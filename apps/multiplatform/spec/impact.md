@@ -196,6 +196,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | `views/newchat/ContactConnectionInfoView.kt` | PC12 | Low | Pending connection details |
 | `views/newchat/AddContactLearnMore.kt` | PC12 | Low | Educational content |
 | `views/newchat/QRCode.kt` | PC12 | Low | QR code display |
+| `views/newchat/WrongQRCode.kt` | PC12 | Low | Wrong QR code type alert |
 | `views/newchat/QRCodeScanner.kt` | PC12 | Low | QR code camera scanner |
 | `views/contacts/ContactListNavView.kt` | PC1, PC12 | Medium | Contact list navigation |
 | `views/contacts/ContactPreviewView.kt` | PC12 | Low | Contact row preview |

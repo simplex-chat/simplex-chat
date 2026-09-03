@@ -187,6 +187,38 @@ struct ParsedServerAddress: Decodable {
     var parseError: String
 }
 
+public enum ScannedLinkType: Decodable {
+    case connection(linkType: SimplexLinkType)
+    case server
+    case fileDescription
+    case desktopCtrl
+    case verificationCode
+}
+
+struct CheckedLink: Decodable {
+    var linkType: ScannedLinkType?
+}
+
+public func checkLink(_ s: String) -> ScannedLinkType? {
+    var c = s.cString(using: .utf8)!
+    if let cjson = chat_check_link(&c) {
+        if let d = dataFromCString(cjson) {
+            do {
+                return try jsonDecoder.decode(CheckedLink.self, from: d).linkType
+            } catch {
+                logger.error("checkLink jsonDecoder.decode error: \(error.localizedDescription)")
+            }
+        }
+    }
+    return nil
+}
+
+// nonisolated async, so callers on the main actor offload to the global executor:
+// pasted text is unbounded, and classifying a file link parses its YAML description
+public func checkLinkAsync(_ s: String) async -> ScannedLinkType? {
+    checkLink(s)
+}
+
 public func parseSanitizeUri(_ s: String, safe: Bool) -> ParsedUri? {
     var c = s.cString(using: .utf8)!
     if let cjson = chat_parse_uri(&c, safe ? 1 : 0) {

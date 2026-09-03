@@ -36,6 +36,7 @@ struct ConnectDesktopView: View {
         case badInvitationError
         case badVersionError(version: String?)
         case desktopDisconnectedError
+        case wrongQRCode(message: String)
         case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
@@ -45,6 +46,7 @@ struct ConnectDesktopView: View {
             case .badInvitationError: "badInvitationError"
             case let .badVersionError(v): "badVersionError \(v ?? "")"
             case .desktopDisconnectedError: "desktopDisconnectedError"
+            case .wrongQRCode: "wrongQRCode"
             case let .error(title, _): "error \(title)"
             }
         }
@@ -141,6 +143,8 @@ struct ConnectDesktopView: View {
                 )
             case .desktopDisconnectedError:
                 Alert(title: Text("Connection terminated"))
+            case let .wrongQRCode(message):
+                wrongQRCodeAlert(message)
             case let .error(title, error):
                 mkAlert(title: title, message: error)
             }
@@ -405,7 +409,15 @@ struct ConnectDesktopView: View {
 
     private func processDesktopQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
-        case let .success(r): connectDesktopAddress(r.string)
+        case let .success(r):
+            let trimmed = r.string.trimmingCharacters(in: .whitespacesAndNewlines)
+            switch checkLink(trimmed) {
+            case .some(.desktopCtrl), nil:
+                // a desktop address, or unrecognised text: let the core parse and report its own error
+                connectDesktopAddress(trimmed)
+            case let type?:
+                alert = .wrongQRCode(message: wrongQRCodeMessage(type))
+            }
         case let .failure(e): errorAlert(e)
         }
     }

@@ -81,7 +81,7 @@ When a group has `groupInfo.useRelays == true` (channel):
 
 ### Relay URL Handling
 
-When a relay address link (`/r` path) is opened via URL deep link, `ContentView.connectViaUrl_()` intercepts it and shows an alert: "Relay address" / "This is a chat relay address, it cannot be used to connect." The link is not processed further.
+When a relay address link (`/r` path) is opened via URL deep link, `ContentView.connectViaUrl_()` intercepts it and shows an alert: "Relay address" / "This is a chat relay address, it cannot be used to connect. To use it, open Network & servers, Your servers, Add server, then Chat relay, paste the address, then Test relay." The link is not processed further.
 
 ### Swipe Actions
 
