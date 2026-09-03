@@ -105,3 +105,24 @@ Custom forks specified in `cabal.project`:
 - `aeson`, `hs-socks` (SimpleX forks)
 - `direct-sqlcipher`, `sqlcipher-simple` (encrypted SQLite)
 - `warp`, `warp-tls` (HTTP server)
+
+## Building the Linux Desktop App
+
+Run these commands from the repository root to build the Linux desktop app:
+
+```bash
+cp scripts/cabal.project.local.linux cabal.project.local
+cabal update
+scripts/desktop/build-lib-linux.sh
+scripts/desktop/make-appimage-linux.sh
+```
+
+`scripts/desktop/build-lib-linux.sh` builds the native `libsimplex.so` library and prepares the desktop native libraries. It also runs `scripts/desktop/prepare-vlc-linux.sh` to bundle the VLC dependency used by the desktop app.
+
+To build a Debian package instead of an AppImage, run:
+
+```bash
+scripts/desktop/make-deb-linux.sh
+```
+
+The Linux scripts in `scripts/desktop/` are the starting point for porting the desktop build to BSD systems.
