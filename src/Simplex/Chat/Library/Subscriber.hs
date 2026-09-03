@@ -1368,10 +1368,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           _ -> pure ()
       SREQ invId sigKey_ payload ->
         chatReadVar processServiceRequests >>= \case
-          True -> case J.eitherDecodeStrict' payload of
+          True -> case J.eitherDecodeStrict' =<< decompressServiceBody payload of
             Right request -> toView $ CEvtServiceRequest user (AgentInvId invId) sigKey_ request
-            Left _ -> dropSReq
-          False -> dropSReq
+            Left e -> logError ("service request dropped, invalid payload: " <> tshow e) >> dropSReq
+          -- the requester gets no reply and waits out its timeout, so this must be visible
+          -- to whoever deployed the service without enabling service requests
+          False -> logError "service request dropped: service requests are not enabled" >> dropSReq
         where
           dropSReq = withAgent $ \a -> rejectServiceRequest a NRMBackground (aUserId user) invId Nothing
       LINK _link auData ->

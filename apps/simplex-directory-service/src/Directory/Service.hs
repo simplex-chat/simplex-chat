@@ -20,15 +20,21 @@ where
 
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.STM
-import Control.Exception (SomeException, try)
+import Control.Exception (SomeException, finally, try)
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Control.Monad.Reader (runReaderT)
 import qualified Data.Attoparsec.Text as A
+import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as JM
+import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
-import Data.Either (fromRight)
+import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Either (fromRight, isRight)
+import Data.Foldable (foldl')
+import Data.Functor (($>))
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
@@ -44,6 +50,7 @@ import Directory.Captcha
 import Directory.Events
 import Directory.Listing
 import Directory.Options
+import Directory.Rpc
 import Directory.Search
 import Directory.Store
 import Directory.Store.Migrate
@@ -56,7 +63,7 @@ import Simplex.Chat.Library.Internal (setGroupLinkData)
 import Simplex.Chat.Markdown (Format (..), FormattedText (..), SimplexLinkType (..), parseMaybeMarkdownList, viewName)
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (GroupShortLinkData (..), LinkOwnerSig (..), MsgChatLink (..), MsgContent (..), memberSupportVoiceVersion)
+import Simplex.Chat.Protocol (GroupShortLinkData (..), compressServiceBody, LinkOwnerSig (..), MsgChatLink (..), MsgContent (..), memberSupportVoiceVersion)
 import Simplex.Chat.Store.Direct (getContact)
 import Simplex.Chat.Store.Groups (getGroupLink, getGroupMember, getGroupMemberByMemberId, setGroupCustomData) -- TODO remove setGroupCustomData
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
@@ -99,7 +106,9 @@ data ServiceState = ServiceState
     pendingCaptchas :: TMap GroupMemberId PendingCaptcha,
     serviceCC :: TMVar ChatController,
     eventQ :: TQueue DirectoryEvent,
-    updateListingsJob :: TMVar ()
+    updateListingsJob :: TMVar (),
+    -- service requests carry no caller identity, so the only possible bound is global
+    serviceRequestsInFlight :: TVar Int
   }
 
 data CaptchaMode = CMText | CMAudio
@@ -128,7 +137,14 @@ newServiceState opts = do
   serviceCC <- newEmptyTMVarIO
   eventQ <- newTQueueIO
   updateListingsJob <- newEmptyTMVarIO
-  pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, serviceCC, eventQ, updateListingsJob}
+  serviceRequestsInFlight <- newTVarIO 0
+  pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, serviceCC, eventQ, updateListingsJob, serviceRequestsInFlight}
+
+-- Requests are answered off the event loop, which is shared with registrations and captchas,
+-- so the bound has to be here rather than in the loop. Over the bound requests are refused
+-- immediately: a caller gets an error rather than waiting out its timeout.
+maxServiceRequestsInFlight :: Int
+maxServiceRequestsInFlight = 8
 
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
@@ -314,7 +330,7 @@ readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, na
   pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
 directoryServiceEvent :: DirectoryOpts -> ServiceState -> User -> ChatController -> DirectoryEvent -> IO ()
-directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults, prohibitedToObserver, alwaysCaptcha} env@ServiceState {searchRequests} user@User {userId} cc = \case
+directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults, prohibitedToObserver, alwaysCaptcha} env@ServiceState {searchRequests, serviceRequestsInFlight} user@User {userId} cc = \case
     DEContactConnected ct -> deContactConnected ct
     DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
     DEServiceJoinedGroup ctId g owner -> deServiceJoinedGroup ctId g owner
@@ -340,8 +356,75 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         SDRUser -> deUserCommand ct ciId cmd
         SDRAdmin -> deAdminCommand ct ciId cmd
         SDRSuperUser -> deSuperUserCommand ct ciId cmd
+    DEServiceRequest reqId req -> deServiceRequest reqId req
     DELogChatResponse r -> logInfo r
   where
+    deServiceRequest :: AgentInvId -> J.Object -> IO ()
+    deServiceRequest reqId req = do
+      accepted <- atomically $ stateTVar serviceRequestsInFlight $ \n ->
+        if n < maxServiceRequestsInFlight then (True, n + 1) else (False, n)
+      if accepted
+        then void $ forkIO $ (respond =<< requestResponse) `finally` releaseSlot
+        else reject "service is busy"
+      where
+        releaseSlot = atomically $ modifyTVar' serviceRequestsInFlight (subtract 1)
+        -- runs on the shared event loop, so it must not block on the network: the reject
+        -- is enqueued, like the response is
+        reject reason =
+          sendChatCmd cc (APIRejectServiceRequest userId reqId $ Just reason) >>= \case
+            Right _ -> pure ()
+            Left e -> logError $ "service reject error: " <> tshow e
+        requestResponse = case JT.parseMaybe JT.parseJSON (J.Object req) of
+          Nothing -> pure $ DRError "unsupported request"
+          Just DRSearch {searchText, searchCursor} -> directorySearch searchText searchCursor
+        respond resp =
+          sendChatCmd cc (APISendServiceResponse userId reqId $ responseObject resp) >>= \case
+            Right _ -> pure ()
+            Left e -> logError $ "service response error: " <> tshow e
+        responseObject resp = case J.toJSON resp of
+          J.Object o -> o
+          -- unreachable: DirectoryResponse encodes as a tagged object; kept for totality
+          _ -> JM.fromList [("type", J.String "error"), ("errorMessage", J.String "internal error")]
+    directorySearch :: Text -> Maybe SearchCursor -> IO DirectoryResponse
+    directorySearch searchText cursor_ =
+      searchListedGroups cc user (STSearch searchText) cursor_ searchResults >>= \case
+        Left e -> logError ("searchListedGroups error: " <> T.pack e) $> DRError "search failed"
+        Right (gs, n) -> do
+          now <- getCurrentTime
+          let rows = map (\row@(g, _, gLink_) -> (row, searchEntry now g gLink_)) gs
+              -- rows with no link cannot be connected to, so they are not sent
+              entryRows = [(row, e) | (row, Just e) <- rows]
+              (sent, lastFitted) = fitPage entryRows
+              fittedAll = length sent == length entryRows
+              -- when the whole page fitted, the cursor covers every row read, including
+              -- rows dropped for having no link; otherwise it stops where sending stopped
+              cursorRow = if fittedAll then fst <$> lastMaybe rows else lastFitted
+              more = not fittedAll || n > length gs
+          pure
+            DRSearchResults
+              { entries = map snd sent,
+                searchCursor = if more then rowCursor <$> cursorRow else Nothing
+              }
+      where
+        -- Send as many entries as the padded envelope allows, and report the last row consumed
+        -- so the cursor can move past rows that were read but not sent. A lone entry that does
+        -- not fit is retried without its image; if it still does not fit it is skipped rather
+        -- than sent, or every retry would land on it again and paging would stall there.
+        fitPage [] = ([], Nothing)
+        fitPage rows
+          | fits rows = (rows, fst <$> lastMaybe rows)
+          | [(gr, _)] <- rows = (if fits noImage then noImage else [], Just gr)
+          | otherwise = fitPage $ init rows
+          where
+            noImage = [(gr, dropImage e) | (gr, e) <- rows]
+        dropImage :: DirectorySearchEntry -> DirectorySearchEntry
+        dropImage e = e {image = Nothing}
+        fits rows = isRight $ compressServiceBody $ LB.toStrict $ J.encode $ page rows
+        page rows =
+          DRSearchResults {entries = map snd rows, searchCursor = rowCursor . fst <$> lastMaybe rows}
+        lastMaybe = foldl' (\_ x -> Just x) Nothing
+        rowCursor (GroupInfo {groupId, groupSummary = GroupSummary {currentMembers}}, GroupReg {createdAt}, _) =
+          SearchCursor {lastMembers = currentMembers, lastCreatedAt = createdAt, lastGroupId = groupId}
     groupLinkText (CCLink cReq sLnk_) = maybe (strEncodeTxt $ simplexChatContact cReq) strEncodeTxt sLnk_
     withAdminUsers action = void . forkIO $ do
       forM_ superUsers $ \KnownContact {contactId} -> action contactId
@@ -1075,14 +1158,14 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           groupLinkUri fts = listToMaybe [uri | FormattedText (Just SimplexLink {linkType, simplexUri = uri}) _ <- fts, linkType == XLGroup || linkType == XLChannel]
       DCSearchNext ->
         atomically (TM.lookup (contactId' ct) searchRequests) >>= \case
-          Just SearchRequest {searchType, searchTime, lastGroup} -> do
+          Just SearchRequest {searchType, searchTime, searchCursor} -> do
             currentTime <- getCurrentTime
             if diffUTCTime currentTime searchTime > 300 -- 5 minutes
               then do
                 atomically $ TM.delete (contactId' ct) searchRequests
                 showAllGroups
               else
-                sendFoundListedGroups searchType (Just lastGroup) "No more groups" $ \gs _ ->
+                sendFoundListedGroups searchType (Just searchCursor) "No more groups" $ \gs _ ->
                   "Sending " <> tshow (length gs) <> " more group(s)."
           Nothing -> showAllGroups
         where
@@ -1232,8 +1315,8 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
               | maybe True (displayName ==) gName_ -> action g gr
               | otherwise -> sendReply $ "Group ID " <> tshow ugrId <> " has the display name " <> displayName
         sendReply = mkSendReply ct ciId
-        sendFoundListedGroups searchType lastGroup_ notFound replyStr =
-          searchListedGroups cc user searchType lastGroup_ searchResults >>= \case
+        sendFoundListedGroups searchType cursor_ notFound replyStr =
+          searchListedGroups cc user searchType cursor_ searchResults >>= \case
             Right ([], _) -> do
               atomically $ TM.delete (contactId' ct) searchRequests
               sendReply notFound
@@ -1247,9 +1330,10 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           let more = if n > length gs then ", sending " <> sortName <> " " <> tshow (length gs) else ""
            in tshow n <> " group(s) listed" <> more <> "."
         updateSearchRequest :: SearchType -> (GroupInfo, GroupReg, Maybe CreatedLinkContact) -> IO ()
-        updateSearchRequest searchType (GroupInfo {groupId}, _, _) = do
+        updateSearchRequest searchType (GroupInfo {groupId, groupSummary = GroupSummary {currentMembers}}, GroupReg {createdAt}, _) = do
           searchTime <- getCurrentTime
-          let search = SearchRequest {searchType, searchTime, lastGroup = groupId}
+          let searchCursor = SearchCursor {lastMembers = currentMembers, lastCreatedAt = createdAt, lastGroupId = groupId}
+              search = SearchRequest {searchType, searchTime, searchCursor}
           atomically $ TM.insert (contactId' ct) search searchRequests
         getRegisteredGroupByLink :: AConnectionLink -> IO (Maybe (GroupInfo, GroupReg, CreatedLinkContact))
         getRegisteredGroupByLink uri =

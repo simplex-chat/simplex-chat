@@ -1036,6 +1036,23 @@ func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> Pendi
     if let r { throw r.unexpected } else { return nil }
 }
 
+// Blocks until the directory replies or the timeout elapses.
+func apiSearchDirectory(_ text: String, cursor: JSONValue?) async -> DirectorySearchResults? {
+    guard let userId = ChatModel.shared.currentUser?.userId else {
+        logger.error("apiSearchDirectory: no current user")
+        return nil
+    }
+    let req = directorySearchRequestJSON(text, cursor)
+    let r: APIResult<ChatResponse1> = await chatApiSendCmd(
+        .apiSendServiceRequest(userId: userId, target: DIRECTORY_SERVICE_LINK, timeoutSec: DIRECTORY_SEARCH_TIMEOUT_SEC, requestJSON: req)
+    )
+    if case let .result(.serviceResponse(_, responseData)) = r {
+        return parseDirectorySearchResponse(responseData)
+    }
+    logger.error("apiSearchDirectory error: \(String(describing: r))")
+    return nil
+}
+
 func apiConnectPlan(connLink: String, resolveMode: PlanResolveMode = .unknown, linkOwnerSig: LinkOwnerSig? = nil, inProgress: BoxedValue<Bool>) async -> ConnectionPlanResult? {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnectPlan: no current user")

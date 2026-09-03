@@ -298,30 +298,47 @@ class ChatItemDummyModel: ObservableObject {
     func sendUpdate() { objectWillChange.send() }
 }
 
+// A directory search and a connection can overlap - tapping a result starts a connection while
+// the search is still running - so the single progress slot records its owner.
+enum ConnectProgressOwner {
+    case connect
+    case directorySearch
+}
+
 class ConnectProgressManager: ObservableObject {
     @Published private var connectInProgress: String? = nil
     @Published private var connectProgressByTimeout: Bool = false
     private var onCancel: (() -> Void)?
+    private var owner: ConnectProgressOwner?
 
     static let shared = ConnectProgressManager()
 
-    func startConnectProgress(_ text: String, onCancel: (() -> Void)? = nil) {
+    func startConnectProgress(_ text: String, owner: ConnectProgressOwner = .connect, onCancel: (() -> Void)? = nil) {
         connectInProgress = text
+        self.owner = owner
         self.onCancel = onCancel
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.connectProgressByTimeout = self.connectInProgress != nil
         }
     }
 
-    func stopConnectProgress() {
+    // a late directory search result must not clear the spinner that now belongs to a connection
+    func stopConnectProgress(_ owner: ConnectProgressOwner = .connect) {
+        if let current = self.owner, current != owner { return }
         connectInProgress = nil
+        self.owner = nil
         onCancel = nil
         connectProgressByTimeout = false
     }
 
+    // a user-initiated cancel, and the takeover in planAndConnect, cancel whatever is running
     func cancelConnectProgress() {
-        onCancel?()
-        stopConnectProgress()
+        let cancel = onCancel
+        owner = nil
+        onCancel = nil
+        connectInProgress = nil
+        connectProgressByTimeout = false
+        cancel?()
     }
 
     var showConnectProgress: String? {
