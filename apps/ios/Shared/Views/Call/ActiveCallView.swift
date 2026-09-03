@@ -181,6 +181,8 @@ struct ActiveCallView: View {
                     if call.connectedAt == nil {
                         call.connectedAt = .now
                     }
+                    // stops the sound if the call was being reconnected
+                    CallSoundsPlayer.shared.stop()
                     if !wasConnected {
                         CallSoundsPlayer.shared.vibrate(long: false)
                         wasConnected = true
@@ -188,6 +190,9 @@ struct ActiveCallView: View {
                 } else if state.connectionState == "reconnecting" {
                     // call is restored and not sent to the core, this is shown only to the ui
                     // make sure core records correct duration despite reconnection state
+                    if call.callState != .reconnecting {
+                        CallSoundsPlayer.shared.startConnectingCallSound()
+                    }
                     call.callState = .reconnecting
                 }
                 if state.connectionState == "closed" {
