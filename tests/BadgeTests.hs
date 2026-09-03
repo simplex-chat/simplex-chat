@@ -224,7 +224,7 @@ at :: Integer -> Int -> Int -> UTCTime
 at y m d = UTCTime (fromGregorian y m d) (11 * 3600)
 
 newBalance :: UTCTime -> LedgerBalance
-newBalance t = LedgerBalance {balanceMonths = 0, balanceStartTs = t, balanceBadgeType = BTSupporter}
+newBalance t = LedgerBalance {balanceMonths = 0, balanceStartTs = t, balanceAnchorTs = t, balanceBadgeType = BTSupporter}
 
 -- StatementEntry and BadgeInfo carry fields of the same names, so the selectors are ambiguous here
 bMonths :: LedgerBalance -> Int
@@ -338,9 +338,9 @@ testMonthEndClipping = do
         (rows, Just p) -> issueAll (finalBalance b rows) (p : ps)
         (_, Nothing) -> reverse ps
       periods = issueAll granted []
-  -- 31 Jan clips to 28 Feb and does not spring back to the 31st
-  map pStart periods `shouldBe` [at 2027 1 31, at 2027 2 28, at 2027 3 28]
-  map pEnd periods `shouldBe` [at 2027 2 28, at 2027 3 28, at 2027 4 28]
+  -- February clips to the 28th, and March goes back to the 31st: clipping does not accumulate
+  map pStart periods `shouldBe` [at 2027 1 31, at 2027 2 28, at 2027 3 31]
+  map pEnd periods `shouldBe` [at 2027 2 28, at 2027 3 31, at 2027 4 30]
   -- the issued period start is the balance start, never periodEnd minus a month, which clipping
   -- would answer as 28 Jan
   addMonths (-1) (pEnd (head periods)) `shouldNotBe` pStart (head periods)
@@ -351,6 +351,13 @@ testMonthEndClipping = do
   -- a month that ends on the leap day counts as elapsed the moment it ends
   elapsedMonths (at 2028 2 29) leap `shouldBe` 1
   elapsedMonths (addUTCTime (-1) (at 2028 2 29)) leap `shouldBe` 0
+  -- buying a month at a time keeps the day of month that buying three at once keeps
+  let jan = grantMonths (at 2027 1 31) 1 (newBalance (at 2027 1 31))
+  case issueMonth (at 2027 1 31) jan of
+    Just (_, issuedJan) -> do
+      let feb = grantMonths (at 2027 2 20) 1 issuedJan
+      fmap (pEnd . fst) (issueMonth (at 2027 2 28) feb) `shouldBe` Just (at 2027 3 31)
+    Nothing -> expectationFailure "January was not issued"
 
 testSundayExpiry :: IO ()
 testSundayExpiry = do
@@ -438,6 +445,7 @@ testStatementJSON = do
             changeMonths = 3,
             balanceMonths = 3,
             balanceStartTs = futureTime,
+            balanceAnchorTs = futureTime,
             balanceBadgeType = BTSupporter,
             wasPausedSince = Nothing,
             createdAt = futureTime,
@@ -450,6 +458,7 @@ testStatementJSON = do
         "changeMonths" J..= (3 :: Int),
         "balanceMonths" J..= (3 :: Int),
         "balanceStartTs" J..= futureTime,
+        "balanceAnchorTs" J..= futureTime,
         "balanceBadgeType" J..= ("supporter" :: T.Text),
         "createdAt" J..= futureTime,
         "entryType" J..= entryType entry

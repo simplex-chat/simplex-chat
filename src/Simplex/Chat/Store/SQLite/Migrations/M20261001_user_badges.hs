@@ -144,6 +144,7 @@ CREATE TABLE @badge_ledger(
   change_months INTEGER NOT NULL,
   balance_months INTEGER NOT NULL,
   balance_start_ts TEXT NOT NULL,
+  balance_anchor_ts TEXT NOT NULL,
   balance_badge_type TEXT NOT NULL,
   was_paused_since TEXT,
   service_created_at TEXT NOT NULL,

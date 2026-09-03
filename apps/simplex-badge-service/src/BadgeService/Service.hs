@@ -275,8 +275,8 @@ signedCredential :: SignedPlan -> Maybe BadgeCredential
 signedCredential SignedPlan {spIssuance} = (\(_, _, c) -> c) <$> spIssuance
 
 statementEntry :: ServiceLedgerEntry -> StatementEntry
-statementEntry ServiceLedgerEntry {entryUuid, changeMonths, balance = LedgerBalance {balanceMonths, balanceStartTs, balanceBadgeType}, entryType, createdAt} =
-  StatementEntry {entryId = entryUuid, changeMonths, balanceMonths, balanceStartTs, balanceBadgeType, wasPausedSince = Nothing, createdAt, entryType}
+statementEntry ServiceLedgerEntry {entryUuid, changeMonths, balance = LedgerBalance {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType}, entryType, createdAt} =
+  StatementEntry {entryId = entryUuid, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince = Nothing, createdAt, entryType}
 
 credentialResponse :: Maybe BadgeCredential -> Maybe T.Text -> [ServiceLedgerEntry] -> BadgeServiceResponse
 credentialResponse credential previousEntryId entries =
@@ -295,7 +295,7 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
       Right (Just (Right IssuedCode {badgeCodeId, badgeType, months})) -> do
         now <- badgeNow cc
         -- a fresh purchase starts from an exhausted balance dated now, which the grant then credits
-        let b0 = LedgerBalance {balanceMonths = 0, balanceStartTs = now, balanceBadgeType = badgeType}
+        let b0 = LedgerBalance {balanceMonths = 0, balanceStartTs = now, balanceAnchorTs = now, balanceBadgeType = badgeType}
         signLedgerPlan key masterKey Nothing now (Just (months, SCCode)) b0 >>= \case
           Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
           Right signed -> do
@@ -339,7 +339,7 @@ issueBadgeCmd key cc purchaseKey BadgeRequest {masterKey, badgeInfo = BadgeInfo 
       -- a supporter balance must not sign a legend credential
       | askedType /= badgeType -> pure $ errorResponse BSEBadRequest
       | otherwise -> do
-          let emptyBalance = LedgerBalance {balanceMonths = 0, balanceStartTs = now, balanceBadgeType = badgeType}
+          let emptyBalance = LedgerBalance {balanceMonths = 0, balanceStartTs = now, balanceAnchorTs = now, balanceBadgeType = badgeType}
               b0 = maybe emptyBalance tipBalance tip
           signLedgerPlan key masterKey (Just askedExpiry) now Nothing b0 >>= \case
             Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal

@@ -173,6 +173,9 @@ data StatementEntry = StatementEntry
     changeMonths :: Int,
     balanceMonths :: Int,
     balanceStartTs :: UTCTime,
+    -- the start of the current run of months; every month boundary in it is counted from here,
+    -- so that the day of month survives a short month
+    balanceAnchorTs :: UTCTime,
     balanceBadgeType :: BadgeType,
     wasPausedSince :: Maybe UTCTime,
     createdAt :: UTCTime,

@@ -248,18 +248,18 @@ clearShownBadge db User {userId} badgePurchaseId =
 storeBadgeStatement :: DB.Connection -> Int64 -> [StatementEntry] -> UTCTime -> IO ()
 storeBadgeStatement db badgePurchaseId entries now = forM_ entries storeEntry
   where
-    storeEntry StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceBadgeType, wasPausedSince, createdAt, entryType} =
+    storeEntry StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType} =
       DB.execute
         db
         [sql|
           INSERT INTO badge_ledger
-            (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_badge_type,
+            (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
              was_paused_since, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type,
              entry_type_unknown, entry_type_value)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           ON CONFLICT (entry_uuid) DO NOTHING
         |]
-        ( (entryId, badgePurchaseId, changeMonths, balanceMonths, balanceStartTs, balanceBadgeType, wasPausedSince)
+        ( (entryId, badgePurchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince)
             :. (createdAt, now, entryTypeT, creditType, debitType, BI (isJust unknown_), unknownJSON)
         )
       where
@@ -278,7 +278,7 @@ getBadgeLedgerBalance db badgePurchaseId =
     DB.query
       db
       [sql|
-        SELECT balance_months, balance_start_ts, balance_badge_type
+        SELECT balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type
         FROM badge_ledger
         WHERE badge_purchase_id = ?
         ORDER BY entry_id DESC
@@ -286,7 +286,7 @@ getBadgeLedgerBalance db badgePurchaseId =
       |]
       (Only badgePurchaseId)
   where
-    toBalance (balanceMonths, balanceStartTs, balanceBadgeType) = LedgerBalance {balanceMonths, balanceStartTs, balanceBadgeType}
+    toBalance (balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) = LedgerBalance {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType}
 
 -- | The entry the client asserts to the service: its last row, or none before the first statement.
 getBadgeLedgerLastEntry :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
@@ -295,15 +295,15 @@ getBadgeLedgerLastEntry db badgePurchaseId =
   where
     q =
       [sql|
-        SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_badge_type,
+        SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
                was_paused_since, service_created_at, entry_type, entry_credit_type, entry_debit_type
         FROM badge_ledger
         WHERE badge_purchase_id = ?
         ORDER BY entry_id DESC
         LIMIT 1
       |]
-    toEntry (entryId, changeMonths, balanceMonths, balanceStartTs, balanceBadgeType, wasPausedSince, createdAt, entryType_, credit_, debit_) =
-      (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceBadgeType, wasPausedSince, createdAt, entryType})
+    toEntry (entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType_, credit_, debit_) =
+      (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType})
         <$> entryTypeFromColumns entryType_ credit_ debit_
 
 getBadgeLedgerEntryId :: DB.Connection -> Int64 -> Text -> IO (Maybe Int64)

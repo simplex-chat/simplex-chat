@@ -353,6 +353,9 @@ serviceCmd BadgeServiceEnv {bsIssuerKey, bsController} purchaseKey request =
 entryOf :: StatementEntry -> (Int, Int, UTCTime)
 entryOf StatementEntry {changeMonths, balanceMonths, balanceStartTs} = (changeMonths, balanceMonths, balanceStartTs)
 
+anchorOf :: StatementEntry -> UTCTime
+anchorOf StatementEntry {balanceAnchorTs} = balanceAnchorTs
+
 entryTag :: StatementEntry -> Text
 entryTag StatementEntry {entryType} = case entryType of
   SECredit c -> creditTypeTag c
@@ -436,8 +439,9 @@ testLapseWhileAway ps =
     redeemed <- serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
     let (entries, _) = statementOf redeemed
         req = BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = nextDue entries, badgeExtra = ""}}
-    -- away for three months: two elapsed unissued, the third is the one now due
-    setClockAt bsClock (addMonths 3 (nextDue entries))
+    -- away past the fourth boundary of the run: three months lapse, the fourth is due. Counted
+    -- from the anchor - adding months to an already clipped due date would miss the boundary.
+    setClockAt bsClock (addMonths 4 (anchorOf (last entries)))
     away <- assertBalance env purchaseKey (last entries) req
     let (entries', _) = statementOf away
     map entryTag entries' `shouldBe` ["lapse", "badge"]

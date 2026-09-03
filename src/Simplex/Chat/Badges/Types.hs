@@ -162,6 +162,7 @@ data BadgeLedgerEntry = BadgeLedgerEntry
     changeMonths :: Int,
     balanceMonths :: Int,
     balanceStartTs :: UTCTime,
+    balanceAnchorTs :: UTCTime,
     balanceBadgeType :: BadgeType,
     wasPausedSince :: Maybe UTCTime,
     serviceCreatedAt :: UTCTime,

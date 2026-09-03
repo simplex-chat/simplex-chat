@@ -191,6 +191,10 @@
         "changeMonths": {"type": "int16"},
         "balanceMonths": {"type": "uint16"},
         "balanceStartTs": {"type": "timestamp"},
+        "balanceAnchorTs": {
+          "type": "timestamp",
+          "metadata": {"comment": "start of the current run of months; boundaries are counted from it"}
+        },
         "balanceBadgeType": {"type": "string"},
         "createdAt": {"type": "timestamp"},
         "entryType": {"ref": "ledgerEntryType"}

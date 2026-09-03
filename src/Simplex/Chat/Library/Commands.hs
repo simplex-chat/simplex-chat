@@ -60,7 +60,7 @@ import Control.Concurrent (ThreadId, killThread, mkWeakThreadId)
 import Crypto.Random (ChaChaDRG)
 import System.Mem.Weak (Weak, deRefWeak)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeRequest (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
-import Simplex.Chat.Badges.Ledger (LedgerBalance, LedgerPlan (..))
+import Simplex.Chat.Badges.Ledger (LedgerBalance (..), LedgerPlan (..))
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeState (..), UserBadgeState (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
@@ -5368,8 +5368,8 @@ requestBadgeIssue user@User {userId} UserBadgePurchase {badgePurchaseId, purchas
       J.Success BSPError {code} -> throwCmdError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
       _ -> throwCmdError "unexpected badge service response"
   where
-    paidThroughOf StatementEntry {balanceMonths, balanceStartTs} =
-      L.addMonths (toInteger balanceMonths) balanceStartTs
+    paidThroughOf StatementEntry {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType} =
+      L.paidThrough LedgerBalance {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType}
 
 -- | A credential is stored only if it verifies and is for the master key this client sent: the
 -- signature is checked against the key inside the credential, so any other one also verifies.

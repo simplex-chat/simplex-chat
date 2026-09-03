@@ -161,7 +161,7 @@ getLedgerTip db purchaseId =
     DB.query
       db
       [sql|
-        SELECT entry_id, entry_uuid, balance_months, balance_start_ts, balance_badge_type
+        SELECT entry_id, entry_uuid, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type
         FROM sx_badge_service_badge_ledger
         WHERE badge_purchase_id = ?
         ORDER BY entry_id DESC
@@ -169,8 +169,8 @@ getLedgerTip db purchaseId =
       |]
       (Only purchaseId)
   where
-    toTip (tipEntryId, tipEntryUuid, balanceMonths, balanceStartTs, balanceBadgeType) =
-      LedgerTip {tipEntryId, tipEntryUuid, tipBalance = LedgerBalance {balanceMonths, balanceStartTs, balanceBadgeType}}
+    toTip (tipEntryId, tipEntryUuid, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) =
+      LedgerTip {tipEntryId, tipEntryUuid, tipBalance = LedgerBalance {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType}}
 
 -- | Scoped to the client's own purchase, so asserting another's entry tells it nothing.
 getLedgerEntryId :: DB.Connection -> Int64 -> Text -> IO (Maybe Int64)
@@ -189,7 +189,7 @@ getLedgerEntries db purchaseId afterEntryId =
     <$> DB.query
       db
       [sql|
-        SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_badge_type,
+        SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
                entry_type, entry_credit_type, entry_debit_type, service_created_at
         FROM sx_badge_service_badge_ledger
         WHERE badge_purchase_id = ? AND entry_id > ?
@@ -197,8 +197,8 @@ getLedgerEntries db purchaseId afterEntryId =
       |]
       (purchaseId, afterEntryId)
   where
-    toEntry (entryUuid, changeMonths, balanceMonths, balanceStartTs, balanceBadgeType, entryType_, credit_, debit_, createdAt) =
-      (\entryType -> ServiceLedgerEntry {entryUuid, changeMonths, balance = LedgerBalance {balanceMonths, balanceStartTs, balanceBadgeType}, entryType, createdAt})
+    toEntry (entryUuid, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, entryType_, credit_, debit_, createdAt) =
+      (\entryType -> ServiceLedgerEntry {entryUuid, changeMonths, balance = LedgerBalance {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType}, entryType, createdAt})
         <$> entryTypeFromColumns entryType_ credit_ debit_
 
 -- | Answers a repeat inside an issued month, rather than signing the same content twice.
@@ -241,17 +241,17 @@ appendLedgerPlan db g purchaseId SignedPlan {spRows, spIssuance} now = do
   where
     appendRow LedgerRow {rowChange, rowBalance, rowType} = do
       entryUuid <- randomId g
-      let LedgerBalance {balanceMonths, balanceStartTs, balanceBadgeType} = rowBalance
+      let LedgerBalance {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType} = rowBalance
           (entryType, creditType, debitType) = entryTypeColumns rowType
       DB.execute
         db
         [sql|
           INSERT INTO sx_badge_service_badge_ledger
-            (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts,
+            (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts,
              balance_badge_type, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((entryUuid, purchaseId, rowChange, balanceMonths, balanceStartTs) :. (balanceBadgeType, now, now, entryType, creditType, debitType))
+        ((entryUuid, purchaseId, rowChange, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, now, now, entryType, creditType, debitType))
       insertedRowId db
 
 randomId :: TVar ChaChaDRG -> IO Text

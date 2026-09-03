@@ -308,8 +308,9 @@ Rules:
 
 - `months` — unused months.
 - `start` — the date the unused balance starts. Not changed by grants (while `months > 0`); advanced by one month per `consume` and by the lapsed count per `lapse`.
+- `anchor` — the start of the current run of months, set only where a lapsed run restarts. Every month boundary of the run is counted from it, so a run beginning 31 Jan reaches 28 Feb and then returns to 31 Mar; counting from the moving `start` would hold it at the 28th for good.
 
-Coverage = `[start, addMonths months start)`. `paidThrough = addMonths months start` — read from the last row alone; not a `badges` column.
+Write `monthAfter n = addMonths (m + n) anchor`, where `m` is the whole months from `anchor` to `start`, which always sits on a boundary. Coverage = `[start, monthAfter months)`. `paidThrough = monthAfter months` — read from the last row alone; not a `badges` column.
 
 **Row:**
 
@@ -319,6 +320,7 @@ Coverage = `[start, addMonths months start)`. `paidThrough = addMonths months st
 - `delta` — signed months change
 - `months` — state: unused months after this row
 - `start` — state: balance start after this row
+- `anchor` — state: the run's anchor after this row
 - ref — bot-assigned payment ref / `charge_id` (grants)
 - `created_at`
 
@@ -328,20 +330,19 @@ Append protocol: lock the badge's ledger → read the last row → compute the n
 
 ```
 advance t:            -- time bookkeeping only: one lapse row for the fully elapsed months
-  k = min months (fullMonthsBetween start t)
-      -- fullMonthsBetween start t: the largest m >= 0 with addMonths m start <= t
-  if k > 0: append (lapse, −k, months − k, addMonths k start)               -- O11, one row
+  k = the largest k in [0, months] with monthAfter k <= t
+  if k > 0: append (lapse, −k, months − k, monthAfter k)                    -- O11, one row
 
 issue t:              -- run after advance t
-  requires months > 0 && start <= t && no issuance for [start, addMonths 1 start)
-  sign the credential, expiry sundayAfter (addMonths 1 start)
-  in one transaction: append (consume, −1, months − 1, addMonths 1 start)   -- O10
-                      + issuance row for [start, addMonths 1 start)
+  requires months > 0 && start <= t && no issuance for [start, monthAfter 1)
+  sign the credential, expiry sundayAfter (monthAfter 1)
+  in one transaction: append (consume, −1, months − 1, monthAfter 1)        -- O10
+                      + issuance row for [start, monthAfter 1)
   on signing failure: no rows; retried at the next `issue`
 
 grant t n src:                                    -- O1–O5; t = settlement time,
-  months == 0 → append (grant src, +n, n, max start t)      -- provider period start for O2
-  months > 0  → append (grant src, +n, months + n, start)
+  months == 0 && t > start → append (grant src, +n, n, t), anchor = t   -- provider period start for O2
+  otherwise                → append (grant src, +n, months + n, start)  -- same run keeps its anchor
 
 debit reason:  append (debit reason, −months, 0, start)     -- O6–O9
 

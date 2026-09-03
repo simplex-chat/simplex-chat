@@ -30,12 +30,25 @@ import Data.Time.Clock (UTCTime (..))
 import Simplex.Chat.Badges (BadgeType)
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntryType (..))
 
+-- | balanceAnchorTs is the start of the current run of months, and every month boundary in that
+-- run is counted from it. Counting from balanceStartTs instead would compound the day-of-month
+-- clipping: a run from 31 Jan would reach 28 Feb and stay on the 28th for good.
 data LedgerBalance = LedgerBalance
   { balanceMonths :: Int,
     balanceStartTs :: UTCTime,
+    balanceAnchorTs :: UTCTime,
     balanceBadgeType :: BadgeType
   }
   deriving (Eq, Show)
+
+-- | balanceStartTs is always a whole number of months from the anchor; this is that number.
+monthsFromAnchor :: LedgerBalance -> Int
+monthsFromAnchor LedgerBalance {balanceStartTs, balanceAnchorTs} =
+  length $ takeWhile (\m -> addMonths m balanceAnchorTs <= balanceStartTs) [1 ..]
+
+-- | The start of the month that follows n more months of this run.
+monthAfter :: LedgerBalance -> Int -> UTCTime
+monthAfter b n = addMonths (toInteger $ monthsFromAnchor b + n) (balanceAnchorTs b)
 
 -- | periodStart is stored, not derived from periodEnd: subtracting a month does not undo adding
 -- one (31 Jan + 1 month = 28 Feb, - 1 month = 28 Jan).
@@ -47,17 +60,16 @@ data BadgePeriod = BadgePeriod
   deriving (Eq, Show)
 
 paidThrough :: LedgerBalance -> UTCTime
-paidThrough LedgerBalance {balanceMonths, balanceStartTs} = addMonths (toInteger balanceMonths) balanceStartTs
+paidThrough b = monthAfter b (balanceMonths b)
 
 elapsedMonths :: UTCTime -> LedgerBalance -> Int
-elapsedMonths t LedgerBalance {balanceMonths, balanceStartTs} =
-  length $ takeWhile (\m -> addMonths m balanceStartTs <= t) [1 .. toInteger balanceMonths]
+elapsedMonths t b = length $ takeWhile (\m -> monthAfter b m <= t) [1 .. balanceMonths b]
 
 -- | Runs before every grant and issue.
 advanceBalance :: UTCTime -> LedgerBalance -> Maybe LedgerBalance
-advanceBalance t b@LedgerBalance {balanceMonths, balanceStartTs}
+advanceBalance t b@LedgerBalance {balanceMonths}
   | k == 0 = Nothing
-  | otherwise = Just b {balanceMonths = balanceMonths - k, balanceStartTs = addMonths (toInteger k) balanceStartTs}
+  | otherwise = Just b {balanceMonths = balanceMonths - k, balanceStartTs = monthAfter b k}
   where
     k = elapsedMonths t b
 
@@ -65,8 +77,12 @@ advanceBalance t b@LedgerBalance {balanceMonths, balanceStartTs}
 -- are neither spent on the month still running nor backdated over a gap.
 grantMonths :: UTCTime -> Int -> LedgerBalance -> LedgerBalance
 grantMonths t n b@LedgerBalance {balanceMonths, balanceStartTs}
-  | balanceMonths == 0 = b {balanceMonths = n, balanceStartTs = max balanceStartTs t}
+  -- only a lapsed run restarts; topping up before coverage ends continues the run on its anchor,
+  -- so buying a month at a time keeps the same day of month as buying a year at once
+  | lapsed = b {balanceMonths = n, balanceStartTs = t, balanceAnchorTs = t}
   | otherwise = b {balanceMonths = balanceMonths + n}
+  where
+    lapsed = balanceMonths == 0 && t > balanceStartTs
 
 -- | Runs after advanceBalance. Nothing when the balance is empty, or when it starts in the future
 -- because the current month is already issued - the caller then replies with the stored credential.
@@ -75,7 +91,7 @@ issueMonth t b@LedgerBalance {balanceMonths, balanceStartTs}
   | balanceMonths <= 0 || balanceStartTs > t = Nothing
   | otherwise = Just (period, b {balanceMonths = balanceMonths - 1, balanceStartTs = periodEnd})
   where
-    periodEnd = addMonths 1 balanceStartTs
+    periodEnd = monthAfter b 1
     period = BadgePeriod {periodStart = balanceStartTs, periodEnd, badgeExpiry = endOfSundayAfter periodEnd}
 
 data LedgerRow = LedgerRow
