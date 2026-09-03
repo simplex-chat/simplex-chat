@@ -220,7 +220,8 @@ data BadgeState = BadgeState
   }
   deriving (Show)
 
--- unconfirmed draft
+-- TODO [badges] a second code while one is active - supersede the old purchase, refuse, or credit
+-- the balance? Each leaves one badge per profile, reducing this to BadgeState with no shown flag
 data UserBadgeState = UserBadgeState
   { badges :: [BadgeState],
     shownBadgeId :: Maybe Int64,
