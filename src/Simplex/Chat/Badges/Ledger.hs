@@ -3,15 +3,12 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- | The badge ledger, shared by the service that writes the rows and the client that replicates
--- them. Every row carries the state after it, so the last row is the balance - neither side sums.
 module Simplex.Chat.Badges.Ledger
   ( LedgerBalance (..),
     BadgePeriod (..),
     LedgerRow (..),
     LedgerPlan (..),
     ledgerPlan,
-    planAllRows,
     paidThrough,
     elapsedMonths,
     advanceBalance,
@@ -33,7 +30,6 @@ import Data.Time.Clock (UTCTime (..))
 import Simplex.Chat.Badges (BadgeType)
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntryType (..))
 
--- | Coverage is @[balanceStartTs, addMonths balanceMonths balanceStartTs)@.
 data LedgerBalance = LedgerBalance
   { balanceMonths :: Int,
     balanceStartTs :: UTCTime,
@@ -41,8 +37,8 @@ data LedgerBalance = LedgerBalance
   }
   deriving (Eq, Show)
 
--- | 'periodStart' cannot be recovered from 'periodEnd': month arithmetic clips, so
--- 31 Jan + 1 month - 1 month = 28 Jan.
+-- | periodStart is stored, not derived from periodEnd: subtracting a month does not undo adding
+-- one (31 Jan + 1 month = 28 Feb, - 1 month = 28 Jan).
 data BadgePeriod = BadgePeriod
   { periodStart :: UTCTime,
     periodEnd :: UTCTime,
@@ -65,14 +61,15 @@ advanceBalance t b@LedgerBalance {balanceMonths, balanceStartTs}
   where
     k = elapsedMonths t b
 
--- | An exhausted balance restarts at @t@, so months bought after a gap are not spent on it.
+-- | New months start where the current coverage ends, or at t if it has already lapsed - so they
+-- are neither spent on the month still running nor backdated over a gap.
 grantMonths :: UTCTime -> Int -> LedgerBalance -> LedgerBalance
 grantMonths t n b@LedgerBalance {balanceMonths, balanceStartTs}
   | balanceMonths == 0 = b {balanceMonths = n, balanceStartTs = max balanceStartTs t}
   | otherwise = b {balanceMonths = balanceMonths + n}
 
--- | Runs after 'advanceBalance'. A balance starting in the future is a month already issued, so
--- topping up inside an issued period does not issue it twice.
+-- | Runs after advanceBalance. Nothing when the balance is empty, or when it starts in the future
+-- because the current month is already issued - the caller then replies with the stored credential.
 issueMonth :: UTCTime -> LedgerBalance -> Maybe (BadgePeriod, LedgerBalance)
 issueMonth t b@LedgerBalance {balanceMonths, balanceStartTs}
   | balanceMonths <= 0 || balanceStartTs > t = Nothing
@@ -88,23 +85,19 @@ data LedgerRow = LedgerRow
   }
   deriving (Show)
 
--- | The rows the transitions would write, computed before any of them is applied. 'planIssuance'
--- is apart so the issuance references the @debit(badge)@ row itself, not whichever went in last.
+-- | The rows to write, worked out before any of them is written. The issuance row is kept
+-- separate because the credential is stored against that row and no other.
 data LedgerPlan = LedgerPlan
   { planRows :: [LedgerRow],
-    planIssuance :: Maybe (LedgerRow, BadgePeriod),
-    planBalance :: LedgerBalance
+    planIssuance :: Maybe (LedgerRow, BadgePeriod)
   }
   deriving (Show)
 
-planAllRows :: LedgerPlan -> [LedgerRow]
-planAllRows LedgerPlan {planRows, planIssuance} = planRows <> maybe [] (pure . fst) planIssuance
-
--- | What a redemption and an issue request would each write, differing only in the credit.
+-- | A redemption and an issue request run the same steps; only a redemption passes a credit.
 ledgerPlan :: UTCTime -> Maybe (Int, StatementCreditType) -> LedgerBalance -> LedgerPlan
 ledgerPlan t grant_ b0 = case issueMonth t granted of
-  Just (p, issued) -> LedgerPlan rows (Just (row granted issued $ SEDebit SDBadge, p)) issued
-  Nothing -> LedgerPlan rows Nothing granted
+  Just (p, issued) -> LedgerPlan rows $ Just (row granted issued $ SEDebit SDBadge, p)
+  Nothing -> LedgerPlan rows Nothing
   where
     (lapseRows, advanced) = case advanceBalance t b0 of
       Just b -> ([row b0 b $ SEDebit SDLapse], b)
@@ -116,7 +109,8 @@ ledgerPlan t grant_ b0 = case issueMonth t granted of
     -- read off the two states, so a row cannot disagree with the balance it carries
     row before after rowType = LedgerRow {rowChange = balanceMonths after - balanceMonths before, rowBalance = after, rowType}
 
--- | The stored tag is the wire tag, so a row replicated from a newer service keeps its type.
+-- | The tag stored is the string the service sent, so a type this version does not know is kept
+-- as received and can be read once it does.
 entryTypeColumns :: StatementEntryType -> (Text, Maybe Text, Maybe Text)
 entryTypeColumns = \case
   SECredit c -> ("credit", Just $ creditTypeTag c, Nothing)
@@ -142,8 +136,11 @@ debitTypeTag = \case
   SDLapse -> "lapse"
   SDUnknown {tag} -> tag
 
--- | Only the reference-free types, which are the only ones this version writes; the rest also
--- need their reference column and arrive with subscriptions and payments.
+-- | Only the types a tag alone rebuilds, which is those whose constructor has no fields. The rest
+-- name an invoice, a charge or another purchase, kept in a column this is not given, and reading
+-- them back is not implemented - Nothing rather than a type with an invented payload.
+-- TODO [badges] take the reference columns and rebuild payment, charge, transferIn, upgrade and
+-- transferOut, without which a statement carrying one cannot be re-emitted or read back.
 entryTypeFromColumns :: Text -> Maybe Text -> Maybe Text -> Maybe StatementEntryType
 entryTypeFromColumns entryType credit_ debit_ = case (entryType, credit_, debit_) of
   ("credit", Just t, _) -> SECredit <$> creditType t

@@ -219,6 +219,8 @@ getCurrentIssuance db purchaseId now = do
     _ -> Nothing
 
 -- | entry_uuid is assigned here, so no caller can author one.
+-- TODO [badges] this writes the entry type tag and no reference: an entry naming an invoice, a
+-- charge or another purchase would be stored without it, and cannot be until payments exist.
 appendLedgerPlan :: DB.Connection -> TVar ChaChaDRG -> Int64 -> SignedPlan -> UTCTime -> IO ()
 appendLedgerPlan db g purchaseId SignedPlan {spRows, spIssuance} now = do
   mapM_ appendRow spRows
