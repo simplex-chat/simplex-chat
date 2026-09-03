@@ -13,7 +13,7 @@ module BadgeService.Store
     ServicePurchase (..),
     LedgerTip (..),
     ServiceLedgerEntry (..),
-    SignedPass (..),
+    SignedPlan (..),
     getBadgeCode,
     purchaseKeyExists,
     getPurchaseByKey,
@@ -21,7 +21,7 @@ module BadgeService.Store
     getLedgerEntryId,
     getLedgerEntries,
     getCurrentIssuance,
-    appendLedgerPass,
+    appendLedgerPlan,
     createCodePurchase,
     insertBadgeCode,
   )
@@ -74,7 +74,7 @@ data RedeemedCode = RedeemedCode
     credential :: BadgeCredential
   }
 
--- Its rows and issuance are appended by 'appendLedgerPass' in the same transaction: a code marked
+-- Its rows and issuance are appended by 'appendLedgerPlan' in the same transaction: a code marked
 -- redeemed while another write failed would be spent with no credential, and nothing reissues it.
 data NewCodePurchase = NewCodePurchase
   { badgeCodeId :: Int64,
@@ -103,10 +103,10 @@ data ServiceLedgerEntry = ServiceLedgerEntry
     createdAt :: UTCTime
   }
 
--- | Pairs the pass with its credential, so a @debit(badge)@ row cannot be written without one.
-data SignedPass = SignedPass
+-- | Pairs the plan with its credential, so a @debit(badge)@ row cannot be written without one.
+data SignedPlan = SignedPlan
   { spRows :: [LedgerRow],
-    spIssue :: Maybe (LedgerRow, BadgePeriod, BadgeCredential)
+    spIssuance :: Maybe (LedgerRow, BadgePeriod, BadgeCredential)
   }
 
 getBadgeCode :: DB.Connection -> ByteString -> IO (Maybe IssuedCode)
@@ -219,10 +219,10 @@ getCurrentIssuance db purchaseId now = do
     _ -> Nothing
 
 -- | entry_uuid is assigned here, so no caller can author one.
-appendLedgerPass :: DB.Connection -> TVar ChaChaDRG -> Int64 -> SignedPass -> UTCTime -> IO ()
-appendLedgerPass db g purchaseId SignedPass {spRows, spIssue} now = do
+appendLedgerPlan :: DB.Connection -> TVar ChaChaDRG -> Int64 -> SignedPlan -> UTCTime -> IO ()
+appendLedgerPlan db g purchaseId SignedPlan {spRows, spIssuance} now = do
   mapM_ appendRow spRows
-  case spIssue of
+  case spIssuance of
     Nothing -> pure ()
     Just (issueRow, BadgePeriod {periodStart, periodEnd, badgeExpiry}, credential) -> do
       entryId <- appendRow issueRow
@@ -254,7 +254,7 @@ appendLedgerPass db g purchaseId SignedPass {spRows, spIssue} now = do
 randomId :: TVar ChaChaDRG -> IO Text
 randomId g = safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes 16 g)
 
--- the caller has already signed and appends the pass in this same transaction, so no code is
+-- the caller has already signed and appends the plan in this same transaction, so no code is
 -- left spent without a credential
 createCodePurchase :: DB.Connection -> NewCodePurchase -> UTCTime -> IO Int64
 createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do

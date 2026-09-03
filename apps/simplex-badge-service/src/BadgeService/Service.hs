@@ -259,20 +259,20 @@ badgeNow ChatController {config = ChatConfig {badgeCurrentTime}} = badgeCurrentT
 
 -- | Signs before anything is written, so a signing failure leaves the month still due.
 -- @expiryCap@ is a client's proposal, which can only shorten what the balance funds.
-planPass :: BadgeIssuerKey -> BadgeMasterKey -> Maybe UTCTime -> UTCTime -> Maybe (Int, StatementCreditType) -> LedgerBalance -> IO (Either String SignedPass)
-planPass BadgeIssuerKey {keyIdx, secretKey} masterKey expiryCap now grant_ b0 =
-  case passIssue pass of
-    Nothing -> pure $ Right $ SignedPass {spRows = passRows pass, spIssue = Nothing}
+signLedgerPlan :: BadgeIssuerKey -> BadgeMasterKey -> Maybe UTCTime -> UTCTime -> Maybe (Int, StatementCreditType) -> LedgerBalance -> IO (Either String SignedPlan)
+signLedgerPlan BadgeIssuerKey {keyIdx, secretKey} masterKey expiryCap now grant_ b0 =
+  case planIssuance plan of
+    Nothing -> pure $ Right $ SignedPlan {spRows = planRows plan, spIssuance = Nothing}
     Just (row@LedgerRow {rowBalance = LedgerBalance {balanceBadgeType}}, period@BadgePeriod {badgeExpiry}) -> do
       -- the type is the one the balance funds, never one the caller proposed
       let badgeInfo = BadgeInfo {badgeType = balanceBadgeType, badgeExpiry = maybe badgeExpiry (min badgeExpiry) expiryCap, badgeExtra = ""}
-      fmap (\credential -> SignedPass {spRows = passRows pass, spIssue = Just (row, period, credential)})
+      fmap (\credential -> SignedPlan {spRows = planRows plan, spIssuance = Just (row, period, credential)})
         <$> issueBadge keyIdx secretKey (VerifiedBadgeRequest BadgeRequest {masterKey, badgeInfo})
   where
-    pass = ledgerPass now grant_ b0
+    plan = ledgerPlan now grant_ b0
 
-signedCredential :: SignedPass -> Maybe BadgeCredential
-signedCredential SignedPass {spIssue} = (\(_, _, c) -> c) <$> spIssue
+signedCredential :: SignedPlan -> Maybe BadgeCredential
+signedCredential SignedPlan {spIssuance} = (\(_, _, c) -> c) <$> spIssuance
 
 statementEntry :: ServiceLedgerEntry -> StatementEntry
 statementEntry ServiceLedgerEntry {entryUuid, changeMonths, balance = LedgerBalance {balanceMonths, balanceStartTs, balanceBadgeType}, entryType, createdAt} =
@@ -296,7 +296,7 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
         now <- badgeNow cc
         -- a fresh purchase starts from an exhausted balance dated now, which the grant then credits
         let b0 = LedgerBalance {balanceMonths = 0, balanceStartTs = now, balanceBadgeType = badgeType}
-        planPass key masterKey Nothing now (Just (months, SCCode)) b0 >>= \case
+        signLedgerPlan key masterKey Nothing now (Just (months, SCCode)) b0 >>= \case
           Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
           Right signed -> do
             -- re-read: a concurrent redemption may have landed while this one was signing
@@ -305,7 +305,7 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
                 Just (Left resp) -> pure resp
                 Just (Right _) -> liftIO $ do
                   purchaseId <- createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType} now
-                  appendLedgerPass db (random cc) purchaseId signed now
+                  appendLedgerPlan db (random cc) purchaseId signed now
                   entries_ <- getLedgerEntries db purchaseId 0
                   pure $ maybe (errorResponse BSEInternal) (credentialResponse (signedCredential signed) Nothing) entries_
                 Nothing -> pure $ errorResponse BSECodeInvalid
@@ -341,14 +341,14 @@ issueBadgeCmd key cc purchaseKey BadgeRequest {masterKey, badgeInfo = BadgeInfo 
       | otherwise -> do
           let emptyBalance = LedgerBalance {balanceMonths = 0, balanceStartTs = now, balanceBadgeType = badgeType}
               b0 = maybe emptyBalance tipBalance tip
-          planPass key masterKey (Just askedExpiry) now Nothing b0 >>= \case
+          signLedgerPlan key masterKey (Just askedExpiry) now Nothing b0 >>= \case
             Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
             Right signed -> do
               r <- withDB "issueBadge" cc $ \db -> liftIO $ do
                 -- a row appended since the read makes the signed period stale
                 tip' <- getLedgerTip db badgePurchaseId
                 when (fmap tipEntryId tip' == fmap tipEntryId tip) $
-                  appendLedgerPass db (random cc) badgePurchaseId signed now
+                  appendLedgerPlan db (random cc) badgePurchaseId signed now
                 issueResponse db badgePurchaseId now
               pure $ either (const $ errorResponse BSEInternal) id r
   where

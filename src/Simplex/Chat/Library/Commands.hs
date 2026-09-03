@@ -60,7 +60,7 @@ import Control.Concurrent (ThreadId, killThread, mkWeakThreadId)
 import Crypto.Random (ChaChaDRG)
 import System.Mem.Weak (Weak, deRefWeak)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeRequest (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
-import Simplex.Chat.Badges.Ledger (LedgerBalance, LedgerPass (..))
+import Simplex.Chat.Badges.Ledger (LedgerBalance, LedgerPlan (..))
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeState (..), UserBadgeState (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
@@ -5266,9 +5266,9 @@ badgePurchasePass user emitted p@UserBadgePurchase {badgePurchaseId} now = do
   case balance_ of
     Nothing -> pure (False, Nothing)
     Just balance -> do
-      -- the same pass the service would run: if it would write nothing, there is nothing to ask for
-      balance' <- case L.ledgerPass now Nothing balance of
-        LedgerPass {passRows = [], passIssue = Nothing} -> pure balance
+      -- the same plan the service would write: if it is empty, there is nothing to ask for
+      balance' <- case L.ledgerPlan now Nothing balance of
+        LedgerPlan {planRows = [], planIssuance = Nothing} -> pure balance
         _ -> requestBadgeIssue user p now `catchAllErrors` \e -> balance <$ eToView e
       retired <- retireExpiredBadge user p now balance'
       let issued = L.balanceStartTs balance' /= L.balanceStartTs balance

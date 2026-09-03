@@ -9,9 +9,9 @@ module Simplex.Chat.Badges.Ledger
   ( LedgerBalance (..),
     BadgePeriod (..),
     LedgerRow (..),
-    LedgerPass (..),
-    ledgerPass,
-    passAllRows,
+    LedgerPlan (..),
+    ledgerPlan,
+    planAllRows,
     paidThrough,
     elapsedMonths,
     advanceBalance,
@@ -88,23 +88,23 @@ data LedgerRow = LedgerRow
   }
   deriving (Show)
 
--- | 'passIssue' is apart from 'passRows' so the issuance references the @debit(badge)@ entry
--- itself, rather than whichever row a caller inserted last.
-data LedgerPass = LedgerPass
-  { passRows :: [LedgerRow],
-    passIssue :: Maybe (LedgerRow, BadgePeriod),
-    passBalance :: LedgerBalance
+-- | The rows the transitions would write, computed before any of them is applied. 'planIssuance'
+-- is apart so the issuance references the @debit(badge)@ row itself, not whichever went in last.
+data LedgerPlan = LedgerPlan
+  { planRows :: [LedgerRow],
+    planIssuance :: Maybe (LedgerRow, BadgePeriod),
+    planBalance :: LedgerBalance
   }
   deriving (Show)
 
-passAllRows :: LedgerPass -> [LedgerRow]
-passAllRows LedgerPass {passRows, passIssue} = passRows <> maybe [] (pure . fst) passIssue
+planAllRows :: LedgerPlan -> [LedgerRow]
+planAllRows LedgerPlan {planRows, planIssuance} = planRows <> maybe [] (pure . fst) planIssuance
 
--- | What a redemption and an issue request both do, differing only in the credit.
-ledgerPass :: UTCTime -> Maybe (Int, StatementCreditType) -> LedgerBalance -> LedgerPass
-ledgerPass t grant_ b0 = case issueMonth t granted of
-  Just (p, issued) -> LedgerPass rows (Just (row granted issued $ SEDebit SDBadge, p)) issued
-  Nothing -> LedgerPass rows Nothing granted
+-- | What a redemption and an issue request would each write, differing only in the credit.
+ledgerPlan :: UTCTime -> Maybe (Int, StatementCreditType) -> LedgerBalance -> LedgerPlan
+ledgerPlan t grant_ b0 = case issueMonth t granted of
+  Just (p, issued) -> LedgerPlan rows (Just (row granted issued $ SEDebit SDBadge, p)) issued
+  Nothing -> LedgerPlan rows Nothing granted
   where
     (lapseRows, advanced) = case advanceBalance t b0 of
       Just b -> ([row b0 b $ SEDebit SDLapse], b)
