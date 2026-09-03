@@ -142,13 +142,13 @@ import UnliftIO.IO (hClose)
 import UnliftIO.STM
 #if defined(dbPostgres)
 import Data.Bifunctor (bimap, first, second)
-import Simplex.Messaging.Agent.Client (SubInfo (..), cancelWorker, getAgentQueuesInfo, getAgentWorker, getAgentWorkersDetails, getAgentWorkersSummary, hasWorkToDo', temporaryOrHostError, waitForWork)
+import Simplex.Messaging.Agent.Client (SubInfo (..), cancelWorker, getAgentQueuesInfo, getAgentWorker, getAgentWorkersDetails, getAgentWorkersSummary, hasWorkToDo', temporaryOrHostError)
 #else
 import Data.Bifunctor (bimap, first, second)
 import qualified Data.ByteArray as BA
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
-import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, cancelWorker, getAgentQueuesInfo, getAgentWorker, getAgentWorkersDetails, getAgentWorkersSummary, hasWorkToDo', temporaryOrHostError, waitForWork)
+import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, cancelWorker, getAgentQueuesInfo, getAgentWorker, getAgentWorkersDetails, getAgentWorkersSummary, hasWorkToDo', temporaryOrHostError)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 #endif
@@ -5237,7 +5237,9 @@ runBadgeWorker User {userId} Worker {doWork} = do
   -- derived from state, so a restart derives and raises it again.
   emitted <- newTVarIO M.empty
   forever $ do
-    lift $ waitForWork doWork
+    -- a destructive take, unlike waitForWork elsewhere: the signal is consumed where it is
+    -- observed, so a pass that throws cannot leave it set, and one arriving mid-pass is not lost
+    atomically $ takeTMVar doWork
     lift waitChatStartedAndActivated
     runBadgePass userId emitted doWork `catchAllErrors` eToView
 
@@ -5412,9 +5414,6 @@ scheduleBadgeWake :: UserId -> TMVar () -> UTCTime -> Maybe UTCTime -> CM' ()
 scheduleBadgeWake userId doWork now at_ = do
   sleepers <- asks badgeSleepers
   atomically (TM.lookupDelete userId sleepers) >>= mapM_ (liftIO . killWeakThread)
-  -- unconditionally: the pass has consumed the signal, and leaving it set with no boundary to
-  -- clear it later spins the worker
-  void . atomically $ tryTakeTMVar doWork
   forM_ at_ $ \at -> do
     tId <- forkIO $ do
       liftIO $ threadDelay' $ diffToMicroseconds $ diffUTCTime at now
