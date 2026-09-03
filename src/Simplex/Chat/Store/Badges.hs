@@ -104,10 +104,8 @@ deleteBadgeCodeRedemption db redemptionId =
     |]
     (redemptionId, redemptionId)
 
--- | The purchase a redeemed code created and the profile's pointer to it. 'False' when the code
--- was already redeemed here: the service replays the credential it issued, and that must add no
--- purchase and leave the shown badge alone - though its statement is still stored, so a client
--- that lost the first response ends holding the rows the service holds.
+-- | 'False' when the code was already redeemed here: the service replays the credential it
+-- issued, and that must add no purchase and leave the shown badge alone.
 createCodeBadgePurchase :: DB.Connection -> User -> BadgeCodeRedemption -> BadgeCredential -> UTCTime -> IO (Int64, Bool)
 createCodeBadgePurchase db User {userId} redemption credential now =
   getCodeBadgePurchase db redemption >>= \case
@@ -128,13 +126,9 @@ createCodeBadgePurchase db User {userId} redemption credential now =
     BadgeCodeRedemption {redemptionId, purchaseKey, purchasePrivKey, masterKey = BadgeMasterKey mk} = redemption
     BadgeCredential {badgeInfo = BadgeInfo {badgeType}} = credential
 
--- | The credential the service issued, stored against the @debit(badge)@ row it was issued for.
--- The period comes from the ledger rather than from the credential, whose expiry is the end of the
--- following Sunday and so up to a week later than the month actually ends.
--- 'False' when the ledger has no row before the one issued, so no period can be named for it.
--- It should be unreachable - a debit(badge) row always has a predecessor, and statements are
--- stored in order - but silence here would leave the ledger saying a month was issued while no
--- issuance holds its credential, and the profile showing last month's badge with no diagnostic.
+-- | The period comes from the ledger, not from the credential, whose expiry is the end of the
+-- following Sunday and so up to a week past the month. 'False' when the issued row has no
+-- predecessor to name a period from - unreachable, but not something to drop in silence.
 storeBadgeIssuance :: DB.Connection -> TVar ChaChaDRG -> Int64 -> Int64 -> BadgeCredential -> UTCTime -> IO Bool
 storeBadgeIssuance db g badgePurchaseId entryId credential now = do
   period_ <- getIssuedPeriod db badgePurchaseId entryId
@@ -150,8 +144,6 @@ storeBadgeIssuance db g badgePurchaseId entryId credential now = do
   where
     BadgeCredential {badgeInfo = BadgeInfo {badgeType, badgeExpiry}} = credential
 
--- | The credential of the latest month issued for this badge, which is the one the profile should
--- be showing.
 getLatestIssuedCredential :: DB.Connection -> Int64 -> IO (Maybe BadgeCredential)
 getLatestIssuedCredential db badgePurchaseId = do
   rows <-
@@ -168,8 +160,7 @@ getLatestIssuedCredential db badgePurchaseId = do
     [Only (Binary bs)] -> J.decodeStrict' bs
     _ -> Nothing
 
--- | The month a @debit(badge)@ row issued: from the balance start of the row before it to its own.
--- Month arithmetic clips, so the start cannot be recovered by subtracting a month from the end.
+-- | Read from the preceding row rather than by subtracting a month, which clips.
 getIssuedPeriod :: DB.Connection -> Int64 -> Int64 -> IO (Maybe (UTCTime, UTCTime))
 getIssuedPeriod db badgePurchaseId entryId = do
   rows <-
@@ -195,7 +186,6 @@ getCodeBadgePurchase db BadgeCodeRedemption {redemptionId} =
   maybeFirstRow fromOnly $
     DB.query db "SELECT badge_purchase_id FROM badge_purchases WHERE badge_code_redemption_id = ?" (Only redemptionId)
 
--- | A badge the worker may have work for, with the keys its requests are signed with.
 data UserBadgePurchase = UserBadgePurchase
   { badgePurchaseId :: Int64,
     purchaseKey :: C.PublicKeyEd25519,
@@ -234,8 +224,7 @@ getUserBadgePurchases db User {userId} =
           alertSnoozeUntil
         }
 
--- | Acknowledging an alert records the occurrence it answered, so the same one is not shown again;
--- snoozing holds it until the given time instead.
+-- | An ack records the occurrence it answered; a snooze holds it until the given time instead.
 setBadgeAlertAcked :: DB.Connection -> Int64 -> BadgeAlertKind -> Text -> Maybe UTCTime -> IO ()
 setBadgeAlertAcked db badgePurchaseId kind episode snoozeUntil = case snoozeUntil of
   Nothing ->
@@ -254,10 +243,8 @@ clearShownBadge :: DB.Connection -> User -> Int64 -> IO ()
 clearShownBadge db User {userId} badgePurchaseId =
   DB.execute db "UPDATE users SET shown_badge_id = NULL WHERE user_id = ? AND shown_badge_id = ?" (userId, badgePurchaseId)
 
--- | Store the statement's entries exactly as the service sent them, entry_uuid and entry type
--- included. The client authors no row of its own, or the two sides would stop holding the same
--- ledger. Re-applying a statement adds nothing: the unique index on entry_uuid would otherwise
--- throw on a retry rather than no-op.
+-- | Verbatim, entry_uuid and type included: the client authors no row, or the two sides stop
+-- holding the same ledger. DO NOTHING makes a re-applied statement a no-op rather than a throw.
 storeBadgeStatement :: DB.Connection -> Int64 -> [StatementEntry] -> UTCTime -> IO ()
 storeBadgeStatement db badgePurchaseId entries now = forM_ entries storeEntry
   where
@@ -319,7 +306,6 @@ getBadgeLedgerLastEntry db badgePurchaseId =
       (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceBadgeType, wasPausedSince, createdAt, entryType})
         <$> entryTypeFromColumns entryType_ credit_ debit_
 
--- | The local id of a replicated row, which the issuance written beside it references.
 getBadgeLedgerEntryId :: DB.Connection -> Int64 -> Text -> IO (Maybe Int64)
 getBadgeLedgerEntryId db badgePurchaseId entryUuid =
   maybeFirstRow fromOnly $

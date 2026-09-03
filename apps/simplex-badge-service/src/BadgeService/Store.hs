@@ -74,9 +74,8 @@ data RedeemedCode = RedeemedCode
     credential :: BadgeCredential
   }
 
--- The purchase a redeemed code creates. Its ledger rows and issuance are appended by
--- 'appendLedgerPass' in the same transaction: if the code were marked redeemed and one of the
--- other writes failed, it would be spent with no credential behind it, and nothing can reissue it.
+-- Its rows and issuance are appended by 'appendLedgerPass' in the same transaction: a code marked
+-- redeemed while another write failed would be spent with no credential, and nothing reissues it.
 data NewCodePurchase = NewCodePurchase
   { badgeCodeId :: Int64,
     purchaseKey :: C.PublicKeyEd25519,
@@ -90,14 +89,12 @@ data ServicePurchase = ServicePurchase
     badgeType :: BadgeType
   }
 
--- | The last ledger row of a purchase.
 data LedgerTip = LedgerTip
   { tipEntryId :: Int64,
     tipEntryUuid :: Text,
     tipBalance :: LedgerBalance
   }
 
--- | A stored row, as the statement re-emits it.
 data ServiceLedgerEntry = ServiceLedgerEntry
   { entryUuid :: Text,
     changeMonths :: Int,
@@ -106,8 +103,7 @@ data ServiceLedgerEntry = ServiceLedgerEntry
     createdAt :: UTCTime
   }
 
--- | A pass paired with the credential signed for it, so that a @debit(badge)@ row cannot be
--- written without the issuance it belongs to.
+-- | Pairs the pass with its credential, so a @debit(badge)@ row cannot be written without one.
 data SignedPass = SignedPass
   { spRows :: [LedgerRow],
     spIssue :: Maybe (LedgerRow, BadgePeriod, BadgeCredential)
@@ -143,8 +139,7 @@ purchaseKeyExists db key =
   maybeFirstRow' False (\(Only (_ :: Int64)) -> True) $
     DB.query db "SELECT badge_purchase_id FROM sx_badge_service_badge_purchases WHERE purchase_key = ?" (Only key)
 
--- | The purchase the verified signer owns. Every command but redemption reaches its purchase
--- through this and no other way, so a client cannot name one it cannot sign for.
+-- | The only route from a command to a purchase, so a client cannot name one it cannot sign for.
 getPurchaseByKey :: DB.Connection -> C.PublicKeyEd25519 -> IO (Maybe ServicePurchase)
 getPurchaseByKey db key =
   maybeFirstRow toPurchase $
@@ -160,7 +155,6 @@ getPurchaseByKey db key =
     toPurchase (badgePurchaseId, Binary mk, badgeType) =
       ServicePurchase {badgePurchaseId, masterKey = BadgeMasterKey mk, badgeType}
 
--- | The last row of the purchase's ledger, which is the state to append from.
 getLedgerTip :: DB.Connection -> Int64 -> IO (Maybe LedgerTip)
 getLedgerTip db purchaseId =
   maybeFirstRow toTip $
@@ -178,8 +172,7 @@ getLedgerTip db purchaseId =
     toTip (tipEntryId, tipEntryUuid, balanceMonths, balanceStartTs, balanceBadgeType) =
       LedgerTip {tipEntryId, tipEntryUuid, tipBalance = LedgerBalance {balanceMonths, balanceStartTs, balanceBadgeType}}
 
--- | The entry_id of a uuid the client asserted, scoped to its own purchase so that asserting
--- another purchase's entry tells it nothing.
+-- | Scoped to the client's own purchase, so asserting another's entry tells it nothing.
 getLedgerEntryId :: DB.Connection -> Int64 -> Text -> IO (Maybe Int64)
 getLedgerEntryId db purchaseId entryUuid =
   maybeFirstRow fromOnly $
@@ -188,9 +181,8 @@ getLedgerEntryId db purchaseId entryUuid =
       "SELECT entry_id FROM sx_badge_service_badge_ledger WHERE badge_purchase_id = ? AND entry_uuid = ?"
       (purchaseId, entryUuid)
 
--- | Rows after the given entry_id; 0 for the whole ledger, as entry_id starts at 1. 'Nothing'
--- when a stored row carries an entry type this version cannot represent, so that a statement is
--- never sent with a row silently changed into another type.
+-- | 0 for the whole ledger, as entry_id starts at 1. 'Nothing' when a stored row has a type this
+-- version cannot represent, rather than sending it changed into another.
 getLedgerEntries :: DB.Connection -> Int64 -> Int64 -> IO (Maybe [ServiceLedgerEntry])
 getLedgerEntries db purchaseId afterEntryId =
   mapM toEntry
@@ -209,8 +201,7 @@ getLedgerEntries db purchaseId afterEntryId =
       (\entryType -> ServiceLedgerEntry {entryUuid, changeMonths, balance = LedgerBalance {balanceMonths, balanceStartTs, balanceBadgeType}, entryType, createdAt})
         <$> entryTypeFromColumns entryType_ credit_ debit_
 
--- | The credential of the issued period that still covers @now@ - what a repeat request inside an
--- issued month is answered with, rather than a second signature over the same content.
+-- | Answers a repeat inside an issued month, rather than signing the same content twice.
 getCurrentIssuance :: DB.Connection -> Int64 -> UTCTime -> IO (Maybe BadgeCredential)
 getCurrentIssuance db purchaseId now = do
   rs <-
@@ -227,8 +218,7 @@ getCurrentIssuance db purchaseId now = do
     [Only (Binary bs)] -> J.decodeStrict' bs
     _ -> Nothing
 
--- | Append a pass, and the issuance beside its own debit row. The service assigns each row its
--- entry_uuid here, so no caller can author one.
+-- | entry_uuid is assigned here, so no caller can author one.
 appendLedgerPass :: DB.Connection -> TVar ChaChaDRG -> Int64 -> SignedPass -> UTCTime -> IO ()
 appendLedgerPass db g purchaseId SignedPass {spRows, spIssue} now = do
   mapM_ appendRow spRows

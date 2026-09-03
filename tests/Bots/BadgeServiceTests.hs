@@ -48,6 +48,11 @@ import Simplex.Messaging.Crypto.BBS (BBSSecretKey, bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.FilePath ((</>))
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple (Only (..))
+#else
+import Database.SQLite.Simple (Only (..))
+#endif
 import Test.Hspec hiding (it)
 
 badgeServiceTests :: SpecWith TestParams
@@ -70,6 +75,7 @@ badgeServiceTests = do
   it "should stop showing a badge whose balance ran out, and tell contacts" testWorkerRetiresExpired
   it "should alert that support ended, survive a restart, and go silent once acknowledged" testEndedAlert
   it "should broadcast the current profile when a renewal presents a badge" testRenewalKeepsProfileEdits
+  it "should present the month already issued when a previous pass did not" testPresentationCatchesUp
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -489,6 +495,27 @@ testClientReplicatesLedger ps =
 dueAtOf :: [LedgerRow] -> UTCTime
 dueAtOf rows = let (_, _, _, start, _, _) = last rows in start
 
+issuedExpiries :: ChatController -> IO [UTCTime]
+issuedExpiries ChatController {chatStore} = do
+  rows :: [(UTCTime, Int64)] <-
+    withTransaction chatStore $ \db ->
+      DB.query_ db "SELECT expiry, badge_purchase_id FROM badge_issuances ORDER BY period_end"
+  pure $ map fst rows
+
+peerBadgeExpiry :: ChatController -> IO (Maybe UTCTime)
+peerBadgeExpiry ChatController {chatStore} = do
+  rows :: [(Maybe UTCTime, Int64)] <-
+    withTransaction chatStore $ \db ->
+      DB.query_ db "SELECT badge_expiry, contact_profile_id FROM contact_profiles WHERE badge_proof IS NOT NULL"
+  pure $ case rows of
+    ((t, _) : _) -> t
+    [] -> Nothing
+
+setBadgeExpiry :: ChatController -> String -> UTCTime -> IO ()
+setBadgeExpiry ChatController {chatStore} whichBadge t =
+  withTransaction chatStore $ \db ->
+    DB.execute db (fromString $ "UPDATE contact_profiles SET badge_expiry = ? WHERE " <> whichBadge <> " IS NOT NULL") (Only t)
+
 -- | The month the profile is showing, and the month last issued. They must agree: a profile left
 -- on an earlier month shows contacts a badge the ledger has already replaced.
 shownAndIssuedExpiry :: ChatController -> IO (Maybe UTCTime, Maybe UTCTime)
@@ -708,6 +735,48 @@ testRenewalKeepsProfileEdits ps =
         bob <## "connection not verified, use /code command to see security code"
         bob <## "quantum resistant end-to-end encryption"
         bob <## currentChatVRangeInfo
+
+-- Forces the state a crash between the issuance write and the profile write leaves behind: the
+-- month is issued, unpresented, and no later pass finds it due.
+testPresentationCatchesUp :: HasCallStack => TestParams -> IO ()
+testPresentationCatchesUp ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
+        connectUsers alice bob
+        code <- issueCode cc BTSupporter 3
+        redeemFirstBadge alice code
+        alice #> "@bob hi"
+        bob <# "alice *> hi"
+        rows <- ledgerRows (chatController alice) "badge_ledger"
+        setClockAt bsClock $ dueAtOf rows
+        alice ##> "/_app activate"
+        alice <## "ok"
+        alice <##. "1: supporter"
+        void $ waitLedgerRows (chatController alice) 3
+        expiries <- issuedExpiries (chatController alice)
+        length expiries `shouldBe` 2
+        let firstMonth = head expiries
+            latestMonth = last expiries
+        -- the renewal's rows are kept; only its presentation is undone, on both sides
+        setBadgeExpiry (chatController alice) "badge_signature" firstMonth
+        setBadgeExpiry (chatController bob) "badge_proof" firstMonth
+        alice ##> "/_app activate"
+        alice <## "ok"
+        waitPeerBadgeExpiry (chatController bob) latestMonth
+        (shown, issued) <- shownAndIssuedExpiry (chatController alice)
+        shown `shouldBe` Just latestMonth
+        issued `shouldBe` Just latestMonth
+        alice #> "@bob after repair"
+        bob <# "alice *> after repair"
+
+waitPeerBadgeExpiry :: HasCallStack => ChatController -> UTCTime -> IO ()
+waitPeerBadgeExpiry cc expected = loop (600 :: Int)
+  where
+    loop 0 = peerBadgeExpiry cc >>= \actual -> actual `shouldBe` Just expected
+    loop i =
+      peerBadgeExpiry cc >>= \actual ->
+        if actual == Just expected then pure () else threadDelay 50000 >> loop (i - 1)
 
 testPurchaseKeyMismatch :: HasCallStack => TestParams -> IO ()
 testPurchaseKeyMismatch ps =

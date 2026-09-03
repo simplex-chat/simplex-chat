@@ -257,9 +257,8 @@ badgeServiceResponse key cc sigKey reqData = case J.fromJSON (J.Object reqData) 
 badgeNow :: ChatController -> IO UTCTime
 badgeNow ChatController {config = ChatConfig {badgeCurrentTime}} = badgeCurrentTime
 
--- | Plan the pass and sign the month it issues. Signing happens before anything is written, so a
--- signing failure leaves the month still due rather than consumed with nothing behind it.
--- @expiryCap@ is a client's proposed expiry, which can only shorten what the balance funds.
+-- | Signs before anything is written, so a signing failure leaves the month still due.
+-- @expiryCap@ is a client's proposal, which can only shorten what the balance funds.
 planPass :: BadgeIssuerKey -> BadgeMasterKey -> Maybe UTCTime -> UTCTime -> Maybe (Int, StatementCreditType) -> LedgerBalance -> IO (Either String SignedPass)
 planPass BadgeIssuerKey {keyIdx, secretKey} masterKey expiryCap now grant_ b0 =
   case passIssue pass of
@@ -312,8 +311,7 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
                 Nothing -> pure $ errorResponse BSECodeInvalid
             pure $ either (const $ errorResponse BSEInternal) id r
   where
-    -- one definition, used before signing and again inside the write transaction: Left is the
-    -- answer for a code already spent, Right a code still to redeem
+    -- used before signing and again inside the write transaction: Left answers a spent code
     readCode code db = liftIO $ do
       c_ <- getBadgeCode db (badgeCodeHash code)
       forM c_ $ \c@IssuedCode {redemption} -> fmap (const c) <$> spentResponse db redemption
@@ -322,14 +320,12 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
       CodeRedeemedUnreadable -> pure $ Left $ errorResponse BSEInternal
       CodeRedeemed RedeemedCode {purchaseKey = k, badgePurchaseId, credential}
         | k /= purchaseKey -> pure $ Left $ errorResponse BSECodeUsed
-        -- a replay is answered with the credential already issued and the whole ledger, so a
-        -- client that lost the response still ends with the rows the service holds
+        -- the whole ledger, so a client that lost the first response still ends holding it
         | otherwise ->
             maybe (Left $ errorResponse BSEInternal) (Left . credentialResponse (Just credential) Nothing)
               <$> getLedgerEntries db badgePurchaseId 0
 
--- | Issue the month the balance funds. The purchase is reached through the verified signer key
--- and no other way, so a client cannot issue against a purchase it cannot sign for.
+-- | The purchase is reached through the verified signer key and no other way.
 issueBadgeCmd :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeRequest -> BadgeBalance -> IO BadgeServiceResponse
 issueBadgeCmd key cc purchaseKey BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType = askedType, badgeExpiry = askedExpiry}} BadgeBalance {lastEntry} = do
   now <- badgeNow cc
@@ -349,17 +345,15 @@ issueBadgeCmd key cc purchaseKey BadgeRequest {masterKey, badgeInfo = BadgeInfo 
             Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
             Right signed -> do
               r <- withDB "issueBadge" cc $ \db -> liftIO $ do
-                -- re-read the tip: a row appended since the read makes the signed period stale,
-                -- and the month it was signed for is no longer the one due
+                -- a row appended since the read makes the signed period stale
                 tip' <- getLedgerTip db badgePurchaseId
                 when (fmap tipEntryId tip' == fmap tipEntryId tip) $
                   appendLedgerPass db (random cc) badgePurchaseId signed now
                 issueResponse db badgePurchaseId now
               pure $ either (const $ errorResponse BSEInternal) id r
   where
-    -- The statement carries the entries the client has not seen: those after the one it asserts,
-    -- or the whole ledger when it asserts an entry this purchase does not hold. Only the asserted
-    -- entry's identity is read - never the months it claims, which the client could invent.
+    -- entries after the one asserted, or the whole ledger when this purchase does not hold it.
+    -- Only the asserted entry's identity is read, never the months it claims.
     issueResponse db purchaseId t = do
       let StatementEntry {entryId = assertedUuid} = lastEntry
       assertedId <- getLedgerEntryId db purchaseId assertedUuid

@@ -5220,8 +5220,8 @@ badgeServiceErrorText = \case
 badgeNow :: CM UTCTime
 badgeNow = asks (badgeCurrentTime . config) >>= liftIO
 
--- | Signal the user's badge worker. A trigger carries nothing: each pass reads stored state and
--- derives its own work, so a signal that is lost or duplicated changes no outcome.
+-- | A signal carries nothing: each pass derives its work from stored state, so a signal lost or
+-- duplicated changes no outcome.
 startBadgeWork :: User -> CM' ()
 startBadgeWork user = whenM (isJust <$> asks (badgeServiceAddress . config)) $ void $ getBadgeWorker True user
 
@@ -5233,26 +5233,21 @@ getBadgeWorker hasWork user@User {userId} = do
 
 runBadgeWorker :: User -> Worker -> CM ()
 runBadgeWorker User {userId} Worker {doWork} = do
-  -- the alerts this worker has raised, so an occurrence is raised once rather than on every pass.
-  -- It lives with the worker rather than in the database: an alert is derived from state, not
-  -- stored as pending, so a restart derives and raises it again.
+  -- raised occurrences, so one is raised once rather than every pass. Not stored: an alert is
+  -- derived from state, so a restart derives and raises it again.
   emitted <- newTVarIO M.empty
   forever $ do
     lift $ waitForWork doWork
     lift waitChatStartedAndActivated
     runBadgePass userId emitted doWork `catchAllErrors` eToView
 
--- | One pass over the user's badges: renew what is due, retire what has ended, then sleep until
--- the next boundary. Nothing here is load-bearing for correctness - a pass derives its work from
--- stored state, so chat start alone gives correct behaviour; this is what lets a client left
--- running renew without a restart.
+-- | Renew what is due, retire what has ended, sleep to the next boundary. Not load-bearing: a
+-- pass derives its work from stored state, so chat start alone is already correct.
 runBadgePass :: UserId -> TVar (Map Int64 (BadgeAlertKind, Text)) -> TMVar () -> CM ()
 runBadgePass userId emitted doWork = do
   now <- badgeNow
-  -- The profile is re-read each pass rather than captured with the worker. setUserBadge returns
-  -- the record it was given with only the badge replaced, and that record is what is written to
-  -- currentUser and sent as XInfo - so a stale copy would revert any profile edit made during the
-  -- session and broadcast the old one.
+  -- re-read, not captured with the worker: setUserBadge returns the record it was given, and that
+  -- is what is broadcast, so a stale copy would revert a profile edit made during the session
   user <- withStore $ \db -> getUser db userId
   purchases <- withStore' $ \db -> getUserBadgePurchases db user
   results <- forM purchases $ \p -> badgePurchasePass user emitted p now `catchAllErrors` \e -> (False, Nothing) <$ eToView e
@@ -5264,8 +5259,7 @@ runBadgePass userId emitted doWork = do
       [] -> Nothing
       ts -> Just $ minimum ts
 
--- | Whether the badge changed, and its next boundary - the earliest time its state can change
--- with nothing asked of the service.
+-- | Whether the badge changed, and its next boundary.
 badgePurchasePass :: User -> TVar (Map Int64 (BadgeAlertKind, Text)) -> UserBadgePurchase -> UTCTime -> CM (Bool, Maybe UTCTime)
 badgePurchasePass user emitted p@UserBadgePurchase {badgePurchaseId} now = do
   balance_ <- withStore' $ \db -> getBadgeLedgerBalance db badgePurchaseId
@@ -5278,15 +5272,15 @@ badgePurchasePass user emitted p@UserBadgePurchase {badgePurchaseId} now = do
         _ -> requestBadgeIssue user p now `catchAllErrors` \e -> balance <$ eToView e
       retired <- retireExpiredBadge user p now balance'
       let issued = L.balanceStartTs balance' /= L.balanceStartTs balance
-      -- outside the badge lock: that lock is for one signed request per profile, and holding it
-      -- across a broadcast would also take the chat lock under it, reversing the established order
-      when (issued && not retired) $ presentIssuedBadge user p now
+      -- every pass, not only a renewal: the issuance and the profile are separate transactions,
+      -- and no later pass finds a month due that was issued but left unpresented.
+      -- Outside the badge lock, which must not be held while the chat lock is taken.
+      unless retired $ presentIssuedBadge user p now
       emitBadgeAlert user emitted p now balance'
       pure (retired || issued, badgeBoundary now balance')
 
--- | The alert this badge's state implies. Support ended is the only one: the other kinds need
--- subscriptions, and a warning before a prepaid badge ends is not actionable, because topping up
--- before the current period ends would need the service to credit months without issuing.
+-- | The only kind: the others need subscriptions, and warning before a prepaid badge ends is not
+-- actionable while topping up cannot credit months without issuing them.
 -- TODO [badges] BAPrepaidEnding belongs here, three days before paidThrough, once that exists.
 derivedBadgeAlert :: UTCTime -> LedgerBalance -> Maybe BadgeAlert
 derivedBadgeAlert now b
@@ -5296,8 +5290,8 @@ derivedBadgeAlert now b
   where
     endsAt = L.paidThrough b
 
--- | Alerts are derived from state rather than kept pending: the one the state implies is compared
--- with the one already answered, and is the alert only when they differ.
+-- | Derived from state rather than kept pending, and an alert only when it differs from the
+-- occurrence already answered.
 unansweredBadgeAlert :: UTCTime -> UserBadgePurchase -> LedgerBalance -> Maybe BadgeAlert
 unansweredBadgeAlert now UserBadgePurchase {alertAcked, alertSnoozeUntil} balance = do
   alert@BadgeAlert {kind, episode} <- derivedBadgeAlert now balance
@@ -5311,8 +5305,7 @@ emitBadgeAlert user emitted p@UserBadgePurchase {badgePurchaseId} now balance =
     raised <- atomically $ stateTVar emitted $ \m -> (M.lookup badgePurchaseId m, M.insert badgePurchaseId (kind, episode) m)
     when (raised /= Just (kind, episode)) $ toView $ CEvtBadgeAlert user alert
 
--- | The state the badge surfaces render, read from stored rows alone - this command sends nothing
--- to the service; the worker's results follow as CEvtBadgeChanged.
+-- | Read from stored rows alone; the worker's results follow as CEvtBadgeChanged.
 getUserBadgeState :: User -> CM UserBadgeState
 getUserBadgeState user = do
   now <- badgeNow
@@ -5342,8 +5335,7 @@ getUserBadgeState user = do
           alert = unansweredBadgeAlert now p balance
         }
 
--- | The earliest time this balance changes without anything being asked of the service: the month
--- that falls due next, or the end of what is paid for.
+-- | The next month falling due, or the end of what is paid for.
 badgeBoundary :: UTCTime -> LedgerBalance -> Maybe UTCTime
 badgeBoundary now b = case filter (> now) [L.balanceStartTs b, L.paidThrough b] of
   [] -> Nothing
@@ -5387,18 +5379,15 @@ verifyIssuedCredential masterKey (Just cred@(BadgeCredential _ credMasterKey _ _
     Just True -> Nothing <$ eToView (ChatError $ CEInternalError "issued badge credential is for a different master key")
     _ -> Nothing <$ eToView (ChatError $ CEInternalError "issued badge credential does not verify")
 
--- | Show the credential of the month last issued, if the profile is not already showing it. The
--- issuance and the profile are written in separate transactions, so a crash between them would
--- otherwise leave the previous credential shown until the month after next. With
--- badgeGraceInterval at 7 days a renewal some hours late is invisible to contacts.
+-- | Show the month last issued, unless the profile already shows it. With badgeGraceInterval at
+-- 7 days a renewal some hours late is invisible to contacts.
 presentIssuedBadge :: User -> UserBadgePurchase -> UTCTime -> CM ()
 presentIssuedBadge user@User {profile = LocalProfile {localBadge}} UserBadgePurchase {badgePurchaseId, shown} now
   | not shown = pure ()
   | otherwise = do
       cred_ <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
       forM_ cred_ $ \cred@(BadgeCredential _ _ _ info) ->
-        -- the profile itself says what is being shown, so a pass that changed nothing tells no
-        -- contact anything, and a presentation lost to a crash is made good at the next pass
+        -- the profile itself says what is shown, so an unchanged pass tells no contact anything
         unless (shownCredential == Just cred) $ do
           user' <- withStore' $ \db -> setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus now (Just True) info))
           presentUserBadgeToContacts user'
@@ -5407,8 +5396,7 @@ presentIssuedBadge user@User {profile = LocalProfile {localBadge}} UserBadgePurc
       Just (OwnBadge c _) -> Just c
       _ -> Nothing
 
--- | The visible half of "the badge expired": once the balance is spent and the last period has
--- ended, the profile stops showing it and contacts are told.
+-- | The visible half of "the badge expired".
 retireExpiredBadge :: User -> UserBadgePurchase -> UTCTime -> LedgerBalance -> CM Bool
 retireExpiredBadge user UserBadgePurchase {badgePurchaseId, shown} now balance
   | not (shown && L.paidThrough balance <= now) = pure False
@@ -5418,16 +5406,16 @@ retireExpiredBadge user UserBadgePurchase {badgePurchaseId, shown} now balance
         setUserBadge db user Nothing
       True <$ presentUserBadgeToContacts user'
 
--- | Sleep to the next boundary, in the shape of the agent's rescheduleWork: clear the signal, fork
--- a sleeper that sets it again, then block as usual. Unlike its original the sleeper is tracked
--- and replaced - badge horizons are a month, so untracked sleepers would accumulate, one per
--- activate, instead of retiring.
+-- | In the shape of the agent's rescheduleWork, but the sleeper is tracked and replaced: badge
+-- horizons are a month, so untracked ones would accumulate, one per activate.
 scheduleBadgeWake :: UserId -> TMVar () -> UTCTime -> Maybe UTCTime -> CM' ()
 scheduleBadgeWake userId doWork now at_ = do
   sleepers <- asks badgeSleepers
   atomically (TM.lookupDelete userId sleepers) >>= mapM_ (liftIO . killWeakThread)
+  -- unconditionally: the pass has consumed the signal, and leaving it set with no boundary to
+  -- clear it later spins the worker
+  void . atomically $ tryTakeTMVar doWork
   forM_ at_ $ \at -> do
-    void . atomically $ tryTakeTMVar doWork
     tId <- forkIO $ do
       liftIO $ threadDelay' $ diffToMicroseconds $ diffUTCTime at now
       atomically $ hasWorkToDo' doWork
@@ -5437,8 +5425,7 @@ scheduleBadgeWake userId doWork now at_ = do
 killWeakThread :: Weak ThreadId -> IO ()
 killWeakThread t = deRefWeak t >>= mapM_ killThread
 
--- | Stop the badge workers and the sleepers they forked. A sleeper left running would signal a
--- worker that is no longer there, a month after the chat stopped.
+-- | A sleeper left running would signal a worker that is gone, a month after the chat stopped.
 stopBadgeWorkers :: TM.TMap UserId Worker -> TM.TMap UserId (Weak ThreadId) -> IO ()
 stopBadgeWorkers workers sleepers = do
   atomically (swapTVar workers M.empty) >>= mapM_ cancelWorker
