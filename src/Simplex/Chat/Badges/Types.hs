@@ -18,11 +18,13 @@ module Simplex.Chat.Badges.Types
     LedgerCreditType (..),
     LedgerDebitType (..),
     BadgeAlertKind (..),
+    BadgeFunding (..),
     BadgePurchase (..),
     BadgeLedgerEntry (..),
     BadgeCharge (..),
     BadgeIssuance (..),
     BadgeAlert (..),
+    BadgeState (..),
     UserBadgeState (..),
   ) where
 
@@ -34,12 +36,12 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8)
 import Simplex.Chat.Badges hiding (BadgePurchase (..))
-import Simplex.Chat.PaymentService.Types (InvoiceId, StoredPayment)
+import Simplex.Chat.PaymentService.Types (InvoiceId, PaymentId, StoredPayment)
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, taggedObjectJSON)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple.FromField (FromField (..))
 import Database.PostgreSQL.Simple.ToField (ToField (..))
@@ -84,8 +86,9 @@ data LedgerEntryType = LECredit {credit :: LedgerCreditType} | LEDebit {debit ::
 
 -- confirmed
 data LedgerCreditType
-  = CTPayment {invoiceId :: Int64}
-  | CTCharge {chargeId :: Int64}
+  = CTPayment {invoiceId :: InvoiceId}
+  | CTCode
+  | CTCharge {chargeId :: Text}
   | CTSupport
   | CTTransferIn {fromPurchaseId :: Maybe Int64}
   | CTOpening
@@ -107,6 +110,31 @@ data LedgerDebitType
 data BadgeAlertKind = BARenewalApproaching | BAPaymentIssue | BASubscriptionEnded | BAPrepaidEnding | BASupportEnded
   deriving (Eq, Show)
 
+instance TextEncoding BadgeAlertKind where
+  textEncode = \case
+    BARenewalApproaching -> "renewal_approaching"
+    BAPaymentIssue -> "payment_issue"
+    BASubscriptionEnded -> "subscription_ended"
+    BAPrepaidEnding -> "prepaid_ending"
+    BASupportEnded -> "support_ended"
+  textDecode = \case
+    "renewal_approaching" -> Just BARenewalApproaching
+    "payment_issue" -> Just BAPaymentIssue
+    "subscription_ended" -> Just BASubscriptionEnded
+    "prepaid_ending" -> Just BAPrepaidEnding
+    "support_ended" -> Just BASupportEnded
+    _ -> Nothing
+
+instance FromField BadgeAlertKind where fromField = fromTextField_ textDecode
+
+instance ToField BadgeAlertKind where toField = toField . textEncode
+
+-- exactly one of these funds a purchase; the schema cannot say so, both columns being nullable
+data BadgeFunding
+  = BFPayment {paymentId :: PaymentId}
+  | BFCodeRedemption {redemptionId :: Int64}
+  deriving (Eq, Show)
+
 -- to review
 data BadgePurchase = BadgePurchase
   { badgePurchaseId :: Int64,
@@ -117,7 +145,7 @@ data BadgePurchase = BadgePurchase
     badgeType :: BadgeType,
     priceId :: Maybe BadgePriceId,
     offerId :: Maybe BadgeOfferId,
-    paymentId :: Int64,
+    funding :: BadgeFunding,
     status :: BadgePurchaseStatus,
     credential :: Maybe BadgeCredential,
     alertAcked :: Maybe (BadgeAlertKind, Text),
@@ -156,14 +184,16 @@ data BadgeCharge = BadgeCharge
   }
   deriving (Show)
 
--- unconfirmed draft
+-- every issuance covers one month and is written beside exactly one debit(badge) row
 data BadgeIssuance = BadgeIssuance
-  { issuanceId :: Int64,
+  { issuanceId :: Text,
     badgePurchaseId :: Int64,
-    periodStart :: Maybe UTCTime,
-    periodEnd :: Maybe UTCTime,
-    expiry :: Maybe UTCTime,
-    entryId :: Maybe Int64,
+    badgeType :: BadgeType,
+    periodStart :: UTCTime,
+    periodEnd :: UTCTime,
+    expiry :: UTCTime,
+    entryId :: Int64,
+    credential :: BadgeCredential,
     createdAt :: UTCTime
   }
   deriving (Show)
@@ -177,17 +207,30 @@ data BadgeAlert = BadgeAlert
   }
   deriving (Show)
 
+-- | One badge as the badge surfaces render it. The purchase keys are deliberately absent: this
+-- travels to the UI and over remote control, and they are secrets that stay in core.
+data BadgeState = BadgeState
+  { badgePurchaseId :: Int64,
+    badgeType :: BadgeType,
+    monthsLeft :: Int,
+    paidThrough :: UTCTime,
+    shown :: Bool,
+    alert :: Maybe BadgeAlert
+  }
+  deriving (Show)
+
 -- unconfirmed draft
 data UserBadgeState = UserBadgeState
-  { badges :: [BadgePurchase],
+  { badges :: [BadgeState],
     shownBadgeId :: Maybe Int64,
-    payments :: [StoredPayment],
+    -- payments returns here with the payment types, which this slice neither writes nor encodes
     monthsLeft :: Int,
     paidThrough :: Maybe UTCTime,
     renewsAt :: Maybe UTCTime,
     willRenew :: Bool,
     alert :: Maybe BadgeAlert
   }
+  deriving (Show)
 
 instance TextEncoding BadgePurchaseStatus where
   textEncode = \case
@@ -224,3 +267,16 @@ instance ToField BadgeCodePaymentStatus where toField = toField . textEncode
 $(JQ.deriveJSON (enumJSON $ dropPrefix "BIS") ''BadgeItemStatus)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "OD") ''OfferDiscount)
+
+instance ToJSON BadgeAlertKind where
+  toJSON = textToJSON
+  toEncoding = textToEncoding
+
+instance FromJSON BadgeAlertKind where
+  parseJSON = textParseJSON "BadgeAlertKind"
+
+$(JQ.deriveJSON defaultJSON ''BadgeAlert)
+
+$(JQ.deriveJSON defaultJSON ''BadgeState)
+
+$(JQ.deriveJSON defaultJSON ''UserBadgeState)

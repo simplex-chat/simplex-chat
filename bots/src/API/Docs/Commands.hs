@@ -399,6 +399,8 @@ undocumentedCommands =
     "APIPrepareContact",
     "APIPrepareGroup",
     "APIRedeemBadgeCode",
+    "APIGetBadgeState",
+    "APIAckBadgeAlert",
     "APIRegisterToken",
     "APIRejectCall",
     "APIReorderChatTags",

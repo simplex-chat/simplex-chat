@@ -73,6 +73,7 @@ data ChatLockEntity
   | CLUserContact Int64
   | CLContactRequest Int64
   | CLFile Int64
+  | CLBadgeUser Int64 -- one signed badge request per profile in flight
   deriving (Eq, Ord)
 
 -- These error type constructors must be added to mobile apps

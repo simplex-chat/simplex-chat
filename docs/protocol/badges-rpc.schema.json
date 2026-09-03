@@ -217,9 +217,13 @@
           "optionalProperties": {
             "invoiceId": {
               "type": "string",
-              "metadata": {"comment": "absent for store and code payments"}
+              "metadata": {"comment": "absent for store payments"}
             }
           }
+        },
+        "code": {
+          "optionalProperties": {},
+          "metadata": {"comment": "a redeemed code; its invoice belongs to the buyer, not the redeemer"}
         },
         "charge": {
           "properties": {"chargeId": {"type": "string"}}

@@ -41,6 +41,7 @@ library
       Simplex.Chat.Badges
       Simplex.Chat.Badges.CLI
       Simplex.Chat.Badges.Code
+      Simplex.Chat.Badges.Ledger
       Simplex.Chat.Badges.Service
       Simplex.Chat.Badges.Types
       Simplex.Chat.Names

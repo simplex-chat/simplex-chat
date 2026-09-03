@@ -184,7 +184,8 @@ data StatementEntryType = SECredit {credit :: StatementCreditType} | SEDebit {de
   deriving (Show)
 
 data StatementCreditType
-  = SCPayment {invoiceId :: Maybe InvoiceId} -- absent for store and code payments
+  = SCPayment {invoiceId :: Maybe InvoiceId} -- absent for store payments
+  | SCCode -- a redeemed code; its own invoice belongs to the buyer, not to the redeemer
   | SCCharge {chargeId :: Text}
   | SCSupport
   | SCTransferIn {fromPurchaseKey :: C.PublicKeyEd25519}
