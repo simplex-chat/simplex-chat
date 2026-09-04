@@ -119,8 +119,8 @@ testClockTime (TestClock r) = do
   offset <- readIORef r
   addUTCTime offset <$> getCurrentTime
 
--- | Move the clock so that "now" becomes @t@, exactly - months are calendar months, so a test
--- crosses a boundary by naming the date rather than adding a duration.
+-- | Move the clock so that "now" becomes exactly the given time - months are calendar months, so
+-- a test crosses a boundary by naming the date rather than adding a duration.
 setClockAt :: TestClock -> UTCTime -> IO ()
 setClockAt (TestClock r) t = getCurrentTime >>= \real -> writeIORef r (diffUTCTime t real)
 

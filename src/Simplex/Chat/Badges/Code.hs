@@ -3,11 +3,11 @@
 
 -- | Badge redemption codes, shared by the client, the badge service and the checkout site.
 --
--- A code is @SXB-@ and 20 Crockford base32 characters in four groups of five:
+-- A code is "SXB-" and 20 Crockford base32 characters in four groups of five:
 -- 19 payload characters and a final check character.
 --
 -- Reading folds the characters the alphabet omits so that a code copied by hand still
--- verifies: it is case-insensitive and maps @I@ and @L@ to @1@ and @O@ to @0@.
+-- verifies: it is case-insensitive and maps 'I' and 'L' to '1' and 'O' to '0'.
 --
 -- The check character is Luhn mod N with N = 32 over the payload values, which keeps it
 -- inside the same 32-character alphabet. It detects every single-character substitution

@@ -103,7 +103,8 @@ data ServiceLedgerEntry = ServiceLedgerEntry
     createdAt :: UTCTime
   }
 
--- | Pairs the plan with its credential, so a @debit(badge)@ row cannot be written without one.
+-- | The plan once signing succeeded, holding the credential against the row that spends the
+-- month, so that row cannot be written without it.
 data SignedPlan = SignedPlan
   { spRows :: [LedgerRow],
     spIssuance :: Maybe (LedgerRow, BadgePeriod, BadgeCredential)

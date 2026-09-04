@@ -258,7 +258,7 @@ badgeNow :: ChatController -> IO UTCTime
 badgeNow ChatController {config = ChatConfig {badgeCurrentTime}} = badgeCurrentTime
 
 -- | Signs before anything is written, so a signing failure leaves the month still due.
--- @expiryCap@ is a client's proposal, which can only shorten what the balance funds.
+-- The expiry cap is a client's proposal, which can only shorten what the balance funds.
 signLedgerPlan :: BadgeIssuerKey -> BadgeMasterKey -> Maybe UTCTime -> UTCTime -> Maybe (Int, StatementCreditType) -> LedgerBalance -> IO (Either String SignedPlan)
 signLedgerPlan BadgeIssuerKey {keyIdx, secretKey} masterKey expiryCap now grant_ b0 =
   case planIssuance plan of
