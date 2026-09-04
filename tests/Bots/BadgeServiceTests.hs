@@ -540,7 +540,7 @@ peerBadgeExpiry :: ChatController -> IO (Maybe UTCTime)
 peerBadgeExpiry ChatController {chatStore} = do
   rows :: [(Maybe UTCTime, Int64)] <-
     withTransaction chatStore $ \db ->
-      DB.query_ db "SELECT badge_expiry, contact_profile_id FROM contact_profiles WHERE badge_proof IS NOT NULL"
+      DB.query_ db "SELECT badge_expiry, contact_profile_id FROM contact_profiles WHERE badge_proof IS NOT NULL ORDER BY contact_profile_id"
   pure $ case rows of
     ((t, _) : _) -> t
     [] -> Nothing
@@ -569,7 +569,7 @@ insertUnknownLedgerEntry ChatController {chatStore} =
 shownAndIssuedExpiry :: ChatController -> IO (Maybe UTCTime, Maybe UTCTime)
 shownAndIssuedExpiry ChatController {chatStore} = withTransaction chatStore $ \db -> do
   shown :: [(Maybe UTCTime, Int64)] <-
-    DB.query_ db "SELECT badge_expiry, contact_profile_id FROM contact_profiles WHERE badge_signature IS NOT NULL"
+    DB.query_ db "SELECT badge_expiry, contact_profile_id FROM contact_profiles WHERE badge_signature IS NOT NULL ORDER BY contact_profile_id"
   issued :: [(Maybe UTCTime, Int64)] <-
     DB.query_ db "SELECT expiry, badge_purchase_id FROM badge_issuances ORDER BY period_end DESC LIMIT 1"
   pure (firstOf shown, firstOf issued)
@@ -590,25 +590,26 @@ waitLedgerRows cc n = loop (600 :: Int)
       if length rows >= n then pure rows else threadDelay 50000 >> loop (i - 1)
 
 -- the badge the profile shows, which the worker clears when the balance has run out
-shownBadgeId :: ChatController -> IO (Maybe Int64)
+shownBadgeId :: HasCallStack => ChatController -> IO (Maybe Int64)
 shownBadgeId ChatController {chatStore} = do
   -- two columns rather than one, so the row type needs no backend-specific Only
   rows :: [(Maybe Int64, Int64)] <-
     withTransaction chatStore $ \db ->
       DB.query_ db "SELECT shown_badge_id, user_id FROM users WHERE user_id = 1"
+  -- not Nothing on an unexpected shape: waiting for Nothing would then pass without reading it
   pure $ case rows of
     [(i, _)] -> i
-    _ -> Nothing
+    _ -> error $ "expected one users row, got " <> show rows
 
 -- the occurrence the user answered, which silences that alert and no other
-ackedEpisode :: ChatController -> IO (Maybe Text, Maybe Text)
+ackedEpisode :: HasCallStack => ChatController -> IO (Maybe Text, Maybe Text)
 ackedEpisode ChatController {chatStore} = do
   rows :: [(Maybe Text, Maybe Text)] <-
     withTransaction chatStore $ \db ->
       DB.query_ db "SELECT alert_acked_kind, alert_acked_episode FROM badge_purchases"
   pure $ case rows of
     [r] -> r
-    _ -> (Nothing, Nothing)
+    _ -> error $ "expected one badge purchase, got " <> show rows
 
 waitShownBadge :: HasCallStack => ChatController -> Maybe Int64 -> IO ()
 waitShownBadge cc expected = loop (600 :: Int)
@@ -780,7 +781,9 @@ testRenewalKeepsActiveProfile ps =
       setClockAt bsClock $ dueAtOf rows
       alice ##> "/_app activate"
       alice <## "ok"
-      void $ waitLedgerRows (chatController alice) 3
+      renewed <- waitLedgerRows (chatController alice) 3
+      map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed
+        `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-1, 1, Just "badge")]
       -- the renewal is reported for alice, and the prefix is there because alice is not active
       alice <##. "[user: alice] 1: supporter"
       alice ##> "/p"
@@ -838,7 +841,9 @@ testRenewalKeepsProfileEdits ps =
         alice ##> "/_app activate"
         alice <## "ok"
         alice <##. "1: supporter"
-        void $ waitLedgerRows (chatController alice) 3
+        renewed <- waitLedgerRows (chatController alice) 3
+        map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed
+          `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-1, 1, Just "badge")]
         -- The renewal's profile update carries the edited bio. Had it carried the profile the
         -- worker started with, bob would print a bio change back to "Alice" here, before the
         -- message - so the message arriving next is the assertion.
