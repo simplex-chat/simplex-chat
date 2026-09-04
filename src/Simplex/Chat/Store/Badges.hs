@@ -30,7 +30,6 @@ import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
-import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
@@ -266,16 +265,19 @@ storeBadgeStatement db badgePurchaseId entries now = forM_ entries storeEntry
           ON CONFLICT (entry_uuid) DO NOTHING
         |]
         ( (entryId, badgePurchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince)
-            :. (createdAt, now, entryTypeT, creditType, debitType, BI (isJust unknown_), unknownJSON)
+            :. (createdAt, now, entryTypeT, creditType, debitType, BI typeUnknown, entryTypeValue)
         )
       where
         (entryTypeT, creditType, debitType) = entryTypeColumns entryType
-        -- a type this version cannot decode is kept verbatim, to be read after an app upgrade
-        unknown_ = case entryType of
-          SECredit SCUnknown {json} -> Just json
-          SEDebit SDUnknown {json} -> Just json
-          _ -> Nothing
-        unknownJSON = safeDecodeUtf8 . LB.toStrict . J.encode <$> unknown_
+        -- kept for every entry, not only for a type this version cannot decode: a tag alone does
+        -- not rebuild the types that name an invoice, a charge or another purchase
+        entryTypeValue = safeDecodeUtf8 . LB.toStrict $ case entryType of
+          SECredit c -> J.encode c
+          SEDebit d -> J.encode d
+        typeUnknown = case entryType of
+          SECredit SCUnknown {} -> True
+          SEDebit SDUnknown {} -> True
+          _ -> False
 
 -- | The balance is the last row, on both sides; nothing derives it by summing the history.
 getBadgeLedgerBalance :: DB.Connection -> Int64 -> IO (Maybe LedgerBalance)

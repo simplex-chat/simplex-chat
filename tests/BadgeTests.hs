@@ -58,7 +58,7 @@ badgeTests = do
     it "does not issue months topped up inside an issued period" testGrantInsideIssuedPeriod
     it "clips month ends without losing the issued period start" testMonthEndClipping
     it "expires at the end of the Sunday after the period" testSundayExpiry
-    it "stores the wire tag of every entry type, and reads back the ones it writes" testEntryTypeColumns
+    it "stores the wire tag of every entry type, and rebuilds each from its stored JSON" testEntryTypeColumns
   describe "worker retry" $ do
     it "repeats a failure that can clear on its own, and no other" testRetryClassification
     it "backs off to the cap, and honours what the service asks for within bounds" testRetryBackoff
@@ -452,6 +452,10 @@ testEntryTypeColumns = do
     [SECredit SCCode, SEDebit SDBadge, SEDebit SDLapse]
   -- a type that needs a reference column is not silently read back as something else
   uncurry3 entryTypeFromColumns (entryTypeColumns (SECredit (SCCharge "ch1"))) `shouldSatisfy` isNothing
+  -- which is why every type is stored as its own JSON as well, and read from that first: the
+  -- columns alone would answer a row naming an invoice or a purchase as no row at all
+  mapM_ roundTrips credits
+  mapM_ roundTrips debits
   where
     uncurry3 f (a, b, c) = f a b c
     sameEntryType t = maybe False ((J.toJSON t ==) . J.toJSON)

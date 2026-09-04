@@ -2215,6 +2215,10 @@ CREATE INDEX idx_badge_issuances_purchase ON test_chat_schema.badge_issuances US
 
 
 
+CREATE UNIQUE INDEX idx_badge_issuances_purchase_entry ON test_chat_schema.badge_issuances USING btree (badge_purchase_id, entry_id);
+
+
+
 CREATE INDEX idx_badge_ledger_charge ON test_chat_schema.badge_ledger USING btree (charge_id);
 
 
