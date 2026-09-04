@@ -5159,8 +5159,12 @@ addUserBadge user cred@(BadgeCredential _ _ _ info) =
       presentUserBadgeToContacts user'
 
 presentUserBadgeToContacts :: User -> CM ()
-presentUserBadgeToContacts user'@User {profile = LocalProfile {localBadge}} = do
-  asks currentUser >>= atomically . (`writeTVar` Just user')
+presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadge}} = do
+  -- a badge worker runs for every profile, not only the active one, so this refreshes the active
+  -- record where it is the same profile and must never switch to another
+  chatModifyVar currentUser $ \case
+    Just User {userId = activeId} | activeId == userId -> Just user'
+    active_ -> active_
   lift $ withAgent' $ \a -> setUserEntitlement a (aUserId user') (badgeServerCredential localBadge)
   cxt <- asks $ mkStoreCxt . config
   contacts <- withFastStore' $ \db -> getUserContacts db cxt user'

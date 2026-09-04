@@ -77,6 +77,7 @@ badgeServiceTests = do
   it "should stop showing a badge whose balance ran out, and tell contacts" testWorkerRetiresExpired
   it "should alert that support ended, survive a restart, and go silent once acknowledged" testEndedAlert
   it "should raise a snoozed alert once more when the snooze lapses" testSnoozedAlertReturns
+  it "should renew a badge on a profile that is not active, without switching to it" testRenewalKeepsActiveProfile
   it "should broadcast the current profile when a renewal presents a badge" testRenewalKeepsProfileEdits
   it "should present the month already issued when a previous pass did not" testPresentationCatchesUp
 
@@ -760,6 +761,27 @@ testEndedAlert ps =
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
       alice <## "use /p <name> [<bio>] to change it"
+
+-- A worker runs for every profile, not only the one in use, so presenting a renewed badge must not
+-- make its profile active - the next message would then be sent from the wrong identity.
+testRenewalKeepsActiveProfile :: HasCallStack => TestParams -> IO ()
+testRenewalKeepsActiveProfile ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 3
+      redeemFirstBadge alice code
+      rows <- ledgerRows (chatController alice) "badge_ledger"
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      -- alice's month falls due while alisa is the profile in use
+      setClockAt bsClock $ dueAtOf rows
+      alice ##> "/_app activate"
+      alice <## "ok"
+      void $ waitLedgerRows (chatController alice) 3
+      -- the renewal is reported for alice, and the prefix is there because alice is not active
+      alice <##. "[user: alice] 1: supporter"
+      alice ##> "/p"
+      showActiveUser alice "alisa"
 
 -- A snooze silences the alert until it lapses, and then it is raised once more, without a restart.
 -- A snooze changes nothing else on the purchase, so the occurrence already raised has to count it.
