@@ -229,19 +229,14 @@ getUserBadgePurchases db User {userId} =
           alertSnoozeUntil
         }
 
--- | An ack records the occurrence it answered; a snooze holds it until the given time instead.
+-- | An ack and a snooze both record the occurrence answered; a snooze also records how long it
+-- holds, so that it silences that occurrence and not whichever one is derived next.
 setBadgeAlertAcked :: DB.Connection -> Int64 -> BadgeAlertKind -> Text -> Maybe UTCTime -> IO ()
-setBadgeAlertAcked db badgePurchaseId kind episode snoozeUntil = case snoozeUntil of
-  Nothing ->
-    DB.execute
-      db
-      "UPDATE badge_purchases SET alert_acked_kind = ?, alert_acked_episode = ?, alert_snooze_until = NULL WHERE badge_purchase_id = ?"
-      (kind, episode, badgePurchaseId)
-  Just t ->
-    DB.execute
-      db
-      "UPDATE badge_purchases SET alert_snooze_until = ? WHERE badge_purchase_id = ?"
-      (t, badgePurchaseId)
+setBadgeAlertAcked db badgePurchaseId kind episode snoozeUntil =
+  DB.execute
+    db
+    "UPDATE badge_purchases SET alert_acked_kind = ?, alert_acked_episode = ?, alert_snooze_until = ? WHERE badge_purchase_id = ?"
+    (kind, episode, snoozeUntil, badgePurchaseId)
 
 -- | Stop showing a badge that has expired unrenewed; the profile update is broadcast by the caller.
 clearShownBadge :: DB.Connection -> User -> Int64 -> IO ()

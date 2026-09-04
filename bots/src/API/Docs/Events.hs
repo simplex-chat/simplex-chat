@@ -169,11 +169,11 @@ chatEventsDocsData =
 undocumentedEvents :: [ConsName]
 undocumentedEvents =
   [ "CEvtAcceptingGroupJoinRequestMember",
-    "CEvtBadgeAlert",
-    "CEvtBadgeChanged",
     "CEvtAgentConnsDeleted",
     "CEvtAgentRcvQueuesDeleted",
     "CEvtAgentUserDeleted",
+    "CEvtBadgeAlert",
+    "CEvtBadgeChanged",
     "CEvtBusinessRequestAlreadyAccepted",
     "CEvtCallAnswer",
     "CEvtCallEnded",

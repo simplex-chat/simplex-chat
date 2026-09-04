@@ -1833,7 +1833,7 @@ viewContactBadge = maybe [] $ \lb ->
         BSExpiredOld -> "expired (old)"
         BSFailed -> "verification failed"
         BSUnknownKey -> "unknown key"
-      expiry = "expires " <> T.pack (formatTime defaultTimeLocale "%Y-%m-%d" badgeExpiry)
+      expiry = "expires " <> day badgeExpiry
    in [plain (textEncode badgeType <> " badge - " <> st), plain expiry]
 
 viewUserBadgeState :: UserBadgeState -> [StyledString]

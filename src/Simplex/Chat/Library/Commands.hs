@@ -5320,13 +5320,13 @@ derivedBadgeAlert now b
   where
     endsAt = L.paidThrough b
 
--- | Derived from state rather than kept pending, and an alert only when it differs from the
--- occurrence already answered.
+-- | Derived from state rather than kept pending: raised unless this occurrence is the one already
+-- answered, and raised again once a snooze that answered it lapses.
 unansweredBadgeAlert :: UTCTime -> UserBadgePurchase -> LedgerBalance -> Maybe BadgeAlert
 unansweredBadgeAlert now UserBadgePurchase {alertAcked, alertSnoozeUntil} balance =
   case derivedBadgeAlert now balance of
     Just alert@BadgeAlert {kind, episode}
-      | alertAcked /= Just (kind, episode) && maybe True (now >=) alertSnoozeUntil -> Just alert
+      | alertAcked /= Just (kind, episode) || maybe False (now >=) alertSnoozeUntil -> Just alert
     _ -> Nothing
 
 emitBadgeAlert :: User -> BadgeMemory -> UserBadgePurchase -> UTCTime -> LedgerBalance -> CM ()
