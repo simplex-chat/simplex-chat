@@ -61,7 +61,7 @@ The worker holds no queue. A trigger only signals it; each pass reads stored sta
 
 **Pass**, per badge: is a month due, or has one lapsed, or is an alert derivable? If a request is needed, take the user's badge lock, send it signed with the purchase key, apply the response, then release. Applying a response means: copy the statement's entries verbatim, verify the credential, store the issuance, update the purchase, and re-present the badge to contacts.
 
-**Triggers.** Chat start and chat activate. Network restore and profile switch belong here too and cost nothing to add, but no caller sends them in this slice. Redemption is *not* a trigger: it is one round trip that returns the credential and the statement, and the redeem command already stores the rows, sets the badge and broadcasts — there is no follow-up work.
+**Triggers.** Chat start, chat activate, and redemption. Network restore and profile switch belong here too and cost nothing to add, but no caller sends them in this slice. Redemption has no immediate follow-up work — the round trip returns the credential and the statement, and the redeem command already stores the rows, sets the badge and broadcasts — but scheduling is something only a pass produces, so a purchase created without a signal has no wake-up until the next start or activate. Any later path that creates a purchase signals for the same reason.
 
 **Scheduling.** No timer thread and no boundary map. Each pass ends by scheduling its own next wake-up, in the shape of `rescheduleWork` (`simplexmq` `NtfSubSupervisor.hs:478`): clear `doWork`, fork a sleeper that signals it at the next boundary, then block as usual. Two boundaries only, both day-granularity — the next month falling due, and `paidThrough`.
 

@@ -5526,6 +5526,8 @@ storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCr
         pure (user', newBadge, applied)
       unless applied $ eToView $ ChatError $ CEInternalError "redeemed badge credential has no ledger row to store it against"
       when newBadge $ presentUserBadgeToContacts user'
+      -- nothing is due yet, but a pass is what arms the next wake, and this is the first purchase
+      lift $ startBadgeWork user'
       pure $ CRBadgeRedeemed user' badge newBadge
 
 -- | Store the statement's rows, then the credential against the badge debit row among them.
