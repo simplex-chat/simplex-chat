@@ -1557,6 +1557,10 @@ CREATE INDEX idx_badge_issuances_purchase ON badge_issuances(
   issuance_id
 );
 CREATE INDEX idx_badge_issuances_entry ON badge_issuances(entry_id);
+CREATE UNIQUE INDEX idx_badge_issuances_purchase_entry ON badge_issuances(
+  badge_purchase_id,
+  entry_id
+);
 CREATE INDEX idx_badge_purchases_user ON badge_purchases(user_id);
 CREATE INDEX idx_users_shown_badge ON users(shown_badge_id);
 CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(
