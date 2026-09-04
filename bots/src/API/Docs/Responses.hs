@@ -130,6 +130,7 @@ undocumentedResponses =
     "CRArchiveExported",
     "CRArchiveImported",
     "CRBadgeRedeemed",
+    "CRBadgeState",
     "CRBroadcastSent",
     "CRCallInvitations",
     "CRChatCleared",

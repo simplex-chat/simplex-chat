@@ -223,6 +223,7 @@ CREATE TABLE test_chat_schema.badge_ledger (
     change_months smallint NOT NULL,
     balance_months smallint NOT NULL,
     balance_start_ts timestamp with time zone NOT NULL,
+    balance_anchor_ts timestamp with time zone NOT NULL,
     balance_badge_type text NOT NULL,
     was_paused_since timestamp with time zone,
     service_created_at timestamp with time zone NOT NULL,
@@ -2211,6 +2212,10 @@ CREATE INDEX idx_badge_issuances_entry ON test_chat_schema.badge_issuances USING
 
 
 CREATE INDEX idx_badge_issuances_purchase ON test_chat_schema.badge_issuances USING btree (badge_purchase_id, issuance_id);
+
+
+
+CREATE UNIQUE INDEX idx_badge_issuances_purchase_entry ON test_chat_schema.badge_issuances USING btree (badge_purchase_id, entry_id);
 
 
 

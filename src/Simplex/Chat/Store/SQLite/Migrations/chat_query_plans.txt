@@ -1204,8 +1204,18 @@ Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
 
 Query: 
-          INSERT INTO badge_issuances (issuance_id, badge_purchase_id, badge_type, period_start, period_end, expiry, credential, created_at)
-          VALUES (?,?,?,?,?,?,?,?)
+          INSERT INTO badge_issuances (issuance_id, badge_purchase_id, entry_id, badge_type, period_start, period_end, expiry, credential, created_at)
+          VALUES (?,?,?,?,?,?,?,?,?)
+        
+Plan:
+
+Query: 
+          INSERT INTO badge_ledger
+            (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
+             was_paused_since, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type,
+             entry_type_unknown, entry_type_value)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          ON CONFLICT (entry_uuid) DO NOTHING
         
 Plan:
 
@@ -2016,6 +2026,20 @@ Query:
           (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       
 Plan:
+
+Query: 
+        SELECT
+          (SELECT prev.balance_start_ts FROM badge_ledger prev
+           WHERE prev.badge_purchase_id = issued.badge_purchase_id AND prev.entry_id < issued.entry_id
+           ORDER BY prev.entry_id DESC LIMIT 1),
+          issued.balance_start_ts
+        FROM badge_ledger issued
+        WHERE issued.badge_purchase_id = ? AND issued.entry_id = ?
+      
+Plan:
+SEARCH issued USING INTEGER PRIMARY KEY (rowid=?)
+CORRELATED SCALAR SUBQUERY 1
+SEARCH prev USING INDEX idx_badge_ledger_purchase (badge_purchase_id=? AND entry_id<?)
 
 Query: 
         SELECT
@@ -3485,6 +3509,16 @@ Plan:
 SEARCH badge_code_redemptions USING INDEX sqlite_autoindex_badge_code_redemptions_1 (user_id=? AND code=?)
 
 Query: 
+        SELECT balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type
+        FROM badge_ledger
+        WHERE badge_purchase_id = ?
+        ORDER BY entry_id DESC
+        LIMIT 1
+      
+Plan:
+SEARCH badge_ledger USING INDEX idx_badge_ledger_purchase (badge_purchase_id=?)
+
+Query: 
         SELECT c.agent_conn_id
         FROM connections c
         JOIN contacts ct ON ct.contact_id = c.contact_id
@@ -3730,6 +3764,16 @@ Plan:
 SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        SELECT credential FROM badge_issuances
+        WHERE badge_purchase_id = ?
+        ORDER BY period_end DESC
+        LIMIT 1
+      
+Plan:
+SEARCH badge_issuances USING INDEX idx_badge_issuances_purchase (badge_purchase_id=?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query: 
         SELECT ct.contact_id
         FROM contacts ct
         JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
@@ -3780,6 +3824,17 @@ Query:
       
 Plan:
 SEARCH contact_profiles USING INDEX idx_contact_profiles_user_id (user_id=?)
+
+Query: 
+        SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
+               was_paused_since, service_created_at, entry_type, entry_credit_type, entry_debit_type, entry_type_value
+        FROM badge_ledger
+        WHERE badge_purchase_id = ?
+        ORDER BY entry_id DESC
+        LIMIT 1
+      
+Plan:
+SEARCH badge_ledger USING INDEX idx_badge_ledger_purchase (badge_purchase_id=?)
 
 Query: 
         SELECT f.file_id
@@ -3980,6 +4035,19 @@ Query:
 Plan:
 SEARCH m USING INDEX idx_group_members_user_id (user_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        SELECT p.badge_purchase_id, p.purchase_key, p.purchase_priv_key, p.master_key, p.current_badge_type,
+               (CASE WHEN u.shown_badge_id = p.badge_purchase_id THEN 1 ELSE 0 END),
+               p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until
+        FROM badge_purchases p
+        JOIN users u ON u.user_id = p.user_id
+        WHERE p.user_id = ? AND p.purchase_priv_key IS NOT NULL
+        ORDER BY p.badge_purchase_id
+      
+Plan:
+SEARCH u USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH p USING INDEX idx_badge_purchases_user (user_id=?)
 
 Query: 
         SELECT pgm.message_id, m.shared_msg_id, m.msg_body, m.msg_chat_binding, m.msg_signatures
@@ -7018,6 +7086,11 @@ Plan:
 Query: INSERT INTO app_settings (app_settings) VALUES (?)
 Plan:
 
+Query: INSERT INTO badge_ledger (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts,  balance_badge_type, service_created_at, created_at, entry_type, entry_credit_type,  entry_type_unknown, entry_type_value) SELECT 'unknown-entry', badge_purchase_id, 0, balance_months, balance_start_ts, balance_anchor_ts,  balance_badge_type, service_created_at, created_at, 'credit', 'grant', 1, '{"type":"grant"}' FROM badge_ledger ORDER BY entry_id DESC LIMIT 1
+Plan:
+SCAN badge_ledger
+SEARCH badge_issuances USING COVERING INDEX idx_badge_issuances_entry (entry_id=?)
+
 Query: INSERT INTO chat_item_mentions (chat_item_id, group_id, member_id, display_name) VALUES (?, ?, ?, ?)
 Plan:
 
@@ -7205,6 +7278,10 @@ Query: SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv 
 Plan:
 SEARCH connections USING INDEX idx_connections_conn_req_inv (user_id=? AND conn_req_inv=?)
 
+Query: SELECT alert_acked_kind, alert_acked_episode FROM badge_purchases
+Plan:
+SCAN badge_purchases
+
 Query: SELECT app_settings FROM app_settings
 Plan:
 SCAN app_settings
@@ -7216,6 +7293,14 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT auth_err_counter FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT badge_expiry, contact_profile_id FROM contact_profiles WHERE badge_proof IS NOT NULL
+Plan:
+SCAN contact_profiles
+
+Query: SELECT badge_expiry, contact_profile_id FROM contact_profiles WHERE badge_signature IS NOT NULL
+Plan:
+SCAN contact_profiles
 
 Query: SELECT badge_purchase_id FROM badge_purchases WHERE badge_code_redemption_id = ?
 Plan:
@@ -7353,6 +7438,24 @@ SCAN group_members USING COVERING INDEX idx_group_members_invited_by_group_membe
 Query: SELECT count(1) FROM pending_group_messages
 Plan:
 SCAN pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id
+
+Query: SELECT entry_id FROM badge_ledger WHERE badge_purchase_id = ? AND entry_uuid = ?
+Plan:
+SEARCH badge_ledger USING INDEX idx_badge_ledger_uuid (entry_uuid=?)
+
+Query: SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_badge_type, COALESCE(entry_credit_type, entry_debit_type) FROM badge_ledger ORDER BY entry_id
+Plan:
+SCAN badge_ledger
+
+Query: SELECT expiry, badge_purchase_id FROM badge_issuances ORDER BY period_end
+Plan:
+SCAN badge_issuances
+USE TEMP B-TREE FOR ORDER BY
+
+Query: SELECT expiry, badge_purchase_id FROM badge_issuances ORDER BY period_end DESC LIMIT 1
+Plan:
+SCAN badge_issuances
+USE TEMP B-TREE FOR ORDER BY
 
 Query: SELECT file_id FROM files WHERE user_id = ? AND redirect_file_id = ?
 Plan:
@@ -7554,6 +7657,10 @@ Query: SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1
 Plan:
 SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT shown_badge_id, user_id FROM users WHERE user_id = 1
+Plan:
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT stored_roster_version FROM groups WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
@@ -7581,6 +7688,14 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_purchases SET alert_acked_kind = ?, alert_acked_episode = ?, alert_snooze_until = NULL WHERE badge_purchase_id = ?
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_purchases SET alert_snooze_until = ? WHERE badge_purchase_id = ?
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ? AND include_in_history = 1
 Plan:
@@ -7645,6 +7760,14 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1
 Plan:
 SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE contact_profiles SET badge_expiry = ? WHERE badge_proof IS NOT NULL
+Plan:
+SCAN contact_profiles
+
+Query: UPDATE contact_profiles SET badge_expiry = ? WHERE badge_signature IS NOT NULL
+Plan:
+SCAN contact_profiles
 
 Query: UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user_id = ? AND contact_profile_id = ?
 Plan:
@@ -8031,6 +8154,10 @@ Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE users SET shown_badge_id = ? WHERE user_id = ?
+Plan:
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE users SET shown_badge_id = NULL WHERE user_id = ? AND shown_badge_id = ?
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 

@@ -69,6 +69,8 @@ defaultChatConfig =
       chatVRange = supportedChatVRange,
       badgePublicKeys = M.mapKeys fromIntegral entitlementIssuerKeys,
       badgeServiceAddress = Nothing,
+      badgeCurrentTime = getCurrentTime,
+      badgeRetryInterval = RetryInterval {initialInterval = 30_000000, increaseAfter = 0, maxInterval = 3600_000000},
       confirmMigrations = MCConsole,
       -- this property should NOT use operator = Nothing
       -- non-operator servers can be passed via options
@@ -189,6 +191,7 @@ newChatController
         deliveryTaskWorkers <- TM.emptyIO
         deliveryJobWorkers <- TM.emptyIO
         relayRequestWorkers <- TM.emptyIO
+        badgeWorkers <- TM.emptyIO
         relayGroupLinkChecksAsync <- newTVarIO Nothing
         webPreviewState <- forM webPreviewConfig $ \_ -> newWebPreviewState
         chatRelayTests <- TM.emptyIO
@@ -235,6 +238,7 @@ newChatController
               deliveryTaskWorkers,
               deliveryJobWorkers,
               relayRequestWorkers,
+              badgeWorkers,
               relayGroupLinkChecksAsync,
               webPreviewState,
               chatRelayTests,

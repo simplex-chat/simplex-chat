@@ -44,6 +44,7 @@ import Simplex.Chat.Help
 import Simplex.Chat.Library.Commands (maxImageSize)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeState (..), UserBadgeState (..))
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
@@ -190,6 +191,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
   -- the badge is only shown when it is the one now on the profile; a replayed code's badge may not be
   CRBadgeRedeemed u badge newBadge -> ttyUser u $ if newBadge then "badge redeemed" : viewContactBadge (Just badge) else ["badge already redeemed"]
+  CRBadgeState u st -> ttyUser u $ viewUserBadgeState st
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
@@ -476,6 +478,8 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
         <> maybe [] (\k -> [plain $ "signed by " <> safeDecodeUtf8 (strEncode k)]) sigKey_
         <> ["request: " <> viewJSON req]
   CEvtServiceReplySent (AgentConnId cId) -> [plain $ "service reply sent, connection id: " <> safeDecodeUtf8 (strEncode cId)]
+  CEvtBadgeChanged u st -> ttyUser u $ viewUserBadgeState st
+  CEvtBadgeAlert u alert -> ttyUser u $ viewBadgeAlert alert
   CEvtContactRequestRejected u Contact {localDisplayName = c} _reason -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CEvtRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
   CEvtRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
@@ -1829,8 +1833,28 @@ viewContactBadge = maybe [] $ \lb ->
         BSExpiredOld -> "expired (old)"
         BSFailed -> "verification failed"
         BSUnknownKey -> "unknown key"
-      expiry = "expires " <> T.pack (formatTime defaultTimeLocale "%Y-%m-%d" badgeExpiry)
+      expiry = "expires " <> day badgeExpiry
    in [plain (textEncode badgeType <> " badge - " <> st), plain expiry]
+
+viewUserBadgeState :: UserBadgeState -> [StyledString]
+viewUserBadgeState UserBadgeState {badges, alert} = map viewBadge badges <> maybe [] viewBadgeAlert alert
+  where
+    viewBadge BadgeState {badgePurchaseId, badgeType, monthsLeft, paidThrough, shown} =
+      plain $
+        tshow badgePurchaseId
+          <> ": "
+          <> textEncode badgeType
+          <> (if shown then " (shown)" else "")
+          <> ", "
+          <> tshow monthsLeft
+          <> " months left, paid through "
+          <> day paidThrough
+
+viewBadgeAlert :: BadgeAlert -> [StyledString]
+viewBadgeAlert BadgeAlert {kind, date} = [plain $ "badge alert: " <> textEncode kind <> " " <> day date]
+
+day :: UTCTime -> Text
+day = T.pack . formatTime defaultTimeLocale "%Y-%m-%d"
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
 viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, customData} stats incognitoProfile =
