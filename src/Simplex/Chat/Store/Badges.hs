@@ -43,7 +43,7 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (decodeJSON, maybeFirstRow, safeDecodeUtf8)
+import Simplex.Messaging.Util (decodeJSON, maybeFirstRow, maybeFirstRow', safeDecodeUtf8)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), (:.) (..))
@@ -130,17 +130,19 @@ createCodeBadgePurchase db User {userId} redemption credential now =
 -- following Sunday and so up to a week past the month. 'False' when the issued row has no
 -- predecessor to name a period from - unreachable, but not something to drop in silence.
 storeBadgeIssuance :: DB.Connection -> TVar ChaChaDRG -> Int64 -> Int64 -> BadgeCredential -> UTCTime -> IO Bool
-storeBadgeIssuance db g badgePurchaseId entryId credential now = do
-  period_ <- getIssuedPeriod db badgePurchaseId entryId
-  fmap (const $ isJust period_) $ forM_ period_ $ \(periodStart, periodEnd) -> do
-    issuanceId <- safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes 16 g)
-    DB.execute
-      db
-      [sql|
-        INSERT INTO badge_issuances (issuance_id, badge_purchase_id, entry_id, badge_type, period_start, period_end, expiry, credential, created_at)
-        VALUES (?,?,?,?,?,?,?,?,?)
-      |]
-      ((issuanceId, badgePurchaseId, entryId, badgeType) :. (periodStart, periodEnd, badgeExpiry, Binary (LB.toStrict $ J.encode credential), now))
+storeBadgeIssuance db g badgePurchaseId entryId credential now =
+  getIssuedPeriod db badgePurchaseId entryId >>= \case
+    Nothing -> pure False
+    Just (periodStart, periodEnd) -> do
+      issuanceId <- safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes 16 g)
+      DB.execute
+        db
+        [sql|
+          INSERT INTO badge_issuances (issuance_id, badge_purchase_id, entry_id, badge_type, period_start, period_end, expiry, credential, created_at)
+          VALUES (?,?,?,?,?,?,?,?,?)
+        |]
+        ((issuanceId, badgePurchaseId, entryId, badgeType) :. (periodStart, periodEnd, badgeExpiry, Binary (LB.toStrict $ J.encode credential), now))
+      pure True
   where
     BadgeCredential {badgeInfo = BadgeInfo {badgeType, badgeExpiry}} = credential
 
@@ -160,7 +162,7 @@ getLatestIssuedCredential db badgePurchaseId = do
     [Only (Binary bs)] -> J.decodeStrict' bs
     _ -> Nothing
 
--- | Read from the preceding row rather than by subtracting a month, which clips.
+-- the start is read from the row before rather than by subtracting a month, which clips
 getIssuedPeriod :: DB.Connection -> Int64 -> Int64 -> IO (Maybe (UTCTime, UTCTime))
 getIssuedPeriod db badgePurchaseId entryId = do
   rows <-
@@ -168,12 +170,12 @@ getIssuedPeriod db badgePurchaseId entryId = do
       db
       [sql|
         SELECT
-          (SELECT p.balance_start_ts FROM badge_ledger p
-           WHERE p.badge_purchase_id = e.badge_purchase_id AND p.entry_id < e.entry_id
-           ORDER BY p.entry_id DESC LIMIT 1),
-          e.balance_start_ts
-        FROM badge_ledger e
-        WHERE e.badge_purchase_id = ? AND e.entry_id = ?
+          (SELECT prev.balance_start_ts FROM badge_ledger prev
+           WHERE prev.badge_purchase_id = issued.badge_purchase_id AND prev.entry_id < issued.entry_id
+           ORDER BY prev.entry_id DESC LIMIT 1),
+          issued.balance_start_ts
+        FROM badge_ledger issued
+        WHERE issued.badge_purchase_id = ? AND issued.entry_id = ?
       |]
       (badgePurchaseId, entryId)
   -- no preceding row means no credit was ever stored, so the period this row issued is unknown
@@ -291,9 +293,9 @@ getBadgeLedgerBalance db badgePurchaseId =
 -- | The entry the client asserts to the service: its last row, or none before the first statement.
 getBadgeLedgerLastEntry :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
 getBadgeLedgerLastEntry db badgePurchaseId =
-  (>>= toEntry) <$> maybeFirstRow id (DB.query db q (Only badgePurchaseId))
-  where
-    q =
+  maybeFirstRow' Nothing toEntry $
+    DB.query
+      db
       [sql|
         SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
                was_paused_since, service_created_at, entry_type, entry_credit_type, entry_debit_type, entry_type_value
@@ -302,6 +304,8 @@ getBadgeLedgerLastEntry db badgePurchaseId =
         ORDER BY entry_id DESC
         LIMIT 1
       |]
+      (Only badgePurchaseId)
+  where
     toEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) :. (wasPausedSince, createdAt, entryType_, credit_, debit_, value_)) =
       (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType})
         <$> maybe (entryTypeFromColumns entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
