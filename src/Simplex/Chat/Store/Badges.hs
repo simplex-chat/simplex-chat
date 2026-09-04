@@ -43,7 +43,7 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (maybeFirstRow, safeDecodeUtf8)
+import Simplex.Messaging.Util (decodeJSON, maybeFirstRow, safeDecodeUtf8)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), (:.) (..))
@@ -296,15 +296,23 @@ getBadgeLedgerLastEntry db badgePurchaseId =
     q =
       [sql|
         SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
-               was_paused_since, service_created_at, entry_type, entry_credit_type, entry_debit_type
+               was_paused_since, service_created_at, entry_type, entry_credit_type, entry_debit_type, entry_type_value
         FROM badge_ledger
         WHERE badge_purchase_id = ?
         ORDER BY entry_id DESC
         LIMIT 1
       |]
-    toEntry (entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType_, credit_, debit_) =
+    toEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) :. (wasPausedSince, createdAt, entryType_, credit_, debit_, value_)) =
       (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType})
-        <$> entryTypeFromColumns entryType_ credit_ debit_
+        <$> maybe (entryTypeFromColumns entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
+
+-- | Decodes the stored JSON rather than rebuilding from the tag, so a version that has since
+-- learnt the type reads it with its fields, and one that has not still gets it back verbatim.
+entryTypeFromValue :: Text -> Text -> Maybe StatementEntryType
+entryTypeFromValue entryTypeT value_ = case entryTypeT of
+  "credit" -> SECredit <$> decodeJSON value_
+  "debit" -> SEDebit <$> decodeJSON value_
+  _ -> Nothing
 
 getBadgeLedgerEntryId :: DB.Connection -> Int64 -> Text -> IO (Maybe Int64)
 getBadgeLedgerEntryId db badgePurchaseId entryUuid =

@@ -98,8 +98,7 @@ data BadgeServiceCommand
         balance :: BadgeBalance
       }
   | BSCIssueBadge
-      { badgeRequest :: BadgeRequest,
-        balance :: BadgeBalance
+      { balance :: BadgeBalance -- no badgeRequest: the service holds the key, the tier and the expiry
       }
   | BSCPauseBadge
 

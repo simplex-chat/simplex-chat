@@ -32,9 +32,9 @@ import System.Timeout (timeout)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
-import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgeMasterKey, BadgeRequest (..), BadgeType (..), generateMasterKey)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), generateMasterKey)
 import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, formatBadgeCode, parseBadgeCode, randomBadgeCode)
-import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag)
+import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag, endOfSundayAfter)
 import Simplex.Chat.Badges.Service
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
@@ -69,9 +69,11 @@ badgeServiceTests = do
   it "should credit a code's months and issue one credential per month" testCodeMonthsRenew
   it "should return the stored credential for a repeat inside an issued period" testRepeatInsideIssuedPeriod
   it "should lapse only the months that elapsed while the client was away" testLapseWhileAway
-  it "should refuse to issue a badge type the balance does not fund" testIssueRefusesOtherBadgeType
+  it "should round the last month's expiry up to the end of the Sunday after it" testLastMonthExpiryRounds
+  it "should sign a renewal with the master key stored on the purchase" testRenewalSignsWithStoredMasterKey
   it "should leave the client holding the same ledger rows as the service" testClientReplicatesLedger
   it "should renew a badge whose month has elapsed, with no command" testWorkerRenews
+  it "should renew a badge whose newest ledger row is of an unknown type" testRenewsAfterUnknownEntry
   it "should stop showing a badge whose balance ran out, and tell contacts" testWorkerRetiresExpired
   it "should alert that support ended, survive a restart, and go silent once acknowledged" testEndedAlert
   it "should broadcast the current profile when a renewal presents a badge" testRenewalKeepsProfileEdits
@@ -381,9 +383,15 @@ newPurchaseKeys = do
   (purchaseKey, _) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
   (purchaseKey,) <$> generateMasterKey g
 
-assertBalance :: HasCallStack => BadgeServiceEnv -> C.PublicKeyEd25519 -> StatementEntry -> BadgeRequest -> IO BadgeServiceResponse
-assertBalance env purchaseKey lastEntry badgeRequest =
-  serviceCmd env purchaseKey BSCIssueBadge {badgeRequest, balance = BadgeBalance {lastEntry}}
+assertBalance :: HasCallStack => BadgeServiceEnv -> C.PublicKeyEd25519 -> StatementEntry -> IO BadgeServiceResponse
+assertBalance env purchaseKey lastEntry =
+  serviceCmd env purchaseKey BSCIssueBadge {balance = BadgeBalance {lastEntry}}
+
+expiryOf :: HasCallStack => BadgeServiceResponse -> Maybe UTCTime
+expiryOf r = (\(BadgeCredential _ _ _ BadgeInfo {badgeExpiry}) -> badgeExpiry) <$> credentialOf r
+
+masterKeyOf :: HasCallStack => BadgeServiceResponse -> Maybe BadgeMasterKey
+masterKeyOf r = (\(BadgeCredential _ mk _ _) -> mk) <$> credentialOf r
 
 -- A three month code credits three months and issues the first; a month later the second is
 -- issued, and only then. Asserted against the service's own rows.
@@ -399,13 +407,12 @@ testCodeMonthsRenew ps =
     map (\e -> let (c, m, _) = entryOf e in (c, m)) entries `shouldBe` [(3, 3), (-1, 2)]
     credentialOf redeemed `shouldSatisfy` isJust
     let firstDue = nextDue entries
-        req = BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = firstDue, badgeExtra = ""}}
     -- still inside the first month: nothing new is written
-    r2 <- assertBalance env purchaseKey (last entries) req
+    r2 <- assertBalance env purchaseKey (last entries)
     map entryTag (fst $ statementOf r2) `shouldBe` []
     -- the second month falls due
     setClockAt bsClock firstDue
-    r3 <- assertBalance env purchaseKey (last entries) req
+    r3 <- assertBalance env purchaseKey (last entries)
     let (entries3, prev3) = statementOf r3
     prev3 `shouldBe` Just (entryIdOf $ last entries)
     map entryTag entries3 `shouldBe` ["badge"]
@@ -425,8 +432,7 @@ testRepeatInsideIssuedPeriod ps =
     (purchaseKey, masterKey) <- newPurchaseKeys
     redeemed <- serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
     let (entries, _) = statementOf redeemed
-        req = BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = nextDue entries, badgeExtra = ""}}
-    repeated <- assertBalance env purchaseKey (last entries) req
+    repeated <- assertBalance env purchaseKey (last entries)
     map entryTag (fst $ statementOf repeated) `shouldBe` []
     credentialOf repeated `shouldBe` credentialOf redeemed
 
@@ -438,27 +444,46 @@ testLapseWhileAway ps =
     (purchaseKey, masterKey) <- newPurchaseKeys
     redeemed <- serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
     let (entries, _) = statementOf redeemed
-        req = BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType = BTSupporter, badgeExpiry = nextDue entries, badgeExtra = ""}}
     -- away past the fourth boundary of the run: three months lapse, the fourth is due. Counted
     -- from the anchor - adding months to an already clipped due date would miss the boundary.
     setClockAt bsClock (addMonths 4 (anchorOf (last entries)))
-    away <- assertBalance env purchaseKey (last entries) req
+    away <- assertBalance env purchaseKey (last entries)
     let (entries', _) = statementOf away
     map entryTag entries' `shouldBe` ["lapse", "badge"]
     map (\e -> let (c, m, _) = entryOf e in (c, m)) entries' `shouldBe` [(-3, 2), (-1, 1)]
     credentialOf away `shouldSatisfy` isJust
 
--- The balance funds a type; a request naming another must not be signed.
-testIssueRefusesOtherBadgeType :: HasCallStack => TestParams -> IO ()
-testIssueRefusesOtherBadgeType ps =
-  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
+-- Every badge issued in a week expires at the same moment, so the expiry says nothing about when
+-- it was bought. On the last month of a balance paidThrough is the period end exactly, so a
+-- client-proposed expiry capped the rounding away and put the expiry back on the anniversary.
+testLastMonthExpiryRounds :: HasCallStack => TestParams -> IO ()
+testLastMonthExpiryRounds ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc} -> do
     code <- issueCode cc BTSupporter 2
     (purchaseKey, masterKey) <- newPurchaseKeys
     redeemed <- serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
     let (entries, _) = statementOf redeemed
-        req = BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType = BTLegend, badgeExpiry = nextDue entries, badgeExtra = ""}}
-    r <- assertBalance env purchaseKey (last entries) req
-    J.toJSON r `shouldBe` J.toJSON BSPError {code = BSEBadRequest, message = Nothing, retryAfter = Nothing}
+    setClockAt bsClock (nextDue entries)
+    renewed <- assertBalance env purchaseKey (last entries)
+    let (entries', _) = statementOf renewed
+    map entryTag entries' `shouldBe` ["badge"]
+    -- the last month the balance funds: nothing is left to issue after it
+    map (\e -> let (c, m, _) = entryOf e in (c, m)) entries' `shouldBe` [(-1, 0)]
+    expiryOf renewed `shouldBe` Just (endOfSundayAfter (nextDue entries'))
+
+-- A renewal states nothing, so the credential carries the master key stored with the purchase.
+-- The service used to sign whatever key the request supplied, checking only the badge type.
+testRenewalSignsWithStoredMasterKey :: HasCallStack => TestParams -> IO ()
+testRenewalSignsWithStoredMasterKey ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc} -> do
+    code <- issueCode cc BTSupporter 2
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    redeemed <- serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
+    masterKeyOf redeemed `shouldBe` Just masterKey
+    let (entries, _) = statementOf redeemed
+    setClockAt bsClock (nextDue entries)
+    renewed <- assertBalance env purchaseKey (last entries)
+    masterKeyOf renewed `shouldBe` Just masterKey
 
 -- The replicated columns of a ledger, in order. service_created_at and created_at are left out:
 -- the client records when it stored a row, which is not when the service wrote it.
@@ -519,6 +544,20 @@ setBadgeExpiry :: ChatController -> String -> UTCTime -> IO ()
 setBadgeExpiry ChatController {chatStore} whichBadge t =
   withTransaction chatStore $ \db ->
     DB.execute db (fromString $ "UPDATE contact_profiles SET badge_expiry = ? WHERE " <> whichBadge <> " IS NOT NULL") (Only t)
+
+-- | Copy the newest ledger row as an entry of a type this version does not know: the service is
+-- deployed ahead of app releases, so a new type first arrives at clients that predate it.
+insertUnknownLedgerEntry :: ChatController -> IO ()
+insertUnknownLedgerEntry ChatController {chatStore} =
+  withTransaction chatStore $ \db ->
+    DB.execute_ db . fromString $
+      "INSERT INTO badge_ledger"
+        <> " (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts,"
+        <> "  balance_badge_type, service_created_at, created_at, entry_type, entry_credit_type,"
+        <> "  entry_type_unknown, entry_type_value)"
+        <> " SELECT 'unknown-entry', badge_purchase_id, 0, balance_months, balance_start_ts, balance_anchor_ts,"
+        <> "  balance_badge_type, service_created_at, created_at, 'credit', 'grant', 1, '{\"type\":\"grant\"}'"
+        <> " FROM badge_ledger ORDER BY entry_id DESC LIMIT 1"
 
 -- | The month the profile is showing, and the month last issued. They must agree: a profile left
 -- on an earlier month shows contacts a badge the ledger has already replaced.
@@ -614,6 +653,26 @@ testWorkerRenews ps =
       (shown, issued) <- shownAndIssuedExpiry (chatController alice)
       shown `shouldBe` issued
       shown `shouldSatisfy` isJust
+
+-- The newest row being of an unknown type must not stop the renewal: it is stored verbatim and
+-- read back to be asserted, rather than leaving the client with no entry to assert at all.
+testRenewsAfterUnknownEntry :: HasCallStack => TestParams -> IO ()
+testRenewsAfterUnknownEntry ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 3
+      redeemFirstBadge alice code
+      rows <- ledgerRows (chatController alice) "badge_ledger"
+      insertUnknownLedgerEntry (chatController alice)
+      setClockAt bsClock $ dueAtOf rows
+      alice ##> "/_app activate"
+      alice <## "ok"
+      renewed <- waitLedgerRows (chatController alice) 4
+      alice <##. "1: supporter"
+      -- the unknown row is asserted, so the service answers with what it does not hold: the whole
+      -- ledger, which re-stores the two rows already held and adds the month it issued
+      map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed
+        `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (0, 2, Just "grant"), (-1, 1, Just "badge")]
 
 -- When the balance is spent and the last period ends, the badge stops being shown and the profile
 -- update reaches contacts - the visible half of "the badge expired".

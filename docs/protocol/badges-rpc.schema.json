@@ -331,7 +331,6 @@
         },
         "issueBadge": {
           "properties": {
-            "badgeRequest": {"ref": "badgeRequest"},
             "balance": {"ref": "balance"}
           }
         },

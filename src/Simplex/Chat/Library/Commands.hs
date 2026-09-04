@@ -59,8 +59,8 @@ import Simplex.Chat.Library.Subscriber
 import Control.Concurrent (ThreadId, killThread, mkWeakThreadId)
 import Crypto.Random (ChaChaDRG)
 import System.Mem.Weak (Weak, deRefWeak)
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeRequest (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
-import Simplex.Chat.Badges.Ledger (LedgerBalance (..), LedgerPlan (..))
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeMasterKey, LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges.Ledger (LedgerBalance, LedgerPlan (..))
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeState (..), UserBadgeState (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
@@ -5346,16 +5346,15 @@ badgeBoundary now b = case filter (> now) [L.balanceStartTs b, L.paidThrough b] 
 -- | Ask the service for the month that is due and apply what comes back. A timeout leaves the
 -- month due and the same envelope is sent again at the next signal, never on a poll timer.
 requestBadgeIssue :: User -> UserBadgePurchase -> UTCTime -> CM LedgerBalance
-requestBadgeIssue user@User {userId} UserBadgePurchase {badgePurchaseId, purchaseKey, purchasePrivKey, masterKey, badgeType} now = do
+requestBadgeIssue user@User {userId} UserBadgePurchase {badgePurchaseId, purchaseKey, purchasePrivKey, masterKey} now = do
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
   withEntityLock "badgeIssue" (CLBadgeUser userId) $ do
     lastEntry <- withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no entry to assert") pure
-    let badgeInfo = BadgeInfo {badgeType, badgeExpiry = paidThroughOf lastEntry, badgeExtra = ""}
-        req =
+    let req =
           BadgeServiceRequest
             { version = currentBadgeServiceVersion,
               purchaseKey = Just purchaseKey,
-              request = BSCIssueBadge {badgeRequest = BadgeRequest {masterKey, badgeInfo}, balance = BadgeBalance {lastEntry}}
+              request = BSCIssueBadge {balance = BadgeBalance {lastEntry}}
             }
     respData <- sendServiceRequestTo NRMBackground user sendTarget Nothing (Just purchasePrivKey) req
     case J.fromJSON (J.Object respData) of
@@ -5367,11 +5366,8 @@ requestBadgeIssue user@User {userId} UserBadgePurchase {badgePurchaseId, purchas
         withStore' (`getBadgeLedgerBalance` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no balance") pure
       J.Success BSPError {code} -> throwCmdError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
       _ -> throwCmdError "unexpected badge service response"
-  where
-    paidThroughOf StatementEntry {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType} =
-      L.paidThrough LedgerBalance {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType}
 
--- | A credential is stored only if it verifies and is for the master key this client sent: the
+-- | A credential is stored only if it verifies and is for this purchase's master key: the
 -- signature is checked against the key inside the credential, so any other one also verifies.
 verifyIssuedCredential :: BadgeMasterKey -> Maybe BadgeCredential -> CM (Maybe BadgeCredential)
 verifyIssuedCredential _ Nothing = pure Nothing
@@ -5455,8 +5451,8 @@ storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCr
       when newBadge $ presentUserBadgeToContacts user'
       pure $ CRBadgeRedeemed user' badge newBadge
 
--- | Copy the statement's rows verbatim and store the credential against the @debit(badge)@ row
--- they carry. The client authors no row of its own, and re-applying a statement writes nothing.
+-- | Copy the statement's rows verbatim and store the credential against the badge debit row they
+-- carry. The client authors no row of its own, and re-applying a statement writes nothing.
 -- 'False' when the statement issued a month whose credential could not be stored against its row,
 -- which the caller reports rather than leaving the ledger and the issuances disagreeing.
 applyBadgeStatement :: DB.Connection -> TVar ChaChaDRG -> Int64 -> BadgeStatement -> Maybe BadgeCredential -> UTCTime -> IO Bool
