@@ -91,7 +91,6 @@ data ServicePurchase = ServicePurchase
 
 data LedgerTip = LedgerTip
   { tipEntryId :: Int64,
-    tipEntryUuid :: Text,
     tipBalance :: LedgerBalance
   }
 
@@ -162,7 +161,7 @@ getLedgerTip db purchaseId =
     DB.query
       db
       [sql|
-        SELECT entry_id, entry_uuid, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type
+        SELECT entry_id, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type
         FROM sx_badge_service_badge_ledger
         WHERE badge_purchase_id = ?
         ORDER BY entry_id DESC
@@ -170,10 +169,11 @@ getLedgerTip db purchaseId =
       |]
       (Only purchaseId)
   where
-    toTip (tipEntryId, tipEntryUuid, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) =
-      LedgerTip {tipEntryId, tipEntryUuid, tipBalance = LedgerBalance {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType}}
+    toTip (tipEntryId, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) =
+      LedgerTip {tipEntryId, tipBalance = LedgerBalance {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType}}
 
--- | Scoped to the client's own purchase, so asserting another's entry tells it nothing.
+-- | The uuid is the client's claim about its last held entry, so the lookup is scoped to its own
+-- purchase - an entry_id taken from another ledger would silently skip rows of this one.
 getLedgerEntryId :: DB.Connection -> Int64 -> Text -> IO (Maybe Int64)
 getLedgerEntryId db purchaseId entryUuid =
   maybeFirstRow fromOnly $
@@ -219,7 +219,6 @@ getCurrentIssuance db purchaseId now = do
     [Only (Binary bs)] -> J.decodeStrict' bs
     _ -> Nothing
 
--- | entry_uuid is assigned here, so no caller can author one.
 -- TODO [badges] also write the reference columns - payment_id, charge_id, from_purchase_id,
 -- to_purchase_id - for the entry types that carry one. Only the tag is written today, so a
 -- payment, charge, transferIn, upgrade or transferOut row would be stored without its reference.
@@ -258,8 +257,8 @@ appendLedgerPlan db g purchaseId SignedPlan {spRows, spIssuance} now = do
 randomId :: TVar ChaChaDRG -> IO Text
 randomId g = safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes 16 g)
 
--- the caller has already signed and appends the plan in this same transaction, so no code is
--- left spent without a credential
+-- redeemed_at is stamped here, so this must share a transaction with the credential's rows:
+-- a code marked spent without one can never be reissued
 createCodePurchase :: DB.Connection -> NewCodePurchase -> UTCTime -> IO Int64
 createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do
   DB.execute
