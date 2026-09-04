@@ -521,6 +521,9 @@ testClientReplicatesLedger ps =
       alice <## "badge already redeemed"
       clientLedger' <- ledgerRows (chatController alice) "badge_ledger"
       clientLedger' `shouldBe` serviceLedger
+      -- nor a second issuance for the one month issued: the replay names a month already stored
+      expiries <- issuedExpiries (chatController alice)
+      length expiries `shouldBe` 1
 
 -- the balance start of the last row, which is when the next month falls due
 dueAtOf :: [ReplicatedRow] -> UTCTime

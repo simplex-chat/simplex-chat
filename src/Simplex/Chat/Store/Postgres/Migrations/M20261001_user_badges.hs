@@ -184,6 +184,8 @@ CREATE TABLE @badge_issuances(
 CREATE INDEX @idx_badge_issuances_purchase ON @badge_issuances(badge_purchase_id, issuance_id);
 
 CREATE INDEX @idx_badge_issuances_entry ON @badge_issuances(entry_id);
+
+CREATE UNIQUE INDEX @idx_badge_issuances_purchase_entry ON @badge_issuances(badge_purchase_id, entry_id);
 |]
 
 badgeSchemaTablesDown :: Text
@@ -191,6 +193,7 @@ badgeSchemaTablesDown =
   [r|
 DROP INDEX @idx_badge_issuances_purchase;
 DROP INDEX @idx_badge_issuances_entry;
+DROP INDEX @idx_badge_issuances_purchase_entry;
 DROP TABLE @badge_issuances;
 DROP INDEX @idx_badge_ledger_uuid;
 DROP INDEX @idx_badge_ledger_purchase;

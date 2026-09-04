@@ -128,6 +128,7 @@ createCodeBadgePurchase db User {userId} redemption credential now =
 
 -- | The period comes from the ledger, the expiry from the credential, which runs a week longer.
 -- 'False' means no issuance row was written, which the caller reports rather than drop in silence.
+-- A replayed statement names a month already issued, and one month has one issuance.
 storeBadgeIssuance :: DB.Connection -> TVar ChaChaDRG -> Int64 -> Int64 -> BadgeCredential -> UTCTime -> IO Bool
 storeBadgeIssuance db g badgePurchaseId entryId credential now =
   getIssuedPeriod db badgePurchaseId entryId >>= \case
@@ -139,6 +140,7 @@ storeBadgeIssuance db g badgePurchaseId entryId credential now =
         [sql|
           INSERT INTO badge_issuances (issuance_id, badge_purchase_id, entry_id, badge_type, period_start, period_end, expiry, credential, created_at)
           VALUES (?,?,?,?,?,?,?,?,?)
+          ON CONFLICT (badge_purchase_id, entry_id) DO NOTHING
         |]
         ((issuanceId, badgePurchaseId, entryId, badgeType) :. (periodStart, periodEnd, badgeExpiry, Binary (LB.toStrict $ J.encode credential), now))
       pure True
