@@ -5288,11 +5288,15 @@ updateBadgePurchase user@User {userId} mem p@UserBadgePurchase {badgePurchaseId}
   case balance_ of
     Nothing -> pure (False, Nothing)
     Just balance -> do
-      -- the same plan the service would write: if it is empty, there is nothing to ask for
-      renewal <- case L.ledgerPlan now Nothing balance of
-        LedgerPlan {planRows = [], planIssuance = Nothing} -> pure $ Right balance
-        _ -> requestBadgeIssue user p now `catchAllErrors` \e -> Left (badgeErrorRetry e) <$ eToView e
-      let (balance', badgeRetry) = either (balance,) (,NoBadgeRetry) renewal
+      renewal <-
+        if badgeWorkDue now balance
+          then requestBadgeIssue user p now `catchAllErrors` \e -> Left (badgeErrorRetry e) <$ eToView e
+          else pure $ Right balance
+      -- a response that leaves the month due means the service does not agree it is due, its clock
+      -- being behind this one; without a retry the next wake is paidThrough, the rest of the balance away
+      let (balance', badgeRetry) = case renewal of
+            Left r -> (balance, r)
+            Right b -> (b, if badgeWorkDue now b then RetryBadge Nothing else NoBadgeRetry)
       -- presenting writes currentUser and broadcasts the record it is given, and the request above
       -- takes as long as the service timeout, so a profile edited during it must be read again
       user' <- withStore $ \db -> getUser db userId
@@ -5361,6 +5365,12 @@ getUserBadgeState user = do
           shown,
           alert = unansweredBadgeAlert now p balance
         }
+
+-- | Whether the service has anything to do for this balance, by the plan it would itself write.
+badgeWorkDue :: UTCTime -> LedgerBalance -> Bool
+badgeWorkDue now b = case L.ledgerPlan now Nothing b of
+  LedgerPlan {planRows = [], planIssuance = Nothing} -> False
+  _ -> True
 
 -- | The next month falling due, or the end of what is paid for.
 badgeBoundary :: UTCTime -> LedgerBalance -> Maybe UTCTime
