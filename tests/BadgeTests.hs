@@ -304,14 +304,27 @@ testLapseAfterGap = do
   map paidThrough (granted : rows1 <> rows2) `shouldBe` replicate 4 (at 2026 6 10)
   bMonths afterSecond `shouldBe` 0
 
+data LedgerStep = Grant UTCTime Int | Pass UTCTime
+
 testLedgerInvariants :: IO ()
 testLedgerInvariants = do
   let start = at 2026 1 15
-      -- grants and passes interleaved, including passes long after the balance ran out
-      steps = [Left 3, Right (at 2026 1 15), Right (at 2026 4 20), Left 2, Right (at 2026 5 1), Right (at 2027 9 9), Left 1, Right (at 2027 9 9)]
+      reopened = at 2027 9 9
+      -- the April grant lands exactly where coverage ended and continues the run, the 2027 one
+      -- lands past it and restarts, so both branches of grantMonths run under the invariants
+      steps =
+        [ Grant start 3,
+          Pass start,
+          Pass (at 2026 4 20),
+          Grant (at 2026 4 15) 2,
+          Pass (at 2026 5 1),
+          Pass reopened,
+          Grant reopened 1,
+          Pass reopened
+        ]
       step (b, rows) = \case
-        Left n -> let b' = grantMonths (bStart b) n b in (b', rows <> [b'])
-        Right t -> let (rs, _) = pass t b in (finalBalance b rs, rows <> rs)
+        Grant t n -> let b' = grantMonths t n b in (b', rows <> [b'])
+        Pass t -> let (rs, _) = pass t b in (finalBalance b rs, rows <> rs)
       (_, allRows) = foldl step (newBalance start, []) steps
   map bMonths allRows `shouldSatisfy` all (>= 0)
   map bStart allRows `shouldSatisfy` nonDecreasing
