@@ -126,9 +126,8 @@ createCodeBadgePurchase db User {userId} redemption credential now =
     BadgeCodeRedemption {redemptionId, purchaseKey, purchasePrivKey, masterKey = BadgeMasterKey mk} = redemption
     BadgeCredential {badgeInfo = BadgeInfo {badgeType}} = credential
 
--- | The period comes from the ledger, not from the credential, whose expiry is the end of the
--- following Sunday and so up to a week past the month. 'False' when the issued row has no
--- predecessor to name a period from - unreachable, but not something to drop in silence.
+-- | The period comes from the ledger, the expiry from the credential, which runs a week longer.
+-- 'False' means no issuance row was written, which the caller reports rather than drop in silence.
 storeBadgeIssuance :: DB.Connection -> TVar ChaChaDRG -> Int64 -> Int64 -> BadgeCredential -> UTCTime -> IO Bool
 storeBadgeIssuance db g badgePurchaseId entryId credential now =
   getIssuedPeriod db badgePurchaseId entryId >>= \case
