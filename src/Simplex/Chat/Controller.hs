@@ -148,6 +148,8 @@ data ChatConfig = ChatConfig
     badgeServiceAddress :: Maybe (ConnectTarget 'CMContact),
     -- the only clock badge code reads, so tests can shift it; production arithmetic is unchanged
     badgeCurrentTime :: IO UTCTime,
+    -- how long a badge worker waits before repeating a renewal that failed for a passing reason
+    badgeRetryInterval :: RetryInterval,
     confirmMigrations :: MigrationConfirmation,
     presetServers :: PresetServers,
     shortLinkPresetServers :: NonEmpty SMPServer,

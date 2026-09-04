@@ -25,9 +25,11 @@ import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service
-import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..), chatErrorAgent)
-import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeRetryInterval, badgeRetryTime)
+import Simplex.Chat (defaultChatConfig)
+import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
+import Simplex.Chat.Library.Commands (BadgeRetry (..), badgeAttemptDelay, badgeErrorRetry)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
+import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Protocol (BrokerErrorType (..), NetworkError (..))
 import Simplex.Messaging.Version.Internal (Version (..))
@@ -57,8 +59,9 @@ badgeTests = do
     it "clips month ends without losing the issued period start" testMonthEndClipping
     it "expires at the end of the Sunday after the period" testSundayExpiry
     it "stores the wire tag of every entry type, and reads back the ones it writes" testEntryTypeColumns
-  describe "worker retry" $
+  describe "worker retry" $ do
     it "repeats a failure that can clear on its own, and no other" testRetryClassification
+    it "backs off to the cap, and honours what the service asks for within bounds" testRetryBackoff
   describe "service protocol JSON" $ do
     it "redeemBadgeCode request matches the schema" testRedeemRequestJSON
     it "badgeCredential response matches the schema" testCredentialResponseJSON
@@ -67,6 +70,9 @@ badgeTests = do
 
 proofOf :: BadgeProof -> BBSProof
 proofOf (BadgeProof _ _ p _) = p
+
+nonDecreasing :: Ord a => [a] -> Bool
+nonDecreasing xs = and $ zipWith (<=) xs (drop 1 xs)
 
 testKeyIdx :: Int
 testKeyIdx = 1
@@ -277,7 +283,7 @@ testTwelveMonths = do
   issueMonth (at 2030 1 1) spent `shouldBe` Nothing
   advanceBalance (at 2030 1 1) spent `shouldBe` Nothing
 
--- the worked example: 3 months bought Tue 10 Mar 2026, app off 5 Apr - 20 May, issue 20 May
+-- 3 months bought 10 Mar, first issued the same day, no pass until 20 May: April lapses unissued
 testLapseAfterGap :: IO ()
 testLapseAfterGap = do
   let start = at 2026 3 10
@@ -309,8 +315,6 @@ testLedgerInvariants = do
       (_, allRows) = foldl step (newBalance start, []) steps
   map bMonths allRows `shouldSatisfy` all (>= 0)
   map bStart allRows `shouldSatisfy` nonDecreasing
-  where
-    nonDecreasing xs = and $ zipWith (<=) xs (drop 1 xs)
 
 testGrantAfterExhausted :: IO ()
 testGrantAfterExhausted = do
@@ -382,17 +386,43 @@ testSundayExpiry = do
 -- left running can be days - long enough for a funded badge to lapse.
 testRetryClassification :: IO ()
 testRetryClassification = do
-  let now = at 2026 3 10
-      soon = Just $ badgeRetryInterval `addUTCTime` now
-      retryFor = badgeRetryTime . badgeErrorRetry now . chatErrorAgent
+  let retryFor = badgeErrorRetry . chatErrorAgent
   -- an unanswered request is the likeliest renewal failure, and it is the agent's own error
-  retryFor (AGENT (A_SERVICE ASETimeout)) `shouldBe` soon
-  retryFor (BROKER "localhost" TIMEOUT) `shouldBe` soon
-  retryFor (BROKER "localhost" (NETWORK NETimeoutError)) `shouldBe` soon
+  retryFor (AGENT (A_SERVICE ASETimeout)) `shouldBe` RetryBadge Nothing
+  retryFor (BROKER "localhost" TIMEOUT) `shouldBe` RetryBadge Nothing
+  retryFor (BROKER "localhost" (NETWORK NETimeoutError)) `shouldBe` RetryBadge Nothing
   -- terminal: the same request would fail the same way, and repeating it would spin
-  retryFor (AGENT (A_SERVICE ASEBadSignature)) `shouldBe` Nothing
-  retryFor (AGENT (A_SERVICE (ASERejected "no"))) `shouldBe` Nothing
-  badgeRetryTime (badgeErrorRetry now (ChatError (CECommandError "badge service error: unknown_purchase_key"))) `shouldBe` Nothing
+  retryFor (AGENT (A_SERVICE ASEBadSignature)) `shouldBe` NoBadgeRetry
+  retryFor (AGENT (A_SERVICE (ASERejected "no"))) `shouldBe` NoBadgeRetry
+  badgeErrorRetry (ChatError (CECommandError "badge service error: unknown_purchase_key")) `shouldBe` NoBadgeRetry
+
+-- A failure that never clears is repeated for as long as the balance funds a month, so the wait
+-- has to grow: at a fixed interval an annual code would ask hundreds of times a day, all year.
+testRetryBackoff :: IO ()
+testRetryBackoff = do
+  let ri@RetryInterval {initialInterval, maxInterval} = badgeRetryInterval defaultChatConfig
+      -- the transition nextBadgeAttempt stores, so this follows production rather than restating it
+      advanceWith asked (elapsed, delay) =
+        let waitFor = badgeAttemptDelay ri delay asked
+            elapsed' = elapsed + waitFor
+         in (elapsed', nextRetryDelay elapsed' waitFor ri)
+      delays = map snd $ take 40 $ iterate (advanceWith Nothing) (0, initialInterval)
+  head delays `shouldBe` initialInterval
+  delays `shouldSatisfy` all (\d -> d >= initialInterval && d <= maxInterval)
+  delays `shouldSatisfy` nonDecreasing
+  -- it reaches the cap rather than creeping towards it, and stays there
+  last delays `shouldBe` maxInterval
+  -- the service's own value is honoured above the backoff, and clamped into the same bounds
+  badgeAttemptDelay ri initialInterval Nothing `shouldBe` initialInterval
+  badgeAttemptDelay ri initialInterval (Just 1) `shouldBe` initialInterval
+  badgeAttemptDelay ri initialInterval (Just $ maxInterval * 2) `shouldBe` maxInterval
+  badgeAttemptDelay ri initialInterval (Just $ initialInterval * 3) `shouldBe` initialInterval * 3
+  badgeAttemptDelay ri maxInterval (Just initialInterval) `shouldBe` maxInterval
+  -- the backoff advances from what was asked for, not from where it had reached, so a hint is not
+  -- spent on one attempt: one at the cap holds this purchase there for the rest of the session
+  let hinted = advanceWith (Just maxInterval) (0, initialInterval)
+  snd hinted `shouldBe` maxInterval
+  snd (advanceWith Nothing hinted) `shouldBe` maxInterval
 
 -- The client replicates entry_credit_type / entry_debit_type verbatim, so a stored tag that
 -- disagreed with the wire tag would put a different row on each side.

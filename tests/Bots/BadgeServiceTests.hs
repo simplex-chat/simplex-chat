@@ -31,7 +31,7 @@ import Data.String (fromString)
 import System.Timeout (timeout)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), generateMasterKey)
 import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, formatBadgeCode, parseBadgeCode, randomBadgeCode)
 import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag, endOfSundayAfter)
@@ -76,6 +76,7 @@ badgeServiceTests = do
   it "should renew a badge whose newest ledger row is of an unknown type" testRenewsAfterUnknownEntry
   it "should stop showing a badge whose balance ran out, and tell contacts" testWorkerRetiresExpired
   it "should alert that support ended, survive a restart, and go silent once acknowledged" testEndedAlert
+  it "should raise a snoozed alert once more when the snooze lapses" testSnoozedAlertReturns
   it "should broadcast the current profile when a renewal presents a badge" testRenewalKeepsProfileEdits
   it "should present the month already issued when a previous pass did not" testPresentationCatchesUp
 
@@ -760,6 +761,37 @@ testEndedAlert ps =
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
       alice <## "use /p <name> [<bio>] to change it"
+
+-- A snooze silences the alert until it lapses, and then it is raised once more, without a restart.
+-- A snooze changes nothing else on the purchase, so the occurrence already raised has to count it.
+testSnoozedAlertReturns :: HasCallStack => TestParams -> IO ()
+testSnoozedAlertReturns ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 1
+      redeemFirstBadge alice code
+      rows <- ledgerRows (chatController alice) "badge_ledger"
+      let endsAt = dueAtOf rows
+      setClockAt bsClock endsAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      alice <##. "badge alert: support_ended "
+      alice <##. "1: supporter"
+      alice <##. "badge alert: support_ended "
+      alice ##> ("/_badge ack 1 1 support_ended on " <> T.unpack (safeDecodeUtf8 $ strEncode endsAt))
+      alice <##. "1: supporter"
+      -- snoozed, and the same worker keeps the occurrence it raised: /p prints only what a silent
+      -- pass leaves behind
+      alice ##> "/_app activate"
+      alice <## "ok"
+      alice ##> "/p"
+      alice <## "user profile: alice (Alice)"
+      alice <## "use /p <name> [<bio>] to change it"
+      -- the snooze lapses: nothing else about the badge changed, so only the alert is reported
+      setClockAt bsClock $ addUTCTime (nominalDay + 60) endsAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      alice <##. "badge alert: support_ended "
 
 -- The worker re-reads the profile each pass. Presenting a renewed badge from a copy captured when
 -- the worker started would revert any edit made since and broadcast the profile in its old form.
