@@ -488,9 +488,9 @@ testRenewalSignsWithStoredMasterKey ps =
 
 -- The replicated columns of a ledger, in order. service_created_at and created_at are left out:
 -- the client records when it stored a row, which is not when the service wrote it.
-type LedgerRow = (Text, Int, Int, UTCTime, Text, Maybe Text)
+type ReplicatedRow = (Text, Int, Int, UTCTime, Text, Maybe Text)
 
-ledgerRows :: ChatController -> String -> IO [LedgerRow]
+ledgerRows :: ChatController -> String -> IO [ReplicatedRow]
 ledgerRows ChatController {chatStore} table =
   withTransaction chatStore $ \db ->
     DB.query_ db . fromString $
@@ -522,7 +522,7 @@ testClientReplicatesLedger ps =
       clientLedger' `shouldBe` serviceLedger
 
 -- the balance start of the last row, which is when the next month falls due
-dueAtOf :: [LedgerRow] -> UTCTime
+dueAtOf :: [ReplicatedRow] -> UTCTime
 dueAtOf rows = let (_, _, _, start, _, _) = last rows in start
 
 issuedExpiries :: ChatController -> IO [UTCTime]
@@ -577,7 +577,7 @@ shownAndIssuedExpiry ChatController {chatStore} = withTransaction chatStore $ \d
 -- The worker acts on its own schedule, so the test waits for the rows rather than for a response.
 -- The budget is generous because a renewal is a real round trip to the in-process service, and
 -- the whole suite runs several of them under load.
-waitLedgerRows :: HasCallStack => ChatController -> Int -> IO [LedgerRow]
+waitLedgerRows :: HasCallStack => ChatController -> Int -> IO [ReplicatedRow]
 waitLedgerRows cc n = loop (600 :: Int)
   where
     loop 0 = ledgerRows cc "badge_ledger" >>= \rows -> error $ "expected " <> show n <> " ledger rows, got " <> show (length rows)
@@ -752,7 +752,6 @@ testEndedAlert ps =
       alice ##> ("/_badge ack 1 1 support_ended off " <> T.unpack (safeDecodeUtf8 $ strEncode endsAt))
       alice <##. "1: supporter"
       ackedEpisode (chatController alice) `shouldReturn` (Just "support_ended", Just (safeDecodeUtf8 $ strEncode endsAt))
-      -- acknowledged: the same occurrence is not raised again
       -- acknowledged: the state no longer carries the alert, and no event raises it again
       alice ##> "/_badge state 1"
       alice <##. "1: supporter"
