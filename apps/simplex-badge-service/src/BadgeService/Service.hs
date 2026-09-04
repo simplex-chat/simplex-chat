@@ -341,7 +341,7 @@ issueBadgeCmd key cc purchaseKey BadgeBalance {lastEntry} = do
         Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
         Right signed -> do
           r <- withDB "issueBadge" cc $ \db -> liftIO $ do
-            -- if a row was appended while this request was signing, it signed a period that is no longer due
+            -- if a row was appended while this request was signing, the period it signed is no longer next
             tip' <- getLedgerTip db badgePurchaseId
             when (fmap tipEntryId tip' == fmap tipEntryId tip) $
               appendLedgerPlan db (random cc) badgePurchaseId signed now
