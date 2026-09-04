@@ -164,7 +164,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
             if (chatModel.localUserCreated.value == true) {
               createProfileInProfiles(chatModel, displayName.value, shortDescr.value, profileImage.value, close)
             } else {
-              createProfileInNoProfileSetup(displayName.value, profileImage.value, close)
+              createProfileInNoProfileSetup(displayName.value, shortDescr.value, profileImage.value, close)
             }
           },
         )
@@ -353,9 +353,9 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
   }
 }
 
-fun createProfileInNoProfileSetup(displayName: String, image: String? = null, close: () -> Unit) {
+fun createProfileInNoProfileSetup(displayName: String, shortDescr: String, image: String? = null, close: () -> Unit) {
   withBGApi {
-    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null, image)) ?: return@withBGApi
+    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image = image)) ?: return@withBGApi
     if (!chatModel.connectedToRemote()) {
       chatModel.localUserCreated.value = true
     }
