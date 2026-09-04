@@ -629,9 +629,10 @@ fun ModalData.GroupChatInfoLayout(
 
       var anyTopSectionRowShow = false
       val channelLink = groupInfo.groupProfile.publicGroup?.groupLink
-      val showUserSupportChat = groupInfo.membership.memberActive &&
-        ((groupInfo.fullGroupPreferences.support.on && groupInfo.membership.memberRole < GroupMemberRole.Moderator)
-          || groupInfo.membership.supportChat != null)
+      val showUserSupportChat = groupInfo.membership.supportChat != null ||
+        (groupInfo.membership.memberActive
+          && groupInfo.fullGroupPreferences.support.on
+          && groupInfo.membership.memberRole < GroupMemberRole.Moderator)
 
       if (groupInfo.useRelays) {
         SectionView {
