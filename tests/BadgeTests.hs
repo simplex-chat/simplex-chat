@@ -25,7 +25,11 @@ import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service
+import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..), chatErrorAgent)
+import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeRetryInterval, badgeRetryTime)
+import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Crypto.BBS
+import Simplex.Messaging.Protocol (BrokerErrorType (..), NetworkError (..))
 import Simplex.Messaging.Version.Internal (Version (..))
 import Test.Hspec
 
@@ -53,6 +57,8 @@ badgeTests = do
     it "clips month ends without losing the issued period start" testMonthEndClipping
     it "expires at the end of the Sunday after the period" testSundayExpiry
     it "stores the wire tag of every entry type, and reads back the ones it writes" testEntryTypeColumns
+  describe "worker retry" $
+    it "repeats a failure that can clear on its own, and no other" testRetryClassification
   describe "service protocol JSON" $ do
     it "redeemBadgeCode request matches the schema" testRedeemRequestJSON
     it "badgeCredential response matches the schema" testCredentialResponseJSON
@@ -264,7 +270,7 @@ testTwelveMonths = do
   bMonths spent `shouldBe` 0
   -- no month was skipped or issued twice: the periods tile the whole year
   map pStart periods `shouldBe` map (\m -> addMonths m start) [0 .. 11]
-  zipWith (\p p' -> pEnd p == pStart p') periods (drop 1 periods) `shouldSatisfy` and
+  map pEnd (init periods) `shouldBe` map pStart (drop 1 periods)
   pEnd (last periods) `shouldBe` at 2027 3 10
   -- a thirteenth request issues nothing, whenever it is made
   issueMonth (bStart spent) spent `shouldBe` Nothing
@@ -371,6 +377,22 @@ testSundayExpiry = do
   -- every expiry is a Monday midnight strictly after its period, by at most a week
   expiries `shouldSatisfy` all (\(UTCTime d t) -> t == 0 && (\(_, _, wd) -> wd == 1) (toWeekDate d))
   zipWith diffUTCTime expiries periodEnds `shouldSatisfy` all (\d -> d > 0 && d <= 7 * nominalDay)
+
+-- A failed renewal is otherwise left until the next chat start or activate, which on a desktop
+-- left running can be days - long enough for a funded badge to lapse.
+testRetryClassification :: IO ()
+testRetryClassification = do
+  let now = at 2026 3 10
+      soon = Just $ badgeRetryInterval `addUTCTime` now
+      retryFor = badgeRetryTime . badgeErrorRetry now . chatErrorAgent
+  -- an unanswered request is the likeliest renewal failure, and it is the agent's own error
+  retryFor (AGENT (A_SERVICE ASETimeout)) `shouldBe` soon
+  retryFor (BROKER "localhost" TIMEOUT) `shouldBe` soon
+  retryFor (BROKER "localhost" (NETWORK NETimeoutError)) `shouldBe` soon
+  -- terminal: the same request would fail the same way, and repeating it would spin
+  retryFor (AGENT (A_SERVICE ASEBadSignature)) `shouldBe` Nothing
+  retryFor (AGENT (A_SERVICE (ASERejected "no"))) `shouldBe` Nothing
+  badgeRetryTime (badgeErrorRetry now (ChatError (CECommandError "badge service error: unknown_purchase_key"))) `shouldBe` Nothing
 
 -- The client replicates entry_credit_type / entry_debit_type verbatim, so a stored tag that
 -- disagreed with the wire tag would put a different row on each side.

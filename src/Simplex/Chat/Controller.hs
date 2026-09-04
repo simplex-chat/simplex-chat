@@ -281,6 +281,11 @@ defaultInlineFilesConfig =
 
 data ChatDatabase = ChatDatabase {chatStore :: DBStore, agentStore :: DBStore}
 
+-- | A badge worker and the sleeper it forks to wake itself at its next boundary, held together so
+-- that the two cannot get out of step. The sleeper is tracked to be replaced rather than left to
+-- accumulate - badge horizons are a month, not minutes.
+type BadgeWorker = (Worker, TVar (Maybe (Weak ThreadId)))
+
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
     randomPresetServers :: NonEmpty PresetOperator,
@@ -314,10 +319,7 @@ data ChatController = ChatController
     deliveryJobWorkers :: TMap DeliveryWorkerKey Worker,
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
     -- one badge worker per user: badge state is per profile, and one profile must not stall another
-    badgeWorkers :: TMap UserId Worker,
-    -- the sleeper each badge worker forks to wake itself at its next boundary, tracked so that it
-    -- is replaced rather than accumulated - badge horizons are a month, not minutes
-    badgeSleepers :: TMap UserId (Weak ThreadId),
+    badgeWorkers :: TMap UserId BadgeWorker,
     relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
     webPreviewState :: Maybe WebPreviewState,
     chatRelayTests :: TMap ConnId RelayTest,
