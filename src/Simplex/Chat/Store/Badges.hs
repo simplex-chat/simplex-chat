@@ -198,6 +198,8 @@ data UserBadgePurchase = UserBadgePurchase
     alertSnoozeUntil :: Maybe UTCTime
   }
 
+-- | shown is a CASE rather than the comparison itself: in Postgres a comparison yields boolean,
+-- and BoolInt decodes an Int.
 getUserBadgePurchases :: DB.Connection -> User -> IO [UserBadgePurchase]
 getUserBadgePurchases db User {userId} =
   map toPurchase
@@ -205,7 +207,8 @@ getUserBadgePurchases db User {userId} =
       db
       [sql|
         SELECT p.badge_purchase_id, p.purchase_key, p.purchase_priv_key, p.master_key, p.current_badge_type,
-               (u.shown_badge_id = p.badge_purchase_id), p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until
+               (CASE WHEN u.shown_badge_id = p.badge_purchase_id THEN 1 ELSE 0 END),
+               p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.user_id = ? AND p.purchase_priv_key IS NOT NULL
@@ -220,7 +223,7 @@ getUserBadgePurchases db User {userId} =
           purchasePrivKey,
           masterKey = BadgeMasterKey mk,
           badgeType,
-          shown = maybe False unBI shown_,
+          shown = unBI shown_,
           alertAcked = (,) <$> ackedKind_ <*> ackedEpisode_,
           alertSnoozeUntil
         }
