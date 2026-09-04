@@ -5237,23 +5237,24 @@ runBadgeWorker User {userId} Worker {doWork} = do
   -- derived from state, so a restart derives and raises it again.
   emitted <- newTVarIO M.empty
   forever $ do
-    -- a destructive take, unlike waitForWork elsewhere: the signal is consumed where it is
-    -- observed, so a pass that throws cannot leave it set, and one arriving mid-pass is not lost
+    -- waitForWork waits without taking, leaving that to the work-item helpers; this worker has
+    -- none, so it takes here: taking at the end would spin on a throw and swallow a new signal
     atomically $ takeTMVar doWork
     lift waitChatStartedAndActivated
-    runBadgePass userId emitted doWork `catchAllErrors` eToView
+    updateUserBadges userId emitted doWork `catchAllErrors` eToView
 
--- | Renew what is due, retire what has ended, sleep to the next boundary. Not load-bearing: a
--- pass derives its work from stored state, so chat start alone is already correct.
-runBadgePass :: UserId -> TVar (Map Int64 (BadgeAlertKind, Text)) -> TMVar () -> CM ()
-runBadgePass userId emitted doWork = do
+-- | Renew what is due, retire what has ended, then sleep to the next boundary. Waking early, late
+-- or not at all changes only timing: each run reads stored state and works out what to do.
+updateUserBadges :: UserId -> TVar (Map Int64 (BadgeAlertKind, Text)) -> TMVar () -> CM ()
+updateUserBadges userId emitted doWork = do
   now <- badgeNow
   -- re-read, not captured with the worker: setUserBadge returns the record it was given, and that
   -- is what is broadcast, so a stale copy would revert a profile edit made during the session
   user <- withStore $ \db -> getUser db userId
   purchases <- withStore' $ \db -> getUserBadgePurchases db user
-  results <- forM purchases $ \p -> badgePurchasePass user emitted p now `catchAllErrors` \e -> (False, Nothing) <$ eToView e
-  -- the open badge surfaces re-render from this; a renewal arrives without any command
+  -- one badge failing reports and yields no change and no boundary, leaving the others to run
+  results <- forM purchases $ \p -> updateBadgePurchase user emitted p now `catchAllErrors` \e -> (False, Nothing) <$ eToView e
+  -- a renewal answers no command, so the new state can only reach the client as an event
   when (any fst results) $ toView . CEvtBadgeChanged user =<< getUserBadgeState user
   lift $ scheduleBadgeWake userId doWork now $ earliest $ map snd results
   where
@@ -5262,8 +5263,8 @@ runBadgePass userId emitted doWork = do
       ts -> Just $ minimum ts
 
 -- | Whether the badge changed, and its next boundary.
-badgePurchasePass :: User -> TVar (Map Int64 (BadgeAlertKind, Text)) -> UserBadgePurchase -> UTCTime -> CM (Bool, Maybe UTCTime)
-badgePurchasePass user emitted p@UserBadgePurchase {badgePurchaseId} now = do
+updateBadgePurchase :: User -> TVar (Map Int64 (BadgeAlertKind, Text)) -> UserBadgePurchase -> UTCTime -> CM (Bool, Maybe UTCTime)
+updateBadgePurchase user emitted p@UserBadgePurchase {badgePurchaseId} now = do
   balance_ <- withStore' $ \db -> getBadgeLedgerBalance db badgePurchaseId
   case balance_ of
     Nothing -> pure (False, Nothing)
@@ -5274,15 +5275,13 @@ badgePurchasePass user emitted p@UserBadgePurchase {badgePurchaseId} now = do
         _ -> requestBadgeIssue user p now `catchAllErrors` \e -> balance <$ eToView e
       retired <- retireExpiredBadge user p now balance'
       let issued = L.balanceStartTs balance' /= L.balanceStartTs balance
-      -- every pass, not only a renewal: the issuance and the profile are separate transactions,
-      -- and no later pass finds a month due that was issued but left unpresented.
-      -- Outside the badge lock, which must not be held while the chat lock is taken.
+      -- outside the badge lock: the chat lock must not be taken under it
       unless retired $ presentIssuedBadge user p now
       emitBadgeAlert user emitted p now balance'
       pure (retired || issued, badgeBoundary now balance')
 
--- | The only kind: the others need subscriptions, and warning before a prepaid badge ends is not
--- actionable while topping up cannot credit months without issuing them.
+-- | Support ended is the only alert raised here: the others need subscriptions, and warning before
+-- a prepaid badge ends is not actionable while topping up cannot credit months without issuing.
 -- TODO [badges] BAPrepaidEnding belongs here, three days before paidThrough, once that exists.
 derivedBadgeAlert :: UTCTime -> LedgerBalance -> Maybe BadgeAlert
 derivedBadgeAlert now b
@@ -5295,11 +5294,11 @@ derivedBadgeAlert now b
 -- | Derived from state rather than kept pending, and an alert only when it differs from the
 -- occurrence already answered.
 unansweredBadgeAlert :: UTCTime -> UserBadgePurchase -> LedgerBalance -> Maybe BadgeAlert
-unansweredBadgeAlert now UserBadgePurchase {alertAcked, alertSnoozeUntil} balance = do
-  alert@BadgeAlert {kind, episode} <- derivedBadgeAlert now balance
-  guard $ alertAcked /= Just (kind, episode)
-  guard $ maybe True (now >=) alertSnoozeUntil
-  pure alert
+unansweredBadgeAlert now UserBadgePurchase {alertAcked, alertSnoozeUntil} balance =
+  case derivedBadgeAlert now balance of
+    Just alert@BadgeAlert {kind, episode}
+      | alertAcked /= Just (kind, episode) && maybe True (now >=) alertSnoozeUntil -> Just alert
+    _ -> Nothing
 
 emitBadgeAlert :: User -> TVar (Map Int64 (BadgeAlertKind, Text)) -> UserBadgePurchase -> UTCTime -> LedgerBalance -> CM ()
 emitBadgeAlert user emitted p@UserBadgePurchase {badgePurchaseId} now balance =
@@ -5343,8 +5342,8 @@ badgeBoundary now b = case filter (> now) [L.balanceStartTs b, L.paidThrough b] 
   [] -> Nothing
   ts -> Just $ minimum ts
 
--- | Ask the service for the month that is due and apply what comes back. A timeout leaves the
--- month due and the same envelope is sent again at the next signal, never on a poll timer.
+-- | Ask the service for the month that is due and apply the response. A timeout writes nothing,
+-- so the same request is sent again at the next signal, never on a poll timer.
 requestBadgeIssue :: User -> UserBadgePurchase -> UTCTime -> CM LedgerBalance
 requestBadgeIssue user@User {userId} UserBadgePurchase {badgePurchaseId, purchaseKey, purchasePrivKey, masterKey} now = do
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
@@ -5360,15 +5359,17 @@ requestBadgeIssue user@User {userId} UserBadgePurchase {badgePurchaseId, purchas
     case J.fromJSON (J.Object respData) of
       J.Success BSPBadgeCredential {credential, statement} -> do
         cred_ <- verifyIssuedCredential masterKey credential
+        -- TODO [badges] the statement is applied either way, so a failed verification spends the
+        -- month with nothing to show for it; that needs an alert, not only a line in the log
         g <- asks random
-        stored <- withStore' $ \db -> applyBadgeStatement db g badgePurchaseId statement cred_ now
-        unless stored $ eToView $ ChatError $ CEInternalError "issued badge credential has no ledger row to store it against"
+        applied <- withStore' $ \db -> applyBadgeStatement db g badgePurchaseId statement cred_ now
+        unless applied $ eToView $ ChatError $ CEInternalError "issued badge credential has no ledger row to store it against"
         withStore' (`getBadgeLedgerBalance` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no balance") pure
       J.Success BSPError {code} -> throwCmdError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
       _ -> throwCmdError "unexpected badge service response"
 
--- | A credential is stored only if it verifies and is for this purchase's master key: the
--- signature is checked against the key inside the credential, so any other one also verifies.
+-- | The signature covers the master key inside the credential, so it verifies no matter which key
+-- that is - the credential is stored only when that key is also this purchase's.
 verifyIssuedCredential :: BadgeMasterKey -> Maybe BadgeCredential -> CM (Maybe BadgeCredential)
 verifyIssuedCredential _ Nothing = pure Nothing
 verifyIssuedCredential masterKey (Just cred@(BadgeCredential _ credMasterKey _ _)) =
@@ -5377,8 +5378,8 @@ verifyIssuedCredential masterKey (Just cred@(BadgeCredential _ credMasterKey _ _
     Just True -> Nothing <$ eToView (ChatError $ CEInternalError "issued badge credential is for a different master key")
     _ -> Nothing <$ eToView (ChatError $ CEInternalError "issued badge credential does not verify")
 
--- | Show the month last issued, unless the profile already shows it. With badgeGraceInterval at
--- 7 days a renewal some hours late is invisible to contacts.
+-- | Present the newest issued credential, unless the profile already carries it. It is written in
+-- a separate transaction from the issuance, so a crash between the two is repaired at the next run.
 presentIssuedBadge :: User -> UserBadgePurchase -> UTCTime -> CM ()
 presentIssuedBadge user@User {profile = LocalProfile {localBadge}} UserBadgePurchase {badgePurchaseId, shown} now
   | not shown = pure ()
@@ -5404,8 +5405,8 @@ retireExpiredBadge user UserBadgePurchase {badgePurchaseId, shown} now balance
         setUserBadge db user Nothing
       True <$ presentUserBadgeToContacts user'
 
--- | In the shape of the agent's rescheduleWork, but the sleeper is tracked and replaced: badge
--- horizons are a month, so untracked ones would accumulate, one per activate.
+-- | The sleeper is tracked and replaced rather than left to fire: badge horizons are a month, so
+-- untracked ones would accumulate, one per activate.
 scheduleBadgeWake :: UserId -> TMVar () -> UTCTime -> Maybe UTCTime -> CM' ()
 scheduleBadgeWake userId doWork now at_ = do
   sleepers <- asks badgeSleepers
@@ -5441,20 +5442,18 @@ storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCr
       now <- badgeNow
       let badge = OwnBadge cred (mkBadgeStatus now (Just True) info)
       -- TODO [badges] retire a previously held badge
-      (user', newBadge, stored) <- withStore' $ \db -> do
+      (user', newBadge, applied) <- withStore' $ \db -> do
         (purchaseId, newBadge) <- createCodeBadgePurchase db user redemption cred now
-        stored <- applyBadgeStatement db g purchaseId statement (Just cred) now
+        applied <- applyBadgeStatement db g purchaseId statement (Just cred) now
         -- a replay must not put a superseded badge back, or tell every contact again
         user' <- if newBadge then setUserBadge db user (Just badge) else pure user
-        pure (user', newBadge, stored)
-      unless stored $ eToView $ ChatError $ CEInternalError "redeemed badge credential has no ledger row to store it against"
+        pure (user', newBadge, applied)
+      unless applied $ eToView $ ChatError $ CEInternalError "redeemed badge credential has no ledger row to store it against"
       when newBadge $ presentUserBadgeToContacts user'
       pure $ CRBadgeRedeemed user' badge newBadge
 
--- | Copy the statement's rows verbatim and store the credential against the badge debit row they
--- carry. The client authors no row of its own, and re-applying a statement writes nothing.
--- 'False' when the statement issued a month whose credential could not be stored against its row,
--- which the caller reports rather than leaving the ledger and the issuances disagreeing.
+-- | Store the statement's rows, then the credential against the badge debit row among them.
+-- 'False' when that row cannot be found, which the caller reports rather than drop in silence.
 applyBadgeStatement :: DB.Connection -> TVar ChaChaDRG -> Int64 -> BadgeStatement -> Maybe BadgeCredential -> UTCTime -> IO Bool
 applyBadgeStatement db g purchaseId BadgeStatement {entries} cred_ now = do
   storeBadgeStatement db purchaseId entries now
