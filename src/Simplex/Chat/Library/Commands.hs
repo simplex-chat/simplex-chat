@@ -5279,7 +5279,7 @@ updateUserBadges userId mem bw = do
 
 -- | Whether the badge changed, and when it next needs a pass.
 updateBadgePurchase :: User -> BadgeMemory -> UserBadgePurchase -> UTCTime -> CM (Bool, Maybe UTCTime)
-updateBadgePurchase user mem p@UserBadgePurchase {badgePurchaseId} now = do
+updateBadgePurchase user@User {userId} mem p@UserBadgePurchase {badgePurchaseId} now = do
   balance_ <- withStore' $ \db -> getBadgeLedgerBalance db badgePurchaseId
   case balance_ of
     Nothing -> pure (False, Nothing)
@@ -5289,11 +5289,14 @@ updateBadgePurchase user mem p@UserBadgePurchase {badgePurchaseId} now = do
         LedgerPlan {planRows = [], planIssuance = Nothing} -> pure $ Right balance
         _ -> requestBadgeIssue user p now `catchAllErrors` \e -> Left (badgeErrorRetry e) <$ eToView e
       let (balance', badgeRetry) = either (balance,) (,NoBadgeRetry) renewal
-      retired <- retireExpiredBadge user p now balance'
+      -- presenting writes currentUser and broadcasts the record it is given, and the request above
+      -- takes as long as the service timeout, so a profile edited during it must be read again
+      user' <- withStore $ \db -> getUser db userId
+      retired <- retireExpiredBadge user' p now balance'
       let issued = L.balanceStartTs balance' /= L.balanceStartTs balance
       -- outside the badge lock: the chat lock must not be taken under it
-      unless retired $ presentIssuedBadge user p now
-      emitBadgeAlert user mem p now balance'
+      unless retired $ presentIssuedBadge user' p now
+      emitBadgeAlert user' mem p now balance'
       retryAt <- nextBadgeAttempt mem badgePurchaseId now badgeRetry
       -- the retry can fall before the boundary or after it, so neither is dropped for the other
       pure (retired || issued, earliestTime [retryAt, badgeBoundary now balance'])
