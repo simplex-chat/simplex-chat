@@ -5273,9 +5273,9 @@ updateUserBadges userId mem bw = do
     updateBadgePurchase user mem p now `catchAllErrors` \e -> do
       eToView e
       (False,) <$> nextBadgeAttempt mem badgePurchaseId now (badgeErrorRetry e)
+  lift $ scheduleBadgeWake bw now $ earliestTime $ map snd results
   -- a renewal answers no command, so the new state can only reach the client as an event
   when (any fst results) $ toView . CEvtBadgeChanged user =<< getUserBadgeState user
-  lift $ scheduleBadgeWake bw now $ earliestTime $ map snd results
 
 -- | Whether the badge changed, and when it next needs a pass.
 updateBadgePurchase :: User -> BadgeMemory -> UserBadgePurchase -> UTCTime -> CM (Bool, Maybe UTCTime)
