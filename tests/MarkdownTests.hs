@@ -20,6 +20,7 @@ import qualified URI.ByteString as U
 markdownTests :: Spec
 markdownTests = do
   textFormat
+  textHeader
   secretText
   textSmall
   textColor
@@ -56,6 +57,9 @@ s <<==>> ft = (s ==>> ft) >> (s <<== ft)
 
 bold :: Text -> Markdown
 bold = markdown Bold
+
+header :: Int -> Text -> Markdown
+header n = markdown (Header n)
 
 textFormat :: Spec
 textFormat = describe "text format (bold)" do
@@ -115,6 +119,27 @@ textFormat = describe "text format (bold)" do
       <==> "this is " <> bold "long _bold_ (not italic)" <> " text"
     "snippet: `this is *bold text*`"
       <==> "snippet: " <> markdown Snippet "this is *bold text*"
+
+textHeader :: Spec
+textHeader = describe "text header" do
+  it "correct markdown" do
+    "# Header"
+      <==> header 1 " Header"
+    "## Header"
+      <==> header 2 " Header"
+    "###### Header"
+      <==> header 6 " Header"
+    "#   Header"
+      <==> header 1 "   Header"
+    "# Header with *bold* not nested"
+      <==> header 1 " Header with *bold* not nested"
+  it "ignored as markdown" do
+    "####### Header"
+      <==> "####### Header"
+    " # Header"
+      <==> " # Header"
+    "#"
+      <==> "#"
 
 secretText :: Spec
 secretText = describe "secret text" do
