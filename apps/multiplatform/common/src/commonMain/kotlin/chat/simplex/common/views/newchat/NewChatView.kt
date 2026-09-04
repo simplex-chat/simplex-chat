@@ -326,7 +326,6 @@ fun ActiveProfilePicker(
         switchingProfile.value = true
         withApi {
           try {
-            appPreferences.incognito.set(false)
             var updatedConn: PendingContactConnection? = null;
 
             if (contactConnection != null) {
@@ -340,6 +339,7 @@ fun ActiveProfilePicker(
             }
 
             if ((contactConnection != null && updatedConn != null) || contactConnection == null) {
+              appPreferences.incognito.set(false)
               controller.changeActiveUser_(
                 rhId = user.remoteHostId,
                 toUserId = user.userId,
@@ -352,15 +352,15 @@ fun ActiveProfilePicker(
                   String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
                 )
               }
-            }
 
-            if (updatedConn != null) {
-              withContext(Dispatchers.Main) {
-                chatModel.chatsContext.updateContactConnection(user.remoteHostId, updatedConn)
+              if (updatedConn != null) {
+                withContext(Dispatchers.Main) {
+                  chatModel.chatsContext.updateContactConnection(user.remoteHostId, updatedConn)
+                }
               }
-            }
 
-            close()
+              close()
+            }
           } finally {
             switchingProfile.value = false
           }
@@ -383,9 +383,9 @@ fun ActiveProfilePicker(
         switchingProfile.value = true
         withApi {
           try {
-            appPreferences.incognito.set(true)
             val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
             if (conn != null) {
+              appPreferences.incognito.set(true)
               withContext(Dispatchers.Main) {
                 chatModel.chatsContext.updateContactConnection(rhId, conn)
                 updateShownConnection(conn)
