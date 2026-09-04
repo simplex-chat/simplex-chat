@@ -28,7 +28,7 @@ bbsSecretLen = 32
 data BadgeCommand
   = Keygen
   | MasterKey
-  | Sign Int BBSSecretKey BadgeMasterKey BadgeType (Maybe UTCTime)
+  | Sign Int BBSSecretKey BadgeMasterKey BadgeType UTCTime
 
 runBadgeCommand :: [String] -> IO ()
 runBadgeCommand args =
@@ -53,16 +53,14 @@ badgeCommandP =
         <*> option (eitherReader secretR) (long "secret" <> metavar "ISSUER_SECRET" <> help "issuer secret from keygen (base64url)")
         <*> option (eitherReader (strDecode . B.pack)) (long "master" <> metavar "MASTER" <> help "user master secret from master-key (base64url)")
         <*> option (eitherReader badgeTypeR) (long "type" <> metavar "TYPE" <> help "badge type (supporter, legend, investor)")
-        <*> option (eitherReader expireR) (long "expire" <> metavar "lifetime|YYYY-MM-DD" <> help "expiry date, or 'lifetime'")
+        <*> option (eitherReader expireR) (long "expire" <> metavar "YYYY-MM-DD" <> help "expiry date")
     secretR s = do
       sk@(BBSSecretKey b) <- strDecode (B.pack s)
       if B.length b == bbsSecretLen
         then Right sk
         else Left "bad issuer secret - use the 'secret' value from keygen"
     badgeTypeR = maybe (Left "invalid badge type") Right . textDecode . T.pack
-    expireR = \case
-      "lifetime" -> Right Nothing
-      s -> maybe (Left "use 'lifetime' or YYYY-MM-DD") (Right . Just) $ parseTimeM True defaultTimeLocale "%Y-%m-%d" s
+    expireR s = maybe (Left "use YYYY-MM-DD") Right $ parseTimeM True defaultTimeLocale "%Y-%m-%d" s
 
 keygen :: IO ()
 keygen =
@@ -78,7 +76,7 @@ genMasterKey = do
   mk <- generateMasterKey drg
   B.putStrLn $ strEncode mk
 
-sign :: Int -> BBSSecretKey -> BadgeMasterKey -> BadgeType -> Maybe UTCTime -> IO ()
+sign :: Int -> BBSSecretKey -> BadgeMasterKey -> BadgeType -> UTCTime -> IO ()
 sign keyIdx secretKey masterKey badgeType badgeExpiry = do
   let req = VerifiedBadgeRequest (BadgeRequest {masterKey, badgeInfo = BadgeInfo {badgeType, badgeExpiry, badgeExtra = ""}} :: BadgeRequest)
   issueBadge keyIdx secretKey req >>= \case

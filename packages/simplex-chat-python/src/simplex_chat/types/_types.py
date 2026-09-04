@@ -170,7 +170,7 @@ class AutoAccept(TypedDict):
 
 class BadgeInfo(TypedDict):
     badgeType: "BadgeType"
-    badgeExpiry: NotRequired[str]  # ISO-8601 timestamp
+    badgeExpiry: str  # ISO-8601 timestamp
     badgeExtra: str
 
 class BadgeProof(TypedDict):
@@ -481,6 +481,7 @@ class CIFile(TypedDict):
     fileSource: NotRequired["CryptoFile"]
     fileStatus: "CIFileStatus"
     fileProtocol: "FileProtocol"
+    fileExpires: NotRequired[str]  # ISO-8601 timestamp
 
 class CIFileStatus_sndStored(TypedDict):
     type: Literal["sndStored"]
