@@ -58,7 +58,7 @@ fun bioFitsLimit(bio: String): Boolean {
 }
 
 @Composable
-fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
+fun CreateProfile(chatModel: ChatModel, close: () -> Unit, createProfile: ((String, String, String?) -> Unit)? = null) {
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()
@@ -161,7 +161,9 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
           textColor = MaterialTheme.colors.primary,
           iconColor = MaterialTheme.colors.primary,
           click = {
-            if (chatModel.localUserCreated.value == true) {
+            if (createProfile != null) {
+              createProfile(displayName.value, shortDescr.value, profileImage.value)
+            } else if (chatModel.localUserCreated.value == true) {
               createProfileInProfiles(chatModel, displayName.value, shortDescr.value, profileImage.value, close)
             } else {
               createProfileInNoProfileSetup(displayName.value, profileImage.value, close)
@@ -350,6 +352,24 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
   LaunchedEffect(refocusTrigger.value) {
     delay(300)
     focusRequester.requestFocus()
+  }
+}
+
+fun createProfileForInvitation(rhId: Long?, onCreated: (User) -> Unit) {
+  val modalManager = ModalManager.fullscreen
+  modalManager.showModalCloseable(id = ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE) { close ->
+    CreateProfile(chatModel, close, createProfile = { displayName, shortDescr, image ->
+      withBGApi {
+        val profile = Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image = image)
+        val user = controller.apiCreateActiveUser(rhId, profile, keepActiveUser = true) ?: return@withBGApi
+        val users = controller.listUsers(rhId)
+        chatModel.users.clear()
+        chatModel.users.addAll(users)
+        if (!modalManager.isLastModalOpen(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) return@withBGApi
+        close()
+        onCreated(user)
+      }
+    })
   }
 }
 

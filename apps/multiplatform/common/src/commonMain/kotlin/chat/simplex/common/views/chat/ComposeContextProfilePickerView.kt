@@ -18,7 +18,9 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.createProfileForInvitation
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.AddProfileOptionImage
 import chat.simplex.common.views.newchat.IncognitoOptionImage
 import chat.simplex.common.views.usersettings.IncognitoView
 import chat.simplex.res.MR
@@ -222,6 +224,31 @@ fun ComposeContextProfilePickerView(
   }
 
   @Composable
+  fun NewProfileOption() {
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT + 8.dp)
+        .clickable(onClick = {
+          if (chat.chatInfo.profileChangeProhibited) {
+            showCantChangeProfileAlert()
+          } else {
+            createProfileForInvitation(rhId) { changeProfile(it) }
+          }
+        })
+        .padding(horizontal = DEFAULT_PADDING_HALF, vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      AddProfileOptionImage()
+      TextIconSpaced(false)
+      Text(
+        stringResource(MR.strings.users_add),
+        color = MaterialTheme.colors.primary,
+      )
+    }
+  }
+
+  @Composable
   fun ProfilePicker() {
     LazyColumnWithScrollBarNoAppBar(
       Modifier
@@ -265,6 +292,11 @@ fun ComposeContextProfilePickerView(
           )
         )
         ProfilePickerUserOption(user)
+      }
+
+      item {
+        NewProfileOption()
+        if (otherUsers.isEmpty()) Divider(Modifier.padding(horizontal = DEFAULT_PADDING_HALF))
       }
     }
   }
