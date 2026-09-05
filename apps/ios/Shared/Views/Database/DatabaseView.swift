@@ -602,6 +602,7 @@ struct DatabaseView: View {
         appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
         do {
             let chats = try apiGetChats()
+            if let users = try? listUsers() { m.users = users }
             m.updateChats(chats)
         } catch let error {
             logger.error("apiGetChats: cannot update chats \(responseError(error))")

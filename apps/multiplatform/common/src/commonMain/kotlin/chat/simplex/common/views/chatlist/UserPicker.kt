@@ -105,7 +105,7 @@ fun UserPicker(
             for (i in 0 until minOf(users.size, updatedUsers.size)) {
               val prev = updatedUsers[i].user
               val next = users[i].user
-              if (prev.userId != next.userId || prev.activeUser != next.activeUser || prev.chatViewName != next.chatViewName || prev.image != next.image) {
+              if (prev.userId != next.userId || prev.activeUser != next.activeUser || prev.chatViewName != next.chatViewName || prev.image != next.image || updatedUsers[i].unreadCount != users[i].unreadCount) {
                 same = false
                 break
               }
