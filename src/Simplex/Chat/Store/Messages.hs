@@ -1194,6 +1194,7 @@ getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
         WHERE user_id = ?
           AND conn_type = ?
           AND conn_status != ?
+          AND relay_test = 0
           AND contact_id IS NULL
           AND conn_level = 0
           AND via_contact IS NULL
