@@ -1898,8 +1898,7 @@ class GroupInfo(TypedDict):
     groupDomainVerified: NotRequired[bool]
 
 class GroupKeys(TypedDict):
-    publicGroupId: str
-    groupRootKey: "GroupRootKey"
+    publicGroupKeys: NotRequired["PublicGroupKeys"]
     memberPrivKey: str
 
 class GroupLink(TypedDict):
@@ -2489,6 +2488,10 @@ class PublicGroupAccess(TypedDict):
 
 class PublicGroupData(TypedDict):
     publicMemberCount: int  # int64
+
+class PublicGroupKeys(TypedDict):
+    publicGroupId: str
+    groupRootKey: "GroupRootKey"
 
 class PublicGroupProfile(TypedDict):
     groupType: "GroupType"
