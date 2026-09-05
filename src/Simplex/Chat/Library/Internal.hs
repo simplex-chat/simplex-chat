@@ -1437,12 +1437,9 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
               pure $ invCompleteDescr ciFile rfd
         fileExpired :: Maybe UTCTime -> CM Bool
         fileExpired fileExpires = do
+          ttl <- asks $ rcvFilesTTL . agentConfig . config
           now <- liftIO getCurrentTime
-          case fileExpires of
-            Just expiresAt -> pure $ expiresAt < now
-            Nothing -> do
-              ttl <- asks $ rcvFilesTTL . agentConfig . config
-              pure $ chatItemTs cci < addUTCTime (-ttl) now
+          pure $ fromMaybe (addUTCTime ttl $ chatItemTs cci) fileExpires < now
         invCompleteDescr :: CIFile d -> RcvFileDescr -> Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime)
         invCompleteDescr CIFile {fileName, fileSize, fileExpires} RcvFileDescr {fileDescrText, fileDescrComplete}
           | fileDescrComplete =
