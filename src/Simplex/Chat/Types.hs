@@ -155,7 +155,8 @@ data NewUser = NewUser
   { profile :: Maybe Profile,
     pastTimestamp :: Bool,
     userChatRelay :: BoolDef,
-    clientService :: BoolDef
+    clientService :: BoolDef,
+    keepActiveUser :: BoolDef
   }
   deriving (Show)
 
