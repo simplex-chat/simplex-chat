@@ -1,0 +1,432 @@
+---
+title: "Invest in SimpleX Chat"
+description: "Get a stake in SimpleX Chat - the first and only messaging network without any user identifiers. Equity crowdfunding on Wefunder."
+permalink: "/crowdfunding-new/index.html"
+templateEngineOverride: njk
+---
+
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{{ title }}</title>
+    <meta name="description" content="{{ description }}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{{ title }}" />
+    <meta property="og:description" content="{{ description }}" />
+    <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.jpg" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+    <meta name="theme-color" content="#050920">
+
+    <link rel="preload" href="/img/design_3/cover.webp" as="image" type="image/webp">
+    <link rel="preload" href="/img/new/logo-dark.png" as="image">
+    <link rel="preload" href="/fonts/GT-Walsheim/GT-Walsheim-LC-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/GT-Walsheim/GT-Walsheim-LC-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/Manrope/Manrope-Light.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/fonts/Manrope/Manrope-Medium.ttf" as="font" type="font/ttf" crossorigin>
+
+    <link rel="stylesheet" href="/css/design3.css">
+    <link rel="stylesheet" href="/css/design3-nav.css">
+
+    <style>
+        /* ============================================================
+           Crowdfunding landing page
+           Fixed, art-directed (no light/dark toggle).
+           Reuses design3.css (sections, --sec-vwu scaling, fonts) and
+           design3-nav.css (logo + button size / position / chip).
+           ============================================================ */
+
+        :root {
+            --cf-grad-light: linear-gradient(10deg, #e8f3ff 0%, #c0e2ff 40%, #e9ffff 80%, #ffefd6 90%);
+            --cf-grad-dark: linear-gradient(9.2deg, #000000 0%, #131d49 52%, #3f5598 65%, #c3faff 85%, #fff6e0 90%);
+            --cf-cyan: #70F0F9;
+            --cf-ink: #023789;
+        }
+
+        @media screen and (max-width: 959px) {
+            :root { --cf-grad-dark: linear-gradient(30deg, #000000 0%, #131d49 52%, #3f5598 65%, #c3faff 85%, #fff6e0 90%); }
+        }
+
+        body {
+            background: var(--cf-grad-dark);
+            font-family: "GT-Walsheim", Gilroy, Helvetica, sans-serif;
+        }
+
+        /* ---- per-section background: transparent illustration over gradient ---- */
+        section.page.cf {
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: var(--cover-bg-w) var(--cover-bg-h), cover;
+        }
+
+        section.page.cf.cf-light { background-image: var(--cf-art), var(--cf-grad-light); }
+        section.page.cf.cf-dark  { background-image: var(--cf-art), var(--cf-grad-dark); }
+
+        /* Art paths */
+        .cf-problem { --cf-art: url("/img/crowdfunding/problem.png"); }
+        .cf-growth  { --cf-art: url("/img/crowdfunding/simplex-growth-2.png"); }
+        .cf-moat    { --cf-art: url("/img/crowdfunding/cf-moat.webp"); }    /* supply (or comparison.webp) */
+        .cf-network { --cf-art: url("/img/design_3/section-3-desktop-light.webp"); } /* 5 participants - home page */
+        .cf-revenue { --cf-art: url("/img/design_3/section-4-desktop-light.webp"); } /* Funded by Its Users - home page */
+
+        /* hero + close: full-bleed globe (home page hero cover) */
+        section.page.cf.cf-hero,
+        section.page.cf.cf-close {
+            background-image: url("/img/design_3/cover.webp");
+            background-size: var(--cover-bg-w) var(--cover-bg-h);
+            background-position: center;
+        }
+
+        /* problem + growth: standalone graphics sit inside the fixed 16:9 box
+           (.area), the same coordinate system as the text, so both margins are
+           7.5vwu from the box edge and the text-to-art gap scales with the box */
+        section.page.cf.cf-problem { background-image: var(--cf-grad-dark); background-size: cover; background-position: center; }
+        section.page.cf.cf-growth  { background-image: var(--cf-grad-light); background-size: cover; background-position: center; }
+        .cf-problem .area {
+            background: url("/img/crowdfunding/problem.png") no-repeat left calc(var(--sec-vwu) * 7.5) center;
+            background-size: calc(var(--sec-vwu) * 40) auto;
+        }
+        .cf-growth .area {
+            background: url("/img/crowdfunding/simplex-growth-2.png") no-repeat right calc(var(--sec-vwu) * 7.5) center;
+            background-size: calc(var(--sec-vwu) * 44) auto;
+        }
+
+        /* ---- text colours per theme (design3.css defaults are the light theme) ---- */
+        .cf-dark .text-container h2,
+        .cf-dark .text-container p { color: #ffffff; }
+        .cf-light .text-container h2 { color: var(--cf-ink); }
+        .cf-light .text-container p { color: #06214a; }
+
+        /* text placement: alternate side by side with the art */
+        .cf-right .text-container { margin-left: auto; }
+        .cf-left  .text-container { margin-right: auto; }
+
+        /* ---- centered content (hero + close) ---- */
+        section.page.cf-center { flex-direction: column; }
+
+        .cf-center .content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            gap: calc(var(--sec-vhu) * 3.2);
+            width: var(--sec-w);
+            height: var(--sec-h);
+            padding: 0 calc(var(--sec-vwu) * 6);
+            z-index: 2;
+        }
+
+        .cf-center h1 {
+            font-family: "GT-Walsheim", sans-serif;
+            font-weight: 700;
+            font-size: calc(var(--sec-vwu) * 6.4);
+            line-height: 1.0;
+            letter-spacing: -0.025em;
+            color: #ffffff;
+            max-width: calc(var(--sec-vwu) * 62);
+        }
+
+        .cf-center .lead {
+            font-family: "Manrope", sans-serif;
+            font-weight: 300;
+            font-size: calc(var(--sec-vwu) * 2.15);
+            line-height: 1.5;
+            color: #dfeaff;
+            max-width: calc(var(--sec-vwu) * 50);
+        }
+
+        .cf-center .lead strong { font-weight: 600; color: #ffffff; }
+
+        /* ---- CTA buttons (in-content, scale with the section) ---- */
+        .cf-cta {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: calc(var(--sec-vwu) * 1.4);
+            margin-top: calc(var(--sec-vhu) * 1.5);
+        }
+
+        .cf-btn {
+            font-family: "Manrope", sans-serif;
+            font-weight: 600;
+            font-size: calc(var(--sec-vwu) * 1.7);
+            line-height: 1;
+            border-radius: 999px;
+            padding: calc(var(--sec-vwu) * 1.5) calc(var(--sec-vwu) * 3.2);
+            text-decoration: none;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: filter .15s ease, background .15s ease, color .15s ease;
+        }
+
+        .cf-btn-primary { background: var(--cf-cyan); color: #041038; }
+        .cf-btn-primary:hover { filter: brightness(1.06); }
+
+        .cf-btn-ghost {
+            background: transparent;
+            color: #ffffff;
+            box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .6);
+        }
+        .cf-btn-ghost:hover { background: rgba(255, 255, 255, .1); }
+
+        @media screen and (min-width: 960px) {
+            .cf-network .text-container h2 { max-width: calc(var(--sec-vwu) * 29) !important; }
+            .cf-network .text-container p { max-width: calc(var(--sec-vwu) * 31) !important; }
+            .cf-revenue .text-container p { max-width: calc(var(--sec-vwu) * 30) !important; }
+            .cf-problem .text-container h2 { max-width: calc(var(--sec-vwu) * 42) !important; }
+            .cf-problem .text-container p { max-width: calc(var(--sec-vwu) * 42) !important; }
+            .cf-problem .text-container a { max-width: calc(var(--sec-vwu) * 42) !important; }
+            .cf-growth .text-container h2 { max-width: calc(var(--sec-vwu) * 36) !important; }
+            .cf-growth .text-container p { max-width: calc(var(--sec-vwu) * 35) !important; }
+        }
+
+        /* ============================================================
+           Navbar — same layout as the site (design3-nav.css), menu and
+           theme toggle omitted. Logo + button invert per section via a
+           class on #navbar (not the root .dark), so light sections keep
+           their colours. Fixed size, does not scale.
+           ============================================================ */
+
+        /* logo swap by section theme */
+        #navbar.on-dark > a.logo.logo-light { display: none; }
+        #navbar.on-dark > a.logo.logo-dark { display: flex; }
+        #navbar.on-light > a.logo.logo-light { display: flex; }
+        #navbar.on-light > a.logo.logo-dark { display: none; }
+
+        /* invest button colour by section theme */
+        #navbar.on-light .box-btn.token {
+            background: linear-gradient(90deg, #019bfe 0%, #2e3fa0 100%);
+            color: #ffffff;
+        }
+        #navbar.on-dark .box-btn.token {
+            background: linear-gradient(90deg, #ffb55d 0%, #fff494 50%, #fbffdd 100%);
+            color: #000000;
+        }
+
+        /* keep the navbar visible on mobile (no slide-in menu here) */
+        @media screen and (max-width: 959px) {
+            header#navbar {
+                visibility: visible !important;
+                opacity: 1 !important;
+                transform: none !important;
+                background: transparent !important;
+                height: 54px !important;
+            }
+            header#navbar > a.logo { top: 0 !important; height: 100% !important; align-items: center; }
+        }
+
+        /* ---- mobile: portrait art on top, text at the bottom (home page system) ---- */
+        @media screen and (max-width: 959px) {
+            .cf-network { --cf-art: url("/img/design_3/section-3-mobile-light.webp"); }
+            .cf-revenue { --cf-art: url("/img/design_3/section-4-mobile-light.webp"); }
+
+            section.page.cf.cf-network {
+                background-size: auto calc(var(--cover-bg-h) * 0.8), cover;
+                background-position: 50% calc(50% - var(--sec-vhu) * 4.5), center;
+            }
+            section.page.cf.cf-revenue {
+                background-size: auto calc(var(--cover-bg-h) * 0.84), cover;
+                background-position: 50% calc(50% - var(--sec-vhu) * 2), center;
+            }
+            .cf-problem .area {
+                background-size: calc(var(--sec-vwu) * 82) auto;
+                background-position: center calc(var(--sec-vhu) * 4);
+            }
+            .cf-growth .area {
+                background-size: calc(var(--sec-vwu) * 82) auto;
+                background-position: center calc(var(--sec-vhu) * 4);
+            }
+
+            .cf-center h1 { font-size: calc(var(--sec-vwu) * 15); max-width: calc(var(--sec-vwu) * 90); }
+            .cf-center .lead { font-size: calc(var(--sec-vwu) * 5); max-width: calc(var(--sec-vwu) * 88); }
+
+            .cf-cta { gap: calc(var(--sec-vwu) * 3); }
+            .cf-btn { font-size: calc(var(--sec-vwu) * 4.4); padding: calc(var(--sec-vwu) * 3.4) calc(var(--sec-vwu) * 6); }
+            .cf .text-container a.gradient-text { font-weight: 400; }
+        }
+
+        /* extension link + CSS-only :target popups (as on simplex.domains) */
+        .cf-ext-link { display: inline-block; margin-top: calc(var(--sec-vhu) * 2.2); font-family: "Manrope", sans-serif; font-weight: 600; font-size: calc(var(--sec-vwu) * 1.5); text-decoration: underline; text-underline-offset: 4px; color: var(--cf-ink); }
+        .cf-dark .cf-ext-link { color: #9fd0ff; }
+        .cf-dark .text-container a.gradient-text {
+            background: linear-gradient(90deg, #019bfe 0%, #64fdff 58%, #c8feff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+        }
+        .cf .text-container a.gradient-text { font-weight: 300; }
+
+        .cf-modal { position: fixed; inset: 0; z-index: 60000; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transition: opacity .18s ease, visibility .18s; }
+        .cf-modal:target { opacity: 1; visibility: visible; }
+        .cf-modal-backdrop { position: absolute; inset: 0; background: rgba(4, 9, 24, .55); backdrop-filter: blur(3px); }
+        .cf-modal-panel { position: relative; z-index: 1; display: flex; align-items: center; gap: clamp(24px, 3vw, 44px); width: clamp(min(680px, 100%), 80vw, 980px); max-height: calc(100dvh - 48px); overflow: auto; background: linear-gradient(160deg, #050920 0%, #0b1440 46%, #16255f 78%, #22346f 100%); color: #dfeaff; border-radius: 24px; box-shadow: 0 30px 80px rgba(4, 9, 24, .5); padding: clamp(28px, 4vw, 52px); font-family: "Manrope", sans-serif; }
+        .cf-modal-text { flex: 1; min-width: 0; }
+        .cf-modal-img { flex: none; width: clamp(240px, 44%, 460px); height: auto; }
+        .cf-modal-close { position: absolute; top: 22px; right: 22px; width: 20px; height: 20px; color: #9fb2d8; z-index: 2; }
+        .cf-modal-close svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+        .cf-modal-close:hover { color: #ffffff; }
+        .cf-modal-panel h2 { font-family: "GT-Walsheim", sans-serif; font-weight: 700; font-size: 1.6rem; letter-spacing: -.015em; line-height: 1.15; color: #ffffff; padding-right: 30px; }
+        .cf-modal-panel p { font-weight: 400; font-size: 1.06rem; line-height: 1.7; margin-top: 14px; }
+        .cf-modal-panel p strong { font-weight: 500; color: #ffffff; }
+        .cf-star { font-size: 1.25em; line-height: 0; }
+        .cf-modal-panel p.cf-modal-footnote { margin-top: 20px; font-size: .78rem; line-height: 1.5; color: #9fb2d8; }
+        .cf-modal-footnote a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+        .cf-modal-footnote a:hover { color: #dfeaff; }
+        @media screen and (max-width: 700px) {
+            .cf-modal-panel { flex-direction: column; align-items: flex-start; }
+            .cf-modal-img { width: 80%; align-self: center; }
+        }
+    </style>
+</head>
+
+<body>
+    <header id="navbar" class="on-dark">
+        <a href="/" class="logo logo-light"><img src="/img/new/logo-light.png" alt="SimpleX"></a>
+        <a href="/" class="logo logo-dark"><img src="/img/new/logo-dark.png" alt="SimpleX"></a>
+        <div class="right-links">
+            <a class="box-btn token" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener">Invest</a>
+        </div>
+    </header>
+
+    <div class="screen">
+
+        <!-- HERO -->
+        <section class="page cf cf-dark cf-center cf-hero">
+            <div class="content">
+                <h1>The first messaging network with no user identifiers</h1>
+                <p class="lead">No phone numbers, usernames, or accounts &mdash; no one, not even our servers, can see who talks to whom. 480,000 people already use it.</p>
+                <div class="cf-cta">
+                    <a class="cf-btn cf-btn-primary" href="#request">Request our investor brief</a>
+                    <a class="cf-btn cf-btn-ghost" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener">Invest on Wefunder</a>
+                    <a class="cf-btn cf-btn-ghost" href="/livestream/">Join the livestream, Sep 15</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 1 · TRACTION -->
+        <section class="page cf cf-light cf-left cf-growth">
+            <div class="area">
+                <div class="text-container">
+                    <h2>480,000+ users with zero marketing spend</h2>
+                    <p>Hundreds of user posts, podcasts and videos and <span>$650,000 in user donations</span>, before any paid features.</p>
+                    <p>Only <span>$1.7M investment over 4 years</span> &mdash; more capital efficient than most startups.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2 · MARKET -->
+        <section class="page cf cf-dark cf-right cf-problem" id="identifiers">
+            <div class="area">
+                <div class="text-container">
+                    <h2>Every other network can identify you</h2>
+                    <p>Surveillance, censorship and online crime all depend on user identifiers. AI made all three affect everyone.</p>
+                    <p>Removing them by design, as SimpleX did, is the only solution &mdash; so you control who can reach you.</p>
+                    <a class="gradient-text" href="#ai-privacy">Why AI increases demand for privacy</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3 · NETWORK, NOT AN APP -->
+        <section class="page cf cf-light cf-right cf-network">
+            <div class="area">
+                <div class="text-container">
+                    <h2>It's becoming a network, not an app</h2>
+                    <p>Creators, businesses, and developers already build on it. Solve privacy and usability together, and it becomes how everyone communicates &mdash; like the web, but private.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4 · CAN'T BE COPIED -->
+        <section class="page cf cf-light cf-left cf-moat">
+            <div class="area">
+                <div class="text-container">
+                    <h2>And no one can copy it</h2>
+                    <p>You can't bolt "no identifiers" onto a network built on them &mdash; rivals would start over, and the ad giants would lose their business.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5 · REVENUE -->
+        <section class="page cf cf-light cf-right cf-revenue">
+            <div class="area">
+                <div class="text-container">
+                    <h2>It earns without selling you</h2>
+                    <p>Free for users; the money comes from infrastructure and services, not your data &mdash; two of four revenue streams launch this year.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6 · CLOSE -->
+        <section class="page cf cf-dark cf-center cf-close" id="request">
+            <div class="content">
+                <h1>People who'd know already invested</h1>
+                <p class="lead">The syndicate lead, Flux's co-founder, and three advisors put in money before this round opened. <strong>Own part of it</strong> &mdash; and claim your SimpleX name before the public sale.</p>
+                <div class="cf-cta">
+                    <a class="cf-btn cf-btn-primary" href="#request">Request our investor brief</a>
+                    <a class="cf-btn cf-btn-ghost" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener">Invest on Wefunder</a>
+                    <a class="cf-btn cf-btn-ghost" href="/livestream/">Book a call</a>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <div class="cf-modal" id="ai-privacy">
+        <a class="cf-modal-backdrop" href="#identifiers" aria-label="Close"></a>
+        <div class="cf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="ai-privacy-title">
+            <a class="cf-modal-close" href="#identifiers" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
+            <div class="cf-modal-text">
+                <h2 id="ai-privacy-title">AI increases demand for privacy</h2>
+                <p>Surveillance, deplatforming, and online fraud used to require human effort, so they were relatively rare &mdash; and most people thought they needed no protection.<span class="cf-star">*</span></p>
+                <p>AI removed the effort: it scans messages at scale, deplatforms automatically, and can fake any face, voice, or number. Anyone with a user identifier will now be targeted &mdash; so everyone will want protection.</p>
+                <p>AI agents handling credentials and money increase demand further: an agent whose identity is controlled by a platform can be shut down or turned against its owner.</p>
+                <p><strong>Everyone will want communication without user identifiers &mdash; and only SimpleX network can provide it.</strong></p>
+                <p class="cf-modal-footnote"><span class="cf-star">*</span> In 2021, 9% of 16+ year old US residents were victims of identity theft &mdash; <a href="https://bjs.ojp.gov/library/publications/victims-identity-theft-2021" target="_blank" rel="noopener">Bureau of Justice Statistics</a>.</p>
+            </div>
+            <img class="cf-modal-img" src="/img/crowdfunding/ai.png" alt="">
+        </div>
+    </div>
+
+    <div class="cf-modal" id="ai-threat">
+        <a class="cf-modal-backdrop" href="#identifiers" aria-label="Close"></a>
+        <div class="cf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="ai-threat-title">
+            <a class="cf-modal-close" href="#identifiers" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
+            <div class="cf-modal-text">
+                <h2 id="ai-threat-title">AI made everyone a target</h2>
+                <p>For 150 years, every network required a user identifier to reach you &mdash; a phone number, a username, or a key.</p>
+                <p>This identifier is your fixed address that can be used to surveil, deplatform, or attack you. AI made it automatic and cheap, so everyone is affected now. SimpleX has no user identifiers at all, so users are protected from such attacks &mdash; it is the only network built this way.</p>
+                <p>The AI agents now acting for people need the same &mdash; an identity no company can control, on a network without any user identifiers.</p>
+            </div>
+            <img class="cf-modal-img" src="/img/crowdfunding/ai.png" alt="">
+        </div>
+    </div>
+
+    <script>
+        // Invert the navbar (logo + button) depending on whether the
+        // section under it is dark or light. Same idea as the home page.
+        (function cfNav() {
+            var nav = document.getElementById('navbar');
+            var sections = Array.prototype.slice.call(document.querySelectorAll('section.page.cf'));
+            if (!nav || !sections.length || !('IntersectionObserver' in window)) return;
+
+            var io = new IntersectionObserver(function (entries) {
+                entries.forEach(function (e) {
+                    if (e.isIntersecting && e.intersectionRatio >= 0.5) {
+                        var dark = e.target.classList.contains('cf-dark');
+                        nav.classList.toggle('on-dark', dark);
+                        nav.classList.toggle('on-light', !dark);
+                    }
+                });
+            }, { threshold: [0.5] });
+
+            sections.forEach(function (s) { io.observe(s); });
+        })();
+    </script>
+</body>
+
+</html>
