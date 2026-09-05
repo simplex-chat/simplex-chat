@@ -1193,7 +1193,6 @@ getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
         FROM connections
         WHERE user_id = ?
           AND conn_type = ?
-          AND conn_status != ?
           AND relay_test = 0
           AND contact_id IS NULL
           AND conn_level = 0
@@ -1201,7 +1200,7 @@ getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
           AND (via_group_link = 0 OR (via_group_link = 1 AND group_link_id IS NOT NULL))
           AND LOWER(local_alias) LIKE '%' || LOWER(?) || '%'
       |]
-    params search = (userId, ConnContact, ConnPrepared, search)
+    params search = (userId, ConnContact, search)
     getPreviews search = case pagination of
       PTLast count -> DB.query db (query <> " ORDER BY updated_at DESC LIMIT ?") (params search :. Only count)
       PTAfter ts count -> DB.query db (query <> " AND updated_at > ? ORDER BY updated_at ASC LIMIT ?") (params search :. (ts, count))
