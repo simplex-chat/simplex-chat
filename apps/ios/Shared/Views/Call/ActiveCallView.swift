@@ -176,11 +176,24 @@ struct ActiveCallView: View {
                     ? CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
                     : CallController.shared.reportIncomingCall(call: call, connectedAt: nil)
                     call.callState = .connected
-                    call.connectedAt = .now
+                    // connectedAt is only set once, so that the call duration is not reset
+                    // when the call is reconnected after any connectivity issue like using cellular data and travelling
+                    if call.connectedAt == nil {
+                        call.connectedAt = .now
+                    }
+                    // stops the sound if the call was being reconnected
+                    CallSoundsPlayer.shared.stop()
                     if !wasConnected {
                         CallSoundsPlayer.shared.vibrate(long: false)
                         wasConnected = true
                     }
+                } else if state.connectionState == "reconnecting" {
+                    // call is restored and not sent to the core, this is shown only to the ui
+                    // make sure core records correct duration despite reconnection state
+                    if call.callState != .reconnecting {
+                        CallSoundsPlayer.shared.startConnectingCallSound()
+                    }
+                    call.callState = .reconnecting
                 }
                 if state.connectionState == "closed" {
                     closeCallView(client)
@@ -190,11 +203,13 @@ struct ActiveCallView: View {
                     m.activeCall = nil
                     m.activeCallViewIsCollapsed = false
                 }
-                Task {
-                    do {
-                        try await apiCallStatus(call.contact, state.connectionState)
-                    } catch {
-                        logger.error("apiCallStatus \(responseError(error))")
+                if state.connectionState != "reconnecting" {
+                    Task {
+                        do {
+                            try await apiCallStatus(call.contact, state.connectionState)
+                        } catch {
+                            logger.error("apiCallStatus \(responseError(error))")
+                        }
                     }
                 }
             case let .connected(connectionInfo):
