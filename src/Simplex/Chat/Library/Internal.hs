@@ -1420,16 +1420,16 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
           cxt <- chatStoreCxt
           eitherToMaybe <$> withStore' (\db -> runExceptT $ getGroupMemberById db cxt user gmId)
         getRcvFileInvDescr :: CIFile 'MDRcv -> CM (Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime))
-        getRcvFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus} = do
-          expired <- fileExpired
+        getRcvFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus, fileExpires} = do
+          expired <- fileExpired fileExpires
           if fileProtocol /= FPXFTP || fileStatus == CIFSRcvCancelled || expired
             then pure Nothing
             else do
               rfd <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
               pure $ invCompleteDescr ciFile rfd
         getSndFileInvDescr :: CIFile 'MDSnd -> CM (Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime))
-        getSndFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus} = do
-          expired <- fileExpired
+        getSndFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus, fileExpires} = do
+          expired <- fileExpired fileExpires
           if fileProtocol /= FPXFTP || fileStatus == CIFSSndCancelled || expired
             then pure Nothing
             else do
@@ -1437,11 +1437,11 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
               -- would be best if snd file had a single rcv description for all members saved in files table
               rfd <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
               pure $ invCompleteDescr ciFile rfd
-        fileExpired :: CM Bool
-        fileExpired = do
+        fileExpired :: Maybe UTCTime -> CM Bool
+        fileExpired fileExpires = do
           ttl <- asks $ rcvFilesTTL . agentConfig . config
-          cutoffTs <- addUTCTime (-ttl) <$> liftIO getCurrentTime
-          pure $ chatItemTs cci < cutoffTs
+          now <- liftIO getCurrentTime
+          pure $ fromMaybe (addUTCTime ttl $ chatItemTs cci) fileExpires < now
         invCompleteDescr :: CIFile d -> RcvFileDescr -> Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime)
         invCompleteDescr CIFile {fileName, fileSize, fileExpires} RcvFileDescr {fileDescrText, fileDescrComplete}
           | fileDescrComplete =
