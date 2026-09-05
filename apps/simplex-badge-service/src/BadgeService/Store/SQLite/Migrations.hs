@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module BadgeService.Store.SQLite.Migrations (badgeServiceSchemaMigrations) where
+module BadgeService.Store.SQLite.Migrations (badgeServiceSchemaMigrations, servicePrefix, withPrefix) where
 
 import Data.List (sortOn)
 import Data.Text (Text)
@@ -18,10 +18,14 @@ badgeServiceSchemaMigrations = sortOn name $ map migration schemaMigrations
 
 schemaMigrations :: [(String, Query, Maybe Query)]
 schemaMigrations =
-  [ ("20260806_badge_service_schema", m20260806_badge_service_schema, Just down_m20260806_badge_service_schema)
+  [ ("20260806_badge_service_schema", m20260806_badge_service_schema, Just down_m20260806_badge_service_schema),
+    ("20260831_badge_service_web", m20260831_badge_service_web, Just down_m20260831_badge_service_web),
+    ("20260903_payment_paid_in_full", m20260903_payment_paid_in_full, Just down_m20260903_payment_paid_in_full),
+    ("20260904_payment_crypto_due", m20260904_payment_crypto_due, Just down_m20260904_payment_crypto_due),
+    ("20260905_invoices_open_index", m20260905_invoices_open_index, Just down_m20260905_invoices_open_index)
   ]
 
--- the client tables are in the same database, so the service tables are the same names with this prefix
+-- | The client tables share this database, so the service tables are the same names behind a prefix.
 servicePrefix :: Text
 servicePrefix = "sx_badge_service_"
 
@@ -78,3 +82,98 @@ DROP INDEX @idx_badge_purchases_code;
       [sql|
 DROP TABLE @badge_codes;
 |]
+
+-- provider_ref is NOT NULL UNIQUE in the schema, but SQLite cannot ADD
+-- COLUMN a NOT NULL column without a default, so it is nullable here and the unique
+-- index does the work. Postgres matches, for symmetry.
+m20260831_badge_service_web :: Query
+m20260831_badge_service_web =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @badge_code_invoices ADD COLUMN code_hash BLOB;
+
+ALTER TABLE @badge_code_invoices ADD COLUMN provider_ref TEXT;
+
+CREATE UNIQUE INDEX @idx_badge_code_invoices_provider_ref ON @badge_code_invoices(provider_ref);
+
+ALTER TABLE @payments ADD COLUMN crypto_amount TEXT;
+
+ALTER TABLE @badge_codes ADD COLUMN expires_at TEXT;
+
+ALTER TABLE @badge_codes ADD COLUMN revoked_at TEXT;
+|]
+
+down_m20260831_badge_service_web :: Query
+down_m20260831_badge_service_web =
+  withPrefix
+    servicePrefix
+    [sql|
+DROP INDEX @idx_badge_code_invoices_provider_ref;
+ALTER TABLE @badge_code_invoices DROP COLUMN provider_ref;
+ALTER TABLE @badge_code_invoices DROP COLUMN code_hash;
+ALTER TABLE @payments DROP COLUMN crypto_amount;
+ALTER TABLE @badge_codes DROP COLUMN revoked_at;
+ALTER TABLE @badge_codes DROP COLUMN expires_at;
+|]
+
+-- The provider applies its own payment tolerance, so whether an invoice is paid is its
+-- verdict and cannot be recomputed from the amounts we store.
+m20260903_payment_paid_in_full :: Query
+m20260903_payment_paid_in_full =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @payments ADD COLUMN paid_in_full INTEGER NOT NULL DEFAULT 0;
+|]
+
+down_m20260903_payment_paid_in_full :: Query
+down_m20260903_payment_paid_in_full =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @payments DROP COLUMN paid_in_full;
+|]
+
+-- The provider knows what is still owed: it applies the payment tolerance and adds a network
+-- fee after a partial payment, so the figure cannot be recomputed from the amounts we store.
+m20260904_payment_crypto_due :: Query
+m20260904_payment_crypto_due =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @payments ADD COLUMN crypto_due TEXT;
+|]
+
+down_m20260904_payment_crypto_due :: Query
+down_m20260904_payment_crypto_due =
+  withPrefix
+    servicePrefix
+    [sql|
+ALTER TABLE @payments DROP COLUMN crypto_due;
+|]
+
+-- Two filters run on every poller pass and neither may read the whole table, or the pass
+-- lengthens for as long as the service keeps selling: the expiry sweep, on (status, expires_at),
+-- and the read lane, which takes a window of created_at. Status leads the first because it is
+-- matched by equality there; the second matches it with <>, which no index can seek, so it seeks
+-- the window and filters what little that leaves.
+m20260905_invoices_open_index :: Query
+m20260905_invoices_open_index =
+  withPrefix
+    servicePrefix
+    [sql|
+CREATE INDEX @idx_invoices_open ON @invoices(status, expires_at);
+
+CREATE INDEX @idx_invoices_created ON @invoices(created_at);
+|]
+
+down_m20260905_invoices_open_index :: Query
+down_m20260905_invoices_open_index =
+  withPrefix
+    servicePrefix
+    [sql|
+DROP INDEX @idx_invoices_created;
+DROP INDEX @idx_invoices_open;
+|]
+
