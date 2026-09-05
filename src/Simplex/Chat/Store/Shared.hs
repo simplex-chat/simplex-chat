@@ -73,6 +73,7 @@ data ChatLockEntity
   | CLUserContact Int64
   | CLContactRequest Int64
   | CLFile Int64
+  | CLFeed FeedId
   deriving (Eq, Ord)
 
 -- These error type constructors must be added to mobile apps
@@ -113,6 +114,9 @@ data StoreError
   | SENoteFolderAlreadyExists {noteFolderId :: NoteFolderId}
   | SENoteFolderNotFound {noteFolderId :: NoteFolderId}
   | SEUserNoteFolderNotFound
+  | SEFeedAlreadyExists {feedId :: FeedId}
+  | SEFeedNotFound {feedId :: FeedId}
+  | SEUserFeedNotFound
   | SESndFileNotFound {fileId :: FileTransferId}
   | SESndFileInvalid {fileId :: FileTransferId}
   | SERcvFileNotFound {fileId :: FileTransferId}

@@ -41,9 +41,20 @@ message id used here.
   item -> instance with feed_item_id = feed item AND the contact_id /
   group_id of the connection`.
 - Instances are ordinary sent items of their chats: per-chat editing,
-  deletion, reactions, expiration, disappearing messages.
-  `chat_items.feed_item_id` (`ON DELETE SET NULL`) links an instance to the
-  feed item and is the file join; `CIMeta.itemFeed` exposes it.
+  deletion, reactions, forwarding, expiration, disappearing messages. A
+  per-chat edit, or a per-chat deletion that keeps the row (a marked or a
+  moderated item), detaches the instance: `chat_items.item_feed` changes
+  from 1 (linked) to 2 (detached). Feed edits and feed deletes are applied
+  to linked instances only; feed file descriptions are sent for every
+  undeleted instance. The per-chat `XMsgUpdate` of an instance is sent with
+  `feed = Just True`, so a recipient with `dropFeed` discards it. Bulk
+  removals (`APIClearChat`, contact or group deletion, chat item expiration,
+  disappearing messages) remove instances; those recipients, and the
+  recipients of detached instances, are outside later feed edits and
+  deletes: the instances are the record of delivery.
+  `chat_items.feed_item_id` (`ON DELETE SET NULL`) links every instance,
+  linked or detached, to the feed item and is the file join; after the feed
+  item is removed a remaining instance shows no file.
 - A feed message takes the TTL of the chat on both sides: the sender's
   instance from `sndContactCITimed False ct Nothing` (`Internal.hs:174`), the
   recipient's item from the chat's own TTL in place of the absent message
@@ -72,8 +83,11 @@ message id used here.
 - Wire marker: `feed :: Maybe Bool` in `MsgContainer` and in `XMsgUpdate`,
   serialized only as `true`. Older clients ignore the field. The chat version
   is unchanged.
-- Received feed messages are stored with `chat_items.item_feed = 1`;
-  `CIMeta.itemFeed = Just CIFeedRcv`.
+- `CIMeta.itemFeed :: Maybe CIFeed` marks the items of a broadcast in direct
+  and group chats on both sides: the sender's instances (`CIFLinked` or
+  `CIFDetached`) and the recipients' received feed messages (`CIFLinked`).
+  The feed item and every other item have `Nothing`. Received feed
+  messages are stored with `chat_items.item_feed = 1`.
 - Content: text, link, image, video, voice, file. One XFTP upload per
   broadcast; one recipient description for everyone. Quotes, mentions, live
   messages and the `ttl` parameter are rejected.
@@ -88,8 +102,9 @@ message id used here.
   only; `SendRef` is unchanged.
 - `CRBroadcastSent` is removed: the broadcast is a job, so counts are not
   known at command time. `/feed` returns `CRNewChatItems` with the feed item.
-- Commands on the feed hold a `CLFeed` entity lock and only write the feed
-  item and a job. The worker holds no entity locks (as relay job workers).
+- Commands on the feed hold the `CLFeed feedId` entity lock and only write
+  the feed item and a job. The worker holds no entity locks (as relay job
+  workers).
 - Feed items are outside global chat item expiration (as notes).
 
 ## Types
@@ -151,19 +166,19 @@ returns `(Maybe ContactId, Maybe GroupId, Maybe FeedId)`.
   matches the constructors and gains a `FeedId` branch returning
   `SEInternalError`: received messages have a connection or a group.
 - `CIMeta` (:509): field `itemFeed :: Maybe CIFeed` after `msgVerified`;
-  `mkCIMeta` (:535) gains the parameter; `dummyMeta` (:551) sets `Nothing`.
+  `mkCIMeta` (:535) gains the parameter; `deletable` and `editable` (:537-538)
+  are unchanged; `dummyMeta` (:551) sets `Nothing`.
 
   ```haskell
-  data CIFeed
-    = CIFeedSnd {feedItemId :: Maybe ChatItemId}
-    | CIFeedRcv
+  data CIFeed = CIFLinked | CIFDetached
   ```
 
-  JSON `sumTypeJSON $ dropPrefix "CIFeed"`. Stored as
-  `chat_items.item_feed` (1 for both) and `chat_items.feed_item_id`
-  (`CIFeedSnd` only; `Nothing` after the feed item is removed or the feed is
-  cleared). Row mapping: `item_feed = 1` with `item_sent = 1` ->
-  `CIFeedSnd feed_item_id`; with `item_sent = 0` -> `CIFeedRcv`.
+  JSON `enumJSON $ dropPrefix "CIF"`. Stored in `chat_items.item_feed`:
+  0 -> `Nothing`, 1 -> `Just CIFLinked`, 2 -> `Just CIFDetached`
+  (`DBCIFeedLinked`, `DBCIFeedDetached` patterns next to `DBCIDeleted`,
+  `Store/Messages.hs:2933`). `chat_items.feed_item_id` stays in the store:
+  the link of a sender's instance to the feed item for jobs, delivery events
+  and the file join.
 
 `Protocol.hs`:
 
@@ -172,7 +187,9 @@ returns `(Maybe ContactId, Maybe GroupId, Maybe FeedId)`.
 - `XMsgUpdate` (:450): field `feed :: Maybe Bool`; parser (:1403) reads
   `opt "feed"`; encoder (:1486) adds `("feed" .=? feed)`. Positional
   patterns and constructions gain the argument: `Subscriber.hs:554`, `:730`,
-  `:1039`, `:1286`, `:3882`; `Commands.hs:780`, `:814`, `:1443`.
+  `:1039`, `:1286`, `:3882`; `Commands.hs:1443` (`Nothing`); `Commands.hs:780`
+  and `:814` pass `justTrue (isJust itemFeed)` (`justTrue`,
+  `Protocol.hs:1037`), the edited item's marker.
 - `cmFeed :: AChatMsgEvent -> Bool` next to `cmToQuotedMsg` (:622):
   `ACME _ (XMsgNew MsgContainer {feed = Just True}) -> True`.
 
@@ -238,61 +255,50 @@ data FeedJobSpec
 
 ## Schema
 
-SQLite `M20260904_feeds`; Postgres with `BIGINT GENERATED ALWAYS AS IDENTITY`,
-`TIMESTAMPTZ`, `SMALLINT` and named constraints, as `M20241220_initial.hs:619-635`.
-
-```sql
-CREATE TABLE feeds(
-  feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
-  chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
-  favorite INTEGER NOT NULL DEFAULT 0,
-  unread_chat INTEGER NOT NULL DEFAULT 0
-) STRICT;
-PRAGMA writable_schema=1;
-UPDATE sqlite_master
-SET sql = replace(sql, 'group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE', 'group_id INTEGER REFERENCES groups ON DELETE CASCADE')
-WHERE type = 'table' AND name = 'delivery_jobs';
-PRAGMA writable_schema=RESET;
-ALTER TABLE delivery_jobs ADD COLUMN feed_id INTEGER REFERENCES feeds ON DELETE CASCADE;
-ALTER TABLE delivery_jobs ADD COLUMN chat_item_id INTEGER REFERENCES chat_items ON DELETE CASCADE;
-ALTER TABLE delivery_jobs ADD COLUMN delete_mode TEXT;
-ALTER TABLE delivery_jobs ADD COLUMN message_ids TEXT;
-ALTER TABLE delivery_jobs ADD COLUMN cursor_contact_id INTEGER;
-ALTER TABLE delivery_jobs ADD COLUMN cursor_group_id INTEGER;
-CREATE INDEX idx_delivery_jobs_feed_next ON delivery_jobs(feed_id, worker_scope, failed, job_status);
-CREATE INDEX idx_delivery_jobs_chat_item_id ON delivery_jobs(chat_item_id);
-ALTER TABLE chat_items ADD COLUMN feed_id INTEGER DEFAULT NULL REFERENCES feeds ON DELETE CASCADE;
-ALTER TABLE chat_items ADD COLUMN feed_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL;
-ALTER TABLE chat_items ADD COLUMN item_feed INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE messages ADD COLUMN feed_id INTEGER DEFAULT NULL REFERENCES feeds ON DELETE CASCADE;
-ALTER TABLE files ADD COLUMN feed_id INTEGER DEFAULT NULL REFERENCES feeds ON DELETE CASCADE;
-ALTER TABLE contacts ADD COLUMN drop_feed INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE groups ADD COLUMN drop_feed INTEGER NOT NULL DEFAULT 0;
-CREATE INDEX idx_feeds_user_id ON feeds(user_id);
-CREATE INDEX idx_chat_items_feed_id ON chat_items(feed_id);
-CREATE INDEX idx_chat_items_feeds_created_at ON chat_items(user_id, feed_id, created_at);
-CREATE INDEX idx_chat_items_feed_item_contact ON chat_items(feed_item_id, contact_id);
-CREATE INDEX idx_chat_items_feed_item_group ON chat_items(feed_item_id, group_id);
-CREATE INDEX idx_messages_feed_id ON messages(feed_id);
-CREATE INDEX idx_files_feed_id ON files(feed_id);
-INSERT INTO feeds (user_id) SELECT user_id FROM users;
-```
+SQLite: `M20260905_feeds.hs` (written; registered in `SQLite/Migrations.hs`
+and `simplex-chat.cabal`; `chat_schema.sql` regenerated; the up, down and
+repeated up dumps and `.lint fkey-indexes` verified with `sqlite3`).
+Postgres: the same statements with `BIGINT GENERATED ALWAYS AS IDENTITY`,
+`TIMESTAMPTZ`, `SMALLINT`, named constraints and
+`ALTER TABLE delivery_jobs ALTER COLUMN group_id DROP NOT NULL`, as
+`M20241220_initial.hs:619-635`.
 
 - `feed_item_id` self-reference precedent: `fwd_from_chat_item_id`
-  (`chat_schema.sql:504`).
+  (`chat_schema.sql:504`). `item_feed`: 0 none, 1 linked, 2 detached.
 - `delivery_jobs.group_id` becomes nullable through the `sqlite_master`
-  edit of `M20251230_strict_tables.hs:18-26`; Postgres uses
-  `ALTER COLUMN group_id DROP NOT NULL`. A feed job has `feed_id`,
-  `chat_item_id` (the feed item), `message_ids` and the feed cursors; a
-  group job has `group_id` and `cursor_group_member_id`.
+  edit of `M20251230_strict_tables.hs:18-26`; `PRAGMA writable_schema=RESET`
+  reloads the schema before the `ADD COLUMN` statements of the same
+  transaction, so their column offsets are computed from the edited text.
+  A feed job has `feed_id`, `chat_item_id` (the feed item), `message_ids`
+  and the feed cursors; a group job has `group_id` and
+  `cursor_group_member_id`.
 - `message_ids`: comma-separated decimal ids, the encoding of
   `delivery_jobs.sender_group_member_ids` (`Store/Delivery.hs:266-270, :329`).
-- Registration: `SQLite/Migrations.hs`, `Postgres/Migrations.hs`, the module
-  list in `simplex-chat.cabal` (:85), regenerated `chat_schema.sql` dumps, the
-  down-migration round-trip.
+- Indexes and the queries they serve (plans checked with
+  `EXPLAIN QUERY PLAN` on the migrated schema):
+  - `idx_delivery_jobs_feed_next (feed_id, worker_scope, failed, job_status)`:
+    `getNextDeliveryJob` by feed, a covering search.
+  - `idx_delivery_jobs_chat_item_id`: the `chat_item_id` FK.
+  - `idx_chat_items_feed_item_contact (feed_item_id, contact_id)` and
+    `idx_chat_items_feed_item_group (feed_item_id, group_id)`: the instance
+    cursor reads, the range guards, `updateFeedInstances` and the
+    delivery-event join (`feed_item_id = ? AND contact_id > ?`, in cursor
+    order without a sort).
+  - `idx_contacts_user_id (user_id)`: `getFeedContactsByCursor`
+    (`user_id = ? AND rowid > ? ORDER BY rowid`); without it the planner
+    picks `idx_contacts_chat_ts` and sorts every contact of the user per
+    bucket.
+  - `idx_groups_user_id_business_chat (user_id, business_chat)`:
+    `getFeedCustomerGroupsByCursor`
+    (`user_id = ? AND business_chat = ? AND rowid > ? ORDER BY rowid`).
+  - `idx_chat_items_feed_id`, `idx_chat_items_feeds_created_at (user_id, feed_id, created_at)`:
+    the `feed_id` FK and the feed chat reads.
+  - `idx_messages_feed_id`, `idx_files_feed_id`, `idx_feeds_user_id`: FKs
+    and `deleteFeedCIs`.
+  - Existing: `idx_msg_deliveries_message_id` (delivery guards),
+    `idx_group_members_group_id (user_id, group_id)` (members by group
+    range), `idx_chat_tags_chats_*` (tags by range),
+    `idx_chat_item_reactions_shared_msg_id` (feed reactions).
 
 ## Store
 
@@ -325,16 +331,20 @@ New module `Store/Feeds.hs`:
     (the `getGroupMembers` condition, `Store/Groups.hs:1236`;
     `idx_group_members_group_id (user_id, group_id)`); the `groups` join
     keeps members of other groups in the id range out.
-  - `getFeedContactInstancesByCursor db cxt user feedItemId cursor_ count :: IO [(Contact, CChatItem 'CTDirect)]` —
+  - `getFeedContactInstancesByCursor db cxt user feedItemId spec cursor_ count :: IO [(Contact, CChatItem 'CTDirect)]` —
     the `getDirectChatItem` SELECT (`Store/Messages.hs:2700-2716`) composed
     with `contactQueryFields` (`:.` rows), `FROM chat_items i JOIN contacts ct ON ct.contact_id = i.contact_id`
     + `contactQueryFrom` joins,
-    `WHERE i.user_id = ? AND i.feed_item_id = ? AND i.contact_id > ? ORDER BY i.contact_id, c.connection_id LIMIT ?`
-    (`idx_chat_items_feed_item_contact`).
-  - `getFeedGroupInstancesByCursor db cxt user feedItemId cursor_ count :: IO [(GroupInfo, CChatItem 'CTGroup)]` —
+    `WHERE i.user_id = ? AND i.feed_item_id = ? AND i.contact_id > ? AND <spec> ORDER BY i.contact_id, c.connection_id LIMIT ?`
+    (`idx_chat_items_feed_item_contact`); `<spec>` is `i.item_feed = 1` for
+    `FJUpdate` and `FJDelete`, `i.item_deleted = 0` for `FJFileDescr`.
+  - `getFeedGroupInstancesByCursor db cxt user feedItemId spec cursor_ count :: IO [(GroupInfo, CChatItem 'CTGroup)]` —
     the `getGroupChatItem` SELECT (:3094-3139) composed with
-    `groupInfoQueryFields`, `WHERE i.user_id = ? AND i.feed_item_id = ? AND i.group_id > ? ORDER BY i.group_id LIMIT ?`
+    `groupInfoQueryFields`, `WHERE i.user_id = ? AND i.feed_item_id = ? AND i.group_id > ? AND <spec> ORDER BY i.group_id LIMIT ?`
     (`idx_chat_items_feed_item_group`); members from `getCustomerGroupsMembersByRange`.
+  - `detachFeedInstances db itemIds` —
+    `UPDATE chat_items SET item_feed = 2 WHERE chat_item_id = ? AND item_feed = 1`
+    by `executeMany`.
   - `getFeedInstanceContactIdsByRange db user feedItemId fromId toId :: IO [ContactId]`
     (and groups) — the instance guard of a repeated `FJNew` bucket.
   - `getDeliveredContactIdsByRange db msgId fromId toId :: IO [ContactId]` —
@@ -366,7 +376,7 @@ New module `Store/Feeds.hs`:
 - Bucket writers, one statement or one `executeMany` each, in one
   transaction per bucket: `updateFeedInstances` (`item_content`, `item_text`,
   `item_edited = 1`, `has_link`, `updated_at` for
-  `user_id = ? AND feed_item_id = ? AND contact_id > ? AND contact_id <= ?`,
+  `user_id = ? AND feed_item_id = ? AND item_feed = 1 AND contact_id > ? AND contact_id <= ?`,
   and the group range), `deleteFeedInstances` and `markFeedInstancesDeleted`
   by `executeMany` over the ids of each subset (the full-delete split is
   decided in Haskell from `mergedPreferences`), reaction deletion by
@@ -414,17 +424,18 @@ the `note_folders` shape (`Store/NoteFolders.hs:61`).
   `connOrGroupId`. `Just smId` inserts with it; `Nothing` keeps
   `createWithRandomId'`. `SharedMsgId` has a `ToField` instance
   (`Types.hs:256`). `FeedId feedId` writes `messages.feed_id`.
-- `createNewChatItem_` (:590): parameter `Maybe CIFeed`; `idsRow` gains
+- `createNewChatItem_` (:590): parameters `Maybe CIFeed` and
+  `Maybe ChatItemId` (the feed item of a sender's instance); `idsRow` gains
   `Maybe FeedId` from `CDFeedSnd Feed {feedId}`; the INSERT adds `feed_id`,
-  `feed_item_id`, `item_feed`. `createNewSndChatItem` (:548) passes the
-  parameter through; `createNewRcvChatItem` (:564) passes
-  `if cmFeed chatMsgEvent then Just CIFeedRcv else Nothing`;
-  `createNewChatItemNoMsg` (:583) and `createLocalChatItems`
-  (`Internal.hs:3185`) pass `Nothing`.
-- `ChatItemModeRow` (:2281) gains `(BoolInt, Maybe ChatItemId)` from
-  `i.item_feed, i.feed_item_id`; `toLocalChatItem` (:1096),
-  `toDirectChatItem` (:2307), `toGroupChatItem` (:2375) build `Maybe CIFeed`
-  and pass it to `mkCIMeta`; SELECT lists at :2706, :3100, :3213.
+  `feed_item_id`, `item_feed`. `createNewRcvChatItem` (:564) passes
+  `(if cmFeed chatMsgEvent then Just CIFLinked else Nothing) Nothing`;
+  `createNewSndChatItem` (:548), `createNewChatItemNoMsg` (:583) and
+  `createLocalChatItems` (`Internal.hs:3185`) pass `Nothing Nothing`; the
+  feed job calls `createNewChatItem_` with `(Just CIFLinked) (Just feedItemId)`.
+- `ChatItemModeRow` (:2281) gains `Int` from `i.item_feed`;
+  `toCIFeed :: Int -> Maybe CIFeed` maps 0, 1, 2; `toLocalChatItem` (:1096),
+  `toDirectChatItem` (:2307), `toGroupChatItem` (:2375) pass the value to
+  `mkCIMeta`; SELECT lists at :2706, :3100, :3213.
 - The file join in `getDirectChatItem` (:2712) and `getGroupChatItem`
   (:3129) becomes
   `LEFT JOIN files f ON f.chat_item_id = COALESCE(i.feed_item_id, i.chat_item_id)`:
@@ -501,14 +512,21 @@ the `note_folders` shape (`Store/NoteFolders.hs:61`).
 - `createMemberSndStatuses` (`Commands.hs:4866`) moves to the top level of
   `Internal.hs` unchanged.
 - `mkChatItem_` (:2859) gains the `Maybe CIFeed` parameter for `mkCIMeta`;
-  `mkChatItem` (:2853), `saveRcvChatItem'` (:2825) and
-  `saveSndChatItems.createItem` (:2789) pass through (`NewSndChatItemData`
-  :2761 gains `itemFeed :: Maybe CIFeed`, `Nothing` at existing sites).
+  `saveRcvChatItem'` (:2825) passes
+  `if cmFeed chatMsgEvent then Just CIFLinked else Nothing`; `mkChatItem`
+  (:2853) and `saveSndChatItems.createItem` (:2793) pass `Nothing`; the feed
+  job passes `Just CIFLinked`.
 - The file-info lambda repeated in `deleteDirectCIs` (:521),
   `deleteGroupCIs` (:533), `deleteLocalCIs` (:597), `markDirectCIsDeleted`
   (:616), `markGroupCIsDeleted` (:628) becomes `itemsFilesInfo`, which skips
-  items with `itemFeed = Just (CIFeedSnd _)`: an instance's file is the feed
-  item's file and is not cancelled or deleted with the instance.
+  `CChatItem SMDSnd` items with `itemFeed` set: a sender's instance renders
+  the feed item's file, which is not cancelled or deleted with the instance.
+  A recipient's received feed item owns its file and is unaffected.
+- `detachedInstance :: ChatItem c 'MDSnd -> ChatItem c 'MDSnd` sets
+  `itemFeed = Just CIFDetached`; `detachFeedInstances :: [CChatItem c] -> CM [CChatItem c]`
+  runs the store `detachFeedInstances` for the `CChatItem SMDSnd` items with
+  `itemFeed = Just CIFLinked`, returns those through `detachedInstance` and
+  the other items unchanged, in the input order.
 
 `Commands.hs`, `APISendFeedMessage feedId cm`, under `withFeedLock "sendFeed" feedId`:
 
@@ -582,8 +600,9 @@ delivery, and a crash between delivery and the cursor sends nothing twice.
 
 Contact bucket, one range read: `FJNew` reads
 `getFeedContactsByCursor` and `getContactsTagsByRange`; the other types read
-`getFeedContactInstancesByCursor` (contact and instance together) and the
-tags. Then, in memory:
+`getFeedContactInstancesByCursor` (contact and instance together, linked
+instances for `FJUpdate` and `FJDelete`, undeleted instances for
+`FJFileDescr`) and the tags. Then, in memory:
 
 1. Eligible for `FJNew`: `directOrUsed`, not `contactConnIncognito`,
    `contactSendConn_` returns a connection. For the other types every
@@ -595,7 +614,7 @@ tags. Then, in memory:
    `getFeedInstanceContactIdsByRange` are skipped; for the rest
    `updateChatTsStats` and `createNewChatItem_` with `CDDirectSnd ct`, no
    message id, the shared id, `CISndMsgContent` from the container,
-   `Just (CIFeedSnd (Just feedItemId))`, `timed_`; the items are built with
+   `Just CIFLinked`, `Just feedItemId`, `timed_`; the items are built with
    `mkChatItem_`.
 4. Delivery: one `deliverMessagesB` over
    `(conn, MsgFlags {notification = hasNotification tag}, (vor, messageIds))`
@@ -697,8 +716,8 @@ description per relay, forwarded to all subscribers).
    and `getDeliveryJobWorker True (DEFeed feedId, DWSFeed)`.
 5. Feed item: `addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)`;
    `updateFeedChatItem' db user feedId ci (CISndMsgContent mc) True`;
-   response `CRChatItemUpdated`. Instance versions are not recorded; the
-   feed item holds the history.
+   response `CRChatItemUpdated`. The job records no instance versions; the
+   feed item holds the history of feed edits.
 
 ## Deleting
 
@@ -720,6 +739,33 @@ description per relay, forwarded to all subscribers).
    `markFeedChatItemDeleted` with `CIDeleting` (`toChatItem = Just` the
    item in `CIDeleting`); the job removes the item at the end.
 4. Response `CRChatItemsDeleted user deletions True False`.
+
+## Per-chat editing and deletion of an instance
+
+`APIUpdateChatItem` on `CTDirect` (:768) and `CTGroup` (:793): the existing
+paths, with two changes in the `(CISndMsgContent oldMC, Just itemSharedMId, True)`
+branch: the event's `feed` is `justTrue (isJust itemFeed)` (:780, :814), and
+the item passed to `updateDirectChatItem'` (:787) and `updateGroupChatItem`
+(:822) is `detachedInstance ci` after `detachFeedInstances db [itemId]` in
+the same transaction, when `itemFeed == Just CIFLinked`. The instance
+receives its own versions from `addInitialAndNewCIVersions` (:785, :820),
+starting from its content at the time of the edit. The response and
+`startUpdatedTimedItemThread` are unchanged.
+
+`APIDeleteChatItem` on `CTDirect` (:844): `CIDMInternalMark` (:848) and the
+marking branch of `CIDMBroadcast` (:859) call `markDirectCIsDeleted` with
+`detachFeedInstances items`; `CIDMInternal` and the full-delete branch
+remove the rows. On `CTGroup`: `CIDMInternalMark` (:870) likewise;
+`delGroupChatItems` (:4154) detaches before `markGroupCIsDeleted` and
+before `deleteGroupCIs` with a moderating member (`updateGroupChatItemModerated`
+keeps the row, `Internal.hs:549`), which covers `CIDMBroadcast` (:877),
+`CIDMHistory` (:883) and `APIDeleteMemberChatItem` (:918). Received items
+in the same command are not detached (`detachFeedInstances` selects
+`CChatItem SMDSnd`).
+
+Reactions on an instance (`APIChatItemReaction`), forwarding from an
+instance, and every operation on a recipient's received feed item are
+unchanged.
 
 ## Receiving
 
@@ -744,8 +790,8 @@ description per relay, forwarded to all subscribers).
 - `newGroupContentMessage` (:2121) and `groupMessageUpdate` (:2209): the same
   checks against `GroupInfo {chatSettings}`; a discarded message returns
   `Nothing` (no delivery task).
-- Received feed items get `itemFeed = Just CIFeedRcv` through
-  `createNewRcvChatItem` (`cmFeed`).
+- Received feed items get `itemFeed = Just CIFLinked` through
+  `createNewRcvChatItem` and `saveRcvChatItem'` (`cmFeed`).
 - `APISetChatSettings` (:1898) stores `dropFeed`; `SetDropFeed cName on`
   uses `updateChatSettings` (:4347). The command replaces the whole record,
   so a client without the field (an older remote controller) resets
@@ -766,7 +812,8 @@ description per relay, forwarded to all subscribers).
 - `APIChatRead` (:1231): `CTFeed -> getUserByFeedId; ok user`.
   `APIChatItemsRead`: "not supported". `APIChatUnread` (:1296):
   `updateFeedUnreadChat`. `APIClearChat` (:1386): `deleteFeedFiles`,
-  `deleteFeedCIs`; instances stay in their chats, detached by the FK.
+  `deleteFeedCIs`; instances stay in their chats with `feed_item_id` set
+  to NULL by the FK and `item_feed` unchanged.
 - `APIChatItemReaction` (:943): `CTFeed -> throwCmdError "not supported"`.
 - `APIDeleteChat`, `APISetChatTags`, `APISetChatSettings`,
   `APISetChatUIThemes`, `APISetChatTTL`: existing "not supported" branches.
@@ -801,8 +848,10 @@ description per relay, forwarded to all subscribers).
   `CIDeleted.Deleting`, `CIMeta.itemFeed: CIFeed?`, `ChatSettings.dropFeed`,
   the `StoreError` constructors. Chat list row and chat view for the feed;
   a `CIDeleting` item rendered as deletion in progress; a feed marker on
-  instances and on received feed items; "edit" on an instance opens the feed
-  item when `feedItemId` is present; a "Drop feed messages" toggle in contact
+  instances and on received feed items; before an edit or a deletion of a
+  `linked` instance, a notice that the message is detached from the feed and
+  later feed edits and deletions skip this chat (`detached` instances show
+  no notice); a "Drop feed messages" toggle in contact
   and group settings; a privacy notice in the feed chat before the first
   broadcast: every recipient receives the same message id, so recipients can
   establish a common sender by comparing messages.
@@ -822,14 +871,16 @@ description per relay, forwarded to all subscribers).
   the UI refreshes the feed item meanwhile.
 - `getChatRefViaItemId` (`Store/Messages.hs:3323`) for local and feed items.
 - Forwarding into the feed.
+- Navigation from an instance to its feed item (a lookup by the shared
+  `itemSharedMsgId` in the feed chat).
 
 ## Tests
 
 `ChatTests`, with `feedBucketSize = 2` in the test config:
 
 1. `/feed` to three contacts and a customer group: instances in each chat
-   with `itemFeed = CIFeedSnd`; recipients' items with `CIFeedRcv`; the feed
-   item reaches `CISSndSent SSPComplete`.
+   and recipients' items with `itemFeed = Just CIFLinked`; the feed item
+   reaches `CISSndSent SSPComplete`.
 2. Instance statuses after `SENT` and receipts.
 3. A contact with `dropFeed` set receives nothing; a later feed edit and
    delete are silent.
@@ -864,3 +915,11 @@ description per relay, forwarded to all subscribers).
     the following file description.
 15. `Direct.hs:995`, `Groups.hs:6731`, `Bots/BroadcastTests.hs` updated to
     `CRNewChatItems`.
+16. Per-chat edit of one instance: the recipient receives the edit, the
+    instance becomes `CIFDetached` with its own versions; a following feed
+    edit updates the other instances and recipients, and this chat keeps the
+    per-chat text; a following feed delete keeps this instance and the
+    recipient's message. A per-chat broadcast delete of an instance in a
+    chat without full delete marks and detaches it; a recipient with
+    `dropFeed` set receives nothing from a per-chat edit of a dropped
+    message.

@@ -329,6 +329,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260813_auto_accept_group_invitations
           Simplex.Chat.Store.SQLite.Migrations.M20260822_forward_link
           Simplex.Chat.Store.SQLite.Migrations.M20260828_file_expiry
+          Simplex.Chat.Store.SQLite.Migrations.M20260905_feeds
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

@@ -10,7 +10,8 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Time.Clock (UTCTime)
-import Simplex.Chat.Messages (GroupChatScopeInfo (..), MessageId, ShowGroupAsSender)
+import Simplex.Chat.Messages (ChatItemId, GroupChatScopeInfo (..), MessageId, ShowGroupAsSender)
+import Simplex.Chat.Messages.CIContent (CIDeleteMode (..))
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
@@ -18,11 +19,15 @@ import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Encoding.String
 
-type DeliveryWorkerKey = (GroupId, DeliveryWorkerScope)
+data DeliveryEntity = DEGroup GroupId | DEFeed FeedId
+  deriving (Eq, Ord, Show)
+
+type DeliveryWorkerKey = (DeliveryEntity, DeliveryWorkerScope)
 
 data DeliveryWorkerScope
   = DWSGroup
   | DWSMemberSupport
+  | DWSFeed
   -- | DWSMemberProfileUpdate
   deriving (Eq, Ord, Show)
 
@@ -34,11 +39,13 @@ instance TextEncoding DeliveryWorkerScope where
   textDecode = \case
     "group" -> Just DWSGroup
     "member_support" -> Just DWSMemberSupport
+    "feed" -> Just DWSFeed
     -- "member_profile_update" -> Just DWSMemberProfileUpdate
     _ -> Nothing
   textEncode = \case
     DWSGroup -> "group"
     DWSMemberSupport -> "member_support"
+    DWSFeed -> "feed"
     -- DWSMemberProfileUpdate -> "member_profile_update"
 
 -- Context for creating a delivery task. Separate from DeliveryJobScope because
@@ -54,17 +61,30 @@ data DeliveryTaskContext = DeliveryTaskContext
 data DeliveryJobScope
   = DJSGroup {jobSpec :: DeliveryJobSpec}
   | DJSMemberSupport {supportGMId :: GroupMemberId}
+  | DJSFeed {feedItemId :: ChatItemId, feedJobSpec :: FeedJobSpec}
   -- | DJSMemberProfileUpdate
   deriving (Show)
 
 data DeliveryJobSpec
   = DJDeliveryJob {includePending :: Bool}
   | DJRelayRemoved
+  | DJFeed FeedJobSpec
+  deriving (Show)
+
+data FeedJobSpec
+  = FJNew
+  | FJFileDescr
+  | FJUpdate
+  | FJDelete CIDeleteMode
   deriving (Show)
 
 data DeliveryJobSpecTag
   = DJSTDeliveryJob
   | DJSTRelayRemoved
+  | DJSTFeedNew
+  | DJSTFeedFileDescr
+  | DJSTFeedUpdate
+  | DJSTFeedDelete
   deriving (Show)
 
 instance FromField DeliveryJobSpecTag where fromField = fromTextField_ textDecode
@@ -75,15 +95,24 @@ instance TextEncoding DeliveryJobSpecTag where
   textDecode = \case
     "delivery_job" -> Just DJSTDeliveryJob
     "relay_removed" -> Just DJSTRelayRemoved
+    "feed_new" -> Just DJSTFeedNew
+    "feed_file_descr" -> Just DJSTFeedFileDescr
+    "feed_update" -> Just DJSTFeedUpdate
+    "feed_delete" -> Just DJSTFeedDelete
     _ -> Nothing
   textEncode = \case
     DJSTDeliveryJob -> "delivery_job"
     DJSTRelayRemoved -> "relay_removed"
+    DJSTFeedNew -> "feed_new"
+    DJSTFeedFileDescr -> "feed_file_descr"
+    DJSTFeedUpdate -> "feed_update"
+    DJSTFeedDelete -> "feed_delete"
 
 toWorkerScope :: DeliveryJobScope -> DeliveryWorkerScope
 toWorkerScope = \case
   DJSGroup _ -> DWSGroup
   DJSMemberSupport _ -> DWSMemberSupport
+  DJSFeed {} -> DWSFeed
   -- DJSMemberProfileUpdate -> DWSMemberProfileUpdate
 
 isRelayRemoved :: DeliveryJobScope -> Bool
@@ -97,11 +126,13 @@ jobScopeImpliedSpec :: DeliveryJobScope -> DeliveryJobSpec
 jobScopeImpliedSpec = \case
   DJSGroup {jobSpec} -> jobSpec
   DJSMemberSupport {} -> DJDeliveryJob {includePending = False}
+  DJSFeed {feedJobSpec} -> DJFeed feedJobSpec
 
 jobSpecImpliedPending :: DeliveryJobSpec -> Bool
 jobSpecImpliedPending = \case
   DJDeliveryJob {includePending} -> includePending
   DJRelayRemoved -> True
+  DJFeed _ -> False
 
 infoToDeliveryContext :: GroupInfo -> Maybe GroupChatScopeInfo -> ShowGroupAsSender -> DeliveryTaskContext
 infoToDeliveryContext GroupInfo {membership} scopeInfo sentAsGroup = DeliveryTaskContext {jobScope, sentAsGroup}
@@ -162,8 +193,11 @@ data MessageDeliveryJob = MessageDeliveryJob
   { jobId :: Int64,
     jobScope :: DeliveryJobScope,
     senderGMIds :: [GroupMemberId],
+    messageIds :: [MessageId],
     body :: ByteString,
-    cursorGMId_ :: Maybe GroupMemberId
+    cursorGMId_ :: Maybe GroupMemberId,
+    cursorContactId_ :: Maybe ContactId,
+    cursorGroupId_ :: Maybe GroupId
   }
   deriving (Show)
 
