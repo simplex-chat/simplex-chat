@@ -6,8 +6,14 @@
 
 module Bots.BadgeServiceTests where
 
+import BadgeService.Config (readServiceConfig)
+import Bots.BadgeConfigTests (withIssuer)
 import BadgeService.Options
 import BadgeService.Service
+import BadgeService.Store (CodeRedemption (..), IssuedCode (..), RedeemedCode (..), getBadgeCode)
+import BadgeService.Store.Invoices (markCodePaid)
+import Simplex.Messaging.Agent.Store.DB (Binary (..))
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
@@ -19,8 +25,10 @@ import Data.Char (toLower)
 import Data.Either (isLeft, isRight)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Simplex.Chat.Badges (BadgeType (..))
-import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, formatBadgeCode, parseBadgeCode, randomBadgeCode)
+import Data.Time.Clock (addUTCTime, diffUTCTime, getCurrentTime)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeType (..))
+import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeHash, badgeCodeText, formatBadgeCode, parseBadgeCode, randomBadgeCode)
+import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatConfig (..), ChatController, ChatResponse (CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Options (CoreChatOpts (..))
@@ -29,6 +37,7 @@ import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey, bbsKeyGen)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode, textEncode)
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
 
@@ -40,9 +49,15 @@ badgeServiceTests = do
   it "should answer code_invalid to an unknown code, indistinguishably from a malformed one" testRedeemUnknownCode
   it "should tell a second profile redeeming the same code that it is used" testRedeemSameCodeOtherProfile
   it "should redeem a second code, and not restore the first badge on replay" testRedeemSecondCode
+  it "should refuse a code that has not been paid for" testRedeemUnpaidCode
+  it "should grant the months the code was sold for" testRedeemGrantsTheMonthsSold
+  it "should refuse a badge code past its redemption deadline" testExpiredCode
+  it "should keep answering a code redeemed before its deadline" testRedeemedBeforeTheDeadline
+  it "should refuse a revoked badge code, and refuse to revoke it twice" testRevokedCode
   it "should refuse to issue a code with an unknown badge type or a nonsense month count" testIssueRejectsBadArguments
   it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
   it "should refuse to start unless the issuer secret is the key trusted at its index" testIssuerKeyMustMatchConfig
+  it "should refuse to start when any key in [issuer] is one no client trusts" testIssuerIniKeysAreAllChecked
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -70,7 +85,8 @@ mkBadgeServiceOpts TestParams {tmpPath = ps} secretKey =
       clientService = True,
       noAddress = False,
       runCLI = False,
-      issuerKey = Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey},
+      serviceConfigFile = Nothing,
+      issuerKey = Right (Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey}),
       testing = True
     }
 
@@ -101,8 +117,18 @@ withBadgeService ps test = do
 
 -- through the operator command the service actually exposes, not the function behind it
 issueCode :: HasCallStack => ChatController -> BadgeType -> Int -> IO BadgeCode
-issueCode cc badgeType months =
-  sendChatCmdStr cc ("//issue " <> T.unpack (textEncode badgeType) <> " " <> show months) >>= \case
+issueCode cc badgeType months = issueCodeAs cc badgeType months "free"
+
+revokeCodeAs :: HasCallStack => ChatController -> BadgeCode -> IO T.Text
+revokeCodeAs cc code =
+  sendChatCmdStr cc ("//revoke " <> T.unpack (formatBadgeCode code)) >>= \case
+    Right (CRCustomChatResponse _ response) -> pure response
+    Left e -> pure (T.pack (show e))
+    r -> error $ "revoke failed: " <> show (() <$ r)
+
+issueCodeAs :: HasCallStack => ChatController -> BadgeType -> Int -> String -> IO BadgeCode
+issueCodeAs cc badgeType months status =
+  sendChatCmdStr cc ("//issue " <> T.unpack (textEncode badgeType) <> " " <> show months <> " " <> status) >>= \case
     Right (CRCustomChatResponse _ response) -> case T.stripPrefix "code " response of
       Just c | Just code <- parseBadgeCode c -> pure code
       _ -> error $ "unexpected issue response: " <> T.unpack response
@@ -215,6 +241,7 @@ testIssueRejectsBadArguments ps =
     refuses "suporter"
     refuses "supporter 0"
     refuses "supporter 256"
+    refuses "supporter 18446744073709551617"
     refuses "supporter 1 gratis"
     refuses ""
     issueRaw cc "supporter 255 paid" >>= (`shouldSatisfy` isRight)
@@ -290,7 +317,120 @@ testIssuerKeyMustMatchConfig ps = do
   Right (_, otherSk) <- bbsKeyGen
   let optsFor sk' = mkBadgeServiceOpts ps sk'
       cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
-  checkIssuerKey (optsFor sk) cfg >>= (`shouldSatisfy` isRight)
-  checkIssuerKey (optsFor otherSk) cfg >>= (`shouldSatisfy` isLeft)
+  checkIssuerKey (optsFor sk) Nothing cfg >>= (`shouldSatisfy` isRight)
+  checkIssuerKey (optsFor otherSk) Nothing cfg >>= (`shouldSatisfy` isLeft)
   -- an index no client trusts is equally fatal
-  checkIssuerKey (optsFor sk) testCfg {badgePublicKeys = M.empty} >>= (`shouldSatisfy` isLeft)
+  checkIssuerKey (optsFor sk) Nothing testCfg {badgePublicKeys = M.empty} >>= (`shouldSatisfy` isLeft)
+  -- half the pair is a mistake, not a request to fall back to the ini: signing with the key
+  -- someone meant to replace is the failure this refuses
+  let halfGiven = (optsFor sk) {issuerKey = Left "--issuer-key-idx and --issuer-secret are given together or not at all"}
+  checkIssuerKey halfGiven Nothing cfg >>= (`shouldSatisfy` isLeft)
+
+-- Every key in [issuer] is checked, not only the one that signs: a key listed for a future
+-- rotation that clients could not verify has to fail now, while someone is reading the error,
+-- rather than at the restart that rotates onto it.
+testIssuerIniKeysAreAllChecked :: HasCallStack => TestParams -> IO ()
+testIssuerIniKeysAreAllChecked ps = do
+  Right (pk, sk) <- bbsKeyGen
+  Right (_, untrusted) <- bbsKeyGen
+  let cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
+      -- no key on the command line, so the ini section is what is read
+      fromIni = (mkBadgeServiceOpts ps sk) {issuerKey = Right Nothing}
+      secretText k = safeDecodeUtf8 (strEncode k)
+      iniWith keys = withIssuer (("default = key_" <> tshow testIssuerKeyIdx) : keys) readServiceConfig
+  Right onlyTheSigner <- iniWith ["key_" <> tshow testIssuerKeyIdx <> " = " <> secretText sk]
+  checkIssuerKey fromIni (Just onlyTheSigner) cfg >>= (`shouldSatisfy` isRight)
+
+  Right alsoARotation <-
+    iniWith
+      [ "key_" <> tshow testIssuerKeyIdx <> " = " <> secretText sk,
+        "key_9 = " <> secretText untrusted
+      ]
+  checkIssuerKey fromIni (Just alsoARotation) cfg >>= (`shouldSatisfy` isLeft)
+
+-- The web checkout writes the code row when the invoice is created, and settlement is what
+-- marks it paid. Redeeming in between would hand out a badge nobody paid for.
+testRedeemUnpaidCode :: HasCallStack => TestParams -> IO ()
+testRedeemUnpaidCode ps =
+  withBadgeService ps $ \clientCfg _ cc ->
+    withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
+      unpaid <- issueCodeAs cc BTSupporter 1 "unpaid"
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg unpaid)
+      alice <## "bad chat command: badge service error: payment_pending"
+      -- and it redeems once it is paid for, so this is the payment check and not a broken code
+      paid <- issueCodeAs cc BTSupporter 1 "paid"
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+
+-- A span rather than a date: the badge expiry is rounded up to a Sunday, and the service reads
+-- its own clock rather than this test's.
+testRedeemGrantsTheMonthsSold :: HasCallStack => TestParams -> IO ()
+testRedeemGrantsTheMonthsSold ps =
+  withBadgeService ps $ \clientCfg _ cc ->
+    withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
+      now <- getCurrentTime
+      code <- issueCodeAs cc BTSupporter 12 "paid"
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      Right (Just IssuedCode {redemption = CodeRedeemed RedeemedCode {credential}}) <-
+        withDB' "getBadgeCode" cc (`getBadgeCode` badgeCodeHash code)
+      let days = diffUTCTime (badgeExpiry (badgeInfo credential)) now / 86400
+      days `shouldSatisfy` (> 300)
+      days `shouldSatisfy` (< 400)
+
+-- | The deadline is on redeeming, and a year is not something a test can wait for: the code is
+-- issued unpaid, then marked paid with a deadline already behind it.
+testExpiredCode :: HasCallStack => TestParams -> IO ()
+testExpiredCode ps =
+  withBadgeService ps $ \clientCfg _ cc ->
+    withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCodeAs cc BTSupporter 1 "unpaid"
+      now <- getCurrentTime
+      withDB' "markCodePaid" cc (\db -> markCodePaid db (badgeCodeHash code) (addUTCTime (-60) now))
+        `shouldReturn` Right ()
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      alice <## "bad chat command: badge service error: code_expired"
+
+-- | The deadline is on redeeming, not on holding. A buyer who redeemed in time must not lose the
+-- credential when the deadline passes, so the already-redeemed answer has to be reached before
+-- the expiry refusal rather than after it.
+testRedeemedBeforeTheDeadline :: HasCallStack => TestParams -> IO ()
+testRedeemedBeforeTheDeadline ps =
+  withBadgeService ps $ \clientCfg _ cc ->
+    withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCodeAs cc BTSupporter 1 "unpaid"
+      now <- getCurrentTime
+      withDB' "markCodePaid" cc (\db -> markCodePaid db (badgeCodeHash code) (addUTCTime 3600 now))
+        `shouldReturn` Right ()
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+
+      -- the deadline passes with the code already redeemed. Written directly: `markCodePaid` sets
+      -- the expiry only on the unpaid-to-paid transition, which this code has already made.
+      withDB' "expireCode" cc (\db ->
+        DB.execute
+          db
+          "UPDATE sx_badge_service_badge_codes SET expires_at = ? WHERE code_hash = ?"
+          (addUTCTime (-60) now, Binary (badgeCodeHash code)))
+        `shouldReturn` Right ()
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      alice <## "badge already redeemed"
+
+testRevokedCode :: HasCallStack => TestParams -> IO ()
+testRevokedCode ps =
+  withBadgeService ps $ \clientCfg _ cc ->
+    withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
+      paid <- issueCodeAs cc BTSupporter 1 "paid"
+      revokeCodeAs cc paid `shouldReturn` "revoked"
+      -- a revoked code answers as if it never existed, so its holder learns nothing
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
+      alice <## "bad chat command: badge service error: code_invalid"
+      -- and revoking is not repeatable, so a second operator sees that it was already done
+      second <- revokeCodeAs cc paid
+      second `shouldSatisfy` T.isInfixOf "revoked already"

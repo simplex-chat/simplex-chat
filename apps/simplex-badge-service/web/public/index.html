@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<!-- the `publishable_key`: public by design, and empty here. The deployment
+     substitutes its own when it serves this file; `mock/server.py` does it from
+     $STRIPE_PUBLISHABLE_KEY. Empty means no card form and a development
+     stand-in (`src/stripe.ts`). A real key is never committed. -->
+<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">
+<!-- The two page grounds, so the browser paints the right one before the
+     stylesheet lands rather than flashing white into the dark theme. -->
+<meta name="theme-color" content="#F7F7F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141416" media="(prefers-color-scheme: dark)">
+<title>Support SimpleX</title>
+<!-- The official symbol, both variants, served from the build hash like every
+     other asset so the worker precaches it. -->
+<link rel="icon" type="image/svg+xml" href="/assets/b36892a45dde8359/symbol-light.svg" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/svg+xml" href="/assets/b36892a45dde8359/symbol-dark.svg" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="/assets/b36892a45dde8359/styles.css">
+</head>
+<body>
+  <!-- The chrome: the wordmark, and the menu that holds the purchase history,
+       a new purchase and the one irreversible action. `main.ts` builds it, so
+       it is empty here for the same reason `#app` is. -->
+  <div id="chrome"></div>
+  <main id="app" aria-live="polite"></main>
+  <!-- Named, so `main.ts` can take it out of the accessibility tree with the
+       screen while the menu is open. -->
+  <footer id="contact"><a href="https://simplex.chat/contact">simplex.chat/contact</a></footer>
+  <script type="module" src="/assets/b36892a45dde8359/main.js"></script>
+</body>
+</html>
