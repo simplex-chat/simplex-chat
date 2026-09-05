@@ -357,6 +357,7 @@ private fun CreateFirstProfileDesktop(chatModel: ChatModel, close: () -> Unit) {
 
 fun createProfileForInvitation(rhId: Long?, onCreated: (User) -> Unit) {
   val modalManager = ModalManager.fullscreen
+  if (modalManager.isLastModalOpen(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) return
   modalManager.showModalCloseable(id = ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE) { close ->
     CreateProfile(chatModel, close, createProfile = { displayName, shortDescr, image ->
       withBGApi {

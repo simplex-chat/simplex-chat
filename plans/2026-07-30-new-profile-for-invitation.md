@@ -175,11 +175,11 @@ workaround here:
   `CreateProfile` and shown on the form, which stays open. Fixing this needs either a fixed
   delay after dismissal or the presenting controller's completion handler, which is not
   reachable from where these alerts are raised.
-- **The back-out guard has a ~250ms residual.** `closeModal` leaves a dismissed modal in
-  `modalViews` until its close animation ends, so `isLastModalOpen` still reports it open
-  for that window. Backing out and having the create land inside it still reassigns. Closing
-  that needs a `toRemove`-aware variant of the check, which is more machinery than the
-  remaining window is worth.
+- **Both `isLastModalOpen` guards have a ~250ms residual.** `closeModal` leaves a dismissed
+  modal in `modalViews` until its close animation ends, so the check still reports it open
+  for that window: backing out and having the create land inside it still reassigns, and
+  re-opening the form within it is swallowed. Closing that needs a `toRemove`-aware variant
+  of the check, which is more machinery than the remaining windows are worth.
 - **Surface 2's `filteredProfiles` is `remember`ed on the search text only**, so on desktop
   (where the picker is not disposed under the form) a profile created while it is open is
   not listed. Invisible today because `selectProfile`
