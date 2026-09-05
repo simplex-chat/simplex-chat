@@ -47,7 +47,10 @@ templateEngineOverride: njk
         }
 
         @media screen and (max-width: 959px) {
-            :root { --cf-grad-dark: linear-gradient(30deg, #000000 0%, #131d49 52%, #3f5598 65%, #c3faff 85%, #fff6e0 90%); }
+            :root {
+                --cf-grad-light: linear-gradient(30deg, #e8f3ff 0%, #c0e2ff 40%, #e9ffff 80%, #ffefd6 90%);
+                --cf-grad-dark: linear-gradient(30deg, #000000 0%, #131d49 52%, #3f5598 65%, #c3faff 85%, #fff6e0 90%);
+            }
         }
 
         body {
@@ -59,7 +62,7 @@ templateEngineOverride: njk
         section.page.cf {
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
-            background-size: var(--cover-bg-w) var(--cover-bg-h), cover;
+            background-size: var(--cover-bg-w) var(--cover-bg-h), 102% 102%;
         }
 
         section.page.cf.cf-light { background-image: var(--cf-art), var(--cf-grad-light); }
@@ -83,8 +86,8 @@ templateEngineOverride: njk
         /* problem + growth: standalone graphics sit inside the fixed 16:9 box
            (.area), the same coordinate system as the text, so both margins are
            7.5vwu from the box edge and the text-to-art gap scales with the box */
-        section.page.cf.cf-problem { background-image: var(--cf-grad-dark); background-size: cover; background-position: center; }
-        section.page.cf.cf-growth  { background-image: var(--cf-grad-light); background-size: cover; background-position: center; }
+        section.page.cf.cf-problem { background-image: var(--cf-grad-dark); background-size: 102% 102%; background-position: center; }
+        section.page.cf.cf-growth  { background-image: var(--cf-grad-light); background-size: 102% 102%; background-position: center; }
         .cf-problem .area {
             background: url("/img/crowdfunding/problem.png") no-repeat left calc(var(--sec-vwu) * 7.5) center;
             background-size: calc(var(--sec-vwu) * 40) auto;
@@ -197,14 +200,14 @@ templateEngineOverride: njk
         #navbar.on-light > a.logo.logo-light { display: flex; }
         #navbar.on-light > a.logo.logo-dark { display: none; }
 
-        /* invest button colour by section theme */
-        #navbar.on-light .box-btn.token {
-            background: linear-gradient(90deg, #019bfe 0%, #2e3fa0 100%);
-            color: #ffffff;
-        }
-        #navbar.on-dark .box-btn.token {
+        #navbar.on-cover .box-btn.token {
             background: linear-gradient(90deg, #ffb55d 0%, #fff494 50%, #fbffdd 100%);
             color: #000000;
+        }
+
+        @media screen and (min-width: 960px) {
+            #navbar.on-dark > a.logo,
+            #navbar.on-dark .right-links { background: rgba(19, 29, 73, 0.005); }
         }
 
         /* keep the navbar visible on mobile (no slide-in menu here) */
@@ -225,11 +228,11 @@ templateEngineOverride: njk
             .cf-revenue { --cf-art: url("/img/design_3/section-4-mobile-light.webp"); }
 
             section.page.cf.cf-network {
-                background-size: auto calc(var(--cover-bg-h) * 0.8), cover;
+                background-size: auto calc(var(--cover-bg-h) * 0.8), 102% 102%;
                 background-position: 50% calc(50% - var(--sec-vhu) * 4.5), center;
             }
             section.page.cf.cf-revenue {
-                background-size: auto calc(var(--cover-bg-h) * 0.84), cover;
+                background-size: auto calc(var(--cover-bg-h) * 0.84), 102% 102%;
                 background-position: 50% calc(50% - var(--sec-vhu) * 2), center;
             }
             .cf-problem .area {
@@ -285,7 +288,7 @@ templateEngineOverride: njk
 </head>
 
 <body>
-    <header id="navbar" class="on-dark">
+    <header id="navbar" class="on-dark on-cover">
         <a href="/" class="logo logo-light"><img src="/img/new/logo-light.png" alt="SimpleX"></a>
         <a href="/" class="logo logo-dark"><img src="/img/new/logo-dark.png" alt="SimpleX"></a>
         <div class="right-links">
@@ -418,8 +421,10 @@ templateEngineOverride: njk
                 entries.forEach(function (e) {
                     if (e.isIntersecting && e.intersectionRatio >= 0.5) {
                         var dark = e.target.classList.contains('cf-dark');
+                        var cover = e.target.classList.contains('cf-hero') || e.target.classList.contains('cf-close');
                         nav.classList.toggle('on-dark', dark);
                         nav.classList.toggle('on-light', !dark);
+                        nav.classList.toggle('on-cover', cover);
                     }
                 });
             }, { threshold: [0.5] });
