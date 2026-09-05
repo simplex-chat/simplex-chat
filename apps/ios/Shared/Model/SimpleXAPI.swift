@@ -253,10 +253,18 @@ func apiGetActiveUser(ctrl: chat_ctrl? = nil) throws -> User? {
     }
 }
 
-func apiCreateActiveUser(_ p: Profile?, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
-    let r: ChatResponse0 = try chatSendCmdSync(.createActiveUser(profile: p, pastTimestamp: pastTimestamp), ctrl: ctrl)
+func apiCreateActiveUser(_ p: Profile?, pastTimestamp: Bool = false, keepActiveUser: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
+    let r: ChatResponse0 = try chatSendCmdSync(.createActiveUser(profile: p, pastTimestamp: pastTimestamp, keepActiveUser: keepActiveUser), ctrl: ctrl)
     if case let .activeUser(user) = r { return user }
     throw r.unexpected
+}
+
+func createProfileKeepingActiveUser(_ profile: Profile) async throws -> User {
+    let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
+    if let users = try? await listUsersAsync() {
+        await MainActor.run { ChatModel.shared.users = users }
+    }
+    return newUser
 }
 
 func listUsers() throws -> [UserInfo] {

@@ -21,6 +21,7 @@ struct ContextProfilePickerView: View {
     @State private var listExpanded = false
     @State private var expandedListReady = false
     @State private var showIncognitoSheet = false
+    @State private var showAddProfile = false
 
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
@@ -33,6 +34,11 @@ struct ContextProfilePickerView: View {
             }
             .sheet(isPresented: $showIncognitoSheet) {
                 IncognitoHelp()
+            }
+            .sheet(isPresented: $showAddProfile) {
+                NavigationView {
+                    CreateProfile(onCreate: createProfileForChat)
+                }
             }
     }
 
@@ -79,6 +85,12 @@ struct ContextProfilePickerView: View {
                 if expandedListReady {
                     let scroll = ScrollView {
                         LazyVStack(spacing: 0) {
+                            addProfileOption()
+                                .contentShape(Rectangle())
+                            Divider()
+                                .padding(.leading)
+                                .padding(.leading, 48)
+
                             let otherUsers = users
                                 .filter { u in u.userId != selectedUser.userId }
                                 .sorted(using: KeyPathComparator<User>(\.activeOrder))
@@ -113,7 +125,7 @@ struct ContextProfilePickerView: View {
                             }
                         }
                     }
-                        .frame(maxHeight: USER_ROW_SIZE * min(MAX_VISIBLE_USER_ROWS, CGFloat(users.count + 1))) // + 1 for incognito
+                        .frame(maxHeight: USER_ROW_SIZE * min(MAX_VISIBLE_USER_ROWS, CGFloat(users.count + 2)))
                         .onAppear {
                             DispatchQueue.main.async {
                                 withAnimation(nil) {
@@ -190,6 +202,38 @@ struct ContextProfilePickerView: View {
             .padding(.leading, 12)
             .padding(.trailing)
             .frame(height: USER_ROW_SIZE)
+        }
+    }
+
+    private func addProfileOption() -> some View {
+        Button {
+            if chat.chatInfo.profileChangeProhibited {
+                showCantChangeProfileAlert()
+            } else {
+                showAddProfile = true
+            }
+        } label: {
+            HStack {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .resizable().scaledToFit().frame(width: 38, height: 38)
+                    .foregroundColor(theme.colors.primary)
+                Text("Add profile")
+                    .foregroundColor(theme.colors.primary)
+                    .lineLimit(1)
+                Spacer()
+            }
+            .padding(.leading, 12)
+            .padding(.trailing)
+            .frame(height: USER_ROW_SIZE)
+        }
+    }
+
+    private func createProfileForChat(_ profile: Profile) async throws {
+        let newUser = try await createProfileKeepingActiveUser(profile)
+        await MainActor.run {
+            showAddProfile = false
+            users = chatModel.users.map { $0.user }.filter { u in u.activeUser || !u.hidden }
+            changeProfile(newUser)
         }
     }
 

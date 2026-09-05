@@ -52,6 +52,7 @@ chatProfileTests = do
     it "reject profile image that is too large" testSetProfileImageTooLarge
     it "set profile image from file" testSetProfileImageFromFile
     it "use multiword profile names" testMultiWordProfileNames
+    it "create user without keepActiveUser activates it" testCreateUserWithoutKeepActiveUser
     it "auto-accept group invitations" testAutoAcceptGroupInvitations
     it "auto-accept group invitations on a second profile" testAutoAcceptGroupInvitationsSecondProfile
     it "auto-accept group invitations on an inactive profile" testAutoAcceptGroupInvitationsInactiveProfile
@@ -156,6 +157,7 @@ shortLinkTests = do
   it "connect to prepared contact incognito (via address)" testShortLinkAddressConnectPreparedContactIncognito
   it "change prepared contact user" testShortLinkChangePreparedContactUser
   it "change prepared contact user, new user has contact with the same name" testShortLinkChangePreparedContactUserDuplicate
+  it "create user keeping active user, then change prepared contact user" testCreateUserKeepingActiveUser
   it "connect to prepared group incognito" testShortLinkConnectPreparedGroupIncognito
   it "change prepared group user" testShortLinkChangePreparedGroupUser
   it "change prepared group user, new user has group with the same name" testShortLinkChangePreparedGroupUserDuplicate
@@ -4049,6 +4051,38 @@ testShortLinkChangePreparedContactUser = testChat2 aliceProfile bobProfile test
       showActiveUser bob "bob (Bob)"
       bob @@@ []
       bob `hasContactProfiles` ["bob"]
+
+testCreateUserKeepingActiveUser :: HasCallStack => TestParams -> IO ()
+testCreateUserKeepingActiveUser = testChat2 aliceProfile bobProfile test
+  where
+    test alice bob = do
+      bob ##> "/_create user {\"profile\":{\"displayName\":\"robert\",\"fullName\":\"\"},\"pastTimestamp\":false,\"keepActiveUser\":true}"
+      showActiveUser bob "robert"
+      bob ##> "/u"
+      showActiveUser bob "bob (Bob)"
+      bob ##> "/users"
+      bob <## "bob (Bob) (active)"
+      bob <## "robert"
+
+      alice ##> "/_connect 1"
+      (shortLink, fullLink) <- getInvitations alice
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "invitation link: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+
+      bob ##> "/_set contact user @4 2"
+      bob <## "contact alice changed from user bob to user robert"
+
+testCreateUserWithoutKeepActiveUser :: HasCallStack => TestParams -> IO ()
+testCreateUserWithoutKeepActiveUser = testChat aliceProfile test
+  where
+    test alice = do
+      alice ##> "/_create user {\"profile\":{\"displayName\":\"alisa\",\"fullName\":\"\"},\"pastTimestamp\":false}"
+      showActiveUser alice "alisa"
+      alice ##> "/u"
+      showActiveUser alice "alisa"
 
 testShortLinkChangePreparedContactUserDuplicate :: HasCallStack => TestParams -> IO ()
 testShortLinkChangePreparedContactUserDuplicate = testChat2 aliceProfile bobProfile test
