@@ -1,0 +1,1055 @@
+/* Every colour, radius, face and type step below is the published SimpleX design's own
+   value. Where one is not, the line says why. */
+:root {
+  /* One accent in both themes, with white on it in both: #3889FF on white is
+     3.6:1 for the 16/700 label it carries. */
+  --accent: #3889FF;
+  --accent-hover: #2F7BEC;            /* the accent, one step down in value */
+  --accent-pressed: #2A6ED6;
+  --on-accent: #ffffff;
+  --ink: #1E2122;
+  --bg: #F7F7F7;
+  --surface: #FFFFFF;
+  --menu: #FFFFFF;                    /* the popup, one step off the page */
+  --line: #E8E8E8;
+  /* one faint blue wash over the flat ground, and nothing else */
+  --page: radial-gradient(50% 50% at 50% 50%, rgba(82, 152, 255, .063) 0%, rgba(255, 255, 255, 0) 100%);
+
+  /* Secondary text is the ink at two lower emphases, so the page stays one hue
+     and composites correctly over the wash. 8.9:1 and 6.2:1 on #F7F7F7. */
+  --body: rgba(30, 33, 34, .72);
+  --muted: rgba(30, 33, 34, .56);
+  /* The ink at 4%: the menu's hover, the landing screen's info panel, and a card the catalog
+     cannot price. */
+  --tint: rgba(30, 33, 34, .04);
+
+  --title: linear-gradient(330.4deg, #44BCF0 4.54%, #7298F8 59.2%, #A099FF 148.85%);
+
+  /* Settled, waiting and failed, each a foreground on its own ground. */
+  --ok-fg: #1c7c3f;
+  --ok-bg: #e8f5ec;
+  --ok-line: #bfe3cc;
+  --warn-fg: #8a6100;
+  --warn-bg: #fff8e6;
+  --warn-line: #f0dcae;
+  --danger-fg: #b3261e;
+  --danger-bg: #fdecec;
+  --danger-line: #f3c9c6;
+
+  /* the code screen's code frame, in the one accent both themes share. */
+  --code-bg: rgba(56, 137, 255, .06);
+  --code-line: rgba(56, 137, 255, .35);
+
+  /* A primary button with nothing to do: a flat bar with a washed label, legible
+     at 4.0:1. See `.primary[disabled]` for why it is not the accent faded. */
+  --disabled: rgba(30, 33, 34, .07);
+  --on-disabled: rgba(30, 33, 34, .50);
+
+  /* Switched with the theme rather than tinted by it. The dark wordmark is the
+     same file with its `#030749` set to white. */
+  --hero: url(hero-light.png);
+  --wordmark: url(wordmark-light.svg);
+
+  /* a card is a 1px border at radius 20 with no shadow, and every button a pill; the
+     only shadow on the page is the menu's */
+  --r-card: 20px;
+  --r-pill: 9999px;
+  --shadow-pop: 0 2px 6px rgba(0, 0, 0, .06), 0 16px 40px rgba(0, 0, 0, .12);
+
+  /* Satoshi is not vendored and may not be fetched, so the system face is what
+     actually renders. */
+  --font: Satoshi, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* The dark palette is written twice on purpose: the media query claims
+   everything that is not an explicit light, and the attribute rule claims an
+   explicit dark, which is how `system`, `light` and `dark` all win where they
+   should. Both blocks must declare the same tokens and values, and
+   `design.test.ts` fails if they diverge. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* The accent does not move between themes, and the dark surface #1E2122 is the
+       light theme's ink, to the byte. */
+    --ink: #FFFFFF;
+    --bg: #141416;
+    --surface: #1E2122;
+    --menu: #242427;
+    --line: #424347;
+    /* the dark ground is flat: the light theme's wash would be a smear */
+    --page: none;
+
+    --body: rgba(255, 255, 255, .72);
+    --muted: rgba(255, 255, 255, .56);
+    --tint: rgba(255, 255, 255, .06);
+
+    /* The light theme's three hues, lightened to sit on #141416, each with its
+       own ground at a low alpha of itself. */
+    --ok-fg: #7FE3A6;
+    --ok-bg: rgba(127, 227, 166, .12);
+    --ok-line: rgba(127, 227, 166, .28);
+    --warn-fg: #F5C86A;
+    --warn-bg: rgba(245, 200, 106, .12);
+    --warn-line: rgba(245, 200, 106, .28);
+    --danger-fg: #FF9F98;
+    --danger-bg: rgba(255, 159, 152, .12);
+    --danger-line: rgba(255, 159, 152, .28);
+
+    --code-bg: rgba(56, 137, 255, .12);
+    --code-line: rgba(56, 137, 255, .45);
+
+    --disabled: rgba(255, 255, 255, .09);
+    --on-disabled: rgba(255, 255, 255, .45);
+
+    --hero: url(hero-dark.png);
+    --wordmark: url(wordmark-dark.svg);
+
+    --shadow-pop: 0 2px 8px rgba(0, 0, 0, .50), 0 16px 40px rgba(0, 0, 0, .55);
+  }
+}
+
+/* The same palette again, for the menu's explicit Dark. */
+:root[data-theme="dark"] {
+  --ink: #FFFFFF;
+  --bg: #141416;
+  --surface: #1E2122;
+  --menu: #242427;
+  --line: #424347;
+  --page: none;
+
+  --body: rgba(255, 255, 255, .72);
+  --muted: rgba(255, 255, 255, .56);
+  --tint: rgba(255, 255, 255, .06);
+
+  --ok-fg: #7FE3A6;
+  --ok-bg: rgba(127, 227, 166, .12);
+  --ok-line: rgba(127, 227, 166, .28);
+  --warn-fg: #F5C86A;
+  --warn-bg: rgba(245, 200, 106, .12);
+  --warn-line: rgba(245, 200, 106, .28);
+  --danger-fg: #FF9F98;
+  --danger-bg: rgba(255, 159, 152, .12);
+  --danger-line: rgba(255, 159, 152, .28);
+
+  --code-bg: rgba(56, 137, 255, .12);
+  --code-line: rgba(56, 137, 255, .45);
+
+  --disabled: rgba(255, 255, 255, .09);
+  --on-disabled: rgba(255, 255, 255, .45);
+
+  --hero: url(hero-dark.png);
+  --wordmark: url(wordmark-dark.svg);
+
+  --shadow-pop: 0 2px 8px rgba(0, 0, 0, .50), 0 16px 40px rgba(0, 0, 0, .55);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  /* The gutter is here, so `#app` is exactly the 560px content column and
+     nothing inside it has to subtract padding to reach that width. */
+  padding: 0 20px;
+  min-height: 100vh;
+  background: var(--bg);
+  /* Fixed, so the wash does not tile or scroll away on a long screen. */
+  background-image: var(--page);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font);
+  /* the scale: 1rem/1.25 body, .875 small, .75 extra-small, larger steps below */
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app { max-width: 560px; margin: 0 auto; overflow-x: hidden; }
+
+/* ------------------------------------------------------------------- chrome */
+
+/* The wordmark on the left, and on the right a circular icon button holding the
+   hamburger. It spans the page rather than the 560 column, so the column reads
+   as content inside a site rather than as the whole site. */
+.chrome-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 8px 4px;
+}
+
+/* The official wordmark, drawn from the file. The URL is relative, so it
+   resolves inside /assets/<buildHash>/ beside this sheet and is precached with
+   everything else. */
+.brand {
+  display: block;
+  width: 132px;
+  aspect-ratio: 161 / 40;
+  background-image: var(--wordmark);
+  background-size: contain;
+  background-position: left center;
+  background-repeat: no-repeat;
+  /* A link with no text: the accessible name is on the element. */
+  text-indent: -9999px;
+  overflow: hidden;
+}
+
+.menu-wrap { position: relative; }
+
+/* 40 rather than the reference's 32, which is under every platform's minimum
+   touch target and this is the header's only control. */
+.menu-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  /* The hairline colour as a fill, which on both grounds is the reference's own
+     circle without a fourth grey. */
+  background: var(--line);
+  color: var(--ink);
+  cursor: pointer;
+}
+.menu-button:hover, .menu-button[aria-expanded="true"] { color: var(--accent); }
+.bars { display: block; width: 20px; height: 20px; }
+
+/* The panel, anchored under the button and right-aligned to it, one step off
+   the page ground, with a hairline and the page's only drop shadow. */
+.menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  width: 320px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--menu);
+  box-shadow: var(--shadow-pop);
+  text-align: left;
+  overflow: hidden;
+}
+.menu[hidden] { display: none; }
+
+/* Full-bleed hairlines between sections, so the padding is on the section and
+   never on the panel. */
+.menu-section { padding: 6px; }
+.menu-section + .menu-section { border-top: 1px solid var(--line); }
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
+}
+.menu-label { font-size: .875rem; font-weight: 700; color: var(--ink); }
+
+/* the segmented setting: three values in one pill, the chosen one in the
+   accent with white on it. */
+.segmented {
+  display: flex;
+  padding: 2px;
+  border-radius: var(--r-pill);
+  background: var(--tint);
+}
+.segment {
+  padding: 5px 11px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: .75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.segment:hover { color: var(--ink); }
+.segment[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+
+.menu-item {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: .875rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+.menu-item[hidden] { display: none; }
+.menu-item:hover { background: var(--tint); color: var(--accent); }
+.menu-item.danger { color: var(--danger-fg); }
+.menu-item.danger:hover { background: var(--danger-bg); color: var(--danger-fg); }
+
+/* the footer, on every screen: a hairline across the column, then the
+   contact link centred under it in the accent. */
+footer {
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
+}
+footer a {
+  display: block;
+  border-top: 1px solid var(--line);
+  padding: 16px 0 34px;
+  color: var(--accent);
+  font-size: .875rem;
+  text-decoration: none;
+}
+footer a:hover { text-decoration: underline; }
+
+/* The keyboard's equivalent of the hover underline, declared rather than left
+   to the user agent, whose thin dark outline all but disappears on the accent
+   button and on the dark ground. `:focus-visible`, so a mouse press leaves
+   nothing behind. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* On the accent ground itself an accent ring is invisible, so it inverts. */
+.primary:not(.outline):focus-visible { outline-color: var(--ink); }
+
+/* -------------------------------------------------------------- the wizard */
+
+/* the horizontal track, in two elements, because one cannot clip and travel
+   at the same time. `.track` clips and is the height of the panel in view;
+   `.rail` is the flex row of four panels and is what translates. Both animate,
+   so the outgoing panel travels off one edge while the incoming one arrives at
+   the other. `main.ts` writes the height and the transform, and sets `--slide`
+   to 0ms for any move that is not a step.
+
+   `overflow: hidden` is also what makes this a stepper rather than a carousel:
+   there is no scroll to drag. Unreached panels carry `inert`, so Tab cannot
+   enter them either. */
+.track {
+  overflow: hidden;
+  transition: height var(--slide, 320ms) cubic-bezier(.22, .61, .36, 1);
+}
+.rail {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  transition: transform var(--slide, 320ms) cubic-bezier(.22, .61, .36, 1);
+}
+/* Below the column width each panel is the viewport width: the same track is
+   the phone flow, with only the padding and the type scale changing. */
+.panel {
+  flex: 0 0 100%;
+  min-width: 0;
+  padding: 12px 0 22px;
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .track, .rail { transition: none; }
+}
+
+/* Every payment screen and `#/codes` takes the same shell as a wizard panel.
+   The 20px a trailing button adds is the difference between a footer rule under
+   a button and one under a block of text. */
+.panel > button:last-child { margin-bottom: 20px; }
+
+/* ------------------------------------------------------------------ headings */
+
+h1 {
+  font-size: 2.25rem;
+  line-height: 3rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 12px 0 0;
+}
+/* The heading is the gradient, clipped to its own glyphs, in both themes.
+   Guarded, because the fill is transparent: a browser that cannot clip a
+   background to text would render every heading invisible. */
+@supports ((background-clip: text) or (-webkit-background-clip: text)) {
+  h1 {
+    background-image: var(--title);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+/* the payment screen and the code screen take one step down from the landing screen's. */
+h1.tight { font-size: 1.875rem; line-height: 2.5rem; margin-top: 15px; }
+
+.lede {
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: var(--body);
+  margin: 10px 0 0;
+}
+h1 + .lede { margin-top: 10px; }
+h1.tight + .lede { margin-top: 6px; }
+/* Two ledes are two sentences of one paragraph, a line height apart rather than
+   a paragraph gap. */
+.lede + .lede { margin-top: 0; }
+
+.muted { color: var(--muted); font-size: .875rem; margin: 14px 0 0; }
+/* A narrower measure than the column, so the closing footnote breaks in two rather than
+   reading as a caption that ran on. Scoped to a direct child, so it cannot reach the same
+   class inside a left-aligned field and indent the line it holds. */
+.panel > p.muted { max-width: 332px; margin-left: auto; margin-right: auto; }
+/* Shown beside the status while the browser is offline, not instead of it. */
+.offline { color: var(--warn-fg); }
+.center { text-align: center; }
+
+/* Figures that are compared down a column, or that change in place while the
+   buyer is looking at them. The default proportional digits are narrower on 1
+   than on 0, so the payment screen's held-rate clock and the rate-limited screen's countdown shifted every second
+   they ticked, and the duration list's three prices did not line up under one another.
+   `.notice .title` is the rate-limited screen's countdown, which is the only figure that line ever
+   holds. */
+.row, .choice .price, .rate, .notice .title, .entry .meta {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ← Back is the first thing in the panel, on the left of the column. */
+.back {
+  display: block;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+
+/* -------------------------------------------------------------------- buttons */
+
+/* Spans the column because it is the column's one action. */
+.primary {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+  cursor: pointer;
+  margin: 24px 0 0;
+  transition: background-color 120ms linear;
+}
+.primary:not([disabled]):not(.copied):hover { background: var(--accent-hover); }
+.primary:not([disabled]):not(.copied):active { background: var(--accent-pressed); }
+/* A different shape, not a faded one: the accent at reduced opacity still reads
+   as the live button, so a Continue that cannot continue looks broken rather
+   than not-yet-answered. */
+.primary[disabled] {
+  background: var(--disabled);
+  color: var(--on-disabled);
+  cursor: default;
+}
+
+/* The same button as an outline, which is what the closed-window screen's [ New invoice ] and the code screen's
+   [ Copy code ] are. */
+.primary.outline {
+  background: none;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+.primary.outline:not([disabled]):not(.copied):hover { background: var(--tint); color: var(--accent-hover); }
+
+/* A minimum height and not a fixed one: at the 320px floor a two-line
+   label would otherwise put its second line outside the border. */
+.secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  margin: 12px 0 0;
+  line-height: 1.25;
+}
+.secondary:not(.copied):hover { border-color: var(--accent); }
+
+/* the payment screen's Copy, which lives inside the address panel rather than under it. */
+.secondary.inline {
+  display: inline;
+  width: auto;
+  min-height: 0;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: .875rem;
+  line-height: inherit;
+  margin: 0;
+}
+.secondary.inline:not(.copied):hover { text-decoration: underline; }
+
+/* A copy that landed, confirmed on the control itself for two seconds.
+   Every hover rule above excludes it: the pointer is still on the button that
+   was just pressed, and a hover colour would overwrite the confirmation. */
+.copied { color: var(--ok-fg); border-color: var(--ok-line); }
+.primary.copied { background: none; color: var(--ok-fg); border-color: var(--ok-fg); }
+.secondary.inline.copied { text-decoration: none; }
+/* The failure line only: a success never lands here, so this is empty until
+   something goes wrong, and empty it takes up no room. */
+.copy-status:empty, .cancel-status:empty { display: none; }
+
+.link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: .875rem;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: none;
+}
+.link:hover { text-decoration: underline; }
+.link.danger { color: var(--danger-fg); }
+.link[disabled] { color: var(--muted); cursor: default; text-decoration: none; }
+p.row-line { margin: 16px 0 0; }
+
+/* --------------------------------------------------------------- the choices */
+
+/* the tier list's tiers and the duration list's durations stay side by side at every width: values being
+   compared must stay comparable. Only the type scale shrinks. */
+.choices { display: flex; gap: 14px; margin: 26px 0 0; align-items: stretch; }
+.choice {
+  /* A column, explicitly top-aligned: a <button> centres its own content, so a
+     card stretched to a taller sibling's height would print its name low. */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 17px 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 120ms linear;
+}
+.choice:not([disabled]):hover { border-color: var(--accent-pressed); }
+/* The chosen card keeps the same box: a 2px accent border drawn inside the
+   1px one's place, so nothing moves when the answer changes. */
+.choice[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+/* the provider-unavailable screen's unavailable method, and any tier or duration the catalog cannot price:
+   the outline stays and what is inside it greys, so the word "unavailable"
+   stays readable, the card being shown precisely so it can be read. */
+.choice[disabled] { cursor: default; color: var(--muted); background: var(--tint); }
+.choice[disabled] .mark, .choice[disabled] .badge-art { opacity: .4; }
+/* A tier leads with its name and states its price plainly under it; a duration leads with
+   the price and lets the term step back. The design's 19/17 is not a pair of steps on this
+   scale, so the tier takes 1.25/600 over 1.125/400, the same relationship at sizes the
+   scale has. */
+.choice .name { font-weight: 600; font-size: 1.125rem; }
+/* On the scale: 1.0625rem stood on no step of it, and the badge-art rule below already
+   renders this pair one step up. */
+.choice .price { font-size: 1rem; font-weight: 400; margin-top: 6px; }
+/* On a duration the price is the emphasis, so the term steps back to the normal weight:
+   both at 600 is two shouts where the size alone says which is which. */
+.choice.term .name { font-weight: 500; }
+.choice.term .price { font-size: 1.375rem; font-weight: 600; }
+
+/* The undiscounted total sits above the charged one at every width, not beside it: three
+   cards across a 350px column leave 98px inside each, and two figures a step and a half
+   apart do not share that on one line. `.875rem` rather than the `.8em` it carried, which
+   computed to 17.6px and moved with whatever `.price` it landed in. */
+.choice .price .was {
+  display: block;
+  color: var(--muted);
+  font-weight: 400;
+  font-size: .875rem;
+}
+.choice .feature { color: var(--muted); font-size: .875rem; }
+
+/* the tier list's cards carry the badge itself, 300×399 in its own box, drawn at 65×86. */
+.badge-art { display: block; width: 65px; aspect-ratio: 300 / 399; margin: 0 auto 8px; }
+/* A tier with artwork takes one step up on both lines. The weight does not move
+   with the size: the price is stated plainly whether or not the card has a
+   badge on it, and the 500 that used to live here made the same figure read at
+   a different weight on a tier this build has no artwork for. */
+.choice .badge-art + .name { font-size: 1.25rem; }
+.choice .badge-art ~ .price { font-size: 1.125rem; margin-top: 2px; }
+.choice .badge-art ~ .feature { margin-top: 6px; }
+.choice .badge-art ~ .feature + .feature { margin-top: 0; }
+
+/* the duration list's saving, a pill in the settled palette. */
+.pill {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+/* `max-width`, never `width` or `height`: a phone is the same layout at a smaller scale,
+   and `aspect-ratio` above keeps a scaled box in proportion. */
+@media (max-width: 560px) {
+  .badge-art { max-width: 56px; }
+}
+
+/* the order summary's method row: the same three-across grid, with a 30px mark sitting almost
+   on its label, the line box's own half-leading being most of the gap. */
+.choice.method { padding: 18px 6px 19px; }
+.mark { display: block; width: 30px; height: 30px; margin: 0 auto 2px; }
+/* No size of its own: a method is a card that leads with its name, which is
+   what `.choice .name` above already says. The rule that restated 1.125rem here
+   was a second copy of one number, and the phone band still steps it down. */
+.choice.method[aria-pressed="true"] .name { color: var(--accent); }
+.choice.method .feature { font-size: .75rem; margin-top: 2px; }
+
+/* ---------------------------------------------------------- the summary card */
+
+/* the order summary: one bordered card, two label/value rows, a hairline, and
+   the total. */
+.rows {
+  margin: 37px 0 0;
+  padding: 15px 27px 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  text-align: left;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 1rem;
+  padding: 7px 0;
+}
+.row span:first-child { color: var(--muted); }
+.row span:last-child { font-weight: 600; color: var(--ink); }
+.row.total {
+  font-size: 1.25rem;
+  border-top: 1px solid var(--line);
+  margin-top: 13px;
+  padding-top: 7px;
+}
+.row.total span:first-child { color: var(--ink); font-weight: 600; }
+
+/* A bare field (the reference, the address, where to redeem) is the same card
+   with the label above the value, and follows a notice by 16 rather than the 37
+   a summary card takes under a heading. */
+.rows.field {
+  margin-top: 16px;
+  padding: 12px 21px 5px;
+}
+/* the payment screen's Copy sits on the field's own top-right corner. The value is an address
+   that wraps, so the room is reserved for the control instead of the two being
+   allowed to overlap. */
+.rows.field.copyable { position: relative; }
+.rows.field.copyable .mono { padding-right: 68px; }
+.copy-line { position: absolute; top: 26px; right: 21px; margin: 0; }
+.rows.plain { background: none; border: 0; padding: 0; }
+/* One step below the body size, so "Settings → Supporter perks → Redeem code"
+   holds one line in the code screen's 344 column. */
+.rows.plain > div { font-size: .875rem; }
+
+.label {
+  display: block;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+/* the order summary's PAY WITH stands alone above the row rather than inside a card. It is the
+   same label, and only its place changes, so it restates no type. */
+.label.standalone { margin: 13px 0 0; text-align: left; }
+/* the order summary's row sits closer to its label, and its Pay button closer to the row, than
+   the tier list's and the duration list's do to their headings. */
+.label.standalone + .methods { margin-top: 18px; }
+.methods + .primary { margin-top: 16px; }
+
+/* --------------------------------------------------------------- the notices */
+
+/* Three grounds, one shape: a 1px border of the same family as the text, and a
+   1rem/600 title over .875rem lines at the page's own leading. `.info` below is
+   the fourth ground of the same block, and takes the same two type rules. */
+.notice, .warn {
+  margin: 24px 0 0;
+  padding: 13px 23px 14px;
+  border-radius: var(--r-card);
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--tint);
+  color: var(--ink);
+}
+/* The block title, on all four grounds. 600 and not 700: 700 is the weight of the
+   micro-labels, and a block title is a heading rather than a label. */
+.notice .title, .warn .title, .info .title {
+  display: block;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 2px;
+}
+/* Block body copy, on all four grounds, at the page's own leading. The 1.35 it
+   used to carry was the only leading on the page that was neither the body's
+   1.5 nor anything else's, and it set these lines closer together than the same
+   size reads anywhere else. */
+.notice p, .warn p, .info p { font-size: .875rem; margin: 0; }
+
+/* the catalog-changed screen, the rate-limited screen and the payment screen's "waiting": something is pending, nothing has gone wrong. */
+.notice { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-fg); }
+.notice .title, .notice p { color: var(--warn-fg); }
+
+/* the provider-unavailable screen, the closed-window screen and the code screen's "only copy": something has failed, or is about to be lost. */
+.warn { background: var(--danger-bg); border-color: var(--danger-line); color: var(--danger-fg); }
+.warn .title, .warn p { color: var(--danger-fg); }
+
+/* the landing screen's "Already bought a code?", which is neither a notice nor a warning, and
+   so is drawn as a card like every other card on the page. */
+.info {
+  margin: 20px 0 0;
+  padding: 12px 23px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  text-align: left;
+}
+/* Only what the ground changes: the type is the block rules above, so this card
+   cannot drift a step away from the notice it sits beside. */
+.info .title { color: var(--ink); }
+.info p { color: var(--muted); }
+
+/* --------------------------------------------------------------- the landing screen's hero */
+
+/* Switched with the theme rather than filtered. The URL is relative, so it
+   resolves inside /assets/<buildHash>/ beside this file and the worker precaches it
+   under the same hash as everything else. */
+.hero {
+  width: 268px;
+  aspect-ratio: 460 / 578;
+  margin: 27px auto 0;
+  background-image: var(--hero);
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.hero + .primary { margin-top: 30px; }
+@media (max-width: 560px) {
+  .hero { max-width: 168px; margin-top: 20px; }
+}
+
+/* ------------------------------------------------------------------ the code */
+
+/* the code screen's code: mono 24/600 in a wider frame of its own, so it reads as the thing
+   the whole page was for. It must wrap at its hyphens rather than overflow. */
+.code {
+  font-family: var(--mono);
+  font-size: 1.375rem;
+  font-weight: 700;
+  /* Relative, so the tracking follows the size: at .5px the phone band's 16px
+     code was tracked a third harder than the 22px one it steps down from. */
+  letter-spacing: .03em;
+  background: var(--code-bg);
+  border: 2px solid var(--code-line);
+  color: var(--ink);
+  padding: 27px 16px 22px;
+  border-radius: var(--r-card);
+  margin: 36px 0 0;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+/* [ Copy code ] belongs to the frame above it, so it sits 14 under it rather
+   than the 24 a button takes under a row of cards. */
+.code + .primary { margin-top: 14px; }
+
+.mono {
+  font-family: var(--mono);
+  font-size: 1rem;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* A shell command to run, with its copy control on the same row: the command is
+   the payload, so it is selectable text and never a button's label. The surface
+   is the page's, not the warning's, so it reads as something to run rather than
+   as more of the warning around it.
+
+   the history list's saved code takes the same box (`.entry .code-row`): a value to be copied
+   whole, with the control that copies it. */
+.command, .entry .code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+/* A run to be read a character at a time, so it steps one below `.mono`'s body
+   size, the size the copy beside it is set at in both boxes. */
+.command code, .entry .code-row code {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: .875rem;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.command .secondary, .entry .code-row .secondary {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: .875rem;
+}
+
+/* the payment screen's state, under both columns. It is the one thing on that screen that
+   moves: the address, the amount and the QR are all fixed, so without it the
+   page gives a buyer who has just sent money no sign it is still watching. */
+.awaiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 18px 0 0;
+  color: var(--warn-fg);
+  font-weight: 600;
+}
+
+.pulse {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: .25; }
+  50% { opacity: 1; }
+}
+
+/* The dot carries no information the sentence beside it does not, so it simply
+   holds still where motion is unwelcome. */
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; opacity: .85; }
+}
+
+/* the code screen's tick: a 54px disc in the settled palette. */
+.tick {
+  width: 54px;
+  height: 54px;
+  line-height: 54px;
+  margin: 8px auto 0;
+  border-radius: 50%;
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+  font-size: 1.375rem;
+  text-align: center;
+}
+
+/* -------------------------------------------------------------- the two-column */
+
+/* the payment screen and the code screen put the QR beside its details: 196 + 20 + 344 is the 560 column
+   exactly. `wrap` rather than a media query, so the phone layout is the
+   same rule reflowing, the QR centring itself through its auto margins the
+   moment the line has room to spare. */
+.split { display: flex; flex-wrap: wrap; gap: 20px; margin: 18px 0 0; align-items: flex-start; }
+.lede + .split { margin-top: 29px; }
+/* Sized by the symbol inside it: the phone band changes `.qr`'s width alone, so
+   there is one number per width and no chance of the two disagreeing. */
+.split > .qr-wrap { flex: 0 0 auto; max-width: 196px; margin: 0 auto; }
+.split > .details { flex: 1 1 300px; min-width: 0; text-align: left; }
+.split > .details > :first-child { margin-top: 0; }
+/* The panels in the details column sit 14 apart, not the 24 a block gets when
+   it stands alone on a screen. */
+.split > .details > * + * { margin-top: 14px; }
+
+/* the two QRs, drawn by `src/qr.ts` and never fetched. The light background
+   is painted into the symbol itself rather than inherited: this page has a dark
+   theme, and a QR drawn dark-on-dark does not scan. */
+.qr-wrap { margin: 24px 0 0; text-align: center; }
+.qr {
+  display: block;
+  width: 196px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  /* No padding: the symbol carries its own four-module quiet zone, and adding to
+     it would only shrink the modules a camera has to resolve. */
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+}
+.qr-wrap .muted { font-size: .75rem; margin-top: 8px; }
+/* Under the symbol, in the flow: the QR is what most people use, and this is for
+   the wallet on the same device. */
+.qr-wrap .wallet-line { margin: 10px 0 0; }
+
+/* ------------------------------------------------------------------ the history list's list */
+
+/* A row is a receipt: the badge that was bought, what it cost and how it was
+   paid for, the state it is in, and the code where there is one. Every part
+   inside it is a shape that already exists: the tier list's badge art, the order summary's payment mark,
+   the duration list's pill, and the command box above. */
+.entries { list-style: none; margin: 24px 0 0; padding: 0; text-align: left; }
+.entry {
+  padding: 16px 20px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  margin-bottom: 12px;
+}
+
+/* the tier list's tier card laid on its side: the art beside the name rather than above
+   it, and at 44 rather than 65, since a row is not a card to choose from. */
+.entry-head { display: flex; align-items: center; gap: 14px; }
+.entry-head .badge-art { width: 44px; flex: 0 0 auto; margin: 0; }
+.entry-main { flex: 1 1 auto; min-width: 0; }
+/* `Legend, 12 months`: what was bought, built by one function (`orderTitle`)
+   and drawn on two screens: every row of this list, and the paid-no-code screen's summary. One rule
+   for both, because the paid-no-code screen's copy of it inherited the body and read as a caption
+   under a heading while the same string here was a title. Weight 600, which is
+   what every card title on the page is set at. */
+.entry .name, .rows.field > .name { font-weight: 600; font-size: 1.125rem; color: var(--ink); }
+
+/* Method, price and day on one line. Each is drawn only where the record holds
+   it, so the line has to survive holding one of the three: a flex row with a
+   gap, and no separators to leave dangling. */
+.entry .meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 14px;
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: .75rem;
+}
+.entry .meta .method { display: inline-flex; align-items: center; gap: 6px; }
+/* the order summary draws the mark at 30 above its name; here it stands beside 12px text. */
+.entry .meta .mark { width: 16px; height: 16px; margin: 0; }
+
+/* The state, and the way out of the row. It wraps rather than squeezes: the
+   longest of the four lines is a sentence, and on a phone it takes the width
+   and leaves [ Open ] below it. */
+/* A row's two lines each carry a fact on the left and a control or a state on
+   the right. `margin-left: auto` rather than `space-between`, so the right-hand
+   item still sits right when a partial record left nothing on the left. */
+.entry-row { display: flex; align-items: center; gap: 10px; }
+.entry-row:nth-child(2) { margin-top: 5px; }
+.entry-row > .status,
+.entry-row > .secondary { margin-left: auto; }
+/* The state is one short phrase and reads as a label, so it keeps its own line
+   and lets the title take the wrap. Allowed to wrap, "this invoice expired"
+   becomes a two-line block on a phone and squeezes the title beside it. */
+.entry-row > .status { flex: 0 0 auto; white-space: nowrap; }
+.entry-row > .secondary {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 32px;
+  padding: 0 14px;
+  font-size: .875rem;
+}
+.entry .meta { margin: 0; min-width: 0; }
+
+/* the duration list's pill, in each of the three grounds. The tone names are its own:
+   `.warn` and `.danger` are the notice blocks, and a status that inherited
+   their padding and border would be a notice. */
+.status {
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  font-size: .75rem;
+  font-weight: 700;
+}
+.status.settled { background: var(--ok-bg); color: var(--ok-fg); }
+.status.pending { background: var(--warn-bg); color: var(--warn-fg); }
+.status.lost { background: var(--danger-bg); color: var(--danger-fg); }
+
+.entry .code-row { margin-top: 12px; }
+
+.card-mount { min-height: 220px; margin: 24px 0 0; text-align: left; }
+.card-fields { text-align: left; }
+
+/* ------------------------------------------------------------ the phone band */
+
+/* The same layout at a smaller scale: the type scale steps down and no box is
+   re-declared. It sits at the end of the sheet because a media query adds no specificity,
+   so a phone rule beside its desktop rule would be beaten by any equally specific rule
+   further down the file. */
+@media (max-width: 560px) {
+  .chrome-bar { padding: 8px 0; }
+  .brand { width: 108px; }
+  /* A 320px panel floating inside a 350px column has no room to float, so on a
+     phone it is a sheet: pinned under the header, across the page. */
+  .menu {
+    position: fixed;
+    top: 60px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+  }
+  .panel { padding-top: 8px; }
+  .back { font-size: .875rem; }
+  h1 { font-size: 1.625rem; line-height: 2.125rem; margin-top: 10px; }
+  h1.tight { font-size: 1.375rem; line-height: 1.875rem; margin-top: 12px; }
+  .lede { font-size: 1rem; }
+  h1 + .lede { margin-top: 9px; }
+  .muted { font-size: .75rem; }
+  /* 16 keeps all 27 characters of the code on one line in a 350 column. */
+  .code { font-size: 1rem; padding: 18px 12px; }
+  .tick { width: 44px; height: 44px; line-height: 44px; font-size: 1.25rem; }
+  .qr { width: 170px; }
+  .split > .qr-wrap { max-width: 170px; }
+  .choices { gap: 10px; margin-top: 24px; }
+  .choice { padding: 14px 6px 16px; }
+  .choice .name { font-size: .875rem; }
+  .choice .feature { font-size: .75rem; }
+  .choice .badge-art + .name { font-size: 1rem; }
+  .choice .badge-art ~ .price { font-size: .875rem; }
+
+  /* `.choice .price` is not the selector to step here: `.choice.term .price`
+     and `.choice .badge-art ~ .price` both out-specify it, so the rule that
+     stood here reached neither screen and the duration list's price stayed at its 22px in a
+     110px card, where the struck total beside it ran off the card. A media
+     query adds no specificity, so it has to name the same selector the desktop
+     rule does. */
+  .choice.term .price { font-size: 1.25rem; }
+
+  .row { font-size: .875rem; }
+  .row.total { font-size: 1.125rem; }
+
+  .rows.plain > div { font-size: .75rem; }
+
+  /* the history list's rows: the type scale steps down, and the art keeps the 44 it has at
+     every width. The paid-no-code screen's summary carries the same title and steps with it. */
+  .entry { padding: 14px 16px 16px; }
+  .entry .name, .rows.field > .name { font-size: 1rem; }
+}
