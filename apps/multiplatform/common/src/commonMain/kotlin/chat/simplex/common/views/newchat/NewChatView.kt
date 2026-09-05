@@ -454,7 +454,9 @@ fun ActiveProfilePicker(
           }
         }
         item {
-          Spacer(Modifier.imePadding().padding(bottom = DEFAULT_BOTTOM_PADDING))
+          val oneHandUI = remember { appPrefs.oneHandUI.state }
+          val bottomBarClearance = if (oneHandUI.value) WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + AppBarHeight * fontSizeSqrtMultiplier else 0.dp
+          Spacer(Modifier.imePadding().padding(bottom = DEFAULT_BOTTOM_PADDING + bottomBarClearance))
         }
       }
     }
