@@ -47,6 +47,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
+import Data.Word (Word16)
 import Network.HTTP.Types (Header, Status, hCacheControl, hContentType, status200, status400, status404, status405, status409, status413, status429, status500, status503)
 import Network.Socket (SockAddr (..), hostAddress6ToTuple, hostAddressToTuple)
 import Network.Wai
@@ -228,7 +229,7 @@ peerText = \case
   where
     tshowInt :: Show a => a -> Text
     tshowInt = T.pack . show
-    hex16 :: Integral a => a -> Text
+    hex16 :: Word16 -> Text
     hex16 w = T.pack (showHex w "")
 
 apiHeaders :: [Header]
