@@ -1,0 +1,40 @@
+[listener]
+; bind locally; the reverse proxy terminates TLS. It must pass the query string through:
+; the long poll's `wait`, `seenPaid` and `seenFull` all travel in it
+host = 127.0.0.1
+port = 8080
+; required: the directory `npm run build` writes in apps/simplex-badge-service/web
+static_dir = ./apps/simplex-badge-service/web/dist
+; on behind the reverse proxy above: without it every request keys the rate limiter on the
+; proxy's own address, so one bucket is shared by everyone. Set it off only where this
+; listener is reached directly, since a client can write the header itself.
+trust_forwarded_for = on
+
+; omit this whole section to disable Bitcoin and Monero (the browser shows the provider-unavailable screen)
+[btcpay]
+host = https://btcpay.example.org
+api_key = replace-me
+store_id = replace-me
+webhook_secret = replace-me
+expiry_minutes = 60
+speed_policy = MediumSpeed
+payment_tolerance = 0.5
+
+[poll]
+waiting_seconds = 3
+idle_seconds = 60
+
+; the keys this service may sign credentials with. key_<n> is the index clients verify against,
+; and default names the one that signs, so a key here has to be one whose public half already
+; ships in the apps: a fresh `simplex-chat badge keygen` pair is refused until it does.
+; --issuer-key-idx and --issuer-secret override this section if both are given.
+; list a key before rotating onto it: every key here is checked at startup, so this section
+; stays commented out until it holds a real key. An unusable one here refuses the boot.
+;[issuer]
+;default = key_1
+;key_1 = replace-me
+
+; local testing only: signs a credential for anyone who sends /redeem <code> over chat,
+; with a master key this service generates and can therefore link
+[dev]
+chat_redeem = off
