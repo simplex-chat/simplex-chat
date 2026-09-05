@@ -397,6 +397,7 @@ private struct ActiveProfilePicker: View {
     @State private var searchTextOrPassword = ""
     @State private var showIncognitoSheet = false
     @State private var incognitoFirst: Bool = false
+    @State private var showAddProfile = false
     @State var selectedProfile: User
     var trimmedSearchTextOrPassword: String { searchTextOrPassword.trimmingCharacters(in: .whitespaces)}
 
@@ -558,6 +559,36 @@ private struct ActiveProfilePicker: View {
         }
     }
 
+    private var addProfileOption: some View {
+        Button {
+            showAddProfile = true
+        } label: {
+            HStack {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .resizable().scaledToFit().frame(width: 30, height: 30)
+                    .padding(.trailing, 2)
+                    .foregroundColor(theme.colors.primary)
+                Text("Add profile")
+                    .foregroundColor(theme.colors.primary)
+                Spacer()
+            }
+        }
+    }
+
+    private func createProfileForConnection(_ profile: Profile) async throws {
+        let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
+        let updatedUsers = try? await listUsersAsync()
+        await MainActor.run {
+            showAddProfile = false
+            if let updatedUsers {
+                chatModel.users = updatedUsers
+                profiles = updatedUsers.map { $0.user }
+            }
+            selectedProfile = newUser
+            profileSwitchStatus = .switchingUser
+        }
+    }
+
     @ViewBuilder private func profilePicker() -> some View {
         let incognitoOption = Button {
             if !incognitoEnabled {
@@ -610,8 +641,17 @@ private struct ActiveProfilePicker: View {
                     profilerPickerUserOption(p)
                 }
             }
+
+            if contactConnection != nil {
+                addProfileOption
+            }
         }
         .opacity(switchingProfileByTimeout ? 0.4 : 1)
+        .sheet(isPresented: $showAddProfile) {
+            NavigationView {
+                CreateProfile(onCreate: createProfileForConnection)
+            }
+        }
     }
 }
 
