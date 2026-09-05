@@ -229,14 +229,10 @@ struct ContextProfilePickerView: View {
     }
 
     private func createProfileForChat(_ profile: Profile) async throws {
-        let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
-        let updatedUsers = try? await listUsersAsync()
+        let newUser = try await createProfileKeepingActiveUser(profile)
         await MainActor.run {
             showAddProfile = false
-            if let updatedUsers {
-                chatModel.users = updatedUsers
-                users = updatedUsers.map { $0.user }.filter { u in u.activeUser || !u.hidden }
-            }
+            users = chatModel.users.map { $0.user }.filter { u in u.activeUser || !u.hidden }
             changeProfile(newUser)
         }
     }
