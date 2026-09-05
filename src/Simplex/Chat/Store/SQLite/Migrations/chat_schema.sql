@@ -106,6 +106,7 @@ CREATE TABLE contacts(
   grp_direct_inv_from_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
   grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
+  drop_feed INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -208,7 +209,8 @@ CREATE TABLE groups(
   roster_blob BLOB,
   group_domain_verified INTEGER,
   stored_roster_version INTEGER,
-  applied_complete_roster_version INTEGER, -- received
+  applied_complete_roster_version INTEGER,
+  drop_feed INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -303,6 +305,8 @@ CREATE TABLE files(
   roster_transfer_id INTEGER,
   file_digest BLOB,
   file_expires_at TEXT
+  ,
+  feed_id INTEGER DEFAULT NULL REFERENCES feeds ON DELETE CASCADE
 ) STRICT;
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -456,6 +460,8 @@ CREATE TABLE messages(
   broker_ts TEXT,
   msg_chat_binding TEXT,
   msg_signatures BLOB
+  ,
+  feed_id INTEGER DEFAULT NULL REFERENCES feeds ON DELETE CASCADE
 ) STRICT;
 CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
@@ -521,6 +527,10 @@ CREATE TABLE chat_items(
   fwd_from_public_group_id BLOB,
   fwd_from_member_id BLOB,
   fwd_from_shared_msg_id BLOB
+  ,
+  feed_id INTEGER DEFAULT NULL REFERENCES feeds ON DELETE CASCADE,
+  feed_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL,
+  item_feed INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
@@ -785,7 +795,7 @@ CREATE TABLE delivery_tasks(
 ) STRICT;
 CREATE TABLE delivery_jobs(
   delivery_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   worker_scope TEXT NOT NULL,
   job_scope_spec_tag TEXT,
   job_scope_include_pending INTEGER,
@@ -799,6 +809,13 @@ CREATE TABLE delivery_jobs(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
   ,
   sender_group_member_ids TEXT
+  ,
+  feed_id INTEGER REFERENCES feeds ON DELETE CASCADE,
+  chat_item_id INTEGER REFERENCES chat_items ON DELETE CASCADE,
+  delete_mode TEXT,
+  message_ids TEXT,
+  cursor_contact_id INTEGER,
+  cursor_group_id INTEGER
 ) STRICT;
 CREATE TABLE group_member_status_predicates(
   member_status TEXT NOT NULL PRIMARY KEY,
@@ -1418,3 +1435,41 @@ BEGIN
         )
     WHERE group_id = NEW.group_id;
 END;
+CREATE TABLE feeds(
+  feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
+  chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
+  favorite INTEGER NOT NULL DEFAULT 0,
+  unread_chat INTEGER NOT NULL DEFAULT 0
+) STRICT;
+CREATE INDEX idx_feeds_user_id ON feeds(user_id);
+CREATE INDEX idx_chat_items_feed_id ON chat_items(feed_id);
+CREATE INDEX idx_chat_items_feeds_created_at ON chat_items(
+  user_id,
+  feed_id,
+  created_at
+);
+CREATE INDEX idx_chat_items_feed_item_contact ON chat_items(
+  feed_item_id,
+  contact_id
+);
+CREATE INDEX idx_chat_items_feed_item_group ON chat_items(
+  feed_item_id,
+  group_id
+);
+CREATE INDEX idx_messages_feed_id ON messages(feed_id);
+CREATE INDEX idx_files_feed_id ON files(feed_id);
+CREATE INDEX idx_contacts_user_id ON contacts(user_id);
+CREATE INDEX idx_groups_user_id_business_chat ON groups(
+  user_id,
+  business_chat
+);
+CREATE INDEX idx_delivery_jobs_feed_next ON delivery_jobs(
+  feed_id,
+  worker_scope,
+  failed,
+  job_status
+);
+CREATE INDEX idx_delivery_jobs_chat_item_id ON delivery_jobs(chat_item_id);

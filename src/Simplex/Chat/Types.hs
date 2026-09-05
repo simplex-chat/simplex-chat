@@ -588,20 +588,22 @@ data GroupLink = GroupLink
   }
   deriving (Show)
 
-data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
+data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember] | CGFeed Feed
 
 data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
 
-contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
+contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId, Maybe FeedId)
 contactAndGroupIds = \case
-  CGContact Contact {contactId} -> (Just contactId, Nothing)
-  CGGroup GroupInfo {groupId} _ -> (Nothing, Just groupId)
+  CGContact Contact {contactId} -> (Just contactId, Nothing, Nothing)
+  CGGroup GroupInfo {groupId} _ -> (Nothing, Just groupId, Nothing)
+  CGFeed Feed {feedId} -> (Nothing, Nothing, Just feedId)
 
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
   { enableNtfs :: MsgFilter,
     sendRcpts :: Maybe Bool,
-    favorite :: Bool
+    favorite :: Bool,
+    dropFeed :: BoolDef
   }
   deriving (Eq, Show)
 
@@ -610,7 +612,8 @@ defaultChatSettings =
   ChatSettings
     { enableNtfs = MFAll,
       sendRcpts = Nothing,
-      favorite = False
+      favorite = False,
+      dropFeed = BoolDef False
     }
 
 chatHasNtfs :: ChatSettings -> Bool
@@ -2218,6 +2221,19 @@ data NoteFolder = NoteFolder
 
 type NoteFolderId = Int64
 
+data Feed = Feed
+  { feedId :: FeedId,
+    userId :: UserId,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime,
+    chatTs :: UTCTime,
+    favorite :: Bool,
+    unread :: Bool
+  }
+  deriving (Eq, Show)
+
+type FeedId = Int64
+
 data ChatVersion
 
 instance VersionScope ChatVersion
@@ -2409,5 +2425,7 @@ $(JQ.deriveJSON defaultJSON ''Contact)
 $(JQ.deriveJSON defaultJSON ''ContactRef)
 
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
+
+$(JQ.deriveJSON defaultJSON ''Feed)
 
 $(JQ.deriveJSON defaultJSON ''ChatTag)
