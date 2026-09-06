@@ -39,6 +39,8 @@ templateEngineOverride: njk
            design3-nav.css (logo + button size / position / chip).
            ============================================================ */
 
+        .cf-nw { white-space: nowrap; }
+
         :root {
             --cf-grad-light: linear-gradient(10deg, #e8f3ff 0%, #c0e2ff 40%, #e9ffff 80%, #ffefd6 90%);
             --cf-grad-dark: linear-gradient(9.2deg, #000000 0%, #131d49 52%, #3f5598 65%, #c3faff 85%, #fff6e0 90%);
@@ -54,7 +56,7 @@ templateEngineOverride: njk
         }
 
         body {
-            background: var(--cf-grad-dark);
+            background: #0a0f2b;
             font-family: "GT-Walsheim", Gilroy, Helvetica, sans-serif;
         }
 
@@ -71,13 +73,13 @@ templateEngineOverride: njk
         /* Art paths */
         .cf-problem { --cf-art: url("/img/crowdfunding/problem.png"); }
         .cf-growth  { --cf-art: url("/img/crowdfunding/simplex-growth-2.png"); }
-        .cf-moat    { --cf-art: url("/img/crowdfunding/cf-moat.webp"); }    /* supply (or comparison.webp) */
         .cf-network { --cf-art: url("/img/design_3/section-3-desktop-light.webp"); } /* 5 participants - home page */
         .cf-revenue { --cf-art: url("/img/design_3/section-4-desktop-light.webp"); } /* Funded by Its Users - home page */
 
         /* hero + close: full-bleed globe (home page hero cover) */
         section.page.cf.cf-hero,
         section.page.cf.cf-close {
+            background-color: #0a0f2b;
             background-image: url("/img/design_3/cover.webp");
             background-size: var(--cover-bg-w) var(--cover-bg-h);
             background-position: center;
@@ -88,6 +90,16 @@ templateEngineOverride: njk
            7.5vwu from the box edge and the text-to-art gap scales with the box */
         section.page.cf.cf-problem { background-image: var(--cf-grad-dark); background-size: 102% 102%; background-position: center; }
         section.page.cf.cf-growth  { background-image: var(--cf-grad-light); background-size: 102% 102%; background-position: center; }
+        section.page.cf.cf-moat    { background-image: var(--cf-grad-light); background-size: 102% 102%; background-position: center; }
+        section.page.cf.cf-build   { background-image: var(--cf-grad-light); background-size: 102% 102%; background-position: center; }
+        .cf-build .area {
+            background: url("/img/crowdfunding/github-stars.png") no-repeat right calc(var(--sec-vwu) * 7.5) center;
+            background-size: calc(var(--sec-vwu) * 42) auto;
+        }
+        .cf-moat .area {
+            background: url("/img/crowdfunding/comparison.png") no-repeat right calc(var(--sec-vwu) * 7.5) center;
+            background-size: calc(var(--sec-vwu) * 46) auto;
+        }
         .cf-problem .area {
             background: url("/img/crowdfunding/problem.png") no-repeat left calc(var(--sec-vwu) * 7.5) center;
             background-size: calc(var(--sec-vwu) * 40) auto;
@@ -144,47 +156,92 @@ templateEngineOverride: njk
 
         .cf-center .lead strong { font-weight: 600; color: #ffffff; }
 
-        /* ---- CTA buttons (in-content, scale with the section) ---- */
-        .cf-cta {
+        .cf-pill {
+            position: fixed;
+            right: 30px;
+            z-index: 50000;
+            height: 48px;
+            padding: 0 28px;
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: calc(var(--sec-vwu) * 1.4);
-            margin-top: calc(var(--sec-vhu) * 1.5);
-        }
-
-        .cf-btn {
+            align-items: center;
             font-family: "Manrope", sans-serif;
+            font-size: 17px;
             font-weight: 600;
-            font-size: calc(var(--sec-vwu) * 1.7);
-            line-height: 1;
             border-radius: 999px;
-            padding: calc(var(--sec-vwu) * 1.5) calc(var(--sec-vwu) * 3.2);
             text-decoration: none;
             white-space: nowrap;
-            cursor: pointer;
-            transition: filter .15s ease, background .15s ease, color .15s ease;
+            transition: filter .15s ease, box-shadow .15s ease, transform .06s ease;
         }
+        .cf-pill:focus-visible { outline: 2px solid #006cd7; outline-offset: 2px; }
+        .cf-pill:active { transform: translateY(1px); }
 
-        .cf-btn-primary { background: var(--cf-cyan); color: #041038; }
-        .cf-btn-primary:hover { filter: brightness(1.06); }
+        .cf-top { top: 30px; }
+        .cf-bottom { bottom: 30px; }
 
-        .cf-btn-ghost {
-            background: transparent;
+        .cf-primary {
+            background: linear-gradient(90deg, #019bfe 0%, #2e3fa0 100%);
             color: #ffffff;
-            box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .6);
+            --wf-capital-nav-logo-fill: #ffffff;
         }
-        .cf-btn-ghost:hover { background: rgba(255, 255, 255, .1); }
+        .cf-primary:hover { filter: brightness(1.1); }
+        .cf-primary:active { filter: brightness(.98); }
+        .cf-primary:focus-visible { outline-color: #ffffff; }
+
+        #navbar.on-cover ~ .cf-primary {
+            background: linear-gradient(90deg, #ffb55d 0%, #fff494 50%, #fbffdd 100%);
+            color: #000000;
+            --wf-capital-nav-logo-fill: #000000;
+        }
+        #navbar.on-cover ~ .cf-primary:focus-visible { outline-color: #000000; }
+
+        .cf-secondary {
+            background: #ffffff;
+            color: #006cd7;
+            border: 1px solid rgba(2, 55, 137, .15);
+            --wf-capital-nav-logo-fill: #006cd7;
+        }
+        .cf-secondary:hover { box-shadow: 0 0 0 1px #80b6eb; }
+
+        .cf-pill { gap: 9px; }
+        .cf-pill svg { height: 30px; width: auto; display: block; transform: translateY(-3.5px); }
 
         @media screen and (min-width: 960px) {
-            .cf-network .text-container h2 { max-width: calc(var(--sec-vwu) * 29) !important; }
+            .cf-pill { width: 252px; justify-content: center; }
+        }
+
+        .cf-live-link {
+            font-family: "Manrope", sans-serif;
+            font-weight: 300;
+            font-size: calc(var(--sec-vwu) * 1.9);
+            background: linear-gradient(90deg, #019bfe 0%, #64fdff 58%, #c8feff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            text-decoration: none;
+        }
+        .cf-live-link:focus-visible { outline: 2px solid #019bfe; outline-offset: 2px; }
+
+        @media screen and (min-width: 960px) {
+            .cf-network .text-container h2 { max-width: calc(var(--sec-vwu) * 23.5) !important; }
             .cf-network .text-container p { max-width: calc(var(--sec-vwu) * 31) !important; }
-            .cf-revenue .text-container p { max-width: calc(var(--sec-vwu) * 30) !important; }
+            .cf-network .text-container a { max-width: calc(var(--sec-vwu) * 31) !important; }
+            section.page.cf.cf-revenue {
+                background-size: calc(var(--cover-bg-w) * 0.89) calc(var(--cover-bg-h) * 0.89), 102% 102%;
+                background-position: calc(50% - var(--sec-vwu) * 6.9) center, center;
+            }
+            .cf-revenue .text-container h2 { max-width: calc(var(--sec-vwu) * 38) !important; }
+            .cf-revenue .text-container p { max-width: calc(var(--sec-vwu) * 38) !important; }
             .cf-problem .text-container h2 { max-width: calc(var(--sec-vwu) * 42) !important; }
             .cf-problem .text-container p { max-width: calc(var(--sec-vwu) * 42) !important; }
             .cf-problem .text-container a { max-width: calc(var(--sec-vwu) * 42) !important; }
             .cf-growth .text-container h2 { max-width: calc(var(--sec-vwu) * 36) !important; }
             .cf-growth .text-container p { max-width: calc(var(--sec-vwu) * 35) !important; }
+            .cf-moat .text-container h2 { max-width: calc(var(--sec-vwu) * 38) !important; }
+            .cf-moat .text-container p { max-width: calc(var(--sec-vwu) * 33) !important; }
+            .cf-build .text-container h2 { max-width: calc(var(--sec-vwu) * 33) !important; }
+            .cf-build .text-container p { max-width: calc(var(--sec-vwu) * 35) !important; }
+            .cf-build .text-container a { max-width: calc(var(--sec-vwu) * 35) !important; }
         }
 
         /* ============================================================
@@ -200,14 +257,17 @@ templateEngineOverride: njk
         #navbar.on-light > a.logo.logo-light { display: flex; }
         #navbar.on-light > a.logo.logo-dark { display: none; }
 
-        #navbar.on-cover .box-btn.token {
-            background: linear-gradient(90deg, #ffb55d 0%, #fff494 50%, #fbffdd 100%);
-            color: #000000;
-        }
-
         @media screen and (min-width: 960px) {
-            #navbar.on-dark > a.logo,
-            #navbar.on-dark .right-links { background: rgba(19, 29, 73, 0.005); }
+            header#navbar { height: 74px; }
+            header#navbar > a.logo {
+                top: 0;
+                padding: 18.7px 30px;
+                height: auto;
+                background: transparent;
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+            }
+            header#navbar > a.logo img { width: 174.7px; height: auto; }
         }
 
         /* keep the navbar visible on mobile (no slide-in menu here) */
@@ -228,9 +288,10 @@ templateEngineOverride: njk
             .cf-revenue { --cf-art: url("/img/design_3/section-4-mobile-light.webp"); }
 
             section.page.cf.cf-network {
-                background-size: auto calc(var(--cover-bg-h) * 0.8), 102% 102%;
+                background-size: auto calc(var(--cover-bg-h) * 0.72), 102% 102%;
                 background-position: 50% calc(50% - var(--sec-vhu) * 4.5), center;
             }
+            .cf-network .text-container h2 { font-size: calc(var(--sec-vwu) * 12.2); }
             section.page.cf.cf-revenue {
                 background-size: auto calc(var(--cover-bg-h) * 0.84), 102% 102%;
                 background-position: 50% calc(50% - var(--sec-vhu) * 2), center;
@@ -243,13 +304,61 @@ templateEngineOverride: njk
                 background-size: calc(var(--sec-vwu) * 82) auto;
                 background-position: center calc(var(--sec-vhu) * 4);
             }
+            .cf-moat .area {
+                background-size: calc(var(--sec-vwu) * 82) auto;
+                background-position: center calc(var(--sec-vhu) * 4);
+            }
+            .cf-build .area {
+                background-size: calc(var(--sec-vwu) * 82) auto;
+                background-position: center calc(var(--sec-vhu) * 4);
+            }
 
             .cf-center h1 { font-size: calc(var(--sec-vwu) * 15); max-width: calc(var(--sec-vwu) * 90); }
             .cf-center .lead { font-size: calc(var(--sec-vwu) * 5); max-width: calc(var(--sec-vwu) * 88); }
 
-            .cf-cta { gap: calc(var(--sec-vwu) * 3); }
-            .cf-btn { font-size: calc(var(--sec-vwu) * 4.4); padding: calc(var(--sec-vwu) * 3.4) calc(var(--sec-vwu) * 6); }
+            .cf-pill { font-size: 15px; }
+            .cf-bottom { top: 5px; right: 16px; bottom: auto; padding: 0 18px; }
+            .cf-top { top: auto; left: 16px; right: 16px; bottom: 16px; height: 48px; justify-content: center; }
+            .cf-live-link { font-size: calc(var(--sec-vwu) * 4.2); }
             .cf .text-container a.gradient-text { font-weight: 400; }
+        }
+
+        section.page.cf.cf-network { overflow: hidden; }
+
+        .cf-tags {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: var(--cover-bg-w);
+            height: var(--cover-bg-h);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 3;
+        }
+        .cf-tag {
+            position: absolute;
+            font-family: "Manrope", sans-serif;
+            text-align: left;
+            color: #06214a;
+            text-shadow: 0 1px 8px rgba(255, 255, 255, .95), 0 0 3px rgba(255, 255, 255, .95);
+            white-space: nowrap;
+        }
+        .cf-tag .n { font-weight: 700; font-size: calc(var(--sec-vwu) * 1.5); line-height: 1.35; }
+        .cf-tag .v { font-weight: 500; font-size: calc(var(--sec-vwu) * 1.2); line-height: 1.45; }
+        .cf-tag .v b { font-weight: 700; }
+        @media screen and (max-width: 959px) {
+            .cf-tags {
+                width: calc(var(--cover-bg-h) * 0.72 * 0.7143);
+                height: calc(var(--cover-bg-h) * 0.72);
+                top: calc(50% - var(--sec-vhu) * 4.5);
+            }
+            .cf-tag .n { font-size: calc(var(--cover-bg-h) * 0.0104); line-height: 1.3; }
+            .cf-tag .v { font-size: calc(var(--cover-bg-h) * 0.0087); line-height: 1.4; }
+            .cf-tags .cf-tag:nth-child(1) { left: 54.1% !important; top: 53.1% !important; }
+            .cf-tags .cf-tag:nth-child(2) { left: 64.2% !important; top: 34.5% !important; }
+            .cf-tags .cf-tag:nth-child(3) { left: 62.3% !important; top: 20.6% !important; }
+            .cf-tags .cf-tag:nth-child(4) { left: 35.6% !important; top: 19.7% !important; }
+            .cf-tags .cf-tag:nth-child(5) { left: 24.4% !important; top: 50.8% !important; }
         }
 
         /* extension link + CSS-only :target popups (as on simplex.domains) */
@@ -269,10 +378,20 @@ templateEngineOverride: njk
         .cf-modal-backdrop { position: absolute; inset: 0; background: rgba(4, 9, 24, .55); backdrop-filter: blur(3px); }
         .cf-modal-panel { position: relative; z-index: 1; display: flex; align-items: center; gap: clamp(24px, 3vw, 44px); width: clamp(min(680px, 100%), 80vw, 980px); max-height: calc(100dvh - 48px); overflow: auto; background: linear-gradient(160deg, #050920 0%, #0b1440 46%, #16255f 78%, #22346f 100%); color: #dfeaff; border-radius: 24px; box-shadow: 0 30px 80px rgba(4, 9, 24, .5); padding: clamp(28px, 4vw, 52px); font-family: "Manrope", sans-serif; }
         .cf-modal-text { flex: 1; min-width: 0; }
-        .cf-modal-img { flex: none; width: clamp(240px, 44%, 460px); height: auto; }
+        .cf-modal-img { flex: none; width: clamp(240px, 44%, 460px); height: auto; border-radius: 12px; }
         .cf-modal-close { position: absolute; top: 22px; right: 22px; width: 20px; height: 20px; color: #9fb2d8; z-index: 2; }
         .cf-modal-close svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
         .cf-modal-close:hover { color: #ffffff; }
+
+        .cf-modal-light .cf-modal-panel {
+            background: linear-gradient(160deg, #ffffff 0%, #eaf4ff 70%, #e9ffff 100%);
+            color: #06214a;
+        }
+        .cf-modal-light .cf-modal-panel h2 { color: #023789; }
+        .cf-modal-light .cf-modal-panel p strong { color: #023789; }
+        .cf-modal-light .cf-modal-close { color: rgba(2, 55, 137, .55); }
+        .cf-modal-light .cf-modal-close:hover { color: #023789; }
+        .cf-modal-light .cf-modal-img { border: 1px solid rgba(2, 55, 137, .12); }
         .cf-modal-panel h2 { font-family: "GT-Walsheim", sans-serif; font-weight: 700; font-size: 1.6rem; letter-spacing: -.015em; line-height: 1.15; color: #ffffff; padding-right: 30px; }
         .cf-modal-panel p { font-weight: 400; font-size: 1.06rem; line-height: 1.7; margin-top: 14px; }
         .cf-modal-panel p strong { font-weight: 500; color: #ffffff; }
@@ -291,9 +410,6 @@ templateEngineOverride: njk
     <header id="navbar" class="on-dark on-cover">
         <a href="/" class="logo logo-light"><img src="/img/new/logo-light.png" alt="SimpleX"></a>
         <a href="/" class="logo logo-dark"><img src="/img/new/logo-dark.png" alt="SimpleX"></a>
-        <div class="right-links">
-            <a class="box-btn token" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener">Invest</a>
-        </div>
     </header>
 
     <div class="screen">
@@ -303,11 +419,7 @@ templateEngineOverride: njk
             <div class="content">
                 <h1>The first messaging network with no user identifiers</h1>
                 <p class="lead">No phone numbers, usernames, or accounts &mdash; no one, not even our servers, can see who talks to whom. 480,000 people already use it.</p>
-                <div class="cf-cta">
-                    <a class="cf-btn cf-btn-primary" href="#request">Request our investor brief</a>
-                    <a class="cf-btn cf-btn-ghost" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener">Invest on Wefunder</a>
-                    <a class="cf-btn cf-btn-ghost" href="/livestream/">Join the livestream, Sep 15</a>
-                </div>
+                <a class="cf-live-link" href="/livestream/">Join the livestream, Sep 15</a>
             </div>
         </section>
 
@@ -335,49 +447,109 @@ templateEngineOverride: njk
         </section>
 
         <!-- 3 · NETWORK, NOT AN APP -->
-        <section class="page cf cf-light cf-right cf-network">
+        <section class="page cf cf-light cf-right cf-network" id="network">
+            <div class="cf-tags" aria-hidden="true">
+                <div class="cf-tag" style="left: 40.8%; top: 70.1%;">
+                    <div class="n">Users</div>
+                    <div class="v"><b>480,000</b> active monthly,</div>
+                    <div class="v">organic growth</div>
+                </div>
+                <div class="cf-tag" style="left: 45.8%; top: 47.6%;">
+                    <div class="n">Creators</div>
+                    <div class="v"><b>1,000s</b> of public</div>
+                    <div class="v">groups and channels</div>
+                </div>
+                <div class="cf-tag" style="left: 45.2%; top: 30%;">
+                    <div class="n">Businesses</div>
+                    <div class="v"><b>20+</b> offer customer</div>
+                    <div class="v">support</div>
+                </div>
+                <div class="cf-tag" style="left: 31.9%; top: 29.4%;">
+                    <div class="n">Developers</div>
+                    <div class="v"><b>19K+</b> GitHub stars</div>
+                    <div class="v"><b>1,000+</b> forks, bots,</div>
+                    <div class="v">bridges, plugins</div>
+                </div>
+                <div class="cf-tag" style="left: 25.8%; top: 67.5%;">
+                    <div class="n">Operators</div>
+                    <div class="v"><b>~1,000</b></div>
+                    <div class="v">independent</div>
+                    <div class="v">servers</div>
+                </div>
+            </div>
             <div class="area">
                 <div class="text-container">
-                    <h2>It's becoming a network, not an app</h2>
-                    <p>Creators, businesses, and developers already build on it. Solve privacy and usability together, and it becomes how everyone communicates &mdash; like the web, but private.</p>
+                    <h2>SimpleX is a network, not an app</h2>
+                    <p>All five kinds of participants arrived on their own &mdash; the cold start problem solved.</p>
+                    <p>Each group makes the network more valuable to others, accelerating growth.</p>
                 </div>
             </div>
         </section>
 
-        <!-- 4 · CAN'T BE COPIED -->
-        <section class="page cf cf-light cf-left cf-moat">
-            <div class="area">
-                <div class="text-container">
-                    <h2>And no one can copy it</h2>
-                    <p>You can't bolt "no identifiers" onto a network built on them &mdash; rivals would start over, and the ad giants would lose their business.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- 5 · REVENUE -->
+        <!-- 4 · REVENUE -->
         <section class="page cf cf-light cf-right cf-revenue">
             <div class="area">
                 <div class="text-container">
-                    <h2>It earns without selling you</h2>
-                    <p>Free for users; the money comes from infrastructure and services, not your data &mdash; two of four revenue streams launch this year.</p>
+                    <h2><span class="cf-nw">Pre-revenue</span> stage ends this year</h2>
+                    <p>Additional file capacity and SimpleX public names launch this year, followed by business messaging and paid servers for big channels.</p>
+                    <p>Demand is proven &mdash; <span>users donated $650,000</span> while everything was free.</p>
                 </div>
             </div>
         </section>
 
-        <!-- 6 · CLOSE -->
+        <!-- 5 · CAN'T BE COPIED -->
+        <section class="page cf cf-light cf-left cf-moat">
+            <div class="area">
+                <div class="text-container">
+                    <h2>Design advantage that can't be copied</h2>
+                    <p>Only SimpleX has every property in this comparison &mdash; together they need a network without user identifiers.</p>
+                    <p>A network with user IDs can't remove them &mdash; rivals would have to rebuild, and the ad giants would lose revenue that depends on user IDs.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6 · BUILD ON -->
+        <section class="page cf cf-light cf-left cf-build" id="build">
+            <div class="area">
+                <div class="text-container">
+                    <h2>A network others build on</h2>
+                    <p>Developers already built many different services on SimpleX. In 2027, we plan to add support for user-created features inside chats.</p>
+                    <p>Features and services users build would bring new users and increase revenue.</p>
+                    <a class="gradient-text" href="#one-protocol">How custom UX may unify messaging</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7 · CLOSE -->
         <section class="page cf cf-dark cf-center cf-close" id="request">
             <div class="content">
                 <h1>People who'd know already invested</h1>
                 <p class="lead">The syndicate lead, Flux's co-founder, and three advisors put in money before this round opened. <strong>Own part of it</strong> &mdash; and claim your SimpleX name before the public sale.</p>
-                <div class="cf-cta">
-                    <a class="cf-btn cf-btn-primary" href="#request">Request our investor brief</a>
-                    <a class="cf-btn cf-btn-ghost" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener">Invest on Wefunder</a>
-                    <a class="cf-btn cf-btn-ghost" href="/livestream/">Book a call</a>
-                </div>
+                <a class="cf-live-link" href="/livestream/">Join the livestream, Sep 15</a>
             </div>
         </section>
 
     </div>
+
+    <a class="cf-pill cf-top cf-primary" id="cf-cta-request" href="#request">Request Investor Brief</a>
+    <a class="cf-pill cf-bottom cf-secondary" id="cf-cta-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
+        Invest on
+        <svg width="120" height="33" viewBox="0 0 165 45" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M44.0386 38.5332H56.7241V35.3848H47.5317V31.6849H55.5291V28.5365H47.5317V24.9515H56.6092V21.8031H44.0386V38.5332ZM60.242 38.5332H63.7581V31.9836H71.8474V28.7663H63.7581V25.0204H72.9045V21.8031H60.242V38.5332ZM83.049 38.786C87.5302 38.786 90.3569 36.3041 90.3569 31.2482V21.8031H86.8408V31.4091C86.8408 34.1438 85.416 35.5457 83.0949 35.5457C80.7738 35.5457 79.372 34.0749 79.372 31.2712V21.8031H75.8329V31.3861C75.8329 36.2811 78.5906 38.786 83.049 38.786ZM94.3543 38.5332H97.8245V27.6402L106.144 38.5332H109.154V21.8031H105.661V32.3513L97.5946 21.8031H94.3543V38.5332ZM113.43 38.5332H119.888C125.151 38.5332 128.782 34.8792 128.782 30.1681V30.1222C128.782 25.4111 125.151 21.8031 119.888 21.8031H113.43V38.5332ZM119.888 24.9974C122.99 24.9974 125.082 27.1346 125.082 30.1681V30.2141C125.082 33.2476 122.99 35.3388 119.888 35.3388H116.946V24.9974H119.888ZM132.304 38.5332H144.99V35.3848H135.797V31.6849H143.795V28.5365H135.797V24.9515H144.875V21.8031H132.304V38.5332ZM152.024 29.9613V24.9974H155.816C157.677 24.9974 158.826 25.8477 158.826 27.4564V27.5023C158.826 28.9731 157.723 29.9613 155.885 29.9613H152.024ZM148.508 38.5332H152.024V33.0867H155.08L158.78 38.5332H162.917L158.734 32.4892C160.894 31.7308 162.388 30.0302 162.388 27.3185V27.2725C162.388 25.7328 161.906 24.4229 160.986 23.5037C159.883 22.4006 158.229 21.8031 156.114 21.8031H148.508V38.5332Z" fill="var(--wf-capital-nav-logo-fill)"></path>
+            <path d="M3 29.4853L6.36524 22.194C6.60628 21.6717 7.35366 21.6867 7.57359 22.2182L14.3487 38.5913C14.5779 39.1453 15.3677 39.1308 15.5764 38.5687L23.1127 18.279C23.315 17.7341 24.0721 17.6984 24.3249 18.2217L32.5064 35.1596C32.7713 35.7081 33.5744 35.6351 33.7362 35.048L43.1168 1" stroke="var(--wf-capital-nav-logo-fill)" stroke-width="4.86264"></path>
+        </svg>
+    </a>
+    <script>
+        (function cfFlip() {
+            if (new URLSearchParams(location.search).get('action') !== 'invest') return;
+            var req = document.getElementById('cf-cta-request');
+            var inv = document.getElementById('cf-cta-invest');
+            req.classList.remove('cf-top', 'cf-primary');
+            req.classList.add('cf-bottom', 'cf-secondary');
+            inv.classList.remove('cf-bottom', 'cf-secondary');
+            inv.classList.add('cf-top', 'cf-primary');
+        })();
+    </script>
 
     <div class="cf-modal" id="ai-privacy">
         <a class="cf-modal-backdrop" href="#identifiers" aria-label="Close"></a>
@@ -409,27 +581,45 @@ templateEngineOverride: njk
         </div>
     </div>
 
+    <div class="cf-modal cf-modal-light" id="one-protocol">
+        <a class="cf-modal-backdrop" href="#build" aria-label="Close"></a>
+        <div class="cf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="one-protocol-title">
+            <a class="cf-modal-close" href="#build" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
+            <div class="cf-modal-text">
+                <h2 id="one-protocol-title">How messaging converges to one protocol</h2>
+                <p>Every network before messaging converged to one protocol &mdash; telephony, email, the web.</p>
+                <p>Messaging is the exception, because each app's experience can't reduce to a shared protocol.</p>
+                <p><strong>Once we add custom user experiences in the chat, SimpleX might become the network messaging converges on.</strong></p>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Invert the navbar (logo + button) depending on whether the
         // section under it is dark or light. Same idea as the home page.
         (function cfNav() {
             var nav = document.getElementById('navbar');
             var sections = Array.prototype.slice.call(document.querySelectorAll('section.page.cf'));
-            if (!nav || !sections.length || !('IntersectionObserver' in window)) return;
+            if (!nav || !sections.length) return;
 
-            var io = new IntersectionObserver(function (entries) {
-                entries.forEach(function (e) {
-                    if (e.isIntersecting && e.intersectionRatio >= 0.5) {
-                        var dark = e.target.classList.contains('cf-dark');
-                        var cover = e.target.classList.contains('cf-hero') || e.target.classList.contains('cf-close');
-                        nav.classList.toggle('on-dark', dark);
-                        nav.classList.toggle('on-light', !dark);
-                        nav.classList.toggle('on-cover', cover);
-                    }
-                });
-            }, { threshold: [0.5] });
+            function apply() {
+                var stripY = Math.max(18, window.innerHeight * 0.02);
+                var current = null;
+                for (var k = 0; k < sections.length; k++) {
+                    var r = sections[k].getBoundingClientRect();
+                    if (r.top <= stripY && r.bottom > stripY) { current = sections[k]; break; }
+                }
+                if (!current) return;
+                var dark = current.classList.contains('cf-dark');
+                var cover = current.classList.contains('cf-hero') || current.classList.contains('cf-close');
+                nav.classList.toggle('on-dark', dark);
+                nav.classList.toggle('on-light', !dark);
+                nav.classList.toggle('on-cover', cover);
+            }
 
-            sections.forEach(function (s) { io.observe(s); });
+            window.addEventListener('scroll', apply, { passive: true });
+            window.addEventListener('resize', apply);
+            apply();
         })();
     </script>
 </body>
