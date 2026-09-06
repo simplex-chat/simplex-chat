@@ -365,7 +365,7 @@ chatTypesDocsData =
     (sti @SimplexDomainError, STUnion, "SDE", [], "", ""),
     (sti @SimplexDomainProof, STRecord, "", [], "", ""),
     (sti @SimplexLinkType, STEnum, "XL", [], "", ""),
-    (sti @SimplexNameAvailability, STUnion, "SNA", [], "", ""),
+    (sti @SimplexNameAvailability, STUnion, "SNA", [], "", "What the names router knows about a name that is not this profile's. `premium` is in attoUSD (1e-18 USD), a 256-bit integer, so it travels as a decimal string."),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
     (sti @SimplexNameType, STEnum, "NT", [], "", ""),
     (sti @SimplexTLD, STEnum, "TLD", [], "", ""),

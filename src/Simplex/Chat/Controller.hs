@@ -1448,15 +1448,11 @@ data SimplexDomainError
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
   deriving (Eq, Show)
 
--- what the router says about a name that resolved to someone else, so the user
--- is told whether it is registered, lapsed, or held back. Travels beside the
--- reason the claim failed, never instead of it: clients that do not read it
--- behave as they did before.
 data SimplexNameAvailability
-  = SNANotRegistered -- nobody has registered it
+  = SNANotRegistered
   | SNARegistered {expires :: Maybe UTCTime}
-  | SNAInGrace {graceEnds :: UTCTime} -- lapsed, still renewable by its owner
-  | SNAInAuction {premium :: Text, auctionEnds :: UTCTime} -- lapsed, open to anyone; premium in attoUSD (1e-18 USD), a 256-bit integer so it travels as a decimal string
+  | SNAInGrace {graceEnds :: UTCTime}
+  | SNAInAuction {premium :: Text, auctionEnds :: UTCTime}
   | SNAReserved {reason :: NameReservedReason}
   deriving (Eq, Show)
 

@@ -2861,6 +2861,8 @@ class SimplexDomainProof(TypedDict):
 
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
 
+# What the names router knows about a name that is not this profile's. `premium` is in attoUSD (1e-18 USD), a 256-bit integer, so it travels as a decimal string.
+
 class SimplexNameAvailability_notRegistered(TypedDict):
     type: Literal["notRegistered"]
 
