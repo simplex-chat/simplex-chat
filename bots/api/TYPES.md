@@ -3740,6 +3740,7 @@ InGrace:
 
 InAuction:
 - type: "inAuction"
+- premium: string
 - auctionEnds: UTCTime
 
 Reserved:

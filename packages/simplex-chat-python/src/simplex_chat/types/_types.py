@@ -2874,6 +2874,7 @@ class SimplexNameAvailability_inGrace(TypedDict):
 
 class SimplexNameAvailability_inAuction(TypedDict):
     type: Literal["inAuction"]
+    premium: str
     auctionEnds: str  # ISO-8601 timestamp
 
 class SimplexNameAvailability_reserved(TypedDict):

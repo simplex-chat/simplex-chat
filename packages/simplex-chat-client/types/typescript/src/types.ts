@@ -4134,6 +4134,7 @@ export namespace SimplexNameAvailability {
 
   export interface InAuction extends Interface {
     type: "inAuction"
+    premium: string
     auctionEnds: string // ISO-8601 timestamp
   }
 

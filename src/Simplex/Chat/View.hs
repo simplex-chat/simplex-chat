@@ -30,7 +30,8 @@ import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1)
+import qualified Data.Text.Read as TR
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
 import Data.Time.Calendar (addDays)
 import Data.Time.Clock (UTCTime)
@@ -832,8 +833,15 @@ availabilityReason = \case
   SNANotRegistered -> "is not registered"
   SNARegistered expires_ -> "is registered to someone else" <> maybe "" ((" until " <>) . day) expires_
   SNAInGrace graceEnds -> "has expired, and its owner can renew it until " <> day graceEnds
-  SNAInAuction auctionEnds -> "has expired and anyone can register it, at a premium until " <> day auctionEnds
+  SNAInAuction premium auctionEnds -> "has expired and anyone can register it, at a premium of " <> usd premium <> " until " <> day auctionEnds
   SNAReserved r -> "is reserved" <> reservedReason r
+
+-- | The registry prices in attoUSD (1e-18 USD); whole dollars is what a person
+-- reads. Rounded down, so a premium under a dollar shows as $0.
+usd :: Text -> B.ByteString
+usd atto = case TR.decimal atto of
+  Right (n :: Integer, _) -> "$" <> B.pack (show (n `div` (10 :: Integer) ^ (18 :: Int)))
+  Left _ -> encodeUtf8 atto
 
 day :: UTCTime -> B.ByteString
 day = B.pack . formatTime defaultTimeLocale "%Y-%m-%d"
@@ -2752,12 +2760,11 @@ viewChatError isCmd logLevel testView = \case
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
     CESimplexDomainNotReady domain domainErr availability_ ->
-      -- the router's answer is more use than the link's, when there is one
-      let reason = case availability_ of
-            Just a -> availabilityReason a
-            Nothing -> case domainErr of
-              SDENoValidLink -> "has no valid connection link"
-              SDEUnknownDomain -> "is not included in the connection link's profile"
+      -- what the router knows about the name beats what the link says
+      let linkReason = case domainErr of
+            SDENoValidLink -> "has no valid connection link"
+            SDEUnknownDomain -> "is not included in the connection link's profile"
+          reason = maybe linkReason availabilityReason availability_
        in [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]

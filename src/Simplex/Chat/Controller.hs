@@ -1456,7 +1456,7 @@ data SimplexNameAvailability
   = SNANotRegistered -- nobody has registered it
   | SNARegistered {expires :: Maybe UTCTime}
   | SNAInGrace {graceEnds :: UTCTime} -- lapsed, still renewable by its owner
-  | SNAInAuction {auctionEnds :: UTCTime} -- lapsed, open to anyone at a premium
+  | SNAInAuction {premium :: Text, auctionEnds :: UTCTime} -- lapsed, open to anyone; premium in attoUSD (1e-18 USD), a 256-bit integer so it travels as a decimal string
   | SNAReserved {reason :: NameReservedReason}
   deriving (Eq, Show)
 

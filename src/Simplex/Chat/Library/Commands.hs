@@ -1596,7 +1596,7 @@ processChatCommand cxt nm = \case
             UserContactLink {shortLinkDataSet, connLinkContact = CCLink _ sl_} <- withFastStore (`getUserAddress` user)
             case sl_ of
               Just sl | shortLinkDataSet -> do
-                claimName nm user domain (nameResolvesTo sl . nrSimplexContact)
+                checkNameClaim nm user domain (nameResolvesTo sl . nrSimplexContact)
                 pure $ Just (CLShort sl)
               _ -> throwCmdError "create the address short link and add it to name"
         let p' = (fromLocalProfile p :: Profile) {contactDomain = mkDomainClaim <$> domain_, contactLink = cl'}
@@ -3286,7 +3286,7 @@ processChatCommand cxt nm = \case
         let domainChanged = (claimDomain <$> newClaim) /= (claimDomain <$> (existingAccess >>= groupDomainClaim))
         forM_ (claimDomain <$> newClaim) $ \newDomain ->
           when domainChanged $ do
-            claimName nm user newDomain (nameResolvesTo groupLink . nrSimplexChannel)
+            checkNameClaim nm user newDomain (nameResolvesTo groupLink . nrSimplexChannel)
         runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}} (isJust newClaim && domainChanged)
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
@@ -5042,22 +5042,20 @@ firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
 -- router knows about it. The failure is the same one as before; the answer only
 -- travels beside it, and is absent when the router cannot say - NAVL exists from
 -- SMP v22.
-claimName :: NetworkRequestMode -> User -> SimplexDomain -> (NameRecord -> Bool) -> CM ()
-claimName nm user domain pointsHere = do
+checkNameClaim :: NetworkRequestMode -> User -> SimplexDomain -> (NameRecord -> Bool) -> CM ()
+checkNameClaim nm user domain pointsHere = do
   nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
   unless (pointsHere nr) $ do
-    a_ <- tryAllErrors $ withAgent $ \a -> getSimplexNameAvailability a nm (aUserId user) domain
-    throwChatError $ CESimplexDomainNotReady domain SDENoValidLink (nameAvailability <$> eitherToMaybe a_)
+    availability_ <- eitherToMaybe <$> tryAllErrors (withAgent $ \a -> getSimplexNameAvailability a nm (aUserId user) domain)
+    throwChatError $ CESimplexDomainNotReady domain SDENoValidLink (nameAvailability <$> availability_)
 
--- | What the router said about a name that is not this profile's. The auction
--- premium is dropped: the deadline is what the user can act on, and on .testing
--- the oracle quotes a figure that would only confuse.
+-- | What the router said about a name that is not this profile's.
 nameAvailability :: NameAvailability -> SimplexNameAvailability
 nameAvailability = \case
   NAVailable -> SNANotRegistered
   NATaken expires_ -> SNARegistered $ utcTime <$> expires_
   NAInGrace graceEnds -> SNAInGrace $ utcTime graceEnds
-  NAAuction _ auctionEnds -> SNAInAuction $ utcTime auctionEnds
+  NAAuction premium auctionEnds -> SNAInAuction premium (utcTime auctionEnds)
   NAReserved reason -> SNAReserved reason
   where
     utcTime t = systemToUTCTime (MkSystemTime t 0)

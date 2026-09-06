@@ -9,6 +9,18 @@ import Test.Hspec
 viewTests :: Spec
 viewTests = do
   testRecent
+  testPremiumUsd
+
+-- the registry prices in attoUSD, which no one can read at a glance
+testPremiumUsd :: Spec
+testPremiumUsd = describe "auction premium in USD" $ do
+  it "converts attoUSD to whole dollars" $
+    usd "99999952316384526016153087" `shouldBe` "$99999952"
+  it "rounds down, so under a dollar reads as zero" $ do
+    usd "999999999999999999" `shouldBe` "$0"
+    usd "1000000000000000000" `shouldBe` "$1"
+  it "shows a price it cannot read rather than dropping it" $
+    usd "not-a-number" `shouldBe` "not-a-number"
 
 testRecent :: Spec
 testRecent = describe "recent" $ do
