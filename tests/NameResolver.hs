@@ -18,6 +18,7 @@ where
 
 import Control.Concurrent.STM
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as JKM
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
@@ -26,12 +27,12 @@ import Network.Wai (Application, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Names.Record (NameRecord (..))
 import Simplex.Messaging.Server.Names (NamesConfig (..))
-import Simplex.Messaging.SimplexName (SimplexNameInfo (..), fullDomainName)
+import Simplex.Messaging.SimplexName (SimplexNameInfo (..), fullDomainName, hashedDomain)
 
 type NameRegistry = TVar (Map Text NameRecord)
 
 -- | Run an action with a local resolver on a free port and its registry (keyed
--- by full domain name, what the resolver looks the name up by).
+-- by the full domain name the client asks for, see 'registerName').
 withNameResolver :: (Int -> TVar (Map Text NameRecord) -> IO a) -> IO a
 withNameResolver action = do
   reg <- newTVarIO M.empty
@@ -41,14 +42,23 @@ withNameResolver action = do
     app reg req send = do
       (st, body) <- case pathInfo req of
         ["health"] -> pure (ok200, "{}")
-        ["resolve", d] -> maybe (notFound404, "{}") (\r -> (ok200, J.encode r)) . M.lookup d <$> readTVarIO reg
+        ["resolve", d] -> maybe (notFound404, unregistered) (\r -> (ok200, resolved r)) . M.lookup d <$> readTVarIO reg
         _ -> pure (notFound404, "{}")
       send $ responseLBS st [(hContentType, "application/json")] body
+    -- the real resolver reports the registration status next to the record, and
+    -- names the failure in the body when there is none; availability reads those
+    resolved r = J.encode $ case J.toJSON r of
+      J.Object o -> J.Object $ JKM.insert "status" (J.String "registered") o
+      v -> v
+    unregistered = "{\"error\":\"unregistered\"}"
 
--- | Register a name's domain to resolve to the given record.
+-- | Register a name's domain to resolve to the given record, under the hashed
+-- form of its second-level label. That is the only form a current client asks
+-- by, so registering the plain name too would let these tests pass even if
+-- lookups regressed to plaintext.
 registerName :: TVar (Map Text NameRecord) -> SimplexNameInfo -> NameRecord -> IO ()
 registerName reg SimplexNameInfo {nameDomain} r =
-  atomically $ modifyTVar' reg $ M.insert (fullDomainName nameDomain) r
+  atomically $ modifyTVar' reg $ M.insert (fullDomainName (hashedDomain nameDomain)) r
 
 contactNameRecord :: Text -> Text -> NameRecord
 contactNameRecord name link = (emptyRecord name) {nrSimplexContact = [link]}

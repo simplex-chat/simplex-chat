@@ -70,7 +70,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NameReservedReason (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
@@ -826,6 +826,19 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
           Just (CIFFGroup g _ _ _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]
           Just (CIFFGroupLink g _ _ _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]
           _ -> []
+
+day :: UTCTime -> B.ByteString
+day = B.pack . formatTime defaultTimeLocale "%Y-%m-%d"
+
+reservedReason :: NameReservedReason -> B.ByteString
+reservedReason = \case
+  NRUnspecified -> ""
+  NRTrademark -> " to protect a trademark"
+  NRPublicInterest -> " in the public interest"
+  NROffensive -> " as offensive"
+  NRInternal -> " for SimpleX"
+  NRPremium -> " as a premium name"
+  NRUnknown -> "" -- a reason this version cannot word
 
 localTs :: TimeZone -> UTCTime -> String
 localTs tz ts = do
@@ -2734,6 +2747,11 @@ viewChatError isCmd logLevel testView = \case
       let reason = case domainErr of
             SDENoValidLink -> "has no valid connection link"
             SDEUnknownDomain -> "is not included in the connection link's profile"
+            SDENotRegistered -> "is not registered"
+            SDERegistered expires_ -> "is registered to someone else" <> maybe "" ((" until " <>) . day) expires_
+            SDEInGrace graceEnds -> "has expired, and its owner can renew it until " <> day graceEnds
+            SDEInAuction auctionEnds -> "has expired and anyone can register it, at a premium until " <> day auctionEnds
+            SDEReserved r -> "is reserved" <> reservedReason r
        in [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]

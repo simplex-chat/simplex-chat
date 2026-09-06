@@ -52,6 +52,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, getCurrentTime, nominalDay)
+import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
@@ -111,7 +112,7 @@ import Simplex.Messaging.Crypto.Ratchet (E2ERatchetParamsUri (..), InitialKeys (
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ErrorType (NAME), MsgFlags (..), NameRecord (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ErrorType (NAME), MsgFlags (..), NameAvailability (..), NameRecord (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
@@ -1595,8 +1596,7 @@ processChatCommand cxt nm = \case
             UserContactLink {shortLinkDataSet, connLinkContact = CCLink _ sl_} <- withFastStore (`getUserAddress` user)
             case sl_ of
               Just sl | shortLinkDataSet -> do
-                NameRecord {nrSimplexContact} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
-                unless (nameResolvesTo sl nrSimplexContact) $ throwChatError $ CESimplexDomainNotReady domain SDENoValidLink
+                claimName nm user domain (nameResolvesTo sl . nrSimplexContact)
                 pure $ Just (CLShort sl)
               _ -> throwCmdError "create the address short link and add it to name"
         let p' = (fromLocalProfile p :: Profile) {contactDomain = mkDomainClaim <$> domain_, contactLink = cl'}
@@ -3286,8 +3286,7 @@ processChatCommand cxt nm = \case
         let domainChanged = (claimDomain <$> newClaim) /= (claimDomain <$> (existingAccess >>= groupDomainClaim))
         forM_ (claimDomain <$> newClaim) $ \newDomain ->
           when domainChanged $ do
-            NameRecord {nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) newDomain
-            unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexDomainNotReady newDomain SDENoValidLink
+            claimName nm user newDomain (nameResolvesTo groupLink . nrSimplexChannel)
         runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}} (isJust newClaim && domainChanged)
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
@@ -5038,6 +5037,36 @@ firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
     nameLink t = case strDecode @(ConnShortLink 'CMContact) (encodeUtf8 t) of
       Right sl@(CSLContact _ ct _ _) | ct == ctType -> Just sl
       _ -> Nothing
+
+-- | Check that a name resolves to this link. When it does not, ask the router
+-- what it knows about the name, so the user is told whether it is unregistered,
+-- someone else's, or held back. Asking is best effort - NAVL exists from SMP
+-- v22 and the router may not answer - so a router that cannot say leaves the
+-- failure exactly as it was before.
+claimName :: NetworkRequestMode -> User -> SimplexDomain -> (NameRecord -> Bool) -> CM ()
+claimName nm user domain pointsHere =
+  tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain) >>= \case
+    Right nr | pointsHere nr -> pure ()
+    Right _ -> notReady $ throwChatError $ CESimplexDomainNotReady domain SDENoValidLink
+    Left e -> notReady $ throwError e
+  where
+    notReady fallback =
+      tryAllErrors (withAgent $ \a -> getSimplexNameAvailability a nm (aUserId user) domain) >>= \case
+        Right a -> throwChatError $ CESimplexDomainNotReady domain (nameNotOwned a)
+        Left _ -> fallback
+
+-- | What the router said, as the reason the name is not this profile's to use.
+-- The auction premium is dropped: the deadline is what the user can act on, and
+-- on .testing the oracle quotes a figure that would only confuse.
+nameNotOwned :: NameAvailability -> SimplexDomainError
+nameNotOwned = \case
+  NAVailable -> SDENotRegistered
+  NATaken expires_ -> SDERegistered $ utcTime <$> expires_
+  NAInGrace graceEnds -> SDEInGrace $ utcTime graceEnds
+  NAAuction _ auctionEnds -> SDEInAuction $ utcTime auctionEnds
+  NAReserved reason -> SDEReserved reason
+  where
+    utcTime t = systemToUTCTime (MkSystemTime t 0)
 
 nameResolvesTo :: ConnShortLink 'CMContact -> [Text] -> Bool
 nameResolvesTo sLnk = any (either (const False) (sameShortLinkContact sLnk) . strDecode . encodeUtf8)

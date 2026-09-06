@@ -3313,6 +3313,16 @@ export namespace NameErrorType {
   }
 }
 
+export enum NameReservedReason {
+  Unspecified = "unspecified",
+  Trademark = "trademark",
+  PublicInterest = "publicInterest",
+  Offensive = "offensive",
+  Internal = "internal",
+  Premium = "premium",
+  Unknown = "unknown",
+}
+
 export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
@@ -4061,10 +4071,24 @@ export interface SimplexDomainClaim {
   proof?: SimplexDomainProof
 }
 
-export type SimplexDomainError = SimplexDomainError.NoValidLink | SimplexDomainError.UnknownDomain
+export type SimplexDomainError = 
+  | SimplexDomainError.NoValidLink
+  | SimplexDomainError.UnknownDomain
+  | SimplexDomainError.NotRegistered
+  | SimplexDomainError.Registered
+  | SimplexDomainError.InGrace
+  | SimplexDomainError.InAuction
+  | SimplexDomainError.Reserved
 
 export namespace SimplexDomainError {
-  export type Tag = "noValidLink" | "unknownDomain"
+  export type Tag = 
+    | "noValidLink"
+    | "unknownDomain"
+    | "notRegistered"
+    | "registered"
+    | "inGrace"
+    | "inAuction"
+    | "reserved"
 
   interface Interface {
     type: Tag
@@ -4076,6 +4100,30 @@ export namespace SimplexDomainError {
 
   export interface UnknownDomain extends Interface {
     type: "unknownDomain"
+  }
+
+  export interface NotRegistered extends Interface {
+    type: "notRegistered"
+  }
+
+  export interface Registered extends Interface {
+    type: "registered"
+    expires?: string // ISO-8601 timestamp
+  }
+
+  export interface InGrace extends Interface {
+    type: "inGrace"
+    graceEnds: string // ISO-8601 timestamp
+  }
+
+  export interface InAuction extends Interface {
+    type: "inAuction"
+    auctionEnds: string // ISO-8601 timestamp
+  }
+
+  export interface Reserved extends Interface {
+    type: "reserved"
+    reason: NameReservedReason
   }
 }
 

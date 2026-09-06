@@ -142,6 +142,7 @@ This file is generated automatically.
 - [MsgSigStatus](#msgsigstatus)
 - [MsgVerified](#msgverified)
 - [NameErrorType](#nameerrortype)
+- [NameReservedReason](#namereservedreason)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
@@ -3033,6 +3034,20 @@ RESOLVER:
 
 ---
 
+## NameReservedReason
+
+**Enum type**:
+- "unspecified"
+- "trademark"
+- "publicInterest"
+- "offensive"
+- "internal"
+- "premium"
+- "unknown"
+
+
+---
+
 ## NetworkError
 
 **Discriminated union type**:
@@ -3680,6 +3695,25 @@ NoValidLink:
 
 UnknownDomain:
 - type: "unknownDomain"
+
+NotRegistered:
+- type: "notRegistered"
+
+Registered:
+- type: "registered"
+- expires: UTCTime?
+
+InGrace:
+- type: "inGrace"
+- graceEnds: UTCTime
+
+InAuction:
+- type: "inAuction"
+- auctionEnds: UTCTime
+
+Reserved:
+- type: "reserved"
+- reason: [NameReservedReason](#namereservedreason)
 
 
 ---

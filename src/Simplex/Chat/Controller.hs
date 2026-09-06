@@ -91,7 +91,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NameReservedReason, NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
@@ -1442,10 +1442,17 @@ data ChatError
   | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
--- why a resolved SimpleX name could not be used (the name itself resolved; an unregistered name is the agent's NAME NOT_FOUND)
+-- why a SimpleX name could not be used. The first two are about the record; the
+-- rest are what the router says about the name, which is how an unregistered or
+-- someone else's name is told apart from a broken one.
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
+  | SDENotRegistered -- nobody has registered it
+  | SDERegistered {expires :: Maybe UTCTime} -- registered, and not to this profile
+  | SDEInGrace {graceEnds :: UTCTime} -- lapsed, still renewable by its owner
+  | SDEInAuction {auctionEnds :: UTCTime} -- lapsed, open to anyone at a premium
+  | SDEReserved {reason :: NameReservedReason} -- held back by the registry
   deriving (Eq, Show)
 
 data ChatErrorType

@@ -2319,6 +2319,8 @@ NameErrorType = NameErrorType_NO_RESOLVER | NameErrorType_NOT_FOUND | NameErrorT
 
 NameErrorType_Tag = Literal["NO_RESOLVER", "NOT_FOUND", "RESOLVER"]
 
+NameReservedReason = Literal["unspecified", "trademark", "publicInterest", "offensive", "internal", "premium", "unknown"]
+
 class NetworkError_connectError(TypedDict):
     type: Literal["connectError"]
     connectError: str
@@ -2847,9 +2849,36 @@ class SimplexDomainError_noValidLink(TypedDict):
 class SimplexDomainError_unknownDomain(TypedDict):
     type: Literal["unknownDomain"]
 
-SimplexDomainError = SimplexDomainError_noValidLink | SimplexDomainError_unknownDomain
+class SimplexDomainError_notRegistered(TypedDict):
+    type: Literal["notRegistered"]
 
-SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain"]
+class SimplexDomainError_registered(TypedDict):
+    type: Literal["registered"]
+    expires: NotRequired[str]  # ISO-8601 timestamp
+
+class SimplexDomainError_inGrace(TypedDict):
+    type: Literal["inGrace"]
+    graceEnds: str  # ISO-8601 timestamp
+
+class SimplexDomainError_inAuction(TypedDict):
+    type: Literal["inAuction"]
+    auctionEnds: str  # ISO-8601 timestamp
+
+class SimplexDomainError_reserved(TypedDict):
+    type: Literal["reserved"]
+    reason: "NameReservedReason"
+
+SimplexDomainError = (
+    SimplexDomainError_noValidLink
+    | SimplexDomainError_unknownDomain
+    | SimplexDomainError_notRegistered
+    | SimplexDomainError_registered
+    | SimplexDomainError_inGrace
+    | SimplexDomainError_inAuction
+    | SimplexDomainError_reserved
+)
+
+SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain", "notRegistered", "registered", "inGrace", "inAuction", "reserved"]
 
 class SimplexDomainProof(TypedDict):
     linkOwnerId: NotRequired[str]
