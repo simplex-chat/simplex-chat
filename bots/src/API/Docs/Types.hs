@@ -365,6 +365,7 @@ chatTypesDocsData =
     (sti @SimplexDomainError, STUnion, "SDE", [], "", ""),
     (sti @SimplexDomainProof, STRecord, "", [], "", ""),
     (sti @SimplexLinkType, STEnum, "XL", [], "", ""),
+    (sti @SimplexNameAvailability, STUnion, "SNA", [], "", ""),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
     (sti @SimplexNameType, STEnum, "NT", [], "", ""),
     (sti @SimplexTLD, STEnum, "TLD", [], "", ""),
@@ -598,6 +599,7 @@ deriving instance Generic SimplexDomainClaim
 deriving instance Generic SimplexDomainError
 deriving instance Generic SimplexDomainProof
 deriving instance Generic SimplexLinkType
+deriving instance Generic SimplexNameAvailability
 deriving instance Generic SimplexNameInfo
 deriving instance Generic SimplexNameType
 deriving instance Generic SimplexTLD

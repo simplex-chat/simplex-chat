@@ -20,7 +20,6 @@ chatNamesTests = do
   it "connect by name to a known contact not claimed in profile is rejected" testConnectByNameKnownContactNotClaimed
   it "connect by unregistered name fails to resolve" testConnectByNameNotFound
   it "set name not resolving to own address is rejected" testSetNameNotOwnAddress
-  it "set unregistered name says it is not registered" testSetNameUnregistered
   it "channel name is not verified just by joining via link" testChannelDomainLinkJoinUnverified
   it "verify channel name, fail on re-point, retain status on refresh" testChannelDomainVerify
   it "connect by channel name" testConnectByChannelName
@@ -124,19 +123,6 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
       alice <## "SimpleX name alice.simplex is registered to someone else"
 
 -- a self-claimed name is never auto-verified from link data: the claim is not proof of ownership
--- the name nobody has registered: the router says so, rather than the app
--- blaming the connection link
-testSetNameUnregistered :: HasCallStack => TestParams -> IO ()
-testSetNameUnregistered ps = withSmpServerAndNames $ \_reg ->
-  testChat2 aliceProfile bobProfile test ps
-  where
-    test alice _bob = do
-      enableNamesRole alice
-      alice ##> "/ad"
-      _ <- getContactLinks alice True
-      alice ##> "/_set domain 1 nobody.simplex"
-      alice <## "SimpleX name nobody.simplex is not registered"
-
 testChannelDomainLinkJoinUnverified :: HasCallStack => TestParams -> IO ()
 testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames $ \reg ->
   withNewTestChat ps "alice" aliceProfile $ \alice ->

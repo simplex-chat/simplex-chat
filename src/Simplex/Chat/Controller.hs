@@ -1442,17 +1442,22 @@ data ChatError
   | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
--- why a SimpleX name could not be used. The first two are about the record; the
--- rest are what the router says about the name, which is how an unregistered or
--- someone else's name is told apart from a broken one.
+-- why a resolved SimpleX name could not be used (the name itself resolved; an unregistered name is the agent's NAME NOT_FOUND)
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
-  | SDENotRegistered -- nobody has registered it
-  | SDERegistered {expires :: Maybe UTCTime} -- registered, and not to this profile
-  | SDEInGrace {graceEnds :: UTCTime} -- lapsed, still renewable by its owner
-  | SDEInAuction {auctionEnds :: UTCTime} -- lapsed, open to anyone at a premium
-  | SDEReserved {reason :: NameReservedReason} -- held back by the registry
+  deriving (Eq, Show)
+
+-- what the router says about a name that resolved to someone else, so the user
+-- is told whether it is registered, lapsed, or held back. Travels beside the
+-- reason the claim failed, never instead of it: clients that do not read it
+-- behave as they did before.
+data SimplexNameAvailability
+  = SNANotRegistered -- nobody has registered it
+  | SNARegistered {expires :: Maybe UTCTime}
+  | SNAInGrace {graceEnds :: UTCTime} -- lapsed, still renewable by its owner
+  | SNAInAuction {auctionEnds :: UTCTime} -- lapsed, open to anyone at a premium
+  | SNAReserved {reason :: NameReservedReason}
   deriving (Eq, Show)
 
 data ChatErrorType
@@ -1476,7 +1481,7 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
-  | CESimplexDomainNotReady {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError}
+  | CESimplexDomainNotReady {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError, availability :: Maybe SimplexNameAvailability}
   | CENotResolvedLocally -- a name or link is not a known chat in the local store and online resolution is off (PRMNever)
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
@@ -1810,6 +1815,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SNA") ''SimplexNameAvailability)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
 

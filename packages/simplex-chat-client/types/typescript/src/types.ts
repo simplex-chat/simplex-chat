@@ -1337,6 +1337,7 @@ export namespace ChatErrorType {
     type: "simplexDomainNotReady"
     simplexDomain: SimplexDomain
     simplexDomainError: SimplexDomainError
+    availability?: SimplexNameAvailability
   }
 
   export interface NotResolvedLocally extends Interface {
@@ -4071,24 +4072,10 @@ export interface SimplexDomainClaim {
   proof?: SimplexDomainProof
 }
 
-export type SimplexDomainError = 
-  | SimplexDomainError.NoValidLink
-  | SimplexDomainError.UnknownDomain
-  | SimplexDomainError.NotRegistered
-  | SimplexDomainError.Registered
-  | SimplexDomainError.InGrace
-  | SimplexDomainError.InAuction
-  | SimplexDomainError.Reserved
+export type SimplexDomainError = SimplexDomainError.NoValidLink | SimplexDomainError.UnknownDomain
 
 export namespace SimplexDomainError {
-  export type Tag = 
-    | "noValidLink"
-    | "unknownDomain"
-    | "notRegistered"
-    | "registered"
-    | "inGrace"
-    | "inAuction"
-    | "reserved"
+  export type Tag = "noValidLink" | "unknownDomain"
 
   interface Interface {
     type: Tag
@@ -4100,6 +4087,35 @@ export namespace SimplexDomainError {
 
   export interface UnknownDomain extends Interface {
     type: "unknownDomain"
+  }
+}
+
+export interface SimplexDomainProof {
+  linkOwnerId?: string
+  presHeader: string
+  signature: string
+}
+
+export enum SimplexLinkType {
+  Contact = "contact",
+  Invitation = "invitation",
+  Group = "group",
+  Channel = "channel",
+  Relay = "relay",
+}
+
+export type SimplexNameAvailability = 
+  | SimplexNameAvailability.NotRegistered
+  | SimplexNameAvailability.Registered
+  | SimplexNameAvailability.InGrace
+  | SimplexNameAvailability.InAuction
+  | SimplexNameAvailability.Reserved
+
+export namespace SimplexNameAvailability {
+  export type Tag = "notRegistered" | "registered" | "inGrace" | "inAuction" | "reserved"
+
+  interface Interface {
+    type: Tag
   }
 
   export interface NotRegistered extends Interface {
@@ -4125,20 +4141,6 @@ export namespace SimplexDomainError {
     type: "reserved"
     reason: NameReservedReason
   }
-}
-
-export interface SimplexDomainProof {
-  linkOwnerId?: string
-  presHeader: string
-  signature: string
-}
-
-export enum SimplexLinkType {
-  Contact = "contact",
-  Invitation = "invitation",
-  Group = "group",
-  Channel = "channel",
-  Relay = "relay",
 }
 
 export interface SimplexNameInfo {

@@ -827,6 +827,14 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
           Just (CIFFGroupLink g _ _ _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]
           _ -> []
 
+availabilityReason :: SimplexNameAvailability -> B.ByteString
+availabilityReason = \case
+  SNANotRegistered -> "is not registered"
+  SNARegistered expires_ -> "is registered to someone else" <> maybe "" ((" until " <>) . day) expires_
+  SNAInGrace graceEnds -> "has expired, and its owner can renew it until " <> day graceEnds
+  SNAInAuction auctionEnds -> "has expired and anyone can register it, at a premium until " <> day auctionEnds
+  SNAReserved r -> "is reserved" <> reservedReason r
+
 day :: UTCTime -> B.ByteString
 day = B.pack . formatTime defaultTimeLocale "%Y-%m-%d"
 
@@ -2743,15 +2751,13 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
-    CESimplexDomainNotReady domain domainErr ->
-      let reason = case domainErr of
-            SDENoValidLink -> "has no valid connection link"
-            SDEUnknownDomain -> "is not included in the connection link's profile"
-            SDENotRegistered -> "is not registered"
-            SDERegistered expires_ -> "is registered to someone else" <> maybe "" ((" until " <>) . day) expires_
-            SDEInGrace graceEnds -> "has expired, and its owner can renew it until " <> day graceEnds
-            SDEInAuction auctionEnds -> "has expired and anyone can register it, at a premium until " <> day auctionEnds
-            SDEReserved r -> "is reserved" <> reservedReason r
+    CESimplexDomainNotReady domain domainErr availability_ ->
+      -- the router's answer is more use than the link's, when there is one
+      let reason = case availability_ of
+            Just a -> availabilityReason a
+            Nothing -> case domainErr of
+              SDENoValidLink -> "has no valid connection link"
+              SDEUnknownDomain -> "is not included in the connection link's profile"
        in [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]

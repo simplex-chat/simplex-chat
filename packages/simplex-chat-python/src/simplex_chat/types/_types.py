@@ -838,6 +838,7 @@ class ChatErrorType_simplexDomainNotReady(TypedDict):
     type: Literal["simplexDomainNotReady"]
     simplexDomain: "SimplexDomain"
     simplexDomainError: "SimplexDomainError"
+    availability: NotRequired["SimplexNameAvailability"]
 
 class ChatErrorType_notResolvedLocally(TypedDict):
     type: Literal["notResolvedLocally"]
@@ -2849,36 +2850,9 @@ class SimplexDomainError_noValidLink(TypedDict):
 class SimplexDomainError_unknownDomain(TypedDict):
     type: Literal["unknownDomain"]
 
-class SimplexDomainError_notRegistered(TypedDict):
-    type: Literal["notRegistered"]
+SimplexDomainError = SimplexDomainError_noValidLink | SimplexDomainError_unknownDomain
 
-class SimplexDomainError_registered(TypedDict):
-    type: Literal["registered"]
-    expires: NotRequired[str]  # ISO-8601 timestamp
-
-class SimplexDomainError_inGrace(TypedDict):
-    type: Literal["inGrace"]
-    graceEnds: str  # ISO-8601 timestamp
-
-class SimplexDomainError_inAuction(TypedDict):
-    type: Literal["inAuction"]
-    auctionEnds: str  # ISO-8601 timestamp
-
-class SimplexDomainError_reserved(TypedDict):
-    type: Literal["reserved"]
-    reason: "NameReservedReason"
-
-SimplexDomainError = (
-    SimplexDomainError_noValidLink
-    | SimplexDomainError_unknownDomain
-    | SimplexDomainError_notRegistered
-    | SimplexDomainError_registered
-    | SimplexDomainError_inGrace
-    | SimplexDomainError_inAuction
-    | SimplexDomainError_reserved
-)
-
-SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain", "notRegistered", "registered", "inGrace", "inAuction", "reserved"]
+SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain"]
 
 class SimplexDomainProof(TypedDict):
     linkOwnerId: NotRequired[str]
@@ -2886,6 +2860,35 @@ class SimplexDomainProof(TypedDict):
     signature: str
 
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
+
+class SimplexNameAvailability_notRegistered(TypedDict):
+    type: Literal["notRegistered"]
+
+class SimplexNameAvailability_registered(TypedDict):
+    type: Literal["registered"]
+    expires: NotRequired[str]  # ISO-8601 timestamp
+
+class SimplexNameAvailability_inGrace(TypedDict):
+    type: Literal["inGrace"]
+    graceEnds: str  # ISO-8601 timestamp
+
+class SimplexNameAvailability_inAuction(TypedDict):
+    type: Literal["inAuction"]
+    auctionEnds: str  # ISO-8601 timestamp
+
+class SimplexNameAvailability_reserved(TypedDict):
+    type: Literal["reserved"]
+    reason: "NameReservedReason"
+
+SimplexNameAvailability = (
+    SimplexNameAvailability_notRegistered
+    | SimplexNameAvailability_registered
+    | SimplexNameAvailability_inGrace
+    | SimplexNameAvailability_inAuction
+    | SimplexNameAvailability_reserved
+)
+
+SimplexNameAvailability_Tag = Literal["notRegistered", "registered", "inGrace", "inAuction", "reserved"]
 
 class SimplexNameInfo(TypedDict):
     nameType: "SimplexNameType"

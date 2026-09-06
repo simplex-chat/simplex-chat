@@ -1483,7 +1483,7 @@ processChatCommand cxt nm = \case
             nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) d
             case firstNameLink CCTContact (nrSimplexContact nr) of
               Just sLnk -> resolveShortLink sLnk
-              Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink
+              Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink Nothing
           resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
@@ -4391,7 +4391,7 @@ processChatCommand cxt nm = \case
                       (addOther nr <$> connectPlanName NTContact (Right nr) `catchAllErrors` \_ -> throwError e)
                 | isJust (firstNameLink CCTContact (nrSimplexContact nr)) ->
                     addOther nr <$> connectPlanName NTContact (Right nr)
-                | otherwise -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENoValidLink
+                | otherwise -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENoValidLink Nothing
               Left e -> connectPlanNoName e
         where
           connectPlanName nameType nr_ = connectPlan user connTarget resolveMode sig_ (Just nr_)
@@ -4428,7 +4428,7 @@ processChatCommand cxt nm = \case
                       (Just _, Just p) -> updateContactFromLinkData user ct' p
                       _ -> pure ct'
                 forM_ planDomain $ \nameDomain ->
-                  unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
+                  unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain Nothing
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
                   Just ct' | not (contactDeleted ct') -> do
                     ct'' <- refreshContact ct'
@@ -4511,7 +4511,7 @@ processChatCommand cxt nm = \case
                               CPGroupLink (GLPOwnLink GroupInfo {groupProfile}) -> Just groupProfile
                               CPGroupLink (GLPConnectingProhibit (Just GroupInfo {groupProfile})) -> Just groupProfile
                               _ -> (\GroupShortLinkData {groupProfile} -> groupProfile) <$> groupSLinkData_
-                         in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
+                         in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain Nothing
                       pure (con l' cReq, plan)
             where
               unsupportedGroupType = \case
@@ -4539,7 +4539,7 @@ processChatCommand cxt nm = \case
             let (candidates, ctType') = case nameType of
                   NTContact -> (nrSimplexContact, CCTContact)
                   NTPublicGroup -> (nrSimplexChannel, CCTChannel)
-            maybe (throwChatError $ CESimplexDomainNotReady nameDomain SDENoValidLink) pure $ firstNameLink ctType' candidates
+            maybe (throwChatError $ CESimplexDomainNotReady nameDomain SDENoValidLink Nothing) pure $ firstNameLink ctType' candidates
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> Maybe SimplexNameInfo -> Maybe SimplexNameInfo -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink planSimplexName otherSimplexName plan
       | connectionPlanProceed plan = do
@@ -5038,33 +5038,27 @@ firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
       Right sl@(CSLContact _ ct _ _) | ct == ctType -> Just sl
       _ -> Nothing
 
--- | Check that a name resolves to this link. When it does not, ask the router
--- what it knows about the name, so the user is told whether it is unregistered,
--- someone else's, or held back. Asking is best effort - NAVL exists from SMP
--- v22 and the router may not answer - so a router that cannot say leaves the
--- failure exactly as it was before.
+-- | Check that a name resolves to this link, and when it does not, say what the
+-- router knows about it. The failure is the same one as before; the answer only
+-- travels beside it, and is absent when the router cannot say - NAVL exists from
+-- SMP v22.
 claimName :: NetworkRequestMode -> User -> SimplexDomain -> (NameRecord -> Bool) -> CM ()
-claimName nm user domain pointsHere =
-  tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain) >>= \case
-    Right nr | pointsHere nr -> pure ()
-    Right _ -> notReady $ throwChatError $ CESimplexDomainNotReady domain SDENoValidLink
-    Left e -> notReady $ throwError e
-  where
-    notReady fallback =
-      tryAllErrors (withAgent $ \a -> getSimplexNameAvailability a nm (aUserId user) domain) >>= \case
-        Right a -> throwChatError $ CESimplexDomainNotReady domain (nameNotOwned a)
-        Left _ -> fallback
+claimName nm user domain pointsHere = do
+  nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+  unless (pointsHere nr) $ do
+    a_ <- tryAllErrors $ withAgent $ \a -> getSimplexNameAvailability a nm (aUserId user) domain
+    throwChatError $ CESimplexDomainNotReady domain SDENoValidLink (nameAvailability <$> eitherToMaybe a_)
 
--- | What the router said, as the reason the name is not this profile's to use.
--- The auction premium is dropped: the deadline is what the user can act on, and
--- on .testing the oracle quotes a figure that would only confuse.
-nameNotOwned :: NameAvailability -> SimplexDomainError
-nameNotOwned = \case
-  NAVailable -> SDENotRegistered
-  NATaken expires_ -> SDERegistered $ utcTime <$> expires_
-  NAInGrace graceEnds -> SDEInGrace $ utcTime graceEnds
-  NAAuction _ auctionEnds -> SDEInAuction $ utcTime auctionEnds
-  NAReserved reason -> SDEReserved reason
+-- | What the router said about a name that is not this profile's. The auction
+-- premium is dropped: the deadline is what the user can act on, and on .testing
+-- the oracle quotes a figure that would only confuse.
+nameAvailability :: NameAvailability -> SimplexNameAvailability
+nameAvailability = \case
+  NAVailable -> SNANotRegistered
+  NATaken expires_ -> SNARegistered $ utcTime <$> expires_
+  NAInGrace graceEnds -> SNAInGrace $ utcTime graceEnds
+  NAAuction _ auctionEnds -> SNAInAuction $ utcTime auctionEnds
+  NAReserved reason -> SNAReserved reason
   where
     utcTime t = systemToUTCTime (MkSystemTime t 0)
 

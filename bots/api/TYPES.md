@@ -182,6 +182,7 @@ This file is generated automatically.
 - [SimplexDomainError](#simplexdomainerror)
 - [SimplexDomainProof](#simplexdomainproof)
 - [SimplexLinkType](#simplexlinktype)
+- [SimplexNameAvailability](#simplexnameavailability)
 - [SimplexNameInfo](#simplexnameinfo)
 - [SimplexNameType](#simplexnametype)
 - [SimplexTLD](#simplextld)
@@ -1158,6 +1159,7 @@ SimplexDomainNotReady:
 - type: "simplexDomainNotReady"
 - simplexDomain: [SimplexDomain](#simplexdomain)
 - simplexDomainError: [SimplexDomainError](#simplexdomainerror)
+- availability: [SimplexNameAvailability](#simplexnameavailability)?
 
 NotResolvedLocally:
 - type: "notResolvedLocally"
@@ -3696,25 +3698,6 @@ NoValidLink:
 UnknownDomain:
 - type: "unknownDomain"
 
-NotRegistered:
-- type: "notRegistered"
-
-Registered:
-- type: "registered"
-- expires: UTCTime?
-
-InGrace:
-- type: "inGrace"
-- graceEnds: UTCTime
-
-InAuction:
-- type: "inAuction"
-- auctionEnds: UTCTime
-
-Reserved:
-- type: "reserved"
-- reason: [NameReservedReason](#namereservedreason)
-
 
 ---
 
@@ -3736,6 +3719,32 @@ Reserved:
 - "group"
 - "channel"
 - "relay"
+
+
+---
+
+## SimplexNameAvailability
+
+**Discriminated union type**:
+
+NotRegistered:
+- type: "notRegistered"
+
+Registered:
+- type: "registered"
+- expires: UTCTime?
+
+InGrace:
+- type: "inGrace"
+- graceEnds: UTCTime
+
+InAuction:
+- type: "inAuction"
+- auctionEnds: UTCTime
+
+Reserved:
+- type: "reserved"
+- reason: [NameReservedReason](#namereservedreason)
 
 
 ---
