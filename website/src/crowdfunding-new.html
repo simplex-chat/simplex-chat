@@ -56,7 +56,7 @@ templateEngineOverride: njk
         }
 
         body {
-            background: #0a0f2b;
+            background: #02071D;
             font-family: "GT-Walsheim", Gilroy, Helvetica, sans-serif;
         }
 
@@ -79,10 +79,15 @@ templateEngineOverride: njk
         /* hero + close: full-bleed globe (home page hero cover) */
         section.page.cf.cf-hero,
         section.page.cf.cf-close {
-            background-color: #0a0f2b;
+            background-color: #02071D;
             background-image: url("/img/design_3/cover.webp");
             background-size: var(--cover-bg-w) var(--cover-bg-h);
             background-position: center;
+        }
+
+        section.page.cf.cf-hero,
+        section.page.cf.cf-close {
+            background-position: calc(50% + var(--sec-vwu) * 41.7) calc(50% + var(--sec-vhu) * 2.2);
         }
 
         /* problem + growth: standalone graphics sit inside the fixed 16:9 box
@@ -155,6 +160,135 @@ templateEngineOverride: njk
         }
 
         .cf-center .lead strong { font-weight: 600; color: #ffffff; }
+
+        /* ---- hero: text left, phone right, bleeding off the bottom ---- */
+        section.page.cf.cf-hero { overflow: hidden; }
+        .cf-hero .area { position: relative; display: flex; align-items: center; }
+
+        .cf-hero-text {
+            margin-left: calc(var(--sec-vwu) * 7.5);
+            width: calc(var(--sec-vwu) * 45);
+            position: relative;
+            z-index: 4;
+        }
+
+        .cf-hero h1 {
+            font-family: "GT-Walsheim", sans-serif;
+            font-weight: 400;
+            font-size: calc(var(--sec-vwu) * 4.94);
+            line-height: 1.05;
+            letter-spacing: -0.025em;
+            color: #ffffff;
+        }
+
+        .cf-hero .lead {
+            font-family: "Manrope", sans-serif;
+            font-weight: 300;
+            font-size: calc(var(--sec-vwu) * 1.55);
+            line-height: 1.55;
+            color: #dfeaff;
+            margin-top: calc(var(--sec-vhu) * 3);
+            max-width: calc(var(--sec-vwu) * 40);
+        }
+
+        .cf-stats {
+            display: flex;
+            gap: calc(var(--sec-vwu) * 5);
+            margin-top: calc(var(--sec-vhu) * 8);
+            position: relative;
+            top: calc(var(--sec-vhu) * 8);
+        }
+        .cf-stat { display: flex; align-items: center; gap: calc(var(--sec-vwu) * 1.1); }
+        .cf-stat img { width: calc(var(--sec-vwu) * 4); height: auto; display: block; }
+        .cf-stat b {
+            display: block;
+            font-family: "Manrope", sans-serif;
+            font-weight: 700;
+            font-size: calc(var(--sec-vwu) * 3);
+            line-height: 1.1;
+            color: #ffffff;
+        }
+        .cf-stat span {
+            font-family: "Manrope", sans-serif;
+            font-weight: 400;
+            font-size: calc(var(--sec-vwu) * 1.6);
+            color: #dfeaff;
+        }
+
+        .cf-hero .cf-live-link { display: inline-block; margin-top: calc(var(--sec-vhu) * 7); font-size: calc(var(--sec-vwu) * 2.2); position: relative; top: calc(var(--sec-vhu) * 6.6); }
+
+        /* ---- close: same left-aligned layout as the hero ---- */
+        .cf-close .area { position: relative; display: flex; align-items: center; }
+        .cf-close .cf-hero-text { width: calc(var(--sec-vwu) * 68); position: relative; top: calc(var(--sec-vhu) * 6); }
+        .cf-close h1 {
+            font-family: "GT-Walsheim", sans-serif;
+            font-weight: 400;
+            font-size: calc(var(--sec-vwu) * 4.94);
+            line-height: 1.05;
+            letter-spacing: -0.025em;
+            color: #ffffff;
+        }
+        .cf-close .lead {
+            font-family: "Manrope", sans-serif;
+            font-weight: 300;
+            font-size: calc(var(--sec-vwu) * 2.4);
+            line-height: 1.55;
+            color: #ffffff;
+            margin-top: calc(var(--sec-vhu) * 7);
+        }
+        .cf-close .cf-close-call {
+            font-family: "Manrope", sans-serif;
+            font-weight: 600;
+            font-size: calc(var(--sec-vwu) * 2.4);
+            line-height: 1.6;
+            margin-top: calc(var(--sec-vhu) * 4.5);
+            background: linear-gradient(90deg, #019bfe 0%, #64fdff 58%, #c8feff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            width: fit-content;
+        }
+        .cf-close .cf-close-note {
+            font-family: "Manrope", sans-serif;
+            font-weight: 300;
+            font-size: calc(var(--sec-vwu) * 1.9);
+            line-height: 1.5;
+            color: #ffffff;
+            margin-top: calc(var(--sec-vhu) * 7);
+            max-width: calc(var(--sec-vwu) * 60);
+        }
+        .cf-close .cf-live-link { display: inline-block; margin-top: calc(var(--sec-vhu) * 7); font-size: calc(var(--sec-vwu) * 2.2); position: relative; top: calc(var(--sec-vhu) * -5.3); }
+
+        .cf-phone {
+            position: absolute;
+            right: calc(var(--sec-vwu) * -6);
+            bottom: calc(var(--sec-vhu) * -71.5);
+            height: calc(var(--sec-vhu) * 144.4);
+            width: auto;
+            z-index: 1;
+        }
+
+        .cf-mask {
+            position: absolute;
+            left: calc(var(--sec-vwu) * 62.6);
+            top: calc(var(--sec-vhu) * 27.3);
+            height: calc(var(--sec-vhu) * 41.4);
+            width: auto;
+            opacity: .38;
+            z-index: 2;
+        }
+
+        .cf-hero-fade {
+            position: absolute;
+            right: calc(var(--sec-vwu) * -6);
+            width: calc(var(--sec-vhu) * 144.4 * 0.4914);
+            bottom: calc((var(--sec-h) - 100svh) / 2);
+            height: calc(var(--sec-vhu) * 38);
+            background: linear-gradient(to top, #02071D 22%, rgba(2, 7, 29, .8) 52%, rgba(2, 7, 29, 0) 100%);
+            z-index: 3;
+            pointer-events: none;
+        }
 
         .cf-pill {
             position: fixed;
@@ -316,6 +450,30 @@ templateEngineOverride: njk
             .cf-center h1 { font-size: calc(var(--sec-vwu) * 15); max-width: calc(var(--sec-vwu) * 90); }
             .cf-center .lead { font-size: calc(var(--sec-vwu) * 5); max-width: calc(var(--sec-vwu) * 88); }
 
+            .cf-hero .area,
+            .cf-close .area { flex-direction: column; justify-content: flex-start; }
+            .cf-hero-text { margin: calc(var(--sec-vhu) * 5) calc(var(--sec-vwu) * 7) 0; width: auto; }
+            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 11); }
+            .cf-hero .lead { font-size: calc(var(--sec-vwu) * 4.2); max-width: none; margin-top: calc(var(--sec-vhu) * 2); }
+            .cf-close h1 { font-size: calc(var(--sec-vwu) * 11); }
+            .cf-close .lead { font-size: calc(var(--sec-vwu) * 4.2); margin-top: calc(var(--sec-vhu) * 3); }
+            .cf-close .cf-close-call { font-size: calc(var(--sec-vwu) * 4.2); margin-top: calc(var(--sec-vhu) * 2.5); }
+            .cf-close .cf-close-note { font-size: calc(var(--sec-vwu) * 3.2); max-width: none; margin-top: calc(var(--sec-vhu) * 4); }
+            .cf-close .cf-live-link { font-size: calc(var(--sec-vwu) * 4.2); margin-top: calc(var(--sec-vhu) * 2.5); top: 0; }
+            .cf-stats { gap: calc(var(--sec-vwu) * 8); margin-top: calc(var(--sec-vhu) * 3); }
+            .cf-stat img { width: calc(var(--sec-vwu) * 8); }
+            .cf-stat b { font-size: calc(var(--sec-vwu) * 6.5); }
+            .cf-stat span { font-size: calc(var(--sec-vwu) * 3.4); }
+            .cf-hero .cf-live-link { margin-top: calc(var(--sec-vhu) * 2.5); }
+            .cf-phone {
+                position: absolute;
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                bottom: calc(var(--sec-vhu) * -14);
+                height: calc(var(--sec-vhu) * 56);
+            }
+
             .cf-pill { font-size: 15px; }
             .cf-bottom { top: 5px; right: 16px; bottom: auto; padding: 0 18px; }
             .cf-top { top: auto; left: 16px; right: 16px; bottom: 16px; height: 48px; justify-content: center; }
@@ -383,6 +541,8 @@ templateEngineOverride: njk
         .cf-modal-close svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
         .cf-modal-close:hover { color: #ffffff; }
 
+        .cf-modal-text-only .cf-modal-panel { width: min(640px, 100%); }
+
         .cf-modal-light .cf-modal-panel {
             background: linear-gradient(160deg, #ffffff 0%, #eaf4ff 70%, #e9ffff 100%);
             color: #06214a;
@@ -415,11 +575,26 @@ templateEngineOverride: njk
     <div class="screen">
 
         <!-- HERO -->
-        <section class="page cf cf-dark cf-center cf-hero">
-            <div class="content">
-                <h1>The first messaging network with no user identifiers</h1>
-                <p class="lead">No phone numbers, usernames, or accounts &mdash; no one, not even our servers, can see who talks to whom. 480,000 people already use it.</p>
-                <a class="cf-live-link" href="/livestream/">Join the livestream, Sep 15</a>
+        <section class="page cf cf-dark cf-hero">
+            <div class="area">
+                <div class="cf-hero-text">
+                    <h1>The first and the only messaging network without any user IDs</h1>
+                    <p class="lead">SimpleX Chat is building a messaging network designed differently from every major platform &mdash; without phone numbers, usernames, emails, or any user identifiers.</p>
+                    <div class="cf-stats">
+                        <div class="cf-stat">
+                            <img src="/img/crowdfunding/cloud-download.png" alt="">
+                            <div><b>3M</b><span>Downloads</span></div>
+                        </div>
+                        <div class="cf-stat">
+                            <img src="/img/crowdfunding/p2p.png" alt="">
+                            <div><b>480K</b><span>Monthly users</span></div>
+                        </div>
+                    </div>
+                    <a class="cf-live-link" href="/livestream/">Join the livestream and Q&amp;A on Sep 15</a>
+                </div>
+                <img class="cf-phone" src="/img/crowdfunding/phone.png" alt="">
+                <img class="cf-mask" src="/img/crowdfunding/phone-mask.png" alt="">
+                <div class="cf-hero-fade"></div>
             </div>
         </section>
 
@@ -515,17 +690,21 @@ templateEngineOverride: njk
                     <h2>A network others build on</h2>
                     <p>Developers already built many different services on SimpleX. In 2027, we plan to add support for user-created features inside chats.</p>
                     <p>Features and services users build would bring new users and increase revenue.</p>
-                    <a class="gradient-text" href="#one-protocol">How custom UX may unify messaging</a>
+                    <a class="gradient-text" href="#one-protocol">How custom UX helps unify messaging</a>
                 </div>
             </div>
         </section>
 
         <!-- 7 · CLOSE -->
-        <section class="page cf cf-dark cf-center cf-close" id="request">
-            <div class="content">
-                <h1>People who'd know already invested</h1>
-                <p class="lead">The syndicate lead, Flux's co-founder, and three advisors put in money before this round opened. <strong>Own part of it</strong> &mdash; and claim your SimpleX name before the public sale.</p>
-                <a class="cf-live-link" href="/livestream/">Join the livestream, Sep 15</a>
+        <section class="page cf cf-dark cf-close" id="request">
+            <div class="area">
+                <div class="cf-hero-text">
+                    <h1>Get a stake<br>in SimpleX Chat</h1>
+                    <p class="lead">By investing in SimpleX Chat, you benefit from its growth.</p>
+                    <p class="cf-close-call">We are building a network that people own.<br>We invite you to invest and become part of it.</p>
+                    <p class="cf-close-note">Invest $500+ by September 22 and get a SimpleX name for your channel or business for 7 years.</p>
+                    <a class="cf-live-link" href="/livestream/">Join the livestream and Q&amp;A on Sep 15</a>
+                </div>
             </div>
         </section>
 
@@ -581,14 +760,14 @@ templateEngineOverride: njk
         </div>
     </div>
 
-    <div class="cf-modal cf-modal-light" id="one-protocol">
+    <div class="cf-modal cf-modal-light cf-modal-text-only" id="one-protocol">
         <a class="cf-modal-backdrop" href="#build" aria-label="Close"></a>
         <div class="cf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="one-protocol-title">
             <a class="cf-modal-close" href="#build" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
             <div class="cf-modal-text">
-                <h2 id="one-protocol-title">How messaging converges to one protocol</h2>
+                <h2 id="one-protocol-title">How custom UX helps unify messaging</h2>
                 <p>Every network before messaging converged to one protocol &mdash; telephony, email, the web.</p>
-                <p>Messaging is the exception, because each app's experience can't reduce to a shared protocol.</p>
+                <p>Messaging is the exception, because each app's experience can't be reduced to a shared protocol.</p>
                 <p><strong>Once we add custom user experiences in the chat, SimpleX might become the network messaging converges on.</strong></p>
             </div>
         </div>
