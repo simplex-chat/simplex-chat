@@ -20,6 +20,7 @@ expect fun PlatformTextField(
   showVoiceButton: Boolean,
   onMessageChange: (ComposeMessage) -> Unit,
   onUpArrow: () -> Unit,
+  onEscape: () -> Unit = {},
   onFilesPasted: (List<URI>) -> Unit,
   focusRequester: FocusRequester? = null,
   onDone: () -> Unit,
