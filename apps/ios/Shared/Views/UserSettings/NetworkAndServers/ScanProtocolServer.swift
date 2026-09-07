@@ -16,28 +16,44 @@ struct ScanProtocolServer: View {
     @Binding var userServers: [UserOperatorServers]
     @Binding var serverErrors: [UserServersError]
     @Binding var serverWarnings: [UserServersWarning]
+    @State private var scanAlert: SomeAlert?
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("Scan server QR code")
-                .font(.largeTitle)
-                .bold()
-                .padding(.vertical)
+        NavigationView {
             CodeScannerView(codeTypes: [.qr], scanMode: .oncePerCode, completion: processQRCode)
                 .aspectRatio(1, contentMode: .fit)
                 .cornerRadius(12)
-                .padding(.top)
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .navigationTitle("Scan server QR code")
+                .navigationBarTitleDisplayMode(.large)
+                .modifier(ThemedBackground(grouped: true))
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                    }
+                }
+                .alert(item: $scanAlert) { $0.alert }
         }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            var server: UserServer = .empty
-            server.server = r.string
-            addServer(server, $userServers, $serverErrors, $serverWarnings, dismiss)
+            let trimmed = r.string.trimmingCharacters(in: .whitespacesAndNewlines)
+            switch checkLink(trimmed) {
+            case .server?:
+                var server: UserServer = .empty
+                server.server = trimmed
+                addServer(server, $userServers, $serverErrors, $serverWarnings, dismiss)
+            case nil:
+                scanAlert = SomeAlert(
+                    alert: mkAlert(title: "Invalid server address!", message: "Check server address and try again."),
+                    id: "invalidServerAddress"
+                )
+            case let type?:
+                scanAlert = SomeAlert(alert: wrongQRCodeAlert(wrongQRCodeMessage(type)), id: "wrongQRCode")
+            }
         case let .failure(e):
             logger.error("ScanProtocolServer.processQRCode QR code error: \(e.localizedDescription)")
             dismiss()
@@ -52,5 +68,6 @@ struct ScanProtocolServer_Previews: PreviewProvider {
             serverErrors: Binding.constant([]),
             serverWarnings: Binding.constant([])
         )
+        .environmentObject(CurrentColors.toAppTheme())
     }
 }
