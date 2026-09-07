@@ -3171,9 +3171,11 @@ processChatCommand cxt nm = \case
                 then void $ fullyDeleteMemberRecordIO db user gInfo m
                 else void $ deleteOrUpdateMemberRecordIO db user gInfo m
               pure m {memberStatus = GSMemRemoved}
-      deleteMessages user gInfo@GroupInfo {membership} ms
-        | groupFeatureUserAllowed SGFFullDelete gInfo = deleteGroupMembersCIs user gInfo ms
-        | otherwise = markGroupMembersCIsDeleted user gInfo ms membership
+      deleteMessages user gInfo@GroupInfo {membership} ms = do
+        archiveMembersReports user gInfo ms membership True
+        if groupFeatureUserAllowed SGFFullDelete gInfo
+          then deleteGroupMembersCIs user gInfo ms
+          else markGroupMembersCIsDeleted user gInfo ms membership
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     gInfo@GroupInfo {membership} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
