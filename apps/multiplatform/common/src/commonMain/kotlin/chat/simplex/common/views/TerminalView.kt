@@ -165,7 +165,7 @@ fun TerminalLog(floating: Boolean, composeViewHeight: State<Dp>) {
     reverseLayout = true,
     additionalBarOffset = composeViewHeight
   ) {
-    items(reversedTerminalItems, key = { item -> item.id to item.createdAtNanos }) { item ->
+    items(reversedTerminalItems, key = { item -> item.itemNo }) { item ->
       val clipboard = LocalClipboardManager.current
       val rhId = item.remoteHostId
       val rhIdStr = if (rhId == null) "" else "$rhId "
