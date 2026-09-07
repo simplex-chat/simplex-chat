@@ -74,6 +74,7 @@ badgeServiceTests = do
   it "should leave the client holding the same ledger rows as the service" testClientReplicatesLedger
   it "should renew a badge whose month has elapsed, with no command" testWorkerRenews
   it "should renew a badge whose newest ledger row is of an unknown type" testRenewsAfterUnknownEntry
+  it "should catch up the months that lapsed while the client was stopped" testRenewsAfterRestart
   it "should stop showing a badge whose balance ran out, and tell contacts" testWorkerRetiresExpired
   it "should alert that support ended, survive a restart, and go silent once acknowledged" testEndedAlert
   it "should raise a snoozed alert once more when the snooze lapses" testSnoozedAlertReturns
@@ -679,6 +680,32 @@ testRenewsAfterUnknownEntry ps =
       -- ledger, which re-stores the two rows already held and adds the month it issued
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed
         `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (0, 2, Just "grant"), (-1, 1, Just "badge")]
+
+-- The worker driven by chat start rather than by activate, and the only test where the client is
+-- given a lapse row to store: the months that passed while the app was stopped.
+testRenewsAfterRestart :: HasCallStack => TestParams -> IO ()
+testRenewsAfterRestart ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} -> do
+    rows <- withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 6
+      redeemFirstBadge alice code
+      ledgerRows (chatController alice) "badge_ledger"
+    -- the credit row's start is the anchor: a grant on a run that has never lapsed moves neither
+    let (_, _, _, anchor, _, _) = head rows
+    -- stopped until past the fourth boundary of the run: three months lapse, the fourth is issued
+    setClockAt bsClock $ addMonths 4 anchor
+    withTestChatCfg ps bsClientCfg "alice" $ \alice -> do
+      renewed <- waitLedgerRows (chatController alice) 4
+      alice <##. "1: supporter"
+      map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed
+        `shouldBe` [(6, 6, Just "code"), (-1, 5, Just "badge"), (-3, 2, Just "lapse"), (-1, 1, Just "badge")]
+      -- the lapse row was replicated rather than authored here
+      serviceLedger <- ledgerRows cc "sx_badge_service_badge_ledger"
+      renewed `shouldBe` serviceLedger
+      -- the badge shown is the month issued now, not the one held before the restart
+      (shown, issued) <- shownAndIssuedExpiry (chatController alice)
+      shown `shouldBe` issued
+      shown `shouldSatisfy` isJust
 
 -- When the balance is spent and the last period ends, the badge stops being shown and the profile
 -- update reaches contacts - the visible half of "the badge expired".
