@@ -22,6 +22,18 @@ import kotlinx.serialization.Serializable
 import java.io.File
 import kotlin.math.*
 
+// Per-wallpaper SIMPLEX gradient stops: chat background + the four bubble slots + secondary/author text.
+// The background stops are drawn by simplexGradient(); bubble/text stops are consumed by SimplexBrushes.
+data class SimplexStops(
+  val bg: Array<Pair<Float, Color>>,
+  val sent: Array<Pair<Float, Color>>,
+  val sentQuote: Array<Pair<Float, Color>>,
+  val received: Array<Pair<Float, Color>>,
+  val receivedQuote: Array<Pair<Float, Color>>,
+  val secondary: List<Pair<Float, Color>>,
+  val author: List<Pair<Float, Color>>,
+)
+
 enum class PresetWallpaper(
   val res: ImageResource,
   val filename: String,
@@ -29,13 +41,14 @@ enum class PresetWallpaper(
   val background: Map<DefaultTheme, Color>,
   val tint: Map<DefaultTheme, Color>,
   val colors: Map<DefaultTheme, ThemeColors>,
+  val simplexStops: SimplexStops? = null,
 ) {
   CATS(MR.images.wallpaper_cats, "cats", 0.63f,
     wallpaperBackgrounds(light = "#ffF8F6EA"),
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffefdca6".colorFromReadableHex(),
       DefaultTheme.DARK to "#ff4b3b0e".colorFromReadableHex(),
-      DefaultTheme.SIMPLEX to "#ff51400f".colorFromReadableHex(),
+      DefaultTheme.SIMPLEX to oklch(0.8356f, 0.1909f, 87.09f, 0.12f),
       DefaultTheme.BLACK to "#ff4b3b0e".colorFromReadableHex()
     ),
     mapOf(
@@ -63,6 +76,49 @@ enum class PresetWallpaper(
         receivedMessage = "#ff1f1e1b",
         receivedQuote = "#ff2f2d27",
       ),
+    ),
+    simplexStops = SimplexStops(
+      bg = arrayOf(
+        0.10f to oklch(0.0f, 0.0f, 0.0f),
+        0.55f to oklch(0.1650f, 0.0214f, 88f),
+        0.85f to oklch(0.2850f, 0.0659f, 88f),
+        1.00f to oklch(0.3400f, 0.0820f, 105f),
+      ),
+      sent = arrayOf(
+        0.20f to oklch(0.3380f, 0.0780f, 88f),
+        0.55f to oklch(0.3550f, 0.0795f, 88f),
+        0.80f to oklch(0.4350f, 0.1005f, 88f),
+        1.00f to oklch(0.4500f, 0.1085f, 105f),
+      ),
+      sentQuote = arrayOf(
+        0.20f to oklch(0.3830f, 0.0884f, 88f),
+        0.55f to oklch(0.3950f, 0.0885f, 88f),
+        0.80f to oklch(0.4550f, 0.1051f, 88f),
+        1.00f to oklch(0.4750f, 0.1145f, 105f),
+      ),
+      received = arrayOf(
+        0.20f to oklch(0.2200f, 0.0259f, 88f),
+        0.55f to oklch(0.2550f, 0.0301f, 88f),
+        0.84f to oklch(0.3200f, 0.0641f, 88f),
+        1.00f to oklch(0.4050f, 0.0976f, 105f),
+      ),
+      receivedQuote = arrayOf(
+        0.20f to oklch(0.2730f, 0.0321f, 88f),
+        0.55f to oklch(0.3000f, 0.0354f, 88f),
+        0.84f to oklch(0.3700f, 0.0742f, 88f),
+        1.00f to oklch(0.4350f, 0.1049f, 105f),
+      ),
+      secondary = listOf(
+        0.20f to oklch(0.5050f, 0.1072f, 88f),
+        0.55f to oklch(0.5350f, 0.1135f, 88f),
+        0.90f to oklch(0.7050f, 0.1200f, 88f),
+      ),
+      author = listOf(
+        0.20f to oklch(0.6300f, 0.1367f, 88f),
+        0.55f to oklch(0.6450f, 0.1399f, 88f),
+        0.70f to oklch(0.7250f, 0.1100f, 88f),
+        0.90f to oklch(0.9923f, 0.0170f, 100f),
+      ),
     )
   ),
   FLOWERS(MR.images.wallpaper_flowers, "flowers", 0.53f,
@@ -70,7 +126,7 @@ enum class PresetWallpaper(
     tint = mapOf(
       DefaultTheme.LIGHT to "#ff9CEA59".colorFromReadableHex(),
       DefaultTheme.DARK to "#ff31560D".colorFromReadableHex(),
-      DefaultTheme.SIMPLEX to "#ff36600f".colorFromReadableHex(),
+      DefaultTheme.SIMPLEX to oklch(0.8000f, 0.1500f, 140f, 0.12f),
       DefaultTheme.BLACK to "#ff31560D".colorFromReadableHex()
     ),
     mapOf(
@@ -98,6 +154,49 @@ enum class PresetWallpaper(
         receivedMessage = "#ff1c1f1a",
         receivedQuote = "#ff282b25",
       ),
+    ),
+    simplexStops = SimplexStops(
+      bg = arrayOf(
+        0.10f to oklch(0.0f, 0.0f, 0.0f),
+        0.55f to oklch(0.1800f, 0.0330f, 130f),
+        0.85f to oklch(0.3000f, 0.0926f, 130f),
+        1.00f to oklch(0.4250f, 0.1080f, 113f),
+      ),
+      sent = arrayOf(
+        0.20f to oklch(0.3450f, 0.1066f, 130f),
+        0.55f to oklch(0.3700f, 0.1107f, 130f),
+        0.80f to oklch(0.4820f, 0.1421f, 130f),
+        1.00f to oklch(0.5030f, 0.1278f, 113f),
+      ),
+      sentQuote = arrayOf(
+        0.20f to oklch(0.3930f, 0.1211f, 130f),
+        0.55f to oklch(0.4100f, 0.1226f, 130f),
+        0.80f to oklch(0.4940f, 0.1523f, 130f),
+        1.00f to oklch(0.5220f, 0.1326f, 113f),
+      ),
+      received = arrayOf(
+        0.20f to oklch(0.2210f, 0.0369f, 130f),
+        0.55f to oklch(0.2700f, 0.0451f, 130f),
+        0.84f to oklch(0.3610f, 0.1024f, 130f),
+        1.00f to oklch(0.4800f, 0.1217f, 113f),
+      ),
+      receivedQuote = arrayOf(
+        0.20f to oklch(0.2770f, 0.0461f, 130f),
+        0.55f to oklch(0.3150f, 0.0526f, 130f),
+        0.84f to oklch(0.4130f, 0.1171f, 130f),
+        1.00f to oklch(0.5040f, 0.1217f, 113f),
+      ),
+      secondary = listOf(
+        0.20f to oklch(0.5200f, 0.1320f, 130f),
+        0.55f to oklch(0.5500f, 0.1421f, 130f),
+        0.90f to oklch(0.7200f, 0.1218f, 130f),
+      ),
+      author = listOf(
+        0.20f to oklch(0.6450f, 0.1523f, 130f),
+        0.55f to oklch(0.6600f, 0.1523f, 130f),
+        0.70f to oklch(0.7400f, 0.1117f, 130f),
+        0.90f to oklch(0.9923f, 0.0170f, 100f),
+      ),
     )
   ),
   HEARTS(MR.images.wallpaper_hearts, "hearts", 0.59f,
@@ -105,7 +204,7 @@ enum class PresetWallpaper(
     tint = mapOf(
       DefaultTheme.LIGHT to "#fffde0e0".colorFromReadableHex(),
       DefaultTheme.DARK to "#ff3c0f0f".colorFromReadableHex(),
-      DefaultTheme.SIMPLEX to "#ff411010".colorFromReadableHex(),
+      DefaultTheme.SIMPLEX to oklch(0.7500f, 0.1400f, 20f, 0.12f),
       DefaultTheme.BLACK to "#ff3C0F0F".colorFromReadableHex()
     ),
     mapOf(
@@ -133,6 +232,49 @@ enum class PresetWallpaper(
         receivedMessage = "#ff1f1b1b",
         receivedQuote = "#ff2e2626",
       ),
+    ),
+    simplexStops = SimplexStops(
+      bg = arrayOf(
+        0.10f to oklch(0.0f, 0.0f, 0.0f),
+        0.55f to oklch(0.1900f, 0.0530f, 5f),
+        0.85f to oklch(0.3100f, 0.1147f, 5f),
+        1.00f to oklch(0.4350f, 0.1147f, 22f),
+      ),
+      sent = arrayOf(
+        0.20f to oklch(0.3550f, 0.1236f, 5f),
+        0.55f to oklch(0.3800f, 0.1442f, 5f),
+        0.80f to oklch(0.4920f, 0.1442f, 5f),
+        1.00f to oklch(0.5130f, 0.1545f, 22f),
+      ),
+      sentQuote = arrayOf(
+        0.20f to oklch(0.4030f, 0.1339f, 5f),
+        0.55f to oklch(0.4200f, 0.1545f, 5f),
+        0.80f to oklch(0.5040f, 0.1545f, 5f),
+        1.00f to oklch(0.5320f, 0.1545f, 22f),
+      ),
+      received = arrayOf(
+        0.20f to oklch(0.2310f, 0.0586f, 5f),
+        0.55f to oklch(0.2800f, 0.0710f, 5f),
+        0.84f to oklch(0.3710f, 0.1234f, 5f),
+        1.00f to oklch(0.4900f, 0.1234f, 22f),
+      ),
+      receivedQuote = arrayOf(
+        0.20f to oklch(0.2860f, 0.0669f, 5f),
+        0.55f to oklch(0.3250f, 0.0770f, 5f),
+        0.84f to oklch(0.4230f, 0.1319f, 5f),
+        1.00f to oklch(0.5140f, 0.1234f, 22f),
+      ),
+      secondary = listOf(
+        0.20f to oklch(0.5300f, 0.1339f, 5f),
+        0.55f to oklch(0.5600f, 0.1442f, 5f),
+        0.90f to oklch(0.7300f, 0.1236f, 5f),
+      ),
+      author = listOf(
+        0.20f to oklch(0.6550f, 0.1545f, 5f),
+        0.55f to oklch(0.6700f, 0.1545f, 5f),
+        0.70f to oklch(0.7500f, 0.1133f, 5f),
+        0.90f to oklch(0.9923f, 0.0170f, 100f),
+      ),
     )
   ),
   KIDS(MR.images.wallpaper_kids, "kids", 0.53f,
@@ -140,7 +282,7 @@ enum class PresetWallpaper(
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffadeffc".colorFromReadableHex(),
       DefaultTheme.DARK to "#ff16404B".colorFromReadableHex(),
-      DefaultTheme.SIMPLEX to "#ff184753".colorFromReadableHex(),
+      DefaultTheme.SIMPLEX to oklch(0.7700f, 0.1200f, 205f, 0.12f),
       DefaultTheme.BLACK to "#ff16404B".colorFromReadableHex()
     ),
     mapOf(
@@ -168,6 +310,49 @@ enum class PresetWallpaper(
         receivedMessage = "#ff1e1f1f",
         receivedQuote = "#ff262b29",
       ),
+    ),
+    simplexStops = SimplexStops(
+      bg = arrayOf(
+        0.10f to oklch(0.0f, 0.0f, 0.0f),
+        0.55f to oklch(0.1900f, 0.0238f, 200f),
+        0.85f to oklch(0.3100f, 0.0692f, 200f),
+        1.00f to oklch(0.4350f, 0.1011f, 217f),
+      ),
+      sent = arrayOf(
+        0.20f to oklch(0.3550f, 0.0794f, 200f),
+        0.55f to oklch(0.3800f, 0.0823f, 200f),
+        0.80f to oklch(0.4920f, 0.1099f, 200f),
+        1.00f to oklch(0.5130f, 0.1193f, 217f),
+      ),
+      sentQuote = arrayOf(
+        0.20f to oklch(0.4030f, 0.0899f, 200f),
+        0.55f to oklch(0.4200f, 0.0909f, 200f),
+        0.80f to oklch(0.5040f, 0.1126f, 200f),
+        1.00f to oklch(0.5320f, 0.1237f, 217f),
+      ),
+      received = arrayOf(
+        0.20f to oklch(0.2310f, 0.0263f, 200f),
+        0.55f to oklch(0.2800f, 0.0319f, 200f),
+        0.84f to oklch(0.3710f, 0.0719f, 200f),
+        1.00f to oklch(0.4900f, 0.1139f, 217f),
+      ),
+      receivedQuote = arrayOf(
+        0.20f to oklch(0.2860f, 0.0326f, 200f),
+        0.55f to oklch(0.3250f, 0.0370f, 200f),
+        0.84f to oklch(0.4230f, 0.0819f, 200f),
+        1.00f to oklch(0.5140f, 0.1195f, 217f),
+      ),
+      secondary = listOf(
+        0.20f to oklch(0.5300f, 0.1087f, 200f),
+        0.55f to oklch(0.5600f, 0.1149f, 200f),
+        0.90f to oklch(0.7300f, 0.1200f, 200f),
+      ),
+      author = listOf(
+        0.20f to oklch(0.6550f, 0.1373f, 200f),
+        0.55f to oklch(0.6700f, 0.1405f, 200f),
+        0.70f to oklch(0.7500f, 0.1100f, 200f),
+        0.90f to oklch(0.9923f, 0.0170f, 100f),
+      ),
     )
   ),
   SCHOOL(MR.images.wallpaper_school, "school", 0.53f,
@@ -175,7 +360,7 @@ enum class PresetWallpaper(
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffCEEBFF".colorFromReadableHex(),
       DefaultTheme.DARK to "#ff0F293B".colorFromReadableHex(),
-      DefaultTheme.SIMPLEX to "#ff112f43".colorFromReadableHex(),
+      DefaultTheme.SIMPLEX to oklch(0.7730f, 0.1419f, 239.87f, 0.12f),
       DefaultTheme.BLACK to "#ff0F293B".colorFromReadableHex()
     ),
     mapOf(
@@ -203,6 +388,49 @@ enum class PresetWallpaper(
         receivedMessage = "#ff1d1e22",
         receivedQuote = "#ff292b2f",
       ),
+    ),
+    simplexStops = SimplexStops(
+      bg = arrayOf(
+        0.10f to oklch(0.0f, 0.0f, 0.0f),
+        0.55f to oklch(0.2200f, 0.0717f, 271f),
+        0.85f to oklch(0.3400f, 0.1218f, 271f),
+        1.00f to oklch(0.5700f, 0.1218f, 254f),
+      ),
+      sent = arrayOf(
+        0.20f to oklch(0.3750f, 0.1290f, 266f),
+        0.55f to oklch(0.4100f, 0.1505f, 266f),
+        0.80f to oklch(0.5700f, 0.1505f, 266f),
+        1.00f to oklch(0.6000f, 0.1612f, 254f),
+      ),
+      sentQuote = arrayOf(
+        0.20f to oklch(0.4250f, 0.1397f, 266f),
+        0.55f to oklch(0.4500f, 0.1612f, 266f),
+        0.80f to oklch(0.5700f, 0.1612f, 266f),
+        1.00f to oklch(0.6100f, 0.1612f, 254f),
+      ),
+      received = arrayOf(
+        0.20f to oklch(0.2400f, 0.0717f, 271f),
+        0.55f to oklch(0.3100f, 0.0824f, 271f),
+        0.84f to oklch(0.4400f, 0.1286f, 271f),
+        1.00f to oklch(0.6100f, 0.1286f, 254f),
+      ),
+      receivedQuote = arrayOf(
+        0.20f to oklch(0.3000f, 0.0771f, 271f),
+        0.55f to oklch(0.3550f, 0.0875f, 271f),
+        0.84f to oklch(0.4950f, 0.1346f, 271f),
+        1.00f to oklch(0.6250f, 0.1286f, 254f),
+      ),
+      secondary = listOf(
+        0.20f to oklch(0.5600f, 0.1397f, 271f),
+        0.55f to oklch(0.5900f, 0.1505f, 271f),
+        0.90f to oklch(0.7600f, 0.1172f, 271f),
+      ),
+      author = listOf(
+        0.20f to oklch(0.6850f, 0.1612f, 271f),
+        0.55f to oklch(0.7000f, 0.1562f, 271f),
+        0.70f to oklch(0.7800f, 0.1116f, 271f),
+        0.90f to oklch(0.9923f, 0.0170f, 100f),
+      ),
     )
   ),
   TRAVEL(MR.images.wallpaper_travel, "travel", 0.68f,
@@ -210,7 +438,7 @@ enum class PresetWallpaper(
     tint = mapOf(
       DefaultTheme.LIGHT to "#ffeedbfe".colorFromReadableHex(),
       DefaultTheme.DARK to "#ff311E48".colorFromReadableHex(),
-      DefaultTheme.SIMPLEX to "#ff35204e".colorFromReadableHex(),
+      DefaultTheme.SIMPLEX to oklch(0.7800f, 0.1500f, 320f, 0.12f),
       DefaultTheme.BLACK to "#ff311E48".colorFromReadableHex()
     ),
     mapOf(
@@ -237,6 +465,49 @@ enum class PresetWallpaper(
         sentQuote = "#ff623485",
         receivedMessage = "#ff231f23",
         receivedQuote = "#ff2c2931",
+      ),
+    ),
+    simplexStops = SimplexStops(
+      bg = arrayOf(
+        0.10f to oklch(0.0f, 0.0f, 0.0f),
+        0.55f to oklch(0.2000f, 0.0650f, 315f),
+        0.85f to oklch(0.3200f, 0.1171f, 315f),
+        1.00f to oklch(0.4800f, 0.1171f, 298f),
+      ),
+      sent = arrayOf(
+        0.20f to oklch(0.3620f, 0.1254f, 310f),
+        0.55f to oklch(0.3900f, 0.1463f, 310f),
+        0.80f to oklch(0.5180f, 0.1463f, 310f),
+        1.00f to oklch(0.5420f, 0.1567f, 298f),
+      ),
+      sentQuote = arrayOf(
+        0.20f to oklch(0.4100f, 0.1358f, 310f),
+        0.55f to oklch(0.4300f, 0.1567f, 310f),
+        0.80f to oklch(0.5260f, 0.1567f, 310f),
+        1.00f to oklch(0.5580f, 0.1567f, 298f),
+      ),
+      received = arrayOf(
+        0.20f to oklch(0.2340f, 0.0650f, 315f),
+        0.55f to oklch(0.2900f, 0.0754f, 315f),
+        0.84f to oklch(0.3940f, 0.1251f, 315f),
+        1.00f to oklch(0.5300f, 0.1251f, 298f),
+      ),
+      receivedQuote = arrayOf(
+        0.20f to oklch(0.2910f, 0.0703f, 315f),
+        0.55f to oklch(0.3350f, 0.0805f, 315f),
+        0.84f to oklch(0.4470f, 0.1328f, 315f),
+        1.00f to oklch(0.5510f, 0.1251f, 298f),
+      ),
+      secondary = listOf(
+        0.20f to oklch(0.5400f, 0.1358f, 315f),
+        0.55f to oklch(0.5700f, 0.1463f, 315f),
+        0.90f to oklch(0.7400f, 0.1254f, 315f),
+      ),
+      author = listOf(
+        0.20f to oklch(0.6650f, 0.1567f, 315f),
+        0.55f to oklch(0.6800f, 0.1567f, 315f),
+        0.70f to oklch(0.7600f, 0.1149f, 315f),
+        0.90f to oklch(0.9923f, 0.0170f, 100f),
       ),
     )
   );
@@ -383,13 +654,38 @@ private fun drawToBitmap(image: ImageBitmap, imageScale: Float, tint: Color, siz
   return bitmap
 }
 
+// SIMPLEX preset wallpapers paint a per-wallpaper gradient background (from SimplexStops.bg) instead of a
+// flat colour, along the same 20° axis the chat bubbles/text sample. previewMode expands the axis so the
+// small theme-preview swatch shows a representative slice rather than the full sweep.
+private fun simplexGradient(filename: String, size: Size, previewMode: Boolean = false): Brush? {
+  val stops = PresetWallpaper.from(filename)?.simplexStops?.bg ?: return null
+  val theta = 20.0 * PI / 180.0
+  val dx = sin(theta).toFloat()
+  val dy = -cos(theta).toFloat()
+  val cx = size.width / 2f
+  val cy = size.height / 2f
+  val maxP = abs(dx) * cx + abs(dy) * cy
+  val bl = Offset(cx - dx * maxP, cy - dy * maxP)
+  val tr = Offset(cx + dx * maxP, cy + dy * maxP)
+  val span = tr - bl
+  val axisStart = if (previewMode) bl - span else bl
+  val axisEnd = if (previewMode) tr + span * 2f else tr
+  return Brush.linearGradient(
+    colorStops = stops,
+    start = axisStart,
+    end = axisEnd,
+  )
+}
+
 fun CacheDrawScope.chatViewBackground(
   image: ImageBitmap,
   imageType: WallpaperType,
   background: Color,
   tint: Color,
   graphicsLayerSize: MutableState<IntSize>? = null,
-  backgroundGraphicsLayer: GraphicsLayer? = null
+  backgroundGraphicsLayer: GraphicsLayer? = null,
+  theme: DefaultTheme = DefaultTheme.LIGHT,
+  previewMode: Boolean = false,
 ): DrawResult {
   val imageScale = if (imageType is WallpaperType.Preset) {
     (imageType.scale ?: 1f) * imageType.predefinedImageScale
@@ -404,10 +700,19 @@ fun CacheDrawScope.chatViewBackground(
     image
   }
 
+  // SIMPLEX preset: paint the wallpaper gradient instead of the flat background; the pattern still draws on top.
+  val simplexBrush: Brush? =
+    if (theme == DefaultTheme.SIMPLEX && imageType is WallpaperType.Preset) simplexGradient(imageType.filename, size, previewMode)
+    else null
+
   return onDrawBehind {
     copyBackgroundToAppBar(graphicsLayerSize, backgroundGraphicsLayer) {
       val quality = if (appPlatform.isAndroid) FilterQuality.High else FilterQuality.Low
-      drawRect(background)
+      if (simplexBrush != null) {
+        drawRect(brush = simplexBrush)
+      } else {
+        drawRect(background)
+      }
       when (imageType) {
         is WallpaperType.Preset -> drawImage(image)
         is WallpaperType.Image -> when (val scaleType = imageType.scaleType ?: WallpaperScaleType.FILL) {
