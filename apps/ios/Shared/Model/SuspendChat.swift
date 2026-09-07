@@ -191,11 +191,21 @@ class AppChatState {
     static let shared = AppChatState()
     private var value_ = appStateGroupDefault.get()
 
+    init() {
+        // SUBS_TRACE: the state this process starts at, read from the persisted group default.
+        // On cold launch this is whatever was saved when the app last backgrounded (often .suspended).
+        logger.debug("SUBS_TRACE appstate init: initial persisted value=\(value_.rawValue)")
+    }
+
     var value: AppState {
         value_
     }
 
     func set(_ state: AppState) {
+        // SUBS_TRACE: log every app-state transition. The chat-list subs indicator only polls when
+        // value == .active, so this shows whether/when the app actually reaches (or leaves) .active,
+        // e.g. on cold launch vs returning from background.
+        logger.debug("SUBS_TRACE appstate set: \(value_.rawValue) -> \(state.rawValue)")
         appStateGroupDefault.set(state)
         sendAppState(state)
         value_ = state

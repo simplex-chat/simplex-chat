@@ -114,9 +114,17 @@ public func resetChatCtrl() {
 @inline(__always)
 public func sendSimpleXCmd<R: ChatAPIResult>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl? = nil, retryNum: Int32 = 0) -> APIResult<R> {
     if let d = sendSimpleXCmdStr(cmd.cmdString, ctrl, retryNum: retryNum) {
-        decodeAPIResult(d)
+        // SUBS_TRACE: log the exact bytes the core sends back for the subs-total query,
+        // before any decoding — this is what the UI actually receives from the core.
+        if cmd.cmdString.hasPrefix("/get subs total") {
+            logger.debug("SUBS_TRACE raw core->UI for '\(cmd.cmdString)': \(dataToString(d))")
+        }
+        return decodeAPIResult(d)
     } else {
-        APIResult.error(.invalidJSON(json: nil))
+        if cmd.cmdString.hasPrefix("/get subs total") {
+            logger.debug("SUBS_TRACE raw core->UI for '\(cmd.cmdString)': nil (core returned no data)")
+        }
+        return APIResult.error(.invalidJSON(json: nil))
     }
 }
 
