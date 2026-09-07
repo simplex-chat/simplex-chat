@@ -344,3 +344,23 @@ main .section-bg {
 .dark .register-card .close-register svg {
     fill: #ffffff;
 }
+
+.mc-frame {
+    position: absolute;
+    left: -5000px;
+    width: 0;
+    height: 0;
+    border: 0;
+}
+
+.mc-frame.mc-frame-shown {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    width: calc(100vw - 48px);
+    height: calc(100svh - 48px);
+    z-index: 60000;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 3px 24px rgba(0, 0, 0, .35);
+}

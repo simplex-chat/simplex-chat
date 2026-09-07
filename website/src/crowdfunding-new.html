@@ -679,6 +679,16 @@ templateEngineOverride: njk
         }
         .cf-form-submit:hover { filter: brightness(1.07); }
         .cf-form-submit:active { transform: translateY(1px); }
+        .cf-deck-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 22px;
+            text-decoration: none;
+        }
+        #download .cf-modal-text { text-align: center; }
+        #download .cf-thanks { margin-top: 18px; }
+        .mc-frame { position: absolute; width: 0; height: 0; border: 0; left: -5000px; }
 
         .cf-modal-light .cf-modal-panel {
             background: linear-gradient(160deg, #ffffff 0%, #eaf4ff 70%, #e9ffff 100%);
@@ -890,7 +900,17 @@ templateEngineOverride: njk
         </svg>
     </a>
     </div>
+    <script>{% include "mc-submit.js" %}</script>
+
     <script>
+        (function cfSubscribe() {
+            document.addEventListener('mc:result', function (e) {
+                var thanks = document.querySelector('#download .cf-thanks');
+                if (thanks) thanks.hidden = !e.detail.ok;
+                location.hash = 'download';
+            });
+        })();
+
         (function cfDock() {
             var ctas = document.querySelector('.cf-ctas');
             var footer = document.querySelector('.cf-footer');
@@ -980,6 +1000,18 @@ templateEngineOverride: njk
                     </span>
                     <button type="submit" name="subscribe" class="cf-form-submit">Submit and download our Pitch deck</button>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="cf-modal cf-modal-text-only" id="download">
+        <a class="cf-modal-backdrop" href="#!" aria-label="Close"></a>
+        <div class="cf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="download-title">
+            <a class="cf-modal-close" href="#!" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
+            <div class="cf-modal-text">
+                <h2 id="download-title">Our Pitch deck</h2>
+                <p class="cf-thanks" hidden>Thank you for subscribing to crowdfunding updates. Please confirm your subscription by clicking the link in the email we just sent you.</p>
+                <p><a class="cf-form-submit cf-deck-link" href="/simplex-chat-pitch-deck.pdf" target="_blank" rel="noopener">Download our Pitch deck</a></p>
             </div>
         </div>
     </div>
