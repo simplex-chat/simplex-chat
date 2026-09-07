@@ -518,11 +518,7 @@ struct ChatListNavLink: View {
         .contentShape(Rectangle())
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
-            Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) } }
-            if !ChatModel.shared.addressShortLinkDataSet {
-                Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) } }
-            }
-            Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest.apiId) } }
+            contactRequestDialogButtons(contactRequest)
         }
     }
 
@@ -683,6 +679,17 @@ extension View {
             }
         }
     }
+}
+
+// Buttons for the "Accept connection request?" dialog, shared by the chat-list row and the
+// dialog surfaced when a contact-request notification is tapped (ChatListView).
+@ViewBuilder
+func contactRequestDialogButtons(_ contactRequest: UserContactRequest) -> some View {
+    Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) } }
+    if !ChatModel.shared.addressShortLinkDataSet {
+        Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) } }
+    }
+    Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest.apiId) } }
 }
 
 func rejectContactRequestAlert(_ contactRequestId: Int64) -> Alert {

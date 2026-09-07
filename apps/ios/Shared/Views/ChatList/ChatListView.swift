@@ -218,6 +218,15 @@ struct ChatListView: View {
                 }
             }
         }
+        .confirmationDialog("Accept connection request?", isPresented: Binding(
+            get: { chatModel.showingContactRequest != nil },
+            set: { if !$0 { chatModel.showingContactRequest = nil } }
+        ), titleVisibility: .visible) {
+            if let ncr = chatModel.showingContactRequest,
+               case let .contactRequest(contactRequest) = chatModel.getChat(ncr.chatId)?.chatInfo {
+                contactRequestDialogButtons(contactRequest)
+            }
+        }
         .environmentObject(chatTagsModel)
     }
     
