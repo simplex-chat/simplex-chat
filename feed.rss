@@ -7,6 +7,62 @@
         <description>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</description>
         <language>en</language>
             <item>
+                <title>Nick Rogers: Why I Backed SimpleX Chat in 2022, and Why I Doubled Down</title>
+                <link>https://simplex.chat/blog/20260908-nick-rogers-why-i-backed-simplex-chat.html</link>
+                <description>&lt;h1 id=&quot;why-i-backed-simplex-chat-in-2022-and-why-i-doubled-down&quot; tabindex=&quot;-1&quot;&gt;Why I Backed SimpleX Chat in 2022, and Why I Doubled Down&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Sep 08, 2026&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;By &lt;a href=&quot;https://x.com/nickwd&quot;&gt;Nick Rogers&lt;/a&gt;, Early Investor and Advisor, SimpleX Chat | Founder, Fieldwork | former CPO &amp;amp; CTO, Stream (Wagestream)&lt;/em&gt;&lt;/p&gt;
+&lt;hr /&gt;
+&lt;p&gt;When I first met Evgeny at Wagestream (now Stream) back in 2020, he was one of the most unique people I had ever encountered in technology.&lt;/p&gt;
+&lt;p&gt;He was fiercely, relentlessly honest. In a tech industry where corporate diplomacy usually trumps candour, that honesty struck me as genuine bravery. Evgeny was never afraid to speak truth to authority, and he held an uncompromisingly high bar for technical truth.&lt;/p&gt;
+&lt;p&gt;In late 2021, when he decided to step down as VP of Engineering to build a brand new messaging protocol from scratch, I took over as VP of Engineering.&lt;/p&gt;
+&lt;p&gt;I knew how massive the shoes were that I had to fill. But more than that, I knew that whatever Evgeny set out to build next, he would pursue with absolute conviction.&lt;/p&gt;
+&lt;p&gt;Most people in software already know Evgeny without realizing it. He is the creator of &lt;strong&gt;Ajv&lt;/strong&gt; (Another JSON Schema Validator), one of the most widely used open source libraries in the JavaScript ecosystem, downloaded over a billion times each month by virtually every major technology company on earth. When someone has already built foundational infrastructure that the entire web secretly depends on, you take notice when they turn their attention to a new problem.&lt;/p&gt;
+&lt;h3 id=&quot;the-2022-bet-backing-a-protocol-before-it-had-users&quot; tabindex=&quot;-1&quot;&gt;The 2022 Bet: Backing a Protocol Before It Had Users&lt;/h3&gt;
+&lt;p&gt;When Evgeny first pitched me on &lt;strong&gt;SimpleX Chat&lt;/strong&gt;, his ambition was enormous: build an alternative to WhatsApp and Telegram that fundamentally eliminated user identifiers.&lt;/p&gt;
+&lt;p&gt;No phone numbers. No email addresses. No usernames. Not even a persistent public key or random user ID.&lt;/p&gt;
+&lt;p&gt;My first thought was that competing with WhatsApp was wildly ambitious. But as an engineering leader, I also knew there was a massive, structural gap in the market.&lt;/p&gt;
+&lt;p&gt;People assume end-to-end encryption solves privacy. It does not. WhatsApp, Telegram, Signal, and Matrix still rely on centralized account registries or user identifiers. Even when the message payload is encrypted, the platforms still collect, analyze, and classify the metadata: who you are, who you talk to, at what time, and from where. Between on-device classification, advertising networks, and platform-level censorship, modern messaging is fundamentally broken at the protocol layer.&lt;/p&gt;
+&lt;p&gt;When I wrote one of the first angel checks into SimpleX&#39;s SEIS round in early 2022 (at a $5M valuation), there were no mobile app store rankings. There was barely a user base. It was essentially a Haskell terminal prototype on GitHub and Evgeny&#39;s mathematical conviction that you could route messages over isolated, unidirectional queues without ever tracking who was talking to whom.&lt;/p&gt;
+&lt;p&gt;I invested because I believed in the architectural insight, and because I knew Evgeny was stubborn enough to work on this until it succeeded.&lt;/p&gt;
+&lt;h3 id=&quot;four-years-later-the-inflection-point&quot; tabindex=&quot;-1&quot;&gt;Four Years Later: The Inflection Point&lt;/h3&gt;
+&lt;p&gt;Over the last four years, as an investor and advisor, I have watched that initial command-line prototype grow into a global network:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Almost 500,000 Monthly Active Users&lt;/strong&gt; (up from zero when I invested).&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;3 Million+ App Downloads&lt;/strong&gt; and &lt;strong&gt;over 20 Million messages per day&lt;/strong&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Zero paid marketing spend.&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;SimpleX has reached this size because it started with the people who need uncompromising privacy the most: journalists, whistleblowers, developers, cryptographers, and sovereign communities.&lt;/p&gt;
+&lt;p&gt;More importantly, it has evolved from a 1:1 private messenger into a platform for &lt;strong&gt;sovereign publishing and broadcast channels&lt;/strong&gt;. Platforms like Telegram banned tens of millions of channels in 2025 alone, proving to creators and communities that they do not own their audience on centralized platforms. On SimpleX channels, publishers cannot be revoked, subscribers cannot be tracked, and content cannot be taken down centrally.&lt;/p&gt;
+&lt;h3 id=&quot;why-the-commercial-model-works-scale-low-arpu-and-organic-demand&quot; tabindex=&quot;-1&quot;&gt;Why the Commercial Model Works: Scale, Low ARPU, and Organic Demand&lt;/h3&gt;
+&lt;p&gt;A common criticism of privacy tools is that they make great philosophical statements but terrible businesses.&lt;/p&gt;
+&lt;p&gt;I take the opposite view for two reasons:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Unsolicited willingness to pay:&lt;/strong&gt; Before SimpleX even introduced paid commercial tiers, users voluntarily gave over &lt;strong&gt;$650,000 in unsolicited donations&lt;/strong&gt;. When a community gives you hundreds of thousands of dollars purely to support the software, you have a level of organic product love and willingness to pay that most consumer startups spend tens of millions of venture dollars trying to manufacture.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Viral dynamics and low ARPU:&lt;/strong&gt; Messaging apps are inherently viral networks. Once a protocol achieves scale, building a high-margin, profitable business is straightforward even at very low average revenue per user (ARPU).&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;SimpleX is not monetizing through surveillance advertising. It is monetizing through core infrastructure utilities:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;SimpleX Domains (&lt;code&gt;.simplex&lt;/code&gt; public names launching Dec 12):&lt;/strong&gt; Memorable names for public channels and contact addresses, providing recurring utility revenue.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Paid Supporter Badges and Dedicated Relays:&lt;/strong&gt; High-throughput infrastructure for power users and enterprise teams.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Enterprise Messaging:&lt;/strong&gt; Allowing businesses to talk to customers via their websites, without any privacy compromises of existing solutions like Intercom or Drift (especially important for sectors that require anonymity by law).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&quot;why-i-doubled-down-and-why-you-should-join-the-wefunder-round&quot; tabindex=&quot;-1&quot;&gt;Why I Doubled Down, and Why You Should Join the Wefunder Round&lt;/h3&gt;
+&lt;p&gt;Messaging is the most fundamental layer of human communication on the internet. It should look more like email: an open, decentralized protocol that nobody owns, rather than a walled garden controlled by Big Tech.&lt;/p&gt;
+&lt;p&gt;When Evgeny opened an insider round in mid-2026, I immediately wrote another check. And when he decided to take this round to &lt;strong&gt;Wefunder&lt;/strong&gt; (&lt;a href=&quot;https://wefunder.com/simplexchat?utm_source=nr_post&quot;&gt;wefunder.com/simplexchat&lt;/a&gt;), I was proud to represent the community of investors backing him.&lt;/p&gt;
+&lt;p&gt;In startup investing, you back two things: &lt;strong&gt;the founder and the TAM&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;The market for private, sovereign communications is enormous. And Evgeny is the rarest kind of founder: technically brilliant, relentlessly honest, and stubborn enough to see an audacious mission through to the end.&lt;/p&gt;
+&lt;p&gt;If you believe that the future of communication should belong to individuals rather than centralized platforms, I encourage you to join us as an investor.&lt;/p&gt;
+&lt;p&gt;👉 &lt;strong&gt;Invest in SimpleX Chat on Wefunder:&lt;/strong&gt; &lt;a href=&quot;https://wefunder.com/simplexchat?utm_source=nr_post&quot;&gt;wefunder.com/simplexchat&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;(Note: Anyone investing $500 or more before September 22 secures their &lt;code&gt;.simplex&lt;/code&gt; public name for 7 years prior to the public launch.)&lt;/em&gt;&lt;/p&gt;
+</description>
+                
+                <pubDate>Tue, 08 Sep 2026 00:00:00 +0000</pubDate>
+                
+                <dc:creator>SimpleX Chat</dc:creator>
+                <guid>https://simplex.chat/blog/20260908-nick-rogers-why-i-backed-simplex-chat.html</guid>
+            </item>
+            <item>
                 <title>Equity Crowdfunding Launched &amp;mdash; You Can Get a Stake in SimpleX Chat</title>
                 <link>https://simplex.chat/blog/20260819-simplex-chat-crowdfunding.html</link>
                 <description>&lt;h1 id=&quot;equity-crowdfunding-launched-you-can-get-a-stake-in-simplex-chat&quot; tabindex=&quot;-1&quot;&gt;Equity Crowdfunding Launched — You Can Get a Stake in SimpleX Chat&lt;/h1&gt;
