@@ -647,14 +647,6 @@ markGroupMembersCIsDeleted user gInfo members byGroupMember = do
   filesInfo <- withStore' $ \db -> fmap concat $ forM members $ \m -> markGroupMemberCIsDeleted_ db user gInfo m byGroupMember deletedTs
   cancelFilesInProgress user filesInfo
 
--- Reports about a member's messages are authored by the reporter, so deleting the member's own
--- chat items never reaches them - they have to be archived separately, as moderation does.
-archiveMembersReports :: User -> GroupInfo -> [GroupMember] -> GroupMember -> Bool -> CM ()
-archiveMembersReports user gInfo members byGroupMember byUser = do
-  deletedTs <- liftIO getCurrentTime
-  ciIds <- concat <$> withStore' (\db -> forM members $ \m -> markMemberReportsDeleted db user gInfo m byGroupMember deletedTs)
-  unless (null ciIds) $ toView $ CEvtGroupChatItemsDeleted user gInfo ciIds byUser (Just byGroupMember)
-
 markGroupMemberCIsDeleted_ :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> UTCTime -> IO [CIFileInfo]
 markGroupMemberCIsDeleted_ db user gInfo member byGroupMember deletedTs = do
   fs <- getGroupMemberFileInfo db user gInfo member

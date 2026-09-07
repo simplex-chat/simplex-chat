@@ -3658,7 +3658,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           if groupFeatureMemberAllowed SGFFullDelete m gInfo'
             then deleteGroupMemberCIs user gInfo' delMem
             else markGroupMemberCIsDeleted user gInfo' delMem m
-          archiveMembersReports user gInfo' [delMem] m False
+          ciIds <- withStore' $ \db -> markMemberReportsDeleted db user gInfo' delMem m
+          unless (null ciIds) $ toView $ CEvtGroupChatItemsDeleted user gInfo' ciIds False (Just m)
         forwardToMember :: GroupMember -> CM ()
         forwardToMember member =
           let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' m) (memberShortenedName m), fwdBrokerTs = brokerTs}

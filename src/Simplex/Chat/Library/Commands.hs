@@ -3175,7 +3175,8 @@ processChatCommand cxt nm = \case
         if groupFeatureUserAllowed SGFFullDelete gInfo
           then deleteGroupMembersCIs user gInfo ms
           else markGroupMembersCIsDeleted user gInfo ms membership
-        archiveMembersReports user gInfo ms membership True
+        ciIds <- concat <$> withStore' (\db -> forM ms $ \m -> markMemberReportsDeleted db user gInfo m membership)
+        unless (null ciIds) $ toView $ CEvtGroupChatItemsDeleted user gInfo ciIds True (Just membership)
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     gInfo@GroupInfo {membership} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
