@@ -1206,6 +1206,7 @@ SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=?
 Query: 
           INSERT INTO badge_issuances (issuance_id, badge_purchase_id, entry_id, badge_type, period_start, period_end, expiry, credential, created_at)
           VALUES (?,?,?,?,?,?,?,?,?)
+          ON CONFLICT (badge_purchase_id, entry_id) DO NOTHING
         
 Plan:
 
@@ -3770,7 +3771,7 @@ Query:
         LIMIT 1
       
 Plan:
-SEARCH badge_issuances USING INDEX idx_badge_issuances_purchase (badge_purchase_id=?)
+SEARCH badge_issuances USING INDEX idx_badge_issuances_purchase_entry (badge_purchase_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -7294,11 +7295,11 @@ Query: SELECT auth_err_counter FROM connections WHERE user_id = ? AND connection
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT badge_expiry, contact_profile_id FROM contact_profiles WHERE badge_proof IS NOT NULL
+Query: SELECT badge_expiry, contact_profile_id FROM contact_profiles WHERE badge_proof IS NOT NULL ORDER BY contact_profile_id
 Plan:
 SCAN contact_profiles
 
-Query: SELECT badge_expiry, contact_profile_id FROM contact_profiles WHERE badge_signature IS NOT NULL
+Query: SELECT badge_expiry, contact_profile_id FROM contact_profiles WHERE badge_signature IS NOT NULL ORDER BY contact_profile_id
 Plan:
 SCAN contact_profiles
 
@@ -7689,11 +7690,7 @@ Query: SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE badge_purchases SET alert_acked_kind = ?, alert_acked_episode = ?, alert_snooze_until = NULL WHERE badge_purchase_id = ?
-Plan:
-SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE badge_purchases SET alert_snooze_until = ? WHERE badge_purchase_id = ?
+Query: UPDATE badge_purchases SET alert_acked_kind = ?, alert_acked_episode = ?, alert_snooze_until = ? WHERE badge_purchase_id = ?
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 

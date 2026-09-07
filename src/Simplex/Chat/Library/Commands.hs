@@ -5268,43 +5268,44 @@ runBadgeWorker User {userId} bw@(Worker {doWork}, _) = do
 updateUserBadges :: UserId -> BadgeMemory -> BadgeWorker -> CM ()
 updateUserBadges userId mem bw = do
   now <- badgeNow
-  -- re-read, not captured with the worker: setUserBadge returns the record it was given, and that
-  -- is what is broadcast, so a stale copy would revert a profile edit made during the session
   user <- withStore $ \db -> getUser db userId
   purchases <- withStore' $ \db -> getUserBadgePurchases db user
   -- one badge failing reports and yields no change, leaving the others to run
   results <- forM purchases $ \p@UserBadgePurchase {badgePurchaseId} ->
-    updateBadgePurchase user mem p now `catchAllErrors` \e -> do
+    updateBadgePurchase userId mem p now `catchAllErrors` \e -> do
       eToView e
       (False,) <$> nextBadgeAttempt mem badgePurchaseId now (badgeErrorRetry e)
   lift $ scheduleBadgeWake bw now $ earliestTime $ map snd results
-  -- a renewal answers no command, so the new state can only reach the client as an event
-  when (any fst results) $ toView . CEvtBadgeChanged user =<< getUserBadgeState user
+  -- a renewal answers no command, so the new state can only reach the client as an event; the
+  -- record read above still carries the badge this pass replaced, so it is read again
+  when (any fst results) $ do
+    user' <- withStore $ \db -> getUser db userId
+    toView . CEvtBadgeChanged user' =<< getUserBadgeState user'
 
 -- | Whether the badge changed, and when it next needs a pass.
-updateBadgePurchase :: User -> BadgeMemory -> UserBadgePurchase -> UTCTime -> CM (Bool, Maybe UTCTime)
-updateBadgePurchase user@User {userId} mem p@UserBadgePurchase {badgePurchaseId} now = do
+updateBadgePurchase :: UserId -> BadgeMemory -> UserBadgePurchase -> UTCTime -> CM (Bool, Maybe UTCTime)
+updateBadgePurchase userId mem p@UserBadgePurchase {badgePurchaseId} now = do
   balance_ <- withStore' $ \db -> getBadgeLedgerBalance db badgePurchaseId
   case balance_ of
     Nothing -> pure (False, Nothing)
     Just balance -> do
       renewal <-
         if badgeWorkDue now balance
-          then requestBadgeIssue user p now `catchAllErrors` \e -> Left (badgeErrorRetry e) <$ eToView e
+          then requestBadgeIssue userId p now `catchAllErrors` \e -> Left (badgeErrorRetry e) <$ eToView e
           else pure $ Right balance
       -- a response that leaves the month due means the service does not agree it is due, its clock
       -- being behind this one; without a retry the next wake is paidThrough, the rest of the balance away
       let (balance', badgeRetry) = case renewal of
             Left r -> (balance, r)
             Right b -> (b, if badgeWorkDue now b then RetryBadge Nothing else NoBadgeRetry)
-      -- presenting writes currentUser and broadcasts the record it is given, and the request above
-      -- takes as long as the service timeout, so a profile edited during it must be read again
-      user' <- withStore $ \db -> getUser db userId
-      retired <- retireExpiredBadge user' p now balance'
+      -- presenting broadcasts the record it is handed, and the request above can block for the
+      -- whole service timeout, so this read belongs after it and not at the top of the pass
+      user <- withStore $ \db -> getUser db userId
+      retired <- retireExpiredBadge user p now balance'
       let issued = L.balanceStartTs balance' /= L.balanceStartTs balance
       -- outside the badge lock: the chat lock must not be taken under it
-      unless retired $ presentIssuedBadge user' p now
-      emitBadgeAlert user' mem p now balance'
+      unless retired $ presentIssuedBadge user p now
+      emitBadgeAlert user mem p now balance'
       retryAt <- nextBadgeAttempt mem badgePurchaseId now badgeRetry
       -- the retry can fall before the boundary or after it, so neither is dropped for the other
       pure (retired || issued, earliestTime [retryAt, badgeBoundary now balance'])
@@ -5426,10 +5427,11 @@ nextBadgeAttempt BadgeMemory {attempts} badgePurchaseId now = \case
 -- | Ask the service for the month that is due and apply the response. A timeout writes nothing, so
 -- the same request is sent again on the next pass. 'Left' is a service error, already reported, and
 -- says whether asking again could answer differently.
-requestBadgeIssue :: User -> UserBadgePurchase -> UTCTime -> CM (Either BadgeRetry LedgerBalance)
-requestBadgeIssue user@User {userId} UserBadgePurchase {badgePurchaseId, purchaseKey, purchasePrivKey, masterKey} now = do
+requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either BadgeRetry LedgerBalance)
+requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, purchaseKey, purchasePrivKey, masterKey} now = do
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
   withEntityLock "badgeIssue" (CLBadgeUser userId) $ do
+    user <- withStore $ \db -> getUser db userId
     lastEntry <- withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no entry to assert") pure
     let req =
           BadgeServiceRequest
