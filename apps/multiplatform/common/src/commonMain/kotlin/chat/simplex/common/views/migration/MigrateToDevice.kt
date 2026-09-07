@@ -524,17 +524,18 @@ private fun ProgressView() {
 }
 
 private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String): Boolean {
-  return if (strHasSimplexFileLink(link.trim())) {
-    val data = MigrationFileLinkData.readFromLink(link)
+  val trimmed = link.trim()
+  return if (strHasSimplexFileLink(trimmed)) {
+    val data = MigrationFileLinkData.readFromLink(trimmed)
     val hasProxyConfigured = data?.networkConfig?.hasProxyConfigured() ?: false
     val networkConfig = data?.networkConfig?.transformToPlatformSupported()
     // If any of iOS or Android had onion enabled, show onion screen
     if (hasProxyConfigured && networkConfig?.hostMode != null && networkConfig.requiredHostMode != null) {
-      state = MigrationToState.Onion(link.trim(), networkConfig.legacySocksProxy, networkConfig.networkProxy, networkConfig.hostMode, networkConfig.requiredHostMode)
-      MigrationToDeviceState.save(MigrationToDeviceState.Onion(link.trim(), networkConfig.legacySocksProxy, networkConfig.networkProxy, networkConfig.hostMode, networkConfig.requiredHostMode))
+      state = MigrationToState.Onion(trimmed, networkConfig.legacySocksProxy, networkConfig.networkProxy, networkConfig.hostMode, networkConfig.requiredHostMode)
+      MigrationToDeviceState.save(MigrationToDeviceState.Onion(trimmed, networkConfig.legacySocksProxy, networkConfig.networkProxy, networkConfig.hostMode, networkConfig.requiredHostMode))
     } else {
       val current = getNetCfg()
-      state = MigrationToState.DatabaseInit(link.trim(), current.copy(
+      state = MigrationToState.DatabaseInit(trimmed, current.copy(
         socksProxy = null,
         hostMode = networkConfig?.hostMode ?: current.hostMode,
         requiredHostMode = networkConfig?.requiredHostMode ?: current.requiredHostMode
