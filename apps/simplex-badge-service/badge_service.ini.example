@@ -20,6 +20,16 @@ expiry_minutes = 60
 speed_policy = MediumSpeed
 payment_tolerance = 0.5
 
+; omit this whole section to disable card payments (the browser shows the provider-unavailable screen)
+[stripe]
+; restricted key (rk_): Checkout Sessions write + PaymentIntents/Charges read — never a full secret key (sk_)
+secret_key = rk_test_replace-me
+publishable_key = pk_test_replace-me
+; the signing secret of the /webhooks/stripe endpoint configured in the Dashboard
+webhook_secret = whsec_replace-me
+; minutes until an unpaid checkout session expires; 31-1439 (a minute inside Stripe's 30-minute-to-24-hour window)
+session_minutes = 60
+
 [poll]
 waiting_seconds = 3
 idle_seconds = 60

@@ -22,6 +22,7 @@ import BadgeService.Config (IssuerConfig (..), ServiceConfig (..), readServiceCo
 import BadgeService.Options
 import BadgeService.Poller (newPollerEnv, newReadHints, runPoller)
 import BadgeService.Providers.BTCPay (btcpayProvider)
+import BadgeService.Providers.Stripe (stripeProvider)
 import BadgeService.Store
 import BadgeService.Store.Invoices (seedCatalog, truncateToSecond)
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
@@ -159,7 +160,9 @@ badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
     serviceLanes ws ChatController {chatStore} sc = do
       -- before the listener accepts anything, since every checkout is priced from these
       seedServiceCatalog chatStore
-      providers <- maybe (pure []) (fmap (: []) . btcpayProvider) (btcpay sc)
+      btc <- maybe (pure []) (fmap (: []) . btcpayProvider) (btcpay sc)
+      str <- maybe (pure []) (fmap (: []) . stripeProvider) (stripe sc)
+      let providers = btc <> str
       hints <- newReadHints
       webEnv <- newWebEnv chatStore sc ws hints providers
       pollerEnv <- newPollerEnv chatStore ws hints providers (poll sc)

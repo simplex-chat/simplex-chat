@@ -3,8 +3,7 @@
 `simplex-badge-service` runs the whole supporter-badge service as one process, two
 lanes: a SimpleX chat bot that answers service RPC over a double-ratchet contact
 address, and — only when `--service-config` names a `badge_service.ini` — the badge-codes
-web checkout (BTCPay payment, code issuance, the poller; card payment is not served in
-this build). **Without
+web checkout (BTCPay and Stripe payment, code issuance, the poller). **Without
 `--service-config` the web listener does not start at all**; the process still runs the
 chat side and nothing else.
 
@@ -24,7 +23,7 @@ At this stage the service:
 - listens for service requests (`CEvtServiceRequest`) on that address, rejects a request whose `purchaseKey` is not the key the agent verified the signature against, and answers `redeemBadgeCode`,
 - issues redemption codes, storing only their `SHA-256` and printing each code once,
 - does not accept contact requests unless `[dev] chat_redeem` is on: the address is for RPC only,
-- in service mode with `--service-config`, also serves the built web app (`npm run build` in `web/`), `POST /api/invoice` and `GET /api/invoice/:id`, the BTCPay webhook route, and a payment poller, seeding its price/offer catalog on every start,
+- in service mode with `--service-config`, also serves the built web app (`npm run build` in `web/`), `POST /api/invoice` and `GET /api/invoice/:id`, the BTCPay and Stripe webhook routes, and a payment poller, seeding its price/offer catalog on every start,
 - owns the `sx_badge_service_`-prefixed tables and its own migrations table (`sx_badge_service_migrations`).
 
 Every other command answers `unsupported_version`, or `unknown_purchase_key` when the key that
@@ -78,7 +77,7 @@ before anyone rotates onto it.
 The command line wins over the file when both `--issuer-key-idx` and `--issuer-secret` are given.
 Note that a secret passed as a flag is visible to every user on the machine through `ps`, where one
 in the ini is only as readable as the file: `badge_service.ini` is gitignored and already holds the
-BTCPay API key and webhook secret.
+provider API keys and webhook secrets.
 
 Other options:
 
@@ -95,9 +94,10 @@ Other options:
 ### Running the web checkout
 
 `badge_service.ini` holds the listener bind address and `static_dir`, an optional
-`[btcpay]` section (omitting it disables Bitcoin and Monero) and the poll cadence.
+`[btcpay]` section (omitting it disables Bitcoin and Monero), an optional `[stripe]`
+section (omitting it disables card payments) and the poll cadence.
 `badge_service.ini.example` is the committed template; `badge_service.ini` itself is
-gitignored, since a real one holds an API key and a webhook secret.
+gitignored, since a real one holds API keys and webhook secrets.
 
 The full walkthrough is in
 [`web/README.md`](web/README.md#running-the-real-service-against-this-build). Short version:
@@ -125,9 +125,57 @@ The BTCPay API key needs four permissions, each scoped to the one store:
 `canmodifyinvoices` so `POST /api/invoice/:id/cancel` can invalidate an invoice at BTCPay
 rather than only in this store.
 
+### Card payments (Stripe)
+
+An optional `[stripe]` section enables the card lane; omitting it disables card payments
+and `POST /api/invoice` answers `provider_unavailable` for a card order, the same as an
+absent `[btcpay]` does for Bitcoin and Monero. Its keys:
+
+- `secret_key` — a **restricted** key (`rk_...`), never a full secret key (`sk_...`). Grant it
+  **Checkout Sessions: write**, plus **PaymentIntents: read** and **Charges: read** — the poller
+  reads a session with `expand[]=payment_intent.latest_charge`, and Stripe rejects the whole read
+  if the key lacks read on an expanded object (settlement then falls back to the slower list pass).
+- `publishable_key` (`pk_...`) — the public key the browser mounts the Payment Element with.
+- `webhook_secret` (`whsec_...`) — the signing secret of the `/webhooks/stripe` endpoint,
+  configured in the Stripe Dashboard alongside it.
+- `session_minutes` — minutes until an unpaid checkout session expires; must be between
+  31 and 1439, default 60. The bounds sit a minute inside Stripe's own 30-minute-to-24-hour
+  window, so request latency or clock skew cannot push an at-bound value outside it.
+
+The service fills `publishable_key` into the shell at boot: the built `index.html` ships
+with an empty `<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">`
+(`web/public/index.html`), and the listener serves a copy with the configured key
+substituted in, so the ini is the only place the key is set. With no `[stripe]` section the
+pristine (empty) shell is served and the page shows its development stand-in card form. The
+dev mock (`web/mock/server.py`) does the same substitution from `$STRIPE_PUBLISHABLE_KEY`,
+since it runs without an ini.
+
+`POST /webhooks/stripe` verifies `Stripe-Signature` against `webhook_secret` and queues a
+read, the same hint-only role as `POST /webhooks/btcpay`: the poller carries authority, so
+an unverified or unreadable delivery costs nothing but a log line.
+
+The reverse proxy in front of this service must send a Content-Security-Policy that
+allows Stripe.js and its iframes, since Stripe forbids bundling or self-hosting its
+script:
+
+```
+script-src 'self' https://js.stripe.com https://*.js.stripe.com;
+frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com
+```
+
+**Stripe Link must be disabled in the Dashboard.** Left on, it needs `link.com` in the
+CSP above and reintroduces an email prompt of its own, which this design otherwise avoids.
+
+**Enable card only; do not enable redirect-based methods** (iDEAL, Bancontact, PayPal, and
+the rest) in the Dashboard. The embedded checkout sends no `return_url`, which Stripe requires
+the moment a redirect-based method is offered, so enabling one makes every checkout fail to
+create. The service pins the Stripe API version it was built against, so the account's default
+version does not affect the card lane.
+
 ### The checkout endpoints
 
-The browser in `web/` is the only client of the `/api` routes; the webhook below is BTCPay's.
+The browser in `web/` is the only client of the `/api` routes; the two webhooks below are the
+providers', one each for BTCPay and Stripe.
 The invoice id is the only credential for reading or cancelling an order: it is 16 random bytes,
 it travels in the path, and anything that logs request paths logs it. It is also what the buyer
 is shown as their reference and asked to quote, so support sees it: losing it lets someone cancel
@@ -142,13 +190,14 @@ provider's reference instead.
 | `GET /api/invoice/:id?wait=<status>&seenPaid=<figure>&seenFull=<0\|1>` | The same, held for up to 30 seconds while the invoice's status is still `<status>` **and** its payment is the one the caller says it has rendered. `wait=paid` and any value that is not a status answer at once, since neither can change. A status the caller has not seen, or a payment it has not seen, answers at once — the provider's verdict counts as much as the figure, because Monero reports an invoice as confirming while its figures are still zero. A request that omits `seenPaid` holds on the status alone. |
 | `POST /api/invoice/:id/cancel` | Invalidates an open invoice at the provider and expires it here. Refuses a settled or expired one with `not_open`, and one that already holds a payment with `funded`. The provider is told first, and a payment landing in between does not keep the invoice open: nothing can reach that address any more, so the row is expired either way and the poller settles or reports what arrived. |
 | `POST /webhooks/btcpay` | Verifies `BTCPay-Sig` over the bytes as received and queues a read. A hint only: the poller is what carries authority, so an unverified or unreadable delivery costs nothing but a log line. |
+| `POST /webhooks/stripe` | Verifies `Stripe-Signature` over the bytes as received and queues a read. The card lane's equivalent of the row above, and a hint just the same: the poller carries authority, so an unverified or unreadable delivery costs nothing but a log line. |
 
 Every `/api` refusal is `{"error": "<code>"}`. Besides the codes above, any of them can answer
 `internal`, an unknown id answers `not_found`, and a wrong verb answers `method_not_allowed` —
-ten codes in all, which is what the browser's `WIRE_ERROR_CODES` lists. The webhook route is the exception:
-it answers 200, 400 or 413 with an empty body, because BTCPay is the only caller and nothing it
-could read would change what it does. A wrong verb on any route, that one included, answers
-`method_not_allowed`.
+ten codes in all, which is what the browser's `WIRE_ERROR_CODES` lists. The two webhook routes are
+the exception: each answers 200, 400 or 413 with an empty body, because its provider is the only
+caller and nothing it could read would change what the route does. A wrong verb on any route, those
+two included, answers `method_not_allowed`.
 
 ### Redeeming over chat, for local testing
 

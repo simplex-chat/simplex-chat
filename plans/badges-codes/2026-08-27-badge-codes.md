@@ -582,7 +582,7 @@ verifyWebhook :: PaymentProvider -> Headers -> RawBody -> Either WebhookError (M
 
 | | |
 |---|---|
-| API | HTTP Basic, the key as username, no password. Use a **restricted key** (`rk_live_`) scoped to Checkout Sessions |
+| API | HTTP Basic, the key as username, no password. Use a **restricted key** (`rk_live_`) with Checkout Sessions write, and PaymentIntents + Charges read (the settlement read expands `payment_intent.latest_charge`, and Stripe refuses the whole read if the key cannot read an expanded object) |
 | Create | `POST /v1/checkout/sessions`, `mode=payment`, `ui_mode=elements` |
 | Returned to the browser | `client_secret` (§5.1). The publishable key is compiled into the page |
 | Mounting | `stripe.initCheckoutElementsSdk({clientSecret})`, then `createPaymentElement()` and `mount()` into B4 |

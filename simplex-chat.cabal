@@ -428,6 +428,7 @@ executable simplex-badge-service
       BadgeService.Poller
       BadgeService.Providers
       BadgeService.Providers.BTCPay
+      BadgeService.Providers.Stripe
       BadgeService.Service
       BadgeService.Store
       BadgeService.Store.Invoices
@@ -714,6 +715,7 @@ test-suite simplex-chat-test
       BadgeService.Poller
       BadgeService.Providers
       BadgeService.Providers.BTCPay
+      BadgeService.Providers.Stripe
       BadgeService.Service
       BadgeService.Store
       BadgeService.Store.Invoices
@@ -724,9 +726,11 @@ test-suite simplex-chat-test
       Bots.BadgeCatalogTests
       Bots.BadgeConfigTests
       Bots.BadgeServiceTests
+      Bots.BadgeStripeTests
       Bots.BadgeWaitersTests
       Bots.BadgeWebTests
       Bots.FakeBTCPay
+      Bots.FakeStripe
       Broadcast.Bot
       Broadcast.Options
       Directory.BlockedWords

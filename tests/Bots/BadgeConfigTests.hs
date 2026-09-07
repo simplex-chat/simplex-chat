@@ -21,7 +21,10 @@ badgeConfigTests = describe "badge service config" $ do
   it "disables a provider whose section is absent" testAbsentSection
   it "refuses an incomplete provider section, naming the key" testIncompleteSection
   it "refuses a missing static_dir" testAbsentStaticDir
-  it "refuses a stripe section in this build" testStripeRefused
+  it "applies every documented stripe default" testStripeDefaults
+  it "disables stripe when the section is absent" testStripeAbsent
+  it "refuses an incomplete stripe section, naming the key" testStripeIncomplete
+  it "bounds stripe session_minutes to 31-1439" testStripeSessionMinutesRange
   it "accepts HighSpeed" (testSpeedPolicyAccepted "HighSpeed" HighSpeed)
   it "accepts LowMediumSpeed" (testSpeedPolicyAccepted "LowMediumSpeed" LowMediumSpeed)
   it "accepts LowSpeed" (testSpeedPolicyAccepted "LowSpeed" LowSpeed)
@@ -109,13 +112,59 @@ testAbsentStaticDir =
   withIni (T.replace "static_dir = /srv/badges\n" "" fullIni) $ \p ->
     readServiceConfig p >>= (`shouldSatisfy` isLeft)
 
-testStripeRefused :: IO ()
-testStripeRefused =
-  withIni (fullIni <> "[stripe]\nsecret_key = rk_live_x\n") $ \p -> do
+fullStripeIni :: T.Text
+fullStripeIni =
+  fullIni
+    <> T.unlines
+      [ "[stripe]",
+        "secret_key = rk_test_x",
+        "publishable_key = pk_test_x",
+        "webhook_secret = whsec_x"
+      ]
+
+testStripeDefaults :: IO ()
+testStripeDefaults = withIni fullStripeIni $ \p -> do
+  Right cfg <- readServiceConfig p
+  case stripe cfg of
+    Nothing -> expectationFailure "the stripe section was present"
+    Just StripeConfig {sSessionMinutes, sHost} -> do
+      sSessionMinutes `shouldBe` 60
+      sHost `shouldBe` "https://api.stripe.com"
+
+testStripeAbsent :: IO ()
+testStripeAbsent = withIni fullIni $ \p -> do
+  Right cfg <- readServiceConfig p
+  stripe cfg `shouldBe` Nothing
+
+testStripeIncomplete :: IO ()
+testStripeIncomplete =
+  withIni (T.replace "webhook_secret = whsec_x" "" fullStripeIni) $ \p -> do
     r <- readServiceConfig p
     case r of
-      Left e -> e `shouldContain` "card payments"
-      Right _ -> expectationFailure "a stripe section must fail this build"
+      Left e -> e `shouldContain` "webhook_secret"
+      Right _ -> expectationFailure "an incomplete stripe section must fail at boot"
+
+testStripeSessionMinutesRange :: IO ()
+testStripeSessionMinutesRange = do
+  refuses "session_minutes = 5\n"
+  refuses "session_minutes = 30\n"
+  refuses "session_minutes = 1440\n"
+  refuses "session_minutes = 2000\n"
+  accepts "session_minutes = 31\n" 31
+  accepts "session_minutes = 1439\n" 1439
+  where
+    refuses value =
+      withIni (fullStripeIni <> value) $ \p -> do
+        r <- readServiceConfig p
+        case r of
+          Left e -> e `shouldContain` "session_minutes"
+          Right _ -> expectationFailure ("stripe." <> T.unpack (T.strip value) <> " is outside 31-1439 and must fail")
+    accepts value expected =
+      withIni (fullStripeIni <> value) $ \p -> do
+        r <- readServiceConfig p
+        case r of
+          Right cfg -> fmap sSessionMinutes (stripe cfg) `shouldBe` Just expected
+          Left e -> expectationFailure ("stripe." <> T.unpack (T.strip value) <> " is inside 31-1439 and must parse, but: " <> e)
 
 testSpeedPolicyAccepted :: T.Text -> SpeedPolicy -> IO ()
 testSpeedPolicyAccepted name expected =

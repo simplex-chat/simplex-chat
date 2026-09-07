@@ -8,16 +8,18 @@
 module Bots.BadgeWebTests (badgeWebTests) where
 
 import BadgeService.Catalog (catalogCurrency, defaultCatalog)
-import BadgeService.Config (BTCPayConfig (..), ListenerConfig (..), PollConfig (..), ServiceConfig (..), SpeedPolicy (..))
+import BadgeService.Config (BTCPayConfig (..), ListenerConfig (..), PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..))
 import BadgeService.Orders (codeLifetime, settleOrder)
 import BadgeService.Poller
 import BadgeService.Providers
 import BadgeService.Providers.BTCPay (btcpayProvider, listPageSize, maxListPages)
+import BadgeService.Providers.Stripe (stripeProvider)
 import BadgeService.Store.Invoices
 import BadgeService.Waiters (awaitStatus, newWaiters, publish, waitingCount)
 import BadgeService.Web.Server
 import Bots.BadgeCatalogTests (WebOffer (..), WebPrice (..), parseCatalogSource)
 import Bots.FakeBTCPay
+import Bots.FakeStripe (FakeStripe (..), setSessionState, stripeEvent, stripeSigHeader, withFakeStripe)
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.Async (async, wait)
 import qualified Control.Concurrent.Async as Async
@@ -149,6 +151,7 @@ badgeWebTests = do
     it "records nothing when the caller never reaches the provider" testStubProviderNotCalledWhenSkipped
   describe "badge service web" $ do
     it "serves the shell at / and a hashed asset under /assets" testServesTheBuild
+    it "fills the shell's publishable key from the ini at boot" testShellCarriesPublishableKey
     it "caches by where the file is, not by how the request spelled it" testCachingFollowsTheResolvedPath
     it "serves the built web app, exactly as it is shipped" testServesBuiltWebApp
     it "refuses every traversal spelling, by canonicalisation" testTraversalRefused
@@ -244,9 +247,13 @@ badgeWebTests = do
     it "answers 500 and names the abandoned invoice when the store is lost" testStoreLostAfterTheProviderCreated
     it "refuses a malformed body, an unknown method and a malformed codeHash" testBadRequestCostsNothing
     it "refuses a body over the size cap before reading it all" testOversizedBodyCostsNothing
-    it "answers method card with provider_unavailable while Stripe is out of scope" testCardIsProviderUnavailable
+    it "answers method card with provider_unavailable when no Stripe provider is configured" testCardUnconfigured503
     it "answers a provider that failed to create with provider_unavailable, writing nothing" testProviderFailureWritesNothing
     it "refuses the sixth create in a minute, without reaching the provider" testCreateRateLimit
+  describe "badge service card" $ do
+    it "creates a Stripe session, carrying its clientSecret and a stripe invoice row" testCardCreatesSession
+    it "derives the shown expiry from stripe.session_minutes, not the btcpay window" testCardExpiryFollowsSessionMinutes
+    it "settles a card invoice from a signed checkout.session.completed and a pass" testCardWebhookSettles
   describe "badge service cancel" $ do
     it "expires the invoice here and invalidates it at the provider" testCancelClosesTheInvoiceAtBothEnds
     it "wakes a hold another tab is sitting on" testCancelWakesAHeldRequest
@@ -691,7 +698,7 @@ outsideMarker :: LB.ByteString
 outsideMarker = "SECRET-OUTSIDE-STATIC-DIR"
 
 shellHtml :: LB.ByteString
-shellHtml = "<!doctype html><title>SimpleX badges</title>"
+shellHtml = "<!doctype html><title>SimpleX badges</title><meta id=\"stripe-publishable-key\" name=\"stripe-publishable-key\" content=\"\">"
 
 assetJs :: LB.ByteString
 assetJs = "export const build = \"d95503da54ee228f\";"
@@ -722,6 +729,7 @@ testServiceConfig staticDir trustForwarded =
   ServiceConfig
     { listener = ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = staticDir, lTrustForwardedFor = trustForwarded},
       btcpay = Nothing,
+      stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
       issuer = Nothing,
       devChatRedeem = False
@@ -863,6 +871,28 @@ testCachingFollowsTheResolvedPath = bounded "cache by resolved path" $ withWebAp
   statusOf escaped `shouldBe` 200
   responseBody escaped `shouldBe` shellHtml
   headerOf escaped hCacheControl `shouldBe` Just "no-cache"
+
+testShellCarriesPublishableKey :: IO ()
+testShellCarriesPublishableKey = bounded "shell carries the publishable key" $
+  withServiceStore $ \st -> do
+    createDirectoryIfMissing True "tests/tmp"
+    withTempDirectory "tests/tmp" "badge-static" $ \root -> do
+      staticDir <- prepareStaticDir root
+      let cfg = (testServiceConfig staticDir True) {stripe = Just publishTestStripe}
+      withListener [] True holdMicros st cfg $ \_ client -> do
+        shell <- webGet client "/"
+        statusOf shell `shouldBe` 200
+        LB.toStrict (responseBody shell) `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
+
+publishTestStripe :: StripeConfig
+publishTestStripe =
+  StripeConfig
+    { sSecretKey = "rk_test_x",
+      sPublishableKey = "pk_test_injected",
+      sWebhookSecret = "whsec_x",
+      sSessionMinutes = 60,
+      sHost = "https://api.stripe.com"
+    }
 
 testServesTheBuild :: IO ()
 testServesTheBuild = bounded "serves the build" $ withWebApp $ \_ client -> do
@@ -1514,13 +1544,100 @@ testOversizedBodyCostsNothing = bounded "oversized body" $ withCheckout $ \ref e
   small <- postCreateAs client 2 (J.encode (J.object ["priceId" .= supporterPriceId, "method" .= ("btc" :: Text), "codeHash" .= codeHashText sampleCode, "padding" .= T.replicate 16 "x"]))
   statusOf small `shouldBe` 200
 
-testCardIsProviderUnavailable :: IO ()
-testCardIsProviderUnavailable = bounded "card is unavailable" $ withCheckout $ \ref env client -> do
+testCardUnconfigured503 :: IO ()
+testCardUnconfigured503 = bounded "card is unavailable" $ withCheckout $ \ref env client -> do
   r <- postCreateAs client 1 (createBody supporterPriceId Nothing "card" (codeHashText sampleCode))
   statusOf r `shouldBe` 503
   responseBody r `shouldBe` errorBody "provider_unavailable"
   stubCalls ref `shouldReturn` []
   invoiceCount (weStore env) `shouldReturn` 0
+
+stripeWebhookPath :: String
+stripeWebhookPath = "/webhooks/stripe"
+
+postStripeWebhook :: WebClient -> [Header] -> LB.ByteString -> IO (Response LB.ByteString)
+postStripeWebhook client hdrs = webRequestBody client "POST" stripeWebhookPath hdrs
+
+signedStripeEvent :: FakeStripe -> Text -> Text -> IO ([Header], LB.ByteString)
+signedStripeEvent fake eventType sid = do
+  t <- round . utcTimeToPOSIXSeconds <$> getCurrentTime :: IO Int
+  let body = stripeEvent eventType sid
+  pure (stripeSigHeader (sWebhookSecret (fsConfig fake)) t body, body)
+
+withFakeStripePoller :: (FakeStripe -> PollerEnv -> WebEnv -> WebClient -> IO a) -> IO a
+withFakeStripePoller action =
+  withFakeStripe $ \fake ->
+    withServiceStore $ \st -> do
+      createDirectoryIfMissing True "tests/tmp"
+      withTempDirectory "tests/tmp" "badge-stripe-fake" $ \root -> do
+        staticDir <- prepareStaticDir root
+        seedCheckoutCatalog st
+        provider <- stripeProvider (fsConfig fake)
+        let cfg = (testServiceConfig staticDir True) {stripe = Just (fsConfig fake)}
+        withListener [provider] True holdMicros st cfg $ \env client -> do
+          poller <- pollerFor env
+          action fake poller env client
+
+testCardCreatesSession :: IO ()
+testCardCreatesSession = bounded "card creates a session" $ withFakeStripePoller $ \_ _ env client -> do
+  r <- postCreateAs client 1 (createBody supporterPriceId Nothing "card" (codeHashText sampleCode))
+  statusOf r `shouldBe` 200
+  headerOf r hContentType `shouldBe` Just "application/json"
+  o <- jsonObject r
+  fieldOf o "clientSecret" `shouldSatisfy` isJust
+  fieldOf o "badgeType" `shouldBe` Just (J.String "supporter")
+  invId <- InvoiceId <$> stringField o "invoiceId"
+  Just row <- getInvoice (weStore env) invId
+  irProvider row `shouldBe` PPStripe
+  irStatus row `shouldBe` ISOpen
+  bcPaymentStatus <$> settledCode (weStore env) invId `shouldReturn` CPSUnpaid
+
+-- | Distinct from the default 60 and from the btcpay window (45), so a card expiry drawn from the
+-- wrong key would read as one of those instead.
+cardSessionMinutes :: Int
+cardSessionMinutes = 90
+
+-- | The deadline shown and stored for a card order must come from stripe.session_minutes, the same
+-- key the adapter sets the session's real expires_at from, not the btcpay window.
+testCardExpiryFollowsSessionMinutes :: IO ()
+testCardExpiryFollowsSessionMinutes = bounded "card expiry from session_minutes" $
+  withFakeStripe $ \fake ->
+    withServiceStore $ \st -> do
+      createDirectoryIfMissing True "tests/tmp"
+      withTempDirectory "tests/tmp" "badge-stripe-expiry" $ \root -> do
+        staticDir <- prepareStaticDir root
+        seedCheckoutCatalog st
+        let stripeCfg = (fsConfig fake) {sSessionMinutes = cardSessionMinutes}
+            cfg = (testServiceConfig staticDir True) {stripe = Just stripeCfg, btcpay = Just testBTCPayConfig}
+        provider <- stripeProvider stripeCfg
+        withListener [provider] True holdMicros st cfg $ \env client -> do
+          r <- postCreateAs client 1 (createBody supporterPriceId Nothing "card" (codeHashText sampleCode))
+          statusOf r `shouldBe` 200
+          o <- jsonObject r
+          invId <- InvoiceId <$> stringField o "invoiceId"
+          Just row <- getInvoice (weStore env) invId
+          fieldOf o "expiresAt" `shouldBe` Just (J.toJSON (irExpiresAt row))
+          diffUTCTime (irExpiresAt row) (irCreatedAt row) `shouldBe` fromIntegral (cardSessionMinutes * 60)
+          diffUTCTime (irExpiresAt row) (irCreatedAt row) `shouldNotBe` fromIntegral (testExpiryMinutes * 60)
+
+testCardWebhookSettles :: IO ()
+testCardWebhookSettles = bounded "card webhook settles" $ withFakeStripePoller $ \fake poller env client -> do
+  r <- postCreateAs client 1 (createBody supporterPriceId Nothing "card" (codeHashText sampleCode))
+  statusOf r `shouldBe` 200
+  o <- jsonObject r
+  iid <- InvoiceId <$> stringField o "invoiceId"
+  Just row <- getInvoice (weStore env) iid
+  let sid = irProviderRef row
+  setSessionState fake sid ["status" .= ("complete" :: Text), "payment_status" .= ("paid" :: Text)]
+  (hdrs, body) <- signedStripeEvent fake "checkout.session.completed" sid
+  delivered <- postStripeWebhook client hdrs body
+  statusOf delivered `shouldBe` 200
+  responseBody delivered `shouldBe` ""
+  invoiceStatus (weStore env) iid `shouldReturn` ISOpen
+  drainHints poller
+  invoiceStatus (weStore env) iid `shouldReturn` ISPaid
+  bcPaymentStatus <$> settledCode (weStore env) iid `shouldReturn` CPSPaid
+  ipStatus <$> paymentRow (weStore env) iid `shouldReturn` "settled"
 
 testProviderFailureWritesNothing :: IO ()
 testProviderFailureWritesNothing = bounded "provider failure" $ withCheckout $ \ref env client -> do

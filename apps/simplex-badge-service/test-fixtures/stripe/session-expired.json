@@ -1,0 +1,16 @@
+{
+  "_fixture": "GET /v1/checkout/sessions/{id}?expand[]=payment_intent.latest_charge -- a Checkout Session with status expired -- the window closed unpaid -- from Stripe's DOCUMENTED API schema. NOT captured from a live instance; replace `response` with a recorded body and rewrite this line. The fake patches `id`, `status`, `payment_status` and `amount_total`; everything else is served as written here.",
+  "response": {
+    "id": "cs_test_expired",
+    "object": "checkout.session",
+    "mode": "payment",
+    "ui_mode": "elements",
+    "status": "expired",
+    "payment_status": "unpaid",
+    "amount_total": 5400,
+    "currency": "usd",
+    "client_secret": "cs_test_expired_secret",
+    "expires_at": 1700003600,
+    "payment_intent": null
+  }
+}

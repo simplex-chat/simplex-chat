@@ -6,12 +6,14 @@
 module BadgeService.Config
   ( ListenerConfig (..),
     BTCPayConfig (..),
+    StripeConfig (..),
     SpeedPolicy (..),
     speedPolicyName,
     PollConfig (..),
     IssuerConfig (..),
     ServiceConfig (..),
     defaultExpiryMinutes,
+    defaultSessionMinutes,
     readServiceConfig,
     unknownKeys,
   )
@@ -73,6 +75,19 @@ data BTCPayConfig = BTCPayConfig
 instance Show BTCPayConfig where
   show BTCPayConfig {bHost, bStoreId} = "btcpay " <> T.unpack bHost <> " store " <> T.unpack bStoreId
 
+data StripeConfig = StripeConfig
+  { sSecretKey :: Text,
+    sPublishableKey :: Text,
+    sWebhookSecret :: Text,
+    sSessionMinutes :: Int,
+    sHost :: Text
+  }
+  deriving (Eq)
+
+-- keeps the restricted key and the signing secret out of logs and errors
+instance Show StripeConfig where
+  show StripeConfig {sHost} = "stripe " <> T.unpack sHost
+
 data PollConfig = PollConfig {pWaitingSeconds :: Int, pIdleSeconds :: Int}
   deriving (Eq, Show)
 
@@ -93,6 +108,7 @@ instance Show IssuerConfig where
 data ServiceConfig = ServiceConfig
   { listener :: ListenerConfig,
     btcpay :: Maybe BTCPayConfig,
+    stripe :: Maybe StripeConfig,
     poll :: PollConfig,
     issuer :: Maybe IssuerConfig,
     -- signs a credential for anyone who asks over chat, with a master key this service
@@ -103,6 +119,20 @@ data ServiceConfig = ServiceConfig
 
 defaultExpiryMinutes :: Int
 defaultExpiryMinutes = 60
+
+defaultStripeHost :: Text
+defaultStripeHost = "https://api.stripe.com"
+
+defaultSessionMinutes :: Int
+defaultSessionMinutes = 60
+
+-- | Stripe bounds the checkout session expiry to 30 minutes through 24 hours, measured from its own
+-- clock when the create lands. These bounds sit a minute inside Stripe's, so neither request latency
+-- (which eats into the floor) nor a service clock running ahead of Stripe's (which overshoots the
+-- ceiling) makes an at-bound value 400 the create.
+minSessionMinutes, maxSessionMinutes :: Int
+minSessionMinutes = 31
+maxSessionMinutes = 1439
 
 -- | An http host would carry the API key in the clear on every call.
 requireHttps :: Text -> Either String Text
@@ -143,6 +173,7 @@ knownSettings :: [(Text, [Text])]
 knownSettings =
   [ ("listener", ["host", "port", "static_dir", "trust_forwarded_for"]),
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
+    ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
     ("dev", ["chat_redeem"])
   ]
@@ -155,7 +186,7 @@ unknownKeys ini = beforeAnySection <> unknownSections <> settings
   where
     -- the parser keeps these, and nothing else ever looks at them
     beforeAnySection = [k <> ", written above the first section header" | (k, _) <- iniGlobals ini]
-    ours = map fst knownSettings <> ["issuer", "stripe"]
+    ours = map fst knownSettings <> ["issuer"]
     unknownSections = ["[" <> s <> "]" | s <- sections ini, T.strip s `notElem` ours]
     settings =
       [ section <> "." <> key
@@ -166,12 +197,12 @@ unknownKeys ini = beforeAnySection <> unknownSections <> settings
 
 parseConfig :: Ini -> Either String ServiceConfig
 parseConfig ini = do
-  refuseStripe
   lStaticDir <- T.unpack <$> required "listener" "static_dir"
   lHost <- optional "listener" "host" "127.0.0.1"
   lPort <- num "listener" "port" 8080
   lTrustForwardedFor <- bool "listener" "trust_forwarded_for" False
   btc <- btcpaySection
+  str <- stripeSection
   iss <- issuerSection
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
@@ -180,6 +211,7 @@ parseConfig ini = do
     ServiceConfig
       { listener = ListenerConfig {lHost, lPort, lStaticDir, lTrustForwardedFor},
         btcpay = btc,
+        stripe = str,
         poll = PollConfig {pWaitingSeconds, pIdleSeconds},
         issuer = iss,
         devChatRedeem = devRedeem
@@ -208,10 +240,6 @@ parseConfig ini = do
     cadence k d = do
       v <- num "poll" k d
       if v >= 1 then Right v else Left ("poll." <> T.unpack k <> " must be at least 1 second")
-    refuseStripe
-      | hasSection "stripe" =
-          Left "the [stripe] section is not supported: card payments are not implemented in this build"
-      | otherwise = Right ()
     issuerSection
       | not (hasSection "issuer") = Right Nothing
       | otherwise = do
@@ -283,3 +311,17 @@ parseConfig ini = do
         -- 100 settles an invoice for one satoshi, which a typo for 1.00 would reach
         Just d | d >= 0 && d <= maxTolerance -> Right d
         _ -> Left ("btcpay.payment_tolerance must be a percentage between 0 and " <> show maxTolerance)
+    stripeSection
+      | not (hasSection "stripe") = Right Nothing
+      | otherwise = do
+          sSecretKey <- required "stripe" "secret_key"
+          sPublishableKey <- required "stripe" "publishable_key"
+          sWebhookSecret <- required "stripe" "webhook_secret"
+          sSessionMinutes <- sessionMinutes
+          let sHost = defaultStripeHost
+          pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost})
+    sessionMinutes = do
+      v <- num "stripe" "session_minutes" defaultSessionMinutes
+      if v >= minSessionMinutes && v <= maxSessionMinutes
+        then Right v
+        else Left ("stripe.session_minutes must be between " <> show minSessionMinutes <> " and " <> show maxSessionMinutes <> " minutes")

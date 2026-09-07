@@ -19,7 +19,7 @@ module BadgeService.Web.Server
 where
 
 import BadgeService.Catalog (PricedOffer (..), priceOffer)
-import BadgeService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), defaultExpiryMinutes)
+import BadgeService.Config (BTCPayConfig (..), ListenerConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..), defaultExpiryMinutes, defaultSessionMinutes)
 import BadgeService.Poller (ReadHints, queueReadHint)
 import BadgeService.Providers (OrderDraft (..), Provider (..), ProviderError (..), ProviderInvoice (..), WebhookError (..))
 import BadgeService.Store.Invoices (CreateError (..), InvoicePayment (..), InvoiceRow (..), NewInvoice (..), cancelOpenInvoice, codeHashExists, createInvoiceRows, cryptoCurrencyText, getInvoice, getInvoiceByProviderRef, invoiceStatusText, newInvoiceId, paymentHolds, readCatalogRows, textToInvoiceStatus, truncateToSecond)
@@ -46,6 +46,7 @@ import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
+import qualified Data.Text.IO as TIO
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word16)
 import Network.HTTP.Types (Header, Status, hCacheControl, hContentType, status200, status400, status404, status405, status409, status413, status429, status500, status503)
@@ -69,13 +70,17 @@ data WebEnv = WebEnv
     weProviders :: [Provider],
     weHoldMicros :: Int,
     weHints :: ReadHints,
-    weBuckets :: TVar (Map Text Bucket)
+    weBuckets :: TVar (Map Text Bucket),
+    -- | The shell HTML with the publishable key filled in, held in memory. @Nothing@ when no Stripe
+    -- key is configured, and the pristine @static_dir@ shell is served instead.
+    weShell :: Maybe LB.ByteString
   }
 
 newWebEnv :: DBStore -> ServiceConfig -> Waiters -> ReadHints -> [Provider] -> IO WebEnv
 newWebEnv weStore weConfig weWaiters weHints weProviders = do
   weBuckets <- newTVarIO Map.empty
-  pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weBuckets}
+  weShell <- prepareShell (listener weConfig) (stripe weConfig)
+  pure WebEnv {weStore, weConfig, weWaiters, weProviders, weHoldMicros = holdMicros, weHints, weBuckets, weShell}
 
 listenerConfig :: WebEnv -> ListenerConfig
 listenerConfig WebEnv {weConfig} = listener weConfig
@@ -279,16 +284,19 @@ webhookResponse st = responseLBS st [(hCacheControl, "no-store")] ""
 
 webApp :: WebEnv -> Application
 webApp env req respond = case pathInfo req of
-  [] -> only "GET" $ serveStatic env ["index.html"] respond
+  [] -> only "GET" $ case weShell env of
+    Just shell -> respond (responseLBS status200 shellHeaders shell)
+    Nothing -> serveStatic env ["index.html"] respond
   "assets" : rest -> only "GET" $ serveStatic env ("assets" : rest) respond
   ["sw.js"] -> only "GET" $ serveStatic env ["sw.js"] respond
   ["api", "invoice"] -> only "POST" $ limited env createLimit req respond $ createInvoiceHandler env req respond
   ["api", "invoice", iid] -> only "GET" $ limited env readLimit req respond $ readInvoiceHandler env (InvoiceId iid) req respond
   ["api", "invoice", iid, "cancel"] -> only "POST" $ limited env createLimit req respond $ cancelInvoiceHandler env (InvoiceId iid) respond
-  -- the one API route with no rate limit: refusing a delivery is worse than serving it, since BTCPay
-  -- retries what it cannot deliver. The work per request is bounded instead, by `maxWebhookBytes`
-  -- before anything parses and by a signature check that reaches no database.
-  ["webhooks", "btcpay"] -> only "POST" $ webhookHandler env req respond
+  -- the webhook routes have no rate limit: refusing a delivery is worse than serving it, since a
+  -- provider retries what it cannot deliver. The work per request is bounded instead, by
+  -- `maxWebhookBytes` before anything parses and by a signature check that reaches no database.
+  ["webhooks", "btcpay"] -> only "POST" $ webhookHandler env PPCrypto "POST /webhooks/btcpay" req respond
+  ["webhooks", "stripe"] -> only "POST" $ webhookHandler env PPStripe "POST /webhooks/stripe" req respond
   _ -> respond notFound
   where
     only method action
@@ -303,6 +311,39 @@ serveStatic env segments respond =
   resolveInside (lStaticDir (listenerConfig env)) segments >>= \case
     Nothing -> respond notFound
     Just (root, file) -> respond (responseFile status200 (staticHeaders root file) file Nothing)
+
+shellHeaders :: [Header]
+shellHeaders = [(hContentType, "text/html; charset=utf-8"), (hCacheControl, "no-cache")]
+
+publishableKeyMeta :: Text
+publishableKeyMeta = "id=\"stripe-publishable-key\" name=\"stripe-publishable-key\" content=\""
+
+-- | Fill the shell's publishable-key meta from the ini once at boot and hold the filled HTML in
+-- memory, so @static_dir@ is only ever read and can stay read-only. @Nothing@ (serve the pristine
+-- file) when no key is set, no shell is present, or it cannot be read.
+prepareShell :: ListenerConfig -> Maybe StripeConfig -> IO (Maybe LB.ByteString)
+prepareShell _ Nothing = pure Nothing
+prepareShell ListenerConfig {lStaticDir} (Just StripeConfig {sPublishableKey}) =
+  E.try attempt >>= \case
+    Right out -> pure out
+    -- an unreadable shell would otherwise serve nothing with no clue why the card form is dead
+    Left (e :: E.IOException) -> do
+      logWarn ("could not read the shell in " <> T.pack lStaticDir <> ", serving the pristine one: " <> tshow e)
+      pure Nothing
+  where
+    attempt :: IO (Maybe LB.ByteString)
+    attempt = do
+      let shell = lStaticDir </> "index.html"
+      present <- doesFileExist shell
+      if not present
+        then pure Nothing
+        else do
+          html <- TIO.readFile shell
+          pure (Just (LB.fromStrict (encodeUtf8 (injectPublishableKey sPublishableKey html))))
+
+-- | A shell whose meta is not the exact placeholder is left untouched; the served-shell test guards it.
+injectPublishableKey :: Text -> Text -> Text
+injectPublishableKey key = T.replace (publishableKeyMeta <> "\"") (publishableKeyMeta <> key <> "\"")
 
 -- | The canonical root alongside the file, since what may be cached forever is decided from
 -- where the file really is, not from how the request spelled its way there.
@@ -514,7 +555,7 @@ createAtProvider WebEnv {weStore, weConfig} provider CreateRequest {crPriceId, c
       invId <- newInvoiceId
       -- truncate once, so the response, the row and the provider get the same value
       now <- truncateToSecond <$> getCurrentTime
-      let expiresAt = addUTCTime (invoiceWindow weConfig) now
+      let expiresAt = addUTCTime (invoiceWindow weConfig crMethod) now
           draft = OrderDraft {odAmount = poAmount priced, odCurrency = poCurrency priced}
       pCreateInvoice provider crMethod draft >>= \case
         Left (ProviderError e) -> failed ("provider refused to create an invoice: " <> e) providerUnavailable
@@ -557,8 +598,17 @@ createdInvoice (InvoiceId invId) PricedOffer {poBadgeType, poMonths, poAmount, p
     ]
       <> destinationPairs destination
 
-invoiceWindow :: ServiceConfig -> NominalDiffTime
-invoiceWindow ServiceConfig {btcpay} = fromIntegral (60 * maybe defaultExpiryMinutes bExpiryMinutes btcpay)
+secondsPerMinute :: Int
+secondsPerMinute = 60
+
+-- | The expiry shown and stored must come from the same key the provider sets the invoice's real
+-- expiry from: stripe.session_minutes for a card order, btcpay.expiry_minutes for a crypto one.
+invoiceWindow :: ServiceConfig -> ServicePaymentMethod -> NominalDiffTime
+invoiceWindow cfg = \case
+  SPMCard CPStripe -> minutes (maybe defaultSessionMinutes sSessionMinutes (stripe cfg))
+  SPMCrypto _ -> minutes (maybe defaultExpiryMinutes bExpiryMinutes (btcpay cfg))
+  where
+    minutes n = fromIntegral (secondsPerMinute * n)
 
 providerFor :: WebEnv -> ServicePaymentMethod -> Maybe Provider
 providerFor env method = providerNamed env (providerOf method)
@@ -625,10 +675,10 @@ parseCodeHash t
     canonical = T.filter (/= '=') . safeDecodeUtf8 . B64U.encode
 
 -- | Verifies, resolves the reference, queues a read, answers. It never calls the provider,
--- settles, opens a transaction or waits. BTCPay retries on a 5xx, so anything thrown below is
--- caught and answered 200 anyway.
-webhookHandler :: WebEnv -> Request -> Respond -> IO ResponseReceived
-webhookHandler env@WebEnv {weStore, weHints} req respond =
+-- settles, opens a transaction or waits. A provider retries a delivery it sees fail, so anything
+-- thrown below is caught and answered 200 anyway.
+webhookHandler :: WebEnv -> PaymentProvider -> Text -> Request -> Respond -> IO ResponseReceived
+webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
   E.try deliver >>= \case
     Right received -> pure received
     Left e -> case E.fromException e of
@@ -638,22 +688,20 @@ webhookHandler env@WebEnv {weStore, weHints} req respond =
         respond webhookOk
   where
     deliver :: IO ResponseReceived
-    deliver = case providerNamed env PPCrypto of
+    deliver = case providerNamed env provider of
       Nothing -> do
-        logWarn (route <> ": no crypto adapter is configured, so every delivery is refused")
+        logWarn (route <> ": no " <> tshow provider <> " adapter is configured, so every delivery is refused")
         respond webhookRefused
       Just p ->
         readBoundedBody maxWebhookBytes req >>= \case
           Nothing -> logInfo (route <> ": body over the " <> tshow maxWebhookBytes <> "-byte cap") >> respond webhookTooLarge
           Just body ->
-            -- BTCPay signs the indented payload it sent, so parsing and re-encoding here
-            -- would fail the signature on every event
+            -- a provider signs the exact bytes it sent (BTCPay's indented JSON, Stripe's body
+            -- verbatim), so parsing and re-encoding here would fail the signature on every event
             case pVerifyWebhook p (requestHeaders req) (LB.toStrict body) of
               Left (WebhookError e) -> refuse e
               Right Nothing -> ignore body "nothing this service acts on"
               Right (Just ref) -> resolve body ref
-    route :: Text
-    route = "POST /webhooks/btcpay"
     refuse :: Text -> IO ResponseReceived
     refuse why = logInfo (route <> " refused: " <> why) >> respond webhookRefused
     ignore :: LB.ByteString -> Text -> IO ResponseReceived
@@ -671,7 +719,7 @@ webhookHandler env@WebEnv {weStore, weHints} req respond =
         Just InvoiceRow {irProvider}
           -- provider_ref is unique table-wide, not per provider, so without this a
           -- collision could credit the wrong order
-          | irProvider /= PPCrypto -> ignore body ("provider_ref " <> ref <> " belongs to " <> tshow irProvider)
+          | irProvider /= provider -> ignore body ("provider_ref " <> ref <> " belongs to " <> tshow irProvider)
           | otherwise -> queue body ref
     queue :: LB.ByteString -> Text -> IO ResponseReceived
     queue body ref = do
@@ -682,9 +730,9 @@ webhookHandler env@WebEnv {weStore, weHints} req respond =
           logWarn (route <> ": " <> fromMaybe noEventType (eventTypeOf body) <> ", the read queue is full, so the read of " <> ref <> " waits for the next pass")
       respond webhookOk
 
--- | For the log only. The adapter returns @Right Nothing@ both for an event we do not
--- act on and for one it could not read, and being pure it cannot log the difference, so
--- a rename of @type@ or @invoiceId@ at BTCPay would make every delivery look successful.
+-- | For the log only. The adapter returns @Right Nothing@ both for an event we do not act on and
+-- for one it could not read, and being pure it cannot log the difference, so a rename of @type@ or
+-- the reference field a provider signs its events with would make every delivery look successful.
 eventTypeOf :: LB.ByteString -> Maybe Text
 eventTypeOf body = case J.decode body of
   Just (J.Object o) | Just (J.String t) <- KM.lookup "type" o -> Just t

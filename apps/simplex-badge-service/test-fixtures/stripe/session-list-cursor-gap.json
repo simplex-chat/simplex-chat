@@ -1,0 +1,35 @@
+{
+  "_fixture": "GET /v1/checkout/sessions?created[gte]=<unix>&limit=<n> -- a page whose LAST row carries no `id`, as could happen if a session this build cannot fully parse ends a page. From Stripe's DOCUMENTED API schema, NOT captured from a live instance. Used only to drive the no-cursor path: served with a small page size so the id-less row ends a page while more remain, leaving no `starting_after` to continue from. cs_test_a settles, cs_test_c sits on the unreachable next page.",
+  "response": {
+    "object": "list",
+    "has_more": false,
+    "data": [
+      {
+        "id": "cs_test_a",
+        "object": "checkout.session",
+        "mode": "payment",
+        "status": "complete",
+        "payment_status": "paid",
+        "amount_total": 5400,
+        "currency": "usd"
+      },
+      {
+        "object": "checkout.session",
+        "mode": "payment",
+        "status": "open",
+        "payment_status": "unpaid",
+        "amount_total": 5400,
+        "currency": "usd"
+      },
+      {
+        "id": "cs_test_c",
+        "object": "checkout.session",
+        "mode": "payment",
+        "status": "expired",
+        "payment_status": "unpaid",
+        "amount_total": 5400,
+        "currency": "usd"
+      }
+    ]
+  }
+}
