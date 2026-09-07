@@ -344,3 +344,34 @@ main .section-bg {
 .dark .register-card .close-register svg {
     fill: #ffffff;
 }
+
+.mc-frame {
+    position: absolute;
+    left: -5000px;
+    width: 0;
+    height: 0;
+    border: 0;
+}
+
+.mc-error-card {
+    max-width: 640px;
+    padding: 44px 0 0;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.dark .mc-error-card {
+    background: #ffffff;
+}
+
+.mc-error-card .close-register svg,
+.dark .mc-error-card .close-register svg {
+    fill: #023789;
+}
+
+#mc-error.open .mc-frame {
+    position: static;
+    display: block;
+    width: 100%;
+    height: min(520px, calc(100svh - 140px));
+}
