@@ -9,6 +9,7 @@
 
 module BadgeTests (badgeTests) where
 
+import BadgeService.Service (badgeErrorRetryAfter)
 import Control.Concurrent.STM (atomically)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -62,6 +63,7 @@ badgeTests = do
   describe "worker retry" $ do
     it "repeats a failure that can clear on its own, and no other" testRetryClassification
     it "backs off to the cap, and honours what the service asks for within bounds" testRetryBackoff
+    it "sends retryAfter with the transient service codes and no other" testServiceRetryAfter
   describe "service protocol JSON" $ do
     it "redeemBadgeCode request matches the schema" testRedeemRequestJSON
     it "badgeCredential response matches the schema" testCredentialResponseJSON
@@ -436,6 +438,21 @@ testRetryBackoff = do
   let hinted = advanceWith (Just maxInterval) (0, initialInterval)
   snd hinted `shouldBe` maxInterval
   snd (advanceWith Nothing hinted) `shouldBe` maxInterval
+
+-- badges-rpc.md defines retryAfter as marking the transient codes, and every other code as
+-- terminal for the command attempted. The client repeats a code that carries one on the service's
+-- schedule, so the set is the protocol's and not a judgement to make per call site.
+testServiceRetryAfter :: IO ()
+testServiceRetryAfter = do
+  badgeErrorRetryAfter BSEPaymentPending `shouldBe` Just 300
+  badgeErrorRetryAfter BSEProviderUnavailable `shouldBe` Just 300
+  badgeErrorRetryAfter BSERateLimited `shouldBe` Just 60
+  -- internal is the one most likely to clear on its own, and is still terminal: repeating it on
+  -- the service's cadence presses a service already failing, and the client has its own floor
+  badgeErrorRetryAfter BSEInternal `shouldBe` Nothing
+  mapM_
+    (\code -> badgeErrorRetryAfter code `shouldBe` Nothing)
+    [BSEBadRequest, BSEUnsupportedVersion, BSEUnknownPurchaseKey, BSECodeInvalid, BSECodeUsed, BSECodeExpired, BSEUnknown "future_code"]
 
 -- The client replicates entry_credit_type / entry_debit_type verbatim, so a stored tag that
 -- disagreed with the wire tag would put a different row on each side.

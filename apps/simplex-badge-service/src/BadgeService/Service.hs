@@ -12,6 +12,7 @@ module BadgeService.Service
     badgeService,
     badgeServiceCLI,
     badgeServiceResponse,
+    badgeErrorRetryAfter,
     IssueCodeOpts (..),
     issueBadgeCode,
   )
@@ -35,6 +36,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Word (Word32)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
@@ -225,7 +227,16 @@ responseObject r = case J.toJSON r of
   _ -> KM.fromList [("type", J.String "error"), ("code", J.toJSON BSEInternal)]
 
 errorResponse :: BadgeServiceErrorCode -> BadgeServiceResponse
-errorResponse code = BSPError {code, message = Nothing, retryAfter = Nothing}
+errorResponse code = BSPError {code, message = Nothing, retryAfter = badgeErrorRetryAfter code}
+
+-- | Seconds, for the three codes badges-rpc.md marks transient. Every other code is terminal for
+-- the command attempted - internal included, which would otherwise press a failing service.
+badgeErrorRetryAfter :: BadgeServiceErrorCode -> Maybe Word32
+badgeErrorRetryAfter = \case
+  BSEPaymentPending -> Just 300
+  BSEProviderUnavailable -> Just 300
+  BSERateLimited -> Just 60
+  _ -> Nothing
 
 
 -- | The agent verified the signature, so sigKey is a key the sender holds - a purchaseKey that

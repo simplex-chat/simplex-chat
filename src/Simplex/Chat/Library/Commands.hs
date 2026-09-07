@@ -5312,7 +5312,8 @@ updateBadgePurchase userId mem p@UserBadgePurchase {badgePurchaseId, alertSnooze
       -- a snooze is the one wake that is not in the ledger: nothing else brings the alert back,
       -- since support having ended leaves both ledger boundaries in the past
       let snoozeAt = find (> now) alertSnoozeUntil
-      pure (retired || issued, earliestTime [retryAt, snoozeAt, badgeBoundary now balance'])
+          stalledAt = if badgeWorkDue now balance' then Just $ badgeStalledInterval `addUTCTime` now else Nothing
+      pure (retired || issued, earliestTime [retryAt, snoozeAt, stalledAt, badgeBoundary now balance'])
 
 -- | Support ended is the only alert raised here: the others need subscriptions, and warning before
 -- a prepaid badge ends is not actionable while topping up cannot credit months without issuing.
@@ -5376,6 +5377,11 @@ badgeWorkDue :: UTCTime -> LedgerBalance -> Bool
 badgeWorkDue now b = case L.ledgerPlan now Nothing b of
   LedgerPlan {planRows = [], planIssuance = Nothing} -> False
   _ -> True
+
+-- | How long a month that did not issue waits before it is tried again, whatever stopped it. Not
+-- derived from the failure, so a misclassified one cannot leave a funded badge to expire.
+badgeStalledInterval :: NominalDiffTime
+badgeStalledInterval = nominalDay
 
 -- | The next month falling due, or the end of what is paid for.
 badgeBoundary :: UTCTime -> LedgerBalance -> Maybe UTCTime
