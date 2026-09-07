@@ -9,8 +9,13 @@ import Control.Concurrent.STM
 import Control.Monad
 import Data.Maybe (fromMaybe)
 import Network.Socket
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError, ChatEvent (..), PresetServers (..), SimpleNetCfg (..), currentRemoteHost, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatError, ChatEvent (..), PresetServers (..), SimpleNetCfg (..), currentRemoteHost, versionNumber, versionString)
+import Control.Monad.Reader (runReaderT)
+import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Core
+import Simplex.Chat.Library.Commands (execChatCommand', parseChatCommand)
+import Simplex.Chat.Terminal.Output (claimedName, nameAvailabilityOr)
 import Simplex.Chat.Options
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Terminal
@@ -57,7 +62,8 @@ simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServer
         case r of
           Right CEvtNewChatItems {} -> printResponse r
           _ -> when (chatCmdLog == CCLAll) $ printResponse r
-      sendChatCmdStr cc chatCmd >>= printResponse
+      r <- sendChatCmdStr cc chatCmd
+      printResponse =<< nameAvailabilityOr cc r (claimedName (parseChatCommand $ encodeUtf8 $ T.pack chatCmd) r)
       threadDelay $ chatCmdDelay * 1000000
       where
         printResponse :: ChatResponseEvent r => Either ChatError r -> IO ()

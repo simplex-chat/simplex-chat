@@ -1586,6 +1586,8 @@ processChatCommand cxt nm = \case
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
+  APIGetNameAvailability userId domain -> withUserId userId $ \user ->
+    CRNameAvailability user domain . nameAvailability <$> withAgent (\a -> getSimplexNameAvailability a nm (aUserId user) domain)
   APISetUserDomain userId domain_ -> withUserId userId $ \user@User {profile = p@LocalProfile {contactLink, contactDomain}} ->
     if (claimDomain <$> contactDomain) == domain_
       then pure $ CRUserProfileNoChange user
@@ -5574,6 +5576,7 @@ chatCommandP =
       "/_call get" $> APIGetCallInvitations,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
       "/_set domain " *> (APISetUserDomain <$> A.decimal <*> optional (A.space *> strP)),
+      "/_name availability " *> (APIGetNameAvailability <$> A.decimal <* A.space <*> strP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias #" *> (APISetGroupAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),

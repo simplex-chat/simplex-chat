@@ -119,6 +119,7 @@ chatResponsesDocsData =
 undocumentedResponses :: [ConsName]
 undocumentedResponses =
   [ "CRAgentQueuesInfo",
+    "CRNameAvailability",
     "CRAgentServersSummary",
     "CRAgentSubs",
     "CRAgentSubsDetails",

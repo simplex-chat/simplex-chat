@@ -66,7 +66,10 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
   case r of
     Right r' -> processResp cmd rh r'
     Left _ -> when (isMessage cmd) $ echo s
-  printRespToTerminal ct cc False rh r
+  -- NOT_FOUND says only that the name did not resolve, so show what the router
+  -- knows about the name instead - and the bare error when it cannot say
+  r' <- nameAvailabilityOr cc r $ claimedName cmd r
+  printRespToTerminal ct cc False rh r'
   chatResponseNotification ct r
   mapM_ (startLiveMessage cmd) r
   where
