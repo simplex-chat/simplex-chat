@@ -3556,6 +3556,8 @@ processChatCommand cxt nm = \case
     now <- badgeNow
     let snoozeUntil = if snooze then Just (addUTCTime nominalDay now) else Nothing
     withStore' $ \db -> setBadgeAlertAcked db badgePurchaseId alertKind episode snoozeUntil
+    -- after the write, so the pass it signals arms a wake for the snooze rather than raising again
+    lift $ startBadgeWork user
     CRBadgeState user <$> getUserBadgeState user
   SetBotCommands commands -> withUser $ \user@User {profile} -> do
     let LocalProfile {preferences} = profile
@@ -5284,7 +5286,7 @@ updateUserBadges userId mem bw = do
 
 -- | Whether the badge changed, and when it next needs a pass.
 updateBadgePurchase :: UserId -> BadgeMemory -> UserBadgePurchase -> UTCTime -> CM (Bool, Maybe UTCTime)
-updateBadgePurchase userId mem p@UserBadgePurchase {badgePurchaseId} now = do
+updateBadgePurchase userId mem p@UserBadgePurchase {badgePurchaseId, alertSnoozeUntil} now = do
   balance_ <- withStore' $ \db -> getBadgeLedgerBalance db badgePurchaseId
   case balance_ of
     Nothing -> pure (False, Nothing)
@@ -5307,8 +5309,10 @@ updateBadgePurchase userId mem p@UserBadgePurchase {badgePurchaseId} now = do
       unless retired $ presentIssuedBadge user p now
       emitBadgeAlert user mem p now balance'
       retryAt <- nextBadgeAttempt mem badgePurchaseId now badgeRetry
-      -- the retry can fall before the boundary or after it, so neither is dropped for the other
-      pure (retired || issued, earliestTime [retryAt, badgeBoundary now balance'])
+      -- a snooze is the one wake that is not in the ledger: nothing else brings the alert back,
+      -- since support having ended leaves both ledger boundaries in the past
+      let snoozeAt = find (> now) alertSnoozeUntil
+      pure (retired || issued, earliestTime [retryAt, snoozeAt, badgeBoundary now balance'])
 
 -- | Support ended is the only alert raised here: the others need subscriptions, and warning before
 -- a prepaid badge ends is not actionable while topping up cannot credit months without issuing.

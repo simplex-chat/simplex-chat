@@ -580,10 +580,8 @@ shownAndIssuedExpiry ChatController {chatStore} = withTransaction chatStore $ \d
       [] -> Nothing
 
 -- The worker acts on its own schedule, so the test waits for the rows rather than for a response.
--- The budget is generous because a renewal is a real round trip to the in-process service, and
--- the whole suite runs several of them under load.
 waitLedgerRows :: HasCallStack => ChatController -> Int -> IO [ReplicatedRow]
-waitLedgerRows cc n = loop (600 :: Int)
+waitLedgerRows cc n = loop (100 :: Int)
   where
     loop 0 = ledgerRows cc "badge_ledger" >>= \rows -> error $ "expected " <> show n <> " ledger rows, got " <> show (length rows)
     loop i = do
@@ -613,7 +611,7 @@ ackedEpisode ChatController {chatStore} = do
     _ -> error $ "expected one badge purchase, got " <> show rows
 
 waitShownBadge :: HasCallStack => ChatController -> Maybe Int64 -> IO ()
-waitShownBadge cc expected = loop (600 :: Int)
+waitShownBadge cc expected = loop (100 :: Int)
   where
     loop 0 = shownBadgeId cc >>= \actual -> actual `shouldBe` expected
     loop i =
@@ -834,10 +832,7 @@ testSnoozedAlertReturns ps =
       alice <##. "badge alert: support_ended "
       alice ##> ("/_badge ack 1 1 support_ended on " <> T.unpack (safeDecodeUtf8 $ strEncode endsAt))
       alice <##. "1: supporter"
-      -- snoozed, and the same worker keeps the occurrence it raised: /p prints only what a silent
-      -- pass leaves behind
-      alice ##> "/_app activate"
-      alice <## "ok"
+      -- the ack signalled the worker, and the pass it ran was silent: /p prints only its own output
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
       alice <## "use /p <name> [<bio>] to change it"
@@ -922,7 +917,7 @@ testPresentationCatchesUp ps =
         bob <# "alice *> after repair"
 
 waitPeerBadgeExpiry :: HasCallStack => ChatController -> UTCTime -> IO ()
-waitPeerBadgeExpiry cc expected = loop (600 :: Int)
+waitPeerBadgeExpiry cc expected = loop (100 :: Int)
   where
     loop 0 = peerBadgeExpiry cc >>= \actual -> actual `shouldBe` Just expected
     loop i =
