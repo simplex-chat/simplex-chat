@@ -95,7 +95,7 @@ All three trends increase the demand for identity-free messaging. None of the ex
 
 Private messaging should remain free for the users. Instead, we plan to earn from the infrastructure and services that channels and businesses need:
 
-- **SimpleX public names** &mdash; globally unique names for a public channel or business, paid yearly and controlled by the owner's key, so no one can seize them. If you invest $500 or more, you would receive a name as a perk for 5 years during early bird, and for 3 years after that.
+- **SimpleX public names** &mdash; globally unique names for a public channel or business, paid yearly and controlled by the owner's key, so no one can seize them. If you invest $500 or more, you would receive a name as a perk for 7 years, if you invest by September 22, for 5 years during early bird, and for 3 years after that.
 - **Business messaging** &mdash; a web widget that adds encrypted chat to any website with one line of code, built for privacy-first businesses and sectors where anonymity is required.
 - **Paid servers for big channels** &mdash; channels that have grown beyond the free tier pay for the servers that deliver their messages, with server operators earning most of the revenue.
 
