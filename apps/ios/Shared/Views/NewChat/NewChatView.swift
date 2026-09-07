@@ -576,10 +576,11 @@ private struct ActiveProfilePicker: View {
     }
 
     private func createProfileForConnection(_ profile: Profile) async throws {
-        let newUser = try await createProfileKeepingActiveUser(profile)
+        let newUser = try apiCreateActiveUser(profile, keepActiveUser: true)
         await MainActor.run {
             showAddProfile = false
-            profiles = chatModel.users.map { $0.user }
+            chatModel.users.append(UserInfo(user: newUser, unreadCount: 0))
+            profiles.append(newUser)
             selectedProfile = newUser
             profileSwitchStatus = .switchingUser
         }

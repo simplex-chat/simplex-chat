@@ -363,9 +363,7 @@ fun createProfileForInvitation(rhId: Long?, onCreated: (User) -> Unit) {
       withBGApi {
         val profile = Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, image = image)
         val user = controller.apiCreateActiveUser(rhId, profile, keepActiveUser = true) ?: return@withBGApi
-        val users = controller.listUsers(rhId)
-        chatModel.users.clear()
-        chatModel.users.addAll(users)
+        chatModel.users.add(UserInfo(user, 0))
         if (!modalManager.isLastModalOpen(ModalViewId.CONTEXT_USER_PICKER_NEW_PROFILE)) return@withBGApi
         close()
         onCreated(user)
