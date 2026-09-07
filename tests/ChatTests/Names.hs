@@ -105,7 +105,7 @@ testConnectByNameNotFound ps = withSmpServerAndNames $ \_reg ->
     test _alice bob = do
       enableNamesRole bob
       bob ##> "/c @nobody.simplex"
-      bob .<## "smpErr = NAME {nameErr = NOT_FOUND}}"
+      bob <## "SimpleX name nobody.simplex is not registered"
 
 testSetNameNotOwnAddress :: HasCallStack => TestParams -> IO ()
 testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->

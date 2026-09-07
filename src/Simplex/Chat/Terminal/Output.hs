@@ -33,9 +33,6 @@ import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications)
 import Simplex.Chat.Types
 import Simplex.Chat.View
-import Simplex.Messaging.Agent.Protocol (AgentErrorType (SMP), UserId)
-import Simplex.Messaging.Protocol (ErrorType (NAME), NameErrorType (NOT_FOUND))
-import Simplex.Messaging.SimplexName (SimplexDomain)
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (tshow)
@@ -283,22 +280,6 @@ whenCurrUser cc u a = do
   when (sameUser u u_) a
   where
     sameUser User {userId = uId} = maybe False $ \User {userId} -> userId == uId
-
--- | The name a command tried to claim, when the core answered only that it did
--- not resolve. NOT_FOUND says nothing the user can act on, so the caller asks
--- the router what it knows about the name and shows that too.
-claimedName :: Either String ChatCommand -> Either ChatError r -> Maybe (UserId, SimplexDomain)
-claimedName cmd r = case (cmd, r) of
-  (Right (APISetUserDomain userId (Just d)), Left (ChatErrorAgent (SMP _ (NAME NOT_FOUND)) _ _)) -> Just (userId, d)
-  _ -> Nothing
-
--- | What the router knows about `claimed`, falling back to `r` when it cannot
--- say - an older router has no NAVL, and the bare error is still the truth.
-nameAvailabilityOr :: ChatController -> Either ChatError ChatResponse -> Maybe (UserId, SimplexDomain) -> IO (Either ChatError ChatResponse)
-nameAvailabilityOr cc r = \case
-  Nothing -> pure r
-  Just (userId, domain) ->
-    either (const r) Right <$> (execChatCommand' (APIGetNameAvailability userId domain) 0 `runReaderT` cc)
 
 printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> Either ChatError ChatResponse -> IO ()
 printRespToTerminal ct cc liveItems outputRH r = responseString ct cc liveItems outputRH r >>= printToTerminal ct

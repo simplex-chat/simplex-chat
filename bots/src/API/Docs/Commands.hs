@@ -334,7 +334,6 @@ cliCommands =
 undocumentedCommands :: [ConsName]
 undocumentedCommands =
   [ "APIAbortSwitchContact",
-    "APIGetNameAvailability",
     "APIAbortSwitchGroupMember",
     "APIAcceptConditions",
     "APIActivateChat",

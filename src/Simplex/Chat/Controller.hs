@@ -474,7 +474,6 @@ data ChatCommand
   | APISetServerOperators (NonEmpty ServerOperator)
   | SetServerOperators (NonEmpty ServerOperatorRoles)
   | APIGetUserServers UserId
-  | APIGetNameAvailability UserId SimplexDomain
   | APISetUserServers UserId (NonEmpty UpdatedUserOperatorServers)
   | APIValidateServers UserId [UpdatedUserOperatorServers] -- response is CRUserServersValidation
   | APIGetUsageConditions
@@ -795,7 +794,6 @@ data ChatResponse
   | CRChatRelayTestResult {user :: User, relayProfile :: Maybe RelayProfile, relayTestFailure :: Maybe RelayTestFailure}
   | CRServerOperatorConditions {conditions :: ServerOperatorConditions}
   | CRUserServers {user :: User, userServers :: [UserOperatorServers]}
-  | CRNameAvailability {user :: User, simplexDomain :: SimplexDomain, availability :: SimplexNameAvailability}
   | CRUserServersValidation {user :: User, serverErrors :: [UserServersError], serverWarnings :: [UserServersWarning]}
   | CRUsageConditions {usageConditions :: UsageConditions, conditionsText :: Text, acceptedConditions :: Maybe UsageConditions}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}

@@ -112,7 +112,7 @@ import Simplex.Messaging.Crypto.Ratchet (E2ERatchetParamsUri (..), InitialKeys (
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ErrorType (NAME), MsgFlags (..), NameAvailability (..), NameRecord (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ErrorType (NAME), MsgFlags (..), NameRecord (..), NameResponse (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
@@ -1480,7 +1480,7 @@ processChatCommand cxt nm = \case
         CTDomain d -> resolveDomain d
         where
           resolveDomain d = do
-            nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) d
+            nr <- resolvedRecord d =<< withAgent (\a -> resolveSimplexName a nm (aUserId user) d)
             case firstNameLink CCTContact (nrSimplexContact nr) of
               Just sLnk -> resolveShortLink sLnk
               Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink Nothing
@@ -1586,8 +1586,6 @@ processChatCommand cxt nm = \case
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
-  APIGetNameAvailability userId domain -> withUserId userId $ \user ->
-    CRNameAvailability user domain . nameAvailability <$> withAgent (\a -> getSimplexNameAvailability a nm (aUserId user) domain)
   APISetUserDomain userId domain_ -> withUserId userId $ \user@User {profile = p@LocalProfile {contactLink, contactDomain}} ->
     if (claimDomain <$> contactDomain) == domain_
       then pure $ CRUserProfileNoChange user
@@ -2413,9 +2411,10 @@ processChatCommand cxt nm = \case
     -- checks the profile link, not the link we joined through (which may have rotated)
     (verified, reason) <-
       tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) (claimDomain claim)) >>= \case
-        Right NameRecord {nrSimplexChannel}
+        Right (NRNameRecord NameRecord {nrSimplexChannel} _)
           | nameResolvesTo groupLink nrSimplexChannel -> pure (True, Nothing)
           | otherwise -> pure (False, Just "the name does not resolve to the link in the group profile")
+        Right _ -> pure (False, Just "the name is not registered")
         Left (ChatErrorAgent {agentError = SMP _ (NAME SMP.NOT_FOUND)}) -> pure (False, Just "the name is not registered")
         Left e -> throwError e
     g' <- withFastStore' $ \db -> setGroupDomainVerified db user g verified
@@ -4387,13 +4386,14 @@ processChatCommand cxt nm = \case
         | resolveMode == PRMNever -> connectPlanNoName $ ChatError CENotResolvedLocally
         | otherwise ->
             tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) d) >>= \case
-              Right nr
+              Right (NRNameRecord nr _)
                 | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) ->
                     (addOther nr <$> connectPlanName NTPublicGroup (Right nr)) `catchAllErrors` \e ->
                       (addOther nr <$> connectPlanName NTContact (Right nr) `catchAllErrors` \_ -> throwError e)
                 | isJust (firstNameLink CCTContact (nrSimplexContact nr)) ->
                     addOther nr <$> connectPlanName NTContact (Right nr)
                 | otherwise -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENoValidLink Nothing
+              Right r -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENoValidLink (Just (nameAvailability r))
               Left e -> connectPlanNoName e
         where
           connectPlanName nameType nr_ = connectPlan user connTarget resolveMode sig_ (Just nr_)
@@ -4537,7 +4537,8 @@ processChatCommand cxt nm = \case
           -- resolve a name to its first contact/channel short link
           resolveNameLink :: SimplexNameInfo -> CM (ConnShortLink 'CMContact)
           resolveNameLink SimplexNameInfo {nameType, nameDomain} = do
-            NameRecord {nrSimplexContact, nrSimplexChannel} <- maybe (withAgent $ \a -> resolveSimplexName a nm (aUserId user) nameDomain) (ExceptT . pure) nameRec
+            NameRecord {nrSimplexContact, nrSimplexChannel} <-
+              maybe (resolvedRecord nameDomain =<< withAgent (\a -> resolveSimplexName a nm (aUserId user) nameDomain)) (ExceptT . pure) nameRec
             let (candidates, ctType') = case nameType of
                   NTContact -> (nrSimplexContact, CCTContact)
                   NTPublicGroup -> (nrSimplexChannel, CCTChannel)
@@ -5042,23 +5043,33 @@ firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
 
 -- | Check that a name resolves to this link, and when it does not, say what the
 -- router knows about it. The failure is the same one as before; the answer only
--- travels beside it, and is absent when the router cannot say - NAVL exists from
--- SMP v22.
+-- travels beside it, and is absent when the router cannot say - RSLV carries it
+-- from SMP v22.
 checkNameClaim :: NetworkRequestMode -> User -> SimplexDomain -> (NameRecord -> Bool) -> CM ()
 checkNameClaim nm user domain pointsHere = do
-  nr <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
-  unless (pointsHere nr) $ do
-    availability_ <- eitherToMaybe <$> tryAllErrors (withAgent $ \a -> getSimplexNameAvailability a nm (aUserId user) domain)
-    throwChatError $ CESimplexDomainNotReady domain SDENoValidLink (nameAvailability <$> availability_)
+  r <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+  unless (maybe False pointsHere (resolvedRecord_ r)) $
+    throwChatError $ CESimplexDomainNotReady domain SDENoValidLink (Just (nameAvailability r))
+
+-- | The record a name resolves to; when it does not, the failure says why.
+resolvedRecord :: SimplexDomain -> NameResponse -> CM NameRecord
+resolvedRecord domain r =
+  maybe (throwChatError $ CESimplexDomainNotReady domain SDENoValidLink (Just (nameAvailability r))) pure (resolvedRecord_ r)
+
+resolvedRecord_ :: NameResponse -> Maybe NameRecord
+resolvedRecord_ = \case
+  NRNameRecord {nameRecord} -> Just nameRecord
+  _ -> Nothing
 
 -- | What the router said about a name that is not this profile's.
-nameAvailability :: NameAvailability -> SimplexNameAvailability
+nameAvailability :: NameResponse -> SimplexNameAvailability
 nameAvailability = \case
-  NAVailable -> SNANotRegistered
-  NATaken expires_ -> SNARegistered $ utcTime <$> expires_
-  NAInGrace graceEnds -> SNAInGrace $ utcTime graceEnds
-  NAAuction premium auctionEnds -> SNAInAuction premium (utcTime auctionEnds)
-  NAReserved reason -> SNAReserved reason
+  NRNameRecord {expires} -> SNARegistered $ utcTime <$> expires
+  NRNameTaken {expires} -> SNARegistered $ utcTime <$> expires
+  NRNameInGrace {graceEnds} -> SNAInGrace $ utcTime graceEnds
+  NRNameAuction {premium, auctionEnds} -> SNAInAuction premium (utcTime auctionEnds)
+  NRNameReserved {reason} -> SNAReserved reason
+  NRNameAvailable -> SNANotRegistered
   where
     utcTime t = systemToUTCTime (MkSystemTime t 0)
 
@@ -5070,7 +5081,7 @@ verifyEntityDomain user nm nameType SimplexDomainClaim {domain = StrJSON domain,
   (Nothing, _) -> pure (Nothing, Just "no name proof to verify")
   (_, Nothing) -> pure (Nothing, Just "no connection link to check the name against")
   (Just proof, Just (ACSL SCMContact profileSLnk)) -> do
-    NameRecord {nrSimplexContact, nrSimplexChannel} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+    NameRecord {nrSimplexContact, nrSimplexChannel} <- resolvedRecord domain =<< withAgent (\a -> resolveSimplexName a nm (aUserId user) domain)
     let resolvedLinks = case nameType of
           NTContact -> nrSimplexContact
           NTPublicGroup -> nrSimplexChannel
@@ -5576,7 +5587,6 @@ chatCommandP =
       "/_call get" $> APIGetCallInvitations,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
       "/_set domain " *> (APISetUserDomain <$> A.decimal <*> optional (A.space *> strP)),
-      "/_name availability " *> (APIGetNameAvailability <$> A.decimal <* A.space <*> strP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias #" *> (APISetGroupAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
