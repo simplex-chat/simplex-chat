@@ -2948,4 +2948,8 @@
     <string name="simplex_name_sales">La vendita di nomi SimpleX inizia in</string>
     <string name="until_register_simplex_domain">fino a quando potrai registrare un dominio SimpleX</string>
     <string name="update_app_register_simplex_domain">Aggiorna l\'app per registrare un dominio SimpleX</string>
+    <string name="info_row_file_expires">File disponibile fino al</string>
+    <string name="file_expired">File scaduto</string>
+    <string name="info_row_file_expired">Il file era disponibile fino al</string>
+    <string name="file_error_expired">Il file era disponibile fino al %1$s.</string>
 </resources>
