@@ -7,7 +7,6 @@
 //
 
 import SwiftUI
-import LinkPresentation
 import SimpleXChat
 
 struct ComposeLinkView: View {
