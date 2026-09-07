@@ -24,7 +24,7 @@ import { money, moneyCompact } from "./format.js";
 import * as api from "./api.js";
 import { resolveLoad } from "./routing.js";
 import * as screens from "./screens.js";
-import { cardPlan, loadStripeJs, mountCard, publishableKey, type CardFailure, type ConfirmOutcome } from "./stripe.js";
+import { appearanceFor, cardPlan, loadStripeJs, mountCard, publishableKey, type CardFailure, type ConfirmOutcome } from "./stripe.js";
 import { Store, type StorageLike } from "./store.js";
 import { STEPS } from "./domain.js";
 import type { Method, OrderRecord, SessionRecord, Step, Theme } from "./domain.js";
@@ -104,7 +104,9 @@ const chromeUi = screens.chrome({
     resetToLanding("replace");
   },
   theme: store.theme(),
-  onTheme: (theme) => { store.saveTheme(theme); applyTheme(theme); },
+  // A theme change while the card form is up re-mounts the Element so its appearance follows;
+  // `paint` leaves an in-flight confirm untouched, so this cannot rebuild a form mid-payment.
+  onTheme: (theme) => { store.saveTheme(theme); applyTheme(theme); if (lastView?.screen === "cardForm") paint(lastView); },
   onToggle: (open) => {
     for (const node of [root, document.getElementById("contact")]) {
       if (open) node?.setAttribute("inert", "");
@@ -124,6 +126,27 @@ function applyTheme(theme: Theme): void {
 }
 
 applyTheme(store.theme());
+
+function prefersDark(): boolean {
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches === true;
+}
+
+function cardAppearance(): ReturnType<typeof appearanceFor> {
+  return appearanceFor(store.theme(), prefersDark());
+}
+
+// Stripe demands a return URL for the redirect a 3DS card may need. It is the bare page, with no
+// `?order=` on it: the order id is a bearer capability this service never hands to Stripe, and a
+// return_url is stored on the session and visible in the Dashboard. The order resumes from local
+// state, not from this URL.
+function cardReturnUrl(): string {
+  return location.origin + location.pathname;
+}
+
+// In `system` mode the OS can flip while the card form is up; re-mount so the Element follows it.
+window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
+  if (store.theme() === "system" && lastView?.screen === "cardForm") paint(lastView);
+});
 
 function syncChrome(): void {
   chromeUi.offerNewPurchase(store.newestOpen()?.submitted !== true);
@@ -707,7 +730,7 @@ function renderCardForm(view: CardView): void {
   });
   const node = shell(fields.node);
   root.replaceChildren(node);
-  void mountCard({ plan, clientSecret: view.clientSecret, target: mount, loadStripe: loadStripeJs })
+  void mountCard({ plan, clientSecret: view.clientSecret, target: mount, appearance: cardAppearance(), returnUrl: cardReturnUrl(), loadStripe: loadStripeJs })
     .then((result) => {
       if (root.firstChild !== node) {
         if (result.kind === "mounted") result.destroy();

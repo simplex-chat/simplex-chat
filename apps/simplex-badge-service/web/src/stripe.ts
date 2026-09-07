@@ -1,6 +1,8 @@
+import type { Theme } from "./domain.js";
+
 // Stripe.js has to come from js.stripe.com and may not be bundled or self-hosted, which is
 // why this is a script tag. public/sw.js routes the origin to bypass, so it is never cached.
-export const STRIPE_JS_URL = "https://js.stripe.com/basil/stripe.js";
+export const STRIPE_JS_URL = "https://js.stripe.com/dahlia/stripe.js";
 
 // The shell carries the key in a meta element rather than the bundle, so a build is the same
 // file whichever account serves it.
@@ -56,22 +58,46 @@ export interface PaymentElement {
   destroy(): void;
 }
 
+export interface StripeError {
+  message?: string;
+}
+
 export interface ConfirmResult {
   type?: string;
-  error?: { message?: string };
+  error?: StripeError;
 }
 
 export interface CheckoutActions {
-  confirm(): Promise<ConfirmResult>;
+  // Stripe requires a return URL even for a card: it is where a 3DS full-page redirect lands. It
+  // must carry no order id, since that is a bearer capability this integration never sends Stripe.
+  confirm(options: { returnUrl: string }): Promise<ConfirmResult>;
 }
+
+// loadActions resolves to this discriminated result, not a bare object: a session that cannot be
+// actioned (a missing required field, say) resolves with `type: "error"` rather than throwing.
+export type LoadActionsResult =
+  | { type: "success"; actions: CheckoutActions }
+  | { type: "error"; error?: StripeError };
 
 export interface CheckoutSdk {
   createPaymentElement(): PaymentElement;
-  loadActions(): Promise<{ actions: CheckoutActions }>;
+  loadActions(): Promise<LoadActionsResult>;
+}
+
+// Stripe.js ships a few built-in appearances; `stripe` is its light default and `night` its dark.
+export interface Appearance {
+  theme: "stripe" | "night" | "flat";
 }
 
 export interface StripeInstance {
-  initCheckoutElementsSdk(options: { clientSecret: string }): Promise<CheckoutSdk>;
+  initCheckoutElementsSdk(options: { clientSecret: string; elementsOptions?: { appearance?: Appearance } }): Promise<CheckoutSdk>;
+}
+
+// The Payment Element does not read the page's theme, so map the site's setting to a built-in
+// appearance. `system` follows the OS; the caller resolves that, since this stays free of the DOM.
+export function appearanceFor(theme: Theme, systemDark: boolean): Appearance {
+  const dark = theme === "dark" || (theme === "system" && systemDark);
+  return { theme: dark ? "night" : "stripe" };
 }
 
 export type StripeGlobal = (publishableKey: string) => StripeInstance;
@@ -108,6 +134,9 @@ export interface MountRequest {
   plan: LoadPlan;
   clientSecret: string;
   target: unknown;
+  appearance: Appearance;
+  // Where a 3DS redirect returns; must carry no order id (see CheckoutActions.confirm).
+  returnUrl: string;
   loadStripe: LoadStripeJs;
 }
 
@@ -131,13 +160,16 @@ export async function mountCard(req: MountRequest): Promise<MountResult> {
     return { kind: "failed", reason: "script" };
   }
   try {
-    const sdk = await stripe(req.plan.publishableKey).initCheckoutElementsSdk({ clientSecret: req.clientSecret });
+    const sdk = await stripe(req.plan.publishableKey).initCheckoutElementsSdk({
+      clientSecret: req.clientSecret,
+      elementsOptions: { appearance: req.appearance },
+    });
     const element = sdk.createPaymentElement();
     element.mount(req.target);
     let destroyed = false;
     return {
       kind: "mounted",
-      confirm: () => confirmWith(sdk),
+      confirm: () => confirmWith(sdk, req.returnUrl),
       destroy: () => {
         if (destroyed) return;
         destroyed = true;
@@ -151,17 +183,21 @@ export async function mountCard(req: MountRequest): Promise<MountResult> {
 
 // A confirm that threw did not succeed. Treating it as success would move the page to the confirming screen
 // for a payment nobody attempted.
-async function confirmWith(sdk: CheckoutSdk): Promise<ConfirmOutcome> {
-  let result: ConfirmResult;
+async function confirmWith(sdk: CheckoutSdk, returnUrl: string): Promise<ConfirmOutcome> {
   try {
-    const { actions } = await sdk.loadActions();
-    result = await actions.confirm();
+    const loaded = await sdk.loadActions();
+    // The real reason a session cannot be confirmed (a required field, a declined card) is on
+    // `error.message`; surface it rather than the generic, and keep the generic only for a throw
+    // or an error with nothing to say.
+    if (loaded.type === "error") {
+      return { kind: "error", message: loaded.error?.message ?? CONFIRM_FAILED };
+    }
+    const result = await loaded.actions.confirm({ returnUrl });
+    if (result?.type === "error" || result?.error?.message !== undefined) {
+      return { kind: "error", message: result?.error?.message ?? CONFIRM_FAILED };
+    }
+    return { kind: "submitted" };
   } catch {
     return { kind: "error", message: CONFIRM_FAILED };
   }
-  const message = result?.error?.message;
-  if (message !== undefined || result?.type === "error") {
-    return { kind: "error", message: message ?? CONFIRM_FAILED };
-  }
-  return { kind: "submitted" };
 }

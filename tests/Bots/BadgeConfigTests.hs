@@ -119,7 +119,8 @@ fullStripeIni =
       [ "[stripe]",
         "secret_key = rk_test_x",
         "publishable_key = pk_test_x",
-        "webhook_secret = whsec_x"
+        "webhook_secret = whsec_x",
+        "receipt_email = card@example.test"
       ]
 
 testStripeDefaults :: IO ()
@@ -127,9 +128,10 @@ testStripeDefaults = withIni fullStripeIni $ \p -> do
   Right cfg <- readServiceConfig p
   case stripe cfg of
     Nothing -> expectationFailure "the stripe section was present"
-    Just StripeConfig {sSessionMinutes, sHost} -> do
+    Just StripeConfig {sSessionMinutes, sHost, sReceiptEmail} -> do
       sSessionMinutes `shouldBe` 60
       sHost `shouldBe` "https://api.stripe.com"
+      sReceiptEmail `shouldBe` "card@example.test"
 
 testStripeAbsent :: IO ()
 testStripeAbsent = withIni fullIni $ \p -> do

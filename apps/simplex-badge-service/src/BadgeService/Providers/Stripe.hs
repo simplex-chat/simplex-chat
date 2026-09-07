@@ -261,6 +261,8 @@ createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor
         [ ("mode", "payment"),
           ("ui_mode", "elements"),
           ("expires_at", B8.pack (show expiresAt)),
+          -- a fixed address, so Stripe's mandatory confirm email is met without the buyer entering one
+          ("customer_email", TE.encodeUtf8 (sReceiptEmail (seCfg env))),
           ("line_items[0][quantity]", "1"),
           ("line_items[0][price_data][currency]", TE.encodeUtf8 (T.toLower odCurrency)),
           ("line_items[0][price_data][unit_amount]", B8.pack (show minor)),

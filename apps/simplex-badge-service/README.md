@@ -138,6 +138,10 @@ absent `[btcpay]` does for Bitcoin and Monero. Its keys:
 - `publishable_key` (`pk_...`) — the public key the browser mounts the Payment Element with.
 - `webhook_secret` (`whsec_...`) — the signing secret of the `/webhooks/stripe` endpoint,
   configured in the Stripe Dashboard alongside it.
+- `receipt_email` — a fixed address sent as the session's `customer_email`. The Checkout Sessions
+  API requires an email to confirm, so this is prefilled and the buyer never enters one. Use an
+  address you own (turn receipts off in the Dashboard to keep it quiet); never derive it from the
+  order id, which is a bearer capability the service never sends Stripe.
 - `session_minutes` — minutes until an unpaid checkout session expires; must be between
   31 and 1439, default 60. The bounds sit a minute inside Stripe's own 30-minute-to-24-hour
   window, so request latency or clock skew cannot push an at-bound value outside it.

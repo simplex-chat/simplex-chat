@@ -79,6 +79,10 @@ data StripeConfig = StripeConfig
   { sSecretKey :: Text,
     sPublishableKey :: Text,
     sWebhookSecret :: Text,
+    -- a fixed address sent as the session's customer_email: Stripe requires an email to confirm, and
+    -- prefilling a constant one means the buyer never enters theirs. Never derive it from the order id
+    -- (that is a bearer capability, and return/customer fields are stored on the session at Stripe).
+    sReceiptEmail :: Text,
     sSessionMinutes :: Int,
     sHost :: Text
   }
@@ -173,7 +177,7 @@ knownSettings :: [(Text, [Text])]
 knownSettings =
   [ ("listener", ["host", "port", "static_dir", "trust_forwarded_for"]),
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
-    ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
+    ("stripe", ["secret_key", "publishable_key", "webhook_secret", "receipt_email", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
     ("dev", ["chat_redeem"])
   ]
@@ -317,9 +321,10 @@ parseConfig ini = do
           sSecretKey <- required "stripe" "secret_key"
           sPublishableKey <- required "stripe" "publishable_key"
           sWebhookSecret <- required "stripe" "webhook_secret"
+          sReceiptEmail <- required "stripe" "receipt_email"
           sSessionMinutes <- sessionMinutes
           let sHost = defaultStripeHost
-          pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sSessionMinutes, sHost})
+          pure (Just StripeConfig {sSecretKey, sPublishableKey, sWebhookSecret, sReceiptEmail, sSessionMinutes, sHost})
     sessionMinutes = do
       v <- num "stripe" "session_minutes" defaultSessionMinutes
       if v >= minSessionMinutes && v <= maxSessionMinutes

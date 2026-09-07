@@ -26,6 +26,8 @@ type InvoiceView = import("../src/api.js").InvoiceView;
 const HELD_CODE = "SXB-YDC8A-YGQTM-PUYZ9-2TUXP";
 const CLIENT_SECRET = "cs_test_a1b2c3d4";
 const PUBLISHABLE_KEY = "pk_test_51NotARealKey";
+const APPEARANCE = { theme: "stripe" } as const;
+const RETURN_URL = "https://badges.example/";
 
 function render(node: unknown): StubElement { return node as unknown as StubElement; }
 function noop(): void { /* a control this test does not press */ }
@@ -86,6 +88,10 @@ cardTest("stripe: the script URL is Stripe's own origin, which may not be self-h
 
 interface Trace {
   calls: string[]; target: unknown; secret: string; key: string; elementArgs: number;
+  /** The appearance theme handed to the SDK, or "" if none was passed. */
+  appearance: string;
+  /** The returnUrl handed to confirm(), or "" if confirm was not reached. */
+  returnUrl: string;
   /** How many times the Element was actually torn down. */
   destroys: number;
 }
@@ -93,8 +99,9 @@ interface Trace {
 function fakeStripe(over: {
   initFails?: boolean; mountThrows?: boolean; destroyThrows?: boolean;
   confirmResult?: import("../src/stripe.js").ConfirmResult; confirmRejects?: boolean;
+  loadActionsError?: string;
 } = {}): { load: import("../src/stripe.js").LoadStripeJs; trace: Trace; loaded: string[] } {
-  const trace: Trace = { calls: [], target: null, secret: "", key: "", elementArgs: -1, destroys: 0 };
+  const trace: Trace = { calls: [], target: null, secret: "", key: "", elementArgs: -1, appearance: "", returnUrl: "", destroys: 0 };
   const loaded: string[] = [];
   const sdk = {
     createPaymentElement: (...args: unknown[]) => {
@@ -115,10 +122,15 @@ function fakeStripe(over: {
     },
     loadActions: async () => {
       trace.calls.push("loadActions");
+      if (over.loadActionsError !== undefined) {
+        return { type: "error" as const, error: { message: over.loadActionsError } };
+      }
       return {
+        type: "success" as const,
         actions: {
-          confirm: async () => {
+          confirm: async (options: { returnUrl: string }) => {
             trace.calls.push("confirm");
+            trace.returnUrl = options.returnUrl;
             if (over.confirmRejects === true) throw new Error("network");
             return over.confirmResult ?? {};
           },
@@ -132,9 +144,10 @@ function fakeStripe(over: {
       trace.calls.push("Stripe");
       trace.key = key;
       return {
-        initCheckoutElementsSdk: async (options: { clientSecret: string }) => {
+        initCheckoutElementsSdk: async (options: { clientSecret: string; elementsOptions?: { appearance?: { theme?: string } } }) => {
           trace.calls.push("initCheckoutElementsSdk");
           trace.secret = options.clientSecret;
+          trace.appearance = options.elementsOptions?.appearance?.theme ?? "";
           if (over.initFails === true) throw new Error("no such session");
           return sdk;
         },
@@ -153,7 +166,7 @@ function loadPlan(): import("../src/stripe.js").LoadPlan {
 cardTest("stripe: mounting follows Stripe's script rule — init the SDK, create the element, mount it", async () => {
   const { load, trace, loaded } = fakeStripe();
   const target = { the: "mount point" };
-  const result = await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target, loadStripe: load });
+  const result = await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target, appearance: APPEARANCE, returnUrl: RETURN_URL, loadStripe: load });
   assert.equal(result.kind, "mounted");
   assert.deepEqual(trace.calls, ["Stripe", "initCheckoutElementsSdk", "createPaymentElement", "mount"]);
   assert.deepEqual(loaded, [stripe.STRIPE_JS_URL], "loaded once, from js.stripe.com");
@@ -165,9 +178,22 @@ cardTest("stripe: mounting follows Stripe's script rule — init the SDK, create
   assert.equal(trace.elementArgs, 0, "createPaymentElement takes no field configuration");
 });
 
+cardTest("stripe: the appearance follows the site theme, resolving system by the OS", () => {
+  assert.deepEqual(stripe.appearanceFor("light", true), { theme: "stripe" }, "forced light ignores a dark OS");
+  assert.deepEqual(stripe.appearanceFor("dark", false), { theme: "night" }, "forced dark ignores a light OS");
+  assert.deepEqual(stripe.appearanceFor("system", true), { theme: "night" }, "system follows a dark OS");
+  assert.deepEqual(stripe.appearanceFor("system", false), { theme: "stripe" }, "system follows a light OS");
+});
+
+cardTest("stripe: the chosen appearance is handed to the SDK, so the Element matches the page", async () => {
+  const { load, trace } = fakeStripe();
+  await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target: {}, appearance: { theme: "night" }, returnUrl: RETURN_URL, loadStripe: load });
+  assert.equal(trace.appearance, "night", "the dark theme reached initCheckoutElementsSdk");
+});
+
 cardTest("stripe: a mounted form can be torn down, once, and a throwing teardown is survivable", async () => {
   const { load, trace } = fakeStripe();
-  const mounted = await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target: {}, loadStripe: load });
+  const mounted = await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target: {}, appearance: APPEARANCE, returnUrl: RETURN_URL, loadStripe: load });
   if (mounted.kind !== "mounted") throw new Error("expected a mounted form");
   assert.equal(trace.destroys, 0, "mounting tears nothing down");
   mounted.destroy();
@@ -176,7 +202,7 @@ cardTest("stripe: a mounted form can be torn down, once, and a throwing teardown
   assert.equal(trace.destroys, 1, "idempotent: a second release destroys nothing twice");
 
   const thrower = fakeStripe({ destroyThrows: true });
-  const second = await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target: {}, loadStripe: thrower.load });
+  const second = await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target: {}, appearance: APPEARANCE, returnUrl: RETURN_URL, loadStripe: thrower.load });
   if (second.kind !== "mounted") throw new Error("expected a mounted form");
   // The node is being replaced either way; a teardown that throws must not
   // take the screen with it.
@@ -187,7 +213,7 @@ cardTest("stripe: a mounted form can be torn down, once, and a throwing teardown
 cardTest("stripe: a script that does not load is a failure, and nothing is mounted", async () => {
   const { trace } = fakeStripe();
   const result = await stripe.mountCard({
-    plan: loadPlan(), clientSecret: CLIENT_SECRET, target: {},
+    plan: loadPlan(), clientSecret: CLIENT_SECRET, target: {}, appearance: APPEARANCE, returnUrl: RETURN_URL,
     loadStripe: async () => { throw new Error("blocked"); },
   });
   assert.equal(result.kind, "failed");
@@ -197,14 +223,14 @@ cardTest("stripe: a script that does not load is a failure, and nothing is mount
 
 cardTest("stripe: an SDK that refuses the client secret is its own failure", async () => {
   const { load } = fakeStripe({ initFails: true });
-  const result = await stripe.mountCard({ plan: loadPlan(), clientSecret: "cs_gone", target: {}, loadStripe: load });
+  const result = await stripe.mountCard({ plan: loadPlan(), clientSecret: "cs_gone", target: {}, appearance: APPEARANCE, returnUrl: RETURN_URL, loadStripe: load });
   assert.equal(result.kind, "failed");
   assert.equal(result.kind === "failed" ? result.reason : "", "sdk");
 });
 
 cardTest("stripe: a mount that throws leaves no half-usable form", async () => {
   const { load } = fakeStripe({ mountThrows: true });
-  const result = await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target: {}, loadStripe: load });
+  const result = await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target: {}, appearance: APPEARANCE, returnUrl: RETURN_URL, loadStripe: load });
   assert.equal(result.kind, "failed");
   assert.equal(result.kind === "failed" ? result.reason : "", "sdk");
 });
@@ -215,7 +241,7 @@ async function confirmWith(over: Parameters<typeof fakeStripe>[0]): Promise<{
   outcome: import("../src/stripe.js").ConfirmOutcome; trace: Trace;
 }> {
   const { load, trace } = fakeStripe(over);
-  const mounted = await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target: {}, loadStripe: load });
+  const mounted = await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target: {}, appearance: APPEARANCE, returnUrl: RETURN_URL, loadStripe: load });
   if (mounted.kind !== "mounted") throw new Error(`expected a mounted form, got ${mounted.kind}`);
   return { outcome: await mounted.confirm(), trace };
 }
@@ -224,6 +250,7 @@ cardTest("stripe: confirming is loadActions() then confirm(), and success is `su
   const { outcome, trace } = await confirmWith({});
   assert.deepEqual(outcome, { kind: "submitted" });
   assert.deepEqual(trace.calls.slice(-2), ["loadActions", "confirm"]);
+  assert.equal(trace.returnUrl, RETURN_URL, "confirm is handed the return URL Stripe requires");
   // the watch loop and the give-up rule: success is not proof of payment. Nothing here says paid,
   // carries a settlement time, or could be read as one.
   assert.ok(!("paid" in outcome) && !("settledAt" in outcome));
@@ -242,6 +269,12 @@ cardTest("stripe: an error with no message of its own still says something usabl
 cardTest("stripe: a confirm that THREW is an error, and never a submission", async () => {
   const { outcome } = await confirmWith({ confirmRejects: true });
   assert.equal(outcome.kind, "error", "a rejected confirm must not move the page to the confirming screen");
+});
+
+cardTest("stripe: a session that cannot load its actions surfaces that reason, not the generic", async () => {
+  const { outcome, trace } = await confirmWith({ loadActionsError: "A valid email is required." });
+  assert.deepEqual(outcome, { kind: "error", message: "A valid email is required." });
+  assert.ok(!trace.calls.includes("confirm"), "a failed loadActions never reaches confirm");
 });
 
 // ------------------------------------------------------------- the screens
@@ -531,6 +564,8 @@ cardTest("main: a Stripe.js that fails to load lands on the failure screen, not 
 /** Every Element the page has mounted, and whether each has been torn down. */
 const elements: Array<{ node: unknown; destroyed: boolean }> = [];
 const confirms: number[] = [];
+/** The returnUrl the real main.ts path handed to confirm(); asserted to leak no order id. */
+let lastReturnUrl = "";
 /**
  * When set, `actions.confirm()` holds until it is released: the window in
  * which a repaint must not rebuild the form.
@@ -558,9 +593,11 @@ function holdNextConfirm(): void {
           };
         },
         loadActions: async () => ({
+          type: "success" as const,
           actions: {
-            confirm: async () => {
+            confirm: async (options: { returnUrl: string }) => {
               confirms.push(1);
+              lastReturnUrl = options.returnUrl;
               if (heldConfirm !== null) await heldConfirm.promise;
               return {};
             },
@@ -648,6 +685,10 @@ cardTest("main: a connectivity flap must not remount the form under an in-flight
 cardTest("main: a real confirm ALSO lands on the confirming screen, and the confirming screen alone", async () => {
   assert.equal(heading(), "Payment received");
   assert.equal(confirms.length, 1, "one press, one confirm");
+  // the order id is a bearer capability the service never sends Stripe, and return_url is stored on
+  // the session; so the URL handed to confirm must not carry it.
+  assert.ok(lastReturnUrl.length > 0 && !lastReturnUrl.includes("inv_card_2"),
+    `the return URL leaks no order id: ${lastReturnUrl}`);
   assert.ok(elements.every((e) => e.destroyed), "and the form it left behind took its Element with it");
   // the give-up rule as amended: no confirming screen offers a control that could start a second charge.
   assert.equal(screen().all("button").filter((b) => b.textContent === "New invoice").length, 0);

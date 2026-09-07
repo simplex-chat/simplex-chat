@@ -890,6 +890,7 @@ publishTestStripe =
     { sSecretKey = "rk_test_x",
       sPublishableKey = "pk_test_injected",
       sWebhookSecret = "whsec_x",
+      sReceiptEmail = "card@example.test",
       sSessionMinutes = 60,
       sHost = "https://api.stripe.com"
     }

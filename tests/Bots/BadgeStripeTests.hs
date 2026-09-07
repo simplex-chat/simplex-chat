@@ -123,6 +123,8 @@ testFakeCreateBody = withProvider $ \fake p -> do
       lookup "line_items[0][price_data][currency]" form `shouldBe` Just "usd"
       lookup "line_items[0][price_data][unit_amount]" form `shouldBe` Just "5400"
       lookup "expires_at" form `shouldSatisfy` maybe False (all (`elem` ['0' .. '9']) . B8.unpack)
+      -- the fixed receipt email, so Stripe's mandatory confirm email is met without the buyer's
+      lookup "customer_email" form `shouldBe` Just (B8.pack (T.unpack fakeReceiptEmail))
       lookup hAuthorization (frHeaders created) `shouldSatisfy` maybe False ("Basic " `B8.isPrefixOf`)
     _ -> expectationFailure ("expected one create, got " <> show (length posts))
 

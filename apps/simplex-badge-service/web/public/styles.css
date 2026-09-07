@@ -145,6 +145,11 @@
 
 * { box-sizing: border-box; }
 
+/* Reserve the scrollbar's width always, so a panel whose height changes (the Payment Element
+   autofilling or a 3DS challenge resizing it) cannot toggle the scrollbar and jog the centred
+   column sideways, which `#app`'s overflow-x then clips. */
+html { scrollbar-gutter: stable; }
+
 body {
   margin: 0;
   /* The gutter is here, so `#app` is exactly the 560px content column and

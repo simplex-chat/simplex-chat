@@ -8,6 +8,7 @@ module Bots.FakeStripe
     FakeRequest (..),
     withFakeStripe,
     fakeSessionMinutes,
+    fakeReceiptEmail,
     setSessionState,
     failNextCalls,
     useListPageSize,
@@ -144,9 +145,13 @@ fakeConfig host =
     { sSecretKey = fakeSecretKey,
       sPublishableKey = "pk_test_x",
       sWebhookSecret = fakeWebhookSecret,
+      sReceiptEmail = fakeReceiptEmail,
       sSessionMinutes = fakeSessionMinutes,
       sHost = host
     }
+
+fakeReceiptEmail :: Text
+fakeReceiptEmail = "card@example.test"
 
 -- | Stripe-Signature: t=<unix>,v1=<hex HMAC-SHA256 of "t.body">.
 stripeSigHeader :: Text -> Int -> LB.ByteString -> [Header]
