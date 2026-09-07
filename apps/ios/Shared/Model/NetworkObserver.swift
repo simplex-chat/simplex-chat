@@ -35,8 +35,12 @@ class NetworkObserver {
             online: path.status == .satisfied
         )
         if (prevInfo != info) {
+            // iOS does not report the sockets of the previous network as broken, so the servers have to
+            // be reconnected. There is nothing to reconnect before the first network info is set.
+            let shouldReconnect = prevInfo != nil && info.online
             prevInfo = info
             setNetworkInfo(info)
+            if shouldReconnect { reconnectServers() }
         }
     }
 
@@ -67,6 +71,17 @@ class NetworkObserver {
                 try apiSetNetworkInfo(info)
             } catch let err {
                 logger.error("setNetworkInfo error: \(responseError(err))")
+            }
+        }
+    }
+
+    private func reconnectServers() {
+        Task {
+            if !hasChatCtrl() { return }
+            do {
+                try await reconnectAllServers()
+            } catch let err {
+                logger.error("reconnectAllServers error: \(responseError(err))")
             }
         }
     }
