@@ -73,6 +73,7 @@ module Simplex.Chat.Store.Messages
     markGroupChatItemBlocked,
     markGroupCIBlockedByAdmin,
     markMessageReportsDeleted,
+    markMemberReportsDeleted,
     markReceivedGroupReportsDeleted,
     deleteLocalChatItem,
     updateDirectChatItemsRead,
@@ -3023,6 +3024,21 @@ markMessageReportsDeleted db User {userId} GroupInfo {groupId} ChatItem {meta = 
         RETURNING chat_item_id;
       |]
       (DBCIDeleted, deletedTs, groupMemberId, currentTs, userId, groupId, MCReport_, itemSharedMsgId, DBCINotDeleted)
+
+markMemberReportsDeleted :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> IO [ChatItemId]
+markMemberReportsDeleted db User {userId} GroupInfo {groupId} reportedMember byGroupMember = do
+  deletedTs <- getCurrentTime
+  map fromOnly
+    <$> DB.query
+      db
+      [sql|
+        UPDATE chat_items
+        SET item_deleted = ?, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, updated_at = ?
+        WHERE user_id = ? AND group_id = ? AND msg_content_tag = ? AND item_deleted = ?
+          AND (quoted_member_id = ? OR group_member_id = ?)
+        RETURNING chat_item_id;
+      |]
+      ((DBCIDeleted, deletedTs, groupMemberId' byGroupMember, deletedTs) :. (userId, groupId, MCReport_, DBCINotDeleted, memberId' reportedMember, groupMemberId' reportedMember))
 
 markReceivedGroupReportsDeleted :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO [ChatItemId]
 markReceivedGroupReportsDeleted db User {userId} GroupInfo {groupId, membership} deletedTs = do

@@ -219,6 +219,7 @@ chatGroupTests = do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
     it "should send report to group owner, admins and moderators, but not other users" testGroupMemberReports
+    it "should archive reports about the messages of the member removed with messages" testGroupMemberReportsRemoveMember
   describe "group member mentions" $ do
     it "should send and edit messages with member mentions" testMemberMention
     it "should forward and quote message updating mentioned member name" testForwardQuoteMention
@@ -7389,6 +7390,43 @@ testGroupMemberInactive ps = do
               { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
               }
         }
+
+testGroupMemberReportsRemoveMember :: HasCallStack => TestParams -> IO ()
+testGroupMemberReportsRemoveMember =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "jokes" alice (bob, GRMember) (cath, GRMember)
+      threadDelay 1000000
+      bob #> "#jokes inappropriate joke"
+      concurrently_
+        (alice <# "#jokes bob> inappropriate joke")
+        (cath <# "#jokes bob> inappropriate joke")
+      cath #> "#jokes another joke"
+      concurrently_
+        (alice <# "#jokes cath> another joke")
+        (bob <# "#jokes cath> another joke")
+      cath ##> "/report #jokes content inappropriate joke"
+      cath <# "#jokes (support) > bob inappropriate joke"
+      cath <## "      report content"
+      alice <# "#jokes (support: cath) cath> > bob inappropriate joke"
+      alice <## "      report content"
+      bob ##> "/report #jokes content another joke"
+      bob <# "#jokes (support) > cath another joke"
+      bob <## "      report content"
+      alice <# "#jokes (support: bob) bob> > cath another joke"
+      alice <## "      report content"
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content"), (0, "report content")])
+      cath #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content")])
+      threadDelay 1000000
+      alice ##> "/rm #jokes bob messages=on"
+      alice <## "#jokes: 2 messages deleted by user"
+      alice <## "#jokes: you removed bob from the group with all messages"
+      bob <## "#jokes: alice removed you from the group with all messages"
+      bob <## "use /d #jokes to delete the group"
+      cath <## "#jokes: 1 messages deleted by member alice"
+      cath <## "#jokes: alice removed bob from the group with all messages"
+      alice #$> ("/_get chat #1 content=report count=100", chat, [(0, "report content [marked deleted by you]")])
+      cath #$> ("/_get chat #1 content=report count=100", chat, [(1, "report content [marked deleted by alice]")])
 
 testGroupMemberReports :: HasCallStack => TestParams -> IO ()
 testGroupMemberReports =

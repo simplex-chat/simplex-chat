@@ -3654,9 +3654,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gi' scopeInfo m') msg' brokerTs (CIRcvGroupEvent gEvent)
           groupMsgToView cInfo ci
         deleteMessages :: GroupInfo -> GroupMember -> CM ()
-        deleteMessages gInfo' delMem
-          | groupFeatureMemberAllowed SGFFullDelete m gInfo' = deleteGroupMemberCIs user gInfo' delMem
-          | otherwise = markGroupMemberCIsDeleted user gInfo' delMem m
+        deleteMessages gInfo' delMem = do
+          ciIds <- withStore' $ \db -> markMemberReportsDeleted db user gInfo' delMem m
+          unless (null ciIds) $ toView $ CEvtGroupChatItemsDeleted user gInfo' ciIds False (Just m)
+          if groupFeatureMemberAllowed SGFFullDelete m gInfo'
+            then deleteGroupMemberCIs user gInfo' delMem
+            else markGroupMemberCIsDeleted user gInfo' delMem m
         forwardToMember :: GroupMember -> CM ()
         forwardToMember member =
           let fwd = GrpMsgForward {fwdSender = FwdMember (memberId' m) (memberShortenedName m), fwdBrokerTs = brokerTs}
