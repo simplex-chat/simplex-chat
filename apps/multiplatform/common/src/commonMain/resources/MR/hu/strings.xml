@@ -2913,4 +2913,8 @@
     <string name="simplex_name_sales">SimpleX-nevek értékesítésének kezdete:</string>
     <string name="until_register_simplex_domain">egy SimpleX-domainnév regisztrációjáig</string>
     <string name="update_app_register_simplex_domain">Frissítse az alkalmazást egy SimpleX-domainnév regisztrálásához</string>
+    <string name="info_row_file_expires">Eddig érhető el a fájl</string>
+    <string name="file_expired">Már nem érhető el a fájl</string>
+    <string name="info_row_file_expired">Eddig volt elérhető a fájl</string>
+    <string name="file_error_expired">Eddig volt elérhető a fájl: %1$s.</string>
 </resources>
