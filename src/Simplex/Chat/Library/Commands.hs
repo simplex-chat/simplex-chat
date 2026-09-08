@@ -62,7 +62,7 @@ import System.Mem.Weak (Weak, deRefWeak)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeMasterKey, LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Badges.Ledger (LedgerBalance, LedgerPlan (..))
 import qualified Simplex.Chat.Badges.Ledger as L
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeState (..), UserBadgeState (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeState (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
@@ -5189,10 +5189,13 @@ redeemBadgeCode nm user codeText = do
   g <- asks random
   now <- liftIO getCurrentTime
   let codeSent = badgeCodeText code
+  redemption_ <- withStore' $ \db -> getBadgeCodeRedemption db user codeSent
+  -- a code already redeemed here is allowed through: re-sending it returns the badge it bought
+  -- and adds nothing. Refused before its keys are stashed and before the request, so it stays unspent
+  replaying <- maybe (pure False) (\r -> withStore' $ \db -> isJust <$> getCodeBadgePurchase db r) redemption_
+  unless replaying $ whenM (withStore' (`userHasBadge` user)) $ throwCmdError "badge already active"
   redemption@BadgeCodeRedemption {purchaseKey, purchasePrivKey, masterKey} <-
-    withStore' $ \db ->
-      getBadgeCodeRedemption db user codeSent
-        >>= maybe (createBadgeCodeRedemption db g user codeSent now) pure
+    maybe (withStore' $ \db -> createBadgeCodeRedemption db g user codeSent now) pure redemption_
   let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request = BSCRedeemBadgeCode {masterKey, code = codeSent}}
   respData <- sendServiceRequestTo nm user sendTarget Nothing (Just purchasePrivKey) req
   case J.fromJSON (J.Object respData) of
@@ -5271,16 +5274,17 @@ updateUserBadges :: UserId -> BadgeMemory -> BadgeWorker -> CM ()
 updateUserBadges userId mem bw = do
   now <- badgeNow
   user <- withStore $ \db -> getUser db userId
-  purchases <- withStore' $ \db -> getUserBadgePurchases db user
-  -- one badge failing reports and yields no change, leaving the others to run
-  results <- forM purchases $ \p@UserBadgePurchase {badgePurchaseId} ->
-    updateBadgePurchase userId mem p now `catchAllErrors` \e -> do
-      eToView e
-      (False,) <$> nextBadgeAttempt mem badgePurchaseId now (badgeErrorRetry e)
-  lift $ scheduleBadgeWake bw now $ earliestTime $ map snd results
+  purchase_ <- withStore' $ \db -> getUserBadgePurchase db user
+  (changed, wakeAt) <- case purchase_ of
+    Nothing -> pure (False, Nothing)
+    Just p@UserBadgePurchase {badgePurchaseId} ->
+      updateBadgePurchase userId mem p now `catchAllErrors` \e -> do
+        eToView e
+        (False,) <$> nextBadgeAttempt mem badgePurchaseId now (badgeErrorRetry e)
+  lift $ scheduleBadgeWake bw now wakeAt
   -- a renewal answers no command, so the new state can only reach the client as an event; the
   -- record read above still carries the badge this pass replaced, so it is read again
-  when (any fst results) $ do
+  when changed $ do
     user' <- withStore $ \db -> getUser db userId
     toView . CEvtBadgeChanged user' =<< getUserBadgeState user'
 
@@ -5343,32 +5347,22 @@ emitBadgeAlert user BadgeMemory {emitted} p@UserBadgePurchase {badgePurchaseId, 
     when (raised /= Just occurrence) $ toView $ CEvtBadgeAlert user alert
 
 -- | Read from stored rows alone; the worker's results follow as CEvtBadgeChanged.
-getUserBadgeState :: User -> CM UserBadgeState
+getUserBadgeState :: User -> CM (Maybe BadgeState)
 getUserBadgeState user = do
   now <- badgeNow
-  purchases <- withStore' $ \db -> getUserBadgePurchases db user
-  badges <- fmap catMaybes $ forM purchases $ \p -> fmap (badgeStateOf now p) <$> withStore' (`getBadgeLedgerBalance` purchaseIdOf p)
-  let shownBadge = find (\BadgeState {shown} -> shown) badges
-      current = shownBadge <|> listToMaybe badges
-  pure
-    UserBadgeState
-      { badges,
-        shownBadgeId = (\BadgeState {badgePurchaseId} -> badgePurchaseId) <$> shownBadge,
-        monthsLeft = maybe 0 (\BadgeState {monthsLeft} -> monthsLeft) current,
-        paidThrough = (\BadgeState {paidThrough} -> paidThrough) <$> current,
-        renewsAt = Nothing,
-        willRenew = False,
-        alert = current >>= \BadgeState {alert} -> alert
-      }
+  withStore' (`getUserBadgePurchase` user) >>= \case
+    Nothing -> pure Nothing
+    Just p@UserBadgePurchase {badgePurchaseId} ->
+      fmap (badgeStateOf now p) <$> withStore' (`getBadgeLedgerBalance` badgePurchaseId)
   where
-    purchaseIdOf UserBadgePurchase {badgePurchaseId} = badgePurchaseId
-    badgeStateOf now p@UserBadgePurchase {badgePurchaseId, badgeType, shown} balance =
+    badgeStateOf now p@UserBadgePurchase {badgePurchaseId, badgeType} balance =
       BadgeState
         { badgePurchaseId,
           badgeType,
           monthsLeft = L.balanceMonths balance,
           paidThrough = L.paidThrough balance,
-          shown,
+          renewsAt = Nothing,
+          willRenew = False,
           alert = unansweredBadgeAlert now p balance
         }
 

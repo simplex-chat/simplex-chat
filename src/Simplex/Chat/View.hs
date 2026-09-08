@@ -44,7 +44,7 @@ import Simplex.Chat.Help
 import Simplex.Chat.Library.Commands (maxImageSize)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeState (..), UserBadgeState (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeState (..))
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
@@ -1836,19 +1836,20 @@ viewContactBadge = maybe [] $ \lb ->
       expiry = "expires " <> day badgeExpiry
    in [plain (textEncode badgeType <> " badge - " <> st), plain expiry]
 
-viewUserBadgeState :: UserBadgeState -> [StyledString]
-viewUserBadgeState UserBadgeState {badges, alert} = map viewBadge badges <> maybe [] viewBadgeAlert alert
+viewUserBadgeState :: Maybe BadgeState -> [StyledString]
+viewUserBadgeState = maybe [] viewBadge
   where
-    viewBadge BadgeState {badgePurchaseId, badgeType, monthsLeft, paidThrough, shown} =
-      plain $
-        tshow badgePurchaseId
-          <> ": "
-          <> textEncode badgeType
-          <> (if shown then " (shown)" else "")
-          <> ", "
-          <> tshow monthsLeft
-          <> " months left, paid through "
-          <> day paidThrough
+    viewBadge BadgeState {badgePurchaseId, badgeType, monthsLeft, paidThrough, alert} =
+      plain
+        ( tshow badgePurchaseId
+            <> ": "
+            <> textEncode badgeType
+            <> ", "
+            <> tshow monthsLeft
+            <> " months left, paid through "
+            <> day paidThrough
+        )
+        : maybe [] viewBadgeAlert alert
 
 viewBadgeAlert :: BadgeAlert -> [StyledString]
 viewBadgeAlert BadgeAlert {kind, date} = [plain $ "badge alert: " <> textEncode kind <> " " <> day date]

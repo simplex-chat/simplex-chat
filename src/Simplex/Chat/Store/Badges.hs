@@ -8,13 +8,15 @@
 module Simplex.Chat.Store.Badges
   ( BadgeCodeRedemption (..),
     UserBadgePurchase (..),
-    getUserBadgePurchases,
+    getUserBadgePurchase,
+    userHasBadge,
     setBadgeAlertAcked,
     clearShownBadge,
     getBadgeCodeRedemption,
     createBadgeCodeRedemption,
     deleteBadgeCodeRedemption,
     createCodeBadgePurchase,
+    getCodeBadgePurchase,
     storeBadgeIssuance,
     getLatestIssuedCredential,
     storeBadgeStatement,
@@ -30,6 +32,7 @@ import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
@@ -199,12 +202,13 @@ data UserBadgePurchase = UserBadgePurchase
     alertSnoozeUntil :: Maybe UTCTime
   }
 
--- | shown is a CASE rather than the comparison itself: in Postgres a comparison yields boolean,
--- and BoolInt decodes an Int.
-getUserBadgePurchases :: DB.Connection -> User -> IO [UserBadgePurchase]
-getUserBadgePurchases db User {userId} =
-  map toPurchase
-    <$> DB.query
+-- | Newest, not the one shown_badge_id points at - retirement clears that, and the support ended
+-- alert is recomputed from this purchase after the badge stops being shown.
+-- shown is a CASE because in Postgres a comparison is boolean, which BoolInt rejects.
+getUserBadgePurchase :: DB.Connection -> User -> IO (Maybe UserBadgePurchase)
+getUserBadgePurchase db User {userId} =
+  maybeFirstRow toPurchase $
+    DB.query
       db
       [sql|
         SELECT p.badge_purchase_id, p.purchase_key, p.purchase_priv_key, p.master_key, p.current_badge_type,
@@ -213,7 +217,8 @@ getUserBadgePurchases db User {userId} =
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.user_id = ? AND p.purchase_priv_key IS NOT NULL
-        ORDER BY p.badge_purchase_id
+        ORDER BY p.badge_purchase_id DESC
+        LIMIT 1
       |]
       (Only userId)
   where
@@ -228,6 +233,16 @@ getUserBadgePurchases db User {userId} =
           alertAcked = (,) <$> ackedKind_ <*> ackedEpisode_,
           alertSnoozeUntil
         }
+
+-- | Whether a badge is on the profile now: set when a redemption stores one, cleared when it is
+-- retired. Read as the id rather than as a comparison, which in Postgres would be a boolean.
+userHasBadge :: DB.Connection -> User -> IO Bool
+userHasBadge db User {userId} =
+  maybeFirstRow' False shownBadge $
+    DB.query db "SELECT shown_badge_id FROM users WHERE user_id = ?" (Only userId)
+  where
+    shownBadge :: Only (Maybe Int64) -> Bool
+    shownBadge = isJust . fromOnly
 
 -- | An ack and a snooze both record the occurrence answered; a snooze also records how long it
 -- holds, so that it silences that occurrence and not whichever one is derived next.

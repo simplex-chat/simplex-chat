@@ -25,7 +25,6 @@ module Simplex.Chat.Badges.Types
     BadgeIssuance (..),
     BadgeAlert (..),
     BadgeState (..),
-    UserBadgeState (..),
   ) where
 
 import Data.Aeson (FromJSON, ToJSON)
@@ -208,26 +207,14 @@ data BadgeAlert = BadgeAlert
   }
   deriving (Show)
 
--- | One badge as the badge surfaces render it. The purchase keys are deliberately absent: this
--- travels to the UI and over remote control, and they are secrets that stay in core.
+-- | The user's badge as the badge surfaces render it. The purchase keys are deliberately absent:
+-- this travels to the UI and over remote control, and they are secrets that stay in core.
 data BadgeState = BadgeState
   { badgePurchaseId :: Int64,
     badgeType :: BadgeType,
     monthsLeft :: Int,
     paidThrough :: UTCTime,
-    shown :: Bool,
-    alert :: Maybe BadgeAlert
-  }
-  deriving (Show)
-
--- TODO [badges] a second code while one is active - supersede the old purchase, refuse, or credit
--- the balance? Each leaves one badge per profile, reducing this to BadgeState with no shown flag
-data UserBadgeState = UserBadgeState
-  { badges :: [BadgeState],
-    shownBadgeId :: Maybe Int64,
     -- payments returns here with the payment types, which this slice neither writes nor encodes
-    monthsLeft :: Int,
-    paidThrough :: Maybe UTCTime,
     renewsAt :: Maybe UTCTime,
     willRenew :: Bool,
     alert :: Maybe BadgeAlert
@@ -280,5 +267,3 @@ instance FromJSON BadgeAlertKind where
 $(JQ.deriveJSON defaultJSON ''BadgeAlert)
 
 $(JQ.deriveJSON defaultJSON ''BadgeState)
-
-$(JQ.deriveJSON defaultJSON ''UserBadgeState)

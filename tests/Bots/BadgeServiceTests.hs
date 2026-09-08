@@ -62,7 +62,7 @@ badgeServiceTests = do
   it "should return the same badge when the same code is redeemed twice" testRedeemBadgeCodeTwice
   it "should answer code_invalid to an unknown code, indistinguishably from a malformed one" testRedeemUnknownCode
   it "should tell a second profile redeeming the same code that it is used" testRedeemSameCodeOtherProfile
-  it "should redeem a second code, and not restore the first badge on replay" testRedeemSecondCode
+  it "should refuse a second code while a badge is held, leaving it unspent" testRedeemSecondCode
   it "should refuse to issue a code with an unknown badge type or a nonsense month count" testIssueRejectsBadArguments
   it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
   it "should refuse to start unless the issuer secret is the key trusted at its index" testIssuerKeyMustMatchConfig
@@ -298,8 +298,8 @@ issueRaw cc args =
     Right CRCustomChatResponse {} -> pure $ Right ()
     _ -> pure $ Left ()
 
--- Both purchases fund no payment, so both leave payment_id NULL under UNIQUE(payment_id).
--- The first purchase stays as it is: retiring a superseded badge is not implemented.
+-- The guard is the badge on the profile, so it refuses whatever the code is and whichever type it
+-- funds; nothing is sent, so the refused code is still redeemable.
 testRedeemSecondCode :: HasCallStack => TestParams -> IO ()
 testRedeemSecondCode ps =
   withBadgeService ps $ \clientCfg _ cc ->
@@ -311,16 +311,15 @@ testRedeemSecondCode ps =
       alice <## "supporter badge - active"
       alice <##. "expires "
       alice ##> ("/_redeem_badge_code 1 " <> codeArg legend)
+      alice <## "bad chat command: badge already active"
+      alice ##> "/p"
+      showActiveUser alice "alice (Alice, * supporter)"
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> ("/_redeem_badge_code 2 " <> codeArg legend)
       alice <## "badge redeemed"
       alice <## "legend badge - active"
       alice <##. "expires "
-      alice ##> "/p"
-      showActiveUser alice "alice (Alice, * legend)"
-      -- replaying the first code must not put supporter back
-      alice ##> ("/_redeem_badge_code 1 " <> codeArg supporter)
-      alice <## "badge already redeemed"
-      alice ##> "/p"
-      showActiveUser alice "alice (Alice, * legend)"
 
 -- Each profile stashes its own keys, so the second reaches the service as a different signer -
 -- rather than being handed the first profile's badge, or colliding in badge_code_redemptions.
