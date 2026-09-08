@@ -40,8 +40,9 @@
         <target>%1$@ támogatta a SimpleX Chatet. A kitűző lejárt ekkor: %2$@.</target>
         <note>badge alert</note>
       </trans-unit>
-      <trans-unit id="%02d hrs %02d min %02d sec" xml:space="preserve">
+      <trans-unit id="%02d hrs %02d min %02d sec" xml:space="preserve" approved="no">
         <source>%1$02d hrs %2$02d min %3$02d sec</source>
+        <target state="translated">%1$02d óra %2$02d perc %3$02d mp</target>
         <note>countdown</note>
       </trans-unit>
       <trans-unit id="%@" xml:space="preserve">
@@ -159,8 +160,9 @@
         <target>%@:</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="%d day" xml:space="preserve">
+      <trans-unit id="%d day" xml:space="preserve" approved="no">
         <source>%d day</source>
+        <target state="translated">%d nap</target>
         <note>time interval</note>
       </trans-unit>
       <trans-unit id="%d days" xml:space="preserve">
@@ -2723,8 +2725,9 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Hivatkozás létrehozása…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" xml:space="preserve">
+      <trans-unit id="Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" xml:space="preserve" approved="no">
         <source>Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)</source>
+        <target state="translated">A közösségi finanszírozásban részt vevő befektetők már az értékesítés megkezdése előtt lefoglalhatnak SimpleX-neveket: [simplex.domains](https://simplex.domains/)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Crowdfunding on Wefunder" xml:space="preserve">
@@ -8950,8 +8953,9 @@ copied message info</note>
         <target>Nincs ellenőrizve a SimpleX-név</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="SimpleX name sale starts in" xml:space="preserve">
+      <trans-unit id="SimpleX name sale starts in" xml:space="preserve" approved="no">
         <source>SimpleX name sale starts in</source>
+        <target state="translated">SimpleX-nevek értékesítésének kezdete:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX one-time invitation" xml:space="preserve">
@@ -10107,8 +10111,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>Frissíti a beállításokat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update the app to register a SimpleX domain" xml:space="preserve">
+      <trans-unit id="Update the app to register a SimpleX domain" xml:space="preserve" approved="no">
         <source>Update the app to register a SimpleX domain</source>
+        <target state="translated">Frissítse az alkalmazást egy SimpleX-domainnév regisztrálásához</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updated conditions" xml:space="preserve">
@@ -11758,8 +11763,9 @@ pref value</note>
         <target>továbbított</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="forwarded from" xml:space="preserve">
+      <trans-unit id="forwarded from" xml:space="preserve" approved="no">
         <source>forwarded from</source>
+        <target state="translated">továbbítva innen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="group" xml:space="preserve">
@@ -12269,8 +12275,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>nem védett</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="until you can register a SimpleX domain" xml:space="preserve">
+      <trans-unit id="until you can register a SimpleX domain" xml:space="preserve" approved="no">
         <source>until you can register a SimpleX domain</source>
+        <target state="translated">egy SimpleX-domainnév regisztrációjáig</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="updated channel profile" xml:space="preserve">
