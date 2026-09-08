@@ -2931,4 +2931,8 @@
     <string name="simplex_name_sales">SimpleX 名称销售开始于</string>
     <string name="until_register_simplex_domain">直到您可以注册 SimpleX 域名</string>
     <string name="update_app_register_simplex_domain">更新应用来注册 SimpleX 域名</string>
+    <string name="info_row_file_expires">文件到期日</string>
+    <string name="file_expired">文件已到期</string>
+    <string name="info_row_file_expired">文件到期日</string>
+    <string name="file_error_expired">文件到期日 %1$s。</string>
 </resources>
