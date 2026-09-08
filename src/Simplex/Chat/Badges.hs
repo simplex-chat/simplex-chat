@@ -66,11 +66,13 @@ import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, nominalDay)
+import Data.Time.Clock.System (systemToUTCTime, utcToSystemTime)
 import Simplex.FileTransfer.Description (gb, maxFileSize)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Crypto.Entitlement (Entitlement (Entitlement), EntitlementCredential (EntitlementCredential), MasterKey (MasterKey), entitlementBBSHeader)
+import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 #if defined(dbPostgres)
@@ -209,20 +211,29 @@ maxXFTPFileSize = \case
 -- presentation, not bound to any context; the 'T' tag marks it so master rejects it.
 -- PHUnknown is the forward-compat catch-all for tags this version does not interpret.
 
-data ProofPresHeaderTag = PHTestTag | PHUnknownTag Char
+data ProofPresHeaderTag = PHTestTag | PHChatTag | PHFileInvTag | PHFileDescrTag | PHUnknownTag Char
 
 instance StrEncoding ProofPresHeaderTag where
   strEncode = B.singleton . \case
     PHTestTag -> 'T'
+    PHChatTag -> 'C'
+    PHFileInvTag -> 'F'
+    PHFileDescrTag -> 'D'
     PHUnknownTag c -> c
   strP = tag <$> A.anyChar
     where
       tag = \case
         'T' -> PHTestTag
+        'C' -> PHChatTag
+        'F' -> PHFileInvTag
+        'D' -> PHFileDescrTag
         c -> PHUnknownTag c
 
 data ProofPresHeader
   = PHTest ByteString
+  | PHChat ByteString
+  | PHFileInv {chatBinding :: ByteString, fileName :: String, fileSize :: Int64}
+  | PHFileDescr {chatBinding :: ByteString, fileName :: String, fileSize :: Int64, descrHash :: ByteString, fileExpires :: Maybe UTCTime}
   | PHUnknown Char ByteString
   deriving (Eq, Show)
   deriving (ToJSON, FromJSON) via (StrJSON "ProofPresHeader" ProofPresHeader)
@@ -230,16 +241,30 @@ data ProofPresHeader
 instance StrEncoding ProofPresHeader where
   strEncode = \case
     PHTest nonce -> strEncode PHTestTag <> nonce
+    PHChat binding -> strEncode PHChatTag <> binding
+    PHFileInv {chatBinding, fileName, fileSize} ->
+      strEncode PHFileInvTag <> smpEncode (chatBinding, fileName, fileSize)
+    PHFileDescr {chatBinding, fileName, fileSize, descrHash, fileExpires} ->
+      strEncode PHFileDescrTag <> smpEncode (chatBinding, fileName, fileSize, descrHash, utcToSystemTime <$> fileExpires)
     PHUnknown c b -> strEncode (PHUnknownTag c) <> b
   strP =
     strP >>= \case
       PHTestTag -> PHTest <$> A.takeByteString
+      PHChatTag -> PHChat <$> A.takeByteString
+      PHFileInvTag -> do
+        (chatBinding, fileName, fileSize) <- smpP
+        pure PHFileInv {chatBinding, fileName, fileSize}
+      PHFileDescrTag -> do
+        (chatBinding, fileName, fileSize, descrHash, expires_) <- smpP
+        pure PHFileDescr {chatBinding, fileName, fileSize, descrHash, fileExpires = systemToUTCTime <$> expires_}
       PHUnknownTag c -> PHUnknown c <$> A.takeByteString
 
--- v6.5.x accepts both; v7 will reject PHTest/PHUnknown
 proofPresHeaderAccepted :: ProofPresHeader -> Bool
 proofPresHeaderAccepted = \case
   PHTest _ -> True
+  PHChat _ -> True
+  PHFileInv {} -> True
+  PHFileDescr {} -> True
   PHUnknown _ _ -> True
 
 -- Payment proof

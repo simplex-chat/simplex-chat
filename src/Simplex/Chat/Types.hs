@@ -1558,7 +1558,8 @@ data FileInvitation = FileInvitation
     fileDigest :: Maybe FileDigest,
     fileConnReq :: Maybe ConnReqInvitation,
     fileInline :: Maybe InlineFileMode,
-    fileDescr :: Maybe FileDescr
+    fileDescr :: Maybe FileDescr,
+    fileBadge :: Maybe BadgeProof
   }
   deriving (Eq, Show)
 
@@ -1573,7 +1574,8 @@ xftpFileInvitation fileName fileSize fileDescr =
       fileDigest = Nothing,
       fileConnReq = Nothing,
       fileInline = Nothing,
-      fileDescr = Just fileDescr
+      fileDescr = Just fileDescr,
+      fileBadge = Nothing
     }
 
 data InlineFileMode
