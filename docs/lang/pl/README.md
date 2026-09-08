@@ -54,7 +54,7 @@ Jeśli jesteś zainteresowany pomocą w integracji otwartoźródłowych modeli j
 
 ## Dołącz do grup użytkowników
 
-Możesz dołączyć do grup utworzonych przez innych użytkowników za pośrednictwem nowej [usługi katalogowej](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion). Nie jesteśmy odpowiedzialni za treści udostępniane w tych grupach.
+Grupy utworzone przez użytkowników znajdziesz w [SimpleX Directory](https://simplex.chat/directory/). Ta usługa jest również dostępna jako [bot SimpleX](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok), za pomocą którego możesz dodać do katalogu własne grupy i społeczności. Nie jesteśmy odpowiedzialni za treści udostępniane w grupach z katalogu.
 
 **Uwaga**: Poniższe grupy zostały utworzone, aby użytkownicy mogli zadawać pytania, zgłaszać sugestie i zadawać pytania dotyczące wyłącznie SimpleX Chat.
 
@@ -81,11 +81,7 @@ Istnieje również [#simplex-devs](https://smp6.simplex.im/g#Drx3efC-n418AuSpzTs
 - aplikacje społecznościowe i serwisy
 - itp.
 
-Istnieją grupy w innych językach, na które przetłumaczyliśmy interfejs aplikacji. Grupy te służą do testowania i zadawania pytań innym użytkownikom SimpleX Chat:
-
-[\#SimpleX-DE](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FkIEl7OQzcp-J6aDmjdlQbRJwqkcZE7XR%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAR16PCu02MobRmKAsjzhDWMZcWP9hS8l5AUZi-Gs8z18%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22puYPMCQt11yPUvgmI5jCiw%3D%3D%22%7D) (German-speaking), [\#SimpleX-ES](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FaJ8O1O8A8GbeoaHTo_V8dcefaCl7ouPb%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA034qWTA3sWcTsi6aWhNf9BA34vKVCFaEBdP2R66z6Ao%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22wiZ1v_wNjLPlT-nCSB-bRA%3D%3D%22%7D) (Spanish-speaking), [\#SimpleX-FR](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FvIHQDxTor53nwnWWTy5cHNwQQAdWN5Hw%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAPdgK1eBnETmgiqEQufbUkydKBJafoRx4iRrtrC2NAGc%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%221FyUryBPza-1ZFFE80Ekbg%3D%3D%22%7D) (French-speaking), [\#SimpleX-RU](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FXZyt3hJmWsycpN7Dqve_wbrAqb6myk1R%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAMFVIoytozTEa_QXOgoZFq_oe0IwZBYKvW50trSFXzXo%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22xz05ngjA3pNIxLZ32a8Vxg%3D%3D%22%7D) (Russian-speaking), [\#SimpleX-IT](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F0weR-ZgDUl7ruOtI_8TZwEsnJP6UiImA%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAq4PSThO9Fvb5ydF48wB0yNbpzCbuQJCW3vZ9BGUfcxk%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22e-iceLA0SctC62eARgYDWg%3D%3D%22%7D) (Italian-speaking).
-
-Możesz do nich dołączyć otwierając te linki w aplikacji lub otwierając je w przeglądarce na komputerze i skanując kod QR.
+Możesz dołączyć do tych i innych grup, otwierając te linki w aplikacji lub otwierając je w przeglądarce na komputerze i skanując kod QR.
 
 ## Śledź nasze aktualizacje
 
