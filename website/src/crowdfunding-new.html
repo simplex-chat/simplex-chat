@@ -683,11 +683,28 @@ templateEngineOverride: njk
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin-top: 22px;
             text-decoration: none;
         }
         #download .cf-modal-text { text-align: center; }
-        #download .cf-thanks { margin-top: 18px; }
+        #download .cf-status-area { min-height: 62px; }
+        #download .cf-modal-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 14px;
+            margin-top: 22px;
+        }
+        #download .cf-modal-actions .cf-form-submit { margin-top: 0; }
+        #download.cf-modal-failed .cf-modal-panel { width: min(880px, 100%); }
+        #download.cf-modal-failed .mc-frame {
+            position: static;
+            display: block;
+            width: 100%;
+            height: min(420px, calc(100dvh - 420px));
+            margin-top: 24px;
+            border-radius: 12px;
+            background: #ffffff;
+        }
         .mc-frame { position: absolute; width: 0; height: 0; border: 0; left: -5000px; }
 
         .cf-modal-light .cf-modal-panel {
@@ -905,8 +922,11 @@ templateEngineOverride: njk
     <script>
         (function cfSubscribe() {
             document.addEventListener('mc:result', function (e) {
-                var thanks = document.querySelector('#download .cf-thanks');
-                if (thanks) thanks.hidden = !e.detail.ok;
+                var modal = document.getElementById('download');
+                modal.querySelectorAll('.cf-status').forEach(function (line) {
+                    line.hidden = line.dataset.status !== e.detail.status;
+                });
+                modal.classList.toggle('cf-modal-failed', e.detail.status === 'failed');
                 location.hash = 'download';
             });
         })();
@@ -989,16 +1009,16 @@ templateEngineOverride: njk
             <a class="cf-modal-close" href="#!" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
             <div class="cf-modal-text">
                 <h2 id="request-title">Learn more about investing in SimpleX Chat</h2>
-                <form class="cf-form" action="https://chat.us2.list-manage.com/subscribe/post?u=ddd892b258ae36e5438e6d4e1&amp;id=6f73f92ffa&amp;f_id=001df8e3f0&amp;legacy_form=1" method="post" target="_blank">
+                <form class="cf-form" action="https://chat.us2.list-manage.com/subscribe/post?u=ddd892b258ae36e5438e6d4e1&amp;id=de405d59d2&amp;f_id=001ef8e3f0&amp;legacy_form=1" method="post" target="_blank">
                     <input type="text" name="FNAME" placeholder="Name or pseudonym" aria-label="Name or pseudonym">
                     <input type="email" name="EMAIL" placeholder="Email*" aria-label="Email address" required>
                     <input type="hidden" name="PAGE" value="crowdfunding">
-                    <input type="hidden" name="SOURCE" value="">
+                    <input type="hidden" name="SOURCE" value="crowdfunding_page">
                     <input type="hidden" name="CAMPAIGN" value="">
                     <span aria-hidden="true" class="cf-bot-field">
-                        <input type="text" name="b_ddd892b258ae36e5438e6d4e1_6f73f92ffa" tabindex="-1" value="">
+                        <input type="text" name="b_ddd892b258ae36e5438e6d4e1_de405d59d2" tabindex="-1" value="">
                     </span>
-                    <button type="submit" name="subscribe" class="cf-form-submit">Submit and download our Pitch deck</button>
+                    <button type="submit" name="subscribe" value="Subscribe" class="cf-form-submit">Submit and download our Pitch deck</button>
                 </form>
             </div>
         </div>
@@ -1009,9 +1029,16 @@ templateEngineOverride: njk
         <div class="cf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="download-title">
             <a class="cf-modal-close" href="#!" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
             <div class="cf-modal-text">
-                <h2 id="download-title">Our Pitch deck</h2>
-                <p class="cf-thanks" hidden>Thank you for subscribing to crowdfunding updates. Please confirm your subscription by clicking the link in the email we just sent you.</p>
-                <p><a class="cf-form-submit cf-deck-link" href="/simplex-chat-pitch-deck.pdf" target="_blank" rel="noopener">Download our Pitch deck</a></p>
+                <h2 id="download-title">Thank you for your interest in SimpleX&nbsp;Chat crowdfunding</h2>
+                <div class="cf-status-area">
+                    <p class="cf-status" data-status="subscribed" hidden>Please confirm your subscription by clicking the link in the email.</p>
+                    <p class="cf-status" data-status="confirmed" hidden>This address is in the list &mdash; you will receive the updates.</p>
+                    <p class="cf-status" data-status="failed" hidden>We could not confirm your subscription &mdash; Mailchimp&rsquo;s response is below.</p>
+                </div>
+                <div class="cf-modal-actions">
+                    <a class="cf-form-submit cf-deck-link" href="/img/crowdfunding/simplex-chat-pitch-deck.pdf" target="_blank" rel="noopener">Download pitch deck</a>
+                </div>
+                <div class="mc-frame-host"></div>
             </div>
         </div>
     </div>

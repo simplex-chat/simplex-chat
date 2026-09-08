@@ -33,15 +33,11 @@
         });
     }
 
-    function withUtm(href, useHash) {
+    function withUtm(href) {
         var url = new URL(href, location.href);
-        var params = useHash
-            ? new URLSearchParams(url.hash.replace(/^#\??/, ''))
-            : url.searchParams;
         KEYS.forEach(function (name) {
-            if (utm[name]) params.set(name, utm[name]);
+            if (utm[name]) url.searchParams.set(name, utm[name]);
         });
-        if (useHash) url.hash = '?' + params.toString();
         return url.toString();
     }
 
@@ -51,14 +47,8 @@
 
         if (/^\/blog(\/|$)/.test(location.pathname)) return;
 
-        document.querySelectorAll('a[href]').forEach(function (link) {
-            var href = link.getAttribute('href');
-            if (!href) return;
-            if (/^https:\/\/wefunder\.com\//.test(href)) {
-                link.href = withUtm(href, false);
-            } else if (/^(\/|https:\/\/simplex\.chat\/)(livestream|crowdfunding)\//.test(href)) {
-                link.href = withUtm(href, true);
-            }
+        document.querySelectorAll('a[href^="https://wefunder.com/"]').forEach(function (link) {
+            link.href = withUtm(link.getAttribute('href'));
         });
     }
 
