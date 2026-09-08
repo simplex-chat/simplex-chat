@@ -44,6 +44,7 @@
 - [Soukromí: technické detaily a omezení](#privacy-technical-details-and-limitations)
 - [Pro vývojáře](#pro-vývojáře)
 - [Plán](#roadmap)
+- [Spojte se s týmem](#spojte-se-s-týmem)
 - [Připojte se ke skupině uživatelů](#připojte-se-ke-skupině-uživatelů)
 - [Přeložit aplikace](#translate-the-apps)
 - [Přispívat](#contribute)
@@ -227,6 +228,16 @@ Připojte se také ke skupině [#simplex-devs](https://smp6.simplex.im/g#Drx3efC
 - Hostitelský server pro velké skupiny, komunity a veřejné kanály.
 - Relé pro doručování zpráv pro odesílatele (pro skrytí IP adresy před servery příjemců a snížení provozu).
 - Vysokokapacitní víceuzlové relé SMP.
+
+## Spojte se s týmem
+
+S týmem se můžete spojit volbou "Zaslat otázky a nápady" v nastavení aplikace nebo prostřednictvím naší [adresy SimpleX](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw). Napište nám:
+
+- s jakýmkoli dotazem
+- s návrhem na vylepšení
+- s čímkoli, co je relevantní
+
+Na dotazy odpovídáme ručně, takže odpověď není okamžitá - může trvat až 24 hodin.
 
 ## Připojte se ke skupině uživatelů
 

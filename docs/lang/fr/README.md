@@ -42,9 +42,13 @@
 
 ## Se connecter aux développeurs via l'app
 
+Vous pouvez vous connecter à l'équipe avec l'option "Envoyez vos questions et idées" dans les paramètres de l'application, ou via notre [adresse SimpleX](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw). Écrivez-nous :
+
 - pour poser des questions
-- suggérer des améliorations
-- partager toute information pertinente
+- pour suggérer des améliorations
+- pour partager toute information pertinente
+
+Nous répondons aux questions manuellement, ce n'est donc pas instantané - cela peut prendre jusqu'à 24 heures.
 
 ## Rejoindre des groupes d'utilisateurs
 
