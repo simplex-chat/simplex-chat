@@ -1,7 +1,7 @@
 ---
-title: "Thank you for subscribing - SimpleX Chat"
-description: "Please confirm your subscription to SimpleX Chat updates."
-permalink: /subscribe/thankyou/
+title: "Subscription confirmed - SimpleX Chat"
+description: "Your subscription to SimpleX Chat updates is confirmed."
+permalink: /subscribe/confirmed/
 templateEngineOverride: njk
 ---
 
@@ -59,7 +59,7 @@ templateEngineOverride: njk
     </style>
 
     <script>
-        if (window.parent !== window) window.parent.postMessage('mc:subscribed', '*');
+        if (window.parent !== window) window.parent.postMessage('mc:confirmed', '*');
     </script>
 </head>
 
@@ -67,8 +67,8 @@ templateEngineOverride: njk
     {% include "navbar.html" %}
 
     <main class="thankyou">
-        <h1>Thank you for subscribing<br>to SimpleX Chat updates</h1>
-        <p>Please confirm your subscription by clicking the link in the email we just sent you.</p>
+        <h1>Your subscription<br>is confirmed</h1>
+        <p>Thank you. We will send SimpleX Chat updates to this address.</p>
     </main>
 
     {% include "footer.html" %}

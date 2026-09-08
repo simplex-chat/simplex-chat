@@ -281,6 +281,7 @@ main .section-bg {
 
 .register-card input[type="submit"] {
     height: 52px;
+    min-width: 164px;
     padding: 0 34px;
     border: none;
     border-radius: 9999px;
@@ -295,6 +296,16 @@ main .section-bg {
 .dark .register-card input[type="submit"] {
     background: #70f0f9;
     color: #000000;
+}
+
+.register-card .register-note {
+    margin-top: 10px;
+    font-size: 16px;
+    color: #6b7478;
+}
+
+.dark .register-card .register-note {
+    color: #9fb2c9;
 }
 
 .register-card .channel-link {
@@ -353,14 +364,25 @@ main .section-bg {
     border: 0;
 }
 
-.mc-frame.mc-frame-shown {
-    position: fixed;
-    top: 24px;
-    left: 24px;
-    width: calc(100vw - 48px);
-    height: calc(100svh - 48px);
-    z-index: 60000;
-    border-radius: 12px;
+.mc-frame-card {
+    max-width: 640px;
+    padding: 44px 0 0;
+    overflow: hidden;
     background: #ffffff;
-    box-shadow: 0 3px 24px rgba(0, 0, 0, .35);
+}
+
+.dark .mc-frame-card {
+    background: #ffffff;
+}
+
+.mc-frame-card .close-register svg,
+.dark .mc-frame-card .close-register svg {
+    fill: #023789;
+}
+
+#subscribe-failed.open .mc-frame {
+    position: static;
+    display: block;
+    width: 100%;
+    height: min(520px, calc(100svh - 140px));
 }
