@@ -1,4 +1,4 @@
-| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/README.md), [FR](/docs/lang/fr/README.md), [PL](/docs/lang/pl/README.md) |
+| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/README.md), [FR](/docs/lang/fr/README.md), [PL](/docs/lang/pl/README.md) |
 
 <img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
@@ -271,7 +271,7 @@ Vaše dary nám pomohou získat další finanční prostředky - jakákoli čás
 Přispět je možné prostřednictvím:
 
 - [GitHub](https://github.com/sponsors/simplex-chat) - je to pro nás bez provize.
-- OpenCollective](https://opencollective.com/simplex-chat) - účtuje si provizi a přijímá také dary v kryptoměnách.
+- [OpenCollective](https://opencollective.com/simplex-chat) - účtuje si provizi a přijímá také dary v kryptoměnách.
 - Adresa Monero: 8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c.
 - Bitcoinová adresa: bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u
 - BCH adresa: bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg
