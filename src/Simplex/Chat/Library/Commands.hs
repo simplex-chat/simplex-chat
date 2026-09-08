@@ -51,16 +51,16 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
+import Data.Word (Word32)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Control.Concurrent (ThreadId, killThread, mkWeakThreadId)
 import Crypto.Random (ChaChaDRG)
-import System.Mem.Weak (Weak, deRefWeak)
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeMasterKey, LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
-import Simplex.Chat.Badges.Ledger (LedgerBalance, LedgerPlan (..))
+import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges.Ledger (LedgerBalance)
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeState (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
@@ -104,9 +104,9 @@ import qualified Simplex.Chat.Util as U
 import Simplex.Chat.Web (webPreviewWorker)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSizeHard)
 import Simplex.Messaging.Agent
-import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), Worker (..), allRoles)
+import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
+import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), withRetryInterval)
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Agent.Store.Interface (execSQL)
 import Simplex.Messaging.Agent.Store.Shared (upMigration)
@@ -143,13 +143,13 @@ import UnliftIO.IO (hClose)
 import UnliftIO.STM
 #if defined(dbPostgres)
 import Data.Bifunctor (bimap, first, second)
-import Simplex.Messaging.Agent.Client (SubInfo (..), cancelWorker, getAgentQueuesInfo, getAgentWorker', getAgentWorkersDetails, getAgentWorkersSummary, hasWorkToDo', temporaryOrHostError)
+import Simplex.Messaging.Agent.Client (SubInfo (..), getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
 #else
 import Data.Bifunctor (bimap, first, second)
 import qualified Data.ByteArray as BA
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
-import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, cancelWorker, getAgentQueuesInfo, getAgentWorker', getAgentWorkersDetails, getAgentWorkersSummary, hasWorkToDo', temporaryOrHostError)
+import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 #endif
@@ -5233,91 +5233,101 @@ badgeNow = asks (badgeCurrentTime . config) >>= liftIO
 -- | A signal carries nothing: each pass derives its work from stored state, so a signal lost or
 -- duplicated changes no outcome.
 startBadgeWork :: User -> CM' ()
-startBadgeWork user = whenM (isJust <$> asks (badgeServiceAddress . config)) $ void $ getBadgeWorker True user
+startBadgeWork user = whenM (isJust <$> asks (badgeServiceAddress . config)) $ void $ getBadgeWorker user
 
-getBadgeWorker :: Bool -> User -> CM' BadgeWorker
-getBadgeWorker hasWork user@User {userId} = do
+-- | Exactly one caller starts the thread and the rest wait for it: the lookup and the create cannot
+-- be one transaction, because starting a thread is not STM.
+getBadgeWorker :: User -> CM' BadgeWorker
+getBadgeWorker User {userId} = do
   ws <- asks badgeWorkers
-  a <- asks smpAgent
-  getAgentWorker' fst withSleeper "badge" hasWork a userId ws $ runBadgeWorker user
+  seq' <- asks badgeSeq
+  now <- liftIO getCurrentTime
+  withGetSessVar' seq' userId ws now startWorker signalWorker
   where
-    withSleeper w = (w,) <$> newTVar Nothing
+    startWorker v = do
+      badgeWork <- newTMVarIO ()
+      badgeWorkerAsync <- async $ void $ runExceptT $ runBadgeWorker userId badgeWork
+      let w = BadgeWorker {badgeWorkerAsync, badgeWork}
+      w <$ atomically (putTMVar (sessionVar v) w)
+    signalWorker v = do
+      w <- atomically $ readTMVar $ sessionVar v
+      w <$ atomically (void $ tryPutTMVar (badgeWork w) ())
 
 -- | The alert last raised, so it is not repeated on every pass. The snooze is in the key because
 -- kind and episode do not change when it lapses: the alert would match and stay silent until a restart.
 type BadgeOccurrence = (BadgeAlertKind, Text, Maybe UTCTime)
 
--- | How long a purchase has been retrying and the wait before its next attempt, in microseconds.
--- No entry means it is not currently failing.
-type BadgeAttempt = (Int64, Int64)
-
--- | What a worker remembers across passes, per purchase, and only for the session: an alert is
--- derived from stored state and a backoff is not worth storing, so a restart starts both again.
-data BadgeMemory = BadgeMemory
-  { emitted :: TVar (Map Int64 BadgeOccurrence),
-    attempts :: TVar (Map Int64 BadgeAttempt)
-  }
-
-runBadgeWorker :: User -> BadgeWorker -> CM ()
-runBadgeWorker User {userId} bw@(Worker {doWork}, _) = do
-  mem <- BadgeMemory <$> newTVarIO M.empty <*> newTVarIO M.empty
+-- | Nothing ends a pass, so a persistent fault is one attempt per stall interval rather than a hot
+-- loop: every error returns a wake, and the wait is outside the retries.
+runBadgeWorker :: UserId -> TMVar () -> CM ()
+runBadgeWorker userId badgeWork = do
+  emitted <- newTVarIO Nothing
+  ri <- asks $ badgeRetryInterval . config
   forever $ do
-    -- waitForWork waits without taking, leaving that to the work-item helpers; this worker has
-    -- none, so it takes here: taking at the end would spin on a throw and swallow a new signal
-    atomically $ takeTMVar doWork
     lift waitChatStartedAndActivated
-    updateUserBadges userId mem bw `catchAllErrors` eToView
+    at_ <- withRetryInterval ri $ \_ loop -> do
+      now <- badgeNow
+      let stalled = pure $ Just $ badgeStalledInterval `addUTCTime` now
+      updateUserBadge userId emitted now `catchAllErrors` retryBadgeError loop stalled
+    now <- badgeNow
+    liftIO $ waitBadgeWake badgeWork now at_
 
--- | Renew what is due, retire what has ended, then sleep to the next boundary. Waking early, late
--- or not at all changes only timing: each run reads stored state and works out what to do.
-updateUserBadges :: UserId -> BadgeMemory -> BadgeWorker -> CM ()
-updateUserBadges userId mem bw = do
-  now <- badgeNow
+retryBadgeError :: CM a -> CM a -> ChatError -> CM a
+retryBadgeError loop stalled e = eToView e >> if badgeErrorRetry e then loop else stalled
+
+-- | The signal is taken only by the wait that reports it - the take and the timer read are one
+-- transaction. now is the badge clock, so the remaining time counts down rather than re-reading it.
+waitBadgeWake :: TMVar () -> UTCTime -> Maybe UTCTime -> IO ()
+waitBadgeWake badgeWork now = \case
+  Nothing -> atomically $ takeTMVar badgeWork
+  Just at -> waitFor $ diffToMicroseconds $ diffUTCTime at now
+  where
+    waitFor time
+      | time <= 0 = pure ()
+      | otherwise = do
+          let maxWait = min time $ fromIntegral (maxBound :: Int)
+          timer <- registerDelay $ fromIntegral maxWait
+          signalled <- atomically $ do
+            w <- tryTakeTMVar badgeWork
+            fired <- readTVar timer
+            unless (isJust w || fired) retry
+            pure $ isJust w
+          unless signalled $ waitFor $ time - maxWait
+
+-- | Retire what has ended, renew what is due, then report the next wake. Waking early, late or not
+-- at all changes only timing: each run reads stored state and works out what to do.
+updateUserBadge :: UserId -> TVar (Maybe BadgeOccurrence) -> UTCTime -> CM (Maybe UTCTime)
+updateUserBadge userId emitted now = do
   user <- withStore $ \db -> getUser db userId
-  purchase_ <- withStore' $ \db -> getUserBadgePurchase db user
-  (changed, wakeAt) <- case purchase_ of
-    Nothing -> pure (False, Nothing)
-    Just p@UserBadgePurchase {badgePurchaseId} ->
-      updateBadgePurchase userId mem p now `catchAllErrors` \e -> do
-        eToView e
-        (False,) <$> nextBadgeAttempt mem badgePurchaseId now (badgeErrorRetry e)
-  lift $ scheduleBadgeWake bw now wakeAt
-  -- a renewal answers no command, so the new state can only reach the client as an event; the
-  -- record read above still carries the badge this pass replaced, so it is read again
-  when changed $ do
-    user' <- withStore $ \db -> getUser db userId
-    toView . CEvtBadgeChanged user' =<< getUserBadgeState user'
-
--- | Whether the badge changed, and when it next needs a pass.
-updateBadgePurchase :: UserId -> BadgeMemory -> UserBadgePurchase -> UTCTime -> CM (Bool, Maybe UTCTime)
-updateBadgePurchase userId mem p@UserBadgePurchase {badgePurchaseId, alertSnoozeUntil} now = do
-  balance_ <- withStore' $ \db -> getBadgeLedgerBalance db badgePurchaseId
-  case balance_ of
-    Nothing -> pure (False, Nothing)
-    Just balance -> do
-      renewal <-
-        if badgeWorkDue now balance
-          then requestBadgeIssue userId p now `catchAllErrors` \e -> Left (badgeErrorRetry e) <$ eToView e
-          else pure $ Right balance
-      -- a response that leaves the month due means the service does not agree it is due, its clock
-      -- being behind this one; without a retry the next wake is paidThrough, the rest of the balance away
-      let (balance', badgeRetry) = case renewal of
-            Left r -> (balance, r)
-            Right b -> (b, if badgeWorkDue now b then RetryBadge Nothing else NoBadgeRetry)
-      -- presenting broadcasts the record it is handed, and the request above can block for the
-      -- whole service timeout, so this read belongs after it and not at the top of the pass
-      user <- withStore $ \db -> getUser db userId
-      retired <- retireExpiredBadge user p now balance'
-      let issued = L.balanceStartTs balance' /= L.balanceStartTs balance
-      -- outside the badge lock: the chat lock must not be taken under it
-      unless retired $ presentIssuedBadge user p now
-      emitBadgeAlert user mem p now balance'
-      retryAt <- nextBadgeAttempt mem badgePurchaseId now badgeRetry
-      -- a snooze is the one wake that is not in the ledger: nothing else brings the alert back,
-      -- since support having ended leaves both ledger boundaries in the past
-      let snoozeAt = find (> now) alertSnoozeUntil
-          stalledAt = if badgeWorkDue now balance' then Just $ badgeStalledInterval `addUTCTime` now else Nothing
-      pure (retired || issued, earliestTime [retryAt, snoozeAt, stalledAt, badgeBoundary now balance'])
+  withStore' (`getUserBadgePurchase` user) >>= \case
+    Nothing -> pure Nothing
+    Just p@UserBadgePurchase {badgePurchaseId, alertSnoozeUntil} ->
+      withStore' (`getBadgeLedgerBalance` badgePurchaseId) >>= \case
+        Nothing -> pure Nothing
+        Just balance -> do
+          -- retirement needs no service and an unbounded retry would not return before it
+          retired <- retireExpiredBadge user p now balance
+          latest <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
+          let requestDue = not retired && badgeRequestDue now (shownBadgeCredential user p) latest balance
+          (balance', serviceAt) <-
+            if requestDue
+              then either ((balance,) . Just) (,Nothing) <$> requestBadgeIssue userId p now
+              else pure (balance, Nothing)
+          -- presenting broadcasts the record it is handed, and the request above can block for the
+          -- whole service timeout, so this read belongs after it and not at the top of the pass
+          user' <- withStore $ \db -> getUser db userId
+          let issued = L.balanceStartTs balance' /= L.balanceStartTs balance
+          -- outside the badge lock: the chat lock must not be taken under it
+          unless retired $ presentIssuedBadge user' p now
+          emitBadgeAlert user' emitted p now balance'
+          -- retiring and presenting both replace the badge on the record read above, so it is read again
+          user'' <- withStore $ \db -> getUser db userId
+          when (retired || issued) $ toView . CEvtBadgeChanged user'' =<< getUserBadgeState user''
+          -- a snooze is the one wake that is not in the ledger: nothing else brings the alert back,
+          -- since support having ended leaves both ledger boundaries in the past
+          let snoozeAt = find (> now) alertSnoozeUntil
+              stalledAt = if requestDue && not issued then Just $ badgeStalledInterval `addUTCTime` now else Nothing
+          pure $ earliestTime [serviceAt, snoozeAt, stalledAt, badgeBoundary now (shownBadgeCredential user'' p) balance']
 
 -- | Support ended is the only alert raised here: the others need subscriptions, and warning before
 -- a prepaid badge ends is not actionable while topping up cannot credit months without issuing.
@@ -5339,12 +5349,12 @@ unansweredBadgeAlert now UserBadgePurchase {alertAcked, alertSnoozeUntil} balanc
       | alertAcked /= Just (kind, episode) || maybe False (now >=) alertSnoozeUntil -> Just alert
     _ -> Nothing
 
-emitBadgeAlert :: User -> BadgeMemory -> UserBadgePurchase -> UTCTime -> LedgerBalance -> CM ()
-emitBadgeAlert user BadgeMemory {emitted} p@UserBadgePurchase {badgePurchaseId, alertSnoozeUntil} now balance =
+emitBadgeAlert :: User -> TVar (Maybe BadgeOccurrence) -> UserBadgePurchase -> UTCTime -> LedgerBalance -> CM ()
+emitBadgeAlert user emitted p@UserBadgePurchase {alertSnoozeUntil} now balance =
   forM_ (unansweredBadgeAlert now p balance) $ \alert@BadgeAlert {kind, episode} -> do
-    let occurrence = (kind, episode, alertSnoozeUntil)
-    raised <- atomically $ stateTVar emitted $ \m -> (M.lookup badgePurchaseId m, M.insert badgePurchaseId occurrence m)
-    when (raised /= Just occurrence) $ toView $ CEvtBadgeAlert user alert
+    let occurrence = Just (kind, episode, alertSnoozeUntil)
+    raised <- atomically $ stateTVar emitted (,occurrence)
+    when (raised /= occurrence) $ toView $ CEvtBadgeAlert user alert
 
 -- | Read from stored rows alone; the worker's results follow as CEvtBadgeChanged.
 getUserBadgeState :: User -> CM (Maybe BadgeState)
@@ -5366,40 +5376,70 @@ getUserBadgeState user = do
           alert = unansweredBadgeAlert now p balance
         }
 
--- | Whether the service has anything to do for this balance, by the plan it would itself write.
-badgeWorkDue :: UTCTime -> LedgerBalance -> Bool
-badgeWorkDue now b = case L.ledgerPlan now Nothing b of
-  LedgerPlan {planRows = [], planIssuance = Nothing} -> False
-  _ -> True
-
 -- | How long a month that did not issue waits before it is tried again, whatever stopped it. Not
 -- derived from the failure, so a misclassified one cannot leave a funded badge to expire.
 badgeStalledInterval :: NominalDiffTime
 badgeStalledInterval = nominalDay
 
--- | The next month falling due, or the end of what is paid for.
-badgeBoundary :: UTCTime -> LedgerBalance -> Maybe UTCTime
-badgeBoundary now b = case filter (> now) [L.balanceStartTs b, L.paidThrough b] of
+-- | The wait after a service refusal, floored at initialInterval so answering 0 cannot spin the
+-- worker, and uncapped above it.
+badgeRetryAfter :: RetryInterval -> Maybe Word32 -> NominalDiffTime
+badgeRetryAfter RetryInterval {initialInterval} = maybe badgeStalledInterval (max floorWait . fromIntegral)
+  where
+    floorWait = fromIntegral initialInterval / 1000000
+
+-- | How far ahead of the shown credential's expiry the renewal is requested - a day, so a failure
+-- has that long to retry. The wake and the due check both derive from it and have to agree.
+badgeRequestLead :: NominalDiffTime
+badgeRequestLead = nominalDay
+
+-- | The credential the profile is showing for this purchase. Nothing when the purchase is not the
+-- one being shown, or when a crash left the issuance written and the profile not.
+shownBadgeCredential :: User -> UserBadgePurchase -> Maybe BadgeCredential
+shownBadgeCredential User {profile = LocalProfile {localBadge}} UserBadgePurchase {shown}
+  | not shown = Nothing
+  | otherwise = case localBadge of
+      Just (OwnBadge cred _) -> Just cred
+      _ -> Nothing
+
+credentialExpiry :: BadgeCredential -> UTCTime
+credentialExpiry (BadgeCredential _ _ _ BadgeInfo {badgeExpiry}) = badgeExpiry
+
+-- | Timed off the shown credential, not the period end: renewing around its shared expiry is what
+-- joins the anonymity set. Latest still equal to shown means this month has not been asked for.
+badgeRequestDue :: UTCTime -> Maybe BadgeCredential -> Maybe BadgeCredential -> LedgerBalance -> Bool
+badgeRequestDue now shownCred latestCred balance =
+  L.balanceMonths balance > 0 && latestCred == shownCred && maybe False lapsingSoon shownCred
+  where
+    lapsingSoon cred = credentialExpiry cred <= badgeRequestLead `addUTCTime` now
+
+-- | The request and the presentation, a day apart, both read off the credential the profile shows,
+-- and the end of what is paid for. The credential's expiry window is what covers renewal, so it
+-- says nothing about entitlement: paidThrough is when that ends and the badge has to come off.
+-- TODO [badges] every client whose credential shares an expiry requests at the same instant. Only
+-- the expiry has to be shared, so the request could fall anywhere in its lead without splitting
+-- the anonymity set - spreading the load, and any outage, off a single moment.
+badgeBoundary :: UTCTime -> Maybe BadgeCredential -> LedgerBalance -> Maybe UTCTime
+badgeBoundary now shownCred balance = case filter (> now) moments of
   [] -> Nothing
   ts -> Just $ minimum ts
+  where
+    moments = L.paidThrough balance : maybe [] renewalMoments shownCred
+    renewalMoments cred =
+      let expiry = credentialExpiry cred
+       in [negate badgeRequestLead `addUTCTime` expiry, expiry]
 
 earliestTime :: [Maybe UTCTime] -> Maybe UTCTime
 earliestTime ts = case catMaybes ts of
   [] -> Nothing
   ts' -> Just $ minimum ts'
 
--- | Whether a failed pass is worth repeating, and the least the service asked to wait for, in
--- microseconds, where it named one. Not repeating leaves the month until the next chat start or
--- activate, which on a desktop left running can be days, while the balance still funds it.
-data BadgeRetry = RetryBadge (Maybe Int64) | NoBadgeRetry
-  deriving (Eq, Show)
-
 -- | Only a failure that can clear on its own is repeated; every other throw is terminal, and
 -- repeating it would spin. Service errors are classified by retryAfter in requestBadgeIssue.
-badgeErrorRetry :: ChatError -> BadgeRetry
+badgeErrorRetry :: ChatError -> Bool
 badgeErrorRetry = \case
-  ChatErrorAgent {agentError} | retryable agentError -> RetryBadge Nothing
-  _ -> NoBadgeRetry
+  ChatErrorAgent {agentError} -> retryable agentError
+  _ -> False
   where
     -- an unanswered request is the likeliest renewal failure and temporaryOrHostError does not
     -- cover it: that classifies reaching the server, and this timeout is the agent's own
@@ -5407,31 +5447,10 @@ badgeErrorRetry = \case
       AGENT (A_SERVICE ASETimeout) -> True
       e -> temporaryOrHostError e
 
--- | A service asking for more time is honoured; one asking for less cannot bring the wait below
--- where this purchase's backoff has already reached.
-badgeAttemptDelay :: RetryInterval -> Int64 -> Maybe Int64 -> Int64
-badgeAttemptDelay RetryInterval {initialInterval, maxInterval} delay = \case
-  Nothing -> delay
-  Just asked -> max delay $ min maxInterval $ max initialInterval asked
-
--- | When to repeat a failed pass, advancing this purchase's backoff; 'Nothing' for a terminal
--- failure, which also forgets the backoff so the next month starts again from the initial wait.
-nextBadgeAttempt :: BadgeMemory -> Int64 -> UTCTime -> BadgeRetry -> CM (Maybe UTCTime)
-nextBadgeAttempt BadgeMemory {attempts} badgePurchaseId now = \case
-  NoBadgeRetry -> Nothing <$ atomically (modifyTVar' attempts $ M.delete badgePurchaseId)
-  RetryBadge asked -> do
-    ri@RetryInterval {initialInterval} <- asks $ badgeRetryInterval . config
-    waitFor <- atomically $ stateTVar attempts $ \m ->
-      let (elapsed, delay) = fromMaybe (0, initialInterval) $ M.lookup badgePurchaseId m
-          waitFor' = badgeAttemptDelay ri delay asked
-          elapsed' = elapsed + waitFor'
-       in (waitFor', M.insert badgePurchaseId (elapsed', nextRetryDelay elapsed' waitFor' ri) m)
-    pure $ Just $ addUTCTime (fromIntegral waitFor / 1000000) now
-
 -- | Ask the service for the month that is due and apply the response. A timeout writes nothing, so
 -- the same request is sent again on the next pass. 'Left' is a service error, already reported, and
--- says whether asking again could answer differently.
-requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either BadgeRetry LedgerBalance)
+-- carries when to try again, since a service error is answered rather than thrown.
+requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either UTCTime LedgerBalance)
 requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, purchaseKey, purchasePrivKey, masterKey} now = do
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
   withEntityLock "badgeIssue" (CLBadgeUser userId) $ do
@@ -5455,8 +5474,8 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, purchaseKey, purcha
         Right <$> (withStore' (`getBadgeLedgerBalance` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no balance") pure)
       J.Success BSPError {code, retryAfter} -> do
         eToView $ ChatError $ CECommandError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
-        -- retryAfter marks the transient codes, and every other code is terminal for this command
-        pure $ Left $ maybe NoBadgeRetry (RetryBadge . Just . (1000000 *) . fromIntegral) retryAfter
+        ri <- asks $ badgeRetryInterval . config
+        pure $ Left $ badgeRetryAfter ri retryAfter `addUTCTime` now
       _ -> throwCmdError "unexpected badge service response"
 
 -- | The signature covers the master key inside the credential, so it verifies no matter which key
@@ -5469,22 +5488,22 @@ verifyIssuedCredential masterKey (Just cred@(BadgeCredential _ credMasterKey _ _
     Just True -> Nothing <$ eToView (ChatError $ CEInternalError "issued badge credential is for a different master key")
     _ -> Nothing <$ eToView (ChatError $ CEInternalError "issued badge credential does not verify")
 
--- | Present the newest issued credential, unless the profile already carries it. It is written in
+-- | Present the newest issued credential once the one on the profile has run out. It is written in
 -- a separate transaction from the issuance, so a crash between the two is repaired at the next run.
 presentIssuedBadge :: User -> UserBadgePurchase -> UTCTime -> CM ()
-presentIssuedBadge user@User {profile = LocalProfile {localBadge}} UserBadgePurchase {badgePurchaseId, shown} now
+presentIssuedBadge user p@UserBadgePurchase {badgePurchaseId, shown} now
   | not shown = pure ()
   | otherwise = do
       cred_ <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
       forM_ cred_ $ \cred@(BadgeCredential _ _ _ info) ->
-        -- the profile itself says what is shown, so an unchanged pass tells no contact anything
-        unless (shownCredential == Just cred) $ do
+        when (presentDue cred) $ do
           user' <- withStore' $ \db -> setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus now (Just True) info))
           presentUserBadgeToContacts user'
   where
-    shownCredential = case localBadge of
-      Just (OwnBadge c _) -> Just c
-      _ -> Nothing
+    shownCred = shownBadgeCredential user p
+    -- Held back until the shown credential lapses, so the broadcast does not correlate with the
+    -- request that produced it. Nothing shown at all is the state a lost profile write leaves.
+    presentDue cred = Just cred /= shownCred && maybe True ((<= now) . credentialExpiry) shownCred
 
 -- | The visible half of "the badge expired".
 retireExpiredBadge :: User -> UserBadgePurchase -> UTCTime -> LedgerBalance -> CM Bool
@@ -5496,28 +5515,14 @@ retireExpiredBadge user UserBadgePurchase {badgePurchaseId, shown} now balance
         setUserBadge db user Nothing
       True <$ presentUserBadgeToContacts user'
 
--- | The sleeper is replaced rather than left to fire: badge horizons are a month, so untracked
--- ones would accumulate, one per activate.
-scheduleBadgeWake :: BadgeWorker -> UTCTime -> Maybe UTCTime -> CM' ()
-scheduleBadgeWake (Worker {doWork}, sleeper) now at_ = do
-  newSleeper <- forM at_ $ \at -> do
-    tId <- forkIO $ do
-      liftIO $ threadDelay' $ diffToMicroseconds $ diffUTCTime at now
-      atomically $ hasWorkToDo' doWork
-    liftIO $ mkWeakThreadId tId
-  atomically (swapTVar sleeper newSleeper) >>= mapM_ (liftIO . killWeakThread)
-
-killWeakThread :: Weak ThreadId -> IO ()
-killWeakThread t = deRefWeak t >>= mapM_ killThread
-
--- | A sleeper left running would signal a worker that is gone, a month after the chat stopped.
-stopBadgeWorkers :: TM.TMap UserId BadgeWorker -> IO ()
+-- | Waiting on the var rather than skipping an empty one is what catches a worker whose creator
+-- had not filled it when the map was swapped out.
+stopBadgeWorkers :: TM.TMap UserId (SessionVar BadgeWorker) -> IO ()
 stopBadgeWorkers workers =
-  atomically (swapTVar workers M.empty) >>= mapM_ stopWorker
+  atomically (swapTVar workers M.empty) >>= mapM_ cancelBadgeWorker
   where
-    stopWorker (w, sleeper) = do
-      cancelWorker w
-      atomically (swapTVar sleeper Nothing) >>= mapM_ killWeakThread
+    cancelBadgeWorker v =
+      void $ forkIO $ atomically (badgeWorkerAsync <$> readTMVar (sessionVar v)) >>= uninterruptibleCancel
 
 -- | Verify the credential before writing anything; the purchase, the statement's rows, the
 -- issuance and the profile's badge go in one transaction, and contacts are told after it commits.

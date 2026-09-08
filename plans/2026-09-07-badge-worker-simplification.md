@@ -74,7 +74,7 @@ Same shape as `retryOnError` (`FileTransfer/Agent.hs:260`), except that it class
 
 `updateUserBadge` returns the next wake, as `updateBadgePurchase` does today. Retry-or-stop is a property of the error rather than a return value, so no result type is needed and `BadgeRetry` collapses to `badgeErrorRetry :: ChatError -> Bool`.
 
-A service error is the exception, since it is returned rather than thrown: `requestBadgeIssue` becomes `Either (Maybe UTCTime) LedgerBalance`, where `Left` means do not retry and wake then. That is where a `retryAfter` hint lands — `withRetryInterval` owns the sleeping, so a wait the service names becomes a wake time directly — and where a terminal code lands as the stall floor.
+A service error is the exception, since it is returned rather than thrown: `requestBadgeIssue` becomes `Either (Maybe UTCTime) LedgerBalance`, where `Left` means do not retry and wake then. That is where a `retryAfter` hint lands — `withRetryInterval` owns the sleeping, so a wait the service names becomes a wake time — and where a terminal code lands as the stall floor. Floor the hint at `initialInterval`, since a service answering `0` would otherwise spin the worker, but do not cap it: a service that names a long wait is denying issuance, which it can already do by refusing, and `paidThrough` remains a wake candidate regardless of what it says.
 
 **The stall floor is a day.** A terminal failure is not retried, and the ledger boundary is a whole term away. The client's own state cannot change without the service, so the only thing that can make the next attempt succeed is the service being repaired — a day is slow enough not to press a service already failing, and fast enough to recover well inside the badge's 8-14 days of headroom.
 
@@ -96,7 +96,9 @@ Neither needs a marker. Both derive from the shown credential's expiry, which th
 - **Request** when the shown credential expires within a day, months remain, and the newest issuance is still the one shown — so nothing has been requested yet. A successful request moves the newest expiry a month out, and the condition stops holding by itself.
 - **Present** when the newest issuance differs from what is shown and the shown credential has expired — or when nothing is shown at all, which is the state a crash between the issuance write and the profile write leaves behind, and which `testPresentationCatchesUp` covers.
 
-Ordering falls out of that: presenting cannot precede requesting, because nothing differs until the request succeeds. `badgeBoundary` becomes the next of those two moments — `shownExpiry - 1 day` and `shownExpiry` — rather than the ledger's `balanceStartTs` or `paidThrough`.
+Ordering falls out of that: presenting cannot precede requesting, because nothing differs until the request succeeds.
+
+`badgeBoundary` becomes the next of three moments: `shownExpiry - 1 day`, `shownExpiry`, and `paidThrough`. The ledger's `balanceStartTs` goes, since renewal is no longer month-aligned — but `paidThrough` stays, and for a different reason from the other two. The credential's expiry window is what covers renewal: the client renews around it to join the anonymity set, and the recipients' grace period keeps the badge honoured while that happens. `paidThrough` is when entitlement itself ends. The worker has to be there for it, to retire the badge and raise the alert that tells the user to buy again; waiting for the credential to expire would leave them wearing a badge they have stopped paying for.
 
 Missing a week is safe. A worker whose first run is the Wednesday finds both conditions true and does both in one pass: that renewal loses its anonymity benefit, and nothing else changes, which is the same property every other wake here has.
 

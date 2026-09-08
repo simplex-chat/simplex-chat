@@ -15,7 +15,7 @@ module Simplex.Chat.Badges.Ledger
     grantMonths,
     issueMonth,
     addMonths,
-    endOfSundayAfter,
+    endOfMondayAfter,
     entryTypeColumns,
     entryTypeFromColumns,
     creditTypeTag,
@@ -92,7 +92,7 @@ issueMonth t b@LedgerBalance {balanceMonths, balanceStartTs}
   | otherwise = Just (period, b {balanceMonths = balanceMonths - 1, balanceStartTs = periodEnd})
   where
     periodEnd = monthAfter b 1
-    period = BadgePeriod {periodStart = balanceStartTs, periodEnd, badgeExpiry = endOfSundayAfter periodEnd}
+    period = BadgePeriod {periodStart = balanceStartTs, periodEnd, badgeExpiry = endOfMondayAfter periodEnd}
 
 data LedgerRow = LedgerRow
   { rowChange :: Int,
@@ -179,8 +179,10 @@ addMonths :: Integer -> UTCTime -> UTCTime
 addMonths n (UTCTime d t) = UTCTime (addGregorianMonthsClip n d) t
 
 -- Every badge in a week expires together, revealing nothing about when it was bought.
--- The end of a Sunday is the next Monday at 00:00, so this returns a Monday and 8 is right.
-endOfSundayAfter :: UTCTime -> UTCTime
-endOfSundayAfter (UTCTime d _) =
+-- The end of a Monday is the next Tuesday at 00:00, so this returns a Tuesday and 9 is right.
+-- Returning a Monday instead would put the expiry on Sunday evening in the Americas, leaving a
+-- renewal that failed there waiting for weekend support.
+endOfMondayAfter :: UTCTime -> UTCTime
+endOfMondayAfter (UTCTime d _) =
   let (_, _, dayOfWeek) = toWeekDate d -- 1 Monday .. 7 Sunday
-   in UTCTime (addDays (toInteger (8 - dayOfWeek)) d) 0
+   in UTCTime (addDays (toInteger (9 - dayOfWeek)) d) 0

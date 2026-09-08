@@ -16,7 +16,7 @@ import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Calendar.WeekDate (toWeekDate)
-import Data.Time.Clock (UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
+import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -28,7 +28,7 @@ import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
-import Simplex.Chat.Library.Commands (BadgeRetry (..), badgeAttemptDelay, badgeErrorRetry)
+import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeRetryAfter, badgeStalledInterval)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
 import Simplex.Messaging.Crypto.BBS
@@ -58,11 +58,12 @@ badgeTests = do
     it "credits an exhausted balance from the grant, not from the date it ran out" testGrantAfterExhausted
     it "does not issue months topped up inside an issued period" testGrantInsideIssuedPeriod
     it "clips month ends without losing the issued period start" testMonthEndClipping
-    it "expires at the end of the Sunday after the period" testSundayExpiry
+    it "expires at the end of the Monday after the period" testMondayExpiry
     it "stores the wire tag of every entry type, and rebuilds each from its stored JSON" testEntryTypeColumns
   describe "worker retry" $ do
     it "repeats a failure that can clear on its own, and no other" testRetryClassification
-    it "backs off to the cap, and honours what the service asks for within bounds" testRetryBackoff
+    it "backs off to the cap" testRetryBackoff
+    it "floors the wait a service asks for, and honours anything above it" testServiceRetryFloor
     it "sends retryAfter with the transient service codes and no other" testServiceRetryAfter
   describe "service protocol JSON" $ do
     it "redeemBadgeCode request matches the schema" testRedeemRequestJSON
@@ -384,18 +385,18 @@ testMonthEndClipping = do
       fmap (pEnd . fst) (issueMonth (at 2027 2 28) feb) `shouldBe` Just (at 2027 3 31)
     Nothing -> expectationFailure "January was not issued"
 
-testSundayExpiry :: IO ()
-testSundayExpiry = do
-  -- the end of Sunday 12 Apr is Monday 13 Apr 00:00
-  endOfSundayAfter (at 2026 4 10) `shouldBe` UTCTime (fromGregorian 2026 4 13) 0
-  endOfSundayAfter (at 2026 6 10) `shouldBe` UTCTime (fromGregorian 2026 6 15) 0
-  -- a period ending on a Monday still runs to the end of the following Sunday, never to zero days
-  endOfSundayAfter (at 2026 4 13) `shouldBe` UTCTime (fromGregorian 2026 4 20) 0
+testMondayExpiry :: IO ()
+testMondayExpiry = do
+  -- the end of Monday 13 Apr is Tuesday 14 Apr 00:00
+  endOfMondayAfter (at 2026 4 10) `shouldBe` UTCTime (fromGregorian 2026 4 14) 0
+  endOfMondayAfter (at 2026 6 10) `shouldBe` UTCTime (fromGregorian 2026 6 16) 0
+  -- a period ending on a Monday still runs to the end of the following Monday, never to zero days
+  endOfMondayAfter (at 2026 4 13) `shouldBe` UTCTime (fromGregorian 2026 4 21) 0
   let periodEnds = map (\d -> at 2026 4 d) [1 .. 30]
-      expiries = map endOfSundayAfter periodEnds
-  -- every expiry is a Monday midnight strictly after its period, by at most a week
-  expiries `shouldSatisfy` all (\(UTCTime d t) -> t == 0 && (\(_, _, wd) -> wd == 1) (toWeekDate d))
-  zipWith diffUTCTime expiries periodEnds `shouldSatisfy` all (\d -> d > 0 && d <= 7 * nominalDay)
+      expiries = map endOfMondayAfter periodEnds
+  -- every expiry is a Tuesday midnight more than a day after its period, and at most eight
+  expiries `shouldSatisfy` all (\(UTCTime d t) -> t == 0 && (\(_, _, wd) -> wd == 2) (toWeekDate d))
+  zipWith diffUTCTime expiries periodEnds `shouldSatisfy` all (\d -> d > nominalDay && d <= 8 * nominalDay)
 
 -- A failed renewal is otherwise left until the next chat start or activate, which on a desktop
 -- left running can be days - long enough for a funded badge to lapse.
@@ -403,41 +404,45 @@ testRetryClassification :: IO ()
 testRetryClassification = do
   let retryFor = badgeErrorRetry . chatErrorAgent
   -- an unanswered request is the likeliest renewal failure, and it is the agent's own error
-  retryFor (AGENT (A_SERVICE ASETimeout)) `shouldBe` RetryBadge Nothing
-  retryFor (BROKER "localhost" TIMEOUT) `shouldBe` RetryBadge Nothing
-  retryFor (BROKER "localhost" (NETWORK NETimeoutError)) `shouldBe` RetryBadge Nothing
+  retryFor (AGENT (A_SERVICE ASETimeout)) `shouldBe` True
+  retryFor (BROKER "localhost" TIMEOUT) `shouldBe` True
+  retryFor (BROKER "localhost" (NETWORK NETimeoutError)) `shouldBe` True
   -- terminal: the same request would fail the same way, and repeating it would spin
-  retryFor (AGENT (A_SERVICE ASEBadSignature)) `shouldBe` NoBadgeRetry
-  retryFor (AGENT (A_SERVICE (ASERejected "no"))) `shouldBe` NoBadgeRetry
-  badgeErrorRetry (ChatError (CECommandError "badge service error: unknown_purchase_key")) `shouldBe` NoBadgeRetry
+  retryFor (AGENT (A_SERVICE ASEBadSignature)) `shouldBe` False
+  retryFor (AGENT (A_SERVICE (ASERejected "no"))) `shouldBe` False
+  badgeErrorRetry (ChatError (CECommandError "unexpected badge service response")) `shouldBe` False
 
 -- A failure that never clears is repeated for as long as the balance funds a month, so the wait
 -- has to grow: at a fixed interval an annual code would ask hundreds of times a day, all year.
 testRetryBackoff :: IO ()
 testRetryBackoff = do
   let ri@RetryInterval {initialInterval, maxInterval} = badgeRetryInterval defaultChatConfig
-      -- the transition nextBadgeAttempt stores, so this follows production rather than restating it
-      advanceWith asked (elapsed, delay) =
-        let waitFor = badgeAttemptDelay ri delay asked
-            elapsed' = elapsed + waitFor
-         in (elapsed', nextRetryDelay elapsed' waitFor ri)
-      delays = map snd $ take 40 $ iterate (advanceWith Nothing) (0, initialInterval)
+      advance (elapsed, delay) =
+        let elapsed' = elapsed + delay
+         in (elapsed', nextRetryDelay elapsed' delay ri)
+      delays = map snd $ take 40 $ iterate advance (0, initialInterval)
   head delays `shouldBe` initialInterval
   delays `shouldSatisfy` all (\d -> d >= initialInterval && d <= maxInterval)
   delays `shouldSatisfy` nonDecreasing
   -- it reaches the cap rather than creeping towards it, and stays there
   last delays `shouldBe` maxInterval
-  -- the service's own value is honoured above the backoff, and clamped into the same bounds
-  badgeAttemptDelay ri initialInterval Nothing `shouldBe` initialInterval
-  badgeAttemptDelay ri initialInterval (Just 1) `shouldBe` initialInterval
-  badgeAttemptDelay ri initialInterval (Just $ maxInterval * 2) `shouldBe` maxInterval
-  badgeAttemptDelay ri initialInterval (Just $ initialInterval * 3) `shouldBe` initialInterval * 3
-  badgeAttemptDelay ri maxInterval (Just initialInterval) `shouldBe` maxInterval
-  -- the backoff advances from what was asked for, not from where it had reached, so a hint is not
-  -- spent on one attempt: one at the cap holds this purchase there for the rest of the session
-  let hinted = advanceWith (Just maxInterval) (0, initialInterval)
-  snd hinted `shouldBe` maxInterval
-  snd (advanceWith Nothing hinted) `shouldBe` maxInterval
+
+-- A service answering retryAfter 0 would put the next attempt at now, and the worker would ask
+-- again as fast as the round trip allows, for as long as the service kept answering that way.
+testServiceRetryFloor :: IO ()
+testServiceRetryFloor = do
+  let ri@RetryInterval {initialInterval, maxInterval} = badgeRetryInterval defaultChatConfig
+      floorWait = fromIntegral initialInterval / 1000000 :: NominalDiffTime
+      aboveCap = 2 * fromIntegral maxInterval / 1000000 :: NominalDiffTime
+  -- a code carrying no wait is terminal for this request, and waits what any stalled month waits
+  badgeRetryAfter ri Nothing `shouldBe` badgeStalledInterval
+  -- nothing the service names brings the wait below where a retry of its own would start
+  badgeRetryAfter ri (Just 0) `shouldBe` floorWait
+  badgeRetryAfter ri (Just 1) `shouldBe` floorWait
+  badgeRetryAfter ri (Just $ round floorWait) `shouldBe` floorWait
+  -- above that it is honoured as sent, and not capped: a service may know it is down for the day
+  badgeRetryAfter ri (Just 600) `shouldBe` 600
+  badgeRetryAfter ri (Just $ round aboveCap) `shouldBe` aboveCap
 
 -- badges-rpc.md defines retryAfter as marking the transient codes, and every other code as
 -- terminal for the command attempted. The client repeats a code that carries one on the service's

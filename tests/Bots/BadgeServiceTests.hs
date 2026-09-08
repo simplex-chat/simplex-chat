@@ -34,7 +34,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), generateMasterKey)
 import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, formatBadgeCode, parseBadgeCode, randomBadgeCode)
-import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag, endOfSundayAfter)
+import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag, endOfMondayAfter)
 import Simplex.Chat.Badges.Service
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
@@ -69,13 +69,14 @@ badgeServiceTests = do
   it "should credit a code's months and issue one credential per month" testCodeMonthsRenew
   it "should return the stored credential for a repeat inside an issued period" testRepeatInsideIssuedPeriod
   it "should lapse only the months that elapsed while the client was away" testLapseWhileAway
-  it "should round the last month's expiry up to the end of the Sunday after it" testLastMonthExpiryRounds
+  it "should round the last month's expiry up to the end of the Monday after it" testLastMonthExpiryRounds
   it "should sign a renewal with the master key stored on the purchase" testRenewalSignsWithStoredMasterKey
   it "should leave the client holding the same ledger rows as the service" testClientReplicatesLedger
-  it "should renew a badge whose month has elapsed, with no command" testWorkerRenews
+  it "should renew a badge whose credential is lapsing, with no command" testWorkerRenews
   it "should renew a badge whose newest ledger row is of an unknown type" testRenewsAfterUnknownEntry
   it "should catch up the months that lapsed while the client was stopped" testRenewsAfterRestart
   it "should stop showing a badge whose balance ran out, and tell contacts" testWorkerRetiresExpired
+  it "should retire when entitlement ends, not when the credential expires" testRetiresWhenEntitlementEnds
   it "should alert that support ended, survive a restart, and go silent once acknowledged" testEndedAlert
   it "should raise a snoozed alert once more when the snooze lapses" testSnoozedAlertReturns
   it "should renew a badge on a profile that is not active, without switching to it" testRenewalKeepsActiveProfile
@@ -471,7 +472,7 @@ testLastMonthExpiryRounds ps =
     map entryTag entries' `shouldBe` ["badge"]
     -- the last month the balance funds: nothing is left to issue after it
     map (\e -> let (c, m, _) = entryOf e in (c, m)) entries' `shouldBe` [(-1, 0)]
-    expiryOf renewed `shouldBe` Just (endOfSundayAfter (nextDue entries'))
+    expiryOf renewed `shouldBe` Just (endOfMondayAfter (nextDue entries'))
 
 -- A renewal states nothing, so the credential carries the master key stored with the purchase.
 -- The service used to sign whatever key the request supplied, checking only the badge type.
@@ -529,6 +530,13 @@ testClientReplicatesLedger ps =
 dueAtOf :: [ReplicatedRow] -> UTCTime
 dueAtOf rows = let (_, _, _, start, _, _) = last rows in start
 
+-- | The two clock positions a renewal needs: the request, a day before the shown credential
+-- lapses, and the presentation, as it lapses.
+renewalMoments :: [ReplicatedRow] -> (UTCTime, UTCTime)
+renewalMoments rows =
+  let expiry = endOfMondayAfter $ dueAtOf rows
+   in (addUTCTime (-nominalDay) expiry, expiry)
+
 issuedExpiries :: ChatController -> IO [UTCTime]
 issuedExpiries ChatController {chatStore} = do
   rows :: [(UTCTime, Int64)] <-
@@ -578,6 +586,17 @@ shownAndIssuedExpiry ChatController {chatStore} = withTransaction chatStore $ \d
       ((t, _) : _) -> t
       [] -> Nothing
 
+waitShownIssued :: HasCallStack => ChatController -> IO ()
+waitShownIssued cc = loop (100 :: Int)
+  where
+    -- both absent would compare equal, so the presence of a badge is asserted separately
+    loop 0 = shownAndIssuedExpiry cc >>= \(shown, issued) -> do
+      shown `shouldSatisfy` isJust
+      shown `shouldBe` issued
+    loop i =
+      shownAndIssuedExpiry cc >>= \(shown, issued) ->
+        if isJust shown && shown == issued then pure () else threadDelay 50000 >> loop (i - 1)
+
 -- The worker acts on its own schedule, so the test waits for the rows rather than for a response.
 waitLedgerRows :: HasCallStack => ChatController -> Int -> IO [ReplicatedRow]
 waitLedgerRows cc n = loop (100 :: Int)
@@ -624,8 +643,9 @@ redeemFirstBadge alice code = do
   alice <## "supporter badge - active"
   alice <##. "expires "
 
--- A month elapses and the badge renews from the worker's own pass, with no command sent by the
--- app: chat activate only signals it, and the work is derived from the stored ledger.
+-- A credential nears its expiry and the badge renews from the worker's own pass, with no command
+-- sent by the app: chat activate only signals it, and the work is derived from stored state.
+-- The request and the presentation are a day apart, so each renewal takes two passes.
 testWorkerRenews :: HasCallStack => TestParams -> IO ()
 testWorkerRenews ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
@@ -634,16 +654,26 @@ testWorkerRenews ps =
       redeemFirstBadge alice code
       redeemed <- ledgerRows (chatController alice) "badge_ledger"
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) redeemed `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge")]
-      -- the second month falls due while the app is running
-      setClockAt bsClock $ dueAtOf redeemed
+      -- the credential the profile shows is a day from lapsing, while the app is running
+      let (requestAt, presentAt) = renewalMoments redeemed
+      setClockAt bsClock requestAt
       alice ##> "/_app activate"
       alice <## "ok"
       renewed <- waitLedgerRows (chatController alice) 3
       -- the renewal reports itself, no command having asked for it
       alice <##. "1: supporter"
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-1, 1, Just "badge")]
-      -- and the third, so this is a schedule rather than a single catch-up
-      setClockAt bsClock $ dueAtOf renewed
+      -- the month is issued but not yet worn: the profile still carries the one it had
+      (shownEarly, issuedEarly) <- shownAndIssuedExpiry (chatController alice)
+      shownEarly `shouldNotBe` issuedEarly
+      -- a day later the held credential lapses and the new month is presented
+      setClockAt bsClock presentAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      waitShownIssued (chatController alice)
+      -- the third month too: the state a renewal leaves must support the next one
+      let (requestAt2, presentAt2) = renewalMoments renewed
+      setClockAt bsClock requestAt2
       alice ##> "/_app activate"
       alice <## "ok"
       alice <##. "1: supporter"
@@ -654,9 +684,10 @@ testWorkerRenews ps =
       serviceLedger <- ledgerRows cc "sx_badge_service_badge_ledger"
       renewed2 `shouldBe` serviceLedger
       -- and the profile shows the month last issued, not an earlier one
-      (shown, issued) <- shownAndIssuedExpiry (chatController alice)
-      shown `shouldBe` issued
-      shown `shouldSatisfy` isJust
+      setClockAt bsClock presentAt2
+      alice ##> "/_app activate"
+      alice <## "ok"
+      waitShownIssued (chatController alice)
 
 -- The newest row being of an unknown type must not stop the renewal: it is stored verbatim and
 -- read back to be asserted, rather than leaving the client with no entry to assert at all.
@@ -668,7 +699,7 @@ testRenewsAfterUnknownEntry ps =
       redeemFirstBadge alice code
       rows <- ledgerRows (chatController alice) "badge_ledger"
       insertUnknownLedgerEntry (chatController alice)
-      setClockAt bsClock $ dueAtOf rows
+      setClockAt bsClock $ fst $ renewalMoments rows
       alice ##> "/_app activate"
       alice <## "ok"
       renewed <- waitLedgerRows (chatController alice) 4
@@ -699,10 +730,8 @@ testRenewsAfterRestart ps =
       -- the lapse row was replicated rather than authored here
       serviceLedger <- ledgerRows cc "sx_badge_service_badge_ledger"
       renewed `shouldBe` serviceLedger
-      -- the badge shown is the month issued now, not the one held before the restart
-      (shown, issued) <- shownAndIssuedExpiry (chatController alice)
-      shown `shouldBe` issued
-      shown `shouldSatisfy` isJust
+      -- a week missed costs only the day between the two steps: one pass does both
+      waitShownIssued (chatController alice)
 
 -- When the balance is spent and the last period ends, the badge stops being shown and the profile
 -- update reaches contacts - the visible half of "the badge expired".
@@ -756,6 +785,31 @@ testWorkerRetiresExpired ps =
         bob <## "quantum resistant end-to-end encryption"
         bob <## currentChatVRangeInfo
 
+-- The credential outlives the balance by up to eight days, because its expiry covers renewal and
+-- not entitlement. A worker scheduled only on that expiry would leave the badge worn, and the user
+-- unasked to buy again, for the whole of that week - so paidThrough is a wake of its own.
+testRetiresWhenEntitlementEnds :: HasCallStack => TestParams -> IO ()
+testRetiresWhenEntitlementEnds ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 1
+      redeemFirstBadge alice code
+      rows <- ledgerRows (chatController alice) "badge_ledger"
+      -- three seconds short of the end, so the pass this signals only schedules the next one
+      setClockAt bsClock $ addUTCTime (-3) $ dueAtOf rows
+      alice ##> "/_app activate"
+      alice <## "ok"
+      -- that pass retired nothing and printed nothing: the badge is still worn and /p says so
+      alice ##> "/p"
+      alice <## "user profile: alice (Alice, * supporter)"
+      alice <## "use /p <name> [<bio>] to change it"
+      -- nothing signals the worker from here, and the credential has days left, so the wake that
+      -- produces these is the one the worker set for itself at paidThrough
+      alice <##. "badge alert: support_ended "
+      alice <##. "1: supporter"
+      alice <##. "badge alert: support_ended "
+      waitShownBadge (chatController alice) Nothing
+
 -- The alert is derived from stored state rather than kept pending, so it is still there after a
 -- restart; acknowledging records the occurrence it answered, and the same one is not raised again.
 testEndedAlert :: HasCallStack => TestParams -> IO ()
@@ -801,8 +855,9 @@ testRenewalKeepsActiveProfile ps =
       rows <- ledgerRows (chatController alice) "badge_ledger"
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
-      -- alice's month falls due while alisa is the profile in use
-      setClockAt bsClock $ dueAtOf rows
+      -- alice's credential is a day from lapsing while alisa is the profile in use
+      let (requestAt, presentAt) = renewalMoments rows
+      setClockAt bsClock requestAt
       alice ##> "/_app activate"
       alice <## "ok"
       renewed <- waitLedgerRows (chatController alice) 3
@@ -810,6 +865,11 @@ testRenewalKeepsActiveProfile ps =
         `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-1, 1, Just "badge")]
       -- the renewal is reported for alice, and the prefix is there because alice is not active
       alice <##. "[user: alice] 1: supporter"
+      -- presenting is the pass that writes alice's profile, and it is the one that could switch
+      setClockAt bsClock presentAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      waitShownIssued (chatController alice)
       alice ##> "/p"
       showActiveUser alice "alisa"
 
@@ -858,13 +918,19 @@ testRenewalKeepsProfileEdits ps =
             bob <## "contact alice updated bio: Alice Jones"
           ]
         rows <- ledgerRows (chatController alice) "badge_ledger"
-        setClockAt bsClock $ dueAtOf rows
+        let (requestAt, presentAt) = renewalMoments rows
+        setClockAt bsClock requestAt
         alice ##> "/_app activate"
         alice <## "ok"
         alice <##. "1: supporter"
         renewed <- waitLedgerRows (chatController alice) 3
         map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed
           `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-1, 1, Just "badge")]
+        -- presenting a day later is the pass that broadcasts the profile
+        setClockAt bsClock presentAt
+        alice ##> "/_app activate"
+        alice <## "ok"
+        waitShownIssued (chatController alice)
         -- The renewal's profile update carries the edited bio. Had it carried the profile the
         -- worker started with, bob would print a bio change back to "Alice" here, before the
         -- message - so the message arriving next is the assertion.
@@ -894,11 +960,16 @@ testPresentationCatchesUp ps =
         alice #> "@bob hi"
         bob <# "alice *> hi"
         rows <- ledgerRows (chatController alice) "badge_ledger"
-        setClockAt bsClock $ dueAtOf rows
+        let (requestAt, presentAt) = renewalMoments rows
+        setClockAt bsClock requestAt
         alice ##> "/_app activate"
         alice <## "ok"
         alice <##. "1: supporter"
         void $ waitLedgerRows (chatController alice) 3
+        setClockAt bsClock presentAt
+        alice ##> "/_app activate"
+        alice <## "ok"
+        waitShownIssued (chatController alice)
         expiries <- issuedExpiries (chatController alice)
         length expiries `shouldBe` 2
         let firstMonth = head expiries

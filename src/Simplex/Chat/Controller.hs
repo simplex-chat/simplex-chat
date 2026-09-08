@@ -93,6 +93,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Session (SessionVar)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
@@ -283,10 +284,11 @@ defaultInlineFilesConfig =
 
 data ChatDatabase = ChatDatabase {chatStore :: DBStore, agentStore :: DBStore}
 
--- | A badge worker and the sleeper it forks to wake itself at its next boundary, held together so
--- that the two cannot get out of step. The sleeper is tracked to be replaced rather than left to
--- accumulate - badge horizons are a month, not minutes.
-type BadgeWorker = (Worker, TVar (Maybe (Weak ThreadId)))
+-- | Signalling badgeWork wakes the worker from its own wait; a full var means it has work to do.
+data BadgeWorker = BadgeWorker
+  { badgeWorkerAsync :: Async (),
+    badgeWork :: TMVar ()
+  }
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
@@ -321,7 +323,8 @@ data ChatController = ChatController
     deliveryJobWorkers :: TMap DeliveryWorkerKey Worker,
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
     -- one badge worker per user: badge state is per profile, and one profile must not stall another
-    badgeWorkers :: TMap UserId BadgeWorker,
+    badgeWorkers :: TMap UserId (SessionVar BadgeWorker),
+    badgeSeq :: TVar Int,
     relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
     webPreviewState :: Maybe WebPreviewState,
     chatRelayTests :: TMap ConnId RelayTest,
