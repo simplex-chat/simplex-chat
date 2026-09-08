@@ -170,6 +170,8 @@ Můžete:
 
 Pokud uvažujete o vývoji s platformou SimpleX, obraťte se na nás pro případné rady a podporu.
 
+Připojte se také ke skupině [#simplex-devs](https://smp6.simplex.im/g#Drx3efC-n418AuSpzTspw9SER0iJwrQTmKBafQHwkKM), kde můžete klást otázky a sdílet své úspěchy.
+
 ## Plán postupu
 
 - ✅ Snadné nasazení serveru SimpleX s ukládáním zpráv v paměti, bez jakýchkoli závislostí.
@@ -231,6 +233,13 @@ Pokud uvažujete o vývoji s platformou SimpleX, obraťte se na nás pro přípa
 Skupiny vytvořené uživateli najdete v [SimpleX Directory](https://simplex.chat/directory/). Tato služba je dostupná také jako [SimpleX bot](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok), pomocí kterého můžete do adresáře přidat vlastní skupiny a komunity. Za obsah sdílený ve skupinách z adresáře neneseme odpovědnost.
 
 Pokud se chcete na něco zeptat, můžete se připojit k anglicky mluvící skupině: [#SimpleX users group](https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM)
+
+Existuje také skupina [#simplex-devs](https://smp6.simplex.im/g#Drx3efC-n418AuSpzTspw9SER0iJwrQTmKBafQHwkKM) pro vývojáře, kteří staví na platformě SimpleX:
+
+- chatovací boty a automatizace
+- integrace s dalšími aplikacemi
+- sociální aplikace a služby
+- atd.
 
 K těmto a dalším skupinám se můžete připojit buď otevřením těchto odkazů v aplikaci, nebo jejich otevřením v prohlížeči počítače a naskenováním QR kódu.
 

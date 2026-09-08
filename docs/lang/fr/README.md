@@ -52,6 +52,13 @@ Vous trouverez les groupes créés par les utilisateurs dans le [SimpleX Directo
 
 Vous pouvez rejoindre un groupe anglophone pour poser des questions : [#SimpleX users group](https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM)
 
+Il existe également un groupe [#simplex-devs](https://smp6.simplex.im/g#Drx3efC-n418AuSpzTspw9SER0iJwrQTmKBafQHwkKM) pour les développeurs qui construisent sur la plateforme SimpleX :
+
+- des bots de chat et des automatisations
+- des intégrations avec d'autres applications
+- des applications et services sociaux
+- etc.
+
 Vous pouvez rejoindre ces groupes et d'autres encore soit en ouvrant ces liens dans l'application, soit en les ouvrant dans un navigateur de bureau et en scannant le code QR.
 
 ## Établir une connexion privée
@@ -253,6 +260,8 @@ Vous pouvez :
 - exécuter [simplex-chat terminal CLI](/docs/lang/fr/CLI.md) pour exécuter des commandes de chat individuelles, par exemple pour envoyer des messages dans le cadre de l'exécution d'un script shell.
 
 Si vous envisagez de développer avec la plateforme SimpleX, n'hésitez pas à nous contacter pour obtenir des conseils et de l'aide.
+
+Rejoignez également le groupe [#simplex-devs](https://smp6.simplex.im/g#Drx3efC-n418AuSpzTspw9SER0iJwrQTmKBafQHwkKM) pour poser vos questions et partager vos réussites.
 
 ## Feuille de route
 
