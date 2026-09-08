@@ -1,4 +1,4 @@
-| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/docs/README.md), [FR](/docs/lang/fr/README.md), [PL](/docs/lang/pl/README.md) |
+| Aktualizováno 07.02.2023 | Jazyky: CZ, [EN](/README.md), [FR](/docs/lang/fr/README.md), [PL](/docs/lang/pl/README.md) |
 
 <img src="images/simplex-chat-logo.svg" alt="SimpleX logo" width="100%">
 
@@ -42,12 +42,13 @@
 - [Rychlá instalace terminálové aplikace](#zap-quick-installation-of-a-terminal-app)
 - [Návrh platformy SimpleX](#simplex-platform-design)
 - [Soukromí: technické detaily a omezení](#privacy-technical-details-and-limitations)
-- [Pro vývojáře](#for-developers)
+- [Pro vývojáře](#pro-vývojáře)
 - [Plán](#roadmap)
-- [Join a user group](#join-a-user-group)
+- [Spojte se s týmem](#spojte-se-s-týmem)
+- [Připojte se ke skupině uživatelů](#připojte-se-ke-skupině-uživatelů)
 - [Přeložit aplikace](#translate-the-apps)
 - [Přispívat](#contribute)
-- [Pomozte nám s dary](#help-us-with-donations)
+- [Pomozte nám s dary](#pomozte-nám-s-dary)
 - [Prohlášení o vyloučení odpovědnosti, bezpečnostní kontakt, licence](#disclaimers)
 
 ## Proč záleží na ochraně osobních údajů
@@ -170,6 +171,8 @@ Můžete:
 
 Pokud uvažujete o vývoji s platformou SimpleX, obraťte se na nás pro případné rady a podporu.
 
+Připojte se také ke skupině [#simplex-devs](https://smp6.simplex.im/g#Drx3efC-n418AuSpzTspw9SER0iJwrQTmKBafQHwkKM), kde můžete klást otázky a sdílet své úspěchy.
+
 ## Plán postupu
 
 - ✅ Snadné nasazení serveru SimpleX s ukládáním zpráv v paměti, bez jakýchkoli závislostí.
@@ -226,18 +229,30 @@ Pokud uvažujete o vývoji s platformou SimpleX, obraťte se na nás pro přípa
 - Relé pro doručování zpráv pro odesílatele (pro skrytí IP adresy před servery příjemců a snížení provozu).
 - Vysokokapacitní víceuzlové relé SMP.
 
+## Spojte se s týmem
+
+S týmem se můžete spojit volbou "Zaslat otázky a nápady" v nastavení aplikace nebo prostřednictvím naší [adresy SimpleX](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw). Napište nám:
+
+- s jakýmkoli dotazem
+- s návrhem na vylepšení
+- s čímkoli, co je relevantní
+
+Na dotazy odpovídáme ručně, takže odpověď není okamžitá - může trvat až 24 hodin.
+
 ## Připojte se ke skupině uživatelů
 
-Pokud se chcete na něco zeptat, můžete se připojit k anglicky mluvící skupině: [#SimpleX users group](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fos8FftfoV8zjb2T89fUEjJtF7y64p5av%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAQqMgh0fw2lPhjn3PDIEfAKA_E0-gf8Hr8zzhYnDivRs%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22lBPiveK2mjfUH43SN77R0w%3D%3D%22%7D)
+Skupiny vytvořené uživateli najdete v [SimpleX Directory](https://simplex.chat/directory/). Tato služba je dostupná také jako [SimpleX bot](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok), pomocí kterého můžete do adresáře přidat vlastní skupiny a komunity. Za obsah sdílený ve skupinách z adresáře neneseme odpovědnost.
 
-Existuje také několik skupin v jiných jazycích než v angličtině, do kterých jsme nechali přeložit rozhraní aplikací. Tyto skupiny slouží k testování a pokládání otázek ostatním uživatelům SimpleX Chat. Ne vždy v nich odpovídáme na dotazy, proto je prosím pokládejte v některé z anglicky mluvících skupin.
+Pokud se chcete na něco zeptat, můžete se připojit k anglicky mluvící skupině: [#SimpleX users group](https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM)
 
-- [\#SimpleX-DE](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FkIEl7OQzcp-J6aDmjdlQbRJwqkcZE7XR%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAR16PCu02MobRmKAsjzhDWMZcWP9hS8l5AUZi-Gs8z18%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22puYPMCQt11yPUvgmI5jCiw%3D%3D%22%7D) (German-speaking).
-- [\#SimpleX-FR](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FvIHQDxTor53nwnWWTy5cHNwQQAdWN5Hw%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAPdgK1eBnETmgiqEQufbUkydKBJafoRx4iRrtrC2NAGc%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%221FyUryBPza-1ZFFE80Ekbg%3D%3D%22%7D) (francouzsky mluvící).
-- [\#SimpleX-RU](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FXZyt3hJmWsycpN7Dqve_wbrAqb6myk1R%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAMFVIoytozTEa_QXOgoZFq_oe0IwZBYKvW50trSFXzXo%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22xz05ngjA3pNIxLZ32a8Vxg%3D%3D%22%7D) (Russian-speaking).
-- [\#SimpleX-IT](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F0weR-ZgDUl7ruOtI_8TZwEsnJP6UiImA%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAq4PSThO9Fvb5ydF48wB0yNbpzCbuQJCW3vZ9BGUfcxk%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22e-iceLA0SctC62eARgYDWg%3D%3D%22%7D) (Italian-speaking).
+Existuje také skupina [#simplex-devs](https://smp6.simplex.im/g#Drx3efC-n418AuSpzTspw9SER0iJwrQTmKBafQHwkKM) pro vývojáře, kteří staví na platformě SimpleX:
 
-K těmto skupinám se můžete připojit buď otevřením těchto odkazů v aplikaci, nebo jejich otevřením v prohlížeči počítače a naskenováním QR kódu.
+- chatovací boty a automatizace
+- integrace s dalšími aplikacemi
+- sociální aplikace a služby
+- atd.
+
+K těmto a dalším skupinám se můžete připojit buď otevřením těchto odkazů v aplikaci, nebo jejich otevřením v prohlížeči počítače a naskenováním QR kódu.
 
 Připojte se prostřednictvím aplikace a sdílejte, co se děje, a pokládejte případné dotazy!
 
@@ -276,7 +291,7 @@ Vaše dary nám pomohou získat další finanční prostředky - jakákoli čás
 Přispět je možné prostřednictvím:
 
 - [GitHub](https://github.com/sponsors/simplex-chat) - je to pro nás bez provize.
-- OpenCollective](https://opencollective.com/simplex-chat) - účtuje si provizi a přijímá také dary v kryptoměnách.
+- [OpenCollective](https://opencollective.com/simplex-chat) - účtuje si provizi a přijímá také dary v kryptoměnách.
 - Adresa Monero: 8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c.
 - Bitcoinová adresa: bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u
 - BCH adresa: bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg
