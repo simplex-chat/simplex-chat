@@ -79,7 +79,14 @@ function setupRegisterOverlay() {
     }
 
     openBtn.addEventListener('click', openOverlay);
-    form.addEventListener('submit', closeOverlay);
+    form.addEventListener('submit', () => {
+        const submit = form.querySelector('[type="submit"]');
+        if (!submit) return;
+        setTimeout(() => {
+            submit.disabled = true;
+            submit.value = 'Submitting...';
+        }, 0);
+    });
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay || e.target.closest('.close-register')) closeOverlay();
     });
