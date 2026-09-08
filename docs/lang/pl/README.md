@@ -42,7 +42,7 @@
 
 ## Połącz się z naszym zespołem
 
-Możesz połączyć się z naszym zespołem za pośrednictwem aplikacji, korzystając z przycisku "czat z deweloperami" który dostępny jest w przypadku gdy nie masz konwersacji na swoim profilu, opcji "wysyłaj pytania i pomysły" w ustawieniach aplikacji lub za pośrednictwem naszego [adresu SimpleX](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion). Please connect to:
+Możesz połączyć się z naszym zespołem za pośrednictwem aplikacji, korzystając z przycisku "czat z deweloperami" który dostępny jest w przypadku gdy nie masz konwersacji na swoim profilu, opcji "wysyłaj pytania i pomysły" w ustawieniach aplikacji lub za pośrednictwem naszego [adresu SimpleX](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw). Please connect to:
 
 - by zadać dowolne pytania
 - by zasugerować dowolne ulepszenia
