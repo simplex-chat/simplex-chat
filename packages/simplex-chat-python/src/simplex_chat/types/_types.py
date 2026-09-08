@@ -2320,8 +2320,6 @@ NameErrorType = NameErrorType_NO_RESOLVER | NameErrorType_NOT_FOUND | NameErrorT
 
 NameErrorType_Tag = Literal["NO_RESOLVER", "NOT_FOUND", "RESOLVER"]
 
-NameReservedReason = Literal["unspecified", "trademark", "publicInterest", "offensive", "internal", "premium", "unknown"]
-
 class NetworkError_connectError(TypedDict):
     type: Literal["connectError"]
     connectError: str
@@ -2861,37 +2859,31 @@ class SimplexDomainProof(TypedDict):
 
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
 
-# What the names router knows about a name that is not this profile's. `premium` is in attoUSD (1e-18 USD), a 256-bit integer, so it travels as a decimal string.
-
-class SimplexNameAvailability_notRegistered(TypedDict):
-    type: Literal["notRegistered"]
+# What the registry says about a name that is not this profile's. `yearPriceUSD` is US cents for one year, absent when the label is shorter than `minLabelLength`; `auctionUntil` is set while the name also costs a premium, which the registry prices continuously and so is not quoted.
 
 class SimplexNameAvailability_registered(TypedDict):
     type: Literal["registered"]
     expires: NotRequired[str]  # ISO-8601 timestamp
+    graceUntil: NotRequired[str]  # ISO-8601 timestamp
+    reserved: NotRequired[str]
 
-class SimplexNameAvailability_inGrace(TypedDict):
-    type: Literal["inGrace"]
-    graceEnds: str  # ISO-8601 timestamp
-
-class SimplexNameAvailability_inAuction(TypedDict):
-    type: Literal["inAuction"]
-    premium: str
-    auctionEnds: str  # ISO-8601 timestamp
+class SimplexNameAvailability_available(TypedDict):
+    type: Literal["available"]
+    yearPriceUSD: NotRequired[int]  # int64
+    minLabelLength: int  # int
+    auctionUntil: NotRequired[str]  # ISO-8601 timestamp
 
 class SimplexNameAvailability_reserved(TypedDict):
     type: Literal["reserved"]
-    reason: "NameReservedReason"
+    reason: str
 
 SimplexNameAvailability = (
-    SimplexNameAvailability_notRegistered
-    | SimplexNameAvailability_registered
-    | SimplexNameAvailability_inGrace
-    | SimplexNameAvailability_inAuction
+    SimplexNameAvailability_registered
+    | SimplexNameAvailability_available
     | SimplexNameAvailability_reserved
 )
 
-SimplexNameAvailability_Tag = Literal["notRegistered", "registered", "inGrace", "inAuction", "reserved"]
+SimplexNameAvailability_Tag = Literal["registered", "available", "reserved"]
 
 class SimplexNameInfo(TypedDict):
     nameType: "SimplexNameType"

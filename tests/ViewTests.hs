@@ -11,16 +11,17 @@ viewTests = do
   testRecent
   testPremiumUsd
 
--- the registry prices in attoUSD, which no one can read at a glance
+-- the registry prices in cents, which no one reads at a glance
 testPremiumUsd :: Spec
-testPremiumUsd = describe "auction premium in USD" $ do
-  it "converts attoUSD to whole dollars" $
-    usd "99999952316384526016153087" `shouldBe` "$99999952"
-  it "rounds down, so under a dollar reads as zero" $ do
-    usd "999999999999999999" `shouldBe` "$0"
-    usd "1000000000000000000" `shouldBe` "$1"
-  it "shows a price it cannot read rather than dropping it" $
-    usd "not-a-number" `shouldBe` "not-a-number"
+testPremiumUsd = describe "name price in USD" $ do
+  it "shows dollars and cents" $ do
+    usd 12793 `shouldBe` "$127.93"
+    usd 100 `shouldBe` "$1.00"
+  it "pads the cents" $ do
+    usd 105 `shouldBe` "$1.05"
+    usd 5 `shouldBe` "$0.05"
+  it "shows a free name as zero rather than blank" $
+    usd 0 `shouldBe` "$0.00"
 
 testRecent :: Spec
 testRecent = describe "recent" $ do

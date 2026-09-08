@@ -46,7 +46,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Client
 import Simplex.Messaging.Crypto.File
 import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
-import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NameReservedReason (..), NetworkError (..), ProxyError (..))
+import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NetworkError (..), ProxyError (..))
 import Simplex.Messaging.Protocol.Types (ClientNotice (..))
 import Simplex.Messaging.Transport
 import Simplex.RemoteControl.Types
@@ -326,7 +326,6 @@ chatTypesDocsData =
     (sti @MsgSigStatus, STEnum, "MSS", [], "", ""),
     (sti @MsgVerified, STUnion, "MV", [], "", ""),
     (sti @NameErrorType, STUnion, "", [], "", ""),
-    (sti @NameReservedReason, STEnum, "NR", [], "", ""),
     (sti @NetworkError, STUnion, "NE", [], "", ""),
     (sti @NewUser, STRecord, "", [], "", ""),
     (sti @NoteFolder, STRecord, "", [], "", ""),
@@ -365,7 +364,7 @@ chatTypesDocsData =
     (sti @SimplexDomainError, STUnion, "SDE", [], "", ""),
     (sti @SimplexDomainProof, STRecord, "", [], "", ""),
     (sti @SimplexLinkType, STEnum, "XL", [], "", ""),
-    (sti @SimplexNameAvailability, STUnion, "SNA", [], "", "What the names router knows about a name that is not this profile's. `premium` is in attoUSD (1e-18 USD), a 256-bit integer, so it travels as a decimal string."),
+    (sti @SimplexNameAvailability, STUnion, "SNA", [], "", "What the registry says about a name that is not this profile's. `yearPriceUSD` is US cents for one year, absent when the label is shorter than `minLabelLength`; `auctionUntil` is set while the name also costs a premium, which the registry prices continuously and so is not quoted."),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
     (sti @SimplexNameType, STEnum, "NT", [], "", ""),
     (sti @SimplexTLD, STEnum, "TLD", [], "", ""),
@@ -562,7 +561,6 @@ deriving instance Generic MsgReceiptStatus
 deriving instance Generic MsgSigStatus
 deriving instance Generic MsgVerified
 deriving instance Generic NameErrorType
-deriving instance Generic NameReservedReason
 deriving instance Generic NetworkError
 deriving instance Generic NewUser
 deriving instance Generic NoteFolder

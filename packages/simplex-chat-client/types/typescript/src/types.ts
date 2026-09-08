@@ -3314,16 +3314,6 @@ export namespace NameErrorType {
   }
 }
 
-export enum NameReservedReason {
-  Unspecified = "unspecified",
-  Trademark = "trademark",
-  PublicInterest = "publicInterest",
-  Offensive = "offensive",
-  Internal = "internal",
-  Premium = "premium",
-  Unknown = "unknown",
-}
-
 export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
@@ -4103,45 +4093,37 @@ export enum SimplexLinkType {
   Channel = "channel",
   Relay = "relay",
 }
-// What the names router knows about a name that is not this profile's. `premium` is in attoUSD (1e-18 USD), a 256-bit integer, so it travels as a decimal string.
+// What the registry says about a name that is not this profile's. `yearPriceUSD` is US cents for one year, absent when the label is shorter than `minLabelLength`; `auctionUntil` is set while the name also costs a premium, which the registry prices continuously and so is not quoted.
 
 export type SimplexNameAvailability = 
-  | SimplexNameAvailability.NotRegistered
   | SimplexNameAvailability.Registered
-  | SimplexNameAvailability.InGrace
-  | SimplexNameAvailability.InAuction
+  | SimplexNameAvailability.Available
   | SimplexNameAvailability.Reserved
 
 export namespace SimplexNameAvailability {
-  export type Tag = "notRegistered" | "registered" | "inGrace" | "inAuction" | "reserved"
+  export type Tag = "registered" | "available" | "reserved"
 
   interface Interface {
     type: Tag
   }
 
-  export interface NotRegistered extends Interface {
-    type: "notRegistered"
-  }
-
   export interface Registered extends Interface {
     type: "registered"
     expires?: string // ISO-8601 timestamp
+    graceUntil?: string // ISO-8601 timestamp
+    reserved?: string
   }
 
-  export interface InGrace extends Interface {
-    type: "inGrace"
-    graceEnds: string // ISO-8601 timestamp
-  }
-
-  export interface InAuction extends Interface {
-    type: "inAuction"
-    premium: string
-    auctionEnds: string // ISO-8601 timestamp
+  export interface Available extends Interface {
+    type: "available"
+    yearPriceUSD?: number // int64
+    minLabelLength: number // int
+    auctionUntil?: string // ISO-8601 timestamp
   }
 
   export interface Reserved extends Interface {
     type: "reserved"
-    reason: NameReservedReason
+    reason: string
   }
 }
 

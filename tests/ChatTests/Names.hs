@@ -105,7 +105,7 @@ testConnectByNameNotFound ps = withSmpServerAndNames $ \_reg ->
     test _alice bob = do
       enableNamesRole bob
       bob ##> "/c @nobody.simplex"
-      bob <## "SimpleX name nobody.simplex is not registered"
+      bob <## "SimpleX name nobody.simplex can be registered for $1.00 a year"
 
 testSetNameNotOwnAddress :: HasCallStack => TestParams -> IO ()
 testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
@@ -120,7 +120,7 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
       alice ##> "/ad"
       _ <- getContactLinks alice True
       alice ##> "/_set domain 1 alice.simplex"
-      alice <## "SimpleX name alice.simplex is registered to someone else"
+      alice <## "SimpleX name alice.simplex is registered to someone else until 2027-06-24"
 
 -- a self-claimed name is never auto-verified from link data: the claim is not proof of ownership
 testChannelDomainLinkJoinUnverified :: HasCallStack => TestParams -> IO ()

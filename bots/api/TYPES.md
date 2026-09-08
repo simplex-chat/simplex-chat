@@ -142,7 +142,6 @@ This file is generated automatically.
 - [MsgSigStatus](#msgsigstatus)
 - [MsgVerified](#msgverified)
 - [NameErrorType](#nameerrortype)
-- [NameReservedReason](#namereservedreason)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
@@ -3036,20 +3035,6 @@ RESOLVER:
 
 ---
 
-## NameReservedReason
-
-**Enum type**:
-- "unspecified"
-- "trademark"
-- "publicInterest"
-- "offensive"
-- "internal"
-- "premium"
-- "unknown"
-
-
----
-
 ## NetworkError
 
 **Discriminated union type**:
@@ -3725,29 +3710,25 @@ UnknownDomain:
 
 ## SimplexNameAvailability
 
-What the names router knows about a name that is not this profile's. `premium` is in attoUSD (1e-18 USD), a 256-bit integer, so it travels as a decimal string.
+What the registry says about a name that is not this profile's. `yearPriceUSD` is US cents for one year, absent when the label is shorter than `minLabelLength`; `auctionUntil` is set while the name also costs a premium, which the registry prices continuously and so is not quoted.
 
 **Discriminated union type**:
-
-NotRegistered:
-- type: "notRegistered"
 
 Registered:
 - type: "registered"
 - expires: UTCTime?
+- graceUntil: UTCTime?
+- reserved: string?
 
-InGrace:
-- type: "inGrace"
-- graceEnds: UTCTime
-
-InAuction:
-- type: "inAuction"
-- premium: string
-- auctionEnds: UTCTime
+Available:
+- type: "available"
+- yearPriceUSD: int64?
+- minLabelLength: int
+- auctionUntil: UTCTime?
 
 Reserved:
 - type: "reserved"
-- reason: [NameReservedReason](#namereservedreason)
+- reason: string
 
 
 ---

@@ -27,7 +27,9 @@ import Network.Wai (Application, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Names.Record (NameRecord (..))
 import Simplex.Messaging.Server.Names (NamesConfig (..))
-import Simplex.Messaging.SimplexName (SimplexNameInfo (..), fullDomainName, hashedDomain)
+import Simplex.Messaging.Protocol (queryName, nameQuery)
+import Simplex.Messaging.SimplexName (SimplexNameInfo (..))
+import Simplex.Messaging.Transport (currentClientSMPRelayVersion)
 
 type NameRegistry = TVar (Map Text NameRecord)
 
@@ -47,10 +49,19 @@ withNameResolver action = do
       send $ responseLBS st [(hContentType, "application/json")] body
     -- the real resolver reports the registration status next to the record, and
     -- names the failure in the body when there is none; availability reads those
+    -- a registered name is dated, and an unregistered one is priced: the router
+    -- reports neither without the other, so the stub answers as the real
+    -- resolver does
     resolved r = J.encode $ case J.toJSON r of
-      J.Object o -> J.Object $ JKM.insert "status" (J.String "registered") o
+      J.Object o ->
+        J.Object $
+          JKM.insert "status" (J.String "registered") $
+            JKM.insert "expires" (J.Number 1813853483) $
+              JKM.insert "graceEnds" (J.Number 1821629483) o
       v -> v
-    unregistered = "{\"error\":\"unregistered\"}"
+    unregistered =
+      "{\"error\":\"unregistered\",\"rentPrices\":{\"3\":12793,\"4\":3198},\
+      \\"basePrice\":100,\"minLabelLength\":3}"
 
 -- | Register a name's domain to resolve to the given record, under the hashed
 -- form of its second-level label. That is the only form a current client asks
@@ -58,7 +69,7 @@ withNameResolver action = do
 -- lookups regressed to plaintext.
 registerName :: TVar (Map Text NameRecord) -> SimplexNameInfo -> NameRecord -> IO ()
 registerName reg SimplexNameInfo {nameDomain} r =
-  atomically $ modifyTVar' reg $ M.insert (fullDomainName (hashedDomain nameDomain)) r
+  atomically $ modifyTVar' reg $ M.insert (queryName (nameQuery currentClientSMPRelayVersion nameDomain)) r
 
 contactNameRecord :: Text -> Text -> NameRecord
 contactNameRecord name link = (emptyRecord name) {nrSimplexContact = [link]}

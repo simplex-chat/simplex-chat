@@ -830,31 +830,33 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
 
 availabilityReason :: SimplexNameAvailability -> B.ByteString
 availabilityReason = \case
-  SNANotRegistered -> "is not registered"
-  SNARegistered expires_ -> "is registered to someone else" <> maybe "" ((" until " <>) . day) expires_
-  SNAInGrace graceEnds -> "has expired, and its owner can renew it until " <> day graceEnds
-  SNAInAuction premium auctionEnds -> "has expired and anyone can register it, at a premium of " <> usd premium <> " until " <> day auctionEnds
+  SNARegistered {expires, reserved} ->
+    "is registered to someone else"
+      <> maybe "" ((" until " <>) . day) expires
+      <> maybe "" ((", and reserved" <>) . reservedReason) reserved
+  SNAAvailable {yearPriceUSD = Nothing, minLabelLength} ->
+    "is too short: names need at least " <> B.pack (show minLabelLength) <> " characters"
+  SNAAvailable {yearPriceUSD = Just cents, auctionUntil} ->
+    "can be registered for " <> usd cents <> " a year"
+      <> maybe "" ((", plus a premium until " <>) . day) auctionUntil
   SNAReserved r -> "is reserved" <> reservedReason r
 
--- | The registry prices in attoUSD (1e-18 USD); whole dollars is what a person
--- reads. Rounded down, so a premium under a dollar shows as $0.
-usd :: Text -> B.ByteString
-usd atto = case TR.decimal atto of
-  Right (n :: Integer, _) -> "$" <> B.pack (show (n `div` (10 :: Integer) ^ (18 :: Int)))
-  Left _ -> encodeUtf8 atto
+-- | The registry prices in US cents; dollars and cents is what a person reads.
+usd :: Int64 -> B.ByteString
+usd cents = "$" <> B.pack (show d) <> "." <> B.pack (pad (show c))
+  where
+    (d, c) = cents `divMod` 100
+    pad t = replicate (2 - length t) '0' <> t
 
 day :: UTCTime -> B.ByteString
 day = B.pack . formatTime defaultTimeLocale "%Y-%m-%d"
 
 reservedReason :: NameReservedReason -> B.ByteString
 reservedReason = \case
-  NRUnspecified -> ""
-  NRTrademark -> " to protect a trademark"
-  NRPublicInterest -> " in the public interest"
-  NROffensive -> " as offensive"
-  NRInternal -> " for SimpleX"
-  NRPremium -> " as a premium name"
-  NRUnknown -> "" -- a reason this version cannot word
+  NRRInternal -> " for SimpleX"
+  NRRTrademark -> " to protect a trademark"
+  NRRCommunity -> " for the community"
+  NRRUnknown _ -> "" -- a reason this version cannot word
 
 localTs :: TimeZone -> UTCTime -> String
 localTs tz ts = do

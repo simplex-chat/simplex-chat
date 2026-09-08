@@ -1448,11 +1448,24 @@ data SimplexDomainError
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
   deriving (Eq, Show)
 
+-- | What the registry says about a name, as this client words it. The price is
+-- worked out here rather than by the router, which cannot see the label behind
+-- a hash and so knows neither its tier nor whether it is long enough.
 data SimplexNameAvailability
-  = SNANotRegistered
-  | SNARegistered {expires :: Maybe UTCTime}
-  | SNAInGrace {graceEnds :: UTCTime}
-  | SNAInAuction {premium :: Text, auctionEnds :: UTCTime}
+  = SNARegistered
+      { expires :: Maybe UTCTime,
+        graceUntil :: Maybe UTCTime,
+        -- | held back as well, which is why it will not free up at expiry
+        reserved :: Maybe NameReservedReason
+      }
+  | SNAAvailable
+      { -- | US cents for one year; Nothing when the label is too short
+        yearPriceUSD :: Maybe Int64,
+        minLabelLength :: Int,
+        -- | until here it also costs a premium, which the registry prices
+        -- continuously and so is not quoted
+        auctionUntil :: Maybe UTCTime
+      }
   | SNAReserved {reason :: NameReservedReason}
   deriving (Eq, Show)
 

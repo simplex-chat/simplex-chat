@@ -112,9 +112,10 @@ import Simplex.Messaging.Crypto.Ratchet (E2ERatchetParamsUri (..), InitialKeys (
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ErrorType (NAME), MsgFlags (..), NameRecord (..), NameResponse (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ErrorType (NAME), MsgFlags (..), NamePricing (..), NameRecord (..), NameRegistration (..), USDCents (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxyWithAuth)
 import Simplex.Messaging.Util
@@ -2411,7 +2412,7 @@ processChatCommand cxt nm = \case
     -- checks the profile link, not the link we joined through (which may have rotated)
     (verified, reason) <-
       tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) (claimDomain claim)) >>= \case
-        Right (NRNameRecord NameRecord {nrSimplexChannel} _)
+        Right (NRRegistered {nameRecord = NameRecord {nrSimplexChannel}})
           | nameResolvesTo groupLink nrSimplexChannel -> pure (True, Nothing)
           | otherwise -> pure (False, Just "the name does not resolve to the link in the group profile")
         Right _ -> pure (False, Just "the name is not registered")
@@ -4386,14 +4387,14 @@ processChatCommand cxt nm = \case
         | resolveMode == PRMNever -> connectPlanNoName $ ChatError CENotResolvedLocally
         | otherwise ->
             tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) d) >>= \case
-              Right (NRNameRecord nr _)
+              Right (NRRegistered {nameRecord = nr})
                 | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) ->
                     (addOther nr <$> connectPlanName NTPublicGroup (Right nr)) `catchAllErrors` \e ->
                       (addOther nr <$> connectPlanName NTContact (Right nr) `catchAllErrors` \_ -> throwError e)
                 | isJust (firstNameLink CCTContact (nrSimplexContact nr)) ->
                     addOther nr <$> connectPlanName NTContact (Right nr)
                 | otherwise -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENoValidLink Nothing
-              Right r -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENoValidLink (Just (nameAvailability r))
+              Right reg -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENoValidLink (Just (nameAvailability d reg))
               Left e -> connectPlanNoName e
         where
           connectPlanName nameType nr_ = connectPlan user connTarget resolveMode sig_ (Just nr_)
@@ -5047,31 +5048,37 @@ firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
 -- from SMP v22.
 checkNameClaim :: NetworkRequestMode -> User -> SimplexDomain -> (NameRecord -> Bool) -> CM ()
 checkNameClaim nm user domain pointsHere = do
-  r <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
-  unless (maybe False pointsHere (resolvedRecord_ r)) $
-    throwChatError $ CESimplexDomainNotReady domain SDENoValidLink (Just (nameAvailability r))
+  reg <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+  unless (maybe False pointsHere (resolvedRecord_ reg)) $
+    throwChatError $ CESimplexDomainNotReady domain SDENoValidLink (Just (nameAvailability domain reg))
 
 -- | The record a name resolves to; when it does not, the failure says why.
-resolvedRecord :: SimplexDomain -> NameResponse -> CM NameRecord
-resolvedRecord domain r =
-  maybe (throwChatError $ CESimplexDomainNotReady domain SDENoValidLink (Just (nameAvailability r))) pure (resolvedRecord_ r)
+resolvedRecord :: SimplexDomain -> NameRegistration -> CM NameRecord
+resolvedRecord domain reg =
+  maybe (throwChatError $ CESimplexDomainNotReady domain SDENoValidLink (Just (nameAvailability domain reg))) pure (resolvedRecord_ reg)
 
-resolvedRecord_ :: NameResponse -> Maybe NameRecord
+resolvedRecord_ :: NameRegistration -> Maybe NameRecord
 resolvedRecord_ = \case
-  NRNameRecord {nameRecord} -> Just nameRecord
+  NRRegistered {nameRecord} -> Just nameRecord
   _ -> Nothing
 
--- | What the router said about a name that is not this profile's.
-nameAvailability :: NameResponse -> SimplexNameAvailability
-nameAvailability = \case
-  NRNameRecord {expires} -> SNARegistered $ utcTime <$> expires
-  NRNameTaken {expires} -> SNARegistered $ utcTime <$> expires
-  NRNameInGrace {graceEnds} -> SNAInGrace $ utcTime graceEnds
-  NRNameAuction {premium, auctionEnds} -> SNAInAuction premium (utcTime auctionEnds)
-  NRNameReserved {reason} -> SNAReserved reason
-  NRNameAvailable -> SNANotRegistered
+-- | What the registry said about a name that is not this profile's. The price
+-- is worked out here: only this side knows the label, and so its length.
+nameAvailability :: SimplexDomain -> NameRegistration -> SimplexNameAvailability
+nameAvailability SimplexDomain {domain} = \case
+  NRRegistered {expires, graceUntil, reservedReason_} ->
+    SNARegistered {expires = utcTime <$> expires, graceUntil = utcTime <$> graceUntil, reserved = reservedReason_}
+  NRAvailable {pricing = NamePricing {rentPrices, basePrice, minLabelLength}, auctionUntil} ->
+    SNAAvailable
+      { yearPriceUSD = if len < minLabelLength then Nothing else Just (cents $ M.findWithDefault basePrice len rentPrices),
+        minLabelLength,
+        auctionUntil = utcTime <$> auctionUntil
+      }
+  NRReserved {reservedReason} -> SNAReserved reservedReason
   where
-    utcTime t = systemToUTCTime (MkSystemTime t 0)
+    len = T.length domain
+    cents (USDCents c) = c
+    utcTime (RoundedSystemTime t) = systemToUTCTime (MkSystemTime t 0)
 
 nameResolvesTo :: ConnShortLink 'CMContact -> [Text] -> Bool
 nameResolvesTo sLnk = any (either (const False) (sameShortLinkContact sLnk) . strDecode . encodeUtf8)
