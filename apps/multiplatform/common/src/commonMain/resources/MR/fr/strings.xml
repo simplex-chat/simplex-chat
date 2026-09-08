@@ -2936,4 +2936,8 @@
     <string name="update_app_register_simplex_domain">Mettez à jour l’application pour enregistrer un domaine SimpleX</string>
     <string name="countdown_hrs_min_sec">%1$02d h %2$02d min %3$02d s</string>
     <string name="simplex_name_sales_footer">Les investisseurs du financement participatif peuvent réserver des noms avant le début de la vente :</string>
+    <string name="file_expired">Fichier expiré</string>
+    <string name="file_error_expired">Le fichier était disponible jusqu’au %1$s.</string>
+    <string name="info_row_file_expires">Fichier disponible jusqu’au</string>
+    <string name="info_row_file_expired">Le fichier était disponible jusqu’au</string>
 </resources>
