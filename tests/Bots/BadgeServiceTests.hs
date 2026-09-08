@@ -73,6 +73,8 @@ badgeServiceTests = do
   it "should sign a renewal with the master key stored on the purchase" testRenewalSignsWithStoredMasterKey
   it "should leave the client holding the same ledger rows as the service" testClientReplicatesLedger
   it "should renew a badge whose credential is lapsing, with no command" testWorkerRenews
+  it "should request from the wake it set a day before the credential lapses" testRequestWakeFires
+  it "should present from the wake it set at the credential's expiry" testPresentWakeFires
   it "should renew a badge whose newest ledger row is of an unknown type" testRenewsAfterUnknownEntry
   it "should catch up the months that lapsed while the client was stopped" testRenewsAfterRestart
   it "should stop showing a badge whose balance ran out, and tell contacts" testWorkerRetiresExpired
@@ -537,6 +539,20 @@ renewalMoments rows =
   let expiry = endOfMondayAfter $ dueAtOf rows
    in (addUTCTime (-nominalDay) expiry, expiry)
 
+-- | Real seconds between arming a wake and it firing. Long enough for the arming pass to finish
+-- first, since one that overruns does the work itself and the test passes without a wake at all.
+badgeWakeMargin :: NominalDiffTime
+badgeWakeMargin = 3
+
+-- | Stand the clock just short of t and signal once. A sleeping worker cannot see the clock move,
+-- so the signal is what makes it re-derive - and, standing short, it arms the wake at t rather
+-- than doing the work. Whatever follows is produced by that wake.
+armWakeAt :: HasCallStack => TestCC -> TestClock -> UTCTime -> IO ()
+armWakeAt cc clock t = do
+  setClockAt clock $ addUTCTime (negate badgeWakeMargin) t
+  cc ##> "/_app activate"
+  cc <## "ok"
+
 issuedExpiries :: ChatController -> IO [UTCTime]
 issuedExpiries ChatController {chatStore} = do
   rows :: [(UTCTime, Int64)] <-
@@ -689,6 +705,42 @@ testWorkerRenews ps =
       alice <## "ok"
       waitShownIssued (chatController alice)
 
+-- The request is made by the wake the worker set for itself a day before the credential lapses.
+testRequestWakeFires :: HasCallStack => TestParams -> IO ()
+testRequestWakeFires ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 3
+      redeemFirstBadge alice code
+      redeemed <- ledgerRows (chatController alice) "badge_ledger"
+      armWakeAt alice bsClock $ fst $ renewalMoments redeemed
+      -- the arming pass asked for nothing, so what follows cannot be its doing
+      ledgerRows (chatController alice) "badge_ledger" >>= (`shouldBe` redeemed)
+      renewed <- waitLedgerRows (chatController alice) 3
+      alice <##. "1: supporter"
+      map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed
+        `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-1, 1, Just "badge")]
+
+-- The presentation is made by the wake at the expiry itself, a day after the request that issued
+-- the month it presents.
+testPresentWakeFires :: HasCallStack => TestParams -> IO ()
+testPresentWakeFires ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 3
+      redeemFirstBadge alice code
+      redeemed <- ledgerRows (chatController alice) "badge_ledger"
+      let (requestAt, presentAt) = renewalMoments redeemed
+      setClockAt bsClock requestAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      void $ waitLedgerRows (chatController alice) 3
+      alice <##. "1: supporter"
+      armWakeAt alice bsClock presentAt
+      -- the arming pass presented nothing: the profile still carries the credential it had
+      shownAndIssuedExpiry (chatController alice) >>= \(shown, issued) -> shown `shouldNotBe` issued
+      waitShownIssued (chatController alice)
+
 -- The newest row being of an unknown type must not stop the renewal: it is stored verbatim and
 -- read back to be asserted, rather than leaving the client with no entry to assert at all.
 testRenewsAfterUnknownEntry :: HasCallStack => TestParams -> IO ()
@@ -795,10 +847,7 @@ testRetiresWhenEntitlementEnds ps =
       code <- issueCode cc BTSupporter 1
       redeemFirstBadge alice code
       rows <- ledgerRows (chatController alice) "badge_ledger"
-      -- three seconds short of the end, so the pass this signals only schedules the next one
-      setClockAt bsClock $ addUTCTime (-3) $ dueAtOf rows
-      alice ##> "/_app activate"
-      alice <## "ok"
+      armWakeAt alice bsClock $ dueAtOf rows
       -- that pass retired nothing and printed nothing: the badge is still worn and /p says so
       alice ##> "/p"
       alice <## "user profile: alice (Alice, * supporter)"
