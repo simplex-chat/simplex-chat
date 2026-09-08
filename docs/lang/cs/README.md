@@ -42,12 +42,12 @@
 - [Rychlá instalace terminálové aplikace](#zap-quick-installation-of-a-terminal-app)
 - [Návrh platformy SimpleX](#simplex-platform-design)
 - [Soukromí: technické detaily a omezení](#privacy-technical-details-and-limitations)
-- [Pro vývojáře](#for-developers)
+- [Pro vývojáře](#pro-vývojáře)
 - [Plán](#roadmap)
-- [Join a user group](#join-a-user-group)
+- [Připojte se ke skupině uživatelů](#připojte-se-ke-skupině-uživatelů)
 - [Přeložit aplikace](#translate-the-apps)
 - [Přispívat](#contribute)
-- [Pomozte nám s dary](#help-us-with-donations)
+- [Pomozte nám s dary](#pomozte-nám-s-dary)
 - [Prohlášení o vyloučení odpovědnosti, bezpečnostní kontakt, licence](#disclaimers)
 
 ## Proč záleží na ochraně osobních údajů

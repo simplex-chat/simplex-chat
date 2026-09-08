@@ -88,7 +88,7 @@ Możesz dołączyć do tych i innych grup, otwierając te linki w aplikacji lub 
 Nasze aktualizacje i wydania publikujemy za pośrednictwem:
 
 - [Reddita](https://www.reddit.com/r/SimpleXChat/), [Twittera](https://twitter.com/SimpleXChat), [Lemmy](https://lemmy.ml/c/simplex), [Mastodona](https://mastodon.social/@simplex) oraz [Nostr](https://snort.social/p/npub1exv22uulqnmlluszc4yk92jhs2e5ajcs6mu3t00a6avzjcalj9csm7d828).
-- [profilu zespołu](#connect-to-the-team) w aplikacji SimpleX.
+- [profilu zespołu](#połącz-się-z-naszym-zespołem) w aplikacji SimpleX.
 - [bloga](https://simplex.chat/blog/) oraz [feedu RSS](https://simplex.chat/feed.rss).
 - [listy mailingowej](https://simplex.chat/#join-simplex), bardzo rzadko.
 
