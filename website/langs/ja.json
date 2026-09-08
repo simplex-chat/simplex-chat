@@ -24,7 +24,7 @@
     "guide-dropdown-8": "アプリ設定",
     "menu": "メニュー",
     "simplex-unique-card-1-p-1": "SimpleXは、SimpleXネットワークのサーバやその他の観察者から隠すことで、あなたのプロフィール、連絡先やメタデータのプライバシーを守ります。",
-    "simplex-unique-overlay-card-4-p-3": "例えば、SimpleXアプリユーザへのチャットボットやSimpleX Chatライブラリーの携帯アプリへの統合など、SimpleXネットワークに関する開発を検討してくださっているようでしたら、どのようなアドバイスや支援のことでも<a href='https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D' target='_blank'>ご連絡ください</a> 。",
+    "simplex-unique-overlay-card-4-p-3": "例えば、SimpleXアプリユーザへのチャットボットやSimpleX Chatライブラリーの携帯アプリへの統合など、SimpleXネットワークに関する開発を検討してくださっているようでしたら、どのようなアドバイスや支援のことでも<a href='https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw' target='_blank'>ご連絡ください</a> 。",
     "simplex-unique-overlay-card-4-p-2": "SimpleXネットワークは、SimpleX Chatアプリを介してユーザが交流するサービスを実装させつつ<a href='https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md' target='_blank'>オープンプロトコル</a>を使い、<a href='https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript' target='_blank'>チャットボットを作成するためにSDK</a>を提供します&mdash;私たちはあなた達がどのようなSimpleXのサービスを築くか本当に楽しみです。",
     "simplex-unique-overlay-card-4-p-1": "あなたが、<strong>自分自身のサーバでSimpleXを使っても</strong>、アプリで予め設定されたサーバを使う方々と連絡を取ることができます。",
     "reference": "リファレンス",
