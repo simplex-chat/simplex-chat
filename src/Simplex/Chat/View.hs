@@ -181,6 +181,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
     HSRemote -> remoteHelpInfo
     HSSettings -> settingsInfo
     HSDatabase -> databaseHelpInfo
+    HSWallet -> walletHelpInfo
   CRWelcome user -> chatWelcome user
   CRContactsList u cs -> ttyUser u $ viewContactsList cs
   CRUserContactLink u UserContactLink {connLinkContact, addressSettings} -> ttyUser u $ connReqContact_ showFullLinks "Your chat address:" connLinkContact <> viewAddressSettings addressSettings
@@ -188,6 +189,21 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRServiceResponse u resp -> ttyUser u ["service response: " <> viewJSON resp]
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
+  CRWallet u exists acc_ ->
+    ttyUser u $ case acc_ of
+      Just (acct, path, addr) ->
+        [ plain $ "wallet account " <> tshow acct,
+          plain $ "next name will be owned by " <> addr,
+          plain $ "  at " <> path
+        ]
+      Nothing
+        | exists -> ["wallet key on this device, but this profile has no account - add one with " <> highlight' "/wallet create"]
+        | otherwise -> ["no wallet key on this device - create one with " <> highlight' "/wallet create"]
+  CRWalletPhrase u phrase ->
+    ttyUser u
+      [ "write this down - anyone who knows these words controls the names this key owns:",
+        plain $ "  " <> phrase
+      ]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results

@@ -41,6 +41,8 @@ library
       Simplex.Chat.Badges
       Simplex.Chat.Badges.CLI
       Simplex.Chat.Names
+      Simplex.Chat.Store.Wallets
+      Simplex.Chat.Wallet
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
@@ -156,6 +158,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260813_auto_accept_group_invitations
           Simplex.Chat.Store.Postgres.Migrations.M20260822_forward_link
           Simplex.Chat.Store.Postgres.Migrations.M20260828_file_expiry
+          Simplex.Chat.Store.Postgres.Migrations.M20260908_wallet_seeds
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -329,6 +332,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260813_auto_accept_group_invitations
           Simplex.Chat.Store.SQLite.Migrations.M20260822_forward_link
           Simplex.Chat.Store.SQLite.Migrations.M20260828_file_expiry
+          Simplex.Chat.Store.SQLite.Migrations.M20260908_wallet_seeds
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -617,6 +621,7 @@ test-suite simplex-chat-test
       RemoteTests
       ValidNames
       ViewTests
+      WalletTests
       API.Docs.Commands
       API.Docs.Events
       API.Docs.Generate

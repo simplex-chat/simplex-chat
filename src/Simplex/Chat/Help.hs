@@ -14,6 +14,7 @@ module Simplex.Chat.Help
     markdownInfo,
     settingsInfo,
     databaseHelpInfo,
+    walletHelpInfo,
   )
 where
 
@@ -88,7 +89,7 @@ chatHelpInfo =
       green "Create your address: " <> highlight "/address",
       "",
       green "Other commands:",
-      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["groups", "contacts", "messages", "files", "address", "incognito", "remote", "settings", "db"],
+      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["groups", "contacts", "messages", "files", "address", "incognito", "remote", "settings", "db", "wallet"],
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/chats           " <> " - most recent chats",
@@ -216,6 +217,26 @@ myAddressHelpInfo =
       "Please note: you can receive spam contact requests, but it's safe to delete the address!",
       "",
       "The commands may be abbreviated: " <> listHighlight ["/ad", "/da", "/sa", "/ac", "/rc"]
+    ]
+
+walletHelpInfo :: [StyledString]
+walletHelpInfo =
+  map
+    styleMarkdown
+    [ green "Your wallet key:",
+      indent <> highlight "/wallet         " <> " - the address that would own the next name you buy",
+      indent <> highlight "/wallet create  " <> " - create the key, and this profile's account under it",
+      indent <> highlight "/wallet import  " <> " <phrase> - use a key you already have",
+      indent <> highlight "/wallet export  " <> " - the recovery phrase, to write down",
+      "",
+      "One key per device, and one account per chat profile under it. A name gets",
+      "its own key at " <> highlight "m/44'/60'/<profile>'/0/<name>" <> ". That is ordinary BIP-44,",
+      "so importing the phrase into another wallet reaches the same addresses.",
+      "",
+      "Anyone who knows a recovery phrase controls the names it owns. The risk is",
+      "theft, not loss.",
+      "",
+      "Please note: this is in development. Nothing can be bought or signed yet."
     ]
 
 incognitoHelpInfo :: [StyledString]

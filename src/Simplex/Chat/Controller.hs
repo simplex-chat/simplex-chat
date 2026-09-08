@@ -68,6 +68,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
+import Simplex.Chat.Wallet (AccountIndex)
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
@@ -324,7 +325,7 @@ data ChatController = ChatController
     contactMergeEnabled :: TVar Bool
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
+data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase | HSWallet
   deriving (Show)
 
 data ChatCommand
@@ -416,6 +417,10 @@ data ChatCommand
   | APIRejectContact {contactReqId :: Int64, notify :: Bool}
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
+  | APIWallet
+  | APIWalletCreate
+  | APIWalletImport {recoveryPhrase :: Text}
+  | APIWalletExport
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
@@ -842,6 +847,8 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
+  | CRWallet {user :: User, walletKeyExists :: Bool, walletAccount :: Maybe (AccountIndex, Text, Text)}
+  | CRWalletPhrase {user :: User, recoveryPhrase :: Text}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}

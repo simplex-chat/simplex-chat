@@ -1,5 +1,17 @@
 # Release History
 
+## Unreleased
+
+Wallet (in development, CLI only). A key on the device, so that a name bought
+later has an owner the app can still derive:
+- `/wallet create` creates one BIP-39 key per device and one BIP-44 account per
+  chat profile under it, `/wallet` shows the address that would own the next
+  name that profile buys, `/wallet import` and `/wallet export` move the key
+  with its recovery phrase.
+- A name key sits at `m/44'/60'/<profile>'/0/<name>`, which is ordinary BIP-44,
+  so the phrase reaches the same addresses in other wallets.
+- No signing, so nothing can be bought or edited yet.
+
 ## v6.5
 
 30 April, 2026

@@ -58,6 +58,8 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
+import Simplex.Chat.Store.Wallets (boundAccount, deviceSeed, getOrCreateAccountRef)
+import Simplex.Chat.Wallet (AccountRef (..), accountAddress, deriveNameKey, importRecoveryKey, newSeed, recoveryKeyPhrase, renderNameKeyPath)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -104,6 +106,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BIP39 (MnemonicStrength (..))
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -1488,6 +1491,34 @@ processChatCommand cxt nm = \case
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
+  -- Read-only: a profile is never given keys as a side effect of asking which
+  -- address it has.
+  APIWallet -> withUser $ \user -> do
+    exists <- isJust <$> withFastStore' deviceSeed
+    acc_ <- withFastStore' $ \db -> boundAccount db user
+    -- name index 0: with no purchases yet the next name is always the first
+    a <- forM acc_ $ \(seed, AccountRef {arIndex}) -> do
+      acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveNameKey seed arIndex 0
+      pure (arIndex, renderNameKeyPath arIndex 0, tshow (accountAddress acc))
+    pure $ CRWallet user exists a
+  -- Creates the device key on first use, and this profile's account under it.
+  -- A second profile lands on its own account index rather than sharing one.
+  APIWalletCreate -> withUser $ \user -> do
+    g <- asks random
+    void $ withFastStore' $ \db -> getOrCreateAccountRef db user (atomically $ newSeed MS256 g)
+    processChatCommand cxt nm APIWallet
+  -- One key per device: importing onto a device that already has one would make
+  -- the addresses it shows depend on which key was picked.
+  APIWalletImport phrase -> withUser $ \user -> do
+    exists <- isJust <$> withFastStore' deviceSeed
+    when exists $ throwCmdError "this device already has a wallet key"
+    entropy <- either (throwCmdError . ("wallet: " <>)) pure $ importRecoveryKey (encodeUtf8 phrase)
+    void $ withFastStore' $ \db -> getOrCreateAccountRef db user (pure entropy)
+    processChatCommand cxt nm APIWallet
+  APIWalletExport -> withUser $ \user -> do
+    seed <- withFastStore' deviceSeed >>= maybe (throwCmdError "no wallet key on this device") pure
+    phrase <- either (throwCmdError . ("wallet: " <>)) pure $ recoveryKeyPhrase seed
+    pure $ CRWalletPhrase user (safeDecodeUtf8 phrase)
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db cxt user contactId
@@ -5542,6 +5573,10 @@ chatCommandP =
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
+      "/wallet create" $> APIWalletCreate,
+      "/wallet import " *> (APIWalletImport <$> textP),
+      "/wallet export" $> APIWalletExport,
+      "/wallet" $> APIWallet,
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),
@@ -5661,6 +5696,7 @@ chatCommandP =
       ("/help remote" <|> "/hr") $> ChatHelp HSRemote,
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help db" <|> "/hd") $> ChatHelp HSDatabase,
+      ("/help wallet" <|> "/hw") $> ChatHelp HSWallet,
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group" <|> "/g") *> (NewGroup <$> incognitoP <* A.space <* char_ '#' <*> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
