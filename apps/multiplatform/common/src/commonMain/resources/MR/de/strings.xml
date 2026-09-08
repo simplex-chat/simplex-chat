@@ -3017,4 +3017,8 @@
     <string name="simplex_name_sales">Der Verkauf von SimpleX-Namen startet in</string>
     <string name="until_register_simplex_domain">bis Sie eine SimpleX-Domain registrieren können</string>
     <string name="update_app_register_simplex_domain">Aktualisieren Sie die App, um eine SimpleX-Domain registrieren zu können</string>
+    <string name="info_row_file_expires">Datei verfügbar bis zum</string>
+    <string name="file_expired">Datei nicht mehr verfügbar</string>
+    <string name="info_row_file_expired">Datei war verfügbar bis zum</string>
+    <string name="file_error_expired">Datei war bis zum %1$s verfügbar.</string>
 </resources>
