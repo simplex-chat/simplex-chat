@@ -73,7 +73,9 @@ Both call sites inline the two lines rather than sharing a new function. This ma
 
 ## Testing
 
-`testGroupMemberReportsRemoveMember` (`tests/ChatTests/Groups.hs`) covers both defects in one scenario: cath reports bob's message, bob reports cath's message, then alice removes bob with messages. It asserts that **two** reports are archived (`#jokes: 2 messages deleted by user`) — the one about bob and the one filed by him — and that the reporter's own copy is archived on her device too.
+`testGroupMemberReportsRemoveMember` (`tests/ChatTests/Groups.hs`) covers both defects in one scenario: cath reports bob's message, bob reports cath's message, then alice removes bob with messages. It asserts that **two** reports are archived (`#jokes: 2 messages deleted by user`) — the one about bob and the one filed by him — which is the assertion that fails without the `OR group_member_id = ?` branch, since only one id would be emitted and the badge would stick.
+
+Note that bob's own report row does not survive as marked-deleted: reports live in a member-support scope, and `chat_items.group_scope_group_member_id` is `ON DELETE CASCADE`, so removing bob's member record deletes the row in his scope. Cath's report, in her own scope, remains archived. Both outcomes leave zero active reports, which is what the badge must agree with.
 
 Regression coverage relied on: `remove member with messages (full deletion is enabled)`, `remove member with messages mark deleted`, `remove member - delete messages of left/removed members`, and `should send report to group owner, admins and moderators, but not other users`.
 
