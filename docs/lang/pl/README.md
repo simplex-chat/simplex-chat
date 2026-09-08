@@ -72,7 +72,7 @@ Musisz:
 
 Wiadomości nieprzestrzegające tych zasad będą usuwane, prawo do wysyłania wiadomości może zostać odebrane ich autorom, a dostęp nowych członków do grupy może zostać tymczasowo ograniczony, aby zapobiec ponownemu dołączeniu pod inną nazwą - nasza niedoskonała moderacja grupy nie ma obecnie lepszego rozwiązania.
 
-Jeśli chcesz zadać jakieś pytania, możesz dołączyć do anglojęzycznej grupy użytkowników: [#SimpleX users group](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fos8FftfoV8zjb2T89fUEjJtF7y64p5av%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAQqMgh0fw2lPhjn3PDIEfAKA_E0-gf8Hr8zzhYnDivRs%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22lBPiveK2mjfUH43SN77R0w%3D%3D%22%7D)
+Jeśli chcesz zadać jakieś pytania, możesz dołączyć do anglojęzycznej grupy użytkowników: [#SimpleX users group](https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM)
 
 Istnieje również [#simplex-devs](https://smp6.simplex.im/g#Drx3efC-n418AuSpzTspw9SER0iJwrQTmKBafQHwkKM) dla deweloperów, którzy na bazie platformy SimpleX tworzą:
 
