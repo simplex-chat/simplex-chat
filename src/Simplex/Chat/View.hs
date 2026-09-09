@@ -30,7 +30,6 @@ import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Read as TR
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
 import Data.Time.Calendar (addDays)
@@ -828,18 +827,23 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
           Just (CIFFGroupLink g _ _ _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]
           _ -> []
 
-availabilityReason :: SimplexNameAvailability -> B.ByteString
-availabilityReason = \case
-  SNARegistered {expires, reserved} ->
+-- | A reserved name never frees up, so it is given no date.
+availabilityReason :: SimplexDomain -> SimplexNameAvailability -> B.ByteString
+availabilityReason SimplexDomain {subDomain} = \case
+  SNARegistered {reserved = Just r} -> "is registered to someone else, and reserved" <> reservedReason r
+  SNARegistered {graceUntil} ->
     "is registered to someone else"
-      <> maybe "" ((" until " <>) . day) expires
-      <> maybe "" ((", and reserved" <>) . reservedReason) reserved
+      <> maybe "" ((", free to register from " <>) . day) graceUntil
+  SNAReserved r -> "is reserved" <> reservedReason r
+  -- only a second-level name is registrable, so a subname is quoted no price
+  SNAAvailable {} | not (null subDomain) -> "is not registered"
   SNAAvailable {yearPriceUSD = Nothing, minLabelLength} ->
     "is too short: names need at least " <> B.pack (show minLabelLength) <> " characters"
   SNAAvailable {yearPriceUSD = Just cents, auctionUntil} ->
     "can be registered for " <> usd cents <> " a year"
       <> maybe "" ((", plus a premium until " <>) . day) auctionUntil
-  SNAReserved r -> "is reserved" <> reservedReason r
+  where
+    day = B.pack . formatTime defaultTimeLocale "%Y-%m-%d"
 
 -- | The registry prices in US cents; dollars and cents is what a person reads.
 usd :: Int64 -> B.ByteString
@@ -848,15 +852,12 @@ usd cents = "$" <> B.pack (show d) <> "." <> B.pack (pad (show c))
     (d, c) = cents `divMod` 100
     pad t = replicate (2 - length t) '0' <> t
 
-day :: UTCTime -> B.ByteString
-day = B.pack . formatTime defaultTimeLocale "%Y-%m-%d"
-
 reservedReason :: NameReservedReason -> B.ByteString
 reservedReason = \case
   NRRInternal -> " for SimpleX"
   NRRTrademark -> " to protect a trademark"
   NRRCommunity -> " for the community"
-  NRRUnknown _ -> "" -- a reason this version cannot word
+  NRRUnknown t -> " (" <> encodeUtf8 t <> ")"
 
 localTs :: TimeZone -> UTCTime -> String
 localTs tz ts = do
@@ -2761,12 +2762,11 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
-    CESimplexDomainNotReady domain domainErr availability_ ->
-      -- what the router knows about the name beats what the link says
-      let linkReason = case domainErr of
+    CESimplexDomainNotReady domain domainErr ->
+      let reason = case domainErr of
             SDENoValidLink -> "has no valid connection link"
             SDEUnknownDomain -> "is not included in the connection link's profile"
-          reason = maybe linkReason availabilityReason availability_
+            SDEUnavailable a -> availabilityReason domain a
        in [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]

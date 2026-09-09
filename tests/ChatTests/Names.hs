@@ -120,7 +120,7 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
       alice ##> "/ad"
       _ <- getContactLinks alice True
       alice ##> "/_set domain 1 alice.simplex"
-      alice <## "SimpleX name alice.simplex is registered to someone else until 2027-06-24"
+      alice <## "SimpleX name alice.simplex is registered to someone else, free to register from 2027-09-22"
 
 -- a self-claimed name is never auto-verified from link data: the claim is not proof of ownership
 testChannelDomainLinkJoinUnverified :: HasCallStack => TestParams -> IO ()
