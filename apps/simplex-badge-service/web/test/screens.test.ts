@@ -24,7 +24,7 @@ function render(node: unknown): StubElement { return node as unknown as StubElem
  * node, and `textContent` sees none. The display form and the raw body are both checked: either redeems. */
 function assertNoCode(node: StubElement, where: string): void {
   const dump = node.serialize();
-  for (const form of [HELD_CODE, HELD_CODE.replace(/-/g, ""), HELD_CODE.replace(/^SXB-/, ""), "SXB-"]) {
+  for (const form of [HELD_CODE, HELD_CODE.replace(/-/g, ""), HELD_CODE.replace(/^SB-/, ""), "SB-"]) {
     assert.ok(!dump.includes(form), `${where} leaked a code (${form}) into: ${dump.slice(0, 400)}`);
   }
 }
@@ -55,7 +55,7 @@ const openXmr: View = {
   address: "48HqK2XmVexampleAddress9fRtWc", cryptoAmount: "1.482", cryptoCurrency: "xmr",
 };
 const NOW = Date.parse("2026-08-28T12:00:00Z");
-const HELD_CODE = "SXB-YDC8A-YGQTM-PUYZ9-2TUXP";
+const HELD_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
 
 const noop = (): void => {};
 const noopAsync = (): Promise<void> => Promise.resolve();
@@ -764,8 +764,8 @@ domTest("screens: a history row states its status beside the title, not on a lin
 domTest("screens: the history list prints a code only on a paid entry that holds one", () => {
   const entries: Rec[] = [
     record({ orderId: "a", status: "paid", code: HELD_CODE }),
-    record({ orderId: "b", status: "open", code: "SXB-OPEN0-OPEN0-OPEN0-OPEN0" }),
-    record({ orderId: "c", status: "expired", code: "SXB-EXPD0-EXPD0-EXPD0-EXPD0" }),
+    record({ orderId: "b", status: "open", code: "SB-OPEN0-OPEN0-OPEN0-OPEN0" }),
+    record({ orderId: "c", status: "expired", code: "SB-EXPD0-EXPD0-EXPD0-EXPD0" }),
     record({ orderId: "d", status: "paid" }),
   ];
   const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows: historyRows(entries), onOpen: noop, onStart: noop }));
@@ -778,7 +778,7 @@ domTest("screens: the history list prints a code only on a paid entry that holds
   // The whole serialized row, so a code in an attribute is caught too.
   for (const [i, row] of rows.entries()) {
     if (i === 0) continue;
-    assert.ok(!row.serialize().includes("SXB-"), `row ${i} leaked a code: ${row.serialize()}`);
+    assert.ok(!row.serialize().includes("SB-"), `row ${i} leaked a code: ${row.serialize()}`);
   }
   for (const [i, row] of rows.entries()) {
     if (i === 0) continue;
@@ -892,7 +892,7 @@ domTest("screens: a row missing the method or the price shows what it has", () =
 domTest("screens: the history list's Copy is offered only on a paid entry, and copies that entry's code", () => {
   copied.length = 0;
   const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true,
-    rows: historyRows([record({ orderId: "a", status: "paid", code: HELD_CODE }), record({ orderId: "b", status: "open", code: "SXB-OPEN0" })]),
+    rows: historyRows([record({ orderId: "a", status: "paid", code: HELD_CODE }), record({ orderId: "b", status: "open", code: "SB-OPEN0" })]),
     onOpen: noop, onStart: noop,
   }));
   const copies = p.all("li.entry").flatMap((r) => r.all("button.secondary").filter((b) => b.textContent === "Copy"));
@@ -983,7 +983,7 @@ domTest("screens: ACROSS EVERY UNPAID SCREEN, the code is absent from the WHOLE 
   copied.length = 0;
   for (const [, node] of unpaid) for (const b of node.all("button.secondary")) b.click();
   for (const [, node] of unpaid) for (const b of node.all("button.primary")) b.click();
-  assert.ok(!copied.some((v) => v.includes("SXB-")), `an unpaid code reached the clipboard: ${copied.join(", ")}`);
+  assert.ok(!copied.some((v) => v.includes("SB-")), `an unpaid code reached the clipboard: ${copied.join(", ")}`);
 });
 
 domTest("screens: the code screen is the only screen whose subtree may contain the code", () => {

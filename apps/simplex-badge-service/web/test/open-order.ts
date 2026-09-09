@@ -4,7 +4,7 @@
 import { MemStorage } from "./stub-dom.js";
 
 export const NOW = Date.parse("2026-08-28T12:00:00Z");
-export const HELD_CODE = "SXB-YDC8A-YGQTM-PUYZ9-2TUXP";
+export const HELD_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
 export const ADDRESS = "48HqK2XmVexampleAddress9fRtWc";
 export const ORDER_ID = "inv_open";
 

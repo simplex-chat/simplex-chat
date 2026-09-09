@@ -7,7 +7,7 @@ const resumeTest = timedTest(3000);
 
 const NOW = Date.parse("2026-08-28T12:00:00Z");
 const CREATED = new Date(NOW - 14 * 60_000).toISOString();
-const HELD_CODE = "SXB-YDC8A-YGQTM-PUYZ9-2TUXP";
+const HELD_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
 
 // the watch loop: "someone who sent a Monero payment and closed the tab reopens
 // badges.simplex.chat and sees their pending invoice, not a landing page."
@@ -69,7 +69,7 @@ resumeTest("main: a resumed payment screen says how long ago it started, and off
 resumeTest("main: the resumed screen still never shows the code it holds", () => {
   assert.ok(page.storage.getItem("sxb.orders.v1")!.includes(HELD_CODE), "the code is in the store");
   assert.ok(!screenOf(app).serialize().includes(HELD_CODE), "and nowhere on the unpaid screen");
-  assert.ok(!screenOf(app).serialize().includes("SXB-"));
+  assert.ok(!screenOf(app).serialize().includes("SB-"));
 });
 
 // ------------------------------------------- detailsUnavailable, end to end

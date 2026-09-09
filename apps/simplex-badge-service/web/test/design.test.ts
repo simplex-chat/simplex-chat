@@ -619,7 +619,7 @@ designTest("design: the chrome is a wordmark home link and a menu, and holds no 
   assert.equal(bar.all("div.menu-section").length, 2);
   // the store rules: the menu is fixed labels over callbacks, so nothing about an order can
   // reach it: not a code, not an address, not a reference.
-  assert.equal(/SXB-|order=|inv_/.test(bar.serialize()), false, bar.serialize());
+  assert.equal(/SB-|order=|inv_/.test(bar.serialize()), false, bar.serialize());
 });
 
 designTest("design: the theme control is the reference's segmented setting, over three values", () => {
@@ -790,7 +790,7 @@ designTest("design: no screen repeats the mark — the header carries it, and th
     assert.equal(render(node).all("svg.logo").length, 0, `${name} must not draw a second mark`);
     assert.equal(render(node).all("a.brand").length, 0, `${name} must not draw a second wordmark`);
   }
-  const codeIssued = render(screens.codeIssued({ code: "SXB-YDC8A-YGQTM-PUYZ9-2TUXP", savedLocally: true }));
+  const codeIssued = render(screens.codeIssued({ code: "SB-YDC8A-YGQTM-PUYZ9-2TUXP", savedLocally: true }));
   assert.equal(codeIssued.all("div.tick").length, 1, "the code screen opens on the settled tick");
 });
 

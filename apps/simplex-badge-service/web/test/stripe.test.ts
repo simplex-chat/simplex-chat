@@ -23,7 +23,7 @@ await import("../src/main.js");
 type UnpaidOrder = import("../src/order.js").UnpaidOrder;
 type InvoiceView = import("../src/api.js").InvoiceView;
 
-const HELD_CODE = "SXB-YDC8A-YGQTM-PUYZ9-2TUXP";
+const HELD_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
 const CLIENT_SECRET = "cs_test_a1b2c3d4";
 const PUBLISHABLE_KEY = "pk_test_51NotARealKey";
 const APPEARANCE = { theme: "stripe" } as const;
@@ -46,7 +46,7 @@ const cardInvoice: InvoiceView = {
 /** the guard over the whole serialized subtree, attributes included. */
 function assertNoCode(node: StubElement, where: string): void {
   const dump = node.serialize();
-  for (const form of [HELD_CODE, HELD_CODE.replace(/-/g, ""), "SXB-"]) {
+  for (const form of [HELD_CODE, HELD_CODE.replace(/-/g, ""), "SB-"]) {
     assert.ok(!dump.includes(form), `${where} leaked a code (${form})`);
   }
 }
@@ -441,7 +441,7 @@ cardTest("main: with NO key the card path renders the stand-in, and still loads 
   assert.ok(!screen().textContent.includes(CLIENT_SECRET), "the client secret is never on screen");
   // the store rules: the code is in localStorage from before the invoice existed.
   const stored = JSON.parse(storage.getItem("sxb.orders.v1")!) as Array<Record<string, string>>;
-  assert.ok(stored[0]!.code!.startsWith("SXB-"));
+  assert.ok(stored[0]!.code!.startsWith("SB-"));
   assert.ok(!screen().serialize().includes(stored[0]!.code!), "and never on an unpaid screen");
   assert.equal(storage.getItem("sxb.orders.v1")!.includes(CLIENT_SECRET), false,
     "the store rules: clientSecret is never written to rest");

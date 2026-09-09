@@ -32,11 +32,11 @@ storeTest("store: session round-trips the step and the draft", () => {
 
 storeTest("store: orders upsert by id and keep a stored code", () => {
   const s = new Store(new MemoryStorage());
-  s.saveOrder(order("1", { code: "SXB-CODE" }));
+  s.saveOrder(order("1", { code: "SB-CODE" }));
   s.saveOrder(order("1", { status: "paid" }));
   const got = s.orders()[0]!;
   assert.equal(got.status, "paid");
-  assert.equal(got.code, "SXB-CODE", "a later record must not clear the code");
+  assert.equal(got.code, "SB-CODE", "a later record must not clear the code");
 });
 
 storeTest("store: the cap drops the oldest entry holding no code", () => {
@@ -134,13 +134,13 @@ storeTest("store: a stored record keeps the fields that read and drops the ones 
   const mem = new MemoryStorage();
   mem.map.set("sxb.orders.v1", JSON.stringify([{
     orderId: "corrupt", createdAt: "2026-08-24T11:00:00Z", status: "open",
-    code: "SXB-KEEP-ME", badgeType: null, months: "12",
+    code: "SB-KEEP-ME", badgeType: null, months: "12",
     currency: 42, paidInFull: "yes", cryptoCurrency: "eth", amount: 42000,
   }]));
   const stored = new Store(mem).orders();
   assert.equal(stored.length, 1, "a record with a code is never dropped over a bad field");
   const o = stored[0]!;
-  assert.equal(o.code, "SXB-KEEP-ME");
+  assert.equal(o.code, "SB-KEEP-ME");
   assert.equal(o.amount, 42000, "and what does read is kept");
   for (const key of ["currency", "paidInFull", "cryptoCurrency"] as const) {
     assert.equal(o[key], undefined, `${key} does not read, so it is not there to be believed`);
@@ -193,17 +193,17 @@ storeTest("store: the two facts only this browser holds survive a write that omi
   // A code exists nowhere else, and a card confirmation never comes back off. Everything
   // else on a record can be asked for again.
   const s = new Store(new MemoryStorage());
-  s.saveOrder(order("1", { code: "SXB-CODE" }));
+  s.saveOrder(order("1", { code: "SB-CODE" }));
   assert.equal(s.markSubmitted("1"), true);
   s.saveOrder(order("1", { status: "paid" }));
-  assert.equal(s.order("1")!.code, "SXB-CODE");
+  assert.equal(s.order("1")!.code, "SB-CODE");
   assert.equal(s.order("1")!.submitted, true);
 });
 
 storeTest("store: markSubmitted is per order, sticky, and survives everything but Forget", () => {
   const mem = new MemoryStorage();
   const s = new Store(mem);
-  s.saveOrder(order("1", { code: "SXB-CODE" }));
+  s.saveOrder(order("1", { code: "SB-CODE" }));
   s.saveOrder(order("2"));
   assert.equal(s.markSubmitted("1"), true);
   assert.equal(s.markSubmitted("absent"), false, "there is no order to mark");
@@ -211,7 +211,7 @@ storeTest("store: markSubmitted is per order, sticky, and survives everything bu
   s.clearSession();
   s.saveOrder(order("1", { status: "open" }));   // a later 200 for the same order
   assert.equal(s.order("1")!.submitted, true, "a plain upsert must not take it back off");
-  assert.equal(s.order("1")!.code, "SXB-CODE");
+  assert.equal(s.order("1")!.code, "SB-CODE");
   assert.equal(s.order("2")!.submitted, undefined, "and it is not a page-wide flag");
 
   // A reload is a fresh Store over the same storage.
@@ -238,16 +238,16 @@ storeTest("store: a store that loses its writes never claims to hold the code", 
   // store accepts every write and forgets them all on the next load, so a round trip through it
   // proves nothing: the code screen's "Saved in this browser" rests on this answer.
   const durable = new Store(new MemoryStorage());
-  durable.saveOrder(order("1", { code: "SXB-CODE" }));
-  assert.equal(durable.holdsCode("1", "SXB-CODE"), true);
+  durable.saveOrder(order("1", { code: "SB-CODE" }));
+  assert.equal(durable.holdsCode("1", "SB-CODE"), true);
 
   const losing = new Store(new MemoryStorage(), false);
-  losing.saveOrder(order("1", { code: "SXB-CODE" }));
-  assert.equal(losing.order("1")?.code, "SXB-CODE", "it answers with what it was handed");
-  assert.equal(losing.holdsCode("1", "SXB-CODE"), false, "and still does not claim to hold it");
+  losing.saveOrder(order("1", { code: "SB-CODE" }));
+  assert.equal(losing.order("1")?.code, "SB-CODE", "it answers with what it was handed");
+  assert.equal(losing.holdsCode("1", "SB-CODE"), false, "and still does not claim to hold it");
 
   assert.equal(durable.holdsCode("1", undefined), false, "no code is not a held code");
-  assert.equal(durable.holdsCode("2", "SXB-CODE"), false);
+  assert.equal(durable.holdsCode("2", "SB-CODE"), false);
 });
 
 storeTest("store: a full list cannot hold another code, and says so before the money", () => {
@@ -277,7 +277,7 @@ storeTest("store: forgetting one key does not depend on the other succeeding", (
   }
   const storage = new RefusesOrders();
   const s = new Store(storage);
-  s.saveOrder(order("1", { code: "SXB-CODE" }));
+  s.saveOrder(order("1", { code: "SB-CODE" }));
   s.saveSession({ step: "checkout" });
   s.forgetEverything();
   assert.equal(storage.getItem("sxb.session.v1"), null, "the session goes even though the orders key threw");

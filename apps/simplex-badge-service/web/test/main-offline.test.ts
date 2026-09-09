@@ -8,7 +8,7 @@ const offlineTest = timedTest(3000);
 
 const NOW = Date.parse("2026-08-28T12:00:00Z");
 const CREATED = new Date(NOW - 9 * 60_000).toISOString();
-const HELD_CODE = "SXB-YDC8A-YGQTM-PUYZ9-2TUXP";
+const HELD_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
 const ADDRESS = "48HqK2XmVexampleAddress9fRtWc";
 
 // An open order keeps everything the payment screen draws: where to
@@ -73,7 +73,7 @@ offlineTest("main: the rate window is on screen offline, not silently dropped", 
 
 offlineTest("main: the code it holds is still not on the unpaid screen", () => {
   assert.ok(page.storage.getItem("sxb.orders.v1")!.includes(HELD_CODE), "the code is in the store");
-  assert.ok(!screenOf(app).serialize().includes("SXB-"), "and nowhere on a screen whose order is unpaid");
+  assert.ok(!screenOf(app).serialize().includes("SB-"), "and nowhere on a screen whose order is unpaid");
 });
 
 offlineTest("main: coming back online clears the note and asks for nothing extra", async () => {

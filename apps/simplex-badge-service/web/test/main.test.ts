@@ -217,9 +217,9 @@ mainTest("main: the 200 REPLACES the history entry, so Back cannot resubmit", as
   const stored = JSON.parse(storage.getItem("sxb.orders.v1")!) as Array<Record<string, string>>;
   assert.equal(stored.length, 1);
   assert.equal(stored[0]!.orderId, "inv_9f3a");
-  assert.ok(stored[0]!.code!.startsWith("SXB-"));
+  assert.ok(stored[0]!.code!.startsWith("SB-"));
   assert.ok(!screen.textContent.includes(stored[0]!.code!), "the payment screen must never show the code");
-  assert.ok(!JSON.stringify(fetches[0]!.init!.body).includes(stored[0]!.code!.replace(/-/g, "").replace(/^SXB/, "")),
+  assert.ok(!JSON.stringify(fetches[0]!.init!.body).includes(stored[0]!.code!.replace(/-/g, "").replace(/^SB/, "")),
     "the plaintext code never leaves the browser — only its hash");
 
   // the store rules: the 200 clears the session; the draft became an invoice.
@@ -330,7 +330,7 @@ mainTest("main: the menu opens the history list from the store, with [ Open ] as
   assert.equal(location.hash, "#/codes");
   // the store rules: an open entry never shows its code, in text or in any attribute.
   const stored = (JSON.parse(storage.getItem("sxb.orders.v1")!) as Array<{ code: string }>)[0]!.code;
-  assert.ok(stored.startsWith("SXB-"));
+  assert.ok(stored.startsWith("SB-"));
   assert.ok(!codes.serialize().includes(stored), "the history list leaked an unpaid code");
 });
 
@@ -626,7 +626,7 @@ mainTest("main: a key press with the menu closed reaches nothing", () => {
 mainTest("main: the menu carries no order, on a page that holds one", () => {
   // The guard that covers every screen covers the chrome too: it is fixed
   // labels over callbacks, and there is no path by which an order reaches it.
-  assert.equal(/SXB-|inv_|order=/.test(page.chrome.serialize()), false, page.chrome.serialize());
+  assert.equal(/SB-|inv_|order=/.test(page.chrome.serialize()), false, page.chrome.serialize());
 });
 
 // ------------------------------------------------- the worker's registration

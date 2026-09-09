@@ -15,7 +15,7 @@ full.m.set("sxb.orders.v1", JSON.stringify(
   Array.from({ length: 50 }, (_, i) => ({
     orderId: `inv_old_${i}`, badgeType: "supporter", months: 1,
     createdAt: new Date(NOW - (i + 2) * 86_400_000).toISOString(), status: "paid", paidInFull: true,
-    code: `SXB-OLD${String(i).padStart(2, "0")}-YGQTM-PUYZ9-2TUXP`, amount: 700, currency: "usd",
+    code: `SB-OLD${String(i).padStart(2, "0")}-YGQTM-PUYZ9-2TUXP`, amount: 700, currency: "usd",
   })),
 ));
 
@@ -46,7 +46,7 @@ capTest("main: a card code survives the confirm when the orders list is full", a
   inView().all("button.primary").find((b) => b.textContent.startsWith("Pay"))!.click();
   await until(() => heading() === "Pay by card", `the card form, not ${heading()}`);
 
-  const codeShape = /SXB-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}/;
+  const codeShape = /SB-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}/;
   assert.ok(!codeShape.test(screenOf(app).serialize()), "no code is on an unpaid screen");
 
   screenOf(app).all("button").find((b) => b.textContent === "Simulate a confirmed card payment")!.click();

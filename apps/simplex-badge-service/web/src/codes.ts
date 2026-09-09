@@ -11,7 +11,7 @@ const CODE_LENGTH = 20;       // 19 payload characters and a check character
 export const PAYLOAD = CODE_LENGTH - 1;
 const GROUP = 5;
 const GROUPS = new RegExp(`.{1,${GROUP}}`, "g");
-const PREFIX = "SXB";
+const PREFIX = "SB";
 
 // I and L are read as 1, O as 0, so a code copied by hand still verifies.
 function charValue(c: string): number | undefined {

@@ -291,13 +291,13 @@ apiTest("flow: readInvoice carries a 429's Retry-After through, so the history l
 
 apiTest("flow: applyView overwrites the status and keeps the stored code", () => {
   const store = new Store(new Mem());
-  store.saveOrder(record({ code: "SXB-AAAAA-BBBBB-CCCCC-DDDDD" }));
+  store.saveOrder(record({ code: "SB-AAAAA-BBBBB-CCCCC-DDDDD" }));
   const { record: after, savedLocally } = applyView(store, "inv_9f3a", paidXmr, Date.now());
   assert.equal(after.status, "paid");
-  assert.equal(after.code, "SXB-AAAAA-BBBBB-CCCCC-DDDDD");
+  assert.equal(after.code, "SB-AAAAA-BBBBB-CCCCC-DDDDD");
   assert.equal(savedLocally, true);
   assert.equal(store.order("inv_9f3a")!.status, "paid");
-  assert.equal(store.order("inv_9f3a")!.code, "SXB-AAAAA-BBBBB-CCCCC-DDDDD");
+  assert.equal(store.order("inv_9f3a")!.code, "SB-AAAAA-BBBBB-CCCCC-DDDDD");
 });
 
 apiTest("flow: the `submitted` survives every 200, and a store that refused the write", () => {
@@ -328,10 +328,10 @@ apiTest("flow: a stored entry with no code does not overwrite the code held in m
   // has it, and a 200 that read the code off `base` alone would drop the whole purchase.
   const shared = new Store(new Mem());
   shared.saveOrder(record({ status: "open" }));
-  const held = record({ status: "open", code: "SXB-YDC8A-YGQTM-PUYZ9-2TUXP" });
+  const held = record({ status: "open", code: "SB-YDC8A-YGQTM-PUYZ9-2TUXP" });
   const applied = applyView(shared, "inv_9f3a", openXmr, Date.parse("2026-08-28T12:00:00Z"), held);
-  assert.equal(applied.record.code, "SXB-YDC8A-YGQTM-PUYZ9-2TUXP", "the answer must not drop it");
-  assert.equal(shared.order("inv_9f3a")!.code, "SXB-YDC8A-YGQTM-PUYZ9-2TUXP", "and it is written back");
+  assert.equal(applied.record.code, "SB-YDC8A-YGQTM-PUYZ9-2TUXP", "the answer must not drop it");
+  assert.equal(shared.order("inv_9f3a")!.code, "SB-YDC8A-YGQTM-PUYZ9-2TUXP", "and it is written back");
 });
 
 apiTest("flow: a 200 with no entry present creates one from the response, holding no code", () => {
@@ -363,10 +363,10 @@ apiTest("flow: a method that cannot be inferred leaves the row without one, rath
 
 apiTest("flow: a refusing store still yields the record, and says the code was not saved", () => {
   const store = new Store(new Refusing());
-  const memory = record({ code: "SXB-AAAAA-BBBBB-CCCCC-DDDDD" });
+  const memory = record({ code: "SB-AAAAA-BBBBB-CCCCC-DDDDD" });
   const { record: after, savedLocally } = applyView(store, "inv_9f3a", paidXmr, Date.now(), memory);
   assert.equal(after.status, "paid");
-  assert.equal(after.code, "SXB-AAAAA-BBBBB-CCCCC-DDDDD", "the flow keeps working from memory");
+  assert.equal(after.code, "SB-AAAAA-BBBBB-CCCCC-DDDDD", "the flow keeps working from memory");
   assert.equal(savedLocally, false, "the code screen must drop its saved-copy clause");
 });
 
@@ -488,10 +488,10 @@ apiTest("flow: viewFor leaves the payment screen for the processing screen once 
 });
 
 apiTest("flow: viewFor renders the code screen with the code only on a paid order", () => {
-  const paid = record({ status: "paid", code: "SXB-Y-Y-Y-Y" });
+  const paid = record({ status: "paid", code: "SB-Y-Y-Y-Y" });
   const v = viewFor(paid, paidXmr, "xmr", { savedLocally: true, resumed: false });
   assert.equal(v.screen, "codeIssued");
-  assert.equal(v.screen === "codeIssued" ? v.code : undefined, "SXB-Y-Y-Y-Y");
+  assert.equal(v.screen === "codeIssued" ? v.code : undefined, "SB-Y-Y-Y-Y");
 });
 
 apiTest("flow: viewFor renders the paid-no-code screen for a paid order this browser has no code for", () => {
@@ -500,7 +500,7 @@ apiTest("flow: viewFor renders the paid-no-code screen for a paid order this bro
 });
 
 apiTest("flow: viewFor never renders a code on an unpaid order, whatever the store holds", () => {
-  const held = "SXB-AAAAA-BBBBB-CCCCC-DDDDD";
+  const held = "SB-AAAAA-BBBBB-CCCCC-DDDDD";
   const cases: Array<[OrderRecord, InvoiceView, "btc" | "xmr" | "card"]> = [
     [record({ status: "open", code: held }), openXmr, "xmr"],
     [record({ status: "open", code: held }), openCard, "card"],
@@ -540,7 +540,7 @@ apiTest("flow: an open order whose method cannot be inferred renders the referen
 });
 
 apiTest("flow: a paid order still renders the code screen when the method cannot be inferred — only `open` needs it", () => {
-  const paid = record({ status: "paid", code: "SXB-Y" });
+  const paid = record({ status: "paid", code: "SB-Y" });
   assert.equal(viewFor(paid, { status: "paid" }, undefined, { savedLocally: true, resumed: false }).screen, "codeIssued");
   const expired = record({ status: "expired" });
   assert.equal(viewFor(expired, { status: "expired" }, undefined, { savedLocally: false, resumed: false }).screen, "windowClosed");
@@ -557,7 +557,7 @@ apiTest("flow: a 200 saves the order with the display code and leaves the sessio
   assert.equal(h.net.urls[0], "/api/invoice");
   const stored = h.store.order("inv_9f3a")!;
   assert.equal(stored.status, "open");
-  assert.equal(stored.code, `SXB-${h.codes[0]!.match(/.{1,5}/g)!.join("-")}`);
+  assert.equal(stored.code, `SB-${h.codes[0]!.match(/.{1,5}/g)!.join("-")}`);
   // spending the draft is `pay`'s call, not this one's: only the page knows whether the buyer has
   // chosen again since, and clearing a choice they made while this was on the wire loses it
   assert.equal(h.store.session().priceId, "price_legend", "the draft is not this call's to spend");
@@ -657,7 +657,7 @@ apiTest("flow: a store that refuses the write still creates the order, flagged u
 
 apiTest("flow: a paid first read renders the code screen and issues no hold at all", async () => {
   const h = harness();
-  h.store.saveOrder(record({ code: "SXB-Y" }));
+  h.store.saveOrder(record({ code: "SB-Y" }));
   h.net.script({ status: 200, body: paidXmr });
   const w = h.flow.watch("inv_9f3a");
   await w.done;
@@ -668,7 +668,7 @@ apiTest("flow: a paid first read renders the code screen and issues no hold at a
 
 apiTest("flow: expired KEEPS WAITING, so a last-second payment turns the closed-window screen into the code screen", async () => {
   const h = harness();
-  h.store.saveOrder(record({ code: "SXB-Y" }));
+  h.store.saveOrder(record({ code: "SB-Y" }));
   h.net.script(
     { status: 200, body: openXmr },      // the plain first read
     { status: 200, body: expiredXmr },   // ?wait=open answers "expired"
@@ -700,7 +700,7 @@ apiTest("flow: no pass ever asks the read endpoint to wait on 'paid', which the 
 
 apiTest("flow: every 200 updates the local record BEFORE rendering", async () => {
   const store = new Store(new Mem());
-  store.saveOrder(record({ code: "SXB-Y" }));
+  store.saveOrder(record({ code: "SB-Y" }));
   const net = new Net();
   const clock = new Clock();
   const seen: Array<{ screen: string; storedStatus: string | undefined }> = [];
@@ -719,7 +719,7 @@ apiTest("flow: every 200 updates the local record BEFORE rendering", async () =>
 
 apiTest("flow: not even a paid order renders its code before the store agrees it is paid", async () => {
   const h = harness();
-  h.store.saveOrder(record({ code: "SXB-AAAAA-BBBBB-CCCCC-DDDDD" }));
+  h.store.saveOrder(record({ code: "SB-AAAAA-BBBBB-CCCCC-DDDDD" }));
   h.net.script({ status: 200, body: openXmr }, { status: 200, body: expiredXmr }, { status: 200, body: paidXmr });
   await h.flow.watch("inv_9f3a").done;
   for (const v of h.views) {
@@ -784,7 +784,7 @@ apiTest("flow: suspend aborts the held request, and resume restarts exactly one"
 
 apiTest("flow: the loop survives suspend/resume and still reports the settlement", async () => {
   const h = harness();
-  h.store.saveOrder(record({ code: "SXB-AAAAA-BBBBB-CCCCC-DDDDD" }));
+  h.store.saveOrder(record({ code: "SB-AAAAA-BBBBB-CCCCC-DDDDD" }));
   const w = h.flow.watch("inv_9f3a", { initial: openXmr, method: "xmr" });
   await settle();
   w.suspend();
@@ -805,7 +805,7 @@ apiTest("flow: an expired order paints from the record while the read is retried
   const clock = new Clock();
   const views: PaymentView[] = [];
   const store = new Store(new Mem());
-  store.saveOrder(record({ status: "expired", code: "SXB-Y" }));
+  store.saveOrder(record({ status: "expired", code: "SB-Y" }));
   const flow = new Flow({
     store, fetch: failing, sleep: clock.sleep, now: clock.now,
     newCode: () => "C", hashCode: async (c) => c, render: (v) => { views.push(v); },
@@ -916,7 +916,7 @@ apiTest("flow: the closed-window screen keeps waiting for an hour too, so a late
 
 apiTest("flow: a card order that settles before the deadline renders the code screen and disarms the give-up", async () => {
   const h = harness();
-  h.store.saveOrder(record({ status: "open", code: "SXB-Y", submitted: true }));
+  h.store.saveOrder(record({ status: "open", code: "SB-Y", submitted: true }));
   const w = h.flow.watch("inv_9f3a", { initial: openCard, method: "card" });
   await settle();
   await h.clock.advance(GIVE_UP_MS - 60_000);
@@ -951,7 +951,7 @@ apiTest("flow: an open order whose response names no method renders detailsUnava
 
 apiTest("flow: a failed first read renders nothing, and its retry is cancellable", async () => {
   const h = offlineHarness();
-  h.store.saveOrder(record({ code: "SXB-Y" }));
+  h.store.saveOrder(record({ code: "SB-Y" }));
   const w = h.flow.watch("inv_9f3a");
   await settle();
   assert.deepEqual(h.views, [], "nothing is rendered from a read that never arrived");
@@ -970,7 +970,7 @@ apiTest("flow: refreshHistory re-reads only open and expired, newest first, at m
       orderId: `inv_${String(i).padStart(2, "0")}`,
       createdAt: new Date(Date.parse("2026-08-01T00:00:00Z") + i * 60_000).toISOString(),
       status: i % 2 === 0 ? "open" : "paid",
-      ...(i % 2 === 1 ? { code: "SXB-Y" } : {}),
+      ...(i % 2 === 1 ? { code: "SB-Y" } : {}),
     }));
   }
   for (let i = 0; i < 20; i++) h.net.script({ status: 200, body: paidXmr });
@@ -1010,12 +1010,12 @@ apiTest("flow: refreshHistory stops on a 429 rather than walking the rest of the
 
 apiTest("flow: refreshHistory leaves a 404'd entry exactly as it was", async () => {
   const h = harness();
-  h.store.saveOrder(record({ status: "open", code: "SXB-Y" }));
+  h.store.saveOrder(record({ status: "open", code: "SB-Y" }));
   h.net.script({ status: 404, body: { error: "not_found" } });
   const after = await h.flow.refreshHistory();
   assert.equal(after.length, 1);
   assert.equal(after[0]!.status, "open");
-  assert.equal(after[0]!.code, "SXB-Y");
+  assert.equal(after[0]!.code, "SB-Y");
 });
 
 // ------------------------------------------------------------------ formatting
@@ -1072,7 +1072,7 @@ apiTest("flow: realSleep resolves after its delay and rejects at once on abort",
 // ------------------------------------------- the code, stripped by value
 
 apiTest("flow: every view but the code screen carries an order with NO code key at all", () => {
-  const held = "SXB-AAAAA-BBBBB-CCCCC-DDDDD";
+  const held = "SB-AAAAA-BBBBB-CCCCC-DDDDD";
   const cases: Array<[string, PaymentView]> = [
     ["awaitingPayment", viewFor(record({ code: held }), openXmr, "xmr", { savedLocally: true, resumed: false })],
     ["cardForm", viewFor(record({ code: held }), openCard, "card", { savedLocally: true, resumed: false })],
@@ -1096,23 +1096,23 @@ apiTest("flow: every view but the code screen carries an order with NO code key 
 });
 
 apiTest("flow: withoutCode removes the key rather than blanking the value", () => {
-  const stripped = withoutCode(record({ code: "SXB-Y" }));
+  const stripped = withoutCode(record({ code: "SB-Y" }));
   assert.equal(Object.hasOwn(stripped, "code"), false);
   assert.deepEqual(Object.keys(stripped).sort(), ["badgeType", "createdAt", "months", "orderId", "status"]);
 });
 
 apiTest("flow: historyRows hands a code to the paid row and to no other", () => {
   const rows = historyRows([
-    record({ orderId: "a", status: "paid", code: "SXB-PAID0" }),
+    record({ orderId: "a", status: "paid", code: "SB-PAID0" }),
     record({ orderId: "b", status: "paid" }),
-    record({ orderId: "c", status: "open", code: "SXB-OPEN0" }),
-    record({ orderId: "d", status: "expired", code: "SXB-EXPD0" }),
+    record({ orderId: "c", status: "open", code: "SB-OPEN0" }),
+    record({ orderId: "d", status: "expired", code: "SB-EXPD0" }),
   ]);
   assert.deepEqual(rows.map((r) => r.kind), ["paid", "paidNoCode", "open", "expired"]);
-  assert.equal(rows[0]!.kind === "paid" ? rows[0]!.code : "", "SXB-PAID0");
+  assert.equal(rows[0]!.kind === "paid" ? rows[0]!.code : "", "SB-PAID0");
   for (const row of rows) {
     assert.equal(Object.hasOwn(row.order, "code"), false, `${row.kind}'s order still has a code key`);
-    if (row.kind !== "paid") assert.ok(!JSON.stringify(row).includes("SXB-"), `${row.kind} serialises a code`);
+    if (row.kind !== "paid") assert.ok(!JSON.stringify(row).includes("SB-"), `${row.kind} serialises a code`);
   }
 });
 
@@ -1120,7 +1120,7 @@ apiTest("flow: historyRows hands a code to the paid row and to no other", () => 
 
 apiTest("flow: the confirming screen's give-up is DISARMED when the screen changes, so expired still waits", async () => {
   const h = harness();
-  h.store.saveOrder(record({ status: "open", code: "SXB-Y", submitted: true }));
+  h.store.saveOrder(record({ status: "open", code: "SB-Y", submitted: true }));
   const w = h.flow.watch("inv_9f3a", { initial: openCard, method: "card" });
   await settle();
   assert.deepEqual(h.views.map((v) => v.screen), ["awaitingConfirmation"], "the deadline is now armed");
@@ -1146,7 +1146,7 @@ apiTest("flow: the confirming screen's give-up is DISARMED when the screen chang
 
 apiTest("flow: a settlement after the expiry still reaches the code screen, deadline or not", async () => {
   const h = harness();
-  h.store.saveOrder(record({ status: "open", code: "SXB-AAAAA-BBBBB-CCCCC-DDDDD", submitted: true }));
+  h.store.saveOrder(record({ status: "open", code: "SB-AAAAA-BBBBB-CCCCC-DDDDD", submitted: true }));
   const w = h.flow.watch("inv_9f3a", { initial: openCard, method: "card" });
   await settle();
   h.net.answerHeld({ status: 200, body: { ...expiredXmr, clientSecret: "cs_test_abc" } });
@@ -1161,14 +1161,14 @@ apiTest("flow: a settlement after the expiry still reaches the code screen, dead
 
 apiTest("flow: a paid record renders the code screen from the store alone, with no request", async () => {
   const h = harness();
-  h.store.saveOrder(record({ status: "paid", code: "SXB-AAAAA-BBBBB-CCCCC-DDDDD" }));
+  h.store.saveOrder(record({ status: "paid", code: "SB-AAAAA-BBBBB-CCCCC-DDDDD" }));
   const w = h.flow.watch("inv_9f3a");
   // Asserted before awaiting `done`, so a regression that goes to the network
   // fails on the assertion rather than by hanging on a request nothing answers.
   await settle();
   assert.equal(h.net.calls.length, 0, "nothing is fetched: a reload needs no network");
   assert.deepEqual(h.views.map((v) => v.screen), ["codeIssued"]);
-  assert.equal(h.views[0]!.screen === "codeIssued" ? h.views[0]!.code : "", "SXB-AAAAA-BBBBB-CCCCC-DDDDD");
+  assert.equal(h.views[0]!.screen === "codeIssued" ? h.views[0]!.code : "", "SB-AAAAA-BBBBB-CCCCC-DDDDD");
   await w.done;
 });
 
@@ -1184,7 +1184,7 @@ apiTest("flow: a paid record with no code renders the paid-no-code screen offlin
 
 apiTest("flow: an OPEN record holding no destination renders nothing without the network", async () => {
   const h = offlineHarness();
-  h.store.saveOrder(record({ status: "open", code: "SXB-Y" }));
+  h.store.saveOrder(record({ status: "open", code: "SB-Y" }));
   const w = h.flow.watch("inv_9f3a");
   await settle();
   assert.deepEqual(h.views, [], "the payment screen cannot be drawn from this record: it holds no address");
@@ -1210,7 +1210,7 @@ apiTest("flow: checkAgain returns null while a loop is live, so the screen is no
 
 apiTest("flow: checkAgain after a give-up restarts the confirming screen and RE-ARMS the fifteen minutes", async () => {
   const h = harness();
-  h.store.saveOrder(record({ status: "open", code: "SXB-AAAAA-BBBBB-CCCCC-DDDDD", submitted: true }));
+  h.store.saveOrder(record({ status: "open", code: "SB-AAAAA-BBBBB-CCCCC-DDDDD", submitted: true }));
   const first = h.flow.watch("inv_9f3a", { initial: openCard, method: "card", resumed: true });
   await settle();
   await h.clock.advance(GIVE_UP_MS);
@@ -1221,7 +1221,7 @@ apiTest("flow: checkAgain after a give-up restarts the confirming screen and RE-
   // enumeration test above never walks it: assert its order is stripped too.
   const gaveUpOrder = (h.views[1]! as { order: Record<string, unknown> }).order;
   assert.equal(Object.hasOwn(gaveUpOrder, "code"), false, "the give-up view still carries a code key");
-  assert.ok(!JSON.stringify(h.views[1]).includes("SXB-"), "the give-up view serialises a code");
+  assert.ok(!JSON.stringify(h.views[1]).includes("SB-"), "the give-up view serialises a code");
 
   // The restart reads the flag off the order record, which is where a card
   // confirm writes it. A restart that re-read a page-global flag would
@@ -1403,7 +1403,7 @@ apiTest("flow: offlineInvoice draws the payment screen from an open record only"
 
 apiTest("flow: an open crypto order resumes from the record alone when the read fails", async () => {
   const h = offlineHarness();
-  h.store.saveOrder(record({ code: "SXB-Y", ...HELD }));
+  h.store.saveOrder(record({ code: "SB-Y", ...HELD }));
   const w = h.flow.watch("inv_9f3a", { resumed: true });
   await settle();
   assert.deepEqual(h.views.map((v) => v.screen), ["awaitingPayment"], "the offline promise: the address, the amount and the QR come from the store");
@@ -1416,7 +1416,7 @@ apiTest("flow: an open crypto order resumes from the record alone when the read 
   assert.equal(first.screen === "awaitingPayment" ? first.invoice.amount : 0, 42000);
   // the store rules: the code is in the store from before the invoice existed, and the payment screen is
   // an unpaid screen: the view it is handed must not carry it at all.
-  assert.ok(!JSON.stringify(first).includes("SXB-Y"), "an unpaid screen never receives a code");
+  assert.ok(!JSON.stringify(first).includes("SB-Y"), "an unpaid screen never receives a code");
   w.stop();
   await Promise.race([w.done, flush().then(() => { throw new Error("stop left the loop in its backoff"); })]);
 });

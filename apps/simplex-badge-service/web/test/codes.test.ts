@@ -11,9 +11,9 @@ const codeTest = timedTest(5000);
 // and badgeCodeHash gives that digest. Disagreeing with any of the three sells codes the service cannot redeem,
 // as shipped before with a 31-character alphabet, a mod-31 check character and a hash missing the prefix.
 const VECTOR_BODY = "4RT6E8YBMW74Q8DK9DKR";
-const VECTOR = "SXB-4RT6E-8YBMW-74Q8D-K9DKR";
-const VECTOR_CANONICAL = "SXB4RT6E8YBMW74Q8DK9DKR";
-const VECTOR_HASH = "3d_WN-5f2kzgJl49HWgHiLYBDgedGOBVkFD1UsHSE8Y";
+const VECTOR = "SB-4RT6E-8YBMW-74Q8D-K9DKR";
+const VECTOR_CANONICAL = "SB4RT6E8YBMW74Q8DK9DKR";
+const VECTOR_HASH = "Lyr52PVy843AXApBOwdq8hJKCfkpE4zuR_Xm_50SDQg";
 
 codeTest("codes: the vector agrees with parseBadgeCode's canonical form and hash", async () => {
   assert.equal(checkChar(VECTOR_BODY.slice(0, 19)), VECTOR_BODY[19]);
@@ -77,14 +77,14 @@ codeTest("codes: every adjacent transposition is detected but Luhn's 0/Z blind s
 });
 
 codeTest("codes: normalise folds I, L and O, and requires the prefix", () => {
-  assert.equal(normalise("sxb-4rt6e-8ybmw-74q8d-k9dkr"), VECTOR_BODY);
-  assert.equal(normalise(" SXB 4RT6E 8YBMW 74Q8D K9DKR "), VECTOR_BODY);
+  assert.equal(normalise("sb-4rt6e-8ybmw-74q8d-k9dkr"), VECTOR_BODY);
+  assert.equal(normalise(" SB 4RT6E 8YBMW 74Q8D K9DKR "), VECTOR_BODY);
   // I and L read as 1, O as 0, so a code copied by hand still verifies
   const folded = normalise(display("1".repeat(19) + checkChar("1".repeat(19))).replace(/1/g, "I"));
   assert.equal(folded, "1".repeat(19) + checkChar("1".repeat(19)));
   // U is not in the alphabet and folds onto nothing
-  assert.equal(normalise("SXB-UUUUU-UUUUU-UUUUU-UUUUU"), null);
-  assert.equal(normalise("SXB-TOOSHORT"), null);
+  assert.equal(normalise("SB-UUUUU-UUUUU-UUUUU-UUUUU"), null);
+  assert.equal(normalise("SB-TOOSHORT"), null);
   // parseBadgeCode strips the prefix and fails without it, so this must too
   assert.equal(normalise("4RT6E8YBMW74Q8DK9DKR"), null);
   // a wrong check character is not a code
@@ -140,8 +140,8 @@ codeTest("codes: every code drawn is a different one, and the draw covers the al
 codeTest("codes: stripping is Unicode, the way parseBadgeCode's isAlphaNum is", () => {
   // An ASCII-only strip would drop an Arabic-Indic digit and read the rest as a valid code that
   // the service, filtering with `isAlphaNum`, would refuse.
-  assert.equal(normalise("SXB\u0663-4RT6E-8YBMW-74Q8D-K9DKR"), null);
-  assert.equal(normalise("SXB-4RT6E-8YBMW-74Q8D-K9DKR"), VECTOR_BODY, "and the separators still go");
+  assert.equal(normalise("SB\u0663-4RT6E-8YBMW-74Q8D-K9DKR"), null);
+  assert.equal(normalise("SB-4RT6E-8YBMW-74Q8D-K9DKR"), VECTOR_BODY, "and the separators still go");
 });
 
 codeTest("codes: the payload comes from the CSPRNG, one byte per character", () => {

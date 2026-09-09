@@ -409,16 +409,16 @@ qrTest("qr: the remainder bits per version are the published counts", () => {
 // ------------------------------------------------------------ the bit stream
 
 qrTest("qr: the bit stream is mode, count, payload, terminator and the alternating pad", () => {
-  const bytes = new TextEncoder().encode("SXB");
+  const bytes = new TextEncoder().encode("SB");
   const codewords = dataCodewords(bytes, 1);
   assert.equal(codewords.length, numDataCodewords(1), "a version is filled, not partly written");
-  // 0100 then 00000011 then 'S' 'X' 'B', packed across the nibble boundary.
+  // 0100 then 00000010 then 'S' 'B', packed across the nibble boundary.
   assert.equal(codewords[0], 0b01000000);
-  assert.equal(codewords[1], 0b00110101, "the length nibble carries into the first payload byte");
-  assert.equal(codewords[2], 0b00110101, "'S' and the high nibble of 'X'");
-  assert.equal(codewords[4], (("B".charCodeAt(0) & 0x0f) << 4) | 0b0000, "the terminator follows the last byte");
-  for (let i = 5; i < codewords.length; i++) {
-    assert.equal(codewords[i], i % 2 === 1 ? 0xec : 0x11, "the pad alternates 11101100 00010001");
+  assert.equal(codewords[1], 0b00100101, "the length nibble carries into the first payload byte");
+  assert.equal(codewords[2], 0b00110100, "the low nibble of 'S' and the high nibble of 'B'");
+  assert.equal(codewords[3], (("B".charCodeAt(0) & 0x0f) << 4) | 0b0000, "the terminator follows the last byte");
+  for (let i = 4; i < codewords.length; i++) {
+    assert.equal(codewords[i], i % 2 === 0 ? 0xec : 0x11, "the pad alternates 11101100 00010001");
   }
 });
 
@@ -471,7 +471,7 @@ qrTest("qr: the first codeword starts at the bottom-right corner and runs upward
   // The one statement about the traversal that comes from outside this
   // repository: a reader that started anywhere else would read a different
   // symbol. Checked against the encoder's own output, not against the decoder.
-  const payload = "SXB-YDC8A-YGQTM-PUYZ9-2TUXP";
+  const payload = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
   const symbol = symbolOf(payload);
   const codewords = interleave(dataCodewords(new TextEncoder().encode(payload), symbol.version), symbol.version);
   const rule = MASK_RULES[symbol.mask]!;
@@ -486,7 +486,7 @@ qrTest("qr: the first codeword starts at the bottom-right corner and runs upward
 });
 
 qrTest("qr: the mask is one of the eight, and is the one the format block declares", () => {
-  for (const payload of ["a", "SXB-YDC8A-YGQTM-PUYZ9-2TUXP", "x".repeat(400)]) {
+  for (const payload of ["a", "SB-YDC8A-YGQTM-PUYZ9-2TUXP", "x".repeat(400)]) {
     const symbol = symbolOf(payload);
     assert.ok(symbol.mask >= 0 && symbol.mask <= 7);
     const decoded = decodeQr(symbol.modules);
@@ -500,7 +500,7 @@ qrTest("qr: the mask is one of the eight, and is the one the format block declar
 const MONERO_ADDRESS = "48HqK2XmVexampleAddress9fRtWcExampleAddress2nQyVXaLbEEXampleAddr9SDFGHJK9fRtWcQ8Uv7VJj3mExample";
 const MONERO_INTEGRATED = "4LEXampleIntegratedAddress9fRtWcExampleAddress2nQyVXaLbEEXampleAddr9SDFGHJK9fRtWcQ8Uv7VJj3mExampleAddr9fRt";
 const BITCOIN_ADDRESS = "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq";
-const BADGE_CODE = "SXB-YDC8A-YGQTM-PUYZ9-2TUXP";
+const BADGE_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
 
 function roundTrip(payload: string, what: string): Decoded {
   const symbol = symbolOf(payload);
@@ -536,8 +536,8 @@ qrTest("qr: a Bitcoin BIP-21 URI round-trips", () => {
 
 qrTest("qr: a badge code round-trips exactly, hyphens and all", () => {
   const decoded = roundTrip(BADGE_CODE, "the badge code");
-  assert.equal(BADGE_CODE.length, 27);
-  assert.equal(decoded.version, 3, "twenty-seven characters is more than version 2's twenty-six");
+  assert.equal(BADGE_CODE.length, 26);
+  assert.equal(decoded.version, 2, "twenty-six characters is exactly version 2's capacity");
 });
 
 qrTest("qr: payloads on both sides of a version boundary round-trip", () => {
@@ -640,7 +640,7 @@ qrTest("svg: the drawn modules ARE the symbol, quiet zone included", () => {
 qrTest("svg: nothing in the tree carries the payload as text or as an attribute", () => {
   const svg = qrSvg(BADGE_CODE, "Badge code as a scannable code") as unknown as StubElement;
   const dump = svg.serialize();
-  for (const form of [BADGE_CODE, BADGE_CODE.replace(/-/g, ""), "SXB-"]) {
+  for (const form of [BADGE_CODE, BADGE_CODE.replace(/-/g, ""), "SB-"]) {
     assert.ok(!dump.includes(form), `the SVG smuggled ${form} into ${dump.slice(0, 200)}`);
   }
   assert.deepEqual(svg.texts, [], "a symbol has no text nodes at all");
@@ -744,7 +744,7 @@ qrTest("only the code screen draws a QR of the code, and every other screen draw
       assert.equal(where, "awaitingPayment", `${where} drew a QR while its order is unpaid`);
       const payload = decodeQr(modulesOfSvg(svg)).payload;
       assert.ok(payload.startsWith("monero:"), `the payment screen's QR must be the payment URI, not ${payload.slice(0, 40)}`);
-      assert.ok(!payload.includes("SXB"), "and never the code");
+      assert.ok(!payload.includes("SB"), "and never the code");
     }
     // Every OTHER symbol on the screen is artwork, be it the logo, a badge or a
     // payment mark, and artwork is decorative by construction: it is built
@@ -756,7 +756,7 @@ qrTest("only the code screen draws a QR of the code, and every other screen draw
       assert.equal(art.getAttribute("aria-label"), null, "and artwork never carries a name");
     }
     const dump = panel.serialize();
-    for (const form of [BADGE_CODE, BADGE_CODE.replace(/-/g, ""), "SXB-"]) {
+    for (const form of [BADGE_CODE, BADGE_CODE.replace(/-/g, ""), "SB-"]) {
       assert.ok(!dump.includes(form), `${where} leaked a code (${form})`);
     }
   }
