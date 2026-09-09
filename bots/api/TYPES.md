@@ -1158,7 +1158,6 @@ SimplexDomainNotReady:
 - type: "simplexDomainNotReady"
 - simplexDomain: [SimplexDomain](#simplexdomain)
 - simplexDomainError: [SimplexDomainError](#simplexdomainerror)
-- availability: [SimplexNameAvailability](#simplexnameavailability)?
 
 NotResolvedLocally:
 - type: "notResolvedLocally"
@@ -3682,6 +3681,18 @@ NoValidLink:
 
 UnknownDomain:
 - type: "unknownDomain"
+- claimedDomain: [SimplexDomain](#simplexdomain)?
+
+Unavailable:
+- type: "unavailable"
+- availability: [SimplexNameAvailability](#simplexnameavailability)
+
+ResolvesElsewhere:
+- type: "resolvesElsewhere"
+- resolvedLinks: [string]
+
+NotRegistered:
+- type: "notRegistered"
 
 
 ---

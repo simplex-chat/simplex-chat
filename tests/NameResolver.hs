@@ -28,7 +28,7 @@ import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Names.Record (NameRecord (..))
 import Simplex.Messaging.Server.Names (NamesConfig (..))
 import Simplex.Messaging.Protocol (queryName, nameQuery)
-import Simplex.Messaging.SimplexName (SimplexNameInfo (..))
+import Simplex.Messaging.SimplexName (SimplexNameInfo (..), fullDomainName)
 import Simplex.Messaging.Transport (currentClientSMPRelayVersion)
 
 type NameRegistry = TVar (Map Text NameRecord)
@@ -69,7 +69,11 @@ withNameResolver action = do
 -- lookups regressed to plaintext.
 registerName :: TVar (Map Text NameRecord) -> SimplexNameInfo -> NameRecord -> IO ()
 registerName reg SimplexNameInfo {nameDomain} r =
-  atomically $ modifyTVar' reg $ M.insert (queryName (nameQuery currentClientSMPRelayVersion nameDomain)) r
+  atomically $ modifyTVar' reg $ M.insert key r {nrName = fullDomainName nameDomain}
+  where
+    -- the record names the name it is registered under, as the resolver's
+    -- canonical_name does, and as the client checks
+    key = queryName (nameQuery currentClientSMPRelayVersion nameDomain)
 
 contactNameRecord :: Text -> Text -> NameRecord
 contactNameRecord name link = (emptyRecord name) {nrSimplexContact = [link]}

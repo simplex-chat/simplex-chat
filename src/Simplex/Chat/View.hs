@@ -152,6 +152,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
+  CRNameStatus u domain availability -> ttyUser u [plain $ strEncode domain <> " " <> nameStatus domain availability]
   CRContactDomainVerified u (Contact {profile = LocalProfile {contactDomain}}) result -> ttyUser u $ viewDomainVerified NTContact (claimDomain <$> contactDomain) result
   CRGroupDomainVerified u g result -> ttyUser u $ viewDomainVerified NTPublicGroup (groupSimplexDomain g) result
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
@@ -828,19 +829,21 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
           _ -> []
 
 -- | A reserved name never frees up, so it is given no date.
-availabilityReason :: SimplexDomain -> SimplexNameAvailability -> B.ByteString
-availabilityReason SimplexDomain {subDomain} = \case
-  SNARegistered {reserved = Just r} -> "is registered to someone else, and reserved" <> reservedReason r
-  SNARegistered {graceUntil} ->
-    "is registered to someone else"
-      <> maybe "" ((", free to register from " <>) . day) graceUntil
-  SNAReserved r -> "is reserved" <> reservedReason r
-  -- only a second-level name is registrable, so a subname is quoted no price
-  SNAAvailable {} | not (null subDomain) -> "is not registered"
+-- | What the registry says about a name, for someone deciding whether to register it.
+nameStatus :: SimplexDomain -> SimplexNameAvailability -> B.ByteString
+nameStatus SimplexDomain {subDomain} = \case
+  SNARegistered {expires, graceUntil, reserved} ->
+    "registered"
+      <> maybe "" ((", expires " <>) . day) expires
+      <> maybe "" (\t -> ", free to register from " <> day t <> " unless renewed by owner") graceUntil
+      <> maybe "" ((", and reserved" <>) . reservedReason) reserved
+  SNAReserved r -> "reserved" <> reservedReason r
+  -- only a second-level name is registrable
+  SNAAvailable {} | not (null subDomain) -> "not registered, and not registrable on its own"
   SNAAvailable {yearPriceUSD = Nothing, minLabelLength} ->
-    "is too short: names need at least " <> B.pack (show minLabelLength) <> " characters"
+    "too short: names need at least " <> B.pack (show minLabelLength) <> " characters"
   SNAAvailable {yearPriceUSD = Just cents, auctionUntil} ->
-    "can be registered for " <> usd cents <> " a year"
+    "available, " <> usd cents <> " a year"
       <> maybe "" ((", plus a premium until " <>) . day) auctionUntil
   where
     day = B.pack . formatTime defaultTimeLocale "%Y-%m-%d"
@@ -2763,11 +2766,16 @@ viewChatError isCmd logLevel testView = \case
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
     CESimplexDomainNotReady domain domainErr ->
-      let reason = case domainErr of
-            SDENoValidLink -> "has no valid connection link"
-            SDEUnknownDomain -> "is not included in the connection link's profile"
-            SDEUnavailable a -> availabilityReason domain a
-       in [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
+      let name = "SimpleX name " <> strEncode domain <> " "
+       in case domainErr of
+            SDENoValidLink -> [plain $ name <> "has no valid connection link"]
+            SDEUnknownDomain claimed_ ->
+              [plain $ name <> "resolves to an address that claims " <> maybe "no name" strEncode claimed_]
+            SDENotRegistered -> [plain $ name <> "is not registered"]
+            SDEUnavailable a -> [plain $ name <> "is " <> nameStatus domain a]
+            SDEResolvesElsewhere links ->
+              plain (name <> "does not resolve to this address, it resolves to:")
+                : map (plain . ("  " <>) . encodeUtf8) links
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->

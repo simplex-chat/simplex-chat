@@ -1596,7 +1596,7 @@ processChatCommand cxt nm = \case
             UserContactLink {shortLinkDataSet, connLinkContact = CCLink _ sl_} <- withFastStore (`getUserAddress` user)
             case sl_ of
               Just sl | shortLinkDataSet -> do
-                checkNameClaim nm user domain (nameResolvesTo sl . nrSimplexContact)
+                checkNameClaim nm user domain sl nrSimplexContact
                 pure $ Just (CLShort sl)
               _ -> throwCmdError "create the address short link and add it to name"
         let p' = (fromLocalProfile p :: Profile) {contactDomain = mkDomainClaim <$> domain_, contactLink = cl'}
@@ -2397,6 +2397,11 @@ processChatCommand cxt nm = \case
       _ -> throwError e
     connectWithPlan user incognito ccLink planSimplexName otherSimplexName plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
+  APIGetNameStatus userId domain -> withUserId userId $ \user -> do
+    reg <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+    pure $ CRNameStatus user domain (nameAvailability domain reg)
+  ShowNameStatus domain -> withUser $ \User {userId} ->
+    processChatCommand cxt nm $ APIGetNameStatus userId domain
   APIVerifyContactDomain contactId -> withUser $ \user -> do
     ct@Contact {profile = LocalProfile {contactDomain}, preparedContact} <- withFastStore $ \db -> getContact db cxt user contactId
     let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
@@ -3287,7 +3292,7 @@ processChatCommand cxt nm = \case
         let domainChanged = (claimDomain <$> newClaim) /= (claimDomain <$> (existingAccess >>= groupDomainClaim))
         forM_ (claimDomain <$> newClaim) $ \newDomain ->
           when domainChanged $ do
-            checkNameClaim nm user newDomain (nameResolvesTo groupLink . nrSimplexChannel)
+            checkNameClaim nm user newDomain groupLink nrSimplexChannel
         runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}} (isJust newClaim && domainChanged)
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
@@ -4393,7 +4398,7 @@ processChatCommand cxt nm = \case
                 | isJust (firstNameLink CCTContact (nrSimplexContact nr)) ->
                     addOther nr <$> connectPlanName NTContact (Right nr)
                 | otherwise -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENoValidLink
-              Right reg -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d (SDEUnavailable (nameAvailability d reg))
+              Right _ -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENotRegistered
               Left e -> connectPlanNoName e
         where
           connectPlanName nameType nr_ = connectPlan user connTarget resolveMode sig_ (Just nr_)
@@ -4430,7 +4435,7 @@ processChatCommand cxt nm = \case
                       (Just _, Just p) -> updateContactFromLinkData user ct' p
                       _ -> pure ct'
                 forM_ planDomain $ \nameDomain ->
-                  unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
+                  unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain (SDEUnknownDomain linkDomain_)
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
                   Just ct' | not (contactDeleted ct') -> do
                     ct'' <- refreshContact ct'
@@ -4513,7 +4518,7 @@ processChatCommand cxt nm = \case
                               CPGroupLink (GLPOwnLink GroupInfo {groupProfile}) -> Just groupProfile
                               CPGroupLink (GLPConnectingProhibit (Just GroupInfo {groupProfile})) -> Just groupProfile
                               _ -> (\GroupShortLinkData {groupProfile} -> groupProfile) <$> groupSLinkData_
-                         in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
+                         in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain (SDEUnknownDomain domain_)
                       pure (con l' cReq, plan)
             where
               unsupportedGroupType = \case
@@ -5043,15 +5048,23 @@ firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
 
 -- | Check that a name resolves to this link, and when it does not, say what the
 -- registry says about it.
-checkNameClaim :: NetworkRequestMode -> User -> SimplexDomain -> (NameRecord -> Bool) -> CM ()
-checkNameClaim nm user domain pointsHere = do
+checkNameClaim :: NetworkRequestMode -> User -> SimplexDomain -> ConnShortLink 'CMContact -> (NameRecord -> [Text]) -> CM ()
+checkNameClaim nm user domain sLnk nameLinks = do
   reg <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
-  unless (maybe False pointsHere (resolvedRecord_ reg)) $ unavailable domain reg
+  case resolvedRecord_ reg of
+    Nothing -> unavailable domain reg
+    Just nr -> case nameLinks nr of
+      [] -> notReady SDENoValidLink
+      links -> unless (nameResolvesTo sLnk links) $ notReady (SDEResolvesElsewhere links)
+      where
+        notReady = throwChatError . CESimplexDomainNotReady domain
 
 -- | The record a name resolves to; when it does not, the failure says why.
 resolvedRecord :: SimplexDomain -> NameRegistration -> CM NameRecord
-resolvedRecord domain reg = maybe (unavailable domain reg) pure (resolvedRecord_ reg)
+resolvedRecord domain reg =
+  maybe (throwChatError $ CESimplexDomainNotReady domain SDENotRegistered) pure (resolvedRecord_ reg)
 
+-- | Claiming a name: what the registry says, since the point is to get it.
 unavailable :: SimplexDomain -> NameRegistration -> CM a
 unavailable domain reg = throwChatError $ CESimplexDomainNotReady domain (SDEUnavailable (nameAvailability domain reg))
 
@@ -5765,6 +5778,8 @@ chatCommandP =
       "/_set conn user :" *> (APIChangeConnectionUser <$> A.decimal <* A.space <*> A.decimal),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
+      "/_name " *> (APIGetNameStatus <$> A.decimal <* A.space <*> strP),
+      "/name " *> (ShowNameStatus <$> strP),
       "/_verify domain @" *> (APIVerifyContactDomain <$> A.decimal),
       "/_verify domain #" *> (APIVerifyGroupDomain <$> A.decimal),
       ForwardMessage <$> chatNameP <* " <- @" <*> displayNameP <* A.space <*> msgTextP,

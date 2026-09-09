@@ -838,7 +838,6 @@ class ChatErrorType_simplexDomainNotReady(TypedDict):
     type: Literal["simplexDomainNotReady"]
     simplexDomain: "SimplexDomain"
     simplexDomainError: "SimplexDomainError"
-    availability: NotRequired["SimplexNameAvailability"]
 
 class ChatErrorType_notResolvedLocally(TypedDict):
     type: Literal["notResolvedLocally"]
@@ -2847,10 +2846,28 @@ class SimplexDomainError_noValidLink(TypedDict):
 
 class SimplexDomainError_unknownDomain(TypedDict):
     type: Literal["unknownDomain"]
+    claimedDomain: NotRequired["SimplexDomain"]
 
-SimplexDomainError = SimplexDomainError_noValidLink | SimplexDomainError_unknownDomain
+class SimplexDomainError_unavailable(TypedDict):
+    type: Literal["unavailable"]
+    availability: "SimplexNameAvailability"
 
-SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain"]
+class SimplexDomainError_resolvesElsewhere(TypedDict):
+    type: Literal["resolvesElsewhere"]
+    resolvedLinks: list[str]
+
+class SimplexDomainError_notRegistered(TypedDict):
+    type: Literal["notRegistered"]
+
+SimplexDomainError = (
+    SimplexDomainError_noValidLink
+    | SimplexDomainError_unknownDomain
+    | SimplexDomainError_unavailable
+    | SimplexDomainError_resolvesElsewhere
+    | SimplexDomainError_notRegistered
+)
+
+SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain", "unavailable", "resolvesElsewhere", "notRegistered"]
 
 class SimplexDomainProof(TypedDict):
     linkOwnerId: NotRequired[str]

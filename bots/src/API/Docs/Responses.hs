@@ -151,6 +151,7 @@ undocumentedResponses =
     "CRContactCode",
     "CRContactInfo",
     "CRContactDomainVerified",
+    "CRNameStatus",
     "CRContactRatchetSyncStarted",
     "CRContactSwitchAborted",
     "CRContactSwitchStarted",

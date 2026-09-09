@@ -547,6 +547,8 @@ data ChatCommand
   | APIConnectPreparedGroup {groupId :: GroupId, incognito :: IncognitoEnabled, ownerContact :: Maybe GroupOwnerContact, msgContent_ :: Maybe MsgContent}
   | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
   | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe AConnectTarget}
+  | APIGetNameStatus {userId :: UserId, statusDomain :: SimplexDomain}
+  | ShowNameStatus {statusDomain :: SimplexDomain}
   | APIVerifyContactDomain {contactId :: ContactId}
   | APIVerifyGroupDomain {groupId :: GroupId}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
@@ -811,6 +813,7 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
+  | CRNameStatus {user :: User, statusDomain :: SimplexDomain, availability :: SimplexNameAvailability}
   | CRContactDomainVerified {user :: User, contact :: Contact, verificationFailure :: Maybe Text}
   | CRGroupDomainVerified {user :: User, groupInfo :: GroupInfo, verificationFailure :: Maybe Text}
   | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
@@ -1445,8 +1448,10 @@ data ChatError
 -- why a resolved SimpleX name could not be used
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
-  | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
+  | SDEUnknownDomain {claimedDomain :: Maybe SimplexDomain} -- the name the resolved address claims, if any
   | SDEUnavailable {availability :: SimplexNameAvailability} -- what the registry says instead
+  | SDEResolvesElsewhere {resolvedLinks :: [Text]} -- resolves, but not to this address
+  | SDENotRegistered -- connecting only needs to know the name reaches no one
   deriving (Eq, Show)
 
 -- | What the registry says about a name, as this client words it. The price is
