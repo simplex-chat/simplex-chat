@@ -20,20 +20,26 @@ module Simplex.Chat.Badges.Ledger
 where
 
 import Data.Text (Text)
-import Data.Time.Calendar (addDays, addGregorianMonthsClip)
+import Data.Time.Calendar (addDays, addGregorianMonthsClip, toGregorian)
 import Data.Time.Calendar.WeekDate (toWeekDate)
 import Data.Time.Clock (UTCTime (..))
 import Simplex.Chat.Badges (BadgeType)
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
 
 -- | balanceStartTs is always a whole number of months from the anchor; this is that number.
-monthsFromAnchor :: StatementEntry -> Int
-monthsFromAnchor StatementEntry {balanceStartTs, balanceAnchorTs} =
-  length $ takeWhile (\m -> addMonths m balanceAnchorTs <= balanceStartTs) [1 ..]
+-- The calendar difference overshoots by at most one month, so one comparison settles it.
+monthsFromAnchor :: StatementEntry -> Integer
+monthsFromAnchor StatementEntry {balanceStartTs, balanceAnchorTs}
+  | addMonths months balanceAnchorTs <= balanceStartTs = max 0 months
+  | otherwise = max 0 (months - 1)
+  where
+    (ay, am, _) = toGregorian (utctDay balanceAnchorTs)
+    (sy, sm, _) = toGregorian (utctDay balanceStartTs)
+    months = (sy - ay) * 12 + toInteger (sm - am)
 
 -- | The start of the month that follows n more months of this run.
 monthAfter :: StatementEntry -> Int -> UTCTime
-monthAfter e n = addMonths (toInteger $ monthsFromAnchor e + n) (balanceAnchorTs e)
+monthAfter e n = addMonths (monthsFromAnchor e + toInteger n) (balanceAnchorTs e)
 
 paidThrough :: StatementEntry -> UTCTime
 paidThrough e = monthAfter e (balanceMonths e)
