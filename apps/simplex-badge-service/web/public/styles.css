@@ -663,6 +663,9 @@ p.row-line { margin: 16px 0 0; }
   padding-top: 7px;
 }
 .row.total span:first-child { color: var(--ink); font-weight: 600; }
+/* the checkout summary's saving: the reduction is a credit, so its figure takes the settled
+   green the duration list's saving pill carries. */
+.row.discount span:last-child { color: var(--ok-fg); }
 
 /* A bare field (the reference, the address, where to redeem) is the same card
    with the label above the value, and follows a notice by 16 rather than the 37

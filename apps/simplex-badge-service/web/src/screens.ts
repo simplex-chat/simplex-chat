@@ -351,6 +351,7 @@ export interface OrderSummaryOptions {
   badgeType: string;
   months: number;
   total: string;
+  discount?: Discount;
   /** False where a code bought now could not be kept: this browser refuses to store anything, or
    * the orders list is full and every entry holds someone else's code. Either way, copy it. */
   canKeepTheCode: boolean;
@@ -384,13 +385,29 @@ function orderLink(orderId: string, label: string, cls: string, onOpen: (orderId
   return a;
 }
 
-function summaryRows(badgeType: string, months: number, total: string): HTMLElement {
+/** The gross price and the reduction off it, both preformatted; `percent` names the saving where
+ * the offer is a percentage. Present only where the charged total is below the gross. */
+export interface Discount {
+  price: string;
+  off: string;
+  percent?: number;
+}
+
+function summaryRows(badgeType: string, months: number, total: string, discount?: Discount): HTMLElement {
   const level = badgeType.charAt(0).toUpperCase() + badgeType.slice(1);
-  return el("div", { class: "rows" },
+  const rows: HTMLElement[] = [
     el("div", { class: "row" }, el("span", {}, "Level"), el("span", {}, level)),
     el("div", { class: "row" }, el("span", {}, "Duration"), el("span", {}, months === 1 ? "1 month" : `${months} months`)),
-    el("div", { class: "row total" }, el("span", {}, "Total"), el("span", {}, total)),
-  );
+  ];
+  if (discount !== undefined) {
+    rows.push(el("div", { class: "row" }, el("span", {}, "Price"), el("span", {}, discount.price)));
+    rows.push(el("div", { class: "row discount" },
+      el("span", {}, discount.percent !== undefined ? `Discount (${discount.percent}% off)` : "Discount"),
+      // U+2212 minus, not a hyphen: it lines up with the tabular figures and reads as a subtraction.
+      el("span", {}, `−${discount.off}`)));
+  }
+  rows.push(el("div", { class: "row total" }, el("span", {}, "Total"), el("span", {}, total)));
+  return el("div", { class: "rows" }, ...rows);
 }
 
 export const AWAITING_CARD_TITLE = "A card payment is waiting to be confirmed";
@@ -405,7 +422,7 @@ export function orderSummary(o: OrderSummaryOptions): HTMLElement {
       "link", o.openOrder.onOpen,
     )));
   }
-  p.append(summaryRows(o.badgeType, o.months, o.total));
+  p.append(summaryRows(o.badgeType, o.months, o.total, o.discount));
   if (awaiting) {
     p.append(notice(AWAITING_CARD_TITLE,
       "A second order would be a second charge, so this one cannot be started yet.",

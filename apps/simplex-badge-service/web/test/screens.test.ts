@@ -143,6 +143,29 @@ domTest("screens: the order summary is the summary and the method row, with the 
   }
 });
 
+domTest("screens: a discounted order shows the gross price and the reduction above the total", () => {
+  const p = render(screens.orderSummary({ canKeepTheCode: true,
+    badgeType: "legend", months: 12, total: "$420.00", selected: "xmr",
+    discount: { price: "$840.00", off: "$420.00", percent: 50 },
+    onSelect: noop, onPay: noop, onBack: noop,
+  }));
+  for (const line of ["Price", "$840.00", "Discount (50% off)", "−$420.00", "Total", "$420.00"]) {
+    assert.ok(p.textContent.includes(line), `the discounted summary is missing: ${line}`);
+  }
+  const discountRow = p.all("div.discount")[0]!;
+  assert.ok(discountRow.textContent.includes("−$420.00"), "the reduction is on the discount row");
+});
+
+domTest("screens: an order at full price shows no Price or Discount row, only the total", () => {
+  const p = render(screens.orderSummary({ canKeepTheCode: true,
+    badgeType: "supporter", months: 1, total: "$7.00", selected: "xmr",
+    onSelect: noop, onPay: noop, onBack: noop,
+  }));
+  assert.ok(!p.textContent.includes("Discount"), "no discount row without a saving");
+  assert.equal(p.all("div.discount").length, 0);
+  assert.ok(p.textContent.includes("Total"));
+});
+
 domTest("screens: the provider-unavailable screen shows the unavailable method disabled rather than omitting it", () => {
   const p = render(screens.orderSummary({ canKeepTheCode: true,
     badgeType: "legend", months: 12, total: "$420.00", selected: "btc", unavailable: "xmr",

@@ -324,6 +324,13 @@ function buildPanel(at: number): HTMLElement {
         badgeType: price?.badgeType ?? "",
         months: total?.months ?? 1,
         total: total === undefined ? "" : money(total.amount, price?.currency ?? "usd"),
+        ...(total !== undefined && total.price > total.amount
+          ? { discount: {
+              price: money(total.price, price?.currency ?? "usd"),
+              off: money(total.price - total.amount, price?.currency ?? "usd"),
+              ...(savingPercent(total.price, total.amount) > 0 ? { percent: savingPercent(total.price, total.amount) } : {}),
+            } }
+          : {}),
         selected: method,
         ...(unavailableMethod !== undefined ? { unavailable: unavailableMethod } : {}),
         ...(open !== undefined
