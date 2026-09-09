@@ -49,15 +49,6 @@ function startCountdown() {
     setInterval(tick, 1000);
 }
 
-function setSignupSource() {
-    const field = document.querySelector('input[name="SOURCE"]');
-    if (!field) return;
-
-    const inHash = new URLSearchParams(location.hash.replace(/^#\??/, '')).get('utm_source');
-    const source = inHash ?? new URLSearchParams(location.search).get('utm_source');
-    if (source && /^[\w.-]{1,40}$/.test(source)) field.value = source;
-}
-
 function setupRegisterOverlay() {
     const overlay = document.getElementById('register');
     const openBtn = document.querySelector('.register-btn');
@@ -79,7 +70,14 @@ function setupRegisterOverlay() {
     }
 
     openBtn.addEventListener('click', openOverlay);
-    form.addEventListener('submit', closeOverlay);
+    form.addEventListener('submit', () => {
+        const submit = form.querySelector('[type="submit"]');
+        if (!submit) return;
+        setTimeout(() => {
+            submit.disabled = true;
+            submit.value = 'Submitting...';
+        }, 0);
+    });
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay || e.target.closest('.close-register')) closeOverlay();
     });
@@ -107,6 +105,5 @@ function trackNavColor() {
 
 showLocalTime();
 startCountdown();
-setSignupSource();
 setupRegisterOverlay();
 trackNavColor();
