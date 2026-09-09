@@ -737,7 +737,7 @@ templateEngineOverride: njk
                 position: relative;
                 z-index: 5;
             }
-            .cf-hero-cta .cf-pill { width: 100%; height: 48px; font-size: 15px; }
+            .cf-hero-cta .cf-pill { width: 100%; height: 48px; font-size: 16px; }
             .cf-close .cf-hero-cta {
                 order: 5;
                 flex-direction: column-reverse;
@@ -784,7 +784,7 @@ templateEngineOverride: njk
                     rgba(2, 7, 29, 0) 100%);
             }
 
-            .cf-pill { font-size: 15px; }
+            .cf-pill { font-size: 16px; }
             .cf-bottom { top: calc(5px + var(--cf-nav-shift)); right: 16px; bottom: auto; padding: 0 18px; }
             .cf-top { top: auto; left: 16px; right: 16px; bottom: var(--cf-cta-bottom); height: 48px; justify-content: center; }
             .cf-live-link { font-size: calc(var(--sec-vwu) * 4.2); }
@@ -860,9 +860,11 @@ templateEngineOverride: njk
         .cf-fine-links a:hover { color: #ffffff; }
 
         @media screen and (max-width: 959px) {
-            section.page.cf.cf-footer { height: fit-content; min-height: fit-content; }
-            .cf-footer-inner { padding: calc(var(--sec-vhu) * 5) calc(var(--sec-vwu) * 7) calc(var(--sec-vhu) * 12); }
-            .cf-fine { font-size: calc(var(--sec-vwu) * 3); }
+            /* padding-bottom comes from .safari-ios section.page, which a
+               fit-content footer does not need */
+            section.page.cf.cf-footer { height: fit-content; min-height: fit-content; padding-bottom: 0; }
+            .cf-footer-inner { padding: calc(var(--sec-vhu) * 2) var(--cf-text-pad) calc(var(--sec-vhu) * 5); }
+            .cf-fine { font-size: calc(var(--sec-vwu) * 3); max-width: none; }
             .cf-fine-links { gap: calc(var(--sec-vwu) * 6); }
         }
 
