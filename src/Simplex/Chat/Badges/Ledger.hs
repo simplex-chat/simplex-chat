@@ -4,16 +4,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Badges.Ledger
-  ( LedgerBalance (..),
-    BadgePeriod (..),
-    LedgerRow (..),
-    LedgerPlan (..),
-    ledgerPlan,
+  ( emptyEntry,
+    lapseEntry,
+    grantEntry,
+    issueEntry,
     paidThrough,
-    elapsedMonths,
-    advanceBalance,
-    grantMonths,
-    issueMonth,
+    balanceChecked,
     addMonths,
     endOfMondayAfter,
     entryTypeColumns,
@@ -28,102 +24,88 @@ import Data.Time.Calendar (addDays, addGregorianMonthsClip)
 import Data.Time.Calendar.WeekDate (toWeekDate)
 import Data.Time.Clock (UTCTime (..))
 import Simplex.Chat.Badges (BadgeType)
-import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntryType (..))
-
--- | balanceAnchorTs is the start of the current run of months, and every month boundary in that
--- run is counted from it. Counting from balanceStartTs instead would compound the day-of-month
--- clipping: a run from 31 Jan would reach 28 Feb and stay on the 28th for good.
-data LedgerBalance = LedgerBalance
-  { balanceMonths :: Int,
-    balanceStartTs :: UTCTime,
-    balanceAnchorTs :: UTCTime,
-    balanceBadgeType :: BadgeType
-  }
-  deriving (Eq, Show)
+import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
 
 -- | balanceStartTs is always a whole number of months from the anchor; this is that number.
-monthsFromAnchor :: LedgerBalance -> Int
-monthsFromAnchor LedgerBalance {balanceStartTs, balanceAnchorTs} =
+monthsFromAnchor :: StatementEntry -> Int
+monthsFromAnchor StatementEntry {balanceStartTs, balanceAnchorTs} =
   length $ takeWhile (\m -> addMonths m balanceAnchorTs <= balanceStartTs) [1 ..]
 
 -- | The start of the month that follows n more months of this run.
-monthAfter :: LedgerBalance -> Int -> UTCTime
-monthAfter b n = addMonths (toInteger $ monthsFromAnchor b + n) (balanceAnchorTs b)
+monthAfter :: StatementEntry -> Int -> UTCTime
+monthAfter e n = addMonths (toInteger $ monthsFromAnchor e + n) (balanceAnchorTs e)
 
--- | periodStart is stored, not derived from periodEnd: subtracting a month does not undo adding
--- one (31 Jan + 1 month = 28 Feb, - 1 month = 28 Jan).
-data BadgePeriod = BadgePeriod
-  { periodStart :: UTCTime,
-    periodEnd :: UTCTime,
-    badgeExpiry :: UTCTime
-  }
-  deriving (Eq, Show)
+paidThrough :: StatementEntry -> UTCTime
+paidThrough e = monthAfter e (balanceMonths e)
 
-paidThrough :: LedgerBalance -> UTCTime
-paidThrough b = monthAfter b (balanceMonths b)
+elapsedMonths :: UTCTime -> StatementEntry -> Int
+elapsedMonths t e = length $ takeWhile (\m -> monthAfter e m <= t) [1 .. balanceMonths e]
 
-elapsedMonths :: UTCTime -> LedgerBalance -> Int
-elapsedMonths t b = length $ takeWhile (\m -> monthAfter b m <= t) [1 .. balanceMonths b]
+-- | The seed for a purchase with no ledger yet: no months, and a run starting now.
+emptyEntry :: UTCTime -> BadgeType -> StatementEntry
+emptyEntry t badgeType =
+  StatementEntry
+    { -- this entry is never stored, and every operation puts its own id on the entry it returns
+      entryId = "",
+      changeMonths = 0,
+      balanceMonths = 0,
+      balanceStartTs = t,
+      balanceAnchorTs = t,
+      balanceBadgeType = badgeType,
+      wasPausedSince = Nothing,
+      createdAt = t,
+      entryType = SECredit SCOpening
+    }
 
--- | Runs before every grant and issue.
-advanceBalance :: UTCTime -> LedgerBalance -> Maybe LedgerBalance
-advanceBalance t b@LedgerBalance {balanceMonths}
+-- | Writes off the months that have passed.
+lapseEntry :: UTCTime -> Text -> StatementEntry -> Maybe StatementEntry
+lapseEntry t entryId e@StatementEntry {balanceMonths}
   | k == 0 = Nothing
-  | otherwise = Just b {balanceMonths = balanceMonths - k, balanceStartTs = monthAfter b k}
+  | otherwise =
+      Just
+        e
+          { entryId,
+            createdAt = t,
+            changeMonths = negate k,
+            balanceMonths = balanceMonths - k,
+            balanceStartTs = monthAfter e k,
+            entryType = SEDebit SDLapse
+          }
   where
-    k = elapsedMonths t b
+    k = elapsedMonths t e
 
 -- | New months start where the current coverage ends, or at t if it has already lapsed - so they
 -- are neither spent on the month still running nor backdated over a gap.
-grantMonths :: UTCTime -> Int -> LedgerBalance -> LedgerBalance
-grantMonths t n b@LedgerBalance {balanceMonths, balanceStartTs}
+grantEntry :: UTCTime -> Text -> Int -> StatementCreditType -> StatementEntry -> StatementEntry
+grantEntry t entryId n credit e@StatementEntry {balanceMonths, balanceStartTs}
   -- only a lapsed run restarts; topping up before coverage ends continues the run on its anchor,
   -- so buying a month at a time keeps the same day of month as buying a year at once
-  | lapsed = b {balanceMonths = n, balanceStartTs = t, balanceAnchorTs = t}
-  | otherwise = b {balanceMonths = balanceMonths + n}
+  | lapsed = credited {balanceMonths = n, balanceStartTs = t, balanceAnchorTs = t}
+  | otherwise = credited {balanceMonths = balanceMonths + n}
   where
     lapsed = balanceMonths == 0 && t > balanceStartTs
+    credited = e {entryId, createdAt = t, changeMonths = n, entryType = SECredit credit}
 
--- | Runs after advanceBalance. Nothing when the balance is empty, or when it starts in the future
--- because the current month is already issued - the caller then replies with the stored credential.
-issueMonth :: UTCTime -> LedgerBalance -> Maybe (BadgePeriod, LedgerBalance)
-issueMonth t b@LedgerBalance {balanceMonths, balanceStartTs}
+-- | The period issued runs from the previous entry's balanceStartTs to this one's.
+issueEntry :: UTCTime -> Text -> StatementEntry -> Maybe StatementEntry
+issueEntry t entryId e@StatementEntry {balanceMonths, balanceStartTs}
   | balanceMonths <= 0 || balanceStartTs > t = Nothing
-  | otherwise = Just (period, b {balanceMonths = balanceMonths - 1, balanceStartTs = periodEnd})
-  where
-    periodEnd = monthAfter b 1
-    period = BadgePeriod {periodStart = balanceStartTs, periodEnd, badgeExpiry = endOfMondayAfter periodEnd}
+  | otherwise =
+      Just
+        e
+          { entryId,
+            createdAt = t,
+            changeMonths = -1,
+            balanceMonths = balanceMonths - 1,
+            balanceStartTs = monthAfter e 1,
+            entryType = SEDebit SDBadge
+          }
 
-data LedgerRow = LedgerRow
-  { rowChange :: Int,
-    rowBalance :: LedgerBalance,
-    rowType :: StatementEntryType
-  }
-  deriving (Show)
-
--- | The rows to write, worked out before any of them is written. The issuance row is kept
--- separate because the credential is stored against that row and no other.
-data LedgerPlan = LedgerPlan
-  { planRows :: [LedgerRow],
-    planIssuance :: Maybe (LedgerRow, BadgePeriod)
-  }
-  deriving (Show)
-
--- | A redemption and an issue request run the same steps; only a redemption passes a credit.
-ledgerPlan :: UTCTime -> Maybe (Int, StatementCreditType) -> LedgerBalance -> LedgerPlan
-ledgerPlan t grant_ b0 = case issueMonth t granted of
-  Just (p, issued) -> LedgerPlan rows $ Just (row granted issued $ SEDebit SDBadge, p)
-  Nothing -> LedgerPlan rows Nothing
-  where
-    (lapseRows, advanced) = case advanceBalance t b0 of
-      Just b -> ([row b0 b $ SEDebit SDLapse], b)
-      Nothing -> ([], b0)
-    (grantRows, granted) = case grant_ of
-      Just (n, ct) -> let b = grantMonths t n advanced in ([row advanced b $ SECredit ct], b)
-      Nothing -> ([], advanced)
-    rows = lapseRows <> grantRows
-    -- read off the two states, so a row cannot disagree with the balance it carries
-    row before after rowType = LedgerRow {rowChange = balanceMonths after - balanceMonths before, rowBalance = after, rowType}
+-- | Pairs each arriving entry with whether its balance follows from the one before it, the stored
+-- tip standing in for the first one's predecessor. 'Nothing' is "not checked".
+-- TODO [badges] do the arithmetic.
+balanceChecked :: Maybe StatementEntry -> [StatementEntry] -> [(StatementEntry, Maybe Bool)]
+balanceChecked _tip = map (\e -> (e, Nothing))
 
 -- | The tag stored is the string the service sent, so a type this version does not know is kept
 -- as received and can be read once it does.

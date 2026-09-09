@@ -60,7 +60,6 @@ import Simplex.Chat.Library.Subscriber
 import Crypto.Random (ChaChaDRG)
 import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
-import Simplex.Chat.Badges.Ledger (LedgerBalance)
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeState (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
@@ -5302,7 +5301,7 @@ updateUserBadge userId emitted now = do
   withStore' (`getUserBadgePurchase` user) >>= \case
     Nothing -> pure Nothing
     Just p@UserBadgePurchase {badgePurchaseId, alertSnoozeUntil} ->
-      withStore' (`getBadgeLedgerBalance` badgePurchaseId) >>= \case
+      withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= \case
         Nothing -> pure Nothing
         Just balance -> do
           -- retirement needs no service and an unbounded retry would not return before it
@@ -5316,7 +5315,7 @@ updateUserBadge userId emitted now = do
           -- presenting broadcasts the record it is handed, and the request above can block for the
           -- whole service timeout, so this read belongs after it and not at the top of the pass
           user' <- withStore $ \db -> getUser db userId
-          let issued = L.balanceStartTs balance' /= L.balanceStartTs balance
+          let issued = balanceStartTs balance' /= balanceStartTs balance
           -- outside the badge lock: the chat lock must not be taken under it
           unless retired $ presentIssuedBadge user' p now
           emitBadgeAlert user' emitted p now balance'
@@ -5332,9 +5331,9 @@ updateUserBadge userId emitted now = do
 -- | Support ended is the only alert raised here: the others need subscriptions, and warning before
 -- a prepaid badge ends is not actionable while topping up cannot credit months without issuing.
 -- TODO [badges] BAPrepaidEnding belongs here, three days before paidThrough, once that exists.
-derivedBadgeAlert :: UTCTime -> LedgerBalance -> Maybe BadgeAlert
+derivedBadgeAlert :: UTCTime -> StatementEntry -> Maybe BadgeAlert
 derivedBadgeAlert now b
-  | L.balanceMonths b == 0 && endsAt <= now =
+  | balanceMonths b == 0 && endsAt <= now =
       Just BadgeAlert {kind = BASupportEnded, episode = safeDecodeUtf8 $ strEncode endsAt, date = endsAt, price = Nothing}
   | otherwise = Nothing
   where
@@ -5342,14 +5341,14 @@ derivedBadgeAlert now b
 
 -- | Derived from state rather than kept pending: raised unless this occurrence is the one already
 -- answered, and raised again once a snooze that answered it lapses.
-unansweredBadgeAlert :: UTCTime -> UserBadgePurchase -> LedgerBalance -> Maybe BadgeAlert
+unansweredBadgeAlert :: UTCTime -> UserBadgePurchase -> StatementEntry -> Maybe BadgeAlert
 unansweredBadgeAlert now UserBadgePurchase {alertAcked, alertSnoozeUntil} balance =
   case derivedBadgeAlert now balance of
     Just alert@BadgeAlert {kind, episode}
       | alertAcked /= Just (kind, episode) || maybe False (now >=) alertSnoozeUntil -> Just alert
     _ -> Nothing
 
-emitBadgeAlert :: User -> TVar (Maybe BadgeOccurrence) -> UserBadgePurchase -> UTCTime -> LedgerBalance -> CM ()
+emitBadgeAlert :: User -> TVar (Maybe BadgeOccurrence) -> UserBadgePurchase -> UTCTime -> StatementEntry -> CM ()
 emitBadgeAlert user emitted p@UserBadgePurchase {alertSnoozeUntil} now balance =
   forM_ (unansweredBadgeAlert now p balance) $ \alert@BadgeAlert {kind, episode} -> do
     let occurrence = Just (kind, episode, alertSnoozeUntil)
@@ -5363,13 +5362,13 @@ getUserBadgeState user = do
   withStore' (`getUserBadgePurchase` user) >>= \case
     Nothing -> pure Nothing
     Just p@UserBadgePurchase {badgePurchaseId} ->
-      fmap (badgeStateOf now p) <$> withStore' (`getBadgeLedgerBalance` badgePurchaseId)
+      fmap (badgeStateOf now p) <$> withStore' (`getBadgeLedgerLastEntry` badgePurchaseId)
   where
     badgeStateOf now p@UserBadgePurchase {badgePurchaseId, badgeType} balance =
       BadgeState
         { badgePurchaseId,
           badgeType,
-          monthsLeft = L.balanceMonths balance,
+          monthsLeft = balanceMonths balance,
           paidThrough = L.paidThrough balance,
           renewsAt = Nothing,
           willRenew = False,
@@ -5407,9 +5406,9 @@ credentialExpiry (BadgeCredential _ _ _ BadgeInfo {badgeExpiry}) = badgeExpiry
 
 -- | Timed off the shown credential, not the period end: renewing around its shared expiry is what
 -- joins the anonymity set. Latest still equal to shown means this month has not been asked for.
-badgeRequestDue :: UTCTime -> Maybe BadgeCredential -> Maybe BadgeCredential -> LedgerBalance -> Bool
+badgeRequestDue :: UTCTime -> Maybe BadgeCredential -> Maybe BadgeCredential -> StatementEntry -> Bool
 badgeRequestDue now shownCred latestCred balance =
-  L.balanceMonths balance > 0 && latestCred == shownCred && maybe False lapsingSoon shownCred
+  balanceMonths balance > 0 && latestCred == shownCred && maybe False lapsingSoon shownCred
   where
     lapsingSoon cred = credentialExpiry cred <= badgeRequestLead `addUTCTime` now
 
@@ -5419,7 +5418,7 @@ badgeRequestDue now shownCred latestCred balance =
 -- TODO [badges] every client whose credential shares an expiry requests at the same instant. Only
 -- the expiry has to be shared, so the request could fall anywhere in its lead without splitting
 -- the anonymity set - spreading the load, and any outage, off a single moment.
-badgeBoundary :: UTCTime -> Maybe BadgeCredential -> LedgerBalance -> Maybe UTCTime
+badgeBoundary :: UTCTime -> Maybe BadgeCredential -> StatementEntry -> Maybe UTCTime
 badgeBoundary now shownCred balance = case filter (> now) moments of
   [] -> Nothing
   ts -> Just $ minimum ts
@@ -5450,7 +5449,7 @@ badgeErrorRetry = \case
 -- | Ask the service for the month that is due and apply the response. A timeout writes nothing, so
 -- the same request is sent again on the next pass. 'Left' is a service error, already reported, and
 -- carries when to try again, since a service error is answered rather than thrown.
-requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either UTCTime LedgerBalance)
+requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either UTCTime StatementEntry)
 requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, purchaseKey, purchasePrivKey, masterKey} now = do
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
   withEntityLock "badgeIssue" (CLBadgeUser userId) $ do
@@ -5471,7 +5470,7 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, purchaseKey, purcha
         g <- asks random
         applied <- withStore' $ \db -> applyBadgeStatement db g badgePurchaseId statement cred_ now
         unless applied $ eToView $ ChatError $ CEInternalError "issued badge credential has no ledger row to store it against"
-        Right <$> (withStore' (`getBadgeLedgerBalance` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no balance") pure)
+        Right <$> (withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no balance") pure)
       J.Success BSPError {code, retryAfter} -> do
         eToView $ ChatError $ CECommandError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
         ri <- asks $ badgeRetryInterval . config
@@ -5506,7 +5505,7 @@ presentIssuedBadge user p@UserBadgePurchase {badgePurchaseId, shown} now
     presentDue cred = Just cred /= shownCred && maybe True ((<= now) . credentialExpiry) shownCred
 
 -- | The visible half of "the badge expired".
-retireExpiredBadge :: User -> UserBadgePurchase -> UTCTime -> LedgerBalance -> CM Bool
+retireExpiredBadge :: User -> UserBadgePurchase -> UTCTime -> StatementEntry -> CM Bool
 retireExpiredBadge user UserBadgePurchase {badgePurchaseId, shown} now balance
   | not (shown && L.paidThrough balance <= now) = pure False
   | otherwise = do
@@ -5555,7 +5554,8 @@ storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCr
 -- 'False' when that row cannot be found, which the caller reports rather than drop in silence.
 applyBadgeStatement :: DB.Connection -> TVar ChaChaDRG -> Int64 -> BadgeStatement -> Maybe BadgeCredential -> UTCTime -> IO Bool
 applyBadgeStatement db g purchaseId BadgeStatement {entries} cred_ now = do
-  storeBadgeStatement db purchaseId entries now
+  tip <- getBadgeLedgerLastEntry db purchaseId
+  storeBadgeStatement db purchaseId tip entries now
   case (,) <$> cred_ <*> issuedEntryId of
     Nothing -> pure True
     Just (cred, entryUuid) ->

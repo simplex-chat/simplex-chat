@@ -90,9 +90,9 @@ Checking the first entry against what the client actually holds is also what cat
 
 **What happens when it fails: store the row and mark it.** Not refuse. Perks do not depend on the ledger — the credential is signed independently and a receiver verifies that signature — so rejecting a statement would strand a badge the service considers paid while proving nothing. The ledger is the user's record of what was spent, and the useful response to arithmetic that does not add up is to keep it and be able to point at the line.
 
-**The column.** `balance_checked`, per entry — `1` when the entry follows from its predecessor, `0` when it does not. `NOT NULL` with no default, so every insert has to say which. Not `verified`, which already means signature verification on profiles and would read as the same thing.
+**The column.** `balance_checked`, per entry — `1` when the entry follows from its predecessor, `0` when it does not, and null when nobody has looked. Nullable, because "can be checked" and "has been checked" are different things: every row has a predecessor to check against, and none has been checked while the check is a stub. Not `verified`, which already means signature verification on profiles and would read as the same thing.
 
-The check belongs in `Ledger.hs`, beside the arithmetic it verifies — `monthsFromAnchor` is internal there and would otherwise have to be exported to check a debit's start. Stub it to write `1` until it exists; adding the column now is what keeps it out of a migration of its own.
+The check belongs in `Ledger.hs`, beside the arithmetic it verifies — `monthsFromAnchor` is internal there and would otherwise have to be exported to check a debit's start. Stub it to null until it exists; adding the column now is what keeps it out of a migration of its own.
 
 ## The tests move with the types
 
