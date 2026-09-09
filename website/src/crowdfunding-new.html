@@ -75,9 +75,32 @@ templateEngineOverride: njk
 
         /* ---- per-section background: transparent illustration over gradient ---- */
         section.page.cf {
+            --cf-band: 64px;
+            /* backgrounds positioned by a length from the box top must add the
+               band back, or the extension drags them up with the box */
+            --cf-band-shift: 0px;
             background-position: center, center;
             background-repeat: no-repeat, no-repeat;
             background-size: var(--cover-bg-w) var(--cover-bg-h), 102% 102%;
+        }
+
+        /* only the section in view is extended, and only upward, so nothing
+           protrudes at the bottom of the one above. The negative margin cancels
+           the padding, so the flow is unchanged and nothing moves as the class
+           travels; scroll-margin-top keeps the snap on the content. */
+        html.safari-ios section.page.cf.cf-current,
+        html.chrome-ios section.page.cf.cf-current {
+            --cf-band-shift: var(--cf-band);
+            margin-top: calc(-1 * var(--cf-band));
+            padding-top: var(--cf-band);
+            scroll-margin-top: calc(-1 * var(--cf-band));
+        }
+
+        /* the footer stays fit-content: it must not fill the screen */
+        html.safari-ios section.page.cf.cf-current:not(.cf-footer),
+        html.chrome-ios section.page.cf.cf-current:not(.cf-footer) {
+            height: calc(110lvh + var(--cf-band));
+            min-height: calc(110lvh + var(--cf-band));
         }
 
         section.page.cf.cf-light { background-image: var(--cf-art), var(--cf-grad-light); }
@@ -527,7 +550,7 @@ templateEngineOverride: njk
                 background-size: calc(var(--cf-phone-w) * 4.176) auto;
                 background-position:
                     calc((100vw - var(--cf-phone-w)) / 2 - var(--cf-phone-w) * 1.4462)
-                    calc(100svh - var(--cf-phone-show) - var(--cf-phone-h) * 0.4034);
+                    calc(100svh - var(--cf-phone-show) - var(--cf-phone-h) * 0.4034 + var(--cf-band-shift));
             }
             section.page.cf.cf-revenue {
                 background-size: auto calc(var(--cover-bg-h) * 0.84), 102% 102%;
@@ -697,7 +720,7 @@ templateEngineOverride: njk
             .cf-close .area { align-items: stretch; justify-content: flex-start; padding: calc(var(--cf-top) + var(--sec-vhu) * 14) var(--cf-gutter) 0; }
             /* crest a fixed 78px from the section top */
             section.page.cf.cf-close {
-                background-position: 50% calc(78px - var(--cover-bg-h) * 0.2678);
+                background-position: 50% calc(78px - var(--cover-bg-h) * 0.2678 + var(--cf-band-shift));
             }
             /* centred like the home page, the two heading lines set apart */
             .cf-close h1,
@@ -1325,10 +1348,33 @@ templateEngineOverride: njk
                 var dark = current.classList.contains('cf-dark');
                 nav.classList.toggle('on-dark', dark);
                 nav.classList.toggle('on-light', !dark);
+
+                // the extension flips half a screen early, so Safari has
+                // recomputed by the time the section reaches the top
+                var midY = window.innerHeight * 0.5;
+                var soon = null;
+                for (var j = 0; j < sections.length; j++) {
+                    var rr = sections[j].getBoundingClientRect();
+                    if (rr.top <= midY && rr.bottom > midY) { soon = sections[j]; break; }
+                }
+                if (soon && soon !== extended) {
+                    if (extended) extended.classList.remove('cf-current');
+                    soon.classList.add('cf-current');
+                    extended = soon;
+                }
             }
+
+            var extended = null;
 
             window.addEventListener('scroll', apply, { passive: true });
             window.addEventListener('resize', apply);
+            // opening on a hash fragment scrolls without firing scroll first,
+            // so re-run once the browser has jumped there
+            window.addEventListener('hashchange', apply);
+            window.addEventListener('load', apply);
+            requestAnimationFrame(apply);
+            setTimeout(apply, 120);
+            setTimeout(apply, 400);
             apply();
         })();
     </script>
