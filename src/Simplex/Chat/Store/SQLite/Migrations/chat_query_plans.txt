@@ -1214,8 +1214,8 @@ Query:
           INSERT INTO badge_ledger
             (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
              was_paused_since, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type,
-             entry_type_unknown, entry_type_value)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             entry_type_unknown, entry_type_value, balance_checked)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           ON CONFLICT (entry_uuid) DO NOTHING
         
 Plan:
@@ -3510,16 +3510,6 @@ Plan:
 SEARCH badge_code_redemptions USING INDEX sqlite_autoindex_badge_code_redemptions_1 (user_id=? AND code=?)
 
 Query: 
-        SELECT balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type
-        FROM badge_ledger
-        WHERE badge_purchase_id = ?
-        ORDER BY entry_id DESC
-        LIMIT 1
-      
-Plan:
-SEARCH badge_ledger USING INDEX idx_badge_ledger_purchase (badge_purchase_id=?)
-
-Query: 
         SELECT c.agent_conn_id
         FROM connections c
         JOIN contacts ct ON ct.contact_id = c.contact_id
@@ -4044,7 +4034,8 @@ Query:
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.user_id = ? AND p.purchase_priv_key IS NOT NULL
-        ORDER BY p.badge_purchase_id
+        ORDER BY p.badge_purchase_id DESC
+        LIMIT 1
       
 Plan:
 SEARCH u USING INTEGER PRIMARY KEY (rowid=?)
@@ -7657,6 +7648,10 @@ SCAN chat_items
 Query: SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1
 Plan:
 SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT shown_badge_id FROM users WHERE user_id = ?
+Plan:
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT shown_badge_id, user_id FROM users WHERE user_id = 1
 Plan:
