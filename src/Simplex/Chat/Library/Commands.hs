@@ -5182,28 +5182,34 @@ presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadg
 -- stashed before the request is sent, so a retry reaches the service as the same signer.
 -- A terminal answer drops the stash; a timeout keeps it.
 redeemBadgeCode :: NetworkRequestMode -> User -> Text -> CM ChatResponse
-redeemBadgeCode nm user codeText = do
+redeemBadgeCode nm user@User {userId} codeText = do
   code <- maybe (throwCmdError "invalid badge code") pure $ parseBadgeCode codeText
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
   g <- asks random
   now <- liftIO getCurrentTime
   let codeSent = badgeCodeText code
-  redemption_ <- withStore' $ \db -> getBadgeCodeRedemption db user codeSent
-  -- a code already redeemed here is allowed through: re-sending it returns the badge it bought
-  -- and adds nothing. Refused before its keys are stashed and before the request, so it stays unspent
-  replaying <- maybe (pure False) (\r -> withStore' $ \db -> isJust <$> getCodeBadgePurchase db r) redemption_
-  unless replaying $ whenM (withStore' (`userHasBadge` user)) $ throwCmdError "badge already active"
-  redemption@BadgeCodeRedemption {purchaseKey, purchasePrivKey, masterKey} <-
-    maybe (withStore' $ \db -> createBadgeCodeRedemption db g user codeSent now) pure redemption_
-  let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request = BSCRedeemBadgeCode {masterKey, code = codeSent}}
-  respData <- sendServiceRequestTo nm user sendTarget Nothing (Just purchasePrivKey) req
-  case J.fromJSON (J.Object respData) of
-    J.Error e -> throwCmdError $ "invalid badge service response, " <> show e <> ": " <> respJSON respData
-    J.Success BSPError {code = errCode} -> do
-      when (terminalCodeError errCode) $ withStore' $ \db -> deleteBadgeCodeRedemption db (redemptionId redemption)
-      throwCmdError $ "badge service error: " <> T.unpack (badgeServiceErrorText errCode)
-    J.Success BSPBadgeCredential {credential = Just cred, statement} -> storeRedeemedBadge user redemption cred statement
-    J.Success _ -> throwCmdError $ "unexpected badge service response: " <> respJSON respData
+  -- the guard, the request and the write are one section: without it two codes redeemed at once
+  -- both pass the guard and are both spent, for one badge
+  (present_, redeemed) <- withEntityLock "badgeRedeem" (CLBadgeUser userId) $ do
+    redemption_ <- withStore' $ \db -> getBadgeCodeRedemption db user codeSent
+    -- a code already redeemed here is allowed through: re-sending it returns the badge it bought
+    -- and adds nothing. Refused before its keys are stashed and before the request, so it stays unspent
+    replaying <- maybe (pure False) (\r -> withStore' $ \db -> isJust <$> getCodeBadgePurchase db r) redemption_
+    unless replaying $ whenM (withStore' (`userHasBadge` user)) $ throwCmdError "badge already active"
+    redemption@BadgeCodeRedemption {purchaseKey, purchasePrivKey, masterKey} <-
+      maybe (withStore' $ \db -> createBadgeCodeRedemption db g user codeSent now) pure redemption_
+    let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request = BSCRedeemBadgeCode {masterKey, code = codeSent}}
+    respData <- sendServiceRequestTo nm user sendTarget Nothing (Just purchasePrivKey) req
+    case J.fromJSON (J.Object respData) of
+      J.Error e -> throwCmdError $ "invalid badge service response, " <> show e <> ": " <> respJSON respData
+      J.Success BSPError {code = errCode} -> do
+        when (terminalCodeError errCode) $ withStore' $ \db -> deleteBadgeCodeRedemption db (redemptionId redemption)
+        throwCmdError $ "badge service error: " <> T.unpack (badgeServiceErrorText errCode)
+      J.Success BSPBadgeCredential {credential = Just cred, statement} -> storeRedeemedBadge user redemption cred statement
+      J.Success _ -> throwCmdError $ "unexpected badge service response: " <> respJSON respData
+  -- outside the badge lock: the chat lock must not be taken under it
+  mapM_ presentUserBadgeToContacts present_
+  pure redeemed
   where
     -- re-encoded, not shown as received: JSON escapes the control characters a terminal acts on
     respJSON = LB.unpack . J.encode
@@ -5529,8 +5535,9 @@ stopBadgeWorkers workers =
       void $ forkIO $ atomically (badgeWorkerAsync <$> readTMVar (sessionVar v)) >>= uninterruptibleCancel
 
 -- | Verify the credential before writing anything; the purchase, the statement's rows, the
--- issuance and the profile's badge go in one transaction, and contacts are told after it commits.
-storeRedeemedBadge :: User -> BadgeCodeRedemption -> BadgeCredential -> BadgeStatement -> CM ChatResponse
+-- issuance and the profile's badge go in one transaction. Answers the user to tell contacts about,
+-- which the caller does once the badge lock is released.
+storeRedeemedBadge :: User -> BadgeCodeRedemption -> BadgeCredential -> BadgeStatement -> CM (Maybe User, ChatResponse)
 storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCredential _ credMasterKey _ info) statement =
   verifyOwnBadge cred >>= \case
     Nothing -> throwCmdError "redeemed badge credential names an unknown badge key index"
@@ -5550,10 +5557,9 @@ storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCr
         user' <- if newBadge then setUserBadge db user (Just badge) else pure user
         pure (user', newBadge, applied)
       unless applied $ eToView $ ChatError $ CEInternalError "redeemed badge credential has no ledger row to store it against"
-      when newBadge $ presentUserBadgeToContacts user'
       -- nothing is due yet, but a pass is what arms the next wake, and this is the first purchase
       lift $ startBadgeWork user'
-      pure $ CRBadgeRedeemed user' badge newBadge
+      pure (if newBadge then Just user' else Nothing, CRBadgeRedeemed user' badge newBadge)
 
 -- | Store the statement's rows, then the credential against the badge debit row among them.
 -- 'False' when that row cannot be found, which the caller reports rather than drop in silence.
