@@ -9,6 +9,7 @@ module Simplex.Chat.Store.Badges
   ( BadgeCodeRedemption (..),
     UserBadgePurchase (..),
     getUserBadgePurchase,
+    getBadgePurchase,
     userHasBadge,
     setBadgeAlertAcked,
     clearShownBadge,
@@ -202,9 +203,24 @@ data UserBadgePurchase = UserBadgePurchase
 
 -- | Newest, not the one shown_badge_id points at - retirement clears that, and the support ended
 -- alert is recomputed from this purchase after the badge stops being shown.
--- shown is a CASE because in Postgres a comparison is boolean, which BoolInt rejects.
 getUserBadgePurchase :: DB.Connection -> User -> IO (Maybe UserBadgePurchase)
 getUserBadgePurchase db User {userId} =
+  maybeFirstRow fromOnly newestId >>= maybe (pure Nothing) (getBadgePurchase db)
+  where
+    newestId =
+      DB.query
+        db
+        [sql|
+          SELECT badge_purchase_id FROM badge_purchases
+          WHERE user_id = ? AND purchase_priv_key IS NOT NULL
+          ORDER BY badge_purchase_id DESC
+          LIMIT 1
+        |]
+        (Only userId)
+
+-- shown is a CASE because in Postgres a comparison is boolean, which BoolInt rejects.
+getBadgePurchase :: DB.Connection -> Int64 -> IO (Maybe UserBadgePurchase)
+getBadgePurchase db purchaseId =
   maybeFirstRow toPurchase $
     DB.query
       db
@@ -214,11 +230,9 @@ getUserBadgePurchase db User {userId} =
                p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
-        WHERE p.user_id = ? AND p.purchase_priv_key IS NOT NULL
-        ORDER BY p.badge_purchase_id DESC
-        LIMIT 1
+        WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
       |]
-      (Only userId)
+      (Only purchaseId)
   where
     toPurchase (badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) =
       UserBadgePurchase

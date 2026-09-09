@@ -5327,7 +5327,7 @@ updateUserBadge userId emitted now = do
           -- whole service timeout, so this read belongs after it and not at the top of the pass
           user' <- withStore $ \db -> getUser db userId
           -- and the purchase, or an alert acked while the request was in flight is raised again
-          p' <- fromMaybe p <$> withStore' (`getUserBadgePurchase` user')
+          p' <- fromMaybe p <$> withStore' (`getBadgePurchase` badgePurchaseId)
           let issued = balanceStartTs balance' /= balanceStartTs balance
           -- outside the badge lock: the chat lock must not be taken under it
           unless retired $ presentIssuedBadge user' p' now
