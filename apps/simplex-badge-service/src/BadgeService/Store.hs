@@ -170,7 +170,6 @@ getLedgerEntries db purchaseId afterEntryId =
       |]
       (purchaseId, afterEntryId)
 
--- | wasPausedSince is Nothing because the service does not set it, and there is no column for it.
 toEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType, Text, Maybe Text, Maybe Text, UTCTime) -> Maybe StatementEntry
 toEntry (entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, entryType_, credit_, debit_, createdAt) =
   (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince = Nothing, createdAt, entryType})
