@@ -5554,7 +5554,6 @@ storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCr
 -- 'False' when that row cannot be found, which the caller reports rather than drop in silence.
 applyBadgeStatement :: DB.Connection -> TVar ChaChaDRG -> Int64 -> BadgeStatement -> Maybe BadgeCredential -> UTCTime -> IO Bool
 applyBadgeStatement db g purchaseId BadgeStatement {entries} cred_ now = do
-  -- read before the rows land: the first arriving entry is checked against the one it follows
   tip <- getBadgeLedgerLastEntry db purchaseId
   storeBadgeStatement db purchaseId tip entries now
   case (,) <$> cred_ <*> issuedEntryId of
