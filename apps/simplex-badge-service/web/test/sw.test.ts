@@ -439,12 +439,12 @@ swTest("sw: an install that fails does not skipWaiting over a half-filled cache"
 
 swTest("sw: activation deletes every cache whose hash is not this build", async () => {
   const r = rig();
-  await r.caches.open("sxb-0000000000000000");
-  await r.caches.open("sxb-1111111111111111");
+  await r.caches.open("sb-0000000000000000");
+  await r.caches.open("sb-1111111111111111");
   await r.install();
   await r.activate();
   assert.deepEqual([...r.caches.stores.keys()], [r.sw.CACHE], "the old builds are gone");
-  assert.deepEqual(r.caches.deleted.sort(), ["sxb-0000000000000000", "sxb-1111111111111111"]);
+  assert.deepEqual(r.caches.deleted.sort(), ["sb-0000000000000000", "sb-1111111111111111"]);
 });
 
 swTest("sw: activation keeps this build's cache, which is what offline is made of", async () => {

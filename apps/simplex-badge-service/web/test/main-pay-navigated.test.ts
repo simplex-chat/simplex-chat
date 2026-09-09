@@ -50,7 +50,7 @@ payTest("main: a checkout that lands after the buyer left keeps its order but no
     `no watch may start for an order the buyer navigated away from: ${JSON.stringify(watches.map((f) => f.url))}`);
 
   // the invoice was really bought, so it and its code have to be recoverable from this browser
-  const stored = JSON.parse(storage.getItem("sxb.orders.v1") ?? "[]") as Array<Record<string, unknown>>;
+  const stored = JSON.parse(storage.getItem("sb.orders.v1") ?? "[]") as Array<Record<string, unknown>>;
   const saved = stored.find((o) => o.orderId === "inv_left");
   assert.ok(saved, `the order is kept whatever the page did: ${JSON.stringify(stored)}`);
   assert.equal(typeof saved.code, "string", "and with the code only this browser holds");

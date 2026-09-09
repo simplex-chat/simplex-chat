@@ -25,7 +25,7 @@ bootTest("main: booting at #/checkout with nothing answered lands on the landing
   assert.equal(heading(), "Support SimpleX");
   assert.ok(!inView().textContent.includes("Check your order"));
   assert.ok(!inView().textContent.includes("Pay "), "and no Pay button anywhere on it");
-  assert.equal(storage.getItem("sxb.session.v1"), null, "nothing was invented to make it renderable");
+  assert.equal(storage.getItem("sb.session.v1"), null, "nothing was invented to make it renderable");
   assert.equal(fetches.length, 0, "and nothing was asked of the network");
 });
 

@@ -43,7 +43,7 @@ if (chromeSlot === null) throw new Error("main: #chrome is missing from the shel
 // accepts every write and forgets them all on the next load. The probe is a write round trip, and
 // its answer travels with the store, because the code screen's promise rests on it.
 function pageStore(): Store {
-  const probe = "sxb.probe";
+  const probe = "sb.probe";
   let real: StorageLike | undefined;
   try {
     const s = window.localStorage;

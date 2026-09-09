@@ -12,7 +12,7 @@ export const ORDER_ID = "inv_open";
  * straight into the map, because the stores that most need seeding are the ones whose `setItem`
  * throws or silently drops, and seeding them through it would seed nothing. */
 export function seededStorage<S extends MemStorage>(into: S = new MemStorage() as S): S {
-  into.m.set("sxb.orders.v1", JSON.stringify([{
+  into.m.set("sb.orders.v1", JSON.stringify([{
     orderId: ORDER_ID, badgeType: "legend", months: 12,
     createdAt: new Date(NOW - 60_000).toISOString(), status: "open", code: HELD_CODE,
     address: ADDRESS, cryptoAmount: "1.482", cryptoCurrency: "xmr",
@@ -23,7 +23,7 @@ export function seededStorage<S extends MemStorage>(into: S = new MemStorage() a
 
 /** The order as the store holds it now. These fixtures seed exactly one, so it is the only one. */
 export function storedOrder(from: MemStorage): Record<string, unknown> | undefined {
-  return (JSON.parse(from.getItem("sxb.orders.v1") ?? "[]") as Record<string, unknown>[])[0];
+  return (JSON.parse(from.getItem("sb.orders.v1") ?? "[]") as Record<string, unknown>[])[0];
 }
 
 /** The same order as the service reports it, for the first read the watch makes. */

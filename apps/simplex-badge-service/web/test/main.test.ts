@@ -116,7 +116,7 @@ mainTest("main: the wizard walks the landing screen to the order summary, with t
 });
 
 mainTest("main: the answers are in the store, and never in the URL", () => {
-  const session = JSON.parse(storage.getItem("sxb.session.v1")!) as Record<string, unknown>;
+  const session = JSON.parse(storage.getItem("sb.session.v1")!) as Record<string, unknown>;
   assert.equal(session.priceId, "price_legend");
   assert.equal(session.offerId, "offer_12m");
   assert.equal(history.url, "/#/checkout", "a URL passed to someone else transfers no selection");
@@ -214,7 +214,7 @@ mainTest("main: the 200 REPLACES the history entry, so Back cannot resubmit", as
   assert.ok(screen.textContent.includes("inv_9f3a"));
 
   // the store rules: the code was drawn and stored before this screen, and is not on it.
-  const stored = JSON.parse(storage.getItem("sxb.orders.v1")!) as Array<Record<string, string>>;
+  const stored = JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, string>>;
   assert.equal(stored.length, 1);
   assert.equal(stored[0]!.orderId, "inv_9f3a");
   assert.ok(stored[0]!.code!.startsWith("SB-"));
@@ -223,7 +223,7 @@ mainTest("main: the 200 REPLACES the history entry, so Back cannot resubmit", as
     "the plaintext code never leaves the browser — only its hash");
 
   // the store rules: the 200 clears the session; the draft became an invoice.
-  assert.equal(storage.getItem("sxb.session.v1"), null);
+  assert.equal(storage.getItem("sb.session.v1"), null);
 });
 
 mainTest("main: the waiting loop holds, and the hidden tab releases it", async () => {
@@ -250,7 +250,7 @@ mainTest("main: Back from a payment screen RETURNS TO THE WIZARD", async () => {
   // the resume row would send the buyer straight back to the payment screen:
   // the search is empty again, and an open order exists, so resume applies
   // to a fresh load only and a history navigation goes by the URL.
-  assert.ok(storage.getItem("sxb.orders.v1")!.includes('"status":"open"'), "an open order exists to be resumed");
+  assert.ok(storage.getItem("sb.orders.v1")!.includes('"status":"open"'), "an open order exists to be resumed");
   const held = fetches.filter((f) => f.url.includes("?wait=")).at(-1)!.init!.signal!;
   assert.equal(held.aborted, false);
 
@@ -272,7 +272,7 @@ mainTest("main: Back after a purchase reaches a usable duration list, not an emp
   // the session is cleared on the 200, so the duration list has no session to rebuild from.
   // Back must return to the duration list with the duration still chosen, and
   // the order record carries badgeType and months, the same pair.
-  assert.equal(storage.getItem("sxb.session.v1"), null, "the session really is gone");
+  assert.equal(storage.getItem("sb.session.v1"), null, "the session really is gone");
   const durations = inView();
   assert.equal(heading(durations), "How long?");
   const choices = durations.all("button.choice");
@@ -324,32 +324,32 @@ mainTest("main: the menu opens the history list from the store, with [ Open ] as
   assert.equal(plain.defaultPrevented, true, "the plain click is handled in-document");
   await settle();
   assert.equal(location.search, "?order=inv_9f3a");
-  assert.equal(storage.getItem("sxb.orders.v1") !== null, true, "and the store survives");
+  assert.equal(storage.getItem("sb.orders.v1") !== null, true, "and the store survives");
   history.back();
   await settle();
   assert.equal(location.hash, "#/codes");
   // the store rules: an open entry never shows its code, in text or in any attribute.
-  const stored = (JSON.parse(storage.getItem("sxb.orders.v1")!) as Array<{ code: string }>)[0]!.code;
+  const stored = (JSON.parse(storage.getItem("sb.orders.v1")!) as Array<{ code: string }>)[0]!.code;
   assert.ok(stored.startsWith("SB-"));
   assert.ok(!codes.serialize().includes(stored), "the history list leaked an unpaid code");
 });
 
 mainTest("main: [ Forget everything ] does nothing when the confirmation is refused", () => {
-  const before = storage.getItem("sxb.orders.v1");
+  const before = storage.getItem("sb.orders.v1");
   assert.ok(before !== null && before.includes("inv_9f3a"));
   confirms.length = 0;
   page.confirmAnswer(false);
   forgetControl(page)!.click();
   assert.equal(confirms.length, 1, "the one irreversible action must ask first");
-  assert.equal(storage.getItem("sxb.orders.v1"), before, "a refused confirmation keeps every code");
+  assert.equal(storage.getItem("sb.orders.v1"), before, "a refused confirmation keeps every code");
   assert.equal(app.all("li.entry").length, 1, "and the list stands");
 });
 
 mainTest("main: [ Forget everything ] removes the key and returns to the landing page", () => {
   page.confirmAnswer(true);
   forgetControl(page)!.click();
-  assert.equal(storage.getItem("sxb.orders.v1"), null);
-  assert.equal(storage.getItem("sxb.session.v1"), null, "the draft goes with the codes");
+  assert.equal(storage.getItem("sb.orders.v1"), null);
+  assert.equal(storage.getItem("sb.session.v1"), null, "the draft goes with the codes");
   // Not the empty history: every screen but the landing screen is drawn from something that has
   // just been deleted. Staying on the code screen would leave a code on screen that the
   // store no longer holds, beside a line calling this browser its only copy.
@@ -542,7 +542,7 @@ mainTest("main: the chosen theme is written to <html>, and system removes it", (
 
   segment("Dark").click();
   assert.equal(html.getAttribute("data-theme"), "dark");
-  assert.equal(storage.getItem("sxb.theme.v1"), '"dark"', "and it survives a reload");
+  assert.equal(storage.getItem("sb.theme.v1"), '"dark"', "and it survives a reload");
   assert.equal(segment("Dark").getAttribute("aria-pressed"), "true");
   assert.equal(segment("System").getAttribute("aria-pressed"), "false");
 
@@ -553,20 +553,20 @@ mainTest("main: the chosen theme is written to <html>, and system removes it", (
   segment("System").click();
   assert.equal(html.hasAttribute("data-theme"), false,
     "system is the ABSENCE of the attribute, which hands the page back to the media query");
-  assert.equal(storage.getItem("sxb.theme.v1"), '"system"');
+  assert.equal(storage.getItem("sb.theme.v1"), '"system"');
 });
 
 mainTest("main: [ Forget everything ] does not take the theme with it", () => {
   // The wipe control lives on the codes list, so there has to be a code to reach it.
-  storage.setItem("sxb.orders.v1", JSON.stringify([{
+  storage.setItem("sb.orders.v1", JSON.stringify([{
     orderId: "inv_theme", badgeType: "supporter", months: 1,
     createdAt: "2026-08-28T11:02:19Z", status: "open",
   }]));
   page.chrome.all("button.segment").find((b) => b.textContent === "Dark")!.click();
   page.confirmAnswer(true);
   forgetControl(page)!.click();
-  assert.equal(storage.getItem("sxb.orders.v1"), null, "the codes go");
-  assert.equal(storage.getItem("sxb.theme.v1"), '"dark"',
+  assert.equal(storage.getItem("sb.orders.v1"), null, "the codes go");
+  assert.equal(storage.getItem("sb.theme.v1"), '"dark"',
     "and a colour scheme is not something that control exists to destroy");
   page.chrome.all("button.segment").find((b) => b.textContent === "System")!.click();
 });

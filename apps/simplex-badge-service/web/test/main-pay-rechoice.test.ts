@@ -41,7 +41,7 @@ payTest("main: a checkout answered after a re-choice keeps the buyer's tier", as
   // The Legend invoice was really bought, so the page goes to it. What must not happen is the
   // buyer's new answer being spent for it: cleared, `effectiveSession` reseeds from the order just
   // stored, and the next checkout charges Legend's $420 for the Supporter the buyer is looking at.
-  const session = JSON.parse(storage.getItem("sxb.session.v1") ?? "null") as { priceId?: string } | null;
+  const session = JSON.parse(storage.getItem("sb.session.v1") ?? "null") as { priceId?: string } | null;
   assert.equal(session?.priceId, "price_supporter",
     `the buyer chose Supporter and it has to survive: ${JSON.stringify(session)}`);
 

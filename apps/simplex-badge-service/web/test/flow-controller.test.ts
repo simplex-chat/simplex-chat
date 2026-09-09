@@ -1321,7 +1321,7 @@ apiTest("flow: a card checkout stores no destination and no client secret", asyn
   assert.equal(stored.method, "card");
   // The raw value, not the typed read: a secret smuggled in as an excess
   // property would be invisible to `store.order` and still be written to disk.
-  const raw = storage.m.get("sxb.orders.v1") ?? "";
+  const raw = storage.m.get("sb.orders.v1") ?? "";
   assert.ok(!raw.includes("cs_test_abc") && !raw.includes("clientSecret"),
     "the offline promise puts the card form under \"needs the network\": no payment secret is written to rest");
 });
@@ -1373,8 +1373,8 @@ apiTest("flow: paid and expired CLEAR the stored destination, in the store and n
     for (const key of ["cryptoAmount", "cryptoCurrency", "expiresAt"] as const) {
       assert.equal(stored[key], undefined, `${status} must clear ${key}`);
     }
-    assert.ok(!(storage.m.get("sxb.orders.v1") ?? "").includes("48HqK2Xm"));
-    assert.ok(!(storage.m.get("sxb.orders.v1") ?? "").includes("2026-08-28T13:00:00Z"));
+    assert.ok(!(storage.m.get("sb.orders.v1") ?? "").includes("48HqK2Xm"));
+    assert.ok(!(storage.m.get("sb.orders.v1") ?? "").includes("2026-08-28T13:00:00Z"));
   }
 });
 

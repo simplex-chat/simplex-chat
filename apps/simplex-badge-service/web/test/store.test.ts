@@ -68,7 +68,7 @@ storeTest("store: a failing storage degrades without throwing", () => {
 
 storeTest("store: corruption is replaced, not parsed", () => {
   const mem = new MemoryStorage();
-  mem.map.set("sxb.orders.v1", "{not json");
+  mem.map.set("sb.orders.v1", "{not json");
   const s = new Store(mem);
   assert.deepEqual(s.orders(), []);
   assert.equal(s.saveOrder(order("1")), true);
@@ -85,7 +85,7 @@ storeTest("store: newestOpen finds the resumable order", () => {
 
 storeTest("store: shape-corrupted but parseable entries are dropped, not thrown", () => {
   const mem = new MemoryStorage();
-  mem.map.set("sxb.orders.v1", JSON.stringify([{ foo: 1 }, { bar: 2 }]));
+  mem.map.set("sb.orders.v1", JSON.stringify([{ foo: 1 }, { bar: 2 }]));
   const s = new Store(mem);
   assert.deepEqual(s.orders(), [], "malformed elements are dropped rather than surfaced");
   assert.equal(s.saveOrder(order("1")), true, "the write path must not throw on corrupted shape");
@@ -118,7 +118,7 @@ storeTest("store: an unparseable createdAt sorts oldest instead of poisoning the
   // `Date.parse` answers NaN for one it cannot read. NaN makes every comparison false, so rather than sorting
   // the bad entry late it leaves the whole list to the sort algorithm, and with it which order `newestOpen` resumes.
   const mem = new MemoryStorage();
-  mem.map.set("sxb.orders.v1", JSON.stringify([
+  mem.map.set("sb.orders.v1", JSON.stringify([
     { orderId: "undated", badgeType: "legend", months: 12, createdAt: "whenever", status: "open" },
     { orderId: "older", badgeType: "legend", months: 12, createdAt: "2026-08-20T00:00:00Z", status: "open" },
   ]));
@@ -132,7 +132,7 @@ storeTest("store: a stored record keeps the fields that read and drops the ones 
   // The opposite policy from a response, and for the reason that separates them: the service
   // can be asked again, and this is the one copy of the code.
   const mem = new MemoryStorage();
-  mem.map.set("sxb.orders.v1", JSON.stringify([{
+  mem.map.set("sb.orders.v1", JSON.stringify([{
     orderId: "corrupt", createdAt: "2026-08-24T11:00:00Z", status: "open",
     code: "SB-KEEP-ME", badgeType: null, months: "12",
     currency: 42, paidInFull: "yes", cryptoCurrency: "eth", amount: 42000,
@@ -151,7 +151,7 @@ storeTest("store: a stored record keeps the fields that read and drops the ones 
 
 storeTest("store: a record with nothing to point at is dropped whole", () => {
   const mem = new MemoryStorage();
-  mem.map.set("sxb.orders.v1", JSON.stringify([
+  mem.map.set("sb.orders.v1", JSON.stringify([
     { orderId: "no-status", createdAt: "2026-08-24T11:00:00Z" },
     { orderId: "bad-status", createdAt: "2026-08-24T11:00:00Z", status: "refunded" },
     { orderId: "", createdAt: "2026-08-24T11:00:00Z", status: "open" },
@@ -160,18 +160,18 @@ storeTest("store: a record with nothing to point at is dropped whole", () => {
     null,
   ]));
   assert.deepEqual(new Store(mem).orders(), [], "an order with no id or no state has no row to draw");
-  mem.map.set("sxb.orders.v1", JSON.stringify({ orderId: "not-a-list" }));
+  mem.map.set("sb.orders.v1", JSON.stringify({ orderId: "not-a-list" }));
   assert.deepEqual(new Store(mem).orders(), []);
 });
 
 storeTest("store: a session or theme outside the known set falls back to the default", () => {
   const mem = new MemoryStorage();
-  mem.map.set("sxb.session.v1", JSON.stringify({ step: "elsewhere", priceId: 12, method: "paypal" }));
-  mem.map.set("sxb.theme.v1", JSON.stringify("neon"));
+  mem.map.set("sb.session.v1", JSON.stringify({ step: "elsewhere", priceId: 12, method: "paypal" }));
+  mem.map.set("sb.theme.v1", JSON.stringify("neon"));
   assert.deepEqual(new Store(mem).session(), { step: "tier" });
   assert.equal(new Store(mem).theme(), "system");
 
-  mem.map.set("sxb.session.v1", JSON.stringify({ step: "months", priceId: "price_legend", method: "paypal" }));
+  mem.map.set("sb.session.v1", JSON.stringify({ step: "months", priceId: "price_legend", method: "paypal" }));
   assert.deepEqual(new Store(mem).session(), { step: "months", priceId: "price_legend" },
     "a good step keeps what reads beside it, and only that");
 });
@@ -271,7 +271,7 @@ storeTest("store: forgetting one key does not depend on the other succeeding", (
   // not take the second with it
   class RefusesOrders extends MemoryStorage {
     override removeItem(k: string): void {
-      if (k === "sxb.orders.v1") throw new Error("SecurityError");
+      if (k === "sb.orders.v1") throw new Error("SecurityError");
       super.removeItem(k);
     }
   }
@@ -280,7 +280,7 @@ storeTest("store: forgetting one key does not depend on the other succeeding", (
   s.saveOrder(order("1", { code: "SB-CODE" }));
   s.saveSession({ step: "checkout" });
   s.forgetEverything();
-  assert.equal(storage.getItem("sxb.session.v1"), null, "the session goes even though the orders key threw");
+  assert.equal(storage.getItem("sb.session.v1"), null, "the session goes even though the orders key threw");
 });
 
 storeTest("store: forgetting everything is countable, so a write awaited across it can be dropped", () => {

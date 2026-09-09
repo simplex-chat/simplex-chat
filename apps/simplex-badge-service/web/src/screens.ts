@@ -155,7 +155,7 @@ export function chrome(o: ChromeOptions): Chrome {
 
   // The site navbar, structure and class names as there: the wordmark on the left, and on the right
   // the menu (our burger, integrated) and then the theme switch.
-  const node = el("header", { id: "navbar", class: "sxb-navbar" },
+  const node = el("header", { id: "navbar", class: "sb-navbar" },
     brand,
     el("div", { class: "right-links" },
       el("nav", { class: "menu-wrap" }, trigger, panelNode),

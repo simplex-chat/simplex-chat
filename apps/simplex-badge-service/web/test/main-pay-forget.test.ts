@@ -24,13 +24,13 @@ payTest("main: a checkout answered after the wipe is not written back", async ()
 
   // A code from an earlier purchase, so the codes list — where the wipe control now lives — is not
   // empty while this checkout is still on the wire. The wipe still has to drop the answer to it.
-  storage.setItem("sxb.orders.v1", JSON.stringify([{
+  storage.setItem("sb.orders.v1", JSON.stringify([{
     orderId: "inv_prior", badgeType: "supporter", months: 1,
     createdAt: "2026-08-28T11:02:19Z", status: "open",
   }]));
   page.confirmAnswer(true);
   forgetControl(page)!.click();
-  assert.equal(storage.getItem("sxb.orders.v1"), null, "the wipe itself is immediate");
+  assert.equal(storage.getItem("sb.orders.v1"), null, "the wipe itself is immediate");
 
   assert.ok(page.answerHeld({
     status: 200,
@@ -42,6 +42,6 @@ payTest("main: a checkout answered after the wipe is not written back", async ()
   }, "/api/invoice"), "the checkout POST is the one still holding");
   await settle(10);
 
-  assert.equal(storage.getItem("sxb.orders.v1"), null,
+  assert.equal(storage.getItem("sb.orders.v1"), null,
     "the order the buyer erased does not come back as a row with a code");
 });

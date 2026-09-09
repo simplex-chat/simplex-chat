@@ -381,9 +381,9 @@ const heading = (): string => headingOf(screen());
 
 /** An invoice running out on its own: the give-up rule leaves a confirmed order waiting for exactly that. */
 function expireStoredOrder(orderId: string): void {
-  const orders = JSON.parse(storage.getItem("sxb.orders.v1")!) as Array<Record<string, unknown>>;
+  const orders = JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, unknown>>;
   orders.find((o) => o.orderId === orderId)!.status = "expired";
-  storage.setItem("sxb.orders.v1", JSON.stringify(orders));
+  storage.setItem("sb.orders.v1", JSON.stringify(orders));
 }
 
 function scripts(): StubElement[] {
@@ -440,10 +440,10 @@ cardTest("main: with NO key the card path renders the stand-in, and still loads 
   assert.equal(stripeTags().length, 0, "no key, no script — the gate is before the load");
   assert.ok(!screen().textContent.includes(CLIENT_SECRET), "the client secret is never on screen");
   // the store rules: the code is in localStorage from before the invoice existed.
-  const stored = JSON.parse(storage.getItem("sxb.orders.v1")!) as Array<Record<string, string>>;
+  const stored = JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, string>>;
   assert.ok(stored[0]!.code!.startsWith("SB-"));
   assert.ok(!screen().serialize().includes(stored[0]!.code!), "and never on an unpaid screen");
-  assert.equal(storage.getItem("sxb.orders.v1")!.includes(CLIENT_SECRET), false,
+  assert.equal(storage.getItem("sb.orders.v1")!.includes(CLIENT_SECRET), false,
     "the store rules: clientSecret is never written to rest");
 });
 
@@ -455,13 +455,13 @@ cardTest("main: the stand-in's confirm lands on the confirming screen, WHICH WAI
   assert.equal(heading(), "Payment received", "the confirming screen, and not the code screen");
   assert.ok(screen().textContent.includes("Waiting for the card network to confirm."));
   assert.ok(!screen().textContent.includes("Here is your code"), "a confirm is not a payment");
-  const stored = JSON.parse(storage.getItem("sxb.orders.v1")!) as Array<Record<string, string>>;
+  const stored = JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, string>>;
   assert.ok(!screen().serialize().includes(stored[0]!.code!), "the store rules: no code while the order is unpaid");
   assert.equal(stored[0]!.status, "open", "and the order is still open");
   // the watch loop as amended: a successful actions.confirm() writes `submitted` onto
   // this order, where the next checkout's `clearSession` cannot reach it.
   assert.equal(stored.find((o) => o.orderId === "inv_card_1")!.submitted, true);
-  assert.equal(storage.getItem("sxb.session.v1"), null,
+  assert.equal(storage.getItem("sb.session.v1"), null,
     "and the session, which the checkout 200 cleared, is not where it lives");
   // the give-up rule: the loop keeps asking. The provider is what settles this.
   assert.ok(fetches.length > before, "the waiting loop was started");
@@ -500,7 +500,7 @@ cardTest("main: Back from a payment screen to the order summary, and Pay still w
   // The invoice awaiting confirmation above has expired with nothing charged,
   // its own way out, so the order summary may offer to create one again.
   expireStoredOrder("inv_card_1");
-  // The 200 cleared `sxb.session.v1` and the panels are seeded from the
+  // The 200 cleared `sb.session.v1` and the panels are seeded from the
   // newest order instead, so the order summary draws a complete summary with an empty session
   // behind it. `pay()` used to read the raw session and return at its first
   // guard: a fully-rendered checkout whose Pay button did nothing at all.
@@ -693,18 +693,18 @@ cardTest("main: a real confirm ALSO lands on the confirming screen, and the conf
   // the give-up rule as amended: no confirming screen offers a control that could start a second charge.
   assert.equal(screen().all("button").filter((b) => b.textContent === "New invoice").length, 0);
   assert.ok(!screen().textContent.includes("Here is your code"));
-  const stored = (JSON.parse(storage.getItem("sxb.orders.v1")!) as Array<Record<string, string>>)
+  const stored = (JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, string>>)
     .find((o) => o.orderId === "inv_card_2")!;
   assert.equal(stored.status, "open", "nothing about the order changed: the provider decides");
   assert.ok(!screen().serialize().includes(stored.code!));
   // the watch loop as amended: the flag is on the order, so it survives the next
   // checkout's `clearSession`, and [ New invoice ] cannot erase it.
   assert.equal(stored.submitted, true);
-  assert.equal(storage.getItem("sxb.session.v1"), null, "and not in the session");
+  assert.equal(storage.getItem("sb.session.v1"), null, "and not in the session");
 });
 
 cardTest("main: the code appears only when the SERVER says paid", async () => {
-  const stored = (JSON.parse(storage.getItem("sxb.orders.v1")!) as Array<Record<string, string>>)
+  const stored = (JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, string>>)
     .find((o) => o.orderId === "inv_card_2")!;
   page.respondWith({
     status: 200,

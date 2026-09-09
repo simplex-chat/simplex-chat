@@ -12,7 +12,7 @@ const HELD_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
 // the watch loop: "someone who sent a Monero payment and closed the tab reopens
 // badges.simplex.chat and sees their pending invoice, not a landing page."
 const storage = new MemStorage();
-storage.setItem("sxb.orders.v1", JSON.stringify([{
+storage.setItem("sb.orders.v1", JSON.stringify([{
   orderId: "inv_open", badgeType: "legend", months: 12,
   createdAt: CREATED, status: "open", code: HELD_CODE,
 }, {
@@ -67,7 +67,7 @@ resumeTest("main: a resumed payment screen says how long ago it started, and off
 });
 
 resumeTest("main: the resumed screen still never shows the code it holds", () => {
-  assert.ok(page.storage.getItem("sxb.orders.v1")!.includes(HELD_CODE), "the code is in the store");
+  assert.ok(page.storage.getItem("sb.orders.v1")!.includes(HELD_CODE), "the code is in the store");
   assert.ok(!screenOf(app).serialize().includes(HELD_CODE), "and nowhere on the unpaid screen");
   assert.ok(!screenOf(app).serialize().includes("SB-"));
 });
@@ -101,7 +101,7 @@ resumeTest("main: the confirming screen gives up after fifteen minutes and [ Che
   // `submitted` is the browser's own note that this order's confirm() succeeded, and it is on the order
   // record seeded above, not the session, which every checkout 200 and every [ New invoice ] wipes. The
   // session is cleared here first because the rule that withholds a second charge must not go with it.
-  page.storage.removeItem("sxb.session.v1");
+  page.storage.removeItem("sb.session.v1");
   {
     page.respondWith({ status: 200, body: { status: "open", badgeType: "supporter", months: 1, clientSecret: "cs_test_abc" } });
     history.pushState(null, "", "?order=inv_card");
@@ -197,7 +197,7 @@ resumeTest("main: another card order does not inherit the confirmed one's confir
   page.fire("popstate");
   await until(() => heading() === "Pay by card", `the card form, not ${heading()}`);
   assert.ok(!screenOf(app).textContent.includes("Waiting for the card network to confirm."));
-  const stored = JSON.parse(page.storage.getItem("sxb.orders.v1")!) as Array<Record<string, unknown>>;
+  const stored = JSON.parse(page.storage.getItem("sb.orders.v1")!) as Array<Record<string, unknown>>;
   assert.equal(stored.find((o) => o.orderId === "inv_card_other")!.submitted, undefined,
     "and reading it wrote no flag of its own");
   assert.equal(stored.find((o) => o.orderId === "inv_card")!.submitted, true,
@@ -221,7 +221,7 @@ resumeTest("main: [ Forget everything ] leaves nothing that restores the order",
   // The wipe is only as good as the loops it stops: a live watch saves the record it is watching on every
   // 200, so one left running would put the order straight back into the store just emptied. The test above
   // has already abandoned this page's holds, so what is pinned here is the outcome, not the abort it owns.
-  assert.ok(storage.getItem("sxb.orders.v1") !== null, "there is an order to forget");
+  assert.ok(storage.getItem("sb.orders.v1") !== null, "there is an order to forget");
   page.confirmAnswer(true);
 
   // Reaching the wipe control is itself a navigation to the codes list, which stops this page's
@@ -233,11 +233,11 @@ resumeTest("main: [ Forget everything ] leaves nothing that restores the order",
   const before = fetches.length;
   forget.click();
 
-  assert.equal(storage.getItem("sxb.orders.v1"), null);
-  assert.equal(storage.getItem("sxb.session.v1"), null, "the draft goes with the codes");
+  assert.equal(storage.getItem("sb.orders.v1"), null);
+  assert.equal(storage.getItem("sb.session.v1"), null, "the draft goes with the codes");
   assert.equal(heading(), "Support SimpleX", "the landing page is the only screen still true once nothing is stored");
   await settle(10);
-  assert.equal(storage.getItem("sxb.orders.v1"), null, "and nothing wrote it back");
+  assert.equal(storage.getItem("sb.orders.v1"), null, "and nothing wrote it back");
   assert.equal(fetches.length, before, "no loop survived to ask again");
 });
 
@@ -245,7 +245,7 @@ resumeTest("main: an answer already on the wire is dropped once the store is for
   // The history list refreshes every stale order it holds, and those answers are writes. One
   // still in flight when the buyer wipes the store would put a forgotten order straight back,
   // which is exactly what the confirm promises will not happen.
-  storage.setItem("sxb.orders.v1", JSON.stringify([{
+  storage.setItem("sb.orders.v1", JSON.stringify([{
     orderId: "inv_late", badgeType: "supporter", months: 1,
     createdAt: new Date(NOW - 60_000).toISOString(), status: "open",
   }]));
@@ -255,10 +255,10 @@ resumeTest("main: an answer already on the wire is dropped once the store is for
   // no settle: the read is on the wire, and this is the wipe landing while it is
   page.confirmAnswer(true);
   forgetControl(page)!.click();
-  assert.equal(storage.getItem("sxb.orders.v1"), null, "the wipe itself is immediate");
+  assert.equal(storage.getItem("sb.orders.v1"), null, "the wipe itself is immediate");
 
   await settle(10);
-  assert.equal(storage.getItem("sxb.orders.v1"), null, "and the answer that arrived after it is dropped");
+  assert.equal(storage.getItem("sb.orders.v1"), null, "and the answer that arrived after it is dropped");
 });
 
 // The faked clock is released last, so nothing outlives the file.

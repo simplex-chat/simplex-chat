@@ -74,7 +74,7 @@ let gradientSeq = 0;
 // reference reaches a `d`, a `fill` or an `aria-label`.
 // Path data is copied verbatim from the app's own SVGs; the brand mark ships as a file the stylesheet draws.
 export function badgeIcon(tier: BadgeTier): SVGElement {
-  const id = `sxb-badge-${tier}-${(gradientSeq += 1)}`;
+  const id = `sb-badge-${tier}-${(gradientSeq += 1)}`;
   const gradient = shape("linearGradient", { id, x1: "0", y1: "0", x2: "0", y2: "1" });
   for (const [offset, color] of BADGE_STOPS[tier]) {
     gradient.append(shape("stop", { offset, "stop-color": color }));

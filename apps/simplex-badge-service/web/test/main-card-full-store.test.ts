@@ -11,7 +11,7 @@ const capTest = timedTest(5000);
 const NOW = Date.parse("2026-08-28T12:00:00Z");
 
 const full = new MemStorage();
-full.m.set("sxb.orders.v1", JSON.stringify(
+full.m.set("sb.orders.v1", JSON.stringify(
   Array.from({ length: 50 }, (_, i) => ({
     orderId: `inv_old_${i}`, badgeType: "supporter", months: 1,
     createdAt: new Date(NOW - (i + 2) * 86_400_000).toISOString(), status: "paid", paidInFull: true,

@@ -18,11 +18,11 @@ function createdMs(o: OrderRecord): number {
   return Number.isNaN(t) ? Number.MIN_SAFE_INTEGER : t;
 }
 
-const SESSION_KEY = "sxb.session.v1";
-const ORDERS_KEY = "sxb.orders.v1";
+const SESSION_KEY = "sb.session.v1";
+const ORDERS_KEY = "sb.orders.v1";
 // A key of its own, because the theme belongs to the device: it survives a checkout,
 // which clears the session, and [ Forget everything on this device ], which is about codes.
-const THEME_KEY = "sxb.theme.v1";
+const THEME_KEY = "sb.theme.v1";
 const CAP = 50;
 
 /** A field that does not read is left out and the record kept, unlike a response, because the service

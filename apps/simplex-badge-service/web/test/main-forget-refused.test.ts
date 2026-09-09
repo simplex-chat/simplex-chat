@@ -28,11 +28,11 @@ refusedTest("main: a refused cancel answered after the wipe is not written back"
 
   // no settle: the cancel is on the wire, and this is the wipe landing while it is
   forgetControl(page)!.click();
-  assert.equal(storage.getItem("sxb.orders.v1"), null, "the wipe itself is immediate");
+  assert.equal(storage.getItem("sb.orders.v1"), null, "the wipe itself is immediate");
 
   // the refusal lands, and the watch it would restart is the thing that puts the record back
   page.respondWith(openReply);
   await settle(10);
-  assert.equal(storage.getItem("sxb.orders.v1"), null,
+  assert.equal(storage.getItem("sb.orders.v1"), null,
     "the order the buyer erased does not come back, with its address, as a row they cannot remove");
 });

@@ -175,7 +175,7 @@ body {
 /* The site's own navbar, copied: a fixed bar across the top of the page, the wordmark on the left
    and the controls on the right. `body` pads its own top by the bar's height so the column clears
    it. Embedded, the site hides its navbar and this is the one the buyer sees. */
-.sxb-navbar {
+.sb-navbar {
   position: fixed;
   top: 0;
   left: 0;
@@ -1048,7 +1048,7 @@ p.row-line { margin: 16px 0 0; }
    so a phone rule beside its desktop rule would be beaten by any equally specific rule
    further down the file. */
 @media (max-width: 560px) {
-  .sxb-navbar { gap: 0; }
+  .sb-navbar { gap: 0; }
   .brand { width: 108px; }
   /* A 320px panel floating inside a 350px column has no room to float, so on a
      phone it is a sheet: pinned under the navbar, across the page. */

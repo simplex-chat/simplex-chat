@@ -15,7 +15,7 @@ const ADDRESS = "48HqK2XmVexampleAddress9fRtWc";
 // send, how much, until when, and the fiat figure beside it. Nothing else
 // about the payment. No `clientSecret`, and nothing on a settled order.
 const storage = new MemStorage();
-storage.setItem("sxb.orders.v1", JSON.stringify([{
+storage.setItem("sb.orders.v1", JSON.stringify([{
   orderId: "inv_open", badgeType: "legend", months: 12,
   createdAt: CREATED, status: "open", code: HELD_CODE,
   address: ADDRESS, cryptoAmount: "1.482", cryptoCurrency: "xmr",
@@ -72,7 +72,7 @@ offlineTest("main: the rate window is on screen offline, not silently dropped", 
 });
 
 offlineTest("main: the code it holds is still not on the unpaid screen", () => {
-  assert.ok(page.storage.getItem("sxb.orders.v1")!.includes(HELD_CODE), "the code is in the store");
+  assert.ok(page.storage.getItem("sb.orders.v1")!.includes(HELD_CODE), "the code is in the store");
   assert.ok(!screenOf(app).serialize().includes("SB-"), "and nowhere on a screen whose order is unpaid");
 });
 

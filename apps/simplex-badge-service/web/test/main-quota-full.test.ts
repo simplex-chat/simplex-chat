@@ -31,8 +31,8 @@ quotaTest("main: codes already stored stay readable when the writes stop", () =>
 quotaTest("main: Forget clears the store that is really holding the codes", () => {
   // writes go to memory, but the removal has to reach the real store: everything this page is
   // promising to erase is over there, and the confirm says it cannot be undone
-  assert.ok(full.m.has("sxb.orders.v1"), "the real store is the one holding them");
+  assert.ok(full.m.has("sb.orders.v1"), "the real store is the one holding them");
   page.confirmAnswer(true);
   forgetControl(page)!.click();
-  assert.equal(full.m.get("sxb.orders.v1"), undefined, "and it is what Forget has to empty");
+  assert.equal(full.m.get("sb.orders.v1"), undefined, "and it is what Forget has to empty");
 });

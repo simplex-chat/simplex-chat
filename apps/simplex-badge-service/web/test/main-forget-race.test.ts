@@ -28,9 +28,9 @@ raceTest("main: a cancel answered after the wipe is not written back", async () 
 
   // no settle: the cancel is on the wire, and this is the wipe landing while it is
   forgetControl(page)!.click();
-  assert.equal(storage.getItem("sxb.orders.v1"), null, "the wipe itself is immediate");
+  assert.equal(storage.getItem("sb.orders.v1"), null, "the wipe itself is immediate");
 
   await settle(10);
-  assert.equal(storage.getItem("sxb.orders.v1"), null,
+  assert.equal(storage.getItem("sb.orders.v1"), null,
     "and the cancelled invoice does not come back as a row the buyer cannot remove");
 });

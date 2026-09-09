@@ -11,7 +11,7 @@ const page = installPage();
 const { app, storage, fetches } = page;
 await import("../src/main.js");
 
-const SESSION_KEY = "sxb.session.v1";
+const SESSION_KEY = "sb.session.v1";
 
 const inView = (): StubElement => inViewOf(app);
 const heading = headingOf;
