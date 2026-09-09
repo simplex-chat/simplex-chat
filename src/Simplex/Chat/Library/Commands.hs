@@ -5269,8 +5269,8 @@ runBadgeWorker userId badgeWork = do
   emitted <- newTVarIO Nothing
   ri <- asks $ badgeRetryInterval . config
   forever $ do
-    lift waitChatStartedAndActivated
     at_ <- withRetryInterval ri $ \_ loop -> do
+      lift waitChatStartedAndActivated
       now <- badgeNow
       let stalled = pure $ Just $ badgeStalledInterval `addUTCTime` now
       updateUserBadge userId emitted now `catchAllErrors` retryBadgeError loop stalled
@@ -5311,7 +5311,7 @@ updateUserBadge userId emitted now = do
   user <- withStore $ \db -> getUser db userId
   withStore' (`getUserBadgePurchase` user) >>= \case
     Nothing -> pure Nothing
-    Just p@UserBadgePurchase {badgePurchaseId, alertSnoozeUntil} ->
+    Just p@UserBadgePurchase {badgePurchaseId} ->
       withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= \case
         Nothing -> pure Nothing
         Just balance -> do
@@ -5326,18 +5326,21 @@ updateUserBadge userId emitted now = do
           -- presenting broadcasts the record it is handed, and the request above can block for the
           -- whole service timeout, so this read belongs after it and not at the top of the pass
           user' <- withStore $ \db -> getUser db userId
+          -- and the purchase, or an alert acked while the request was in flight is raised again
+          p' <- fromMaybe p <$> withStore' (`getUserBadgePurchase` user')
           let issued = balanceStartTs balance' /= balanceStartTs balance
           -- outside the badge lock: the chat lock must not be taken under it
-          unless retired $ presentIssuedBadge user' p now
-          emitBadgeAlert user' emitted p now balance'
+          unless retired $ presentIssuedBadge user' p' now
+          emitBadgeAlert user' emitted p' now balance'
           -- retiring and presenting both replace the badge on the record read above, so it is read again
           user'' <- withStore $ \db -> getUser db userId
           when (retired || issued) $ toView . CEvtBadgeChanged user'' =<< getUserBadgeState user''
           -- a snooze is the one wake that is not in the ledger: nothing else brings the alert back,
           -- since support having ended leaves both ledger boundaries in the past
-          let snoozeAt = find (> now) alertSnoozeUntil
+          let UserBadgePurchase {alertSnoozeUntil} = p'
+              snoozeAt = find (> now) alertSnoozeUntil
               stalledAt = if requestDue && not issued then Just $ badgeStalledInterval `addUTCTime` now else Nothing
-          pure $ earliestTime [serviceAt, snoozeAt, stalledAt, badgeBoundary now (shownBadgeCredential user'' p) balance']
+          pure $ earliestTime [serviceAt, snoozeAt, stalledAt, badgeBoundary now (shownBadgeCredential user'' p') balance']
 
 -- | Support ended is the only alert raised here: the others need subscriptions, and warning before
 -- a prepaid badge ends is not actionable while topping up cannot credit months without issuing.
