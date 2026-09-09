@@ -271,9 +271,10 @@ badgeNow ChatController {config = ChatConfig {badgeCurrentTime}} = badgeCurrentT
 randomId :: ChatController -> IO T.Text
 randomId cc = safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes 16 (random cc))
 
--- | The badge type and the expiry are the entry's own, never a caller's proposal.
-signIssuedEntry :: BadgeIssuerKey -> BadgeMasterKey -> StatementEntry -> IO (Either String (StatementEntry, BadgeCredential))
-signIssuedEntry BadgeIssuerKey {keyIdx, secretKey} masterKey e@StatementEntry {balanceStartTs = periodEnd, balanceBadgeType} = do
+-- | Neither value comes from the caller: the badge type is the entry's, the expiry is derived
+-- from the period end it carries.
+credentialForEntry :: BadgeIssuerKey -> BadgeMasterKey -> StatementEntry -> IO (Either String (StatementEntry, BadgeCredential))
+credentialForEntry BadgeIssuerKey {keyIdx, secretKey} masterKey e@StatementEntry {balanceStartTs = periodEnd, balanceBadgeType} = do
   let badgeInfo = BadgeInfo {badgeType = balanceBadgeType, badgeExpiry = endOfMondayAfter periodEnd, badgeExtra = ""}
   fmap (e,) <$> issueBadge keyIdx secretKey (VerifiedBadgeRequest BadgeRequest {masterKey, badgeInfo})
 
@@ -299,7 +300,7 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
         -- a redemption always creates the purchase, so there is no ledger to lapse before granting
         let granted = grantEntry now grantUuid months SCCode $ emptyEntry now badgeType
             issued = issueEntry now issueUuid granted
-        fmap sequence (traverse (signIssuedEntry key masterKey) issued) >>= \case
+        fmap sequence (traverse (credentialForEntry key masterKey) issued) >>= \case
           Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
           Right signed -> do
             -- re-read: a concurrent redemption may have landed while this one was signing
@@ -345,7 +346,7 @@ issueBadgeCmd key cc purchaseKey BadgeBalance {lastEntry} = do
           lapsed = lapseEntry now lapseUuid tipEntry
           current = fromMaybe tipEntry lapsed
           issued = issueEntry now issueUuid current
-      fmap sequence (traverse (signIssuedEntry key masterKey) issued) >>= \case
+      fmap sequence (traverse (credentialForEntry key masterKey) issued) >>= \case
         Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
         Right signed -> do
           r <- withDB "issueBadge" cc $ \db -> liftIO $ do
