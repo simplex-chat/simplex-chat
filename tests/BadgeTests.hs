@@ -324,7 +324,7 @@ testLedgerInvariants = do
       steps =
         [ Grant start 3,
           Pass start,
-          Pass (at 2026 4 20),
+          Pass (at 2026 4 15),
           Grant (at 2026 4 15) 2,
           Pass (at 2026 5 1),
           Pass reopened,
@@ -340,7 +340,7 @@ testLedgerInvariants = do
 
 testGrantAfterExhausted :: IO ()
 testGrantAfterExhausted = do
-      -- the balance ran out on 10 Feb; the next code is redeemed on 1 Jun
+  -- the balance ran out on 10 Feb; the next code is redeemed on 1 Jun
   let spent = newBalance (at 2026 2 10)
       granted = grant (at 2026 6 1) 2 spent
   bStart granted `shouldBe` at 2026 6 1
