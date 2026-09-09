@@ -5279,7 +5279,7 @@ retryBadgeError loop stalled e = eToView e >> if badgeErrorRetry e then loop els
 waitBadgeWake :: TMVar () -> UTCTime -> Maybe UTCTime -> IO ()
 waitBadgeWake badgeWork now = \case
   Nothing -> atomically $ takeTMVar badgeWork
-  Just at -> waitFor $ diffToMicroseconds $ diffUTCTime at now
+  Just at -> waitFor $ diffToMicroseconds $ min badgeMaxWake $ diffUTCTime at now
   where
     waitFor time
       | time <= 0 = pure ()
@@ -5292,6 +5292,11 @@ waitBadgeWake badgeWork now = \case
             unless (isJust w || fired) retry
             pure $ isJust w
           unless signalled $ waitFor $ time - maxWait
+
+-- | Bounds the wait: a paidThrough far enough out would overflow the microsecond conversion,
+-- wrap negative and spin the worker. Longer than any entitlement, so no real wake is early.
+badgeMaxWake :: NominalDiffTime
+badgeMaxWake = 100 * 365 * nominalDay
 
 -- | Retire what has ended, renew what is due, then report the next wake. Waking early, late or not
 -- at all changes only timing: each run reads stored state and works out what to do.
