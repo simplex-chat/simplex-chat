@@ -20,7 +20,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, 
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
-import Data.Maybe (isNothing)
+import Data.Maybe (fromMaybe, isNothing, maybeToList)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
@@ -238,71 +238,77 @@ testCodeHash = do
 at :: Integer -> Int -> Int -> UTCTime
 at y m d = UTCTime (fromGregorian y m d) (11 * 3600)
 
-newBalance :: UTCTime -> LedgerBalance
-newBalance t = LedgerBalance {balanceMonths = 0, balanceStartTs = t, balanceAnchorTs = t, balanceBadgeType = BTSupporter}
+newBalance :: UTCTime -> StatementEntry
+newBalance t = emptyEntry t BTSupporter
+
+-- these tests never write, so the id each operation stamps on its entry is never read
+grant :: UTCTime -> Int -> StatementEntry -> StatementEntry
+grant t n = grantEntry t "" n SCCode
+
+lapse :: UTCTime -> StatementEntry -> Maybe StatementEntry
+lapse t = lapseEntry t ""
+
+issue :: UTCTime -> StatementEntry -> Maybe StatementEntry
+issue t = issueEntry t ""
 
 -- StatementEntry and BadgeInfo carry fields of the same names, so the selectors are ambiguous here
-bMonths :: LedgerBalance -> Int
-bMonths LedgerBalance {balanceMonths} = balanceMonths
+bMonths :: StatementEntry -> Int
+bMonths StatementEntry {balanceMonths} = balanceMonths
 
-bStart :: LedgerBalance -> UTCTime
-bStart LedgerBalance {balanceStartTs} = balanceStartTs
+bStart :: StatementEntry -> UTCTime
+bStart StatementEntry {balanceStartTs} = balanceStartTs
 
-pStart :: BadgePeriod -> UTCTime
-pStart BadgePeriod {periodStart} = periodStart
-
-pEnd :: BadgePeriod -> UTCTime
-pEnd BadgePeriod {periodEnd} = periodEnd
-
--- one service pass: advance, then issue if a month is due. Returns the rows each transition
--- writes, in order, and the issued period.
-pass :: UTCTime -> LedgerBalance -> ([LedgerBalance], Maybe BadgePeriod)
-pass t b0 = case issueMonth t b1 of
-  Just (p, b2) -> (lapsed <> [b2], Just p)
-  Nothing -> (lapsed, Nothing)
+-- one service pass: lapse what elapsed, then issue if a month is due, as the service chains them.
+-- The period an issue covers is the previous entry's balance start to its own, so a run of starts
+-- is what the period assertions read.
+pass :: UTCTime -> StatementEntry -> [StatementEntry]
+pass t e0 = maybeToList lapsed <> maybeToList (issue t $ fromMaybe e0 lapsed)
   where
-    (lapsed, b1) = maybe ([], b0) (\b -> ([b], b)) $ advanceBalance t b0
+    lapsed = lapse t e0
 
-finalBalance :: LedgerBalance -> [LedgerBalance] -> LedgerBalance
-finalBalance b0 rows = last (b0 : rows)
+finalBalance :: StatementEntry -> [StatementEntry] -> StatementEntry
+finalBalance e0 rows = last (e0 : rows)
+
+-- each pass issues exactly one month, so the entries returned are the months issued, in order
+issueAll :: StatementEntry -> [StatementEntry]
+issueAll e = case pass (bStart e) e of
+  [] -> []
+  rows -> let e' = finalBalance e rows in e' : issueAll e'
 
 testTwelveMonths :: IO ()
 testTwelveMonths = do
   let start = at 2026 3 10
-      granted = grantMonths start 12 (newBalance start)
+      granted = grant start 12 (newBalance start)
       -- each month is issued as soon as it falls due
-      issueAll b ps = case pass (bStart b) b of
-        (rows, Just p) -> issueAll (finalBalance b rows) (p : ps)
-        (_, Nothing) -> (b, reverse ps)
-      (spent, periods) = issueAll granted []
-  length periods `shouldBe` 12
+      issued = issueAll granted
+      spent = finalBalance granted issued
+  length issued `shouldBe` 12
   bMonths spent `shouldBe` 0
-  -- no month was skipped or issued twice: the periods tile the whole year
-  map pStart periods `shouldBe` map (\m -> addMonths m start) [0 .. 11]
-  map pEnd (init periods) `shouldBe` map pStart (drop 1 periods)
-  pEnd (last periods) `shouldBe` at 2027 3 10
+  -- no month was skipped or issued twice: consecutive starts, so the periods tile the whole year
+  map bStart (granted : issued) `shouldBe` map (\m -> addMonths m start) [0 .. 12]
+  bStart spent `shouldBe` at 2027 3 10
   -- a thirteenth request issues nothing, whenever it is made
-  issueMonth (bStart spent) spent `shouldBe` Nothing
-  issueMonth (at 2030 1 1) spent `shouldBe` Nothing
-  advanceBalance (at 2030 1 1) spent `shouldBe` Nothing
+  issue (bStart spent) spent `shouldSatisfy` isNothing
+  issue (at 2030 1 1) spent `shouldSatisfy` isNothing
+  lapse (at 2030 1 1) spent `shouldSatisfy` isNothing
 
 -- 3 months bought 10 Mar, first issued the same day, no pass until 20 May: April lapses unissued
 testLapseAfterGap :: IO ()
 testLapseAfterGap = do
   let start = at 2026 3 10
-      granted = grantMonths start 3 (newBalance start)
-      (rows1, p1) = pass start granted
+      granted = grant start 3 (newBalance start)
+      rows1 = pass start granted
       afterFirst = finalBalance granted rows1
-      (rows2, p2) = pass (at 2026 5 20) afterFirst
+      rows2 = pass (at 2026 5 20) afterFirst
       afterSecond = finalBalance afterFirst rows2
   map bMonths rows1 `shouldBe` [2]
-  fmap pStart p1 `shouldBe` Just (at 2026 3 10)
-  fmap pEnd p1 `shouldBe` Just (at 2026 4 10)
-  -- one lapse row for April, then May is issued: two rows, not one and not three
+  -- March is issued: from the granting entry's start to the issued entry's own
+  bStart granted `shouldBe` at 2026 3 10
+  map bStart rows1 `shouldBe` [at 2026 4 10]
+  -- one lapse row for April, then May is issued: two rows, not one and not three. The lapse row's
+  -- start is where May begins, so it is also the start of the period the issue that follows covers
   map bMonths rows2 `shouldBe` [1, 0]
   map bStart rows2 `shouldBe` [at 2026 5 10, at 2026 6 10]
-  fmap pStart p2 `shouldBe` Just (at 2026 5 10)
-  fmap pEnd p2 `shouldBe` Just (at 2026 6 10)
   -- a lapse moves months from unused to gone; it never changes what was paid for
   map paidThrough (granted : rows1 <> rows2) `shouldBe` replicate 4 (at 2026 6 10)
   bMonths afterSecond `shouldBe` 0
@@ -314,7 +320,7 @@ testLedgerInvariants = do
   let start = at 2026 1 15
       reopened = at 2027 9 9
       -- the April grant lands exactly where coverage ended and continues the run, the 2027 one
-      -- lands past it and restarts, so both branches of grantMonths run under the invariants
+      -- lands past it and restarts, so both branches of grantEntry run under the invariants
       steps =
         [ Grant start 3,
           Pass start,
@@ -325,9 +331,9 @@ testLedgerInvariants = do
           Grant reopened 1,
           Pass reopened
         ]
-      step (b, rows) = \case
-        Grant t n -> let b' = grantMonths t n b in (b', rows <> [b'])
-        Pass t -> let (rs, _) = pass t b in (finalBalance b rs, rows <> rs)
+      step (e, rows) = \case
+        Grant t n -> let e' = grant t n e in (e', rows <> [e'])
+        Pass t -> let rs = pass t e in (finalBalance e rs, rows <> rs)
       (_, allRows) = foldl step (newBalance start, []) steps
   map bMonths allRows `shouldSatisfy` all (>= 0)
   map bStart allRows `shouldSatisfy` nonDecreasing
@@ -336,53 +342,49 @@ testGrantAfterExhausted :: IO ()
 testGrantAfterExhausted = do
       -- the balance ran out on 10 Feb; the next code is redeemed on 1 Jun
   let spent = newBalance (at 2026 2 10)
-      granted = grantMonths (at 2026 6 1) 2 spent
+      granted = grant (at 2026 6 1) 2 spent
   bStart granted `shouldBe` at 2026 6 1
   paidThrough granted `shouldBe` at 2026 8 1
   -- the four unsupported months are not backfilled, so nothing lapses immediately
-  advanceBalance (at 2026 6 1) granted `shouldBe` Nothing
+  lapse (at 2026 6 1) granted `shouldSatisfy` isNothing
 
 testGrantInsideIssuedPeriod :: IO ()
 testGrantInsideIssuedPeriod = do
   let start = at 2026 1 10
-      granted = grantMonths start 1 (newBalance start)
-      (rows, _) = pass start granted
-      issued = finalBalance granted rows
+      granted = grant start 1 (newBalance start)
+      issued = finalBalance granted $ pass start granted
       -- topped up on 20 Jan, while the month issued on 10 Jan still runs
-      toppedUp = grantMonths (at 2026 1 20) 3 issued
+      toppedUp = grant (at 2026 1 20) 3 issued
+  -- February is where the next period starts, the top-up having been spent on neither January nor a gap
   bStart toppedUp `shouldBe` at 2026 2 10
   paidThrough toppedUp `shouldBe` at 2026 5 10
   -- the balance starts in the future, so no second credential is issued for January
-  issueMonth (at 2026 1 20) toppedUp `shouldBe` Nothing
-  fmap (pStart . fst) (issueMonth (at 2026 2 10) toppedUp) `shouldBe` Just (at 2026 2 10)
+  issue (at 2026 1 20) toppedUp `shouldSatisfy` isNothing
+  fmap bStart (issue (at 2026 2 10) toppedUp) `shouldBe` Just (at 2026 3 10)
 
 testMonthEndClipping :: IO ()
 testMonthEndClipping = do
   let start = at 2027 1 31
-      granted = grantMonths start 3 (newBalance start)
-      issueAll b ps = case pass (bStart b) b of
-        (rows, Just p) -> issueAll (finalBalance b rows) (p : ps)
-        (_, Nothing) -> reverse ps
-      periods = issueAll granted []
-  -- February clips to the 28th, and March goes back to the 31st: clipping does not accumulate
-  map pStart periods `shouldBe` [at 2027 1 31, at 2027 2 28, at 2027 3 31]
-  map pEnd periods `shouldBe` [at 2027 2 28, at 2027 3 31, at 2027 4 30]
-  -- the issued period start is the balance start, never periodEnd minus a month, which clipping
-  -- would answer as 28 Jan
-  addMonths (-1) (pEnd (head periods)) `shouldNotBe` pStart (head periods)
+      granted = grant start 3 (newBalance start)
+      issued = issueAll granted
+  -- February clips to the 28th, and March goes back to the 31st: clipping does not accumulate.
+  -- Each period runs from one start to the next, so these bounds are the three periods
+  map bStart (granted : issued) `shouldBe` [at 2027 1 31, at 2027 2 28, at 2027 3 31, at 2027 4 30]
+  -- the issued period start is the previous balance start, never periodEnd minus a month, which
+  -- clipping would answer as 28 Jan
+  addMonths (-1) (bStart (head issued)) `shouldNotBe` bStart granted
   -- across a leap day
-  let leap = grantMonths (at 2028 1 29) 2 (newBalance (at 2028 1 29))
-      leapPeriods = issueAll leap []
-  map pEnd leapPeriods `shouldBe` [at 2028 2 29, at 2028 3 29]
-  -- a month that ends on the leap day counts as elapsed the moment it ends
-  elapsedMonths (at 2028 2 29) leap `shouldBe` 1
-  elapsedMonths (addUTCTime (-1) (at 2028 2 29)) leap `shouldBe` 0
+  let leap = grant (at 2028 1 29) 2 (newBalance (at 2028 1 29))
+  map bStart (issueAll leap) `shouldBe` [at 2028 2 29, at 2028 3 29]
+  -- a month that ends on the leap day counts as elapsed the moment it ends, and not before
+  fmap bMonths (lapse (at 2028 2 29) leap) `shouldBe` Just 1
+  lapse (addUTCTime (-1) (at 2028 2 29)) leap `shouldSatisfy` isNothing
   -- buying a month at a time keeps the day of month that buying three at once keeps
-  let jan = grantMonths (at 2027 1 31) 1 (newBalance (at 2027 1 31))
-  case issueMonth (at 2027 1 31) jan of
-    Just (_, issuedJan) -> do
-      let feb = grantMonths (at 2027 2 20) 1 issuedJan
-      fmap (pEnd . fst) (issueMonth (at 2027 2 28) feb) `shouldBe` Just (at 2027 3 31)
+  let jan = grant (at 2027 1 31) 1 (newBalance (at 2027 1 31))
+  case issue (at 2027 1 31) jan of
+    Just issuedJan -> do
+      let feb = grant (at 2027 2 20) 1 issuedJan
+      fmap bStart (issue (at 2027 2 28) feb) `shouldBe` Just (at 2027 3 31)
     Nothing -> expectationFailure "January was not issued"
 
 testMondayExpiry :: IO ()

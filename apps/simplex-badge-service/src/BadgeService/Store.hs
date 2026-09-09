@@ -11,9 +11,6 @@ module BadgeService.Store
     RedeemedCode (..),
     NewCodePurchase (..),
     ServicePurchase (..),
-    LedgerTip (..),
-    ServiceLedgerEntry (..),
-    SignedPlan (..),
     getBadgeCode,
     purchaseKeyExists,
     getPurchaseByKey,
@@ -27,8 +24,6 @@ module BadgeService.Store
   )
 where
 
-import Control.Concurrent.STM (TVar, atomically)
-import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -37,14 +32,13 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges (BadgeCredential, BadgeMasterKey (..), BadgeType)
 import Simplex.Chat.Badges.Ledger
-import Simplex.Chat.Badges.Service (StatementEntryType)
+import Simplex.Chat.Badges.Service (StatementEntry (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus, BadgePurchaseStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow', safeDecodeUtf8)
+import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow')
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), (:.) (..))
@@ -87,26 +81,6 @@ data ServicePurchase = ServicePurchase
   { badgePurchaseId :: Int64,
     masterKey :: BadgeMasterKey,
     badgeType :: BadgeType
-  }
-
-data LedgerTip = LedgerTip
-  { tipEntryId :: Int64,
-    tipBalance :: LedgerBalance
-  }
-
-data ServiceLedgerEntry = ServiceLedgerEntry
-  { entryUuid :: Text,
-    changeMonths :: Int,
-    balance :: LedgerBalance,
-    entryType :: StatementEntryType,
-    createdAt :: UTCTime
-  }
-
--- | The plan once signing succeeded, holding the credential against the row that spends the
--- month, so that row cannot be written without it.
-data SignedPlan = SignedPlan
-  { spRows :: [LedgerRow],
-    spIssuance :: Maybe (LedgerRow, BadgePeriod, BadgeCredential)
   }
 
 getBadgeCode :: DB.Connection -> ByteString -> IO (Maybe IssuedCode)
@@ -155,22 +129,22 @@ getPurchaseByKey db key =
     toPurchase (badgePurchaseId, Binary mk, badgeType) =
       ServicePurchase {badgePurchaseId, masterKey = BadgeMasterKey mk, badgeType}
 
-getLedgerTip :: DB.Connection -> Int64 -> IO (Maybe LedgerTip)
+-- | 'Nothing' also when the newest row has a type this version cannot rebuild, which for the
+-- service means never: it writes only code, badge and lapse, all of which a tag alone rebuilds.
+getLedgerTip :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
 getLedgerTip db purchaseId =
-  maybeFirstRow toTip $
+  maybeFirstRow' Nothing toEntry $
     DB.query
       db
       [sql|
-        SELECT entry_id, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type
+        SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
+               entry_type, entry_credit_type, entry_debit_type, service_created_at
         FROM sx_badge_service_badge_ledger
         WHERE badge_purchase_id = ?
         ORDER BY entry_id DESC
         LIMIT 1
       |]
       (Only purchaseId)
-  where
-    toTip (tipEntryId, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) =
-      LedgerTip {tipEntryId, tipBalance = LedgerBalance {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType}}
 
 -- | The uuid is the client's claim about its last held entry, so the lookup is scoped to its own
 -- purchase - an entry_id taken from another ledger would silently skip rows of this one.
@@ -184,7 +158,7 @@ getLedgerEntryId db purchaseId entryUuid =
 
 -- | 0 for the whole ledger, as entry_id starts at 1. 'Nothing' when a stored row has a type this
 -- version cannot represent, rather than sending it changed into another.
-getLedgerEntries :: DB.Connection -> Int64 -> Int64 -> IO (Maybe [ServiceLedgerEntry])
+getLedgerEntries :: DB.Connection -> Int64 -> Int64 -> IO (Maybe [StatementEntry])
 getLedgerEntries db purchaseId afterEntryId =
   mapM toEntry
     <$> DB.query
@@ -197,10 +171,12 @@ getLedgerEntries db purchaseId afterEntryId =
         ORDER BY entry_id
       |]
       (purchaseId, afterEntryId)
-  where
-    toEntry (entryUuid, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, entryType_, credit_, debit_, createdAt) =
-      (\entryType -> ServiceLedgerEntry {entryUuid, changeMonths, balance = LedgerBalance {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType}, entryType, createdAt})
-        <$> entryTypeFromColumns entryType_ credit_ debit_
+
+-- | wasPausedSince is Nothing because the service does not set it, and there is no column for it.
+toEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType, Text, Maybe Text, Maybe Text, UTCTime) -> Maybe StatementEntry
+toEntry (entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, entryType_, credit_, debit_, createdAt) =
+  (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince = Nothing, createdAt, entryType})
+    <$> entryTypeFromColumns entryType_ credit_ debit_
 
 -- | Answers a repeat inside an issued month, rather than signing the same content twice.
 getCurrentIssuance :: DB.Connection -> Int64 -> UTCTime -> IO (Maybe BadgeCredential)
@@ -219,17 +195,18 @@ getCurrentIssuance db purchaseId now = do
     [Only (Binary bs)] -> J.decodeStrict' bs
     _ -> Nothing
 
+-- | The issuance names the entry that spends the month and the one before it, which together give
+-- the period: the predecessor's balanceStartTs to the issued entry's own.
 -- TODO [badges] also write the reference columns - payment_id, charge_id, from_purchase_id,
 -- to_purchase_id - for the entry types that carry one. Only the tag is written today, so a
 -- payment, charge, transferIn, upgrade or transferOut row would be stored without its reference.
-appendLedgerPlan :: DB.Connection -> TVar ChaChaDRG -> Int64 -> SignedPlan -> UTCTime -> IO ()
-appendLedgerPlan db g purchaseId SignedPlan {spRows, spIssuance} now = do
-  mapM_ appendRow spRows
-  case spIssuance of
+appendLedgerPlan :: DB.Connection -> Int64 -> [StatementEntry] -> Maybe (StatementEntry, StatementEntry, BadgeCredential) -> IO ()
+appendLedgerPlan db purchaseId rows issuance_ = do
+  mapM_ appendRow rows
+  case issuance_ of
     Nothing -> pure ()
-    Just (issueRow, BadgePeriod {periodStart, periodEnd, badgeExpiry}, credential) -> do
-      entryId <- appendRow issueRow
-      issuanceId <- randomId g
+    Just (previous, issued@StatementEntry {entryId, balanceStartTs = periodEnd, balanceBadgeType, createdAt}, credential) -> do
+      rowId <- appendRow issued
       DB.execute
         db
         [sql|
@@ -237,12 +214,14 @@ appendLedgerPlan db g purchaseId SignedPlan {spRows, spIssuance} now = do
             (issuance_id, badge_purchase_id, entry_id, badge_type, period_start, period_end, expiry, credential, created_at)
           VALUES (?,?,?,?,?,?,?,?,?)
         |]
-        ((issuanceId, purchaseId, entryId, balanceBadgeType (rowBalance issueRow)) :. (periodStart, periodEnd, badgeExpiry, Binary (LB.toStrict $ J.encode credential), now))
+        -- the issued entry's uuid is the issuance id: one issuance per such entry, and entry uuids
+        -- are already unique across the ledger, so nothing has to be drawn for it
+        ( (entryId, purchaseId, rowId, balanceBadgeType)
+            :. (balanceStartTs previous, periodEnd, endOfMondayAfter periodEnd, Binary (LB.toStrict $ J.encode credential), createdAt)
+        )
   where
-    appendRow LedgerRow {rowChange, rowBalance, rowType} = do
-      entryUuid <- randomId g
-      let LedgerBalance {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType} = rowBalance
-          (entryType, creditType, debitType) = entryTypeColumns rowType
+    appendRow StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, createdAt, entryType} = do
+      let (entryTypeT, creditType, debitType) = entryTypeColumns entryType
       DB.execute
         db
         [sql|
@@ -251,11 +230,8 @@ appendLedgerPlan db g purchaseId SignedPlan {spRows, spIssuance} now = do
              balance_badge_type, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type)
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((entryUuid, purchaseId, rowChange, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, now, now, entryType, creditType, debitType))
+        ((entryId, purchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, createdAt, createdAt, entryTypeT, creditType, debitType))
       insertedRowId db
-
-randomId :: TVar ChaChaDRG -> IO Text
-randomId g = safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes 16 g)
 
 -- redeemed_at is stamped here, so this must share a transaction with the credential's rows:
 -- a code marked spent without one can never be reissued

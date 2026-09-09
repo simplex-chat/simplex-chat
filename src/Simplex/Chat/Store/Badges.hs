@@ -20,14 +20,12 @@ module Simplex.Chat.Store.Badges
     storeBadgeIssuance,
     getLatestIssuedCredential,
     storeBadgeStatement,
-    getBadgeLedgerBalance,
     getBadgeLedgerLastEntry,
     getBadgeLedgerEntryId,
   )
 where
 
 import Control.Concurrent.STM (TVar, atomically)
-import Control.Monad (forM_)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -260,22 +258,24 @@ clearShownBadge db User {userId} badgePurchaseId =
 
 -- | Verbatim, entry_uuid and type included: the client authors no row, or the two sides stop
 -- holding the same ledger. DO NOTHING makes a re-applied statement a no-op rather than a throw.
-storeBadgeStatement :: DB.Connection -> Int64 -> [StatementEntry] -> UTCTime -> IO ()
-storeBadgeStatement db badgePurchaseId entries now = forM_ entries storeEntry
+-- An entry whose balance does not follow from the one before it is stored and marked, not refused.
+storeBadgeStatement :: DB.Connection -> Int64 -> Maybe StatementEntry -> [StatementEntry] -> UTCTime -> IO ()
+storeBadgeStatement db badgePurchaseId tip entries now =
+  mapM_ storeEntry $ balanceChecked tip entries
   where
-    storeEntry StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType} =
+    storeEntry (StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType}, checked) =
       DB.execute
         db
         [sql|
           INSERT INTO badge_ledger
             (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
              was_paused_since, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type,
-             entry_type_unknown, entry_type_value)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             entry_type_unknown, entry_type_value, balance_checked)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           ON CONFLICT (entry_uuid) DO NOTHING
         |]
         ( (entryId, badgePurchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince)
-            :. (createdAt, now, entryTypeT, creditType, debitType, BI typeUnknown, entryTypeValue)
+            :. (createdAt, now, entryTypeT, creditType, debitType, BI typeUnknown, entryTypeValue, BI <$> checked)
         )
       where
         (entryTypeT, creditType, debitType) = entryTypeColumns entryType
@@ -289,24 +289,8 @@ storeBadgeStatement db badgePurchaseId entries now = forM_ entries storeEntry
           SEDebit SDUnknown {} -> True
           _ -> False
 
--- | The balance is the last row, on both sides; nothing derives it by summing the history.
-getBadgeLedgerBalance :: DB.Connection -> Int64 -> IO (Maybe LedgerBalance)
-getBadgeLedgerBalance db badgePurchaseId =
-  maybeFirstRow toBalance $
-    DB.query
-      db
-      [sql|
-        SELECT balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type
-        FROM badge_ledger
-        WHERE badge_purchase_id = ?
-        ORDER BY entry_id DESC
-        LIMIT 1
-      |]
-      (Only badgePurchaseId)
-  where
-    toBalance (balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) = LedgerBalance {balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType}
-
--- | The entry the client asserts to the service: its last row, or none before the first statement.
+-- | The balance is the last row, on both sides; nothing derives it by summing the history. It is
+-- also the entry the client asserts to the service, and is 'Nothing' before the first statement.
 getBadgeLedgerLastEntry :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
 getBadgeLedgerLastEntry db badgePurchaseId =
   maybeFirstRow' Nothing toEntry $

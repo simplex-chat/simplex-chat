@@ -242,6 +242,8 @@ ALTER TABLE badge_ledger ADD COLUMN entry_type_unknown INTEGER NOT NULL DEFAULT 
 
 ALTER TABLE badge_ledger ADD COLUMN entry_type_value TEXT;
 
+ALTER TABLE badge_ledger ADD COLUMN balance_checked INTEGER;
+
 CREATE INDEX idx_badge_purchases_user ON badge_purchases(user_id);
 
 ALTER TABLE users ADD COLUMN shown_badge_id INTEGER REFERENCES badge_purchases ON DELETE SET NULL;
