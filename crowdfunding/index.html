@@ -111,8 +111,11 @@
         :root {
             --cf-grad-light: linear-gradient(10deg, #e8f3ff 0%, #c0e2ff 40%, #e9ffff 80%, #ffefd6 90%);
             --cf-grad-dark: linear-gradient(9.2deg, #000000 0%, #131d49 52%, #3f5598 65%, #c3faff 85%, #fff6e0 90%);
-            --cf-cyan: #70F0F9;
             --cf-ink: #023789;
+            /* .area is sized from vh, the section from svh: this is how far the
+               area's top sits above the section's visible top, negative below.
+               Anything anchored to the viewport inside .area subtracts it. */
+            --cf-area-off: calc((var(--sec-h) - 100svh) / 2);
         }
 
         @media screen and (max-width: 959px) {
@@ -157,15 +160,20 @@
             min-height: calc(110lvh + var(--cf-band));
         }
 
+        /* the band fills the top safe area, so a screen without one must not
+           grow its sections. Every iPhone with a safe area is at least 812pt
+           tall; the tallest without one is 736pt. */
+        @media screen and (max-height: 750px) {
+            section.page.cf { --cf-band: 0px; }
+        }
+
         section.page.cf.cf-light { background-image: var(--cf-art), var(--cf-grad-light); }
         section.page.cf.cf-dark  { background-image: var(--cf-art), var(--cf-grad-dark); }
 
-        /* Art paths */
-        .cf-problem { --cf-art: url("/img/crowdfunding/problem.png"); }
-        .cf-growth  { --cf-art: url("/img/crowdfunding/simplex-growth-2.png"); }
-        .cf-network { --cf-art: url("/img/design_3/section-3-desktop-light.webp"); } /* 5 participants - home page */
-        .cf-revenue { --cf-art: url("/img/design_3/section-4-desktop-light.webp"); } /* Funded by Its Users - home page */
-
+        /* the two sections whose art is a full-bleed background (desktop only:
+           on mobile both draw the gradient and place the art as an <img>) */
+        .cf-network { --cf-art: url("/img/design_3/section-3-desktop-light.webp"); }
+        .cf-revenue { --cf-art: url("/img/design_3/section-4-desktop-light.webp"); }
 
         /* hero + close: full-bleed globe (home page hero cover) */
         section.page.cf.cf-hero,
@@ -173,11 +181,6 @@
             background-color: #02071D;
             background-image: url("/img/design_3/cover.webp");
             background-size: var(--cover-bg-w) var(--cover-bg-h);
-            background-position: center;
-        }
-
-        section.page.cf.cf-hero,
-        section.page.cf.cf-close {
             background-position: calc(50% + var(--sec-vwu) * 40.3) calc(50% + var(--sec-vhu) * 2.2);
         }
 
@@ -214,43 +217,6 @@
         /* text placement: alternate side by side with the art */
         .cf-right .text-container { margin-left: auto; }
         .cf-left  .text-container { margin-right: auto; }
-
-        /* ---- centered content (hero + close) ---- */
-        section.page.cf-center { flex-direction: column; }
-
-        .cf-center .content {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            gap: calc(var(--sec-vhu) * 3.2);
-            width: var(--sec-w);
-            height: var(--sec-h);
-            padding: 0 calc(var(--sec-vwu) * 6);
-            z-index: 2;
-        }
-
-        .cf-center h1 {
-            font-family: "GT-Walsheim", sans-serif;
-            font-weight: 700;
-            font-size: calc(var(--sec-vwu) * 6.4);
-            line-height: 1.0;
-            letter-spacing: -0.025em;
-            color: #ffffff;
-            max-width: calc(var(--sec-vwu) * 62);
-        }
-
-        .cf-center .lead {
-            font-family: "Manrope", sans-serif;
-            font-weight: 300;
-            font-size: calc(var(--sec-vwu) * 2.15);
-            line-height: 1.5;
-            color: #dfeaff;
-            max-width: calc(var(--sec-vwu) * 50);
-        }
-
-        .cf-center .lead strong { font-weight: 600; color: #ffffff; }
 
         /* ---- hero: text left, phone right, bleeding off the bottom ---- */
         section.page.cf.cf-hero { overflow: hidden; }
@@ -339,14 +305,6 @@
             letter-spacing: -0.025em;
             color: #ffffff;
         }
-        .cf-close .lead {
-            font-family: "Manrope", sans-serif;
-            font-weight: 300;
-            font-size: calc(var(--sec-vwu) * 2.4);
-            line-height: 1.55;
-            color: #ffffff;
-            margin-top: calc(var(--sec-vhu) * 7);
-        }
         .cf-close .cf-close-call {
             font-family: "Manrope", sans-serif;
             font-weight: 500;
@@ -382,7 +340,7 @@
             position: absolute;
             right: calc(var(--sec-vwu) * -4.6);
             width: calc(var(--sec-vhu) * 144.4 * 0.4914);
-            bottom: calc((var(--sec-h) - 100svh) / 2);
+            bottom: var(--cf-area-off);
             height: calc(var(--sec-vhu) * 38);
             background: linear-gradient(to top, #02071D 22%, rgba(2, 7, 29, .8) 52%, rgba(2, 7, 29, 0) 100%);
             z-index: 3;
@@ -429,6 +387,9 @@
         }
         .cf-hero-invest-link svg { height: calc(var(--sec-vwu) * 2.1); width: auto; display: block; transform: translateY(calc(var(--sec-vwu) * -0.25)); }
         .cf-hero-invest-link:focus-visible { outline: 2px solid #ffffff; outline-offset: 4px; border-radius: 4px; }
+        /* the same link twice: beside the button (desktop), in the hero's top
+           right corner (mobile). Only one of the two is ever displayed. */
+        .cf-hero-corner { display: none; }
         .cf-hero-cta .cf-pill {
             position: relative;
             right: auto;
@@ -451,6 +412,7 @@
             padding: 0 28px;
             display: flex;
             align-items: center;
+            gap: 9px;
             font-family: "Manrope", sans-serif;
             font-size: 17px;
             font-weight: 600;
@@ -480,17 +442,7 @@
         }
         .cf-secondary:hover { box-shadow: 0 0 0 1px #80b6eb; }
 
-        .cf-pill { gap: 9px; }
         .cf-pill svg { height: 30px; width: auto; display: block; transform: translateY(-3.5px); }
-
-        /* the hero's invest control keeps the pill's slot, not its skin */
-        .cf-pill.cf-hero-invest-link {
-            padding: 0;
-            font-weight: 400;
-            font-size: calc(var(--sec-vwu) * 1.5);
-            gap: calc(var(--sec-vwu) * 0.7);
-        }
-        .cf-pill.cf-hero-invest-link svg { height: calc(var(--sec-vwu) * 2.1); transform: translateY(calc(var(--sec-vwu) * -0.25)); }
 
         @media screen and (min-width: 960px) {
             .cf-pill { width: 252px; justify-content: center; }
@@ -546,6 +498,11 @@
            their colours. Fixed size, does not scale.
            ============================================================ */
 
+        /* the bar spans the full width at z-index 50000, above every section:
+           only the logo itself may take a tap, or it covers what sits beside it */
+        header#navbar { pointer-events: none; }
+        header#navbar > a.logo { pointer-events: auto; }
+
         /* logo swap by section theme */
         #navbar.on-dark > a.logo.logo-light { display: none; }
         #navbar.on-dark > a.logo.logo-dark { display: flex; }
@@ -581,13 +538,6 @@
 
         /* ---- mobile: portrait art on top, text at the bottom (home page system) ---- */
         @media screen and (max-width: 959px) {
-            .cf-network { --cf-art: url("/img/design_3/section-3-mobile-light.webp"); }
-            .cf-revenue { --cf-art: url("/img/design_3/section-4-mobile-light.webp"); }
-
-            section.page.cf.cf-network {
-                background-size: auto calc(var(--cover-bg-h) * 0.72), 102% 102%;
-                background-position: 50% calc(50% - var(--sec-vhu) * 4.5), center;
-            }
             .cf .text-container h2 { font-size: calc(var(--sec-vwu) * 9.4); }
             .cf .text-container {
                 margin-left: 0 !important;
@@ -605,10 +555,6 @@
                 background-position:
                     calc((100vw - var(--cf-phone-w)) / 2 - var(--cf-phone-w) * 1.4462)
                     calc(100svh - var(--cf-phone-show) - var(--cf-phone-h) * 0.4034 + var(--cf-band-shift));
-            }
-            section.page.cf.cf-revenue {
-                background-size: auto calc(var(--cover-bg-h) * 0.84), 102% 102%;
-                background-position: 50% calc(50% - var(--sec-vhu) * 2), center;
             }
             .cf-problem .area,
             .cf-growth .area,
@@ -715,38 +661,33 @@
                 padding-right: var(--cf-text-inset);
             }
 
-            .cf-center h1 { font-size: calc(var(--sec-vwu) * 15); max-width: calc(var(--sec-vwu) * 90); }
-            .cf-center .lead { font-size: calc(var(--sec-vwu) * 5); max-width: calc(var(--sec-vwu) * 88); }
-
             :root {
                 --cf-gutter: 16px;
                 --cf-text-pad: 21.6px;
                 --cf-text-inset: calc(var(--cf-text-pad) - var(--cf-gutter));
-                --cf-nav: 54px;
                 --cf-nav-shift: 2.5px;
-                /* .area is sized from vh; when the browser chrome shrinks the
-                   visible box below that, the area overhangs it symmetrically */
+                /* the area's overhang above the section, clamped to zero: text
+                   inside it is pushed down by that much to stay on screen */
                 --cf-top-base: 66px;
-                --cf-over: max(0px, calc((var(--sec-h) - 100svh) / 2));
+                --cf-over: max(0px, var(--cf-area-off));
                 --cf-top: calc(var(--cf-top-base) + var(--cf-over));
                 --cf-safe-b: env(safe-area-inset-bottom, 0px);
                 --cf-cta-gap: 12px;
                 --cf-cta-bottom: max(var(--cf-cta-gap), var(--cf-safe-b));
                 --cf-cta: calc(62px + var(--cf-cta-bottom) + var(--cf-over));
                 --cf-gap: 24px;
-                --cf-pad: var(--cf-gutter);
                 --cf-art-max: 54%;
                 --cf-phone-w: 82vw;
                 --cf-phone-h: calc(var(--cf-phone-w) / 0.4914);
                 --cf-phone-part: 0.55;
                 /* bottom of the hero text block, measured from the section top */
-                --cf-hero-text-b: calc(var(--cf-top-base) + max(0px, calc((100svh - var(--sec-h)) / 2)) + 78.5vw);
+                --cf-hero-text-b: calc(var(--cf-top-base) + max(0px, calc(-1 * var(--cf-area-off))) + 78.5vw);
                 /* the arc crest starts 0.2678 down the cover image, which is
                    2.349 phone widths tall and sits 0.4034 phone heights above
                    the phone top: the phone may rise no higher than this */
                 --cf-phone-ceiling: calc(var(--cf-hero-text-b) + var(--cf-phone-w) * 0.1917);
                 --cf-phone-show: max(calc(var(--cf-phone-h) * 0.15), min(calc(var(--cf-phone-h) * var(--cf-phone-part)), calc(100svh - var(--cf-phone-ceiling))));
-                --cf-phone-top: calc(100svh - var(--cf-phone-show) - (100svh - var(--sec-h)) / 2);
+                --cf-phone-top: calc(100svh - var(--cf-phone-show) + var(--cf-area-off));
                 --cf-fade-ext: max(0px, calc(110lvh - 100svh));
                 /* dvh so the fade rides with the button as the chrome moves */
                 --cf-fade-dyn: max(0px, calc(110lvh - 100dvh));
@@ -760,18 +701,17 @@
             .cf-close .area { flex-direction: column; justify-content: flex-start; align-items: stretch; }
             section.page.cf .area { width: 100%; }
             .cf-hero .area { padding: var(--cf-top) var(--cf-gutter) 0; }
-            .cf-close .area { padding-top: var(--cf-top); padding-bottom: var(--cf-cta); }
-            .cf-hero .cf-hero-text { display: contents; }
+            /* both blocks lay out as one column: text from the top, CTA pinned
+               to the bottom, so the h1 and the pills are direct flex items */
+            .cf-hero .cf-hero-text,
+            .cf-close .cf-hero-text { display: contents; }
             .cf-hero h1,
             .cf-hero .lead,
             .cf-hero .cf-stats,
             .cf-hero .cf-live-link { position: relative; z-index: 4; }
-            .cf-close .cf-hero-text { margin: 0; width: auto; }
             .cf-hero h1 { font-size: calc(var(--sec-vwu) * 9.7); }
             .cf-hero .lead { font-size: calc(var(--sec-vwu) * 3.55); max-width: none; margin-top: calc(var(--sec-vhu) * 2); }
-            /* same frame as the hero: text from the top, CTA pinned to the bottom */
-            .cf-close .cf-hero-text { display: contents; }
-            .cf-close .area { align-items: stretch; justify-content: flex-start; padding: calc(var(--cf-top) + var(--sec-vhu) * 14) var(--cf-gutter) 0; }
+            .cf-close .area { padding: calc(var(--cf-top) + var(--sec-vhu) * 14) var(--cf-gutter) 0; }
             /* crest a fixed 78px from the section top */
             section.page.cf.cf-close {
                 background-position: 50% calc(78px - var(--cover-bg-h) * 0.2678 + var(--cf-band-shift));
@@ -791,7 +731,6 @@
                 width: auto;
                 text-shadow: 0 0 2px rgba(2, 7, 29, .95), 0 0 4px rgba(2, 7, 29, .9), 0 2px 10px rgba(2, 7, 29, .7);
             }
-            .cf-close .cf-hero-text { width: auto; align-self: stretch; }
             .cf-close-offer {
                 width: auto;
                 align-self: stretch;
@@ -800,21 +739,14 @@
             }
             .cf-close-offer p { font-size: calc(var(--sec-vwu) * 3.6); }
             .cf-close .cf-live-link { display: block; font-size: calc(var(--sec-vwu) * 5); margin-top: calc(var(--sec-vhu) * 2.5); top: 0; }
-            .cf-stats { gap: calc(var(--sec-vwu) * 8); margin-top: calc(var(--sec-vhu) * 3); }
+            .cf-stats { top: 0; gap: calc(var(--sec-vwu) * 8); margin-top: calc(var(--sec-vhu) * 3); }
             .cf-stat img { width: calc(var(--sec-vwu) * 8); }
             .cf-stat b { font-size: calc(var(--sec-vwu) * 6.5); }
             .cf-stat span { font-size: calc(var(--sec-vwu) * 3.4); }
             .cf-hero .cf-live-link { margin-top: calc(var(--sec-vhu) * 2); top: 0; font-size: calc(var(--sec-vwu) * 5); }
-            .cf-hero .cf-hero-cta {
-                order: 5;
-                flex-direction: column-reverse;
-                align-items: center;
-                gap: calc(var(--sec-vhu) * 2);
-                margin: auto 0 calc((var(--sec-h) + 100svh) / 2 - 100dvh + var(--cf-cta-bottom));
-                position: relative;
-                z-index: 5;
-            }
-            .cf-hero-cta .cf-pill { width: 100%; height: 48px; font-size: 16px; }
+            /* the pill sits on the bottom edge and rides with the chrome:
+               dvh tracks the visible bottom, svh the box the area is sized from */
+            .cf-hero .cf-hero-cta,
             .cf-close .cf-hero-cta {
                 order: 5;
                 flex-direction: column-reverse;
@@ -822,17 +754,29 @@
                 gap: calc(var(--sec-vhu) * 1.6);
                 margin: auto 0 calc((var(--sec-h) + 100svh) / 2 - 100dvh + var(--cf-cta-bottom));
             }
-            /* its own button-sized target, sitting on the button */
-            .cf-close .cf-hero-invest-link {
+            /* over the phone and the gradient covering it */
+            .cf-hero .cf-hero-cta { z-index: 5; }
+            .cf-hero-cta .cf-pill { width: 100%; height: 48px; font-size: 16px; }
+            /* one link, two placements: the top right corner of the hero, and
+               its own button-sized target above the pill on the closing section */
+            .cf-hero-invest-link {
                 height: 48px;
-                justify-content: center;
                 font-size: calc(var(--sec-vwu) * 4.6);
                 gap: calc(var(--sec-vwu) * 1.9);
             }
-            .cf-close .cf-hero-invest-link svg { height: calc(var(--sec-vwu) * 6.5); transform: translateY(calc(var(--sec-vwu) * -0.7)); }
-            .cf-pill.cf-hero-invest-link { font-size: calc(var(--sec-vwu) * 4.6); gap: calc(var(--sec-vwu) * 1.9); }
-            .cf-pill.cf-hero-invest-link svg { height: calc(var(--sec-vwu) * 6.5); transform: translateY(calc(var(--sec-vwu) * -0.7)); }
-            .cf-stats { top: 0; margin-top: calc(var(--sec-vhu) * 3); }
+            .cf-hero-invest-link svg { height: calc(var(--sec-vwu) * 6.5); transform: translateY(calc(var(--sec-vwu) * -0.7)); }
+            .cf-close .cf-hero-invest-link { justify-content: center; }
+            .cf-hero .cf-hero-cta .cf-hero-invest-link { display: none; }
+            /* a child of the section, so its reference is the section's top
+               edge, which the band raises by --cf-band-shift, as with the arc.
+               z-index clears .area, which is 11 and covers this corner. */
+            .cf-hero-corner {
+                display: flex;
+                position: absolute;
+                top: calc(5px + var(--cf-nav-shift) + var(--cf-band-shift));
+                right: 16px;
+                z-index: 12;
+            }
             .cf-phone {
                 position: absolute;
                 left: 50%;
@@ -854,7 +798,7 @@
                 right: auto;
                 transform: translateX(-50%);
                 width: var(--cf-phone-w);
-                bottom: calc((var(--sec-h) - 100svh) / 2 - var(--cf-fade-ext));
+                bottom: calc(var(--cf-area-off) - var(--cf-fade-ext));
                 height: calc(var(--cf-fade-base) + var(--cf-fade-ramp));
                 background: linear-gradient(to top,
                     rgba(2, 7, 29, .9) var(--cf-fade-base),
@@ -899,16 +843,17 @@
             .cf-tag .n { font-size: 3.54cqh; line-height: 1.3; }
         }
 
-        /* narrow phones: keep the Wefunder pill clear of the logo */
         /* 320pt phones: keep the headline at three lines */
         @media screen and (max-width: 330px) {
             .cf-hero h1 { font-size: calc(var(--sec-vwu) * 9.3); }
         }
 
+        /* narrow phones: keep the corner link and the pill clear of the logo */
         @media screen and (max-width: 389px) {
             header#navbar > a.logo img { height: 24px; }
             .cf-bottom { font-size: 12px; padding: 0 12px; height: 40px; }
             .cf-bottom svg { height: 22px; transform: translateY(-2.5px); }
+            .cf-hero-corner { height: 40px; }
             .cf-tag .v { font-size: 2.96cqh; line-height: 1.4; }
         }
 
@@ -924,8 +869,8 @@
             margin: 0 auto;
             padding: calc(var(--sec-vhu) * 9) calc(var(--sec-vwu) * 7.5) calc(var(--sec-vhu) * 7);
         }
-        .cf-fine { max-width: calc(var(--sec-vwu) * 72); }
         .cf-fine {
+            max-width: calc(var(--sec-vwu) * 72);
             font-family: "Manrope", sans-serif;
             font-weight: 300;
             font-size: calc(var(--sec-vwu) * 1.05);
@@ -945,9 +890,7 @@
             .cf-fine-links { gap: calc(var(--sec-vwu) * 6); }
         }
 
-        /* extension link + CSS-only :target popups (as on simplex.domains) */
-        .cf-ext-link { display: inline-block; margin-top: calc(var(--sec-vhu) * 2.2); font-family: "Manrope", sans-serif; font-weight: 600; font-size: calc(var(--sec-vwu) * 1.5); text-decoration: underline; text-underline-offset: 4px; color: var(--cf-ink); }
-        .cf-dark .cf-ext-link { color: #9fd0ff; }
+        /* CSS-only :target popups (as on simplex.domains) */
         .cf-dark .text-container a.gradient-text {
             background: linear-gradient(90deg, #019bfe 0%, #64fdff 58%, #c8feff 100%);
             -webkit-background-clip: text;
@@ -1057,6 +1000,8 @@
 
 <body>
 
+    
+
     <header id="navbar" class="on-dark">
         <a href="/" class="logo logo-light"><img src="/img/new/logo-light.png" alt="SimpleX"></a>
         <a href="/" class="logo logo-dark"><img src="/img/new/logo-dark.png" alt="SimpleX"></a>
@@ -1071,7 +1016,13 @@
                     <h1>The first and the only messaging network without any user IDs</h1>
                     <p class="lead">SimpleX Chat is building a messaging network unlike every major platform &mdash; without phone numbers, usernames, emails, or any user identifiers.</p>
                     <div class="cf-hero-cta">
-                        <a class="cf-pill cf-pill-lg cf-primary" id="cf-hero-request" href="#request">Request our Pitch deck</a>
+                        <a class="cf-pill cf-primary" id="cf-hero-request" href="#request">Request our Pitch deck</a>
+                        <a class="cf-hero-invest-link" id="cf-hero-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
+                            Invest on <svg width="120" height="33" viewBox="0 0 165 45" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M44.0386 38.5332H56.7241V35.3848H47.5317V31.6849H55.5291V28.5365H47.5317V24.9515H56.6092V21.8031H44.0386V38.5332ZM60.242 38.5332H63.7581V31.9836H71.8474V28.7663H63.7581V25.0204H72.9045V21.8031H60.242V38.5332ZM83.049 38.786C87.5302 38.786 90.3569 36.3041 90.3569 31.2482V21.8031H86.8408V31.4091C86.8408 34.1438 85.416 35.5457 83.0949 35.5457C80.7738 35.5457 79.372 34.0749 79.372 31.2712V21.8031H75.8329V31.3861C75.8329 36.2811 78.5906 38.786 83.049 38.786ZM94.3543 38.5332H97.8245V27.6402L106.144 38.5332H109.154V21.8031H105.661V32.3513L97.5946 21.8031H94.3543V38.5332ZM113.43 38.5332H119.888C125.151 38.5332 128.782 34.8792 128.782 30.1681V30.1222C128.782 25.4111 125.151 21.8031 119.888 21.8031H113.43V38.5332ZM119.888 24.9974C122.99 24.9974 125.082 27.1346 125.082 30.1681V30.2141C125.082 33.2476 122.99 35.3388 119.888 35.3388H116.946V24.9974H119.888ZM132.304 38.5332H144.99V35.3848H135.797V31.6849H143.795V28.5365H135.797V24.9515H144.875V21.8031H132.304V38.5332ZM152.024 29.9613V24.9974H155.816C157.677 24.9974 158.826 25.8477 158.826 27.4564V27.5023C158.826 28.9731 157.723 29.9613 155.885 29.9613H152.024ZM148.508 38.5332H152.024V33.0867H155.08L158.78 38.5332H162.917L158.734 32.4892C160.894 31.7308 162.388 30.0302 162.388 27.3185V27.2725C162.388 25.7328 161.906 24.4229 160.986 23.5037C159.883 22.4006 158.229 21.8031 156.114 21.8031H148.508V38.5332Z" fill="var(--wf-capital-nav-logo-fill)"></path>
+                <path d="M3 29.4853L6.36524 22.194C6.60628 21.6717 7.35366 21.6867 7.57359 22.2182L14.3487 38.5913C14.5779 39.1453 15.3677 39.1308 15.5764 38.5687L23.1127 18.279C23.315 17.7341 24.0721 17.6984 24.3249 18.2217L32.5064 35.1596C32.7713 35.7081 33.5744 35.6351 33.7362 35.048L43.1168 1" stroke="var(--wf-capital-nav-logo-fill)" stroke-width="4.86264"></path>
+            </svg>
+                        </a>
                     </div>
                     <div class="cf-stats">
                         <div class="cf-stat">
@@ -1089,12 +1040,11 @@
                 <img class="cf-mask" src="/img/crowdfunding/phone-mask.png" alt="">
                 <div class="cf-hero-fade"></div>
             </div>
-            <a class="cf-pill cf-bottom cf-hero-invest-link" id="cf-hero-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
-                Invest on
-                <svg width="120" height="33" viewBox="0 0 165 45" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M44.0386 38.5332H56.7241V35.3848H47.5317V31.6849H55.5291V28.5365H47.5317V24.9515H56.6092V21.8031H44.0386V38.5332ZM60.242 38.5332H63.7581V31.9836H71.8474V28.7663H63.7581V25.0204H72.9045V21.8031H60.242V38.5332ZM83.049 38.786C87.5302 38.786 90.3569 36.3041 90.3569 31.2482V21.8031H86.8408V31.4091C86.8408 34.1438 85.416 35.5457 83.0949 35.5457C80.7738 35.5457 79.372 34.0749 79.372 31.2712V21.8031H75.8329V31.3861C75.8329 36.2811 78.5906 38.786 83.049 38.786ZM94.3543 38.5332H97.8245V27.6402L106.144 38.5332H109.154V21.8031H105.661V32.3513L97.5946 21.8031H94.3543V38.5332ZM113.43 38.5332H119.888C125.151 38.5332 128.782 34.8792 128.782 30.1681V30.1222C128.782 25.4111 125.151 21.8031 119.888 21.8031H113.43V38.5332ZM119.888 24.9974C122.99 24.9974 125.082 27.1346 125.082 30.1681V30.2141C125.082 33.2476 122.99 35.3388 119.888 35.3388H116.946V24.9974H119.888ZM132.304 38.5332H144.99V35.3848H135.797V31.6849H143.795V28.5365H135.797V24.9515H144.875V21.8031H132.304V38.5332ZM152.024 29.9613V24.9974H155.816C157.677 24.9974 158.826 25.8477 158.826 27.4564V27.5023C158.826 28.9731 157.723 29.9613 155.885 29.9613H152.024ZM148.508 38.5332H152.024V33.0867H155.08L158.78 38.5332H162.917L158.734 32.4892C160.894 31.7308 162.388 30.0302 162.388 27.3185V27.2725C162.388 25.7328 161.906 24.4229 160.986 23.5037C159.883 22.4006 158.229 21.8031 156.114 21.8031H148.508V38.5332Z" fill="var(--wf-capital-nav-logo-fill)"></path>
-                    <path d="M3 29.4853L6.36524 22.194C6.60628 21.6717 7.35366 21.6867 7.57359 22.2182L14.3487 38.5913C14.5779 39.1453 15.3677 39.1308 15.5764 38.5687L23.1127 18.279C23.315 17.7341 24.0721 17.6984 24.3249 18.2217L32.5064 35.1596C32.7713 35.7081 33.5744 35.6351 33.7362 35.048L43.1168 1" stroke="var(--wf-capital-nav-logo-fill)" stroke-width="4.86264"></path>
-                </svg>
+            <a class="cf-hero-invest-link cf-hero-corner" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
+                Invest on <svg width="120" height="33" viewBox="0 0 165 45" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M44.0386 38.5332H56.7241V35.3848H47.5317V31.6849H55.5291V28.5365H47.5317V24.9515H56.6092V21.8031H44.0386V38.5332ZM60.242 38.5332H63.7581V31.9836H71.8474V28.7663H63.7581V25.0204H72.9045V21.8031H60.242V38.5332ZM83.049 38.786C87.5302 38.786 90.3569 36.3041 90.3569 31.2482V21.8031H86.8408V31.4091C86.8408 34.1438 85.416 35.5457 83.0949 35.5457C80.7738 35.5457 79.372 34.0749 79.372 31.2712V21.8031H75.8329V31.3861C75.8329 36.2811 78.5906 38.786 83.049 38.786ZM94.3543 38.5332H97.8245V27.6402L106.144 38.5332H109.154V21.8031H105.661V32.3513L97.5946 21.8031H94.3543V38.5332ZM113.43 38.5332H119.888C125.151 38.5332 128.782 34.8792 128.782 30.1681V30.1222C128.782 25.4111 125.151 21.8031 119.888 21.8031H113.43V38.5332ZM119.888 24.9974C122.99 24.9974 125.082 27.1346 125.082 30.1681V30.2141C125.082 33.2476 122.99 35.3388 119.888 35.3388H116.946V24.9974H119.888ZM132.304 38.5332H144.99V35.3848H135.797V31.6849H143.795V28.5365H135.797V24.9515H144.875V21.8031H132.304V38.5332ZM152.024 29.9613V24.9974H155.816C157.677 24.9974 158.826 25.8477 158.826 27.4564V27.5023C158.826 28.9731 157.723 29.9613 155.885 29.9613H152.024ZM148.508 38.5332H152.024V33.0867H155.08L158.78 38.5332H162.917L158.734 32.4892C160.894 31.7308 162.388 30.0302 162.388 27.3185V27.2725C162.388 25.7328 161.906 24.4229 160.986 23.5037C159.883 22.4006 158.229 21.8031 156.114 21.8031H148.508V38.5332Z" fill="var(--wf-capital-nav-logo-fill)"></path>
+                <path d="M3 29.4853L6.36524 22.194C6.60628 21.6717 7.35366 21.6867 7.57359 22.2182L14.3487 38.5913C14.5779 39.1453 15.3677 39.1308 15.5764 38.5687L23.1127 18.279C23.315 17.7341 24.0721 17.6984 24.3249 18.2217L32.5064 35.1596C32.7713 35.7081 33.5744 35.6351 33.7362 35.048L43.1168 1" stroke="var(--wf-capital-nav-logo-fill)" stroke-width="4.86264"></path>
+            </svg>
             </a>
         </section>
 
@@ -1204,13 +1154,12 @@
                     <h1><span class="cf-close-l1">Get a stake</span><br><span class="cf-close-l2">in SimpleX Chat</span></h1>
                     <p class="cf-close-call">We are building a network that people own.<br>We invite you to invest and become part of it.</p>
                     <div class="cf-hero-cta">
-                        <a class="cf-pill cf-pill-lg cf-primary" href="#request">Request our Pitch deck</a>
+                        <a class="cf-pill cf-primary" href="#request">Request our Pitch deck</a>
                         <a class="cf-hero-invest-link" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
-                            Invest on
-                            <svg width="120" height="33" viewBox="0 0 165 45" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                <path d="M44.0386 38.5332H56.7241V35.3848H47.5317V31.6849H55.5291V28.5365H47.5317V24.9515H56.6092V21.8031H44.0386V38.5332ZM60.242 38.5332H63.7581V31.9836H71.8474V28.7663H63.7581V25.0204H72.9045V21.8031H60.242V38.5332ZM83.049 38.786C87.5302 38.786 90.3569 36.3041 90.3569 31.2482V21.8031H86.8408V31.4091C86.8408 34.1438 85.416 35.5457 83.0949 35.5457C80.7738 35.5457 79.372 34.0749 79.372 31.2712V21.8031H75.8329V31.3861C75.8329 36.2811 78.5906 38.786 83.049 38.786ZM94.3543 38.5332H97.8245V27.6402L106.144 38.5332H109.154V21.8031H105.661V32.3513L97.5946 21.8031H94.3543V38.5332ZM113.43 38.5332H119.888C125.151 38.5332 128.782 34.8792 128.782 30.1681V30.1222C128.782 25.4111 125.151 21.8031 119.888 21.8031H113.43V38.5332ZM119.888 24.9974C122.99 24.9974 125.082 27.1346 125.082 30.1681V30.2141C125.082 33.2476 122.99 35.3388 119.888 35.3388H116.946V24.9974H119.888ZM132.304 38.5332H144.99V35.3848H135.797V31.6849H143.795V28.5365H135.797V24.9515H144.875V21.8031H132.304V38.5332ZM152.024 29.9613V24.9974H155.816C157.677 24.9974 158.826 25.8477 158.826 27.4564V27.5023C158.826 28.9731 157.723 29.9613 155.885 29.9613H152.024ZM148.508 38.5332H152.024V33.0867H155.08L158.78 38.5332H162.917L158.734 32.4892C160.894 31.7308 162.388 30.0302 162.388 27.3185V27.2725C162.388 25.7328 161.906 24.4229 160.986 23.5037C159.883 22.4006 158.229 21.8031 156.114 21.8031H148.508V38.5332Z" fill="var(--wf-capital-nav-logo-fill)"></path>
-                                <path d="M3 29.4853L6.36524 22.194C6.60628 21.6717 7.35366 21.6867 7.57359 22.2182L14.3487 38.5913C14.5779 39.1453 15.3677 39.1308 15.5764 38.5687L23.1127 18.279C23.315 17.7341 24.0721 17.6984 24.3249 18.2217L32.5064 35.1596C32.7713 35.7081 33.5744 35.6351 33.7362 35.048L43.1168 1" stroke="var(--wf-capital-nav-logo-fill)" stroke-width="4.86264"></path>
-                            </svg>
+                            Invest on <svg width="120" height="33" viewBox="0 0 165 45" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M44.0386 38.5332H56.7241V35.3848H47.5317V31.6849H55.5291V28.5365H47.5317V24.9515H56.6092V21.8031H44.0386V38.5332ZM60.242 38.5332H63.7581V31.9836H71.8474V28.7663H63.7581V25.0204H72.9045V21.8031H60.242V38.5332ZM83.049 38.786C87.5302 38.786 90.3569 36.3041 90.3569 31.2482V21.8031H86.8408V31.4091C86.8408 34.1438 85.416 35.5457 83.0949 35.5457C80.7738 35.5457 79.372 34.0749 79.372 31.2712V21.8031H75.8329V31.3861C75.8329 36.2811 78.5906 38.786 83.049 38.786ZM94.3543 38.5332H97.8245V27.6402L106.144 38.5332H109.154V21.8031H105.661V32.3513L97.5946 21.8031H94.3543V38.5332ZM113.43 38.5332H119.888C125.151 38.5332 128.782 34.8792 128.782 30.1681V30.1222C128.782 25.4111 125.151 21.8031 119.888 21.8031H113.43V38.5332ZM119.888 24.9974C122.99 24.9974 125.082 27.1346 125.082 30.1681V30.2141C125.082 33.2476 122.99 35.3388 119.888 35.3388H116.946V24.9974H119.888ZM132.304 38.5332H144.99V35.3848H135.797V31.6849H143.795V28.5365H135.797V24.9515H144.875V21.8031H132.304V38.5332ZM152.024 29.9613V24.9974H155.816C157.677 24.9974 158.826 25.8477 158.826 27.4564V27.5023C158.826 28.9731 157.723 29.9613 155.885 29.9613H152.024ZM148.508 38.5332H152.024V33.0867H155.08L158.78 38.5332H162.917L158.734 32.4892C160.894 31.7308 162.388 30.0302 162.388 27.3185V27.2725C162.388 25.7328 161.906 24.4229 160.986 23.5037C159.883 22.4006 158.229 21.8031 156.114 21.8031H148.508V38.5332Z" fill="var(--wf-capital-nav-logo-fill)"></path>
+                <path d="M3 29.4853L6.36524 22.194C6.60628 21.6717 7.35366 21.6867 7.57359 22.2182L14.3487 38.5913C14.5779 39.1453 15.3677 39.1308 15.5764 38.5687L23.1127 18.279C23.315 17.7341 24.0721 17.6984 24.3249 18.2217L32.5064 35.1596C32.7713 35.7081 33.5744 35.6351 33.7362 35.048L43.1168 1" stroke="var(--wf-capital-nav-logo-fill)" stroke-width="4.86264"></path>
+            </svg>
                         </a>
                     </div>
                     <a class="cf-live-link" href="/livestream/">Join the livestream and Q&amp;A on Sep 15</a>
@@ -1238,11 +1187,10 @@
     <div class="cf-ctas">
     <a class="cf-pill cf-top cf-primary" id="cf-cta-request" href="#request">Request our Pitch deck</a>
     <a class="cf-pill cf-bottom cf-secondary" id="cf-cta-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
-        Invest on
-        <svg width="120" height="33" viewBox="0 0 165 45" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M44.0386 38.5332H56.7241V35.3848H47.5317V31.6849H55.5291V28.5365H47.5317V24.9515H56.6092V21.8031H44.0386V38.5332ZM60.242 38.5332H63.7581V31.9836H71.8474V28.7663H63.7581V25.0204H72.9045V21.8031H60.242V38.5332ZM83.049 38.786C87.5302 38.786 90.3569 36.3041 90.3569 31.2482V21.8031H86.8408V31.4091C86.8408 34.1438 85.416 35.5457 83.0949 35.5457C80.7738 35.5457 79.372 34.0749 79.372 31.2712V21.8031H75.8329V31.3861C75.8329 36.2811 78.5906 38.786 83.049 38.786ZM94.3543 38.5332H97.8245V27.6402L106.144 38.5332H109.154V21.8031H105.661V32.3513L97.5946 21.8031H94.3543V38.5332ZM113.43 38.5332H119.888C125.151 38.5332 128.782 34.8792 128.782 30.1681V30.1222C128.782 25.4111 125.151 21.8031 119.888 21.8031H113.43V38.5332ZM119.888 24.9974C122.99 24.9974 125.082 27.1346 125.082 30.1681V30.2141C125.082 33.2476 122.99 35.3388 119.888 35.3388H116.946V24.9974H119.888ZM132.304 38.5332H144.99V35.3848H135.797V31.6849H143.795V28.5365H135.797V24.9515H144.875V21.8031H132.304V38.5332ZM152.024 29.9613V24.9974H155.816C157.677 24.9974 158.826 25.8477 158.826 27.4564V27.5023C158.826 28.9731 157.723 29.9613 155.885 29.9613H152.024ZM148.508 38.5332H152.024V33.0867H155.08L158.78 38.5332H162.917L158.734 32.4892C160.894 31.7308 162.388 30.0302 162.388 27.3185V27.2725C162.388 25.7328 161.906 24.4229 160.986 23.5037C159.883 22.4006 158.229 21.8031 156.114 21.8031H148.508V38.5332Z" fill="var(--wf-capital-nav-logo-fill)"></path>
-            <path d="M3 29.4853L6.36524 22.194C6.60628 21.6717 7.35366 21.6867 7.57359 22.2182L14.3487 38.5913C14.5779 39.1453 15.3677 39.1308 15.5764 38.5687L23.1127 18.279C23.315 17.7341 24.0721 17.6984 24.3249 18.2217L32.5064 35.1596C32.7713 35.7081 33.5744 35.6351 33.7362 35.048L43.1168 1" stroke="var(--wf-capital-nav-logo-fill)" stroke-width="4.86264"></path>
-        </svg>
+        Invest on <svg width="120" height="33" viewBox="0 0 165 45" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M44.0386 38.5332H56.7241V35.3848H47.5317V31.6849H55.5291V28.5365H47.5317V24.9515H56.6092V21.8031H44.0386V38.5332ZM60.242 38.5332H63.7581V31.9836H71.8474V28.7663H63.7581V25.0204H72.9045V21.8031H60.242V38.5332ZM83.049 38.786C87.5302 38.786 90.3569 36.3041 90.3569 31.2482V21.8031H86.8408V31.4091C86.8408 34.1438 85.416 35.5457 83.0949 35.5457C80.7738 35.5457 79.372 34.0749 79.372 31.2712V21.8031H75.8329V31.3861C75.8329 36.2811 78.5906 38.786 83.049 38.786ZM94.3543 38.5332H97.8245V27.6402L106.144 38.5332H109.154V21.8031H105.661V32.3513L97.5946 21.8031H94.3543V38.5332ZM113.43 38.5332H119.888C125.151 38.5332 128.782 34.8792 128.782 30.1681V30.1222C128.782 25.4111 125.151 21.8031 119.888 21.8031H113.43V38.5332ZM119.888 24.9974C122.99 24.9974 125.082 27.1346 125.082 30.1681V30.2141C125.082 33.2476 122.99 35.3388 119.888 35.3388H116.946V24.9974H119.888ZM132.304 38.5332H144.99V35.3848H135.797V31.6849H143.795V28.5365H135.797V24.9515H144.875V21.8031H132.304V38.5332ZM152.024 29.9613V24.9974H155.816C157.677 24.9974 158.826 25.8477 158.826 27.4564V27.5023C158.826 28.9731 157.723 29.9613 155.885 29.9613H152.024ZM148.508 38.5332H152.024V33.0867H155.08L158.78 38.5332H162.917L158.734 32.4892C160.894 31.7308 162.388 30.0302 162.388 27.3185V27.2725C162.388 25.7328 161.906 24.4229 160.986 23.5037C159.883 22.4006 158.229 21.8031 156.114 21.8031H148.508V38.5332Z" fill="var(--wf-capital-nav-logo-fill)"></path>
+                <path d="M3 29.4853L6.36524 22.194C6.60628 21.6717 7.35366 21.6867 7.57359 22.2182L14.3487 38.5913C14.5779 39.1453 15.3677 39.1308 15.5764 38.5687L23.1127 18.279C23.315 17.7341 24.0721 17.6984 24.3249 18.2217L32.5064 35.1596C32.7713 35.7081 33.5744 35.6351 33.7362 35.048L43.1168 1" stroke="var(--wf-capital-nav-logo-fill)" stroke-width="4.86264"></path>
+            </svg>
     </a>
     </div>
     <script>(function () {

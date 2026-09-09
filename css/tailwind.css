@@ -1230,6 +1230,10 @@ video {
   flex-grow: 1;
 }
 
+.grow {
+  flex-grow: 1;
+}
+
 .border-separate {
   border-collapse: separate;
 }
