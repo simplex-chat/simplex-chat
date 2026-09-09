@@ -31,6 +31,7 @@ import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import Data.Char (isSpace)
+import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.Maybe (fromMaybe, maybeToList)
 import qualified Data.Map.Strict as M
@@ -278,8 +279,9 @@ credentialForEntry BadgeIssuerKey {keyIdx, secretKey} masterKey e@StatementEntry
   let badgeInfo = BadgeInfo {badgeType = balanceBadgeType, badgeExpiry = endOfMondayAfter periodEnd, badgeExtra = ""}
   fmap (e,) <$> issueBadge keyIdx secretKey (VerifiedBadgeRequest BadgeRequest {masterKey, badgeInfo})
 
-issuanceOf :: StatementEntry -> Maybe (StatementEntry, BadgeCredential) -> Maybe (StatementEntry, StatementEntry, BadgeCredential)
-issuanceOf previous = fmap $ \(issued, credential) -> (previous, issued, credential)
+-- | Pairs the issued entry with the one before it, which the writer needs for the period start.
+issuanceAfter :: StatementEntry -> (StatementEntry, BadgeCredential) -> (StatementEntry, StatementEntry, BadgeCredential)
+issuanceAfter previous (issued, credential) = (previous, issued, credential)
 
 credentialResponse :: Maybe BadgeCredential -> Maybe T.Text -> [StatementEntry] -> BadgeServiceResponse
 credentialResponse credential previousEntryId entries =
@@ -301,20 +303,22 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
         -- TODO [badges] a top-up grants onto an existing ledger, and must lapse before it or the
         -- months it adds are counted from a start already in the past
         let granted = grantEntry now grantUuid months SCCode $ emptyEntry now badgeType
-            issued = issueEntry now issueUuid granted
-        fmap sequence (traverse (credentialForEntry key masterKey) issued) >>= \case
-          Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
-          Right signed -> do
-            -- re-read: a concurrent redemption may have landed while this one was signing
-            r <- withDB "writeCodeRedemption" cc $ \db ->
-              readCode code db >>= \case
-                Left resp -> pure resp
-                Right _ -> liftIO $ do
-                  purchaseId <- createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType} now
-                  appendLedgerPlan db purchaseId [granted] $ issuanceOf granted signed
-                  entries_ <- getLedgerEntries db purchaseId 0
-                  pure $ maybe (errorResponse BSEInternal) (credentialResponse (snd <$> signed) Nothing) entries_
-            pure $ either (const $ errorResponse BSEInternal) id r
+        -- a grant of at least one month starting now always has a month to issue
+        case issueEntry now issueUuid granted of
+          Nothing -> pure $ errorResponse BSEInternal
+          Just issued -> credentialForEntry key masterKey issued >>= \case
+            Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
+            Right signed -> do
+              -- re-read: a concurrent redemption may have landed while this one was signing
+              r <- withDB "writeCodeRedemption" cc $ \db ->
+                readCode code db >>= \case
+                  Left resp -> pure resp
+                  Right _ -> liftIO $ do
+                    purchaseId <- createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType} now
+                    appendLedgerPlan db purchaseId [granted] $ Just $ issuanceAfter granted signed
+                    entries_ <- getLedgerEntries db purchaseId 0
+                    pure $ maybe (errorResponse BSEInternal) (credentialResponse (Just $ snd signed) Nothing) entries_
+              pure $ fromRight (errorResponse BSEInternal) r
   where
     -- used before signing and again inside the write transaction; every Left is a finished
     -- response, an unknown code included
@@ -347,18 +351,22 @@ issueBadgeCmd key cc purchaseKey BadgeBalance {lastEntry} = do
       let tipEntry = fromMaybe (emptyEntry now badgeType) tip
           lapsed = lapseEntry now lapseUuid tipEntry
           current = fromMaybe tipEntry lapsed
-          issued = issueEntry now issueUuid current
-      fmap sequence (traverse (credentialForEntry key masterKey) issued) >>= \case
-        Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
-        Right signed -> do
-          r <- withDB "issueBadge" cc $ \db -> liftIO $ do
-            -- if a row was appended while this request was signing, the period it signed is no longer next
-            tip' <- getLedgerTip db badgePurchaseId
-            when (fmap entryId tip' == fmap entryId tip) $
-              appendLedgerPlan db badgePurchaseId (maybeToList lapsed) (issuanceOf current signed)
-            issueResponse db badgePurchaseId now
-          pure $ either (const $ errorResponse BSEInternal) id r
+      case issueEntry now issueUuid current of
+        Nothing -> writeIssued badgePurchaseId tip (maybeToList lapsed) now Nothing
+        Just e ->
+          credentialForEntry key masterKey e >>= \case
+            Left err -> logError ("badge service signing failed: " <> T.pack err) $> errorResponse BSEInternal
+            Right signed ->
+              writeIssued badgePurchaseId tip (maybeToList lapsed) now $ Just $ issuanceAfter current signed
   where
+    -- the rows were computed from a tip that another request may have moved, and an issuance was
+    -- signed against it - so write only if it is still the tip
+    writeIssued purchaseId tip rows t issuance_ = do
+      r <- withDB "issueBadge" cc $ \db -> liftIO $ do
+        tip' <- getLedgerTip db purchaseId
+        when (fmap entryId tip' == fmap entryId tip) $ appendLedgerPlan db purchaseId rows issuance_
+        issueResponse db purchaseId t
+      pure $ fromRight (errorResponse BSEInternal) r
     -- entries after the one asserted, or the whole ledger when this purchase does not hold it.
     -- Only the asserted entry's identity is read, never the months it claims.
     issueResponse db purchaseId t = do
