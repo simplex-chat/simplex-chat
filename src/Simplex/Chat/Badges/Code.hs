@@ -3,7 +3,7 @@
 
 -- | Badge redemption codes, shared by the client, the badge service and the checkout site.
 --
--- A code is "SXB-" and 20 Crockford base32 characters in four groups of five:
+-- A code is "SB-" and 20 Crockford base32 characters in four groups of five:
 -- 19 payload characters and a final check character.
 --
 -- Reading folds the characters the alphabet omits so that a code copied by hand still
@@ -56,7 +56,7 @@ groupLength :: Int
 groupLength = 5
 
 codePrefix :: Text
-codePrefix = "SXB"
+codePrefix = "SB"
 
 -- | The Crockford value of a character, folding the omitted characters onto the digits they
 -- are mistaken for.
