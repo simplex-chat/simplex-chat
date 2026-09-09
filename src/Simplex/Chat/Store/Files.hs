@@ -45,6 +45,8 @@ module Simplex.Chat.Store.Files
     updateSndFileStatus,
     createRcvFileTransfer,
     createRcvGroupFileTransfer,
+    getRcvFileProhibited,
+    setRcvFileDescrBadgeProof,
     createRosterRcvFile,
     createRcvStandaloneFileTransfer,
     appendRcvFD,
@@ -93,6 +95,7 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime, nominalDay)
 import Data.Type.Equality
 import Data.Word (Word32)
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Store.Messages
@@ -102,9 +105,10 @@ import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
-import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BBS (BBSPresHeader (..), BBSProof (..))
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import System.FilePath (takeFileName)
@@ -445,8 +449,8 @@ updateSndFileStatus db SndFileTransfer {fileId, connId} status = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE snd_files SET file_status = ?, updated_at = ? WHERE file_id = ? AND connection_id = ?" (status, currentTs, fileId, connId)
 
-createRcvFileTransfer :: DB.Connection -> UserId -> Contact -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer
-createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = do
+createRcvFileTransfer :: DB.Connection -> UserId -> Contact -> FileInvitation -> Maybe FileProhibited -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer
+createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr, fileBadge} prohibited_ rcvFileInline chunkSize = do
   currentTs <- liftIO getCurrentTime
   rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
   let rfdId = (\RcvFileDescr {fileDescrId} -> fileDescrId) <$> rfd_
@@ -456,18 +460,43 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
   fileId <- liftIO $ do
     DB.execute
       db
-      "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
-      (userId, contactId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, fileProtocol, currentTs, currentTs)
+      "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_max_size, file_badge_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+      ((userId, contactId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, fileProtocol) :. prohibitedRow prohibited_ :. (currentTs, currentTs))
     insertedRowId db
+  invProofId <- liftIO $ mapM (createRcvBadgeProof_ db fileId currentTs) fileBadge
   liftIO $
     DB.execute
       db
-      "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-      (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, currentTs, currentTs)
+      "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, file_descr_id, badge_inv_proof_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, invProofId, currentTs, currentTs)
   pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, fileType = FTNormal, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing, cryptoArgs = Nothing}
 
-createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupInfo -> Maybe GroupMember -> FileType -> Maybe SharedMsgId -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer
-createRcvGroupFileTransfer db userId GroupInfo {groupId, localDisplayName = gName} m_ fileType sharedMsgId_ f@FileInvitation {fileName, fileSize, fileDigest, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = do
+prohibitedRow :: Maybe FileProhibited -> (Maybe Int64, Maybe BadgeStatus)
+prohibitedRow = \case
+  Just FileProhibited {maxSize, badgeStatus} -> (Just maxSize, badgeStatus)
+  Nothing -> (Nothing, Nothing)
+
+getRcvFileProhibited :: DB.Connection -> Int64 -> IO (Maybe FileProhibited)
+getRcvFileProhibited db fileId = do
+  row_ <- maybeFirstRow id $ DB.query db "SELECT file_max_size, file_badge_status FROM files WHERE file_id = ?" (Only fileId)
+  pure $ row_ >>= \(maxSize_, badgeStatus) -> (\maxSize -> FileProhibited {maxSize, badgeStatus}) <$> maxSize_
+
+setRcvFileDescrBadgeProof :: DB.Connection -> Int64 -> BadgeProof -> IO ()
+setRcvFileDescrBadgeProof db fileId badge = do
+  currentTs <- getCurrentTime
+  proofId <- createRcvBadgeProof_ db fileId currentTs badge
+  DB.execute db "UPDATE rcv_files SET badge_descr_proof_id = ?, updated_at = ? WHERE file_id = ?" (proofId, currentTs, fileId)
+
+createRcvBadgeProof_ :: DB.Connection -> Int64 -> UTCTime -> BadgeProof -> IO Int64
+createRcvBadgeProof_ db fileId currentTs (BadgeProof idx (BBSPresHeader ph) (BBSProof p) BadgeInfo {badgeType, badgeExpiry, badgeExtra}) = do
+  DB.execute
+    db
+    "INSERT INTO rcv_badge_proofs (file_id, badge_proof, badge_pres_header, badge_key_idx, badge_type, badge_expiry, badge_extra, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+    (fileId, Binary p, Binary ph, idx, badgeType, badgeExpiry, badgeExtra, currentTs, currentTs)
+  insertedRowId db
+
+createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupInfo -> Maybe GroupMember -> FileType -> Maybe SharedMsgId -> FileInvitation -> Maybe FileProhibited -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer
+createRcvGroupFileTransfer db userId GroupInfo {groupId, localDisplayName = gName} m_ fileType sharedMsgId_ f@FileInvitation {fileName, fileSize, fileDigest, fileConnReq, fileInline, fileDescr, fileBadge} prohibited_ rcvFileInline chunkSize = do
   currentTs <- liftIO getCurrentTime
   rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
   let rfdId = (\RcvFileDescr {fileDescrId} -> fileDescrId) <$> rfd_
@@ -479,14 +508,15 @@ createRcvGroupFileTransfer db userId GroupInfo {groupId, localDisplayName = gNam
   fileId <- liftIO $ do
     DB.execute
       db
-      "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_type, shared_msg_id, created_at, updated_at, file_digest) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
-      ((userId, groupId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, fileProtocol, fileType, sharedMsgId_, currentTs, currentTs) :. Only fileDigest)
+      "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_type, shared_msg_id, created_at, updated_at, file_digest, file_max_size, file_badge_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+      ((userId, groupId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, fileProtocol, fileType, sharedMsgId_, currentTs, currentTs) :. Only fileDigest :. prohibitedRow prohibited_)
     insertedRowId db
+  invProofId <- liftIO $ mapM (createRcvBadgeProof_ db fileId currentTs) fileBadge
   liftIO $
     DB.execute
       db
-      "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-      (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, grpMemberId_, rfdId, currentTs, currentTs)
+      "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, file_descr_id, badge_inv_proof_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
+      (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, grpMemberId_, rfdId, invProofId, currentTs, currentTs)
   pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, fileType, rcvFileInline, senderDisplayName = senderName, chunkSize, cancelled = False, grpMemberId = grpMemberId_, cryptoArgs = Nothing}
 
 -- Roster scratch file owned by a per-source transfer: group_member_id is the delivering relay (so chunk

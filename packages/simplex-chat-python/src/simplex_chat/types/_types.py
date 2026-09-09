@@ -482,6 +482,7 @@ class CIFile(TypedDict):
     fileStatus: "CIFileStatus"
     fileProtocol: "FileProtocol"
     fileExpires: NotRequired[str]  # ISO-8601 timestamp
+    fileProhibited: NotRequired["FileProhibited"]
 
 class CIFileStatus_sndStored(TypedDict):
     type: Literal["sndStored"]
@@ -1664,6 +1665,9 @@ class FileError_relay(TypedDict):
     type: Literal["relay"]
     srvError: "SrvError"
 
+class FileError_badgeProof(TypedDict):
+    type: Literal["badgeProof"]
+
 class FileError_other(TypedDict):
     type: Literal["other"]
     fileError: str
@@ -1673,10 +1677,11 @@ FileError = (
     | FileError_blocked
     | FileError_noFile
     | FileError_relay
+    | FileError_badgeProof
     | FileError_other
 )
 
-FileError_Tag = Literal["auth", "blocked", "noFile", "relay", "other"]
+FileError_Tag = Literal["auth", "blocked", "noFile", "relay", "badgeProof", "other"]
 
 class FileErrorType_NOT_APPROVED(TypedDict):
     type: Literal["NOT_APPROVED"]
@@ -1713,6 +1718,10 @@ class FileInvitation(TypedDict):
     fileInline: NotRequired["InlineFileMode"]
     fileDescr: NotRequired["FileDescr"]
     fileBadge: NotRequired["BadgeProof"]
+
+class FileProhibited(TypedDict):
+    maxSize: int  # int64
+    badgeStatus: NotRequired["BadgeStatus"]
 
 FileProtocol = Literal["SMP", "XFTP", "LOCAL"]
 

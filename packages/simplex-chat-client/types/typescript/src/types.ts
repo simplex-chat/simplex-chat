@@ -693,6 +693,7 @@ export interface CIFile {
   fileStatus: CIFileStatus
   fileProtocol: FileProtocol
   fileExpires?: string // ISO-8601 timestamp
+  fileProhibited?: FileProhibited
 }
 
 export type CIFileStatus = 
@@ -2349,10 +2350,11 @@ export type FileError =
   | FileError.Blocked
   | FileError.NoFile
   | FileError.Relay
+  | FileError.BadgeProof
   | FileError.Other
 
 export namespace FileError {
-  export type Tag = "auth" | "blocked" | "noFile" | "relay" | "other"
+  export type Tag = "auth" | "blocked" | "noFile" | "relay" | "badgeProof" | "other"
 
   interface Interface {
     type: Tag
@@ -2375,6 +2377,10 @@ export namespace FileError {
   export interface Relay extends Interface {
     type: "relay"
     srvError: SrvError
+  }
+
+  export interface BadgeProof extends Interface {
+    type: "badgeProof"
   }
 
   export interface Other extends Interface {
@@ -2428,6 +2434,11 @@ export interface FileInvitation {
   fileInline?: InlineFileMode
   fileDescr?: FileDescr
   fileBadge?: BadgeProof
+}
+
+export interface FileProhibited {
+  maxSize: number // int64
+  badgeStatus?: BadgeStatus
 }
 
 export enum FileProtocol {

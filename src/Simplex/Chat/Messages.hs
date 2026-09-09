@@ -42,6 +42,7 @@ import Data.Type.Equality
 import Data.Typeable (Typeable)
 import GHC.TypeLits (ErrorMessage (ShowType, type (:<>:)), TypeError)
 import qualified GHC.TypeLits as Type
+import Simplex.Chat.Badges (BadgeStatus)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
@@ -688,9 +689,13 @@ data CIFile (d :: MsgDirection) = CIFile
     fileSource :: Maybe CryptoFile, -- local file path with optional key and nonce
     fileStatus :: CIFileStatus d,
     fileProtocol :: FileProtocol,
-    fileExpires :: Maybe UTCTime
+    fileExpires :: Maybe UTCTime,
+    fileProhibited :: Maybe FileProhibited
   }
   deriving (Show)
+
+data FileProhibited = FileProhibited {maxSize :: Int64, badgeStatus :: Maybe BadgeStatus}
+  deriving (Eq, Show)
 
 data FileProtocol = FPSMP | FPXFTP | FPLocal
   deriving (Eq, Show, Ord)
@@ -903,6 +908,7 @@ data FileError
   | FileErrBlocked {server :: String, blockInfo :: BlockingInfo}
   | FileErrNoFile
   | FileErrRelay {srvError :: SrvError}
+  | FileErrBadgeProof
   | FileErrOther {fileError :: Text}
   deriving (Eq, Show)
 
@@ -912,6 +918,7 @@ instance StrEncoding FileError where
     FileErrBlocked srv info -> "blocked " <> strEncode (srv, info)
     FileErrNoFile -> "no_file"
     FileErrRelay srvErr -> "relay " <> strEncode srvErr
+    FileErrBadgeProof -> "badge_proof"
     FileErrOther e -> "other " <> encodeUtf8 e
   strP =
     A.takeWhile1 (/= ' ') >>= \case
@@ -919,6 +926,7 @@ instance StrEncoding FileError where
       "blocked" -> FileErrBlocked <$> _strP <*> _strP
       "no_file" -> pure FileErrNoFile
       "relay" -> FileErrRelay <$> _strP
+      "badge_proof" -> pure FileErrBadgeProof
       "other" -> FileErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       s -> FileErrOther . safeDecodeUtf8 . (s <>) <$> A.takeByteString
 
@@ -1451,6 +1459,8 @@ instance (ChatTypeI c, MsgDirectionI d) => FromJSON (CIMeta c d) where
 instance ChatTypeI c => ToJSON (CIMeta c d) where
   toJSON = $(JQ.mkToJSON defaultJSON ''CIMeta)
   toEncoding = $(JQ.mkToEncoding defaultJSON ''CIMeta)
+
+$(JQ.deriveJSON defaultJSON ''FileProhibited)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FileErr") ''FileError)
 

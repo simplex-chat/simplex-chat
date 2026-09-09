@@ -85,6 +85,7 @@ This file is generated automatically.
 - [FileError](#fileerror)
 - [FileErrorType](#fileerrortype)
 - [FileInvitation](#fileinvitation)
+- [FileProhibited](#fileprohibited)
 - [FileProtocol](#fileprotocol)
 - [FileStatus](#filestatus)
 - [FileTransferMeta](#filetransfermeta)
@@ -749,6 +750,7 @@ LocalRcv:
 - fileStatus: [CIFileStatus](#cifilestatus)
 - fileProtocol: [FileProtocol](#fileprotocol)
 - fileExpires: UTCTime?
+- fileProhibited: [FileProhibited](#fileprohibited)?
 
 
 ---
@@ -2086,6 +2088,9 @@ Relay:
 - type: "relay"
 - srvError: [SrvError](#srverror)
 
+BadgeProof:
+- type: "badgeProof"
+
 Other:
 - type: "other"
 - fileError: string
@@ -2127,6 +2132,15 @@ NO_FILE:
 - fileInline: [InlineFileMode](#inlinefilemode)?
 - fileDescr: [FileDescr](#filedescr)?
 - fileBadge: [BadgeProof](#badgeproof)?
+
+
+---
+
+## FileProhibited
+
+**Record type**:
+- maxSize: int64
+- badgeStatus: [BadgeStatus](#badgestatus)?
 
 
 ---

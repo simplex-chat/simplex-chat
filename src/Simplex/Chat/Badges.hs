@@ -116,6 +116,21 @@ instance FromJSON BadgeType where
 data BadgeStatus = BSActive | BSExpired | BSExpiredOld | BSFailed | BSUnknownKey
   deriving (Eq, Show)
 
+instance TextEncoding BadgeStatus where
+  textEncode = \case
+    BSActive -> "active"
+    BSExpired -> "expired"
+    BSExpiredOld -> "expired_old"
+    BSFailed -> "failed"
+    BSUnknownKey -> "unknown_key"
+  textDecode = \case
+    "active" -> Just BSActive
+    "expired" -> Just BSExpired
+    "expired_old" -> Just BSExpiredOld
+    "failed" -> Just BSFailed
+    "unknown_key" -> Just BSUnknownKey
+    _ -> Nothing
+
 -- Disclosed badge content (BBS messages 1, 2, 3)
 
 data BadgeInfo = BadgeInfo
@@ -372,6 +387,10 @@ verifyBadge_ keys = maybe (pure (Just False)) (verifyBadge keys)
 instance FromField BadgeType where fromField = fromTextField_ textDecode
 
 instance ToField BadgeType where toField = toField . textEncode
+
+instance FromField BadgeStatus where fromField = fromTextField_ textDecode
+
+instance ToField BadgeStatus where toField = toField . textEncode
 
 -- (proof, pres_header, expiry, type, verified, extra, master_key, signature, key_idx) - binary columns wrapped in Binary (BLOB/bytea)
 type BadgeRow = (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe UTCTime, Maybe Text, Maybe BoolInt, Maybe Text, Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int)
