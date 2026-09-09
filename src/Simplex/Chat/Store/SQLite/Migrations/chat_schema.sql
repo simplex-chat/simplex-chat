@@ -963,6 +963,7 @@ CREATE TABLE badge_ledger(
   change_months INTEGER NOT NULL,
   balance_months INTEGER NOT NULL,
   balance_start_ts TEXT NOT NULL,
+  balance_anchor_ts TEXT NOT NULL,
   balance_badge_type TEXT NOT NULL,
   was_paused_since TEXT,
   service_created_at TEXT NOT NULL,
@@ -976,7 +977,8 @@ CREATE TABLE badge_ledger(
   to_purchase_id INTEGER REFERENCES badge_purchases
   ,
   entry_type_unknown INTEGER NOT NULL DEFAULT 0,
-  entry_type_value TEXT
+  entry_type_value TEXT,
+  balance_checked INTEGER
 ) STRICT;
 CREATE TABLE badge_issuances(
   issuance_id TEXT NOT NULL PRIMARY KEY,
@@ -1556,6 +1558,10 @@ CREATE INDEX idx_badge_issuances_purchase ON badge_issuances(
   issuance_id
 );
 CREATE INDEX idx_badge_issuances_entry ON badge_issuances(entry_id);
+CREATE UNIQUE INDEX idx_badge_issuances_purchase_entry ON badge_issuances(
+  badge_purchase_id,
+  entry_id
+);
 CREATE INDEX idx_badge_purchases_user ON badge_purchases(user_id);
 CREATE INDEX idx_users_shown_badge ON users(shown_badge_id);
 CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(

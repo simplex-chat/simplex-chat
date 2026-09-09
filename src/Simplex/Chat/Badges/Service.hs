@@ -98,8 +98,7 @@ data BadgeServiceCommand
         balance :: BadgeBalance
       }
   | BSCIssueBadge
-      { badgeRequest :: BadgeRequest,
-        balance :: BadgeBalance
+      { balance :: BadgeBalance -- no badgeRequest: the service holds the key, the tier and the expiry
       }
   | BSCPauseBadge
 
@@ -173,6 +172,9 @@ data StatementEntry = StatementEntry
     changeMonths :: Int,
     balanceMonths :: Int,
     balanceStartTs :: UTCTime,
+    -- the start of the current run of months; every month boundary in it is counted from here,
+    -- so that the day of month survives a short month
+    balanceAnchorTs :: UTCTime,
     balanceBadgeType :: BadgeType,
     wasPausedSince :: Maybe UTCTime,
     createdAt :: UTCTime,
@@ -184,7 +186,8 @@ data StatementEntryType = SECredit {credit :: StatementCreditType} | SEDebit {de
   deriving (Show)
 
 data StatementCreditType
-  = SCPayment {invoiceId :: Maybe InvoiceId} -- absent for store and code payments
+  = SCPayment {invoiceId :: Maybe InvoiceId} -- absent for store payments
+  | SCCode -- a redeemed code; its own invoice belongs to the buyer, not to the redeemer
   | SCCharge {chargeId :: Text}
   | SCSupport
   | SCTransferIn {fromPurchaseKey :: C.PublicKeyEd25519}

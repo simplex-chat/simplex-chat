@@ -143,6 +143,7 @@ CREATE TABLE @badge_ledger(
   change_months SMALLINT NOT NULL,
   balance_months SMALLINT NOT NULL,
   balance_start_ts TIMESTAMPTZ NOT NULL,
+  balance_anchor_ts TIMESTAMPTZ NOT NULL,
   balance_badge_type TEXT NOT NULL,
   was_paused_since TIMESTAMPTZ,
   service_created_at TIMESTAMPTZ NOT NULL,
@@ -183,6 +184,8 @@ CREATE TABLE @badge_issuances(
 CREATE INDEX @idx_badge_issuances_purchase ON @badge_issuances(badge_purchase_id, issuance_id);
 
 CREATE INDEX @idx_badge_issuances_entry ON @badge_issuances(entry_id);
+
+CREATE UNIQUE INDEX @idx_badge_issuances_purchase_entry ON @badge_issuances(badge_purchase_id, entry_id);
 |]
 
 badgeSchemaTablesDown :: Text
@@ -190,6 +193,7 @@ badgeSchemaTablesDown =
   [r|
 DROP INDEX @idx_badge_issuances_purchase;
 DROP INDEX @idx_badge_issuances_entry;
+DROP INDEX @idx_badge_issuances_purchase_entry;
 DROP TABLE @badge_issuances;
 DROP INDEX @idx_badge_ledger_uuid;
 DROP INDEX @idx_badge_ledger_purchase;
@@ -236,6 +240,8 @@ ALTER TABLE payments ADD COLUMN receipt_code TEXT;
 ALTER TABLE badge_ledger ADD COLUMN entry_type_unknown SMALLINT NOT NULL DEFAULT 0;
 
 ALTER TABLE badge_ledger ADD COLUMN entry_type_value TEXT;
+
+ALTER TABLE badge_ledger ADD COLUMN balance_checked SMALLINT;
 
 CREATE INDEX idx_badge_purchases_user ON badge_purchases(user_id);
 

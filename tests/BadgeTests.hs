@@ -9,18 +9,30 @@
 
 module BadgeTests (badgeTests) where
 
+import BadgeService.Service (badgeErrorRetryAfter)
 import Control.Concurrent.STM (atomically)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Calendar.WeekDate (toWeekDate)
+import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as KM
+import Data.Maybe (fromMaybe, isNothing, maybeToList)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
+import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service
+import Simplex.Chat (defaultChatConfig)
+import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
+import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeRetryAfter, badgeStalledInterval)
+import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
+import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
 import Simplex.Messaging.Crypto.BBS
+import Simplex.Messaging.Protocol (BrokerErrorType (..), NetworkError (..))
 import Simplex.Messaging.Version.Internal (Version (..))
 import Test.Hspec
 
@@ -39,6 +51,20 @@ badgeTests = do
     it "reads a code as typed - any case, separators, ambiguous characters" testCodeNormalisation
     it "rejects a code whose check character does not match" testCodeCheckCharacter
     it "hashes the canonical form, whatever was typed" testCodeHash
+  describe "ledger transitions" $ do
+    it "issues a twelve month code one month at a time, and no thirteenth" testTwelveMonths
+    it "lapses only the elapsed months after a gap, leaving paidThrough unchanged" testLapseAfterGap
+    it "keeps the balance non-negative and the start non-decreasing" testLedgerInvariants
+    it "credits an exhausted balance from the grant, not from the date it ran out" testGrantAfterExhausted
+    it "does not issue months topped up inside an issued period" testGrantInsideIssuedPeriod
+    it "clips month ends without losing the issued period start" testMonthEndClipping
+    it "expires at the end of the Monday after the period" testMondayExpiry
+    it "stores the wire tag of every entry type, and rebuilds each from its stored JSON" testEntryTypeColumns
+  describe "worker retry" $ do
+    it "repeats a failure that can clear on its own, and no other" testRetryClassification
+    it "backs off to the cap" testRetryBackoff
+    it "floors the wait a service asks for, and honours anything above it" testServiceRetryFloor
+    it "sends retryAfter with the transient service codes and no other" testServiceRetryAfter
   describe "service protocol JSON" $ do
     it "redeemBadgeCode request matches the schema" testRedeemRequestJSON
     it "badgeCredential response matches the schema" testCredentialResponseJSON
@@ -47,6 +73,9 @@ badgeTests = do
 
 proofOf :: BadgeProof -> BBSProof
 proofOf (BadgeProof _ _ p _) = p
+
+nonDecreasing :: Ord a => [a] -> Bool
+nonDecreasing xs = and $ zipWith (<=) xs (drop 1 xs)
 
 testKeyIdx :: Int
 testKeyIdx = 1
@@ -204,6 +233,260 @@ testCodeHash = do
   Just typed <- pure $ parseBadgeCode $ T.toLower $ formatBadgeCode code
   badgeCodeHash typed `shouldBe` badgeCodeHash code
 
+-- Ledger transitions, against plans/2026-07-30-supporter-badges-v3-ux.md §3
+
+at :: Integer -> Int -> Int -> UTCTime
+at y m d = UTCTime (fromGregorian y m d) (11 * 3600)
+
+newBalance :: UTCTime -> StatementEntry
+newBalance t = emptyEntry t BTSupporter
+
+-- these tests never write, so the id each operation stamps on its entry is never read
+grant :: UTCTime -> Int -> StatementEntry -> StatementEntry
+grant t n = grantEntry t "" n SCCode
+
+lapse :: UTCTime -> StatementEntry -> Maybe StatementEntry
+lapse t = lapseEntry t ""
+
+issue :: UTCTime -> StatementEntry -> Maybe StatementEntry
+issue t = issueEntry t ""
+
+-- StatementEntry and BadgeInfo carry fields of the same names, so the selectors are ambiguous here
+bMonths :: StatementEntry -> Int
+bMonths StatementEntry {balanceMonths} = balanceMonths
+
+bStart :: StatementEntry -> UTCTime
+bStart StatementEntry {balanceStartTs} = balanceStartTs
+
+-- one service pass: lapse what elapsed, then issue if a month is due, as the service chains them.
+-- The period an issue covers is the previous entry's balance start to its own, so a run of starts
+-- is what the period assertions read.
+pass :: UTCTime -> StatementEntry -> [StatementEntry]
+pass t e0 = maybeToList lapsed <> maybeToList (issue t $ fromMaybe e0 lapsed)
+  where
+    lapsed = lapse t e0
+
+finalBalance :: StatementEntry -> [StatementEntry] -> StatementEntry
+finalBalance e0 rows = last (e0 : rows)
+
+-- each pass issues exactly one month, so the entries returned are the months issued, in order
+issueAll :: StatementEntry -> [StatementEntry]
+issueAll e = case pass (bStart e) e of
+  [] -> []
+  rows -> let e' = finalBalance e rows in e' : issueAll e'
+
+testTwelveMonths :: IO ()
+testTwelveMonths = do
+  let start = at 2026 3 10
+      granted = grant start 12 (newBalance start)
+      -- each month is issued as soon as it falls due
+      issued = issueAll granted
+      spent = finalBalance granted issued
+  length issued `shouldBe` 12
+  bMonths spent `shouldBe` 0
+  -- no month was skipped or issued twice: consecutive starts, so the periods tile the whole year
+  map bStart (granted : issued) `shouldBe` map (\m -> addMonths m start) [0 .. 12]
+  bStart spent `shouldBe` at 2027 3 10
+  -- a thirteenth request issues nothing, whenever it is made
+  issue (bStart spent) spent `shouldSatisfy` isNothing
+  issue (at 2030 1 1) spent `shouldSatisfy` isNothing
+  lapse (at 2030 1 1) spent `shouldSatisfy` isNothing
+
+-- 3 months bought 10 Mar, first issued the same day, no pass until 20 May: April lapses unissued
+testLapseAfterGap :: IO ()
+testLapseAfterGap = do
+  let start = at 2026 3 10
+      granted = grant start 3 (newBalance start)
+      rows1 = pass start granted
+      afterFirst = finalBalance granted rows1
+      rows2 = pass (at 2026 5 20) afterFirst
+      afterSecond = finalBalance afterFirst rows2
+  map bMonths rows1 `shouldBe` [2]
+  -- March is issued: from the granting entry's start to the issued entry's own
+  bStart granted `shouldBe` at 2026 3 10
+  map bStart rows1 `shouldBe` [at 2026 4 10]
+  -- one lapse row for April, then May is issued: two rows, not one and not three. The lapse row's
+  -- start is where May begins, so it is also the start of the period the issue that follows covers
+  map bMonths rows2 `shouldBe` [1, 0]
+  map bStart rows2 `shouldBe` [at 2026 5 10, at 2026 6 10]
+  -- a lapse moves months from unused to gone; it never changes what was paid for
+  map paidThrough (granted : rows1 <> rows2) `shouldBe` replicate 4 (at 2026 6 10)
+  bMonths afterSecond `shouldBe` 0
+
+data LedgerStep = Grant UTCTime Int | Pass UTCTime
+
+testLedgerInvariants :: IO ()
+testLedgerInvariants = do
+  let start = at 2026 1 15
+      reopened = at 2027 9 9
+      -- the April grant lands exactly where coverage ended and continues the run, the 2027 one
+      -- lands past it and restarts, so both branches of grantEntry run under the invariants
+      steps =
+        [ Grant start 3,
+          Pass start,
+          Pass (at 2026 4 15),
+          Grant (at 2026 4 15) 2,
+          Pass (at 2026 5 1),
+          Pass reopened,
+          Grant reopened 1,
+          Pass reopened
+        ]
+      step (e, rows) = \case
+        Grant t n -> let e' = grant t n e in (e', rows <> [e'])
+        Pass t -> let rs = pass t e in (finalBalance e rs, rows <> rs)
+      (_, allRows) = foldl step (newBalance start, []) steps
+  map bMonths allRows `shouldSatisfy` all (>= 0)
+  map bStart allRows `shouldSatisfy` nonDecreasing
+
+testGrantAfterExhausted :: IO ()
+testGrantAfterExhausted = do
+  -- the balance ran out on 10 Feb; the next code is redeemed on 1 Jun
+  let spent = newBalance (at 2026 2 10)
+      granted = grant (at 2026 6 1) 2 spent
+  bStart granted `shouldBe` at 2026 6 1
+  paidThrough granted `shouldBe` at 2026 8 1
+  -- the four unsupported months are not backfilled, so nothing lapses immediately
+  lapse (at 2026 6 1) granted `shouldSatisfy` isNothing
+
+testGrantInsideIssuedPeriod :: IO ()
+testGrantInsideIssuedPeriod = do
+  let start = at 2026 1 10
+      granted = grant start 1 (newBalance start)
+      issued = finalBalance granted $ pass start granted
+      -- topped up on 20 Jan, while the month issued on 10 Jan still runs
+      toppedUp = grant (at 2026 1 20) 3 issued
+  -- February is where the next period starts, the top-up having been spent on neither January nor a gap
+  bStart toppedUp `shouldBe` at 2026 2 10
+  paidThrough toppedUp `shouldBe` at 2026 5 10
+  -- the balance starts in the future, so no second credential is issued for January
+  issue (at 2026 1 20) toppedUp `shouldSatisfy` isNothing
+  fmap bStart (issue (at 2026 2 10) toppedUp) `shouldBe` Just (at 2026 3 10)
+
+testMonthEndClipping :: IO ()
+testMonthEndClipping = do
+  let start = at 2027 1 31
+      granted = grant start 3 (newBalance start)
+      issued = issueAll granted
+  -- February clips to the 28th, and March goes back to the 31st: clipping does not accumulate.
+  -- Each period runs from one start to the next, so these bounds are the three periods
+  map bStart (granted : issued) `shouldBe` [at 2027 1 31, at 2027 2 28, at 2027 3 31, at 2027 4 30]
+  -- the issued period start is the previous balance start, never periodEnd minus a month, which
+  -- clipping would answer as 28 Jan
+  addMonths (-1) (bStart (head issued)) `shouldNotBe` bStart granted
+  -- across a leap day
+  let leap = grant (at 2028 1 29) 2 (newBalance (at 2028 1 29))
+  map bStart (issueAll leap) `shouldBe` [at 2028 2 29, at 2028 3 29]
+  -- a month that ends on the leap day counts as elapsed the moment it ends, and not before
+  fmap bMonths (lapse (at 2028 2 29) leap) `shouldBe` Just 1
+  lapse (addUTCTime (-1) (at 2028 2 29)) leap `shouldSatisfy` isNothing
+  -- buying a month at a time keeps the day of month that buying three at once keeps
+  let jan = grant (at 2027 1 31) 1 (newBalance (at 2027 1 31))
+  case issue (at 2027 1 31) jan of
+    Just issuedJan -> do
+      let feb = grant (at 2027 2 20) 1 issuedJan
+      fmap bStart (issue (at 2027 2 28) feb) `shouldBe` Just (at 2027 3 31)
+    Nothing -> expectationFailure "January was not issued"
+
+testMondayExpiry :: IO ()
+testMondayExpiry = do
+  -- the end of Monday 13 Apr is Tuesday 14 Apr 00:00
+  endOfMondayAfter (at 2026 4 10) `shouldBe` UTCTime (fromGregorian 2026 4 14) 0
+  endOfMondayAfter (at 2026 6 10) `shouldBe` UTCTime (fromGregorian 2026 6 16) 0
+  -- a period ending on a Monday still runs to the end of the following Monday, never to zero days
+  endOfMondayAfter (at 2026 4 13) `shouldBe` UTCTime (fromGregorian 2026 4 21) 0
+  let periodEnds = map (\d -> at 2026 4 d) [1 .. 30]
+      expiries = map endOfMondayAfter periodEnds
+  -- every expiry is a Tuesday midnight more than a day after its period, and at most eight
+  expiries `shouldSatisfy` all (\(UTCTime d t) -> t == 0 && (\(_, _, wd) -> wd == 2) (toWeekDate d))
+  zipWith diffUTCTime expiries periodEnds `shouldSatisfy` all (\d -> d > nominalDay && d <= 8 * nominalDay)
+
+-- A failed renewal is otherwise left until the next chat start or activate, which on a desktop
+-- left running can be days - long enough for a funded badge to lapse.
+testRetryClassification :: IO ()
+testRetryClassification = do
+  let retryFor = badgeErrorRetry . chatErrorAgent
+  -- an unanswered request is the likeliest renewal failure, and it is the agent's own error
+  retryFor (AGENT (A_SERVICE ASETimeout)) `shouldBe` True
+  retryFor (BROKER "localhost" TIMEOUT) `shouldBe` True
+  retryFor (BROKER "localhost" (NETWORK NETimeoutError)) `shouldBe` True
+  -- terminal: the same request would fail the same way, and repeating it would spin
+  retryFor (AGENT (A_SERVICE ASEBadSignature)) `shouldBe` False
+  retryFor (AGENT (A_SERVICE (ASERejected "no"))) `shouldBe` False
+  badgeErrorRetry (ChatError (CECommandError "unexpected badge service response")) `shouldBe` False
+
+-- A failure that never clears is repeated for as long as the balance funds a month, so the wait
+-- has to grow: at a fixed interval an annual code would ask hundreds of times a day, all year.
+testRetryBackoff :: IO ()
+testRetryBackoff = do
+  let ri@RetryInterval {initialInterval, maxInterval} = badgeRetryInterval defaultChatConfig
+      advance (elapsed, delay) =
+        let elapsed' = elapsed + delay
+         in (elapsed', nextRetryDelay elapsed' delay ri)
+      delays = map snd $ take 40 $ iterate advance (0, initialInterval)
+  head delays `shouldBe` initialInterval
+  delays `shouldSatisfy` all (\d -> d >= initialInterval && d <= maxInterval)
+  delays `shouldSatisfy` nonDecreasing
+  -- it reaches the cap rather than creeping towards it, and stays there
+  last delays `shouldBe` maxInterval
+
+-- A service answering retryAfter 0 would put the next attempt at now, and the worker would ask
+-- again as fast as the round trip allows, for as long as the service kept answering that way.
+testServiceRetryFloor :: IO ()
+testServiceRetryFloor = do
+  let ri@RetryInterval {initialInterval, maxInterval} = badgeRetryInterval defaultChatConfig
+      floorWait = fromIntegral initialInterval / 1000000 :: NominalDiffTime
+      aboveCap = 2 * fromIntegral maxInterval / 1000000 :: NominalDiffTime
+  -- a code carrying no wait is terminal for this request, and waits what any stalled month waits
+  badgeRetryAfter ri Nothing `shouldBe` badgeStalledInterval
+  -- nothing the service names brings the wait below where a retry of its own would start
+  badgeRetryAfter ri (Just 0) `shouldBe` floorWait
+  badgeRetryAfter ri (Just 1) `shouldBe` floorWait
+  badgeRetryAfter ri (Just $ round floorWait) `shouldBe` floorWait
+  -- above that it is honoured as sent, and not capped: a service may know it is down for the day
+  badgeRetryAfter ri (Just 600) `shouldBe` 600
+  badgeRetryAfter ri (Just $ round aboveCap) `shouldBe` aboveCap
+
+-- badges-rpc.md defines retryAfter as marking the transient codes, and every other code as
+-- terminal for the command attempted. The client repeats a code that carries one on the service's
+-- schedule, so the set is the protocol's and not a judgement to make per call site.
+testServiceRetryAfter :: IO ()
+testServiceRetryAfter = do
+  badgeErrorRetryAfter BSEPaymentPending `shouldBe` Just 300
+  badgeErrorRetryAfter BSEProviderUnavailable `shouldBe` Just 300
+  badgeErrorRetryAfter BSERateLimited `shouldBe` Just 60
+  -- internal is the one most likely to clear on its own, and is still terminal: repeating it on
+  -- the service's cadence presses a service already failing, and the client has its own floor
+  badgeErrorRetryAfter BSEInternal `shouldBe` Nothing
+  mapM_
+    (\code -> badgeErrorRetryAfter code `shouldBe` Nothing)
+    [BSEBadRequest, BSEUnsupportedVersion, BSEUnknownPurchaseKey, BSECodeInvalid, BSECodeUsed, BSECodeExpired, BSEUnknown "future_code"]
+
+-- The client replicates entry_credit_type / entry_debit_type verbatim, so a stored tag that
+-- disagreed with the wire tag would put a different row on each side.
+testEntryTypeColumns :: IO ()
+testEntryTypeColumns = do
+  k <- fst <$> (C.newRandom >>= \g -> atomically (C.generateKeyPair g) :: IO (C.KeyPair 'C.Ed25519))
+  let credits = [SCPayment Nothing, SCCode, SCCharge "ch1", SCSupport, SCTransferIn k, SCOpening]
+      debits = [SDRefund, SDUpgrade k, SDTransferOut k, SDSupport, SDBadge, SDLapse]
+  mapM_ (\c -> wireTag (J.toJSON (SECredit c)) "credit" `shouldBe` Just (creditTypeTag c)) credits
+  mapM_ (\d -> wireTag (J.toJSON (SEDebit d)) "debit" `shouldBe` Just (debitTypeTag d)) debits
+  -- the three types this version writes survive a round trip through the columns
+  mapM_
+    (\t -> uncurry3 entryTypeFromColumns (entryTypeColumns t) `shouldSatisfy` sameEntryType t)
+    [SECredit SCCode, SEDebit SDBadge, SEDebit SDLapse]
+  -- a type that needs a reference column is not silently read back as something else
+  uncurry3 entryTypeFromColumns (entryTypeColumns (SECredit (SCCharge "ch1"))) `shouldSatisfy` isNothing
+  -- which is why every type is stored as its own JSON as well, and read from that first: the
+  -- columns alone would answer a row naming an invoice or a purchase as no row at all
+  mapM_ roundTrips credits
+  mapM_ roundTrips debits
+  where
+    uncurry3 f (a, b, c) = f a b c
+    sameEntryType t = maybe False ((J.toJSON t ==) . J.toJSON)
+    wireTag v fld = case v of
+      J.Object o | Just (J.Object inner) <- KM.lookup fld o, Just (J.String t) <- KM.lookup "type" inner -> Just t
+      _ -> Nothing
+
 -- Service protocol JSON, against docs/protocol/badges-rpc.schema.json
 
 testRedeemRequestJSON :: IO ()
@@ -255,6 +538,7 @@ testStatementJSON = do
             changeMonths = 3,
             balanceMonths = 3,
             balanceStartTs = futureTime,
+            balanceAnchorTs = futureTime,
             balanceBadgeType = BTSupporter,
             wasPausedSince = Nothing,
             createdAt = futureTime,
@@ -267,6 +551,7 @@ testStatementJSON = do
         "changeMonths" J..= (3 :: Int),
         "balanceMonths" J..= (3 :: Int),
         "balanceStartTs" J..= futureTime,
+        "balanceAnchorTs" J..= futureTime,
         "balanceBadgeType" J..= ("supporter" :: T.Text),
         "createdAt" J..= futureTime,
         "entryType" J..= entryType entry
@@ -274,6 +559,10 @@ testStatementJSON = do
   J.toJSON entry {wasPausedSince = Just pastTime} `shouldNotBe` J.toJSON entry
   J.toJSON (entryType entry) `shouldBe` J.object ["type" J..= ("credit" :: T.Text), "credit" J..= J.object ["type" J..= ("payment" :: T.Text)]]
   J.toJSON SEDebit {debit = SDBadge} `shouldBe` J.object ["type" J..= ("debit" :: T.Text), "debit" J..= J.object ["type" J..= ("badge" :: T.Text)]]
+  J.toJSON SEDebit {debit = SDLapse} `shouldBe` J.object ["type" J..= ("debit" :: T.Text), "debit" J..= J.object ["type" J..= ("lapse" :: T.Text)]]
+  -- a code grant is its own credit type, not a payment whose invoiceId happens to be absent
+  J.toJSON SECredit {credit = SCCode} `shouldBe` J.object ["type" J..= ("credit" :: T.Text), "credit" J..= J.object ["type" J..= ("code" :: T.Text)]]
+  J.toJSON SECredit {credit = SCCode} `shouldNotBe` J.toJSON SECredit {credit = SCPayment {invoiceId = Nothing}}
   -- an entry type from a newer service is stored and re-emitted unchanged
   let futureCredit = J.object ["type" J..= ("grant" :: T.Text), "grantedBy" J..= ("operator" :: T.Text)]
   case J.fromJSON futureCredit of

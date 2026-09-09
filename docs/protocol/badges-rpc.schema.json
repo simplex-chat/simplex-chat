@@ -191,6 +191,10 @@
         "changeMonths": {"type": "int16"},
         "balanceMonths": {"type": "uint16"},
         "balanceStartTs": {"type": "timestamp"},
+        "balanceAnchorTs": {
+          "type": "timestamp",
+          "metadata": {"comment": "start of the current run of months; boundaries are counted from it"}
+        },
         "balanceBadgeType": {"type": "string"},
         "createdAt": {"type": "timestamp"},
         "entryType": {"ref": "ledgerEntryType"}
@@ -217,9 +221,13 @@
           "optionalProperties": {
             "invoiceId": {
               "type": "string",
-              "metadata": {"comment": "absent for store and code payments"}
+              "metadata": {"comment": "absent for store payments"}
             }
           }
+        },
+        "code": {
+          "optionalProperties": {},
+          "metadata": {"comment": "a redeemed code; its invoice belongs to the buyer, not the redeemer"}
         },
         "charge": {
           "properties": {"chargeId": {"type": "string"}}
@@ -323,7 +331,6 @@
         },
         "issueBadge": {
           "properties": {
-            "badgeRequest": {"ref": "badgeRequest"},
             "balance": {"ref": "balance"}
           }
         },
