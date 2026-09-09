@@ -382,19 +382,21 @@ updateUserProfileFields_' db userId profileId Profile {displayName, fullName, sh
 
 -- store the user's own badge credential; touches only the badge columns.
 -- bumps user_member_profile_updated_at so groups receive the updated profile (with the badge) on the next message.
-setUserBadge :: DB.Connection -> User -> Maybe LocalBadge -> IO User
-setUserBadge db user@User {userId, profile = p@LocalProfile {profileId}} localBadge = do
-  ts <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE contact_profiles
-      SET badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?, updated_at = ?
-      WHERE user_id = ? AND contact_profile_id = ?
-    |]
-    (localBadgeToRow localBadge :. (ts, userId, profileId))
-  DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (ts, userId)
-  pure (user :: User) {profile = p {localBadge}, userMemberProfileUpdatedAt = Just ts}
+-- answers the row as stored, or a profile edit landing since the caller's read is broadcast back stale.
+setUserBadge :: DB.Connection -> User -> Maybe LocalBadge -> ExceptT StoreError IO User
+setUserBadge db User {userId, profile = LocalProfile {profileId}} localBadge = do
+  liftIO $ do
+    ts <- getCurrentTime
+    DB.execute
+      db
+      [sql|
+        UPDATE contact_profiles
+        SET badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?, updated_at = ?
+        WHERE user_id = ? AND contact_profile_id = ?
+      |]
+      (localBadgeToRow localBadge :. (ts, userId, profileId))
+    DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (ts, userId)
+  getUser db userId
 
 setUserSimplexDomain :: DB.Connection -> User -> Maybe SimplexDomain -> IO User
 setUserSimplexDomain db user@User {userId, profile = p@LocalProfile {profileId}} domain_ = do

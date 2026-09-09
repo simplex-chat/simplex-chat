@@ -5156,7 +5156,7 @@ addUserBadge user cred@(BadgeCredential _ _ _ info) =
     Just False -> throwCmdError "badge credential does not verify against configured key"
     Just True -> do
       now <- liftIO getCurrentTime
-      user' <- withFastStore' $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
+      user' <- withFastStore $ \db -> setUserBadge db user (Just (OwnBadge cred (mkBadgeStatus now (Just True) info)))
       presentUserBadgeToContacts user'
 
 presentUserBadgeToContacts :: User -> CM ()
@@ -5507,7 +5507,7 @@ presentIssuedBadge user p@UserBadgePurchase {badgePurchaseId, shown} now
       cred_ <- withStore' (`getLatestIssuedCredential` badgePurchaseId)
       forM_ cred_ $ \cred@(BadgeCredential _ _ _ info) ->
         when (presentDue cred) $ do
-          user' <- withStore' $ \db -> setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus now (Just True) info))
+          user' <- withStore $ \db -> setUserBadge db user (Just $ OwnBadge cred (mkBadgeStatus now (Just True) info))
           presentUserBadgeToContacts user'
   where
     shownCred = shownBadgeCredential user p
@@ -5520,8 +5520,8 @@ retireExpiredBadge :: User -> UserBadgePurchase -> UTCTime -> StatementEntry -> 
 retireExpiredBadge user UserBadgePurchase {badgePurchaseId, shown} now balance
   | not (shown && L.paidThrough balance <= now) = pure False
   | otherwise = do
-      user' <- withStore' $ \db -> do
-        clearShownBadge db user badgePurchaseId
+      user' <- withStore $ \db -> do
+        liftIO $ clearShownBadge db user badgePurchaseId
         setUserBadge db user Nothing
       True <$ presentUserBadgeToContacts user'
 
@@ -5538,7 +5538,7 @@ stopBadgeWorkers workers =
 -- issuance and the profile's badge go in one transaction. Answers the user to tell contacts about,
 -- which the caller does once the badge lock is released.
 storeRedeemedBadge :: User -> BadgeCodeRedemption -> BadgeCredential -> BadgeStatement -> CM (Maybe User, ChatResponse)
-storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCredential _ credMasterKey _ info) statement =
+storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCredential _ credMasterKey _ info) statement =
   verifyOwnBadge cred >>= \case
     Nothing -> throwCmdError "redeemed badge credential names an unknown badge key index"
     Just False -> throwCmdError "redeemed badge credential does not verify against configured key"
@@ -5550,11 +5550,11 @@ storeRedeemedBadge user redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCr
       now <- badgeNow
       let badge = OwnBadge cred (mkBadgeStatus now (Just True) info)
       -- TODO [badges] retire a previously held badge
-      (user', newBadge, applied) <- withStore' $ \db -> do
-        (purchaseId, newBadge) <- createCodeBadgePurchase db user redemption cred now
-        applied <- applyBadgeStatement db g purchaseId statement (Just cred) now
+      (user', newBadge, applied) <- withStore $ \db -> do
+        (purchaseId, newBadge) <- liftIO $ createCodeBadgePurchase db user redemption cred now
+        applied <- liftIO $ applyBadgeStatement db g purchaseId statement (Just cred) now
         -- a replay must not put a superseded badge back, or tell every contact again
-        user' <- if newBadge then setUserBadge db user (Just badge) else pure user
+        user' <- if newBadge then setUserBadge db user (Just badge) else getUser db userId
         pure (user', newBadge, applied)
       unless applied $ eToView $ ChatError $ CEInternalError "redeemed badge credential has no ledger row to store it against"
       -- nothing is due yet, but a pass is what arms the next wake, and this is the first purchase
