@@ -5567,8 +5567,10 @@ storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey}
 -- | Store the statement's rows, then the credential against the badge debit row among them.
 -- 'False' when that row cannot be found, which the caller reports rather than drop in silence.
 applyBadgeStatement :: DB.Connection -> TVar ChaChaDRG -> Int64 -> BadgeStatement -> Maybe BadgeCredential -> UTCTime -> IO Bool
-applyBadgeStatement db g purchaseId BadgeStatement {entries} cred_ now = do
-  tip <- getBadgeLedgerLastEntry db purchaseId
+applyBadgeStatement db g purchaseId BadgeStatement {entries, previousEntryId} cred_ now = do
+  -- the whole ledger starts at a row with no predecessor, and is sent with no previousEntryId;
+  -- checking that row against a tip this purchase already holds would mark a good row bad
+  tip <- if isJust previousEntryId then getBadgeLedgerLastEntry db purchaseId else pure Nothing
   storeBadgeStatement db purchaseId tip entries now
   case (,) <$> cred_ <*> issuedEntryId of
     Nothing -> pure True

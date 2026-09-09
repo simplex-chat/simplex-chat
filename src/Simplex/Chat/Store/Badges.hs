@@ -275,7 +275,7 @@ clearShownBadge db User {userId} badgePurchaseId =
 -- An entry whose balance does not follow from the one before it is stored and marked, not refused.
 storeBadgeStatement :: DB.Connection -> Int64 -> Maybe StatementEntry -> [StatementEntry] -> UTCTime -> IO ()
 storeBadgeStatement db badgePurchaseId tip entries now =
-  mapM_ storeEntry $ balanceChecked tip entries
+  mapM_ storeEntry $ balanceChecked now tip entries
   where
     storeEntry (StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType}, checked) =
       DB.execute

@@ -19,10 +19,11 @@ module Simplex.Chat.Badges.Ledger
   )
 where
 
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Time.Calendar (addDays, addGregorianMonthsClip, toGregorian)
 import Data.Time.Calendar.WeekDate (toWeekDate)
-import Data.Time.Clock (UTCTime (..))
+import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime)
 import Simplex.Chat.Badges (BadgeType)
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
 
@@ -44,8 +45,12 @@ monthAfter e n = addMonths (monthsFromAnchor e + toInteger n) (balanceAnchorTs e
 paidThrough :: StatementEntry -> UTCTime
 paidThrough e = monthAfter e (balanceMonths e)
 
+-- | Counted on the anchor grid and not from balanceStartTs: a start clipped to a short month is
+-- less than a whole month past the anchor, so counting from it would call a month elapsed early.
 elapsedMonths :: UTCTime -> StatementEntry -> Int
-elapsedMonths t e = length $ takeWhile (\m -> monthAfter e m <= t) [1 .. balanceMonths e]
+elapsedMonths t e = fromInteger $ max 0 $ min (toInteger $ balanceMonths e) elapsed
+  where
+    elapsed = monthsFromAnchor (e {balanceStartTs = t}) - monthsFromAnchor e
 
 -- | The seed for a purchase with no ledger yet: no months, and a run starting now.
 emptyEntry :: UTCTime -> BadgeType -> StatementEntry
@@ -107,11 +112,51 @@ issueEntry t entryId e@StatementEntry {balanceMonths, balanceStartTs}
             entryType = SEDebit SDBadge
           }
 
--- | Pairs each arriving entry with whether its balance follows from the one before it, the stored
--- tip standing in for the first one's predecessor. 'Nothing' is "not checked".
--- TODO [badges] do the arithmetic.
-balanceChecked :: Maybe StatementEntry -> [StatementEntry] -> [(StatementEntry, Maybe Bool)]
-balanceChecked _tip = map (\e -> (e, Nothing))
+maxCreatedAtSkew :: NominalDiffTime
+maxCreatedAtSkew = 5 * 60
+
+-- | Pairs each arriving entry with whether its balance follows from the one before it - the previous
+-- entry as received, the stored tip for the first, or a seed when there is no tip. Each is checked by
+-- re-running the operation it claims rather than against its predecessor's totals: over-lapsing is
+-- self-consistent and still theft. 'Nothing' is "not checked" - a type with no operation behind it,
+-- whose months are still required to add up.
+balanceChecked :: UTCTime -> Maybe StatementEntry -> [StatementEntry] -> [(StatementEntry, Maybe Bool)]
+balanceChecked now tip entries = case entries of
+  [] -> []
+  first : _ ->
+    let opening = fromMaybe (emptyEntry (createdAt first) (balanceBadgeType first)) tip
+     in zipWith checkAfter (opening : entries) entries
+  where
+    checkAfter p e = (e, entryChecked now p e)
+
+entryChecked :: UTCTime -> StatementEntry -> StatementEntry -> Maybe Bool
+entryChecked now p e
+  | postdated || backdated = Just False
+  | otherwise = case entryType e of
+      SEDebit SDLapse -> derived $ lapseEntry t "" p
+      SEDebit SDBadge -> derived $ issueEntry t "" p
+      SECredit SCUnknown {} -> monthsAddUp
+      SECredit c
+        -- the months a grant adds cannot be derived here, but their sign can: a negative one would
+        -- recompute as its own confirmation while moving paidThrough into the past
+        | changeMonths e < 0 -> Just False
+        | otherwise -> Just $ sameBalance e $ grantEntry t "" (changeMonths e) c p
+      _ -> monthsAddUp
+  where
+    t = createdAt e
+    postdated = t > addUTCTime maxCreatedAtSkew now
+    -- equal is not behind: a service pass writes its lapse and its issue with one clock reading
+    backdated = t < createdAt p
+    derived = Just . maybe False (sameBalance e)
+    monthsAddUp = if balanceMonths e == balanceMonths p + changeMonths e then Nothing else Just False
+
+sameBalance :: StatementEntry -> StatementEntry -> Bool
+sameBalance a b =
+  balanceMonths a == balanceMonths b
+    && balanceStartTs a == balanceStartTs b
+    && balanceAnchorTs a == balanceAnchorTs b
+    && balanceBadgeType a == balanceBadgeType b
+    && changeMonths a == changeMonths b
 
 -- | The tag stored is the string the service sent, so a type this version does not know is kept
 -- as received and can be read once it does.
