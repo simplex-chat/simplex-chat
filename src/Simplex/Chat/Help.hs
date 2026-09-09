@@ -14,7 +14,6 @@ module Simplex.Chat.Help
     markdownInfo,
     settingsInfo,
     databaseHelpInfo,
-    walletHelpInfo,
   )
 where
 
@@ -89,7 +88,7 @@ chatHelpInfo =
       green "Create your address: " <> highlight "/address",
       "",
       green "Other commands:",
-      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["groups", "contacts", "messages", "files", "address", "incognito", "remote", "settings", "db", "wallet"],
+      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["groups", "contacts", "messages", "files", "address", "incognito", "remote", "settings", "db"],
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/chats           " <> " - most recent chats",
@@ -217,30 +216,6 @@ myAddressHelpInfo =
       "Please note: you can receive spam contact requests, but it's safe to delete the address!",
       "",
       "The commands may be abbreviated: " <> listHighlight ["/ad", "/da", "/sa", "/ac", "/rc"]
-    ]
-
-walletHelpInfo :: [StyledString]
-walletHelpInfo =
-  map
-    styleMarkdown
-    [ green "Wallet commands:",
-      indent <> highlight "/wallet                " <> " - your key, and the addresses it derives",
-      indent <> highlight "/wallet create         " <> " - create your key, or add this profile to it",
-      indent <> highlight "/wallet import <phrase>" <> " - use a key you already have",
-      indent <> highlight "/wallet export         " <> " - show your recovery phrase",
-      indent <> highlight "/wallet delete <word>  " <> " - delete the key, confirmed by the last word of the phrase",
-      "",
-      "Please note: this is in development. You cannot buy a name yet.",
-      "",
-      "One key per device, one account per chat profile. Each name gets its own",
-      "key at " <> highlight "m/44'/60'/<profile>'/0/<name>" <> ". This is standard BIP-44, so your",
-      "phrase works in other wallets.",
-      "",
-      "The key is stored in the chat database. It is only encrypted if you set a",
-      "database passphrase with " <> highlight "/db encrypt" <> ", and it is included in " <> highlight "/db export" <> ".",
-      "",
-      "Anyone who has your recovery phrase controls your names. Keep it secret,",
-      "and keep a copy."
     ]
 
 incognitoHelpInfo :: [StyledString]

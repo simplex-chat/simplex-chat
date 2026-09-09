@@ -11,11 +11,10 @@ m20260908_wallet_seeds =
 CREATE TABLE wallet_seeds (
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
   seed BLOB NOT NULL,                       -- BIP-39 entropy, 16-32 bytes
-  -- Known issue: after importing a phrase this starts at 0, so a recovered
-  -- device can re-issue an account that already owns names. A recovery scan
-  -- will raise it.
+  -- known issue: after import this starts at 0, so a recovered device can
+  -- re-issue an account that already owns names
   next_account_index INTEGER NOT NULL DEFAULT 0,
-  -- one key per device for now; drop when several are supported
+  -- one key per device for now
   single_seed INTEGER NOT NULL DEFAULT 1 UNIQUE
 ) STRICT;
 

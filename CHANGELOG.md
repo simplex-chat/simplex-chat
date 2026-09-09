@@ -1,14 +1,5 @@
 # Release History
 
-## Unreleased
-
-Wallet (in development, CLI only): creates the key that will own your SimpleX
-names, so a name you buy later has an owner this app can still derive. One key
-per device, one account per chat profile, each name at `m/44'/60'/<profile>'/0/<name>`
-(standard BIP-44, so your recovery phrase works in other wallets). `/wallet`
-shows the addresses, `/wallet import` and `/wallet export` move the key,
-`/wallet delete` removes it. You cannot buy a name yet.
-
 ## v6.5
 
 30 April, 2026

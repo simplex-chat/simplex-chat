@@ -12,9 +12,9 @@ m20260908_wallet_seeds =
 CREATE TABLE wallet_seeds (
   wallet_seed_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   seed BYTEA NOT NULL,
-  -- Known issue: see the SQLite migration.
+  -- see the SQLite migration
   next_account_index BIGINT NOT NULL DEFAULT 0,
-  -- one key per device for now; drop when several are supported
+  -- one key per device for now
   single_seed SMALLINT NOT NULL DEFAULT 1 UNIQUE
 );
 

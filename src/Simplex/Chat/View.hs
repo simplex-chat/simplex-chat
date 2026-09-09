@@ -181,7 +181,6 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
     HSRemote -> remoteHelpInfo
     HSSettings -> settingsInfo
     HSDatabase -> databaseHelpInfo
-    HSWallet -> walletHelpInfo
   CRWelcome user -> chatWelcome user
   CRContactsList u cs -> ttyUser u $ viewContactsList cs
   CRUserContactLink u UserContactLink {connLinkContact, addressSettings} -> ttyUser u $ connReqContact_ showFullLinks "Your chat address:" connLinkContact <> viewAddressSettings addressSettings
@@ -190,21 +189,17 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRServiceResponse u resp -> ttyUser u ["service response: " <> viewJSON resp]
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
   CRWallet u exists accs
-    | not exists -> ttyUser u ["no wallet key on this device - create one with " <> highlight' "/wallet create"]
+    | not exists -> ttyUser u ["no wallet key"]
     | otherwise ->
         ttyUser u $
-          ("key 1" : concatMap accountRows accs)
-            <> ["this profile has no key yet - add one with " <> highlight' "/wallet create" | not (any (\(_, _, active, _) -> active) accs)]
+          concatMap accountRows accs
+            <> ["this profile has no wallet key" | not (any (\(_, _, active, _) -> active) accs)]
     where
       accountRows (n, acct, active, keys) =
-        plain ("  account " <> tshow acct <> " (" <> n <> (if active then ", active" else "") <> ")")
+        plain ("account " <> tshow acct <> " (" <> n <> (if active then ", active" else "") <> ")")
           : zipWith nameRow [0 :: Int ..] keys
-      nameRow k (path, addr) = plain $ "    name " <> tshow k <> "  " <> path <> "  " <> addr
-  CRWalletPhrase u phrase ->
-    ttyUser u
-      [ "write this down - anyone who knows these words controls the names this key owns:",
-        plain $ "  " <> phrase
-      ]
+      nameRow k (path, addr) = plain $ "  name " <> tshow k <> "  " <> path <> "  " <> addr
+  CRWalletPhrase u phrase -> ttyUser u [plain phrase]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results

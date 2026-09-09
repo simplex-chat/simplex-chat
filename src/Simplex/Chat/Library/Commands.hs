@@ -1496,7 +1496,7 @@ processChatCommand cxt nm = \case
     accs <- case seed_ of
       Nothing -> pure []
       Just seed -> do
-        -- a hidden profile is left out, as it is by /users
+        -- hidden profiles are left out, as they are by /users
         as <- filter (\(_, _, active, hidden) -> active || not hidden) <$> withFastStore' (\db -> getSeedAccounts db (wsId seed))
         forM as $ \(n, acct, active, _) -> do
           keys <- forM [0 .. walletNamesShown - 1] $ \k -> do
@@ -5462,12 +5462,12 @@ withExpirationDate globalTTL chatItemTTL action = do
   let ttl = fromMaybe globalTTL chatItemTTL
   when (ttl > 0) $ action $ addUTCTime (-1 * fromIntegral ttl) currentTs
 
--- | Name keys shown per profile by /wallet, to check derivation against other wallets.
+-- | Name keys shown per profile, to check derivation against other wallets.
 walletNamesShown :: NameIndex
 walletNamesShown = 2
 
 noKeyError :: String
-noKeyError = "no wallet key for this profile - create one with /wallet create"
+noKeyError = "no wallet key for this profile"
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
@@ -5587,11 +5587,11 @@ chatCommandP =
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
-      "/wallet create" $> APIWalletCreate,
-      "/wallet import " *> (APIWalletImport <$> textP),
-      "/wallet export" $> APIWalletExport,
-      "/wallet delete " *> (APIWalletDelete <$> textP),
-      "/wallet" $> APIWallet,
+      "/_wallet create" $> APIWalletCreate,
+      "/_wallet import " *> (APIWalletImport <$> textP),
+      "/_wallet export" $> APIWalletExport,
+      "/_wallet delete " *> (APIWalletDelete <$> textP),
+      "/_wallet" $> APIWallet,
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),
@@ -5711,7 +5711,6 @@ chatCommandP =
       ("/help remote" <|> "/hr") $> ChatHelp HSRemote,
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help db" <|> "/hd") $> ChatHelp HSDatabase,
-      ("/help wallet" <|> "/hw") $> ChatHelp HSWallet,
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group" <|> "/g") *> (NewGroup <$> incognitoP <* A.space <* char_ '#' <*> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),

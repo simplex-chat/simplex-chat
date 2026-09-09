@@ -68,8 +68,6 @@ getBoundAccount db user =
     Nothing -> pure Nothing
     Just r -> fmap (\s -> (s, r)) <$> getWalletSeed db (arSeedId r)
 
--- | Profiles bound to this seed: display name, account index, whether active,
--- whether hidden.
 getSeedAccounts :: DB.Connection -> SeedId -> IO [(Text, AccountIndex, Bool, Bool)]
 getSeedAccounts db (SeedId sId) =
   map toRow
@@ -83,17 +81,13 @@ getSeedAccounts db (SeedId sId) =
   where
     toRow (n, ix, BI active, pwdHash) = (n, fromIntegral (ix :: Int64), active, isJust (pwdHash :: Maybe ByteString))
 
--- | Bind this profile to the device seed, creating it from @entropy@ if there
--- is none.
 getOrCreateAccountRef :: DB.Connection -> User -> ByteString -> IO (WalletSeed, AccountRef)
 getOrCreateAccountRef db user entropy =
   getBoundAccount db user >>= \case
     Just bound -> pure bound
     Nothing -> getDeviceSeed db >>= maybe (createWalletSeed db entropy) pure >>= bindNewAccount db user
 
--- | Nothing if the device already has a key. One transaction, so a phrase
--- cannot be discarded in favour of a key created meanwhile; single_seed is
--- UNIQUE, so a concurrent insert cannot add a second key either.
+-- | Nothing if the device already has a key.
 importSeed :: DB.Connection -> User -> ByteString -> IO (Maybe (WalletSeed, AccountRef))
 importSeed db user entropy =
   getDeviceSeed db >>= \case
@@ -113,8 +107,7 @@ createWalletSeed db entropy = do
   sId <- insertedRowId db
   pure WalletSeed {wsId = SeedId sId, wsEntropy = entropy}
 
--- | Incremented in SQL so that concurrent purchases cannot be handed the same
--- account, and read back inside the same transaction.
+-- | Incremented in SQL, so two profiles cannot be handed the same account.
 takeAccountIndex :: DB.Connection -> SeedId -> IO AccountIndex
 takeAccountIndex db sId@(SeedId sId') = do
   DB.execute db "UPDATE wallet_seeds SET next_account_index = next_account_index + 1 WHERE wallet_seed_id = ?" (Only sId')
@@ -127,7 +120,7 @@ getNextAccountIndex db (SeedId sId) =
             DB.query db "SELECT next_account_index FROM wallet_seeds WHERE wallet_seed_id = ?" (Only sId)
         )
 
--- | Profiles are unbound first: the foreign key is ON DELETE RESTRICT.
+-- | Profiles are unbound first, as the foreign key is ON DELETE RESTRICT.
 deleteSeed :: DB.Connection -> SeedId -> IO ()
 deleteSeed db (SeedId sId) = do
   DB.execute db "UPDATE users SET wallet_seed_id = NULL, wallet_account_index = NULL WHERE wallet_seed_id = ?" (Only sId)
