@@ -258,13 +258,13 @@ testRedeemUnknownCode ps =
       alice ##> ("/_redeem_badge_code 1 " <> codeArg unknown)
       alice <## "bad chat command: badge service error: code_invalid"
       -- a failed check character is refused before anything leaves the device
-      alice ##> "/_redeem_badge_code 1 SXB-00000-00000-00000-00001"
+      alice ##> "/_redeem_badge_code 1 SB-00000-00000-00000-00001"
       alice <## "bad chat command: invalid badge code"
       -- sent straight to the service, past the client's own check, the two are one answer
       (_, redeemPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
       redeemDirect alice bsLink redeemPriv (T.unpack $ badgeCodeText unknown)
       alice <## "service response: {\"code\":\"code_invalid\",\"type\":\"error\"}"
-      redeemDirect alice bsLink redeemPriv "SXB-00000-00000-00000-00001"
+      redeemDirect alice bsLink redeemPriv "SB-00000-00000-00000-00001"
       alice <## "service response: {\"code\":\"code_invalid\",\"type\":\"error\"}"
 
 -- a signed redeemBadgeCode sent as a raw service request, bypassing the client's own checks

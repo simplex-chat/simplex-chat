@@ -189,9 +189,9 @@ testCodeRoundTrip = do
   drg <- C.newRandom
   code <- randomBadgeCode drg
   let formatted = formatBadgeCode code
-  T.length formatted `shouldBe` 27 -- SXB-XXXXX-XXXXX-XXXXX-XXXXX
-  T.take 4 formatted `shouldBe` "SXB-"
-  T.length (badgeCodeText code) `shouldBe` 23 -- the canonical form drops the separators
+  T.length formatted `shouldBe` 26 -- SB-XXXXX-XXXXX-XXXXX-XXXXX
+  T.take 3 formatted `shouldBe` "SB-"
+  T.length (badgeCodeText code) `shouldBe` 22 -- the canonical form drops the separators
   parseBadgeCode formatted `shouldBe` Just code
   parseBadgeCode (badgeCodeText code) `shouldBe` Just code
 
@@ -208,7 +208,7 @@ testCodeNormalisation = do
   parseBadgeCode folded `shouldBe` parseBadgeCode fixedCode
   parseBadgeCode fixedCode `shouldNotBe` Nothing
   where
-    fixedCode = "SXB-0C0QS-XAQW1-N1VSA-R00Y3"
+    fixedCode = "SB-0C0QS-XAQW1-N1VSA-R00Y3"
     ambiguous = \case
       '1' -> 'I'
       '0' -> 'O'
@@ -223,8 +223,8 @@ testCodeCheckCharacter = do
       wrong = T.init canonical <> T.singleton (if T.last canonical == 'Z' then 'Y' else 'Z')
   parseBadgeCode wrong `shouldBe` Nothing
   parseBadgeCode "" `shouldBe` Nothing
-  parseBadgeCode "SXB-00000-00000-00000-0000" `shouldBe` Nothing
-  parseBadgeCode (T.drop 3 canonical) `shouldBe` Nothing
+  parseBadgeCode "SB-00000-00000-00000-0000" `shouldBe` Nothing
+  parseBadgeCode (T.drop 2 canonical) `shouldBe` Nothing
 
 testCodeHash :: IO ()
 testCodeHash = do
