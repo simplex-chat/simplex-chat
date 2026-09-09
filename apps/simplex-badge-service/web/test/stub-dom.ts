@@ -47,6 +47,27 @@ export class StubElement {
   hasAttribute(k: string): boolean { return this.attrs.has(k); }
   removeAttribute(k: string): void { this.attrs.delete(k); }
 
+  /** Backed by the `class` attribute, so `all()` and `getAttribute("class")` see every change and
+   * the app's `classList.toggle("dark", …)` behaves as the browser's does. */
+  get classList() {
+    const read = (): string[] => (this.getAttribute("class") ?? "").split(/\s+/).filter(Boolean);
+    const write = (list: string[]): void => {
+      if (list.length > 0) this.setAttribute("class", list.join(" "));
+      else this.removeAttribute("class");
+    };
+    return {
+      contains: (name: string): boolean => read().includes(name),
+      add: (name: string): void => { const l = read(); if (!l.includes(name)) write([...l, name]); },
+      remove: (name: string): void => write(read().filter((n) => n !== name)),
+      toggle: (name: string, force?: boolean): boolean => {
+        const on = force ?? !read().includes(name);
+        if (on) { const l = read(); if (!l.includes(name)) write([...l, name]); }
+        else write(read().filter((n) => n !== name));
+        return on;
+      },
+    };
+  }
+
   append(...kids: Child[]): void {
     for (const kid of kids) if (kid instanceof StubElement) kid.parent = this;
     this.children.push(...kids);

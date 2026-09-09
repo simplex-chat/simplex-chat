@@ -2,7 +2,7 @@
 // are still readable. Swapping in a memory store on the failed write would hide them, and this
 // page's one promise is holding the code.
 import assert from "node:assert/strict";
-import { headingOf, inViewOf, installPage, timedTest } from "./boot.js";
+import { forgetControl, headingOf, inViewOf, installPage, timedTest } from "./boot.js";
 import { MemStorage } from "./stub-dom.js";
 import { ORDER_ID, seededStorage } from "./open-order.js";
 
@@ -33,6 +33,6 @@ quotaTest("main: Forget clears the store that is really holding the codes", () =
   // promising to erase is over there, and the confirm says it cannot be undone
   assert.ok(full.m.has("sxb.orders.v1"), "the real store is the one holding them");
   page.confirmAnswer(true);
-  page.chrome.all("button.menu-item").find((b) => b.textContent === "Forget everything on this device")!.click();
+  forgetControl(page)!.click();
   assert.equal(full.m.get("sxb.orders.v1"), undefined, "and it is what Forget has to empty");
 });

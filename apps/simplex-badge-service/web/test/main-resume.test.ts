@@ -1,6 +1,6 @@
 import { after, mock } from "node:test";
 import assert from "node:assert/strict";
-import { headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
+import { forgetControl, headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
 import { MemStorage } from "./stub-dom.js";
 
 const resumeTest = timedTest(3000);
@@ -223,10 +223,14 @@ resumeTest("main: [ Forget everything ] leaves nothing that restores the order",
   // has already abandoned this page's holds, so what is pinned here is the outcome, not the abort it owns.
   assert.ok(storage.getItem("sxb.orders.v1") !== null, "there is an order to forget");
   page.confirmAnswer(true);
-  const before = fetches.length;
 
-  const forget = page.chrome.all("button.menu-item").find((b) => b.textContent === "Forget everything on this device");
-  assert.ok(forget, "the menu carries the action");
+  // Reaching the wipe control is itself a navigation to the codes list, which stops this page's
+  // holds and issues its own refresh; the loop this test guards against is what a wipe must not
+  // leave running, so the count is pinned from here, after the list is up.
+  const forget = forgetControl(page);
+  assert.ok(forget, "the codes list carries the wipe control");
+  await settle(10);
+  const before = fetches.length;
   forget.click();
 
   assert.equal(storage.getItem("sxb.orders.v1"), null);
@@ -250,7 +254,7 @@ resumeTest("main: an answer already on the wire is dropped once the store is for
 
   // no settle: the read is on the wire, and this is the wipe landing while it is
   page.confirmAnswer(true);
-  page.chrome.all("button.menu-item").find((b) => b.textContent === "Forget everything on this device")!.click();
+  forgetControl(page)!.click();
   assert.equal(storage.getItem("sxb.orders.v1"), null, "the wipe itself is immediate");
 
   await settle(10);

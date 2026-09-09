@@ -144,7 +144,9 @@ designTest("design: the content column is the mockups' 560px, and the gutter is 
   assert.equal(decl("#app", "max-width"), "560px");
   assert.equal(decl("#app", "margin"), "0 auto", "and it is centred");
   assert.equal(decl("footer", "max-width"), "560px", "the footer rule spans the same column");
-  assert.match(decl("body", "padding") ?? "", /^0 \d+px$/, "the gutter is body's, so the column keeps its width");
+  // the fixed navbar's height on top, then the side gutter: the column keeps its width, and clears
+  // the bar. Any three-value `<top> <side> 0` with a non-zero side holds the gutter.
+  assert.match(decl("body", "padding") ?? "", /^\d+px \d+px 0$/, "top clears the navbar, the sides are the gutter");
   const panelPadding = decl(".panel", "padding") ?? "";
   assert.ok(/^\d+px 0( \d+px)?$/.test(panelPadding),
     `a panel adds no horizontal padding, and got "${panelPadding}"`);
@@ -403,7 +405,7 @@ designTest("type: `Legend, 12 months` is one title, on the history list's rows a
     createdAt: "2026-08-28T11:46:00Z", status: "open" as const,
   };
   const paidNoCode = render(screens.paidNoCode({ order, settledAt: undefined }));
-  const history = render(screens.purchaseHistory({ keepsNewCodes: true,
+  const history = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true,
     rows: [{ kind: "open" as const, order }], onOpen: () => {}, onStart: () => {},
   }));
   assert.equal(paidNoCode.all("div.name")[0]!.textContent, "Legend, 12 months");
@@ -577,38 +579,44 @@ designTest("design: the wordmark is the header's, themed and precachable", () =>
 
 function testChrome(over: Partial<Parameters<typeof screens.chrome>[0]> = {}): ReturnType<typeof screens.chrome> {
   return screens.chrome({
-    onNewPurchase: () => {}, onHistory: () => {}, onForget: () => {},
-    theme: "system", onTheme: () => {}, onToggle: () => {}, ...over,
+    onNewPurchase: () => {}, onHistory: () => {},
+    theme: "system", onTheme: () => {}, onToggle: () => {}, embedded: false, ...over,
   });
 }
+
+designTest("design: embedded, the wordmark leaves the frame for the site's own home", () => {
+  const bar = render(testChrome({ embedded: true }).node);
+  const brand = bar.all("a.brand")[0]!;
+  assert.equal(brand.getAttribute("href"), "https://simplex.chat/", "the wordmark points at the site");
+  assert.equal(brand.getAttribute("target"), "_top", "and opens on the top window, not inside the frame");
+  assert.equal(brand.getAttribute("rel"), "noopener");
+});
 
 designTest("design: the chrome is a wordmark home link and a menu, and holds no order", () => {
   let started = 0;
   let history = 0;
-  let forgot = 0;
   const ui = testChrome({
     onNewPurchase: () => { started += 1; },
     onHistory: () => { history += 1; },
-    onForget: () => { forgot += 1; },
   });
   const bar = render(ui.node);
   const brand = bar.all("a.brand")[0]!;
   assert.equal(brand.getAttribute("href"), "/", "the wordmark goes home");
+  assert.equal(brand.getAttribute("target"), null, "standalone, it stays in this page");
   assert.equal(brand.getAttribute("aria-label"), "SimpleX", "and carries the name, since it has no text");
   const trigger = bar.all("button.menu-button")[0]!;
   assert.equal(trigger.getAttribute("aria-expanded"), "false");
   assert.equal(trigger.getAttribute("aria-controls"), screens.MENU_ID);
   assert.equal(bar.all("svg.bars").length, 1, "the hamburger is drawn, not typed");
-  // The three device-wide actions, in the order the menu lists them.
+  // The two device-wide actions, in the order the menu lists them. Forget lives on the codes
+  // screen now, under the last code, not in the menu on every screen.
   assert.deepEqual(bar.all("button.menu-item").map((b) => b.textContent),
-    [screens.NEW_PURCHASE, screens.PURCHASE_HISTORY, screens.FORGET_EVERYTHING]);
+    [screens.NEW_PURCHASE, screens.PURCHASE_HISTORY]);
   for (const b of bar.all("button.menu-item")) b.click();
-  assert.deepEqual([started, history, forgot], [1, 1, 1]);
-  // Three sections, divided as the reference divides them: the setting, the
-  // two actions, and the one that destroys something on its own.
-  assert.equal(bar.all("div.menu-section").length, 3);
-  assert.equal(bar.all("div.menu-section")[2]!.all("button.danger").length, 1,
-    "[ Forget everything ] is separated, and marked");
+  assert.deepEqual([started, history], [1, 1]);
+  assert.equal(bar.all("button.danger").length, 0, "the menu holds nothing destructive");
+  // Two sections: the theme setting, and the two navigations.
+  assert.equal(bar.all("div.menu-section").length, 2);
   // the store rules: the menu is fixed labels over callbacks, so nothing about an order can
   // reach it: not a code, not an address, not a reference.
   assert.equal(/SXB-|order=|inv_/.test(bar.serialize()), false, bar.serialize());
@@ -644,8 +652,9 @@ designTest("design: the menu opens, closes on choosing, and lists what the keybo
   assert.equal(ui.isOpen(), true);
   assert.equal(menu.hasAttribute("hidden"), false);
   assert.equal(trigger.getAttribute("aria-expanded"), "true");
-  // Three segments and three actions, the six things Tab cycles between.
-  assert.equal(ui.focusables().length, 6);
+  // Three theme segments and two actions, the five things Tab cycles between (Forget moved to the
+  // codes list).
+  assert.equal(ui.focusables().length, 5);
   bar.all("button.menu-item")[1]!.click();
   assert.equal(ui.isOpen(), false, "choosing an item closes it before the screen changes");
   assert.equal(menu.hasAttribute("hidden"), true);
@@ -665,7 +674,7 @@ designTest("design: the withholding reaches the menu — no second invoice while
   ui.offerNewPurchase(false);
   assert.equal(fresh.hasAttribute("hidden"), true,
     "the create endpoint has no idempotency key, so a menu that offered one would be a second charge");
-  assert.equal(ui.focusables().length, 5, "and the keyboard cannot reach what the eye cannot see");
+  assert.equal(ui.focusables().length, 4, "and the keyboard cannot reach what the eye cannot see");
   ui.offerNewPurchase(true);
   assert.equal(fresh.hasAttribute("hidden"), false);
 });

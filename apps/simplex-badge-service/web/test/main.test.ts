@@ -2,7 +2,7 @@ import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { mediaFor, ruleFor, sheet } from "./css.js";
-import { headingOf, installPage, inViewOf, primaryOf, screenOf, settle, timedTest, until } from "./boot.js";
+import { forgetControl, headingOf, installPage, inViewOf, primaryOf, screenOf, settle, timedTest, until } from "./boot.js";
 import type { StubElement } from "./stub-dom.js";
 
 const mainTest = timedTest(2000);
@@ -339,7 +339,7 @@ mainTest("main: [ Forget everything ] does nothing when the confirmation is refu
   assert.ok(before !== null && before.includes("inv_9f3a"));
   confirms.length = 0;
   page.confirmAnswer(false);
-  menuItem("Forget everything on this device").click();
+  forgetControl(page)!.click();
   assert.equal(confirms.length, 1, "the one irreversible action must ask first");
   assert.equal(storage.getItem("sxb.orders.v1"), before, "a refused confirmation keeps every code");
   assert.equal(app.all("li.entry").length, 1, "and the list stands");
@@ -347,7 +347,7 @@ mainTest("main: [ Forget everything ] does nothing when the confirmation is refu
 
 mainTest("main: [ Forget everything ] removes the key and returns to the landing page", () => {
   page.confirmAnswer(true);
-  menuItem("Forget everything on this device").click();
+  forgetControl(page)!.click();
   assert.equal(storage.getItem("sxb.orders.v1"), null);
   assert.equal(storage.getItem("sxb.session.v1"), null, "the draft goes with the codes");
   // Not the empty history: every screen but the landing screen is drawn from something that has
@@ -557,9 +557,14 @@ mainTest("main: the chosen theme is written to <html>, and system removes it", (
 });
 
 mainTest("main: [ Forget everything ] does not take the theme with it", () => {
+  // The wipe control lives on the codes list, so there has to be a code to reach it.
+  storage.setItem("sxb.orders.v1", JSON.stringify([{
+    orderId: "inv_theme", badgeType: "supporter", months: 1,
+    createdAt: "2026-08-28T11:02:19Z", status: "open",
+  }]));
   page.chrome.all("button.segment").find((b) => b.textContent === "Dark")!.click();
   page.confirmAnswer(true);
-  menuItem("Forget everything on this device").click();
+  forgetControl(page)!.click();
   assert.equal(storage.getItem("sxb.orders.v1"), null, "the codes go");
   assert.equal(storage.getItem("sxb.theme.v1"), '"dark"',
     "and a colour scheme is not something that control exists to destroy");

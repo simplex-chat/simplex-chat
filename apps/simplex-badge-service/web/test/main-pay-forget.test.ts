@@ -1,6 +1,6 @@
 // A checkout on the wire while the buyer wipes the browser.
 import assert from "node:assert/strict";
-import { headingOf, inViewOf, installPage, primaryOf, settle, timedTest, until } from "./boot.js";
+import { forgetControl, headingOf, inViewOf, installPage, primaryOf, settle, timedTest, until } from "./boot.js";
 
 const payTest = timedTest(3000);
 
@@ -22,8 +22,14 @@ payTest("main: a checkout answered after the wipe is not written back", async ()
   inView().all("button.primary")[0]!.click();
   await until(() => fetches.slice(before).some((f) => f.url === "/api/invoice"), "the checkout POST");
 
+  // A code from an earlier purchase, so the codes list — where the wipe control now lives — is not
+  // empty while this checkout is still on the wire. The wipe still has to drop the answer to it.
+  storage.setItem("sxb.orders.v1", JSON.stringify([{
+    orderId: "inv_prior", badgeType: "supporter", months: 1,
+    createdAt: "2026-08-28T11:02:19Z", status: "open",
+  }]));
   page.confirmAnswer(true);
-  page.chrome.all("button.menu-item").find((b) => b.textContent === "Forget everything on this device")!.click();
+  forgetControl(page)!.click();
   assert.equal(storage.getItem("sxb.orders.v1"), null, "the wipe itself is immediate");
 
   assert.ok(page.answerHeld({

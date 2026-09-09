@@ -1,5 +1,5 @@
 import { money, countdown, outstanding, startedAgo, type Outstanding } from "./format.js";
-import { badgeIcon, hamburger, hasBadgeArt, methodMark } from "./icons.js";
+import { badgeIcon, hamburger, hasBadgeArt, methodMark, moonIcon, sunIcon } from "./icons.js";
 import { paymentUri, qrSvg } from "./qr.js";
 import type { HistoryRow, UnpaidOrder } from "./order.js";
 import type { InvoiceView } from "./api.js";
@@ -69,10 +69,11 @@ const THEME_NAMES: Readonly<Record<Theme, string>> = {
 export interface ChromeOptions {
   onNewPurchase: () => void;
   onHistory: () => void;
-  onForget: () => void;
   theme: Theme;
   onTheme: (theme: Theme) => void;
   onToggle: (open: boolean) => void;
+  /** True inside the site's iframe: the wordmark then navigates the whole site, not just the frame. */
+  embedded: boolean;
 }
 
 export interface Chrome {
@@ -90,7 +91,11 @@ export interface Chrome {
 //
 // Nothing in the menu may carry an order: every item is a fixed label with a callback.
 export function chrome(o: ChromeOptions): Chrome {
-  const brand = el("a", { class: "brand", href: "/", "aria-label": "SimpleX" });
+  // Standalone the wordmark is the page's own home; embedded it is the site's, opened on the top
+  // window so the click leaves the frame rather than loading simplex.chat inside it.
+  const brand = o.embedded
+    ? el("a", { class: "brand", href: "https://simplex.chat/", target: "_top", rel: "noopener", "aria-label": "SimpleX" })
+    : el("a", { class: "brand", href: "/", "aria-label": "SimpleX" });
   const panelNode = el("div", {
     class: "menu", id: MENU_ID, hidden: "", role: "dialog", "aria-label": MENU_LABEL,
   });
@@ -139,10 +144,22 @@ export function chrome(o: ChromeOptions): Chrome {
     el("div", { class: "menu-section" },
       el("div", { class: "menu-row" }, el("span", { class: "menu-label" }, THEME_LABEL), segmented)),
     el("div", { class: "menu-section" }, fresh, action(PURCHASE_HISTORY, o.onHistory)),
-    el("div", { class: "menu-section" }, action(FORGET_EVERYTHING, o.onForget, "menu-item danger")),
   );
-  const node = el("header", { class: "chrome-bar" },
-    brand, el("nav", { class: "menu-wrap" }, trigger, panelNode));
+  // The site's own sun/moon quick switch, to the right of the menu. It flips light↔dark off the
+  // resolved theme (the `.dark` class), leaving the three-way Light/Dark/System control in the menu.
+  const themeSwitch = el("button", { class: "theme-switch-btn", type: "button", "aria-label": "Toggle light or dark theme" });
+  themeSwitch.append(sunIcon(), moonIcon());
+  themeSwitch.addEventListener("click", () => {
+    o.onTheme(document.documentElement.classList.contains("dark") ? "light" : "dark");
+  });
+
+  // The site navbar, structure and class names as there: the wordmark on the left, and on the right
+  // the menu (our burger, integrated) and then the theme switch.
+  const node = el("header", { id: "navbar", class: "sxb-navbar" },
+    brand,
+    el("div", { class: "right-links" },
+      el("nav", { class: "menu-wrap" }, trigger, panelNode),
+      themeSwitch));
   return {
     node,
     close,
@@ -841,6 +858,7 @@ export interface PurchaseHistoryOptions {
   keepsNewCodes: boolean;
   onOpen: (orderId: string) => void;
   onStart: () => void;
+  onForget: () => void;
 }
 
 const ENTRY_STATES: Readonly<Record<HistoryRow["kind"], { text: string; tone: string }>> = {
@@ -903,12 +921,17 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
   }
   const list = el("ul", { class: "entries" });
   for (const row of o.rows) list.append(entryLine(row, o.onOpen));
+  // The one irreversible action, at the foot of the list it clears: below the last code, where a
+  // buyer who has decided to wipe the device looks, and not in the menu on every screen.
+  const forget = el("p", { class: "forget-line" },
+    button(FORGET_EVERYTHING, o.onForget, "link danger"));
   return panel(
     el("h1", {}, "Codes on this device"),
     el("p", { class: "lede" }, o.keepsNewCodes
       ? "Every code you bought is in this browser, and nowhere else."
       : "This browser cannot save anything new right now. Copy any code you have not kept elsewhere."),
     list,
+    forget,
   );
 }
 

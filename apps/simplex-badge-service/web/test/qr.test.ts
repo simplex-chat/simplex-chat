@@ -734,7 +734,7 @@ qrTest("only the code screen draws a QR of the code, and every other screen draw
     ["the card form", screens.cardForm({ order: unpaid, invoice: xmrInvoice, resumed: false, onNewInvoice: noop }) as unknown as StubElement],
   ];
   const rows = order.historyRows([record({ status: "open", code: BADGE_CODE }), record({ orderId: "inv_2", status: "expired", code: BADGE_CODE })]);
-  panels.push(["the history list", screens.purchaseHistory({ keepsNewCodes: true, rows, onOpen: noop, onStart: noop }) as unknown as StubElement]);
+  panels.push(["the history list", screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows, onOpen: noop, onStart: noop }) as unknown as StubElement]);
 
   for (const [where, panel] of panels) {
     // the payment screen draws one, and it is the payment URI: the ban is on the CODE, and

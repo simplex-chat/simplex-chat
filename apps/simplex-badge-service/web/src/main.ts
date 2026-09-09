@@ -28,6 +28,7 @@ import { appearanceFor, cardPlan, loadStripeJs, mountCard, publishableKey, type 
 import { Store, type StorageLike } from "./store.js";
 import { STEPS } from "./domain.js";
 import type { Method, OrderRecord, SessionRecord, Step, Theme } from "./domain.js";
+import { EMBED_READY, THEME_MESSAGE, themeFromMessage, trustedHost } from "./embed.js";
 
 const app = document.getElementById("app");
 if (app === null) throw new Error("main: #app is missing from the shell");
@@ -95,18 +96,18 @@ const flow = new Flow({
   render: (view) => { paint(view); },
 });
 
+// Whether this page runs inside the site's iframe: read once, since it cannot change for the life
+// of the document. It steers the wordmark's link and turns on the host theme channel below.
+const embedded = window.self !== window.top;
+
 const chromeUi = screens.chrome({
+  embedded,
   onNewPurchase: newInvoice,
   onHistory: showCodes,
-  onForget: () => {
-    if (!window.confirm("Remove every code stored in this browser? This cannot be undone.")) return;
-    store.forgetEverything();
-    resetToLanding("replace");
-  },
   theme: store.theme(),
-  // A theme change while the card form is up re-mounts the Element so its appearance follows;
-  // `paint` leaves an in-flight confirm untouched, so this cannot rebuild a form mid-payment.
-  onTheme: (theme) => { store.saveTheme(theme); applyTheme(theme); if (lastView?.screen === "cardForm") paint(lastView); },
+  // A user's own toggle: save it, apply it, and tell the host page so a site-level switch stays in
+  // step with the one inside the frame.
+  onTheme: (theme) => { setTheme(theme, true); },
   onToggle: (open) => {
     for (const node of [root, document.getElementById("contact")]) {
       if (open) node?.setAttribute("inert", "");
@@ -122,7 +123,44 @@ function applyTheme(theme: Theme): void {
   const html = document.documentElement;
   if (theme === "system") html?.removeAttribute(THEME_ATTRIBUTE);
   else html?.setAttribute(THEME_ATTRIBUTE, theme);
+  // The navbar copied from the site keys its dark palette on a `.dark` class, the Tailwind
+  // convention, so mirror the resolved theme onto it while `styles.css` keeps reading `data-theme`.
+  html?.classList.toggle("dark", theme === "dark" || (theme === "system" && prefersDark()));
   chromeUi.showTheme(theme);
+}
+
+// ------------------------------------------------------- embedding in the site
+//
+// The page can run standalone or inside an iframe on the site, which frames it full-bleed with its
+// own navbar hidden. When embedded, the host owns the theme: it posts the buyer's site-wide choice
+// in, and this frame echoes its own toggle back out, so one switch drives both. The message is
+// small and non-sensitive (a theme name), but the origin is still checked: only the site may drive
+// it, and this frame only posts back to the host it actually has.
+let hostOrigin: string | undefined;
+
+// `echo` is false for a theme that arrived from the host: applying it must not post it straight back.
+function setTheme(theme: Theme, echo: boolean): void {
+  store.saveTheme(theme);
+  applyTheme(theme);
+  // A theme change while the card form is up re-mounts the Element so its appearance follows;
+  // `paint` leaves an in-flight confirm untouched, so this cannot rebuild a form mid-payment.
+  if (lastView?.screen === "cardForm") paint(lastView);
+  if (echo && embedded && hostOrigin !== undefined) {
+    window.parent.postMessage({ type: THEME_MESSAGE, theme }, hostOrigin);
+  }
+}
+
+if (embedded) {
+  window.addEventListener("message", (event) => {
+    const theme = themeFromMessage(event.data);
+    if (theme === undefined || !trustedHost(event.origin)) return;
+    hostOrigin = event.origin;
+    setTheme(theme, false);
+  });
+  // Tell the host the frame is ready and hand it the current theme, so it can align its own control
+  // and, if it drives theme, post the site-wide choice back. Broadcast, since the host origin is not
+  // yet known; the reply's origin is what gets trusted.
+  try { window.parent.postMessage({ type: EMBED_READY, theme: store.theme() }, "*"); } catch { /* no host to tell */ }
 }
 
 applyTheme(store.theme());
@@ -143,9 +181,12 @@ function cardReturnUrl(): string {
   return location.origin + location.pathname;
 }
 
-// In `system` mode the OS can flip while the card form is up; re-mount so the Element follows it.
+// In `system` mode the OS can flip under us: re-resolve the navbar's `.dark` class, and re-mount
+// the card Element (if it is up) so its appearance follows.
 window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
-  if (store.theme() === "system" && lastView?.screen === "cardForm") paint(lastView);
+  if (store.theme() !== "system") return;
+  applyTheme("system");
+  if (lastView?.screen === "cardForm") paint(lastView);
 });
 
 function syncChrome(): void {
@@ -826,6 +867,11 @@ function renderCodes(entries: readonly OrderRecord[]): void {
     keepsNewCodes: store.durable,
     onOpen: goToOrder,
     onStart: () => { resetToLanding("push"); },
+    onForget: () => {
+      if (!window.confirm("Remove every code stored in this browser? This cannot be undone.")) return;
+      store.forgetEverything();
+      resetToLanding("replace");
+    },
   }));
 }
 

@@ -236,7 +236,7 @@ domTest("screens: an order link stays a real link for a modified click", () => {
   // the fallback store is an in-memory Map, so a full navigation would
   // destroy every record, but a buyer asking for a new tab must still get one.
   const opened: string[] = [];
-  const p = render(screens.purchaseHistory({ keepsNewCodes: true,
+  const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true,
     rows: historyRows([record({ orderId: "inv_x", status: "open" })]),
     onOpen: (id) => opened.push(id), onStart: noop,
   }));
@@ -735,7 +735,7 @@ domTest("screens: a history row states its status beside the title, not on a lin
   // The status is one short phrase. Given its own row it turned two lines of
   // fact into a three-line card, which is most of what made the list feel
   // empty and tall.
-  const p = render(screens.purchaseHistory({ keepsNewCodes: true,
+  const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true,
     rows: historyRows([
       record({ orderId: "a", status: "paid", code: HELD_CODE }),
       record({ orderId: "b", status: "open" }),
@@ -768,7 +768,7 @@ domTest("screens: the history list prints a code only on a paid entry that holds
     record({ orderId: "c", status: "expired", code: "SXB-EXPD0-EXPD0-EXPD0-EXPD0" }),
     record({ orderId: "d", status: "paid" }),
   ];
-  const p = render(screens.purchaseHistory({ keepsNewCodes: true, rows: historyRows(entries), onOpen: noop, onStart: noop }));
+  const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows: historyRows(entries), onOpen: noop, onStart: noop }));
   const rows = p.all("li.entry");
   assert.equal(rows.length, 4);
   assert.ok(rows[0]!.textContent.includes(HELD_CODE));
@@ -787,14 +787,33 @@ domTest("screens: the history list prints a code only on a paid entry that holds
     assert.equal(link.getAttribute("href"), `?order=${entries[i]!.orderId}`,
       "[ Open ] is the only invoice id rendered, and it is a link");
   }
-  // [ Forget everything on this device ] is an action on the device and not on
-  // this list, and it is in the menu, which every screen has.
-  assert.ok(!p.textContent.includes("Forget everything on this device"),
-    "the list must not carry the control that empties it");
+  // [ Forget everything on this device ] sits at the foot of this list, under the last code, where
+  // a buyer deciding to wipe the device looks — no longer in the menu on every screen.
+  const forgetLine = p.all("p.forget-line")[0];
+  assert.ok(forgetLine !== undefined, "the list carries the wipe control at its foot");
+  const forget = forgetLine.all("button.danger")[0];
+  assert.ok(forget !== undefined && forget.textContent === "Forget everything on this device",
+    "and it is the wipe control");
+  assert.equal(p.all("ul.entries")[0]!.all("button.danger").length, 0, "it is below the list, not a row's control");
+});
+
+domTest("screens: the empty codes list offers no wipe control, since there is nothing to wipe", () => {
+  const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows: [], onOpen: noop, onStart: noop }));
+  assert.ok(!p.textContent.includes("Forget everything on this device"), "nothing bought, nothing to forget");
+});
+
+domTest("screens: the wipe control at the foot of the codes list calls back", () => {
+  let wiped = 0;
+  const p = render(screens.purchaseHistory({
+    onForget: () => { wiped += 1; }, keepsNewCodes: true,
+    rows: historyRows([record({ orderId: "a", status: "paid", code: HELD_CODE })]), onOpen: noop, onStart: noop,
+  }));
+  p.all("button.danger")[0]!.click();
+  assert.equal(wiped, 1);
 });
 
 domTest("screens: a history list row is a receipt — badge, level, price, method and day", () => {
-  const p = render(screens.purchaseHistory({ keepsNewCodes: true,
+  const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true,
     rows: historyRows([record({
       orderId: "a", status: "paid", code: HELD_CODE,
       amount: 42000, currency: "usd", method: "xmr",
@@ -827,7 +846,7 @@ domTest("screens: the four the history list states are told apart by their own g
     record({ orderId: "c", status: "open" }),
     record({ orderId: "d", status: "expired" }),
   ]);
-  const drawn = render(screens.purchaseHistory({ keepsNewCodes: true, rows, onOpen: noop, onStart: noop })).all("li.entry");
+  const drawn = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows, onOpen: noop, onStart: noop })).all("li.entry");
   const status = (i: number): StubElement => drawn[i]!.all("span.status")[0]!;
   assert.deepEqual(drawn.map((_, i) => status(i).textContent),
     ["paid", "paid, and the code was not saved here", "waiting for payment", "this invoice expired"]);
@@ -842,7 +861,7 @@ domTest("screens: a row missing the method or the price shows what it has", () =
   // `orders()` validates `orderId` and `createdAt` and nothing else, so a
   // partial entry has to stay renderable rather than print `undefined` or
   // vanish from a list that is the only copy of what it names.
-  const p = render(screens.purchaseHistory({ keepsNewCodes: true,
+  const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true,
     rows: historyRows([
       record({ orderId: "old", status: "paid", code: HELD_CODE }),
       { orderId: "bare", badgeType: "", months: 0, createdAt: "not a date", status: "open" },
@@ -872,7 +891,7 @@ domTest("screens: a row missing the method or the price shows what it has", () =
 
 domTest("screens: the history list's Copy is offered only on a paid entry, and copies that entry's code", () => {
   copied.length = 0;
-  const p = render(screens.purchaseHistory({ keepsNewCodes: true,
+  const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true,
     rows: historyRows([record({ orderId: "a", status: "paid", code: HELD_CODE }), record({ orderId: "b", status: "open", code: "SXB-OPEN0" })]),
     onOpen: noop, onStart: noop,
   }));
@@ -883,7 +902,7 @@ domTest("screens: the history list's Copy is offered only on a paid entry, and c
 });
 
 domTest("screens: an empty store reads 'Nothing bought on this device'", () => {
-  const p = render(screens.purchaseHistory({ keepsNewCodes: true, rows: [], onOpen: noop, onStart: noop }));
+  const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows: [], onOpen: noop, onStart: noop }));
   assert.ok(p.textContent.includes("Nothing bought on this device"));
   assert.ok(p.textContent.includes("Choose your level"));
 });
@@ -955,7 +974,7 @@ domTest("screens: ACROSS EVERY UNPAID SCREEN, the code is absent from the WHOLE 
     ["the closed-window screen/none", render(screens.windowClosed({ order: expired, invoice: { status: "expired" }, onNewInvoice: noop }))],
     ["cardForm", render(screens.cardForm({ order: held, invoice: { status: "open", clientSecret: "cs" }, resumed: true, onNewInvoice: noop }))],
     ["detailsUnavailable", render(screens.detailsUnavailable({ order: held, onCheckAgain: noop, onNewInvoice: noop }))],
-    ["the history list", render(screens.purchaseHistory({ keepsNewCodes: true, rows: historyRows([record({ code: HELD_CODE }), record({ status: "expired", code: HELD_CODE })]), onOpen: noop, onStart: noop }))],
+    ["the history list", render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows: historyRows([record({ code: HELD_CODE }), record({ status: "expired", code: HELD_CODE })]), onOpen: noop, onStart: noop }))],
   ];
   // Attributes included: a `title`, `data-*`, `aria-label` or `href` carrying
   // the code is a tooltip and a screen-reader announcement, not a hidden field.
@@ -1231,10 +1250,10 @@ domTest("screens: the history list does not promise codes are kept where nothing
   // the same browser the code screen was taught not to lie to: this list is the session's own
   // memory, and it goes when the page does
   const rows = historyRows([record({ orderId: "a", status: "paid", code: HELD_CODE })]);
-  const kept = render(screens.purchaseHistory({ keepsNewCodes: true, rows, onOpen: noop, onStart: noop }));
+  const kept = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows, onOpen: noop, onStart: noop }));
   assert.ok(kept.textContent.includes("in this browser, and nowhere else"));
 
-  const losing = render(screens.purchaseHistory({ keepsNewCodes: false, rows, onOpen: noop, onStart: noop }));
+  const losing = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: false, rows, onOpen: noop, onStart: noop }));
   assert.ok(!losing.textContent.includes("in this browser, and nowhere else"),
     `nothing is kept, so nothing may say it is: ${losing.textContent.slice(0, 160)}`);
   assert.ok(losing.textContent.includes("cannot save anything new"));

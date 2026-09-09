@@ -3,7 +3,7 @@
 // asked to forget, without its code, which the wipe took.
 import { mock } from "node:test";
 import assert from "node:assert/strict";
-import { headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
+import { forgetControl, headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
 import { NOW, openReply, ORDER_ID, seededStorage } from "./open-order.js";
 import { CANCEL_INVOICE } from "../src/screens.js";
 
@@ -27,7 +27,7 @@ raceTest("main: a cancel answered after the wipe is not written back", async () 
   screenOf(app).all("button").find((b) => b.textContent === CANCEL_INVOICE)!.click();
 
   // no settle: the cancel is on the wire, and this is the wipe landing while it is
-  page.chrome.all("button.menu-item").find((b) => b.textContent === "Forget everything on this device")!.click();
+  forgetControl(page)!.click();
   assert.equal(storage.getItem("sxb.orders.v1"), null, "the wipe itself is immediate");
 
   await settle(10);

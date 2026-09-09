@@ -258,9 +258,44 @@ silently and nothing in this test suite would catch it. The policy the spec
 specifies:
 
 ```
-default-src 'self';
-script-src  'self' https://js.stripe.com https://*.js.stripe.com;
-frame-src   https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com;
-connect-src 'self' https://api.stripe.com;
-img-src     'self' https://*.stripe.com
+default-src     'self';
+script-src      'self' https://js.stripe.com https://*.js.stripe.com;
+frame-src       https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com;
+connect-src     'self' https://api.stripe.com;
+img-src         'self' https://*.stripe.com;
+frame-ancestors 'self' https://simplex.chat https://*.simplex.chat
+```
+
+`frame-ancestors` is what lets the site embed this app in an iframe while every other origin is
+refused (clickjacking). Drop the `simplex.chat` entries to forbid embedding entirely.
+
+## Embedding in the site
+
+The app runs standalone or inside an iframe on simplex.chat. It detects the frame
+(`window.self !== window.top`), points the wordmark at the site's own home on the top window, and
+speaks a small theme protocol so one switch drives both (`src/embed.ts`):
+
+- On load the frame posts `{ type: "simplex-embed-ready", theme }` to its parent.
+- The host posts `{ type: "simplex-theme", theme }` (theme is `light` | `dark` | `system`) to drive
+  the frame; the frame applies it only from a trusted origin (`https://simplex.chat` or a subdomain).
+- When the buyer uses the in-frame theme control, the frame echoes the same message back so the
+  host's own control stays in step.
+
+The host page hides its own navbar and frames the app full-bleed:
+
+```html
+<iframe id="badges" src="https://badges.simplex.chat/"
+        style="width:100%;height:100vh;border:0;display:block"></iframe>
+<script>
+  const frame = document.getElementById("badges");
+  const APP = "https://badges.simplex.chat";
+  // current site theme: "light" | "dark" | "system"
+  const send = (theme) => frame.contentWindow.postMessage({ type: "simplex-theme", theme }, APP);
+  window.addEventListener("message", (e) => {
+    if (e.origin !== APP) return;
+    if (e.data?.type === "simplex-embed-ready") send(currentSiteTheme());
+    if (e.data?.type === "simplex-theme") applySiteTheme(e.data.theme); // the in-frame toggle echoed back
+  });
+  // call send(theme) whenever the site's own theme control changes.
+</script>
 ```
