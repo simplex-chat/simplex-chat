@@ -297,7 +297,9 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
       Right (Right IssuedCode {badgeCodeId, badgeType, months}) -> do
         now <- badgeNow cc
         (grantUuid, issueUuid) <- (,) <$> randomId cc <*> randomId cc
-        -- a redemption always creates the purchase, so there is no ledger to lapse before granting
+        -- the purchase is created here, so there is no ledger to lapse
+        -- TODO [badges] a top-up grants onto an existing ledger, and must lapse before it or the
+        -- months it adds are counted from a start already in the past
         let granted = grantEntry now grantUuid months SCCode $ emptyEntry now badgeType
             issued = issueEntry now issueUuid granted
         fmap sequence (traverse (credentialForEntry key masterKey) issued) >>= \case
