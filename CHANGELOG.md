@@ -2,15 +2,12 @@
 
 ## Unreleased
 
-Wallet (in development, CLI only). A key on the device, so that a name bought
-later has an owner the app can still derive:
-- `/wallet create` creates one BIP-39 key per device and one BIP-44 account per
-  chat profile under it, `/wallet` shows the address that would own the next
-  name that profile buys, `/wallet import` and `/wallet export` move the key
-  with its recovery phrase.
-- A name key sits at `m/44'/60'/<profile>'/0/<name>`, which is ordinary BIP-44,
-  so the phrase reaches the same addresses in other wallets.
-- No signing, so nothing can be bought or edited yet.
+Wallet (in development, CLI only): creates the key that will own your SimpleX
+names, so a name you buy later has an owner this app can still derive. One key
+per device, one account per chat profile, each name at `m/44'/60'/<profile>'/0/<name>`
+(standard BIP-44, so your recovery phrase works in other wallets). `/wallet`
+shows the addresses, `/wallet import` and `/wallet export` move the key,
+`/wallet delete` removes it. You cannot buy a name yet.
 
 ## v6.5
 

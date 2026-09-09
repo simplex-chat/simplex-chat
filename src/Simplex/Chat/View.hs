@@ -189,16 +189,17 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRServiceResponse u resp -> ttyUser u ["service response: " <> viewJSON resp]
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
-  CRWallet u exists acc_ ->
-    ttyUser u $ case acc_ of
-      Just (acct, path, addr) ->
-        [ plain $ "wallet account " <> tshow acct,
-          plain $ "next name will be owned by " <> addr,
-          plain $ "  at " <> path
-        ]
-      Nothing
-        | exists -> ["wallet key on this device, but this profile has no account - add one with " <> highlight' "/wallet create"]
-        | otherwise -> ["no wallet key on this device - create one with " <> highlight' "/wallet create"]
+  CRWallet u exists accs
+    | not exists -> ttyUser u ["no wallet key on this device - create one with " <> highlight' "/wallet create"]
+    | otherwise ->
+        ttyUser u $
+          ("key 1" : concatMap accountRows accs)
+            <> ["this profile has no key yet - add one with " <> highlight' "/wallet create" | not (any (\(_, _, active, _) -> active) accs)]
+    where
+      accountRows (n, acct, active, keys) =
+        plain ("  account " <> tshow acct <> " (" <> n <> (if active then ", active" else "") <> ")")
+          : zipWith nameRow [0 :: Int ..] keys
+      nameRow k (path, addr) = plain $ "    name " <> tshow k <> "  " <> path <> "  " <> addr
   CRWalletPhrase u phrase ->
     ttyUser u
       [ "write this down - anyone who knows these words controls the names this key owns:",

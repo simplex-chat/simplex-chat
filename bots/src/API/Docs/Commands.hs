@@ -452,6 +452,7 @@ undocumentedCommands =
     "APIVerifyToken",
     "APIWallet",
     "APIWalletCreate",
+    "APIWalletDelete",
     "APIWalletExport",
     "APIWalletImport",
     "CheckChatRunning",

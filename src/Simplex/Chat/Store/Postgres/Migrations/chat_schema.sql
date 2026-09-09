@@ -1538,7 +1538,8 @@ ALTER TABLE test_chat_schema.users ALTER COLUMN user_id ADD GENERATED ALWAYS AS 
 CREATE TABLE test_chat_schema.wallet_seeds (
     wallet_seed_id bigint NOT NULL,
     seed bytea NOT NULL,
-    next_account_index bigint DEFAULT 0 NOT NULL
+    next_account_index bigint DEFAULT 0 NOT NULL,
+    single_seed smallint DEFAULT 1 NOT NULL
 );
 
 
@@ -1914,6 +1915,11 @@ ALTER TABLE ONLY test_chat_schema.users
 
 ALTER TABLE ONLY test_chat_schema.wallet_seeds
     ADD CONSTRAINT wallet_seeds_pkey PRIMARY KEY (wallet_seed_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.wallet_seeds
+    ADD CONSTRAINT wallet_seeds_single_seed_key UNIQUE (single_seed);
 
 
 

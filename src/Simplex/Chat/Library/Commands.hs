@@ -58,8 +58,8 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Store.Wallets (boundAccount, deviceSeed, getOrCreateAccountRef)
-import Simplex.Chat.Wallet (AccountRef (..), accountAddress, deriveNameKey, importRecoveryKey, newSeed, recoveryKeyPhrase, renderNameKeyPath)
+import Simplex.Chat.Store.Wallets (deleteSeed, getBoundAccount, getDeviceSeed, getOrCreateAccountRef, getSeedAccounts, importSeed)
+import Simplex.Chat.Wallet (NameIndex, WalletSeed (..), accountAddress, deriveNameKey, importRecoveryKey, newSeed, recoveryKeyPhrase, renderNameKeyPath)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -1491,34 +1491,41 @@ processChatCommand cxt nm = \case
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
-  -- Read-only: a profile is never given keys as a side effect of asking which
-  -- address it has.
   APIWallet -> withUser $ \user -> do
-    exists <- isJust <$> withFastStore' deviceSeed
-    acc_ <- withFastStore' $ \db -> boundAccount db user
-    -- name index 0: with no purchases yet the next name is always the first
-    a <- forM acc_ $ \(seed, AccountRef {arIndex}) -> do
-      acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveNameKey seed arIndex 0
-      pure (arIndex, renderNameKeyPath arIndex 0, tshow (accountAddress acc))
-    pure $ CRWallet user exists a
-  -- Creates the device key on first use, and this profile's account under it.
-  -- A second profile lands on its own account index rather than sharing one.
+    seed_ <- withFastStore' getDeviceSeed
+    accs <- case seed_ of
+      Nothing -> pure []
+      Just seed -> do
+        -- a hidden profile is left out, as it is by /users
+        as <- filter (\(_, _, active, hidden) -> active || not hidden) <$> withFastStore' (\db -> getSeedAccounts db (wsId seed))
+        forM as $ \(n, acct, active, _) -> do
+          keys <- forM [0 .. walletNamesShown - 1] $ \k -> do
+            acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveNameKey seed acct k
+            pure (renderNameKeyPath acct k, tshow (accountAddress acc))
+          pure (n, acct, active, keys)
+    pure $ CRWallet user (isJust seed_) accs
   APIWalletCreate -> withUser $ \user -> do
     g <- asks random
-    void $ withFastStore' $ \db -> getOrCreateAccountRef db user (atomically $ newSeed MS256 g)
+    entropy <- atomically $ newSeed MS256 g
+    void $ withFastStore' $ \db -> getOrCreateAccountRef db user entropy
     processChatCommand cxt nm APIWallet
-  -- One key per device: importing onto a device that already has one would make
-  -- the addresses it shows depend on which key was picked.
   APIWalletImport phrase -> withUser $ \user -> do
-    exists <- isJust <$> withFastStore' deviceSeed
-    when exists $ throwCmdError "this device already has a wallet key"
-    entropy <- either (throwCmdError . ("wallet: " <>)) pure $ importRecoveryKey (encodeUtf8 phrase)
-    void $ withFastStore' $ \db -> getOrCreateAccountRef db user (pure entropy)
+    entropy <- either (const $ throwCmdError "bad recovery phrase") pure $ importRecoveryKey (encodeUtf8 phrase)
+    r <- withFastStore' $ \db -> importSeed db user entropy
+    when (isNothing r) $ throwCmdError "this device already has a wallet key"
     processChatCommand cxt nm APIWallet
   APIWalletExport -> withUser $ \user -> do
-    seed <- withFastStore' deviceSeed >>= maybe (throwCmdError "no wallet key on this device") pure
+    (seed, _) <- withFastStore' (\db -> getBoundAccount db user) >>= maybe (throwCmdError noKeyError) pure
     phrase <- either (throwCmdError . ("wallet: " <>)) pure $ recoveryKeyPhrase seed
     pure $ CRWalletPhrase user (safeDecodeUtf8 phrase)
+  APIWalletDelete confirmWord -> withUser $ \user -> do
+    seed <- withFastStore' getDeviceSeed >>= maybe (throwCmdError noKeyError) pure
+    phrase <- either (throwCmdError . ("wallet: " <>)) pure $ recoveryKeyPhrase seed
+    case reverse . T.words $ safeDecodeUtf8 phrase of
+      w : _ | w == confirmWord -> do
+        withFastStore' $ \db -> deleteSeed db (wsId seed)
+        processChatCommand cxt nm APIWallet
+      _ -> throwCmdError "to confirm, pass the last word of the recovery phrase"
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db cxt user contactId
@@ -5455,6 +5462,13 @@ withExpirationDate globalTTL chatItemTTL action = do
   let ttl = fromMaybe globalTTL chatItemTTL
   when (ttl > 0) $ action $ addUTCTime (-1 * fromIntegral ttl) currentTs
 
+-- | Name keys shown per profile by /wallet, to check derivation against other wallets.
+walletNamesShown :: NameIndex
+walletNamesShown = 2
+
+noKeyError :: String
+noKeyError = "no wallet key for this profile - create one with /wallet create"
+
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
@@ -5576,6 +5590,7 @@ chatCommandP =
       "/wallet create" $> APIWalletCreate,
       "/wallet import " *> (APIWalletImport <$> textP),
       "/wallet export" $> APIWalletExport,
+      "/wallet delete " *> (APIWalletDelete <$> textP),
       "/wallet" $> APIWallet,
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),

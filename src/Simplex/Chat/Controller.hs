@@ -421,6 +421,7 @@ data ChatCommand
   | APIWalletCreate
   | APIWalletImport {recoveryPhrase :: Text}
   | APIWalletExport
+  | APIWalletDelete {confirmWord :: Text}
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
@@ -746,6 +747,11 @@ allowRemoteCommand = \case
   DeleteRemoteCtrl _ -> False
   ExecChatStoreSQL _ -> False
   ExecAgentStoreSQL _ -> False
+  APIWallet -> False
+  APIWalletCreate -> False
+  APIWalletImport _ -> False
+  APIWalletExport -> False
+  APIWalletDelete _ -> False
   _ -> True
 
 data RelayConnectionResult = RelayConnectionResult
@@ -847,7 +853,7 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
-  | CRWallet {user :: User, walletKeyExists :: Bool, walletAccount :: Maybe (AccountIndex, Text, Text)}
+  | CRWallet {user :: User, walletKeyExists :: Bool, walletAccounts :: [(Text, AccountIndex, Bool, [(Text, Text)])]}
   | CRWalletPhrase {user :: User, recoveryPhrase :: Text}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}

@@ -2,12 +2,12 @@
 
 -- | The wallet: BIP-39 seeds, and the keys derived from them.
 --
---   * __seed__ — BIP-39 entropy. Generic, /not/ name-specific.
---   * __account__ — a profile's slot in a seed, BIP-44 account index @i@.
---   * __name key__ — @m\/44'\/60'\/i'\/0\/k@: one key per name, at BIP-44
+--   * __seed__: BIP-39 entropy. Generic, /not/ name-specific.
+--   * __account__: a profile's slot in a seed, BIP-44 account index @i@.
+--   * __name key__: @m\/44'\/60'\/i'\/0\/k@: one key per name, at BIP-44
 --     address index @k@ under the profile that buys it. This is what the
 --     registry records as the name's owner.
---   * __wallet__ — this module: creation and derivation.
+--   * __wallet__: this module, creation and derivation.
 --
 -- One key per name, not one per profile. A per-profile key would mean exporting
 -- it hands over every name that profile owns, and would put every name's signed
@@ -91,7 +91,7 @@ instance Show WalletAccount where
   show a = "WalletAccount " <> show (waRef a) <> " <redacted>"
 
 -- | Fresh seed entropy. The caller stores it; this module never persists.
--- A 25th-word passphrase is deliberately not used — it would be a second secret
+-- A 25th-word passphrase is deliberately not used: it would be a second secret
 -- to back up.
 newSeed :: B39.MnemonicStrength -> TVar ChaChaDRG -> STM ByteString
 newSeed strength g = B39.mnemonicToEntropy <$> B39.randomMnemonic strength g
@@ -106,7 +106,7 @@ importRecoveryKey phrase = B39.mnemonicToEntropy <$> B39.parseMnemonic phrase
 recoveryKeyPhrase :: WalletSeed -> Either String ByteString
 recoveryKeyPhrase s = B39.mnemonicPhrase <$> B39.entropyToMnemonic (wsEntropy s)
 
--- | @m\/44'\/60'\/i'\/0\/k@ — the standard BIP-44 layout, with the profile at
+-- | @m\/44'\/60'\/i'\/0\/k@ is the standard BIP-44 layout, with the profile at
 -- the account level and the name at the address level. Nothing here is a custom
 -- path, so profile @i@'s names are the account list an ordinary Ethereum wallet
 -- would show for that account.

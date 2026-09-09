@@ -223,20 +223,24 @@ walletHelpInfo :: [StyledString]
 walletHelpInfo =
   map
     styleMarkdown
-    [ green "Your wallet key:",
-      indent <> highlight "/wallet         " <> " - the address that would own the next name you buy",
-      indent <> highlight "/wallet create  " <> " - create the key, and this profile's account under it",
-      indent <> highlight "/wallet import  " <> " <phrase> - use a key you already have",
-      indent <> highlight "/wallet export  " <> " - the recovery phrase, to write down",
+    [ green "Wallet commands:",
+      indent <> highlight "/wallet                " <> " - your key, and the addresses it derives",
+      indent <> highlight "/wallet create         " <> " - create your key, or add this profile to it",
+      indent <> highlight "/wallet import <phrase>" <> " - use a key you already have",
+      indent <> highlight "/wallet export         " <> " - show your recovery phrase",
+      indent <> highlight "/wallet delete <word>  " <> " - delete the key, confirmed by the last word of the phrase",
       "",
-      "One key per device, and one account per chat profile under it. A name gets",
-      "its own key at " <> highlight "m/44'/60'/<profile>'/0/<name>" <> ". That is ordinary BIP-44,",
-      "so importing the phrase into another wallet reaches the same addresses.",
+      "Please note: this is in development. You cannot buy a name yet.",
       "",
-      "Anyone who knows a recovery phrase controls the names it owns. The risk is",
-      "theft, not loss.",
+      "One key per device, one account per chat profile. Each name gets its own",
+      "key at " <> highlight "m/44'/60'/<profile>'/0/<name>" <> ". This is standard BIP-44, so your",
+      "phrase works in other wallets.",
       "",
-      "Please note: this is in development. Nothing can be bought or signed yet."
+      "The key is stored in the chat database. It is only encrypted if you set a",
+      "database passphrase with " <> highlight "/db encrypt" <> ", and it is included in " <> highlight "/db export" <> ".",
+      "",
+      "Anyone who has your recovery phrase controls your names. Keep it secret,",
+      "and keep a copy."
     ]
 
 incognitoHelpInfo :: [StyledString]

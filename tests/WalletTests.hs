@@ -6,11 +6,10 @@ module WalletTests where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Control.Monad (replicateM_)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft)
-import Simplex.Chat.Help (walletHelpInfo)
+import Data.List (intersect, nub)
 import Simplex.Chat.Wallet (SeedId (..), WalletSeed (..), accountAddress, deriveNameKey, importRecoveryKey, recoveryKeyPhrase, renderNameKeyPath)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
@@ -49,19 +48,21 @@ walletDerivationTests = do
 
 walletTests :: SpecWith TestParams
 walletTests = do
-  it "creates no key until asked, then shows the next name's address" testWalletCreate
-  it "the key and the address come back after a restart" testWalletPersists
-  it "a second profile gets its own account" testWalletSecondProfile
+  it "creates no key until asked, then shows the derived addresses" testWalletCreate
+  it "the key and the addresses come back after a restart" testWalletPersists
+  it "a second profile gets its own account, on the same key" testWalletSecondProfile
   it "imports a phrase, exports it, and refuses a second import" testWalletImport
+  it "deletes the key only with the last word of the phrase" testWalletDelete
 
--- | The address a name would be bought at, and the path to reach it from the
--- phrase. Returned so tests can compare addresses without pinning a random one.
-nextNameAddress :: HasCallStack => TestCC -> Int -> IO String
-nextNameAddress cc acct = do
-  cc <## ("wallet account " <> show acct)
-  addr <- getTermLine cc
-  cc <## ("  at m/44'/60'/" <> show acct <> "'/0/0")
-  pure addr
+-- | The derivation path and address of each name shown for a profile's account.
+accountRows :: HasCallStack => TestCC -> String -> Int -> IO [(String, String)]
+accountRows cc profile acct = do
+  cc <## ("  account " <> show acct <> " (" <> profile <> ")")
+  mapM (\_ -> nameRow <$> getTermLine cc) [0 .. 1 :: Int]
+  where
+    nameRow l = case words l of
+      ["name", _, path, addr] -> (path, addr)
+      _ -> error $ "unexpected wallet row: " <> l
 
 testWalletCreate :: HasCallStack => TestParams -> IO ()
 testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -71,48 +72,75 @@ testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/wallet"
   alice <## "no wallet key on this device - create one with /wallet create"
   alice ##> "/wallet export"
-  alice <## "bad chat command: no wallet key on this device"
+  alice <## "bad chat command: no wallet key for this profile - create one with /wallet create"
   alice ##> "/wallet create"
-  _ <- nextNameAddress alice 0
-  alice ##> "/help wallet"
-  alice <## "Your wallet key:"
-  replicateM_ (length walletHelpInfo - 1) (getTermLine alice)
+  alice <## "key 1"
+  rows <- accountRows alice "alice, active" 0
+  -- one key per name: the two addresses differ and sit at consecutive indices
+  map fst rows `shouldBe` ["m/44'/60'/0'/0/0", "m/44'/60'/0'/0/1"]
+  length (nub $ map snd rows) `shouldBe` 2
 
 testWalletPersists :: HasCallStack => TestParams -> IO ()
 testWalletPersists ps = do
-  addr <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  rows <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
     alice ##> "/wallet create"
-    nextNameAddress alice 0
+    alice <## "key 1"
+    accountRows alice "alice, active" 0
   -- same database, new session: the seed has to come back from the DB, or the
   -- name bought at that address is unreachable
   withTestChat ps "alice" $ \alice -> do
     alice ##> "/wallet"
-    addr' <- nextNameAddress alice 0
-    addr' `shouldBe` addr
+    alice <## "key 1"
+    rows' <- accountRows alice "alice, active" 0
+    rows' `shouldBe` rows
 
 testWalletSecondProfile :: HasCallStack => TestParams -> IO ()
 testWalletSecondProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/wallet create"
-  addr <- nextNameAddress alice 0
+  alice <## "key 1"
+  rows <- accountRows alice "alice, active" 0
   alice ##> "/create user alisa"
   showActiveUser alice "alisa"
   alice ##> "/wallet"
-  alice <## "wallet key on this device, but this profile has no account - add one with /wallet create"
+  alice <## "key 1"
+  _ <- accountRows alice "alice" 0
+  alice <## "this profile has no key yet - add one with /wallet create"
   -- the same key, a different account, so the two profiles do not share names
   alice ##> "/wallet create"
-  addr' <- nextNameAddress alice 1
-  addr' `shouldNotBe` addr
+  alice <## "key 1"
+  _ <- accountRows alice "alice" 0
+  rows' <- accountRows alice "alisa, active" 1
+  null (map snd rows `intersect` map snd rows') `shouldBe` True
 
 testWalletImport :: HasCallStack => TestParams -> IO ()
 testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/wallet import " <> B.unpack testPhrase)
-  alice <## "wallet account 0"
-  alice <## "next name will be owned by 0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
-  alice <## "  at m/44'/60'/0'/0/0"
+  alice <## "key 1"
+  alice <## "  account 0 (alice, active)"
+  alice <## "    name 0  m/44'/60'/0'/0/0  0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
+  alice <## "    name 1  m/44'/60'/0'/0/1  0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0"
   alice ##> "/wallet export"
   alice <## "write this down - anyone who knows these words controls the names this key owns:"
   alice <## ("  " <> B.unpack testPhrase)
-  -- one key per device: a second would make the address shown depend on which
+  -- one key per device: a second would make the addresses shown depend on which
   -- key was picked
   alice ##> ("/wallet import " <> B.unpack testPhrase)
   alice <## "bad chat command: this device already has a wallet key"
+  -- a mistyped phrase says nothing about which word was wrong
+  alice ##> ("/wallet import " <> B.unpack (B.unwords $ replicate 12 "abandon"))
+  alice <## "bad chat command: bad recovery phrase"
+
+testWalletDelete :: HasCallStack => TestParams -> IO ()
+testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  alice ##> ("/wallet import " <> B.unpack testPhrase)
+  alice <## "key 1"
+  _ <- accountRows alice "alice, active" 0
+  alice ##> "/wallet delete abandon"
+  alice <## "bad chat command: to confirm, pass the last word of the recovery phrase"
+  alice ##> "/wallet delete about"
+  alice <## "no wallet key on this device - create one with /wallet create"
+  -- deleting unbinds the profile, so a real phrase can now be imported
+  alice ##> ("/wallet import " <> B.unpack testPhrase)
+  alice <## "key 1"
+  _ <- accountRows alice "alice, active" 0
+  pure ()
