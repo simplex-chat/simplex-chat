@@ -1478,7 +1478,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                 (Just (_, fileDescrText, fileExpires), Just msgId) -> do
                   partSize <- asks $ xftpDescrPartSize . config
                   let parts = splitFileDescr partSize fileDescrText
-                  pure . L.toList $ L.map (\fd -> XMsgFileDescr msgId fd fileExpires) parts
+                  pure . L.toList $ L.map (\fd -> XMsgFileDescr msgId fd fileExpires Nothing) parts
                 _ -> pure []
               let fileDescrVMs = map (VMUnsigned . ChatMessage senderVRange Nothing) fileDescrEvents
               pure $ map ((,) fwd) (contentVM : fileDescrVMs)

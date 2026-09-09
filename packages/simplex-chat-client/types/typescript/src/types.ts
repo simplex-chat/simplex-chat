@@ -2427,6 +2427,7 @@ export interface FileInvitation {
   fileConnReq?: string
   fileInline?: InlineFileMode
   fileDescr?: FileDescr
+  fileBadge?: BadgeProof
 }
 
 export enum FileProtocol {

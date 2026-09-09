@@ -295,7 +295,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
               where
                 splitText :: (Connection, SndFileTransfer, RcvFileDescrText) -> [(Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json))]
                 splitText (conn, _, rfdText) =
-                  map (\fileDescr -> (conn, (connOrGroupId, Nothing, XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires}))) (L.toList $ splitFileDescr partSize rfdText)
+                  map (\fileDescr -> (conn, (connOrGroupId, Nothing, XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires, fileBadge = Nothing}))) (L.toList $ splitFileDescr partSize rfdText)
             toMsgReq :: (Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)) -> SndMessage -> ChatMsgReq
             toMsgReq (conn, _) SndMessage {msgId, msgBody} =
               (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, (vrValue msgBody, [msgId]))
@@ -550,7 +550,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               let ct'' = ct' {activeConn = Just conn''} :: Contact
               case event of
                 XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
-                XMsgFileDescr sharedMsgId fileDescr fileExpires -> messageFileDescription ct'' sharedMsgId fileDescr fileExpires
+                XMsgFileDescr sharedMsgId fileDescr fileExpires _ -> messageFileDescription ct'' sharedMsgId fileDescr fileExpires
                 XMsgUpdate sharedMsgId mContent _ ttl live _msgScope _ -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live
                 XMsgDel sharedMsgId _ _ _ -> messageDelete ct'' sharedMsgId msg msgMeta
                 XMsgReact sharedMsgId _ _ reaction add -> directMsgReaction ct'' sharedMsgId reaction add msg msgMeta
@@ -1040,7 +1040,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 where
                   MsgContainer {scope, asGroup} = mc
               -- file description is always allowed, to allow sending files to support scope
-              XMsgFileDescr sharedMsgId fileDescr fileExpires -> groupMessageFileDescription gInfo' (Just m'') sharedMsgId fileDescr fileExpires
+              XMsgFileDescr sharedMsgId fileDescr fileExpires _ -> groupMessageFileDescription gInfo' (Just m'') sharedMsgId fileDescr fileExpires
               XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ ->
                 checkSendAsGroup asGroup_ $
                   memberCanSend (Just m'') msgScope $
@@ -3410,7 +3410,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           cleanupRosterTransfer gInfo (groupMemberId' fromMember)
           let relayHdr = if isUserGrpFwdRelay gInfo then Just sm else Nothing
           chSize <- asks $ fileChunkSize . config
-          let rosterFInv = FileInvitation {fileName = "roster", fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Just IFMSent, fileDescr = Nothing}
+          let rosterFInv = FileInvitation {fileName = "roster", fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Just IFMSent, fileDescr = Nothing, fileBadge = Nothing}
           -- transfer record + its scratch file in one transaction (file owned by the transfer, keyed per source)
           rft@RcvFileTransfer {fileId} <- withStore $ \db -> do
             transferId <- liftIO $ createRosterTransfer db gInfo (groupMemberId' fromMember) newVer fileDigest (groupMemberId' author) brokerTs relayHdr
@@ -3899,7 +3899,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               where
                 MsgContainer {scope} = mc
             -- file description is always allowed, to allow sending files to support scope
-            XMsgFileDescr sharedMsgId fileDescr fileExpires -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr fileExpires
+            XMsgFileDescr sharedMsgId fileDescr fileExpires _ -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr fileExpires
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ ->
               void $ memberCanSend author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_
             XMsgDel sharedMsgId memId scope_ _ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ False rcvMsg msgTs

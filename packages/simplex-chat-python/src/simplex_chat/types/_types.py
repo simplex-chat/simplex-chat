@@ -1712,6 +1712,7 @@ class FileInvitation(TypedDict):
     fileConnReq: NotRequired[str]
     fileInline: NotRequired["InlineFileMode"]
     fileDescr: NotRequired["FileDescr"]
+    fileBadge: NotRequired["BadgeProof"]
 
 FileProtocol = Literal["SMP", "XFTP", "LOCAL"]
 

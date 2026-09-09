@@ -2126,6 +2126,7 @@ NO_FILE:
 - fileConnReq: string?
 - fileInline: [InlineFileMode](#inlinefilemode)?
 - fileDescr: [FileDescr](#filedescr)?
+- fileBadge: [BadgeProof](#badgeproof)?
 
 
 ---

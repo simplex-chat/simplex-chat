@@ -683,7 +683,7 @@ getRcvFileTransfer_ db userId fileId = do
           (Just _, Just _) -> Just "" -- filePath marks files that are accepted from contact or, in this case, set by createRcvDirectFileTransfer
           _ -> Nothing
         ft senderDisplayName fileStatus =
-          let fileInvitation = FileInvitation {fileName, fileSize, fileDigest = fileDigest_, fileConnReq, fileInline, fileDescr = Nothing}
+          let fileInvitation = FileInvitation {fileName, fileSize, fileDigest = fileDigest_, fileConnReq, fileInline, fileDescr = Nothing, fileBadge = Nothing}
               cryptoArgs = CFArgs <$> fileKey <*> fileNonce
               xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId, agentRcvFileDeleted, userApprovedRelays}) <$> rfd_
            in RcvFileTransfer {fileId, xftpRcvFile, fileInvitation, fileStatus, fileType, rcvFileInline, senderDisplayName, chunkSize, cancelled, grpMemberId, cryptoArgs}

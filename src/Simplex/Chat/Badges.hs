@@ -232,8 +232,8 @@ instance StrEncoding ProofPresHeaderTag where
 data ProofPresHeader
   = PHTest ByteString
   | PHChat ByteString
-  | PHFileInv {chatBinding :: ByteString, fileName :: String, fileSize :: Int64}
-  | PHFileDescr {chatBinding :: ByteString, fileName :: String, fileSize :: Int64, descrHash :: ByteString, fileExpires :: Maybe UTCTime}
+  | PHFileInv {chatBinding :: ByteString, fileSize :: Int64}
+  | PHFileDescr {chatBinding :: ByteString, fileSize :: Int64, descrHash :: ByteString, fileExpires :: Maybe UTCTime}
   | PHUnknown Char ByteString
   deriving (Eq, Show)
   deriving (ToJSON, FromJSON) via (StrJSON "ProofPresHeader" ProofPresHeader)
@@ -242,21 +242,21 @@ instance StrEncoding ProofPresHeader where
   strEncode = \case
     PHTest nonce -> strEncode PHTestTag <> nonce
     PHChat binding -> strEncode PHChatTag <> binding
-    PHFileInv {chatBinding, fileName, fileSize} ->
-      strEncode PHFileInvTag <> smpEncode (chatBinding, fileName, fileSize)
-    PHFileDescr {chatBinding, fileName, fileSize, descrHash, fileExpires} ->
-      strEncode PHFileDescrTag <> smpEncode (chatBinding, fileName, fileSize, descrHash, utcToSystemTime <$> fileExpires)
+    PHFileInv {chatBinding, fileSize} ->
+      strEncode PHFileInvTag <> smpEncode (chatBinding, fileSize)
+    PHFileDescr {chatBinding, fileSize, descrHash, fileExpires} ->
+      strEncode PHFileDescrTag <> smpEncode (chatBinding, fileSize, descrHash, utcToSystemTime <$> fileExpires)
     PHUnknown c b -> strEncode (PHUnknownTag c) <> b
   strP =
     strP >>= \case
       PHTestTag -> PHTest <$> A.takeByteString
       PHChatTag -> PHChat <$> A.takeByteString
       PHFileInvTag -> do
-        (chatBinding, fileName, fileSize) <- smpP
-        pure PHFileInv {chatBinding, fileName, fileSize}
+        (chatBinding, fileSize) <- smpP
+        pure PHFileInv {chatBinding, fileSize}
       PHFileDescrTag -> do
-        (chatBinding, fileName, fileSize, descrHash, expires_) <- smpP
-        pure PHFileDescr {chatBinding, fileName, fileSize, descrHash, fileExpires = systemToUTCTime <$> expires_}
+        (chatBinding, fileSize, descrHash, expires_) <- smpP
+        pure PHFileDescr {chatBinding, fileSize, descrHash, fileExpires = systemToUTCTime <$> expires_}
       PHUnknownTag c -> PHUnknown c <$> A.takeByteString
 
 proofPresHeaderAccepted :: ProofPresHeader -> Bool

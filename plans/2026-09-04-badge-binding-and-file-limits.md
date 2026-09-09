@@ -68,8 +68,10 @@ data ProofPresHeader
 ```
 
 - `PHChat` holds the chat binding.
-- `PHFileInv` holds the chat binding, the file name and the file size from the invitation.
-- `PHFileDescr` holds the same three values, then the shared description hash (section 8) and the file expiration.
+- `PHFileInv` holds the chat binding and the file size from the invitation.
+- `PHFileDescr` holds the same two values, then the shared description hash (section 8) and the file expiration.
+
+The file name is not part of either header: `validateFileInvitation` replaces it with a name valid on the local file system, and history re-sends the stored name.
 
 One constructor serves every chat type, because the chat binding already encodes the type of chat in its first byte. Each constructor gets a tag character in `ProofPresHeaderTag` and an encoding in the `StrEncoding` instance, in the same style as `PHTest`. The file expiration is optional, because a server may grant none; it is encoded as `strEncode` of the time, or one fixed byte when absent. The badge's own expiry is a time and is encoded with `strEncode` in the disclosed messages (`badgeInfoMessages`, `Badges.hs:296`).
 
@@ -81,7 +83,7 @@ One constructor serves every chat type, because the chat binding already encodes
 
 **The key check.** A p2p binding contains the sender's member key. The receiver may know that member's key from the introduction or from a signed message, or may not know it yet. If the receiver knows a key and it differs from the key in the header, the proof fails. Otherwise the key in the header is used for this verification and never stored; keys are stored only by the introduction and by `storeMemberKey`.
 
-The file headers are checked the same way and then further: `PHFileInv` must also name the file's name and size as received; `PHFileDescr` must also hold the hash of the received description and the expiration received with it.
+The file headers are checked the same way and then further: `PHFileInv` must also name the file size as received; `PHFileDescr` must also hold the hash of the received description and the expiration received with it.
 
 `PHUnknown` fails every check. A proof from a released client, which presents `PHTest` in groups, fails in groups; no badge has been issued yet, so nothing in use is affected. A released client that receives one of the new headers verifies it, because its `proofPresHeaderAccepted` admits unknown tags and BBS verification runs with the header bytes as sent. No protocol version change is needed.
 
@@ -137,9 +139,9 @@ Standalone uploads do not apply badge limits. `APIUploadStandaloneFile` keeps th
 
 **Type.** `FileInvitation` (`Types.hs:1555`) gains `fileBadge :: Maybe BadgeProof`. The JSON instance omits absent fields, so a released client ignores it.
 
-**Generation.** In `xftpSndFileTransfer_` (`Internal.hs:438`), when the file is above the default limit and the send is not incognito, generate a proof with `PHFileInv` from the chat binding — `CBDirect` with the ratchet hash for a contact, the group binding for a group — the file name and the file size, and set it in the invitation. The function gains the binding as an argument; the group send path computes it from the group, and the direct send path obtains the ratchet hash of the contact's connection from the agent, as `shareChatBinding` does (`Commands.hs:4685`).
+**Generation.** In `xftpSndFileTransfer_` (`Internal.hs:438`), when the file is above the default limit and the send is not incognito, generate a proof with `PHFileInv` from the chat binding — `CBDirect` with the ratchet hash for a contact, the group binding for a group — and the file size, and set it in the invitation. The function gains the binding as an argument; the group send path computes it from the group, and the direct send path obtains the ratchet hash of the contact's connection from the agent, as `shareChatBinding` does (`Commands.hs:4685`).
 
-**Verification.** A file invitation arrives at three places: `processFileInvitation` (`Subscriber.hs:1957`), for a file in a content message in a direct chat or a group, called with a closure that creates the transfer; `processGroupFileInvitation'` (`:2437`), for the older `XFile` event in a group; and `processFileInvitation'` (`:2422`) for `XFile` in a direct chat. All call `validateFileInvitation`, which replaces the file name with a name valid on the local file system. The proof is checked before that, against the name as received, and against the sender: the connection's ratchet hash for a contact, the group and member for a member. The result is the decision below, passed to `createRcvFileTransfer` or `createRcvGroupFileTransfer`, which gain it as an argument and write it.
+**Verification.** A file invitation arrives at three places: `processFileInvitation` (`Subscriber.hs:1957`), for a file in a content message in a direct chat or a group, called with a closure that creates the transfer; `processGroupFileInvitation'` (`:2437`), for the older `XFile` event in a group; and `processFileInvitation'` (`:2422`) for `XFile` in a direct chat. The proof is checked against the file size and against the sender: the connection's ratchet hash for a contact, the group and member for a member. The result is the decision below, passed to `createRcvFileTransfer` or `createRcvGroupFileTransfer`, which gain it as an argument and write it.
 
 **The decision.** A file is either allowed or prohibited; when prohibited, the apps need the limit that applied and why.
 
@@ -197,7 +199,7 @@ Because the hash ignores replicas, one proof is valid for every recipient's desc
 
 For a file received from another member, `invCompleteDescr` sets `fileBadge` from the proof `rcv_files.badge_inv_proof_id` references, and the last description part gets the proof `rcv_files.badge_descr_proof_id` references. Both are bound to the original sender, and history names the original sender (`fwdSender`, `:1466`), so the new member verifies them against that member's binding. For the host's own files both proofs are generated afresh from the credential, with the same headers.
 
-`fileExpired` (`:1439-1443`) decides which files history re-sends by the item's age against `rcvFilesTTL`, two days, and ignores the granted expiration stored with the file. That check should use the stored `fileExpires`; it is noted here because it bounds when the stored proofs are read. The invitation proof names the file name as sent; `validateFileInvitation` may have changed the stored name on a platform where it was not valid, in which case the re-sent invitation fails the name check for that file.
+`fileExpired` (`:1439-1443`) decides which files history re-sends by the item's age against `rcvFilesTTL`, two days, and ignores the granted expiration stored with the file. That check should use the stored `fileExpires`; it is noted here because it bounds when the stored proofs are read.
 
 ## 10. Forwarding
 
