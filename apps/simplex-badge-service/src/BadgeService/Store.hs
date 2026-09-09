@@ -129,8 +129,6 @@ getPurchaseByKey db key =
     toPurchase (badgePurchaseId, Binary mk, badgeType) =
       ServicePurchase {badgePurchaseId, masterKey = BadgeMasterKey mk, badgeType}
 
--- | 'Nothing' also when the newest row has a type this version cannot rebuild, which for the
--- service means never: it writes only code, badge and lapse, all of which a tag alone rebuilds.
 getLedgerTip :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
 getLedgerTip db purchaseId =
   maybeFirstRow' Nothing toEntry $
@@ -195,8 +193,7 @@ getCurrentIssuance db purchaseId now = do
     [Only (Binary bs)] -> J.decodeStrict' bs
     _ -> Nothing
 
--- | The issuance names the entry that spends the month and the one before it, which together give
--- the period: the predecessor's balanceStartTs to the issued entry's own.
+-- | The issuance is the entry that spends the month and the one before it, which give the period.
 -- TODO [badges] also write the reference columns - payment_id, charge_id, from_purchase_id,
 -- to_purchase_id - for the entry types that carry one. Only the tag is written today, so a
 -- payment, charge, transferIn, upgrade or transferOut row would be stored without its reference.

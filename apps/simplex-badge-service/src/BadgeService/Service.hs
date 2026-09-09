@@ -268,23 +268,15 @@ badgeServiceResponse key cc sigKey reqData = case J.fromJSON (J.Object reqData) 
 badgeNow :: ChatController -> IO UTCTime
 badgeNow ChatController {config = ChatConfig {badgeCurrentTime}} = badgeCurrentTime
 
--- | Made here rather than by the writer, so an entry can be named - and a credential signed
--- against it - before any of it is written.
 randomId :: ChatController -> IO T.Text
 randomId cc = safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes 16 (random cc))
 
--- | Signs before anything is written, so a signing failure leaves the month still due. The
--- credential comes back paired with the entry it was signed for, so that entry cannot reach the
--- writer without it. The type and the expiry are the entry's own, never a caller's proposal.
-signIssuedEntry :: BadgeIssuerKey -> BadgeMasterKey -> Maybe StatementEntry -> IO (Either String (Maybe (StatementEntry, BadgeCredential)))
-signIssuedEntry BadgeIssuerKey {keyIdx, secretKey} masterKey = \case
-  Nothing -> pure $ Right Nothing
-  Just e@StatementEntry {balanceStartTs = periodEnd, balanceBadgeType} -> do
-    let badgeInfo = BadgeInfo {badgeType = balanceBadgeType, badgeExpiry = endOfMondayAfter periodEnd, badgeExtra = ""}
-    fmap (Just . (e,)) <$> issueBadge keyIdx secretKey (VerifiedBadgeRequest BadgeRequest {masterKey, badgeInfo})
+-- | The badge type and the expiry are the entry's own, never a caller's proposal.
+signIssuedEntry :: BadgeIssuerKey -> BadgeMasterKey -> StatementEntry -> IO (Either String (StatementEntry, BadgeCredential))
+signIssuedEntry BadgeIssuerKey {keyIdx, secretKey} masterKey e@StatementEntry {balanceStartTs = periodEnd, balanceBadgeType} = do
+  let badgeInfo = BadgeInfo {badgeType = balanceBadgeType, badgeExpiry = endOfMondayAfter periodEnd, badgeExtra = ""}
+  fmap (e,) <$> issueBadge keyIdx secretKey (VerifiedBadgeRequest BadgeRequest {masterKey, badgeInfo})
 
--- | Adds the predecessor the writer needs for the period, which runs from that entry's
--- balanceStartTs to the issued entry's own.
 issuanceOf :: StatementEntry -> Maybe (StatementEntry, BadgeCredential) -> Maybe (StatementEntry, StatementEntry, BadgeCredential)
 issuanceOf previous = fmap $ \(issued, credential) -> (previous, issued, credential)
 
@@ -307,7 +299,7 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
         -- a redemption always creates the purchase, so there is no ledger to lapse before granting
         let granted = grantEntry now grantUuid months SCCode $ emptyEntry now badgeType
             issued = issueEntry now issueUuid granted
-        signIssuedEntry key masterKey issued >>= \case
+        fmap sequence (traverse (signIssuedEntry key masterKey) issued) >>= \case
           Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
           Right signed -> do
             -- re-read: a concurrent redemption may have landed while this one was signing
@@ -353,7 +345,7 @@ issueBadgeCmd key cc purchaseKey BadgeBalance {lastEntry} = do
           lapsed = lapseEntry now lapseUuid tipEntry
           current = fromMaybe tipEntry lapsed
           issued = issueEntry now issueUuid current
-      signIssuedEntry key masterKey issued >>= \case
+      fmap sequence (traverse (signIssuedEntry key masterKey) issued) >>= \case
         Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
         Right signed -> do
           r <- withDB "issueBadge" cc $ \db -> liftIO $ do

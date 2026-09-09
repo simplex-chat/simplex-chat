@@ -289,8 +289,7 @@ storeBadgeStatement db badgePurchaseId tip entries now =
           SEDebit SDUnknown {} -> True
           _ -> False
 
--- | The balance is the last row, on both sides; nothing derives it by summing the history. It is
--- also the entry the client asserts to the service, and is 'Nothing' before the first statement.
+-- | The balance is the last row; nothing derives it by summing the history.
 getBadgeLedgerLastEntry :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
 getBadgeLedgerLastEntry db badgePurchaseId =
   maybeFirstRow' Nothing toEntry $

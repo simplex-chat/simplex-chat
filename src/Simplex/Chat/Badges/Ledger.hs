@@ -41,8 +41,7 @@ paidThrough e = monthAfter e (balanceMonths e)
 elapsedMonths :: UTCTime -> StatementEntry -> Int
 elapsedMonths t e = length $ takeWhile (\m -> monthAfter e m <= t) [1 .. balanceMonths e]
 
--- | The state a purchase with no ledger is in: no months, and a run starting now. Never written -
--- it is only what the first entry of that purchase is computed from.
+-- | What a purchase with no ledger starts from: no months, and a run starting now.
 emptyEntry :: UTCTime -> BadgeType -> StatementEntry
 emptyEntry t badgeType =
   StatementEntry
@@ -57,7 +56,7 @@ emptyEntry t badgeType =
       entryType = SECredit SCOpening
     }
 
--- | Writes off the months that have passed. Runs before every grant and issue.
+-- | Writes off the months that have passed.
 lapseEntry :: UTCTime -> Text -> StatementEntry -> Maybe StatementEntry
 lapseEntry t entryId e@StatementEntry {balanceMonths}
   | k == 0 = Nothing
@@ -86,9 +85,7 @@ grantEntry t entryId n credit e@StatementEntry {balanceMonths, balanceStartTs}
     lapsed = balanceMonths == 0 && t > balanceStartTs
     credited = e {entryId, createdAt = t, changeMonths = n, entryType = SECredit credit}
 
--- | Runs after lapseEntry. Nothing when the balance is empty, or when it starts in the future
--- because the current month is already issued - the caller then replies with the stored credential.
--- The period issued runs from the previous entry's balanceStartTs to this one's.
+-- | The period issued runs from the previous entry's balanceStartTs to this one's.
 issueEntry :: UTCTime -> Text -> StatementEntry -> Maybe StatementEntry
 issueEntry t entryId e@StatementEntry {balanceMonths, balanceStartTs}
   | balanceMonths <= 0 || balanceStartTs > t = Nothing
