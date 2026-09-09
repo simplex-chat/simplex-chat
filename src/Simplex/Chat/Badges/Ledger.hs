@@ -41,11 +41,12 @@ paidThrough e = monthAfter e (balanceMonths e)
 elapsedMonths :: UTCTime -> StatementEntry -> Int
 elapsedMonths t e = length $ takeWhile (\m -> monthAfter e m <= t) [1 .. balanceMonths e]
 
--- | What a purchase with no ledger starts from: no months, and a run starting now.
+-- | The seed for a purchase with no ledger yet: no months, and a run starting now.
 emptyEntry :: UTCTime -> BadgeType -> StatementEntry
 emptyEntry t badgeType =
   StatementEntry
-    { entryId = "",
+    { -- this entry is never stored, and every operation puts its own id on the entry it returns
+      entryId = "",
       changeMonths = 0,
       balanceMonths = 0,
       balanceStartTs = t,
