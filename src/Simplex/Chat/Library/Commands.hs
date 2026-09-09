@@ -58,7 +58,7 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Store.Wallets (deleteSeed, getBoundAccount, getDeviceSeed, getOrCreateAccountRef, getSeedAccounts, importSeed)
+import Simplex.Chat.Store.Wallets (deleteSeed, getDeviceSeed, getOrCreateAccountRef, getSeedAccounts, importSeed)
 import Simplex.Chat.Wallet (NameIndex, WalletSeed (..), accountAddress, deriveNameKey, importRecoveryKey, newSeed, recoveryKeyPhrase, renderNameKeyPath)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -1496,7 +1496,8 @@ processChatCommand cxt nm = \case
     accs <- case seed_ of
       Nothing -> pure []
       Just seed -> do
-        -- hidden profiles are left out, as they are by /users
+        -- hidden profiles are left out, as they are by /users, but the gap in
+        -- account indexes still shows that one exists
         as <- filter (\(_, _, active, hidden) -> active || not hidden) <$> withFastStore' (\db -> getSeedAccounts db (wsId seed))
         forM as $ \(n, acct, active, _) -> do
           keys <- forM [0 .. walletNamesShown - 1] $ \k -> do
@@ -1515,17 +1516,17 @@ processChatCommand cxt nm = \case
     when (isNothing r) $ throwCmdError "this device already has a wallet key"
     processChatCommand cxt nm APIWallet
   APIWalletExport -> withUser $ \user -> do
-    (seed, _) <- withFastStore' (\db -> getBoundAccount db user) >>= maybe (throwCmdError noKeyError) pure
+    seed <- withFastStore' getDeviceSeed >>= maybe (throwCmdError noKeyError) pure
     phrase <- either (throwCmdError . ("wallet: " <>)) pure $ recoveryKeyPhrase seed
     pure $ CRWalletPhrase user (safeDecodeUtf8 phrase)
   APIWalletDelete confirmWord -> withUser $ \user -> do
     seed <- withFastStore' getDeviceSeed >>= maybe (throwCmdError noKeyError) pure
     phrase <- either (throwCmdError . ("wallet: " <>)) pure $ recoveryKeyPhrase seed
     case reverse . T.words $ safeDecodeUtf8 phrase of
-      w : _ | w == confirmWord -> do
+      w : _ | w == T.toLower confirmWord -> do
         withFastStore' $ \db -> deleteSeed db (wsId seed)
         processChatCommand cxt nm APIWallet
-      _ -> throwCmdError "to confirm, pass the last word of the recovery phrase"
+      _ -> throwCmdError "this deletes the wallet key for all profiles on this device, to confirm pass the last word of the recovery phrase"
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db cxt user contactId
@@ -5467,7 +5468,7 @@ walletNamesShown :: NameIndex
 walletNamesShown = 2
 
 noKeyError :: String
-noKeyError = "no wallet key for this profile"
+noKeyError = "no wallet key on this device"
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =

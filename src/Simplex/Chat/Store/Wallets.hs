@@ -6,7 +6,6 @@
 
 module Simplex.Chat.Store.Wallets
   ( getDeviceSeed,
-    getBoundAccount,
     getSeedAccounts,
     getOrCreateAccountRef,
     importSeed,

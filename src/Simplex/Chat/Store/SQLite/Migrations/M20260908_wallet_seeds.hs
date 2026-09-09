@@ -12,7 +12,8 @@ CREATE TABLE wallet_seeds (
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
   seed BLOB NOT NULL,                       -- BIP-39 entropy, 16-32 bytes
   -- known issue: after import this starts at 0, so a recovered device can
-  -- re-issue an account that already owns names
+  -- re-issue an account that already owns names, and profiles are bound in
+  -- the order they ask for a key, not the order they had
   next_account_index INTEGER NOT NULL DEFAULT 0,
   -- one key per device for now
   single_seed INTEGER NOT NULL DEFAULT 1 UNIQUE

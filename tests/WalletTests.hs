@@ -65,7 +65,7 @@ testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet"
   alice <## "no wallet key"
   alice ##> "/_wallet export"
-  alice <## "bad chat command: no wallet key for this profile"
+  alice <## "bad chat command: no wallet key on this device"
   alice ##> "/_wallet create"
   rows <- accountRows alice "alice, active" 0
   map fst rows `shouldBe` ["m/44'/60'/0'/0/0", "m/44'/60'/0'/0/1"]
@@ -86,11 +86,16 @@ testWalletSecondProfile :: HasCallStack => TestParams -> IO ()
 testWalletSecondProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create"
   rows <- accountRows alice "alice, active" 0
+  alice ##> "/_wallet export"
+  phrase <- getTermLine alice
   alice ##> "/create user alisa"
   showActiveUser alice "alisa"
   alice ##> "/_wallet"
   _ <- accountRows alice "alice" 0
   alice <## "this profile has no wallet key"
+  -- the key belongs to the device, so a profile without an account exports it too
+  alice ##> "/_wallet export"
+  alice <## phrase
   alice ##> "/_wallet create"
   _ <- accountRows alice "alice" 0
   rows' <- accountRows alice "alisa, active" 1
@@ -115,8 +120,8 @@ testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
   _ <- accountRows alice "alice, active" 0
   alice ##> "/_wallet delete abandon"
-  alice <## "bad chat command: to confirm, pass the last word of the recovery phrase"
-  alice ##> "/_wallet delete about"
+  alice <## "bad chat command: this deletes the wallet key for all profiles on this device, to confirm pass the last word of the recovery phrase"
+  alice ##> "/_wallet delete About"
   alice <## "no wallet key"
   -- deleting unbinds the profile, so a key can be imported again
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
