@@ -236,7 +236,8 @@ CREATE TABLE test_chat_schema.badge_ledger (
     from_purchase_id bigint,
     to_purchase_id bigint,
     entry_type_unknown smallint DEFAULT 0 NOT NULL,
-    entry_type_value text
+    entry_type_value text,
+    balance_checked smallint
 );
 
 
