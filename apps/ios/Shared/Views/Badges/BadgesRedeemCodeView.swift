@@ -40,6 +40,7 @@ private func formatBadgeCodeInput(_ s: String) -> String {
 struct BadgesRedeemCodeView: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
+    @AppStorage(DEFAULT_SUPPORTER_BANNER_SHOWN) private var supporterBannerShown = false
     @State private var code = ""
     @State private var canonicalCode: String? = nil
     @State private var submitting = false
@@ -184,6 +185,7 @@ struct BadgesRedeemCodeView: View {
                         failure = .codeUsed
                     } else {
                         redeemed = RedeemedBadge(badgeState: badgeState)
+                        supporterBannerShown = true
                         code = ""
                         canonicalCode = nil
                     }
