@@ -125,6 +125,7 @@ chatDirectTests = do
     it "signed service request delivers the verified key" testSignedServiceRequest
     it "service request dropped when service processing is off" testServiceRequestDroppedWhenOff
     it "service request to a non-DR address fails fast" testServiceRequestNonDRAddress
+    it "service request to an address upgraded by key rotation" testServiceRequestUpgradedAddress
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
     it "delete user with chat tags" testDeleteUserChatTags
@@ -1921,9 +1922,6 @@ testServiceRequestResponse =
           replyConnId <- serviceReplyConnId alice
           alice <## ("service reply sent, connection id: " <> replyConnId)
       )
-  where
-    serviceRequestId cc = getTermLine cc >>= maybe (serviceRequestId cc) pure . stripPrefix "service request "
-    serviceReplyConnId cc = getTermLine cc >>= maybe (serviceReplyConnId cc) pure . stripPrefix "service reply accepted, connection id: "
 
 testSignedServiceRequest :: HasCallStack => TestParams -> IO ()
 testSignedServiceRequest =
@@ -1951,9 +1949,12 @@ testSignedServiceRequest =
           replyConnId <- serviceReplyConnId alice
           alice <## ("service reply sent, connection id: " <> replyConnId)
       )
-  where
-    serviceRequestId cc = getTermLine cc >>= maybe (serviceRequestId cc) pure . stripPrefix "service request "
-    serviceReplyConnId cc = getTermLine cc >>= maybe (serviceReplyConnId cc) pure . stripPrefix "service reply accepted, connection id: "
+
+serviceRequestId :: HasCallStack => TestCC -> IO String
+serviceRequestId cc = getTermLine cc >>= maybe (serviceRequestId cc) pure . stripPrefix "service request "
+
+serviceReplyConnId :: HasCallStack => TestCC -> IO String
+serviceReplyConnId cc = getTermLine cc >>= maybe (serviceReplyConnId cc) pure . stripPrefix "service reply accepted, connection id: "
 
 testServiceRequestDroppedWhenOff :: HasCallStack => TestParams -> IO ()
 testServiceRequestDroppedWhenOff =
@@ -1970,6 +1971,34 @@ testServiceRequestNonDRAddress =
     (sLink, _) <- getContactLinks alice True
     bob ##> ("/_service_request 1 " <> sLink <> " {\"ping\":1}")
     bob <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASENotDRAddress}}"
+
+-- an address created without DR keys gets them from a key rotation, and keeps the same link,
+-- so a published address can be upgraded in place rather than replaced
+testServiceRequestUpgradedAddress :: HasCallStack => TestParams -> IO ()
+testServiceRequestUpgradedAddress =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad"
+    (sLink, _) <- getContactLinks alice True
+    alice ##> "/_rotate_address_keys 1"
+    (sLink', _) <- getContactLinks alice False
+    alice <## "auto_accept off"
+    sLink' `shouldBe` sLink
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_start main=on snd_files=on service_requests=on"
+    alice <## "chat started"
+    concurrently_
+      ( do
+          bob ##> ("/_service_request 1 " <> sLink <> " {\"ping\":1}")
+          bob <## "service response: {\"pong\":2}"
+      )
+      ( do
+          reqId <- serviceRequestId alice
+          alice <## "request: {\"ping\":1}"
+          alice ##> ("/_service_response 1 " <> reqId <> " {\"pong\":2}")
+          replyConnId <- serviceReplyConnId alice
+          alice <## ("service reply sent, connection id: " <> replyConnId)
+      )
 
 testMultipleUserAddresses :: HasCallStack => TestParams -> IO ()
 testMultipleUserAddresses =

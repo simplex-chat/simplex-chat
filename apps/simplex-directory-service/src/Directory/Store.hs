@@ -339,43 +339,41 @@ getAllListedGroups_ db cxt user@User {userId, userContactId} = do
   map (toGroupInfoRegLink currentTs cxt user)
     <$> DB.query db (groupReqQuery <> " AND r.group_reg_status = ?") (userId, userContactId, GRSActive)
 
-searchListedGroups :: ChatController -> User -> SearchType -> Maybe GroupId -> Int -> IO (Either String ([(GroupInfo, GroupReg, Maybe GroupLink)], Int))
-searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pageSize =
+searchListedGroups :: ChatController -> User -> SearchType -> Maybe SearchCursor -> Int -> IO (Either String ([(GroupInfo, GroupReg, Maybe GroupLink)], Int))
+searchListedGroups cc user@User {userId, userContactId} searchType cursor_ pageSize =
   withDB' "searchListedGroups" cc $ \db -> do
     currentTs <- getCurrentTime
     case searchType of
-      STAll -> case lastGroup_ of
+      STAll -> case cursor_ of
         Nothing -> do
-          gs <- groups currentTs $ DB.query db (listedGroupQuery <> orderBy <> " LIMIT ?") (userId, userContactId, GRSActive, pageSize)
+          gs <- groups currentTs $ DB.query db (listedGroupQuery <> membersOrderBy <> " LIMIT ?") (userId, userContactId, GRSActive, pageSize)
           n <- count $ DB.query db countQuery' (Only GRSActive)
           pure (gs, n)
-        Just gId -> do
-          gs <- groups currentTs $ DB.query db (listedGroupQuery <> " AND r.group_id > ? " <> orderBy <> " LIMIT ?") (userId, userContactId, GRSActive, gId, pageSize)
-          n <- count $ DB.query db (countQuery' <> " AND r.group_id > ?") (GRSActive, gId)
+        Just SearchCursor {lastMembers, lastGroupId} -> do
+          gs <- groups currentTs $ DB.query db (listedGroupQuery <> membersCond <> membersOrderBy <> " LIMIT ?") (userId, userContactId, GRSActive, lastMembers, lastMembers, lastGroupId, pageSize)
+          n <- count $ DB.query db (countQuery' <> membersCond) (GRSActive, lastMembers, lastMembers, lastGroupId)
           pure (gs, n)
         where
           countQuery' = countQuery <> " WHERE r.group_reg_status = ? "
-          orderBy = " ORDER BY g.summary_current_members_count DESC, r.group_reg_id ASC "
-      STRecent -> case lastGroup_ of
+      STRecent -> case cursor_ of
         Nothing -> do
-          gs <- groups currentTs $ DB.query db (listedGroupQuery <> orderBy <> " LIMIT ?") (userId, userContactId, GRSActive, pageSize)
+          gs <- groups currentTs $ DB.query db (listedGroupQuery <> recentOrderBy <> " LIMIT ?") (userId, userContactId, GRSActive, pageSize)
           n <- count $ DB.query db countQuery' (Only GRSActive)
           pure (gs, n)
-        Just gId -> do
-          gs <- groups currentTs $ DB.query db (listedGroupQuery <> " AND r.group_id > ? " <> orderBy <> " LIMIT ?") (userId, userContactId, GRSActive, gId, pageSize)
-          n <- count $ DB.query db (countQuery' <> " AND r.group_id > ?") (GRSActive, gId)
+        Just SearchCursor {lastCreatedAt, lastGroupId} -> do
+          gs <- groups currentTs $ DB.query db (listedGroupQuery <> recentCond <> recentOrderBy <> " LIMIT ?") (userId, userContactId, GRSActive, lastCreatedAt, lastCreatedAt, lastGroupId, pageSize)
+          n <- count $ DB.query db (countQuery' <> recentCond) (GRSActive, lastCreatedAt, lastCreatedAt, lastGroupId)
           pure (gs, n)
         where
           countQuery' = countQuery <> " WHERE r.group_reg_status = ? "
-          orderBy = " ORDER BY r.created_at DESC, r.group_reg_id ASC "
-      STSearch search -> case lastGroup_ of
+      STSearch search -> case cursor_ of
         Nothing -> do
-          gs <- groups currentTs $ DB.query db (listedGroupQuery <> searchCond <> orderBy <> " LIMIT ?") ((userId, userContactId, GRSActive, s, s, s, s) :. (sDomain, pageSize))
+          gs <- groups currentTs $ DB.query db (listedGroupQuery <> searchCond <> membersOrderBy <> " LIMIT ?") ((userId, userContactId, GRSActive, s, s, s, s) :. (sDomain, pageSize))
           n <- count $ DB.query db (countQuery' <> searchCond) (GRSActive, s, s, s, s, sDomain)
           pure (gs, n)
-        Just gId -> do
-          gs <- groups currentTs $ DB.query db (listedGroupQuery <> " AND r.group_id > ? " <> searchCond <> orderBy <> " LIMIT ?") ((userId, userContactId, GRSActive, gId, s, s, s, s) :. (sDomain, pageSize))
-          n <- count $ DB.query db (countQuery' <> " AND r.group_id > ? " <> searchCond) (GRSActive, gId, s, s, s, s, sDomain)
+        Just SearchCursor {lastMembers, lastGroupId} -> do
+          gs <- groups currentTs $ DB.query db (listedGroupQuery <> membersCond <> searchCond <> membersOrderBy <> " LIMIT ?") ((userId, userContactId, GRSActive, lastMembers, lastMembers, lastGroupId) :. (s, s, s, s, sDomain, pageSize))
+          n <- count $ DB.query db (countQuery' <> membersCond <> searchCond) ((GRSActive, lastMembers, lastMembers, lastGroupId) :. (s, s, s, s, sDomain))
           pure (gs, n)
         where
           s = T.toLower search
@@ -384,12 +382,17 @@ searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pa
             Just (c, rest) | c == '#' || c == '@' -> if T.null rest then "#" else rest
             _ -> s
           countQuery' = countQuery <> " JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id WHERE r.group_reg_status = ? "
-          orderBy = " ORDER BY g.summary_current_members_count DESC, r.group_reg_id ASC "
   where
     groups currentTs = (map (toGroupInfoRegLink currentTs (storeCxt cc) user) <$>)
     count = maybeFirstRow' 0 fromOnly
     listedGroupQuery = groupReqQuery <> " AND r.group_reg_status = ? "
     countQuery = "SELECT COUNT(1) FROM groups g JOIN sx_directory_group_regs r ON g.group_id = r.group_id "
+    -- the cursor conditions must stay paired with the order by of the same sort key:
+    -- paging by any other column skips and repeats rows
+    membersOrderBy = " ORDER BY g.summary_current_members_count DESC, r.group_id ASC "
+    membersCond = " AND (g.summary_current_members_count < ? OR (g.summary_current_members_count = ? AND r.group_id > ?)) "
+    recentOrderBy = " ORDER BY r.created_at DESC, r.group_id ASC "
+    recentCond = " AND (r.created_at < ? OR (r.created_at = ? AND r.group_id > ?)) "
     searchCond =
       [sql|
         AND (LOWER(gp.display_name) LIKE '%' || ? || '%'

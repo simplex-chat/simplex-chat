@@ -716,6 +716,50 @@ private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
     encodeJSON(value).cString(using: .utf8)!
 }
 
+// Type-erased JSON, so a service response can cross the API layer without it knowing which
+// service produced the payload. Callers re-decode it into their own type with decodeJSONValue.
+public enum JSONValue: Codable, Hashable {
+    case null
+    case bool(Bool)
+    case number(Double)
+    case string(String)
+    case array([JSONValue])
+    case object([String: JSONValue])
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        if c.decodeNil() { self = .null }
+        else if let v = try? c.decode(Bool.self) { self = .bool(v) }
+        else if let v = try? c.decode(Double.self) { self = .number(v) }
+        else if let v = try? c.decode(String.self) { self = .string(v) }
+        else if let v = try? c.decode([JSONValue].self) { self = .array(v) }
+        else if let v = try? c.decode([String: JSONValue].self) { self = .object(v) }
+        else {
+            throw DecodingError.dataCorruptedError(in: c, debugDescription: "invalid JSON value")
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        switch self {
+        case .null: try c.encodeNil()
+        case let .bool(v): try c.encode(v)
+        case let .number(v): try c.encode(v)
+        case let .string(v): try c.encode(v)
+        case let .array(v): try c.encode(v)
+        case let .object(v): try c.encode(v)
+        }
+    }
+
+    public var stringValue: String? {
+        if case let .string(v) = self { return v } else { return nil }
+    }
+}
+
+public func decodeJSONValue<T: Decodable>(_ value: JSONValue) -> T? {
+    decodeJSON(encodeJSON(value))
+}
+
 // Spec: spec/api.md#ChatError
 public enum ChatError: Decodable, Hashable, Error {
     case error(errorType: ChatErrorType)

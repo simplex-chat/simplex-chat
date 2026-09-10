@@ -7,6 +7,7 @@
 
 module ProtocolTests where
 
+import Control.Concurrent.STM (atomically)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -32,7 +33,30 @@ protocolTests :: Spec
 protocolTests = do
   decodeChatMessageTest
   shortLinkDataTests
+  serviceBodyTests
   batchLimitTests
+
+serviceBodyTests :: Spec
+serviceBodyTests = describe "service payload compression" $ do
+  it "passes a small payload through uncompressed" $ do
+    let payload = "{\"ping\":1}"
+    compressServiceBody payload `shouldBe` Right payload
+    decompressServiceBody payload `shouldBe` Right payload
+  it "compresses a payload over the size bound and restores it" $ do
+    let payload = "{\"pong\":\"" <> B.replicate 12000 'a' <> "\"}"
+    compressed <- either fail pure $ compressServiceBody payload
+    B.length compressed `shouldSatisfy` (<= maxCompressedInfoLength)
+    B.head compressed `shouldBe` 'X'
+    decompressServiceBody compressed `shouldBe` Right payload
+  it "rejects a payload that is too large even compressed" $ do
+    -- random bytes do not compress, so this stays over the bound
+    g <- C.newRandom
+    payload <- atomically $ C.randomBytes (maxCompressedInfoLength * 2) g
+    compressServiceBody payload `shouldBe` Left "service payload is too large"
+  it "rejects a payload that expands past the decompressed bound" $ do
+    let bomb = compressedBatchMsgBody_ $ B.replicate (maxDecompressedMsgLength + 1) 'a'
+    B.length bomb `shouldSatisfy` (< maxCompressedInfoLength)
+    decompressServiceBody bomb `shouldBe` Left "decompressed size exceeds limit"
 
 batchLimitTests :: Spec
 batchLimitTests = describe "Chat message batch limits" $ do
