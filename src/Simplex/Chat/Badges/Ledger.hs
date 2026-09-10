@@ -27,16 +27,18 @@ import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime)
 import Simplex.Chat.Badges (BadgeType)
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
 
--- | balanceStartTs is always a whole number of months from the anchor; this is that number.
 -- The calendar difference overshoots by at most one month, so one comparison settles it.
-monthsFromAnchor :: StatementEntry -> Integer
-monthsFromAnchor StatementEntry {balanceStartTs, balanceAnchorTs}
-  | addMonths months balanceAnchorTs <= balanceStartTs = max 0 months
+monthsBetween :: UTCTime -> UTCTime -> Integer
+monthsBetween from to
+  | addMonths months from <= to = max 0 months
   | otherwise = max 0 (months - 1)
   where
-    (ay, am, _) = toGregorian (utctDay balanceAnchorTs)
-    (sy, sm, _) = toGregorian (utctDay balanceStartTs)
-    months = (sy - ay) * 12 + toInteger (sm - am)
+    (fy, fm, _) = toGregorian (utctDay from)
+    (ty, tm, _) = toGregorian (utctDay to)
+    months = (ty - fy) * 12 + toInteger (tm - fm)
+
+monthsFromAnchor :: StatementEntry -> Integer
+monthsFromAnchor e = monthsBetween (balanceAnchorTs e) (balanceStartTs e)
 
 -- | The start of the month that follows n more months of this run.
 monthAfter :: StatementEntry -> Int -> UTCTime
@@ -50,7 +52,7 @@ paidThrough e = monthAfter e (balanceMonths e)
 elapsedMonths :: UTCTime -> StatementEntry -> Int
 elapsedMonths t e = fromInteger $ max 0 $ min (toInteger $ balanceMonths e) elapsed
   where
-    elapsed = monthsFromAnchor (e {balanceStartTs = t}) - monthsFromAnchor e
+    elapsed = monthsBetween (balanceAnchorTs e) t - monthsFromAnchor e
 
 -- | The seed for a purchase with no ledger yet: no months, and a run starting now.
 emptyEntry :: UTCTime -> BadgeType -> StatementEntry
