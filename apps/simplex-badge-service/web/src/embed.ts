@@ -10,6 +10,14 @@ export const EMBED_READY = "simplex-embed-ready";
 export const ROUTE_MESSAGE = "simplex-route";
 export const HEIGHT_MESSAGE = "simplex-height"; // frame -> host: our content height, so it can size the iframe
 export const COLORS_MESSAGE = "simplex-colors"; // host -> frame: the site's page background, to match it
+export const NEW_PURCHASE_MESSAGE = "simplex-new-purchase"; // host -> frame: the site's "Buy a code", start fresh
+export const NAV_MESSAGE = "simplex-nav"; // frame -> host: our current route hash, so the host tracks it in its URL
+
+/** True for a well-formed new-purchase message from the host: its "Buy a code" navbar item, which
+ * starts a fresh purchase rather than routing to a step, so a reload can be told apart from it. */
+export function isNewPurchaseMessage(data: unknown): boolean {
+  return typeof data === "object" && data !== null && (data as { type?: unknown }).type === NEW_PURCHASE_MESSAGE;
+}
 
 /** The background colour a well-formed colours message carries, so the frame's page matches the
  * site's, or undefined to ignore. Only a background is taken; the app keeps its own accent and ink. */

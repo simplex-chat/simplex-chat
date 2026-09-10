@@ -28,7 +28,7 @@ import { appearanceFor, cardPlan, loadStripeJs, mountCard, publishableKey, type 
 import { Store, type StorageLike } from "./store.js";
 import { STEPS } from "./domain.js";
 import type { Method, OrderRecord, SessionRecord, Step, Theme } from "./domain.js";
-import { EMBED_READY, HEIGHT_MESSAGE, THEME_MESSAGE, bgFromMessage, routeFromMessage, themeFromMessage, trustedHost } from "./embed.js";
+import { EMBED_READY, HEIGHT_MESSAGE, NAV_MESSAGE, THEME_MESSAGE, bgFromMessage, isNewPurchaseMessage, routeFromMessage, themeFromMessage, trustedHost } from "./embed.js";
 
 const app = document.getElementById("app");
 if (app === null) throw new Error("main: #app is missing from the shell");
@@ -101,7 +101,7 @@ const flow = new Flow({
 const embedded = window.self !== window.top;
 
 const chromeUi = screens.chrome({
-  onNewPurchase: newInvoice,
+  onNewPurchase: startPurchase,
   onHistory: showCodes,
   theme: store.theme(),
   // A user's own toggle: save it, apply it, and tell the host page so a site-level switch stays in
@@ -167,13 +167,24 @@ function postHeight(): void {
   window.parent.postMessage({ type: HEIGHT_MESSAGE, height }, hostOrigin ?? "*");
 }
 
+// Report our route up to the host so it can keep it in its own URL. A reload then re-posts the step
+// the buyer had reached (the host's `?`-free hash), rather than the entry step, so they resume there.
+// Only meaningful embedded and once the host is known; a bare landing is the empty hash.
+function postNav(): void {
+  if (!embedded || hostOrigin === undefined) return;
+  window.parent.postMessage({ type: NAV_MESSAGE, hash: location.hash }, hostOrigin);
+}
+
 if (embedded) {
   window.addEventListener("message", (event) => {
     if (!trustedHost(event.origin)) return;
     const theme = themeFromMessage(event.data);
     if (theme !== undefined) { hostOrigin = event.origin; setTheme(theme, false); return; }
-    // The site's navbar drives Buy a code / Your codes, and its URL hash deep-links a screen; both
-    // arrive as a route the frame applies through its own router.
+    // The site's "Buy a code" starts a fresh purchase — distinct from a route, so a reload that
+    // re-posts a step is not mistaken for it — and lands on the level picker with the landing beneath.
+    if (isNewPurchaseMessage(event.data)) { hostOrigin = event.origin; startPurchase(); return; }
+    // The site's navbar drives Your codes, and its URL hash deep-links a screen (a reload resumes the
+    // reached step this way); both arrive as a route the frame applies through its own router.
     const hash = routeFromMessage(event.data);
     if (hash !== undefined) { hostOrigin = event.origin; applyRoute(hash); return; }
     // The site hands in its page background so the frame matches it rather than showing its own.
@@ -444,6 +455,7 @@ function goToIndex(at: number): void {
   if (step !== undefined) store.saveSession({ step });
   history.pushState(null, "", hashForIndex(at));
   showIndex(at, true);
+  postNav();
 }
 
 function showIndex(at: number, smooth: boolean): void {
@@ -675,11 +687,29 @@ function resetToLanding(nav: "push" | "replace"): void {
   else history.replaceState(null, "", "/");
   panels.length = 0;
   showIndex(0, false);
+  postNav();
 }
 
+// A new invoice from a payment screen: the abandoned invoice's screen is left behind for the intro,
+// where the buyer can start again. The order summary and the wizard behind it are still there to walk.
 function newInvoice(): void {
   store.clearSession();
   resetToLanding("replace");
+}
+
+// "Buy a code": a fresh purchase opens at the level picker, not the intro, so the menu and the site's
+// navbar land on the same screen. The landing is seeded beneath it (replaced onto the entry, then the
+// step pushed) so [ ← Back ] returns there just as walking in from the landing does; the session is
+// cleared, so nothing is preselected.
+function startPurchase(): void {
+  store.clearSession();
+  stopCountdowns();
+  flow.stopAll();
+  history.replaceState(null, "", "/");
+  history.pushState(null, "", hashForIndex(1));
+  panels.length = 0;
+  showIndex(1, false);
+  postNav();
 }
 
 let lastView: PaymentView | null = null;
@@ -879,6 +909,7 @@ function showCodes(): void {
   if (location.hash !== CODES_HASH) history.pushState(null, "", location.pathname + CODES_HASH);
   renderCodes(store.orders());
   void flow.refreshHistory().then(renderCodes);
+  postNav();
 }
 
 function renderCodes(entries: readonly OrderRecord[]): void {
@@ -907,6 +938,7 @@ function syncFromLocation(fresh: boolean): void {
   if (orderId === null && location.hash === CODES_HASH) {
     renderCodes(store.orders());
     void flow.refreshHistory().then(renderCodes);
+    postNav();
     return;
   }
   const load = resolveLoad({ search: location.search }, fresh ? store.newestOpen() : undefined);
@@ -920,6 +952,7 @@ function syncFromLocation(fresh: boolean): void {
     history.replaceState(null, "", want === "/" ? location.pathname : want);
   }
   showIndex(at, root.firstChild === track && panels.length > 0);
+  postNav();
 }
 
 // A route handed in by the host (its navbar or its URL hash): put it on our own location and let
