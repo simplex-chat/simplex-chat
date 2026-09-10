@@ -16,12 +16,13 @@ CREATE TABLE wallet_seeds (
   -- the order they ask for a key, not the order they had
   next_account_index INTEGER NOT NULL DEFAULT 0,
   -- one key per device for now
-  single_seed INTEGER NOT NULL DEFAULT 1 UNIQUE
+  single_seed INTEGER NOT NULL DEFAULT 1
 ) STRICT;
 
 ALTER TABLE users ADD COLUMN wallet_seed_id INTEGER REFERENCES wallet_seeds ON DELETE RESTRICT;
 ALTER TABLE users ADD COLUMN wallet_account_index INTEGER;
 
+CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON wallet_seeds(single_seed);
 CREATE INDEX idx_users_wallet_seed_id ON users(wallet_seed_id);
 |]
 

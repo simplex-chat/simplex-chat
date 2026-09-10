@@ -1918,11 +1918,6 @@ ALTER TABLE ONLY test_chat_schema.wallet_seeds
 
 
 
-ALTER TABLE ONLY test_chat_schema.wallet_seeds
-    ADD CONSTRAINT wallet_seeds_single_seed_key UNIQUE (single_seed);
-
-
-
 ALTER TABLE ONLY test_chat_schema.xftp_file_descriptions
     ADD CONSTRAINT xftp_file_descriptions_pkey PRIMARY KEY (file_descr_id);
 
@@ -2673,6 +2668,10 @@ CREATE UNIQUE INDEX idx_user_contact_links_group_id ON test_chat_schema.user_con
 
 
 CREATE INDEX idx_users_wallet_seed_id ON test_chat_schema.users USING btree (wallet_seed_id);
+
+
+
+CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON test_chat_schema.wallet_seeds USING btree (single_seed);
 
 
 

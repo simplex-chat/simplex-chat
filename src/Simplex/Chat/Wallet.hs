@@ -2,8 +2,8 @@
 
 -- | BIP-39 seeds and the keys derived from them.
 --
--- One key per name, not one per profile, so that exporting a name's key hands
--- over that name only.
+-- Two layers: one account path per profile, and one key per name under it. A
+-- per-profile key would hand over every name that profile owns.
 module Simplex.Chat.Wallet
   ( SeedId (..),
     WalletSeed (..),
