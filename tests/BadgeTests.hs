@@ -476,12 +476,12 @@ testChecksOverLapse = do
   let start = at 2026 3 10
       granted = grant start 3 (newBalance start)
   Just issued <- pure $ issue start granted
-  Just honest <- pure $ lapse (at 2026 5 20) issued
-  Just greedy <- pure $ lapse (at 2026 8 20) issued
-  verdicts (at 2026 5 20) (Just issued) [honest] `shouldBe` [Just True]
-  verdicts (at 2026 5 20) (Just issued) [stampedAt (at 2026 5 20) greedy] `shouldBe` [Just False]
-  bMonths greedy `shouldBe` bMonths honest - 1
-  paidThrough greedy `shouldBe` paidThrough honest
+  Just lapsed <- pure $ lapse (at 2026 5 20) issued
+  Just overLapsed <- pure $ lapse (at 2026 8 20) issued
+  verdicts (at 2026 5 20) (Just issued) [lapsed] `shouldBe` [Just True]
+  verdicts (at 2026 5 20) (Just issued) [stampedAt (at 2026 5 20) overLapsed] `shouldBe` [Just False]
+  bMonths overLapsed `shouldBe` bMonths lapsed - 1
+  paidThrough overLapsed `shouldBe` paidThrough lapsed
 
 testChecksMovedStart :: IO ()
 testChecksMovedStart = do
@@ -508,10 +508,10 @@ testChecksNegativeCredit :: IO ()
 testChecksNegativeCredit = do
   let t = at 2026 2 10
       funded = grant t 2 (newBalance t)
-      stolen = grant (at 2026 6 1) (-2) funded
-  verdicts (at 2026 6 1) (Just funded) [stolen] `shouldBe` [Just False]
+      negativeCredit = grant (at 2026 6 1) (-2) funded
+  verdicts (at 2026 6 1) (Just funded) [negativeCredit] `shouldBe` [Just False]
   -- the sign is what rejects it: the row itself adds up, and the recompute would confirm it
-  bMonths stolen `shouldBe` bMonths funded - 2
+  bMonths negativeCredit `shouldBe` bMonths funded - 2
 
 testChecksTimestamps :: IO ()
 testChecksTimestamps = do

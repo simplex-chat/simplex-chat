@@ -114,14 +114,14 @@ issueEntry t entryId e@StatementEntry {balanceMonths, balanceStartTs}
             entryType = SEDebit SDBadge
           }
 
--- Generous because postdating only steals by crossing a month boundary, which takes days, while a
--- device clock a few minutes slow would otherwise mark every arriving row bad.
+-- Generous because postdating only writes off a month by crossing a month boundary, which takes
+-- days, while a device clock a few minutes slow would otherwise mark every arriving row bad.
 maxCreatedAtSkew :: NominalDiffTime
 maxCreatedAtSkew = 60 * 60
 
 -- | Each entry is checked by re-running the operation it claims, not against its predecessor's
--- totals: over-lapsing is self-consistent and still theft. 'Nothing' is a third state, not a
--- failure - no operation here rebuilds that entry type.
+-- totals: over-lapsing is self-consistent and still writes off months that have not elapsed.
+-- 'Nothing' is a third state, not a failure - no operation here rebuilds that entry type.
 balanceChecked :: UTCTime -> Maybe StatementEntry -> [StatementEntry] -> [(StatementEntry, Maybe Bool)]
 balanceChecked _ _ [] = []
 balanceChecked now tip entries@(first : _) = zipWith checkAfter (opening : entries) entries
