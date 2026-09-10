@@ -143,8 +143,8 @@ entryChecked now prev e
       SEDebit SDUnknown {} -> uncontradicted
       SECredit SCUnknown {} -> uncontradicted
       SECredit c
-        -- the months a grant adds cannot be derived here, but their sign can: a negative one would
-        -- recompute as its own confirmation while moving paidThrough into the past
+        -- we take the month count from the row and hand it to grantEntry, so they always agree;
+        -- a negative count would go through and shorten what the user has paid for
         | changeMonths e < 0 -> Just False
         | otherwise -> Just $ sameBalance e $ grantEntry t "" (changeMonths e) c prev
   where
