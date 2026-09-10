@@ -79,20 +79,25 @@ The client's remaining use, `ledgerPlan` inside `badgeWorkDue`, is removed by th
 
 The client authors nothing, so it takes the service's arithmetic on trust — while holding everything needed to check it.
 
-**Where.** In `applyBadgeStatement`, as the rows are stored. That is the one place holding both the arriving entries and the stored tip they follow, and it already runs in one transaction.
+**Where.** In `applyBadgeStatement`, as the rows are stored. That is the one place holding both the arriving entries and the stored tip they follow, and it already runs in one transaction. The tip is read only when the statement claims a predecessor: `previousEntryId` is absent whenever the service sends the whole ledger from its opening row, which `redeemCode` always does, and checking that opening against a tip the purchase already holds would mark a good row bad.
 
-**What.** One outcome per entry, from one of two rules:
+**What.** Re-run the operation the entry claims and compare, rather than restate its arithmetic as rules of its own. Each operation is a total function of a predecessor and a timestamp, and the entry carries the timestamp it was computed with — so a lapse is checked by `lapseEntry`, a badge debit by `issueEntry`, and every known credit by `grantEntry` with the entry's own `changeMonths`. `balanceMonths`, `balanceStartTs`, `balanceAnchorTs`, `balanceBadgeType`, and `changeMonths` where it is derived rather than supplied, must all match.
 
-- *Against its predecessor* — the previous entry in the statement, or the stored tip for the first one, whatever `previousEntryId` claims. `balanceMonths` equals the predecessor's plus `changeMonths`; a debit moves `balanceStartTs` forward by exactly the months it consumed, counted from the anchor; a credit either leaves the start alone or restarts the run with `balanceStartTs` and `balanceAnchorTs` equal.
-- *Opening*, when there is no predecessor at all: a credit whose `balanceMonths` equals its `changeMonths`, with start and anchor equal.
+The predecessor is the previous entry as received, the stored tip for the first one, or `emptyEntry` when there is no tip — which is what `redeemCode` grants onto, so the opening is not a rule of its own. A `previousEntryId` naming an entry that is not the client's tip needs no separate outcome either: the arithmetic against the wrong predecessor fails, which is the outcome wanted.
 
-Checking the first entry against what the client actually holds is also what catches a statement that follows some other ledger — it fails its arithmetic — so `previousEntryId` needs no separate outcome.
+Re-running is stronger than checking an entry against its predecessor's totals. A lapse of three months where one elapsed is self-consistent, and it is the theft case: over-lapsing empties `balanceMonths` while leaving `paidThrough` untouched, so the badge stops renewing while the ledger still reads as paid up. Only `lapseEntry`, which derives the month count from the timestamp, catches it.
+
+The months a credit adds cannot be derived — the client does not know what a code was worth — so `changeMonths` is an input to `grantEntry` rather than something to verify. Its sign is not: a negative credit would recompute as its own confirmation while moving `paidThrough` into the past.
+
+Two bounds apply to every entry whatever its type, since the whole check is anchored on a timestamp the service chose. `createdAt` no later than now plus a few minutes' skew catches postdating, which is how a lapse steals; no earlier than its predecessor's catches backdating, which is how a grant does. Equal is not behind — a service pass writes its lapse and its issue with one clock reading.
+
+**Three outcomes, not two.** An entry type this version has no operation for cannot be re-run: `SCUnknown` and `SDUnknown` from a newer service, and `SDRefund`, `SDUpgrade`, `SDTransferOut` and `SDSupport`, which are declared but unimplemented. Marking those bad would report a newer service's correct row as broken, the opposite of the forward compatibility the rest of this code keeps. They are still held to what is true of any operation: the months add up, the balance is not negative, and coverage does not move backwards.
 
 **What happens when it fails: store the row and mark it.** Not refuse. Perks do not depend on the ledger — the credential is signed independently and a receiver verifies that signature — so rejecting a statement would strand a badge the service considers paid while proving nothing. The ledger is the user's record of what was spent, and the useful response to arithmetic that does not add up is to keep it and be able to point at the line.
 
-**The column.** `balance_checked`, per entry — `1` when the entry follows from its predecessor, `0` when it does not, and null when nobody has looked. Nullable, because "can be checked" and "has been checked" are different things: every row has a predecessor to check against, and none has been checked while the check is a stub. Not `verified`, which already means signature verification on profiles and would read as the same thing.
+**The column.** `balance_checked`, per entry — `1` when re-running the operation reproduced the row, `0` when something contradicted it, and null when this version has no operation to re-run. Nullable because those are three states and the third is not a failure. Not `verified`, which already means signature verification on profiles and would read as the same thing.
 
-The check belongs in `Ledger.hs`, beside the arithmetic it verifies — `monthsFromAnchor` is internal there and would otherwise have to be exported to check a debit's start. Stub it to null until it exists; adding the column now is what keeps it out of a migration of its own.
+The check belongs in `Ledger.hs`, beside the arithmetic it verifies — `monthsFromAnchor` is internal there and would otherwise have to be exported. The column ships with the rest of the ledger schema, which keeps it out of a migration of its own.
 
 ## The tests move with the types
 
