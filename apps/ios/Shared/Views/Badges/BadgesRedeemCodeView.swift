@@ -126,7 +126,7 @@ struct BadgesRedeemCodeView: View {
             .autocorrectionDisabled(true)
             .textInputAutocapitalization(.characters)
             .disabled(submitting)
-            .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
+            .padding(EdgeInsets(top: 14, leading: 12, bottom: 14, trailing: 12))
             .background(Color(.tertiarySystemFill))
             .cornerRadius(10.0)
             .onChange(of: code) { applyCodeInput($0) }
