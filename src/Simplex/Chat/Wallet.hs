@@ -30,6 +30,7 @@ import Data.Word (Word32)
 import qualified Simplex.Messaging.Crypto.BIP32 as B32
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
+import Simplex.Messaging.Eth.Address (ethereumPath)
 
 type SeedId = Int64
 
@@ -64,15 +65,11 @@ seedMaster s = do
   m <- B39.entropyToMnemonic (wsEntropy s)
   B32.masterKey (B39.mnemonicToSeed m "")
 
--- | So the phrase reaches the same addresses in other wallets.
-nameKeyPath :: AccountIndex -> NameIndex -> [Word32]
-nameKeyPath acc nm = [B32.hardened 44, B32.hardened 60, B32.hardened acc, 0, nm]
-
 renderNameKeyPath :: AccountIndex -> NameIndex -> Text
-renderNameKeyPath acc nm = decodeLatin1 . B32.renderPath $ nameKeyPath acc nm
+renderNameKeyPath acc nm = decodeLatin1 . B32.renderPath $ ethereumPath acc nm
 
 deriveNameKey :: B32.ExtendedKey -> AccountIndex -> NameIndex -> Either String S.PrivateKey
-deriveNameKey master acc nm = B32.xkKey <$> B32.derivePath master (nameKeyPath acc nm)
+deriveNameKey master acc nm = B32.xkKey <$> B32.derivePath master (ethereumPath acc nm)
 
 -- | As wallets take it when a key is imported on its own.
 nameKeySecret :: S.PrivateKey -> ByteString
