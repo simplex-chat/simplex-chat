@@ -692,9 +692,6 @@ data CIFile (d :: MsgDirection) = CIFile
   }
   deriving (Show)
 
-data FileProhibited = FileProhibited {maxSize :: Int64, badgeStatus :: Maybe BadgeStatus}
-  deriving (Eq, Show)
-
 data FileProtocol = FPSMP | FPXFTP | FPLocal
   deriving (Eq, Show, Ord)
 
@@ -1457,8 +1454,6 @@ instance (ChatTypeI c, MsgDirectionI d) => FromJSON (CIMeta c d) where
 instance ChatTypeI c => ToJSON (CIMeta c d) where
   toJSON = $(JQ.mkToJSON defaultJSON ''CIMeta)
   toEncoding = $(JQ.mkToEncoding defaultJSON ''CIMeta)
-
-$(JQ.deriveJSON defaultJSON ''FileProhibited)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FileErr") ''FileError)
 

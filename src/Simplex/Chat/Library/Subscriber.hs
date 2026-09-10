@@ -235,7 +235,9 @@ processAgentMsgSndFile _corrId aFileId msg = do
                     (rfd : extraRFDs, sft : _, SMDSnd, DirectChat ct) -> do
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
                       conn@Connection {connId} <- liftEither $ contactSendConn_ ct
-                      descrBadge <- sndDescrBadge user (CGContact ct) ft rfd fileExpires
+                      let FileTransferMeta {fileSize} = ft
+                      binding_ <- ifM (fileNeedsBadge fileSize) (sndDirectChatBinding ct) (pure Nothing)
+                      descrBadge <- sndDescrBadge user binding_ ft rfd fileExpires
                       sendFileDescriptions (ConnectionId connId) ((conn, sft, fileDescrText rfd) :| []) sharedMsgId fileExpires descrBadge >>= \case
                         Just rs -> case L.last rs of
                           Right ([msgDeliveryId], _) ->
@@ -249,8 +251,10 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       ms <- getRecipients
                       let rfdsMemberFTs = zipWith (\rfd (conn, sft) -> (conn, sft, fileDescrText rfd)) rfds (memberFTs ms)
                           extraRFDs = drop (length rfdsMemberFTs) rfds
+                          FileTransferMeta {fileSize} = ft
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
-                      descrBadge <- pure (listToMaybe rfds) $>>= \rfd -> sndDescrBadge user (CGGroup g ms showGroupAsSender) ft rfd fileExpires
+                      binding_ <- ifM (fileNeedsBadge fileSize) (sndGroupChatBinding g showGroupAsSender) (pure Nothing)
+                      descrBadge <- pure (listToMaybe rfds) $>>= \rfd -> sndDescrBadge user binding_ ft rfd fileExpires
                       forM_ (L.nonEmpty rfdsMemberFTs) $ \rfdsMemberFTs' ->
                         sendFileDescriptions (GroupId groupId) rfdsMemberFTs' sharedMsgId fileExpires descrBadge
                       ci' <- withStore $ \db -> do
@@ -1899,7 +1903,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           let MsgContainer {ttl = itemTTL, live = live_} = mc
               timed_ = rcvContactCITimed ct itemTTL
               live = fromMaybe False live_
-          file_ <- processFileInvitation fInv_ content (FSContact ct) $ \db -> createRcvFileTransfer db userId ct
+          file_ <- processFileInvitation fInv_ content (rcvDirectFileProhibited ct) $ \db -> createRcvFileTransfer db userId ct
           newChatItem (CIRcvMsgContent content, msgContentTexts content) (snd <$> file_) timed_ live
           autoAcceptFile file_
       where
@@ -1921,7 +1925,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         fileId <- getFileIdBySharedMsgId db userId contactId sharedMsgId
         aci <- getChatItemByFileId db cxt user fileId
         pure (fileId, aci)
-      processFDMessage (FSContact ct) fileId aci fileDescr fileExpires fileBadge
+      binding_ <- if isJust fileBadge then rcvDirectChatBinding ct else pure Nothing
+      processFDMessage binding_ fileId aci fileDescr fileExpires fileBadge
 
     groupMessageFileDescription :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> FileDescr -> Maybe UTCTime -> Maybe BadgeProof -> CM (Maybe DeliveryTaskContext)
     groupMessageFileDescription g@GroupInfo {groupId} m_ sharedMsgId fileDescr fileExpires fileBadge = do
@@ -1935,16 +1940,16 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               -- in processFDMessage some paths are programmed as errors,
               -- for example failure on not approved relays (CEFileNotApproved).
               -- we catch error, so that even if processFDMessage fails, message can still be forwarded.
-              processFDMessage (fdSender g m_ aci) fileId aci fileDescr fileExpires fileBadge `catchAllErrors` \_ -> pure ()
+              processFDMessage (fdChatBinding g m_ aci fileBadge) fileId aci fileDescr fileExpires fileBadge `catchAllErrors` \_ -> pure ()
               pure $ Just $ infoToDeliveryContext g scopeInfo (isChannelDir chatDir)
           | otherwise -> messageError "x.msg.file.descr: file/sender mismatch" $> Nothing
         _ -> messageError "x.msg.file.descr: invalid file description part" $> Nothing
 
-    processFDMessage :: FileSender -> FileTransferId -> AChatItem -> FileDescr -> Maybe UTCTime -> Maybe BadgeProof -> CM ()
-    processFDMessage sender fileId aci fileDescr fileExpires fileBadge = do
+    processFDMessage :: Maybe ByteString -> FileTransferId -> AChatItem -> FileDescr -> Maybe UTCTime -> Maybe BadgeProof -> CM ()
+    processFDMessage binding_ fileId aci fileDescr fileExpires fileBadge = do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       unless (rcvFileCompleteOrCancelled ft) $ do
-        (rfd@RcvFileDescr {fileDescrComplete}, ft'@RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs, fileInvitation = FileInvitation {fileSize}}) <- withStore $ \db -> do
+        (rfd@RcvFileDescr {fileDescrComplete}, ft'@RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs, fileProhibited, fileInvitation = FileInvitation {fileSize}}) <- withStore $ \db -> do
           rfd <- appendRcvFD db userId fileId fileDescr
           forM_ fileExpires $ liftIO . setFileExpiration db user fileId
           -- reading second time in the same transaction as appending description
@@ -1953,8 +1958,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           pure (rfd, ft')
         when fileDescrComplete $ toView $ CEvtRcvFileDescrReady user aci ft' rfd
         needsBadge <- fileNeedsBadge fileSize
-        let descrBadgeRequired = fileDescrComplete && needsBadge && not (itemFileProhibited aci)
-        badgeOk <- if descrBadgeRequired then descrBadgeVerified sender fileSize rfd fileExpires fileBadge else pure True
+        let descrBadgeRequired = fileDescrComplete && needsBadge && isNothing fileProhibited
+        badgeOk <- if descrBadgeRequired then descrBadgeVerified binding_ fileSize rfd fileExpires fileBadge else pure True
         if badgeOk
           then do
             when descrBadgeRequired $ forM_ fileBadge $ \badge -> withStore' $ \db -> setRcvFileDescrBadgeProof db fileId badge
@@ -1966,16 +1971,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             aci_ <- withStore $ \db -> lookupChatItemByFileId db cxt user fileId
             forM_ aci_ $ \aci' -> toView $ CEvtChatItemUpdated user aci'
 
-    fdSender :: GroupInfo -> Maybe GroupMember -> AChatItem -> FileSender
-    fdSender g m_ (AChatItem _ _ _ ChatItem {meta = CIMeta {showGroupAsSender}})
-      | showGroupAsSender = FSChannel g
-      | otherwise = FSMember g m_
+    fdChatBinding :: GroupInfo -> Maybe GroupMember -> AChatItem -> Maybe BadgeProof -> Maybe ByteString
+    fdChatBinding g m_ (AChatItem _ _ _ ChatItem {meta = CIMeta {showGroupAsSender}}) =
+      rcvGroupChatBinding g m_ showGroupAsSender
 
-    itemFileProhibited :: AChatItem -> Bool
-    itemFileProhibited (AChatItem _ _ _ ChatItem {file}) = maybe False (isJust . fileProhibited) file
-
-    descrBadgeVerified :: FileSender -> Integer -> RcvFileDescr -> Maybe UTCTime -> Maybe BadgeProof -> CM Bool
-    descrBadgeVerified sender fileSize RcvFileDescr {fileDescrText} fileExpires = \case
+    descrBadgeVerified :: Maybe ByteString -> Integer -> RcvFileDescr -> Maybe UTCTime -> Maybe BadgeProof -> CM Bool
+    descrBadgeVerified binding_ fileSize RcvFileDescr {fileDescrText} fileExpires = \case
       Nothing -> pure False
       Just badge -> do
         expired <- maybe (pure False) (\t -> (t <) <$> liftIO getCurrentTime) fileExpires
@@ -1983,20 +1984,17 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           then pure False
           else do
             FD.ValidFileDescription fd <- parseFileDescription @'FRecipient fileDescrText
-            bindingAccepted <- fileSenderBinding sender
-            st <- badgeProofStatus (expectedHeader bindingAccepted (FD.sharedDescriptionHash fd)) badge
+            st <- badgeProofStatus (descrPresHeader $ FD.sharedDescriptionHash fd) badge
             pure $ st == BSActive
       where
-        expectedHeader bindingAccepted descrHash = \case
-          PHFileDescr {chatBinding} | bindingAccepted chatBinding ->
-            Just PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash, fileExpires}
-          _ -> Nothing
+        descrPresHeader descrHash =
+          (\chatBinding -> PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash, fileExpires}) <$> binding_
 
-    processFileInvitation :: Maybe FileInvitation -> MsgContent -> FileSender -> (DB.Connection -> FileInvitation -> Maybe FileProhibited -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer) -> CM (Maybe (RcvFileTransfer, CIFile 'MDRcv))
-    processFileInvitation fInv_ mc sender createRcvFT = forM fInv_ $ \fInv -> do
+    processFileInvitation :: Maybe FileInvitation -> MsgContent -> (FileInvitation -> CM (Maybe FileProhibited)) -> (DB.Connection -> FileInvitation -> Maybe FileProhibited -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer) -> CM (Maybe (RcvFileTransfer, CIFile 'MDRcv))
+    processFileInvitation fInv_ mc fileProhibited_ createRcvFT = forM fInv_ $ \fInv -> do
       ChatConfig {fileChunkSize} <- asks config
       fInv'@FileInvitation {fileName, fileSize} <- validateFileInvitation fInv
-      fileProhibited <- rcvFileInvProhibited sender fInv'
+      fileProhibited <- fileProhibited_ fInv'
       inline <- receiveInlineMode fInv' (Just mc) fileChunkSize
       ft@RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvFT db fInv' fileProhibited inline fileChunkSize
       let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
@@ -2241,8 +2239,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           unless (maybe False memberBlocked m') $ autoAcceptFile file_
         processFileInv gInfo' m' =
           let fileMember_ = if sentAsGroup then Nothing else m'
-              sender = if sentAsGroup then FSChannel gInfo' else FSMember gInfo' m'
-           in processFileInvitation fInv_ content sender $ \db -> createRcvGroupFileTransfer db userId gInfo' fileMember_ FTNormal sharedMsgId_
+           in processFileInvitation fInv_ content (rcvGroupFileProhibited gInfo' m' sentAsGroup) $ \db -> createRcvGroupFileTransfer db userId gInfo' fileMember_ FTNormal sharedMsgId_
         newChatItem gInfo' m' scopeInfo ciContent ciFile_ timed live = do
           let mentions' = if maybe False memberBlocked m' then M.empty else mentions
           (ci, cInfo) <- saveRcvCI gInfo' m' scopeInfo ciContent ciFile_ timed live mentions'
@@ -2464,7 +2461,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     processFileInvitation' ct fInv msg@RcvMessage {sharedMsgId_} msgMeta = do
       ChatConfig {fileChunkSize} <- asks config
       fInv'@FileInvitation {fileName, fileSize} <- validateFileInvitation fInv
-      fileProhibited <- rcvFileInvProhibited (FSContact ct) fInv'
+      fileProhibited <- rcvDirectFileProhibited ct fInv'
       inline <- receiveInlineMode fInv' Nothing fileChunkSize
       RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvFileTransfer db userId ct fInv' fileProhibited inline fileChunkSize
       let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
@@ -2480,7 +2477,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     processGroupFileInvitation' gInfo m fInv msg@RcvMessage {sharedMsgId_} brokerTs = do
       ChatConfig {fileChunkSize} <- asks config
       fInv'@FileInvitation {fileName, fileSize} <- validateFileInvitation fInv
-      fileProhibited <- rcvFileInvProhibited (FSMember gInfo (Just m)) fInv'
+      fileProhibited <- rcvGroupFileProhibited gInfo (Just m) False fInv'
       inline <- receiveInlineMode fInv' Nothing fileChunkSize
       RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvGroupFileTransfer db userId gInfo (Just m) FTNormal sharedMsgId_ fInv' fileProhibited inline fileChunkSize
       let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP

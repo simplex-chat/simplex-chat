@@ -45,7 +45,6 @@ module Simplex.Chat.Store.Files
     updateSndFileStatus,
     createRcvFileTransfer,
     createRcvGroupFileTransfer,
-    getRcvFileProhibited,
     setRcvFileDescrBadgeProof,
     getRcvFileBadgeProofs,
     createRosterRcvFile,
@@ -469,17 +468,12 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, file_descr_id, badge_inv_proof_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, invProofId, currentTs, currentTs)
-  pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, fileType = FTNormal, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing, cryptoArgs = Nothing}
+  pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileProhibited = prohibited_, fileStatus = RFSNew, fileType = FTNormal, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing, cryptoArgs = Nothing}
 
 prohibitedRow :: Maybe FileProhibited -> (Maybe Int64, Maybe BadgeStatus)
 prohibitedRow = \case
   Just FileProhibited {maxSize, badgeStatus} -> (Just maxSize, badgeStatus)
   Nothing -> (Nothing, Nothing)
-
-getRcvFileProhibited :: DB.Connection -> User -> Int64 -> IO (Maybe FileProhibited)
-getRcvFileProhibited db User {userId} fileId = do
-  row_ <- maybeFirstRow id $ DB.query db "SELECT file_max_size, file_badge_status FROM files WHERE user_id = ? AND file_id = ?" (userId, fileId)
-  pure $ row_ >>= \(maxSize_, badgeStatus) -> (\maxSize -> FileProhibited {maxSize, badgeStatus}) <$> maxSize_
 
 setRcvFileDescrBadgeProof :: DB.Connection -> Int64 -> BadgeProof -> IO ()
 setRcvFileDescrBadgeProof db fileId badge = do
@@ -540,7 +534,7 @@ createRcvGroupFileTransfer db userId GroupInfo {groupId, localDisplayName = gNam
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, file_descr_id, badge_inv_proof_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, grpMemberId_, rfdId, invProofId, currentTs, currentTs)
-  pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileStatus = RFSNew, fileType, rcvFileInline, senderDisplayName = senderName, chunkSize, cancelled = False, grpMemberId = grpMemberId_, cryptoArgs = Nothing}
+  pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileProhibited = prohibited_, fileStatus = RFSNew, fileType, rcvFileInline, senderDisplayName = senderName, chunkSize, cancelled = False, grpMemberId = grpMemberId_, cryptoArgs = Nothing}
 
 -- Roster scratch file owned by a per-source transfer: group_member_id is the delivering relay (so chunk
 -- streams from different relays are distinct files), roster_transfer_id links to the metadata record.
@@ -559,7 +553,7 @@ createRosterRcvFile db userId GroupInfo {groupId} src@GroupMember {localDisplayN
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, grpMemberId_, currentTs, currentTs)
-  pure RcvFileTransfer {fileId, xftpRcvFile = Nothing, fileInvitation = f, fileStatus = RFSNew, fileType = FTRoster, rcvFileInline, senderDisplayName = senderName, chunkSize, cancelled = False, grpMemberId = Just grpMemberId_, cryptoArgs = Nothing}
+  pure RcvFileTransfer {fileId, xftpRcvFile = Nothing, fileInvitation = f, fileProhibited = Nothing, fileStatus = RFSNew, fileType = FTRoster, rcvFileInline, senderDisplayName = senderName, chunkSize, cancelled = False, grpMemberId = Just grpMemberId_, cryptoArgs = Nothing}
 
 createRcvStandaloneFileTransfer :: DB.Connection -> UserId -> CryptoFile -> Int64 -> Word32 -> ExceptT StoreError IO Int64
 createRcvStandaloneFileTransfer db userId (CryptoFile filePath cfArgs_) fileSize chunkSize = do
@@ -705,7 +699,8 @@ getRcvFileTransfer_ db userId fileId = do
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
             f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
             f.file_path, f.file_crypto_key, f.file_crypto_nonce, r.file_inline, r.rcv_file_inline,
-            r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays, g.local_display_name, f.file_type, f.file_digest
+            r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays, g.local_display_name, f.file_type, f.file_digest,
+            f.file_max_size, f.file_badge_status
           FROM rcv_files r
           JOIN files f USING (file_id)
           LEFT JOIN contacts cs ON cs.contact_id = f.contact_id
@@ -719,9 +714,9 @@ getRcvFileTransfer_ db userId fileId = do
   where
     rcvFileTransfer ::
       Maybe RcvFileDescr ->
-      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe BoolInt) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, BoolInt, BoolInt) :. (Maybe ContactName, FileType, Maybe FileDigest) ->
+      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe BoolInt) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, BoolInt, BoolInt) :. (Maybe ContactName, FileType, Maybe FileDigest, Maybe Int64, Maybe BadgeStatus) ->
       ExceptT StoreError IO RcvFileTransfer
-    rcvFileTransfer rfd_ ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileKey, fileNonce, fileInline, rcvFileInline, agentRcvFileId, BI agentRcvFileDeleted, BI userApprovedRelays) :. (groupName_, fileType, fileDigest_)) =
+    rcvFileTransfer rfd_ ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileKey, fileNonce, fileInline, rcvFileInline, agentRcvFileId, BI agentRcvFileDeleted, BI userApprovedRelays) :. (groupName_, fileType, fileDigest_, fileMaxSize_, fileBadgeStatus_)) =
       case contactName_ <|> memberName_ <|> groupName_ <|> standaloneName_ of
         Nothing -> throwError $ SERcvFileInvalid fileId
         Just name ->
@@ -737,9 +732,10 @@ getRcvFileTransfer_ db userId fileId = do
           _ -> Nothing
         ft senderDisplayName fileStatus =
           let fileInvitation = FileInvitation {fileName, fileSize, fileDigest = fileDigest_, fileConnReq, fileInline, fileDescr = Nothing, fileBadge = Nothing}
+              fileProhibited = (\maxSize -> FileProhibited {maxSize, badgeStatus = fileBadgeStatus_}) <$> fileMaxSize_
               cryptoArgs = CFArgs <$> fileKey <*> fileNonce
               xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId, agentRcvFileDeleted, userApprovedRelays}) <$> rfd_
-           in RcvFileTransfer {fileId, xftpRcvFile, fileInvitation, fileStatus, fileType, rcvFileInline, senderDisplayName, chunkSize, cancelled, grpMemberId, cryptoArgs}
+           in RcvFileTransfer {fileId, xftpRcvFile, fileInvitation, fileProhibited, fileStatus, fileType, rcvFileInline, senderDisplayName, chunkSize, cancelled, grpMemberId, cryptoArgs}
         filePath = case filePath_ of
           Nothing -> throwError $ SERcvFileInvalid fileId
           Just fp -> pure fp

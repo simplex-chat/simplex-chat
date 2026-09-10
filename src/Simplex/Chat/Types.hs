@@ -593,14 +593,14 @@ data GroupLink = GroupLink
   }
   deriving (Show)
 
-data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember] ShowGroupAsSender
+data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
 
 data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
 contactAndGroupIds = \case
   CGContact Contact {contactId} -> (Just contactId, Nothing)
-  CGGroup GroupInfo {groupId} _ _ -> (Nothing, Just groupId)
+  CGGroup GroupInfo {groupId} _ -> (Nothing, Just groupId)
 
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
@@ -1629,10 +1629,14 @@ instance ToJSON FileType where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
 
+data FileProhibited = FileProhibited {maxSize :: Int64, badgeStatus :: Maybe BadgeStatus}
+  deriving (Eq, Show)
+
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,
     xftpRcvFile :: Maybe XFTPRcvFile,
     fileInvitation :: FileInvitation,
+    fileProhibited :: Maybe FileProhibited,
     fileStatus :: RcvFileStatus,
     fileType :: FileType,
     rcvFileInline :: Maybe InlineFileMode,
@@ -2380,6 +2384,8 @@ $(JQ.deriveJSON defaultJSON ''MemberRestrictions)
 $(JQ.deriveJSON defaultJSON ''GroupMemberRef)
 
 $(JQ.deriveJSON defaultJSON ''FileDescr)
+
+$(JQ.deriveJSON defaultJSON ''FileProhibited)
 
 $(JQ.deriveJSON defaultJSON ''FileInvitation)
 

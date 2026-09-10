@@ -3626,7 +3626,7 @@ processChatCommand cxt nm = \case
     fsFilePath <- lift $ toFSFilePath filePath
     fileSize <- liftIO $ CF.getFileContentsSize file {filePath = fsFilePath}
     when (fileSize > toInteger maxFileSizeHard) $ throwChatError $ CEFileSize filePath
-    (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing
+    (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing Nothing
     pure CRSndStandaloneFileCreated {user, fileTransferMeta}
   APIStandaloneFileInfo FileDescriptionURI {clientData} -> pure . CRStandaloneFileInfo $ clientData >>= J.decodeStrict . encodeUtf8
   APIDownloadStandaloneFile userId uri file -> withUserId userId $ \user -> do
@@ -4773,7 +4773,8 @@ processChatCommand cxt nm = \case
                 Just file -> do
                   let User {profile = LocalProfile {localBadge}} = user
                   fileSize <- checkSndFile (if contactConnIncognito ct then Nothing else localBadge) file
-                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize 1 $ CGContact ct
+                  binding_ <- ifM (fileNeedsBadge fileSize) (sndDirectChatBinding ct) (pure Nothing)
+                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize 1 (CGContact ct) binding_
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
             prepareMsgs :: NonEmpty (ComposedMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTDirect)))
@@ -4858,7 +4859,8 @@ processChatCommand cxt nm = \case
                 Just file -> do
                   let User {profile = LocalProfile {localBadge}} = user
                   fileSize <- checkSndFile (if incognitoMembership gInfo then Nothing else localBadge) file
-                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo recipients showGroupAsSender
+                  binding_ <- ifM (fileNeedsBadge fileSize) (sndGroupChatBinding gInfo showGroupAsSender) (pure Nothing)
+                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n (CGGroup gInfo recipients) binding_
                   fInv' <-
                     if signMsgs && useRelays' gInfo
                       then (\d -> (fInv :: FileInvitation) {fileDigest = Just d}) <$> cryptoFileDigest file
@@ -4916,13 +4918,13 @@ processChatCommand cxt nm = \case
           -- batching retrieval of quoted messages (prepareMsgs).
           when (live || length (L.filter (\(ComposedMessage {quotedItemId}, _, _, _) -> isJust quotedItemId) cmrs) > 1) $
             throwCmdError "invalid multi send: live and more than one quote not supported"
-    xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> CM (FileInvitation, CIFile 'MDSnd)
-    xftpSndFileTransfer user file fileSize n contactOrGroup = do
-      (fInv, ciFile, ft) <- xftpSndFileTransfer_ user file fileSize n $ Just contactOrGroup
+    xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> Maybe ByteString -> CM (FileInvitation, CIFile 'MDSnd)
+    xftpSndFileTransfer user file fileSize n contactOrGroup binding_ = do
+      (fInv, ciFile, ft) <- xftpSndFileTransfer_ user file fileSize n (Just contactOrGroup) binding_
       case contactOrGroup of
         CGContact Contact {activeConn} -> forM_ activeConn $ \conn ->
           withFastStore' $ \db -> createSndFTDescrXFTP db user Nothing conn ft dummyFileDescr
-        CGGroup _ ms _ -> forM_ ms $ \m -> saveMemberFD m `catchAllErrors` eToView
+        CGGroup _ ms -> forM_ ms $ \m -> saveMemberFD m `catchAllErrors` eToView
           where
             -- we are not sending files to pending members, same as with inline files
             saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
