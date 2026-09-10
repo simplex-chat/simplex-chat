@@ -273,9 +273,9 @@ clearShownBadge db User {userId} badgePurchaseId =
 -- | Verbatim, entry_uuid and type included: the client authors no row, or the two sides stop
 -- holding the same ledger. DO NOTHING makes a re-applied statement a no-op rather than a throw.
 -- An entry whose balance does not follow from the one before it is stored and marked, not refused.
-storeBadgeStatement :: DB.Connection -> Int64 -> Maybe StatementEntry -> [StatementEntry] -> UTCTime -> IO ()
-storeBadgeStatement db badgePurchaseId tip entries now =
-  mapM_ storeEntry $ balanceChecked now tip entries
+storeBadgeStatement :: DB.Connection -> Int64 -> BadgeType -> Maybe StatementEntry -> [StatementEntry] -> UTCTime -> IO ()
+storeBadgeStatement db badgePurchaseId badgeType tip entries now =
+  mapM_ storeEntry $ balanceChecked now badgeType tip entries
   where
     storeEntry (StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType}, checked) =
       DB.execute

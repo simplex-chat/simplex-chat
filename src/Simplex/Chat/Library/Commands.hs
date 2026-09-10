@@ -59,7 +59,7 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Crypto.Random (ChaChaDRG)
 import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeState (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
@@ -5464,7 +5464,7 @@ badgeErrorRetry = \case
 -- the same request is sent again on the next pass. 'Left' is a service error, already reported, and
 -- carries when to try again, since a service error is answered rather than thrown.
 requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either UTCTime StatementEntry)
-requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, purchaseKey, purchasePrivKey, masterKey} now = do
+requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchaseKey, purchasePrivKey, masterKey} now = do
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
   withEntityLock "badgeIssue" (CLBadgeUser userId) $ do
     user <- withStore $ \db -> getUser db userId
@@ -5485,7 +5485,7 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, purchaseKey, purcha
         -- read again: now was taken before a lock wait and an untimed request, and the check reads
         -- it as the client's clock against the timestamps the service put on the rows
         storedAt <- badgeNow
-        applied <- withStore' $ \db -> applyBadgeStatement db g badgePurchaseId statement cred_ storedAt
+        applied <- withStore' $ \db -> applyBadgeStatement db g badgePurchaseId badgeType statement cred_ storedAt
         unless applied $ eToView $ ChatError $ CEInternalError "issued badge credential has no ledger row to store it against"
         Right <$> (withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no balance") pure)
       J.Success BSPError {code, retryAfter} -> do
@@ -5544,7 +5544,7 @@ stopBadgeWorkers workers =
 -- issuance and the profile's badge go in one transaction. Answers the user to tell contacts about,
 -- which the caller does once the badge lock is released.
 storeRedeemedBadge :: User -> BadgeCodeRedemption -> BadgeCredential -> BadgeStatement -> CM (Maybe User, ChatResponse)
-storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCredential _ credMasterKey _ info) statement =
+storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCredential _ credMasterKey _ info@BadgeInfo {badgeType}) statement =
   verifyOwnBadge cred >>= \case
     Nothing -> throwCmdError "redeemed badge credential names an unknown badge key index"
     Just False -> throwCmdError "redeemed badge credential does not verify against configured key"
@@ -5558,7 +5558,7 @@ storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey}
       -- TODO [badges] retire a previously held badge
       (user', newBadge, applied) <- withStore $ \db -> do
         (purchaseId, newBadge) <- liftIO $ createCodeBadgePurchase db user redemption cred now
-        applied <- liftIO $ applyBadgeStatement db g purchaseId statement (Just cred) now
+        applied <- liftIO $ applyBadgeStatement db g purchaseId badgeType statement (Just cred) now
         -- a replay must not put a superseded badge back, or tell every contact again
         user' <- if newBadge then setUserBadge db user (Just badge) else getUser db userId
         pure (user', newBadge, applied)
@@ -5569,12 +5569,12 @@ storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey}
 
 -- | Store the statement's rows, then the credential against the badge debit row among them.
 -- 'False' when that row cannot be found, which the caller reports rather than drop in silence.
-applyBadgeStatement :: DB.Connection -> TVar ChaChaDRG -> Int64 -> BadgeStatement -> Maybe BadgeCredential -> UTCTime -> IO Bool
-applyBadgeStatement db g purchaseId BadgeStatement {entries, previousEntryId} cred_ now = do
+applyBadgeStatement :: DB.Connection -> TVar ChaChaDRG -> Int64 -> BadgeType -> BadgeStatement -> Maybe BadgeCredential -> UTCTime -> IO Bool
+applyBadgeStatement db g purchaseId badgeType BadgeStatement {entries, previousEntryId} cred_ now = do
   -- the whole ledger starts at a row with no predecessor, and is sent with no previousEntryId;
   -- checking that row against a tip this purchase already holds would mark a good row bad
   tip <- if isJust previousEntryId then getBadgeLedgerLastEntry db purchaseId else pure Nothing
-  storeBadgeStatement db purchaseId tip entries now
+  storeBadgeStatement db purchaseId badgeType tip entries now
   case (,) <$> cred_ <*> issuedEntryId of
     Nothing -> pure True
     Just (cred, entryUuid) ->

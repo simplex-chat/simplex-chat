@@ -65,6 +65,7 @@ badgeTests = do
     it "accepts a chain of entries, each against the one before it" testChecksChain
     it "checks the second entry against the first, not against the tip" testChecksAgainstStatement
     it "accepts an opening credit with no predecessor, and rejects anything else" testChecksOpening
+    it "rejects an opening credit naming a badge type the purchase is not for" testChecksOpeningBadgeType
     it "rejects a lapse writing off months that had not elapsed" testChecksOverLapse
     it "rejects a debit whose start or anchor moved" testChecksMovedStart
     it "rejects a grant restarting a run the predecessor still funds" testChecksGrantRestart
@@ -432,7 +433,7 @@ testMondayExpiry = do
   zipWith diffUTCTime expiries periodEnds `shouldSatisfy` all (\d -> d > nominalDay && d <= 8 * nominalDay)
 
 verdicts :: UTCTime -> Maybe StatementEntry -> [StatementEntry] -> [Maybe Bool]
-verdicts now tip = map snd . balanceChecked now tip
+verdicts now tip = map snd . balanceChecked now BTSupporter tip
 
 testChecksChain :: IO ()
 testChecksChain = do
@@ -467,6 +468,15 @@ testChecksOpening = do
   verdicts t Nothing [opening] `shouldBe` [Just True]
   Just issued <- pure $ issue t opening
   verdicts t Nothing [issued] `shouldBe` [Just False]
+
+-- The seed takes the purchase's badge type, not the statement's, so an opening row cannot assert a
+-- badge the purchase was never for - the one field on that path with something to check it against.
+testChecksOpeningBadgeType :: IO ()
+testChecksOpeningBadgeType = do
+  let t = at 2026 3 10
+      opening = grant t 12 (newBalance t)
+  verdicts t Nothing [opening] `shouldBe` [Just True]
+  verdicts t Nothing [opening {balanceBadgeType = BTLegend}] `shouldBe` [Just False]
 
 -- Over-lapsing empties the balance while paidThrough stays where it was: the badge stops renewing
 -- and the ledger still reads as paid up. The row is self-consistent with the one before it, so only

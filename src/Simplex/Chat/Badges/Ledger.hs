@@ -122,11 +122,12 @@ maxCreatedAtSkew = 60 * 60
 -- | Each entry is checked by re-running the operation it claims. Checking only that its numbers
 -- follow from the previous entry would pass a lapse of three months where one elapsed.
 -- 'Nothing' means this version has no operation for that entry type, so nothing was re-run.
-balanceChecked :: UTCTime -> Maybe StatementEntry -> [StatementEntry] -> [(StatementEntry, Maybe Bool)]
-balanceChecked _ _ [] = []
-balanceChecked now tip entries@(first : _) = zipWith withVerdict (opening : entries) entries
+balanceChecked :: UTCTime -> BadgeType -> Maybe StatementEntry -> [StatementEntry] -> [(StatementEntry, Maybe Bool)]
+balanceChecked _ _ _ [] = []
+balanceChecked now badgeType tip entries@(first : _) = zipWith withVerdict (opening : entries) entries
   where
-    opening = fromMaybe (emptyEntry (createdAt first) (balanceBadgeType first)) tip
+    -- the purchase's own type, not the statement's: on the seed path nothing else contradicts it
+    opening = fromMaybe (emptyEntry (createdAt first) badgeType) tip
     withVerdict prev e = (e, entryChecked now prev e)
 
 entryChecked :: UTCTime -> StatementEntry -> StatementEntry -> Maybe Bool
