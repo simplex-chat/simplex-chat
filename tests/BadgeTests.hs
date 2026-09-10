@@ -519,8 +519,8 @@ testChecksTimestamps = do
       granted = grant start 3 (newBalance start)
   Just issued <- pure $ issue start granted
   -- the two clocks are not the same clock, so a row from just ahead of this one is not evidence
-  verdicts start (Just granted) [stampedAt (addUTCTime 60 start) issued] `shouldBe` [Just True]
-  verdicts start (Just granted) [stampedAt (addUTCTime (10 * 60) start) issued] `shouldBe` [Just False]
+  verdicts start (Just granted) [stampedAt (addUTCTime (30 * 60) start) issued] `shouldBe` [Just True]
+  verdicts start (Just granted) [stampedAt (addUTCTime (2 * 3600) start) issued] `shouldBe` [Just False]
   verdicts start (Just granted) [stampedAt (at 2026 3 1) issued] `shouldBe` [Just False]
 
 -- Marking a row this version has no operation for as broken would report a newer service as

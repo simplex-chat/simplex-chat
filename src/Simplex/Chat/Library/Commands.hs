@@ -5482,7 +5482,10 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, purchaseKey, purcha
         -- TODO [badges] the statement is applied either way, so a failed verification spends the
         -- month with nothing to show for it; that needs an alert, not only a line in the log
         g <- asks random
-        applied <- withStore' $ \db -> applyBadgeStatement db g badgePurchaseId statement cred_ now
+        -- read again: now was taken before a lock wait and an untimed request, and the check reads
+        -- it as the client's clock against the timestamps the service put on the rows
+        storedAt <- badgeNow
+        applied <- withStore' $ \db -> applyBadgeStatement db g badgePurchaseId statement cred_ storedAt
         unless applied $ eToView $ ChatError $ CEInternalError "issued badge credential has no ledger row to store it against"
         Right <$> (withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no balance") pure)
       J.Success BSPError {code, retryAfter} -> do

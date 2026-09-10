@@ -114,8 +114,10 @@ issueEntry t entryId e@StatementEntry {balanceMonths, balanceStartTs}
             entryType = SEDebit SDBadge
           }
 
+-- Generous because postdating only steals by crossing a month boundary, which takes days, while a
+-- device clock a few minutes slow would otherwise mark every arriving row bad.
 maxCreatedAtSkew :: NominalDiffTime
-maxCreatedAtSkew = 5 * 60
+maxCreatedAtSkew = 60 * 60
 
 -- | Each entry is checked by re-running the operation it claims, not against its predecessor's
 -- totals: over-lapsing is self-consistent and still theft. 'Nothing' is a third state, not a
