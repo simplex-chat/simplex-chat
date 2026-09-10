@@ -42,6 +42,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Util (shuffle)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
+import Simplex.FileTransfer.Description (maxFileSize)
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), allRoles, createAgentStore, defaultAgentConfig, presetServerCfg)
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
@@ -106,6 +107,7 @@ defaultChatConfig =
       xftpDescrPartSize = 14000,
       inlineFiles = defaultInlineFilesConfig,
       autoAcceptFileSize = 0,
+      maxFileSizeNoBadge = maxFileSize,
       showReactions = False,
       showFullLinks = False,
       showReceipts = False,

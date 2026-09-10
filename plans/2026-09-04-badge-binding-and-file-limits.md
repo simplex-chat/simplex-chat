@@ -50,7 +50,7 @@ Two new columns on `files`, a new table `rcv_badge_proofs` holding proofs, and t
 
 **Member key.** The Ed25519 key a member holds for one group. It is created when first needed — at group creation on this branch, or by `createUserMemberKey` before the first signed message — and the public key is sent in introductions and in `XInfo`.
 
-**Default limit.** `maxFileSize`, 1GB. A supporter badge raises it to 2GB, a legend badge to 5GB (`maxXFTPFileSize`, `Badges.hs:201`).
+**Default limit.** `maxFileSize`, 1GB. A supporter badge raises it to 2GB, a legend badge to 5GB (`maxXFTPFileSize`, `Badges.hs:201`). The size above which a proof is required is `ChatConfig.maxFileSizeNoBadge`, `maxFileSize` in production and lowered in tests.
 
 ## 1. Presentation headers
 
@@ -237,14 +237,19 @@ CREATE TABLE rcv_badge_proofs(
   badge_pres_header BLOB NOT NULL,
   badge_key_idx INTEGER NOT NULL,
   badge_type TEXT NOT NULL,
-  badge_expiry TEXT,
+  badge_expiry TEXT NOT NULL,
   badge_extra TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 ) STRICT;
 
+CREATE INDEX idx_rcv_badge_proofs_file_id ON rcv_badge_proofs(file_id);
+
 ALTER TABLE rcv_files ADD COLUMN badge_inv_proof_id INTEGER REFERENCES rcv_badge_proofs ON DELETE SET NULL;
 ALTER TABLE rcv_files ADD COLUMN badge_descr_proof_id INTEGER REFERENCES rcv_badge_proofs ON DELETE SET NULL;
+
+CREATE INDEX idx_rcv_files_badge_inv_proof_id ON rcv_files(badge_inv_proof_id);
+CREATE INDEX idx_rcv_files_badge_descr_proof_id ON rcv_files(badge_descr_proof_id);
 ```
 
 The six proof columns are the fields of `BadgeProof` — the proof, the presentation header, the issuer key index, and the disclosed type, expiry and extra — with a conversion of its own. The two references follow the pattern of `rcv_files.file_descr_id`, which references `xftp_file_descriptions` the same way (`chat_schema.sql:328`). File rows are removed by cascade from chat items, contacts and groups rather than by one function, and description rows referenced this way are left behind today. The proof row therefore also references the file with `ON DELETE CASCADE`, so it is removed with the file; the two columns on `rcv_files` say which proof is which. Postgres uses `BYTEA`, `BIGINT` and `GENERATED ALWAYS AS IDENTITY`. Register in both `Migrations.hs` lists and in `simplex-chat.cabal`. Update both `chat_schema.sql` files and `chat_query_plans.txt`; `SchemaDump.hs` compares them.

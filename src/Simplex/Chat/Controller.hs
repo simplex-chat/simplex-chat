@@ -152,6 +152,7 @@ data ChatConfig = ChatConfig
     xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
     autoAcceptFileSize :: Integer,
+    maxFileSizeNoBadge :: Int64,
     showReactions :: Bool,
     showFullLinks :: Bool,
     showReceipts :: Bool,

@@ -7,6 +7,7 @@ module ChatTests.Files where
 
 import ChatClient
 import ChatTests.DBUtils
+import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -20,6 +21,7 @@ import Simplex.Chat.Library.Internal (roundedFDCount)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (..))
+import Simplex.Messaging.Crypto.BBS (BBSPublicKey, bbsKeyGen)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
@@ -46,6 +48,9 @@ chatFileTests = do
     it "send and receive locally encrypted files" testXFTPFileTransferEncrypted
     it "send and receive file, accepting after upload" testXFTPAcceptAfterUpload
     it "send and receive file in group" testXFTPGroupFileTransfer
+    it "send and receive file with badge proof" testXFTPFileBadgeProof
+    it "send and receive file with badge proof in group" testXFTPGroupFileBadgeProof
+    it "file above the limit without badge proof is not accepted" testXFTPFileNoBadgeProof
     it "delete uploaded file" testXFTPDeleteUploadedFile
     it "delete uploaded file in group" testXFTPDeleteUploadedFileGroup
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
@@ -749,6 +754,83 @@ testXFTPGroupFileTransfer =
       dest2 <- B.readFile "./tests/tmp/test_1.pdf"
       dest1 `shouldBe` src
       dest2 `shouldBe` src
+
+badgeFileCfg :: BBSPublicKey -> ChatConfig
+badgeFileCfg pk = testCfg {badgePublicKeys = testBadgeKeys pk, maxFileSizeNoBadge = 100000}
+
+testXFTPFileBadgeProof :: HasCallStack => TestParams -> IO ()
+testXFTPFileBadgeProof ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (badgeFileCfg pk) aliceProfile bobProfile (test sk) ps
+  where
+    test sk alice bob = withXFTPServer $ do
+      connectUsers alice bob
+      addTestBadge alice =<< issueTestBadge sk futureDate
+
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice *> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      concurrentlyN_
+        [ alice <## "completed uploading file 1 (test.pdf) for bob",
+          bob
+            <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
+                   "started receiving file 1 (test.pdf) from alice"
+                 ]
+        ]
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest `shouldBe` src
+
+testXFTPGroupFileBadgeProof :: HasCallStack => TestParams -> IO ()
+testXFTPGroupFileBadgeProof ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg3 (badgeFileCfg pk) aliceProfile bobProfile cathProfile (test sk) ps
+  where
+    test sk alice bob cath = withXFTPServer $ do
+      createGroup3 "team" alice bob cath
+      addTestBadge alice =<< issueTestBadge sk futureDate
+
+      alice #> "/f #team ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            cath <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        ]
+      alice <## "completed uploading file 1 (test.pdf) for #team"
+
+      bob ##> "/fr 1 ./tests/tmp"
+      bob
+        <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
+               "started receiving file 1 (test.pdf) from alice"
+             ]
+      bob <## "completed receiving file 1 (test.pdf) from alice"
+
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest `shouldBe` src
+
+testXFTPFileNoBadgeProof :: HasCallStack => TestParams -> IO ()
+testXFTPFileNoBadgeProof ps = do
+  Right (pk, _) <- bbsKeyGen
+  testChatCfg2 (badgeFileCfg pk) aliceProfile bobProfile test ps
+  where
+    test alice bob = withXFTPServer $ do
+      connectUsers alice bob
+
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "file size exceeds the limit: test.pdf"
 
 testXFTPDeleteUploadedFile :: HasCallStack => TestParams -> IO ()
 testXFTPDeleteUploadedFile =

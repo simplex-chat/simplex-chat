@@ -451,19 +451,24 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
       ciFile = CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndStored, fileProtocol = FPXFTP, fileExpires = Nothing, fileProhibited = Nothing}
   pure (fInv, ciFile, ft)
 
+fileNeedsBadge :: Integer -> CM Bool
+fileNeedsBadge fileSize = (fileSize >) . toInteger <$> asks (maxFileSizeNoBadge . config)
+
 sndFileBadge :: User -> Integer -> Maybe ContactOrGroup -> CM (Maybe BadgeProof)
-sndFileBadge user fileSize contactOrGroup_
-  | fileSize <= toInteger FD.maxFileSize = pure Nothing
-  | otherwise = case contactOrGroup_ of
+sndFileBadge user fileSize contactOrGroup_ =
+  ifM (fileNeedsBadge fileSize) proof (pure Nothing)
+  where
+    proof = case contactOrGroup_ of
       Nothing -> pure Nothing
       Just cg ->
         sndFileChatBinding cg $>>= \binding ->
           sndBadgeProof user PHFileInv {chatBinding = binding, fileSize = fromInteger fileSize}
 
 sndDescrBadge :: User -> ContactOrGroup -> FileTransferMeta -> ValidFileDescription 'FRecipient -> Maybe UTCTime -> CM (Maybe BadgeProof)
-sndDescrBadge user cg FileTransferMeta {fileSize} (FD.ValidFileDescription fd) fileExpires
-  | fileSize <= toInteger FD.maxFileSize = pure Nothing
-  | otherwise =
+sndDescrBadge user cg FileTransferMeta {fileSize} (FD.ValidFileDescription fd) fileExpires =
+  ifM (fileNeedsBadge fileSize) proof (pure Nothing)
+  where
+    proof =
       sndFileChatBinding cg $>>= \binding ->
         sndBadgeProof user PHFileDescr {chatBinding = binding, fileSize = fromInteger fileSize, descrHash = FD.sharedDescriptionHash fd, fileExpires}
 
@@ -2338,10 +2343,12 @@ badgeProofStatus headerAccepted badge@BadgeProof {presHeader = BBSPresHeader phB
     _ -> pure BSFailed
 
 rcvFileInvProhibited :: FileSender -> FileInvitation -> CM (Maybe FileProhibited)
-rcvFileInvProhibited sender FileInvitation {fileSize, fileBadge}
-  | fileSize <= toInteger FD.maxFileSize = pure Nothing
-  | otherwise = case fileBadge of
-      Nothing -> pure $ Just FileProhibited {maxSize = FD.maxFileSize, badgeStatus = Nothing}
+rcvFileInvProhibited sender FileInvitation {fileSize, fileBadge} = do
+  maxNoBadge <- asks $ maxFileSizeNoBadge . config
+  if fileSize <= toInteger maxNoBadge
+    then pure Nothing
+    else case fileBadge of
+      Nothing -> pure $ Just FileProhibited {maxSize = maxNoBadge, badgeStatus = Nothing}
       Just badge -> do
         bindingAccepted <- fileSenderBinding sender
         st <- badgeProofStatus (headerAccepted bindingAccepted) badge

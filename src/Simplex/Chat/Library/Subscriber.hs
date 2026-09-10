@@ -1952,7 +1952,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           ft' <- getRcvFileTransfer db user fileId
           pure (rfd, ft')
         when fileDescrComplete $ toView $ CEvtRcvFileDescrReady user aci ft' rfd
-        let descrBadgeRequired = fileDescrComplete && fileSize > toInteger FD.maxFileSize && not (itemFileProhibited aci)
+        needsBadge <- fileNeedsBadge fileSize
+        let descrBadgeRequired = fileDescrComplete && needsBadge && not (itemFileProhibited aci)
         badgeOk <- if descrBadgeRequired then descrBadgeVerified sender fileSize rfd fileExpires fileBadge else pure True
         if badgeOk
           then do
