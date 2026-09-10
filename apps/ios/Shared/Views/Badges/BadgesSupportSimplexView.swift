@@ -48,7 +48,7 @@ struct BadgesSupportSimplexView: View {
             case .support:
                 supportSimpleX
             case let .badge(badgeState):
-                BadgesYourBadgeView(badgeState: badgeState)
+                BadgesYourBadgeView(badgeState: badgeState, showsAsSheet: showsAsSheet)
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -176,6 +176,7 @@ struct BadgesSupportSimplexView: View {
 struct BadgesYourBadgeView: View {
     @EnvironmentObject var theme: AppTheme
     let badgeState: BadgeState
+    var showsAsSheet: Bool = false
 
     private var title: LocalizedStringKey {
         badgeState.ended ? "Support ended" : "Your badge"
@@ -197,7 +198,7 @@ struct BadgesYourBadgeView: View {
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 25)
-                .padding(.top, 8)
+                .padding(.top, showsAsSheet ? 48 : 8)
                 .padding(.bottom, 20)
                 .frame(minHeight: g.size.height)
             }
