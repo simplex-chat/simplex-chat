@@ -134,8 +134,8 @@ entryChecked :: UTCTime -> StatementEntry -> StatementEntry -> Maybe Bool
 entryChecked now prev e
   | postdated || backdated = Just False
   | otherwise = case entryType e of
-      SEDebit SDLapse -> derived $ lapseEntry t "" prev
-      SEDebit SDBadge -> derived $ issueEntry t "" prev
+      SEDebit SDLapse -> maybe (Just False) matches $ lapseEntry t "" prev
+      SEDebit SDBadge -> maybe (Just False) matches $ issueEntry t "" prev
       SEDebit SDRefund -> uncontradicted
       SEDebit SDUpgrade {} -> uncontradicted
       SEDebit SDTransferOut {} -> uncontradicted
@@ -143,16 +143,17 @@ entryChecked now prev e
       SEDebit SDUnknown {} -> uncontradicted
       SECredit SCUnknown {} -> uncontradicted
       SECredit c
-        -- we take the month count from the row and hand it to grantEntry, so they always agree;
-        -- a negative count would go through and shorten what the user has paid for
+        -- grantEntry is given the row's month count, so the check agrees with whatever it claims -
+        -- including a negative count, which shortens what the user paid for.
+        -- TODO [badges] a purchase made in the app knows the months it bought; check them here.
         | changeMonths e < 0 -> Just False
-        | otherwise -> Just $ sameBalance e $ grantEntry t "" (changeMonths e) c prev
+        | otherwise -> matches $ grantEntry t "" (changeMonths e) c prev
   where
     t = createdAt e
     postdated = t > addUTCTime maxCreatedAtSkew now
     -- equal is not behind: a service pass writes its lapse and its issue with one clock reading
     backdated = t < createdAt prev
-    derived = Just . maybe False (sameBalance e)
+    matches = Just . sameBalance e
     uncontradicted
       | balanceMonths e /= balanceMonths prev + changeMonths e = Just False
       | balanceMonths e < 0 = Just False
