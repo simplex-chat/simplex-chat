@@ -155,8 +155,15 @@ function setTheme(theme: Theme, echo: boolean): void {
 
 // The host sizes the iframe to our content, so the site's page (not the frame) is what scrolls and
 // the footer follows naturally. Post on every layout change; the value is a dimension, not a secret.
+let lastHeight = 0;
 function postHeight(): void {
-  window.parent.postMessage({ type: HEIGHT_MESSAGE, height: document.documentElement.scrollHeight }, hostOrigin ?? "*");
+  // Round up from the fractional box: `scrollHeight` floors, which leaves the iframe a sub-pixel
+  // short and the site's footer riding over the last row — visible as a jitter at fractional zoom,
+  // where the rounding shifts. Skip unchanged values so a zoom's layout churn is one post, not many.
+  const height = Math.ceil(document.documentElement.getBoundingClientRect().height);
+  if (height === lastHeight) return;
+  lastHeight = height;
+  window.parent.postMessage({ type: HEIGHT_MESSAGE, height }, hostOrigin ?? "*");
 }
 
 if (embedded) {
