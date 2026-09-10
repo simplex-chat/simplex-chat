@@ -128,7 +128,10 @@ templateEngineOverride: njk
         </button>
     </header>
 
-    <iframe id="badges-frame" title="Support SimpleX" src="https://badges.simplex.chat"></iframe>
+    <!-- No src here: the script sets it to the frame's own origin plus the route we persisted, so the
+         frame loads straight at the step the buyer had reached — exactly as it does standalone, without
+         first showing the landing and then sliding to the step. -->
+    <iframe id="badges-frame" title="Support SimpleX"></iframe>
 
     {% include "footer.html" %}
 
@@ -139,6 +142,10 @@ templateEngineOverride: njk
             var APP = "https://badges.simplex.chat";
             var frame = document.getElementById("badges-frame");
             var minHeight = 0; // the initial screen's height, kept as the frame's floor once known
+            // Load the frame at the route we persisted (a wizard step's hash; empty for the landing or
+            // an order the frame resumes from its own store). This is what a standalone reload does, so
+            // the step appears in place instead of scrolling in from the landing.
+            frame.src = APP + location.hash;
 
             function siteTheme() {
                 try { return localStorage.getItem("theme") || "system"; } catch (e) { return "system"; }
@@ -172,15 +179,13 @@ templateEngineOverride: njk
 
             window.addEventListener("message", function (e) {
                 if (e.origin !== APP || !e.data) return;
-                // The frame announces itself on load; hand it the site's theme and background, and
-                // restore the route we persisted — but only a non-empty one. An empty hash means the
-                // frame was last on the landing or an order/payment screen it resumes from its own
-                // store; posting "" would drive it to the landing over a payment mid-way through, so
-                // we stay out of the way and let it self-resume.
+                // The frame announces itself on load; hand it the site's theme and background. The
+                // route is not restored here — the frame already loaded at it, from its own src (set
+                // above) — so an order/payment screen the frame resumes from its store is never driven
+                // off to the landing.
                 if (e.data.type === "simplex-embed-ready") {
                     post({ type: "simplex-theme", theme: siteTheme() });
                     postColors();
-                    if (location.hash) postRoute();
                 }
                 // The buyer used the theme switch inside the frame; keep the site in step.
                 if (e.data.type === "simplex-theme") { applySiteTheme(e.data.theme); postColors(); }
