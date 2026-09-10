@@ -46,7 +46,7 @@ walletTests = do
   it "the key and the addresses come back after a restart" testWalletPersists
   it "a second profile gets its own account, on the same key" testWalletSecondProfile
   it "imports a phrase, exports it, and refuses a second import" testWalletImport
-  it "deletes the key only with the last word of the phrase" testWalletDelete
+  it "deletes the key, and a key can be imported again" testWalletDelete
 
 accountRows :: HasCallStack => TestCC -> String -> Int -> IO [(String, String)]
 accountRows cc profile acct = do
@@ -119,9 +119,7 @@ testWalletDelete :: HasCallStack => TestParams -> IO ()
 testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
   _ <- accountRows alice "alice, active" 0
-  alice ##> "/_wallet delete abandon"
-  alice <## "bad chat command: this deletes the wallet key for all profiles on this device, to confirm pass the last word of the recovery phrase"
-  alice ##> "/_wallet delete About"
+  alice ##> "/_wallet delete"
   alice <## "no wallet key"
   -- deleting unbinds the profile, so a key can be imported again
   alice ##> ("/_wallet import " <> B.unpack testPhrase)

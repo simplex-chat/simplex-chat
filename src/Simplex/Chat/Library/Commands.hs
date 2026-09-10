@@ -1519,14 +1519,10 @@ processChatCommand cxt nm = \case
     seed <- withFastStore' getDeviceSeed >>= maybe (throwCmdError noKeyError) pure
     phrase <- either (throwCmdError . ("wallet: " <>)) pure $ recoveryKeyPhrase seed
     pure $ CRWalletPhrase user (safeDecodeUtf8 phrase)
-  APIWalletDelete confirmWord -> withUser $ \user -> do
+  APIWalletDelete -> withUser $ \_ -> do
     seed <- withFastStore' getDeviceSeed >>= maybe (throwCmdError noKeyError) pure
-    phrase <- either (throwCmdError . ("wallet: " <>)) pure $ recoveryKeyPhrase seed
-    case reverse . T.words $ safeDecodeUtf8 phrase of
-      w : _ | w == T.toLower confirmWord -> do
-        withFastStore' $ \db -> deleteSeed db (wsId seed)
-        processChatCommand cxt nm APIWallet
-      _ -> throwCmdError "this deletes the wallet key for all profiles on this device, to confirm pass the last word of the recovery phrase"
+    withFastStore' $ \db -> deleteSeed db (wsId seed)
+    processChatCommand cxt nm APIWallet
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db cxt user contactId
@@ -5591,7 +5587,7 @@ chatCommandP =
       "/_wallet create" $> APIWalletCreate,
       "/_wallet import " *> (APIWalletImport <$> textP),
       "/_wallet export" $> APIWalletExport,
-      "/_wallet delete " *> (APIWalletDelete <$> textP),
+      "/_wallet delete" $> APIWalletDelete,
       "/_wallet" $> APIWallet,
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),

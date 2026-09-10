@@ -421,7 +421,7 @@ data ChatCommand
   | APIWalletCreate
   | APIWalletImport {recoveryPhrase :: Text}
   | APIWalletExport
-  | APIWalletDelete {confirmWord :: Text}
+  | APIWalletDelete
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
@@ -751,7 +751,7 @@ allowRemoteCommand = \case
   APIWalletCreate -> False
   APIWalletImport _ -> False
   APIWalletExport -> False
-  APIWalletDelete _ -> False
+  APIWalletDelete -> False
   _ -> True
 
 data RelayConnectionResult = RelayConnectionResult
