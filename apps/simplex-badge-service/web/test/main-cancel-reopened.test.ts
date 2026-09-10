@@ -27,7 +27,7 @@ cancelTest("main: an accepted cancel takes the payable screen down, not just the
   await settle();
 
   // the menu, the list, and then the same order opened from it
-  chrome.all("button.menu-item").find((b) => b.textContent === "Codes on this device")!.click();
+  chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
   await settle();
   page.respondWith({ status: 500, body: { error: "internal" } });
   const open = screenOf(app).all("a").find((a) => a.textContent === "Open");

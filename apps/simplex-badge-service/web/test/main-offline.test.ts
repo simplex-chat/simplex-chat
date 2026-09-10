@@ -155,11 +155,11 @@ offlineTest("main: the history list is not replaced by the payment screen behind
   page.history.pushState(null, "", "/#/codes");
   page.fire("popstate");
   await settle();
-  assert.equal(heading(), "Codes on this device");
+  assert.equal(heading(), "Your codes");
   for (const off of [true, false]) {
     page.setOffline(off);
     await settle();
-    assert.equal(heading(), "Codes on this device",
+    assert.equal(heading(), "Your codes",
       `an ${off ? "offline" : "online"} event must not paint a payment screen over the history`);
     assert.ok(!app.serialize().includes("8BdXsecondAddressExample"));
   }

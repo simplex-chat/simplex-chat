@@ -222,6 +222,6 @@ const FORGET_LABEL = "Forget everything on this device";
  * e.g. nothing was bought). The caller presses it, having set `confirmAnswer` first. */
 export function forgetControl(page: Page): StubElement | undefined {
   page.chrome.all("button.menu-button")[0]!.click();
-  page.chrome.all("button.menu-item").find((b) => b.textContent === "Codes on this device")!.click();
+  page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
   return page.app.all("button.danger").find((b) => b.textContent === FORGET_LABEL);
 }

@@ -148,12 +148,12 @@ resumeTest("main: the history list is not painted over by the loop of the order 
   await until(() => heading() === "Payment received", "the confirming screen, with its deadline armed");
 
   page.chrome.all("button.menu-button")[0]!.click();
-  page.chrome.all("button.menu-item").find((b) => b.textContent === "Codes on this device")!.click();
-  await until(() => heading() === "Codes on this device", "the history list");
+  page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
+  await until(() => heading() === "Your codes", "the history list");
 
   mock.timers.tick(15 * 60_000);
   await settle();
-  assert.equal(heading(), "Codes on this device",
+  assert.equal(heading(), "Your codes",
     "the give-up of the order behind it must not take the screen the buyer asked for");
   assert.equal(location.hash, "#/codes", "and what is on screen is what the URL says");
   // the whole URL, not just its hash: a bare `#/codes` keeps the `?order=` it was opened from,
@@ -250,7 +250,7 @@ resumeTest("main: an answer already on the wire is dropped once the store is for
     createdAt: new Date(NOW - 60_000).toISOString(), status: "open",
   }]));
   page.respondWith({ status: 200, body: { status: "expired", badgeType: "supporter", months: 1 } });
-  page.chrome.all("button.menu-item").find((b) => b.textContent === "Codes on this device")!.click();
+  page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
 
   // no settle: the read is on the wire, and this is the wipe landing while it is
   page.confirmAnswer(true);

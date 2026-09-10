@@ -727,7 +727,8 @@ function newInvoice(): void {
 // step pushed) so [ ← Back ] returns there just as walking in from the landing does; the session is
 // cleared, so nothing is preselected.
 function startPurchase(): void {
-  store.clearSession();
+  // The buyer's tier and duration are kept, so the level picker opens with the same choice preselected
+  // as reaching it from the landing does — "Buy a code" is a shortcut to the picker, not a reset.
   stopCountdowns();
   flow.stopAll();
   history.replaceState(null, "", "/");

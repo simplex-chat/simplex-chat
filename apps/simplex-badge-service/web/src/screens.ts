@@ -44,7 +44,7 @@ export const MENU_ID = "menu";
 const MENU_LABEL = "Menu";
 export const THEME_LABEL = "Theme";
 export const NEW_PURCHASE = "Buy a code";
-export const PURCHASE_HISTORY = "Codes on this device";
+export const PURCHASE_HISTORY = "Your codes";
 export const FORGET_EVERYTHING = "Forget everything on this device";
 export const NEW_INVOICE = "New invoice";
 export const PART_PAID_TITLE = "Part of the amount has arrived";
@@ -899,7 +899,7 @@ function entryLine(row: HistoryRow, onOpen: (orderId: string) => void): HTMLElem
 export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
   if (o.rows.length === 0) {
     return panel(
-      el("h1", {}, "Codes on this device"),
+      el("h1", {}, "Your codes"),
       el("p", { class: "lede" }, "Nothing bought on this device"),
       button("Choose your level", o.onStart),
     );
@@ -911,7 +911,7 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
   const forget = el("p", { class: "forget-line" },
     button(FORGET_EVERYTHING, o.onForget, "link danger"));
   return panel(
-    el("h1", {}, "Codes on this device"),
+    el("h1", {}, "Your codes"),
     el("p", { class: "lede" }, o.keepsNewCodes
       ? "Every code you bought is in this browser, and nowhere else."
       : "This browser cannot save anything new right now. Copy any code you have not kept elsewhere."),

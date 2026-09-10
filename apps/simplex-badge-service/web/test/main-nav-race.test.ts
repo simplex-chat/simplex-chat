@@ -19,8 +19,8 @@ navTest("main: a history refresh landing after the buyer moved on does not take 
 
   // the refresh this fires reads the open order; its answer is queued, so it resolves promptly
   page.respondWith(openReply);
-  page.chrome.all("button.menu-item").find((b) => b.textContent === "Codes on this device")!.click();
-  assert.equal(headingOf(inView()), "Codes on this device", "the list is drawn from the store at once");
+  page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
+  assert.equal(headingOf(inView()), "Your codes", "the list is drawn from the store at once");
 
   // and the buyer goes back to the order before that answer lands
   page.respondWith(openReply);

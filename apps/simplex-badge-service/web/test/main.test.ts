@@ -306,12 +306,12 @@ mainTest("main: the menu opens the history list from the store, with [ Open ] as
   // than from a line at the foot of whichever panel happened to carry one.
   assert.equal(heading(inView()), "Support SimpleX");
   assert.equal(inView().all("button.link").length, 0, "the landing page carries no navigation of its own");
-  menuItem("Codes on this device").click();
+  menuItem("Your codes").click();
   await until(() => app.all("li.entry").length > 0, "the history list's list");
 
   assert.equal(location.hash, "#/codes", "pushState must update location synchronously");
   const codes = screenOf(app);
-  assert.equal(heading(codes), "Codes on this device");
+  assert.equal(heading(codes), "Your codes");
   const rows = codes.all("li.entry");
   assert.equal(rows.length, 1);
   assert.ok(rows[0]!.textContent.includes("waiting for payment"), rows[0]!.textContent);
@@ -589,7 +589,7 @@ mainTest("main: an open menu takes the screen behind it out of the tree, and giv
   assert.equal(app.hasAttribute("inert"), false, "and every close gives it back");
   // Including the close an item performs on its way to another screen.
   trigger.click();
-  menuItem("Codes on this device").click();
+  menuItem("Your codes").click();
   assert.equal(app.hasAttribute("inert"), false, "or the screen it navigated to would be dead");
   history.back();
 });

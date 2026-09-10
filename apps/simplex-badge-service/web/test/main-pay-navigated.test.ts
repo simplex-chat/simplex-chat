@@ -26,8 +26,8 @@ payTest("main: a checkout that lands after the buyer left keeps its order but no
   inView().all("button.primary")[0]!.click();
   await until(() => fetches.slice(before).some((f) => f.url === "/api/invoice"), "the checkout POST");
 
-  page.chrome.all("button.menu-item").find((b) => b.textContent === "Codes on this device")!.click();
-  assert.equal(headingOf(inView()), "Codes on this device", "the page the buyer asked for");
+  page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
+  assert.equal(headingOf(inView()), "Your codes", "the page the buyer asked for");
 
   // and only now does the invoice come back
   assert.ok(page.answerHeld({
@@ -40,7 +40,7 @@ payTest("main: a checkout that lands after the buyer left keeps its order but no
   }, "/api/invoice"), "the checkout POST is the one still holding");
   await settle();
 
-  assert.equal(headingOf(inView()), "Codes on this device",
+  assert.equal(headingOf(inView()), "Your codes",
     "the checkout's answer does not paint over the page the buyer went to");
 
   assert.equal(location.search, "",

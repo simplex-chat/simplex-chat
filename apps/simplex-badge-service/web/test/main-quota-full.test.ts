@@ -19,9 +19,9 @@ const { app } = page;
 await import("../src/main.js");
 
 quotaTest("main: codes already stored stay readable when the writes stop", () => {
-  page.chrome.all("button.menu-item").find((b) => b.textContent === "Codes on this device")!.click();
+  page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
   const screen = inViewOf(app);
-  assert.equal(headingOf(screen), "Codes on this device");
+  assert.equal(headingOf(screen), "Your codes");
   assert.ok(screen.textContent.includes("Legend, 12 months"),
     `an order this browser really holds must still be listed: ${screen.textContent.slice(0, 200)}`);
   assert.ok(screen.textContent.includes("cannot save anything new"),
