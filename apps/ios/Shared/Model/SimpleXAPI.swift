@@ -2182,6 +2182,100 @@ func resetAgentServersStats() async throws {
     try await sendCommandOkResp(.resetAgentServersStats)
 }
 
+// The failures redeemBadgeCode raises, as core flattens them to command error text.
+// tests/Bots/BadgeServiceTests.hs asserts that text, so a change in core breaks a test there.
+enum BadgeRedeemError: Error {
+    case invalidCode
+    case serviceNotConfigured
+    case alreadyActive
+    case codeInvalid
+    case codeUsed
+    case codeExpired
+    case rateLimited
+    case serviceFailed
+    case badServiceResponse
+    case credentialNotVerified
+    case unsupportedVersion
+    case networkError
+    case unknown
+}
+
+private enum BadgeErrorText {
+    static let invalidCode = "invalid badge code"
+    static let serviceNotConfigured = "badge service not configured"
+    static let alreadyActive = "badge already active"
+    static let unknownKeyIndex = "unknown badge key index"
+    static let credentialNotVerified = "badge credential does not verify against configured key"
+    static let invalidResponse = "invalid badge service response, "
+    static let unexpectedResponse = "unexpected badge service response: "
+    static let serviceError = "badge service error: "
+    // raised by sendServiceRequestTo, not by redeemBadgeCode itself, when the reply is not JSON
+    static let undecodableResponse = "invalid service response"
+}
+
+func badgeRedeemError(_ error: ChatError) -> BadgeRedeemError {
+    // the app's own classifier decides what counts as a network failure; only the classification is
+    // used here, not its retry policy - a client that retries makes code guessing cheaper
+    if retryableNetworkErrorAlert(error) != nil { return .networkError }
+    guard case let .error(.commandError(message)) = error else { return .unknown }
+    switch message {
+    case BadgeErrorText.invalidCode: return .invalidCode
+    case BadgeErrorText.serviceNotConfigured: return .serviceNotConfigured
+    case BadgeErrorText.alreadyActive: return .alreadyActive
+    case BadgeErrorText.unknownKeyIndex, BadgeErrorText.credentialNotVerified: return .credentialNotVerified
+    case BadgeErrorText.undecodableResponse: return .badServiceResponse
+    default: break
+    }
+    if message.hasPrefix(BadgeErrorText.invalidResponse) || message.hasPrefix(BadgeErrorText.unexpectedResponse) {
+        return .badServiceResponse
+    }
+    if message.hasPrefix(BadgeErrorText.serviceError) {
+        return badgeServiceError(String(message.dropFirst(BadgeErrorText.serviceError.count)))
+    }
+    return .unknown
+}
+
+// the service's own tag, which core bounds to [a-z0-9_] and 32 characters and which is never shown
+private func badgeServiceError(_ tag: String) -> BadgeRedeemError {
+    switch tag {
+    case "code_invalid": return .codeInvalid
+    case "code_used": return .codeUsed
+    case "code_expired": return .codeExpired
+    case "rate_limited": return .rateLimited
+    // retrying never succeeds: the client is too old for the service
+    case "unsupported_version": return .unsupportedVersion
+    default: return .serviceFailed
+    }
+}
+
+// log: false because the code is a bearer secret until it is redeemed - it is in the command, and a
+// service response echoed into an error message would carry it into the terminal with the response.
+func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: User, newBadge: Bool) {
+    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiRedeemBadgeCode(userId: userId, code: code), log: false)
+    switch r {
+    // redeemedBadge is dropped: for a top-up it is the newly issued credential, while the profile
+    // still carries the badge contacts see, and "shown on your profile" must render that one
+    case let .result(.badgeRedeemed(user, _, newBadge)): return (user, newBadge)
+    case let .error(e): throw badgeRedeemError(e)
+    default:
+        // the response type alone - it names a case or a JSON key, never the service's message
+        logger.error("apiRedeemBadgeCode: unexpected \(r.responseType)")
+        throw BadgeRedeemError.unknown
+    }
+}
+
+func apiGetBadgeState(_ userId: Int64) async throws -> BadgeState? {
+    let r: ChatResponse2 = try await chatSendCmd(.apiGetBadgeState(userId: userId))
+    if case let .badgeState(_, badgeState) = r { return badgeState }
+    throw r.unexpected
+}
+
+func apiAckBadgeAlert(_ userId: Int64, _ badgePurchaseId: Int64, _ alertKind: BadgeAlertKind, snooze: Bool, episode: String) async throws -> BadgeState? {
+    let r: ChatResponse2 = try await chatSendCmd(.apiAckBadgeAlert(userId: userId, badgePurchaseId: badgePurchaseId, alertKind: alertKind, snooze: snooze, episode: episode))
+    if case let .badgeState(_, badgeState) = r { return badgeState }
+    throw r.unexpected
+}
+
 private func currentUserId(_ funcName: String) throws -> Int64 {
     if let userId = ChatModel.shared.currentUser?.userId {
         return userId
@@ -2946,6 +3040,20 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if active(user) {
             await MainActor.run {
                 m.updateContact(contact)
+            }
+        }
+    case let .badgeChanged(user, badgeState):
+        if active(user) {
+            await MainActor.run {
+                BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
+            }
+        }
+    // support ending raises only this: the worker reports a badge change when it retires or issues a
+    // credential, and a credential outlives the months it was bought with
+    case let .badgeAlert(user, badgeAlert):
+        if active(user) {
+            await MainActor.run {
+                BadgeModel.shared.recomputeForAlert(userId: user.userId, alert: badgeAlert)
             }
         }
     default:

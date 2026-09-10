@@ -359,6 +359,28 @@ class ChannelRelaysModel: ObservableObject {
     }
 }
 
+// The badge of whichever profile it was last loaded for, kept current by the badgeChanged event so
+// that a screen already open shows what the renewal worker did with no command behind it.
+class BadgeModel: ObservableObject {
+    static let shared = BadgeModel()
+    @Published private(set) var userId: Int64?
+    @Published private(set) var badgeState: BadgeState?
+
+    func set(userId: Int64, badgeState: BadgeState?) {
+        self.userId = userId
+        self.badgeState = badgeState
+    }
+
+    // Nothing reads BadgeState.alert yet; publishing it is the point. `ended` is derived from
+    // paidThrough against the clock, so when support lapses no value changes and only this write
+    // makes an open screen re-evaluate. Dropping it, or guarding on a change, breaks that silently.
+    func recomputeForAlert(userId: Int64, alert: BadgeAlert) {
+        if self.userId == userId {
+            badgeState?.alert = alert
+        }
+    }
+}
+
 // Spec: spec/state.md#ChatModel
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
