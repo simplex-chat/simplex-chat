@@ -470,7 +470,7 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, invProofId, currentTs, currentTs)
   pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileProhibited = prohibited_, fileStatus = RFSNew, fileType = FTNormal, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing, cryptoArgs = Nothing}
 
-prohibitedRow :: Maybe FileProhibited -> (Maybe Int64, Maybe BadgeStatus)
+prohibitedRow :: Maybe FileProhibited -> (Maybe Integer, Maybe BadgeStatus)
 prohibitedRow = \case
   Just FileProhibited {maxSize, badgeStatus} -> (Just maxSize, badgeStatus)
   Nothing -> (Nothing, Nothing)
@@ -714,7 +714,7 @@ getRcvFileTransfer_ db userId fileId = do
   where
     rcvFileTransfer ::
       Maybe RcvFileDescr ->
-      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe BoolInt) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, BoolInt, BoolInt) :. (Maybe ContactName, FileType, Maybe FileDigest, Maybe Int64, Maybe BadgeStatus) ->
+      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe BoolInt) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, BoolInt, BoolInt) :. (Maybe ContactName, FileType, Maybe FileDigest, Maybe Integer, Maybe BadgeStatus) ->
       ExceptT StoreError IO RcvFileTransfer
     rcvFileTransfer rfd_ ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileKey, fileNonce, fileInline, rcvFileInline, agentRcvFileId, BI agentRcvFileDeleted, BI userApprovedRelays) :. (groupName_, fileType, fileDigest_, fileMaxSize_, fileBadgeStatus_)) =
       case contactName_ <|> memberName_ <|> groupName_ <|> standaloneName_ of

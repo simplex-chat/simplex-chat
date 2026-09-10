@@ -209,10 +209,10 @@ localBadgeStatus = \case
   ShownBadge _ st -> st
 
 -- XFTP file size limit raised by an active badge: a legend badge to 5GB, any other to 2GB, otherwise the default.
-maxFileSizeSupporter :: Int64
+maxFileSizeSupporter :: Integer
 maxFileSizeSupporter = gb 2
 
-maxFileSizeLegend :: Int64
+maxFileSizeLegend :: Integer
 maxFileSizeLegend = gb 5
 
 badgeServerCredential :: Maybe LocalBadge -> Maybe EntitlementCredential
@@ -222,30 +222,30 @@ badgeServerCredential = \case
   _ -> Nothing
 
 data FileSizeLimits = FileSizeLimits
-  { noBadge :: Int64,
-    supporter :: Int64,
-    legend :: Int64
+  { noBadge :: Integer,
+    supporter :: Integer,
+    legend :: Integer
   }
   deriving (Eq, Show)
 
 defaultFileSizeLimits :: FileSizeLimits
-defaultFileSizeLimits = FileSizeLimits {noBadge = maxFileSize, supporter = maxFileSizeSupporter, legend = maxFileSizeLegend}
+defaultFileSizeLimits = FileSizeLimits {noBadge = toInteger maxFileSize, supporter = maxFileSizeSupporter, legend = maxFileSizeLegend}
 
 -- a badge raises the size limit at send for this long after its expiry, shorter than badgeGraceInterval so the receiver still accepts the size
 badgeSndGraceInterval :: NominalDiffTime
 badgeSndGraceInterval = nominalDay
 
-badgeFileSize :: FileSizeLimits -> LocalBadge -> Int64
+badgeFileSize :: FileSizeLimits -> LocalBadge -> Integer
 badgeFileSize FileSizeLimits {supporter, legend} b = case badgeType (localBadgeInfo b) of
   BTLegend -> legend
   _ -> supporter
 
-maxXFTPFileSize :: FileSizeLimits -> Maybe LocalBadge -> Int64
+maxXFTPFileSize :: FileSizeLimits -> Maybe LocalBadge -> Integer
 maxXFTPFileSize lims = \case
   Just b | localBadgeStatus b == BSActive -> badgeFileSize lims b
   _ -> noBadge lims
 
-maxSndXFTPFileSize :: FileSizeLimits -> UTCTime -> Maybe LocalBadge -> Int64
+maxSndXFTPFileSize :: FileSizeLimits -> UTCTime -> Maybe LocalBadge -> Integer
 maxSndXFTPFileSize lims now = \case
   Just b | localBadgeStatus b == BSActive && addUTCTime badgeSndGraceInterval (badgeExpiry (localBadgeInfo b)) >= now -> badgeFileSize lims b
   _ -> noBadge lims

@@ -3977,7 +3977,7 @@ processChatCommand cxt nm = \case
       fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cfArgs
       lims <- asks $ fileSizeLimits . config
       now <- liftIO getCurrentTime
-      when (fromInteger fileSize > maxSndXFTPFileSize lims now sndBadge) $ throwChatError $ CEFileSize f
+      when (fileSize > maxSndXFTPFileSize lims now sndBadge) $ throwChatError $ CEFileSize f
       pure fileSize
     updateProfile :: User -> Profile -> CM ChatResponse
     updateProfile user p' = updateProfile_ user p' True $ withFastStore $ \db -> updateUserProfile db user p'

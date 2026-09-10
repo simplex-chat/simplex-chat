@@ -452,7 +452,7 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
   pure (fInv, ciFile, ft)
 
 fileNeedsBadge :: Integer -> CM Bool
-fileNeedsBadge fileSize = (fileSize >) . toInteger . noBadge <$> asks (fileSizeLimits . config)
+fileNeedsBadge fileSize = (fileSize >) . noBadge <$> asks (fileSizeLimits . config)
 
 sndBadgeProof :: User -> ProofPresHeader -> CM (Maybe BadgeProof)
 sndBadgeProof User {profile = LocalProfile {localBadge}} ph = case localBadge of
@@ -2355,7 +2355,7 @@ rcvGroupFileProhibited gInfo m_ asGroup fInv@FileInvitation {fileBadge} =
 rcvFileProhibited :: Maybe ByteString -> FileInvitation -> CM (Maybe FileProhibited)
 rcvFileProhibited binding_ FileInvitation {fileSize, fileBadge} = do
   lims <- asks $ fileSizeLimits . config
-  if fileSize <= toInteger (noBadge lims)
+  if fileSize <= noBadge lims
     then pure Nothing
     else case fileBadge of
       Nothing -> pure $ Just FileProhibited {maxSize = noBadge lims, badgeStatus = Nothing}
@@ -2363,10 +2363,9 @@ rcvFileProhibited binding_ FileInvitation {fileSize, fileBadge} = do
         st <- badgeProofStatus ((\chatBinding -> PHFileInv {chatBinding, fileSize = fromInteger fileSize}) <$> binding_) badge
         let maxSize = maxXFTPFileSize lims $ Just $ PeerBadge badge st
         pure $
-          if fileSize <= toInteger maxSize
+          if fileSize <= maxSize
             then Nothing
             else Just FileProhibited {maxSize, badgeStatus = Just st}
-
 
 createUserMemberKey :: GroupInfo -> CM GroupInfo
 createUserMemberKey gInfo@GroupInfo {groupId, membership, groupKeys}
