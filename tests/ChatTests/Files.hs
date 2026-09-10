@@ -836,7 +836,10 @@ testXFTPFileNoBadgeProof ps =
       bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       bob ##> "/fr 1 ./tests/tmp"
-      bob <## "file size exceeds the limit: test.pdf"
+      concurrentlyN_
+        [ bob <## "file size exceeds the limit: test.pdf",
+          alice <## "completed uploading file 1 (test.pdf) for bob"
+        ]
   where
     sndCfg = testCfg {fileSizeLimits = defaultFileSizeLimits {noBadge = 1000000}}
     rcvCfg = testCfg {fileSizeLimits = defaultFileSizeLimits {noBadge = 100000}}
@@ -854,7 +857,10 @@ testXFTPFileBadgeAboveLimit ps = do
       bob <# "alice *> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       bob ##> "/fr 1 ./tests/tmp"
-      bob <## "file size exceeds the limit: test.pdf"
+      concurrentlyN_
+        [ bob <## "file size exceeds the limit: test.pdf",
+          alice <## "completed uploading file 1 (test.pdf) for bob"
+        ]
   where
     rcvCfg pk = badgeFileCfgLimits pk FileSizeLimits {noBadge = 100000, supporter = 150000, legend = 400000}
 
@@ -874,8 +880,12 @@ testXFTPSndFileBadgeLimit ps = do
       addTestBadge alice =<< issueTestBadgeType sk BTLegend futureDate
       alice #> "/f @bob ./tests/fixtures/test.pdf"
       alice <## "use /fc 1 to cancel sending"
-      bob <# "alice *> sends file test.pdf (266.0 KiB / 272376 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      concurrentlyN_
+        [ alice <## "completed uploading file 1 (test.pdf) for bob",
+          do
+            bob <# "alice *> sends file test.pdf (266.0 KiB / 272376 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        ]
 
 testXFTPSndFileBadgeGrace :: HasCallStack => TestParams -> IO ()
 testXFTPSndFileBadgeGrace ps = do
@@ -893,8 +903,12 @@ testXFTPSndFileBadgeGrace ps = do
       addTestBadge alice =<< issueTestBadge sk (addUTCTime (-3600) now)
       alice #> "/f @bob ./tests/fixtures/test.pdf"
       alice <## "use /fc 1 to cancel sending"
-      bob <# "alice *> sends file test.pdf (266.0 KiB / 272376 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      concurrentlyN_
+        [ alice <## "completed uploading file 1 (test.pdf) for bob",
+          do
+            bob <# "alice *> sends file test.pdf (266.0 KiB / 272376 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        ]
 
 testXFTPDeleteUploadedFile :: HasCallStack => TestParams -> IO ()
 testXFTPDeleteUploadedFile =
