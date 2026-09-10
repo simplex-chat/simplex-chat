@@ -49,6 +49,9 @@ module Simplex.Chat.Badges
     verifyBadge_,
     mkBadgeStatus,
     BadgeRow,
+    RcvBadgeProofRow,
+    badgeProofToRow,
+    rowToBadgeProof,
     badgeToRow,
     localBadgeToRow,
     rowToBadge,
@@ -416,6 +419,23 @@ instance ToField BadgeType where toField = toField . textEncode
 instance FromField BadgeStatus where fromField = fromTextField_ textDecode
 
 instance ToField BadgeStatus where toField = toField . textEncode
+
+-- (proof, pres_header, key_idx, type, expiry, extra) - the fields of BadgeProof as stored in rcv_badge_proofs
+type RcvBadgeProofRow = (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int, Maybe Text, Maybe UTCTime, Maybe Text)
+
+badgeProofToRow :: BadgeProof -> (Binary ByteString, Binary ByteString, Int, Text, UTCTime, Text)
+badgeProofToRow (BadgeProof idx (BBSPresHeader ph) (BBSProof p) BadgeInfo {badgeType, badgeExpiry, badgeExtra}) =
+  (Binary p, Binary ph, idx, textEncode badgeType, badgeExpiry, badgeExtra)
+
+rowToBadgeProof :: RcvBadgeProofRow -> Maybe BadgeProof
+rowToBadgeProof (p_, ph_, idx_, type_, expiry_, extra_) = do
+  Binary p <- p_
+  Binary ph <- ph_
+  idx <- idx_
+  badgeType <- textDecode =<< type_
+  badgeExpiry <- expiry_
+  badgeExtra <- extra_
+  pure $ BadgeProof idx (BBSPresHeader ph) (BBSProof p) BadgeInfo {badgeType, badgeExpiry, badgeExtra}
 
 -- (proof, pres_header, expiry, type, verified, extra, master_key, signature, key_idx) - binary columns wrapped in Binary (BLOB/bytea)
 type BadgeRow = (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe UTCTime, Maybe Text, Maybe BoolInt, Maybe Text, Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int)

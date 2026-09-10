@@ -47,6 +47,7 @@ module Simplex.Chat.Store.Files
     createRcvGroupFileTransfer,
     getRcvFileProhibited,
     setRcvFileDescrBadgeProof,
+    getRcvFileBadgeProofs,
     createRosterRcvFile,
     createRcvStandaloneFileTransfer,
     appendRcvFD,
@@ -95,7 +96,7 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime, nominalDay)
 import Data.Type.Equality
 import Data.Word (Word32)
-import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus)
+import Simplex.Chat.Badges (BadgeProof, BadgeStatus, RcvBadgeProofRow, badgeProofToRow, rowToBadgeProof)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Store.Messages
@@ -105,10 +106,9 @@ import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
-import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
+import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.BBS (BBSPresHeader (..), BBSProof (..))
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import System.FilePath (takeFileName)
@@ -476,23 +476,46 @@ prohibitedRow = \case
   Just FileProhibited {maxSize, badgeStatus} -> (Just maxSize, badgeStatus)
   Nothing -> (Nothing, Nothing)
 
-getRcvFileProhibited :: DB.Connection -> Int64 -> IO (Maybe FileProhibited)
-getRcvFileProhibited db fileId = do
-  row_ <- maybeFirstRow id $ DB.query db "SELECT file_max_size, file_badge_status FROM files WHERE file_id = ?" (Only fileId)
+getRcvFileProhibited :: DB.Connection -> User -> Int64 -> IO (Maybe FileProhibited)
+getRcvFileProhibited db User {userId} fileId = do
+  row_ <- maybeFirstRow id $ DB.query db "SELECT file_max_size, file_badge_status FROM files WHERE user_id = ? AND file_id = ?" (userId, fileId)
   pure $ row_ >>= \(maxSize_, badgeStatus) -> (\maxSize -> FileProhibited {maxSize, badgeStatus}) <$> maxSize_
 
 setRcvFileDescrBadgeProof :: DB.Connection -> Int64 -> BadgeProof -> IO ()
 setRcvFileDescrBadgeProof db fileId badge = do
   currentTs <- getCurrentTime
+  DB.execute
+    db
+    "DELETE FROM rcv_badge_proofs WHERE badge_proof_id IN (SELECT badge_descr_proof_id FROM rcv_files WHERE file_id = ?)"
+    (Only fileId)
   proofId <- createRcvBadgeProof_ db fileId currentTs badge
   DB.execute db "UPDATE rcv_files SET badge_descr_proof_id = ?, updated_at = ? WHERE file_id = ?" (proofId, currentTs, fileId)
 
+getRcvFileBadgeProofs :: DB.Connection -> Int64 -> IO (Maybe BadgeProof, Maybe BadgeProof)
+getRcvFileBadgeProofs db fileId =
+  fmap (fromMaybe (Nothing, Nothing)) $
+    maybeFirstRow proofs $
+      DB.query
+        db
+        [sql|
+          SELECT
+            ip.badge_proof, ip.badge_pres_header, ip.badge_key_idx, ip.badge_type, ip.badge_expiry, ip.badge_extra,
+            dp.badge_proof, dp.badge_pres_header, dp.badge_key_idx, dp.badge_type, dp.badge_expiry, dp.badge_extra
+          FROM rcv_files r
+          LEFT JOIN rcv_badge_proofs ip ON ip.badge_proof_id = r.badge_inv_proof_id
+          LEFT JOIN rcv_badge_proofs dp ON dp.badge_proof_id = r.badge_descr_proof_id
+          WHERE r.file_id = ?
+        |]
+        (Only fileId)
+  where
+    proofs (invRow :. descrRow) = (rowToBadgeProof invRow, rowToBadgeProof descrRow)
+
 createRcvBadgeProof_ :: DB.Connection -> Int64 -> UTCTime -> BadgeProof -> IO Int64
-createRcvBadgeProof_ db fileId currentTs (BadgeProof idx (BBSPresHeader ph) (BBSProof p) BadgeInfo {badgeType, badgeExpiry, badgeExtra}) = do
+createRcvBadgeProof_ db fileId currentTs badge = do
   DB.execute
     db
     "INSERT INTO rcv_badge_proofs (file_id, badge_proof, badge_pres_header, badge_key_idx, badge_type, badge_expiry, badge_extra, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-    (fileId, Binary p, Binary ph, idx, badgeType, badgeExpiry, badgeExtra, currentTs, currentTs)
+    (Only fileId :. badgeProofToRow badge :. (currentTs, currentTs))
   insertedRowId db
 
 createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupInfo -> Maybe GroupMember -> FileType -> Maybe SharedMsgId -> FileInvitation -> Maybe FileProhibited -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer

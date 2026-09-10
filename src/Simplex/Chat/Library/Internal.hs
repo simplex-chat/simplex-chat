@@ -796,7 +796,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
   unless (fileStatus == RFSNew) $ case fileStatus of
     RFSCancelled _ -> throwChatError $ CEFileCancelled fName
     _ -> throwChatError $ CEFileAlreadyReceiving fName
-  prohibited_ <- withStore' $ \db -> getRcvFileProhibited db fileId
+  prohibited_ <- withStore' $ \db -> getRcvFileProhibited db user fileId
   when (isJust prohibited_) $ throwChatError $ CEFileSize fName
   cxt <- chatStoreCxt
   case (xftpRcvFile, fileConnReq) of
@@ -1459,7 +1459,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
             processContentItem member_ ci mc fInvDescr_
         | otherwise -> pure []
       (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file, meta = CIMeta {showGroupAsSender}}) -> do
-        fInvDescr_ <- join <$> forM file getSndFileInvDescr
+        fInvDescr_ <- join <$> forM file (getSndFileInvDescr showGroupAsSender)
         let member_ = if showGroupAsSender && isNothing signedMsg_ then Nothing else Just membership
         processContentItem member_ ci mc fInvDescr_
       _ -> pure []
@@ -1469,44 +1469,58 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
         resolveAuthor (Just gmId) = do
           cxt <- chatStoreCxt
           eitherToMaybe <$> withStore' (\db -> runExceptT $ getGroupMemberById db cxt user gmId)
-        getRcvFileInvDescr :: CIFile 'MDRcv -> CM (Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime))
+        getRcvFileInvDescr :: CIFile 'MDRcv -> CM (Maybe HistoryFile)
         getRcvFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus, fileExpires} = do
           expired <- fileExpired fileExpires
           if fileProtocol /= FPXFTP || fileStatus == CIFSRcvCancelled || expired
             then pure Nothing
             else do
               rfd <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
-              pure $ invCompleteDescr ciFile rfd
-        getSndFileInvDescr :: CIFile 'MDSnd -> CM (Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime))
-        getSndFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus, fileExpires} = do
+              (invBadge, descrBadge) <- withStore' $ \db -> getRcvFileBadgeProofs db fileId
+              pure $ invCompleteDescr ciFile rfd invBadge descrBadge
+        getSndFileInvDescr :: ShowGroupAsSender -> CIFile 'MDSnd -> CM (Maybe HistoryFile)
+        getSndFileInvDescr asGroup ciFile@CIFile {fileId, fileSize, fileProtocol, fileStatus, fileExpires} = do
           expired <- fileExpired fileExpires
           if fileProtocol /= FPXFTP || fileStatus == CIFSSndCancelled || expired
             then pure Nothing
             else do
               -- can also lookup in extra_xftp_file_descriptions, though it can be empty;
               -- would be best if snd file had a single rcv description for all members saved in files table
-              rfd <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
-              pure $ invCompleteDescr ciFile rfd
+              rfd@RcvFileDescr {fileDescrText} <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
+              (invBadge, descrBadge) <- sndHistoryBadges asGroup fileSize fileDescrText fileExpires
+              pure $ invCompleteDescr ciFile rfd invBadge descrBadge
+        sndHistoryBadges :: ShowGroupAsSender -> Integer -> RcvFileDescrText -> Maybe UTCTime -> CM (Maybe BadgeProof, Maybe BadgeProof)
+        sndHistoryBadges asGroup fileSize fileDescrText fileExpires =
+          ifM (fileNeedsBadge fileSize) badges (pure (Nothing, Nothing))
+          where
+            badges =
+              sndFileChatBinding (CGGroup gInfo [m] asGroup) >>= \case
+                Nothing -> pure (Nothing, Nothing)
+                Just binding -> do
+                  FD.ValidFileDescription fd <- parseFileDescription @'FRecipient fileDescrText
+                  invBadge <- sndBadgeProof user PHFileInv {chatBinding = binding, fileSize = fromInteger fileSize}
+                  descrBadge <- sndBadgeProof user PHFileDescr {chatBinding = binding, fileSize = fromInteger fileSize, descrHash = FD.sharedDescriptionHash fd, fileExpires}
+                  pure (invBadge, descrBadge)
         fileExpired :: Maybe UTCTime -> CM Bool
         fileExpired fileExpires = do
           ttl <- asks $ rcvFilesTTL . agentConfig . config
           now <- liftIO getCurrentTime
           pure $ fromMaybe (addUTCTime ttl $ chatItemTs cci) fileExpires < now
-        invCompleteDescr :: CIFile d -> RcvFileDescr -> Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime)
-        invCompleteDescr CIFile {fileName, fileSize, fileExpires} RcvFileDescr {fileDescrText, fileDescrComplete}
+        invCompleteDescr :: CIFile d -> RcvFileDescr -> Maybe BadgeProof -> Maybe BadgeProof -> Maybe HistoryFile
+        invCompleteDescr CIFile {fileName, fileSize, fileExpires} RcvFileDescr {fileDescrText, fileDescrComplete} invBadge descrBadge
           | fileDescrComplete =
               let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
-                  fInv = xftpFileInvitation fileName fileSize fInvDescr
-               in Just (fInv, fileDescrText, fileExpires)
+                  fInv = (xftpFileInvitation fileName fileSize fInvDescr :: FileInvitation) {fileBadge = invBadge}
+               in Just (fInv, fileDescrText, fileExpires, descrBadge)
           | otherwise = Nothing
-        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime) -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
+        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe HistoryFile -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
         processContentItem member_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ =
           if isNothing fInvDescr_ && not (msgContentHasText mc)
             then pure []
             else do
               let CIMeta {itemTs, itemSharedMsgId, itemTimed, showGroupAsSender} = meta
                   quotedItemId_ = quoteItemId =<< quotedItem
-                  fInv_ = (\(fInv, _, _) -> fInv) <$> fInvDescr_
+                  fInv_ = (\(fInv, _, _, _) -> fInv) <$> fInvDescr_
                   (mc', _, mentions') = updatedMentionNames mc formattedText mentions
                   mentions'' = M.map (\CIMention {memberId} -> MsgMention {memberId}) mentions'
                   -- for channel messages default chat version range to membership range
@@ -1525,10 +1539,10 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                   (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing showGroupAsSender mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
                   pure $ VMUnsigned ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
               fileDescrEvents <- case (fInvDescr_, itemSharedMsgId) of
-                (Just (_, fileDescrText, fileExpires), Just msgId) -> do
+                (Just (_, fileDescrText, fileExpires, descrBadge), Just msgId) -> do
                   partSize <- asks $ xftpDescrPartSize . config
                   let parts = splitFileDescr partSize fileDescrText
-                  pure . L.toList $ L.map (\fd -> XMsgFileDescr msgId fd fileExpires Nothing) parts
+                  pure . L.toList $ L.map (\fd@FileDescr {fileDescrComplete} -> XMsgFileDescr msgId fd fileExpires (if fileDescrComplete then descrBadge else Nothing)) parts
                 _ -> pure []
               let fileDescrVMs = map (VMUnsigned . ChatMessage senderVRange Nothing) fileDescrEvents
               pure $ map ((,) fwd) (contentVM : fileDescrVMs)
@@ -2313,6 +2327,8 @@ groupBindingData gks memberId memberKey = case gks >>= publicGroupKeys of
   Just PublicGroupKeys {publicGroupId} -> smpEncode (publicGroupId, memberId)
   Nothing -> smpEncode (memberId, memberKey)
 
+type HistoryFile = (FileInvitation, RcvFileDescrText, Maybe UTCTime, Maybe BadgeProof)
+
 data FileSender = FSContact Contact | FSMember GroupInfo (Maybe GroupMember) | FSChannel GroupInfo
 
 fileSenderBinding :: FileSender -> CM (ByteString -> Bool)
@@ -2341,10 +2357,10 @@ memberBindingAccepted GroupInfo {groupKeys} GroupMember {memberId, memberPubKey}
       Just ('G', d) -> eitherToMaybe $ snd <$> (smpDecode d :: Either String (MemberId, C.PublicKeyEd25519))
       _ -> Nothing
 
-badgeProofStatus :: (ProofPresHeader -> Bool) -> BadgeProof -> CM BadgeStatus
-badgeProofStatus headerAccepted badge@BadgeProof {presHeader = BBSPresHeader phBytes, badgeInfo} =
-  case strDecode phBytes of
-    Right ph | headerAccepted ph -> do
+badgeProofStatus :: (ProofPresHeader -> Maybe ProofPresHeader) -> BadgeProof -> CM BadgeStatus
+badgeProofStatus expectedHeader badge@BadgeProof {presHeader = BBSPresHeader phBytes, badgeInfo} =
+  case strDecode phBytes >>= maybe (Left "unexpected presentation header") Right . expectedHeader of
+    Right expected | phBytes == strEncode expected -> do
       keys <- asks $ badgePublicKeys . config
       verified <- liftIO $ verifyBadge keys badge
       now <- liftIO getCurrentTime
@@ -2360,16 +2376,16 @@ rcvFileInvProhibited sender FileInvitation {fileSize, fileBadge} = do
       Nothing -> pure $ Just FileProhibited {maxSize = noBadge lims, badgeStatus = Nothing}
       Just badge -> do
         bindingAccepted <- fileSenderBinding sender
-        st <- badgeProofStatus (headerAccepted bindingAccepted) badge
+        st <- badgeProofStatus (expectedHeader bindingAccepted) badge
         let maxSize = maxXFTPFileSize lims $ Just $ PeerBadge badge st
         pure $
           if fileSize <= toInteger maxSize
             then Nothing
             else Just FileProhibited {maxSize, badgeStatus = Just st}
   where
-    headerAccepted bindingAccepted = \case
-      PHFileInv {chatBinding, fileSize = size} -> bindingAccepted chatBinding && size == fromInteger fileSize
-      _ -> False
+    expectedHeader bindingAccepted = \case
+      PHFileInv {chatBinding} | bindingAccepted chatBinding -> Just PHFileInv {chatBinding, fileSize = fromInteger fileSize}
+      _ -> Nothing
 
 createUserMemberKey :: GroupInfo -> CM GroupInfo
 createUserMemberKey gInfo@GroupInfo {groupId, membership, groupKeys}

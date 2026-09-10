@@ -191,6 +191,8 @@ chatGroupTests = do
   describe "group history" $ do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
+    it "file with badge proof is received from history" testGroupHistoryFileBadgeProof
+    it "file received from member with badge proof is received from history" testGroupHistoryRcvFileBadgeProof
     it "history is not sent if preference is disabled" testGroupHistoryPreferenceOff
     it "host's file" testGroupHistoryHostFile
     it "member's file" testGroupHistoryMemberFile
@@ -12223,6 +12225,104 @@ testChannelOwnerFileTransferAsMember ps =
              ]
       cc <## ("completed receiving file " <> show fileId <> " (test.jpg) from alice")
       B.readFile path >>= (`shouldBe` src)
+
+testGroupHistoryFileBadgeProof :: HasCallStack => TestParams -> IO ()
+testGroupHistoryFileBadgeProof ps = do
+  Right (pk, sk) <- bbsKeyGen
+  let cfg = testCfg {badgePublicKeys = testBadgeKeys pk, fileSizeLimits = FileSizeLimits {noBadge = 100000, supporter = 300000, legend = 400000}}
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile (test sk) ps
+  where
+    test sk alice bob cath = withXFTPServer $ do
+      createGroup2 "team" alice bob
+      addTestBadge alice =<< issueTestBadge sk futureDate
+
+      alice #> "/f #team ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.pdf) for #team"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   WithTime "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes) [>>]",
+                   "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
+               "started receiving file 1 (test.pdf) from alice"
+             ]
+      cath <## "completed receiving file 1 (test.pdf) from alice"
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest `shouldBe` src
+
+testGroupHistoryRcvFileBadgeProof :: HasCallStack => TestParams -> IO ()
+testGroupHistoryRcvFileBadgeProof ps = do
+  Right (pk, sk) <- bbsKeyGen
+  let cfg = testCfg {badgePublicKeys = testBadgeKeys pk, fileSizeLimits = FileSizeLimits {noBadge = 100000, supporter = 300000, legend = 400000}}
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile (test sk) ps
+  where
+    test sk alice bob cath = withXFTPServer $ do
+      createGroup2 "team" alice bob
+      addTestBadge bob =<< issueTestBadge sk futureDate
+
+      bob #> "/f #team ./tests/fixtures/test.pdf"
+      bob <## "use /fc 1 to cancel sending"
+      alice <# "#team bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice ##> "/fr 1 ./tests/tmp"
+      concurrentlyN_
+        [ bob <## "completed uploading file 1 (test.pdf) for #team",
+          alice
+            <### [ "saving file 1 from bob to ./tests/tmp/test.pdf",
+                   "started receiving file 1 (test.pdf) from bob"
+                 ]
+        ]
+      alice <## "completed receiving file 1 (test.pdf) from bob"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   WithTime "#team bob> sends file test.pdf (266.0 KiB / 272376 bytes) [>>]",
+                   "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from bob to ./tests/tmp/test_1.pdf",
+               "started receiving file 1 (test.pdf) from bob"
+             ]
+      cath <## "completed receiving file 1 (test.pdf) from bob"
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test_1.pdf"
+      dest `shouldBe` src
 
 testChannelFileBadgeProof :: HasCallStack => TestParams -> IO ()
 testChannelFileBadgeProof ps = do

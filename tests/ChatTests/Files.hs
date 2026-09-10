@@ -835,7 +835,7 @@ testXFTPFileNoBadgeProof ps =
       alice #> "/f @bob ./tests/fixtures/test.pdf"
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob <## "file is above the limit of 100000 bytes: sender has no badge"
       bob ##> "/fr 1 ./tests/tmp"
       concurrentlyN_
         [ bob <## "file size exceeds the limit: test.pdf",
@@ -856,7 +856,7 @@ testXFTPFileBadgeAboveLimit ps = do
       alice #> "/f @bob ./tests/fixtures/test.pdf"
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice *> sends file test.pdf (266.0 KiB / 272376 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob <## "file is above the limit of 150000 bytes: above the limit of the sender badge"
       bob ##> "/fr 1 ./tests/tmp"
       concurrentlyN_
         [ bob <## "file size exceeds the limit: test.pdf",

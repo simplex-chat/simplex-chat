@@ -1984,13 +1984,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           else do
             FD.ValidFileDescription fd <- parseFileDescription @'FRecipient fileDescrText
             bindingAccepted <- fileSenderBinding sender
-            st <- badgeProofStatus (headerAccepted bindingAccepted (FD.sharedDescriptionHash fd)) badge
+            st <- badgeProofStatus (expectedHeader bindingAccepted (FD.sharedDescriptionHash fd)) badge
             pure $ st == BSActive
       where
-        headerAccepted bindingAccepted descrHash = \case
-          PHFileDescr {chatBinding, fileSize = size, descrHash = h, fileExpires = e} ->
-            bindingAccepted chatBinding && size == fromInteger fileSize && h == descrHash && e == fileExpires
-          _ -> False
+        expectedHeader bindingAccepted descrHash = \case
+          PHFileDescr {chatBinding} | bindingAccepted chatBinding ->
+            Just PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash, fileExpires}
+          _ -> Nothing
 
     processFileInvitation :: Maybe FileInvitation -> MsgContent -> FileSender -> (DB.Connection -> FileInvitation -> Maybe FileProhibited -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer) -> CM (Maybe (RcvFileTransfer, CIFile 'MDRcv))
     processFileInvitation fInv_ mc sender createRcvFT = forM fInv_ $ \fInv -> do
