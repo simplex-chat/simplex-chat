@@ -892,6 +892,21 @@ templateEngineOverride: njk
         }
         .cf-form-submit:hover { filter: brightness(1.07); }
         .cf-form-submit:active { transform: translateY(1px); }
+        .cf-simplex-link {
+            display: inline-block;
+            margin-top: 18px;
+            font-family: "Manrope", sans-serif;
+            font-weight: 500;
+            font-size: 1rem;
+            color: #64FDFF;
+            text-decoration: none;
+        }
+        .cf-simplex-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+        .cf-simplex-link svg { display: inline-block; width: .82em; height: .82em; margin-left: .4em; fill: currentColor; }
+        .cf-form-note { margin-top: 18px; font-size: .85rem; color: #9fb2d8; }
+        .cf-modal-light .cf-simplex-link { color: #0053d0; }
+        .cf-modal-light .cf-form-note { color: #6b7478; }
+
         .cf-deck-link {
             display: inline-flex;
             align-items: center;
@@ -940,6 +955,12 @@ templateEngineOverride: njk
             .cf-modal-panel { flex-direction: column; align-items: flex-start; }
             .cf-modal-img { width: 80%; align-self: center; }
             .cf-modal-panel h2 { font-size: 1.4rem; }
+        }
+        /* 320pt phones: the card's text column is narrower than the submit label */
+        @media screen and (max-width: 389px) {
+            .cf-modal { padding: 24px 12px; }
+            .cf-modal-panel { padding: 28px 20px; }
+            .cf-form-submit { padding: 0 12px; font-size: 15px; }
         }
     </style>
 </head>
@@ -1221,7 +1242,8 @@ templateEngineOverride: njk
         <div class="cf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="request-title">
             <a class="cf-modal-close" href="#!" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
             <div class="cf-modal-text">
-                <h2 id="request-title">Learn more about investing in SimpleX Chat</h2>
+                <h2 id="request-title">Where to send the deck</h2>
+                <p>We will send the deck and updates about the crowdfunding.</p>
                 <form class="cf-form" action="https://chat.us2.list-manage.com/subscribe/post?u=ddd892b258ae36e5438e6d4e1&amp;id=de405d59d2&amp;f_id=001ef8e3f0&amp;legacy_form=1" method="post" target="_blank">
                     <input type="text" name="FNAME" placeholder="Name or pseudonym" aria-label="Name or pseudonym">
                     <input type="email" name="EMAIL" placeholder="Email*" aria-label="Email address" required>
@@ -1231,8 +1253,10 @@ templateEngineOverride: njk
                     <span aria-hidden="true" class="cf-bot-field">
                         <input type="text" name="b_ddd892b258ae36e5438e6d4e1_de405d59d2" tabindex="-1" value="">
                     </span>
-                    <button type="submit" name="subscribe" value="Subscribe" class="cf-form-submit">Submit and download our Pitch deck</button>
+                    <button type="submit" name="subscribe" value="Subscribe" class="cf-form-submit">Submit and download our deck</button>
                 </form>
+                <a class="cf-simplex-link" href="https://smp11.simplex.im/a#JxGcOA1_QhlmVFzYYabloMbvMZk5Y9d9iS3ITDnhzYo" target="_blank" rel="noopener">Or connect to our team via SimpleX Chat<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path><polygon points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a>
+                <p class="cf-form-note">We use Mailchimp to send emails.</p>
             </div>
         </div>
     </div>
