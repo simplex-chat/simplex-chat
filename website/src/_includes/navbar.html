@@ -26,6 +26,14 @@
                 </a>
             </li>
 
+            <hr>
+
+            <li class="nav-link {% if active_badges %}active{% endif %}">
+                <a href="/badges/">
+                    <span class="nav-link-text">{{ "badges" | i18n({}, lang ) | safe }}</span>
+                </a>
+            </li>
+
             <!-- <hr>
 
             <li class="nav-link send-file {% if active_file %}active{% endif %}">

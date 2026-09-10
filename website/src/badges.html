@@ -1,0 +1,118 @@
+---
+permalink: /badges/
+title: "Support SimpleX"
+eleventyExcludeFromCollections: true
+templateEngineOverride: njk
+---
+<!doctype html>
+<html lang="{{ page.url | getlang }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}</title>
+    <!-- Open in the site's theme so a dark-mode buyer is not flashed a light page. -->
+    {% include "dark-mode.html" %}
+    <link href="/css/tailwind.css" rel="stylesheet" />
+    <link href="/css/style.css" rel="stylesheet" />
+    <style>
+        :root { --nav-color: #001796; }
+        html.dark { --nav-color: #ffffff; }
+        html, body { margin: 0; }
+        /* A fixed bar at the site's height and spacing; the frame fills the rest of the screen and
+           the site footer sits below it. This is the only navbar — the app hides its own when embedded. */
+        .b-nav {
+            position: fixed; top: 0; left: 0; width: 100%; height: 54px; z-index: 50;
+            box-sizing: border-box; display: flex; align-items: center; padding: 0 20px 0 30px;
+            background: #F3FAFF;
+        }
+        html.dark .b-nav { background: #000832; }
+        .b-logo { display: flex; align-items: center; height: 40px; }
+        .b-logo img { height: 40px; width: auto; }
+        .b-logo .dark { display: none; }
+        html.dark .b-logo .light { display: none; }
+        html.dark .b-logo .dark { display: block; }
+        .b-links { margin: 0 auto; display: flex; align-items: center; gap: 60px; }
+        .b-links a {
+            color: var(--nav-color); text-decoration: none; font-size: 18px; font-weight: 500;
+            position: relative;
+        }
+        .b-links a::before {
+            content: ""; position: absolute; width: 0; height: 1px; bottom: -2px; right: 0;
+            background-color: var(--nav-color); transition: width .25s ease-out;
+        }
+        .b-links a:hover::before { width: 100%; left: 0; right: auto; }
+        .b-theme { display: flex; align-items: center; justify-content: center; padding: 0; border: 0; background: none; cursor: pointer; }
+        .b-theme svg { width: 20px; height: 20px; }
+        .b-theme svg path { fill: var(--nav-color); }
+        .b-theme .sun { display: none; }
+        html.dark .b-theme .sun { display: block; }
+        html.dark .b-theme .moon { display: none; }
+        #badges-frame { display: block; width: 100%; height: calc(100vh - 54px); border: 0; margin-top: 54px; }
+        @media (max-width: 640px) { .b-links { gap: 24px; } }
+    </style>
+</head>
+<body class="bg-[#F3FAFF] dark:bg-[#000832]">
+    <header class="b-nav">
+        <a class="b-logo" href="/" aria-label="SimpleX">
+            <img class="light" src="/img/new/logo-light.png" alt="SimpleX">
+            <img class="dark" src="/img/new/logo-dark.png" alt="SimpleX">
+        </a>
+        <nav class="b-links" aria-label="Badges">
+            <!-- Home leaves for the site; Buy a code and Your codes are hash links, and the hash is
+                 what propagates the route into the frame. -->
+            <a href="/">Home</a>
+            <a href="#/tier">Buy a code</a>
+            <a href="#/codes">Your codes</a>
+        </nav>
+        <button class="b-theme" id="b-theme" type="button" aria-label="Toggle light or dark theme">
+            <svg class="moon" viewBox="5 5 20 23" xmlns="http://www.w3.org/2000/svg"><path d="M10.895 7.574c0 7.55 5.179 13.67 11.567 13.67 1.588 0 3.101-0.38 4.479-1.063-1.695 4.46-5.996 7.636-11.051 7.636-6.533 0-11.83-5.297-11.83-11.83 0-4.82 2.888-8.959 7.023-10.803-0.116 0.778-0.188 1.573-0.188 2.39z"/></svg>
+            <svg class="sun" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 17a5 5 0 110-10 5 5 0 010 10zm0-15a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm0 17a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM3 11h1a1 1 0 110 2H3a1 1 0 110-2zm17 0h1a1 1 0 110 2h-1a1 1 0 110-2zM5.6 5.6a1 1 0 011.4 0l.7.7A1 1 0 116.3 7.7l-.7-.7a1 1 0 010-1.4zm11 11a1 1 0 011.4 0l.7.7a1 1 0 01-1.4 1.4l-.7-.7a1 1 0 010-1.4zM18.4 5.6a1 1 0 010 1.4l-.7.7A1 1 0 1116.3 6.3l.7-.7a1 1 0 011.4 0zM7 16.6a1 1 0 010 1.4l-.7.7a1 1 0 01-1.4-1.4l.7-.7a1 1 0 011.4 0z"/></svg>
+        </button>
+    </header>
+
+    <iframe id="badges-frame" title="Support SimpleX" src="https://badges.simplex.chat/"></iframe>
+
+    {% include "footer.html" %}
+
+    <script>
+        (function () {
+            // Must match the iframe's origin exactly: messages are only sent to it and only trusted
+            // from it, so neither channel can be driven by another frame.
+            var APP = "https://badges.simplex.chat";
+            var frame = document.getElementById("badges-frame");
+
+            function siteTheme() {
+                try { return localStorage.getItem("theme") || "system"; } catch (e) { return "system"; }
+            }
+            function applySiteTheme(theme) {
+                var dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+                document.documentElement.classList.toggle("dark", dark);
+                try { if (theme === "system") localStorage.removeItem("theme"); else localStorage.setItem("theme", theme); } catch (e) {}
+            }
+            function post(msg) { try { frame.contentWindow.postMessage(msg, APP); } catch (e) { /* not ready */ } }
+            function postRoute() { post({ type: "simplex-route", hash: location.hash }); }
+
+            // Buy a code / Your codes are hash links; changing the hash — from a click or from the
+            // address bar — is what carries the route into the frame.
+            window.addEventListener("hashchange", postRoute);
+
+            window.addEventListener("message", function (e) {
+                if (e.origin !== APP || !e.data) return;
+                // The frame announces itself on load; hand it the site's theme and the current route.
+                if (e.data.type === "simplex-embed-ready") {
+                    post({ type: "simplex-theme", theme: siteTheme() });
+                    postRoute();
+                }
+                // The buyer used the theme switch inside the frame; keep the site in step.
+                if (e.data.type === "simplex-theme") applySiteTheme(e.data.theme);
+            });
+
+            document.getElementById("b-theme").addEventListener("click", function () {
+                var next = document.documentElement.classList.contains("dark") ? "light" : "dark";
+                applySiteTheme(next);
+                post({ type: "simplex-theme", theme: next });
+            });
+        })();
+    </script>
+</body>
+</html>
