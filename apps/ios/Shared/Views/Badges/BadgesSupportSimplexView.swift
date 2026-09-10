@@ -48,7 +48,7 @@ struct BadgesSupportSimplexView: View {
             case .support:
                 supportSimpleX
             case let .badge(badgeState):
-                BadgesYourBadgeView(badgeState: badgeState)
+                BadgesYourBadgeView(badgeState: badgeState, showsAsSheet: showsAsSheet)
             }
         }
         .task(id: chatModel.currentUser?.userId) { await loadBadgeState() }
@@ -176,28 +176,47 @@ struct BadgesSupportSimplexView: View {
 struct BadgesYourBadgeView: View {
     @EnvironmentObject var theme: AppTheme
     let badgeState: BadgeState
+    var showsAsSheet: Bool = false
 
     private var title: LocalizedStringKey {
         badgeState.ended ? "Support ended" : "Your badge"
     }
 
+    // pushed, the navigation bar carries the title and animates it; as a sheet root there is no bar
+    // to put it in, so the title is drawn in the content, as the Support screen does
+    private var navTitle: LocalizedStringKey { showsAsSheet ? "" : title }
+
     var body: some View {
-        List {
-            Section {
-                BadgeSummary(badgeState: badgeState)
+        VStack(spacing: 0) {
+            if showsAsSheet {
+                Text(title)
+                    .font(.largeTitle)
+                    .bold()
+                    .foregroundColor(theme.colors.primary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 25)
+                    .padding(.top, 48)
             }
-            Section {
-                Text(DateFormatter.localizedString(from: badgeState.paidThrough, dateStyle: .long, timeStyle: .none))
-            } header: {
-                Text("Ends")
-                    .foregroundColor(theme.colors.secondary)
-            } footer: {
-                Text("Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.")
-                    .foregroundColor(theme.colors.secondary)
+
+            List {
+                Section {
+                    BadgeSummary(badgeState: badgeState)
+                }
+                Section {
+                    Text(DateFormatter.localizedString(from: badgeState.paidThrough, dateStyle: .long, timeStyle: .none))
+                } header: {
+                    Text("Ends")
+                        .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    Text("Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.")
+                        .foregroundColor(theme.colors.secondary)
+                }
             }
         }
-        .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.large)
+        .frame(maxHeight: .infinity)
+        .navigationTitle(navTitle)
+        .navigationBarTitleDisplayMode(showsAsSheet ? .inline : .large)
         .modifier(ThemedBackground(grouped: true))
     }
 }
