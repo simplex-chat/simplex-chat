@@ -23,9 +23,12 @@ templateEngineOverride: njk
         .b-nav {
             position: fixed; top: 0; left: 0; width: 100%; height: 54px; z-index: 50;
             box-sizing: border-box; display: flex; align-items: center; padding: 0 20px 0 30px;
-            background: #F3FAFF;
+            /* The site's own frosted bar: translucent over the content that scrolls under it. */
+            background: rgba(243, 250, 255, 0.72);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
-        html.dark .b-nav { background: #000832; }
+        html.dark .b-nav { background: rgba(0, 8, 50, 0.72); }
         .b-logo { display: flex; align-items: center; height: 40px; }
         .b-logo img { height: 40px; width: auto; }
         .b-logo .dark { display: none; }
@@ -33,6 +36,7 @@ templateEngineOverride: njk
         html.dark .b-logo .dark { display: block; }
         .b-links { margin: 0 auto; display: flex; align-items: center; gap: 60px; }
         .b-links a {
+            font-family: "Manrope", sans-serif;
             color: var(--nav-color); text-decoration: none; font-size: 18px; font-weight: 500;
             position: relative;
         }
