@@ -743,7 +743,7 @@ testNotDelistedOwnerRejoinsViaLink ps =
       bob ##> "/l privacy_1"
       bob <## "#privacy_1: you left the group"
       bob <## "use /d #privacy_1 to delete the group"
-      bob <## "#privacy: bob_1 left the group"
+      bob <## "#privacy: bob_1 left the group (signed)"
       -- the group must remain listed: the leaving member is not the owner member
       (superUser </)
       groupFound bob "privacy"
@@ -1888,7 +1888,7 @@ setWelcomeMessage u others welcome = do
   u <## "welcome message changed to:"
   u <## welcome
   forM_ others $ \m -> do
-    m <## (uName <> " updated group #privacy:")
+    m <## (uName <> " updated group #privacy: (signed)")
     m <## "welcome message changed to:"
     m <## welcome
 
