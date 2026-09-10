@@ -188,17 +188,14 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRServiceResponse u resp -> ttyUser u ["service response: " <> viewJSON resp]
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
-  CRWallet u exists accs
+  CRWallet u exists paths profiles
     | not exists -> ttyUser u ["no wallet key"]
-    | otherwise ->
-        ttyUser u $
-          concatMap accountRows accs
-            <> ["this profile has no wallet key" | not (any (\(_, _, active, _) -> active) accs)]
+    | otherwise -> ttyUser u $ keyRows <> [plain $ "also on this key: " <> T.intercalate ", " profiles | not (null profiles)]
     where
-      accountRows (n, acct, active, keys) =
-        plain ("account " <> tshow acct <> " (" <> n <> (if active then ", active" else "") <> ")")
-          : zipWith nameRow [0 :: Int ..] keys
-      nameRow k (path, addr) = plain $ "  name " <> tshow k <> "  " <> path <> "  " <> addr
+      keyRows
+        | null paths = ["this profile has no wallet key"]
+        | otherwise = zipWith nameRow [0 :: Int ..] paths
+      nameRow k (path, addr) = plain $ "name " <> tshow k <> "  " <> path <> "  " <> addr
   CRWalletSeedMnemonic u phrase -> ttyUser u [plain phrase]
   CRWalletDerivedSecret u path addr secret -> ttyUser u [plain $ path <> "  " <> addr <> "  " <> secret]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView

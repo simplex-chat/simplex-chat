@@ -58,7 +58,7 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Store.Wallets (deleteSeed, getDeviceSeed, getOrCreateAccountRef, getSeedAccounts, importSeed)
+import Simplex.Chat.Store.Wallets (bindAccountIndex, deleteSeed, getAccountIndex, getDeviceSeed, getOrCreateAccountRef, getSeedProfiles, importSeed)
 import Simplex.Chat.Wallet (NameIndex, WalletSeed (..), accountAddress, accountSecret, deriveNameKey, importRecoveryKey, newSeed, recoveryKeyPhrase, renderNameKeyPath)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -1492,28 +1492,30 @@ processChatCommand cxt nm = \case
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
   APIWallet -> withUser $ \user -> do
-    seed_ <- withFastStore' getDeviceSeed
-    accs <- case seed_ of
-      Nothing -> pure []
+    withFastStore' getDeviceSeed >>= \case
+      Nothing -> pure $ CRWallet user False [] []
       Just seed -> do
-        -- hidden profiles are left out, as they are by /users, but the gap in
-        -- account indexes still shows that one exists
-        as <- filter (\(_, _, active, hidden) -> active || not hidden) <$> withFastStore' (\db -> getSeedAccounts db (wsId seed))
-        forM as $ \(n, acct, active, _) -> do
-          keys <- forM [0 .. walletNamesShown - 1] $ \k -> do
-            acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveNameKey seed acct k
-            pure (renderNameKeyPath acct k, tshow (accountAddress acc))
-          pure (n, acct, active, keys)
-    pure $ CRWallet user (isJust seed_) accs
+        -- other profiles are named but not numbered, so a hidden one leaves no gap
+        acct_ <- withFastStore' (`getAccountIndex` user)
+        paths <- forM (maybe [] (\acct -> map ((,) acct) [0 .. walletNamesShown - 1]) acct_) $ \(acct, k) -> do
+          acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveNameKey seed acct k
+          pure (renderNameKeyPath acct k, tshow $ accountAddress acc)
+        profiles <- withFastStore' $ \db -> getSeedProfiles db (wsId seed) user
+        pure $ CRWallet user True paths profiles
+  APIWalletBind acct -> withUser $ \user -> do
+    seed <- withFastStore' getDeviceSeed >>= maybe (throwCmdError noKeyError) pure
+    bound <- withFastStore' $ \db -> bindAccountIndex db user (wsId seed) acct
+    unless bound $ throwCmdError "another profile uses this account"
+    processChatCommand cxt nm APIWallet
   APIWalletCreate -> withUser $ \user -> do
     g <- asks random
     entropy <- atomically $ newSeed MS256 g
-    void $ withFastStore' $ \db -> getOrCreateAccountRef db user entropy
+    withFastStore' $ \db -> getOrCreateAccountRef db user entropy
     processChatCommand cxt nm APIWallet
   APIWalletImport phrase -> withUser $ \user -> do
     entropy <- either (const $ throwCmdError "bad recovery phrase") pure $ importRecoveryKey (encodeUtf8 phrase)
-    r <- withFastStore' $ \db -> importSeed db user entropy
-    when (isNothing r) $ throwCmdError "this device already has a wallet key"
+    imported <- withFastStore' $ \db -> importSeed db user entropy
+    unless imported $ throwCmdError "this device already has a wallet key"
     processChatCommand cxt nm APIWallet
   APIWalletExportSeedMnemonic -> withUser $ \user -> do
     seed <- withFastStore' getDeviceSeed >>= maybe (throwCmdError noKeyError) pure
@@ -5588,6 +5590,7 @@ chatCommandP =
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
+      "/_wallet bind " *> (APIWalletBind <$> keyIndexP),
       "/_wallet create" $> APIWalletCreate,
       "/_wallet import " *> (APIWalletImport <$> textP),
       "/_wallet export " *> (APIWalletExportDerivedSecret <$> keyIndexP <* A.space <*> keyIndexP),

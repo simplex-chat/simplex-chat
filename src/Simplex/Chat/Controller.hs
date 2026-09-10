@@ -418,6 +418,7 @@ data ChatCommand
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
   | APIWallet
+  | APIWalletBind {accountIndex :: AccountIndex}
   | APIWalletCreate
   | APIWalletImport {recoveryPhrase :: Text}
   | APIWalletExportSeedMnemonic
@@ -749,6 +750,7 @@ allowRemoteCommand = \case
   ExecChatStoreSQL _ -> False
   ExecAgentStoreSQL _ -> False
   APIWallet -> False
+  APIWalletBind {} -> False
   APIWalletCreate -> False
   APIWalletImport _ -> False
   APIWalletExportSeedMnemonic -> False
@@ -855,7 +857,7 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
-  | CRWallet {user :: User, walletKeyExists :: Bool, walletAccounts :: [(Text, AccountIndex, Bool, [(Text, Text)])]}
+  | CRWallet {user :: User, walletKeyExists :: Bool, walletKeyPaths :: [(Text, Text)], walletProfiles :: [Text]}
   | CRWalletSeedMnemonic {user :: User, recoveryPhrase :: Text}
   | CRWalletDerivedSecret {user :: User, keyPath :: Text, address :: Text, derivedSecret :: Text}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}

@@ -52,11 +52,10 @@ walletTests = do
   it "imports a phrase, exports it, and refuses a second import" testWalletImport
   it "exports the secret of any name key" testWalletExportDerivedSecret
   it "deletes the key, and a key can be imported again" testWalletDelete
+  it "binds a profile to the account it had" testWalletBind
 
-accountRows :: HasCallStack => TestCC -> String -> Int -> IO [(String, String)]
-accountRows cc profile acct = do
-  cc <## ("account " <> show acct <> " (" <> profile <> ")")
-  mapM (\_ -> nameRow <$> getTermLine cc) [0 .. 1 :: Int]
+nameRows :: HasCallStack => TestCC -> IO [(String, String)]
+nameRows cc = mapM (\_ -> nameRow <$> getTermLine cc) [0 .. 1 :: Int]
   where
     nameRow l = case words l of
       ["name", _, path, addr] -> (path, addr)
@@ -72,7 +71,7 @@ testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet export"
   alice <## "bad chat command: no wallet key on this device"
   alice ##> "/_wallet create"
-  rows <- accountRows alice "alice, active" 0
+  rows <- nameRows alice
   map fst rows `shouldBe` ["m/44'/60'/0'/0/0", "m/44'/60'/0'/0/1"]
   length (nub $ map snd rows) `shouldBe` 2
 
@@ -80,38 +79,39 @@ testWalletPersists :: HasCallStack => TestParams -> IO ()
 testWalletPersists ps = do
   rows <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
     alice ##> "/_wallet create"
-    accountRows alice "alice, active" 0
+    nameRows alice
   -- same database, new session: a name bought at that address must stay reachable
   withTestChat ps "alice" $ \alice -> do
     alice ##> "/_wallet"
-    rows' <- accountRows alice "alice, active" 0
+    rows' <- nameRows alice
     rows' `shouldBe` rows
 
 testWalletSecondProfile :: HasCallStack => TestParams -> IO ()
 testWalletSecondProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create"
-  rows <- accountRows alice "alice, active" 0
+  rows <- nameRows alice
   alice ##> "/_wallet export"
   phrase <- getTermLine alice
   alice ##> "/create user alisa"
   showActiveUser alice "alisa"
+  -- other profiles are named, never numbered
   alice ##> "/_wallet"
-  _ <- accountRows alice "alice" 0
   alice <## "this profile has no wallet key"
+  alice <## "also on this key: alice"
   -- the key belongs to the device, so a profile without an account exports it too
   alice ##> "/_wallet export"
   alice <## phrase
   alice ##> "/_wallet create"
-  _ <- accountRows alice "alice" 0
-  rows' <- accountRows alice "alisa, active" 1
+  rows' <- nameRows alice
+  alice <## "also on this key: alice"
+  map fst rows' `shouldBe` ["m/44'/60'/1'/0/0", "m/44'/60'/1'/0/1"]
   null (map snd rows `intersect` map snd rows') `shouldBe` True
 
 testWalletImport :: HasCallStack => TestParams -> IO ()
 testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  alice <## "account 0 (alice, active)"
-  alice <## "  name 0  m/44'/60'/0'/0/0  0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
-  alice <## "  name 1  m/44'/60'/0'/0/1  0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0"
+  alice <## "name 0  m/44'/60'/0'/0/0  0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
+  alice <## "name 1  m/44'/60'/0'/0/1  0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0"
   alice ##> "/_wallet export"
   alice <## B.unpack testPhrase
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
@@ -123,7 +123,7 @@ testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
 testWalletExportDerivedSecret :: HasCallStack => TestParams -> IO ()
 testWalletExportDerivedSecret ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  _ <- accountRows alice "alice, active" 0
+  _ <- nameRows alice
   alice ##> "/_wallet export 0 0"
   alice <## "m/44'/60'/0'/0/0  0x9858EfFD232B4033E47d90003D41EC34EcaEda94  0x1ab42cc412b618bdea3a599e3c9bae199ebf030895b039e9db1e30dafb12b727"
   -- an index BIP-32 cannot harden is rejected, not wrapped into another account
@@ -142,10 +142,29 @@ testWalletExportDerivedSecret ps = withNewTestChat ps "alice" aliceProfile $ \al
 testWalletDelete :: HasCallStack => TestParams -> IO ()
 testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  _ <- accountRows alice "alice, active" 0
+  _ <- nameRows alice
   alice ##> "/_wallet delete"
   alice <## "no wallet key"
   -- deleting unbinds the profile, so a key can be imported again
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  _ <- accountRows alice "alice, active" 0
+  _ <- nameRows alice
   pure ()
+
+-- | Restoring a chat database older than the key rebinds profiles in the order
+-- they ask, so the account a profile had is set by hand.
+testWalletBind :: HasCallStack => TestParams -> IO ()
+testWalletBind ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  _ <- nameRows alice
+  alice ##> "/_wallet bind 3"
+  rows <- nameRows alice
+  map fst rows `shouldBe` ["m/44'/60'/3'/0/0", "m/44'/60'/3'/0/1"]
+  alice ##> "/create user alisa"
+  showActiveUser alice "alisa"
+  alice ##> "/_wallet bind 3"
+  alice <## "bad chat command: another profile uses this account"
+  -- the counter moved past the account bound by hand
+  alice ##> "/_wallet create"
+  rows' <- nameRows alice
+  alice <## "also on this key: alice"
+  map fst rows' `shouldBe` ["m/44'/60'/4'/0/0", "m/44'/60'/4'/0/1"]

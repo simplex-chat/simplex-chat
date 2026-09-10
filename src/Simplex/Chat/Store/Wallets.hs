@@ -6,22 +6,22 @@
 
 module Simplex.Chat.Store.Wallets
   ( getDeviceSeed,
-    getSeedAccounts,
+    getAccountIndex,
+    getSeedProfiles,
     getOrCreateAccountRef,
     importSeed,
+    bindAccountIndex,
     deleteSeed,
   )
 where
 
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
-import Data.Maybe (isJust)
 import Data.Text (Text)
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types (User (..))
-import Simplex.Chat.Wallet (AccountIndex, AccountRef (..), SeedId (..), WalletSeed (..))
+import Simplex.Chat.Wallet (AccountIndex, SeedId (..), WalletSeed (..))
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow)
-import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 
 #if defined(dbPostgres)
@@ -40,65 +40,69 @@ getDeviceSeed db =
   maybeFirstRow toSeed $
     DB.query_ db "SELECT wallet_seed_id, seed FROM wallet_seeds ORDER BY wallet_seed_id LIMIT 1"
 
-getWalletSeed :: DB.Connection -> SeedId -> IO (Maybe WalletSeed)
-getWalletSeed db (SeedId sId) =
-  maybeFirstRow toSeed $
-    DB.query db "SELECT wallet_seed_id, seed FROM wallet_seeds WHERE wallet_seed_id = ?" (Only sId)
-
-getAccountRef :: DB.Connection -> User -> IO (Maybe AccountRef)
-getAccountRef db User {userId} = do
+getAccountIndex :: DB.Connection -> User -> IO (Maybe AccountIndex)
+getAccountIndex db User {userId} = do
   r <-
-    maybeFirstRow id $
-      DB.query db "SELECT wallet_seed_id, wallet_account_index FROM users WHERE user_id = ?" (Only userId)
+    maybeFirstRow fromOnly $
+      DB.query db "SELECT wallet_account_index FROM users WHERE user_id = ?" (Only userId)
   pure $ case r of
-    Just (Just sId, Just ix) -> Just AccountRef {arSeedId = SeedId sId, arIndex = fromIntegral (ix :: Int64)}
+    Just (Just ix) -> Just $ fromIntegral (ix :: Int64)
     _ -> Nothing
 
-bindAccount :: DB.Connection -> User -> AccountRef -> IO ()
-bindAccount db User {userId} AccountRef {arSeedId = SeedId sId, arIndex} =
-  DB.execute
-    db
-    "UPDATE users SET wallet_seed_id = ?, wallet_account_index = ? WHERE user_id = ?"
-    (sId, fromIntegral arIndex :: Int64, userId)
-
-getBoundAccount :: DB.Connection -> User -> IO (Maybe (WalletSeed, AccountRef))
-getBoundAccount db user =
-  getAccountRef db user >>= \case
-    Nothing -> pure Nothing
-    Just r -> fmap (\s -> (s, r)) <$> getWalletSeed db (arSeedId r)
-
-getSeedAccounts :: DB.Connection -> SeedId -> IO [(Text, AccountIndex, Bool, Bool)]
-getSeedAccounts db (SeedId sId) =
-  map toRow
+-- | Hidden profiles are left out, as they are by /users.
+getSeedProfiles :: DB.Connection -> SeedId -> User -> IO [Text]
+getSeedProfiles db (SeedId sId) User {userId} =
+  map fromOnly
     <$> DB.query
       db
       [sql|
-        SELECT local_display_name, wallet_account_index, active_user, view_pwd_hash
-        FROM users WHERE wallet_seed_id = ? ORDER BY wallet_account_index
+        SELECT local_display_name FROM users
+        WHERE wallet_seed_id = ? AND user_id != ? AND view_pwd_hash IS NULL
+        ORDER BY local_display_name
       |]
-      (Only sId)
-  where
-    toRow (n, ix, BI active, pwdHash) = (n, fromIntegral (ix :: Int64), active, isJust (pwdHash :: Maybe ByteString))
+      (sId, userId)
 
-getOrCreateAccountRef :: DB.Connection -> User -> ByteString -> IO (WalletSeed, AccountRef)
+bindAccount :: DB.Connection -> User -> SeedId -> AccountIndex -> IO ()
+bindAccount db User {userId} (SeedId sId) acct =
+  DB.execute
+    db
+    "UPDATE users SET wallet_seed_id = ?, wallet_account_index = ? WHERE user_id = ?"
+    (sId, fromIntegral acct :: Int64, userId)
+
+getOrCreateAccountRef :: DB.Connection -> User -> ByteString -> IO ()
 getOrCreateAccountRef db user entropy =
-  getBoundAccount db user >>= \case
-    Just bound -> pure bound
+  getAccountIndex db user >>= \case
+    Just _ -> pure ()
     Nothing -> getDeviceSeed db >>= maybe (createWalletSeed db entropy) pure >>= bindNewAccount db user
 
--- | Nothing if the device already has a key.
-importSeed :: DB.Connection -> User -> ByteString -> IO (Maybe (WalletSeed, AccountRef))
+-- | False if the device already has a key.
+importSeed :: DB.Connection -> User -> ByteString -> IO Bool
 importSeed db user entropy =
   getDeviceSeed db >>= \case
-    Just _ -> pure Nothing
-    Nothing -> Just <$> (createWalletSeed db entropy >>= bindNewAccount db user)
+    Just _ -> pure False
+    Nothing -> True <$ (createWalletSeed db entropy >>= bindNewAccount db user)
 
-bindNewAccount :: DB.Connection -> User -> WalletSeed -> IO (WalletSeed, AccountRef)
-bindNewAccount db user s = do
-  ix <- takeAccountIndex db (wsId s)
-  let r = AccountRef {arSeedId = wsId s, arIndex = ix}
-  bindAccount db user r
-  pure (s, r)
+-- | False if another profile holds the account. The counter moves past it, so
+-- the next profile is not handed the same one.
+bindAccountIndex :: DB.Connection -> User -> SeedId -> AccountIndex -> IO Bool
+bindAccountIndex db user sId@(SeedId sId') acct = do
+  taken <- maybeFirstRow fromOnly $
+    DB.query
+      db
+      "SELECT 1 FROM users WHERE wallet_seed_id = ? AND wallet_account_index = ? AND user_id != ?"
+      (sId', fromIntegral acct :: Int64, userId user)
+  case (taken :: Maybe Int64) of
+    Just _ -> pure False
+    Nothing -> do
+      bindAccount db user sId acct
+      DB.execute
+        db
+        "UPDATE wallet_seeds SET next_account_index = ? WHERE wallet_seed_id = ? AND next_account_index <= ?"
+        (fromIntegral acct + 1 :: Int64, sId', fromIntegral acct :: Int64)
+      pure True
+
+bindNewAccount :: DB.Connection -> User -> WalletSeed -> IO ()
+bindNewAccount db user s = takeAccountIndex db (wsId s) >>= bindAccount db user (wsId s)
 
 createWalletSeed :: DB.Connection -> ByteString -> IO WalletSeed
 createWalletSeed db entropy = do

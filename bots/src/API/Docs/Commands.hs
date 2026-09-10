@@ -451,6 +451,7 @@ undocumentedCommands =
     "APIVerifyGroupMember",
     "APIVerifyToken",
     "APIWallet",
+    "APIWalletBind",
     "APIWalletCreate",
     "APIWalletDelete",
     "APIWalletExportDerivedSecret",
