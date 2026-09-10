@@ -1,6 +1,9 @@
 /* Every colour, radius, face and type step below is the published SimpleX design's own
    value. Where one is not, the line says why. */
 :root {
+  /* Tell the UA which ground to paint before the first message and on a reload's blank frame, and
+     which form controls and scrollbars to render; the dark blocks flip it with the palette. */
+  color-scheme: light;
   /* One accent in both themes, with white on it in both: #3889FF on white is
      3.6:1 for the 16/700 label it carries. */
   --accent: #3889FF;
@@ -69,6 +72,7 @@
    `design.test.ts` fails if they diverge. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    color-scheme: dark;
     /* The accent does not move between themes, and the dark surface #1E2122 is the
        light theme's ink, to the byte. */
     --ink: #FFFFFF;
@@ -110,6 +114,7 @@
 
 /* The same palette again, for the menu's explicit Dark. */
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --ink: #FFFFFF;
   --bg: #141416;
   --surface: #1E2122;
