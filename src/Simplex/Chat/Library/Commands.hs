@@ -58,7 +58,7 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Store.Wallets (bindAccountIndex, createSeed, deleteSeed, getAccountIndex, getDeviceSeed, getSeedProfiles, importSeed)
+import Simplex.Chat.Store.Wallets (bindAccountIndex, createSeed, deleteSeed, getAccountIndex, getDeviceSeed, getSeedProfiles)
 import Simplex.Chat.Wallet (NameIndex, WalletSeed (..), accountAddress, accountSecret, deriveNameKey, importRecoveryKey, newSeed, recoveryKeyPhrase, renderNameKeyPath)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -1515,8 +1515,8 @@ processChatCommand cxt nm = \case
     processChatCommand cxt nm APIWallet
   APIWalletImport phrase -> withUser $ \_ -> do
     entropy <- either (const $ throwCmdError "bad recovery phrase") pure $ importRecoveryKey (encodeUtf8 phrase)
-    imported <- withFastStore' $ \db -> importSeed db entropy
-    unless imported $ throwCmdError "this device already has a wallet key"
+    created <- withFastStore' $ \db -> createSeed db entropy
+    unless created $ throwCmdError "this device already has a wallet key"
     processChatCommand cxt nm APIWallet
   APIWalletExportSeedMnemonic -> withUser $ \user -> do
     seed <- withFastStore' getDeviceSeed >>= maybe (throwCmdError noKeyError) pure

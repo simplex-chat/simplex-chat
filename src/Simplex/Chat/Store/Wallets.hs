@@ -9,17 +9,14 @@ module Simplex.Chat.Store.Wallets
     getAccountIndex,
     getSeedProfiles,
     createSeed,
-    importSeed,
     bindAccountIndex,
     deleteSeed,
   )
 where
 
-import Control.Monad (forM_)
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
-import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types (User (..))
 import Simplex.Chat.Wallet (AccountIndex, SeedId (..), WalletSeed (..))
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow)
@@ -70,26 +67,13 @@ bindUser db uId (SeedId sId) acct =
     "UPDATE users SET wallet_seed_id = ?, wallet_account_index = ? WHERE user_id = ?"
     (sId, acct, uId)
 
--- | False if the device already has a key. Every profile is bound, as a new
--- seed has no account that already owns a name.
+-- | False if the device already has a key. No profile is bound, as which
+-- account a profile takes is said with bind.
 createSeed :: DB.Connection -> ByteString -> IO Bool
 createSeed db entropy =
   getDeviceSeed db >>= \case
     Just _ -> pure False
-    Nothing -> do
-      s <- createWalletSeed db entropy
-      uIds <- map fromOnly <$> DB.query_ db "SELECT user_id FROM users ORDER BY user_id"
-      forM_ (zip uIds [0 ..]) $ \(uId, acct) -> bindUser db uId (wsId s) acct
-      setNextAccountIndex db (wsId s) (fromIntegral $ length uIds)
-      pure True
-
--- | False if the device already has a key. No profile is bound: which account
--- a profile had is what the import is recovering, and the seed does not say.
-importSeed :: DB.Connection -> ByteString -> IO Bool
-importSeed db entropy =
-  getDeviceSeed db >>= \case
-    Just _ -> pure False
-    Nothing -> True <$ createWalletSeed db entropy
+    Nothing -> True <$ DB.execute db "INSERT INTO wallet_seeds (seed) VALUES (?)" (Only entropy)
 
 -- | Without an account the next free one is taken. False if another profile
 -- holds the account asked for.
@@ -110,12 +94,6 @@ bindAccountIndex db User {userId} sId@(SeedId sId') = \case
         -- the counter moves past it, so the next profile is not handed the same one
         setNextAccountIndex db sId (fromIntegral acct + 1)
         pure True
-
-createWalletSeed :: DB.Connection -> ByteString -> IO WalletSeed
-createWalletSeed db entropy = do
-  DB.execute db "INSERT INTO wallet_seeds (seed) VALUES (?)" (Only entropy)
-  sId <- insertedRowId db
-  pure WalletSeed {wsId = SeedId sId, wsEntropy = entropy}
 
 -- | Incremented in SQL, so two profiles cannot be handed the same account.
 takeAccountIndex :: DB.Connection -> SeedId -> IO Int64

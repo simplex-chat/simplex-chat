@@ -70,19 +70,20 @@ testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice <## "no wallet key"
   alice ##> "/_wallet export"
   alice <## "bad chat command: no wallet key on this device"
-  alice ##> "/create user alisa"
-  showActiveUser alice "alisa"
-  -- a new seed has no account that owns a name, so every profile is bound
+  -- creating the seed binds no profile to an account
   alice ##> "/_wallet create"
+  alice <## "this profile has no wallet key"
+  alice ##> "/_wallet bind"
   rows <- nameRows alice
-  alice <## "also on same seed: alice"
-  map fst rows `shouldBe` ["m/44'/60'/1'/0/0", "m/44'/60'/1'/0/1"]
+  map fst rows `shouldBe` ["m/44'/60'/0'/0/0", "m/44'/60'/0'/0/1"]
   length (nub $ map snd rows) `shouldBe` 2
 
 testWalletPersists :: HasCallStack => TestParams -> IO ()
 testWalletPersists ps = do
   rows <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
     alice ##> "/_wallet create"
+    alice <## "this profile has no wallet key"
+    alice ##> "/_wallet bind"
     nameRows alice
   -- same database, new session: a name bought at that address must stay reachable
   withTestChat ps "alice" $ \alice -> do
@@ -93,6 +94,8 @@ testWalletPersists ps = do
 testWalletSecondProfile :: HasCallStack => TestParams -> IO ()
 testWalletSecondProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create"
+  alice <## "this profile has no wallet key"
+  alice ##> "/_wallet bind"
   rows <- nameRows alice
   alice ##> "/_wallet export"
   phrase <- getTermLine alice
