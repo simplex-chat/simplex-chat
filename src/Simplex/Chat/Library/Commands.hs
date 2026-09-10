@@ -59,7 +59,7 @@ import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Store.Wallets (deleteSeed, getDeviceSeed, getOrCreateAccountRef, getSeedAccounts, importSeed)
-import Simplex.Chat.Wallet (NameIndex, WalletSeed (..), accountAddress, deriveNameKey, importRecoveryKey, newSeed, recoveryKeyPhrase, renderNameKeyPath)
+import Simplex.Chat.Wallet (NameIndex, WalletSeed (..), accountAddress, accountSecret, deriveNameKey, importRecoveryKey, newSeed, recoveryKeyPhrase, renderNameKeyPath)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -1515,10 +1515,14 @@ processChatCommand cxt nm = \case
     r <- withFastStore' $ \db -> importSeed db user entropy
     when (isNothing r) $ throwCmdError "this device already has a wallet key"
     processChatCommand cxt nm APIWallet
-  APIWalletExport -> withUser $ \user -> do
+  APIWalletExportSeedMnemonic -> withUser $ \user -> do
     seed <- withFastStore' getDeviceSeed >>= maybe (throwCmdError noKeyError) pure
     phrase <- either (throwCmdError . ("wallet: " <>)) pure $ recoveryKeyPhrase seed
-    pure $ CRWalletPhrase user (safeDecodeUtf8 phrase)
+    pure $ CRWalletSeedMnemonic user (safeDecodeUtf8 phrase)
+  APIWalletExportDerivedSecret acct nameIdx -> withUser $ \user -> do
+    seed <- withFastStore' getDeviceSeed >>= maybe (throwCmdError noKeyError) pure
+    acc <- either (throwCmdError . ("wallet: " <>)) pure $ deriveNameKey seed acct nameIdx
+    pure $ CRWalletDerivedSecret user (renderNameKeyPath acct nameIdx) (tshow $ accountAddress acc) (safeDecodeUtf8 $ accountSecret acc)
   APIWalletDelete -> withUser $ \_ -> do
     seed <- withFastStore' getDeviceSeed >>= maybe (throwCmdError noKeyError) pure
     withFastStore' $ \db -> deleteSeed db (wsId seed)
@@ -5586,7 +5590,8 @@ chatCommandP =
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/_wallet create" $> APIWalletCreate,
       "/_wallet import " *> (APIWalletImport <$> textP),
-      "/_wallet export" $> APIWalletExport,
+      "/_wallet export " *> (APIWalletExportDerivedSecret <$> A.decimal <* A.space <*> A.decimal),
+      "/_wallet export" $> APIWalletExportSeedMnemonic,
       "/_wallet delete" $> APIWalletDelete,
       "/_wallet" $> APIWallet,
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),

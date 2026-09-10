@@ -17,11 +17,13 @@ module Simplex.Chat.Wallet
     deriveNameKey,
     renderNameKeyPath,
     accountAddress,
+    accountSecret,
   )
 where
 
 import Control.Concurrent.STM
 import Crypto.Random (ChaChaDRG)
+import qualified Data.ByteArray.Encoding as BAE
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
@@ -91,3 +93,7 @@ deriveNameKey s acc nm = do
 
 accountAddress :: WalletAccount -> Address
 accountAddress = addressFromPrivateKey . waKey
+
+-- | Hex, as wallets take it when a key is imported on its own.
+accountSecret :: WalletAccount -> ByteString
+accountSecret a = "0x" <> BAE.convertToBase BAE.Base16 (S.unPrivateKey $ waKey a)

@@ -10,7 +10,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft)
 import Data.List (intersect, nub)
-import Simplex.Chat.Wallet (SeedId (..), WalletSeed (..), accountAddress, deriveNameKey, importRecoveryKey, recoveryKeyPhrase, renderNameKeyPath)
+import Simplex.Chat.Wallet (SeedId (..), WalletSeed (..), accountAddress, accountSecret, deriveNameKey, importRecoveryKey, recoveryKeyPhrase, renderNameKeyPath)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
 
@@ -32,6 +32,10 @@ walletDerivationTests = do
     addrOf 0 1 `shouldBe` "0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0"
     -- Ledger Live account 2 for this phrase
     addrOf 1 0 `shouldBe` "0x78839F6054d7ed13918bAe0473BA31b1Ca9D7265"
+  Hspec.it "derives the same secret as other wallets" $
+    -- MetaMask account 1 for this phrase, as exported by "Show private key"
+    either error (show . accountSecret) (deriveNameKey testSeed 0 0)
+      `shouldBe` "\"0x1ab42cc412b618bdea3a599e3c9bae199ebf030895b039e9db1e30dafb12b727\""
   Hspec.it "renders the path a name key sits at" $ do
     renderNameKeyPath 0 0 `shouldBe` "m/44'/60'/0'/0/0"
     renderNameKeyPath 2 7 `shouldBe` "m/44'/60'/2'/0/7"
@@ -46,6 +50,7 @@ walletTests = do
   it "the key and the addresses come back after a restart" testWalletPersists
   it "a second profile gets its own account, on the same key" testWalletSecondProfile
   it "imports a phrase, exports it, and refuses a second import" testWalletImport
+  it "exports the secret of any name key" testWalletExportDerivedSecret
   it "deletes the key, and a key can be imported again" testWalletDelete
 
 accountRows :: HasCallStack => TestCC -> String -> Int -> IO [(String, String)]
@@ -114,6 +119,22 @@ testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   -- a mistyped phrase says nothing about which word was wrong
   alice ##> ("/_wallet import " <> B.unpack (B.unwords $ replicate 12 "abandon"))
   alice <## "bad chat command: bad recovery phrase"
+
+testWalletExportDerivedSecret :: HasCallStack => TestParams -> IO ()
+testWalletExportDerivedSecret ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  _ <- accountRows alice "alice, active" 0
+  alice ##> "/_wallet export 0 0"
+  alice <## "m/44'/60'/0'/0/0  0x9858EfFD232B4033E47d90003D41EC34EcaEda94  0x1ab42cc412b618bdea3a599e3c9bae199ebf030895b039e9db1e30dafb12b727"
+  -- any path derives, whether or not a profile holds that account
+  alice ##> "/_wallet export 3 7"
+  l <- getTermLine alice
+  case words l of
+    [path, addr, secret] -> do
+      path `shouldBe` "m/44'/60'/3'/0/7"
+      length addr `shouldBe` 42
+      length secret `shouldBe` 66
+    _ -> error $ "unexpected export row: " <> l
 
 testWalletDelete :: HasCallStack => TestParams -> IO ()
 testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do

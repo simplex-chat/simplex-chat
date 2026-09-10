@@ -68,7 +68,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Chat.Wallet (AccountIndex)
+import Simplex.Chat.Wallet (AccountIndex, NameIndex)
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
@@ -420,7 +420,8 @@ data ChatCommand
   | APIWallet
   | APIWalletCreate
   | APIWalletImport {recoveryPhrase :: Text}
-  | APIWalletExport
+  | APIWalletExportSeedMnemonic
+  | APIWalletExportDerivedSecret {accountIndex :: AccountIndex, nameIndex :: NameIndex}
   | APIWalletDelete
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
@@ -750,7 +751,8 @@ allowRemoteCommand = \case
   APIWallet -> False
   APIWalletCreate -> False
   APIWalletImport _ -> False
-  APIWalletExport -> False
+  APIWalletExportSeedMnemonic -> False
+  APIWalletExportDerivedSecret {} -> False
   APIWalletDelete -> False
   _ -> True
 
@@ -854,7 +856,8 @@ data ChatResponse
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
   | CRWallet {user :: User, walletKeyExists :: Bool, walletAccounts :: [(Text, AccountIndex, Bool, [(Text, Text)])]}
-  | CRWalletPhrase {user :: User, recoveryPhrase :: Text}
+  | CRWalletSeedMnemonic {user :: User, recoveryPhrase :: Text}
+  | CRWalletDerivedSecret {user :: User, keyPath :: Text, address :: Text, derivedSecret :: Text}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}

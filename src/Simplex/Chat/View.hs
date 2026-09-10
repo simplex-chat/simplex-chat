@@ -199,7 +199,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
         plain ("account " <> tshow acct <> " (" <> n <> (if active then ", active" else "") <> ")")
           : zipWith nameRow [0 :: Int ..] keys
       nameRow k (path, addr) = plain $ "  name " <> tshow k <> "  " <> path <> "  " <> addr
-  CRWalletPhrase u phrase -> ttyUser u [plain phrase]
+  CRWalletSeedMnemonic u phrase -> ttyUser u [plain phrase]
+  CRWalletDerivedSecret u path addr secret -> ttyUser u [plain $ path <> "  " <> addr <> "  " <> secret]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
