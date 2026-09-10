@@ -50,12 +50,6 @@ chatFileTests = do
     it "send and receive locally encrypted files" testXFTPFileTransferEncrypted
     it "send and receive file, accepting after upload" testXFTPAcceptAfterUpload
     it "send and receive file in group" testXFTPGroupFileTransfer
-    it "send and receive file with badge proof" testXFTPFileBadgeProof
-    it "send and receive file with badge proof in group" testXFTPGroupFileBadgeProof
-    it "file above the limit without badge proof is not accepted" testXFTPFileNoBadgeProof
-    it "file above the limit the badge allows is not accepted" testXFTPFileBadgeAboveLimit
-    it "sending file above the limit the badge allows fails" testXFTPSndFileBadgeLimit
-    it "sending file with a badge expired past the send grace fails" testXFTPSndFileBadgeGrace
     it "delete uploaded file" testXFTPDeleteUploadedFile
     it "delete uploaded file in group" testXFTPDeleteUploadedFileGroup
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
@@ -73,6 +67,13 @@ chatFileTests = do
     it "send and receive large standalone file using relative paths" testXFTPStandaloneRelativePaths
     xit "removes sent file from server" testXFTPStandaloneCancelSnd -- no error shown in tests
     it "removes received temporary files" testXFTPStandaloneCancelRcv
+  describe "send larger files with badges" $ do
+    it "send and receive file with badge proof" testXFTPFileBadgeProof
+    it "send and receive file with badge proof in group" testXFTPGroupFileBadgeProof
+    it "file above the limit without badge proof is not accepted" testXFTPFileNoBadgeProof
+    it "file above the limit the badge allows is not accepted" testXFTPFileBadgeAboveLimit
+    it "sending file above the limit the badge allows fails" testXFTPSndFileBadgeLimit
+    it "sending file with a badge expired past the send grace fails" testXFTPSndFileBadgeGrace
 
 runTestMessageWithFile :: HasCallStack => TestParams -> IO ()
 runTestMessageWithFile = testChat2 aliceProfile bobProfile $ \alice bob -> withXFTPServer $ do
