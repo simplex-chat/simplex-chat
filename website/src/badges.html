@@ -51,7 +51,10 @@ templateEngineOverride: njk
         .b-theme .sun { display: none; }
         html.dark .b-theme .sun { display: block; }
         html.dark .b-theme .moon { display: none; }
-        #badges-frame { display: block; width: 100%; height: calc(100vh - 54px); border: 0; margin-top: 54px; }
+        /* The frame sits under the fixed navbar (the app pads its own top to clear it) and is sized
+           to its content by the app's height messages, so the page — not the frame — scrolls, and
+           the footer follows naturally. 100vh is only the size before the first message arrives. */
+        #badges-frame { display: block; width: 100%; height: 100vh; border: 0; }
         @media (max-width: 640px) { .b-links { gap: 24px; } }
     </style>
 </head>
@@ -74,7 +77,7 @@ templateEngineOverride: njk
         </button>
     </header>
 
-    <iframe id="badges-frame" title="Support SimpleX" src="https://badges.simplex.chat/"></iframe>
+    <iframe id="badges-frame" title="Support SimpleX" src="https://badges.simplex.chat"></iframe>
 
     {% include "footer.html" %}
 
@@ -88,6 +91,10 @@ templateEngineOverride: njk
             function siteTheme() {
                 try { return localStorage.getItem("theme") || "system"; } catch (e) { return "system"; }
             }
+            function isDark() {
+                return document.documentElement.classList.contains("dark");
+            }
+            function siteBg() { return isDark() ? "#000832" : "#F3FAFF"; }
             function applySiteTheme(theme) {
                 var dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
                 document.documentElement.classList.toggle("dark", dark);
@@ -95,6 +102,7 @@ templateEngineOverride: njk
             }
             function post(msg) { try { frame.contentWindow.postMessage(msg, APP); } catch (e) { /* not ready */ } }
             function postRoute() { post({ type: "simplex-route", hash: location.hash }); }
+            function postColors() { post({ type: "simplex-colors", bg: siteBg() }); }
 
             // Buy a code / Your codes are hash links; changing the hash — from a click or from the
             // address bar — is what carries the route into the frame.
@@ -102,19 +110,25 @@ templateEngineOverride: njk
 
             window.addEventListener("message", function (e) {
                 if (e.origin !== APP || !e.data) return;
-                // The frame announces itself on load; hand it the site's theme and the current route.
+                // The frame announces itself on load; hand it the site's theme, background and route.
                 if (e.data.type === "simplex-embed-ready") {
                     post({ type: "simplex-theme", theme: siteTheme() });
+                    postColors();
                     postRoute();
                 }
                 // The buyer used the theme switch inside the frame; keep the site in step.
-                if (e.data.type === "simplex-theme") applySiteTheme(e.data.theme);
+                if (e.data.type === "simplex-theme") { applySiteTheme(e.data.theme); postColors(); }
+                // The frame reports its content height; size it so the site's page scrolls, not the frame.
+                if (e.data.type === "simplex-height" && typeof e.data.height === "number") {
+                    frame.style.height = Math.max(0, e.data.height) + "px";
+                }
             });
 
             document.getElementById("b-theme").addEventListener("click", function () {
-                var next = document.documentElement.classList.contains("dark") ? "light" : "dark";
+                var next = isDark() ? "light" : "dark";
                 applySiteTheme(next);
                 post({ type: "simplex-theme", theme: next });
+                postColors();
             });
         })();
     </script>
