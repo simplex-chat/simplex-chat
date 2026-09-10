@@ -277,7 +277,7 @@ swTest("sw: the precache is explicit URLs, every compiled module, all under one 
   const images = readdirSync(new URL("../../public/img", import.meta.url))
     .filter((f) => f.endsWith(".png") || f.endsWith(".svg")).map((f) => `${r.sw.ASSETS}${f}`);
   assert.ok(images.length > 0, "the hero has to be somewhere for the worker to precache");
-  const expected = [`${r.sw.ASSETS}styles.css`, ...modules, ...images].sort();
+  const expected = [`${r.sw.ASSETS}styles.css`, `${r.sw.ASSETS}init.js`, ...modules, ...images].sort();
   assert.deepEqual([...r.sw.PRECACHE].sort(), expected,
     "a module missing here is a page that half-works offline; one under another hash is a skew");
   assert.ok(!r.sw.PRECACHE.includes("/"),

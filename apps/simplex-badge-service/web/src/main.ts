@@ -959,4 +959,7 @@ function registerServiceWorker(): void {
 }
 
 syncFromLocation(true);
+// The real screen is painted; clear the pre-paint mark so a non-landing reload's held shell fades in
+// (see `.sb-booting` in styles.css). A no-op on the landing, which was never marked.
+document.documentElement.classList.remove("sb-booting");
 registerServiceWorker();

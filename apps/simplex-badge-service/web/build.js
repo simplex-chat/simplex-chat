@@ -56,6 +56,34 @@ const IMAGE_TYPES = [".png", ".svg"];
  * `styles.css`, which is what makes `url(hero-light.png)` resolve. The wordmark and the symbol
  * are the official files copied out of `website/` and `media-logos/`, never transcribed.
  */
+/**
+ * The pre-paint bootstrap. A classic (non-module, so it runs before first paint, unlike the deferred
+ * entry module) same-origin script — the CSP allows `script-src 'self'`, not inline — served and
+ * precached under the build hash like everything else. It does the two things the served HTML cannot
+ * know at build time but must be true before the first paint:
+ *   - the theme, from `sb.theme.v1` (the key `store.ts` uses, JSON as `store` writes it), so a device
+ *     forced off its system theme paints the chosen one, not a flash of the system one;
+ *   - whether this load is the landing: the shell prerenders only the landing, so a reload of any
+ *     other screen marks `sb-booting`, which holds the shell hidden until `main.ts` has painted the
+ *     real screen (styles.css), rather than flashing the landing in over it.
+ */
+const INIT_JS = `(function () {
+  var r = document.documentElement;
+  try {
+    var raw = localStorage.getItem("sb.theme.v1");
+    var t = raw ? JSON.parse(raw) : "system";
+    if (t !== "light" && t !== "dark" && t !== "system") t = "system";
+    if (t === "system") r.removeAttribute("data-theme"); else r.setAttribute("data-theme", t);
+    r.style.colorScheme = (t === "dark" || (t === "system" && matchMedia("(prefers-color-scheme: dark)").matches)) ? "dark" : "light";
+  } catch (e) {}
+  try {
+    var h = location.hash;
+    var landing = (h === "" || h === "#" || h === "#/") && location.search.indexOf("order=") < 0;
+    if (!landing) r.classList.add("sb-booting");
+  } catch (e) {}
+})();
+`;
+
 export function assets(compiled = paths.compiled, stylesheet = paths.stylesheet, images = paths.images) {
   const modules = readdirSync(compiled).filter((f) => f.endsWith(".js")).sort();
   if (modules.length === 0) throw new Error("build: build/src holds no modules — run tsc first");
@@ -63,6 +91,7 @@ export function assets(compiled = paths.compiled, stylesheet = paths.stylesheet,
   return [
     ...modules.map((name) => [name, served(readFileSync(`${compiled}/${name}`, "utf8"))]),
     ["styles.css", readFileSync(stylesheet, "utf8")],
+    ["init.js", INIT_JS],
     ...pictures.map((name) => [name, readFileSync(`${images}/${name}`)]),
   ];
 }

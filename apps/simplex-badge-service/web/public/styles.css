@@ -180,6 +180,14 @@ body {
    the site owns the navbar, so the shell's copy of it is hidden there as the built one would be. */
 .embedded #chrome { display: none; }
 
+/* A reload of any screen but the landing can't be prerendered (the screen depends on runtime state),
+   so `init.js` marks it `sb-booting` before the first paint: the shell's landing is held hidden over
+   the themed ground, and `main.ts` clears the mark once it has painted the real screen, which then
+   fades in rather than replacing a flash of the landing. The landing route is never marked, so its
+   prerendered first paint stays instant. */
+#app { transition: opacity .2s ease; }
+.sb-booting #app { opacity: 0; }
+
 /* Embedded in the site: the site's fixed navbar sits above the frame, so pad the top to clear it,
    and drop the page's own wash so the flat background the site hands in shows through cleanly. The
    site carries its own footer below the frame, so ours would only double the contact link and leave
