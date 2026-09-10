@@ -1503,8 +1503,7 @@ processChatCommand cxt nm = \case
         pure $ CRWallet user True paths profiles
   APIWalletBind acct_ -> withUser $ \user -> do
     seed <- deviceSeed
-    bound <- withFastStore' $ \db -> bindAccountIndex db user (wsId seed) acct_
-    unless bound $ throwCmdError "another profile uses this account"
+    withFastStore' (\db -> bindAccountIndex db user (wsId seed) acct_) >>= either throwCmdError pure
     processChatCommand cxt nm APIWallet
   APIWalletCreate -> withUser $ \_ -> do
     g <- asks random
@@ -6143,10 +6142,12 @@ chatCommandP =
     quotedP = safeDecodeUtf8 <$> (A.char '"' *> A.takeTill (== '"') <* A.char '"')
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
-    -- BIP-32 hardens at 2^31, and Word32 would wrap
+    -- BIP-32 hardens at 2^31, and Word32 would wrap. Digits are counted before
+    -- they are read, as reading a very long number is not free.
     keyIndexP = do
-      i <- A.decimal :: Parser Integer
-      if i < 0x80000000 then pure (fromIntegral i) else fail "key index too large"
+      ds <- A.takeWhile1 isDigit
+      let i = read (B.unpack ds) :: Integer
+      if B.length ds <= 10 && i < 0x80000000 then pure (fromIntegral i) else fail "key index too large"
 
 displayNameP :: Parser Text
 displayNameP = safeDecodeUtf8 <$> displayNameP_

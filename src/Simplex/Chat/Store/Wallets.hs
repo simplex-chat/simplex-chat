@@ -73,13 +73,21 @@ createSeed :: DB.Connection -> ByteString -> IO Bool
 createSeed db entropy =
   getDeviceSeed db >>= \case
     Just _ -> pure False
-    Nothing -> True <$ DB.execute db "INSERT INTO wallet_seeds (seed) VALUES (?)" (Only entropy)
+    Nothing -> True <$ DB.execute db "INSERT INTO wallet_seeds (seed) VALUES (?)" (Only $ DB.Binary entropy)
 
--- | Without an account the next free one is taken. False if another profile
--- holds the account asked for.
-bindAccountIndex :: DB.Connection -> User -> SeedId -> Maybe AccountIndex -> IO Bool
-bindAccountIndex db User {userId} sId = \case
-  Nothing -> True <$ (takeAccountIndex db sId >>= bindUser db userId sId)
+-- | Without an account the next free one is taken, which a profile that has
+-- one does not need: moving to another account is asked for by number.
+bindAccountIndex :: DB.Connection -> User -> SeedId -> Maybe AccountIndex -> IO (Either String ())
+bindAccountIndex db user@User {userId} sId = \case
+  Nothing ->
+    getAccountIndex db user >>= \case
+      Just _ -> pure $ Left "this profile already has an account"
+      Nothing -> do
+        acct <- takeAccountIndex db sId
+        -- BIP-32 hardens at 2^31, and every index above it is the same key again
+        if acct >= 0x80000000
+          then pure $ Left "no free account on this key"
+          else Right () <$ bindUser db userId sId acct
   Just acct -> do
     taken <-
       maybeFirstRow fromOnly $
@@ -88,12 +96,12 @@ bindAccountIndex db User {userId} sId = \case
           "SELECT 1 FROM users WHERE wallet_seed_id = ? AND wallet_account_index = ? AND user_id != ?"
           (sId, fromIntegral acct :: Int64, userId)
     case (taken :: Maybe Int64) of
-      Just _ -> pure False
+      Just _ -> pure $ Left "another profile uses this account"
       Nothing -> do
         bindUser db userId sId (fromIntegral acct)
         -- the counter moves past it, so the next profile is not handed the same one
         setNextAccountIndex db sId (fromIntegral acct + 1)
-        pure True
+        pure $ Right ()
 
 -- | So two profiles cannot be handed the same account.
 takeAccountIndex :: DB.Connection -> SeedId -> IO Int64

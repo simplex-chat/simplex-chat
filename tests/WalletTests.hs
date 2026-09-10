@@ -56,6 +56,7 @@ walletTests = do
   it "exports the secret of any name key" testWalletExportDerivedSecret
   it "deletes the key, and a key can be imported again" testWalletDelete
   it "binds a profile to the account it had" testWalletBind
+  it "binds a profile once, and only to an account BIP-32 can harden" testWalletBindLimits
   it "needs no import when the database was backed up after the key" testWalletBackupAfterKey
   it "rebinds by index when the database was backed up before the key" testWalletBackupBeforeKey
   it "discards a key imported before the database is restored" testWalletImportThenRestore
@@ -245,3 +246,24 @@ testWalletImportThenRestore ps = withNewTestChat ps "alice" aliceProfile $ \alic
   alice ##> "/_wallet bind"
   rows <- nameRows alice
   map fst rows `shouldBe` ["m/44'/60'/0'/0/0", "m/44'/60'/0'/0/1"]
+
+testWalletBindLimits :: HasCallStack => TestParams -> IO ()
+testWalletBindLimits ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice <## "no account for this profile"
+  alice ##> "/_wallet bind"
+  _ <- nameRows alice
+  -- a profile that has an account asks for another one by number
+  alice ##> "/_wallet bind"
+  alice <## "bad chat command: this profile already has an account"
+  alice ##> "/create user alisa"
+  showActiveUser alice "alisa"
+  alice ##> "/_wallet bind 2147483647"
+  rows <- nameRows alice
+  alice <## "also on same seed: alice"
+  map fst rows `shouldBe` ["m/44'/60'/2147483647'/0/0", "m/44'/60'/2147483647'/0/1"]
+  -- the counter is past what BIP-32 can harden, where it would repeat account 0
+  alice ##> "/create user carol"
+  showActiveUser alice "carol"
+  alice ##> "/_wallet bind"
+  alice <## "bad chat command: no free account on this key"
