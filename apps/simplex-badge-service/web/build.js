@@ -82,6 +82,49 @@ export function withBuild(html, build) {
   return retarget(html, ASSET_PATTERN, `/assets/${build}/`, "asset path");
 }
 
+/**
+ * The app shell: the serialized first paint of the chrome and the landing screen, straight from
+ * `screens.ts`. Running the real screen builders (under the tests' zero-dependency stub DOM) is what
+ * keeps the shell from ever drifting from what `main.ts` builds and swaps in — it is that output.
+ * The stub globals are installed only for the calls and restored after, so importing this module
+ * from a test does not disturb its own document.
+ */
+export async function prerenderShell() {
+  const dom = await import("./build/test/stub-dom.js");
+  const prevDoc = Object.getOwnPropertyDescriptor(globalThis, "document");
+  const prevNav = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  dom.installDocument();
+  try {
+    const screens = await import("./build/src/screens.js");
+    const noop = () => {};
+    const chromeHtml = screens.chrome({
+      theme: "system", onNewPurchase: noop, onHistory: noop, onTheme: noop, onToggle: noop,
+    }).node.serialize();
+    // The landing sits in the track/rail the wizard mounts it in, so `root.replaceChildren(track)`
+    // swaps like for like; only panel 0 is here, the rest arrive off-screen with the built track.
+    const landingHtml = screens.landing({ onStart: noop }).serialize();
+    return { chromeHtml, appHtml: `<div class="track"><div class="rail">${landingHtml}</div></div>` };
+  } finally {
+    if (prevDoc) Object.defineProperty(globalThis, "document", prevDoc); else delete globalThis.document;
+    if (prevNav) Object.defineProperty(globalThis, "navigator", prevNav); else delete globalThis.navigator;
+  }
+}
+
+export const SHELL_SLOTS = /** @type {const} */ ([
+  ["chrome", /(<!--shell:chrome-->)[\s\S]*?(<!--\/shell:chrome-->)/],
+  ["app", /(<!--shell:app-->)[\s\S]*?(<!--\/shell:app-->)/],
+]);
+
+/** Fills the shell slots between their markers, keeping the markers so the next build finds them. */
+export function injectShell(html, shell) {
+  let out = html;
+  for (const [slot, pattern] of SHELL_SLOTS) {
+    const body = slot === "chrome" ? shell.chromeHtml : shell.appHtml;
+    out = retarget(out, pattern, (_m, open, close) => `${open}${body}${close}`, `${slot} shell slot`);
+  }
+  return out;
+}
+
 export function withBuildId(js, build) {
   return retarget(js, BUILD_PATTERN, `const BUILD = "${build}";`, "BUILD constant");
 }
@@ -95,9 +138,10 @@ function put(file, content) {
   return true;
 }
 
-export function assemble() {
+export async function assemble() {
   const files = assets();
   const build = hashOf(files);
+  const shell = await prerenderShell();
 
   // Rebuilt from scratch: a hash that is no longer current must not be left
   // sitting in the served directory beside the one that is.
@@ -105,8 +149,11 @@ export function assemble() {
   mkdirSync(`${paths.site}/assets/${build}`, { recursive: true });
   for (const [name, content] of files) writeFileSync(`${paths.site}/assets/${build}/${name}`, content);
 
+  // The shell is injected first, then the build hash rewritten over the result: the injected chrome
+  // and landing carry no asset URLs, and the hash rewrite still finds the ones in <head>.
+  const indexSource = withBuild(injectShell(readFileSync(paths.indexHtml, "utf8"), shell), build);
   const moved = [
-    put(paths.indexHtml, withBuild(readFileSync(paths.indexHtml, "utf8"), build)),
+    put(paths.indexHtml, indexSource),
     put(paths.worker, withBuildId(readFileSync(paths.worker, "utf8"), build)),
   ].some(Boolean);
   copyFileSync(paths.indexHtml, `${paths.site}/index.html`);
@@ -116,7 +163,7 @@ export function assemble() {
 }
 
 if (process.argv[1] !== undefined && pathToFileURL(process.argv[1]).href === import.meta.url) {
-  const { build, files, moved } = assemble();
+  const { build, files, moved } = await assemble();
   console.log(`build ${build}: ${files} files in dist/assets/${build}/, with index.html and sw.js`);
   if (moved) console.log("build: public/index.html and public/sw.js now name this build — commit them");
 }

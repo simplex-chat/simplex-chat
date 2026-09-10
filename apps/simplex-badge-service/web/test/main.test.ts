@@ -519,13 +519,20 @@ mainTest("styles: on a phone the menu is a sheet rather than a floating panel", 
   assert.equal(rule.decls.get("width"), "auto", "it spans the page instead of floating in it");
 });
 
-mainTest("shell: index.html carries the track and nothing else", () => {
+mainTest("shell: index.html carries the prerendered first screen, straight from screens.ts", async () => {
   const html = readFileSync(new URL("../../public/index.html", import.meta.url), "utf8");
-  assert.ok(html.includes('<main id="app" aria-live="polite"></main>'));
   assert.ok(/<script type="module" src="\/assets\/[0-9a-f]{16}\/main\.js"><\/script>/.test(html),
     "the offline promise: the entry module is under /assets/<buildHash>/, so the shell and its modules cannot skew");
   assert.ok(html.includes("simplex.chat/contact"), "every screen carries the footer");
-  assert.ok(!/<section|<button|<h1/.test(html), "every screen is built in screens.ts");
+  // The shell is the app shell: the serialized chrome() and landing() from screens.ts, so the first
+  // paint is the real first screen and can never drift from what `main.ts` swaps in. If this fails
+  // after a screens.ts change, run `npm run build` and commit the regenerated public/index.html.
+  const build = await import(new URL("../../build.js", import.meta.url).href);
+  const shell = await build.prerenderShell();
+  assert.ok(html.includes(`<!--shell:chrome-->${shell.chromeHtml}<!--/shell:chrome-->`),
+    "the shell's chrome is not chrome()'s current output — rebuild");
+  assert.ok(html.includes(`<!--shell:app-->${shell.appHtml}<!--/shell:app-->`),
+    "the shell's landing is not landing()'s current output — rebuild");
 });
 
 // ------------------------------------------------------------- the chrome
