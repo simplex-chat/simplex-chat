@@ -857,9 +857,8 @@ CREATE TABLE rcv_roster_transfers(
 CREATE TABLE wallet_seeds(
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
   seed BLOB NOT NULL, -- BIP-39 entropy, 16-32 bytes
-  -- known issue: after import this starts at 0, so a recovered device can
-  -- re-issue an account that already owns names, and profiles are bound in
-  -- the order they ask for a key, not the order they had
+  -- known issue: after an import this starts at 0, so /_wallet bind with no
+  -- account can hand out one that already owns names
   next_account_index INTEGER NOT NULL DEFAULT 0,
   -- one key per device for now
   single_seed INTEGER NOT NULL DEFAULT 1
