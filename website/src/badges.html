@@ -141,7 +141,6 @@ templateEngineOverride: njk
             // from it, so neither channel can be driven by another frame.
             var APP = "https://badges.simplex.chat";
             var frame = document.getElementById("badges-frame");
-            var minHeight = 0; // the initial screen's height, kept as the frame's floor once known
             // Load the frame at the route we persisted (a wizard step's hash; empty for the landing or
             // an order the frame resumes from its own store). This is what a standalone reload does, so
             // the step appears in place instead of scrolling in from the landing.
@@ -194,13 +193,12 @@ templateEngineOverride: njk
                 if (e.data.type === "simplex-nav" && typeof e.data.hash === "string") {
                     try { history.replaceState(null, "", location.pathname + location.search + e.data.hash); } catch (ex) {}
                 }
-                // The frame reports its content height; size it so the site's page scrolls, not the frame.
+                // The frame reports its content height; size it so the site's page scrolls, not the
+                // frame. Its `min` is the welcome-page height — floor the iframe there so a shorter
+                // screen (an empty codes list, a compact step) never collapses it below that.
                 if (e.data.type === "simplex-height" && typeof e.data.height === "number") {
-                    var h = Math.max(0, e.data.height);
-                    // The first height is the initial screen; keep it as a floor so a shorter later
-                    // screen never collapses the frame below where the buyer started.
-                    if (minHeight === 0) { minHeight = h; frame.style.minHeight = h + "px"; }
-                    frame.style.height = h + "px";
+                    if (typeof e.data.min === "number" && e.data.min > 0) frame.style.minHeight = e.data.min + "px";
+                    frame.style.height = Math.max(0, e.data.height) + "px";
                     reveal();
                 }
             });
