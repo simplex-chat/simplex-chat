@@ -22,19 +22,22 @@ templateEngineOverride: njk
            the site footer sits below it. This is the only navbar — the app hides its own when embedded. */
         .b-nav {
             position: fixed; top: 0; left: 0; width: 100%; height: 54px; z-index: 50;
-            box-sizing: border-box; display: flex; align-items: center; padding: 0 20px 0 30px;
+            /* Centre the links on the page; the logo and toggle are taken out of flow below, so
+               neither their width nor the logo image loading can nudge the centred links. This is
+               how the site's own navbar keeps its menu centred. */
+            box-sizing: border-box; display: flex; align-items: center; justify-content: center;
             /* The site's own frosted bar: translucent over the content that scrolls under it. */
             background: rgba(243, 250, 255, 0.72);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
         }
         html.dark .b-nav { background: rgba(0, 8, 50, 0.72); }
-        .b-logo { display: flex; align-items: center; height: 40px; }
+        .b-logo { position: absolute; left: 0; padding-left: 30px; display: flex; align-items: center; height: 100%; }
         .b-logo img { height: 40px; width: auto; }
         .b-logo .dark { display: none; }
         html.dark .b-logo .light { display: none; }
         html.dark .b-logo .dark { display: block; }
-        .b-links { margin: 0 auto; display: flex; align-items: center; gap: 60px; }
+        .b-links { display: flex; align-items: center; gap: 60px; }
         .b-links a {
             font-family: "Manrope", sans-serif;
             color: var(--nav-color); text-decoration: none; font-size: 18px; font-weight: 500;
@@ -45,7 +48,7 @@ templateEngineOverride: njk
             background-color: var(--nav-color); transition: width .25s ease-out;
         }
         .b-links a:hover::before { width: 100%; left: 0; right: auto; }
-        .b-theme { display: flex; align-items: center; justify-content: center; padding: 0; border: 0; background: none; cursor: pointer; }
+        .b-theme { position: absolute; right: 0; margin-right: 20px; display: flex; align-items: center; justify-content: center; padding: 0; border: 0; background: none; cursor: pointer; }
         .b-theme svg { width: 20px; height: 20px; }
         .b-theme svg path { fill: var(--nav-color); }
         .b-theme .sun { display: none; }
