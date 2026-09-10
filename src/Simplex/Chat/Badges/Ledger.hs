@@ -115,18 +115,14 @@ issueEntry t entryId e@StatementEntry {balanceMonths, balanceStartTs}
 maxCreatedAtSkew :: NominalDiffTime
 maxCreatedAtSkew = 5 * 60
 
--- | Pairs each arriving entry with whether its balance follows from the one before it - the previous
--- entry as received, the stored tip for the first, or a seed when there is no tip. Each is checked by
--- re-running the operation it claims rather than against its predecessor's totals: over-lapsing is
--- self-consistent and still theft. 'Nothing' is "not checked" - a type with no operation behind it,
--- whose months are still required to add up.
+-- | Each entry is checked by re-running the operation it claims, not against its predecessor's
+-- totals: over-lapsing is self-consistent and still theft. 'Nothing' is a third state, not a
+-- failure - no operation here rebuilds that entry type.
 balanceChecked :: UTCTime -> Maybe StatementEntry -> [StatementEntry] -> [(StatementEntry, Maybe Bool)]
-balanceChecked now tip entries = case entries of
-  [] -> []
-  first : _ ->
-    let opening = fromMaybe (emptyEntry (createdAt first) (balanceBadgeType first)) tip
-     in zipWith checkAfter (opening : entries) entries
+balanceChecked _ _ [] = []
+balanceChecked now tip entries@(first : _) = zipWith checkAfter (opening : entries) entries
   where
+    opening = fromMaybe (emptyEntry (createdAt first) (balanceBadgeType first)) tip
     checkAfter p e = (e, entryChecked now p e)
 
 entryChecked :: UTCTime -> StatementEntry -> StatementEntry -> Maybe Bool
@@ -135,20 +131,28 @@ entryChecked now p e
   | otherwise = case entryType e of
       SEDebit SDLapse -> derived $ lapseEntry t "" p
       SEDebit SDBadge -> derived $ issueEntry t "" p
-      SECredit SCUnknown {} -> monthsAddUp
+      SEDebit SDRefund -> uncontradicted
+      SEDebit SDUpgrade {} -> uncontradicted
+      SEDebit SDTransferOut {} -> uncontradicted
+      SEDebit SDSupport -> uncontradicted
+      SEDebit SDUnknown {} -> uncontradicted
+      SECredit SCUnknown {} -> uncontradicted
       SECredit c
         -- the months a grant adds cannot be derived here, but their sign can: a negative one would
         -- recompute as its own confirmation while moving paidThrough into the past
         | changeMonths e < 0 -> Just False
         | otherwise -> Just $ sameBalance e $ grantEntry t "" (changeMonths e) c p
-      _ -> monthsAddUp
   where
     t = createdAt e
     postdated = t > addUTCTime maxCreatedAtSkew now
     -- equal is not behind: a service pass writes its lapse and its issue with one clock reading
     backdated = t < createdAt p
     derived = Just . maybe False (sameBalance e)
-    monthsAddUp = if balanceMonths e == balanceMonths p + changeMonths e then Nothing else Just False
+    uncontradicted
+      | balanceMonths e /= balanceMonths p + changeMonths e = Just False
+      | balanceMonths e < 0 = Just False
+      | balanceStartTs e < balanceStartTs p = Just False
+      | otherwise = Nothing
 
 sameBalance :: StatementEntry -> StatementEntry -> Bool
 sameBalance a b =

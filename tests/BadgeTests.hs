@@ -61,6 +61,7 @@ badgeTests = do
     it "counts the elapsed months of an absurd run in one step" testElapsedFarAnchor
     it "expires at the end of the Monday after the period" testMondayExpiry
     it "stores the wire tag of every entry type, and rebuilds each from its stored JSON" testEntryTypeColumns
+  describe "checking a statement" $ do
     it "accepts a chain of entries, each against the one before it" testChecksChain
     it "checks the second entry against the first, not against the tip" testChecksAgainstStatement
     it "accepts an opening credit with no predecessor, and rejects anything else" testChecksOpening
@@ -70,6 +71,7 @@ badgeTests = do
     it "rejects a credit of negative months" testChecksNegativeCredit
     it "rejects an entry ahead of the clock or behind the one it follows" testChecksTimestamps
     it "leaves an entry type it cannot derive unchecked, its months still checked" testChecksUnknownType
+    it "rejects an entry it cannot rebuild whose coverage or months contradict the ledger" testChecksUncheckedInvariants
   describe "worker retry" $ do
     it "repeats a failure that can clear on its own, and no other" testRetryClassification
     it "backs off to the cap" testRetryBackoff
@@ -429,9 +431,6 @@ testMondayExpiry = do
   expiries `shouldSatisfy` all (\(UTCTime d t) -> t == 0 && (\(_, _, wd) -> wd == 2) (toWeekDate d))
   zipWith diffUTCTime expiries periodEnds `shouldSatisfy` all (\d -> d > nominalDay && d <= 8 * nominalDay)
 
--- Checking a statement. The entries under test are built by the operations the service runs, so a
--- bad one is a good one with a single field changed.
-
 verdicts :: UTCTime -> Maybe StatementEntry -> [StatementEntry] -> [Maybe Bool]
 verdicts now tip = map snd . balanceChecked now tip
 
@@ -536,6 +535,20 @@ testChecksUnknownType = do
   verdicts start (Just granted) [issued {entryType = SEDebit SDRefund}] `shouldBe` [Nothing]
   verdicts start (Just granted) [unknown {balanceMonths = 5}] `shouldBe` [Just False]
   verdicts start (Just granted) [stampedAt (at 2026 3 1) unknown] `shouldBe` [Just False]
+
+-- A tag with no operation behind it escapes the recompute, leaving only the months identity - which
+-- holds while coverage moves back, or while the balance goes into debt.
+testChecksUncheckedInvariants :: IO ()
+testChecksUncheckedInvariants = do
+  let start = at 2026 3 10
+      granted = grant start 3 (newBalance start)
+  Just issued <- pure $ issue start granted
+  let shortened = issued {entryType = SEDebit SDRefund, changeMonths = 0, balanceStartTs = addMonths (-1) (bStart issued)}
+      owing = issued {entryType = SEDebit SDRefund, changeMonths = -3, balanceMonths = -1}
+  verdicts start (Just issued) [shortened] `shouldBe` [Just False]
+  paidThrough shortened `shouldBe` addMonths (-1) (paidThrough issued)
+  verdicts start (Just issued) [owing] `shouldBe` [Just False]
+  bMonths owing `shouldBe` bMonths issued - 3
 
 -- A failed renewal is otherwise left until the next chat start or activate, which on a desktop
 -- left running can be days - long enough for a funded badge to lapse.
