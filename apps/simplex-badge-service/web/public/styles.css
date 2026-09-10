@@ -175,6 +175,14 @@ body {
 
 #app { max-width: 560px; margin: 0 auto; overflow-x: hidden; }
 
+/* The screens are painted in JS, so the shell is briefly empty on every load. Hold the content
+   hidden over the themed ground and fade it in once `main.ts` has built the first screen, so a
+   reload does not flash the content out and back. The 0s-at-2.5s animation is a safety net: if that
+   signal never arrives, the content still appears. Embedded, the host's own fade covers the load. */
+#chrome, #app, #contact { opacity: 0; animation: sb-reveal 0s linear 2.5s forwards; }
+html.ready #chrome, html.ready #app, html.ready #contact { opacity: 1; animation: none; transition: opacity .2s ease; }
+@keyframes sb-reveal { to { opacity: 1; } }
+
 /* Embedded in the site: the site's fixed navbar sits above the frame, so pad the top to clear it,
    and drop the page's own wash so the flat background the site hands in shows through cleanly. The
    site carries its own footer below the frame, so ours would only double the contact link and leave

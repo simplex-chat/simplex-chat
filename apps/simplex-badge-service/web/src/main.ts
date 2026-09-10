@@ -959,4 +959,7 @@ function registerServiceWorker(): void {
 }
 
 syncFromLocation(true);
+// The first screen is built; let the shell fade in (`.ready` in styles.css), so a reload does not
+// show the content blank out and back while it is being painted.
+document.documentElement.classList.add("ready");
 registerServiceWorker();
