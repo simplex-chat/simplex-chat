@@ -105,10 +105,11 @@ templateEngineOverride: njk
             <img class="dark" src="/img/new/logo-dark.png" alt="SimpleX">
         </a>
         <nav class="b-links" id="b-links" aria-label="Badges">
-            <!-- Home leaves for the site; Buy a code and Your codes are hash links, and the hash is
-                 what propagates the route into the frame. -->
+            <!-- Home leaves for the site; Your codes is a hash link (the hash carries the route into
+                 the frame). Buy a code starts a fresh purchase, which is not a route — the frame tells
+                 us the step it lands on, and we mirror that hash so a reload resumes there. -->
             <a href="/">Home</a>
-            <a href="#/tier">Buy a code</a>
+            <a href="#/tier" id="b-buy">Buy a code</a>
             <a href="#/codes">Your codes</a>
             <!-- The theme toggle rides inside the dropdown on phones; a second copy (below) sits at
                  the bar's right on wider screens. One `js-theme` class wires both to the handler. -->
@@ -159,9 +160,15 @@ templateEngineOverride: njk
             // can never stay invisible. The first height message reveals it sooner, once themed.
             frame.addEventListener("load", function () { setTimeout(reveal, 400); });
 
-            // Buy a code / Your codes are hash links; changing the hash — from a click or from the
-            // address bar — is what carries the route into the frame.
+            // Your codes is a hash link; changing the hash — from a click or the address bar — carries
+            // the route into the frame. Buy a code is not a route: it posts a fresh-purchase intent,
+            // and the frame reports back the step it lands on (below), which we mirror into the URL.
             window.addEventListener("hashchange", postRoute);
+            var buy = document.getElementById("b-buy");
+            if (buy) buy.addEventListener("click", function (e) {
+                e.preventDefault();
+                post({ type: "simplex-new-purchase" });
+            });
 
             window.addEventListener("message", function (e) {
                 if (e.origin !== APP || !e.data) return;
@@ -173,6 +180,11 @@ templateEngineOverride: njk
                 }
                 // The buyer used the theme switch inside the frame; keep the site in step.
                 if (e.data.type === "simplex-theme") { applySiteTheme(e.data.theme); postColors(); }
+                // The frame reached a step; mirror its hash into our URL (replace, so no history is
+                // stacked and no hashchange re-posts it) so a reload re-posts the step and resumes it.
+                if (e.data.type === "simplex-nav" && typeof e.data.hash === "string") {
+                    try { history.replaceState(null, "", location.pathname + location.search + e.data.hash); } catch (ex) {}
+                }
                 // The frame reports its content height; size it so the site's page scrolls, not the frame.
                 if (e.data.type === "simplex-height" && typeof e.data.height === "number") {
                     var h = Math.max(0, e.data.height);
