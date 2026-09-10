@@ -3360,8 +3360,9 @@ alert button</note>
         <target state="translated">Hətta sizin və ya təyinat serveriniz şəxsi marşrutlaşdırmanı dəstəkləməsə belə, mesajları birbaşa GÖNDƏRMƏYİN.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
+      <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve" approved="no">
         <source>Do NOT use SimpleX for emergency calls.</source>
+        <target state="translated">Təcili zənglər üçün SimpleX-dən istifadə etməyin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use private routing." xml:space="preserve" approved="no">
@@ -3990,140 +3991,174 @@ chat item action</note>
         <target state="translated">Bildirişləri aktivləşdirmə xətası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error encrypting database" xml:space="preserve">
+      <trans-unit id="Error encrypting database" xml:space="preserve" approved="no">
         <source>Error encrypting database</source>
+        <target state="translated">Verilənlər bazasını şifrələməkdə xəta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error exporting chat database" xml:space="preserve">
+      <trans-unit id="Error exporting chat database" xml:space="preserve" approved="no">
         <source>Error exporting chat database</source>
+        <target state="translated">Çat verilənlər bazasını ixrac edərkən xəta baş verdi</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error exporting theme: %@" xml:space="preserve">
+      <trans-unit id="Error exporting theme: %@" xml:space="preserve" approved="no">
         <source>Error exporting theme: %@</source>
+        <target state="translated">Temanı ixrac edərkən xəta oldu: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error importing chat database" xml:space="preserve">
+      <trans-unit id="Error importing chat database" xml:space="preserve" approved="no">
         <source>Error importing chat database</source>
+        <target state="translated">Çat verilənlər bazasını idxal edərkən xəta baş verdi</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error joining group" xml:space="preserve">
+      <trans-unit id="Error joining group" xml:space="preserve" approved="no">
         <source>Error joining group</source>
+        <target state="translated">Qrupa qoşulma xətası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error loading servers" xml:space="preserve">
+      <trans-unit id="Error loading servers" xml:space="preserve" approved="no">
         <source>Error loading servers</source>
+        <target state="translated">Serverləri yükləmə xətası</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error migrating settings" xml:space="preserve">
+      <trans-unit id="Error migrating settings" xml:space="preserve" approved="no">
         <source>Error migrating settings</source>
+        <target state="translated">Parametrləri köçürmə xətası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error opening chat" xml:space="preserve">
+      <trans-unit id="Error opening chat" xml:space="preserve" approved="no">
         <source>Error opening chat</source>
+        <target state="translated">Söhbəti açarkən xəta baş verdi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error receiving file" xml:space="preserve">
+      <trans-unit id="Error receiving file" xml:space="preserve" approved="no">
         <source>Error receiving file</source>
+        <target state="translated">Faylın qəbul edilməsində xəta</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error reconnecting server" xml:space="preserve">
+      <trans-unit id="Error reconnecting server" xml:space="preserve" approved="no">
         <source>Error reconnecting server</source>
+        <target state="translated">Serveri yenidən qoşmaqda xəta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error reconnecting servers" xml:space="preserve">
+      <trans-unit id="Error reconnecting servers" xml:space="preserve" approved="no">
         <source>Error reconnecting servers</source>
+        <target state="translated">Serverləri yenidən qoşmaqda xəta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error registering for notifications" xml:space="preserve">
+      <trans-unit id="Error registering for notifications" xml:space="preserve" approved="no">
         <source>Error registering for notifications</source>
+        <target state="translated">Bildirişlər üçün qeydiyyatdan keçmə xətası</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error rejecting contact request" xml:space="preserve">
+      <trans-unit id="Error rejecting contact request" xml:space="preserve" approved="no">
         <source>Error rejecting contact request</source>
+        <target state="translated">Əlaqə sorğusunu rədd etməkdə xəta baş verdi</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error removing member" xml:space="preserve">
+      <trans-unit id="Error removing member" xml:space="preserve" approved="no">
         <source>Error removing member</source>
+        <target state="translated">Üzvü silməkdə xəta baş verdi</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error reordering lists" xml:space="preserve">
+      <trans-unit id="Error reordering lists" xml:space="preserve" approved="no">
         <source>Error reordering lists</source>
+        <target state="translated">Siyahıları yenidən sıralamaqda xəta</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error resetting statistics" xml:space="preserve">
+      <trans-unit id="Error resetting statistics" xml:space="preserve" approved="no">
         <source>Error resetting statistics</source>
+        <target state="translated">Statistikanı sıfırlayarkən xəta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving ICE servers" xml:space="preserve">
+      <trans-unit id="Error saving ICE servers" xml:space="preserve" approved="no">
         <source>Error saving ICE servers</source>
+        <target state="translated">ICE serverlərini yadda saxlama xətası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving channel profile" xml:space="preserve">
+      <trans-unit id="Error saving channel profile" xml:space="preserve" approved="no">
         <source>Error saving channel profile</source>
+        <target state="translated">Kanal profilini yadda saxlama xətası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving chat list" xml:space="preserve">
+      <trans-unit id="Error saving chat list" xml:space="preserve" approved="no">
         <source>Error saving chat list</source>
+        <target state="translated">Çat siyahısını yadda saxlama xətası</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error saving group profile" xml:space="preserve">
+      <trans-unit id="Error saving group profile" xml:space="preserve" approved="no">
         <source>Error saving group profile</source>
+        <target state="translated">Qrup profilini yadda saxlama xətası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving name" xml:space="preserve">
+      <trans-unit id="Error saving name" xml:space="preserve" approved="no">
         <source>Error saving name</source>
+        <target state="translated">Ad yadda saxlanılarkən xəta baş verdi</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error saving passcode" xml:space="preserve">
+      <trans-unit id="Error saving passcode" xml:space="preserve" approved="no">
         <source>Error saving passcode</source>
+        <target state="translated">Şifrəni yadda saxlama xətası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving passphrase to keychain" xml:space="preserve">
+      <trans-unit id="Error saving passphrase to keychain" xml:space="preserve" approved="no">
         <source>Error saving passphrase to keychain</source>
+        <target state="translated">Şifrəni açar zəncirinə saxlamaqda xəta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error saving servers" xml:space="preserve">
+      <trans-unit id="Error saving servers" xml:space="preserve" approved="no">
         <source>Error saving servers</source>
+        <target state="translated">Serverləri yadda saxlama xətası</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error saving settings" xml:space="preserve">
+      <trans-unit id="Error saving settings" xml:space="preserve" approved="no">
         <source>Error saving settings</source>
+        <target state="translated">Parametrləri yadda saxlama xətası</target>
         <note>when migrating</note>
       </trans-unit>
-      <trans-unit id="Error saving user password" xml:space="preserve">
+      <trans-unit id="Error saving user password" xml:space="preserve" approved="no">
         <source>Error saving user password</source>
+        <target state="translated">İstifadəçi parolunu yadda saxlama xətası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error scanning code: %@" xml:space="preserve">
+      <trans-unit id="Error scanning code: %@" xml:space="preserve" approved="no">
         <source>Error scanning code: %@</source>
+        <target state="translated">Kodu skanlama xətası: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error sending email" xml:space="preserve">
+      <trans-unit id="Error sending email" xml:space="preserve" approved="no">
         <source>Error sending email</source>
+        <target state="translated">E-poçt göndərmə xətası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error sending member contact invitation" xml:space="preserve">
+      <trans-unit id="Error sending member contact invitation" xml:space="preserve" approved="no">
         <source>Error sending member contact invitation</source>
+        <target state="translated">Üzv əlaqə dəvətnaməsini göndərərkən xəta baş verdi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error sending message" xml:space="preserve">
+      <trans-unit id="Error sending message" xml:space="preserve" approved="no">
         <source>Error sending message</source>
+        <target state="translated">Mesaj göndərmə xətası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error setting auto-accept" xml:space="preserve">
+      <trans-unit id="Error setting auto-accept" xml:space="preserve" approved="no">
         <source>Error setting auto-accept</source>
+        <target state="translated">Avtomatik qəbul etmə ayarında xəta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
+      <trans-unit id="Error setting delivery receipts!" xml:space="preserve" approved="no">
         <source>Error setting delivery receipts!</source>
+        <target state="translated">Çatdırılma qəbzlərini ayarlamaqda xəta!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error sharing address" xml:space="preserve">
+      <trans-unit id="Error sharing address" xml:space="preserve" approved="no">
         <source>Error sharing address</source>
+        <target state="translated">Ünvanı paylaşmaqda xəta</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error sharing channel" xml:space="preserve">
+      <trans-unit id="Error sharing channel" xml:space="preserve" approved="no">
         <source>Error sharing channel</source>
+        <target state="translated">Kanalı paylaşmaqda xəta</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
@@ -10679,6 +10714,18 @@ last received msg: %2$@</source>
       <trans-unit id="⚠️ Signature verification failed: %@." xml:space="preserve">
         <source>⚠️ Signature verification failed: %@.</source>
         <note>owner verification</note>
+      </trans-unit>
+      <trans-unit id="%02d hrs %02d min %02d sec" xml:space="preserve" approved="no">
+        <source>%1$02d hrs %2$02d min %3$02d sec</source>
+        <target state="translated">%1$02d saat %2$02d dəq %3$02d san</target>
+      </trans-unit>
+      <trans-unit id="%d day" xml:space="preserve" approved="no">
+        <source>%d day</source>
+        <target state="translated">%d gün</target>
+      </trans-unit>
+      <trans-unit id="Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)" xml:space="preserve" approved="no">
+        <source>Crowdfunding investors can reserve names before the sale starts: [simplex.domains](https://simplex.domains/)</source>
+        <target state="translated">Kütləvi maliyyələşdirmə investorları satış başlamazdan əvvəl adları sifariş edə bilərlər: [simplex.domains](https://simplex.domains/)</target>
       </trans-unit>
     </body>
   </file>
