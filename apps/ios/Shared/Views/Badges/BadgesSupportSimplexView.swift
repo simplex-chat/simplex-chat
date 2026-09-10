@@ -48,10 +48,9 @@ struct BadgesSupportSimplexView: View {
             case .support:
                 supportSimpleX
             case let .badge(badgeState):
-                BadgesYourBadgeView(badgeState: badgeState, showsAsSheet: showsAsSheet)
+                BadgesYourBadgeView(badgeState: badgeState)
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
         .task(id: chatModel.currentUser?.userId) { await loadBadgeState() }
     }
 
@@ -111,6 +110,7 @@ struct BadgesSupportSimplexView: View {
             .frame(height: g.size.height)
         }
         .frame(maxHeight: .infinity)
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private func whyBuiltButton() -> some View {
@@ -176,74 +176,64 @@ struct BadgesSupportSimplexView: View {
 struct BadgesYourBadgeView: View {
     @EnvironmentObject var theme: AppTheme
     let badgeState: BadgeState
-    var showsAsSheet: Bool = false
 
     private var title: LocalizedStringKey {
         badgeState.ended ? "Support ended" : "Your badge"
     }
 
     var body: some View {
-        GeometryReader { g in
-            ScrollView {
-                VStack(alignment: .center, spacing: 16) {
-                    Text(title)
-                        .font(.largeTitle)
-                        .bold()
-                        .foregroundColor(theme.colors.primary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    BadgeSummary(badgeState: badgeState)
-
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, 25)
-                .padding(.top, showsAsSheet ? 48 : 8)
-                .padding(.bottom, 20)
-                .frame(minHeight: g.size.height)
+        List {
+            Section {
+                BadgeSummary(badgeState: badgeState)
+            }
+            Section {
+                Text(DateFormatter.localizedString(from: badgeState.paidThrough, dateStyle: .long, timeStyle: .none))
+            } header: {
+                Text("Ends")
+                    .foregroundColor(theme.colors.secondary)
+            } footer: {
+                Text("Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.")
+                    .foregroundColor(theme.colors.secondary)
             }
         }
-        .frame(maxHeight: .infinity)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(title)
+        .navigationBarTitleDisplayMode(.large)
+        .modifier(ThemedBackground(grouped: true))
     }
 }
 
 struct BadgeSummary: View {
     @EnvironmentObject var theme: AppTheme
-    @EnvironmentObject var chatModel: ChatModel
     let badgeState: BadgeState
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 4) {
             Image(badgeImageName(badgeState.badgeType))
                 .resizable()
                 .scaledToFit()
-                .frame(width: 80, height: 80)
+                .frame(width: 68, height: 68)
+                .padding(.bottom, 8)
 
-            if let user = chatModel.currentUser {
-                NameWithBadge(Text(user.displayName).font(.title2), user.profile.localBadge, .title2)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-            }
+            badgeTypeName(badgeState.badgeType)
+                .font(.title3)
+                .fontWeight(.semibold)
 
-            if !badgeState.ended {
-                Text("Shown on your profile.")
-                    .font(.body)
-                    .foregroundColor(theme.colors.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Text(supportEndsText)
-                .font(.body)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+            Text("shown on your profile")
+                .font(.footnote)
+                .foregroundColor(theme.colors.secondary)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
     }
+}
 
-    private var supportEndsText: LocalizedStringKey {
-        let date = DateFormatter.localizedString(from: badgeState.paidThrough, dateStyle: .long, timeStyle: .none)
-        return badgeState.ended ? "Your support ended on \(date)." : "Your support ends on \(date)."
+// verbatim for an unknown type: it is the service's string, and must not be looked up as a localised key
+private func badgeTypeName(_ t: BadgeType) -> Text {
+    switch t {
+    case .supporter: Text("Supporter")
+    case .legend: Text("Legend")
+    case .investor: Text("Investor")
+    case let .unknown(s): Text(verbatim: s)
     }
 }
 
