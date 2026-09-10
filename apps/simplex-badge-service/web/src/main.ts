@@ -167,10 +167,13 @@ function postHeight(): void {
   window.parent.postMessage({ type: HEIGHT_MESSAGE, height }, hostOrigin ?? "*");
 }
 
-// Report our route up to the host so it can keep it in its own URL. A reload then re-posts the step
-// the buyer had reached (the host's `?`-free hash), rather than the entry step, so they resume there.
-// Only meaningful embedded and once the host is known; a bare landing is the empty hash.
-function postNav(): void {
+// Announce our current SHAREABLE route to the host (see NAV_MESSAGE): the hash for a wizard step or
+// the codes list, and the empty string for the landing and every order/payment screen, whose state
+// lives in our own store and not in a URL the host holds. `location.hash` is exactly that — an order
+// screen sits at `?order=…` with no hash — so the host persists a step to restore, and restores
+// nothing over an order, which the frame resumes itself. Call after every navigation; embedded only,
+// and once the host is known (its origin arrives with the theme/colours it posts on our ready).
+function announceLocation(): void {
   if (!embedded || hostOrigin === undefined) return;
   window.parent.postMessage({ type: NAV_MESSAGE, hash: location.hash }, hostOrigin);
 }
@@ -455,7 +458,7 @@ function goToIndex(at: number): void {
   if (step !== undefined) store.saveSession({ step });
   history.pushState(null, "", hashForIndex(at));
   showIndex(at, true);
-  postNav();
+  announceLocation();
 }
 
 function showIndex(at: number, smooth: boolean): void {
@@ -520,6 +523,7 @@ async function pay(): Promise<void> {
       // it, and `effectiveSession` reseeds from this order to charge a tier they had deselected.
       store.clearSession();
       history.replaceState(null, "", `?order=${encodeURIComponent(outcome.order.orderId)}`);
+      announceLocation();   // an order screen: no hash, so the host clears its step and won't clobber this on reload
       unavailableMethod = undefined;
       root.replaceChildren(screens.loading());
       flow.watch(outcome.order.orderId, {
@@ -687,7 +691,7 @@ function resetToLanding(nav: "push" | "replace"): void {
   else history.replaceState(null, "", "/");
   panels.length = 0;
   showIndex(0, false);
-  postNav();
+  announceLocation();
 }
 
 // A new invoice from a payment screen: the abandoned invoice's screen is left behind for the intro,
@@ -709,7 +713,7 @@ function startPurchase(): void {
   history.pushState(null, "", hashForIndex(1));
   panels.length = 0;
   showIndex(1, false);
-  postNav();
+  announceLocation();
 }
 
 let lastView: PaymentView | null = null;
@@ -878,6 +882,7 @@ function cardConfirmed(view: CardView, owner: Node): void {
 function goToOrder(orderId: string): void {
   history.pushState(null, "", `?order=${encodeURIComponent(orderId)}`);
   openOrder(orderId);
+  announceLocation();
 }
 
 function checkAgain(orderId: string): void {
@@ -909,7 +914,7 @@ function showCodes(): void {
   if (location.hash !== CODES_HASH) history.pushState(null, "", location.pathname + CODES_HASH);
   renderCodes(store.orders());
   void flow.refreshHistory().then(renderCodes);
-  postNav();
+  announceLocation();
 }
 
 function renderCodes(entries: readonly OrderRecord[]): void {
@@ -938,12 +943,13 @@ function syncFromLocation(fresh: boolean): void {
   if (orderId === null && location.hash === CODES_HASH) {
     renderCodes(store.orders());
     void flow.refreshHistory().then(renderCodes);
-    postNav();
+    announceLocation();
     return;
   }
   const load = resolveLoad({ search: location.search }, fresh ? store.newestOpen() : undefined);
   if (load.kind === "order") {
     openOrder(load.orderId);
+    announceLocation();   // no hash: the host holds no route for an order, and resumes it from our store
     return;
   }
   const at = reachableIndex(landingIndex());
@@ -952,7 +958,7 @@ function syncFromLocation(fresh: boolean): void {
     history.replaceState(null, "", want === "/" ? location.pathname : want);
   }
   showIndex(at, root.firstChild === track && panels.length > 0);
-  postNav();
+  announceLocation();
 }
 
 // A route handed in by the host (its navbar or its URL hash): put it on our own location and let

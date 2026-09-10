@@ -11,7 +11,16 @@ export const ROUTE_MESSAGE = "simplex-route";
 export const HEIGHT_MESSAGE = "simplex-height"; // frame -> host: our content height, so it can size the iframe
 export const COLORS_MESSAGE = "simplex-colors"; // host -> frame: the site's page background, to match it
 export const NEW_PURCHASE_MESSAGE = "simplex-new-purchase"; // host -> frame: the site's "Buy a code", start fresh
-export const NAV_MESSAGE = "simplex-nav"; // frame -> host: our current route hash, so the host tracks it in its URL
+// frame -> host: the frame's current SHAREABLE route, announced after each navigation, for the host
+// to persist (in its URL) and hand back on the next load. The contract turns on empty vs non-empty:
+//   non-empty ("#/tier", "#/codes") — a wizard step or the codes list: shareable, so the host stores
+//     it and restores it as a route next load.
+//   empty ("")                     — the landing or an order/payment screen: NOT shareable. An order's
+//     state lives in the frame's own store (the `?order=` session), never in a URL the host holds, so
+//     the host stores nothing to restore and the frame self-resumes (an open order, else the landing).
+// This is what stops a host reload from painting a wizard step over a payment the buyer is mid-way
+// through: the frame announces "" on the payment screen, so the host has no route to clobber it with.
+export const NAV_MESSAGE = "simplex-nav";
 
 /** True for a well-formed new-purchase message from the host: its "Buy a code" navbar item, which
  * starts a fresh purchase rather than routing to a step, so a reload can be told apart from it. */
