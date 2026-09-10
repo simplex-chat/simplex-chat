@@ -10,7 +10,7 @@ m20260908_wallet_seeds =
   [sql|
 CREATE TABLE wallet_seeds (
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  seed BLOB NOT NULL,                       -- BIP-39 entropy, 16-32 bytes
+  seed BLOB NOT NULL, -- BIP-39 entropy, 16-32 bytes
   -- known issue: after an import this starts at 0, so /_wallet bind with no
   -- account can hand out one that already owns names
   next_account_index INTEGER NOT NULL DEFAULT 0,

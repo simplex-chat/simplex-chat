@@ -10,7 +10,9 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft)
 import Data.List (intersect, nub)
-import Simplex.Chat.Wallet (SeedId (..), WalletSeed (..), accountAddress, accountSecret, deriveNameKey, importRecoveryKey, recoveryKeyPhrase, renderNameKeyPath)
+import Simplex.Chat.Wallet (AccountIndex, NameIndex, WalletSeed (..), deriveNameKey, importRecoveryKey, nameKeySecret, recoveryKeyPhrase, renderNameKeyPath, seedMaster)
+import qualified Simplex.Messaging.Crypto.Secp256k1 as S
+import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
 
@@ -19,14 +21,15 @@ testPhrase :: ByteString
 testPhrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
 
 testSeed :: WalletSeed
-testSeed = WalletSeed {wsId = SeedId 1, wsEntropy = either error id $ importRecoveryKey testPhrase}
+testSeed = WalletSeed {wsId = 1, wsEntropy = either error id $ importRecoveryKey testPhrase}
+
+nameKey :: AccountIndex -> NameIndex -> Either String S.PrivateKey
+nameKey acc nm = seedMaster testSeed >>= \m -> deriveNameKey m acc nm
 
 walletDerivationTests :: Spec
 walletDerivationTests = do
-  -- profile 0's names are MetaMask's account list, and each profile's first
-  -- name is the matching Ledger Live account
   Hspec.it "name keys line up with other wallets' derivation" $ do
-    let addrOf i k = either error (show . accountAddress) (deriveNameKey testSeed i k)
+    let addrOf i k = either error (show . addressFromPrivateKey) (nameKey i k)
     -- MetaMask accounts 1 and 2 for this phrase
     addrOf 0 0 `shouldBe` "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
     addrOf 0 1 `shouldBe` "0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0"
@@ -34,8 +37,8 @@ walletDerivationTests = do
     addrOf 1 0 `shouldBe` "0x78839F6054d7ed13918bAe0473BA31b1Ca9D7265"
   Hspec.it "derives the same secret as other wallets" $
     -- MetaMask account 1 for this phrase, as exported by "Show private key"
-    either error (show . accountSecret) (deriveNameKey testSeed 0 0)
-      `shouldBe` "\"0x1ab42cc412b618bdea3a599e3c9bae199ebf030895b039e9db1e30dafb12b727\""
+    either error nameKeySecret (nameKey 0 0)
+      `shouldBe` "0x1ab42cc412b618bdea3a599e3c9bae199ebf030895b039e9db1e30dafb12b727"
   Hspec.it "renders the path a name key sits at" $ do
     renderNameKeyPath 0 0 `shouldBe` "m/44'/60'/0'/0/0"
     renderNameKeyPath 2 7 `shouldBe` "m/44'/60'/2'/0/7"
@@ -73,9 +76,8 @@ testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice <## "no wallet key"
   alice ##> "/_wallet export"
   alice <## "bad chat command: no wallet key on this device"
-  -- creating the seed binds no profile to an account
   alice ##> "/_wallet create"
-  alice <## "this profile has no wallet key"
+  alice <## "no account for this profile"
   alice ##> "/_wallet bind"
   rows <- nameRows alice
   map fst rows `shouldBe` ["m/44'/60'/0'/0/0", "m/44'/60'/0'/0/1"]
@@ -85,7 +87,7 @@ testWalletPersists :: HasCallStack => TestParams -> IO ()
 testWalletPersists ps = do
   rows <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
     alice ##> "/_wallet create"
-    alice <## "this profile has no wallet key"
+    alice <## "no account for this profile"
     alice ##> "/_wallet bind"
     nameRows alice
   -- same database, new session: a name bought at that address must stay reachable
@@ -97,7 +99,7 @@ testWalletPersists ps = do
 testWalletSecondProfile :: HasCallStack => TestParams -> IO ()
 testWalletSecondProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create"
-  alice <## "this profile has no wallet key"
+  alice <## "no account for this profile"
   alice ##> "/_wallet bind"
   rows <- nameRows alice
   alice ##> "/_wallet export"
@@ -106,12 +108,11 @@ testWalletSecondProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice ->
   showActiveUser alice "alisa"
   -- other profiles are named, never numbered
   alice ##> "/_wallet"
-  alice <## "this profile has no wallet key"
+  alice <## "no account for this profile"
   alice <## "also on same seed: alice"
   -- the key belongs to the device, so a profile without an account exports it too
   alice ##> "/_wallet export"
   alice <## phrase
-  -- create is for the seed, and this device has one
   alice ##> "/_wallet create"
   alice <## "bad chat command: this device already has a wallet key"
   alice ##> "/_wallet bind"
@@ -124,7 +125,7 @@ testWalletImport :: HasCallStack => TestParams -> IO ()
 testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   -- import binds nothing: which account a profile had is what it is recovering
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  alice <## "this profile has no wallet key"
+  alice <## "no account for this profile"
   alice ##> "/_wallet bind"
   alice <## "name 0  m/44'/60'/0'/0/0  0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
   alice <## "name 1  m/44'/60'/0'/0/1  0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0"
@@ -140,7 +141,7 @@ testWalletExportDerivedSecret :: HasCallStack => TestParams -> IO ()
 testWalletExportDerivedSecret ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   -- the secret of a name key needs no profile bound to that account
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  alice <## "this profile has no wallet key"
+  alice <## "no account for this profile"
   alice ##> "/_wallet export 0 0"
   alice <## "m/44'/60'/0'/0/0  0x9858EfFD232B4033E47d90003D41EC34EcaEda94  0x1ab42cc412b618bdea3a599e3c9bae199ebf030895b039e9db1e30dafb12b727"
   -- an index BIP-32 cannot harden is rejected, not wrapped into another account
@@ -148,32 +149,28 @@ testWalletExportDerivedSecret ps = withNewTestChat ps "alice" aliceProfile $ \al
   alice <## "bad chat command: Failed reading: empty"
   -- any path derives, whether or not a profile holds that account
   alice ##> "/_wallet export 3 7"
-  l <- getTermLine alice
-  case words l of
-    [path, addr, secret] -> do
-      path `shouldBe` "m/44'/60'/3'/0/7"
-      length addr `shouldBe` 42
-      length secret `shouldBe` 66
-    _ -> error $ "unexpected export row: " <> l
+  alice <## "m/44'/60'/3'/0/7  0xb8cb8628d242fF621adb05E75b7bF16c9b496740  0x5fa3f03c127d150c82f54291f9989c955c3857a54df7abbb50e28199a0bbaac1"
+  -- a secret whose first byte is zero keeps its 64 hex digits
+  alice ##> "/_wallet export 0 15"
+  alice <## "m/44'/60'/0'/0/15  0xa25d37554EB084969C85362f7E6B1A6108e51d0e  0x009a1ccd9c667416d9db6246a35d022b1799517c0cd8547bb07ce280c119ae3c"
 
 testWalletDelete :: HasCallStack => TestParams -> IO ()
 testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  alice <## "this profile has no wallet key"
+  alice <## "no account for this profile"
   alice ##> "/_wallet bind"
   _ <- nameRows alice
   alice ##> "/_wallet delete"
   alice <## "no wallet key"
   -- deleting unbinds the profile, so a key can be imported again
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  alice <## "this profile has no wallet key"
+  alice <## "no account for this profile"
 
--- | Restoring a chat database older than the key rebinds profiles in the order
--- they ask, so the account a profile had is set by hand.
+-- | A profile says which account was its, as nothing else knows.
 testWalletBind :: HasCallStack => TestParams -> IO ()
 testWalletBind ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  alice <## "this profile has no wallet key"
+  alice <## "no account for this profile"
   alice ##> "/_wallet bind 3"
   rows <- nameRows alice
   map fst rows `shouldBe` ["m/44'/60'/3'/0/0", "m/44'/60'/3'/0/1"]
@@ -187,8 +184,7 @@ testWalletBind ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice <## "also on same seed: alice"
   map fst rows' `shouldBe` ["m/44'/60'/4'/0/0", "m/44'/60'/4'/0/1"]
 
--- | The state a chat database backed up before the key restores to: the
--- profiles are the same rows, and nothing knows about a key.
+-- | The state a chat database backed up before the key restores to.
 forgetKey :: HasCallStack => TestCC -> IO ()
 forgetKey cc = do
   cc ##> "/sql chat UPDATE users SET wallet_seed_id = NULL, wallet_account_index = NULL"
@@ -198,7 +194,7 @@ testWalletBackupAfterKey :: HasCallStack => TestParams -> IO ()
 testWalletBackupAfterKey ps = do
   rows <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
     alice ##> "/_wallet create"
-    alice <## "this profile has no wallet key"
+    alice <## "no account for this profile"
     alice ##> "/_wallet bind"
     nameRows alice
   -- the key and the binding are both in the database, so the restore is all of it
@@ -212,7 +208,7 @@ testWalletBackupAfterKey ps = do
 testWalletBackupBeforeKey :: HasCallStack => TestParams -> IO ()
 testWalletBackupBeforeKey ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  alice <## "this profile has no wallet key"
+  alice <## "no account for this profile"
   alice ##> "/_wallet bind 1"
   aliceRows <- nameRows alice
   alice ##> "/create user alisa"
@@ -225,7 +221,7 @@ testWalletBackupBeforeKey ps = withNewTestChat ps "alice" aliceProfile $ \alice 
   alice <## "no wallet key"
   -- the phrase alone puts every account back, and each profile says which was its
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  alice <## "this profile has no wallet key"
+  alice <## "no account for this profile"
   alice ##> "/_wallet bind 0"
   alisaRows' <- nameRows alice
   alisaRows' `shouldBe` alisaRows
@@ -239,13 +235,13 @@ testWalletBackupBeforeKey ps = withNewTestChat ps "alice" aliceProfile $ \alice 
 testWalletImportThenRestore :: HasCallStack => TestParams -> IO ()
 testWalletImportThenRestore ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  alice <## "this profile has no wallet key"
+  alice <## "no account for this profile"
   -- restoring the database replaces the key with what the backup held, which is nothing
   forgetKey alice
   alice ##> "/_wallet"
   alice <## "no wallet key"
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  alice <## "this profile has no wallet key"
+  alice <## "no account for this profile"
   alice ##> "/_wallet bind"
   rows <- nameRows alice
   map fst rows `shouldBe` ["m/44'/60'/0'/0/0", "m/44'/60'/0'/0/1"]

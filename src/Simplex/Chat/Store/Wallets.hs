@@ -18,7 +18,7 @@ import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Simplex.Chat.Types (User (..))
-import Simplex.Chat.Wallet (AccountIndex, SeedId (..), WalletSeed (..))
+import Simplex.Chat.Wallet (AccountIndex, SeedId, WalletSeed (..))
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 
@@ -31,7 +31,7 @@ import Database.SQLite.Simple.QQ (sql)
 #endif
 
 toSeed :: (Int64, ByteString) -> WalletSeed
-toSeed (sId, seed) = WalletSeed {wsId = SeedId sId, wsEntropy = seed}
+toSeed (sId, seed) = WalletSeed {wsId = sId, wsEntropy = seed}
 
 getDeviceSeed :: DB.Connection -> IO (Maybe WalletSeed)
 getDeviceSeed db =
@@ -49,7 +49,7 @@ getAccountIndex db User {userId} = do
 
 -- | Hidden profiles are left out, as they are by /users.
 getSeedProfiles :: DB.Connection -> SeedId -> User -> IO [Text]
-getSeedProfiles db (SeedId sId) User {userId} =
+getSeedProfiles db sId User {userId} =
   map fromOnly
     <$> DB.query
       db
@@ -61,7 +61,7 @@ getSeedProfiles db (SeedId sId) User {userId} =
       (sId, userId)
 
 bindUser :: DB.Connection -> Int64 -> SeedId -> Int64 -> IO ()
-bindUser db uId (SeedId sId) acct =
+bindUser db uId sId acct =
   DB.execute
     db
     "UPDATE users SET wallet_seed_id = ?, wallet_account_index = ? WHERE user_id = ?"
@@ -78,7 +78,7 @@ createSeed db entropy =
 -- | Without an account the next free one is taken. False if another profile
 -- holds the account asked for.
 bindAccountIndex :: DB.Connection -> User -> SeedId -> Maybe AccountIndex -> IO Bool
-bindAccountIndex db User {userId} sId@(SeedId sId') = \case
+bindAccountIndex db User {userId} sId = \case
   Nothing -> True <$ (takeAccountIndex db sId >>= bindUser db userId sId)
   Just acct -> do
     taken <-
@@ -86,7 +86,7 @@ bindAccountIndex db User {userId} sId@(SeedId sId') = \case
         DB.query
           db
           "SELECT 1 FROM users WHERE wallet_seed_id = ? AND wallet_account_index = ? AND user_id != ?"
-          (sId', fromIntegral acct :: Int64, userId)
+          (sId, fromIntegral acct :: Int64, userId)
     case (taken :: Maybe Int64) of
       Just _ -> pure False
       Nothing -> do
@@ -95,9 +95,9 @@ bindAccountIndex db User {userId} sId@(SeedId sId') = \case
         setNextAccountIndex db sId (fromIntegral acct + 1)
         pure True
 
--- | Incremented in SQL, so two profiles cannot be handed the same account.
+-- | So two profiles cannot be handed the same account.
 takeAccountIndex :: DB.Connection -> SeedId -> IO Int64
-takeAccountIndex db (SeedId sId) = do
+takeAccountIndex db sId = do
   DB.execute db "UPDATE wallet_seeds SET next_account_index = next_account_index + 1 WHERE wallet_seed_id = ?" (Only sId)
   maybe 0 (subtract 1)
     <$> ( maybeFirstRow fromOnly $
@@ -105,7 +105,7 @@ takeAccountIndex db (SeedId sId) = do
         )
 
 setNextAccountIndex :: DB.Connection -> SeedId -> Int64 -> IO ()
-setNextAccountIndex db (SeedId sId) acct =
+setNextAccountIndex db sId acct =
   DB.execute
     db
     "UPDATE wallet_seeds SET next_account_index = ? WHERE wallet_seed_id = ? AND next_account_index < ?"
@@ -113,6 +113,6 @@ setNextAccountIndex db (SeedId sId) acct =
 
 -- | Profiles are unbound first, as the foreign key is ON DELETE RESTRICT.
 deleteSeed :: DB.Connection -> SeedId -> IO ()
-deleteSeed db (SeedId sId) = do
+deleteSeed db sId = do
   DB.execute db "UPDATE users SET wallet_seed_id = NULL, wallet_account_index = NULL WHERE wallet_seed_id = ?" (Only sId)
   DB.execute db "DELETE FROM wallet_seeds WHERE wallet_seed_id = ?" (Only sId)

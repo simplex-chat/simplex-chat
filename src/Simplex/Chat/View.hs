@@ -193,7 +193,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
     | otherwise -> ttyUser u $ keyRows <> [plain $ "also on same seed: " <> T.intercalate ", " profiles | not (null profiles)]
     where
       keyRows
-        | null paths = ["this profile has no wallet key"]
+        | null paths = ["no account for this profile"]
         | otherwise = zipWith nameRow [0 :: Int ..] paths
       nameRow k (path, addr) = plain $ "name " <> tshow k <> "  " <> path <> "  " <> addr
   CRWalletSeedMnemonic u phrase -> ttyUser u [plain phrase]
