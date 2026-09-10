@@ -5571,9 +5571,13 @@ storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey}
 -- 'False' when that row cannot be found, which the caller reports rather than drop in silence.
 applyBadgeStatement :: DB.Connection -> TVar ChaChaDRG -> Int64 -> BadgeType -> BadgeStatement -> Maybe BadgeCredential -> UTCTime -> IO Bool
 applyBadgeStatement db g purchaseId badgeType BadgeStatement {entries, previousEntryId} cred_ now = do
-  -- the whole ledger starts at a row with no predecessor, and is sent with no previousEntryId;
-  -- checking that row against a tip this purchase already holds would mark a good row bad
-  tip <- if isJust previousEntryId then getBadgeLedgerLastEntry db purchaseId else pure Nothing
+  -- a replay re-sends the ledger from its first row, which never had a predecessor.
+  -- Requiring a replay stops the service resetting the ledger by omitting previousEntryId.
+  replayed <- maybe (pure False) alreadyStored $ listToMaybe entries
+  tip <-
+    if isNothing previousEntryId && replayed
+      then pure Nothing
+      else getBadgeLedgerLastEntry db purchaseId
   storeBadgeStatement db purchaseId badgeType tip entries now
   case (,) <$> cred_ <*> issuedEntryId of
     Nothing -> pure True
@@ -5582,6 +5586,7 @@ applyBadgeStatement db g purchaseId badgeType BadgeStatement {entries, previousE
         Nothing -> pure False
         Just entryId -> storeBadgeIssuance db g purchaseId entryId cred now
   where
+    alreadyStored StatementEntry {entryId} = isJust <$> getBadgeLedgerEntryId db purchaseId entryId
     -- the credential belongs to the last month the statement issued
     issuedEntryId = case [entryId | StatementEntry {entryId, entryType = SEDebit SDBadge} <- entries] of
       [] -> Nothing

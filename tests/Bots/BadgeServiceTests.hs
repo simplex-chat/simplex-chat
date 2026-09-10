@@ -41,6 +41,7 @@ import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -503,6 +504,14 @@ ledgerRows ChatController {chatStore} table =
         <> table
         <> " ORDER BY entry_id"
 
+-- | The client's verdict on each row, in ledger order. The service has no such column: it computes
+-- the rows rather than checking what someone else computed.
+balanceChecks :: ChatController -> IO [Maybe Bool]
+balanceChecks ChatController {chatStore} =
+  withTransaction chatStore $ \db ->
+    map (fmap unBI . fromOnly)
+      <$> DB.query_ db "SELECT balance_checked FROM badge_ledger ORDER BY entry_id"
+
 -- The client copies the statement verbatim and authors nothing, so after a redemption both sides
 -- hold the same rows under the same entry ids.
 testClientReplicatesLedger :: HasCallStack => TestParams -> IO ()
@@ -519,6 +528,9 @@ testClientReplicatesLedger ps =
       -- the code credit and the first month, on both sides
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) serviceLedger `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge")]
       clientLedger `shouldBe` serviceLedger
+      -- and re-ran both operations against them: the credit from the seed, the issue from the credit
+      checks <- balanceChecks (chatController alice)
+      checks `shouldBe` [Just True, Just True]
       -- redeeming again replays the statement, and must not duplicate a single row
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
       alice <## "badge already redeemed"
@@ -782,6 +794,9 @@ testRenewsAfterRestart ps =
       -- the lapse row was replicated rather than authored here
       serviceLedger <- ledgerRows cc "sx_badge_service_badge_ledger"
       renewed `shouldBe` serviceLedger
+      -- and re-run: the renewal's two rows against the tip the client held, not against a seed
+      checks <- balanceChecks (chatController alice)
+      checks `shouldBe` replicate 4 (Just True)
       -- a week missed costs only the day between the two steps: one pass does both
       waitShownIssued (chatController alice)
 
