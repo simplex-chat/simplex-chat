@@ -171,8 +171,11 @@ body {
 #app { max-width: 560px; margin: 0 auto; overflow-x: hidden; }
 
 /* Embedded in the site: the site's fixed navbar sits above the frame, so pad the top to clear it,
-   and drop the page's own wash so the flat background the site hands in shows through cleanly. */
+   and drop the page's own wash so the flat background the site hands in shows through cleanly. The
+   site carries its own footer below the frame, so ours would only double the contact link and leave
+   its accent line at the frame's edge — hide it embedded. */
 .embedded body { padding-top: 54px; background-image: none; }
+.embedded footer { display: none; }
 
 /* Embedded in the site's dark theme, the standalone grey surfaces read as off against the navy the
    site hands in. Follow the site's own dark-card idiom instead: a faint white veil and hairline on
