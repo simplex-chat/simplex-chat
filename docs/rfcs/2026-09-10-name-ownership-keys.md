@@ -124,6 +124,18 @@ import, so `/_wallet bind` with no account can hand out one that already owns
 names. Only a scan of owned names can restore the mark, and that lands with the
 registrar.
 
+## Hidden profiles
+
+`/_wallet` names the other profiles on the seed and never numbers them, so a
+hidden profile leaves no gap in a list of account indexes.
+
+That hides its existence from the listing, and nothing more. The seed is one per
+device, so whoever unlocks any profile can export the phrase and derive every
+account, including a hidden profile's. A hidden profile's names are not
+pseudonymous against someone who already holds the device and one password. This
+is a consequence of one seed per device, and a key per profile rather than per
+device is what would change it.
+
 ## Scope
 
 Not here, and unchanged from the prototype: buying a name, the names protocol,

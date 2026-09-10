@@ -88,20 +88,22 @@ bindAccountIndex db user@User {userId} sId = \case
         if acct >= 0x80000000
           then pure $ Left "no free account on this key"
           else Right () <$ bindUser db userId sId acct
-  Just acct -> do
-    taken <-
-      maybeFirstRow fromOnly $
-        DB.query
-          db
-          "SELECT 1 FROM users WHERE wallet_seed_id = ? AND wallet_account_index = ? AND user_id != ?"
-          (sId, fromIntegral acct :: Int64, userId)
-    case (taken :: Maybe Int64) of
-      Just _ -> pure $ Left "another profile uses this account"
-      Nothing -> do
-        bindUser db userId sId (fromIntegral acct)
-        -- the counter moves past it, so the next profile is not handed the same one
-        setNextAccountIndex db sId (fromIntegral acct + 1)
-        pure $ Right ()
+  Just acct
+    | acct >= 0x80000000 -> pure $ Left "account index too large"
+    | otherwise -> do
+        taken <-
+          maybeFirstRow fromOnly $
+            DB.query
+              db
+              "SELECT 1 FROM users WHERE wallet_seed_id = ? AND wallet_account_index = ? AND user_id != ?"
+              (sId, fromIntegral acct :: Int64, userId)
+        case (taken :: Maybe Int64) of
+          Just _ -> pure $ Left "another profile uses this account"
+          Nothing -> do
+            bindUser db userId sId (fromIntegral acct)
+            -- the counter moves past it, so the next profile is not handed the same one
+            setNextAccountIndex db sId (fromIntegral acct + 1)
+            pure $ Right ()
 
 -- | So two profiles cannot be handed the same account.
 takeAccountIndex :: DB.Connection -> SeedId -> IO Int64
