@@ -113,6 +113,7 @@ const chromeUi = screens.chrome({
       else node?.removeAttribute("inert");
     }
   },
+  onHome: () => goToIndex(0),
 });
 // Standalone, the app carries its own navbar (logo + burger). Embedded, the site's navbar is the
 // only one, so ours is not rendered; the buyer navigates from there, and `.embedded` pads the top

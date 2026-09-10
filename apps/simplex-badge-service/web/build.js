@@ -127,7 +127,7 @@ export async function prerenderShell() {
     const screens = await import("./build/src/screens.js");
     const noop = () => {};
     const chromeHtml = screens.chrome({
-      theme: "system", onNewPurchase: noop, onHistory: noop, onTheme: noop, onToggle: noop,
+      theme: "system", onNewPurchase: noop, onHistory: noop, onTheme: noop, onToggle: noop, onHome: noop,
     }).node.serialize();
     // The landing sits in the track/rail the wizard mounts it in, so `root.replaceChildren(track)`
     // swaps like for like; only panel 0 is here, the rest arrive off-screen with the built track.

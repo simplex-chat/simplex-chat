@@ -579,7 +579,7 @@ designTest("design: the wordmark is the header's, themed and precachable", () =>
 function testChrome(over: Partial<Parameters<typeof screens.chrome>[0]> = {}): ReturnType<typeof screens.chrome> {
   return screens.chrome({
     onNewPurchase: () => {}, onHistory: () => {},
-    theme: "system", onTheme: () => {}, onToggle: () => {}, ...over,
+    theme: "system", onTheme: () => {}, onToggle: () => {}, onHome: () => {}, ...over,
   });
 }
 

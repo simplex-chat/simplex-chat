@@ -72,6 +72,9 @@ export interface ChromeOptions {
   theme: Theme;
   onTheme: (theme: Theme) => void;
   onToggle: (open: boolean) => void;
+  /** The wordmark: back to the landing, client-side, rather than the reload a bare `href` to the
+   * root would be from a hash route. The `href` stays for middle-click and for the shell before JS. */
+  onHome: () => void;
 }
 
 export interface Chrome {
@@ -90,6 +93,7 @@ export interface Chrome {
 // Nothing in the menu may carry an order: every item is a fixed label with a callback.
 export function chrome(o: ChromeOptions): Chrome {
   const brand = el("a", { class: "brand", href: "/", "aria-label": "SimpleX" });
+  brand.addEventListener("click", (e) => { e.preventDefault(); o.onHome(); });
   const panelNode = el("div", {
     class: "menu", id: MENU_ID, hidden: "", role: "dialog", "aria-label": MENU_LABEL,
   });
