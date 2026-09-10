@@ -25,11 +25,10 @@ import Data.Text (Text)
 import Network.HTTP.Types (hContentType, notFound404, ok200)
 import Network.Wai (Application, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
-import Simplex.Messaging.Names.Record (NameRecord (..))
+import Simplex.Messaging.Names.Record (NameRecord (..), NameRegistration (..), NamePricing (..), USDCents (..))
 import Simplex.Messaging.Server.Names (NamesConfig (..))
-import Simplex.Messaging.Protocol (queryName, nameQuery)
-import Simplex.Messaging.SimplexName (SimplexNameInfo (..), fullDomainName)
-import Simplex.Messaging.Transport (currentClientSMPRelayVersion)
+import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), fullDomainName, labelHash, labelHashText, tldSuffix)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 
 type NameRegistry = TVar (Map Text NameRecord)
 
@@ -44,24 +43,24 @@ withNameResolver action = do
     app reg req send = do
       (st, body) <- case pathInfo req of
         ["health"] -> pure (ok200, "{}")
-        ["resolve", d] -> maybe (notFound404, unregistered) (\r -> (ok200, resolved r)) . M.lookup d <$> readTVarIO reg
+        ["v2", "resolve", d] -> (\r -> (ok200, J.encode (maybe available registered r))) . M.lookup d <$> readTVarIO reg
         _ -> pure (notFound404, "{}")
       send $ responseLBS st [(hContentType, "application/json")] body
-    -- the real resolver reports the registration status next to the record, and
-    -- names the failure in the body when there is none; availability reads those
-    -- a registered name is dated, and an unregistered one is priced: the router
-    -- reports neither without the other, so the stub answers as the real
-    -- resolver does
-    resolved r = J.encode $ case J.toJSON r of
-      J.Object o ->
-        J.Object $
-          JKM.insert "status" (J.String "registered") $
-            JKM.insert "expires" (J.Number 1813853483) $
-              JKM.insert "graceEnds" (J.Number 1821629483) o
-      v -> v
-    unregistered =
-      "{\"error\":\"unregistered\",\"rentPrices\":{\"3\":12793,\"4\":3198},\
-      \\"basePrice\":100,\"minLabelLength\":3}"
+    -- the resolver answers with the protocol's own type, so the stub does too
+    registered nameRecord =
+      NRRegistered
+        { expires = Just (RoundedSystemTime 1813853483),
+          graceUntil = Just (RoundedSystemTime 1821629483),
+          reservedReason_ = Nothing,
+          nameRecord
+        }
+    available =
+      NRAvailable
+        NamePricing
+          { registrationPrices = M.fromList [(3, USDCents 12793), (4, USDCents 3198)],
+            basePrice = USDCents 100,
+            minLabelLength = 3
+          }
 
 -- | Register a name's domain to resolve to the given record, under the hashed
 -- form of its second-level label. That is the only form a current client asks
@@ -73,7 +72,11 @@ registerName reg SimplexNameInfo {nameDomain} r =
   where
     -- the record names the name it is registered under, as the resolver's
     -- canonical_name does, and as the client checks
-    key = queryName (nameQuery currentClientSMPRelayVersion nameDomain)
+    -- a current client asks by the hashed 2LD, so registering the plain name
+    -- would let these tests pass even if lookups regressed to plaintext
+    key = case nameDomain of
+      SimplexDomain {nameTLD, domain, subDomain = []} -> labelHashText (labelHash domain) <> tldSuffix nameTLD
+      d -> fullDomainName d
 
 contactNameRecord :: Text -> Text -> NameRecord
 contactNameRecord name link = (emptyRecord name) {nrSimplexContact = [link]}

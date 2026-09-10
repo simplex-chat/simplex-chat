@@ -5079,9 +5079,9 @@ nameAvailability :: SimplexDomain -> NameRegistration -> SimplexNameAvailability
 nameAvailability SimplexDomain {domain} = \case
   NRRegistered {expires, graceUntil, reservedReason_} ->
     SNARegistered {expires = utcTime <$> expires, graceUntil = utcTime <$> graceUntil, reserved = reservedReason_}
-  NRAvailable {pricing = NamePricing {rentPrices, basePrice, minLabelLength}} ->
+  NRAvailable {pricing = NamePricing {registrationPrices, basePrice, minLabelLength}} ->
     SNAAvailable
-      { yearPriceUSD = if len < minLabelLength then Nothing else Just (cents $ M.findWithDefault basePrice len rentPrices),
+      { yearPriceUSD = if len < minLabelLength then Nothing else Just (cents $ M.findWithDefault basePrice len registrationPrices),
         minLabelLength
       }
   NRReserved {reservedReason} -> SNAReserved reservedReason
