@@ -828,7 +828,6 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
           Just (CIFFGroupLink g _ _ _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]
           _ -> []
 
--- | A reserved name never frees up, so it is given no date.
 -- | What the registry says about a name, for someone deciding whether to register it.
 nameStatus :: SimplexDomain -> SimplexNameAvailability -> B.ByteString
 nameStatus SimplexDomain {subDomain} = \case

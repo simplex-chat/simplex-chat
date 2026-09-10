@@ -18,7 +18,6 @@ where
 
 import Control.Concurrent.STM
 import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as JKM
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
