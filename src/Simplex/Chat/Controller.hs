@@ -307,7 +307,7 @@ data ChatController = ChatController
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     deliveryTaskWorkers :: TMap DeliveryWorkerKey Worker,
-    deliveryJobWorkers :: TMap DeliveryWorkerKey Worker,
+    deliveryJobWorkers :: TMap DeliveryJobKey Worker,
     relayRequestWorkers :: TMap Int Worker, -- single global worker with key 1 is used to fit into existing worker management framework
     relayGroupLinkChecksAsync :: TVar (Maybe (Async ())),
     webPreviewState :: Maybe WebPreviewState,

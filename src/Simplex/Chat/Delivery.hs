@@ -1,17 +1,20 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Simplex.Chat.Delivery where
 
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (fromMaybe)
 import Data.Time.Clock (UTCTime)
-import Simplex.Chat.Messages (ChatItemId, GroupChatScopeInfo (..), MessageId, ShowGroupAsSender)
-import Simplex.Chat.Messages.CIContent (CIDeleteMode (..))
+import Simplex.Chat.Messages (ChatItemId, ChatType (..), GroupChatScopeInfo (..), MessageId, ShowGroupAsSender)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
@@ -19,15 +22,11 @@ import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Encoding.String
 
-data DeliveryEntity = DEGroup GroupId | DEFeed FeedId
-  deriving (Eq, Ord, Show)
-
-type DeliveryWorkerKey = (DeliveryEntity, DeliveryWorkerScope)
+type DeliveryWorkerKey = (GroupId, DeliveryWorkerScope)
 
 data DeliveryWorkerScope
   = DWSGroup
   | DWSMemberSupport
-  | DWSFeed
   -- | DWSMemberProfileUpdate
   deriving (Eq, Ord, Show)
 
@@ -39,14 +38,33 @@ instance TextEncoding DeliveryWorkerScope where
   textDecode = \case
     "group" -> Just DWSGroup
     "member_support" -> Just DWSMemberSupport
-    "feed" -> Just DWSFeed
     -- "member_profile_update" -> Just DWSMemberProfileUpdate
     _ -> Nothing
   textEncode = \case
     DWSGroup -> "group"
     DWSMemberSupport -> "member_support"
-    DWSFeed -> "feed"
     -- DWSMemberProfileUpdate -> "member_profile_update"
+
+data DeliveryJobKey
+  = DJKGroup GroupId DeliveryWorkerScope
+  | DJKFeed FeedId FeedWorkerScope
+  deriving (Eq, Ord, Show)
+
+data FeedWorkerScope = FWSContacts | FWSGroups
+  deriving (Eq, Ord, Show)
+
+instance FromField FeedWorkerScope where fromField = fromTextField_ textDecode
+
+instance ToField FeedWorkerScope where toField = toField . textEncode
+
+instance TextEncoding FeedWorkerScope where
+  textDecode = \case
+    "feed_contacts" -> Just FWSContacts
+    "feed_groups" -> Just FWSGroups
+    _ -> Nothing
+  textEncode = \case
+    FWSContacts -> "feed_contacts"
+    FWSGroups -> "feed_groups"
 
 -- Context for creating a delivery task. Separate from DeliveryJobScope because
 -- sentAsGroup is only needed for task persistence and batching into XGrpMsgForward events.
@@ -61,30 +79,17 @@ data DeliveryTaskContext = DeliveryTaskContext
 data DeliveryJobScope
   = DJSGroup {jobSpec :: DeliveryJobSpec}
   | DJSMemberSupport {supportGMId :: GroupMemberId}
-  | DJSFeed {feedItemId :: ChatItemId, feedJobSpec :: FeedJobSpec}
   -- | DJSMemberProfileUpdate
   deriving (Show)
 
 data DeliveryJobSpec
   = DJDeliveryJob {includePending :: Bool}
   | DJRelayRemoved
-  | DJFeed FeedJobSpec
-  deriving (Show)
-
-data FeedJobSpec
-  = FJNew
-  | FJFileDescr
-  | FJUpdate
-  | FJDelete CIDeleteMode
   deriving (Show)
 
 data DeliveryJobSpecTag
   = DJSTDeliveryJob
   | DJSTRelayRemoved
-  | DJSTFeedNew
-  | DJSTFeedFileDescr
-  | DJSTFeedUpdate
-  | DJSTFeedDelete
   deriving (Show)
 
 instance FromField DeliveryJobSpecTag where fromField = fromTextField_ textDecode
@@ -95,24 +100,15 @@ instance TextEncoding DeliveryJobSpecTag where
   textDecode = \case
     "delivery_job" -> Just DJSTDeliveryJob
     "relay_removed" -> Just DJSTRelayRemoved
-    "feed_new" -> Just DJSTFeedNew
-    "feed_file_descr" -> Just DJSTFeedFileDescr
-    "feed_update" -> Just DJSTFeedUpdate
-    "feed_delete" -> Just DJSTFeedDelete
     _ -> Nothing
   textEncode = \case
     DJSTDeliveryJob -> "delivery_job"
     DJSTRelayRemoved -> "relay_removed"
-    DJSTFeedNew -> "feed_new"
-    DJSTFeedFileDescr -> "feed_file_descr"
-    DJSTFeedUpdate -> "feed_update"
-    DJSTFeedDelete -> "feed_delete"
 
 toWorkerScope :: DeliveryJobScope -> DeliveryWorkerScope
 toWorkerScope = \case
   DJSGroup _ -> DWSGroup
   DJSMemberSupport _ -> DWSMemberSupport
-  DJSFeed {} -> DWSFeed
   -- DJSMemberProfileUpdate -> DWSMemberProfileUpdate
 
 isRelayRemoved :: DeliveryJobScope -> Bool
@@ -126,13 +122,11 @@ jobScopeImpliedSpec :: DeliveryJobScope -> DeliveryJobSpec
 jobScopeImpliedSpec = \case
   DJSGroup {jobSpec} -> jobSpec
   DJSMemberSupport {} -> DJDeliveryJob {includePending = False}
-  DJSFeed {feedJobSpec} -> DJFeed feedJobSpec
 
 jobSpecImpliedPending :: DeliveryJobSpec -> Bool
 jobSpecImpliedPending = \case
   DJDeliveryJob {includePending} -> includePending
   DJRelayRemoved -> True
-  DJFeed _ -> False
 
 infoToDeliveryContext :: GroupInfo -> Maybe GroupChatScopeInfo -> ShowGroupAsSender -> DeliveryTaskContext
 infoToDeliveryContext GroupInfo {membership} scopeInfo sentAsGroup = DeliveryTaskContext {jobScope, sentAsGroup}
@@ -189,20 +183,61 @@ instance TextEncoding DeliveryTaskStatus where
     DTSProcessed -> "processed"
     DTSError -> "error"
 
-data MessageDeliveryJob = MessageDeliveryJob
+data DeliveryJob (c :: ChatType) = DeliveryJob
   { jobId :: Int64,
-    jobScope :: DeliveryJobScope,
-    senderGMIds :: [GroupMemberId],
-    messageIds :: [MessageId],
-    body :: ByteString,
-    cursorGMId_ :: Maybe GroupMemberId,
-    cursorContactId_ :: Maybe ContactId,
-    cursorGroupId_ :: Maybe GroupId
+    cursorId_ :: Maybe Int64,
+    jobWork :: DeliveryJobWork c
   }
+
+deriving instance Show (DeliveryJob c)
+
+deliveryJobId :: DeliveryJob c -> Int64
+deliveryJobId DeliveryJob {jobId} = jobId
+
+data DeliveryJobWork (c :: ChatType) where
+  DJWGroup :: {jobScope :: DeliveryJobScope, senderGMIds :: [GroupMemberId], body :: ByteString} -> DeliveryJobWork 'CTGroup
+  DJWFeed :: {feedItemId :: ChatItemId, feedAction :: FeedJobAction} -> DeliveryJobWork 'CTFeed
+
+deriving instance Show (DeliveryJobWork c)
+
+data FeedJobAction
+  = FJANew MessageId
+  | FJAFileDescr (NonEmpty MessageId)
+  | FJAUpdate MessageId
+  | FJADeleteBroadcast MessageId
+  | FJADeleteInternal
+  | FJADeleteMark
   deriving (Show)
 
-deliveryJobId :: MessageDeliveryJob -> Int64
-deliveryJobId = jobId
+data FeedJobActionTag
+  = FJATNew
+  | FJATFileDescr
+  | FJATUpdate
+  | FJATDeleteBroadcast
+  | FJATDeleteInternal
+  | FJATDeleteMark
+  deriving (Show)
+
+instance FromField FeedJobActionTag where fromField = fromTextField_ textDecode
+
+instance ToField FeedJobActionTag where toField = toField . textEncode
+
+instance TextEncoding FeedJobActionTag where
+  textDecode = \case
+    "feed_new" -> Just FJATNew
+    "feed_file_descr" -> Just FJATFileDescr
+    "feed_update" -> Just FJATUpdate
+    "feed_delete_broadcast" -> Just FJATDeleteBroadcast
+    "feed_delete_internal" -> Just FJATDeleteInternal
+    "feed_delete_mark" -> Just FJATDeleteMark
+    _ -> Nothing
+  textEncode = \case
+    FJATNew -> "feed_new"
+    FJATFileDescr -> "feed_file_descr"
+    FJATUpdate -> "feed_update"
+    FJATDeleteBroadcast -> "feed_delete_broadcast"
+    FJATDeleteInternal -> "feed_delete_internal"
+    FJATDeleteMark -> "feed_delete_mark"
 
 data DeliveryJobStatus
   = DJSPending -- created for delivery job worker to pick up

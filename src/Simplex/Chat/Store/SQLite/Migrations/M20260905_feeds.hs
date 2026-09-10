@@ -49,10 +49,8 @@ PRAGMA writable_schema=RESET;
 
 ALTER TABLE delivery_jobs ADD COLUMN feed_id INTEGER REFERENCES feeds ON DELETE CASCADE;
 ALTER TABLE delivery_jobs ADD COLUMN chat_item_id INTEGER REFERENCES chat_items ON DELETE CASCADE;
-ALTER TABLE delivery_jobs ADD COLUMN delete_mode TEXT;
 ALTER TABLE delivery_jobs ADD COLUMN message_ids TEXT;
-ALTER TABLE delivery_jobs ADD COLUMN cursor_contact_id INTEGER;
-ALTER TABLE delivery_jobs ADD COLUMN cursor_group_id INTEGER;
+ALTER TABLE delivery_jobs ADD COLUMN feed_cursor_id INTEGER;
 CREATE INDEX idx_delivery_jobs_feed_next ON delivery_jobs(feed_id, worker_scope, failed, job_status);
 CREATE INDEX idx_delivery_jobs_chat_item_id ON delivery_jobs(chat_item_id);
 |]
@@ -63,10 +61,8 @@ down_m20260905_feeds =
 DROP INDEX idx_delivery_jobs_chat_item_id;
 DROP INDEX idx_delivery_jobs_feed_next;
 DELETE FROM delivery_jobs WHERE group_id IS NULL;
-ALTER TABLE delivery_jobs DROP COLUMN cursor_group_id;
-ALTER TABLE delivery_jobs DROP COLUMN cursor_contact_id;
+ALTER TABLE delivery_jobs DROP COLUMN feed_cursor_id;
 ALTER TABLE delivery_jobs DROP COLUMN message_ids;
-ALTER TABLE delivery_jobs DROP COLUMN delete_mode;
 ALTER TABLE delivery_jobs DROP COLUMN chat_item_id;
 ALTER TABLE delivery_jobs DROP COLUMN feed_id;
 

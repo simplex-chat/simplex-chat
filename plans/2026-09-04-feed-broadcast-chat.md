@@ -9,10 +9,11 @@ applied to every instance. Reactions received on instances are summed in the
 feed item.
 
 Delivery, edits, deletions and file descriptions are `delivery_jobs` rows
-with a feed scope, processed by the existing delivery job worker
-(`runDeliveryJobWorker`, `Subscriber.hs:4130-4327`) in buckets. Recipients
-are read by cursor; the client never loads all contacts. Jobs are created
-directly, without delivery tasks, as `leaveChannelRelay` does
+in two feed streams — contacts and customer groups, one worker each — over
+the same table, worker map and worker function as relay jobs
+(`runDeliveryJobWorker`, `Subscriber.hs:4130-4327`), processed in buckets.
+Recipients are read by cursor; the client never loads all contacts. Jobs
+are created directly, without delivery tasks, as `leaveChannelRelay` does
 (`Commands.hs:3200-3208`).
 
 The TODO at `Commands.hs:2635` ("Broadcast rework") describes the shared
@@ -89,11 +90,28 @@ message id used here.
   The feed item and every other item have `Nothing`. Received feed
   messages are stored with `chat_items.item_feed = 1`.
 - Content: text, link, image, video, voice, file. One XFTP upload per
-  broadcast; one recipient description for everyone. Quotes, mentions, live
+  broadcast; one recipient description for everyone. Mentions, live
   messages and the `ttl` parameter are rejected.
-- Feed item status is set by the job: `CISSndNew` on creation,
+- Quotes: a feed item may quote an earlier item of the same feed. The quote
+  is `QuotedMsg {msgRef = MsgRef {msgId = Just quotedSharedMsgId, sentAt = itemTs, sent = True, memberId = Nothing}, content}`,
+  identical for every recipient (the shared id is the same everywhere), so
+  the body stays one. Direct recipients resolve it by the shared id
+  (`getChatItemQuote_`, `Store/Messages.hs:676`); group recipients show the
+  quote without a link to the item (`memberId = Nothing`, :683 — the
+  behaviour of channel quotes sent as group, `Internal.hs:230`). The
+  sender's feed item has `CIQuote {chatDir = CIQFeedSnd, itemId = Just quotedFeedItemId}`;
+  every instance stores the quote columns and the existing `ri` joins
+  (:2713, :3132) link it to the instance of the quoted broadcast in that
+  chat. A quote of an item outside the feed is rejected with
+  `SEInvalidQuote`.
+- Every feed event (`FeedJobAction`: new, file description, update, delete
+  for everyone, delete locally, mark deleted locally) is one job in each of
+  the two feed streams; the last of the two to complete finalises the
+  event (`completeFeedJob`).
+- Feed item status is set by the jobs: `CISSndNew` on creation,
   `CISSndSent SSPPartial` after the first bucket, `CISSndSent SSPComplete` on
-  completion, `CISSndError` on job failure. Receipts are visible per instance.
+  completion of the event, `CISSndError` on job failure. Receipts are
+  visible per instance.
 - Feed item reactions are computed on read from received instance reactions
   (`reaction_sent = 0`) by `shared_msg_id`, with `userReacted = False`.
   Reactions sent from the feed are not supported.
@@ -103,8 +121,9 @@ message id used here.
 - `CRBroadcastSent` is removed: the broadcast is a job, so counts are not
   known at command time. `/feed` returns `CRNewChatItems` with the feed item.
 - Commands on the feed hold the `CLFeed feedId` entity lock and only write
-  the feed item and a job. The worker holds no entity locks (as relay job
-  workers).
+  the feed item and its jobs. The workers hold no entity locks while
+  sending (as relay job workers); they take `CLFeed feedId` for the
+  completion step only.
 - Feed items are outside global chat item expiration (as notes).
 
 ## Types
@@ -147,11 +166,15 @@ returns `(Maybe ContactId, Maybe GroupId, Maybe FeedId)`.
   `jsonAChatInfo` (:242).
 - `CIDirection` (:293): `CIFeedSnd :: CIDirection 'CTFeed 'MDSnd`.
   `JSONCIDirection` (:308): `JCIFeedSnd`; `jsonCIDirection` (:318),
-  `jsonACIDirection` (:328). `jsonACIQDirection` (:667):
-  `JCIFeedSnd -> Left "unquotable"`.
+  `jsonACIDirection` (:328).
 - `ChatDirection` (:391): `CDFeedSnd :: Feed -> ChatDirection 'CTFeed 'MDSnd`;
   `toCIDirection` (:400), `toChatInfo` (:410).
-- `ChatTypeQuotable 'CTFeed` resolves to the existing `TypeError` case (:646).
+- `ChatTypeQuotable 'CTFeed = ()` (:643); `CIQDirection` (:649):
+  `CIQFeedSnd :: CIQDirection 'CTFeed`; `jsonCIQDirection` (:659)
+  `CIQFeedSnd -> JCIFeedSnd`; `jsonACIQDirection` (:667)
+  `JCIFeedSnd -> Right $ ACIQDirection SCTFeed CIQFeedSnd`;
+  `quoteMsgDirection` (:677) `CIQFeedSnd -> MDSnd`. `createNewSndChatItem`'s
+  `quoteRow` (`Store/Messages.hs:557`) gains `CIQFeedSnd -> (Just True, Nothing)`.
 - `deletable'` (:542): the default branch applies to `SCTFeed`.
 - `CIDeleted` (:1282): `CIDeleting :: Maybe UTCTime -> CIDeleted 'CTFeed`;
   `JSONCIDeleted` (:1292): `JCIDDeleting {deletedTs}`; `jsonCIDeleted`,
@@ -199,49 +222,62 @@ returns `(Maybe ContactId, Maybe GroupId, Maybe FeedId)`.
   `SetDropFeed ChatName Bool`. `SendMessageBroadcast MsgContent` stays as the
   CLI command. `CRBroadcastSent` (:824) is removed.
 - `ChatConfig` (:141): `feedBucketSize :: Int` (1000 in `Chat.hs`).
-  `deliveryJobWorkers` (:309) serves feed jobs; no new worker map.
+  `deliveryJobWorkers` (:310) is keyed by `DeliveryJobKey`; no new worker
+  map. `deliveryTaskWorkers` keeps `DeliveryWorkerKey`: tasks are group-only.
 
-`Delivery.hs`, extending the existing scopes (the intent recorded at
-`M20250813_delivery_tasks.hs:45`):
+`Delivery.hs` (written). A job worker is one of four streams; a job is the
+common part plus the work of its stream's entity, indexed by `ChatType`:
 
 ```haskell
-data DeliveryEntity = DEGroup GroupId | DEFeed FeedId
-  deriving (Eq, Ord, Show)
+type DeliveryWorkerKey = (GroupId, DeliveryWorkerScope)
 
-type DeliveryWorkerKey = (DeliveryEntity, DeliveryWorkerScope)
+data DeliveryWorkerScope = DWSGroup | DWSMemberSupport
 
-data DeliveryWorkerScope = DWSGroup | DWSMemberSupport | DWSFeed
+data DeliveryJobKey
+  = DJKGroup GroupId DeliveryWorkerScope
+  | DJKFeed FeedId FeedWorkerScope
 
-data DeliveryJobScope
-  = DJSGroup {jobSpec :: DeliveryJobSpec}
-  | DJSMemberSupport {supportGMId :: GroupMemberId}
-  | DJSFeed {feedItemId :: ChatItemId, feedJobSpec :: FeedJobSpec}
+data FeedWorkerScope = FWSContacts | FWSGroups
 
-data DeliveryJobSpec
-  = DJDeliveryJob {includePending :: Bool}
-  | DJRelayRemoved
-  | DJFeed FeedJobSpec
+data DeliveryJob (c :: ChatType) = DeliveryJob
+  { jobId :: Int64,
+    cursorId_ :: Maybe Int64,
+    jobWork :: DeliveryJobWork c
+  }
 
-data FeedJobSpec
-  = FJNew
-  | FJFileDescr
-  | FJUpdate
-  | FJDelete CIDeleteMode
+data DeliveryJobWork (c :: ChatType) where
+  DJWGroup :: {jobScope :: DeliveryJobScope, senderGMIds :: [GroupMemberId], body :: ByteString} -> DeliveryJobWork 'CTGroup
+  DJWFeed :: {feedItemId :: ChatItemId, feedAction :: FeedJobAction} -> DeliveryJobWork 'CTFeed
+
+data FeedJobAction
+  = FJANew MessageId
+  | FJAFileDescr (NonEmpty MessageId)
+  | FJAUpdate MessageId
+  | FJADeleteBroadcast MessageId
+  | FJADeleteInternal
+  | FJADeleteMark
+
+data FeedJobActionTag = FJATNew | FJATFileDescr | FJATUpdate | FJATDeleteBroadcast | FJATDeleteInternal | FJATDeleteMark
 ```
 
-- `toWorkerScope (DJSFeed {}) = DWSFeed`; `jobScopeImpliedSpec (DJSFeed
-  {feedJobSpec}) = DJFeed feedJobSpec` (:96); `jobSpecImpliedPending (DJFeed
-  _) = False` (:101); `DeliveryJobSpecTag` (:65) gains `DJSTFeedNew`,
-  `DJSTFeedFileDescr`, `DJSTFeedUpdate`, `DJSTFeedDelete` for
-  `job_scope_spec_tag`; `DWSFeed` encodes as `"feed"` (:33).
-- `MessageDeliveryJob` (:161) gains `messageIds :: [MessageId]`,
-  `cursorContactId_ :: Maybe ContactId`, `cursorGroupId_ :: Maybe GroupId`;
-  `senderGMIds` is `[]` and `cursorGMId_` is `Nothing` for feed jobs.
-- `DeliveryWorkerKey` construction sites: `Subscriber.hs:1125`, `:1130`,
-  `:4056`, `:4143`; `Commands.hs:3208` (`DEGroup gId`).
-- The task worker's `case jobScopeImpliedSpec jobScope of`
-  (`Subscriber.hs:4067`) gains `DJFeed _ -> throwChatError $ CEInternalError
-  "delivery task worker: feed spec"` — tasks are group-scoped.
+- `DeliveryJobScope`, `DeliveryJobSpec`, `DeliveryJobSpecTag` and the task
+  types are unchanged. `MessageDeliveryJob` becomes `DeliveryJob 'CTGroup`
+  with the group fields in `DJWGroup`; `cursorId_` is the former
+  `cursorGMId_` (`Subscriber.hs:4171`, `Store/Delivery.hs:328`).
+- `FeedWorkerScope` encodes as `feed_contacts`, `feed_groups` in
+  `worker_scope`; `FeedJobActionTag` as `feed_new`, `feed_file_descr`,
+  `feed_update`, `feed_delete_broadcast`, `feed_delete_internal`,
+  `feed_delete_mark` in `job_scope_spec_tag`. The messages of an action are
+  in `message_ids` (NULL for the two local deletions); a feed job has no
+  `body`: the worker loads the bodies from `messages` once per job.
+- A feed event creates one job per feed stream; the two workers of a feed
+  run concurrently, and per-recipient order holds because every recipient
+  is in exactly one stream and jobs of a key run in id order.
+- The cursor is the last recipient id of the worker's own stream; the
+  scope of the key fixes its kind.
+- `DeliveryJobKey` construction sites: `Subscriber.hs:1125`, `:1130`,
+  `:4080`, `:4092` (`DJKGroup groupId workerScope` from the task worker's
+  key), `:4143`; `Commands.hs:3208`.
 
 `Store/Shared.hs`:
 
@@ -256,12 +292,12 @@ data FeedJobSpec
 ## Schema
 
 SQLite: `M20260905_feeds.hs` (written; registered in `SQLite/Migrations.hs`
-and `simplex-chat.cabal`; `chat_schema.sql` regenerated; the up, down and
-repeated up dumps and `.lint fkey-indexes` verified with `sqlite3`).
-Postgres: the same statements with `BIGINT GENERATED ALWAYS AS IDENTITY`,
-`TIMESTAMPTZ`, `SMALLINT`, named constraints and
-`ALTER TABLE delivery_jobs ALTER COLUMN group_id DROP NOT NULL`, as
-`M20241220_initial.hs:619-635`.
+and `simplex-chat.cabal`; the up, down and repeated up dumps and
+`.lint fkey-indexes` verified with `sqlite3`; `chat_schema.sql` is rewritten
+by `tests/SchemaDump.hs`). Postgres: the same statements with
+`BIGINT GENERATED ALWAYS AS IDENTITY`, `TIMESTAMPTZ`, `SMALLINT`, named
+constraints and `ALTER TABLE delivery_jobs ALTER COLUMN group_id DROP NOT NULL`,
+as `M20241220_initial.hs:619-635`.
 
 - `feed_item_id` self-reference precedent: `fwd_from_chat_item_id`
   (`chat_schema.sql:504`). `item_feed`: 0 none, 1 linked, 2 detached.
@@ -269,16 +305,34 @@ Postgres: the same statements with `BIGINT GENERATED ALWAYS AS IDENTITY`,
   edit of `M20251230_strict_tables.hs:18-26`; `PRAGMA writable_schema=RESET`
   reloads the schema before the `ADD COLUMN` statements of the same
   transaction, so their column offsets are computed from the edited text.
-  A feed job has `feed_id`, `chat_item_id` (the feed item), `message_ids`
-  and the feed cursors; a group job has `group_id` and
-  `cursor_group_member_id`.
-- `message_ids`: comma-separated decimal ids, the encoding of
-  `delivery_jobs.sender_group_member_ids` (`Store/Delivery.hs:266-270, :329`).
+  New columns: `feed_id`, `chat_item_id` (the feed item), `message_ids`,
+  `feed_cursor_id`. A feed job row has `feed_id`, `chat_item_id`,
+  `worker_scope` in `feed_contacts`/`feed_groups`, `job_scope_spec_tag` in
+  the six feed tags, `message_ids` for the four delivered actions, and NULL
+  in `group_id`, `job_scope_include_pending`, `job_scope_support_gm_id`,
+  `sender_group_member_ids`, `body`, `cursor_group_member_id`; a group job
+  row has NULL in the four new columns. `toFeedDeliveryJob` and
+  `toDeliveryJob` return `SEInvalidDeliveryJob` for any other combination —
+  the only place that sees the column product.
+- `message_ids`: the messages of the action — one id for `FJANew`,
+  `FJAUpdate` and `FJADeleteBroadcast`, the parts for `FJAFileDescr`.
+  The worker loads their bodies (`messages.msg_body`) once per job; the
+  parts are batched with `batchSndMessagesJSON`, the same function as at
+  creation, so the batches are the same. `deliverMessagesB` writes one
+  `msg_deliveries` row per connection and message id (`Internal.hs:2386`);
+  those rows route `SENT`, `RCVD`, `MWARN` and `MERR` to the instances and
+  are the repeated bucket guard. Relay jobs call `sendMessages` directly
+  (`Subscriber.hs:4224`) with no delivery rows and store a composed forward
+  body instead; the column reuses the comma-separated `Int64` text encoding
+  of `sender_group_member_ids` (`Store/Delivery.hs:266-270, :329`). A job
+  left pending for 30 days fails when `cleanupMessages` removes its
+  messages.
 - Indexes and the queries they serve (plans checked with
   `EXPLAIN QUERY PLAN` on the migrated schema):
   - `idx_delivery_jobs_feed_next (feed_id, worker_scope, failed, job_status)`:
-    `getNextDeliveryJob` by feed, a covering search.
-  - `idx_delivery_jobs_chat_item_id`: the `chat_item_id` FK.
+    `getNextFeedDeliveryJob`, a covering search.
+  - `idx_delivery_jobs_chat_item_id`: the `chat_item_id` FK and the pending
+    count of `completeFeedJob`.
   - `idx_chat_items_feed_item_contact (feed_item_id, contact_id)` and
     `idx_chat_items_feed_item_group (feed_item_id, group_id)`: the instance
     cursor reads, the range guards, `updateFeedInstances` and the
@@ -337,7 +391,7 @@ New module `Store/Feeds.hs`:
     + `contactQueryFrom` joins,
     `WHERE i.user_id = ? AND i.feed_item_id = ? AND i.contact_id > ? AND <spec> ORDER BY i.contact_id, c.connection_id LIMIT ?`
     (`idx_chat_items_feed_item_contact`); `<spec>` is `i.item_feed = 1` for
-    `FJUpdate` and `FJDelete`, `i.item_deleted = 0` for `FJFileDescr`.
+    `FJAUpdate` and the deletions, `i.item_deleted = 0` for `FJAFileDescr`.
   - `getFeedGroupInstancesByCursor db cxt user feedItemId spec cursor_ count :: IO [(GroupInfo, CChatItem 'CTGroup)]` —
     the `getGroupChatItem` SELECT (:3094-3139) composed with
     `groupInfoQueryFields`, `WHERE i.user_id = ? AND i.feed_item_id = ? AND i.group_id > ? AND <spec> ORDER BY i.group_id LIMIT ?`
@@ -346,30 +400,45 @@ New module `Store/Feeds.hs`:
     `UPDATE chat_items SET item_feed = 2 WHERE chat_item_id = ? AND item_feed = 1`
     by `executeMany`.
   - `getFeedInstanceContactIdsByRange db user feedItemId fromId toId :: IO [ContactId]`
-    (and groups) — the instance guard of a repeated `FJNew` bucket.
+    (and groups) — the instance guard of a repeated `FJANew` bucket.
   - `getDeliveredContactIdsByRange db msgId fromId toId :: IO [ContactId]` —
     `SELECT c.contact_id FROM msg_deliveries d JOIN connections c ON c.connection_id = d.connection_id WHERE d.message_id = ? AND c.contact_id > ? AND c.contact_id <= ?`
     (`idx_msg_deliveries_message_id`, `chat_schema.sql:1085`); the group
     variant joins `group_members gm ON gm.group_member_id = c.group_member_id`
     and returns `gm.group_id` — the delivery guard of a repeated bucket for
     every job type.
-`Store/Delivery.hs`, parameterized by the entity:
+`Store/Delivery.hs`:
 
-- `DeliveryJobScopeRow` (:62) gains `(Maybe ChatItemId, Maybe CIDeleteMode)`
-  from `chat_item_id`, `delete_mode`; `jobScopeRow_` (:64) and
-  `toJobScope_` (:71) map `DJSFeed`; `createMsgDeliveryTask` (:78) writes
-  the first four fields (tasks are group-scoped).
-- `createMsgDeliveryJob` (:251): `DeliveryEntity` in place of `GroupInfo`,
-  and `[MessageId]`; writes `group_id` or `feed_id`, `chat_item_id` from
-  the scope, `message_ids`. Callers: `Subscriber.hs:4077`, `:4090`,
-  `Commands.hs:3207` (`DEGroup`, `[]`).
-- `getPendingDeliveryJobScopes` (:272): `SELECT DISTINCT group_id, feed_id, worker_scope`
-  mapped to the key. `getNextDeliveryJob` (:285): the key condition is
-  `group_id = ?` or `feed_id = ?` by entity
-  (`idx_delivery_jobs_next`, `idx_delivery_jobs_feed_next`); the row adds
-  `message_ids`, `cursor_contact_id`, `cursor_group_id`.
-- `updateDeliveryJobFeedCursor db jobId contactId_ groupId_` next to
+- `createMsgDeliveryJob` (:251), `DeliveryJobScopeRow` (:62) and the task
+  functions are unchanged. `getNextDeliveryJob` (:285) keeps its key and
+  query and returns `DeliveryJob 'CTGroup` (`toDeliveryJob` builds
+  `DJWGroup`; `cursorId_` from `cursor_group_member_id`).
+- `createFeedDeliveryJob db feedId feedItemId scope action`: INSERT with
+  `feed_id`, `chat_item_id`, `worker_scope = scope`,
+  `job_scope_spec_tag = feedActionTag action`, `message_ids` from the
+  action's ids, `job_status = DJSPending`. `createFeedJobs db feedId feedItemId action`
+  runs it for `FWSContacts` and `FWSGroups`.
+- `getPendingDeliveryJobScopes` (:272): `SELECT DISTINCT group_id, feed_id, worker_scope`;
+  `(Just gId, Nothing, s)` with a `DeliveryWorkerScope` text -> `DJKGroup`,
+  `(Nothing, Just fId, s)` with a `FeedWorkerScope` text -> `DJKFeed`; other
+  rows are skipped.
+- `getNextFeedDeliveryJob db feedId scope :: IO (Either StoreError (Maybe (DeliveryJob 'CTFeed)))`:
+  `getWorkItem` as `getNextDeliveryJob`, the id query
+  `WHERE feed_id = ? AND worker_scope = ? AND failed = 0 AND job_status = ? ORDER BY delivery_job_id ASC LIMIT 1`
+  (`idx_delivery_jobs_feed_next`); `toFeedDeliveryJob` maps
+  `(job_scope_spec_tag, message_ids, feed_cursor_id)` to `DJWFeed` —
+  `feed_new`/`feed_update`/`feed_delete_broadcast` with exactly one id,
+  `feed_file_descr` with one or more, `feed_delete_internal`/`feed_delete_mark`
+  with NULL — and `SEInvalidDeliveryJob` otherwise.
+- `updateFeedDeliveryJobCursor db jobId cursorId` next to
   `updateDeliveryJobCursor` (:392).
+- `completeFeedJob db jobId feedItemId tag :: IO Bool`: `updateDeliveryJobStatus`
+  `DJSComplete`, then
+  `SELECT COUNT(1) FROM delivery_jobs WHERE chat_item_id = ? AND job_scope_spec_tag = ? AND job_status = ?`
+  (`DJSPending`, `idx_delivery_jobs_chat_item_id`); True when the count is
+  zero — this job was the last of its event.
+- `getFeedJobMessages db msgIds :: IO [SndMessage]` — the query of
+  `getPendingGroupMessages` (`Store/Messages.hs:369`) by `message_id IN`.
 - `deleteGroupDeliveryJobs` (:100), `deleteDoneDeliveryJobs` (:400),
   `updateDeliveryJobStatus` (:337), `setDeliveryJobErrStatus` (:340):
   unchanged.
@@ -530,22 +599,34 @@ the `note_folders` shape (`Store/NoteFolders.hs:61`).
 
 `Commands.hs`, `APISendFeedMessage feedId cm`, under `withFeedLock "sendFeed" feedId`:
 
-1. `assertAllowedContent'`, `assertNoMentions`; `quotedItemId` must be absent.
+1. `assertAllowedContent'`, `assertNoMentions`.
 2. `feed <- getFeed`; `sharedMsgId <- getSharedMsgId` (:5030); `createdAt`.
+   Quote: for `quotedItemId`, `getFeedChatItem` must return an undeleted
+   `CIFeedSnd` item with `CISndMsgContent qmc` and `itemSharedMsgId = Just quotedSmId`
+   (otherwise `SEInvalidQuote`, as `quoteData`, `Internal.hs:227`);
+   `msgRef = MsgRef {msgId = Just quotedSmId, sentAt = itemTs, sent = True, memberId = Nothing}`,
+   `qmc' = quoteContent mc qmc file` (:367), the container is
+   `mcQuote QuotedMsg {msgRef, content = qmc'} mc` and the feed item's quote
+   `CIQuote {chatDir = CIQFeedSnd, itemId = Just quotedItemId, sharedMsgId = Just quotedSmId, sentAt = itemTs, content = qmc', formattedText}`;
+   `createNewChatItemNoMsg` gains the `Maybe (CIQuote c)` parameter for the
+   quote row, and the job passes the same row to every instance.
 3. File: `checkSndFile`; `xftpSndFileTransfer_ user file fileSize 1 (Just $ CGFeed feed)`
    (`Internal.hs:438`; `roundedFDCount 1` yields 4 descriptions, the first is
    used); `xftpSndFileTransfer` (:4911) adds `CGFeed _ -> pure ()` — no
    `snd_files` rows.
 4. Feed item: `updateChatTsStats db cxt user (CDFeedSnd feed) createdAt Nothing`;
-   `createNewChatItemNoMsg db user (CDFeedSnd feed) False (CISndMsgContent mc) (Just sharedMsgId) hasLink Nothing createdAt createdAt`;
+   `createNewChatItemNoMsg db user (CDFeedSnd feed) False (CISndMsgContent mc) (Just sharedMsgId) quotedItem hasLink Nothing createdAt createdAt`;
    `updateFileTransferChatItemId` for the file.
-5. Message: `createFeedSndMessages sharedMsgId (Identity (FeedId feedId, Nothing, XMsgNew (mcSimple mc) {file = fInv_, feed = Just True}))`
-   (`fInv_ :: Maybe FileInvitation` from step 3);
+5. Message: `createFeedSndMessages sharedMsgId (Identity (FeedId feedId, Nothing, XMsgNew container {file = fInv_, feed = Just True}))`
+   (`container` from step 2, `fInv_ :: Maybe FileInvitation` from step 3);
    `insertChatItemMessage_ db feedItemId msgId createdAt`
    (`Store/Messages.hs:669`, added to the module's export list).
-6. Job: `createMsgDeliveryJob db (DEFeed feedId) (DJSFeed feedItemId FJNew) [] [msgId] msgBody`;
-   `getDeliveryJobWorker True (DEFeed feedId, DWSFeed)` — the shape of
-   `leaveChannelRelay` (`Commands.hs:3204-3208`).
+6. Jobs: `createFeedJobs db feedId feedItemId (FJANew msgId)` — one
+   `createFeedDeliveryJob` per `FeedWorkerScope` in the same transaction as
+   the message and the item — then `getDeliveryJobWorker True (DJKFeed feedId scope)`
+   for both scopes; the shape of `leaveChannelRelay` (`Commands.hs:3204-3208`).
+   Every feed event (file description, edit, deletion) creates its jobs the
+   same way.
 7. Response `CRNewChatItems user [feedItem]` (`CISSndNew`).
 
 `SendMessageBroadcast mc` (:2625): `feedId <- getUserFeedId`;
@@ -553,43 +634,47 @@ the `note_folders` shape (`Store/NoteFolders.hs:61`).
 
 ## Delivery worker
 
-`Subscriber.hs`, `runDeliveryJobWorker` (:4130): the worker reads its
-entity once — `(user, gInfo)` by `groupId` as today for `DEGroup`, `user`
-by `getUserByFeedId` and the feed for `DEFeed` — and `processDeliveryJob`
-(:4152) gains the branch `DJFeed spec -> processFeedJob user feed job spec`
-in its `case jobScopeImpliedSpec jobScope of`. Startup
-(`startDeliveryJobWorkers`, :4094), the `withWork_` loop, the error path
-(:4148, `setDeliveryJobErrStatus`) and cleanup (`cleanupDeliveryJobs`,
-`Commands.hs:5315`) are unchanged; feed keys come out of
-`getPendingDeliveryJobScopes` with the group keys.
+`Subscriber.hs`, `runDeliveryJobWorker` (:4130) takes a `DeliveryJobKey`
+and branches once, where it loads the entity today (:4134-4137):
+`DJKGroup groupId workerScope` loads `(user, gInfo)` and runs the existing
+loop with `getNextDeliveryJob db (groupId, workerScope)` and
+`processDeliveryJob` on `DeliveryJob 'CTGroup` (`jobWork = DJWGroup {..}`,
+the only constructor of that index); `DJKFeed feedId scope` loads
+`(user, feed)` by `getUserByFeedId` and runs the feed loop with
+`getNextFeedDeliveryJob db feedId scope` and `processFeedJob`. The
+`forever`/`waitForWork` loop and the `withWork_` wrapper with the error
+path (:4144-4150) are shared, parameterised by the job getter and the
+processor (`deliveryJobId :: DeliveryJob c -> Int64`). Startup
+(`startDeliveryJobWorkers`, :4094), `getDeliveryJobWorker` (:4102) and
+cleanup (`cleanupDeliveryJobs`, `Commands.hs:5315`) are unchanged in shape;
+feed keys come out of `getPendingDeliveryJobScopes` with the group keys.
 
-`processFeedJob` uses the job's `body` and `messageIds`, then
-runs the contact loop and the group loop from the persisted cursors,
-`feedBucketSize` recipients per bucket. Each bucket begins by re-reading the
-feed item (`getFeedChatItem`). `FJNew`, `FJFileDescr` and `FJUpdate` stop
-when the item is absent (removed by `APIClearChat`, which cascaded the job
-row) or has `itemDeleted` set (a delete was issued; the `FJDelete` job that
-follows handles the instances created so far); `FJDelete` stops only when
-the item is absent.
+`processFeedJob cxt user feed scope job`: the action's messages are loaded
+once (`getFeedJobMessages`), the loop of the worker's scope runs from
+`cursorId_`, `feedBucketSize` recipients per bucket. Each bucket begins by
+re-reading the feed item (`getFeedChatItem`). `FJANew`, `FJAFileDescr` and
+`FJAUpdate` stop when the item is absent (removed by `APIClearChat`, which
+cascaded the job row) or has `itemDeleted` set (a deletion was issued; the
+deletion jobs that follow handle the instances created so far); the
+deletion actions stop only when the item is absent.
 
 A failing job is set to `DJSError` by the existing error path and, for
-`FJNew`, the feed item status to `CISSndError (SndErrOther err)` in the feed
-branch; jobs are not retried, as relay jobs are not; the user sends or
+`FJANew`, the feed item status to `CISSndError (SndErrOther err)` in the
+feed branch; jobs are not retried, as relay jobs are not; the user sends or
 deletes again.
 
-Bodies. One `body` per job, stored at creation as for group jobs
-(`createMsgDeliveryJob`): `msg_body` of the message for `FJNew`, `FJUpdate`
-and `FJDelete`; one job per JSON batch of the description parts
-(`batchSndMessagesJSON BMJson`, `maxEncodedMsgLength`) for `FJFileDescr`,
-with the batch's `message_ids`; `FJDelete CIDMInternal` and `FJDelete
-CIDMInternalMark` have an empty body and deliver nothing. Within a bucket
-the first request of the body sends `VRValue (Just 1) body`, the rest
-`VRRef 1` (`sharedBodyReqs`). Requests of one connection are adjacent
-(`toAgent`, `Internal.hs:2374`). `deliverMessagesB` compresses a body above
-`maxCompressedMsgLength` when any connection of the batch has PQ
-(`compressBodies`, `Internal.hs:2365`); the compressed body is then shared
-by every connection, which every peer decodes: `initialChatVersion` is 9
-(`Types.hs:2253`) and compression arrived in version 8 (`Protocol.hs:78`).
+Bodies. `FJANew`, `FJAUpdate` and `FJADeleteBroadcast` deliver the
+`msg_body` of their message; `FJAFileDescr` delivers the JSON batches of
+its parts (`batchSndMessagesJSON BMJson`, `maxEncodedMsgLength`), one
+request per batch; `FJADeleteInternal` and `FJADeleteMark` deliver
+nothing. Within a bucket the first request of a body sends
+`VRValue (Just i) body`, the rest `VRRef i` (`sharedBodyReqs`). Requests
+of one connection are adjacent (`toAgent`, `Internal.hs:2374`).
+`deliverMessagesB` compresses a body above `maxCompressedMsgLength` when
+any connection of the batch has PQ (`compressBodies`, `Internal.hs:2365`);
+the compressed body is then shared by every connection, which every peer
+decodes: `initialChatVersion` is 9 (`Types.hs:2253`) and compression
+arrived in version 8 (`Protocol.hs:78`).
 
 Guards for a bucket repeated after a restart: instances are not created
 for contacts in `getFeedInstanceContactIdsByRange`; requests are not built
@@ -598,51 +683,51 @@ exists once the agent accepted the message); the cursor is written last.
 A crash between instance creation and delivery is therefore resumed by
 delivery, and a crash between delivery and the cursor sends nothing twice.
 
-Contact bucket, one range read: `FJNew` reads
-`getFeedContactsByCursor` and `getContactsTagsByRange`; the other types read
-`getFeedContactInstancesByCursor` (contact and instance together, linked
-instances for `FJUpdate` and `FJDelete`, undeleted instances for
-`FJFileDescr`) and the tags. Then, in memory:
+`FWSContacts` bucket, one range read: `FJANew` reads
+`getFeedContactsByCursor` and `getContactsTagsByRange`; the other actions
+read `getFeedContactInstancesByCursor` (contact and instance together,
+linked instances for `FJAUpdate` and the deletions, undeleted instances for
+`FJAFileDescr`) and the tags. Then, in memory:
 
-1. Eligible for `FJNew`: `directOrUsed`, not `contactConnIncognito`,
-   `contactSendConn_` returns a connection. For the other types every
+1. Eligible for `FJANew`: `directOrUsed`, not `contactConnIncognito`,
+   `contactSendConn_` returns a connection. For the other actions every
    loaded instance is changed locally; the message is delivered only to
    contacts whose `contactSendConn_` returns a connection.
 2. `timed_ = sndContactCITimed False ct Nothing` (`Internal.hs:174`): the
    chat's own TTL, with nothing in the body.
-3. `FJNew`: instances first, one transaction: contacts in
+3. `FJANew`: instances first, one transaction: contacts in
    `getFeedInstanceContactIdsByRange` are skipped; for the rest
    `updateChatTsStats` and `createNewChatItem_` with `CDDirectSnd ct`, no
-   message id, the shared id, `CISndMsgContent` from the container,
-   `Just CIFLinked`, `Just feedItemId`, `timed_`; the items are built with
-   `mkChatItem_`.
+   message id, the shared id, `CISndMsgContent` from the container, the
+   feed item's quote row, `Just CIFLinked`, `Just feedItemId`, `timed_`; the
+   items are built with `mkChatItem_`.
 4. Delivery: one `deliverMessagesB` over
-   `(conn, MsgFlags {notification = hasNotification tag}, (vor, messageIds))`
+   `(conn, MsgFlags {notification = hasNotification tag}, (vor, msgIds))`
    for the connections of the bucket outside `getDeliveredContactIdsByRange`;
-   a `Left` result for `FJNew` sets the instance to `CISSndError` (statuses
+   a `Left` result for `FJANew` sets the instance to `CISSndError` (statuses
    by `executeMany`); `createContactPQSndItem` for contacts whose
    `pqSndEnabled` changed, as `sendDirectContactMessages`
    (`Internal.hs:2170`).
-5. `FJUpdate`: `updateFeedInstances` for the bucket range; the loaded
+5. `FJAUpdate`: `updateFeedInstances` for the bucket range; the loaded
    instances are updated in memory with `updatedChatItem`
    (`Store/Messages.hs:2564`) and emitted as `CEvtChatItemUpdated`.
-   `FJDelete mode`: `CIDMBroadcast` delivers `XMsgDel`, then deletes the
-   instances of contacts with `featureAllowed SCFFullDelete forUser ct` and
-   marks the others (the rule of `APIDeleteChatItem`, `Commands.hs:857`);
-   `CIDMInternal` deletes; `CIDMInternalMark` marks; marked items are
+   `FJADeleteBroadcast` delivers `XMsgDel`, then deletes the instances of
+   contacts with `featureAllowed SCFFullDelete forUser ct` and marks the
+   others (the rule of `APIDeleteChatItem`, `Commands.hs:857`);
+   `FJADeleteInternal` deletes; `FJADeleteMark` marks; marked items are
    updated in memory as `markDirectChatItemDeleted` does (:2665); the
    deletions are emitted as `CEvtChatItemsDeleted` with `byUser = True`.
-   `FJFileDescr`: no instance change.
+   `FJAFileDescr`: no instance change.
 6. Timed instances: `startProximateTimedItemThread`.
-7. `FJNew`: `CEvtNewChatItems user instances`.
-8. `updateDeliveryJobFeedCursor` with the last contact id read; after the
-   first bucket of `FJNew` the feed item status becomes
+7. `FJANew`: `CEvtNewChatItems user instances`.
+8. `updateFeedDeliveryJobCursor` with the last contact id read; after the
+   first bucket of `FJANew` the feed item status becomes
    `CISSndSent SSPPartial` (`updateFeedChatItemStatus`,
    `CEvtChatItemsStatusesUpdated`).
 9. Repeat while the bucket is full.
 
-Group bucket, after the contact loop, two range reads: `FJNew` reads
-`getFeedCustomerGroupsByCursor`; the other types read
+`FWSGroups` bucket, two range reads: `FJANew` reads
+`getFeedCustomerGroupsByCursor`; the other actions read
 `getFeedGroupInstancesByCursor`; both read `getCustomerGroupsMembersByRange` and
 the tags. Then, in memory, per group: skip `incognitoMembership`; require
 `memberCurrent membership && memberActive membership` and take
@@ -653,7 +738,7 @@ bucket's request list holds the broadcast body (shared as above) per member
 connection to send to. One `deliverMessagesB` for the bucket;
 `createPendingGroupMessage` by `executeMany` for pending members (the
 message row is the feed's; `sendPendingGroupMessages`, `Internal.hs:2683`,
-delivers it on connection); `FJNew`: instances with `CDGroupSnd g Nothing`,
+delivers it on connection); `FJANew`: instances with `CDGroupSnd g Nothing`,
 `updateChatTsStats` and `timed_ = sndGroupCITimed False g Nothing`, then
 `createMemberSndStatuses` from the per-group results; instance changes as
 for contacts; cursor by group id. The job sends no profile update
@@ -663,18 +748,22 @@ produces a proof per presentation, so one body cannot serve all groups; a
 pending profile update reaches the customer with the next ordinary message
 in that chat.
 
-Completion: `updateDeliveryJobStatus db jobId DJSComplete` (as the group
-branch, `Subscriber.hs:4161`); `FJNew` sets `CISSndSent SSPComplete` and
-emits `CEvtChatItemsStatusesUpdated` for the feed item; `FJDelete
-CIDMInternal` and `FJDelete CIDMBroadcast` then `deleteFeedChatItem` (its
-messages, versions and file) and emit `CEvtChatItemsDeleted` with the
-`CIDeleting` item and `toChatItem = Nothing`; the cascade removes the job
-row. Completed feed jobs are removed by `cleanupDeliveryJobs`
-(`Commands.hs:5315`) with the group jobs.
+Completion: under `withFeedLock`, `completeFeedJob db jobId feedItemId tag`
+(the lock serialises the two workers of the feed for this step: under
+Postgres read-committed, two concurrent completions could each see the
+other's job pending). When it returns True the job was the last of its
+event: `FJANew` sets `CISSndSent SSPComplete` and emits
+`CEvtChatItemsStatusesUpdated` for the feed item; `FJADeleteInternal` and
+`FJADeleteBroadcast` `deleteFeedChatItem` (its messages, versions and
+file) and emit `CEvtChatItemsDeleted` with the `CIDeleting` item and
+`toChatItem = Nothing`; the cascade removes the job rows. Completed feed
+jobs are removed by `cleanupDeliveryJobs` (`Commands.hs:5315`) with the
+group jobs.
 
-Jobs of one feed run in id order (`getNextDeliveryJob` takes the lowest
-pending id of the key), so per recipient `XMsgNew` precedes
-`XMsgFileDescr`, `XMsgUpdate` and `XMsgDel` on the connection.
+Jobs of one key run in id order (`getNextFeedDeliveryJob` takes the lowest
+pending id), and every recipient is in exactly one stream, so per recipient
+`XMsgNew` precedes `XMsgFileDescr`, `XMsgUpdate` and `XMsgDel` on the
+connection.
 
 ## Files
 
@@ -687,9 +776,8 @@ pending id of the key), so per recipient `XMsgNew` precedes
    `XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires}` events;
    `createFeedSndMessages sharedMsgId` with `FeedId feedId`;
    `insertChatItemMessage_` per part.
-2. `createMsgDeliveryJob db (DEFeed feedId) (DJSFeed feedItemId FJFileDescr) [] partIds batchBody`
-   per batch of `batchSndMessagesJSON`, and
-   `getDeliveryJobWorker True (DEFeed feedId, DWSFeed)`.
+2. `createFeedJobs db feedId feedItemId (FJAFileDescr partIds)` and the two
+   `getDeliveryJobWorker True` calls, as for `FJANew`.
 3. `updateCIFileStatus db user fileId CIFSSndComplete`,
    `xftpDeleteSndFileInternal`, `CEvtSndFileCompleteXFTP`, as the group case
    (:253-257).
@@ -711,9 +799,9 @@ description per relay, forwarded to all subscribers).
    (False for `CIDeleted` and `CIDeleting` items).
 3. `mc == oldMC` -> `CRChatItemNotChanged`.
 4. Message `XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing (Just True)`
-   via `createFeedSndMessages smId`, linked to the feed item; job
-   `createMsgDeliveryJob db (DEFeed feedId) (DJSFeed itemId FJUpdate) [] [msgId] msgBody`
-   and `getDeliveryJobWorker True (DEFeed feedId, DWSFeed)`.
+   via `createFeedSndMessages smId`, linked to the feed item; jobs
+   `createFeedJobs db feedId itemId (FJAUpdate msgId)` and the two
+   `getDeliveryJobWorker True` calls.
 5. Feed item: `addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)`;
    `updateFeedChatItem' db user feedId ci (CISndMsgContent mc) True`;
    response `CRChatItemUpdated`. The job records no instance versions; the
@@ -726,19 +814,28 @@ description per relay, forwarded to all subscribers).
 :4966); `CIDMHistory` -> `CEInvalidChatItemDelete`; per item:
 
 1. An item with `itemDeleted = Just (CIDeleted _)` -> `CEInvalidChatItemDelete`.
-   `CIDMBroadcast` on an item without `itemDeleted`: `assertDeletable` (:891)
-   and the message `XMsgDel smId Nothing Nothing False` via
-   `createFeedSndMessages smId`, linked to the feed item. On a `CIDeleting`
-   item the mode of the earlier delete is kept and no message is created:
-   the job is enqueued again.
-2. Job `createMsgDeliveryJob db (DEFeed feedId) (DJSFeed itemId (FJDelete mode)) [] msgIds body`
-   (`msgIds` and `body` from the `XMsgDel` message for `CIDMBroadcast`,
-   `[]` and empty otherwise) and `getDeliveryJobWorker True (DEFeed feedId, DWSFeed)`.
+   The action: `CIDMBroadcast` on an item without `itemDeleted` ->
+   `assertDeletable` (:891), the message `XMsgDel smId Nothing Nothing False`
+   via `createFeedSndMessages smId` linked to the feed item, and
+   `FJADeleteBroadcast msgId`; `CIDMInternal` -> `FJADeleteInternal`;
+   `CIDMInternalMark` -> `FJADeleteMark`. On a `CIDeleting` item the mode
+   of the earlier delete is kept and no message is created: the jobs are
+   enqueued again with the action of the earlier delete (`FJADeleteBroadcast`
+   with the `XMsgDel` message already linked to the item).
+2. Jobs `createFeedJobs db feedId itemId action` and the two
+   `getDeliveryJobWorker True` calls.
 3. `CIDMInternalMark`: `markFeedChatItemDeleted` with `CIDeleted`
    (`toChatItem = Just` the marked item). `CIDMInternal` and `CIDMBroadcast`:
    `markFeedChatItemDeleted` with `CIDeleting` (`toChatItem = Just` the
-   item in `CIDeleting`); the job removes the item at the end.
+   item in `CIDeleting`); the last job of the event removes the item.
 4. Response `CRChatItemsDeleted user deletions True False`.
+
+A local deletion is a job for two reasons: it is `O(instances)` work —
+`chat_items` has 41 indexes, so one statement over 200k instances holds
+the write lock for seconds in one transaction — and it must run after the
+item's pending `FJANew`, `FJAFileDescr` and `FJAUpdate` jobs in each
+stream, or a synchronous deletion would cascade their rows away and fail a
+running bucket on the `feed_item_id` FK, stopping the send half-way.
 
 ## Per-chat editing and deletion of an instance
 
@@ -907,7 +1004,7 @@ unchanged.
     creates no duplicate instance and sends nothing twice (the recipient
     receives one message); a job interrupted between instance creation and
     delivery delivers on resume.
-12. A delete issued while `FJNew` runs stops the send; the recipients
+12. A delete issued while `FJANew` runs stops the send; the recipients
     reached so far receive `XMsgDel`; the others receive nothing.
 13. A group member connection error (`MERR`) marks the group instance's
     member status (`updateGroupItemsErrorStatus`).
