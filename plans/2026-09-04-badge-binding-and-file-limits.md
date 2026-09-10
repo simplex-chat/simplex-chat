@@ -50,7 +50,7 @@ Two new columns on `files`, a new table `rcv_badge_proofs` holding proofs, and t
 
 **Member key.** The Ed25519 key a member holds for one group. It is created when first needed — at group creation on this branch, or by `createUserMemberKey` before the first signed message — and the public key is sent in introductions and in `XInfo`.
 
-**Default limit.** `maxFileSize`, 1GB. A supporter badge raises it to 2GB, a legend badge to 5GB (`maxXFTPFileSize`, `Badges.hs:201`). The size above which a proof is required is `ChatConfig.maxFileSizeNoBadge`, `maxFileSize` in production and lowered in tests.
+**Default limit.** `maxFileSize`, 1GB. A supporter badge raises it to 2GB, a legend badge to 5GB (`maxXFTPFileSize`, `Badges.hs:201`). The three sizes are `FileSizeLimits` in `ChatConfig`, `defaultFileSizeLimits` in production and lowered in tests. The default limit is also the size above which a proof is required.
 
 ## 1. Presentation headers
 
@@ -131,7 +131,7 @@ When two p2p members connect, each sends `XGrpMemInfo` with its group profile. I
 
 `checkSndFile` (`Commands.hs:3973`) compares the file size with the sender's limit and is called from the two content send paths only, with `Nothing` for an incognito send (`:4773`, `:4858`). `APIUploadStandaloneFile` (`:3628`) checks the hard limit and never the badge.
 
-The comparison stays where it is, with one change: the limit at send counts a badge as active until one day after its expiry, instead of the seven days `maxXFTPFileSize` allows a receiver. A new function in `Badges.hs` computes the send limit with that rule, and the apps use the same rule for the limit they show on the compose screen (section 11), so the compose screen never offers a size the send refuses.
+The comparison stays where it is, with one change: the limit at send counts a badge as active until one day after its expiry, instead of the seven days `maxXFTPFileSize` allows a receiver. `maxSndXFTPFileSize` in `Badges.hs` computes the send limit with that rule, from `FileSizeLimits` and the current time, and the apps use the same rule for the limit they show on the compose screen (section 11), so the compose screen never offers a size the send refuses.
 
 Standalone uploads do not apply badge limits. `APIUploadStandaloneFile` keeps the hard limit.
 

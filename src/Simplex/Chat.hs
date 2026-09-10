@@ -28,7 +28,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime, nominalDay)
-import Simplex.Chat.Badges (badgeServerCredential)
+import Simplex.Chat.Badges (badgeServerCredential, defaultFileSizeLimits)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
@@ -42,7 +42,6 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Util (shuffle)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
-import Simplex.FileTransfer.Description (maxFileSize)
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), allRoles, createAgentStore, defaultAgentConfig, presetServerCfg)
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
@@ -107,7 +106,7 @@ defaultChatConfig =
       xftpDescrPartSize = 14000,
       inlineFiles = defaultInlineFilesConfig,
       autoAcceptFileSize = 0,
-      maxFileSizeNoBadge = maxFileSize,
+      fileSizeLimits = defaultFileSizeLimits,
       showReactions = False,
       showFullLinks = False,
       showReceipts = False,

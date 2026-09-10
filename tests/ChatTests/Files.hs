@@ -7,7 +7,7 @@ module ChatTests.Files where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKeys)
+import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, issueTestBadgeType, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -16,6 +16,8 @@ import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Network.HTTP.Types.URI (urlEncode)
+import Data.Time.Clock (addUTCTime, getCurrentTime, nominalDay)
+import Simplex.Chat.Badges (BadgeType (..), FileSizeLimits (..), defaultFileSizeLimits)
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Library.Internal (roundedFDCount)
 import Simplex.Chat.Mobile.File
@@ -51,6 +53,9 @@ chatFileTests = do
     it "send and receive file with badge proof" testXFTPFileBadgeProof
     it "send and receive file with badge proof in group" testXFTPGroupFileBadgeProof
     it "file above the limit without badge proof is not accepted" testXFTPFileNoBadgeProof
+    it "file above the limit the badge allows is not accepted" testXFTPFileBadgeAboveLimit
+    it "sending file above the limit the badge allows fails" testXFTPSndFileBadgeLimit
+    it "sending file with a badge expired past the send grace fails" testXFTPSndFileBadgeGrace
     it "delete uploaded file" testXFTPDeleteUploadedFile
     it "delete uploaded file in group" testXFTPDeleteUploadedFileGroup
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
@@ -756,7 +761,10 @@ testXFTPGroupFileTransfer =
       dest2 `shouldBe` src
 
 badgeFileCfg :: BBSPublicKey -> ChatConfig
-badgeFileCfg pk = testCfg {badgePublicKeys = testBadgeKeys pk, maxFileSizeNoBadge = 100000}
+badgeFileCfg pk = badgeFileCfgLimits pk FileSizeLimits {noBadge = 100000, supporter = 300000, legend = 400000}
+
+badgeFileCfgLimits :: BBSPublicKey -> FileSizeLimits -> ChatConfig
+badgeFileCfgLimits pk lims = testCfg {badgePublicKeys = testBadgeKeys pk, fileSizeLimits = lims}
 
 testXFTPFileBadgeProof :: HasCallStack => TestParams -> IO ()
 testXFTPFileBadgeProof ps = do
@@ -818,11 +826,9 @@ testXFTPGroupFileBadgeProof ps = do
       dest `shouldBe` src
 
 testXFTPFileNoBadgeProof :: HasCallStack => TestParams -> IO ()
-testXFTPFileNoBadgeProof ps = do
-  Right (pk, _) <- bbsKeyGen
-  testChatCfg2 (badgeFileCfg pk) aliceProfile bobProfile test ps
-  where
-    test alice bob = withXFTPServer $ do
+testXFTPFileNoBadgeProof ps =
+  withNewTestChatCfg ps sndCfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps rcvCfg "bob" bobProfile $ \bob -> withXFTPServer $ do
       connectUsers alice bob
 
       alice #> "/f @bob ./tests/fixtures/test.pdf"
@@ -831,6 +837,64 @@ testXFTPFileNoBadgeProof ps = do
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       bob ##> "/fr 1 ./tests/tmp"
       bob <## "file size exceeds the limit: test.pdf"
+  where
+    sndCfg = testCfg {fileSizeLimits = defaultFileSizeLimits {noBadge = 1000000}}
+    rcvCfg = testCfg {fileSizeLimits = defaultFileSizeLimits {noBadge = 100000}}
+
+testXFTPFileBadgeAboveLimit :: HasCallStack => TestParams -> IO ()
+testXFTPFileBadgeAboveLimit ps = do
+  Right (pk, sk) <- bbsKeyGen
+  withNewTestChatCfg ps (badgeFileCfg pk) "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg ps (rcvCfg pk) "bob" bobProfile $ \bob -> withXFTPServer $ do
+      connectUsers alice bob
+      addTestBadge alice =<< issueTestBadge sk futureDate
+
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice *> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "file size exceeds the limit: test.pdf"
+  where
+    rcvCfg pk = badgeFileCfgLimits pk FileSizeLimits {noBadge = 100000, supporter = 150000, legend = 400000}
+
+testXFTPSndFileBadgeLimit :: HasCallStack => TestParams -> IO ()
+testXFTPSndFileBadgeLimit ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (cfg pk) aliceProfile bobProfile (test sk) ps
+  where
+    cfg pk = badgeFileCfgLimits pk FileSizeLimits {noBadge = 100000, supporter = 150000, legend = 300000}
+    test sk alice bob = withXFTPServer $ do
+      connectUsers alice bob
+
+      addTestBadge alice =<< issueTestBadgeType sk BTSupporter futureDate
+      alice ##> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "file size exceeds the limit: ./tests/fixtures/test.pdf"
+
+      addTestBadge alice =<< issueTestBadgeType sk BTLegend futureDate
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice *> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+testXFTPSndFileBadgeGrace :: HasCallStack => TestParams -> IO ()
+testXFTPSndFileBadgeGrace ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (badgeFileCfg pk) aliceProfile bobProfile (test sk) ps
+  where
+    test sk alice bob = withXFTPServer $ do
+      connectUsers alice bob
+      now <- getCurrentTime
+
+      addTestBadge alice =<< issueTestBadge sk (addUTCTime (-3 * nominalDay) now)
+      alice ##> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "file size exceeds the limit: ./tests/fixtures/test.pdf"
+
+      addTestBadge alice =<< issueTestBadge sk (addUTCTime (-3600) now)
+      alice #> "/f @bob ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice *> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
 
 testXFTPDeleteUploadedFile :: HasCallStack => TestParams -> IO ()
 testXFTPDeleteUploadedFile =

@@ -56,7 +56,7 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxSndXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -3975,7 +3975,9 @@ processChatCommand cxt nm = \case
       fsFilePath <- lift $ toFSFilePath f
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
       fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cfArgs
-      when (fromInteger fileSize > maxXFTPFileSize sndBadge) $ throwChatError $ CEFileSize f
+      lims <- asks $ fileSizeLimits . config
+      now <- liftIO getCurrentTime
+      when (fromInteger fileSize > maxSndXFTPFileSize lims now sndBadge) $ throwChatError $ CEFileSize f
       pure fileSize
     updateProfile :: User -> Profile -> CM ChatResponse
     updateProfile user p' = updateProfile_ user p' True $ withFastStore $ \db -> updateUserProfile db user p'

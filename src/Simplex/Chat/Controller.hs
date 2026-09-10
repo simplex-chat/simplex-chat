@@ -83,7 +83,7 @@ import Simplex.Messaging.Agent.Store.DB (SQLError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Chat.Badges (BadgeCredential)
+import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -152,7 +152,7 @@ data ChatConfig = ChatConfig
     xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
     autoAcceptFileSize :: Integer,
-    maxFileSizeNoBadge :: Int64,
+    fileSizeLimits :: FileSizeLimits,
     showReactions :: Bool,
     showFullLinks :: Bool,
     showReceipts :: Bool,

@@ -53,7 +53,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, maxXFTPFileSize, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), FileSizeLimits (..), LocalBadge (..), badgeProof, maxXFTPFileSize, mkBadgeStatus, verifyBadge)
 import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -452,7 +452,7 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
   pure (fInv, ciFile, ft)
 
 fileNeedsBadge :: Integer -> CM Bool
-fileNeedsBadge fileSize = (fileSize >) . toInteger <$> asks (maxFileSizeNoBadge . config)
+fileNeedsBadge fileSize = (fileSize >) . toInteger . noBadge <$> asks (fileSizeLimits . config)
 
 sndFileBadge :: User -> Integer -> Maybe ContactOrGroup -> CM (Maybe BadgeProof)
 sndFileBadge user fileSize contactOrGroup_ =
@@ -2344,15 +2344,15 @@ badgeProofStatus headerAccepted badge@BadgeProof {presHeader = BBSPresHeader phB
 
 rcvFileInvProhibited :: FileSender -> FileInvitation -> CM (Maybe FileProhibited)
 rcvFileInvProhibited sender FileInvitation {fileSize, fileBadge} = do
-  maxNoBadge <- asks $ maxFileSizeNoBadge . config
-  if fileSize <= toInteger maxNoBadge
+  lims <- asks $ fileSizeLimits . config
+  if fileSize <= toInteger (noBadge lims)
     then pure Nothing
     else case fileBadge of
-      Nothing -> pure $ Just FileProhibited {maxSize = maxNoBadge, badgeStatus = Nothing}
+      Nothing -> pure $ Just FileProhibited {maxSize = noBadge lims, badgeStatus = Nothing}
       Just badge -> do
         bindingAccepted <- fileSenderBinding sender
         st <- badgeProofStatus (headerAccepted bindingAccepted) badge
-        let maxSize = maxXFTPFileSize $ Just $ PeerBadge badge st
+        let maxSize = maxXFTPFileSize lims $ Just $ PeerBadge badge st
         pure $
           if fileSize <= toInteger maxSize
             then Nothing

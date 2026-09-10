@@ -25,7 +25,10 @@ module Simplex.Chat.Badges
     BBSPublicKeyStr (..),
     localBadgeInfo,
     localBadgeStatus,
+    FileSizeLimits (..),
+    defaultFileSizeLimits,
     maxXFTPFileSize,
+    maxSndXFTPFileSize,
     badgeServerCredential,
     maxFileSizeSupporter,
     maxFileSizeLegend,
@@ -215,12 +218,34 @@ badgeServerCredential = \case
     Just $ EntitlementCredential (fromIntegral idx) (MasterKey mk) (Entitlement badgeExpiry (textEncode badgeType) badgeExtra) sig
   _ -> Nothing
 
-maxXFTPFileSize :: Maybe LocalBadge -> Int64
-maxXFTPFileSize = \case
-  Just b | localBadgeStatus b == BSActive -> case badgeType (localBadgeInfo b) of
-    BTLegend -> maxFileSizeLegend
-    _ -> maxFileSizeSupporter
-  _ -> maxFileSize
+data FileSizeLimits = FileSizeLimits
+  { noBadge :: Int64,
+    supporter :: Int64,
+    legend :: Int64
+  }
+  deriving (Eq, Show)
+
+defaultFileSizeLimits :: FileSizeLimits
+defaultFileSizeLimits = FileSizeLimits {noBadge = maxFileSize, supporter = maxFileSizeSupporter, legend = maxFileSizeLegend}
+
+-- a badge raises the size limit at send for this long after its expiry, shorter than badgeGraceInterval so the receiver still accepts the size
+badgeSndGraceInterval :: NominalDiffTime
+badgeSndGraceInterval = nominalDay
+
+badgeFileSize :: FileSizeLimits -> LocalBadge -> Int64
+badgeFileSize FileSizeLimits {supporter, legend} b = case badgeType (localBadgeInfo b) of
+  BTLegend -> legend
+  _ -> supporter
+
+maxXFTPFileSize :: FileSizeLimits -> Maybe LocalBadge -> Int64
+maxXFTPFileSize lims = \case
+  Just b | localBadgeStatus b == BSActive -> badgeFileSize lims b
+  _ -> noBadge lims
+
+maxSndXFTPFileSize :: FileSizeLimits -> UTCTime -> Maybe LocalBadge -> Int64
+maxSndXFTPFileSize lims now = \case
+  Just b | localBadgeStatus b == BSActive && addUTCTime badgeSndGraceInterval (badgeExpiry (localBadgeInfo b)) >= now -> badgeFileSize lims b
+  _ -> noBadge lims
 
 -- Presentation header: a tag char + payload. PHTest is unbound - a fresh random nonce per
 -- presentation, not bound to any context; the 'T' tag marks it so master rejects it.
