@@ -174,7 +174,11 @@ body {
    and drop the page's own wash so the flat background the site hands in shows through cleanly. The
    site carries its own footer below the frame, so ours would only double the contact link and leave
    its accent line at the frame's edge — hide it embedded. */
-.embedded body { padding-top: 54px; background-image: none; }
+/* Standalone, the body fills the viewport so the footer sits at the bottom; embedded, the host sizes
+   the frame to the body, so a `100vh` floor would make the body's height depend on the frame height
+   the host derived from it — a loop that ratchets the frame taller and drops the site's footer as the
+   zoom shifts. Drop the floor so the body is exactly its content. */
+.embedded body { padding-top: 54px; background-image: none; min-height: 0; }
 .embedded footer { display: none; }
 
 /* Embedded in the site's dark theme, the standalone grey surfaces read as off against the navy the
