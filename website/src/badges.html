@@ -137,6 +137,7 @@ templateEngineOverride: njk
             // from it, so neither channel can be driven by another frame.
             var APP = "https://badges.simplex.chat";
             var frame = document.getElementById("badges-frame");
+            var minHeight = 0; // the initial screen's height, kept as the frame's floor once known
 
             function siteTheme() {
                 try { return localStorage.getItem("theme") || "system"; } catch (e) { return "system"; }
@@ -174,7 +175,11 @@ templateEngineOverride: njk
                 if (e.data.type === "simplex-theme") { applySiteTheme(e.data.theme); postColors(); }
                 // The frame reports its content height; size it so the site's page scrolls, not the frame.
                 if (e.data.type === "simplex-height" && typeof e.data.height === "number") {
-                    frame.style.height = Math.max(0, e.data.height) + "px";
+                    var h = Math.max(0, e.data.height);
+                    // The first height is the initial screen; keep it as a floor so a shorter later
+                    // screen never collapses the frame below where the buyer started.
+                    if (minHeight === 0) { minHeight = h; frame.style.minHeight = h + "px"; }
+                    frame.style.height = h + "px";
                     reveal();
                 }
             });
