@@ -4772,8 +4772,9 @@ processChatCommand cxt nm = \case
               forM cmrs $ \(ComposedMessage {fileSource = file_}, _, _, _) -> case file_ of
                 Just file -> do
                   let User {profile = LocalProfile {localBadge}} = user
-                  fileSize <- checkSndFile (if contactConnIncognito ct then Nothing else localBadge) file
-                  binding_ <- ifM (fileNeedsBadge fileSize) (sndDirectChatBinding ct) (pure Nothing)
+                      incognito = contactConnIncognito ct
+                  fileSize <- checkSndFile (if incognito then Nothing else localBadge) file
+                  binding_ <- if incognito then pure Nothing else ifM (fileNeedsBadge fileSize) (directChatBinding ct) (pure Nothing)
                   (fInv, ciFile) <- xftpSndFileTransfer user file fileSize 1 (CGContact ct) binding_
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)

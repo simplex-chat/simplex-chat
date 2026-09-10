@@ -36,7 +36,7 @@ import qualified Data.IntSet as IS
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
-import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
@@ -236,8 +236,8 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
                       conn@Connection {connId} <- liftEither $ contactSendConn_ ct
                       let FileTransferMeta {fileSize} = ft
-                      binding_ <- ifM (fileNeedsBadge fileSize) (sndDirectChatBinding ct) (pure Nothing)
-                      descrBadge <- sndDescrBadge user binding_ ft rfd fileExpires
+                      binding_ <- if contactConnIncognito ct then pure Nothing else ifM (fileNeedsBadge fileSize) (directChatBinding ct) (pure Nothing)
+                      descrBadge <- pure binding_ $>>= \b -> sndBadgeProof user $ descrPresHeader b fileSize sndDescr fileExpires
                       sendFileDescriptions (ConnectionId connId) ((conn, sft, fileDescrText rfd) :| []) sharedMsgId fileExpires descrBadge >>= \case
                         Just rs -> case L.last rs of
                           Right ([msgDeliveryId], _) ->
@@ -254,7 +254,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                           FileTransferMeta {fileSize} = ft
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
                       binding_ <- ifM (fileNeedsBadge fileSize) (sndGroupChatBinding g showGroupAsSender) (pure Nothing)
-                      descrBadge <- pure (listToMaybe rfds) $>>= \rfd -> sndDescrBadge user binding_ ft rfd fileExpires
+                      descrBadge <- pure binding_ $>>= \b -> sndBadgeProof user $ descrPresHeader b fileSize sndDescr fileExpires
                       forM_ (L.nonEmpty rfdsMemberFTs) $ \rfdsMemberFTs' ->
                         sendFileDescriptions (GroupId groupId) rfdsMemberFTs' sharedMsgId fileExpires descrBadge
                       ci' <- withStore $ \db -> do
@@ -1925,7 +1925,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         fileId <- getFileIdBySharedMsgId db userId contactId sharedMsgId
         aci <- getChatItemByFileId db cxt user fileId
         pure (fileId, aci)
-      binding_ <- if isJust fileBadge then rcvDirectChatBinding ct else pure Nothing
+      binding_ <- if isJust fileBadge then directChatBinding ct else pure Nothing
       processFDMessage binding_ fileId aci fileDescr fileExpires fileBadge
 
     groupMessageFileDescription :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> FileDescr -> Maybe UTCTime -> Maybe BadgeProof -> CM (Maybe DeliveryTaskContext)
@@ -1983,12 +1983,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         if expired
           then pure False
           else do
-            FD.ValidFileDescription fd <- parseFileDescription @'FRecipient fileDescrText
-            st <- badgeProofStatus (descrPresHeader $ FD.sharedDescriptionHash fd) badge
+            vfd <- parseFileDescription @'FRecipient fileDescrText
+            st <- badgeProofStatus ((\b -> descrPresHeader b fileSize vfd fileExpires) <$> binding_) badge
             pure $ st == BSActive
-      where
-        descrPresHeader descrHash =
-          (\chatBinding -> PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash, fileExpires}) <$> binding_
 
     processFileInvitation :: Maybe FileInvitation -> MsgContent -> (FileInvitation -> CM (Maybe FileProhibited)) -> (DB.Connection -> FileInvitation -> Maybe FileProhibited -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer) -> CM (Maybe (RcvFileTransfer, CIFile 'MDRcv))
     processFileInvitation fInv_ mc fileProhibited_ createRcvFT = forM fInv_ $ \fInv -> do
