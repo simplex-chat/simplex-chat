@@ -5590,7 +5590,7 @@ chatCommandP =
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/_wallet create" $> APIWalletCreate,
       "/_wallet import " *> (APIWalletImport <$> textP),
-      "/_wallet export " *> (APIWalletExportDerivedSecret <$> A.decimal <* A.space <*> A.decimal),
+      "/_wallet export " *> (APIWalletExportDerivedSecret <$> keyIndexP <* A.space <*> keyIndexP),
       "/_wallet export" $> APIWalletExportSeedMnemonic,
       "/_wallet delete" $> APIWalletDelete,
       "/_wallet" $> APIWallet,
@@ -6134,6 +6134,10 @@ chatCommandP =
     quotedP = safeDecodeUtf8 <$> (A.char '"' *> A.takeTill (== '"') <* A.char '"')
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
+    -- BIP-32 hardens at 2^31, and Word32 would wrap
+    keyIndexP = do
+      i <- A.decimal :: Parser Integer
+      if i < 0x80000000 then pure (fromIntegral i) else fail "key index too large"
 
 displayNameP :: Parser Text
 displayNameP = safeDecodeUtf8 <$> displayNameP_

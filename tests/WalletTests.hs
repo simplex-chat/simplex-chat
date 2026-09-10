@@ -126,6 +126,9 @@ testWalletExportDerivedSecret ps = withNewTestChat ps "alice" aliceProfile $ \al
   _ <- accountRows alice "alice, active" 0
   alice ##> "/_wallet export 0 0"
   alice <## "m/44'/60'/0'/0/0  0x9858EfFD232B4033E47d90003D41EC34EcaEda94  0x1ab42cc412b618bdea3a599e3c9bae199ebf030895b039e9db1e30dafb12b727"
+  -- an index BIP-32 cannot harden is rejected, not wrapped into another account
+  alice ##> "/_wallet export 4294967296 0"
+  alice <## "bad chat command: Failed reading: empty"
   -- any path derives, whether or not a profile holds that account
   alice ##> "/_wallet export 3 7"
   l <- getTermLine alice
