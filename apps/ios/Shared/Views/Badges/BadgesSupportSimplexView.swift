@@ -33,7 +33,9 @@ struct BadgesSupportSimplexView: View {
         // this profile having no badge, so it is held here and falls back to the support screen
         if badgeStateUnavailable { return .support }
         guard badgeModel.userId == userId else { return .loading }
-        if let badgeState = badgeModel.badgeState { return .badge(badgeState) }
+        // an ended badge routes to Support because core has cleared the profile badge and accepts a
+        // code again, while the purchase row the state is read from survives retirement
+        if let badgeState = badgeModel.badgeState, !badgeState.ended { return .badge(badgeState) }
         return .support
     }
 
@@ -174,7 +176,6 @@ struct BadgesSupportSimplexView: View {
 struct BadgesYourBadgeView: View {
     @EnvironmentObject var theme: AppTheme
     let badgeState: BadgeState
-    @State private var redeemCodeActive = false
 
     private var title: LocalizedStringKey {
         badgeState.ended ? "Support ended" : "Your badge"
@@ -194,10 +195,6 @@ struct BadgesYourBadgeView: View {
                     BadgeSummary(badgeState: badgeState)
 
                     Spacer(minLength: 0)
-
-                    addMonthsButton()
-                        .padding(.vertical, 10)
-                        .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
                 .padding(.horizontal, 25)
                 .padding(.top, 8)
@@ -207,26 +204,6 @@ struct BadgesYourBadgeView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private func addMonthsButton() -> some View {
-        ZStack {
-            Button {
-                redeemCodeActive = true
-            } label: {
-                Text("Add more months")
-            }
-            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
-
-            NavigationLink(isActive: $redeemCodeActive) {
-                BadgesRedeemCodeView()
-                    .modifier(ThemedBackground())
-            } label: {
-                EmptyView()
-            }
-            .frame(width: 1, height: 1)
-            .hidden()
-        }
     }
 }
 

@@ -47,7 +47,6 @@ struct BadgesRedeemCodeView: View {
     @State private var redeemed: RedeemedBadge? = nil
 
     private struct RedeemedBadge {
-        var newBadge: Bool
         var badgeState: BadgeState?
     }
 
@@ -73,8 +72,7 @@ struct BadgesRedeemCodeView: View {
 
     @ViewBuilder
     private func redeemedContent(_ redeemed: RedeemedBadge) -> some View {
-        let title: LocalizedStringKey = redeemed.newBadge ? "Badge added" : "Months added"
-        Text(title)
+        Text("Badge added")
             .font(.largeTitle)
             .bold()
             .foregroundColor(theme.colors.primary)
@@ -90,19 +88,21 @@ struct BadgesRedeemCodeView: View {
 
     @ViewBuilder
     private func entryContent(_ g: GeometryProxy) -> some View {
-        Text("Redeem badge code")
+        Text("Redeem code")
             .font(.largeTitle)
             .bold()
             .foregroundColor(theme.colors.primary)
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
 
-        Text("Enter the code you received when you supported SimpleX. The badge is added to the profile you are using now.")
+        Text("Paste the code from your receipt.")
             .font(.body)
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
 
         codeField()
+
+        pasteButton()
 
         if let failure {
             Text(failureMessage(failure))
@@ -126,15 +126,29 @@ struct BadgesRedeemCodeView: View {
             .autocorrectionDisabled(true)
             .textInputAutocapitalization(.characters)
             .disabled(submitting)
-            .padding(12)
-            .background(Color(uiColor: .secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .onChange(of: code) { c in
-                let formatted = formatBadgeCodeInput(c)
-                if formatted != c { code = formatted }
-                canonicalCode = parseBadgeCode(formatted)
-                failure = nil
-            }
+            .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
+            .background(Color(.tertiarySystemFill))
+            .cornerRadius(10.0)
+            .onChange(of: code) { applyCodeInput($0) }
+    }
+
+    private func pasteButton() -> some View {
+        Button {
+            if let pasted = UIPasteboard.general.string { applyCodeInput(pasted) }
+        } label: {
+            Text("Paste")
+                .font(.body)
+                .fontWeight(.medium)
+                .foregroundColor(theme.colors.primary)
+        }
+        .disabled(submitting)
+    }
+
+    private func applyCodeInput(_ s: String) {
+        let formatted = formatBadgeCodeInput(s)
+        if formatted != code { code = formatted }
+        canonicalCode = parseBadgeCode(formatted)
+        failure = nil
     }
 
     private func submitButton() -> some View {
@@ -154,7 +168,7 @@ struct BadgesRedeemCodeView: View {
         failure = nil
         Task {
             do {
-                let (redeemedUser, newBadge) = try await apiRedeemBadgeCode(user.userId, sending)
+                let redeemedUser = try await apiRedeemBadgeCode(user.userId, sending)
                 let badgeState = try? await apiGetBadgeState(user.userId)
                 await MainActor.run {
                     submitting = false
@@ -164,9 +178,15 @@ struct BadgesRedeemCodeView: View {
                     if let badgeState {
                         BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
                     }
-                    redeemed = RedeemedBadge(newBadge: newBadge, badgeState: badgeState)
-                    code = ""
-                    canonicalCode = nil
+                    // a redemption that leaves support ended added nothing: core accepts a code
+                    // already redeemed against this profile and answers with the badge it bought
+                    if let badgeState, badgeState.ended {
+                        failure = .codeUsed
+                    } else {
+                        redeemed = RedeemedBadge(badgeState: badgeState)
+                        code = ""
+                        canonicalCode = nil
+                    }
                 }
             } catch let error {
                 let redeemError = error as? BadgeRedeemError ?? .unknown

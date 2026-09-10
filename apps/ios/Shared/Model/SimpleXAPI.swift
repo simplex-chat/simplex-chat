@@ -2250,12 +2250,12 @@ private func badgeServiceError(_ tag: String) -> BadgeRedeemError {
 
 // log: false because the code is a bearer secret until it is redeemed - it is in the command, and a
 // service response echoed into an error message would carry it into the terminal with the response.
-func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: User, newBadge: Bool) {
+func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> User {
     let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiRedeemBadgeCode(userId: userId, code: code), log: false)
     switch r {
-    // redeemedBadge is dropped: for a top-up it is the newly issued credential, while the profile
-    // still carries the badge contacts see, and "shown on your profile" must render that one
-    case let .result(.badgeRedeemed(user, _, newBadge)): return (user, newBadge)
+    // only the user: its profile carries the badge to show, redeemedBadge is the credential rather
+    // than what is on the profile, and newBadge is false only for a replay, which adds nothing
+    case let .result(.badgeRedeemed(user, _, _)): return user
     case let .error(e): throw badgeRedeemError(e)
     default:
         // the response type alone - it names a case or a JSON key, never the service's message
