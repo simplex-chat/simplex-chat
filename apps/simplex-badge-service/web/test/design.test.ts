@@ -144,9 +144,8 @@ designTest("design: the content column is the mockups' 560px, and the gutter is 
   assert.equal(decl("#app", "max-width"), "560px");
   assert.equal(decl("#app", "margin"), "0 auto", "and it is centred");
   assert.equal(decl("footer", "max-width"), "560px", "the footer rule spans the same column");
-  // the fixed navbar's height on top, then the side gutter: the column keeps its width, and clears
-  // the bar. Any three-value `<top> <side> 0` with a non-zero side holds the gutter.
-  assert.match(decl("body", "padding") ?? "", /^\d+px \d+px 0$/, "top clears the navbar, the sides are the gutter");
+  // just the side gutter: the chrome-bar sits in the flow, so the body needs no top pad.
+  assert.match(decl("body", "padding") ?? "", /^0 \d+px$/, "the gutter is the sides, and nothing on top");
   const panelPadding = decl(".panel", "padding") ?? "";
   assert.ok(/^\d+px 0( \d+px)?$/.test(panelPadding),
     `a panel adds no horizontal padding, and got "${panelPadding}"`);
@@ -580,17 +579,9 @@ designTest("design: the wordmark is the header's, themed and precachable", () =>
 function testChrome(over: Partial<Parameters<typeof screens.chrome>[0]> = {}): ReturnType<typeof screens.chrome> {
   return screens.chrome({
     onNewPurchase: () => {}, onHistory: () => {},
-    theme: "system", onTheme: () => {}, onToggle: () => {}, embedded: false, ...over,
+    theme: "system", onTheme: () => {}, onToggle: () => {}, ...over,
   });
 }
-
-designTest("design: embedded, the wordmark leaves the frame for the site's own home", () => {
-  const bar = render(testChrome({ embedded: true }).node);
-  const brand = bar.all("a.brand")[0]!;
-  assert.equal(brand.getAttribute("href"), "https://simplex.chat/", "the wordmark points at the site");
-  assert.equal(brand.getAttribute("target"), "_top", "and opens on the top window, not inside the frame");
-  assert.equal(brand.getAttribute("rel"), "noopener");
-});
 
 designTest("design: the chrome is a wordmark home link and a menu, and holds no order", () => {
   let started = 0;

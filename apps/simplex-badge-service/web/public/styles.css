@@ -152,9 +152,9 @@ html { scrollbar-gutter: stable; }
 
 body {
   margin: 0;
-  /* Side gutter, so `#app` is exactly the 560px content column and nothing inside it has to
-     subtract padding to reach that width. The top pad clears the fixed navbar. */
-  padding: 54px 20px 0;
+  /* The gutter is here, so `#app` is exactly the 560px content column and
+     nothing inside it has to subtract padding to reach that width. */
+  padding: 0 20px;
   min-height: 100vh;
   background: var(--bg);
   /* Fixed, so the wash does not tile or scroll away on a long screen. */
@@ -172,50 +172,19 @@ body {
 
 /* ------------------------------------------------------------------- chrome */
 
-/* The site's own navbar, copied: a fixed bar across the top of the page, the wordmark on the left
-   and the controls on the right. `body` pads its own top by the bar's height so the column clears
-   it. Embedded, the site hides its navbar and this is the one the buyer sees. */
-.sb-navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 54px;
-  z-index: 50000;
+/* The wordmark on the left, and on the right a circular icon button holding the
+   hamburger. It spans the page rather than the 560 column, so the column reads
+   as content inside a site rather than as the whole site. */
+.chrome-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
-  padding: 0 20px;
-  /* The site's bar is transparent over a hero; this page has none, so the bar takes the page ground
-     and content scrolls cleanly under it rather than showing through. */
-  background: var(--bg);
+  min-height: 56px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 8px 4px;
 }
-
-/* the controls on the right: the menu (our burger) then the site's sun/moon switch, in that
-   order, as the answer asked. `margin-left: auto` carries them to the far edge. */
-.right-links {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-/* the site's theme switch, transparent with a 20px glyph; the icon shown is the theme it switches
-   TO, so a light page shows the moon and a dark page the sun. */
-.theme-switch-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-}
-.theme-switch-btn svg { width: 20px; height: auto; }
-.theme-switch-btn svg path { fill: var(--ink); transition: fill .3s ease; }
-.theme-switch-btn .sun { display: none; }
-.dark .theme-switch-btn .sun { display: block; }
-.dark .theme-switch-btn .moon { display: none; }
 
 /* The official wordmark, drawn from the file. The URL is relative, so it
    resolves inside /assets/<buildHash>/ beside this sheet and is precached with
@@ -1048,13 +1017,13 @@ p.row-line { margin: 16px 0 0; }
    so a phone rule beside its desktop rule would be beaten by any equally specific rule
    further down the file. */
 @media (max-width: 560px) {
-  .sb-navbar { gap: 0; }
+  .chrome-bar { padding: 8px 0; }
   .brand { width: 108px; }
   /* A 320px panel floating inside a 350px column has no room to float, so on a
      phone it is a sheet: pinned under the navbar, across the page. */
   .menu {
     position: fixed;
-    top: 58px;
+    top: 60px;
     left: 12px;
     right: 12px;
     width: auto;

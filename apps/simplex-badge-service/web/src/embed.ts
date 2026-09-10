@@ -7,6 +7,20 @@ import type { Theme } from "./domain.js";
 
 export const THEME_MESSAGE = "simplex-theme";
 export const EMBED_READY = "simplex-embed-ready";
+export const ROUTE_MESSAGE = "simplex-route";
+
+// The routes the host may drive: the wizard's hashes, the codes list, and the landing (empty). A
+// hash outside this set is ignored, so the host cannot steer the frame to anything it invents.
+const ROUTE_HASHES: readonly string[] = ["", "/", "#/tier", "#/months", "#/checkout", "#/codes"];
+
+/** The hash carried by a well-formed route message, or undefined for anything the frame should
+ * ignore: a message of another kind, an unknown hash, or something that is not an object. */
+export function routeFromMessage(data: unknown): string | undefined {
+  if (typeof data !== "object" || data === null) return undefined;
+  const d = data as { type?: unknown; hash?: unknown };
+  if (d.type !== ROUTE_MESSAGE || typeof d.hash !== "string") return undefined;
+  return ROUTE_HASHES.includes(d.hash) ? d.hash : undefined;
+}
 
 /** Only simplex.chat and its subdomains, and only over https, may drive the theme. `endsWith` on a
  * dotted suffix, so `simplex.chat.attacker.com` and `notsimplex.chat` are both turned away. */

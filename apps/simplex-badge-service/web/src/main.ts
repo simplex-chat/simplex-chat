@@ -28,7 +28,7 @@ import { appearanceFor, cardPlan, loadStripeJs, mountCard, publishableKey, type 
 import { Store, type StorageLike } from "./store.js";
 import { STEPS } from "./domain.js";
 import type { Method, OrderRecord, SessionRecord, Step, Theme } from "./domain.js";
-import { EMBED_READY, THEME_MESSAGE, themeFromMessage, trustedHost } from "./embed.js";
+import { EMBED_READY, THEME_MESSAGE, routeFromMessage, themeFromMessage, trustedHost } from "./embed.js";
 
 const app = document.getElementById("app");
 if (app === null) throw new Error("main: #app is missing from the shell");
@@ -101,7 +101,6 @@ const flow = new Flow({
 const embedded = window.self !== window.top;
 
 const chromeUi = screens.chrome({
-  embedded,
   onNewPurchase: newInvoice,
   onHistory: showCodes,
   theme: store.theme(),
@@ -115,7 +114,9 @@ const chromeUi = screens.chrome({
     }
   },
 });
-chromeSlot.replaceChildren(chromeUi.node);
+// Standalone, the app carries its own navbar (logo + burger). Embedded, the site's navbar is the
+// only one, so ours is not rendered and the buyer navigates from there.
+if (!embedded) chromeSlot.replaceChildren(chromeUi.node);
 
 const THEME_ATTRIBUTE = "data-theme";
 
@@ -152,10 +153,13 @@ function setTheme(theme: Theme, echo: boolean): void {
 
 if (embedded) {
   window.addEventListener("message", (event) => {
+    if (!trustedHost(event.origin)) return;
     const theme = themeFromMessage(event.data);
-    if (theme === undefined || !trustedHost(event.origin)) return;
-    hostOrigin = event.origin;
-    setTheme(theme, false);
+    if (theme !== undefined) { hostOrigin = event.origin; setTheme(theme, false); return; }
+    // The site's navbar drives Buy a code / Your codes, and its URL hash deep-links a screen; both
+    // arrive as a route the frame applies through its own router.
+    const hash = routeFromMessage(event.data);
+    if (hash !== undefined) { hostOrigin = event.origin; applyRoute(hash); }
   });
   // Tell the host the frame is ready and hand it the current theme, so it can align its own control
   // and, if it drives theme, post the site-wide choice back. Broadcast, since the host origin is not
@@ -896,6 +900,15 @@ function syncFromLocation(fresh: boolean): void {
     history.replaceState(null, "", want === "/" ? location.pathname : want);
   }
   showIndex(at, root.firstChild === track && panels.length > 0);
+}
+
+// A route handed in by the host (its navbar or its URL hash): put it on our own location and let
+// the router draw it, exactly as a same-tab navigation would. reachableIndex still clamps a step
+// the buyer has not earned, so a deep link to #/checkout lands where it can.
+function applyRoute(hash: string): void {
+  const path = location.pathname;
+  history.pushState(null, "", hash === "" || hash === "/" ? path : path + hash);
+  syncFromLocation(false);
 }
 
 window.addEventListener("popstate", () => { syncFromLocation(false); });
