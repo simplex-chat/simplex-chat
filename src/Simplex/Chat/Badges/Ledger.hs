@@ -45,8 +45,8 @@ monthAfter e n = addMonths (monthsFromAnchor e + toInteger n) (balanceAnchorTs e
 paidThrough :: StatementEntry -> UTCTime
 paidThrough e = monthAfter e (balanceMonths e)
 
--- | Counted on the anchor grid and not from balanceStartTs: a start clipped to a short month is
--- less than a whole month past the anchor, so counting from it would call a month elapsed early.
+-- Counted from the anchor: 31 Jan plus a month clips to 28 Feb, and counting on from there would
+-- retire the next month three days early.
 elapsedMonths :: UTCTime -> StatementEntry -> Int
 elapsedMonths t e = fromInteger $ max 0 $ min (toInteger $ balanceMonths e) elapsed
   where
