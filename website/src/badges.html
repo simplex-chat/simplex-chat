@@ -172,11 +172,15 @@ templateEngineOverride: njk
 
             window.addEventListener("message", function (e) {
                 if (e.origin !== APP || !e.data) return;
-                // The frame announces itself on load; hand it the site's theme, background and route.
+                // The frame announces itself on load; hand it the site's theme and background, and
+                // restore the route we persisted — but only a non-empty one. An empty hash means the
+                // frame was last on the landing or an order/payment screen it resumes from its own
+                // store; posting "" would drive it to the landing over a payment mid-way through, so
+                // we stay out of the way and let it self-resume.
                 if (e.data.type === "simplex-embed-ready") {
                     post({ type: "simplex-theme", theme: siteTheme() });
                     postColors();
-                    postRoute();
+                    if (location.hash) postRoute();
                 }
                 // The buyer used the theme switch inside the frame; keep the site in step.
                 if (e.data.type === "simplex-theme") { applySiteTheme(e.data.theme); postColors(); }
