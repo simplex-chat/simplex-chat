@@ -28,7 +28,7 @@ import { appearanceFor, cardPlan, loadStripeJs, mountCard, publishableKey, type 
 import { Store, type StorageLike } from "./store.js";
 import { STEPS } from "./domain.js";
 import type { Method, OrderRecord, SessionRecord, Step, Theme } from "./domain.js";
-import { EMBED_READY, THEME_MESSAGE, routeFromMessage, themeFromMessage, trustedHost } from "./embed.js";
+import { EMBED_READY, HEIGHT_MESSAGE, THEME_MESSAGE, bgFromMessage, routeFromMessage, themeFromMessage, trustedHost } from "./embed.js";
 
 const app = document.getElementById("app");
 if (app === null) throw new Error("main: #app is missing from the shell");
@@ -115,8 +115,10 @@ const chromeUi = screens.chrome({
   },
 });
 // Standalone, the app carries its own navbar (logo + burger). Embedded, the site's navbar is the
-// only one, so ours is not rendered and the buyer navigates from there.
-if (!embedded) chromeSlot.replaceChildren(chromeUi.node);
+// only one, so ours is not rendered; the buyer navigates from there, and `.embedded` pads the top
+// so the content clears the site's fixed bar and drops the page's own background wash.
+if (embedded) document.documentElement.classList.add("embedded");
+else chromeSlot.replaceChildren(chromeUi.node);
 
 const THEME_ATTRIBUTE = "data-theme";
 
@@ -151,6 +153,12 @@ function setTheme(theme: Theme, echo: boolean): void {
   }
 }
 
+// The host sizes the iframe to our content, so the site's page (not the frame) is what scrolls and
+// the footer follows naturally. Post on every layout change; the value is a dimension, not a secret.
+function postHeight(): void {
+  window.parent.postMessage({ type: HEIGHT_MESSAGE, height: document.documentElement.scrollHeight }, hostOrigin ?? "*");
+}
+
 if (embedded) {
   window.addEventListener("message", (event) => {
     if (!trustedHost(event.origin)) return;
@@ -159,8 +167,12 @@ if (embedded) {
     // The site's navbar drives Buy a code / Your codes, and its URL hash deep-links a screen; both
     // arrive as a route the frame applies through its own router.
     const hash = routeFromMessage(event.data);
-    if (hash !== undefined) { hostOrigin = event.origin; applyRoute(hash); }
+    if (hash !== undefined) { hostOrigin = event.origin; applyRoute(hash); return; }
+    // The site hands in its page background so the frame matches it rather than showing its own.
+    const bg = bgFromMessage(event.data);
+    if (bg !== undefined) { hostOrigin = event.origin; document.documentElement.style.setProperty("--bg", bg); }
   });
+  new ResizeObserver(() => { postHeight(); }).observe(document.body);
   // Tell the host the frame is ready and hand it the current theme, so it can align its own control
   // and, if it drives theme, post the site-wide choice back. Broadcast, since the host origin is not
   // yet known; the reply's origin is what gets trusted.

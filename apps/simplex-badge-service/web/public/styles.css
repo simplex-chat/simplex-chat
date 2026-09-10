@@ -170,6 +170,10 @@ body {
 
 #app { max-width: 560px; margin: 0 auto; overflow-x: hidden; }
 
+/* Embedded in the site: the site's fixed navbar sits above the frame, so pad the top to clear it,
+   and drop the page's own wash so the flat background the site hands in shows through cleanly. */
+.embedded body { padding-top: 54px; background-image: none; }
+
 /* ------------------------------------------------------------------- chrome */
 
 /* The wordmark on the left, and on the right a circular icon button holding the

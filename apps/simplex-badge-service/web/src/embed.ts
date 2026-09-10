@@ -8,6 +8,17 @@ import type { Theme } from "./domain.js";
 export const THEME_MESSAGE = "simplex-theme";
 export const EMBED_READY = "simplex-embed-ready";
 export const ROUTE_MESSAGE = "simplex-route";
+export const HEIGHT_MESSAGE = "simplex-height"; // frame -> host: our content height, so it can size the iframe
+export const COLORS_MESSAGE = "simplex-colors"; // host -> frame: the site's page background, to match it
+
+/** The background colour a well-formed colours message carries, so the frame's page matches the
+ * site's, or undefined to ignore. Only a background is taken; the app keeps its own accent and ink. */
+export function bgFromMessage(data: unknown): string | undefined {
+  if (typeof data !== "object" || data === null) return undefined;
+  const d = data as { type?: unknown; bg?: unknown };
+  if (d.type !== COLORS_MESSAGE || typeof d.bg !== "string") return undefined;
+  return /^#[0-9a-fA-F]{3,8}$/.test(d.bg) ? d.bg : undefined;
+}
 
 // The routes the host may drive: the wizard's hashes, the codes list, and the landing (empty). A
 // hash outside this set is ignored, so the host cannot steer the frame to anything it invents.
