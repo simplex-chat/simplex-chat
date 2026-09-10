@@ -953,9 +953,19 @@ function syncFromLocation(fresh: boolean): void {
     return;
   }
   const at = reachableIndex(landingIndex());
-  const want = hashForIndex(at);
-  if (want === "/" ? location.hash !== "" : location.hash !== want) {
-    history.replaceState(null, "", want === "/" ? location.pathname : want);
+  if (fresh && at > 0) {
+    // Loaded straight at a deep step — a reload, a deep link, or the host framing us at one via the
+    // iframe's src. The steps beneath it are not in this document's history, so [ ← Back ], which is
+    // history.back(), would leave the wizard: to the landing, or, embedded, off the badges page and
+    // out to the site (this document's history is the tab's). Rebuild the stack the buyer would have
+    // walked in, landing first, so Back steps back through it and stops at the landing.
+    history.replaceState(null, "", "/");
+    for (let i = 1; i <= at; i++) history.pushState(null, "", hashForIndex(i));
+  } else {
+    const want = hashForIndex(at);
+    if (want === "/" ? location.hash !== "" : location.hash !== want) {
+      history.replaceState(null, "", want === "/" ? location.pathname : want);
+    }
   }
   showIndex(at, root.firstChild === track && panels.length > 0);
   announceLocation();
