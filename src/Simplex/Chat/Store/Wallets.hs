@@ -8,13 +8,14 @@ module Simplex.Chat.Store.Wallets
   ( getDeviceSeed,
     getAccountIndex,
     getSeedProfiles,
-    getOrCreateAccountRef,
+    createSeed,
     importSeed,
     bindAccountIndex,
     deleteSeed,
   )
 where
 
+import Control.Monad (forM_)
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
@@ -62,47 +63,53 @@ getSeedProfiles db (SeedId sId) User {userId} =
       |]
       (sId, userId)
 
-bindAccount :: DB.Connection -> User -> SeedId -> AccountIndex -> IO ()
-bindAccount db User {userId} (SeedId sId) acct =
+bindUser :: DB.Connection -> Int64 -> SeedId -> Int64 -> IO ()
+bindUser db uId (SeedId sId) acct =
   DB.execute
     db
     "UPDATE users SET wallet_seed_id = ?, wallet_account_index = ? WHERE user_id = ?"
-    (sId, fromIntegral acct :: Int64, userId)
+    (sId, acct, uId)
 
-getOrCreateAccountRef :: DB.Connection -> User -> ByteString -> IO ()
-getOrCreateAccountRef db user entropy =
-  getAccountIndex db user >>= \case
-    Just _ -> pure ()
-    Nothing -> getDeviceSeed db >>= maybe (createWalletSeed db entropy) pure >>= bindNewAccount db user
-
--- | False if the device already has a key.
-importSeed :: DB.Connection -> User -> ByteString -> IO Bool
-importSeed db user entropy =
+-- | False if the device already has a key. Every profile is bound, as a new
+-- seed has no account that already owns a name.
+createSeed :: DB.Connection -> ByteString -> IO Bool
+createSeed db entropy =
   getDeviceSeed db >>= \case
     Just _ -> pure False
-    Nothing -> True <$ (createWalletSeed db entropy >>= bindNewAccount db user)
-
--- | False if another profile holds the account. The counter moves past it, so
--- the next profile is not handed the same one.
-bindAccountIndex :: DB.Connection -> User -> SeedId -> AccountIndex -> IO Bool
-bindAccountIndex db user sId@(SeedId sId') acct = do
-  taken <- maybeFirstRow fromOnly $
-    DB.query
-      db
-      "SELECT 1 FROM users WHERE wallet_seed_id = ? AND wallet_account_index = ? AND user_id != ?"
-      (sId', fromIntegral acct :: Int64, userId user)
-  case (taken :: Maybe Int64) of
-    Just _ -> pure False
     Nothing -> do
-      bindAccount db user sId acct
-      DB.execute
-        db
-        "UPDATE wallet_seeds SET next_account_index = ? WHERE wallet_seed_id = ? AND next_account_index <= ?"
-        (fromIntegral acct + 1 :: Int64, sId', fromIntegral acct :: Int64)
+      s <- createWalletSeed db entropy
+      uIds <- map fromOnly <$> DB.query_ db "SELECT user_id FROM users ORDER BY user_id"
+      forM_ (zip uIds [0 ..]) $ \(uId, acct) -> bindUser db uId (wsId s) acct
+      setNextAccountIndex db (wsId s) (fromIntegral $ length uIds)
       pure True
 
-bindNewAccount :: DB.Connection -> User -> WalletSeed -> IO ()
-bindNewAccount db user s = takeAccountIndex db (wsId s) >>= bindAccount db user (wsId s)
+-- | False if the device already has a key. No profile is bound: which account
+-- a profile had is what the import is recovering, and the seed does not say.
+importSeed :: DB.Connection -> ByteString -> IO Bool
+importSeed db entropy =
+  getDeviceSeed db >>= \case
+    Just _ -> pure False
+    Nothing -> True <$ createWalletSeed db entropy
+
+-- | Without an account the next free one is taken. False if another profile
+-- holds the account asked for.
+bindAccountIndex :: DB.Connection -> User -> SeedId -> Maybe AccountIndex -> IO Bool
+bindAccountIndex db User {userId} sId@(SeedId sId') = \case
+  Nothing -> True <$ (takeAccountIndex db sId >>= bindUser db userId sId)
+  Just acct -> do
+    taken <-
+      maybeFirstRow fromOnly $
+        DB.query
+          db
+          "SELECT 1 FROM users WHERE wallet_seed_id = ? AND wallet_account_index = ? AND user_id != ?"
+          (sId', fromIntegral acct :: Int64, userId)
+    case (taken :: Maybe Int64) of
+      Just _ -> pure False
+      Nothing -> do
+        bindUser db userId sId (fromIntegral acct)
+        -- the counter moves past it, so the next profile is not handed the same one
+        setNextAccountIndex db sId (fromIntegral acct + 1)
+        pure True
 
 createWalletSeed :: DB.Connection -> ByteString -> IO WalletSeed
 createWalletSeed db entropy = do
@@ -111,17 +118,20 @@ createWalletSeed db entropy = do
   pure WalletSeed {wsId = SeedId sId, wsEntropy = entropy}
 
 -- | Incremented in SQL, so two profiles cannot be handed the same account.
-takeAccountIndex :: DB.Connection -> SeedId -> IO AccountIndex
-takeAccountIndex db sId@(SeedId sId') = do
-  DB.execute db "UPDATE wallet_seeds SET next_account_index = next_account_index + 1 WHERE wallet_seed_id = ?" (Only sId')
-  subtract 1 <$> getNextAccountIndex db sId
-
-getNextAccountIndex :: DB.Connection -> SeedId -> IO AccountIndex
-getNextAccountIndex db (SeedId sId) =
-  maybe 0 (fromIntegral :: Int64 -> AccountIndex)
+takeAccountIndex :: DB.Connection -> SeedId -> IO Int64
+takeAccountIndex db (SeedId sId) = do
+  DB.execute db "UPDATE wallet_seeds SET next_account_index = next_account_index + 1 WHERE wallet_seed_id = ?" (Only sId)
+  maybe 0 (subtract 1)
     <$> ( maybeFirstRow fromOnly $
             DB.query db "SELECT next_account_index FROM wallet_seeds WHERE wallet_seed_id = ?" (Only sId)
         )
+
+setNextAccountIndex :: DB.Connection -> SeedId -> Int64 -> IO ()
+setNextAccountIndex db (SeedId sId) acct =
+  DB.execute
+    db
+    "UPDATE wallet_seeds SET next_account_index = ? WHERE wallet_seed_id = ? AND next_account_index < ?"
+    (acct, sId, acct)
 
 -- | Profiles are unbound first, as the foreign key is ON DELETE RESTRICT.
 deleteSeed :: DB.Connection -> SeedId -> IO ()

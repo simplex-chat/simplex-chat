@@ -418,7 +418,7 @@ data ChatCommand
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
   | APIWallet
-  | APIWalletBind {accountIndex :: AccountIndex}
+  | APIWalletBind {boundAccountIndex :: Maybe AccountIndex}
   | APIWalletCreate
   | APIWalletImport {recoveryPhrase :: Text}
   | APIWalletExportSeedMnemonic

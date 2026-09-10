@@ -70,9 +70,13 @@ testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice <## "no wallet key"
   alice ##> "/_wallet export"
   alice <## "bad chat command: no wallet key on this device"
+  alice ##> "/create user alisa"
+  showActiveUser alice "alisa"
+  -- a new seed has no account that owns a name, so every profile is bound
   alice ##> "/_wallet create"
   rows <- nameRows alice
-  map fst rows `shouldBe` ["m/44'/60'/0'/0/0", "m/44'/60'/0'/0/1"]
+  alice <## "also on same seed: alice"
+  map fst rows `shouldBe` ["m/44'/60'/1'/0/0", "m/44'/60'/1'/0/1"]
   length (nub $ map snd rows) `shouldBe` 2
 
 testWalletPersists :: HasCallStack => TestParams -> IO ()
@@ -101,7 +105,10 @@ testWalletSecondProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice ->
   -- the key belongs to the device, so a profile without an account exports it too
   alice ##> "/_wallet export"
   alice <## phrase
+  -- create is for the seed, and this device has one
   alice ##> "/_wallet create"
+  alice <## "bad chat command: this device already has a wallet key"
+  alice ##> "/_wallet bind"
   rows' <- nameRows alice
   alice <## "also on same seed: alice"
   map fst rows' `shouldBe` ["m/44'/60'/1'/0/0", "m/44'/60'/1'/0/1"]
@@ -109,7 +116,10 @@ testWalletSecondProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice ->
 
 testWalletImport :: HasCallStack => TestParams -> IO ()
 testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  -- import binds nothing: which account a profile had is what it is recovering
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice <## "this profile has no wallet key"
+  alice ##> "/_wallet bind"
   alice <## "name 0  m/44'/60'/0'/0/0  0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
   alice <## "name 1  m/44'/60'/0'/0/1  0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0"
   alice ##> "/_wallet export"
@@ -122,8 +132,9 @@ testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
 
 testWalletExportDerivedSecret :: HasCallStack => TestParams -> IO ()
 testWalletExportDerivedSecret ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  -- the secret of a name key needs no profile bound to that account
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  _ <- nameRows alice
+  alice <## "this profile has no wallet key"
   alice ##> "/_wallet export 0 0"
   alice <## "m/44'/60'/0'/0/0  0x9858EfFD232B4033E47d90003D41EC34EcaEda94  0x1ab42cc412b618bdea3a599e3c9bae199ebf030895b039e9db1e30dafb12b727"
   -- an index BIP-32 cannot harden is rejected, not wrapped into another account
@@ -142,20 +153,21 @@ testWalletExportDerivedSecret ps = withNewTestChat ps "alice" aliceProfile $ \al
 testWalletDelete :: HasCallStack => TestParams -> IO ()
 testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice <## "this profile has no wallet key"
+  alice ##> "/_wallet bind"
   _ <- nameRows alice
   alice ##> "/_wallet delete"
   alice <## "no wallet key"
   -- deleting unbinds the profile, so a key can be imported again
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  _ <- nameRows alice
-  pure ()
+  alice <## "this profile has no wallet key"
 
 -- | Restoring a chat database older than the key rebinds profiles in the order
 -- they ask, so the account a profile had is set by hand.
 testWalletBind :: HasCallStack => TestParams -> IO ()
 testWalletBind ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet import " <> B.unpack testPhrase)
-  _ <- nameRows alice
+  alice <## "this profile has no wallet key"
   alice ##> "/_wallet bind 3"
   rows <- nameRows alice
   map fst rows `shouldBe` ["m/44'/60'/3'/0/0", "m/44'/60'/3'/0/1"]
@@ -164,7 +176,7 @@ testWalletBind ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet bind 3"
   alice <## "bad chat command: another profile uses this account"
   -- the counter moved past the account bound by hand
-  alice ##> "/_wallet create"
+  alice ##> "/_wallet bind"
   rows' <- nameRows alice
   alice <## "also on same seed: alice"
   map fst rows' `shouldBe` ["m/44'/60'/4'/0/0", "m/44'/60'/4'/0/1"]
