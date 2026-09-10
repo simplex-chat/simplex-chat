@@ -1,18 +1,18 @@
 package chat.simplex.common.platform
 
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntSize
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.KeyChangeEffect
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
 import java.io.File
+import kotlin.math.roundToInt
 
 @Composable
 expect fun Modifier.desktopOnExternalDrag(
@@ -58,20 +58,25 @@ fun Modifier.desktopModifyBlurredState(enabled: Boolean, blurred: MutableState<B
   }
 }
 
+// Whether the media is behind the blur, and so is not on screen to be seen. The caller that draws it and the
+// caller that decides whether to read its file MUST agree, or one of them shows what the other is hiding.
+@Composable
+fun blurHidesMedia(enabled: Boolean, blurred: State<Boolean>): Boolean =
+  enabled && blurred.value && remember { appPrefs.privacyMediaBlurRadius.state }.value > 0
+
 @Composable
 fun Modifier.privacyBlur(
   enabled: Boolean,
+  preview: ImageBitmap,
   blurred: MutableState<Boolean> = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) },
   scrollState: State<Boolean>,
   onLongClick: () -> Unit = {}
 ): Modifier {
   val blurRadius = remember { appPrefs.privacyMediaBlurRadius.state }
-  return if (enabled && blurred.value) {
-    this then Modifier.blur(
-      radiusX = remember { appPrefs.privacyMediaBlurRadius.state }.value.dp,
-      radiusY = remember { appPrefs.privacyMediaBlurRadius.state }.value.dp,
-      edgeTreatment = BlurredEdgeTreatment(RoundedCornerShape(0.dp))
-    )
+  return if (blurHidesMedia(enabled, blurred)) {
+    val blurredPreview = remember(preview, blurRadius.value) { preview.blurredBy(blurRadius.value) }
+    this then Modifier
+      .drawWithContent { drawImage(blurredPreview, dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt())) }
       .combinedClickable(
         onLongClick = onLongClick,
         onClick = {
@@ -89,4 +94,27 @@ fun Modifier.privacyBlur(
     } else {
       this
     }
+}
+
+// A blur and a downscale discard the same thing - detail finer than their radius - so the media is resampled to
+// about one pixel per radius and stretched back. Modifier.blur convolved the drawn layer on every frame; this
+// runs once when the item composes, and needs no RenderEffect, which Android only applies from API 31.
+private const val BLURRED_MEDIA_WIDTH_DP = 360
+// Nothing bounds a decoded video frame, so the descent starts with one step that samples rather than averages -
+// reading every pixel of a 4K frame would stall composition - and bounds both sides, so no image, however
+// shaped, makes an intermediate larger than this square. Halving from here averages away most of the aliasing.
+private const val RESAMPLE_MEDIA_FROM_SIDE = 512
+
+private fun ImageBitmap.blurredBy(radius: Int): ImageBitmap {
+  if (width <= 0 || height <= 0) return this
+  val w = (BLURRED_MEDIA_WIDTH_DP / radius).coerceIn(1, width)
+  val h = (w * height / width).coerceIn(1, BLURRED_MEDIA_WIDTH_DP)
+  val longest = maxOf(width, height)
+  var image = if (longest > RESAMPLE_MEDIA_FROM_SIDE) {
+    val step = RESAMPLE_MEDIA_FROM_SIDE.toFloat() / longest
+    scale((width * step).roundToInt().coerceAtLeast(1), (height * step).roundToInt().coerceAtLeast(1))
+  } else this
+  // A single bilinear step from a large image reads too few of its pixels to stand for it, so halve down to it.
+  while (image.width / 2 > w) image = image.scale(image.width / 2, (image.height / 2).coerceAtLeast(1))
+  return image.scale(w, h)
 }
