@@ -236,8 +236,10 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
                       conn@Connection {connId} <- liftEither $ contactSendConn_ ct
                       let FileTransferMeta {fileSize} = ft
-                      binding_ <- if contactConnIncognito ct then pure Nothing else ifM (fileNeedsBadge fileSize) (directChatBinding ct) (pure Nothing)
-                      descrBadge <- pure binding_ $>>= \b -> sndBadgeProof user $ descrPresHeader b fileSize sndDescr fileExpires
+                      binding_ <- ifM ((not (contactConnIncognito ct) &&) <$> fileNeedsBadge fileSize) (directChatBinding ct) (pure Nothing)
+                      descrBadge <- pure binding_ $>>= \chatBinding ->
+                        let FD.ValidFileDescription fd = sndDescr
+                         in sndBadgeProof user PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash = FD.sharedDescriptionHash fd, fileExpires}
                       sendFileDescriptions (ConnectionId connId) ((conn, sft, fileDescrText rfd) :| []) sharedMsgId fileExpires descrBadge >>= \case
                         Just rs -> case L.last rs of
                           Right ([msgDeliveryId], _) ->
@@ -253,8 +255,10 @@ processAgentMsgSndFile _corrId aFileId msg = do
                           extraRFDs = drop (length rfdsMemberFTs) rfds
                           FileTransferMeta {fileSize} = ft
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
-                      binding_ <- ifM (fileNeedsBadge fileSize) (sndGroupChatBinding g showGroupAsSender) (pure Nothing)
-                      descrBadge <- pure binding_ $>>= \b -> sndBadgeProof user $ descrPresHeader b fileSize sndDescr fileExpires
+                      binding_ <- ifM ((not (incognitoMembership g) &&) <$> fileNeedsBadge fileSize) (sndGroupChatBinding g showGroupAsSender) (pure Nothing)
+                      descrBadge <- pure binding_ $>>= \chatBinding ->
+                        let FD.ValidFileDescription fd = sndDescr
+                         in sndBadgeProof user PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash = FD.sharedDescriptionHash fd, fileExpires}
                       forM_ (L.nonEmpty rfdsMemberFTs) $ \rfdsMemberFTs' ->
                         sendFileDescriptions (GroupId groupId) rfdsMemberFTs' sharedMsgId fileExpires descrBadge
                       ci' <- withStore $ \db -> do
@@ -1983,8 +1987,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         if expired
           then pure False
           else do
-            vfd <- parseFileDescription @'FRecipient fileDescrText
-            st <- badgeProofStatus ((\b -> descrPresHeader b fileSize vfd fileExpires) <$> binding_) badge
+            FD.ValidFileDescription fd <- parseFileDescription @'FRecipient fileDescrText
+            let descrHash = FD.sharedDescriptionHash fd
+            st <- badgeProofStatus ((\chatBinding -> PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash, fileExpires}) <$> binding_) badge
             pure $ st == BSActive
 
     processFileInvitation :: Maybe FileInvitation -> MsgContent -> (FileInvitation -> CM (Maybe FileProhibited)) -> (DB.Connection -> FileInvitation -> Maybe FileProhibited -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer) -> CM (Maybe (RcvFileTransfer, CIFile 'MDRcv))

@@ -4772,9 +4772,8 @@ processChatCommand cxt nm = \case
               forM cmrs $ \(ComposedMessage {fileSource = file_}, _, _, _) -> case file_ of
                 Just file -> do
                   let User {profile = LocalProfile {localBadge}} = user
-                      incognito = contactConnIncognito ct
-                  fileSize <- checkSndFile (if incognito then Nothing else localBadge) file
-                  binding_ <- if incognito then pure Nothing else ifM (fileNeedsBadge fileSize) (directChatBinding ct) (pure Nothing)
+                  fileSize <- checkSndFile (if contactConnIncognito ct then Nothing else localBadge) file
+                  binding_ <- ifM ((not (contactConnIncognito ct) &&) <$> fileNeedsBadge fileSize) (directChatBinding ct) (pure Nothing)
                   (fInv, ciFile) <- xftpSndFileTransfer user file fileSize 1 (CGContact ct) binding_
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
@@ -4860,7 +4859,7 @@ processChatCommand cxt nm = \case
                 Just file -> do
                   let User {profile = LocalProfile {localBadge}} = user
                   fileSize <- checkSndFile (if incognitoMembership gInfo then Nothing else localBadge) file
-                  binding_ <- ifM (fileNeedsBadge fileSize) (sndGroupChatBinding gInfo showGroupAsSender) (pure Nothing)
+                  binding_ <- ifM ((not (incognitoMembership gInfo) &&) <$> fileNeedsBadge fileSize) (sndGroupChatBinding gInfo showGroupAsSender) (pure Nothing)
                   (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n (CGGroup gInfo recipients) binding_
                   fInv' <-
                     if signMsgs && useRelays' gInfo

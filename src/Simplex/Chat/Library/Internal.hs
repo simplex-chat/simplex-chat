@@ -438,7 +438,7 @@ roundedFDCount n
 
 xftpSndFileTransfer_ :: User -> CryptoFile -> Integer -> Int -> Maybe ContactOrGroup -> Maybe ByteString -> CM (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
 xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOrGroup_ binding_ = do
-  fileBadge <- pure binding_ $>>= \chatBinding -> sndBadgeProof user $ invPresHeader chatBinding fileSize
+  fileBadge <- pure binding_ $>>= \chatBinding -> sndBadgeProof user PHFileInv {chatBinding, fileSize = fromInteger fileSize}
   let fileName = takeFileName filePath
       fInv = (xftpFileInvitation fileName fileSize dummyFileDescr :: FileInvitation) {fileBadge}
   fsFilePath <- lift $ toFSFilePath filePath
@@ -454,13 +454,6 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
 fileNeedsBadge :: Integer -> CM Bool
 fileNeedsBadge fileSize = (fileSize >) . toInteger . noBadge <$> asks (fileSizeLimits . config)
 
-invPresHeader :: ByteString -> Integer -> ProofPresHeader
-invPresHeader chatBinding fileSize = PHFileInv {chatBinding, fileSize = fromInteger fileSize}
-
-descrPresHeader :: ByteString -> Integer -> ValidFileDescription p -> Maybe UTCTime -> ProofPresHeader
-descrPresHeader chatBinding fileSize (FD.ValidFileDescription fd) fileExpires =
-  PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash = FD.sharedDescriptionHash fd, fileExpires}
-
 sndBadgeProof :: User -> ProofPresHeader -> CM (Maybe BadgeProof)
 sndBadgeProof User {profile = LocalProfile {localBadge}} ph = case localBadge of
   Just (OwnBadge cred@(BadgeCredential keyIdx _ _ _) _) -> do
@@ -475,7 +468,6 @@ sndBadgeProof User {profile = LocalProfile {localBadge}} ph = case localBadge of
 
 sndGroupChatBinding :: GroupInfo -> ShowGroupAsSender -> CM (Maybe ByteString)
 sndGroupChatBinding gInfo@GroupInfo {groupKeys = gks} asGroup
-  | incognitoMembership gInfo = pure Nothing
   | asGroup = pure $ (\PublicGroupKeys {publicGroupId} -> encodeChatBinding CBChannel $ smpEncode publicGroupId) <$> (gks >>= publicGroupKeys)
   | otherwise = do
       GroupInfo {groupKeys, membership = GroupMember {memberId}} <- createUserMemberKey gInfo
@@ -1474,15 +1466,15 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
               pure $ invCompleteDescr ciFile rfd invBadge descrBadge
         sndHistoryBadges :: ShowGroupAsSender -> Integer -> RcvFileDescrText -> Maybe UTCTime -> CM (Maybe BadgeProof, Maybe BadgeProof)
         sndHistoryBadges asGroup fileSize fileDescrText fileExpires =
-          ifM (fileNeedsBadge fileSize) badges (pure (Nothing, Nothing))
+          ifM ((not (incognitoMembership gInfo) &&) <$> fileNeedsBadge fileSize) badges (pure (Nothing, Nothing))
           where
             badges =
               sndGroupChatBinding gInfo asGroup >>= \case
                 Nothing -> pure (Nothing, Nothing)
-                Just binding -> do
-                  vfd <- parseFileDescription @'FRecipient fileDescrText
-                  invBadge <- sndBadgeProof user $ invPresHeader binding fileSize
-                  descrBadge <- sndBadgeProof user $ descrPresHeader binding fileSize vfd fileExpires
+                Just chatBinding -> do
+                  FD.ValidFileDescription fd <- parseFileDescription @'FRecipient fileDescrText
+                  invBadge <- sndBadgeProof user PHFileInv {chatBinding, fileSize = fromInteger fileSize}
+                  descrBadge <- sndBadgeProof user PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash = FD.sharedDescriptionHash fd, fileExpires}
                   pure (invBadge, descrBadge)
         fileExpired :: Maybe UTCTime -> CM Bool
         fileExpired fileExpires = do
@@ -2368,7 +2360,7 @@ rcvFileProhibited binding_ FileInvitation {fileSize, fileBadge} = do
     else case fileBadge of
       Nothing -> pure $ Just FileProhibited {maxSize = noBadge lims, badgeStatus = Nothing}
       Just badge -> do
-        st <- badgeProofStatus ((`invPresHeader` fileSize) <$> binding_) badge
+        st <- badgeProofStatus ((\chatBinding -> PHFileInv {chatBinding, fileSize = fromInteger fileSize}) <$> binding_) badge
         let maxSize = maxXFTPFileSize lims $ Just $ PeerBadge badge st
         pure $
           if fileSize <= toInteger maxSize
