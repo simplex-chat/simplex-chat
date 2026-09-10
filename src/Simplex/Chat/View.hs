@@ -190,7 +190,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
   CRWallet u exists paths profiles
     | not exists -> ttyUser u ["no wallet key"]
-    | otherwise -> ttyUser u $ keyRows <> [plain $ "also on this key: " <> T.intercalate ", " profiles | not (null profiles)]
+    | otherwise -> ttyUser u $ keyRows <> [plain $ "also on same seed: " <> T.intercalate ", " profiles | not (null profiles)]
     where
       keyRows
         | null paths = ["this profile has no wallet key"]

@@ -97,13 +97,13 @@ testWalletSecondProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice ->
   -- other profiles are named, never numbered
   alice ##> "/_wallet"
   alice <## "this profile has no wallet key"
-  alice <## "also on this key: alice"
+  alice <## "also on same seed: alice"
   -- the key belongs to the device, so a profile without an account exports it too
   alice ##> "/_wallet export"
   alice <## phrase
   alice ##> "/_wallet create"
   rows' <- nameRows alice
-  alice <## "also on this key: alice"
+  alice <## "also on same seed: alice"
   map fst rows' `shouldBe` ["m/44'/60'/1'/0/0", "m/44'/60'/1'/0/1"]
   null (map snd rows `intersect` map snd rows') `shouldBe` True
 
@@ -166,5 +166,5 @@ testWalletBind ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   -- the counter moved past the account bound by hand
   alice ##> "/_wallet create"
   rows' <- nameRows alice
-  alice <## "also on this key: alice"
+  alice <## "also on same seed: alice"
   map fst rows' `shouldBe` ["m/44'/60'/4'/0/0", "m/44'/60'/4'/0/1"]
