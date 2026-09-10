@@ -53,6 +53,9 @@ walletTests = do
   it "exports the secret of any name key" testWalletExportDerivedSecret
   it "deletes the key, and a key can be imported again" testWalletDelete
   it "binds a profile to the account it had" testWalletBind
+  it "needs no import when the database was backed up after the key" testWalletBackupAfterKey
+  it "rebinds by index when the database was backed up before the key" testWalletBackupBeforeKey
+  it "discards a key imported before the database is restored" testWalletImportThenRestore
 
 nameRows :: HasCallStack => TestCC -> IO [(String, String)]
 nameRows cc = mapM (\_ -> nameRow <$> getTermLine cc) [0 .. 1 :: Int]
@@ -183,3 +186,66 @@ testWalletBind ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   rows' <- nameRows alice
   alice <## "also on same seed: alice"
   map fst rows' `shouldBe` ["m/44'/60'/4'/0/0", "m/44'/60'/4'/0/1"]
+
+-- | The state a chat database backed up before the key restores to: the
+-- profiles are the same rows, and nothing knows about a key.
+forgetKey :: HasCallStack => TestCC -> IO ()
+forgetKey cc = do
+  cc ##> "/sql chat UPDATE users SET wallet_seed_id = NULL, wallet_account_index = NULL"
+  cc ##> "/sql chat DELETE FROM wallet_seeds"
+
+testWalletBackupAfterKey :: HasCallStack => TestParams -> IO ()
+testWalletBackupAfterKey ps = do
+  rows <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    alice ##> "/_wallet create"
+    alice <## "this profile has no wallet key"
+    alice ##> "/_wallet bind"
+    nameRows alice
+  -- the key and the binding are both in the database, so the restore is all of it
+  withTestChat ps "alice" $ \alice -> do
+    alice ##> "/_wallet"
+    rows' <- nameRows alice
+    rows' `shouldBe` rows
+    alice ##> ("/_wallet import " <> B.unpack testPhrase)
+    alice <## "bad chat command: this device already has a wallet key"
+
+testWalletBackupBeforeKey :: HasCallStack => TestParams -> IO ()
+testWalletBackupBeforeKey ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice <## "this profile has no wallet key"
+  alice ##> "/_wallet bind 1"
+  aliceRows <- nameRows alice
+  alice ##> "/create user alisa"
+  showActiveUser alice "alisa"
+  alice ##> "/_wallet bind 0"
+  alisaRows <- nameRows alice
+  alice <## "also on same seed: alice"
+  forgetKey alice
+  alice ##> "/_wallet"
+  alice <## "no wallet key"
+  -- the phrase alone puts every account back, and each profile says which was its
+  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice <## "this profile has no wallet key"
+  alice ##> "/_wallet bind 0"
+  alisaRows' <- nameRows alice
+  alisaRows' `shouldBe` alisaRows
+  alice ##> "/user alice"
+  showActiveUser alice "alice (Alice)"
+  alice ##> "/_wallet bind 1"
+  aliceRows' <- nameRows alice
+  alice <## "also on same seed: alisa"
+  aliceRows' `shouldBe` aliceRows
+
+testWalletImportThenRestore :: HasCallStack => TestParams -> IO ()
+testWalletImportThenRestore ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice <## "this profile has no wallet key"
+  -- restoring the database replaces the key with what the backup held, which is nothing
+  forgetKey alice
+  alice ##> "/_wallet"
+  alice <## "no wallet key"
+  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice <## "this profile has no wallet key"
+  alice ##> "/_wallet bind"
+  rows <- nameRows alice
+  map fst rows `shouldBe` ["m/44'/60'/0'/0/0", "m/44'/60'/0'/0/1"]
