@@ -64,8 +64,15 @@ templateEngineOverride: njk
         /* The frame sits under the fixed navbar (the app pads its own top to clear it) and is sized
            to its content by the app's height messages, so the page — not the frame — scrolls, and
            the footer follows naturally. 100vh is only the size before the first message arrives. */
+        /* Firefox composites the frame's own surface and leaves a one-pixel white line at its bottom
+           edge where it meets the footer; the line is the frame's cleared surface, sits above the
+           footer's fill (the surface composites last), and survives until a reload. Clip that row:
+           the wrapper is one pixel shorter than the frame (the frame's negative bottom margin), so
+           overflow hides the frame's bottom edge and the footer meets a clean box edge, not a
+           composited one. */
+        #badges-frame-wrap { overflow: hidden; }
         #badges-frame {
-            display: block; width: 100%; height: 100vh; border: 0;
+            display: block; width: 100%; height: 100vh; border: 0; margin-bottom: -1px;
             /* An empty frame paints transparent-dark before its document loads, and the app's own
                ground flashes before the site hands in its colour. Give the frame the page's own
                background so any gap reads as the site, and fade the app in once it is sized and
@@ -131,7 +138,7 @@ templateEngineOverride: njk
     <!-- No src here: the script sets it to the frame's own origin plus the route we persisted, so the
          frame loads straight at the step the buyer had reached — exactly as it does standalone, without
          first showing the landing and then sliding to the step. -->
-    <iframe id="badges-frame" title="Support SimpleX"></iframe>
+    <div id="badges-frame-wrap"><iframe id="badges-frame" title="Support SimpleX"></iframe></div>
 
     {% include "footer.html" %}
 
