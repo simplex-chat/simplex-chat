@@ -492,6 +492,8 @@ testChecksOverLapse = do
   verdicts (at 2026 5 20) (Just issued) [stampedAt (at 2026 5 20) overLapsed] `shouldBe` [Just False]
   bMonths overLapsed `shouldBe` bMonths lapsed - 1
   paidThrough overLapsed `shouldBe` paidThrough lapsed
+  -- and a lapse claiming a month before any had elapsed: lapseEntry declines it altogether
+  verdicts start (Just issued) [stampedAt start lapsed] `shouldBe` [Just False]
 
 testChecksMovedStart :: IO ()
 testChecksMovedStart = do
@@ -545,6 +547,10 @@ testChecksUnknownType = do
   verdicts start (Just granted) [issued {entryType = SEDebit SDRefund}] `shouldBe` [Nothing]
   verdicts start (Just granted) [unknown {balanceMonths = 5}] `shouldBe` [Just False]
   verdicts start (Just granted) [stampedAt (at 2026 3 1) unknown] `shouldBe` [Just False]
+  -- an unknown credit takes the same path: fall through to grantEntry and its negative count,
+  -- which issued carries, would be rejected instead
+  let unknownCredit = issued {entryType = SECredit SCUnknown {tag = "future", json = KM.empty}}
+  verdicts start (Just granted) [unknownCredit] `shouldBe` [Nothing]
 
 -- A tag with no operation behind it escapes the recompute, leaving only the months identity - which
 -- holds while coverage moves back, or while the balance goes into debt.
