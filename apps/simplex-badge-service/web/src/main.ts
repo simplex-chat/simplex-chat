@@ -156,15 +156,33 @@ function setTheme(theme: Theme, echo: boolean): void {
 
 // The host sizes the iframe to our content, so the site's page (not the frame) is what scrolls and
 // the footer follows naturally. Post on every layout change; the value is a dimension, not a secret.
+// The welcome page's height, carried on every height message as the floor the host should never let
+// the iframe shrink below (a shorter screen — an empty codes list, a compact step — must not collapse
+// it under where the buyer arrived). The welcome page is panel 0 of the track, laid out even while
+// another panel is in view, so it is measured wherever we are, plus the top the site's fixed navbar
+// is cleared by, which the document height includes. Measured only while the track is mounted (a codes
+// or order screen detaches it, measuring zero) and cached, so the floor still holds on those screens.
+let welcomeHeight = 0;
+function measureWelcome(): void {
+  const landing = panels[0];
+  if (landing === undefined || root.firstChild !== track) return;
+  const pad = Number.parseFloat(getComputedStyle(document.body).paddingTop) || 0;
+  const measured = Math.ceil(landing.getBoundingClientRect().height + pad);
+  if (measured > 0) welcomeHeight = measured;
+}
+
+// The host sizes the iframe to our content, so the site's page (not the frame) is what scrolls and
+// the footer follows naturally. Post on every layout change; the value is a dimension, not a secret.
 let lastHeight = 0;
 function postHeight(): void {
+  measureWelcome();
   // Round up from the fractional box: `scrollHeight` floors, which leaves the iframe a sub-pixel
   // short and the site's footer riding over the last row — visible as a jitter at fractional zoom,
   // where the rounding shifts. Skip unchanged values so a zoom's layout churn is one post, not many.
   const height = Math.ceil(document.documentElement.getBoundingClientRect().height);
   if (height === lastHeight) return;
   lastHeight = height;
-  window.parent.postMessage({ type: HEIGHT_MESSAGE, height }, hostOrigin ?? "*");
+  window.parent.postMessage({ type: HEIGHT_MESSAGE, height, min: welcomeHeight }, hostOrigin ?? "*");
 }
 
 // Announce our current SHAREABLE route to the host (see NAV_MESSAGE): the hash for a wizard step or
@@ -181,6 +199,9 @@ function announceLocation(): void {
 if (embedded) {
   window.addEventListener("message", (event) => {
     if (!trustedHost(event.origin)) return;
+    // First word from the host: now we know where to post, so flush the height (with its welcome-page
+    // floor) the ResizeObserver already computed but had nowhere to send.
+    if (hostOrigin === undefined) { hostOrigin = event.origin; postHeight(); }
     const theme = themeFromMessage(event.data);
     if (theme !== undefined) { hostOrigin = event.origin; setTheme(theme, false); return; }
     // The site's "Buy a code" starts a fresh purchase — distinct from a route, so a reload that
@@ -1007,6 +1028,11 @@ function registerServiceWorker(): void {
   if (!("serviceWorker" in navigator)) return;
   void navigator.serviceWorker.register("/sw.js").catch(() => { /* no offline support this visit */ });
 }
+
+// The shell prerenders the welcome page, so the document right now — before the first render replaces
+// it — is exactly the welcome page. Capture its height as the floor, for a load that resolves to a
+// codes or order screen and so never mounts the wizard for `measureWelcome` to read panel 0.
+if (embedded && welcomeHeight <= 0) welcomeHeight = Math.ceil(document.documentElement.getBoundingClientRect().height);
 
 syncFromLocation(true);
 // The real screen is painted; clear the pre-paint mark so a non-landing reload's held shell fades in

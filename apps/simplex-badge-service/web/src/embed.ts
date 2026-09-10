@@ -8,7 +8,7 @@ import type { Theme } from "./domain.js";
 export const THEME_MESSAGE = "simplex-theme";
 export const EMBED_READY = "simplex-embed-ready";
 export const ROUTE_MESSAGE = "simplex-route";
-export const HEIGHT_MESSAGE = "simplex-height"; // frame -> host: our content height, so it can size the iframe
+export const HEIGHT_MESSAGE = "simplex-height"; // frame -> host: our content height (with `min`, the welcome floor), to size the iframe
 export const COLORS_MESSAGE = "simplex-colors"; // host -> frame: the site's page background, to match it
 export const NEW_PURCHASE_MESSAGE = "simplex-new-purchase"; // host -> frame: the site's "Buy a code", start fresh
 // frame -> host: the frame's current SHAREABLE route, announced after each navigation, for the host
