@@ -14,6 +14,7 @@ module ChatTests.Groups where
 
 import ChatClient
 import ChatTests.DBUtils
+import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -29,6 +30,7 @@ import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
+import Simplex.Chat.Badges (FileSizeLimits (..))
 import Simplex.Chat.Controller (ChatController (ChatController, smpAgent), ChatConfig (..), ChatHooks (..), ChatLogLevel (..), defaultChatHooks)
 import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
@@ -46,6 +48,7 @@ import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff)
 import Simplex.Messaging.Protocol (MsgFlags (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
@@ -332,6 +335,7 @@ chatGroupTests = do
       it "should update channel message sent as member" testChannelOwnerUpdateAsMember
       it "should delete channel message sent as member" testChannelOwnerDeleteAsMember
       it "should send and receive file sent as member" testChannelOwnerFileTransferAsMember
+      it "should send and receive file with badge proof" testChannelFileBadgeProof
       it "should cancel file sent as member" testChannelOwnerFileCancelAsMember
       it "should attribute reactions to member" testChannelReactionAttribution
       it "should recreate deleted item with correct sendAsGroup from update" testChannelUpdateFallbackSendAsGroup
@@ -12219,6 +12223,76 @@ testChannelOwnerFileTransferAsMember ps =
              ]
       cc <## ("completed receiving file " <> show fileId <> " (test.jpg) from alice")
       B.readFile path >>= (`shouldBe` src)
+
+testChannelFileBadgeProof :: HasCallStack => TestParams -> IO ()
+testChannelFileBadgeProof ps = do
+  Right (pk, sk) <- bbsKeyGen
+  let cfg = testCfg {badgePublicKeys = testBadgeKeys pk, fileSizeLimits = FileSizeLimits {noBadge = 100000, supporter = 300000, legend = 400000}}
+  withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath ->
+        withNewTestChatCfg ps cfg "dan" danProfile $ \dan ->
+          withNewTestChatCfg ps cfg "eve" eveProfile $ \eve -> withXFTPServer $ do
+            createChannel1Relay "team" alice bob cath dan eve
+            addTestBadge alice =<< issueTestBadge sk futureDate
+#if defined(dbPostgres)
+            let rcvFileId = 2 :: Int
+#else
+            let rcvFileId = 1 :: Int
+#endif
+            alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
+            alice <# "/f #team ./tests/fixtures/test.jpg"
+            alice <## "use /fc 1 to cancel sending"
+            alice <## "completed uploading file 1 (test.jpg) for #team"
+            bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it")
+            concurrentlyN_
+              [ do
+                  cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  cath <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
+                do
+                  dan <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  dan <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
+                do
+                  eve <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  eve <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]")
+              ]
+
+            src <- B.readFile "./tests/fixtures/test.jpg"
+            let path = "./tests/tmp/test_cath.jpg"
+            cath ##> ("/fr " <> show rcvFileId <> " " <> path)
+            cath
+              <### [ ConsoleString ("saving file " <> show rcvFileId <> " from alice to " <> path),
+                     ConsoleString ("started receiving file " <> show rcvFileId <> " (test.jpg) from alice")
+                   ]
+            cath <## ("completed receiving file " <> show rcvFileId <> " (test.jpg) from alice")
+            B.readFile path >>= (`shouldBe` src)
+
+            alice ##> "/_send #1(as_group=on) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
+            alice <# "/f #team ./tests/fixtures/test.jpg"
+            alice <## "use /fc 2 to cancel sending"
+            alice <## "completed uploading file 2 (test.jpg) for #team"
+            bob <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## ("use /fr " <> show (rcvFileId + 1) <> " [<dir>/ | <path>] to receive it")
+            concurrentlyN_
+              [ do
+                  cath <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  cath <## ("use /fr " <> show (rcvFileId + 1) <> " [<dir>/ | <path>] to receive it [>>]"),
+                do
+                  dan <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  dan <## ("use /fr " <> show (rcvFileId + 1) <> " [<dir>/ | <path>] to receive it [>>]"),
+                do
+                  eve <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  eve <## ("use /fr " <> show (rcvFileId + 1) <> " [<dir>/ | <path>] to receive it [>>]")
+              ]
+            let path2 = "./tests/tmp/test_cath_2.jpg"
+            cath ##> ("/fr " <> show (rcvFileId + 1) <> " " <> path2)
+            cath
+              <### [ ConsoleString ("saving file " <> show (rcvFileId + 1) <> " from #team to " <> path2),
+                     ConsoleString ("started receiving file " <> show (rcvFileId + 1) <> " (test.jpg) from #team")
+                   ]
+            cath <## ("completed receiving file " <> show (rcvFileId + 1) <> " (test.jpg) from #team")
+            B.readFile path2 >>= (`shouldBe` src)
 
 testChannelOwnerFileCancelAsMember :: HasCallStack => TestParams -> IO ()
 testChannelOwnerFileCancelAsMember ps =

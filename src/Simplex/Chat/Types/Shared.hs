@@ -16,6 +16,8 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Util ((<$?>))
 
+type ShowGroupAsSender = Bool
+
 data GroupMemberRole
   = GRUnknown Text -- unknown role from a newer client
   | GRRelay -- chat relay: forwards messages, can't send its own messages

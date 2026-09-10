@@ -490,8 +490,9 @@ sndFileChatBinding = \case
     | contactConnIncognito ct -> pure Nothing
     | otherwise -> forM (contactConn ct) $ \conn ->
         encodeChatBinding CBDirect <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
-  CGGroup gInfo _
+  CGGroup gInfo _ asGroup
     | incognitoMembership gInfo -> pure Nothing
+    | asGroup -> pure $ channelBinding gInfo
     | otherwise -> do
         GroupInfo {groupKeys, membership = GroupMember {memberId}} <- createUserMemberKey gInfo
         pure $ (\GroupKeys {memberPrivKey} -> encodeChatBinding CBGroup $ groupBindingData groupKeys memberId (C.publicKey memberPrivKey)) <$> groupKeys
@@ -2312,7 +2313,7 @@ groupBindingData gks memberId memberKey = case gks >>= publicGroupKeys of
   Just PublicGroupKeys {publicGroupId} -> smpEncode (publicGroupId, memberId)
   Nothing -> smpEncode (memberId, memberKey)
 
-data FileSender = FSContact Contact | FSMember GroupInfo (Maybe GroupMember)
+data FileSender = FSContact Contact | FSMember GroupInfo (Maybe GroupMember) | FSChannel GroupInfo
 
 fileSenderBinding :: FileSender -> CM (ByteString -> Bool)
 fileSenderBinding = \case
@@ -2322,12 +2323,20 @@ fileSenderBinding = \case
       pure (== encodeChatBinding CBDirect adHash)
     Nothing -> pure (const False)
   FSMember gInfo m_ -> pure $ maybe (const False) (memberBindingAccepted gInfo) m_
+  FSChannel gInfo -> pure $ maybe (const False) (==) (channelBinding gInfo)
+
+channelBinding :: GroupInfo -> Maybe ByteString
+channelBinding GroupInfo {groupKeys} =
+  (\PublicGroupKeys {publicGroupId} -> encodeChatBinding CBChannel (smpEncode publicGroupId)) <$> (groupKeys >>= publicGroupKeys)
 
 memberBindingAccepted :: GroupInfo -> GroupMember -> ByteString -> Bool
 memberBindingAccepted GroupInfo {groupKeys} GroupMember {memberId, memberPubKey} binding =
-  maybe False (\k -> binding == encodeChatBinding CBGroup (groupBindingData groupKeys memberId k)) key_
+  case groupKeys >>= publicGroupKeys of
+    Just PublicGroupKeys {publicGroupId} -> matches $ smpEncode (publicGroupId, memberId)
+    Nothing -> maybe False (\k -> matches $ smpEncode (memberId, k)) memberKey_
   where
-    key_ = memberPubKey <|> bindingKey
+    matches bindingData = binding == encodeChatBinding CBGroup bindingData
+    memberKey_ = memberPubKey <|> bindingKey
     bindingKey = case B.uncons binding of
       Just ('G', d) -> eitherToMaybe $ snd <$> (smpDecode d :: Either String (MemberId, C.PublicKeyEd25519))
       _ -> Nothing

@@ -225,7 +225,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                     -- we have 1 chunk - use it as URI whether it is redirect or not
                     ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
                     toView $ CEvtSndStandaloneFileComplete user ft' $ map (decodeLatin1 . strEncode . FD.fileDescriptionURI) rfds'
-            Just (AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted}}) ->
+            Just (AChatItem _ d cInfo _ci@ChatItem {meta = CIMeta {itemSharedMsgId = msgId_, itemDeleted, showGroupAsSender}}) ->
               case (msgId_, itemDeleted) of
                 (Just sharedMsgId, Nothing) -> do
                   when (length rfds < length sfts) $ throwChatError $ CEInternalError "not enough XFTP file descriptions to send"
@@ -250,7 +250,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       let rfdsMemberFTs = zipWith (\rfd (conn, sft) -> (conn, sft, fileDescrText rfd)) rfds (memberFTs ms)
                           extraRFDs = drop (length rfdsMemberFTs) rfds
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
-                      descrBadge <- pure (listToMaybe rfds) $>>= \rfd -> sndDescrBadge user (CGGroup g ms) ft rfd fileExpires
+                      descrBadge <- pure (listToMaybe rfds) $>>= \rfd -> sndDescrBadge user (CGGroup g ms showGroupAsSender) ft rfd fileExpires
                       forM_ (L.nonEmpty rfdsMemberFTs) $ \rfdsMemberFTs' ->
                         sendFileDescriptions (GroupId groupId) rfdsMemberFTs' sharedMsgId fileExpires descrBadge
                       ci' <- withStore $ \db -> do
@@ -1935,7 +1935,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               -- in processFDMessage some paths are programmed as errors,
               -- for example failure on not approved relays (CEFileNotApproved).
               -- we catch error, so that even if processFDMessage fails, message can still be forwarded.
-              processFDMessage (FSMember g m_) fileId aci fileDescr fileExpires fileBadge `catchAllErrors` \_ -> pure ()
+              processFDMessage (fdSender g m_ aci) fileId aci fileDescr fileExpires fileBadge `catchAllErrors` \_ -> pure ()
               pure $ Just $ infoToDeliveryContext g scopeInfo (isChannelDir chatDir)
           | otherwise -> messageError "x.msg.file.descr: file/sender mismatch" $> Nothing
         _ -> messageError "x.msg.file.descr: invalid file description part" $> Nothing
@@ -1965,6 +1965,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             withStore' $ \db -> updateFileCancelled db user fileId (CIFSRcvError FileErrBadgeProof)
             aci_ <- withStore $ \db -> lookupChatItemByFileId db cxt user fileId
             forM_ aci_ $ \aci' -> toView $ CEvtChatItemUpdated user aci'
+
+    fdSender :: GroupInfo -> Maybe GroupMember -> AChatItem -> FileSender
+    fdSender g m_ (AChatItem _ _ _ ChatItem {meta = CIMeta {showGroupAsSender}})
+      | showGroupAsSender = FSChannel g
+      | otherwise = FSMember g m_
 
     itemFileProhibited :: AChatItem -> Bool
     itemFileProhibited (AChatItem _ _ _ ChatItem {file}) = maybe False (isJust . fileProhibited) file
@@ -2236,7 +2241,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           unless (maybe False memberBlocked m') $ autoAcceptFile file_
         processFileInv gInfo' m' =
           let fileMember_ = if sentAsGroup then Nothing else m'
-           in processFileInvitation fInv_ content (FSMember gInfo' m') $ \db -> createRcvGroupFileTransfer db userId gInfo' fileMember_ FTNormal sharedMsgId_
+              sender = if sentAsGroup then FSChannel gInfo' else FSMember gInfo' m'
+           in processFileInvitation fInv_ content sender $ \db -> createRcvGroupFileTransfer db userId gInfo' fileMember_ FTNormal sharedMsgId_
         newChatItem gInfo' m' scopeInfo ciContent ciFile_ timed live = do
           let mentions' = if maybe False memberBlocked m' then M.empty else mentions
           (ci, cInfo) <- saveRcvCI gInfo' m' scopeInfo ciContent ciFile_ timed live mentions'

@@ -4858,7 +4858,7 @@ processChatCommand cxt nm = \case
                 Just file -> do
                   let User {profile = LocalProfile {localBadge}} = user
                   fileSize <- checkSndFile (if incognitoMembership gInfo then Nothing else localBadge) file
-                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo recipients
+                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo recipients showGroupAsSender
                   fInv' <-
                     if signMsgs && useRelays' gInfo
                       then (\d -> (fInv :: FileInvitation) {fileDigest = Just d}) <$> cryptoFileDigest file
@@ -4922,7 +4922,7 @@ processChatCommand cxt nm = \case
       case contactOrGroup of
         CGContact Contact {activeConn} -> forM_ activeConn $ \conn ->
           withFastStore' $ \db -> createSndFTDescrXFTP db user Nothing conn ft dummyFileDescr
-        CGGroup _ ms -> forM_ ms $ \m -> saveMemberFD m `catchAllErrors` eToView
+        CGGroup _ ms _ -> forM_ ms $ \m -> saveMemberFD m `catchAllErrors` eToView
           where
             -- we are not sending files to pending members, same as with inline files
             saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =

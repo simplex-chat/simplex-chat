@@ -531,8 +531,6 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   }
   deriving (Show)
 
-type ShowGroupAsSender = Bool
-
 mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgVerified -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgVerified createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
