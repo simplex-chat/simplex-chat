@@ -123,22 +123,10 @@ fun ModalData.GroupChatInfoView(
         }
       },
       showMemberInfo = { member, groupRelay ->
-        withBGApi {
-          val r = chatModel.controller.apiGroupMemberInfo(rhId, groupInfo.groupId, member.groupMemberId)
-          val stats = r?.second
-          val (_, code) = if ((member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != GroupMemberRole.Relay) {
-            val memCode = chatModel.controller.apiGetGroupMemberCode(rhId, groupInfo.apiId, member.groupMemberId)
-            member to memCode?.second
-          } else {
-            member to null
-          }
-          ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { closeCurrent ->
-            remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
-              GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, groupRelay = groupRelay, close = closeCurrent) {
-                closeCurrent()
-                close()
-              }
-            }
+        ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { closeCurrent ->
+          GroupMemberInfoView(rhId, groupInfo, member, scrollToItemId, chatModel, openedFromSupportChat = false, groupRelay = groupRelay, close = closeCurrent) {
+            closeCurrent()
+            close()
           }
         }
       },

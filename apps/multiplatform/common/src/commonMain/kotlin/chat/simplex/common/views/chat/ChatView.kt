@@ -499,29 +499,11 @@ fun ChatView(
             showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
               hideKeyboard(view)
               groupMembersJob.cancel()
-              groupMembersJob = scope.launch(Dispatchers.Default) {
-                val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
-                val stats = r?.second
-                val (updatedMember, code) = if ((member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != GroupMemberRole.Relay) {
-                  val memCode = chatModel.controller.apiGetGroupMemberCode(chatRh, groupInfo.apiId, member.groupMemberId)
-                  (memCode?.first ?: r?.first ?: member) to memCode?.second
-                } else {
-                  (r?.first ?: member) to null
-                }
-                if (!isActive || chatModel.chatId.value != groupInfo.id) return@launch
-                // members are not loaded in large groups, so only the opened member is added to the model
-                withContext(Dispatchers.Main) {
-                  chatModel.chatsContext.upsertGroupMember(chatRh, groupInfo, updatedMember)
-                }
-
-                if (chatsCtx.secondaryContextFilter == null) {
-                  ModalManager.end.closeModals()
-                }
-                ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
-                  remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
-                    GroupMemberInfoView(chatRh, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, close = close, closeAll = close)
-                  }
-                }
+              if (chatsCtx.secondaryContextFilter == null) {
+                ModalManager.end.closeModals()
+              }
+              ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
+                GroupMemberInfoView(chatRh, groupInfo, member, scrollToItemId, chatModel, openedFromSupportChat = false, close = close, closeAll = close)
               }
             },
             loadMessages = { chatId, pagination, visibleItemIndexes ->
