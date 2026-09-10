@@ -842,9 +842,9 @@ nameStatus SimplexDomain {subDomain} = \case
   SNAAvailable {} | not (null subDomain) -> "not registered, and not registrable on its own"
   SNAAvailable {yearPriceUSD = Nothing, minLabelLength} ->
     "too short: names need at least " <> B.pack (show minLabelLength) <> " characters"
-  SNAAvailable {yearPriceUSD = Just cents, auctionUntil} ->
-    "available, " <> usd cents <> " a year"
-      <> maybe "" ((", plus a premium until " <>) . day) auctionUntil
+  -- .testing charges nothing, so a zero price is an answer, not a missing one
+  SNAAvailable {yearPriceUSD = Just 0} -> "available, free"
+  SNAAvailable {yearPriceUSD = Just cents} -> "available, " <> usd cents <> " a year"
   where
     day = B.pack . formatTime defaultTimeLocale "%Y-%m-%d"
 
@@ -2773,9 +2773,10 @@ viewChatError isCmd logLevel testView = \case
               [plain $ name <> "resolves to an address that claims " <> maybe "no name" strEncode claimed_]
             SDENotRegistered -> [plain $ name <> "is not registered"]
             SDEUnavailable a -> [plain $ name <> "is " <> nameStatus domain a]
-            SDEResolvesElsewhere links ->
-              plain (name <> "does not resolve to this address, it resolves to:")
-                : map (plain . ("  " <>) . encodeUtf8) links
+            SDEResolvesElsewhere nameType links ->
+              let here = case nameType of NTContact -> "address"; NTPublicGroup -> "channel"
+               in plain (name <> "does not resolve to this " <> here <> ", it resolves to:")
+                    : map (plain . ("  " <>) . encodeUtf8) links
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->

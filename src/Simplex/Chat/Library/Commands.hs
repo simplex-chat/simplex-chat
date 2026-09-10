@@ -1596,7 +1596,7 @@ processChatCommand cxt nm = \case
             UserContactLink {shortLinkDataSet, connLinkContact = CCLink _ sl_} <- withFastStore (`getUserAddress` user)
             case sl_ of
               Just sl | shortLinkDataSet -> do
-                checkNameClaim nm user domain sl nrSimplexContact
+                checkNameClaim nm user domain NTContact sl nrSimplexContact
                 pure $ Just (CLShort sl)
               _ -> throwCmdError "create the address short link and add it to name"
         let p' = (fromLocalProfile p :: Profile) {contactDomain = mkDomainClaim <$> domain_, contactLink = cl'}
@@ -3292,7 +3292,7 @@ processChatCommand cxt nm = \case
         let domainChanged = (claimDomain <$> newClaim) /= (claimDomain <$> (existingAccess >>= groupDomainClaim))
         forM_ (claimDomain <$> newClaim) $ \newDomain ->
           when domainChanged $ do
-            checkNameClaim nm user newDomain groupLink nrSimplexChannel
+            checkNameClaim nm user newDomain NTPublicGroup groupLink nrSimplexChannel
         runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}} (isJust newClaim && domainChanged)
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
@@ -5048,14 +5048,14 @@ firstNameLink ctType = foldr (\t r -> nameLink t <|> r) Nothing
 
 -- | Check that a name resolves to this link, and when it does not, say what the
 -- registry says about it.
-checkNameClaim :: NetworkRequestMode -> User -> SimplexDomain -> ConnShortLink 'CMContact -> (NameRecord -> [Text]) -> CM ()
-checkNameClaim nm user domain sLnk nameLinks = do
+checkNameClaim :: NetworkRequestMode -> User -> SimplexDomain -> SimplexNameType -> ConnShortLink 'CMContact -> (NameRecord -> [Text]) -> CM ()
+checkNameClaim nm user domain nameType sLnk nameLinks = do
   reg <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
   case resolvedRecord_ reg of
     Nothing -> unavailable domain reg
     Just nr -> case nameLinks nr of
       [] -> notReady SDENoValidLink
-      links -> unless (nameResolvesTo sLnk links) $ notReady (SDEResolvesElsewhere links)
+      links -> unless (nameResolvesTo sLnk links) $ notReady (SDEResolvesElsewhere nameType links)
       where
         notReady = throwChatError . CESimplexDomainNotReady domain
 
@@ -5079,11 +5079,10 @@ nameAvailability :: SimplexDomain -> NameRegistration -> SimplexNameAvailability
 nameAvailability SimplexDomain {domain} = \case
   NRRegistered {expires, graceUntil, reservedReason_} ->
     SNARegistered {expires = utcTime <$> expires, graceUntil = utcTime <$> graceUntil, reserved = reservedReason_}
-  NRAvailable {pricing = NamePricing {rentPrices, basePrice, minLabelLength}, auctionUntil} ->
+  NRAvailable {pricing = NamePricing {rentPrices, basePrice, minLabelLength}} ->
     SNAAvailable
       { yearPriceUSD = if len < minLabelLength then Nothing else Just (cents $ M.findWithDefault basePrice len rentPrices),
-        minLabelLength,
-        auctionUntil = utcTime <$> auctionUntil
+        minLabelLength
       }
   NRReserved {reservedReason} -> SNAReserved reservedReason
   where

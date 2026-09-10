@@ -364,7 +364,7 @@ chatTypesDocsData =
     (sti @SimplexDomainError, STUnion, "SDE", [], "", ""),
     (sti @SimplexDomainProof, STRecord, "", [], "", ""),
     (sti @SimplexLinkType, STEnum, "XL", [], "", ""),
-    (sti @SimplexNameAvailability, STUnion, "SNA", [], "", "What the registry says about a name that is not this profile's. `yearPriceUSD` is US cents for one year, absent when the label is shorter than `minLabelLength`; `auctionUntil` is set while the name also costs a premium, which the registry prices continuously and so is not quoted."),
+    (sti @SimplexNameAvailability, STUnion, "SNA", [], "", "What the registry says about a name. `yearPriceUSD` is US cents per year, absent when the label is shorter than `minLabelLength`."),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
     (sti @SimplexNameType, STEnum, "NT", [], "", ""),
     (sti @SimplexTLD, STEnum, "TLD", [], "", ""),

@@ -2854,6 +2854,7 @@ class SimplexDomainError_unavailable(TypedDict):
 
 class SimplexDomainError_resolvesElsewhere(TypedDict):
     type: Literal["resolvesElsewhere"]
+    claimNameType: "SimplexNameType"
     resolvedLinks: list[str]
 
 class SimplexDomainError_notRegistered(TypedDict):
@@ -2876,7 +2877,7 @@ class SimplexDomainProof(TypedDict):
 
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
 
-# What the registry says about a name that is not this profile's. `yearPriceUSD` is US cents for one year, absent when the label is shorter than `minLabelLength`; `auctionUntil` is set while the name also costs a premium, which the registry prices continuously and so is not quoted.
+# What the registry says about a name. `yearPriceUSD` is US cents per year, absent when the label is shorter than `minLabelLength`.
 
 class SimplexNameAvailability_registered(TypedDict):
     type: Literal["registered"]
@@ -2888,7 +2889,6 @@ class SimplexNameAvailability_available(TypedDict):
     type: Literal["available"]
     yearPriceUSD: NotRequired[int]  # int64
     minLabelLength: int  # int
-    auctionUntil: NotRequired[str]  # ISO-8601 timestamp
 
 class SimplexNameAvailability_reserved(TypedDict):
     type: Literal["reserved"]

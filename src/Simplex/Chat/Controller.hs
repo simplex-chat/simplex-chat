@@ -1450,7 +1450,7 @@ data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain {claimedDomain :: Maybe SimplexDomain} -- the name the resolved address claims, if any
   | SDEUnavailable {availability :: SimplexNameAvailability} -- what the registry says instead
-  | SDEResolvesElsewhere {resolvedLinks :: [Text]} -- resolves, but not to this address
+  | SDEResolvesElsewhere {claimNameType :: SimplexNameType, resolvedLinks :: [Text]} -- resolves, but elsewhere
   | SDENotRegistered -- connecting only needs to know the name reaches no one
   deriving (Eq, Show)
 
@@ -1467,10 +1467,7 @@ data SimplexNameAvailability
   | SNAAvailable
       { -- | US cents for one year; Nothing when the label is too short
         yearPriceUSD :: Maybe Int64,
-        minLabelLength :: Int,
-        -- | until here it also costs a premium, which the registry prices
-        -- continuously and so is not quoted
-        auctionUntil :: Maybe UTCTime
+        minLabelLength :: Int
       }
   | SNAReserved {reason :: NameReservedReason}
   deriving (Eq, Show)

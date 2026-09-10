@@ -4096,6 +4096,7 @@ export namespace SimplexDomainError {
 
   export interface ResolvesElsewhere extends Interface {
     type: "resolvesElsewhere"
+    claimNameType: SimplexNameType
     resolvedLinks: string[]
   }
 
@@ -4117,7 +4118,7 @@ export enum SimplexLinkType {
   Channel = "channel",
   Relay = "relay",
 }
-// What the registry says about a name that is not this profile's. `yearPriceUSD` is US cents for one year, absent when the label is shorter than `minLabelLength`; `auctionUntil` is set while the name also costs a premium, which the registry prices continuously and so is not quoted.
+// What the registry says about a name. `yearPriceUSD` is US cents per year, absent when the label is shorter than `minLabelLength`.
 
 export type SimplexNameAvailability = 
   | SimplexNameAvailability.Registered
@@ -4142,7 +4143,6 @@ export namespace SimplexNameAvailability {
     type: "available"
     yearPriceUSD?: number // int64
     minLabelLength: number // int
-    auctionUntil?: string // ISO-8601 timestamp
   }
 
   export interface Reserved extends Interface {

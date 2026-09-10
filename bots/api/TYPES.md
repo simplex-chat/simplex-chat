@@ -3689,6 +3689,7 @@ Unavailable:
 
 ResolvesElsewhere:
 - type: "resolvesElsewhere"
+- claimNameType: [SimplexNameType](#simplexnametype)
 - resolvedLinks: [string]
 
 NotRegistered:
@@ -3721,7 +3722,7 @@ NotRegistered:
 
 ## SimplexNameAvailability
 
-What the registry says about a name that is not this profile's. `yearPriceUSD` is US cents for one year, absent when the label is shorter than `minLabelLength`; `auctionUntil` is set while the name also costs a premium, which the registry prices continuously and so is not quoted.
+What the registry says about a name. `yearPriceUSD` is US cents per year, absent when the label is shorter than `minLabelLength`.
 
 **Discriminated union type**:
 
@@ -3735,7 +3736,6 @@ Available:
 - type: "available"
 - yearPriceUSD: int64?
 - minLabelLength: int
-- auctionUntil: UTCTime?
 
 Reserved:
 - type: "reserved"

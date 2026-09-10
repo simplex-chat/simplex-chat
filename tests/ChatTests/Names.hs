@@ -155,7 +155,7 @@ testClaimChannelNameElsewhere ps = withSmpServerAndNames $ \reg ->
       -- the name resolves to a different channel's link
       registerName reg teamName (channelNameRecord "team" (T.pack otherLink))
       alice ##> "/public group access #team domain=team.simplex"
-      alice <## "SimpleX name team.simplex does not resolve to this address, it resolves to:"
+      alice <## "SimpleX name team.simplex does not resolve to this channel, it resolves to:"
       alice <## ("  " <> otherLink)
       shortLink `shouldNotBe` otherLink
   where
