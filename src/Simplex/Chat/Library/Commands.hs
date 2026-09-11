@@ -81,11 +81,10 @@ import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Delivery
 import Simplex.Chat.Store.Direct
+import Simplex.Chat.Store.Feeds
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Messages
-import Simplex.Chat.Store.Feeds hiding (detachFeedInstances)
-import qualified Simplex.Chat.Store.Feeds as Store
 import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
@@ -818,7 +817,7 @@ processChatCommand cxt nm = \case
                     when changed $
                       addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
                     let edited = itemLive /= Just True
-                    when (itemFeed == Just CIFLinked) $ Store.detachFeedInstances db [itemId]
+                    when (itemFeed == Just CIFLinked) $ detachFeedInstances db [itemId]
                     updateDirectChatItem' db user contactId (detachedInstance ci) (CISndMsgContent mc) edited live Nothing $ Just msgId
                   startUpdatedTimedItemThread user (ChatRef CTDirect contactId Nothing) ci ci'
                   pure $ CRChatItemUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci')
@@ -854,7 +853,7 @@ processChatCommand cxt nm = \case
                         when changed $
                           addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
                         let edited = itemLive /= Just True
-                        when (itemFeed == Just CIFLinked) $ Store.detachFeedInstances db [itemId]
+                        when (itemFeed == Just CIFLinked) $ detachFeedInstances db [itemId]
                         ci' <- updateGroupChatItem db user groupId (detachedInstance ci) (CISndMsgContent mc) edited live $ Just msgId
                         updateGroupCIMentions db gInfo ci' ciMentions
                       startUpdatedTimedItemThread user (ChatRef CTGroup groupId scope) ci ci'
@@ -901,12 +900,12 @@ processChatCommand cxt nm = \case
   APIDeleteChatItem (ChatRef cType chatId scope) itemIds mode -> withUser $ \user -> case cType of
     CTDirect -> withContactLock "deleteChatItem" chatId $ do
       (ct, items) <- getCommandDirectChatItems user chatId itemIds
-      let markDeleted items' = do
-            items'' <- detachFeedInstances items'
-            markDirectCIsDeleted user ct items'' =<< liftIO getCurrentTime
+      let markDeleted = do
+            items' <- detachFeedItems items
+            markDirectCIsDeleted user ct items' =<< liftIO getCurrentTime
       deletions <- case mode of
         CIDMInternal -> deleteDirectCIs user ct items
-        CIDMInternalMark -> markDeleted items
+        CIDMInternalMark -> markDeleted
         CIDMHistory -> throwChatError CEInvalidChatItemDelete
         CIDMBroadcast -> do
           assertDeletable items
@@ -917,7 +916,7 @@ processChatCommand cxt nm = \case
             sendDirectContactMessages user ct events'
           if featureAllowed SCFFullDelete forUser ct
             then deleteDirectCIs user ct items
-            else markDeleted items
+            else markDeleted
       pure $ CRChatItemsDeleted user deletions True False
     CTGroup -> withGroupLock "deleteChatItem" chatId $ do
       (gInfo, items) <- getCommandGroupChatItems user chatId itemIds
@@ -928,7 +927,7 @@ processChatCommand cxt nm = \case
           | publicGroupEditor gInfo (membership gInfo) -> throwChatError CEInvalidChatItemDelete
           | otherwise -> deleteGroupCIs user gInfo chatScopeInfo items Nothing =<< liftIO getCurrentTime
         CIDMInternalMark -> do
-          items' <- detachFeedInstances items
+          items' <- detachFeedItems items
           markGroupCIsDeleted user gInfo chatScopeInfo items' Nothing =<< liftIO getCurrentTime
         CIDMBroadcast -> do
           recipients <- getGroupRecipients cxt user gInfo chatScopeInfo groupKnockingVersion
@@ -4249,11 +4248,11 @@ processChatCommand cxt nm = \case
         ciIds <- concat <$> withStore' (\db -> forM items $ \(CChatItem _ ci) -> markMessageReportsDeleted db user gInfo ci membership deletedTs)
         unless (null ciIds) $ toView $ CEvtGroupChatItemsDeleted user gInfo ciIds True (Just membership)
       let m = if moderation then Just membership else Nothing
-          fullDelete = groupFeatureUserAllowed SGFFullDelete gInfo
-      items' <- if fullDelete && not moderation then pure items else detachFeedInstances items
-      if fullDelete
-        then deleteGroupCIs user gInfo chatScopeInfo items' m deletedTs
-        else markGroupCIsDeleted user gInfo chatScopeInfo items' m deletedTs
+      if groupFeatureUserAllowed SGFFullDelete gInfo
+        then deleteGroupCIs user gInfo chatScopeInfo items m deletedTs
+        else do
+          items' <- detachFeedItems items
+          markGroupCIsDeleted user gInfo chatScopeInfo items' m deletedTs
     updateGroupProfileByName :: GroupName -> (GroupProfile -> GroupProfile) -> CM ChatResponse
     updateGroupProfileByName = updateGroupProfileByName_ Nothing
     updateGroupProfileByName_ :: Maybe GroupFeature -> GroupName -> (GroupProfile -> GroupProfile) -> CM ChatResponse

@@ -799,11 +799,12 @@ toBusinessChatInfo businessDomain (Just chatType, Just businessId, Just customer
 toBusinessChatInfo _ _ = Nothing
 
 groupInfoQuery :: Query
-groupInfoQuery = "SELECT " <> groupInfoQueryFields <> " " <> groupInfoQueryFrom
+groupInfoQuery = groupInfoQueryFields <> " " <> groupInfoQueryFrom
 
 groupInfoQueryFields :: Query
 groupInfoQueryFields =
   [sql|
+    SELECT
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
       gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,

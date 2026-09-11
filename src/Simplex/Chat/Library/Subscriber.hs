@@ -4198,16 +4198,22 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
     user <- getUserByGroupId db groupId
     gInfo <- getGroupInfo db cxt user groupId
     pure (user, gInfo)
-  jobWorkerLoop delay doWork $
-    withWork_ a doWork (withStore' $ \db -> getNextDeliveryJob db deliveryKey) $ \job ->
-      processDeliveryJob cxt user gInfo job
-        `catchAllErrors` \e -> do
-          withStore' $ \db -> setDeliveryJobErrStatus db (deliveryJobId job) (tshow e)
-          eToView e
+  forever $ do
+    unless (delay == 0) $ liftIO $ threadDelay' delay
+    lift $ waitForWork doWork
+    runDeliveryJobOperation cxt user gInfo
   where
     (groupId, workerScope) = deliveryKey
-    processDeliveryJob :: StoreCxt -> User -> GroupInfo -> MessageDeliveryJob -> CM ()
-    processDeliveryJob cxt user gInfo job =
+    runDeliveryJobOperation :: StoreCxt -> User -> GroupInfo -> CM ()
+    runDeliveryJobOperation cxt user gInfo = do
+      withWork_ a doWork (withStore' $ \db -> getNextDeliveryJob db deliveryKey) $ \job ->
+        processDeliveryJob job
+          `catchAllErrors` \e -> do
+            withStore' $ \db -> setDeliveryJobErrStatus db (deliveryJobId job) (tshow e)
+            eToView e
+      where
+        processDeliveryJob :: MessageDeliveryJob -> CM ()
+        processDeliveryJob job =
           case jobScopeImpliedSpec jobScope of
             DJDeliveryJob _includePending
               | not (relayServesGroup gInfo) -> do
@@ -4382,12 +4388,6 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                               Nothing -> VRValue Nothing msgBody -- sending to one member, do not reference body
                               Just 1 -> VRValue (Just 1) msgBody
                               Just _ -> VRRef 1
-jobWorkerLoop :: Int64 -> TMVar () -> CM () -> CM ()
-jobWorkerLoop delay doWork operation = forever $ do
-  unless (delay == 0) $ liftIO $ threadDelay' delay
-  lift $ waitForWork doWork
-  operation
-
 runFeedJobWorker :: AgentClient -> FeedJobKey -> Worker -> CM ()
 runFeedJobWorker a feedKey@(feedId, scope) Worker {doWork} = do
   delay <- asks $ deliveryWorkerDelay . config
@@ -4397,7 +4397,9 @@ runFeedJobWorker a feedKey@(feedId, scope) Worker {doWork} = do
     feed <- getFeed db user feedId
     pure (user, feed)
   bucketSize <- asks $ feedBucketSize . config
-  jobWorkerLoop delay doWork $
+  forever $ do
+    unless (delay == 0) $ liftIO $ threadDelay' delay
+    lift $ waitForWork doWork
     withWork_ a doWork (withStore' $ \db -> getNextFeedJob db feedKey) $ \job ->
       processFeedJob cxt user feed bucketSize job `catchAllErrors` jobError user feed job
   where

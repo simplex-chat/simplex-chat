@@ -976,11 +976,12 @@ getContact_ db cxt user@User {userId} contactId deleted = do
       (userId, contactId, BI deleted)
 
 contactQuery :: Query
-contactQuery = "SELECT " <> contactQueryFields <> " " <> contactQueryFrom
+contactQuery = contactQueryFields <> " " <> contactQueryFrom
 
 contactQueryFields :: Query
 contactQueryFields =
   [sql|
+        SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,

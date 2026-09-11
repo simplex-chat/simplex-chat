@@ -21,7 +21,10 @@ implementing:
 - The feed item's own reactions come from `getFeedCIReactions` inside
   `getFeedChatItem`, as the direct and group item getters do.
 - `CRBroadcastSent` and `viewSentBroadcast` are removed; the broadcast bot
-  matches `CRNewChatItems` and replies "Message is sent to the feed".
+  matches `CRNewChatItems` and replies "Message is being delivered to all contacts".
+- `contactQuery`, `contactQueryFields` and `contactQueryFrom` are defined in
+  `Store/Direct.hs` after `getContact_`, not in `Store/Shared.hs`, and keep
+  `SELECT` inside the fields fragment as `groupInfoQueryFields` does.
 - Tests create the feed with `createCCFeed` (as `createCCNoteFolder`), since
   test users are created by `createUserRecordAt` directly.
 

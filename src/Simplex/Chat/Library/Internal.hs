@@ -70,7 +70,7 @@ import Simplex.Chat.Delivery (FeedJobAction (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Direct
-import qualified Simplex.Chat.Store.Feeds as Store
+import Simplex.Chat.Store.Feeds
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Messages
@@ -529,9 +529,9 @@ itemsFilesInfo = mapMaybe itemFileInfo
       SMDSnd | isJust itemFeed -> Nothing
       _ -> mkCIFileInfo <$> file
 
-detachFeedInstances :: forall c. [CChatItem c] -> CM [CChatItem c]
-detachFeedInstances items = do
-  unless (null linkedIds) $ withStore' $ \db -> Store.detachFeedInstances db linkedIds
+detachFeedItems :: forall c. [CChatItem c] -> CM [CChatItem c]
+detachFeedItems items = do
+  unless (null linkedIds) $ withStore' $ \db -> detachFeedInstances db linkedIds
   pure $ map detached items
   where
     linkedIds = mapMaybe linkedItemId items
@@ -2270,13 +2270,17 @@ createSndMessage chatMsgEvent connOrGroupId =
   liftEither . runIdentity =<< lift (createSndMessages $ Identity (connOrGroupId, Nothing, chatMsgEvent))
 
 createSndMessages :: forall e t. (MsgEncodingI e, Traversable t) => t (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent e) -> CM' (t (Either ChatError SndMessage))
-createSndMessages = createSndMessages_ Nothing
-
-createFeedMessage :: Feed -> Maybe SharedMsgId -> ChatItemId -> ChatMsgEvent 'Json -> CM SndMessage
-createFeedMessage feed sharedMsgId_ feedItemId event = do
-  mkMsg <- feedMessageMaker
-  createdAt <- liftIO getCurrentTime
-  withStore $ \db -> mkMsg db feed sharedMsgId_ feedItemId event createdAt
+createSndMessages idsEvents = do
+  g <- asks random
+  vr <- chatVersionRange'
+  withStoreBatch $ \db -> fmap (createMsg db g vr) idsEvents
+  where
+    createMsg :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent e) -> IO (Either ChatError SndMessage)
+    createMsg db g vr (connOrGroupId, msgSigning_, evnt) = runExceptT $ do
+      withExceptT ChatErrorStore $ createNewSndMessage db g connOrGroupId Nothing evnt msgSigning_ encodeMessage
+      where
+        encodeMessage sharedMsgId =
+          encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
 feedMessageMaker :: CM (DB.Connection -> Feed -> Maybe SharedMsgId -> ChatItemId -> ChatMsgEvent 'Json -> UTCTime -> ExceptT StoreError IO SndMessage)
 feedMessageMaker = do
@@ -2294,7 +2298,7 @@ createFeedFileDescrJobs feed feedItemId events = do
   createdAt <- liftIO getCurrentTime
   withStore $ \db -> do
     msgs <- mapM (\evt -> mkMsg db feed Nothing feedItemId evt createdAt) events
-    liftIO $ Store.createFeedJobs db (feedId' feed) feedItemId $ FJAFileDescr (L.map msgId' msgs)
+    liftIO $ createFeedJobs db (feedId' feed) feedItemId $ FJAFileDescr (L.map msgId' msgs)
 
 feedId' :: Feed -> FeedId
 feedId' Feed {feedId} = feedId
@@ -2304,19 +2308,6 @@ msgId' SndMessage {msgId} = msgId
 
 aFeedItem :: Feed -> CChatItem 'CTFeed -> AChatItem
 aFeedItem feed (CChatItem md ci) = AChatItem SCTFeed md (FeedChat feed) ci
-
-createSndMessages_ :: forall e t. (MsgEncodingI e, Traversable t) => Maybe SharedMsgId -> t (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent e) -> CM' (t (Either ChatError SndMessage))
-createSndMessages_ sharedMsgId_ idsEvents = do
-  g <- asks random
-  vr <- chatVersionRange'
-  withStoreBatch $ \db -> fmap (createMsg db g vr) idsEvents
-  where
-    createMsg :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent e) -> IO (Either ChatError SndMessage)
-    createMsg db g vr (connOrGroupId, msgSigning_, evnt) = runExceptT $ do
-      withExceptT ChatErrorStore $ createNewSndMessage db g connOrGroupId sharedMsgId_ evnt msgSigning_ encodeMessage
-      where
-        encodeMessage sharedMsgId =
-          encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
 groupMsgSigning :: Bool -> GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
 groupMsgSigning sign GroupInfo {membership = GroupMember {memberId}, groupKeys} evt = case groupKeys of

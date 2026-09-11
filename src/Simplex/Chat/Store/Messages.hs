@@ -47,7 +47,6 @@ module Simplex.Chat.Store.Messages
     insertChatItemMessage_,
     getFeedChat,
     getFeedChatItem,
-    getFeedCIReactions,
     getFeedChatItemIdByText,
     updateFeedChatItem',
     updateFeedChatItemStatus,
@@ -1346,20 +1345,21 @@ getDirectChatLast_ db user ct contentFilter count search = do
 safeGetDirectItem :: DB.Connection -> User -> Contact -> UTCTime -> ChatItemId -> IO (CChatItem 'CTDirect)
 safeGetDirectItem db user ct currentTs itemId =
   runExceptT (getDirectCIWithReactions db user ct itemId)
-    >>= pure <$> safeToChatItem CIDirectSnd currentTs itemId
+    >>= pure <$> safeToDirectItem currentTs itemId
 
-safeToChatItem :: CIDirection c 'MDSnd -> UTCTime -> ChatItemId -> Either StoreError (CChatItem c) -> CChatItem c
-safeToChatItem chatDir currentTs itemId = \case
+safeToDirectItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTDirect) -> CChatItem 'CTDirect
+safeToDirectItem currentTs itemId = \case
   Right ci -> ci
-  Left e@(SEBadChatItem _ (Just itemTs)) -> badChatItem itemTs e
-  Left e -> badChatItem currentTs e
+  Left e@(SEBadChatItem _ (Just itemTs)) -> badDirectItem itemTs e
+  Left e -> badDirectItem currentTs e
   where
-    badChatItem ts e =
+    badDirectItem :: UTCTime -> StoreError -> CChatItem 'CTDirect
+    badDirectItem ts e =
       let errorText = T.pack $ show e
        in CChatItem
             SMDSnd
             ChatItem
-              { chatDir,
+              { chatDir = CIDirectSnd,
                 meta = dummyMeta itemId ts errorText,
                 content = CIInvalidJSON errorText,
                 mentions = M.empty,
@@ -1697,7 +1697,29 @@ getChatItemIDs db User {userId} cInfo contentFilter range count search = case cI
 safeGetGroupItem :: DB.Connection -> User -> GroupInfo -> UTCTime -> ChatItemId -> IO (CChatItem 'CTGroup)
 safeGetGroupItem db user g currentTs itemId =
   runExceptT (getGroupCIWithReactions db user g itemId)
-    >>= pure <$> safeToChatItem CIGroupSnd currentTs itemId
+    >>= pure <$> safeToGroupItem currentTs itemId
+
+safeToGroupItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTGroup) -> CChatItem 'CTGroup
+safeToGroupItem currentTs itemId = \case
+  Right ci -> ci
+  Left e@(SEBadChatItem _ (Just itemTs)) -> badGroupItem itemTs e
+  Left e -> badGroupItem currentTs e
+  where
+    badGroupItem :: UTCTime -> StoreError -> CChatItem 'CTGroup
+    badGroupItem ts e =
+      let errorText = T.pack $ show e
+       in CChatItem
+            SMDSnd
+            ChatItem
+              { chatDir = CIGroupSnd,
+                meta = dummyMeta itemId ts errorText,
+                content = CIInvalidJSON errorText,
+                mentions = M.empty,
+                formattedText = Nothing,
+                quotedItem = Nothing,
+                reactions = [],
+                file = Nothing
+              }
 
 getGroupMemberChatItemLast :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
@@ -1915,7 +1937,29 @@ getLocalChatLast_ db user nf contentFilter count search = do
 safeGetLocalItem :: DB.Connection -> User -> NoteFolder -> UTCTime -> ChatItemId -> IO (CChatItem 'CTLocal)
 safeGetLocalItem db user NoteFolder {noteFolderId} currentTs itemId =
   runExceptT (getLocalChatItem db user noteFolderId itemId)
-    >>= pure <$> safeToChatItem CILocalSnd currentTs itemId
+    >>= pure <$> safeToLocalItem currentTs itemId
+
+safeToLocalItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTLocal) -> CChatItem 'CTLocal
+safeToLocalItem currentTs itemId = \case
+  Right ci -> ci
+  Left e@(SEBadChatItem _ (Just itemTs)) -> badLocalItem itemTs e
+  Left e -> badLocalItem currentTs e
+  where
+    badLocalItem :: UTCTime -> StoreError -> CChatItem 'CTLocal
+    badLocalItem ts e =
+      let errorText = T.pack $ show e
+       in CChatItem
+            SMDSnd
+            ChatItem
+              { chatDir = CILocalSnd,
+                meta = dummyMeta itemId ts errorText,
+                content = CIInvalidJSON errorText,
+                mentions = M.empty,
+                formattedText = Nothing,
+                quotedItem = Nothing,
+                reactions = [],
+                file = Nothing
+              }
 
 getLocalChatAfter_ :: DB.Connection -> User -> NoteFolder -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTLocal)
 getLocalChatAfter_ db user nf@NoteFolder {noteFolderId} contentFilter afterId count search = do
@@ -3385,7 +3429,29 @@ getFeedCIReactions db User {userId} itemSharedMsgId =
 safeGetFeedItem :: DB.Connection -> User -> Feed -> UTCTime -> ChatItemId -> IO (CChatItem 'CTFeed)
 safeGetFeedItem db user Feed {feedId} currentTs itemId =
   runExceptT (getFeedChatItem db user feedId itemId)
-    >>= pure <$> safeToChatItem CIFeedSnd currentTs itemId
+    >>= pure <$> safeToFeedItem currentTs itemId
+
+safeToFeedItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTFeed) -> CChatItem 'CTFeed
+safeToFeedItem currentTs itemId = \case
+  Right ci -> ci
+  Left e@(SEBadChatItem _ (Just itemTs)) -> badFeedItem itemTs e
+  Left e -> badFeedItem currentTs e
+  where
+    badFeedItem :: UTCTime -> StoreError -> CChatItem 'CTFeed
+    badFeedItem ts e =
+      let errorText = T.pack $ show e
+       in CChatItem
+            SMDSnd
+            ChatItem
+              { chatDir = CIFeedSnd,
+                meta = dummyMeta itemId ts errorText,
+                content = CIInvalidJSON errorText,
+                mentions = M.empty,
+                formattedText = Nothing,
+                quotedItem = Nothing,
+                reactions = [],
+                file = Nothing
+              }
 
 getFeedChat :: DB.Connection -> User -> FeedId -> Maybe MsgContentTag -> ChatPagination -> Maybe Text -> ExceptT StoreError IO (Chat 'CTFeed, Maybe NavigationInfo)
 getFeedChat db user feedId contentFilter pagination search_ = do

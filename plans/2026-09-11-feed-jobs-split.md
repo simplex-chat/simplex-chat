@@ -93,8 +93,7 @@ Feed job statements move to `src/Simplex/Chat/Store/Feeds.hs`:
 `src/Simplex/Chat/Library/Subscriber.hs`:
 
 - `runDeliveryJobWorker` loses its `case deliveryKey` and handles groups only
-- add `runFeedJobWorker` with the same `jobLoop`/`withWork_` shape
-- extract the shared shape as `jobWorkerLoop :: Int64 -> Worker -> CM () -> CM ()` plus `jobOperation`, parameterised by the read, the processor and the error writer
+- add `runFeedJobWorker` with the same `forever`/`withWork_` shape; `runDeliveryJobWorker` keeps its master shape
 - `getDeliveryJobWorker` handles `DeliveryWorkerKey`; add `getFeedJobWorker` for `FeedJobKey`
 - `startDeliveryJobWorkers` reads group scopes; add `startFeedJobWorkers` reading feed scopes
 - `startFeedWorkers` uses `getFeedJobWorker`

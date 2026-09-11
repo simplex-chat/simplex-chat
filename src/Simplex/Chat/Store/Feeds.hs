@@ -111,12 +111,11 @@ deleteFeedCIs db User {userId} Feed {feedId} = do
 getFeedContactsByCursor :: DB.Connection -> StoreCxt -> User -> ChatItemId -> Maybe ContactId -> Int -> IO [(Contact, Maybe ChatItemId)]
 getFeedContactsByCursor db cxt user@User {userId} feedItemId cursorId_ count = do
   currentTs <- getCurrentTime
-  map (\(Only itemId_ :. row) -> (toContact currentTs cxt user [] row, itemId_))
+  map (\(row :. Only itemId_) -> (toContact currentTs cxt user [] row, itemId_))
     <$> DB.query
       db
-      ( "SELECT i.chat_item_id, "
-          <> contactQueryFields
-          <> " "
+      ( contactQueryFields
+          <> ", i.chat_item_id "
           <> contactQueryFrom
           <> " LEFT JOIN chat_items i ON i.feed_item_id = ? AND i.contact_id = ct.contact_id"
           <> " WHERE ct.user_id = ? AND ct.deleted = 0 AND ct.is_user = 0 AND ct.contact_id > ?"
@@ -127,12 +126,11 @@ getFeedContactsByCursor db cxt user@User {userId} feedItemId cursorId_ count = d
 getFeedCustomerGroupsByCursor :: DB.Connection -> StoreCxt -> User -> ChatItemId -> Maybe GroupId -> Int -> IO [(GroupInfo, Maybe ChatItemId)]
 getFeedCustomerGroupsByCursor db cxt User {userId, userContactId} feedItemId cursorId_ count = do
   currentTs <- getCurrentTime
-  map (\(Only itemId_ :. row) -> (toGroupInfo currentTs cxt userContactId [] row, itemId_))
+  map (\(row :. Only itemId_) -> (toGroupInfo currentTs cxt userContactId [] row, itemId_))
     <$> DB.query
       db
-      ( "SELECT i.chat_item_id, "
-          <> groupInfoQueryFields
-          <> " "
+      ( groupInfoQueryFields
+          <> ", i.chat_item_id "
           <> groupInfoQueryFrom
           <> " LEFT JOIN chat_items i ON i.feed_item_id = ? AND i.group_id = g.group_id"
           <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.business_chat = ? AND g.group_id > ?"
@@ -182,12 +180,11 @@ instanceSpecCond = \case
 getFeedContactInstancesByCursor :: DB.Connection -> StoreCxt -> User -> ChatItemId -> FeedJobAction -> Maybe ContactId -> Int -> IO [(Contact, ChatItemId)]
 getFeedContactInstancesByCursor db cxt user@User {userId} feedItemId spec cursorId_ count = do
   currentTs <- getCurrentTime
-  map (\(Only itemId :. row) -> (toContact currentTs cxt user [] row, itemId))
+  map (\(row :. Only itemId) -> (toContact currentTs cxt user [] row, itemId))
     <$> DB.query
       db
-      ( "SELECT i.chat_item_id, "
-          <> contactQueryFields
-          <> " "
+      ( contactQueryFields
+          <> ", i.chat_item_id "
           <> contactQueryFrom
           <> " JOIN chat_items i ON i.contact_id = ct.contact_id"
           <> " WHERE i.user_id = ? AND i.feed_item_id = ? AND i.contact_id > ?"
@@ -199,12 +196,11 @@ getFeedContactInstancesByCursor db cxt user@User {userId} feedItemId spec cursor
 getFeedGroupInstancesByCursor :: DB.Connection -> StoreCxt -> User -> ChatItemId -> FeedJobAction -> Maybe GroupId -> Int -> IO [(GroupInfo, ChatItemId)]
 getFeedGroupInstancesByCursor db cxt User {userId, userContactId} feedItemId spec cursorId_ count = do
   currentTs <- getCurrentTime
-  map (\(Only itemId :. row) -> (toGroupInfo currentTs cxt userContactId [] row, itemId))
+  map (\(row :. Only itemId) -> (toGroupInfo currentTs cxt userContactId [] row, itemId))
     <$> DB.query
       db
-      ( "SELECT i.chat_item_id, "
-          <> groupInfoQueryFields
-          <> " "
+      ( groupInfoQueryFields
+          <> ", i.chat_item_id "
           <> groupInfoQueryFrom
           <> " JOIN chat_items i ON i.group_id = g.group_id"
           <> " WHERE i.user_id = ? AND mu.contact_id = ? AND i.feed_item_id = ? AND i.group_id > ?"
