@@ -277,10 +277,10 @@ acceptMemberHook
     when (useMemberFilter img $ rejectNames a) checkName
     pure $
       if
-        | knocking -> (GAPendingReview, memberRole)
-        | alwaysCaptcha || useMemberFilter img (passCaptcha a) -> (GAPendingApproval, GRMember)
+        | knocking -> (GAPendingReview, GRObserver) -- memberRole)
+        | alwaysCaptcha || useMemberFilter img (passCaptcha a) -> (GAPendingApproval, GRObserver) -- GRMember)
         | useMemberFilter img (makeObserver a) -> (GAAccepted, GRObserver)
-        | otherwise -> (GAAccepted, memberRole)
+        | otherwise -> (GAAccepted, GRObserver) -- memberRole)
     where
       checkName :: ExceptT GroupRejectionReason IO ()
       checkName
