@@ -57,6 +57,7 @@ import Data.Time (UTCTime, getCurrentTime)
 import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
+import Simplex.Chat.Store.Direct (contactQueryFields, contactQueryFrom)
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, getWorkItem, maybeFirstRow)
