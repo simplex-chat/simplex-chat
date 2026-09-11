@@ -1,0 +1,87 @@
+{# Crowdfunding home hero — testing-water / crowdfunding-full.
+   Selected by the homeHero flag (see .eleventy.js); layout/positioning is in design3.css (.cf-hero). #}
+{% set lang = page.url | getlang %}
+<section class="page-1 page cf-hero cf-hero--{{ homeHero }}">
+    <div class="area">
+        <div class="content">
+            {%- if homeHero == 'testing-water' -%}
+            <h1>{{ "index-hero-h1" | i18n({}, lang) | safe }}</h1>
+            <h2 class="gradient-text">{{ "index-hero-h2" | i18n({}, lang) | safe }} <span class="cf-arrow">&rarr;</span></h2>
+            {%- else -%}
+            <h1>{{ "index-hero-cf-h1" | i18n({}, lang) | safe }}</h1>
+            <h2 class="gradient-text">{{ "index-hero-cf-h2" | i18n({}, lang) | safe }}</h2>
+            {%- endif -%}
+            <p>{{ "index-hero-p1" | i18n({}, lang) | safe }}</p>
+
+            {%- if homeHero == 'testing-water' -%}
+            <div class="cf-flag-block">
+                <img class="cf-flag dark:hidden" src="/img/design_3/wefunder-light.webp" alt="">
+                <img class="cf-flag hidden dark:block" src="/img/design_3/wefunder.webp" alt="">
+                <div class="cf-reserve">
+                    <p class="cf-reserve-h">{{ "index-hero-cf-reserve-h" | i18n({}, lang) | safe }}
+                        <a class="gradient-text" href="{{ reserveUrl }}" target="_blank" rel="noopener">{{ "index-hero-cf-reserve-cta" | i18n({}, lang) | safe }}</a>
+                    </p>
+                    <p class="cf-disclaimer">{{ "index-hero-cf-disclaimer" | i18n({}, lang) | safe }}</p>
+                </div>
+            </div>
+            {%- else -%}
+            <img class="cf-flag dark:hidden" src="/img/design_3/wefunder-light.webp" alt="">
+            <img class="cf-flag hidden dark:block" src="/img/design_3/wefunder.webp" alt="">
+            <a class="cf-invest gradient-text" href="{{ wefunderUrl }}" target="_blank" rel="noopener">{{ "index-hero-cf-invest" | i18n({}, lang) | safe }}</a>
+            {%- endif -%}
+
+            <div class="socials">
+                <a href="/downloads" class="desktop-app-btn hidden" title="{{ 'index-hero-download-desktop-btn-title' | i18n({}, lang) }}">
+                    <div class="btn-content">
+                        <div>
+                            <img class="no-border" src="/img/design_3/socials/linux.png">
+                            <img class="no-border" src="/img/design_3/socials/apple.png" alt="">
+                            <img class="no-border" src="/img/design_3/socials/windows.png" alt="">
+                        </div>
+                        <p>Download<br>Desktop App</p>
+                    </div>
+                </a>
+                <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="/img/new/apple_store.svg"></a>
+                <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img src="/img/new/google_play.svg"></a>
+                <a class="f-droid-btn hidden" href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid" title="{{ 'index-f-droid-title' | i18n({}, lang) }}"><img src="/img/new/f_droid.svg"></a>
+                <a class="testflight-btn hidden" href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="no-border" src="/img/design_3/testflight-dark.png" title="{{ 'index-testflight-title' | i18n({}, lang) }}"></a>
+                <a class="android-btn hidden" href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk" target="_blank"><img src="/img/design_3/android-dark.png"></a>
+            </div>
+            <div class="security-btns">
+                <a title="{{ 'index-security-assessment-title' | i18n({}, lang) }}" href="https://www.trailofbits.com/about" target="_blank">
+                    <img class="dark:hidden" src="/img/trail-of-bits-light.png" alt="Trail of Bits">
+                    <img class="hidden dark:block" src="/img/trail-of-bits-dark.png" alt="Trail of Bits">
+                </a>
+                <a class="box-btn btn-1" title="{{ 'index-security-review-2022-title' | i18n({}, lang) }}" href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html">
+                    2022
+                </a>
+                <a class="box-btn gold-gradient" title="{{ 'index-security-review-2024-title' | i18n({}, lang) }}" href="/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html">
+                    2024
+                </a>
+                <p class="security-audits">
+                    {{ 'index-security-audits-label' | i18n({}, lang) | safe }}
+                </p>
+            </div>
+            <div class="publications-btns">
+                <a title="{{ 'index-publications-privacy-guides-title' | i18n({}, lang) }}" href="https://www.privacyguides.org/en/real-time-communication/#simplex-chat" target="_blank">
+                    <img class="dark:hidden" src="/img/design_3/publications/privacy-guides-light.png" alt="Privacy Guides">
+                    <img class="hidden dark:block" src="/img/design_3/publications/privacy-guides.png" alt="Privacy Guides">
+                </a>
+                <a title="{{ 'index-publications-whonix-title' | i18n({}, lang) }}" href="https://www.whonix.org/wiki/Chat#Recommendation" target="_blank">
+                    <img class="whonix" src="/img/design_3/publications/whonix.png" alt="Whonix">
+                </a>
+                <a title="{{ 'index-publications-heise-title' | i18n({}, lang) }}" href="https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search" target="_blank">
+                    <img class="dark:hidden" src="/img/design_3/publications/heise-light.png" alt="Heise">
+                    <img class="hidden dark:block" src="/img/design_3/publications/heise.png" alt="Heise">
+                </a>
+                <a title="{{ 'index-publications-kuketz-title' | i18n({}, lang) }}" href="https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/" target="_blank">
+                    <img class="kuketz dark:hidden" src="/img/design_3/publications/kuketz-blog-light.png" alt="Kuketz Blog">
+                    <img class="kuketz hidden dark:block" src="/img/design_3/publications/kuketz-blog.png" alt="Kuketz Blog">
+                </a>
+                <a title="{{ 'index-publications-optout-title' | i18n({}, lang) }}" href="https://optoutpod.com/episodes/s3e02-simplexchat/" target="_blank">
+                    <img src="/img/design_3/publications/optout.png" alt="Opt Out">
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
