@@ -96,7 +96,7 @@ struct BadgesRedeemCodeView: View {
     }
 
     private func codeField() -> some View {
-        TextField("SB-XXXXX-XXXXX-XXXXX-XXXXX", text: $code)
+        TextField(text: $code) { Text(verbatim: "SB-XXXXX-XXXXX-XXXXX-XXXXX") }
             .font(.body.monospaced())
             .multilineTextAlignment(.center)
             .autocorrectionDisabled(true)

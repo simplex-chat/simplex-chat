@@ -33,6 +33,7 @@ external fun chatParseServer(str: String): String
 external fun chatParseUri(str: String, safe: Int): String
 external fun chatPasswordHash(pwd: String, salt: String): String
 external fun chatValidName(name: String): String
+external fun chatParseBadgeCode(code: String): String
 external fun chatJsonLength(str: String): Int
 external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): String
 external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>
