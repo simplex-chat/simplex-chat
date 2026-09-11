@@ -21,12 +21,14 @@ import qualified Data.Aeson as J
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
+import Data.Text.Encoding (decodeLatin1)
 import Network.HTTP.Types (hContentType, notFound404, ok200)
 import Network.Wai (Application, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
+import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Names.Record (NameRecord (..), NameRegistration (..), NamePricing (..), USDCents (..))
 import Simplex.Messaging.Server.Names (NamesConfig (..))
-import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), fullDomainName, labelHash, labelHashText, tldSuffix)
+import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), fullDomainName, labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 
 type NameRegistry = TVar (Map Text NameRecord)
@@ -74,7 +76,7 @@ registerName reg SimplexNameInfo {nameDomain} r =
     -- a current client asks by the hashed 2LD, so registering the plain name
     -- would let these tests pass even if lookups regressed to plaintext
     key = case nameDomain of
-      SimplexDomain {nameTLD, domain, subDomain = []} -> labelHashText (labelHash domain) <> tldSuffix nameTLD
+      SimplexDomain {nameTLD, domain, subDomain = []} -> decodeLatin1 $ strEncode (labelHash domain) <> strEncode nameTLD
       d -> fullDomainName d
 
 contactNameRecord :: Text -> Text -> NameRecord
