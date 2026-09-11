@@ -16,6 +16,7 @@ struct BadgesSupportSimplexView: View {
     var showsAsSheet: Bool = false
     @State private var whyBuiltActive = false
     @State private var howItWorksActive = false
+    @State private var chooseLevelActive = false
     @State private var redeemCodeActive = false
 
     var body: some View {
@@ -62,6 +63,27 @@ struct BadgesSupportSimplexView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    // the in-app purchase path, kept compiling and uncalled until payments return after the MVP
+    private func chooseLevelButton() -> some View {
+        ZStack {
+            Button {
+                chooseLevelActive = true
+            } label: {
+                Text("Choose your level")
+            }
+            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+
+            NavigationLink(isActive: $chooseLevelActive) {
+                BadgesYourLevelView()
+                    .modifier(ThemedBackground())
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
+        }
     }
 
     private func whyBuiltButton() -> some View {
