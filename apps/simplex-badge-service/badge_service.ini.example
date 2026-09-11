@@ -5,6 +5,12 @@ host = 127.0.0.1
 port = 8080
 ; required: the directory `npm run build` writes in apps/simplex-badge-service/web
 static_dir = ./apps/simplex-badge-service/web/dist
+; serve the webapp over HTTP. On (default) is the all-in-one deployment. Off is a split deployment
+; where a reverse proxy serves the exported folder and this service is only the API and webhooks.
+serve_webapp = on
+; when set, the webapp is written here at boot with the publishable key injected, copied from
+; static_dir, for a reverse proxy to serve. Leave unset in the all-in-one deployment.
+; webapp_export_dir = /srv/webapp
 ; on behind the reverse proxy above: without it every request keys the rate limiter on the
 ; proxy's own address, so one bucket is shared by everyone. Set it off only where this
 ; listener is reached directly, since a client can write the header itself.
