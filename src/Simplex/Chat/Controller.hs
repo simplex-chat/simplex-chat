@@ -68,7 +68,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Chat.Wallet (AccountIndex, NameIndex)
+import Simplex.Chat.Wallet (NameIndex)
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
@@ -418,11 +418,10 @@ data ChatCommand
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
   | APIWallet
-  | APIWalletBind {boundAccountIndex :: Maybe AccountIndex}
   | APIWalletCreate
   | APIWalletImport {recoveryPhrase :: Text}
   | APIWalletExportSeedMnemonic
-  | APIWalletExportDerivedSecret {accountIndex :: AccountIndex, nameIndex :: NameIndex}
+  | APIWalletExportDerivedSecret {nameIndex :: NameIndex}
   | APIWalletDelete
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
@@ -750,7 +749,6 @@ allowRemoteCommand = \case
   ExecChatStoreSQL _ -> False
   ExecAgentStoreSQL _ -> False
   APIWallet -> False
-  APIWalletBind {} -> False
   APIWalletCreate -> False
   APIWalletImport _ -> False
   APIWalletExportSeedMnemonic -> False
@@ -857,7 +855,7 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
-  | CRWallet {user :: User, walletKeyExists :: Bool, walletKeyPaths :: [(Text, Text)], walletProfiles :: [Text]}
+  | CRWallet {user :: User, walletKeyExists :: Bool, walletKeyPaths :: [(Text, Text)]}
   | CRWalletSeedMnemonic {user :: User, recoveryPhrase :: Text}
   | CRWalletDerivedSecret {user :: User, keyPath :: Text, address :: Text, derivedSecret :: Text}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}

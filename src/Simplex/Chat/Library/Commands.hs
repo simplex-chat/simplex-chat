@@ -58,8 +58,8 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Store.Wallets (bindAccountIndex, createSeed, deleteSeed, getAccountIndex, getDeviceSeed, getSeedProfiles)
-import Simplex.Chat.Wallet (AccountIndex, WalletSeed (..), deriveNameKey, importRecoveryKey, nameKeySecret, newSeed, recoveryKeyPhrase, renderNameKeyPath, seedMaster)
+import Simplex.Chat.Store.Wallets (createSeed, deleteSeed, getDeviceSeed, getNextNameIndex)
+import Simplex.Chat.Wallet (NameIndex, WalletSeed (..), deriveNameKey, importRecoveryKey, nameKeySecret, newSeed, recoveryKeyPhrase, renderNameKeyPath, seedMaster)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -1494,17 +1494,10 @@ processChatCommand cxt nm = \case
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
   APIWallet -> withUser $ \user -> do
     withFastStore' getDeviceSeed >>= \case
-      Nothing -> pure $ CRWallet user False [] []
+      Nothing -> pure $ CRWallet user False []
       Just seed -> do
-        acct_ <- withFastStore' (`getAccountIndex` user)
-        paths <- maybe (pure []) (nameKeyRows seed) acct_
-        -- other profiles are named but not numbered, so a hidden one leaves no gap
-        profiles <- withFastStore' $ \db -> getSeedProfiles db (wsId seed) user
-        pure $ CRWallet user True paths profiles
-  APIWalletBind acct_ -> withUser $ \user -> do
-    seed <- deviceSeed
-    withFastStore' (\db -> bindAccountIndex db user (wsId seed) acct_) >>= either throwCmdError pure
-    processChatCommand cxt nm APIWallet
+        next <- withFastStore' $ \db -> getNextNameIndex db (wsId seed)
+        CRWallet user True <$> nameKeyRows seed next
   APIWalletCreate -> withUser $ \_ -> do
     g <- asks random
     entropy <- atomically $ newSeed MS256 g
@@ -1520,10 +1513,10 @@ processChatCommand cxt nm = \case
     seed <- deviceSeed
     phrase <- either throwCmdError pure $ recoveryKeyPhrase seed
     pure $ CRWalletSeedMnemonic user (safeDecodeUtf8 phrase)
-  APIWalletExportDerivedSecret acct nameIdx -> withUser $ \user -> do
+  APIWalletExportDerivedSecret nameIdx -> withUser $ \user -> do
     seed <- deviceSeed
-    k <- either throwCmdError pure $ seedMaster seed >>= \m -> deriveNameKey m acct nameIdx
-    pure $ CRWalletDerivedSecret user (renderNameKeyPath acct nameIdx) (decodeLatin1 . strEncode $ addressFromPrivateKey k) (safeDecodeUtf8 $ nameKeySecret k)
+    k <- either throwCmdError pure $ seedMaster seed >>= \m -> deriveNameKey m nameIdx
+    pure $ CRWalletDerivedSecret user (renderNameKeyPath nameIdx) (decodeLatin1 . strEncode $ addressFromPrivateKey k) (safeDecodeUtf8 $ nameKeySecret k)
   APIWalletDelete -> withUser $ \_ -> do
     seed <- deviceSeed
     withFastStore' $ \db -> deleteSeed db (wsId seed)
@@ -5470,11 +5463,11 @@ walletNamesShown = 2
 deviceSeed :: CM WalletSeed
 deviceSeed = withFastStore' getDeviceSeed >>= maybe (throwCmdError "no wallet key on this device") pure
 
-nameKeyRows :: WalletSeed -> AccountIndex -> CM [(Text, Text)]
-nameKeyRows seed acct = either throwCmdError pure $ do
+nameKeyRows :: WalletSeed -> NameIndex -> CM [(Text, Text)]
+nameKeyRows seed next = either throwCmdError pure $ do
   master <- seedMaster seed
-  forM (take walletNamesShown [0 ..]) $ \nm ->
-    (renderNameKeyPath acct nm,) . decodeLatin1 . strEncode . addressFromPrivateKey <$> deriveNameKey master acct nm
+  forM (take walletNamesShown [next ..]) $ \nm ->
+    (renderNameKeyPath nm,) . decodeLatin1 . strEncode . addressFromPrivateKey <$> deriveNameKey master nm
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
@@ -5594,11 +5587,9 @@ chatCommandP =
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
-      "/_wallet bind " *> (APIWalletBind . Just <$> keyIndexP),
-      "/_wallet bind" $> APIWalletBind Nothing,
       "/_wallet create" $> APIWalletCreate,
       "/_wallet import " *> (APIWalletImport <$> textP),
-      "/_wallet export " *> (APIWalletExportDerivedSecret <$> keyIndexP <* A.space <*> keyIndexP),
+      "/_wallet export " *> (APIWalletExportDerivedSecret <$> keyIndexP),
       "/_wallet export" $> APIWalletExportSeedMnemonic,
       "/_wallet delete" $> APIWalletDelete,
       "/_wallet" $> APIWallet,

@@ -54,9 +54,7 @@ CREATE TABLE users(
   auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0,
   is_user_chat_relay INTEGER NOT NULL DEFAULT 0,
   client_service INTEGER NOT NULL DEFAULT 0,
-  auto_accept_group_invitations INTEGER NOT NULL DEFAULT 0,
-  wallet_seed_id INTEGER REFERENCES wallet_seeds ON DELETE RESTRICT,
-  wallet_account_index INTEGER, -- 1 for active user
+  auto_accept_group_invitations INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -857,10 +855,10 @@ CREATE TABLE rcv_roster_transfers(
 CREATE TABLE wallet_seeds(
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
   seed BLOB NOT NULL, -- BIP-39 entropy, 16-32 bytes
-  -- known issue: after an import this starts at 0, so /_wallet bind with no
-  -- account can hand out one that already owns names
-  next_account_index INTEGER NOT NULL DEFAULT 0,
-  -- one key per device for now
+  -- known issue: after an import this starts at 1, so it can hand out a name
+  -- key at a path that already owns a name
+  next_name_index INTEGER NOT NULL DEFAULT 1,
+  -- one seed per device for now
   single_seed INTEGER NOT NULL DEFAULT 1
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
@@ -1398,7 +1396,6 @@ CREATE INDEX idx_chat_items_item_signed_by_group_member_id ON chat_items(
   item_signed_by_group_member_id
 );
 CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON wallet_seeds(single_seed);
-CREATE INDEX idx_users_wallet_seed_id ON users(wallet_seed_id);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

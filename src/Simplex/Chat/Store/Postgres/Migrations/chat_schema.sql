@@ -1517,9 +1517,7 @@ CREATE TABLE test_chat_schema.users (
     auto_accept_member_contacts smallint DEFAULT 0 NOT NULL,
     is_user_chat_relay smallint DEFAULT 0 NOT NULL,
     client_service smallint DEFAULT 0 NOT NULL,
-    auto_accept_group_invitations smallint DEFAULT 0 NOT NULL,
-    wallet_seed_id bigint,
-    wallet_account_index bigint
+    auto_accept_group_invitations smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -1538,7 +1536,7 @@ ALTER TABLE test_chat_schema.users ALTER COLUMN user_id ADD GENERATED ALWAYS AS 
 CREATE TABLE test_chat_schema.wallet_seeds (
     wallet_seed_id bigint NOT NULL,
     seed bytea NOT NULL,
-    next_account_index bigint DEFAULT 0 NOT NULL,
+    next_name_index bigint DEFAULT 1 NOT NULL,
     single_seed smallint DEFAULT 1 NOT NULL
 );
 
@@ -2667,10 +2665,6 @@ CREATE UNIQUE INDEX idx_user_contact_links_group_id ON test_chat_schema.user_con
 
 
 
-CREATE INDEX idx_users_wallet_seed_id ON test_chat_schema.users USING btree (wallet_seed_id);
-
-
-
 CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON test_chat_schema.wallet_seeds USING btree (single_seed);
 
 
@@ -3347,11 +3341,6 @@ ALTER TABLE ONLY test_chat_schema.user_contact_links
 
 ALTER TABLE ONLY test_chat_schema.user_contact_links
     ADD CONSTRAINT user_contact_links_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.users
-    ADD CONSTRAINT users_wallet_seed_id_fkey FOREIGN KEY (wallet_seed_id) REFERENCES test_chat_schema.wallet_seeds(wallet_seed_id) ON DELETE RESTRICT;
 
 
 

@@ -2,12 +2,11 @@
 
 -- | BIP-39 seeds and the keys derived from them.
 --
--- One account path per profile, one key per name under it. A name's secret is
--- a leaf, so exporting it hands over that name only.
+-- One key per name. A name's secret is a leaf, so exporting it hands over that
+-- name only.
 module Simplex.Chat.Wallet
   ( SeedId,
     WalletSeed (..),
-    AccountIndex,
     NameIndex,
     newSeed,
     importRecoveryKey,
@@ -34,10 +33,8 @@ import Simplex.Messaging.Eth.Address (ethereumPath)
 
 type SeedId = Int64
 
--- | BIP-44 account index, one per chat profile.
-type AccountIndex = Word32
-
--- | BIP-44 address index, one per name.
+-- | BIP-44 address index, one per name. Names sit in account 0, from index 1:
+-- account 0 index 0 is left for the profile accounts to start beside.
 type NameIndex = Word32
 
 data WalletSeed = WalletSeed
@@ -65,11 +62,11 @@ seedMaster s = do
   m <- B39.entropyToMnemonic (wsEntropy s)
   B32.masterKey (B39.mnemonicToSeed m "")
 
-renderNameKeyPath :: AccountIndex -> NameIndex -> Text
-renderNameKeyPath acc nm = decodeLatin1 . B32.renderPath $ ethereumPath acc nm
+renderNameKeyPath :: NameIndex -> Text
+renderNameKeyPath nm = decodeLatin1 . B32.renderPath $ ethereumPath 0 nm
 
-deriveNameKey :: B32.ExtendedKey -> AccountIndex -> NameIndex -> Either String S.PrivateKey
-deriveNameKey master acc nm = B32.xkKey <$> B32.derivePath master (ethereumPath acc nm)
+deriveNameKey :: B32.ExtendedKey -> NameIndex -> Either String S.PrivateKey
+deriveNameKey master nm = B32.xkKey <$> B32.derivePath master (ethereumPath 0 nm)
 
 -- | As wallets take it when a key is imported on its own.
 nameKeySecret :: S.PrivateKey -> ByteString
