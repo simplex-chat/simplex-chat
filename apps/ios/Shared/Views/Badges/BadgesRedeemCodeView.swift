@@ -174,9 +174,9 @@ struct BadgesRedeemCodeView: View {
                     if let badgeState {
                         BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
                     }
-                    // a redemption that leaves support ended added nothing: core accepts a code
+                    // a redemption that leaves no badge shown added nothing: core accepts a code
                     // already redeemed against this profile and answers with the badge it bought
-                    if let badgeState, badgeState.ended {
+                    if let badgeState, !badgeState.shown {
                         failure = .codeUsed
                     } else {
                         redeemed = RedeemedBadge(badgeState: badgeState)

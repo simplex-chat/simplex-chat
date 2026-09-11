@@ -3086,6 +3086,8 @@ func processReceivedMsg(_ res: ChatEvent) async {
     case let .badgeChanged(user, badgeState):
         if active(user) {
             await MainActor.run {
+                // read by core after retiring or presenting, so it carries the profile badge as changed
+                m.updateUser(user)
                 BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
             }
         }

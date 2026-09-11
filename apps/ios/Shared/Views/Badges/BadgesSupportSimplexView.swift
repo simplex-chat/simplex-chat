@@ -33,9 +33,7 @@ struct BadgesSupportSimplexView: View {
         // this profile having no badge, so it is held here and falls back to the support screen
         if badgeStateUnavailable { return .support }
         guard badgeModel.userId == userId else { return .loading }
-        // an ended badge routes to Support because core has cleared the profile badge and accepts a
-        // code again, while the purchase row the state is read from survives retirement
-        if let badgeState = badgeModel.badgeState, !badgeState.ended { return .badge(badgeState) }
+        if let badgeState = badgeModel.badgeState, badgeState.shown { return .badge(badgeState) }
         return .support
     }
 
@@ -178,7 +176,7 @@ struct BadgesYourBadgeView: View {
     var showsAsSheet: Bool = false
 
     private var title: LocalizedStringKey {
-        badgeState.ended ? "Support ended" : "Your badge"
+        badgeState.shown ? "Your badge" : "Support ended"
     }
 
     // pushed, the navigation bar carries the title and animates it; as a sheet root there is no bar

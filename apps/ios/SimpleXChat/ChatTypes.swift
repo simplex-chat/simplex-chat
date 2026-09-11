@@ -327,15 +327,12 @@ public struct LocalBadge: Codable, Hashable {
 public struct BadgeState: Codable, Hashable {
     public var badgePurchaseId: Int64
     public var badgeType: BadgeType
+    public var shown: Bool
     public var monthsLeft: Int
     public var paidThrough: Date
     public var renewsAt: Date?
     public var willRenew: Bool
     public var alert: BadgeAlert?
-
-    // the same condition core derives BASupportEnded from, and not the alert itself, which stops
-    // being raised once it is acked while support stays ended
-    public var ended: Bool { monthsLeft == 0 && paidThrough <= Date.now }
 
     public var paidThroughText: String { badgeDateText(paidThrough) }
 }

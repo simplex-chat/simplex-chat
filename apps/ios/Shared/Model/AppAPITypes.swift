@@ -1228,7 +1228,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
     // pq
     case contactPQEnabled(user: UserRef, contact: Contact, pqEnabled: Bool)
     // badges
-    case badgeChanged(user: UserRef, badgeState: BadgeState?)
+    case badgeChanged(user: User, badgeState: BadgeState?)
     case badgeAlert(user: UserRef, badgeAlert: BadgeAlert)
 
     var responseType: String {
