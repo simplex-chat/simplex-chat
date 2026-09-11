@@ -46,6 +46,7 @@ module Simplex.Chat.Store.Files
     createRcvFileTransfer,
     createRcvGroupFileTransfer,
     createFileBadgeProof,
+    setFileProhibited,
     createRosterRcvFile,
     createRcvStandaloneFileTransfer,
     appendRcvFD,
@@ -469,6 +470,14 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, currentTs, currentTs)
     forM_ fileBadge $ createFileBadgeProof db fileId BPKInvitation
   pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileProhibited = prohibited_, fileStatus = RFSNew, fileType = FTNormal, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing, cryptoArgs = Nothing}
+
+setFileProhibited :: DB.Connection -> User -> Int64 -> FileProhibited -> IO ()
+setFileProhibited db User {userId} fileId FileProhibited {maxSize, badgeStatus} = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE files SET file_max_size = ?, file_badge_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
+    (maxSize, badgeStatus, currentTs, userId, fileId)
 
 prohibitedRow :: Maybe FileProhibited -> (Maybe Integer, Maybe BadgeStatus)
 prohibitedRow = \case

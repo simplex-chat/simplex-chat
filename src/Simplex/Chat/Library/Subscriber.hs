@@ -46,7 +46,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
-import Simplex.Chat.Badges (BadgeProof, BadgeProofKind (..), BadgeStatus (..), ProofPresHeader (..))
+import Simplex.Chat.Badges (BadgeProof, BadgeProofKind (..), BadgeStatus (..), FileSizeLimits (..), ProofPresHeader (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
@@ -1943,12 +1943,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         aci <- getChatItemByFileId db cxt user fileId
         pure (fileId, aci)
       case aci of
-        AChatItem SCTGroup SMDRcv (GroupChat _g scopeInfo) ChatItem {chatDir}
+        AChatItem SCTGroup SMDRcv (GroupChat _g scopeInfo) ChatItem {chatDir, meta = CIMeta {showGroupAsSender}}
           | validSender m_ chatDir -> do
               -- in processFDMessage some paths are programmed as errors,
               -- for example failure on not approved relays (CEFileNotApproved).
               -- we catch error, so that even if processFDMessage fails, message can still be forwarded.
-              processFDMessage (fdChatBinding g m_ aci fileBadge) fileId aci fileDescr fileExpires fileBadge `catchAllErrors` \_ -> pure ()
+              processFDMessage (rcvGroupChatBinding g m_ showGroupAsSender fileBadge) fileId aci fileDescr fileExpires fileBadge `catchAllErrors` \_ -> pure ()
               pure $ Just $ infoToDeliveryContext g scopeInfo (isChannelDir chatDir)
           | otherwise -> messageError "x.msg.file.descr: file/sender mismatch" $> Nothing
         _ -> messageError "x.msg.file.descr: invalid file description part" $> Nothing
@@ -1965,36 +1965,29 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           ft' <- getRcvFileTransfer db user fileId
           pure (rfd, ft')
         when fileDescrComplete $ toView $ CEvtRcvFileDescrReady user aci ft' rfd
-        needsBadge <- fileNeedsBadge fileSize
-        let descrBadgeRequired = fileDescrComplete && needsBadge && isNothing fileProhibited
-        badgeOk <- if descrBadgeRequired then descrBadgeVerified binding_ fileSize rfd fileExpires fileBadge else pure True
-        if badgeOk
-          then do
-            when descrBadgeRequired $ forM_ fileBadge $ \badge -> withStore' $ \db -> createFileBadgeProof db fileId BPKDescription badge
-            case (fileStatus, xftpRcvFile) of
-              (RFSAccepted _, Just XFTPRcvFile {userApprovedRelays}) -> receiveViaCompleteFD user fileId rfd fileSize userApprovedRelays cryptoArgs
-              _ -> pure ()
-          else do
-            withStore' $ \db -> updateFileCancelled db user fileId (CIFSRcvError FileErrBadgeProof)
+        lims <- asks $ fileSizeLimits . config
+        prohibited_ <- case (fileDescrComplete && fileSize > noBadge lims && isNothing fileProhibited, fileBadge) of
+          (False, _) -> pure Nothing
+          (True, Nothing) -> pure $ Just FileProhibited {maxSize = noBadge lims, badgeStatus = Nothing}
+          (True, Just badge) -> do
+            st <- descrBadgeStatus binding_ fileSize rfd fileExpires badge
+            if st == BSActive
+              then Nothing <$ withStore' (\db -> createFileBadgeProof db fileId BPKDescription badge)
+              else pure $ Just FileProhibited {maxSize = noBadge lims, badgeStatus = Just st}
+        case prohibited_ of
+          Nothing -> case (fileStatus, xftpRcvFile) of
+            (RFSAccepted _, Just XFTPRcvFile {userApprovedRelays}) -> receiveViaCompleteFD user fileId rfd fileSize userApprovedRelays cryptoArgs
+            _ -> pure ()
+          Just prohibited -> do
+            withStore' $ \db -> setFileProhibited db user fileId prohibited
             aci_ <- withStore $ \db -> lookupChatItemByFileId db cxt user fileId
             forM_ aci_ $ \aci' -> toView $ CEvtChatItemUpdated user aci'
 
-    fdChatBinding :: GroupInfo -> Maybe GroupMember -> AChatItem -> Maybe BadgeProof -> Maybe ByteString
-    fdChatBinding g m_ (AChatItem _ _ _ ChatItem {meta = CIMeta {showGroupAsSender}}) =
-      rcvGroupChatBinding g m_ showGroupAsSender
-
-    descrBadgeVerified :: Maybe ByteString -> Integer -> RcvFileDescr -> Maybe UTCTime -> Maybe BadgeProof -> CM Bool
-    descrBadgeVerified binding_ fileSize RcvFileDescr {fileDescrText} fileExpires = \case
-      Nothing -> pure False
-      Just badge -> do
-        expired <- maybe (pure False) (\t -> (t <) <$> liftIO getCurrentTime) fileExpires
-        if expired
-          then pure False
-          else do
-            FD.ValidFileDescription fd <- parseFileDescription @'FRecipient fileDescrText
-            let descrHash = FD.sharedDescriptionHash fd
-            st <- badgeProofStatus ((\chatBinding -> PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash, fileExpires}) <$> binding_) badge
-            pure $ st == BSActive
+    descrBadgeStatus :: Maybe ByteString -> Integer -> RcvFileDescr -> Maybe UTCTime -> BadgeProof -> CM BadgeStatus
+    descrBadgeStatus binding_ fileSize RcvFileDescr {fileDescrText} fileExpires badge = do
+      FD.ValidFileDescription fd <- parseFileDescription @'FRecipient fileDescrText
+      let descrHash = FD.sharedDescriptionHash fd
+      badgeProofStatus ((\chatBinding -> PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash, fileExpires}) <$> binding_) badge
 
     processFileInvitation :: Maybe FileInvitation -> MsgContent -> (FileInvitation -> CM (Maybe FileProhibited)) -> (DB.Connection -> FileInvitation -> Maybe FileProhibited -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer) -> CM (Maybe (RcvFileTransfer, CIFile 'MDRcv))
     processFileInvitation fInv_ mc fileProhibited_ createRcvFT = forM fInv_ $ \fInv -> do
@@ -2020,9 +2013,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     mkValidFileInvitation fInv@FileInvitation {fileName} = fInv {fileName = safeFileNameStr fileName}
 
     validateFileInvitation :: FileInvitation -> CM FileInvitation
-    validateFileInvitation fInv@FileInvitation {fileName, fileSize}
-      | fileSize > 0 = pure $ mkValidFileInvitation fInv
-      | otherwise = throwChatError $ CEFileSize fileName
+    validateFileInvitation fInv@FileInvitation {fileName, fileSize, fileDescr}
+      | fileSize <= 0 = throwChatError $ CEFileSize fileName
+      | otherwise = do
+          -- a file that requires a badge is received from the description message, where the proof binds the description
+          needsBadge <- fileNeedsBadge fileSize
+          let fileDescr' = if needsBadge then (\fd -> (fd :: FileDescr) {fileDescrComplete = False}) <$> fileDescr else fileDescr
+          pure $ mkValidFileInvitation fInv {fileDescr = fileDescr'}
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> CM ()
     messageUpdate ct@Contact {contactId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl live_ = do

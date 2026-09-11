@@ -42,7 +42,6 @@ import Data.Type.Equality
 import Data.Typeable (Typeable)
 import GHC.TypeLits (ErrorMessage (ShowType, type (:<>:)), TypeError)
 import qualified GHC.TypeLits as Type
-import Simplex.Chat.Badges (BadgeStatus)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
@@ -531,6 +530,8 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   }
   deriving (Show)
 
+type ShowGroupAsSender = Bool
+
 mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgVerified -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgVerified createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
@@ -903,7 +904,6 @@ data FileError
   | FileErrBlocked {server :: String, blockInfo :: BlockingInfo}
   | FileErrNoFile
   | FileErrRelay {srvError :: SrvError}
-  | FileErrBadgeProof
   | FileErrOther {fileError :: Text}
   deriving (Eq, Show)
 
@@ -913,7 +913,6 @@ instance StrEncoding FileError where
     FileErrBlocked srv info -> "blocked " <> strEncode (srv, info)
     FileErrNoFile -> "no_file"
     FileErrRelay srvErr -> "relay " <> strEncode srvErr
-    FileErrBadgeProof -> "badge_proof"
     FileErrOther e -> "other " <> encodeUtf8 e
   strP =
     A.takeWhile1 (/= ' ') >>= \case
@@ -921,7 +920,6 @@ instance StrEncoding FileError where
       "blocked" -> FileErrBlocked <$> _strP <*> _strP
       "no_file" -> pure FileErrNoFile
       "relay" -> FileErrRelay <$> _strP
-      "badge_proof" -> pure FileErrBadgeProof
       "other" -> FileErrOther . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
       s -> FileErrOther . safeDecodeUtf8 . (s <>) <$> A.takeByteString
 

@@ -10,7 +10,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Time.Clock (UTCTime)
-import Simplex.Chat.Messages (GroupChatScopeInfo (..), MessageId)
+import Simplex.Chat.Messages (GroupChatScopeInfo (..), MessageId, ShowGroupAsSender)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types

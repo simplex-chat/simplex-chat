@@ -1465,8 +1465,9 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
               -- would be best if snd file had a single rcv description for all members saved in files table
               now <- liftIO getCurrentTime
               (rfd, invBadge, descrBadge) <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
+              -- a signed item forwards the author's original bytes, so its invitation proof cannot be replaced
               (invBadge', descrBadge') <-
-                if ownBadgeActive && (staleBadge now invBadge || staleBadge now descrBadge)
+                if isNothing signedMsg_ && ownBadgeActive && (staleBadge now invBadge || staleBadge now descrBadge)
                   then refreshSndBadges fileId invBadge descrBadge
                   else pure (invBadge, descrBadge)
               pure $ invCompleteDescr ciFile rfd invBadge' descrBadge'
