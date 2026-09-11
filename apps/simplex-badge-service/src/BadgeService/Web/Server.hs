@@ -46,7 +46,6 @@ import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8', encodeUtf8)
-import qualified Data.Text.IO as TIO
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Word (Word16)
 import Network.HTTP.Types (Header, Status, hCacheControl, hContentType, status200, status400, status404, status405, status409, status413, status429, status500, status503)
@@ -338,8 +337,14 @@ prepareShell ListenerConfig {lStaticDir} (Just StripeConfig {sPublishableKey}) =
       if not present
         then pure Nothing
         else do
-          html <- TIO.readFile shell
-          pure (Just (LB.fromStrict (encodeUtf8 (injectPublishableKey sPublishableKey html))))
+          -- Decode as UTF-8 explicitly: the shell holds UTF-8 (em dashes and the like), and
+          -- TIO.readFile would decode it in the locale's encoding, which fails outright under a C locale.
+          bytes <- BS.readFile shell
+          case decodeUtf8' bytes of
+            Left e -> do
+              logWarn ("the shell in " <> T.pack lStaticDir <> " is not valid UTF-8, serving the pristine one: " <> tshow e)
+              pure Nothing
+            Right html -> pure (Just (LB.fromStrict (encodeUtf8 (injectPublishableKey sPublishableKey html))))
 
 -- | A shell whose meta is not the exact placeholder is left untouched; the served-shell test guards it.
 injectPublishableKey :: Text -> Text -> Text
