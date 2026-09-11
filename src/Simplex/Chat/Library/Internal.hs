@@ -469,12 +469,10 @@ sndBadgeProof_ User {profile = LocalProfile {localBadge}} ph = case localBadge o
           Left e -> Nothing <$ logError ("sndBadgeProof: proof generation failed: " <> T.pack e)
   _ -> pure Nothing
 
-sndGroupChatBinding :: GroupInfo -> ShowGroupAsSender -> CM (Maybe ByteString)
-sndGroupChatBinding gInfo@GroupInfo {groupKeys = gks} asGroup
-  | asGroup = pure $ (\PublicGroupKeys {publicGroupId} -> encodeChatBinding CBChannel $ smpEncode publicGroupId) <$> (gks >>= publicGroupKeys)
-  | otherwise = do
-      GroupInfo {groupKeys, membership = GroupMember {memberId}} <- createUserMemberKey gInfo
-      pure $ (\GroupKeys {memberPrivKey} -> encodeChatBinding CBGroup $ groupBindingData groupKeys memberId (C.publicKey memberPrivKey)) <$> groupKeys
+sndGroupChatBinding :: GroupInfo -> ShowGroupAsSender -> Maybe ByteString
+sndGroupChatBinding GroupInfo {groupKeys, membership = GroupMember {memberId}} asGroup
+  | asGroup = (\PublicGroupKeys {publicGroupId} -> encodeChatBinding CBChannel $ smpEncode publicGroupId) <$> (groupKeys >>= publicGroupKeys)
+  | otherwise = (\GroupKeys {memberPrivKey} -> encodeChatBinding CBGroup $ groupBindingData groupKeys memberId (C.publicKey memberPrivKey)) <$> groupKeys
 
 cryptoFileDigest :: CryptoFile -> CM FD.FileDigest
 cryptoFileDigest (CryptoFile filePath cfArgs) = do
@@ -786,7 +784,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
         -- marking file as accepted and reading description in the same transaction
         -- to prevent race condition with appending description
         ci <- xftpAcceptRcvFT db cxt user fileId filePath userApproved
-        (rfd, _, _) <- getRcvFileDescrByRcvFileId db fileId
+        rfd <- getRcvFileDescrByRcvFileId db fileId
         pure (ci, rfd)
       receiveViaCompleteFD user fileId rfd fileSize userApproved cryptoArgs
       pure ci
@@ -1453,7 +1451,9 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
           if fileProtocol /= FPXFTP || fileStatus == CIFSRcvCancelled || expired
             then pure Nothing
             else do
-              (rfd, invBadge, descrBadge) <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+              (rfd, (invBadge, descrBadge)) <- withStore $ \db -> do
+                rfd <- getRcvFileDescrByRcvFileId db fileId
+                (rfd,) <$> liftIO (getFileBadgeProofs db fileId)
               pure $ invCompleteDescr ciFile rfd invBadge descrBadge
         getSndFileInvDescr :: CIFile 'MDSnd -> CM (Maybe HistoryFile)
         getSndFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus, fileExpires} = do
@@ -1464,7 +1464,9 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
               -- can also lookup in extra_xftp_file_descriptions, though it can be empty;
               -- would be best if snd file had a single rcv description for all members saved in files table
               now <- liftIO getCurrentTime
-              (rfd, invBadge, descrBadge) <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
+              (rfd, (invBadge, descrBadge)) <- withStore $ \db -> do
+                rfd <- getRcvFileDescrBySndFileId db fileId
+                (rfd,) <$> liftIO (getFileBadgeProofs db fileId)
               -- a signed item forwards the author's original bytes, so its invitation proof cannot be replaced
               (invBadge', descrBadge') <-
                 if isNothing signedMsg_ && ownBadgeActive && (staleBadge now invBadge || staleBadge now descrBadge)
@@ -1498,8 +1500,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
         invCompleteDescr :: CIFile d -> RcvFileDescr -> Maybe BadgeProof -> Maybe BadgeProof -> Maybe HistoryFile
         invCompleteDescr CIFile {fileName, fileSize, fileExpires} RcvFileDescr {fileDescrText, fileDescrComplete} invBadge descrBadge
           | fileDescrComplete =
-              let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
-                  fInv = (xftpFileInvitation fileName fileSize fInvDescr :: FileInvitation) {fileBadge = invBadge}
+              let fInv = (xftpFileInvitation fileName fileSize dummyFileDescr :: FileInvitation) {fileBadge = invBadge}
                in Just (fInv, fileDescrText, fileExpires, descrBadge)
           | otherwise = Nothing
         processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe HistoryFile -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
@@ -1862,7 +1863,7 @@ getChatItemFileServers user dir ci = case ci of
           Just sfdText -> fileDescrServers <$> (parseFileDescription sfdText :: CM (ValidFileDescription 'FSender))
           Nothing -> pure []
       SMDRcv -> do
-        (RcvFileDescr {fileDescrText}, _, _) <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+        RcvFileDescr {fileDescrText} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
         fileDescrServers <$> (parseFileDescription fileDescrText :: CM (ValidFileDescription 'FRecipient))
 
 sendDirectFileInline :: User -> Contact -> FileTransferMeta -> SharedMsgId -> CM ()
@@ -2338,7 +2339,7 @@ proofMemberKey :: MemberId -> Maybe BadgeProof -> Maybe C.PublicKeyEd25519
 proofMemberKey memberId badge_ = do
   BadgeProof _ (BBSPresHeader phBytes) _ _ <- badge_
   binding <- headerChatBinding =<< eitherToMaybe (strDecode phBytes)
-  ('G', d) <- B.uncons binding
+  d <- B.stripPrefix (smpEncode CBGroup) binding
   (mId, k) <- eitherToMaybe (smpDecode d :: Either String (MemberId, C.PublicKeyEd25519))
   if mId == memberId then Just k else Nothing
   where

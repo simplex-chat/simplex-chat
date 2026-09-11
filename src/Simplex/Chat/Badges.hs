@@ -441,20 +441,15 @@ instance FromField BadgeProofKind where fromField = fromTextField_ textDecode
 instance ToField BadgeProofKind where toField = toField . textEncode
 
 -- (proof, pres_header, key_idx, type, expiry, extra) - the fields of BadgeProof as stored in file_badge_proofs
-type BadgeProofRow = (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int, Maybe Text, Maybe UTCTime, Maybe Text)
+type BadgeProofRow = (Binary ByteString, Binary ByteString, Int, Text, UTCTime, Text)
 
-badgeProofToRow :: BadgeProof -> (Binary ByteString, Binary ByteString, Int, Text, UTCTime, Text)
+badgeProofToRow :: BadgeProof -> BadgeProofRow
 badgeProofToRow (BadgeProof idx (BBSPresHeader ph) (BBSProof p) BadgeInfo {badgeType, badgeExpiry, badgeExtra}) =
   (Binary p, Binary ph, idx, textEncode badgeType, badgeExpiry, badgeExtra)
 
 rowToBadgeProof :: BadgeProofRow -> Maybe BadgeProof
-rowToBadgeProof (p_, ph_, idx_, type_, expiry_, extra_) = do
-  Binary p <- p_
-  Binary ph <- ph_
-  idx <- idx_
-  badgeType <- textDecode =<< type_
-  badgeExpiry <- expiry_
-  badgeExtra <- extra_
+rowToBadgeProof (Binary p, Binary ph, idx, type_, badgeExpiry, badgeExtra) = do
+  badgeType <- textDecode type_
   pure $ BadgeProof idx (BBSPresHeader ph) (BBSProof p) BadgeInfo {badgeType, badgeExpiry, badgeExtra}
 
 -- (proof, pres_header, expiry, type, verified, extra, master_key, signature, key_idx) - binary columns wrapped in Binary (BLOB/bytea)

@@ -256,7 +256,8 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       let rfdsMemberFTs = zipWith (\rfd (conn, sft) -> (conn, sft, fileDescrText rfd)) rfds (memberFTs ms)
                           extraRFDs = drop (length rfdsMemberFTs) rfds
                           FileTransferMeta {fileSize} = ft
-                      binding_ <- ifM ((not (incognitoMembership g) &&) <$> fileNeedsBadge fileSize) (sndGroupChatBinding g showGroupAsSender) (pure Nothing)
+                      needsBadge <- fileNeedsBadge fileSize
+                      let binding_ = if needsBadge && not (incognitoMembership g) then sndGroupChatBinding g showGroupAsSender else Nothing
                       descrBadge <- pure binding_ $>>= \chatBinding ->
                         let FD.ValidFileDescription fd = sndDescr
                          in sndBadgeProof user PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash = FD.sharedDescriptionHash fd, fileExpires}
@@ -1965,15 +1966,18 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           ft' <- getRcvFileTransfer db user fileId
           pure (rfd, ft')
         when fileDescrComplete $ toView $ CEvtRcvFileDescrReady user aci ft' rfd
-        lims <- asks $ fileSizeLimits . config
-        prohibited_ <- case (fileDescrComplete && fileSize > noBadge lims && isNothing fileProhibited, fileBadge) of
-          (False, _) -> pure Nothing
-          (True, Nothing) -> pure $ Just FileProhibited {maxSize = noBadge lims, badgeStatus = Nothing}
-          (True, Just badge) -> do
+        maxSize <- asks $ noBadge . fileSizeLimits . config
+        let descrBadgeRequired = fileDescrComplete && fileSize > maxSize && isNothing fileProhibited
+        prohibited_ <- case fileBadge of
+          _ | not descrBadgeRequired -> pure Nothing
+          Nothing -> pure $ Just FileProhibited {maxSize, badgeStatus = Nothing}
+          Just badge -> do
             st <- descrBadgeStatus binding_ fileSize rfd fileExpires badge
             if st == BSActive
-              then Nothing <$ withStore' (\db -> createFileBadgeProof db fileId BPKDescription badge)
-              else pure $ Just FileProhibited {maxSize = noBadge lims, badgeStatus = Just st}
+              then do
+                withStore' $ \db -> createFileBadgeProof db fileId BPKDescription badge
+                pure Nothing
+              else pure $ Just FileProhibited {maxSize, badgeStatus = Just st}
         case prohibited_ of
           Nothing -> case (fileStatus, xftpRcvFile) of
             (RFSAccepted _, Just XFTPRcvFile {userApprovedRelays}) -> receiveViaCompleteFD user fileId rfd fileSize userApprovedRelays cryptoArgs
@@ -2018,7 +2022,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       | otherwise = do
           -- a file that requires a badge is received from the description message, where the proof binds the description
           needsBadge <- fileNeedsBadge fileSize
-          let fileDescr' = if needsBadge then (\fd -> (fd :: FileDescr) {fileDescrComplete = False}) <$> fileDescr else fileDescr
+          let fileDescr' = if needsBadge then dummyFileDescr <$ fileDescr else fileDescr
           pure $ mkValidFileInvitation fInv {fileDescr = fileDescr'}
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> CM ()
