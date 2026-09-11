@@ -38,7 +38,6 @@ fun CIFileView(
   showTimestamp: Boolean,
   showMenu: MutableState<Boolean>,
   smallView: Boolean = false,
-  senderProfile: LocalProfile?,
   receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
@@ -77,13 +76,11 @@ fun CIFileView(
     if (file != null) {
       when {
         file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted -> {
-          if (fileSizeValid(file, senderProfile)) {
-            receiveFile(file.fileId)
+          val prohibited = file.fileProhibited
+          if (prohibited != null) {
+            showProhibitedFileAlert(prohibited)
           } else {
-            AlertManager.shared.showAlertMsg(
-              generalGetString(MR.strings.large_file),
-              String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol, senderProfile)))
-            )
+            receiveFile(file.fileId)
           }
         }
         file.fileStatus is CIFileStatus.RcvAccepted ->
@@ -157,7 +154,7 @@ fun CIFileView(
           is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.SndWarning -> fileIcon(innerIcon = painterResource(MR.images.ic_warning_filled))
           is CIFileStatus.RcvInvitation ->
-            if (!fileSizeValid(file, senderProfile))
+            if (!fileSizeValid(file))
               fileIcon(innerIcon = painterResource(MR.images.ic_priority_high), color = WarningOrange)
             else if (file.expired)
               fileIcon(innerIcon = painterResource(MR.images.ic_close))
@@ -239,9 +236,23 @@ fun CIFileView(
   }
 }
 
-// whether a received file is within the size we accept from its sender
-fun fileSizeValid(file: CIFile, senderProfile: LocalProfile?): Boolean =
-  file.fileSize <= getMaxFileSize(file.fileProtocol, senderProfile)
+// the core decides whether a received file is above the size the sender's badge allows
+fun fileSizeValid(file: CIFile): Boolean = file.fileProhibited == null
+
+fun showProhibitedFileAlert(prohibited: FileProhibited) {
+  val maxSize = formatBytes(prohibited.maxSize)
+  val reason = when (prohibited.badgeStatus) {
+    null -> MR.strings.contact_sent_large_file_no_badge
+    BadgeStatus.Active -> MR.strings.contact_sent_large_file_above_badge
+    BadgeStatus.Expired, BadgeStatus.ExpiredOld -> MR.strings.contact_sent_large_file_badge_expired
+    BadgeStatus.Failed -> MR.strings.contact_sent_large_file_badge_failed
+    BadgeStatus.UnknownKey -> MR.strings.contact_sent_large_file_badge_unknown_key
+  }
+  AlertManager.shared.showAlertMsg(
+    generalGetString(MR.strings.large_file),
+    String.format(generalGetString(reason), maxSize)
+  )
+}
 
 fun showFileErrorAlert(err: FileError, file: CIFile? = null, temporary: Boolean = false) {
   val fileExpires = file?.fileExpires

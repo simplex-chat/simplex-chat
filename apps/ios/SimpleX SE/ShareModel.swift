@@ -406,6 +406,8 @@ enum SharedContent {
 }
 
 fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedContent, ErrorAlert> {
+    // the user's own badge raises the size they can send, so the share extension shows the same limit as the app
+    let ownProfile = ((try? apiGetActiveUser()) ?? nil)?.profile
     if let type = firstMatching(of: [.image, .movie, .fileURL, .url, .text]) {
         switch type {
             // Prepare Image message
@@ -443,9 +445,9 @@ fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedCo
         // Prepare Data message
         case .fileURL:
             if let url = try? await inPlaceUrl(type: .data) {
-                if isFileTooLarge(for: url) {
+                if isFileTooLarge(for: url, ownProfile) {
                     let sizeString = ByteCountFormatter.string(
-                        fromByteCount: Int64(getMaxFileSize(.xftp)),
+                        fromByteCount: Int64(getMaxFileSize(.xftp, ownProfile)),
                         countStyle: .binary
                     )
                     return .failure(
@@ -534,9 +536,9 @@ fileprivate func transcodeVideo(from input: URL) async -> URL? {
     }
 }
 
-fileprivate func isFileTooLarge(for url: URL) -> Bool {
+fileprivate func isFileTooLarge(for url: URL, _ ownProfile: LocalProfile?) -> Bool {
     fileSize(url)
-        .map { $0 > getMaxFileSize(.xftp) }
+        .map { $0 > getMaxFileSize(.xftp, ownProfile) }
         ?? false
 }
 

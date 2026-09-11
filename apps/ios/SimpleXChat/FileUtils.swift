@@ -29,9 +29,12 @@ public let MAX_VIDEO_SIZE_AUTO_RCV: Int64 = 1_047_552 // 1023KB
 // Spec: spec/services/files.md#MAX_FILE_SIZE_XFTP
 public let MAX_FILE_SIZE_XFTP: Int64 = 1_073_741_824 // 1GB
 
-// raised XFTP receive limits for files from a sender with a supporter badge (also investor) or a legend badge
+// raised XFTP limits for a user with a supporter badge (also investor) or a legend badge
 public let MAX_FILE_SIZE_XFTP_SUPPORTER: Int64 = 2_147_483_648 // 2GB
 public let MAX_FILE_SIZE_XFTP_LEGEND: Int64 = 5_368_709_120 // 5GB
+
+// a badge raises the limit at send for this long after its expiry, shorter than the receiver's grace
+public let BADGE_SND_GRACE_INTERVAL = TimeInterval(86400)
 
 public let MAX_FILE_SIZE_LOCAL: Int64 = Int64.max
 
@@ -277,26 +280,22 @@ public func cleanupFile(_ aChatItem: AChatItem) {
     }
 }
 
-public func getMaxFileSize(_ fileProtocol: FileProtocol, _ senderProfile: LocalProfile? = nil) -> Int64 {
+// the limit for sending, shown on the compose screen. The user's own active badge raises the XFTP limit:
+// legend to 5GB, any other (supporter/investor) to 2GB. The badge counts as active until one day after its
+// expiry - the rule the core applies to the send - so the compose screen never offers a size the send refuses.
+// The limit for a received file is decided by the core and reported as CIFile.fileProhibited.
+public func getMaxFileSize(_ fileProtocol: FileProtocol, _ ownProfile: LocalProfile? = nil) -> Int64 {
     switch fileProtocol {
     case .smp: MAX_FILE_SIZE_SMP
     case .local: MAX_FILE_SIZE_LOCAL
-    // a sender's active badge raises the XFTP limit: legend to 5GB, any other (supporter/investor) to 2GB
     case .xftp:
-        if let badge = senderProfile?.localBadge, badge.status == .active {
+        if let badge = ownProfile?.localBadge,
+           badge.status == .active,
+           badge.badge.badgeExpiry.addingTimeInterval(BADGE_SND_GRACE_INTERVAL) >= Date.now {
             badge.badge.badgeType == .legend ? MAX_FILE_SIZE_XFTP_LEGEND : MAX_FILE_SIZE_XFTP_SUPPORTER
         } else {
             MAX_FILE_SIZE_XFTP
         }
-    }
-}
-
-// the profile of whoever sent a received chat item - the group member, or the direct chat's contact
-public func ciSenderProfile(_ ci: ChatItem, _ chatInfo: ChatInfo) -> LocalProfile? {
-    switch (ci.chatDir, chatInfo) {
-    case let (.groupRcv(groupMember), _): return groupMember.memberProfile
-    case let (.directRcv, .direct(contact)): return contact.profile
-    default: return nil
     }
 }
 

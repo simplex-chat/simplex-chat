@@ -18,6 +18,7 @@ import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import java.io.*
 import java.net.URI
@@ -27,6 +28,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.Executors
 import kotlin.math.*
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 
 private val singleThreadDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
@@ -123,9 +126,12 @@ const val MAX_FILE_SIZE_SMP: Long = 8000000
 
 const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 
-// raised XFTP receive limits for files from a sender with a supporter badge (also investor) or a legend badge
+// raised XFTP limits for a user with a supporter badge (also investor) or a legend badge
 const val MAX_FILE_SIZE_XFTP_SUPPORTER: Long = 2_147_483_648 // 2GB
 const val MAX_FILE_SIZE_XFTP_LEGEND: Long = 5_368_709_120 // 5GB
+
+// a badge raises the limit at send for this long after its expiry, shorter than the receiver's grace
+val BADGE_SND_GRACE_INTERVAL: Duration = 1.days
 
 const val MAX_FILE_SIZE_LOCAL: Long = Long.MAX_VALUE
 
@@ -474,23 +480,19 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   return fileCount to bytes
 }
 
-fun getMaxFileSize(fileProtocol: FileProtocol, senderProfile: LocalProfile? = null): Long = when (fileProtocol) {
+// the limit for sending, shown on the compose screen. The user's own active badge raises the XFTP limit:
+// legend to 5GB, any other (supporter/investor) to 2GB. The badge counts as active until one day after its
+// expiry - the rule the core applies to the send - so the compose screen never offers a size the send refuses.
+// The limit for a received file is decided by the core and reported as CIFile.fileProhibited.
+fun getMaxFileSize(fileProtocol: FileProtocol, ownProfile: LocalProfile? = null): Long = when (fileProtocol) {
   FileProtocol.SMP -> MAX_FILE_SIZE_SMP
   FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
-  // a sender's active badge raises the XFTP limit: legend to 5GB, any other (supporter/investor) to 2GB
   FileProtocol.XFTP -> {
-    val badge = senderProfile?.localBadge
-    if (badge == null || badge.status != BadgeStatus.Active) MAX_FILE_SIZE_XFTP
+    val badge = ownProfile?.localBadge
+    if (badge == null || badge.status != BadgeStatus.Active || badge.badge.badgeExpiry + BADGE_SND_GRACE_INTERVAL < Clock.System.now()) MAX_FILE_SIZE_XFTP
     else if (badge.badge.badgeType == BadgeType.Legend) MAX_FILE_SIZE_XFTP_LEGEND
     else MAX_FILE_SIZE_XFTP_SUPPORTER
   }
-}
-
-// the profile of whoever sent a received chat item - the group member, or the direct chat's contact
-fun ciSenderProfile(ci: ChatItem, chatInfo: ChatInfo): LocalProfile? = when (val dir = ci.chatDir) {
-  is CIDirection.GroupRcv -> dir.groupMember.memberProfile
-  is CIDirection.DirectRcv -> (chatInfo as? ChatInfo.Direct)?.contact?.profile
-  else -> null
 }
 
 expect suspend fun getBitmapFromVideo(uri: URI, timestamp: Long? = null, random: Boolean = true, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration

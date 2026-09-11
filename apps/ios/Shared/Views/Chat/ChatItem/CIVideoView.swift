@@ -16,7 +16,6 @@ import Combine
 struct CIVideoView: View {
     @EnvironmentObject var m: ChatModel
     private let chatItem: ChatItem
-    private let senderProfile: LocalProfile?
     private let preview: UIImage?
     @State private var duration: Int
     @State private var progress: Int = 0
@@ -36,9 +35,8 @@ struct CIVideoView: View {
     private var sizeMultiplier: CGFloat { smallView ? 0.38 : 1 }
     @State private var blurred: Bool = UserDefaults.standard.integer(forKey: DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) > 0
 
-    init(chatItem: ChatItem, senderProfile: LocalProfile?, preview: UIImage?, duration: Int, maxWidth: CGFloat, videoWidth: CGFloat?, smallView: Bool = false, showFullscreenPlayer: Binding<Bool>) {
+    init(chatItem: ChatItem, preview: UIImage?, duration: Int, maxWidth: CGFloat, videoWidth: CGFloat?, smallView: Bool = false, showFullscreenPlayer: Binding<Bool>) {
         self.chatItem = chatItem
-        self.senderProfile = senderProfile
         self.preview = preview
         self._duration = State(initialValue: duration)
         self.maxWidth = maxWidth
@@ -368,7 +366,7 @@ struct CIVideoView: View {
                     .simultaneousGesture(TapGesture().onEnded {
                         showFileErrorAlert(sndFileError, temporary: true)
                     })
-            case .rcvInvitation: fileIcon(file.expired && fileSizeValid(file, senderProfile) ? "xmark" : "arrow.down", 10, 13)
+            case .rcvInvitation: fileIcon(file.expired && fileSizeValid(file) ? "xmark" : "arrow.down", 10, 13)
             case .rcvAccepted: fileIcon("ellipsis", 14, 11)
             case let .rcvTransfer(rcvProgress, rcvTotal):
                 if file.fileProtocol == .xftp && rcvProgress < rcvTotal {
@@ -423,18 +421,14 @@ struct CIVideoView: View {
 
     // TODO encrypt: where file size is checked?
     private func receiveFileIfValidSize(file: CIFile, receiveFile: @escaping (User, Int64, Bool, Bool) async -> Void) {
-        if fileSizeValid(file, senderProfile) {
+        if let prohibited = file.fileProhibited {
+            showProhibitedFileAlert(prohibited)
+        } else {
             Task {
                 if let user = m.currentUser {
                     await receiveFile(user, file.fileId, false, false)
                 }
             }
-        } else {
-            let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: getMaxFileSize(file.fileProtocol, senderProfile), countStyle: .binary)
-            AlertManager.shared.showAlertMsg(
-                title: "Large file!",
-                message: "Your contact sent a file that is larger than currently supported maximum size (\(prettyMaxFileSize))."
-            )
         }
     }
 
