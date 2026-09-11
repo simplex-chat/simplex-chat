@@ -138,7 +138,7 @@ testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet create mnemonic=" <> B.unpack testPhrase)
   _ <- nameRows alice
   alice ##> "/_wallet delete"
-  alice <## "no wallet key"
+  alice <## "ok"
   alice ##> ("/_wallet create mnemonic=" <> B.unpack testPhrase)
   _ <- nameRows alice
   pure ()

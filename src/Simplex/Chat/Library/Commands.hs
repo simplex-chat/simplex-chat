@@ -1516,7 +1516,7 @@ processChatCommand cxt nm = \case
   APIWalletDelete -> withUser $ \_ -> do
     seed <- deviceSeed
     withFastStore' $ \db -> deleteSeed db (wsId seed)
-    processChatCommand cxt nm APIWallet
+    ok_
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db cxt user contactId
