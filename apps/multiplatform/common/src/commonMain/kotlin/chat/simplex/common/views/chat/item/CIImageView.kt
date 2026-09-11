@@ -196,9 +196,7 @@ fun CIImageView(
     contentAlignment = Alignment.TopEnd
   ) {
     val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember { mutableStateOf(null) }
-    // The blur is drawn from the preview, which is already in memory, so the file is left unread until the image
-    // is revealed. Every image scrolled past would otherwise be read, decoded at its full size and held in the
-    // image cache, to be hidden again.
+    // Hidden media is not worth reading, decoding at full size and caching.
     val revealed = !blurHidesMedia(!smallView, blurred)
     if (revealed) {
       if (chatModel.connectedToRemote()) {
