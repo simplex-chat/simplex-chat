@@ -657,7 +657,7 @@ ALTER TABLE test_chat_schema.contacts ALTER COLUMN contact_id ADD GENERATED ALWA
 
 CREATE TABLE test_chat_schema.delivery_jobs (
     delivery_job_id bigint NOT NULL,
-    group_id bigint,
+    group_id bigint NOT NULL,
     worker_scope text NOT NULL,
     job_scope_spec_tag text,
     job_scope_include_pending smallint,
@@ -669,11 +669,7 @@ CREATE TABLE test_chat_schema.delivery_jobs (
     failed smallint DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    sender_group_member_ids text,
-    feed_id bigint,
-    chat_item_id bigint,
-    message_ids text,
-    feed_cursor_id bigint
+    sender_group_member_ids text
 );
 
 
@@ -743,6 +739,34 @@ CREATE TABLE test_chat_schema.extra_xftp_file_descriptions (
 
 ALTER TABLE test_chat_schema.extra_xftp_file_descriptions ALTER COLUMN extra_file_descr_id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME test_chat_schema.extra_xftp_file_descriptions_extra_file_descr_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE test_chat_schema.feed_jobs (
+    feed_job_id bigint NOT NULL,
+    feed_id bigint NOT NULL,
+    chat_item_id bigint NOT NULL,
+    worker_scope text NOT NULL,
+    action_tag text NOT NULL,
+    message_ids text,
+    cursor_id bigint,
+    job_status text NOT NULL,
+    job_err_reason text,
+    failed smallint DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.feed_jobs ALTER COLUMN feed_job_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.feed_jobs_feed_job_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -1725,6 +1749,11 @@ ALTER TABLE ONLY test_chat_schema.extra_xftp_file_descriptions
 
 
 
+ALTER TABLE ONLY test_chat_schema.feed_jobs
+    ADD CONSTRAINT feed_jobs_pkey PRIMARY KEY (feed_job_id);
+
+
+
 ALTER TABLE ONLY test_chat_schema.feeds
     ADD CONSTRAINT feeds_pkey PRIMARY KEY (feed_id);
 
@@ -2339,15 +2368,7 @@ CREATE INDEX idx_contacts_xcontact_id ON test_chat_schema.contacts USING btree (
 
 
 
-CREATE INDEX idx_delivery_jobs_chat_item_id ON test_chat_schema.delivery_jobs USING btree (chat_item_id);
-
-
-
 CREATE INDEX idx_delivery_jobs_created_at ON test_chat_schema.delivery_jobs USING btree (created_at);
-
-
-
-CREATE INDEX idx_delivery_jobs_feed_next ON test_chat_schema.delivery_jobs USING btree (feed_id, worker_scope, failed, job_status);
 
 
 
@@ -2400,6 +2421,14 @@ CREATE INDEX idx_extra_xftp_file_descriptions_file_id ON test_chat_schema.extra_
 
 
 CREATE INDEX idx_extra_xftp_file_descriptions_user_id ON test_chat_schema.extra_xftp_file_descriptions USING btree (user_id);
+
+
+
+CREATE INDEX idx_feed_jobs_chat_item_id ON test_chat_schema.feed_jobs USING btree (chat_item_id, action_tag);
+
+
+
+CREATE INDEX idx_feed_jobs_next ON test_chat_schema.feed_jobs USING btree (feed_id, worker_scope, failed, job_status, feed_job_id);
 
 
 
@@ -3029,16 +3058,6 @@ ALTER TABLE ONLY test_chat_schema.contacts
 
 
 ALTER TABLE ONLY test_chat_schema.delivery_jobs
-    ADD CONSTRAINT delivery_jobs_chat_item_id_fkey FOREIGN KEY (chat_item_id) REFERENCES test_chat_schema.chat_items(chat_item_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.delivery_jobs
-    ADD CONSTRAINT delivery_jobs_feed_id_fkey FOREIGN KEY (feed_id) REFERENCES test_chat_schema.feeds(feed_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.delivery_jobs
     ADD CONSTRAINT delivery_jobs_group_id_fkey FOREIGN KEY (group_id) REFERENCES test_chat_schema.groups(group_id) ON DELETE CASCADE;
 
 
@@ -3080,6 +3099,16 @@ ALTER TABLE ONLY test_chat_schema.extra_xftp_file_descriptions
 
 ALTER TABLE ONLY test_chat_schema.extra_xftp_file_descriptions
     ADD CONSTRAINT extra_xftp_file_descriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.feed_jobs
+    ADD CONSTRAINT feed_jobs_chat_item_id_fkey FOREIGN KEY (chat_item_id) REFERENCES test_chat_schema.chat_items(chat_item_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.feed_jobs
+    ADD CONSTRAINT feed_jobs_feed_id_fkey FOREIGN KEY (feed_id) REFERENCES test_chat_schema.feeds(feed_id) ON DELETE CASCADE;
 
 
 
