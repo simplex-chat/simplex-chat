@@ -5571,6 +5571,9 @@ storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey}
 -- 'False' when that row cannot be found, which the caller reports rather than drop in silence.
 applyBadgeStatement :: DB.Connection -> TVar ChaChaDRG -> Int64 -> BadgeType -> BadgeStatement -> Maybe BadgeCredential -> UTCTime -> IO Bool
 applyBadgeStatement db g purchaseId badgeType BadgeStatement {entries} cred_ now = do
+  -- TODO [badges] a service that no longer holds the asserted row re-sends its whole history, which
+  -- joins onto the tip without following it, and every row of it verifies. The service is to heal
+  -- and restate as one opening credit instead (badges-rpc.md), which is checked without a tip.
   tip <- getBadgeLedgerLastEntry db purchaseId
   storeBadgeStatement db purchaseId badgeType tip entries now
   case (,) <$> cred_ <*> issuedEntryId of

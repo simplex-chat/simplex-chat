@@ -772,6 +772,10 @@ testRenewsAfterUnknownEntry ps =
       -- ledger, which re-stores the two rows already held and adds the month it issued
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed
         `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (0, 2, Just "grant"), (-1, 1, Just "badge")]
+      -- the issued row follows the badge row in the statement but the unknown one in the ledger,
+      -- and verifies all the same - the client cannot see that the service dropped a row
+      checks <- balanceChecks (chatController alice)
+      checks `shouldBe` [Just True, Just True, Nothing, Just True]
 
 -- The worker driven by chat start rather than by activate, and the only test where the client is
 -- given a lapse row to store: the months that passed while the app was stopped.
