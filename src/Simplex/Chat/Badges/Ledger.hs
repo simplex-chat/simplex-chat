@@ -119,9 +119,10 @@ issueEntry t entryId e@StatementEntry {balanceMonths, balanceStartTs}
 maxCreatedAtSkew :: NominalDiffTime
 maxCreatedAtSkew = 60 * 60
 
--- | Each entry is checked by re-running the operation it claims. Checking only that its numbers
--- follow from the previous entry would pass a lapse of three months where one elapsed.
--- 'Nothing' is "not re-run" - no operation rebuilds that type, or its timestamp is not credible.
+-- | Each entry is checked by re-running the operation it claims: checking only that its numbers
+-- follow from the previous entry would pass a lapse of three months where one elapsed. So 'True'
+-- means the service ran these functions, not that it ran the right one. 'Nothing' is "not re-run":
+-- no operation rebuilds that type, or its timestamp is not credible.
 balanceChecked :: UTCTime -> BadgeType -> Maybe StatementEntry -> [StatementEntry] -> [(StatementEntry, Maybe Bool)]
 balanceChecked _ _ _ [] = []
 balanceChecked now badgeType tip entries@(first : _) = zipWith withVerdict (opening : entries) entries
