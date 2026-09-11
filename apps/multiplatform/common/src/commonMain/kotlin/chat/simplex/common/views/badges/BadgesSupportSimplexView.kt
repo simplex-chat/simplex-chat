@@ -12,6 +12,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
@@ -32,10 +33,6 @@ import chat.simplex.res.MR
 
 @Composable
 fun BadgesSupportSimplexView() {
-  // TODO [badges] gate on user badge status (no badge → this view, active → "Manage your badge")
-  // preloaded here so the level screen shows store prices without a placeholder pass
-  LaunchedEffect(Unit) { BadgeStore.load() }
-
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -58,15 +55,9 @@ fun BadgesSupportSimplexView() {
       modifier = Modifier.fillMaxWidth()
     )
 
-    val primary = MaterialTheme.colors.primary
-    TextButton({
-      ModalManager.start.showModal { HowItWorks(user = chatModel.currentUser.value, onboardingStage = null, titleColor = primary) }
-    }) {
-      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.primary)
-        Text(stringResource(MR.strings.badges_why_simplex_is_built), color = MaterialTheme.colors.primary, fontWeight = FontWeight.Medium)
-      }
-    }
+    // TODO [badges] restore WhyBuiltButton() when in-app purchase lands: the level screen
+    // returns to the flow and HowItWorksButton() moves there, leaving this one alone here.
+    HowItWorksButton()
 
     Spacer(Modifier.weight(1f))
 
@@ -75,15 +66,13 @@ fun BadgesSupportSimplexView() {
     Spacer(Modifier.weight(1f))
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      ChooseLevelButton()
-      TextButtonBelowOnboardingButton(
-        text = stringResource(MR.strings.badges_redeem_code_button),
-        onClick = { ModalManager.start.showModal { BadgesRedeemCodeView() } }
-      )
+      RedeemCodeButton()
+      GetCodeButton()
     }
   }
 }
 
+// the in-app purchase path, kept compiling and uncalled until payments return after the MVP
 @Composable
 private fun ChooseLevelButton() {
   OnboardingActionButton(
@@ -96,6 +85,55 @@ private fun ChooseLevelButton() {
   )
 }
 
+@Composable
+private fun WhyBuiltButton() {
+  val primary = MaterialTheme.colors.primary
+  TextButton({
+    ModalManager.start.showModal { HowItWorks(user = chatModel.currentUser.value, onboardingStage = null, titleColor = primary) }
+  }) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+      Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.primary)
+      Text(stringResource(MR.strings.badges_why_simplex_is_built), color = MaterialTheme.colors.primary, fontWeight = FontWeight.Medium)
+    }
+  }
+}
+
+@Composable
+private fun HowItWorksButton() {
+  TextButton({
+    ModalManager.start.showModal { BadgesHowItWorksView() }
+  }) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+      Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.primary)
+      Text(stringResource(MR.strings.badges_how_it_works_button), color = MaterialTheme.colors.primary, fontWeight = FontWeight.Medium)
+    }
+  }
+}
+
+@Composable
+private fun RedeemCodeButton() {
+  OnboardingActionButton(
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    labelId = MR.strings.badges_redeem_code_button,
+    onboarding = null,
+    onclick = {
+      ModalManager.start.showModal { BadgesRedeemCodeView() }
+    }
+  )
+}
+
+@Composable
+private fun GetCodeButton() {
+  val uriHandler = LocalUriHandler.current
+  if (platform.androidHasPlatformStore) {
+    TextButtonBelowOnboardingButton("", null)
+  } else {
+    TextButtonBelowOnboardingButton(
+      text = stringResource(MR.strings.badges_get_your_code),
+      onClick = { uriHandler.openExternalLink("https://simplex.chat/badges/") }
+    )
+  }
+}
 
 @Composable
 fun PhoneSupporterHero(modifier: Modifier = Modifier) {

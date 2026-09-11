@@ -9,6 +9,8 @@ import chat.simplex.common.views.badges.BadgeStoreProductId
 // Play Billing is only in the google flavor, so the Play country stays unknown here
 fun loadPlayStoreCountry() {}
 
+const val hasPlatformStore = false
+
 // No store in this flavor: no product is offered, so the purchase screen shows nothing to buy
 // TODO [badges] this build pays via Stripe/crypto - the badge service catalog replaces these
 @Suppress("UNUSED_PARAMETER")

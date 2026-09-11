@@ -154,6 +154,7 @@ struct UserPickerSheetView: View {
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @StateObject private var connectProgressManager = ConnectProgressManager.shared
+    @ObservedObject private var badgeModel = BadgeModel.shared
     @EnvironmentObject var theme: AppTheme
     @Binding var activeUserPickerSheet: UserPickerSheet?
     @State private var showNewChatSheet = false
@@ -215,7 +216,7 @@ struct ChatListView: View {
         }
         .appSheet(isPresented: $showBadgesSheet) {
             NavigationView {
-                BadgesSupportSimplexView(showsAsSheet: true)
+                BadgesView(showsAsSheet: true)
                     .modifier(ThemedBackground())
             }
         }
@@ -371,8 +372,38 @@ struct ChatListView: View {
         }
     }
     
+    // the onboarding cards replace the whole chat list, and the support-ended banner lives in the
+    // list - a lapsed supporter is not a newcomer, and must be told even with no conversations yet
     private var shouldShowOnboarding: Bool {
-        !addressCreationCardShown && !chatModel.chats.isEmpty && !hasConversations
+        !addressCreationCardShown && !chatModel.chats.isEmpty && !hasConversations && !supportEnded
+    }
+
+    private var supportEnded: Bool {
+        badgeModel.alert?.kind == .supportEnded && badgeModel.userId == chatModel.currentUser?.userId
+    }
+
+    private func showSupportEndedDismissAlert() {
+        showAlert(NSLocalizedString("Support ended", comment: "alert title")) {
+            [
+                UIAlertAction(title: NSLocalizedString("Remind me later", comment: "alert button"), style: .default) { _ in
+                    Task { await ackBadgeAlert(snooze: true) }
+                },
+                UIAlertAction(title: NSLocalizedString("Dismiss", comment: "alert button"), style: .default) { _ in
+                    Task { await ackBadgeAlert(snooze: false) }
+                },
+                cancelAlertAction
+            ]
+        }
+    }
+
+    private func showSupportSimpleXDismissAlert() {
+        showAlert(
+            title: NSLocalizedString("Support SimpleX", comment: "alert title"),
+            message: NSLocalizedString("You can support SimpleX later in Settings.", comment: "alert message"),
+            buttonTitle: NSLocalizedString("Ok", comment: "alert button"),
+            buttonAction: { withAnimation { supporterBannerShown = true } },
+            cancelButton: false
+        )
     }
 
     private var hasConversations: Bool {
@@ -426,10 +457,23 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    if !supporterBannerShown && chatModel.chats.count > 3 {
+                    // one slot: a badge the user paid for ending outranks the pitch to get one
+                    if supportEnded, let alert = badgeModel.alert {
+                        SupportSimpleXBanner(
+                            title: "Support ended",
+                            subtitle: "Your support ended on \(alert.dateText).",
+                            onTap: { showBadgesSheet = true },
+                            onDismiss: showSupportEndedDismissAlert
+                        )
+                            .padding(.vertical, 3)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .zIndex(1)
+                    } else if !supporterBannerShown && chatModel.chats.count > 3 {
                         SupportSimpleXBanner(
                             onTap: { showBadgesSheet = true },
-                            onDismiss: { withAnimation { supporterBannerShown = true } }
+                            onDismiss: showSupportSimpleXDismissAlert
                         )
                             .padding(.vertical, 3)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -537,7 +581,7 @@ struct ChatListView: View {
         VoiceItemState.smallView.values.forEach { $0.audioPlayer?.stop() }
         VoiceItemState.smallView = [:]
     }
-    
+
     // Spec: spec/client/chat-list.md#filteredChats
     private func filteredChats() -> [Chat] {
         if !searchChatFilteredBySimplexLink.isEmpty {

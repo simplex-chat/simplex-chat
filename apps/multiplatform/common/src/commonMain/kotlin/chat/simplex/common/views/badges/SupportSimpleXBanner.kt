@@ -31,7 +31,12 @@ import chat.simplex.common.views.newchat.lightStops
 import chat.simplex.res.MR
 
 @Composable
-fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
+fun SupportSimpleXBanner(
+  title: String = generalGetString(MR.strings.badges_banner_title),
+  subtitle: String = generalGetString(MR.strings.badges_banner_subtitle),
+  onTap: () -> Unit,
+  onDismiss: () -> Unit
+) {
   val cardCornerRadius = 16.dp
   // grows linearly with system font but never shrinks below the default so small-font users see the
   // same baseline; the card Row uses heightIn(min = cardHeight) and grows further when 2-line text
@@ -73,7 +78,7 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
       ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
           Text(
-            stringResource(MR.strings.badges_banner_title),
+            title,
             style = MaterialTheme.typography.body1,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colors.primary,
@@ -81,7 +86,7 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
             overflow = TextOverflow.Ellipsis
           )
           Text(
-            stringResource(MR.strings.badges_banner_subtitle),
+            subtitle,
             style = MaterialTheme.typography.body2,
             color = MaterialTheme.colors.onBackground,
             maxLines = 2,
@@ -99,13 +104,7 @@ fun SupportSimpleXBanner(onTap: () -> Unit, onDismiss: () -> Unit) {
           .align(Alignment.TopEnd)
           .padding(end = 4.dp, top = 4.dp)
           .clip(CircleShape)
-          .clickable {
-            AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.badges_banner_title),
-              text = generalGetString(MR.strings.badges_banner_dismiss_message),
-              onConfirm = onDismiss
-            )
-          }
+          .clickable(onClick = onDismiss)
           .padding(8.dp)
           .size(16.dp)
       )

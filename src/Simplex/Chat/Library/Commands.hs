@@ -3547,7 +3547,7 @@ processChatCommand cxt nm = \case
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
   AddBadge cred -> withUser $ \user -> addUserBadge user cred >> ok user
   APIRedeemBadgeCode userId codeText -> withUserId userId $ \user -> redeemBadgeCode nm user codeText
-  APIGetBadgeState userId -> withUserId userId $ \user -> do
+  APIGetBadgeState userId -> withUserId' userId $ \user -> do
     -- the read also signals the worker, whose results follow as CEvtBadgeChanged
     lift $ startBadgeWork user
     CRBadgeState user <$> getUserBadgeState user
@@ -5378,10 +5378,11 @@ getUserBadgeState user = do
     Just p@UserBadgePurchase {badgePurchaseId} ->
       fmap (badgeStateOf now p) <$> withStore' (`getBadgeLedgerLastEntry` badgePurchaseId)
   where
-    badgeStateOf now p@UserBadgePurchase {badgePurchaseId, badgeType} balance =
+    badgeStateOf now p@UserBadgePurchase {badgePurchaseId, badgeType, shown} balance =
       BadgeState
         { badgePurchaseId,
           badgeType,
+          shown = BoolDef shown,
           monthsLeft = balanceMonths balance,
           paidThrough = L.paidThrough balance,
           renewsAt = Nothing,

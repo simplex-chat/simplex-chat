@@ -346,11 +346,12 @@ struct SettingsView: View {
 
             Section {
                 NavigationLink {
-                    BadgesSupportSimplexView()
+                    BadgesView()
                         .modifier(ThemedBackground())
                 } label: {
+                    let badgeType = chatModel.currentUser?.profile.localBadge?.badge.badgeType ?? .supporter
                     ZStack(alignment: .leading) {
-                        Image("badge-supporter")
+                        Image(badgeImageName(badgeType))
                             .resizable()
                             .scaledToFit()
                             .frame(width: 24, height: 24)

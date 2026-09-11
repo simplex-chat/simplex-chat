@@ -10,6 +10,8 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+const val hasPlatformStore = true
+
 // Requests the country of the Google Play account into [androidPlayStoreCountry].
 // It stays null when Play is unavailable or the user is not signed in.
 fun loadPlayStoreCountry() {

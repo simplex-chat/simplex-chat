@@ -23,7 +23,8 @@ struct BadgeUserPreview<Trailing: View>: View {
         let user = chatModel.currentUser
         let displayName = user?.displayName ?? NSLocalizedString("My nickname", comment: "badges preview placeholder")
         let previewBadge = LocalBadge(
-            badge: BadgeInfo(badgeType: level.badgeType),
+            // fabricated for the preview: the status is given here, and NameBadge renders from it alone
+            badge: BadgeInfo(badgeType: level.badgeType, badgeExpiry: .distantFuture),
             status: .active
         )
         return VStack(spacing: 12) {

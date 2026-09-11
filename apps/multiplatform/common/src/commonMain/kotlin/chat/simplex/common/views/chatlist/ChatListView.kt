@@ -36,6 +36,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
+import SectionItemView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
@@ -61,6 +62,41 @@ sealed class ActiveFilter {
   data class PresetTag(val tag: PresetTagKind) : ActiveFilter()
   data class UserTag(val tag: ChatTag) : ActiveFilter()
   data object Unread: ActiveFilter()
+}
+
+private fun showSupportEndedDismissAlert() {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.badges_support_ended),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          withBGApi { chatModel.controller.ackBadgeAlert(snooze = true) }
+        }) {
+          Text(stringResource(MR.strings.badges_remind_me_later), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          withBGApi { chatModel.controller.ackBadgeAlert(snooze = false) }
+        }) {
+          Text(stringResource(MR.strings.badges_dont_show_again), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    }
+  )
+}
+
+private fun showSupportSimpleXDismissAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.badges_banner_title),
+    text = generalGetString(MR.strings.badges_banner_dismiss_message),
+    onConfirm = { appPrefs.supporterBannerShown.set(true) }
+  )
 }
 
 private fun showNewChatSheet(oneHandUI: State<Boolean>) {
@@ -1002,12 +1038,25 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         ToggleChatListCard()
       }
     }
-    if (!supporterBannerShown.value && chatModel.chats.value.size > 3) {
+    // one slot: a badge the user paid for ending outranks the pitch to get one
+    val alert = BadgeModel.alert.value
+    if (supportEnded() && alert != null) {
       item {
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           SupportSimpleXBanner(
-            onTap = { ModalManager.start.showModal { BadgesSupportSimplexView() } },
-            onDismiss = { appPrefs.supporterBannerShown.set(true) }
+            title = stringResource(MR.strings.badges_support_ended),
+            subtitle = String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText),
+            onTap = { ModalManager.start.showModal { BadgesView() } },
+            onDismiss = ::showSupportEndedDismissAlert
+          )
+        }
+      }
+    } else if (!supporterBannerShown.value && chatModel.chats.value.size > 3) {
+      item {
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          SupportSimpleXBanner(
+            onTap = { ModalManager.start.showModal { BadgesView() } },
+            onDismiss = ::showSupportSimpleXDismissAlert
           )
         }
       }
