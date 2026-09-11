@@ -1,11 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE StandaloneDeriving #-}
 
 module Simplex.Chat.Delivery where
 
@@ -14,14 +11,17 @@ import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
-import Simplex.Chat.Messages (ChatItemId, ChatType (..), GroupChatScopeInfo (..), MessageId, ShowGroupAsSender)
+import Simplex.Chat.Messages (ChatItemId, GroupChatScopeInfo (..), MessageId, ShowGroupAsSender)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Encoding.String
+import Text.Read (readMaybe)
 
 type DeliveryWorkerKey = (GroupId, DeliveryWorkerScope)
 
@@ -46,10 +46,7 @@ instance TextEncoding DeliveryWorkerScope where
     DWSMemberSupport -> "member_support"
     -- DWSMemberProfileUpdate -> "member_profile_update"
 
-data DeliveryJobKey
-  = DJKGroup GroupId DeliveryWorkerScope
-  | DJKFeed FeedId FeedWorkerScope
-  deriving (Eq, Ord, Show)
+type FeedJobKey = (FeedId, FeedWorkerScope)
 
 data FeedWorkerScope = FWSContacts | FWSGroups
   deriving (Eq, Ord, Show)
@@ -187,22 +184,38 @@ instance TextEncoding DeliveryTaskStatus where
     DTSProcessed -> "processed"
     DTSError -> "error"
 
-data DeliveryJob (c :: ChatType) = DeliveryJob
+-- NULL and empty string mean []; any other value must parse as a comma-separated Int64 list.
+parseIds :: Maybe Text -> Maybe [Int64]
+parseIds = \case
+  Nothing -> Just []
+  Just t
+    | T.null t -> Just []
+    | otherwise -> traverse (readMaybe . T.unpack) (T.splitOn "," t)
+
+idsColumn :: [Int64] -> Maybe Text
+idsColumn ids
+  | null ids = Nothing
+  | otherwise = Just $ T.intercalate "," $ map (T.pack . show) ids
+
+data MessageDeliveryJob = MessageDeliveryJob
   { jobId :: Int64,
-    cursorId_ :: Maybe Int64,
-    jobWork :: DeliveryJobWork c
+    jobScope :: DeliveryJobScope,
+    senderGMIds :: [GroupMemberId],
+    body :: ByteString,
+    cursorGMId_ :: Maybe GroupMemberId
   }
+  deriving (Show)
 
-deriving instance Show (DeliveryJob c)
+deliveryJobId :: MessageDeliveryJob -> Int64
+deliveryJobId = jobId
 
-deliveryJobId :: DeliveryJob c -> Int64
-deliveryJobId DeliveryJob {jobId} = jobId
-
-data DeliveryJobWork (c :: ChatType) where
-  DJWGroup :: {jobScope :: DeliveryJobScope, senderGMIds :: [GroupMemberId], body :: ByteString} -> DeliveryJobWork 'CTGroup
-  DJWFeed :: {feedItemId :: ChatItemId, feedAction :: FeedJobAction} -> DeliveryJobWork 'CTFeed
-
-deriving instance Show (DeliveryJobWork c)
+data FeedJob = FeedJob
+  { feedJobId :: Int64,
+    feedItemId :: ChatItemId,
+    feedAction :: FeedJobAction,
+    cursorId_ :: Maybe Int64
+  }
+  deriving (Show)
 
 data FeedJobAction
   = FJANew MessageId
@@ -239,15 +252,6 @@ feedActionMsgIds = \case
   FJADeleteBroadcast msgId -> [msgId]
   FJADeleteInternal -> []
   FJADeleteMark -> []
-
-feedActionEventTag :: FeedJobAction -> CMEventTag 'Json
-feedActionEventTag = \case
-  FJANew _ -> XMsgNew_
-  FJAFileDescr _ -> XMsgFileDescr_
-  FJAUpdate _ -> XMsgUpdate_
-  FJADeleteBroadcast _ -> XMsgDel_
-  FJADeleteInternal -> XMsgDel_
-  FJADeleteMark -> XMsgDel_
 
 feedActionCreates :: FeedJobAction -> Bool
 feedActionCreates = \case

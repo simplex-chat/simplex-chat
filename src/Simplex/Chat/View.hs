@@ -2442,6 +2442,8 @@ uploadingFile status = \case
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
   AChatItem _ _ (GroupChat g _scopeInfo) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd} ->
     [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
+  AChatItem _ _ (FeedChat _) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIFeedSnd} ->
+    [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyTo "%"]
   _ -> [status <> " uploading file"]
 
 uploadingFileStandalone :: StyledString -> FileTransferMeta -> [StyledString]
@@ -2845,6 +2847,8 @@ viewChatError isCmd logLevel testView = \case
       | testView -> ["duplicate group message, group id: " <> sShow groupId <> ", message id: " <> sShow sharedMsgId]
       | otherwise -> []
     SEUserNoteFolderNotFound -> ["no notes folder"]
+    SEUserFeedNotFound -> ["no feed"]
+    SEFeedNotFound {feedId} -> ["no feed " <> sShow feedId]
     SEInternalError {message}
       | testView && message == "referenced group member not found" -> []
     e -> ["chat db error: " <> sShow e]

@@ -4438,6 +4438,8 @@ export type StoreError =
   | StoreError.DeliveryTaskNotFound
   | StoreError.InvalidDeliveryJob
   | StoreError.DeliveryJobNotFound
+  | StoreError.InvalidFeedJob
+  | StoreError.FeedJobNotFound
   | StoreError.WorkItemError
 
 export namespace StoreError {
@@ -4533,6 +4535,8 @@ export namespace StoreError {
     | "deliveryTaskNotFound"
     | "invalidDeliveryJob"
     | "deliveryJobNotFound"
+    | "invalidFeedJob"
+    | "feedJobNotFound"
     | "workItemError"
 
   interface Interface {
@@ -4977,6 +4981,16 @@ export namespace StoreError {
   export interface DeliveryJobNotFound extends Interface {
     type: "deliveryJobNotFound"
     jobId: number // int64
+  }
+
+  export interface InvalidFeedJob extends Interface {
+    type: "invalidFeedJob"
+    feedJobId: number // int64
+  }
+
+  export interface FeedJobNotFound extends Interface {
+    type: "feedJobNotFound"
+    feedJobId: number // int64
   }
 
   export interface WorkItemError extends Interface {

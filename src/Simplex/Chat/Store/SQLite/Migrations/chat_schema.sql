@@ -792,7 +792,7 @@ CREATE TABLE delivery_tasks(
 ) STRICT;
 CREATE TABLE delivery_jobs(
   delivery_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  group_id INTEGER REFERENCES groups ON DELETE CASCADE,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   worker_scope TEXT NOT NULL,
   job_scope_spec_tag TEXT,
   job_scope_include_pending INTEGER,
@@ -805,11 +805,7 @@ CREATE TABLE delivery_jobs(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
   ,
-  sender_group_member_ids TEXT,
-  feed_id INTEGER REFERENCES feeds ON DELETE CASCADE,
-  chat_item_id INTEGER REFERENCES chat_items ON DELETE CASCADE,
-  message_ids TEXT,
-  feed_cursor_id INTEGER
+  sender_group_member_ids TEXT
 ) STRICT;
 CREATE TABLE group_member_status_predicates(
   member_status TEXT NOT NULL PRIMARY KEY,
@@ -871,6 +867,20 @@ CREATE TABLE feeds(
   chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
   favorite INTEGER NOT NULL DEFAULT 0,
   unread_chat INTEGER NOT NULL DEFAULT 0
+) STRICT;
+CREATE TABLE feed_jobs(
+  feed_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  feed_id INTEGER NOT NULL REFERENCES feeds ON DELETE CASCADE,
+  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  worker_scope TEXT NOT NULL,
+  action_tag TEXT NOT NULL,
+  message_ids TEXT,
+  cursor_id INTEGER,
+  job_status TEXT NOT NULL,
+  job_err_reason TEXT,
+  failed INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1429,13 +1439,14 @@ CREATE INDEX idx_groups_user_id_business_chat ON groups(
   business_chat,
   group_id
 );
-CREATE INDEX idx_delivery_jobs_feed_next ON delivery_jobs(
+CREATE INDEX idx_feed_jobs_next ON feed_jobs(
   feed_id,
   worker_scope,
   failed,
-  job_status
+  job_status,
+  feed_job_id
 );
-CREATE INDEX idx_delivery_jobs_chat_item_id ON delivery_jobs(chat_item_id);
+CREATE INDEX idx_feed_jobs_chat_item_id ON feed_jobs(chat_item_id, action_tag);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

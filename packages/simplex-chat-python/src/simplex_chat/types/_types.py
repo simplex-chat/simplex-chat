@@ -3390,6 +3390,14 @@ class StoreError_deliveryJobNotFound(TypedDict):
     type: Literal["deliveryJobNotFound"]
     jobId: int  # int64
 
+class StoreError_invalidFeedJob(TypedDict):
+    type: Literal["invalidFeedJob"]
+    feedJobId: int  # int64
+
+class StoreError_feedJobNotFound(TypedDict):
+    type: Literal["feedJobNotFound"]
+    feedJobId: int  # int64
+
 class StoreError_workItemError(TypedDict):
     type: Literal["workItemError"]
     errContext: str
@@ -3486,10 +3494,12 @@ StoreError = (
     | StoreError_deliveryTaskNotFound
     | StoreError_invalidDeliveryJob
     | StoreError_deliveryJobNotFound
+    | StoreError_invalidFeedJob
+    | StoreError_feedJobNotFound
     | StoreError_workItemError
 )
 
-StoreError_Tag = Literal["duplicateName", "userNotFound", "relayUserNotFound", "userNotFoundByName", "userNotFoundByContactId", "userNotFoundByGroupId", "userNotFoundByFileId", "userNotFoundByContactRequestId", "contactNotFound", "contactNotFoundByName", "contactNotFoundByMemberId", "contactNotReady", "duplicateContactLink", "userContactLinkNotFound", "contactRequestNotFound", "contactRequestNotFoundByName", "invalidContactRequestEntity", "invalidBusinessChatContactRequest", "groupNotFound", "groupNotFoundByName", "groupMemberNameNotFound", "groupMemberNotFound", "groupMemberNotFoundByIndex", "memberRelationsVectorNotFound", "groupHostMemberNotFound", "groupMemberNotFoundByMemberId", "memberContactGroupMemberNotFound", "invalidMemberRelationUpdate", "groupWithoutUser", "duplicateGroupMember", "duplicateMemberId", "groupAlreadyJoined", "groupInvitationNotFound", "noteFolderAlreadyExists", "noteFolderNotFound", "userNoteFolderNotFound", "feedAlreadyExists", "feedNotFound", "userFeedNotFound", "sndFileNotFound", "sndFileInvalid", "rcvFileNotFound", "rcvFileDescrNotFound", "fileNotFound", "rcvFileInvalid", "rcvFileInvalidDescrPart", "localFileNoTransfer", "sharedMsgIdNotFoundByFileId", "fileIdNotFoundBySharedMsgId", "sndFileNotFoundXFTP", "rcvFileNotFoundXFTP", "connectionNotFound", "connectionNotFoundById", "connectionNotFoundByMemberId", "pendingConnectionNotFound", "uniqueID", "largeMsg", "internalError", "dBException", "dBBusyError", "badChatItem", "chatItemNotFound", "chatItemNotFoundByText", "chatItemSharedMsgIdNotFound", "chatItemNotFoundByFileId", "chatItemNotFoundByContactId", "chatItemNotFoundByGroupId", "profileNotFound", "duplicateGroupLink", "groupLinkNotFound", "hostMemberIdNotFound", "contactNotFoundByFileId", "noGroupSndStatus", "duplicateGroupMessage", "remoteHostNotFound", "remoteHostUnknown", "remoteHostDuplicateCA", "remoteCtrlNotFound", "remoteCtrlDuplicateCA", "prohibitedDeleteUser", "operatorNotFound", "usageConditionsNotFound", "userChatRelayNotFound", "groupRelayNotFound", "groupRelayNotFoundByMemberId", "invalidQuote", "invalidMention", "invalidDeliveryTask", "deliveryTaskNotFound", "invalidDeliveryJob", "deliveryJobNotFound", "workItemError"]
+StoreError_Tag = Literal["duplicateName", "userNotFound", "relayUserNotFound", "userNotFoundByName", "userNotFoundByContactId", "userNotFoundByGroupId", "userNotFoundByFileId", "userNotFoundByContactRequestId", "contactNotFound", "contactNotFoundByName", "contactNotFoundByMemberId", "contactNotReady", "duplicateContactLink", "userContactLinkNotFound", "contactRequestNotFound", "contactRequestNotFoundByName", "invalidContactRequestEntity", "invalidBusinessChatContactRequest", "groupNotFound", "groupNotFoundByName", "groupMemberNameNotFound", "groupMemberNotFound", "groupMemberNotFoundByIndex", "memberRelationsVectorNotFound", "groupHostMemberNotFound", "groupMemberNotFoundByMemberId", "memberContactGroupMemberNotFound", "invalidMemberRelationUpdate", "groupWithoutUser", "duplicateGroupMember", "duplicateMemberId", "groupAlreadyJoined", "groupInvitationNotFound", "noteFolderAlreadyExists", "noteFolderNotFound", "userNoteFolderNotFound", "feedAlreadyExists", "feedNotFound", "userFeedNotFound", "sndFileNotFound", "sndFileInvalid", "rcvFileNotFound", "rcvFileDescrNotFound", "fileNotFound", "rcvFileInvalid", "rcvFileInvalidDescrPart", "localFileNoTransfer", "sharedMsgIdNotFoundByFileId", "fileIdNotFoundBySharedMsgId", "sndFileNotFoundXFTP", "rcvFileNotFoundXFTP", "connectionNotFound", "connectionNotFoundById", "connectionNotFoundByMemberId", "pendingConnectionNotFound", "uniqueID", "largeMsg", "internalError", "dBException", "dBBusyError", "badChatItem", "chatItemNotFound", "chatItemNotFoundByText", "chatItemSharedMsgIdNotFound", "chatItemNotFoundByFileId", "chatItemNotFoundByContactId", "chatItemNotFoundByGroupId", "profileNotFound", "duplicateGroupLink", "groupLinkNotFound", "hostMemberIdNotFound", "contactNotFoundByFileId", "noGroupSndStatus", "duplicateGroupMessage", "remoteHostNotFound", "remoteHostUnknown", "remoteHostDuplicateCA", "remoteCtrlNotFound", "remoteCtrlDuplicateCA", "prohibitedDeleteUser", "operatorNotFound", "usageConditionsNotFound", "userChatRelayNotFound", "groupRelayNotFound", "groupRelayNotFoundByMemberId", "invalidQuote", "invalidMention", "invalidDeliveryTask", "deliveryTaskNotFound", "invalidDeliveryJob", "deliveryJobNotFound", "invalidFeedJob", "feedJobNotFound", "workItemError"]
 
 class SubscriptionStatus_active(TypedDict):
     type: Literal["active"]

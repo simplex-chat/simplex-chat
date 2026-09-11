@@ -451,9 +451,9 @@ signChatMsgBody MsgSigning {bindingTag, bindingData, keyRef, privKey} msgBody =
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
-  XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr, fileExpires :: Maybe UTCTime} -> ChatMsgEvent 'Json
+  XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr, fileExpires :: Maybe UTCTime, feed :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool, feed :: Maybe Bool} -> ChatMsgEvent 'Json
-  XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, onlyHistory :: Bool} -> ChatMsgEvent 'Json
+  XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, onlyHistory :: Bool, feed :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
   XMsgReact :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, reaction :: MsgReaction, add :: Bool} -> ChatMsgEvent 'Json
   XFile :: FileInvitation -> ChatMsgEvent 'Json -- TODO discontinue
@@ -1404,7 +1404,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
     msg :: CMEventTag 'Json -> Either String (ChatMsgEvent 'Json)
     msg = \case
       XMsgNew_ -> XMsgNew <$> JT.parseEither parseJSON (J.Object params)
-      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr" <*> opt "fileExpires"
+      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr" <*> opt "fileExpires" <*> opt "feed"
       XMsgUpdate_ -> do
         msgId' <- p "msgId"
         content <- p "content"
@@ -1415,7 +1415,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         asGroup <- opt "asGroup"
         feed <- opt "feed"
         pure XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup, feed}
-      XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> (fromMaybe False <$> opt "onlyHistory")
+      XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> (fromMaybe False <$> opt "onlyHistory") <*> opt "feed"
       XMsgDeleted_ -> pure XMsgDeleted
       XMsgReact_ -> XMsgReact <$> p "msgId" <*> opt "memberId" <*> opt "scope" <*> p "reaction" <*> p "add"
       XFile_ -> XFile <$> p "file"
@@ -1497,9 +1497,9 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XMsgNew mc -> case toJSON mc of
         J.Object obj -> obj
         _ -> JM.empty
-      XMsgFileDescr msgId' fileDescr fileExpires -> o $ ("fileExpires" .=? fileExpires) ["msgId" .= msgId', "fileDescr" .= fileDescr]
+      XMsgFileDescr msgId' fileDescr fileExpires feed -> o $ ("feed" .=? feed) $ ("fileExpires" .=? fileExpires) ["msgId" .= msgId', "fileDescr" .= fileDescr]
       XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup, feed} -> o $ ("feed" .=? feed) $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
-      XMsgDel msgId' memberId scope onlyHistory -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) $ ("onlyHistory" .=? justTrue onlyHistory) ["msgId" .= msgId']
+      XMsgDel msgId' memberId scope onlyHistory feed -> o $ ("feed" .=? feed) $ ("memberId" .=? memberId) $ ("scope" .=? scope) $ ("onlyHistory" .=? justTrue onlyHistory) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
       XMsgReact msgId' memberId scope reaction add -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) ["msgId" .= msgId', "reaction" .= reaction, "add" .= add]
       XFile fileInv -> o ["file" .= fileInv]

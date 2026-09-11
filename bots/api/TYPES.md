@@ -4282,6 +4282,14 @@ DeliveryJobNotFound:
 - type: "deliveryJobNotFound"
 - jobId: int64
 
+InvalidFeedJob:
+- type: "invalidFeedJob"
+- feedJobId: int64
+
+FeedJobNotFound:
+- type: "feedJobNotFound"
+- feedJobId: int64
+
 WorkItemError:
 - type: "workItemError"
 - errContext: string

@@ -33,6 +33,14 @@ module Simplex.Chat.Store.Feeds
     detachFeedInstances,
     deleteFeedContactReactions,
     deleteFeedGroupReactions,
+    createFeedJobs,
+    resumeFeedJobsOnStart,
+    getNextFeedJob,
+    updateFeedJobCursor,
+    setFeedJobErrStatus,
+    completeFeedJob,
+    getFeedJobMessages,
+    deleteDoneFeedJobs,
     feedItemMsg,
     FeedItemMsg (..),
   )
@@ -42,19 +50,21 @@ import Control.Monad (forM_, unless)
 import Control.Monad.Except (ExceptT (..), throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Int (Int64)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe)
 import Data.Text (Text)
 import Data.Time (UTCTime, getCurrentTime)
-import Simplex.Chat.Delivery (FeedInstanceSpec (..))
+import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Store.AgentStore (firstRow)
-import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, getWorkItem, maybeFirstRow)
+import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Util (firstRow')
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (In (..), Only (..), Query, ToRow, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
@@ -262,7 +272,6 @@ updateFeedInstances_ db User {userId} feedItemId chatIdColumn fromId toId FeedIt
 
 deleteFeedInstances :: DB.Connection -> [ChatItemId] -> IO ()
 deleteFeedInstances db itemIds = do
-  itemIdsStmt db "DELETE FROM chat_item_messages WHERE chat_item_id" () itemIds
   itemIdsStmt db "DELETE FROM chat_item_versions WHERE chat_item_id" () itemIds
   itemIdsStmt db "DELETE FROM chat_items WHERE chat_item_id" () itemIds
 
@@ -302,3 +311,138 @@ itemIdsStmt db stmt params itemIds = unless (null itemIds) execIds
 
 cursorId :: Maybe Int64 -> Int64
 cursorId = fromMaybe 0
+
+createFeedJobs :: DB.Connection -> FeedId -> ChatItemId -> FeedJobAction -> IO ()
+createFeedJobs db feedId feedItemId action = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "DELETE FROM feed_jobs WHERE chat_item_id = ? AND action_tag = ? AND (job_status = ? OR failed = 1)"
+    (feedItemId, tag, DJSError)
+  DB.executeMany
+    db
+    [sql|
+      INSERT INTO feed_jobs (
+        feed_id, chat_item_id, worker_scope, action_tag, message_ids,
+        job_status, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?)
+    |]
+    [(feedId, feedItemId, scope, tag, msgIds, DJSPending, currentTs, currentTs) | scope <- feedWorkerScopes]
+  where
+    tag = feedActionTag action
+    msgIds = idsColumn $ feedActionMsgIds action
+
+resumeFeedJobsOnStart :: DB.Connection -> IO [FeedJobKey]
+resumeFeedJobsOnStart db = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE feed_jobs SET job_status = ?, updated_at = ? WHERE failed = 0 AND job_status = ?"
+    (DJSPending, currentTs, DJSError)
+  DB.query
+    db
+    [sql|
+      SELECT DISTINCT feed_id, worker_scope
+      FROM feed_jobs
+      WHERE failed = 0 AND job_status = ?
+    |]
+    (Only DJSPending)
+
+type FeedJobRow = (Int64, ChatItemId, FeedJobActionTag, Maybe Text, Maybe Int64)
+
+getNextFeedJob :: DB.Connection -> FeedJobKey -> IO (Either StoreError (Maybe FeedJob))
+getNextFeedJob db (feedId, scope) =
+  getWorkItem "feed job" getJobId getJob markJobFailed
+  where
+    getJobId :: IO (Maybe Int64)
+    getJobId =
+      maybeFirstRow fromOnly $
+        DB.query
+          db
+          [sql|
+            SELECT feed_job_id
+            FROM feed_jobs
+            WHERE feed_id = ? AND worker_scope = ?
+              AND failed = 0 AND job_status = ?
+            ORDER BY feed_job_id ASC
+            LIMIT 1
+          |]
+          (feedId, scope, DJSPending)
+    getJob :: Int64 -> IO (Either StoreError FeedJob)
+    getJob jobId =
+      firstRow' toFeedJob (SEFeedJobNotFound jobId) $
+        DB.query
+          db
+          [sql|
+            SELECT feed_job_id, chat_item_id, action_tag, message_ids, cursor_id
+            FROM feed_jobs
+            WHERE feed_job_id = ?
+          |]
+          (Only jobId)
+      where
+        toFeedJob :: FeedJobRow -> Either StoreError FeedJob
+        toFeedJob (feedJobId, feedItemId, actionTag, msgIdsText_, cursorId_) = do
+          msgIds <- maybe (Left $ SEInvalidFeedJob feedJobId) Right $ parseIds msgIdsText_
+          feedAction <- case (actionTag, msgIds) of
+            (FJATNew, [msgId]) -> Right $ FJANew msgId
+            (FJATFileDescr, msgId : msgIds') -> Right $ FJAFileDescr (msgId :| msgIds')
+            (FJATUpdate, [msgId]) -> Right $ FJAUpdate msgId
+            (FJATDeleteBroadcast, [msgId]) -> Right $ FJADeleteBroadcast msgId
+            (FJATDeleteInternal, []) -> Right FJADeleteInternal
+            (FJATDeleteMark, []) -> Right FJADeleteMark
+            _ -> Left $ SEInvalidFeedJob feedJobId
+          Right FeedJob {feedJobId, feedItemId, feedAction, cursorId_}
+    markJobFailed :: Int64 -> IO ()
+    markJobFailed jobId =
+      DB.execute db "UPDATE feed_jobs SET failed = 1 WHERE feed_job_id = ?" (Only jobId)
+
+updateFeedJobCursor :: DB.Connection -> Int64 -> Int64 -> IO ()
+updateFeedJobCursor db jobId cursorId_ = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE feed_jobs SET cursor_id = ?, updated_at = ? WHERE feed_job_id = ?"
+    (cursorId_, currentTs, jobId)
+
+setFeedJobErrStatus :: DB.Connection -> Int64 -> Text -> IO ()
+setFeedJobErrStatus db jobId errReason = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE feed_jobs SET job_status = ?, job_err_reason = ?, updated_at = ? WHERE feed_job_id = ?"
+    (DJSError, errReason, currentTs, jobId)
+
+completeFeedJob :: DB.Connection -> Int64 -> ChatItemId -> FeedJobActionTag -> IO Bool
+completeFeedJob db jobId feedItemId actionTag = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE feed_jobs SET job_status = ?, updated_at = ? WHERE feed_job_id = ?"
+    (DJSComplete, currentTs, jobId)
+  unfinished <-
+    maybeFirstRow fromOnly $
+      DB.query
+        db
+        [sql|
+          SELECT COUNT(1)
+          FROM feed_jobs
+          WHERE chat_item_id = ? AND action_tag = ? AND job_status != ?
+        |]
+        (feedItemId, actionTag, DJSComplete)
+  pure $ unfinished == Just (0 :: Int)
+
+getFeedJobMessages :: DB.Connection -> [MessageId] -> IO [SndMessage]
+getFeedJobMessages db = fmap catMaybes . mapM getMsg
+  where
+    getMsg msgId =
+      maybeFirstRow toSndMessage $
+        DB.query db "SELECT shared_msg_id, msg_body FROM messages WHERE message_id = ? AND shared_msg_id IS NOT NULL" (Only msgId)
+      where
+        toSndMessage (sharedMsgId, Binary msgBody) = SndMessage {msgId, sharedMsgId, msgBody, signedMsg_ = Nothing}
+
+deleteDoneFeedJobs :: DB.Connection -> UTCTime -> IO ()
+deleteDoneFeedJobs db createdAtCutoff =
+  DB.execute
+    db
+    "DELETE FROM feed_jobs WHERE created_at <= ? AND (job_status = ? OR failed = 1)"
+    (createdAtCutoff, DJSComplete)

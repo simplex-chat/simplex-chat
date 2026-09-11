@@ -60,7 +60,7 @@ import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCr
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
-import Simplex.Chat.Delivery (DeliveryJobKey (..), DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..), FeedJobAction (..))
+import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..), FeedJobAction (..))
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
@@ -263,7 +263,7 @@ startChatController mainApp enableSndFiles serviceRequests = do
         Left e -> liftIO $ putStrLn $ "Error starting XFTP workers: " <> show e
         Right _ -> pure ()
     startDeliveryWorkers =
-      runExceptT (startDeliveryTaskWorkers >> startDeliveryJobWorkers) >>= \case
+      runExceptT (startDeliveryTaskWorkers >> startDeliveryJobWorkers >> startFeedJobWorkers) >>= \case
         Left e -> liftIO $ putStrLn $ "Error starting delivery workers: " <> show e
         Right _ -> pure ()
     startRelayRequestWorker_ =
@@ -768,26 +768,26 @@ processChatCommand cxt nm = \case
       feed <- withFastStore $ \db -> getFeed db user feedId
       sharedMsgId <- getSharedMsgId
       createdAt <- liftIO getCurrentTime
-      (fInv_, ciFile_) <- unzipMaybe3 <$> setupSndFileTransfer user feed
+      (fInv_, ciFile_) <- unzipMaybe <$> setupSndFileTransfer user feed
+      mkMsg <- feedMessageMaker
       let hasLink = msgContentHasLink mc $ snd $ msgContentTexts mc
-      feedItemId <- withFastStore' $ \db -> do
-        void $ updateChatTsStats db cxt user (CDFeedSnd feed) createdAt Nothing
-        itemId <- createNewChatItemNoMsg db user (CDFeedSnd feed) False (CISndMsgContent mc) (Just sharedMsgId) hasLink Nothing createdAt createdAt
-        forM_ ciFile_ $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId itemId createdAt
-        pure itemId
-      let mc' = (mcSimple mc) {file = fInv_, feed = Just True}
-      msg <- createFeedMessage feed (Just sharedMsgId) feedItemId $ XMsgNew mc'
-      withFastStore' $ \db -> createFeedJobs db feedId feedItemId (FJANew $ msgId' msg)
+          mc' = (mcSimple mc) {file = fInv_, feed = Just True}
+      ci <- withFastStore $ \db -> do
+        liftIO $ void $ updateChatTsStats db cxt user (CDFeedSnd feed) createdAt Nothing
+        feedItemId <- liftIO $ createNewChatItemNoMsg db user (CDFeedSnd feed) False (CISndMsgContent mc) (Just sharedMsgId) hasLink Nothing createdAt createdAt
+        liftIO $ forM_ ciFile_ $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId feedItemId createdAt
+        msg <- mkMsg db feed (Just sharedMsgId) feedItemId (XMsgNew mc') createdAt
+        liftIO $ createFeedJobs db feedId feedItemId (FJANew $ msgId' msg)
+        getFeedChatItem db user feedId feedItemId
       startFeedWorkers feedId
-      ci <- withFastStore $ \db -> getFeedChatItem db user feedId feedItemId
       pure $ CRNewChatItems user [aFeedItem feed ci]
     where
       setupSndFileTransfer user@User {profile = LocalProfile {localBadge}} feed = forM file_ $ \file -> do
         fileSize <- checkSndFile localBadge file
         (fInv, ciFile, _) <- xftpSndFileTransfer_ user file fileSize 1 (Just $ CGFeed feed)
         pure (fInv, ciFile)
-      unzipMaybe3 :: Maybe (a, b) -> (Maybe a, Maybe b)
-      unzipMaybe3 = maybe (Nothing, Nothing) (\(a, b) -> (Just a, Just b))
+      unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
+      unzipMaybe = maybe (Nothing, Nothing) (\(a, b) -> (Just a, Just b))
   APIReportMessage gId reportedItemId reportReason reportText -> withUser $ \user ->
     withGroupLock "reportMessage" gId $ do
       gInfo <- withFastStore $ \db -> getGroupInfo db cxt user gId
@@ -885,12 +885,14 @@ processChatCommand cxt nm = \case
               | mc == oldMC -> pure $ CRChatItemNotChanged user (aFeedItem feed cci)
               | otherwise -> do
                   let event = XMsgUpdate itemSharedMId mc M.empty Nothing Nothing Nothing Nothing (Just True)
-                  msg <- createFeedMessage feed Nothing itemId event
-                  ci' <- withFastStore' $ \db -> do
-                    currentTs <- getCurrentTime
-                    addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
-                    createFeedJobs db chatId itemId (FJAUpdate $ msgId' msg)
-                    updateFeedChatItem' db user chatId ci (CISndMsgContent mc) (msgContentHasLink mc $ snd $ msgContentTexts mc)
+                  mkMsg <- feedMessageMaker
+                  currentTs <- liftIO getCurrentTime
+                  ci' <- withFastStore $ \db -> do
+                    msg <- mkMsg db feed Nothing itemId event currentTs
+                    liftIO $ do
+                      addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
+                      createFeedJobs db chatId itemId (FJAUpdate $ msgId' msg)
+                      updateFeedChatItem' db user chatId ci (CISndMsgContent mc) (msgContentHasLink mc $ snd $ msgContentTexts mc)
                   startFeedWorkers chatId
                   pure $ CRChatItemUpdated user (AChatItem SCTFeed SMDSnd (FeedChat feed) ci')
             _ -> throwChatError CEInvalidChatItemUpdate
@@ -910,7 +912,7 @@ processChatCommand cxt nm = \case
           assertDeletable items
           assertDirectAllowed user MDSnd ct XMsgDel_
           let msgIds = itemsMsgIds items
-              events = map (\msgId -> XMsgDel msgId Nothing Nothing False) msgIds
+              events = map (\msgId -> XMsgDel msgId Nothing Nothing False Nothing) msgIds
           forM_ (L.nonEmpty events) $ \events' ->
             sendDirectContactMessages user ct events'
           if featureAllowed SCFFullDelete forUser ct
@@ -948,22 +950,27 @@ processChatCommand cxt nm = \case
     CTFeed -> withFeedLock "deleteChatItem" chatId $ do
       (feed, items) <- getCommandFeedChatItems user chatId itemIds
       when (null items) $ throwChatError CEInvalidChatItemDelete
+      mkMsg <- feedMessageMaker
       deletions <- forM items $ \cci -> case cci of
         CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemId, itemSharedMsgId, itemTs, itemDeleted}} -> do
           deletedTs <- liftIO getCurrentTime
-          action <- case (mode, itemDeleted) of
+          delEvent <- case (mode, itemDeleted) of
             (CIDMHistory, _) -> throwChatError CEInvalidChatItemDelete
+            (CIDMInternal, _) -> pure $ Right FJADeleteInternal
             (_, Just (CIDeleted _)) -> throwChatError CEInvalidChatItemDelete
             (CIDMBroadcast, _) -> case itemSharedMsgId of
-              Just sharedMsgId | diffUTCTime deletedTs itemTs < deleteMsgInterval -> do
-                msg <- createFeedMessage feed Nothing itemId (XMsgDel sharedMsgId Nothing Nothing False)
-                pure $ FJADeleteBroadcast (msgId' msg)
+              Just sharedMsgId | diffUTCTime deletedTs itemTs < deleteMsgInterval ->
+                pure $ Left $ XMsgDel sharedMsgId Nothing Nothing False (Just True)
               _ -> throwChatError CEInvalidChatItemDelete
-            (CIDMInternalMark, Nothing) -> pure FJADeleteMark
-            _ -> pure FJADeleteInternal
-          ci' <- withFastStore' $ \db -> do
-            createFeedJobs db chatId itemId action
-            markFeedChatItemDeleted db user chatId ci (feedItemDeleted action deletedTs) deletedTs
+            (CIDMInternalMark, Nothing) -> pure $ Right FJADeleteMark
+            _ -> pure $ Right FJADeleteInternal
+          ci' <- withFastStore $ \db -> do
+            action <- case delEvent of
+              Left event -> FJADeleteBroadcast . msgId' <$> mkMsg db feed Nothing itemId event deletedTs
+              Right a -> pure a
+            liftIO $ do
+              createFeedJobs db chatId itemId action
+              markFeedChatItemDeleted db user chatId ci (feedItemDeleted action deletedTs) deletedTs
           pure $ ChatItemDeletion (aFeedItem feed cci) (Just $ AChatItem SCTFeed SMDSnd (FeedChat feed) ci')
       startFeedWorkers chatId
       pure $ CRChatItemsDeleted user deletions True False
@@ -995,7 +1002,7 @@ processChatCommand cxt nm = \case
         delEvent <$> itemSharedMsgId
         where
           delEvent msgId =
-            let evt = XMsgDel msgId Nothing (toMsgScope gInfo <$> chatScopeInfo) onlyHistory
+            let evt = XMsgDel msgId Nothing (toMsgScope gInfo <$> chatScopeInfo) onlyHistory Nothing
              in (groupMsgSigning (onlyHistory || itemSigned) gInfo evt, evt)
           itemSigned = case msgVerified of Just (MVSigned _) -> True; _ -> False
   APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
@@ -3276,7 +3283,7 @@ processChatCommand cxt nm = \case
           deleteGroupDeliveryTasks db gInfo
           deleteGroupDeliveryJobs db gInfo
           createMsgDeliveryJob db gInfo (DJSGroup {jobSpec = DJRelayRemoved}) [] body
-        lift . void $ getDeliveryJobWorker True (DJKGroup groupId DWSGroup)
+        lift . void $ getDeliveryJobWorker True (groupId, DWSGroup)
         pure msg
       leaveGroupSendMsg user gInfo = do
         (members, recipients) <- getRecipients user gInfo
@@ -3538,16 +3545,19 @@ processChatCommand cxt nm = \case
     chatRef <- getChatRef user chatName
     case chatRef of
       ChatRef CTLocal folderId _ -> processChatCommand cxt nm $ APICreateChatItems folderId [composedMessage (Just f) (MCFile "")]
+      ChatRef CTFeed feedId _ -> processChatCommand cxt nm $ APISendFeedMessage feedId (composedMessage (Just f) (MCFile ""))
       _ -> withSendRef user chatRef $ \sendRef -> processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage (Just f) (MCFile "")]
   SendImage chatName f@(CryptoFile fPath _) -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    withSendRef user chatRef $ \sendRef -> do
-      filePath <- lift $ toFSFilePath fPath
-      unless (any (`isSuffixOf` map toLower fPath) imageExtensions) $ throwChatError CEFileImageType {filePath}
-      fileSize <- getFileSize filePath
-      unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
-      -- TODO include file description for preview
-      processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [composedMessage (Just f) (MCImage "" fixedImagePreview)]
+    filePath <- lift $ toFSFilePath fPath
+    unless (any (`isSuffixOf` map toLower fPath) imageExtensions) $ throwChatError CEFileImageType {filePath}
+    fileSize <- getFileSize filePath
+    unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
+    -- TODO include file description for preview
+    let cm = composedMessage (Just f) (MCImage "" fixedImagePreview)
+    case chatRef of
+      ChatRef CTFeed feedId _ -> processChatCommand cxt nm $ APISendFeedMessage feedId cm
+      _ -> withSendRef user chatRef $ \sendRef -> processChatCommand cxt nm $ APISendMessages sendRef False Nothing False [cm]
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> throwCmdError "TODO"
@@ -4208,7 +4218,7 @@ processChatCommand cxt nm = \case
       assertUserGroupRole gInfo GRModerator
       let msgMemIds = itemsMsgMemIds gInfo items
           -- moderation deletes always sign (attributable; avoids the catch-up-moderator divergence)
-          signedEvents = L.nonEmpty $ map (\(msgId, memId) -> let evt = XMsgDel msgId memId (toMsgScope gInfo <$> chatScopeInfo) False in (groupMsgSigning True gInfo evt, evt)) msgMemIds
+          signedEvents = L.nonEmpty $ map (\(msgId, memId) -> let evt = XMsgDel msgId memId (toMsgScope gInfo <$> chatScopeInfo) False Nothing in (groupMsgSigning True gInfo evt, evt)) msgMemIds
       mapM_ (sendGroupSignedMessages_ gInfo ms) signedEvents
       delGroupChatItems user gInfo chatScopeInfo items True
       where
@@ -5344,6 +5354,7 @@ cleanupManager = do
       cleanupMessages `catchAllErrors` eToView
       cleanupDeliveryTasks `catchAllErrors` eToView
       cleanupDeliveryJobs `catchAllErrors` eToView
+      cleanupFeedJobs `catchAllErrors` eToView
       -- TODO possibly, also cleanup async commands
       cleanupProbes `catchAllErrors` eToView
     liftIO $ threadDelay' $ diffToMicroseconds interval
@@ -5411,6 +5422,10 @@ cleanupManager = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(7 * nominalDay)) ts
       withStore' (`deleteDoneDeliveryJobs` cutoffTs)
+    cleanupFeedJobs = do
+      ts <- liftIO getCurrentTime
+      let cutoffTs = addUTCTime (-(7 * nominalDay)) ts
+      withStore' (`deleteDoneFeedJobs` cutoffTs)
     cleanupProbes = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(14 * nominalDay)) ts
@@ -6085,7 +6100,7 @@ chatCommandP =
         CTLocal -> pure $ ChatName CTLocal ""
         CTFeed -> pure $ ChatName CTFeed ""
         ct -> ChatName ct <$> displayNameP
-    chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayNameP
+    chatNameP' = chatNameP <|> (ChatName CTDirect <$> displayNameP)
     chatRefP = do
       chatTypeP >>= \case
         CTGroup -> ChatRef CTGroup <$> A.decimal <*> optional gcScopeP

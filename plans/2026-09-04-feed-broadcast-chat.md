@@ -1,5 +1,10 @@
 # Feed: a broadcast chat
 
+Superseded by `plans/2026-09-11-feed-jobs-split.md` wherever the two differ.
+Feed jobs are held in their own `feed_jobs` table with their own worker key,
+so every reference below to `delivery_jobs`, `DeliveryJobKey`, `DeliveryJobWork`
+and `job_scope_spec_tag` for feeds describes the earlier design.
+
 Status: the core is implemented and compiles; the schema tests pass and the
 schema dump is regenerated. Deviations from the sections below, made while
 implementing:

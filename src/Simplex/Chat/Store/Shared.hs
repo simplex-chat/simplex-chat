@@ -169,6 +169,8 @@ data StoreError
   | SEDeliveryTaskNotFound {taskId :: Int64}
   | SEInvalidDeliveryJob {jobId :: Int64}
   | SEDeliveryJobNotFound {jobId :: Int64}
+  | SEInvalidFeedJob {feedJobId :: Int64}
+  | SEFeedJobNotFound {feedJobId :: Int64}
   | -- | Error when reading work item that suspends worker - do not use!
     SEWorkItemError {errContext :: String}
   deriving (Show, Exception)

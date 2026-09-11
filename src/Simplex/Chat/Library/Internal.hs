@@ -66,6 +66,7 @@ import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
+import Simplex.Chat.Delivery (FeedJobAction (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Direct
@@ -1510,7 +1511,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                 (Just (_, fileDescrText, fileExpires), Just msgId) -> do
                   partSize <- asks $ xftpDescrPartSize . config
                   let parts = splitFileDescr partSize fileDescrText
-                  pure . L.toList $ L.map (\fd -> XMsgFileDescr msgId fd fileExpires) parts
+                  pure . L.toList $ L.map (\fd -> XMsgFileDescr msgId fd fileExpires Nothing) parts
                 _ -> pure []
               let fileDescrVMs = map (VMUnsigned . ChatMessage senderVRange Nothing) fileDescrEvents
               pure $ map ((,) fwd) (contentVM : fileDescrVMs)
@@ -2273,18 +2274,27 @@ createSndMessages = createSndMessages_ Nothing
 
 createFeedMessage :: Feed -> Maybe SharedMsgId -> ChatItemId -> ChatMsgEvent 'Json -> CM SndMessage
 createFeedMessage feed sharedMsgId_ feedItemId event = do
-  msg <- liftEither . runIdentity =<< lift (createSndMessages_ sharedMsgId_ $ Identity (FeedId (feedId' feed), Nothing, event))
+  mkMsg <- feedMessageMaker
   createdAt <- liftIO getCurrentTime
-  withStore' $ \db -> insertChatItemMessage_ db feedItemId (msgId' msg) createdAt
-  pure msg
+  withStore $ \db -> mkMsg db feed sharedMsgId_ feedItemId event createdAt
 
-createFeedMessages :: Feed -> ChatItemId -> NonEmpty (ChatMsgEvent 'Json) -> CM [SndMessage]
-createFeedMessages feed feedItemId events = do
-  (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages (L.map (\evt -> (FeedId (feedId' feed), Nothing, evt)) events)
-  unless (null errs) $ toView $ CEvtChatErrors errs
+feedMessageMaker :: CM (DB.Connection -> Feed -> Maybe SharedMsgId -> ChatItemId -> ChatMsgEvent 'Json -> UTCTime -> ExceptT StoreError IO SndMessage)
+feedMessageMaker = do
+  g <- asks random
+  vr <- chatVersionRange
+  pure $ \db feed sharedMsgId_ feedItemId event createdAt -> do
+    let encodeMessage smId = encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just smId, chatMsgEvent = event}
+    msg <- createNewSndMessage db g (FeedId (feedId' feed)) sharedMsgId_ event Nothing encodeMessage
+    liftIO $ insertChatItemMessage_ db feedItemId (msgId' msg) createdAt
+    pure msg
+
+createFeedFileDescrJobs :: Feed -> ChatItemId -> NonEmpty (ChatMsgEvent 'Json) -> CM ()
+createFeedFileDescrJobs feed feedItemId events = do
+  mkMsg <- feedMessageMaker
   createdAt <- liftIO getCurrentTime
-  withStore' $ \db -> forM_ msgs $ \msg -> insertChatItemMessage_ db feedItemId (msgId' msg) createdAt
-  pure msgs
+  withStore $ \db -> do
+    msgs <- mapM (\evt -> mkMsg db feed Nothing feedItemId evt createdAt) events
+    liftIO $ Store.createFeedJobs db (feedId' feed) feedItemId $ FJAFileDescr (L.map msgId' msgs)
 
 feedId' :: Feed -> FeedId
 feedId' Feed {feedId} = feedId

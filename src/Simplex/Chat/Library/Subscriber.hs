@@ -270,10 +270,8 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       let feedItemId = fileItemId
                       partSize <- asks $ xftpDescrPartSize . config
                       let parts = splitFileDescr partSize (fileDescrText rfd)
-                          events = L.map (\fileDescr -> XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires}) parts
-                      msgs <- createFeedMessages feed feedItemId events
-                      forM_ (L.nonEmpty $ map msgId' msgs) $ \msgIds ->
-                        withStore' $ \db -> createFeedJobs db feedId feedItemId (FJAFileDescr msgIds)
+                          events = L.map (\fileDescr -> XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires, feed = Just True}) parts
+                      createFeedFileDescrJobs feed feedItemId events
                       startFeedWorkers feedId
                       ci' <- withStore $ \db -> do
                         liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
@@ -311,7 +309,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
               where
                 splitText :: (Connection, SndFileTransfer, RcvFileDescrText) -> [(Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json))]
                 splitText (conn, _, rfdText) =
-                  map (\fileDescr -> (conn, (connOrGroupId, Nothing, XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires}))) (L.toList $ splitFileDescr partSize rfdText)
+                  map (\fileDescr -> (conn, (connOrGroupId, Nothing, XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires, feed = Nothing}))) (L.toList $ splitFileDescr partSize rfdText)
             toMsgReq :: (Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)) -> SndMessage -> ChatMsgReq
             toMsgReq (conn, _) SndMessage {msgId, msgBody} =
               (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, (vrValue msgBody, [msgId]))
@@ -566,9 +564,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               let ct'' = ct' {activeConn = Just conn''} :: Contact
               case event of
                 XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
-                XMsgFileDescr sharedMsgId fileDescr fileExpires -> messageFileDescription ct'' sharedMsgId fileDescr fileExpires
+                XMsgFileDescr sharedMsgId fileDescr fileExpires feed -> messageFileDescription ct'' sharedMsgId fileDescr fileExpires feed
                 XMsgUpdate sharedMsgId mContent _ ttl live _msgScope _ feed -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live feed
-                XMsgDel sharedMsgId _ _ _ -> messageDelete ct'' sharedMsgId msg msgMeta
+                XMsgDel sharedMsgId _ _ _ feed -> messageDelete ct'' sharedMsgId msg msgMeta feed
                 XMsgReact sharedMsgId _ _ reaction add -> directMsgReaction ct'' sharedMsgId reaction add msg msgMeta
                 -- TODO discontinue XFile
                 XFile fInv -> processFileInvitation' ct'' fInv msg msgMeta
@@ -1056,13 +1054,13 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                 where
                   MsgContainer {scope, asGroup} = mc
               -- file description is always allowed, to allow sending files to support scope
-              XMsgFileDescr sharedMsgId fileDescr fileExpires -> groupMessageFileDescription gInfo' (Just m'') sharedMsgId fileDescr fileExpires
+              XMsgFileDescr sharedMsgId fileDescr fileExpires feed -> groupMessageFileDescription gInfo' (Just m'') sharedMsgId fileDescr fileExpires feed
               XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ feed ->
                 checkSendAsGroup asGroup_ $
                   memberCanSend (Just m'') msgScope $
                     groupMessageUpdate gInfo' (Just m'') sharedMsgId mContent mentions msgScope msg brokerTs ttl live asGroup_ feed
-              XMsgDel sharedMsgId memberId_ scope_ onlyHistory ->
-                groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ onlyHistory msg brokerTs
+              XMsgDel sharedMsgId memberId_ scope_ onlyHistory feed ->
+                groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ onlyHistory msg brokerTs feed
               XMsgReact sharedMsgId memberId scope_ reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId scope_ reaction add msg brokerTs
               -- TODO discontinue XFile
               XFile fInv -> Nothing <$ processGroupFileInvitation' gInfo' m'' fInv msg brokerTs
@@ -1931,17 +1929,17 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       ChatConfig {autoAcceptFileSize = sz} <- asks config
       when (sz > fileSize) $ receiveFileEvt' user ft False Nothing Nothing >>= toView
 
-    messageFileDescription :: Contact -> SharedMsgId -> FileDescr -> Maybe UTCTime -> CM ()
-    messageFileDescription Contact {contactId, chatSettings} sharedMsgId fileDescr fileExpires =
-      void $ skipDroppedFeedFile chatSettings $ do
+    messageFileDescription :: Contact -> SharedMsgId -> FileDescr -> Maybe UTCTime -> Maybe Bool -> CM ()
+    messageFileDescription Contact {contactId, chatSettings} sharedMsgId fileDescr fileExpires feed_ =
+      void $ skipDroppedFeedFile chatSettings feed_ $ do
         (fileId, aci) <- withStore $ \db -> do
           fileId <- getFileIdBySharedMsgId db userId contactId sharedMsgId
           aci <- getChatItemByFileId db cxt user fileId
           pure (fileId, aci)
         processFDMessage fileId aci fileDescr fileExpires
 
-    groupMessageFileDescription :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> FileDescr -> Maybe UTCTime -> CM (Maybe DeliveryTaskContext)
-    groupMessageFileDescription g@GroupInfo {groupId, chatSettings} m_ sharedMsgId fileDescr fileExpires = fmap join $ skipDroppedFeedFile chatSettings $ do
+    groupMessageFileDescription :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> FileDescr -> Maybe UTCTime -> Maybe Bool -> CM (Maybe DeliveryTaskContext)
+    groupMessageFileDescription g@GroupInfo {groupId, chatSettings} m_ sharedMsgId fileDescr fileExpires feed_ = fmap join $ skipDroppedFeedFile chatSettings feed_ $ do
       (fileId, aci) <- withStore $ \db -> do
         fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
         aci <- getChatItemByFileId db cxt user fileId
@@ -2044,10 +2042,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
                     else toView $ CEvtChatItemNotChanged user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
             _ -> messageError "x.msg.update: contact attempted invalid message update"
 
-    messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> CM ()
-    messageDelete ct@Contact {contactId, chatSettings} sharedMsgId _rcvMessage msgMeta = do
+    messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> Maybe Bool -> CM ()
+    messageDelete ct@Contact {contactId, chatSettings} sharedMsgId _rcvMessage msgMeta feed_ = do
       deleteRcvChatItem `catchCINotFound` \smId ->
-        unless (chatDropsFeed chatSettings) $ toView $ CEvtChatItemDeletedNotFound user ct smId
+        unless (dropsFeed chatSettings feed_) $ toView $ CEvtChatItemDeletedNotFound user ct smId
       where
         brokerTs = metaBrokerTs msgMeta
         deleteRcvChatItem = do
@@ -2136,10 +2134,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         ChatErrorStore (SEChatItemSharedMsgIdNotFound sharedMsgId) -> handle sharedMsgId
         e -> throwError e
 
-    skipDroppedFeedFile :: ChatSettings -> CM a -> CM (Maybe a)
-    skipDroppedFeedFile chatSettings f =
+    skipDroppedFeedFile :: ChatSettings -> Maybe Bool -> CM a -> CM (Maybe a)
+    skipDroppedFeedFile chatSettings feed_ f =
       (Just <$> f) `catchAllErrors` \case
-        ChatErrorStore (SEFileIdNotFoundBySharedMsgId _) | chatDropsFeed chatSettings -> pure Nothing
+        ChatErrorStore (SEFileIdNotFoundBySharedMsgId _) | dropsFeed chatSettings feed_ -> pure Nothing
         e -> throwError e
 
     validSender :: Maybe GroupMember -> CIDirection 'CTGroup 'MDRcv -> Bool
@@ -2336,8 +2334,8 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
               pure Nothing
 
-    groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryTaskContext)
-    groupMessageDelete gInfo@GroupInfo {membership, chatSettings = groupChatSettings} m_ sharedMsgId sndMemberId_ scope_ onlyHistory rcvMsg brokerTs =
+    groupMessageDelete :: GroupInfo -> Maybe GroupMember -> SharedMsgId -> Maybe MemberId -> Maybe MsgScope -> Bool -> RcvMessage -> UTCTime -> Maybe Bool -> CM (Maybe DeliveryTaskContext)
+    groupMessageDelete gInfo@GroupInfo {membership, chatSettings = groupChatSettings} m_ sharedMsgId sndMemberId_ scope_ onlyHistory rcvMsg brokerTs feed_ =
       findItem >>= \case
         Right cci@(CChatItem _ ci@ChatItem {chatDir}) -> requireVerifiedDelete cci $ case (chatDir, m_) of
           (CIGroupRcv mem, Just m@GroupMember {memberId}) ->
@@ -2368,7 +2366,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             let msgMemberId = fromMaybe memberId sndMemberId_
             if
               | msgMemberId == memberId ->
-                  unless (chatDropsFeed groupChatSettings) (messageError $ "x.msg.del: message not found, " <> tshow e) $> Nothing
+                  unless (dropsFeed groupChatSettings feed_) (messageError $ "x.msg.del: message not found, " <> tshow e) $> Nothing
               | senderRole < GRModerator -> do
                   messageError $ "x.msg.del: message not found, message of another member with insufficient member permissions, " <> tshow e
                   pure Nothing
@@ -3933,10 +3931,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
               where
                 MsgContainer {scope} = mc
             -- file description is always allowed, to allow sending files to support scope
-            XMsgFileDescr sharedMsgId fileDescr fileExpires -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr fileExpires
+            XMsgFileDescr sharedMsgId fileDescr fileExpires feed -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr fileExpires feed
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ feed ->
               void $ memberCanSend author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_ feed
-            XMsgDel sharedMsgId memId scope_ _ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ False rcvMsg msgTs
+            XMsgDel sharedMsgId memId scope_ _ feed -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ False rcvMsg msgTs feed
             XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
             XInfo p mKey -> withAuthor XInfo_ $ \author -> void $ xInfoMember gInfo author p mKey rcvMsg msgTs
@@ -4126,7 +4124,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                       forM_ body_ $ \body -> createMsgDeliveryJob db gInfo jobScope senderGMIds body
                       forM_ acceptedTasks $ \t -> updateDeliveryTaskStatus db (deliveryTaskId t) DTSProcessed
                       forM_ largeTasks $ \t -> setDeliveryTaskErrStatus db (deliveryTaskId t) "large"
-                    when (isJust body_) . lift . void $ getDeliveryJobWorker True (uncurry DJKGroup deliveryKey)
+                    when (isJust body_) . lift . void $ getDeliveryJobWorker True deliveryKey
             -- DJRelayRemoved is allowed when RSInactive - it forwards XGrpMemDel about relay's own deletion
             DJRelayRemoved
               | workerScope /= DWSGroup ->
@@ -4138,26 +4136,38 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                   withStore' $ \db -> do
                     createMsgDeliveryJob db gInfo jobScope [senderGMId] body
                     updateDeliveryTaskStatus db (deliveryTaskId task) DTSProcessed
-                  lift . void $ getDeliveryJobWorker True (uncurry DJKGroup deliveryKey)
+                  lift . void $ getDeliveryJobWorker True deliveryKey
 
 startDeliveryJobWorkers :: CM ()
 startDeliveryJobWorkers = do
   workerScopes <- withStore' $ \db -> getPendingDeliveryJobScopes db
   lift $ forM_ workerScopes resumeDeliveryJobWork
 
-resumeDeliveryJobWork :: DeliveryJobKey -> CM' ()
+resumeDeliveryJobWork :: DeliveryWorkerKey -> CM' ()
 resumeDeliveryJobWork = void . getDeliveryJobWorker False
 
-getDeliveryJobWorker :: Bool -> DeliveryJobKey -> CM' Worker
+getDeliveryJobWorker :: Bool -> DeliveryWorkerKey -> CM' Worker
 getDeliveryJobWorker hasWork deliveryKey = do
   ws <- asks deliveryJobWorkers
   a <- asks smpAgent
   getAgentWorker "delivery_job" hasWork a deliveryKey ws $
     runDeliveryJobWorker a deliveryKey
 
+startFeedJobWorkers :: CM ()
+startFeedJobWorkers = do
+  feedKeys <- withStore' resumeFeedJobsOnStart
+  lift $ forM_ feedKeys $ void . getFeedJobWorker False
+
 startFeedWorkers :: FeedId -> CM ()
 startFeedWorkers feedId =
-  lift $ mapM_ (\scope -> void $ getDeliveryJobWorker True (DJKFeed feedId scope)) feedWorkerScopes
+  lift $ mapM_ (\scope -> void $ getFeedJobWorker True (feedId, scope)) feedWorkerScopes
+
+getFeedJobWorker :: Bool -> FeedJobKey -> CM' Worker
+getFeedJobWorker hasWork feedKey = do
+  ws <- asks feedJobWorkers
+  a <- asks smpAgent
+  getAgentWorker "feed_job" hasWork a feedKey ws $
+    runFeedJobWorker a feedKey
 
 -- TODO [relays] dissemination here is unsigned (relay-asserted profile).
 -- Future: members sign an XMember on channel join, relay stores it per
@@ -4180,40 +4190,24 @@ encodeMemberNew vr gInfo member = case encodeChatMessage maxBatchElementSize cha
           chatMsgEvent = XGrpMemNew (memberInfo gInfo member) Nothing
         }
 
-runDeliveryJobWorker :: AgentClient -> DeliveryJobKey -> Worker -> CM ()
+runDeliveryJobWorker :: AgentClient -> DeliveryWorkerKey -> Worker -> CM ()
 runDeliveryJobWorker a deliveryKey Worker {doWork} = do
   delay <- asks $ deliveryWorkerDelay . config
   cxt <- chatStoreCxt
-  case deliveryKey of
-    DJKGroup groupId workerScope -> do
-      (user, gInfo) <- withStore $ \db -> do
-        user <- getUserByGroupId db groupId
-        gInfo <- getGroupInfo db cxt user groupId
-        pure (user, gInfo)
-      jobLoop delay $
-        jobOperation (\db -> getNextDeliveryJob db (groupId, workerScope)) (processDeliveryJob cxt user gInfo workerScope)
-    DJKFeed feedId scope -> do
-      (user, feed) <- withStore $ \db -> do
-        user <- getUserByFeedId db feedId
-        feed <- getFeed db user feedId
-        pure (user, feed)
-      jobLoop delay $
-        jobOperation (\db -> getNextFeedDeliveryJob db feedId scope) (processFeedJob cxt user feed scope)
+  (user, gInfo) <- withStore $ \db -> do
+    user <- getUserByGroupId db groupId
+    gInfo <- getGroupInfo db cxt user groupId
+    pure (user, gInfo)
+  jobWorkerLoop delay doWork $
+    withWork_ a doWork (withStore' $ \db -> getNextDeliveryJob db deliveryKey) $ \job ->
+      processDeliveryJob cxt user gInfo job
+        `catchAllErrors` \e -> do
+          withStore' $ \db -> setDeliveryJobErrStatus db (deliveryJobId job) (tshow e)
+          eToView e
   where
-    jobLoop :: Int64 -> CM () -> CM ()
-    jobLoop delay operation = forever $ do
-      unless (delay == 0) $ liftIO $ threadDelay' delay
-      lift $ waitForWork doWork
-      operation
-    jobOperation :: (DB.Connection -> IO (Either StoreError (Maybe (DeliveryJob c)))) -> (DeliveryJob c -> CM ()) -> CM ()
-    jobOperation getJob processJob =
-      withWork_ a doWork (withStore' getJob) $ \job ->
-        processJob job
-          `catchAllErrors` \e -> do
-            withStore' $ \db -> setDeliveryJobErrStatus db (deliveryJobId job) (tshow e)
-            eToView e
-    processDeliveryJob :: StoreCxt -> User -> GroupInfo -> DeliveryWorkerScope -> DeliveryJob 'CTGroup -> CM ()
-    processDeliveryJob cxt user gInfo workerScope job =
+    (groupId, workerScope) = deliveryKey
+    processDeliveryJob :: StoreCxt -> User -> GroupInfo -> MessageDeliveryJob -> CM ()
+    processDeliveryJob cxt user gInfo job =
           case jobScopeImpliedSpec jobScope of
             DJDeliveryJob _includePending
               | not (relayServesGroup gInfo) -> do
@@ -4231,7 +4225,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   deleteGroupConnections user gInfo True
                   withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           where
-            DeliveryJob {jobId, cursorId_ = startingCursor, jobWork = DJWGroup {jobScope, senderGMIds, body}} = job
+            MessageDeliveryJob {jobId, jobScope, senderGMIds, body, cursorGMId_ = startingCursor} = job
             singleSenderGMId_ = case senderGMIds of
               [s] -> Just s
               _ -> Nothing
@@ -4388,51 +4382,75 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                               Nothing -> VRValue Nothing msgBody -- sending to one member, do not reference body
                               Just 1 -> VRValue (Just 1) msgBody
                               Just _ -> VRRef 1
-    processFeedJob :: StoreCxt -> User -> Feed -> FeedWorkerScope -> DeliveryJob 'CTFeed -> CM ()
-    processFeedJob cxt user feed scope job = do
-      bucketSize <- asks $ feedBucketSize . config
+jobWorkerLoop :: Int64 -> TMVar () -> CM () -> CM ()
+jobWorkerLoop delay doWork operation = forever $ do
+  unless (delay == 0) $ liftIO $ threadDelay' delay
+  lift $ waitForWork doWork
+  operation
+
+runFeedJobWorker :: AgentClient -> FeedJobKey -> Worker -> CM ()
+runFeedJobWorker a feedKey@(feedId, scope) Worker {doWork} = do
+  delay <- asks $ deliveryWorkerDelay . config
+  cxt <- chatStoreCxt
+  (user, feed) <- withStore $ \db -> do
+    user <- getUserByFeedId db feedId
+    feed <- getFeed db user feedId
+    pure (user, feed)
+  bucketSize <- asks $ feedBucketSize . config
+  jobWorkerLoop delay doWork $
+    withWork_ a doWork (withStore' $ \db -> getNextFeedJob db feedKey) $ \job ->
+      processFeedJob cxt user feed bucketSize job `catchAllErrors` jobError user feed job
+  where
+    jobError user feed FeedJob {feedJobId, feedItemId, feedAction} e = do
+      withStore' $ \db -> setFeedJobErrStatus db feedJobId (tshow e)
+      when (feedActionCreates feedAction) $
+        setFeedItemStatus user feed feedItemId $ CISSndError $ SndErrOther $ tshow e
+      eToView $ chatErrorAgent $ CRITICAL True $ "feed job " <> show feedJobId <> " failed: " <> show e
+    processFeedJob :: StoreCxt -> User -> Feed -> Int -> FeedJob -> CM ()
+    processFeedJob cxt user feed bucketSize FeedJob {feedJobId, feedItemId, feedAction, cursorId_} = do
       let msgIds = feedActionMsgIds feedAction
       msgs <- withStore' $ \db -> getFeedJobMessages db msgIds
       when (length msgs < length msgIds) $ logWarn "feed job: message not found"
-      bucketLoop bucketSize msgs startingCursor `catchAllErrors` \e -> do
-        when (feedActionCreates feedAction) $
-          withStore' $ \db -> updateFeedChatItemStatus db user feedId feedItemId (CISSndError $ SndErrOther $ tshow e)
-        throwError e
+      bucketLoop msgs cursorId_
       where
-        DeliveryJob {jobId, cursorId_ = startingCursor, jobWork = DJWFeed {feedItemId, feedAction}} = job
-        Feed {feedId} = feed
-        bucketLoop :: Int -> [SndMessage] -> Maybe Int64 -> CM ()
-        bucketLoop bucketSize msgs cursor_ =
+        bucketLoop :: [SndMessage] -> Maybe Int64 -> CM ()
+        bucketLoop msgs cursor_ =
           withStore' (\db -> runExceptT $ getFeedChatItem db user feedId feedItemId) >>= \case
             Right cci
               | not (itemChanged cci),
                 Just item <- feedItemMsg cci ->
-                  sendBucket bucketSize msgs item cursor_ >>= \case
-                    Just cursor' -> bucketLoop bucketSize msgs (Just cursor')
+                  sendBucket msgs item cursor_ >>= \case
+                    Just cursor' -> bucketLoop msgs (Just cursor')
                     Nothing -> completeJob
             _ -> completeJob
         itemChanged (CChatItem _ ChatItem {meta = CIMeta {itemDeleted}}) =
           isJust itemDeleted && not (feedActionDeletes feedAction)
-        sendBucket bucketSize msgs item cursor_ = do
+        sendBucket msgs item cursor_ = do
           cursor' <- case scope of
             FWSContacts -> feedContactsBucket cxt user feedItemId feedAction item bucketSize msgs cursor_
             FWSGroups -> feedGroupsBucket cxt user feedItemId feedAction item bucketSize msgs cursor_
-          forM_ cursor' $ \c -> withStore' $ \db -> do
-            updateFeedDeliveryJobCursor db jobId c
+          forM_ cursor' $ \c -> do
+            withStore' $ \db -> updateFeedJobCursor db feedJobId c
             when (feedActionCreates feedAction && isNothing cursor_) $
-              updateFeedChatItemStatus db user feedId feedItemId (CISSndSent SSPPartial)
+              setFeedItemStatus user feed feedItemId $ CISSndSent SSPPartial
           pure cursor'
-        completeJob = do
-          lastOfEvent <-
-            withFeedLock "completeFeedJob" feedId $
-              withStore' $ \db -> completeFeedJob db jobId feedItemId (feedActionTag feedAction)
-          when lastOfEvent $ finishFeedEvent user feed feedItemId feedAction
+        completeJob =
+          withFeedLock "completeFeedJob" feedId $ do
+            lastOfEvent <- withStore' $ \db -> completeFeedJob db feedJobId feedItemId (feedActionTag feedAction)
+            when lastOfEvent $ finishFeedEvent user feed feedItemId feedAction
 
-chatDropsFeed :: ChatSettings -> Bool
-chatDropsFeed ChatSettings {dropFeed} = isTrue dropFeed
+setFeedItemStatus :: User -> Feed -> ChatItemId -> CIStatus 'MDSnd -> CM ()
+setFeedItemStatus user feed@Feed {feedId} feedItemId status = do
+  withStore' $ \db -> updateFeedChatItemStatus db user feedId feedItemId status
+  withFeedItem user feed feedItemId $ \ci -> toView $ CEvtChatItemsStatusesUpdated user [aFeedItem feed ci]
+
+withFeedItem :: User -> Feed -> ChatItemId -> (CChatItem 'CTFeed -> CM ()) -> CM ()
+withFeedItem user Feed {feedId} feedItemId action =
+  withStore' (\db -> runExceptT $ getFeedChatItem db user feedId feedItemId)
+    >>= either (const $ pure ()) action
 
 dropsFeed :: ChatSettings -> Maybe Bool -> Bool
-dropsFeed chatSettings feed_ = feed_ == Just True && chatDropsFeed chatSettings
+dropsFeed ChatSettings {dropFeed} feed_ = feed_ == Just True && isTrue dropFeed
 
 dropsFeedMsg :: ChatSettings -> MsgContainer -> Bool
 dropsFeedMsg chatSettings MsgContainer {feed} = dropsFeed chatSettings feed
@@ -4449,14 +4467,8 @@ feedContactsBucket cxt user feedItemId action item bucketSize msgs cursor_ = cas
     forM_ (lastId ctIds) $ \lastCtId -> do
       existing <- withStore' $ \db -> getFeedInstanceContactIdsByRange db user feedItemId fromId lastCtId
       createdAt <- liftIO getCurrentTime
-      recipients <- withStore' $ \db ->
-        forM (mapMaybe feedRecipient cts) $ \(ct, conn) -> do
-          let timed_ = sndFeedTimed (contactTimedTTL ct) createdAt
-          case M.lookup (contactId' ct) existing of
-            Just itemId -> pure (contactId' ct, itemId, conn, Nothing)
-            Nothing -> do
-              itemId <- createFeedInstanceItem db user (CDDirectSnd ct) feedSharedMsgId feedContent feedItemId timed_ feedHasLink createdAt
-              pure (contactId' ct, itemId, conn, timed_)
+      (errs, recipients) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (instanceRecipient db createdAt existing) (mapMaybe feedRecipient cts))
+      unless (null errs) $ toView $ CEvtChatErrors errs
       forM_ recipients $ \(ctId, itemId, _, newTimed_) ->
         forM_ (newTimed_ >>= timedDeleteAt') $
           startProximateTimedItemThread user (ChatRef CTDirect ctId Nothing, itemId)
@@ -4477,6 +4489,13 @@ feedContactsBucket cxt user feedItemId action item bucketSize msgs cursor_ = cas
     feedRecipient ct = case contactSendConn_ ct of
       Right conn | directOrUsed ct && not (connIncognito conn) -> Just (ct, conn)
       _ -> Nothing
+    instanceRecipient db createdAt existing (ct, conn) =
+      let timed_ = sndFeedTimed (contactTimedTTL ct) createdAt
+       in case M.lookup (contactId' ct) existing of
+            Just itemId -> pure $ Right (contactId' ct, itemId, conn, Nothing)
+            Nothing -> do
+              itemId <- createFeedInstanceItem db user (CDDirectSnd ct) feedSharedMsgId feedContent feedItemId timed_ feedHasLink createdAt
+              pure $ Right (contactId' ct, itemId, conn, timed_)
     deliverBucket lastCtId recipients = do
       delivered <- withStore' $ \db -> S.fromList <$> getDeliveredContactIdsByRange db (firstMsgId msgs) fromId lastCtId
       deliverFeedBucket action msgs [(itemId, conn) | (ctId, itemId, conn) <- recipients, not $ ctId `S.member` delivered]
@@ -4510,21 +4529,14 @@ feedGroupsBucket cxt user feedItemId action item bucketSize msgs cursor_ = case 
       members <- withStore' $ \db -> getCustomerGroupsMembersByRange db cxt user fromId lastGId
       existing <- withStore' $ \db -> getFeedInstanceGroupIdsByRange db user feedItemId fromId lastGId
       createdAt <- liftIO getCurrentTime
-      recipients <- withStore' $ \db ->
-        forM (filter feedGroup gs) $ \g -> do
-          let ms = groupMembers members g
-              timed_ = sndFeedTimed (groupTimedTTL g) createdAt
-          case M.lookup (groupId' g) existing of
-            Just itemId -> pure (groupId' g, itemId, ms, Nothing)
-            Nothing -> do
-              itemId <- createFeedInstanceItem db user (CDGroupSnd g Nothing) feedSharedMsgId feedContent feedItemId timed_ feedHasLink createdAt
-              forM_ ms $ \(m, _) -> createGroupSndStatus db itemId (groupMemberId' m) GSSNew
-              pure (groupId' g, itemId, ms, timed_)
+      (errs, recipients) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (instanceRecipient db members createdAt existing) (filter feedGroup gs))
+      unless (null errs) $ toView $ CEvtChatErrors errs
       forM_ recipients $ \(gId, itemId, _, newTimed_) ->
         forM_ (newTimed_ >>= timedDeleteAt') $
           startProximateTimedItemThread user (ChatRef CTGroup gId Nothing, itemId)
       results <- deliverBucket lastGId [(itemId, ms) | (_, itemId, ms, _) <- recipients]
-      withStore' $ \db -> updateFeedInstanceStatuses db (sendErrorStatuses results)
+      withStore' $ \db -> forM_ results $ \((itemId, mId), r) ->
+        forM_ (resultSndError r) $ \e -> updateGroupSndStatus db itemId mId (GSSError e)
     pure $ bucketCursor bucketSize gIds
   _ -> do
     instances <- withStore' $ \db -> getFeedGroupInstancesByCursor db cxt user feedItemId (feedActionInstances action) cursor_ bucketSize
@@ -4542,9 +4554,19 @@ feedGroupsBucket cxt user feedItemId action item bucketSize msgs cursor_ = case 
       not (incognitoMembership g) && memberCurrent membership && memberActive membership
     groupMembers members g =
       [(m, conn) | m <- filter memberCurrent (M.findWithDefault [] (groupId' g) members), Just (_, conn) <- [readyMemberConn m]]
+    instanceRecipient db members createdAt existing g =
+      let ms = groupMembers members g
+          timed_ = sndFeedTimed (groupTimedTTL g) createdAt
+       in case M.lookup (groupId' g) existing of
+            Just itemId -> pure $ Right (groupId' g, itemId, ms, Nothing)
+            Nothing -> do
+              itemId <- createFeedInstanceItem db user (CDGroupSnd g Nothing) feedSharedMsgId feedContent feedItemId timed_ feedHasLink createdAt
+              forM_ ms $ \(m, _) -> createGroupSndStatus db itemId (groupMemberId' m) GSSNew
+              pure $ Right (groupId' g, itemId, ms, timed_)
     deliverBucket lastGId recipients = do
       delivered <- withStore' $ \db -> S.fromList <$> getDeliveredMemberIdsByRange db (firstMsgId msgs) fromId lastGId
-      deliverFeedBucket action msgs [(itemId, conn) | (itemId, ms) <- recipients, (m, conn) <- ms, not $ groupMemberId' m `S.member` delivered]
+      let toSend = [((itemId, groupMemberId' m), conn) | (itemId, ms) <- recipients, (m, conn) <- ms, not $ groupMemberId' m `S.member` delivered]
+      deliverFeedBucket action msgs toSend
 
 applyGroupAction :: User -> ChatItemId -> FeedJobAction -> FeedItemMsg -> [(GroupInfo, ChatItemId)] -> GroupId -> GroupId -> CM ()
 applyGroupAction user feedItemId action item instances fromId toId = case action of
@@ -4566,26 +4588,29 @@ applyGroupAction user feedItemId action item instances fromId toId = case action
       withStore' $ \db -> markFeedInstancesDeleted db (map snd gs) deletedTs
     membershipId GroupInfo {groupId, membership} = (groupId, memberId' membership)
 
-deliverFeedBucket :: FeedJobAction -> [SndMessage] -> [(ChatItemId, Connection)] -> CM [(ChatItemId, Either ChatError ([Int64], PQEncryption))]
+deliverFeedBucket :: FeedJobAction -> [SndMessage] -> [(r, Connection)] -> CM [(r, Either ChatError ([Int64], PQEncryption))]
 deliverFeedBucket action msgs recipients = case (L.nonEmpty msgs, recipients) of
   (Just msgs', _ : _) -> do
     let batched_ = batchSndMessagesJSON BMJson $ L.map Right msgs'
     case L.nonEmpty batched_ of
       Nothing -> pure []
       Just batched' -> do
-        let msgFlags = MsgFlags {notification = hasNotification $ feedActionEventTag action}
-            (itemIds, msgReqs) = sharedBodyReqs msgFlags (length batched' + length msgs') msgBatchMBR batched' recipients
+        let msgFlags = MsgFlags {notification = feedActionCreates action}
+            (rs, msgReqs) = sharedBodyReqs msgFlags (length batched' + length msgs') msgBatchMBR batched' recipients
         case L.nonEmpty msgReqs of
           Nothing -> pure []
-          Just msgReqs' -> zip itemIds . L.toList <$> deliverMessagesB msgReqs'
+          Just msgReqs' -> zip rs . L.toList <$> deliverMessagesB msgReqs'
   _ -> pure []
+
+resultSndError :: Either ChatError a -> Maybe SndError
+resultSndError = \case
+  Left e -> Just $ SndErrOther $ tshow e
+  Right _ -> Nothing
 
 sendErrorStatuses :: [(ChatItemId, Either ChatError a)] -> [(ChatItemId, CIStatus 'MDSnd)]
 sendErrorStatuses = mapMaybe itemError
   where
-    itemError (itemId, r) = case r of
-      Left e -> Just (itemId, CISSndError $ SndErrOther $ tshow e)
-      Right _ -> Nothing
+    itemError (itemId, r) = (itemId,) . CISSndError <$> resultSndError r
 
 firstMsgId :: [SndMessage] -> MessageId
 firstMsgId = \case
@@ -4604,18 +4629,12 @@ bucketCursor bucketSize ids
 
 finishFeedEvent :: User -> Feed -> ChatItemId -> FeedJobAction -> CM ()
 finishFeedEvent user feed@Feed {feedId} feedItemId action
-  | feedActionCreates action = do
-      withStore' $ \db -> updateFeedChatItemStatus db user feedId feedItemId (CISSndSent SSPComplete)
-      withFeedItem $ \ci -> toView $ CEvtChatItemsStatusesUpdated user [aFeedItem feed ci]
-  | feedActionRemovesItem action = withFeedItem $ \cci -> do
+  | feedActionCreates action = setFeedItemStatus user feed feedItemId $ CISSndSent SSPComplete
+  | feedActionRemovesItem action = withFeedItem user feed feedItemId $ \cci -> do
       deleteCIFiles user $ itemsFilesInfo [cci]
       withStore' $ \db -> deleteFeedChatItem db user feedId feedItemId
       toView $ CEvtChatItemsDeleted user [ChatItemDeletion (aFeedItem feed cci) Nothing] True False
   | otherwise = pure ()
-  where
-    withFeedItem action' =
-      withStore' (\db -> runExceptT $ getFeedChatItem db user feedId feedItemId)
-        >>= either (const $ pure ()) action'
 
 -- Single worker processes all relay requests (XGrpRelayInv).
 -- We use map with a single key 1 to fit into existing worker management framework.

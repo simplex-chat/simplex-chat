@@ -39,40 +39,30 @@ ALTER TABLE groups ADD COLUMN drop_feed INTEGER NOT NULL DEFAULT 0;
 CREATE INDEX idx_contacts_user_id ON contacts(user_id, contact_id);
 CREATE INDEX idx_groups_user_id_business_chat ON groups(user_id, business_chat, group_id);
 
-PRAGMA writable_schema=1;
-
-UPDATE sqlite_master
-SET sql = replace(sql, 'group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE', 'group_id INTEGER REFERENCES groups ON DELETE CASCADE')
-WHERE type = 'table' AND name = 'delivery_jobs';
-
-PRAGMA writable_schema=RESET;
-
-ALTER TABLE delivery_jobs ADD COLUMN feed_id INTEGER REFERENCES feeds ON DELETE CASCADE;
-ALTER TABLE delivery_jobs ADD COLUMN chat_item_id INTEGER REFERENCES chat_items ON DELETE CASCADE;
-ALTER TABLE delivery_jobs ADD COLUMN message_ids TEXT;
-ALTER TABLE delivery_jobs ADD COLUMN feed_cursor_id INTEGER;
-CREATE INDEX idx_delivery_jobs_feed_next ON delivery_jobs(feed_id, worker_scope, failed, job_status);
-CREATE INDEX idx_delivery_jobs_chat_item_id ON delivery_jobs(chat_item_id);
+CREATE TABLE feed_jobs(
+  feed_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  feed_id INTEGER NOT NULL REFERENCES feeds ON DELETE CASCADE,
+  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  worker_scope TEXT NOT NULL,
+  action_tag TEXT NOT NULL,
+  message_ids TEXT,
+  cursor_id INTEGER,
+  job_status TEXT NOT NULL,
+  job_err_reason TEXT,
+  failed INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+) STRICT;
+CREATE INDEX idx_feed_jobs_next ON feed_jobs(feed_id, worker_scope, failed, job_status, feed_job_id);
+CREATE INDEX idx_feed_jobs_chat_item_id ON feed_jobs(chat_item_id, action_tag);
 |]
 
 down_m20260905_feeds :: Query
 down_m20260905_feeds =
   [sql|
-DROP INDEX idx_delivery_jobs_chat_item_id;
-DROP INDEX idx_delivery_jobs_feed_next;
-DELETE FROM delivery_jobs WHERE group_id IS NULL;
-ALTER TABLE delivery_jobs DROP COLUMN feed_cursor_id;
-ALTER TABLE delivery_jobs DROP COLUMN message_ids;
-ALTER TABLE delivery_jobs DROP COLUMN chat_item_id;
-ALTER TABLE delivery_jobs DROP COLUMN feed_id;
-
-PRAGMA writable_schema=1;
-
-UPDATE sqlite_master
-SET sql = replace(sql, 'group_id INTEGER REFERENCES groups ON DELETE CASCADE', 'group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE')
-WHERE type = 'table' AND name = 'delivery_jobs';
-
-PRAGMA writable_schema=RESET;
+DROP INDEX idx_feed_jobs_chat_item_id;
+DROP INDEX idx_feed_jobs_next;
+DROP TABLE feed_jobs;
 
 DROP INDEX idx_groups_user_id_business_chat;
 DROP INDEX idx_contacts_user_id;

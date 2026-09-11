@@ -108,7 +108,7 @@ Feed job statements move to `src/Simplex/Chat/Store/Feeds.hs`:
 - `processFeedJob` sets `CISSndError` on the feed item when a creating action fails.
 - The `CIDeleting` retry no longer downgrades to `FJADeleteInternal`; `createFeedJobs` supersedes errored jobs of the same action tag.
 - The broadcast deletion window is enforced in the `CTFeed` branch as `diffUTCTime deletedTs itemTs < deleteMsgInterval`.
-- `notification` derives from `feedActionEventTag action`.
+- `notification` derives from `feedActionCreates action`; `feedActionEventTag` is removed.
 - `messageDelete`, `groupMessageDelete` and the two file-description paths are silent under `chatDropsFeed`.
 - `delGroupChatItems` is one `if` over `fullDelete`.
 - `getChatItemIdsByAgentMsgId` is split into `getDirectChatItemIdsByAgentMsgId` and `getGroupChatItemIdsByAgentMsgId`, each probing both columns of the instance index.
@@ -119,28 +119,71 @@ Feed job statements move to `src/Simplex/Chat/Store/Feeds.hs`:
 
 ### To resolve
 
-1. **Errored feed job leaves the item unfinished.** `finishFeedEvent` never runs while a sibling is `DJSError`. Set the feed item to `CISSndError` and emit `CEvtChatItemsStatusesUpdated` when a job errors. Emit the same event for the first `SSPPartial` write.
-2. **No retry of an errored feed job.** Decide between a bounded retry in the worker and a documented manual retry through the command. The current behaviour requires the user to repeat the command.
-3. **A deleted contact aborts a whole bucket.** The `FJANew` bucket creates every instance in one `withStore'`, so one foreign key violation loses the rest of the broadcast. Use `withStoreBatch'` per recipient and drop the failing recipient.
-4. **`finishFeedEvent` runs outside the feed lock.** Extend `withFeedLock` over `completeFeedJob` and `finishFeedEvent`.
-5. **Group recipients.** Members that `memberSendAction` would treat as `MSAPending` or `MSAForwarded` receive nothing and get no pending message. Every member is recorded `GSSNew`, and one member's failure sets the whole instance to `CISSndError`. Record per-member `GSSError` as `createMemberSndStatuses` does, and decide whether pending members are stored.
-6. **`APISendFeedMessage` is not atomic.** The item, the message, the message link and the jobs are four transactions. A crash between them leaves an undelivered item in `CISSndNew`. Create all four in one transaction.
-7. **A locally marked feed item cannot be removed.** `(_, Just (CIDeleted _))` rejects every later deletion. Accept `CIDMInternal` on a marked item, as direct and group chats do.
-8. **`dropFeed` suppression is too broad.** `XMsgDel` and `XMsgFileDescr` carry no feed marker, so the guards silence the not-found delete event and the missing-file error for every message in a chat with `dropFeed` set. Restrict the suppression to items whose shared id belongs to a dropped broadcast, or accept it and record the decision.
-9. **Feed messages to groups are unsigned.** `createFeedMessage` passes no `MsgSigning` and `getFeedJobMessages` sets `signedMsg_ = Nothing`, so in a customer group with `SGFSignMessages` the broadcast arrives unverified. Decide between signing per group and excluding signing groups from the broadcast.
-10. **`feeds.favorite` has no writer.** `APISetChatSettings` rejects `CTFeed`, and the favourite filter in `findFeedChatPreviews_` reads the column. Either accept `CTFeed` in `APISetChatSettings` or drop the column and the filter.
-11. **`setUserChatsRead` skips `feeds`.** A feed marked unread stays unread after `APIUserRead`.
-12. **`getChatRefViaItemId` rejects feed items.** `getAllChatItems` returns them, so `APIGetChatItems` after or around a feed item and `ShowChatItem` fail. Add `feed_id` to the query and the mapping.
-13. **`SendFile` rejects `%`.** `APISendFeedMessage` accepts `fileSource`, and `/file %` does not reach it.
-14. **`SEUserFeedNotFound` and `SEFeedNotFound` have no `viewStoreError` case.**
-15. **`unzipMaybe3` unzips a pair.** Rename.
-16. **`chat_query_plans.txt` is stale.** Regenerate it from a full test run. The file is owned by root in the current environment.
-17. **`plans/2026-09-04-feed-broadcast-chat.md` contradicts the code.** Update it or drop it from the change.
-18. **Tests.** Add coverage for `dropFeed`, a file broadcast, a restart in the middle of a job, incognito exclusion, a member send error, and a per-chat detach. `testFeedEditDelete` reads the instance immediately after the recipient prints the edit, before the worker writes it.
-19. **`createContactPQSndItem` is not called on the feed path.** `deliverMessagesB` updates the stored PQ state, so only the chat item announcing the change is missing.
-20. **Documentation.** A dropped broadcast still stores its body in `messages` for 30 days, and still returns a delivery receipt.
+1. **An inner exception must not fail a job.** The `FJANew` bucket creates every instance in one
+   `withStore'`, so a foreign key violation from a contact, group or member deleted between the bucket's
+   read and its insert loses the rest of the broadcast. Write instances with `withStoreBatch'` per
+   recipient and drop the failing recipient. Same for `createGroupSndStatus`.
+2. **An errored feed job resumes after restart.** `resumeFeedJobsOnStart` resets
+   `failed = 0 AND job_status = DJSError` to `DJSPending` before the workers are started, and the job
+   continues from its stored cursor. Within a session an errored job is not retried, so the worker does
+   not spin. `failed = 1` stays terminal: it marks a row that failed to decode.
+3. **A job error raises a critical error.** `CRITICAL {offerRestart = True}`, as at `Subscriber.hs:153`
+   and `Commands.hs:5316`, so the app offers a restart.
+4. **The feed item's status is reported on every change.** `CISSndError` on a job error and
+   `CISSndSent SSPPartial` on the first bucket each emit `CEvtChatItemsStatusesUpdated`.
+5. **`finishFeedEvent` runs inside the feed lock**, before `completeFeedJob` writes `DJSComplete`.
+6. **Group instance statuses are recorded per member.** A member's send failure writes `GSSError` against
+   that member instead of `CISSndError` on the whole instance. Members without a ready connection are
+   still skipped, and no pending messages are stored.
+7. **`APISendFeedMessage` creates the item, the message, the message link and the jobs in one transaction.**
+8. **`CIDMInternal` is accepted on a marked feed item**, as in direct and group chats.
+9. **`feed :: Maybe Bool` is added to `XMsgDel` and `XMsgFileDescr`**, as it was to `XMsgUpdate`. The
+   guards in `messageDelete`, `groupMessageDelete` and `skipDroppedFeedFile` become
+   `dropsFeed chatSettings feed_`.
+10. **`CTFeed` is accepted by `SendFile` and `SendImage`**, as `CTLocal` already is.
+11. **`setUserChatsRead` clears `feeds.unread_chat`.**
+12. **`SEUserFeedNotFound` and `SEFeedNotFound` get `viewStoreError` cases.**
+13. **`unzipMaybe3` is renamed** — it unzips a pair.
+14. **`chat_query_plans.txt` is regenerated** from a full test run.
+15. **`plans/2026-09-04-feed-broadcast-chat.md` is updated or dropped** — it contradicts the code.
+16. **Tests** for `dropFeed`, a file broadcast, a restart in the middle of a job, incognito exclusion, a
+    member send error, and a per-chat detach. `testFeedEditDelete` reads the instance immediately after
+    the recipient prints the edit, before the worker writes it.
+17. **Feed job cleanup** is wired into the cleanup manager as `deleteDoneFeedJobs`.
+18. **The file description path is one transaction** — `createFeedFileDescrJobs` creates every part
+    message, its link to the feed item and the jobs together.
+19. **`deleteFeedInstances` no longer deletes `chat_item_messages`** — an instance is created without a
+    message link, and the row would cascade with the item.
 
-## 6. Order of work
+### Not changed
+
+- `feeds.favorite` stays, mirroring `NoteFolder`: `note_folders.favorite` has no writer either, so the
+  unwritten column is pre-existing rather than introduced here.
+- `getChatRefViaItemId` stays as it is. `APIGetChatItems` across all chats is used only from the CLI, and
+  its pagination is unused.
+- Signing in customer groups: `signMessages` defaults to `FEOff` and feed groups are filtered to
+  `business_chat = BCCustomer`, so an unsigned broadcast never reaches a signing channel.
+- Retry and the critical error for group delivery jobs: the same gap exists there, outside this change.
+- `createContactPQSndItem` on the feed path: `deliverMessagesB` already updates the stored PQ state, so
+  only the chat item announcing the change is missing.
+- A dropped broadcast still stores its body in `messages` for 30 days and still returns a delivery
+  receipt — documented, not changed.
+
+## 6. Done
+
+Sections 1 to 4 are implemented, and items 1 to 13, 15, and 17 to 19 of section 5.
+
+Item 16: tests cover `dropFeed`, a file broadcast and a per-chat detach. A restart in the middle of a
+job, incognito exclusion and a member send error remain uncovered — none of the three can be made
+deterministic without an induced failure.
+
+Item 14 needs a full test run with write access to `chat_query_plans.txt`.
+
+The Postgres schema dump is stale: `src/Simplex/Chat/Store/Postgres/Migrations/chat_schema.sql` still
+holds the feed columns on `delivery_jobs` and no `feed_jobs`. Only the Postgres client binaries are
+installed here, so `postgresSchemaDumpTest` cannot be run.
+
+## 7. Order of work
 
 1. Amend the migrations.
 2. Split the types.

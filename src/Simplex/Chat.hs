@@ -188,6 +188,7 @@ newChatController
         chatStoreChanged <- newTVarIO False
         deliveryTaskWorkers <- TM.emptyIO
         deliveryJobWorkers <- TM.emptyIO
+        feedJobWorkers <- TM.emptyIO
         relayRequestWorkers <- TM.emptyIO
         relayGroupLinkChecksAsync <- newTVarIO Nothing
         webPreviewState <- forM webPreviewConfig $ \_ -> newWebPreviewState
@@ -234,6 +235,7 @@ newChatController
               filesFolder,
               deliveryTaskWorkers,
               deliveryJobWorkers,
+              feedJobWorkers,
               relayRequestWorkers,
               relayGroupLinkChecksAsync,
               webPreviewState,
