@@ -232,12 +232,14 @@ function cardAppearance(): ReturnType<typeof appearanceFor> {
   return appearanceFor(store.theme(), prefersDark());
 }
 
-// Stripe demands a return URL for the redirect a 3DS card may need. It is the bare page, with no
-// `?order=` on it: the order id is a bearer capability this service never hands to Stripe, and a
-// return_url is stored on the session and visible in the Dashboard. The order resumes from local
-// state, not from this URL.
+// Stripe redirects the page to this URL when a card confirm completes (always, not only for a 3DS
+// challenge). It carries no `?order=`: the order id is a bearer capability this service never hands
+// to Stripe, and a return_url is stored on the session and visible in the Dashboard. It carries only
+// this marker, so the reload resumes the order from local state (see syncFromLocation) rather than
+// landing on the welcome page.
+const CARD_RETURN_PARAM = "sb_return";
 function cardReturnUrl(): string {
-  return location.origin + location.pathname;
+  return location.origin + location.pathname + "?" + CARD_RETURN_PARAM;
 }
 
 // In `system` mode the OS can flip under us: re-resolve the navbar's `.dark` class, and re-mount
@@ -842,6 +844,9 @@ function renderCardForm(view: CardView): void {
       if (confirm === null) return;
       fields.busy(true);
       cardConfirmPending = true;
+      // Stripe's confirm redirects the whole page to the return URL; remember which order it is for, so
+      // the reload resumes this one and not merely the newest when other unpaid orders sit in the list.
+      store.rememberCardReturn(view.order.orderId);
       void confirm().then((outcome) => {
         cardConfirmPending = false;
         if (outcome.kind === "submitted") { cardConfirmed(view, node); return; }
@@ -961,12 +966,32 @@ function syncFromLocation(fresh: boolean): void {
   flow.stopAll();
   stopCountdowns();
   chromeUi.close();
-  const orderId = new URLSearchParams(location.search).get("order");
+  const params = new URLSearchParams(location.search);
+  const orderId = params.get("order");
   if (orderId === null && location.hash === CODES_HASH) {
     renderCodes(store.orders());
     void flow.refreshHistory().then(renderCodes);
     announceLocation();
     return;
+  }
+  // A card checkout returns here after Stripe's redirect: the return URL carries this marker and no
+  // order id, so resume the exact order the confirm was for, kept in local state before the redirect
+  // (see rememberCardReturn). It resumes the right one even with other unpaid orders in the list, and
+  // whether the card settled during the redirect (paid) or has not yet (open) — resolveLoad's
+  // newestOpen would miss a paid one and drop the buyer on the welcome page instead of their code.
+  if (orderId === null && fresh && params.has(CARD_RETURN_PARAM)) {
+    // The newest order is the fallback only if the remembered id was lost, so a return still lands on
+    // an order rather than the welcome page.
+    const resumeId = store.takeCardReturn() ?? store.orders()[0]?.orderId;
+    if (resumeId !== undefined) {
+      history.replaceState(null, "", `?order=${encodeURIComponent(resumeId)}`);
+      openOrder(resumeId);
+      announceLocation();
+      return;
+    }
+    // Nothing to resume (an empty store, or one too full to save the order): drop the marker and load
+    // normally rather than sit on a URL with nothing behind it.
+    history.replaceState(null, "", location.pathname);
   }
   const load = resolveLoad({ search: location.search }, fresh ? store.newestOpen() : undefined);
   if (load.kind === "order") {
