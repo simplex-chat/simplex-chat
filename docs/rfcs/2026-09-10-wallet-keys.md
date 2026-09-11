@@ -6,8 +6,8 @@ The client needs keys of its own, outside the messaging protocol, at addresses
 it can derive again after a restart, after a database restore, or on a new
 device. Otherwise whatever an address holds is lost with the device.
 
-The first of those is name ownership: a name bought in the app is owned by one
-of these addresses. Buying is not here. The keys land first, so the key material
+The first use case is name ownership: a name bought in the app is owned by one
+of these addresses. Buying is not implemented yet: The keys land first, so the key material
 can be reviewed on its own, before the names protocol, the registrar and
 signing.
 
@@ -36,10 +36,11 @@ So profile 0's names are MetaMask's account list in order, and each profile's
 first name is the matching Ledger Live account. The mnemonic imports there as a
 recovery phrase, a single secret as a private key.
 
-**Why not one key per profile.** Exporting it would hand over every name that
-profile owns, and the resolver keeps one nonce per signer, so one key would
-serialise every name's record edits behind one counter. A name's secret is a
-leaf, with no chain code, so exporting it hands over that name only.
+**Why not one key per profile.** A name's owner is public, so an address that
+owns several names links them: whoever knows one of them can read its owner and
+find the rest. A key per name leaves no such link. It also keeps an export
+narrow, as a name's secret is a leaf, with no chain code, so handing it over
+hands over that name only.
 
 **Why the account is a counter and not a hash of the profile.** A hashed index
 would survive a restore in any profile order, and would leave no gap to disclose
