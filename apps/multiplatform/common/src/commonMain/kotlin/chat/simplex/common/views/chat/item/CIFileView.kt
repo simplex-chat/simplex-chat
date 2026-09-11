@@ -78,7 +78,7 @@ fun CIFileView(
         file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted -> {
           val prohibited = file.fileProhibited
           if (prohibited != null) {
-            showProhibitedFileAlert(prohibited)
+            showProhibitedFileAlert(file, prohibited)
           } else {
             receiveFile(file.fileId)
           }
@@ -239,19 +239,22 @@ fun CIFileView(
 // the core decides whether a received file is above the size the sender's badge allows
 fun fileSizeValid(file: CIFile): Boolean = file.fileProhibited == null
 
-fun showProhibitedFileAlert(prohibited: FileProhibited) {
-  val maxSize = formatBytes(prohibited.maxSize)
-  val reason = when (prohibited.badgeStatus) {
-    null -> MR.strings.contact_sent_large_file_no_badge
-    BadgeStatus.Active -> MR.strings.contact_sent_large_file_above_badge
-    BadgeStatus.Expired, BadgeStatus.ExpiredOld -> MR.strings.contact_sent_large_file_badge_expired
-    BadgeStatus.Failed -> MR.strings.contact_sent_large_file_badge_failed
-    BadgeStatus.UnknownKey -> MR.strings.contact_sent_large_file_badge_unknown_key
-  }
-  AlertManager.shared.showAlertMsg(
-    generalGetString(MR.strings.large_file),
-    String.format(generalGetString(reason), maxSize)
+fun requiredBadgeName(fileSize: Long): String =
+  generalGetString(if (fileSize <= MAX_FILE_SIZE_XFTP_SUPPORTER) MR.strings.supporter_badge else MR.strings.legend_badge)
+
+fun showProhibitedFileAlert(file: CIFile, prohibited: FileProhibited) {
+  val message = String.format(
+    generalGetString(MR.strings.large_file_requires_badge),
+    formatBytes(prohibited.maxSize),
+    requiredBadgeName(file.fileSize)
   )
+  val badgeIssue = when (prohibited.badgeStatus) {
+    null, BadgeStatus.Active -> ""
+    BadgeStatus.Expired, BadgeStatus.ExpiredOld -> generalGetString(MR.strings.badge_expired)
+    BadgeStatus.Failed -> generalGetString(MR.strings.badge_verification_failed)
+    BadgeStatus.UnknownKey -> generalGetString(MR.strings.badge_no_key)
+  }
+  AlertManager.shared.showAlertMsg(generalGetString(MR.strings.large_file), message + " " + badgeIssue)
 }
 
 fun showFileErrorAlert(err: FileError, file: CIFile? = null, temporary: Boolean = false) {

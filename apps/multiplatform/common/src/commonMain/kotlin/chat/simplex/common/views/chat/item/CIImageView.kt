@@ -220,7 +220,7 @@ fun CIImageView(
           when {
             file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted ->
               if (file.fileProhibited != null) {
-                showProhibitedFileAlert(file.fileProhibited)
+                showProhibitedFileAlert(file, file.fileProhibited)
               } else {
                 receiveFile(file.fileId)
               }

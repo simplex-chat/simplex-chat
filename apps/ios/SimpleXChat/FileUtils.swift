@@ -281,12 +281,12 @@ public func cleanupFile(_ aChatItem: AChatItem) {
 }
 
 // the send limit: the user's own badge counts as active for one day past expiry, as the core applies it
-public func getMaxFileSize(_ fileProtocol: FileProtocol, _ ownProfile: LocalProfile? = nil) -> Int64 {
+public func getMaxFileSize(_ fileProtocol: FileProtocol, _ senderProfile: LocalProfile? = nil) -> Int64 {
     switch fileProtocol {
     case .smp: MAX_FILE_SIZE_SMP
     case .local: MAX_FILE_SIZE_LOCAL
     case .xftp:
-        if let badge = ownProfile?.localBadge,
+        if let badge = senderProfile?.localBadge,
            badge.status == .active,
            badge.badge.badgeExpiry.addingTimeInterval(BADGE_SND_GRACE_INTERVAL) >= Date.now {
             badge.badge.badgeType == .legend ? MAX_FILE_SIZE_XFTP_LEGEND : MAX_FILE_SIZE_XFTP_SUPPORTER

@@ -481,11 +481,11 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
 }
 
 // the send limit: the user's own badge counts as active for one day past expiry, as the core applies it
-fun getMaxFileSize(fileProtocol: FileProtocol, ownProfile: LocalProfile? = null): Long = when (fileProtocol) {
+fun getMaxFileSize(fileProtocol: FileProtocol, senderProfile: LocalProfile? = null): Long = when (fileProtocol) {
   FileProtocol.SMP -> MAX_FILE_SIZE_SMP
   FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
   FileProtocol.XFTP -> {
-    val badge = ownProfile?.localBadge
+    val badge = senderProfile?.localBadge
     if (badge == null || badge.status != BadgeStatus.Active || badge.badge.badgeExpiry + BADGE_SND_GRACE_INTERVAL < Clock.System.now()) MAX_FILE_SIZE_XFTP
     else if (badge.badge.badgeType == BadgeType.Legend) MAX_FILE_SIZE_XFTP_LEGEND
     else MAX_FILE_SIZE_XFTP_SUPPORTER

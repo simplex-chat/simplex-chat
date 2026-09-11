@@ -91,7 +91,7 @@ struct CIFileView: View {
             switch (file.fileStatus) {
             case .rcvInvitation, .rcvAborted:
                 if let prohibited = file.fileProhibited {
-                    showProhibitedFileAlert(prohibited)
+                    showProhibitedFileAlert(file, prohibited)
                 } else {
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, .rcvAborted, in Task")
@@ -238,17 +238,27 @@ func fileSizeValid(_ file: CIFile?) -> Bool {
     return false
 }
 
-func showProhibitedFileAlert(_ prohibited: FileProhibited) {
-    let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: prohibited.maxSize, countStyle: .binary)
-    AlertManager.shared.showAlertMsg(
-        title: "Large file!",
-        message: switch prohibited.badgeStatus {
-        case .none: "Your contact sent a file larger than \(prettyMaxFileSize), and has no badge."
-        case .some(.active): "Your contact sent a file larger than \(prettyMaxFileSize), the largest their badge allows."
-        case .some(.expired), .some(.expiredOld): "Your contact sent a file larger than \(prettyMaxFileSize), and their badge has expired."
-        case .some(.failed): "Your contact sent a file larger than \(prettyMaxFileSize), and their badge did not verify."
-        case .some(.unknownKey): "Your contact sent a file larger than \(prettyMaxFileSize), and their badge was issued with a key this app version does not know."
-        }
+func requiredBadgeName(_ fileSize: Int64) -> String {
+    fileSize <= MAX_FILE_SIZE_XFTP_SUPPORTER
+    ? NSLocalizedString("supporter badge", comment: "badge required to send a large file")
+    : NSLocalizedString("legend badge", comment: "badge required to send a large file")
+}
+
+func showProhibitedFileAlert(_ file: CIFile, _ prohibited: FileProhibited) {
+    let message = String.localizedStringWithFormat(
+        NSLocalizedString("Sending file larger than %1$@ requires a %2$@.", comment: "file alert"),
+        ByteCountFormatter.string(fromByteCount: prohibited.maxSize, countStyle: .binary),
+        requiredBadgeName(file.fileSize)
+    )
+    let badgeIssue = switch prohibited.badgeStatus {
+    case .none, .some(.active): ""
+    case .some(.expired), .some(.expiredOld): NSLocalizedString("Contact's badge expired.", comment: "file alert")
+    case .some(.failed): NSLocalizedString("Contact's badge verification failed.", comment: "file alert")
+    case .some(.unknownKey): NSLocalizedString("No key to verify contact's badge.", comment: "file alert")
+    }
+    showAlert(
+        NSLocalizedString("Large file!", comment: "file alert title"),
+        message: message + " " + badgeIssue
     )
 }
 

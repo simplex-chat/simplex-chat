@@ -566,7 +566,7 @@ private fun showDownloadButton(status: CIFileStatus?): Boolean =
 
 private fun receiveFileIfValidSize(file: CIFile, receiveFile: (Long) -> Unit) {
   if (file.fileProhibited != null) {
-    showProhibitedFileAlert(file.fileProhibited)
+    showProhibitedFileAlert(file, file.fileProhibited)
   } else {
     receiveFile(file.fileId)
   }

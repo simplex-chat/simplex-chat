@@ -687,11 +687,12 @@
   <string name="icon_descr_file">File</string>
   <string name="large_file">Large file!</string>
   <string name="contact_sent_large_file">Your contact sent a file that is larger than currently supported maximum size (%1$s).</string>
-  <string name="contact_sent_large_file_no_badge">Your contact sent a file larger than %1$s, and has no badge.</string>
-  <string name="contact_sent_large_file_above_badge">Your contact sent a file larger than %1$s, the largest their badge allows.</string>
-  <string name="contact_sent_large_file_badge_expired">Your contact sent a file larger than %1$s, and their badge has expired.</string>
-  <string name="contact_sent_large_file_badge_failed">Your contact sent a file larger than %1$s, and their badge did not verify.</string>
-  <string name="contact_sent_large_file_badge_unknown_key">Your contact sent a file larger than %1$s, and their badge was issued with a key this app version does not know.</string>
+  <string name="supporter_badge">supporter badge</string>
+  <string name="legend_badge">legend badge</string>
+  <string name="large_file_requires_badge">Sending file larger than %1$s requires a %2$s.</string>
+  <string name="badge_expired">Contact\'s badge expired.</string>
+  <string name="badge_verification_failed">Contact\'s badge verification failed.</string>
+  <string name="badge_no_key">No key to verify contact\'s badge.</string>
   <string name="maximum_supported_file_size">Currently maximum supported file size is %1$s.</string>
   <string name="waiting_for_file">Waiting for file</string>
   <string name="file_will_be_received_when_contact_completes_uploading">File will be received when your contact completes uploading it.</string>

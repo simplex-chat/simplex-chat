@@ -52,7 +52,7 @@ struct CIImageView: View {
                             switch file.fileStatus {
                             case .rcvInvitation, .rcvAborted:
                                 if let prohibited = file.fileProhibited {
-                                    showProhibitedFileAlert(prohibited)
+                                    showProhibitedFileAlert(file, prohibited)
                                 } else {
                                     Task {
                                         if let user = m.currentUser {

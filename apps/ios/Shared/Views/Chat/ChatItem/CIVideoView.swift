@@ -422,7 +422,7 @@ struct CIVideoView: View {
     // TODO encrypt: where file size is checked?
     private func receiveFileIfValidSize(file: CIFile, receiveFile: @escaping (User, Int64, Bool, Bool) async -> Void) {
         if let prohibited = file.fileProhibited {
-            showProhibitedFileAlert(prohibited)
+            showProhibitedFileAlert(file, prohibited)
         } else {
             Task {
                 if let user = m.currentUser {
