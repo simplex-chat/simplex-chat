@@ -9,7 +9,6 @@
 import SwiftUI
 import SimpleXChat
 
-// TODO [badges]: replace lorem ipsum with the real copy once the badge protocol and privacy properties are documented.
 struct BadgesHowItWorksView: View {
     @EnvironmentObject var theme: AppTheme
 
@@ -23,9 +22,9 @@ struct BadgesHowItWorksView: View {
                 .padding(.bottom, 16)
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.")
-                    Text("Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.")
-                    Text("Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+                    Text("A badge is not an account. It is a signed credential stored on your device. It does not identify you, and no one keeps a record of who holds which badge.")
+                    Text("Your contacts see the badge and its expiry date, and nothing else. The badge carries no identifier, so it cannot be used to find out who you are or to match you across chats.")
+                    Text("Payment and badge are kept apart. Paying is one step; the badge is issued in another, under a key that exists only for that badge. Whoever handles the payment cannot see where the badge ends up.")
                 }
                 .lineLimit(nil)
                 .fixedSize(horizontal: false, vertical: true)

@@ -13,17 +13,12 @@ private let badgeCodePrefix = "SB"
 private let badgeCodeBodyLength = 20
 private let badgeCodeGroupLength = 5
 
-// Folds and upper-cases exactly as core's parseBadgeCode does, so the user sees the code that is
-// actually sent. Grouping waits for the prefix, so partial input reads back as what was typed.
+// Regroups what was typed; validity and the folding of ambiguous characters are core's alone.
 private func formatBadgeCodeInput(_ s: String) -> String {
     var normalized = ""
     for c in s.prefix(256).uppercased() {
         guard c.isLetter || c.isNumber else { continue }
-        switch c {
-        case "I", "L": normalized.append("1")
-        case "O": normalized.append("0")
-        default: normalized.append(c)
-        }
+        normalized.append(c)
         if normalized.count == badgeCodePrefix.count + badgeCodeBodyLength { break }
     }
     guard normalized.hasPrefix(badgeCodePrefix) else { return normalized }

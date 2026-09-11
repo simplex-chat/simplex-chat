@@ -85,10 +85,9 @@ struct BadgesSupportSimplexView: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
 
-                VStack(spacing: 8) {
-                    whyBuiltButton()
-                    howItWorksButton()
-                }
+                // TODO [badges] restore whyBuiltButton() when in-app purchase lands: the level screen
+                // returns to the flow and howItWorksButton() moves there, leaving this one alone here.
+                howItWorksButton()
 
                 Spacer(minLength: 0)
 
