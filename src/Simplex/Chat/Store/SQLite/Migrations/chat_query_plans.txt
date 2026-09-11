@@ -1483,6 +1483,38 @@ SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?) LEFT-JOIN
 SEARCH ri USING COVERING INDEX idx_chat_items_direct_shared_msg_id (user_id=? AND contact_id=? AND shared_msg_id=?) LEFT-JOIN
 
 Query: 
+          SELECT
+            -- Contact
+            ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
+            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
+            ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
+            ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+            cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
+            cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
+            -- Connection
+            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+            c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+            c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+          FROM contacts ct
+          JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+          JOIN connections c ON c.contact_id = ct.contact_id
+          LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
+          WHERE
+            ( (c.user_id = ? AND c.via_contact_uri_hash = ?) OR
+              (c.user_id = ? AND c.via_contact_uri_hash = ?)
+            ) AND ct.contact_status = ? AND ct.deleted = 0
+        
+Plan:
+MULTI-INDEX OR
+INDEX 1
+SEARCH c USING INDEX idx_connections_via_contact_uri_hash (user_id=? AND via_contact_uri_hash=?)
+INDEX 2
+SEARCH c USING INDEX idx_connections_via_contact_uri_hash (user_id=? AND via_contact_uri_hash=?)
+SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
           SELECT 1 FROM users
           WHERE (user_id = ? AND local_display_name = ?)
              OR contact_id = ?
@@ -2016,6 +2048,135 @@ Query:
           (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       
 Plan:
+
+Query: 
+        SELECT
+          -- Contact
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
+          ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
+          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+          cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
+          cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
+          -- Connection
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+          c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+   
+        FROM contacts ct
+        JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+        LEFT JOIN connections c ON c.contact_id = ct.contact_id
+        LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
+   WHERE ct.user_id = ? AND ct.contact_id = ? AND ct.deleted = ?
+Plan:
+SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
+SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
+        SELECT
+          -- Contact
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
+          ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
+          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+          cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
+          cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
+          -- Connection
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+          c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+  , i.chat_item_id 
+        FROM contacts ct
+        JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+        LEFT JOIN connections c ON c.contact_id = ct.contact_id
+        LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
+   JOIN chat_items i ON i.contact_id = ct.contact_id WHERE i.user_id = ? AND i.feed_item_id = ? AND i.contact_id > ? AND i.item_deleted = 0 ORDER BY i.contact_id ASC LIMIT ?
+Plan:
+SEARCH i USING INDEX idx_chat_items_feed_item_contact (feed_item_id=? AND contact_id>?)
+SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
+SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
+        SELECT
+          -- Contact
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
+          ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
+          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+          cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
+          cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
+          -- Connection
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+          c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+  , i.chat_item_id 
+        FROM contacts ct
+        JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+        LEFT JOIN connections c ON c.contact_id = ct.contact_id
+        LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
+   JOIN chat_items i ON i.contact_id = ct.contact_id WHERE i.user_id = ? AND i.feed_item_id = ? AND i.contact_id > ? AND i.item_feed = 1 ORDER BY i.contact_id ASC LIMIT ?
+Plan:
+SEARCH i USING INDEX idx_chat_items_feed_item_contact (feed_item_id=? AND contact_id>?)
+SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
+SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
+        SELECT
+          -- Contact
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
+          ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
+          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+          cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
+          cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
+          -- Connection
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+          c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+  , i.chat_item_id 
+        FROM contacts ct
+        JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+        LEFT JOIN connections c ON c.contact_id = ct.contact_id
+        LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
+   JOIN chat_items i ON i.contact_id = ct.contact_id WHERE i.user_id = ? AND i.feed_item_id = ? AND i.contact_id > ? AND i.item_feed > 0 ORDER BY i.contact_id ASC LIMIT ?
+Plan:
+SEARCH i USING INDEX idx_chat_items_feed_item_contact (feed_item_id=? AND contact_id>?)
+SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
+SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
+        SELECT
+          -- Contact
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
+          ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
+          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+          cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
+          cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
+          -- Connection
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+          c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+  , i.chat_item_id 
+        FROM contacts ct
+        JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+        LEFT JOIN connections c ON c.contact_id = ct.contact_id
+        LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
+   LEFT JOIN chat_items i ON i.feed_item_id = ? AND i.contact_id = ct.contact_id WHERE ct.user_id = ? AND ct.deleted = 0 AND ct.is_user = 0 AND ct.contact_id > ? ORDER BY ct.contact_id ASC LIMIT ?
+Plan:
+SEARCH ct USING INDEX idx_contacts_user_id (user_id=? AND contact_id>?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
+SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+SEARCH i USING COVERING INDEX idx_chat_items_feed_item_contact (feed_item_id=? AND contact_id=?) LEFT-JOIN
 
 Query: 
         SELECT
@@ -5847,6 +6008,234 @@ SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_me
 
 Query: 
     SELECT
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
+      g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+   
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   
+        WHERE g.user_id = ? AND mu.contact_id = ?
+          AND (LOWER(gp.display_name) LIKE '%' || ? || '%'
+            OR LOWER(gp.full_name) LIKE '%' || ? || '%'
+            OR LOWER(gp.short_descr) LIKE '%' || ? || '%'
+            OR LOWER(gp.description) LIKE '%' || ? || '%'
+          )
+      
+Plan:
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
+      g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+   
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   WHERE g.business_xcontact_id = ? AND g.user_id = ? AND mu.contact_id = ?
+Plan:
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
+      g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+   
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
+Plan:
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
+      g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+  , i.chat_item_id 
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   JOIN chat_items i ON i.group_id = g.group_id WHERE i.user_id = ? AND mu.contact_id = ? AND i.feed_item_id = ? AND i.group_id > ? AND i.item_deleted = 0 ORDER BY i.group_id ASC LIMIT ?
+Plan:
+SEARCH i USING INDEX idx_chat_items_feed_item_group (feed_item_id=? AND group_id>?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
+      g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+  , i.chat_item_id 
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   JOIN chat_items i ON i.group_id = g.group_id WHERE i.user_id = ? AND mu.contact_id = ? AND i.feed_item_id = ? AND i.group_id > ? AND i.item_feed = 1 ORDER BY i.group_id ASC LIMIT ?
+Plan:
+SEARCH i USING INDEX idx_chat_items_feed_item_group (feed_item_id=? AND group_id>?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
+      g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+  , i.chat_item_id 
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   JOIN chat_items i ON i.group_id = g.group_id WHERE i.user_id = ? AND mu.contact_id = ? AND i.feed_item_id = ? AND i.group_id > ? AND i.item_feed > 0 ORDER BY i.group_id ASC LIMIT ?
+Plan:
+SEARCH i USING INDEX idx_chat_items_feed_item_group (feed_item_id=? AND group_id>?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
+      g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+  , i.chat_item_id 
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   LEFT JOIN chat_items i ON i.feed_item_id = ? AND i.group_id = g.group_id WHERE g.user_id = ? AND mu.contact_id = ? AND g.business_chat = ? AND g.group_id > ? ORDER BY g.group_id ASC LIMIT ?
+Plan:
+SEARCH g USING INDEX idx_groups_user_id_business_chat (user_id=? AND business_chat=? AND group_id>?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH mu USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH i USING COVERING INDEX idx_chat_items_feed_item_group (feed_item_id=? AND group_id=?) LEFT-JOIN
+
+Query: 
+    SELECT
       cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
       cr.contact_id, cr.business_group_id, cr.user_contact_link_id, cr.rejection_supported,
       cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
@@ -7348,159 +7737,6 @@ Plan:
 Query: INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete, created_at, updated_at) VALUES (?,?,?,?,?,?)
 Plan:
 
-Query: SELECT 
-      -- Contact
-      ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
-      cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
-      ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-      ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
-      cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
-      cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
-      -- Connection
-      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-      c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-  
-                 FROM contacts ct
-                 JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-                 JOIN connections c ON c.contact_id = ct.contact_id
-                 LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
-                 WHERE
-                   ( (c.user_id = ? AND c.via_contact_uri_hash = ?) OR
-                     (c.user_id = ? AND c.via_contact_uri_hash = ?)
-                   ) AND ct.contact_status = ? AND ct.deleted = 0
-               
-Plan:
-MULTI-INDEX OR
-INDEX 1
-SEARCH c USING INDEX idx_connections_via_contact_uri_hash (user_id=? AND via_contact_uri_hash=?)
-INDEX 2
-SEARCH c USING INDEX idx_connections_via_contact_uri_hash (user_id=? AND via_contact_uri_hash=?)
-SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-
-Query: SELECT 
-      -- Contact
-      ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
-      cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
-      ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-      ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
-      cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
-      cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
-      -- Connection
-      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-      c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-   
-    FROM contacts ct
-    JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-    LEFT JOIN connections c ON c.contact_id = ct.contact_id
-    LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
-   WHERE ct.user_id = ? AND ct.contact_id = ? AND ct.deleted = ?
-Plan:
-SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
-SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-
-Query: SELECT 
-      -- GroupInfo
-      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
-      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
-      g.business_chat, g.business_member_id, g.customer_member_id,
-      g.use_relays, g.relay_own_status,
-      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
-      g.root_priv_key, g.root_pub_key, g.member_priv_key,
-      -- GroupMember - membership
-      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
-      mu.created_at, mu.updated_at,
-      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
-   
-    FROM groups g
-    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-    JOIN group_members mu ON mu.group_id = g.group_id
-    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-   
-        WHERE g.user_id = ? AND mu.contact_id = ?
-          AND (LOWER(gp.display_name) LIKE '%' || ? || '%'
-            OR LOWER(gp.full_name) LIKE '%' || ? || '%'
-            OR LOWER(gp.short_descr) LIKE '%' || ? || '%'
-            OR LOWER(gp.description) LIKE '%' || ? || '%'
-          )
-      
-Plan:
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: SELECT 
-      -- GroupInfo
-      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
-      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
-      g.business_chat, g.business_member_id, g.customer_member_id,
-      g.use_relays, g.relay_own_status,
-      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
-      g.root_priv_key, g.root_pub_key, g.member_priv_key,
-      -- GroupMember - membership
-      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
-      mu.created_at, mu.updated_at,
-      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
-   
-    FROM groups g
-    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-    JOIN group_members mu ON mu.group_id = g.group_id
-    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-   WHERE g.business_xcontact_id = ? AND g.user_id = ? AND mu.contact_id = ?
-Plan:
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: SELECT 
-      -- GroupInfo
-      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
-      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
-      g.business_chat, g.business_member_id, g.customer_member_id,
-      g.use_relays, g.relay_own_status,
-      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
-      g.root_priv_key, g.root_pub_key, g.member_priv_key,
-      -- GroupMember - membership
-      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
-      mu.created_at, mu.updated_at,
-      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
-   
-    FROM groups g
-    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-    JOIN group_members mu ON mu.group_id = g.group_id
-    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-   WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
-Plan:
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
-SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
-
 Query: SELECT 1 FROM settings WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH settings USING COVERING INDEX idx_settings_user_id (user_id=?)
@@ -7816,230 +8052,6 @@ SEARCH group_members USING INDEX idx_group_members_group_id (user_id=? AND group
 Query: SELECT group_member_id, member_category FROM group_members WHERE user_id = ? AND group_id = ? AND member_id = ?
 Plan:
 SEARCH group_members USING INDEX sqlite_autoindex_group_members_1 (group_id=? AND member_id=?)
-
-Query: SELECT i.chat_item_id, 
-      -- Contact
-      ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
-      cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
-      ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-      ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
-      cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
-      cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
-      -- Connection
-      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-      c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-   
-    FROM contacts ct
-    JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-    LEFT JOIN connections c ON c.contact_id = ct.contact_id
-    LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
-   JOIN chat_items i ON i.contact_id = ct.contact_id WHERE i.user_id = ? AND i.feed_item_id = ? AND i.contact_id > ? AND i.item_deleted = 0 ORDER BY i.contact_id ASC LIMIT ?
-Plan:
-SEARCH i USING INDEX idx_chat_items_feed_item_contact (feed_item_id=? AND contact_id>?)
-SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
-SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-
-Query: SELECT i.chat_item_id, 
-      -- Contact
-      ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
-      cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
-      ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-      ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
-      cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
-      cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
-      -- Connection
-      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-      c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-   
-    FROM contacts ct
-    JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-    LEFT JOIN connections c ON c.contact_id = ct.contact_id
-    LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
-   JOIN chat_items i ON i.contact_id = ct.contact_id WHERE i.user_id = ? AND i.feed_item_id = ? AND i.contact_id > ? AND i.item_feed = 1 ORDER BY i.contact_id ASC LIMIT ?
-Plan:
-SEARCH i USING INDEX idx_chat_items_feed_item_contact (feed_item_id=? AND contact_id>?)
-SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
-SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-
-Query: SELECT i.chat_item_id, 
-      -- Contact
-      ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
-      cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
-      ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-      ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
-      cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
-      cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
-      -- Connection
-      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-      c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-   
-    FROM contacts ct
-    JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-    LEFT JOIN connections c ON c.contact_id = ct.contact_id
-    LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
-   JOIN chat_items i ON i.contact_id = ct.contact_id WHERE i.user_id = ? AND i.feed_item_id = ? AND i.contact_id > ? AND i.item_feed > 0 ORDER BY i.contact_id ASC LIMIT ?
-Plan:
-SEARCH i USING INDEX idx_chat_items_feed_item_contact (feed_item_id=? AND contact_id>?)
-SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
-SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-
-Query: SELECT i.chat_item_id, 
-      -- Contact
-      ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
-      cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
-      ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-      ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
-      cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
-      cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
-      -- Connection
-      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-      c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-   
-    FROM contacts ct
-    JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-    LEFT JOIN connections c ON c.contact_id = ct.contact_id
-    LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
-   LEFT JOIN chat_items i ON i.feed_item_id = ? AND i.contact_id = ct.contact_id WHERE ct.user_id = ? AND ct.deleted = 0 AND ct.is_user = 0 AND ct.contact_id > ? ORDER BY ct.contact_id ASC LIMIT ?
-Plan:
-SEARCH ct USING INDEX idx_contacts_user_id (user_id=? AND contact_id>?)
-SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
-SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-SEARCH i USING COVERING INDEX idx_chat_items_feed_item_contact (feed_item_id=? AND contact_id=?) LEFT-JOIN
-
-Query: SELECT i.chat_item_id, 
-      -- GroupInfo
-      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
-      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
-      g.business_chat, g.business_member_id, g.customer_member_id,
-      g.use_relays, g.relay_own_status,
-      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
-      g.root_priv_key, g.root_pub_key, g.member_priv_key,
-      -- GroupMember - membership
-      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
-      mu.created_at, mu.updated_at,
-      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
-   
-    FROM groups g
-    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-    JOIN group_members mu ON mu.group_id = g.group_id
-    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-   JOIN chat_items i ON i.group_id = g.group_id WHERE i.user_id = ? AND mu.contact_id = ? AND i.feed_item_id = ? AND i.group_id > ? AND i.item_deleted = 0 ORDER BY i.group_id ASC LIMIT ?
-Plan:
-SEARCH i USING INDEX idx_chat_items_feed_item_group (feed_item_id=? AND group_id>?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
-SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: SELECT i.chat_item_id, 
-      -- GroupInfo
-      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
-      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
-      g.business_chat, g.business_member_id, g.customer_member_id,
-      g.use_relays, g.relay_own_status,
-      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
-      g.root_priv_key, g.root_pub_key, g.member_priv_key,
-      -- GroupMember - membership
-      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
-      mu.created_at, mu.updated_at,
-      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
-   
-    FROM groups g
-    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-    JOIN group_members mu ON mu.group_id = g.group_id
-    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-   JOIN chat_items i ON i.group_id = g.group_id WHERE i.user_id = ? AND mu.contact_id = ? AND i.feed_item_id = ? AND i.group_id > ? AND i.item_feed = 1 ORDER BY i.group_id ASC LIMIT ?
-Plan:
-SEARCH i USING INDEX idx_chat_items_feed_item_group (feed_item_id=? AND group_id>?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
-SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: SELECT i.chat_item_id, 
-      -- GroupInfo
-      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
-      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
-      g.business_chat, g.business_member_id, g.customer_member_id,
-      g.use_relays, g.relay_own_status,
-      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
-      g.root_priv_key, g.root_pub_key, g.member_priv_key,
-      -- GroupMember - membership
-      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
-      mu.created_at, mu.updated_at,
-      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
-   
-    FROM groups g
-    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-    JOIN group_members mu ON mu.group_id = g.group_id
-    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-   JOIN chat_items i ON i.group_id = g.group_id WHERE i.user_id = ? AND mu.contact_id = ? AND i.feed_item_id = ? AND i.group_id > ? AND i.item_feed > 0 ORDER BY i.group_id ASC LIMIT ?
-Plan:
-SEARCH i USING INDEX idx_chat_items_feed_item_group (feed_item_id=? AND group_id>?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
-SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: SELECT i.chat_item_id, 
-      -- GroupInfo
-      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
-      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
-      g.business_chat, g.business_member_id, g.customer_member_id,
-      g.use_relays, g.relay_own_status,
-      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
-      g.root_priv_key, g.root_pub_key, g.member_priv_key,
-      -- GroupMember - membership
-      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
-      mu.created_at, mu.updated_at,
-      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
-   
-    FROM groups g
-    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-    JOIN group_members mu ON mu.group_id = g.group_id
-    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-   LEFT JOIN chat_items i ON i.feed_item_id = ? AND i.group_id = g.group_id WHERE g.user_id = ? AND mu.contact_id = ? AND g.business_chat = ? AND g.group_id > ? ORDER BY g.group_id ASC LIMIT ?
-Plan:
-SEARCH g USING INDEX idx_groups_user_id_business_chat (user_id=? AND business_chat=? AND group_id>?)
-SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
-SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH i USING COVERING INDEX idx_chat_items_feed_item_group (feed_item_id=? AND group_id=?) LEFT-JOIN
 
 Query: SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1
 Plan:
