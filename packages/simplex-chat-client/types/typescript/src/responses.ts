@@ -246,6 +246,7 @@ export namespace CR {
     user: T.User
     groupInfo: T.GroupInfo
     msgSigned: boolean
+    localDeletion: boolean
   }
 
   export interface GroupLink extends Interface {

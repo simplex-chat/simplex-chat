@@ -733,10 +733,12 @@ toPublicGroupAccess (groupWebPage, groupDomain_, domainWebPage_, allowEmbedding_
     allowEmbedding = maybe False unBI allowEmbedding_
 
 toGroupKeys :: Maybe B64UrlByteString -> GroupKeysRow -> Maybe GroupKeys
-toGroupKeys (Just publicGroupId) (rootPrivKey_, rootPubKey_, Just memberPrivKey) =
-  (\grk -> GroupKeys {publicGroupId, groupRootKey = grk, memberPrivKey})
-    <$> (GRKPrivate <$> rootPrivKey_ <|> GRKPublic <$> rootPubKey_)
-toGroupKeys _ _ = Nothing
+toGroupKeys publicGroupId_ (rootPrivKey, rootPubKey, memberPrivKey) =
+  let publicGroupKeys = case (publicGroupId_, GRKPrivate <$> rootPrivKey <|> GRKPublic <$> rootPubKey) of
+        (Just publicGroupId, Just groupRootKey) -> Just $ Just PublicGroupKeys {publicGroupId, groupRootKey}
+        (Nothing, Nothing) -> Just Nothing
+        _ -> Nothing -- invalid state, in which case messages won't be signed even if memberPrivKey is present
+   in GroupKeys <$> publicGroupKeys <*> memberPrivKey
 
 toGroupMember :: UTCTime -> Int64 -> GroupMemberRow -> GroupMember
 toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink, memberCode_, memberCodeVerifiedAt_)) =

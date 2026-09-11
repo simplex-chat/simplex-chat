@@ -158,6 +158,7 @@ This file is generated automatically.
 - [ProxyError](#proxyerror)
 - [PublicGroupAccess](#publicgroupaccess)
 - [PublicGroupData](#publicgroupdata)
+- [PublicGroupKeys](#publicgroupkeys)
 - [PublicGroupProfile](#publicgroupprofile)
 - [RCErrorType](#rcerrortype)
 - [RatchetSyncState](#ratchetsyncstate)
@@ -2404,8 +2405,7 @@ MemberSupport:
 ## GroupKeys
 
 **Record type**:
-- publicGroupId: string
-- groupRootKey: [GroupRootKey](#grouprootkey)
+- publicGroupKeys: [PublicGroupKeys](#publicgroupkeys)?
 - memberPrivKey: string
 
 
@@ -3272,6 +3272,15 @@ NO_SESSION:
 
 **Record type**:
 - publicMemberCount: int64
+
+
+---
+
+## PublicGroupKeys
+
+**Record type**:
+- publicGroupId: string
+- groupRootKey: [GroupRootKey](#grouprootkey)
 
 
 ---
