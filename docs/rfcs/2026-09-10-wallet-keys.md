@@ -1,13 +1,15 @@
-# Keys that own names
+# Wallet keys
 
 ## Problem
 
-A name bought in the app has to be owned by an address, and the client has to
-derive that address again after a restart, after a database restore, or on a new
-device. Otherwise the name is lost with the device.
+The client needs keys of its own, outside the messaging protocol, at addresses
+it can derive again after a restart, after a database restore, or on a new
+device. Otherwise whatever an address holds is lost with the device.
 
-Buying is not here. The key lands first, so the key material can be reviewed on
-its own, before the names protocol, the registrar and signing.
+The first of those is name ownership: a name bought in the app is owned by one
+of these addresses. Buying is not here. The keys land first, so the key material
+can be reviewed on its own, before the names protocol, the registrar and
+signing.
 
 ## Design
 
@@ -51,9 +53,9 @@ purpose `44'` is used here.
 The plan is one meta address per profile: a spend key and a viewing key, whose
 public halves are published with the chat profile, opt-in. A sender derives a
 fresh destination from it without a handshake, so one meta address serves any
-number of names received that way, and those keys are not at a derivation path.
-That is why it belongs at the profile level, while the names a profile buys sit
-at the address level.
+number of incoming destinations, and those keys are not at a derivation path.
+That is why it belongs at the profile level, while what a profile buys sits at
+the address level.
 
 ## Commands
 
