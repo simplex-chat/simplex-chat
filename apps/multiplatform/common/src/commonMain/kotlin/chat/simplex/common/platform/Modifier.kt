@@ -58,8 +58,6 @@ fun Modifier.desktopModifyBlurredState(enabled: Boolean, blurred: MutableState<B
   }
 }
 
-// Whether the media is behind the blur, and so is not on screen to be seen. The caller that draws it and the
-// caller that decides whether to read its file MUST agree, or one of them shows what the other is hiding.
 @Composable
 fun blurHidesMedia(enabled: Boolean, blurred: State<Boolean>): Boolean =
   enabled && blurred.value && remember { appPrefs.privacyMediaBlurRadius.state }.value > 0
@@ -96,13 +94,9 @@ fun Modifier.privacyBlur(
     }
 }
 
-// A blur and a downscale discard the same thing - detail finer than their radius - so the media is resampled to
-// about one pixel per radius and stretched back. Modifier.blur convolved the drawn layer on every frame; this
-// runs once when the item composes, and needs no RenderEffect, which Android only applies from API 31.
+// Media is drawn about this wide, so the resample keeps roughly one pixel per blur radius.
 private const val BLURRED_MEDIA_WIDTH_DP = 360
-// Nothing bounds a decoded video frame, so the descent starts with one step that samples rather than averages -
-// reading every pixel of a 4K frame would stall composition - and bounds both sides, so no image, however
-// shaped, makes an intermediate larger than this square. Halving from here averages away most of the aliasing.
+// Bounds the first step: nothing bounds a decoded video frame, and reading every pixel of a 4K one would stall.
 private const val RESAMPLE_MEDIA_FROM_SIDE = 512
 
 private fun ImageBitmap.blurredBy(radius: Int): ImageBitmap {
@@ -114,7 +108,7 @@ private fun ImageBitmap.blurredBy(radius: Int): ImageBitmap {
     val step = RESAMPLE_MEDIA_FROM_SIDE.toFloat() / longest
     scale((width * step).roundToInt().coerceAtLeast(1), (height * step).roundToInt().coerceAtLeast(1))
   } else this
-  // A single bilinear step from a large image reads too few of its pixels to stand for it, so halve down to it.
+  // One bilinear step from a large image undersamples it.
   while (image.width / 2 > w) image = image.scale(image.width / 2, (image.height / 2).coerceAtLeast(1))
   return image.scale(w, h)
 }
