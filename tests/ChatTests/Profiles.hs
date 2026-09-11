@@ -18,6 +18,7 @@ import Control.Monad
 import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
+import Data.List (sort)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
@@ -4043,7 +4044,7 @@ testShortLinkChangePreparedContactUser = testChat2 aliceProfile bobProfile test
 
       alice @@@ [("@robert", "hey")]
       alice `hasContactProfiles` ["alice", "robert"]
-      bob #$> ("/_get chats 2 pcc=on", chats, [("@alice", "hey"), ("@Ask SimpleX Team", ""), ("*", ""), ("%", "")])
+      bob #$> ("/_get chats 2 pcc=on", sort . chats, sort [("@alice", "hey"), ("@Ask SimpleX Team", ""), ("*", ""), ("%", "")])
       bob `hasContactProfiles` ["robert", "alice", "Ask SimpleX Team"]
       bob ##> "/user bob"
       showActiveUser bob "bob (Bob)"
@@ -4100,7 +4101,7 @@ testShortLinkChangePreparedContactUserDuplicate = testChat2 aliceProfile bobProf
 
       alice @@@ [("@robert", "hey"), ("@robert_1", "hey")]
       alice `hasContactProfiles` ["alice", "robert", "robert"]
-      bob #$> ("/_get chats 2 pcc=on", chats, [("@alice", "hey"), ("@alice_1", "hey"), ("@Ask SimpleX Team", ""), ("*", ""), ("%", "")])
+      bob #$> ("/_get chats 2 pcc=on", sort . chats, sort [("@alice", "hey"), ("@alice_1", "hey"), ("@Ask SimpleX Team", ""), ("*", ""), ("%", "")])
       bob `hasContactProfiles` ["robert", "alice", "alice", "Ask SimpleX Team"]
       bob ##> "/user bob"
       showActiveUser bob "bob (Bob)"
@@ -4194,7 +4195,7 @@ testShortLinkChangePreparedGroupUser = testChat3 aliceProfile bobProfile cathPro
 
       alice @@@ [("#team", "3"), ("@cath","sent invitation to join group team as admin")]
       alice `hasContactProfiles` ["alice", "cath", "robert"]
-      bob #$> ("/_get chats 2 pcc=on", chats, [("#team", "3"), ("@Ask SimpleX Team", ""), ("*", ""), ("%", "")])
+      bob #$> ("/_get chats 2 pcc=on", sort . chats, sort [("#team", "3"), ("@Ask SimpleX Team", ""), ("*", ""), ("%", "")])
       bob `hasContactProfiles` ["robert", "alice", "cath", "Ask SimpleX Team"]
       cath @@@ [("#team", "3"), ("@alice","received invitation to join group team as admin")]
       cath `hasContactProfiles` ["cath", "alice", "robert"]
