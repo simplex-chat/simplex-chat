@@ -49,7 +49,8 @@ module Simplex.Chat.Badges
     verifyBadge_,
     mkBadgeStatus,
     BadgeRow,
-    RcvBadgeProofRow,
+    BadgeProofKind (..),
+    BadgeProofRow,
     badgeProofToRow,
     rowToBadgeProof,
     badgeToRow,
@@ -135,6 +136,20 @@ instance TextEncoding BadgeStatus where
     "expired_old" -> Just BSExpiredOld
     "failed" -> Just BSFailed
     "unknown_key" -> Just BSUnknownKey
+    _ -> Nothing
+
+-- Badge proof kind - a file has at most one proof of each kind
+
+data BadgeProofKind = BPKInvitation | BPKDescription
+  deriving (Eq, Show)
+
+instance TextEncoding BadgeProofKind where
+  textEncode = \case
+    BPKInvitation -> "inv"
+    BPKDescription -> "descr"
+  textDecode = \case
+    "inv" -> Just BPKInvitation
+    "descr" -> Just BPKDescription
     _ -> Nothing
 
 -- Disclosed badge content (BBS messages 1, 2, 3)
@@ -420,14 +435,18 @@ instance FromField BadgeStatus where fromField = fromTextField_ textDecode
 
 instance ToField BadgeStatus where toField = toField . textEncode
 
--- (proof, pres_header, key_idx, type, expiry, extra) - the fields of BadgeProof as stored in rcv_badge_proofs
-type RcvBadgeProofRow = (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int, Maybe Text, Maybe UTCTime, Maybe Text)
+instance FromField BadgeProofKind where fromField = fromTextField_ textDecode
+
+instance ToField BadgeProofKind where toField = toField . textEncode
+
+-- (proof, pres_header, key_idx, type, expiry, extra) - the fields of BadgeProof as stored in file_badge_proofs
+type BadgeProofRow = (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int, Maybe Text, Maybe UTCTime, Maybe Text)
 
 badgeProofToRow :: BadgeProof -> (Binary ByteString, Binary ByteString, Int, Text, UTCTime, Text)
 badgeProofToRow (BadgeProof idx (BBSPresHeader ph) (BBSProof p) BadgeInfo {badgeType, badgeExpiry, badgeExtra}) =
   (Binary p, Binary ph, idx, textEncode badgeType, badgeExpiry, badgeExtra)
 
-rowToBadgeProof :: RcvBadgeProofRow -> Maybe BadgeProof
+rowToBadgeProof :: BadgeProofRow -> Maybe BadgeProof
 rowToBadgeProof (p_, ph_, idx_, type_, expiry_, extra_) = do
   Binary p <- p_
   Binary ph <- ph_

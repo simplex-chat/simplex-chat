@@ -53,7 +53,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), FileSizeLimits (..), LocalBadge (..), badgeProof, maxXFTPFileSize, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), ProofPresHeader (..), BadgeProof (..), BadgeProofKind (..), BadgeStatus (..), FileSizeLimits (..), LocalBadge (..), badgeProof, localBadgeInfo, maxXFTPFileSize, mkBadgeStatus, verifyBadge)
 import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -783,7 +783,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
         -- marking file as accepted and reading description in the same transaction
         -- to prevent race condition with appending description
         ci <- xftpAcceptRcvFT db cxt user fileId filePath userApproved
-        rfd <- getRcvFileDescrByRcvFileId db fileId
+        (rfd, _, _) <- getRcvFileDescrByRcvFileId db fileId
         pure (ci, rfd)
       receiveViaCompleteFD user fileId rfd fileSize userApproved cryptoArgs
       pure ci
@@ -1434,7 +1434,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
             processContentItem member_ ci mc fInvDescr_
         | otherwise -> pure []
       (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file, meta = CIMeta {showGroupAsSender}}) -> do
-        fInvDescr_ <- join <$> forM file (getSndFileInvDescr showGroupAsSender)
+        fInvDescr_ <- join <$> forM file getSndFileInvDescr
         let member_ = if showGroupAsSender && isNothing signedMsg_ then Nothing else Just membership
         processContentItem member_ ci mc fInvDescr_
       _ -> pure []
@@ -1450,32 +1450,36 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
           if fileProtocol /= FPXFTP || fileStatus == CIFSRcvCancelled || expired
             then pure Nothing
             else do
-              rfd <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
-              (invBadge, descrBadge) <- withStore' $ \db -> getRcvFileBadgeProofs db fileId
+              (rfd, invBadge, descrBadge) <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
               pure $ invCompleteDescr ciFile rfd invBadge descrBadge
-        getSndFileInvDescr :: ShowGroupAsSender -> CIFile 'MDSnd -> CM (Maybe HistoryFile)
-        getSndFileInvDescr asGroup ciFile@CIFile {fileId, fileSize, fileProtocol, fileStatus, fileExpires} = do
+        getSndFileInvDescr :: CIFile 'MDSnd -> CM (Maybe HistoryFile)
+        getSndFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus, fileExpires} = do
           expired <- fileExpired fileExpires
           if fileProtocol /= FPXFTP || fileStatus == CIFSSndCancelled || expired
             then pure Nothing
             else do
               -- can also lookup in extra_xftp_file_descriptions, though it can be empty;
               -- would be best if snd file had a single rcv description for all members saved in files table
-              rfd@RcvFileDescr {fileDescrText} <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
-              (invBadge, descrBadge) <- sndHistoryBadges asGroup fileSize fileDescrText fileExpires
-              pure $ invCompleteDescr ciFile rfd invBadge descrBadge
-        sndHistoryBadges :: ShowGroupAsSender -> Integer -> RcvFileDescrText -> Maybe UTCTime -> CM (Maybe BadgeProof, Maybe BadgeProof)
-        sndHistoryBadges asGroup fileSize fileDescrText fileExpires =
-          ifM ((not (incognitoMembership gInfo) &&) <$> fileNeedsBadge fileSize) badges (pure (Nothing, Nothing))
+              (rfd, invBadge, descrBadge) <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
+              (invBadge', descrBadge') <- refreshSndBadges fileId invBadge descrBadge
+              pure $ invCompleteDescr ciFile rfd invBadge' descrBadge'
+        -- a proof made with a badge that has since expired is re-made with the current badge over the same header
+        refreshSndBadges :: FileTransferId -> Maybe BadgeProof -> Maybe BadgeProof -> CM (Maybe BadgeProof, Maybe BadgeProof)
+        refreshSndBadges fileId invBadge descrBadge = do
+          now <- liftIO getCurrentTime
+          inv_ <- reProve now invBadge
+          descr_ <- reProve now descrBadge
+          let proofs = catMaybes [(BPKInvitation,) <$> inv_, (BPKDescription,) <$> descr_]
+          unless (null proofs) $ withStore' $ \db -> forM_ proofs $ \(kind, p) -> setFileBadgeProof db fileId kind p
+          pure (inv_ <|> invBadge, descr_ <|> descrBadge)
           where
-            badges =
-              sndGroupChatBinding gInfo asGroup >>= \case
-                Nothing -> pure (Nothing, Nothing)
-                Just chatBinding -> do
-                  FD.ValidFileDescription fd <- parseFileDescription @'FRecipient fileDescrText
-                  invBadge <- sndBadgeProof user PHFileInv {chatBinding, fileSize = fromInteger fileSize}
-                  descrBadge <- sndBadgeProof user PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash = FD.sharedDescriptionHash fd, fileExpires}
-                  pure (invBadge, descrBadge)
+            reProve now = \case
+              Just BadgeProof {presHeader = BBSPresHeader ph, badgeInfo = BadgeInfo {badgeExpiry}}
+                | badgeExpiry < now && ownBadgeExpiry > Just badgeExpiry ->
+                    pure (eitherToMaybe $ strDecode ph) $>>= sndBadgeProof user
+              _ -> pure Nothing
+            ownBadgeExpiry = (\BadgeInfo {badgeExpiry} -> badgeExpiry) . localBadgeInfo <$> localBadge
+            User {profile = LocalProfile {localBadge}} = user
         fileExpired :: Maybe UTCTime -> CM Bool
         fileExpired fileExpires = do
           ttl <- asks $ rcvFilesTTL . agentConfig . config
@@ -1848,7 +1852,7 @@ getChatItemFileServers user dir ci = case ci of
           Just sfdText -> fileDescrServers <$> (parseFileDescription sfdText :: CM (ValidFileDescription 'FSender))
           Nothing -> pure []
       SMDRcv -> do
-        RcvFileDescr {fileDescrText} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+        (RcvFileDescr {fileDescrText}, _, _) <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
         fileDescrServers <$> (parseFileDescription fileDescrText :: CM (ValidFileDescription 'FRecipient))
 
 sendDirectFileInline :: User -> Contact -> FileTransferMeta -> SharedMsgId -> CM ()

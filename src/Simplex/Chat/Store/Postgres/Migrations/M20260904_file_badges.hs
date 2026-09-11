@@ -12,9 +12,10 @@ m20260904_file_badges =
 ALTER TABLE files ADD COLUMN file_max_size BIGINT;
 ALTER TABLE files ADD COLUMN file_badge_status TEXT;
 
-CREATE TABLE rcv_badge_proofs(
+CREATE TABLE file_badge_proofs(
   badge_proof_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   file_id BIGINT NOT NULL REFERENCES files ON DELETE CASCADE,
+  proof_kind TEXT NOT NULL,
   badge_proof BYTEA NOT NULL,
   badge_pres_header BYTEA NOT NULL,
   badge_key_idx BIGINT NOT NULL,
@@ -25,26 +26,14 @@ CREATE TABLE rcv_badge_proofs(
   updated_at TIMESTAMPTZ NOT NULL
 );
 
-CREATE INDEX idx_rcv_badge_proofs_file_id ON rcv_badge_proofs(file_id);
-
-ALTER TABLE rcv_files ADD COLUMN badge_inv_proof_id BIGINT REFERENCES rcv_badge_proofs ON DELETE SET NULL;
-ALTER TABLE rcv_files ADD COLUMN badge_descr_proof_id BIGINT REFERENCES rcv_badge_proofs ON DELETE SET NULL;
-
-CREATE INDEX idx_rcv_files_badge_inv_proof_id ON rcv_files(badge_inv_proof_id);
-CREATE INDEX idx_rcv_files_badge_descr_proof_id ON rcv_files(badge_descr_proof_id);
+CREATE UNIQUE INDEX idx_file_badge_proofs_file_id_kind ON file_badge_proofs(file_id, proof_kind);
 |]
 
 down_m20260904_file_badges :: Text
 down_m20260904_file_badges =
   [r|
-DROP INDEX idx_rcv_files_badge_descr_proof_id;
-DROP INDEX idx_rcv_files_badge_inv_proof_id;
-
-ALTER TABLE rcv_files DROP COLUMN badge_descr_proof_id;
-ALTER TABLE rcv_files DROP COLUMN badge_inv_proof_id;
-
-DROP INDEX idx_rcv_badge_proofs_file_id;
-DROP TABLE rcv_badge_proofs;
+DROP INDEX idx_file_badge_proofs_file_id_kind;
+DROP TABLE file_badge_proofs;
 
 ALTER TABLE files DROP COLUMN file_badge_status;
 ALTER TABLE files DROP COLUMN file_max_size;

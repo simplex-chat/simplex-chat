@@ -45,8 +45,7 @@ module Simplex.Chat.Store.Files
     updateSndFileStatus,
     createRcvFileTransfer,
     createRcvGroupFileTransfer,
-    setRcvFileDescrBadgeProof,
-    getRcvFileBadgeProofs,
+    setFileBadgeProof,
     createRosterRcvFile,
     createRcvStandaloneFileTransfer,
     appendRcvFD,
@@ -95,7 +94,7 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime, nominalDay)
 import Data.Type.Equality
 import Data.Word (Word32)
-import Simplex.Chat.Badges (BadgeProof, BadgeStatus, RcvBadgeProofRow, badgeProofToRow, rowToBadgeProof)
+import Simplex.Chat.Badges (BadgeProof, BadgeProofKind (..), BadgeProofRow, BadgeStatus, badgeProofToRow, rowToBadgeProof)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Store.Messages
@@ -183,7 +182,7 @@ getSndFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} agentMs
         <$> (contactName_ <|> memberName_)
 
 createSndFileTransferXFTP :: DB.Connection -> User -> Maybe ContactOrGroup -> CryptoFile -> FileInvitation -> AgentSndFileId -> Maybe FileTransferId -> Integer -> IO FileTransferMeta
-createSndFileTransferXFTP db User {userId} contactOrGroup_ (CryptoFile filePath cryptoArgs) FileInvitation {fileName, fileSize} agentSndFileId xftpRedirectFor chunkSize = do
+createSndFileTransferXFTP db User {userId} contactOrGroup_ (CryptoFile filePath cryptoArgs) FileInvitation {fileName, fileSize, fileBadge} agentSndFileId xftpRedirectFor chunkSize = do
   currentTs <- getCurrentTime
   let xftpSndFile = Just XFTPSndFile {agentSndFileId, privateSndFileDescr = Nothing, agentSndFileDeleted = False, cryptoArgs}
   DB.execute
@@ -191,6 +190,7 @@ createSndFileTransferXFTP db User {userId} contactOrGroup_ (CryptoFile filePath 
     "INSERT INTO files (contact_id, group_id, user_id, file_name, file_path, file_crypto_key, file_crypto_nonce, file_size, chunk_size, redirect_file_id, agent_snd_file_id, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
     (maybe (Nothing, Nothing) contactAndGroupIds contactOrGroup_ :. (userId, fileName, filePath, CF.fileKey <$> cryptoArgs, CF.fileNonce <$> cryptoArgs, fileSize, chunkSize) :. (xftpRedirectFor, agentSndFileId, CIFSSndStored, FPXFTP, currentTs, currentTs))
   fileId <- insertedRowId db
+  forM_ fileBadge $ setFileBadgeProof db fileId BPKInvitation
   pure FileTransferMeta {fileId, xftpSndFile, xftpRedirectFor, fileName, filePath, fileSize, fileInline = Nothing, chunkSize, cancelled = False}
 
 createSndFTDescrXFTP :: DB.Connection -> User -> Maybe GroupMember -> Connection -> FileTransferMeta -> FileDescr -> IO ()
@@ -462,12 +462,12 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
       "INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_max_size, file_badge_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
       ((userId, contactId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, fileProtocol) :. prohibitedRow prohibited_ :. (currentTs, currentTs))
     insertedRowId db
-  invProofId <- liftIO $ mapM (createRcvBadgeProof_ db fileId currentTs) fileBadge
-  liftIO $
+  liftIO $ do
     DB.execute
       db
-      "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, file_descr_id, badge_inv_proof_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-      (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, invProofId, currentTs, currentTs)
+      "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+      (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, currentTs, currentTs)
+    forM_ fileBadge $ setFileBadgeProof db fileId BPKInvitation
   pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileProhibited = prohibited_, fileStatus = RFSNew, fileType = FTNormal, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing, cryptoArgs = Nothing}
 
 prohibitedRow :: Maybe FileProhibited -> (Maybe Integer, Maybe BadgeStatus)
@@ -475,42 +475,24 @@ prohibitedRow = \case
   Just FileProhibited {maxSize, badgeStatus} -> (Just maxSize, badgeStatus)
   Nothing -> (Nothing, Nothing)
 
-setRcvFileDescrBadgeProof :: DB.Connection -> Int64 -> BadgeProof -> IO ()
-setRcvFileDescrBadgeProof db fileId badge = do
+setFileBadgeProof :: DB.Connection -> Int64 -> BadgeProofKind -> BadgeProof -> IO ()
+setFileBadgeProof db fileId kind badge = do
   currentTs <- getCurrentTime
   DB.execute
     db
-    "DELETE FROM rcv_badge_proofs WHERE badge_proof_id IN (SELECT badge_descr_proof_id FROM rcv_files WHERE file_id = ?)"
-    (Only fileId)
-  proofId <- createRcvBadgeProof_ db fileId currentTs badge
-  DB.execute db "UPDATE rcv_files SET badge_descr_proof_id = ?, updated_at = ? WHERE file_id = ?" (proofId, currentTs, fileId)
-
-getRcvFileBadgeProofs :: DB.Connection -> Int64 -> IO (Maybe BadgeProof, Maybe BadgeProof)
-getRcvFileBadgeProofs db fileId =
-  fmap (fromMaybe (Nothing, Nothing)) $
-    maybeFirstRow proofs $
-      DB.query
-        db
-        [sql|
-          SELECT
-            ip.badge_proof, ip.badge_pres_header, ip.badge_key_idx, ip.badge_type, ip.badge_expiry, ip.badge_extra,
-            dp.badge_proof, dp.badge_pres_header, dp.badge_key_idx, dp.badge_type, dp.badge_expiry, dp.badge_extra
-          FROM rcv_files r
-          LEFT JOIN rcv_badge_proofs ip ON ip.badge_proof_id = r.badge_inv_proof_id
-          LEFT JOIN rcv_badge_proofs dp ON dp.badge_proof_id = r.badge_descr_proof_id
-          WHERE r.file_id = ?
-        |]
-        (Only fileId)
-  where
-    proofs (invRow :. descrRow) = (rowToBadgeProof invRow, rowToBadgeProof descrRow)
-
-createRcvBadgeProof_ :: DB.Connection -> Int64 -> UTCTime -> BadgeProof -> IO Int64
-createRcvBadgeProof_ db fileId currentTs badge = do
-  DB.execute
-    db
-    "INSERT INTO rcv_badge_proofs (file_id, badge_proof, badge_pres_header, badge_key_idx, badge_type, badge_expiry, badge_extra, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-    (Only fileId :. badgeProofToRow badge :. (currentTs, currentTs))
-  insertedRowId db
+    [sql|
+      INSERT INTO file_badge_proofs (file_id, proof_kind, badge_proof, badge_pres_header, badge_key_idx, badge_type, badge_expiry, badge_extra, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?)
+      ON CONFLICT (file_id, proof_kind) DO UPDATE SET
+        badge_proof = excluded.badge_proof,
+        badge_pres_header = excluded.badge_pres_header,
+        badge_key_idx = excluded.badge_key_idx,
+        badge_type = excluded.badge_type,
+        badge_expiry = excluded.badge_expiry,
+        badge_extra = excluded.badge_extra,
+        updated_at = excluded.updated_at
+    |]
+    ((fileId, kind) :. badgeProofToRow badge :. (currentTs, currentTs))
 
 createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupInfo -> Maybe GroupMember -> FileType -> Maybe SharedMsgId -> FileInvitation -> Maybe FileProhibited -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer
 createRcvGroupFileTransfer db userId GroupInfo {groupId, localDisplayName = gName} m_ fileType sharedMsgId_ f@FileInvitation {fileName, fileSize, fileDigest, fileConnReq, fileInline, fileDescr, fileBadge} prohibited_ rcvFileInline chunkSize = do
@@ -528,12 +510,12 @@ createRcvGroupFileTransfer db userId GroupInfo {groupId, localDisplayName = gNam
       "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_type, shared_msg_id, created_at, updated_at, file_digest, file_max_size, file_badge_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
       ((userId, groupId, fileName, fileSize, chunkSize, fileInline, CIFSRcvInvitation, fileProtocol, fileType, sharedMsgId_, currentTs, currentTs) :. Only fileDigest :. prohibitedRow prohibited_)
     insertedRowId db
-  invProofId <- liftIO $ mapM (createRcvBadgeProof_ db fileId currentTs) fileBadge
-  liftIO $
+  liftIO $ do
     DB.execute
       db
-      "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, file_descr_id, badge_inv_proof_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
-      (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, grpMemberId_, rfdId, invProofId, currentTs, currentTs)
+      "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+      (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, grpMemberId_, rfdId, currentTs, currentTs)
+    forM_ fileBadge $ setFileBadgeProof db fileId BPKInvitation
   pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileProhibited = prohibited_, fileStatus = RFSNew, fileType, rcvFileInline, senderDisplayName = senderName, chunkSize, cancelled = False, grpMemberId = grpMemberId_, cryptoArgs = Nothing}
 
 -- Roster scratch file owned by a per-source transfer: group_member_id is the delivering relay (so chunk
@@ -596,12 +578,15 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
           (fileDescrId, currentTs, fileId)
       pure rfd
     Just
-      RcvFileDescr
-        { fileDescrId,
-          fileDescrText = rfdText,
-          fileDescrPartNo = rfdPNo,
-          fileDescrComplete = rfdComplete
-        } -> do
+      ( RcvFileDescr
+          { fileDescrId,
+            fileDescrText = rfdText,
+            fileDescrPartNo = rfdPNo,
+            fileDescrComplete = rfdComplete
+          },
+        _,
+        _
+        ) -> do
         let fileDescrText' = rfdText <> fileDescrText
         when (fileDescrPartNo /= rfdPNo + 1 || rfdComplete || not (rcvFileDescrWithinLimits fileDescrPartNo fileDescrText')) $ throwError SERcvFileInvalidDescrPart
         liftIO $
@@ -632,45 +617,58 @@ rcvFileDescrWithinLimits partNo descrText =
     && partNo <= maxRcvFileDescrParts
     && T.length descrText <= maxRcvFileDescrTextLength
 
-getRcvFileDescrByRcvFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO RcvFileDescr
-getRcvFileDescrByRcvFileId db fileId = do
+type FileDescrBadges = (RcvFileDescr, Maybe BadgeProof, Maybe BadgeProof)
+
+getRcvFileDescrByRcvFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO FileDescrBadges
+getRcvFileDescrByRcvFileId db fileId =
   liftIO (getRcvFileDescrByRcvFileId_ db fileId) >>= \case
     Nothing -> throwError $ SERcvFileDescrNotFound fileId
     Just rfd -> pure rfd
 
-getRcvFileDescrByRcvFileId_ :: DB.Connection -> FileTransferId -> IO (Maybe RcvFileDescr)
+getRcvFileDescrByRcvFileId_ :: DB.Connection -> FileTransferId -> IO (Maybe FileDescrBadges)
 getRcvFileDescrByRcvFileId_ db fileId =
-  maybeFirstRow toRcvFileDescr $
+  maybeFirstRow descrBadges $
     DB.query
       db
       [sql|
-        SELECT d.file_descr_id, d.file_descr_text, d.file_descr_part_no, d.file_descr_complete
+        SELECT d.file_descr_id, d.file_descr_text, d.file_descr_part_no, d.file_descr_complete,
+          ip.badge_proof, ip.badge_pres_header, ip.badge_key_idx, ip.badge_type, ip.badge_expiry, ip.badge_extra,
+          dp.badge_proof, dp.badge_pres_header, dp.badge_key_idx, dp.badge_type, dp.badge_expiry, dp.badge_extra
         FROM xftp_file_descriptions d
         JOIN rcv_files f ON f.file_descr_id = d.file_descr_id
+        LEFT JOIN file_badge_proofs ip ON ip.file_id = f.file_id AND ip.proof_kind = ?
+        LEFT JOIN file_badge_proofs dp ON dp.file_id = f.file_id AND dp.proof_kind = ?
         WHERE f.file_id = ?
         LIMIT 1
       |]
-      (Only fileId)
+      (BPKInvitation, BPKDescription, fileId)
 
-getRcvFileDescrBySndFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO RcvFileDescr
+getRcvFileDescrBySndFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO FileDescrBadges
 getRcvFileDescrBySndFileId db fileId = do
   liftIO (getRcvFileDescrBySndFileId_ db fileId) >>= \case
     Nothing -> throwError $ SERcvFileDescrNotFound fileId
     Just rfd -> pure rfd
 
-getRcvFileDescrBySndFileId_ :: DB.Connection -> FileTransferId -> IO (Maybe RcvFileDescr)
+getRcvFileDescrBySndFileId_ :: DB.Connection -> FileTransferId -> IO (Maybe FileDescrBadges)
 getRcvFileDescrBySndFileId_ db fileId =
-  maybeFirstRow toRcvFileDescr $
+  maybeFirstRow descrBadges $
     DB.query
       db
       [sql|
-        SELECT d.file_descr_id, d.file_descr_text, d.file_descr_part_no, d.file_descr_complete
+        SELECT d.file_descr_id, d.file_descr_text, d.file_descr_part_no, d.file_descr_complete,
+          ip.badge_proof, ip.badge_pres_header, ip.badge_key_idx, ip.badge_type, ip.badge_expiry, ip.badge_extra,
+          dp.badge_proof, dp.badge_pres_header, dp.badge_key_idx, dp.badge_type, dp.badge_expiry, dp.badge_extra
         FROM xftp_file_descriptions d
         JOIN snd_files f ON f.file_descr_id = d.file_descr_id
+        LEFT JOIN file_badge_proofs ip ON ip.file_id = f.file_id AND ip.proof_kind = ?
+        LEFT JOIN file_badge_proofs dp ON dp.file_id = f.file_id AND dp.proof_kind = ?
         WHERE f.file_id = ?
         LIMIT 1
       |]
-      (Only fileId)
+      (BPKInvitation, BPKDescription, fileId)
+
+descrBadges :: (Int64, Text, Int, BoolInt) :. BadgeProofRow :. BadgeProofRow -> FileDescrBadges
+descrBadges (descrRow :. invRow :. descrProofRow) = (toRcvFileDescr descrRow, rowToBadgeProof invRow, rowToBadgeProof descrProofRow)
 
 toRcvFileDescr :: (Int64, Text, Int, BoolInt) -> RcvFileDescr
 toRcvFileDescr (fileDescrId, fileDescrText, fileDescrPartNo, BI fileDescrComplete) =
@@ -709,8 +707,8 @@ getRcvFileTransfer_ db userId fileId = do
           WHERE f.user_id = ? AND f.file_id = ?
         |]
         (userId, fileId)
-  rfd_ <- liftIO $ getRcvFileDescrByRcvFileId_ db fileId
-  rcvFileTransfer rfd_ rftRow
+  descr_ <- liftIO $ getRcvFileDescrByRcvFileId_ db fileId
+  rcvFileTransfer ((\(rfd, _, _) -> rfd) <$> descr_) rftRow
   where
     rcvFileTransfer ::
       Maybe RcvFileDescr ->

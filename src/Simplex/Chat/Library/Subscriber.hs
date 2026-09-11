@@ -46,7 +46,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
-import Simplex.Chat.Badges (BadgeProof, BadgeStatus (..), ProofPresHeader (..))
+import Simplex.Chat.Badges (BadgeProof, BadgeProofKind (..), BadgeStatus (..), ProofPresHeader (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
@@ -233,13 +233,15 @@ processAgentMsgSndFile _corrId aFileId msg = do
                   toView $ CEvtSndFileProgressXFTP user ci ft 1 1
                   case (rfds, sfts, d, cInfo) of
                     (rfd : extraRFDs, sft : _, SMDSnd, DirectChat ct) -> do
-                      withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
                       conn@Connection {connId} <- liftEither $ contactSendConn_ ct
                       let FileTransferMeta {fileSize} = ft
                       binding_ <- ifM ((not (contactConnIncognito ct) &&) <$> fileNeedsBadge fileSize) (directChatBinding ct) (pure Nothing)
                       descrBadge <- pure binding_ $>>= \chatBinding ->
                         let FD.ValidFileDescription fd = sndDescr
                          in sndBadgeProof user PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash = FD.sharedDescriptionHash fd, fileExpires}
+                      withStore' $ \db -> do
+                        createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
+                        forM_ descrBadge $ setFileBadgeProof db fileId BPKDescription
                       sendFileDescriptions (ConnectionId connId) ((conn, sft, fileDescrText rfd) :| []) sharedMsgId fileExpires descrBadge >>= \case
                         Just rs -> case L.last rs of
                           Right ([msgDeliveryId], _) ->
@@ -254,11 +256,13 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       let rfdsMemberFTs = zipWith (\rfd (conn, sft) -> (conn, sft, fileDescrText rfd)) rfds (memberFTs ms)
                           extraRFDs = drop (length rfdsMemberFTs) rfds
                           FileTransferMeta {fileSize} = ft
-                      withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
                       binding_ <- ifM ((not (incognitoMembership g) &&) <$> fileNeedsBadge fileSize) (sndGroupChatBinding g showGroupAsSender) (pure Nothing)
                       descrBadge <- pure binding_ $>>= \chatBinding ->
                         let FD.ValidFileDescription fd = sndDescr
                          in sndBadgeProof user PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash = FD.sharedDescriptionHash fd, fileExpires}
+                      withStore' $ \db -> do
+                        createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
+                        forM_ descrBadge $ setFileBadgeProof db fileId BPKDescription
                       forM_ (L.nonEmpty rfdsMemberFTs) $ \rfdsMemberFTs' ->
                         sendFileDescriptions (GroupId groupId) rfdsMemberFTs' sharedMsgId fileExpires descrBadge
                       ci' <- withStore $ \db -> do
@@ -1966,7 +1970,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         badgeOk <- if descrBadgeRequired then descrBadgeVerified binding_ fileSize rfd fileExpires fileBadge else pure True
         if badgeOk
           then do
-            when descrBadgeRequired $ forM_ fileBadge $ \badge -> withStore' $ \db -> setRcvFileDescrBadgeProof db fileId badge
+            when descrBadgeRequired $ forM_ fileBadge $ \badge -> withStore' $ \db -> setFileBadgeProof db fileId BPKDescription badge
             case (fileStatus, xftpRcvFile) of
               (RFSAccepted _, Just XFTPRcvFile {userApprovedRelays}) -> receiveViaCompleteFD user fileId rfd fileSize userApprovedRelays cryptoArgs
               _ -> pure ()
