@@ -7,82 +7,76 @@ it can derive again after a restart, after a database restore, or on a new
 device. Otherwise whatever an address holds is lost with the device.
 
 The first use case is name ownership: a name bought in the app is owned by one
-of these addresses. Buying is not implemented yet: The keys land first, so the key material
-can be reviewed on its own, before the names protocol, the registrar and
-signing.
+of these addresses. Buying is not implemented yet. The keys land first, so the
+key material can be reviewed on its own, before the names protocol, the
+registrar and signing.
 
 ## Design
 
-One BIP-39 seed per device, one BIP-44 account per chat profile, one key per
-name.
+One BIP-39 seed per device, and one key per name.
 
 ```
-seed (BIP-39)
-└── profile account i
-    └── m/44'/60'/i'/0/k        one key per name; k = 0 is the profile's first
+m/44'/60'/0'/0/0      unused
+m/44'/60'/0'/0/k      names, k >= 1, counted per device
+m/44'/60'/i'/0/j      a profile's own addresses, i >= 1          (later)
+m/5564'/60'/i'/...    a profile's stealth meta keys              (later)
 ```
 
-This is plain BIP-44: `account` and `address_index` are what those levels are
-for, so the addresses match wallets people already use. The tests pin that
+This is plain BIP-44, so the addresses match wallets people already use: the
+device's names are MetaMask's account list from its second entry on, and a
+profile's first address is the matching Ledger Live account. The tests pin that
 against the standard `abandon ... about` mnemonic:
 
 ```
-m/44'/60'/0'/0/0   0x9858EfFD232B4033E47d90003D41EC34EcaEda94   MetaMask account 1
 m/44'/60'/0'/0/1   0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0   MetaMask account 2
-m/44'/60'/1'/0/0   0x78839F6054d7ed13918bAe0473BA31b1Ca9D7265   Ledger Live account 2
+m/44'/60'/0'/0/2   0xb6716976A3ebe8D39aCEB04372f22Ff8e6802D7A   MetaMask account 3
 ```
 
-So profile 0's names are MetaMask's account list in order, and each profile's
-first name is the matching Ledger Live account. The mnemonic imports there as a
-recovery phrase, a single secret as a private key.
+The mnemonic imports there as a recovery phrase, a single secret as a private
+key. `m/44'/60'/0'/0/0` is left unused so that neither names nor profiles claim
+the point where both dimensions start.
 
-**Why not one key per profile.** A name's owner is public, so an address that
-owns several names links them: whoever knows one of them can read its owner and
-find the rest. A key per name leaves no such link. It also keeps an export
-narrow, as a name's secret is a leaf, with no chain code, so handing it over
-hands over that name only.
+**Why a key per name.** A name's owner is public, so an address that owns
+several names links them: whoever knows one of them can read its owner and find
+the rest. A key per name leaves no such link. It also keeps an export narrow, as
+a name's secret is a leaf, with no chain code, so handing it over hands over
+that name only.
 
-**Why the account is a counter and not a hash of the profile.** A counter keeps
-every profile on the account list MetaMask and Ledger Live enumerate, which is
-the compatibility this layout is for. A hash of the display name would not, and
-it would change whenever a profile is renamed.
+**Why names are not derived per profile.** Which profile a name belongs to is
+in the record the name resolves to, which the owner signs, not in the key. A
+profile dimension in the path would carry a mapping nothing reads, and it would
+have to be reconstructed after a restore, since a phrase does not say which
+profile held which account. Counting names per device removes the question.
 
-It costs two things a hash would give: the same account after a restore whatever
-order the profiles were recreated in, and indexes with no gap to disclose a
-hidden profile.
+The cost is compartmentalisation that is not in use. Per-profile accounts would
+confine an exposed account-level extended key to one profile's names. Nothing
+derives or exports an extended key, and nothing is planned to, so the compartment
+has no exit.
 
-Stealth addresses will attach at purpose `5564'`, at the profile level. Only
-purpose `44'` is used here.
-
-The plan is one meta address per profile: a spend key and a viewing key, whose
-public halves are published with the chat profile, opt-in. A sender derives a
-fresh destination from it without a handshake, so one meta address serves any
-number of incoming destinations, and those keys are not at a derivation path.
-That is why it belongs at the profile level, while what a profile buys sits at
-the address level.
+Profiles get their own dimension for what is per profile: their own addresses at
+account `i >= 1`, and stealth meta keys at purpose `5564'`. The plan there is one
+meta address per profile, a spend key and a viewing key whose public halves are
+published with the chat profile, opt-in. A sender derives a fresh destination
+from it without a handshake, so one meta address serves any number of incoming
+destinations, and those keys are not at a derivation path. That is why it belongs
+at the profile level, while what a profile buys sits at the address level.
 
 ## Commands
 
 Internal API. The names commands will call these; users will not.
 
 ```
-/_wallet                          this profile's first two name addresses, and
-                                  the other profiles on the seed, by name
-/_wallet create                   generate the seed. Refused if the device has one
-/_wallet import <phrase>          store a seed. Refused if the device has one
-/_wallet bind                     take the next free account
-/_wallet bind <account>           claim one. Refused if another profile holds it
-/_wallet export                   the seed mnemonic
-/_wallet export <account> <name>  one derived secret, as 0x and 64 hex digits
-/_wallet delete                   delete the seed, unbinding every profile
+/_wallet                 the next name addresses
+/_wallet create          generate the seed. Refused if the device has one
+/_wallet import <phrase> store a seed. Refused if the device has one
+/_wallet export          the seed mnemonic
+/_wallet export <name>   one derived secret, as 0x and 64 hex digits
+/_wallet delete          delete the seed
 ```
 
-Creating the seed and claiming an account are separate. `create` and `import`
-bind no profile, so no profile is put on an account it did not ask for. Neither
-runs at startup or as a side effect of reading.
-
-None of them is forwarded to a remote host: the recovery phrase must not leave
-the device, and the raw command would be logged there.
+A seed is created only when asked for, never at startup and never as a side
+effect of reading. None of these is forwarded to a remote host: the recovery
+phrase must not leave the device, and the raw command would be logged there.
 
 ## Schema
 
@@ -90,17 +84,15 @@ the device, and the raw command would be logged there.
 CREATE TABLE wallet_seeds (
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
   seed BLOB NOT NULL,
-  next_account_index INTEGER NOT NULL DEFAULT 0,
+  next_name_index INTEGER NOT NULL DEFAULT 1,
   single_seed INTEGER NOT NULL DEFAULT 1
 );
-ALTER TABLE users ADD COLUMN wallet_seed_id INTEGER REFERENCES wallet_seeds;
-ALTER TABLE users ADD COLUMN wallet_account_index INTEGER;
 ```
 
-`next_account_index` is a high-water mark, deliberately not
-`MAX(users.wallet_account_index)`. After a restore from the phrase alone that
-column is empty while accounts already hold names, so a new profile would reuse
-a recovered account's keys.
+No other table is touched.
+
+`next_name_index` is a high-water mark, not a count of names held. A name a
+device no longer tracks still owns its address, so an index is never reused.
 
 The table models several seeds, which a later change needs. One per device is
 `single_seed` and a unique index on it, lifted later by a `DROP INDEX` and a
@@ -114,34 +106,30 @@ applied to be a prefix of that list. A later wallet migration has to sort after
 
 ## What the phrase does not carry
 
-A phrase carries entropy and nothing else. Two things are not in it, not on
-chain, and not derivable.
+A phrase carries entropy and nothing else. Which indexes are already taken is
+not in it, not derivable, and not on chain in a form the client can ask for
+directly. `next_name_index` starts at 1 after an import, so until a scan of
+owned names raises it, the next name would be bought at a path that already owns
+one. Buying is not implemented here, so nothing can act on the stale mark yet,
+and the scan lands with the registrar that makes buying possible.
 
-**Which profile held which account.** A database backed up after the seed
-carries the binding. One backed up before it comes back with the profiles and no
-binding, and nothing records which profile was account 0. `/_wallet bind
-<account>` is how the user states it, and the counter moves past what is claimed.
-
-**Which accounts are taken.** `next_account_index` starts at 0 after an import,
-so `/_wallet bind` with no account can hand out one that already owns names.
-Only a scan of owned names can restore the mark.
+Which profile a name belongs to is not lost with the device, because it was
+never in the key. It is in the record, and re-pointing a name at a profile is a
+signed record edit, not a rebinding of keys.
 
 ## Hidden profiles
 
-`/_wallet` names the other profiles on the seed and never numbers them, so a
-hidden profile leaves no gap in a list of account indexes.
-
-That hides it from the listing and nothing more. The seed is one per device, so
-whoever unlocks any profile can export the phrase and derive every account,
-including a hidden profile's. Hiding a profile does not make its names
-pseudonymous against someone holding the device and one password. A key per
-profile rather than per device is what would change that.
+Nothing about profiles is encoded in the derivation, so the wallet holds nothing
+that would disclose a hidden profile. The seed is the device's: whoever unlocks
+any profile can export the phrase and derive every name key, hidden profiles
+included. A key per profile rather than per device is what would change that.
 
 ## Scope
 
 Not here: buying a name, the names protocol, the registrar, signing, the
-recovery scan, several seeds per device, stealth addresses.
+recovery scan, several seeds per device, a profile's own addresses, stealth
+addresses.
 
-`/_wallet` shows the first two addresses of the active profile's account, enough
-to check the derivation against another wallet. It will show the names actually
-held once those are recorded.
+`/_wallet` shows the next two name addresses, which is enough to check the
+derivation against another wallet. It will show the names actually held once
+those are recorded.
