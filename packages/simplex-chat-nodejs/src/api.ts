@@ -867,7 +867,7 @@ export class ChatApi {
    * Network usage: no.
    */
   async apiCreateActiveUser(profile?: T.Profile): Promise<T.User> {
-    const r = await this.sendChatCmd(CC.CreateActiveUser.cmdString({newUser: {profile, pastTimestamp: false, userChatRelay: false, clientService: false}}))
+    const r = await this.sendChatCmd(CC.CreateActiveUser.cmdString({newUser: {profile, pastTimestamp: false, userChatRelay: false, clientService: false, keepActiveUser: false}}))
     if (r.type === "activeUser") return r.user
     throw new ChatCommandError("unexpected response", r)
   }

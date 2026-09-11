@@ -29,9 +29,11 @@ enum UserProfileAlert: Identifiable {
 let MAX_BIO_LENGTH_BYTES = 160
 
 struct CreateProfile: View {
+    var onCreate: ((Profile) async throws -> Void)? = nil
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
+    @State private var submitting = false
     @State private var displayName: String = ""
     @State private var profileBio: String = ""
     @FocusState private var focusDisplayName
@@ -104,7 +106,7 @@ struct CreateProfile: View {
                 Button(action: createProfile) {
                     settingsRow("checkmark", color: theme.colors.primary) { Text("Create profile") }
                 }
-                .disabled(!canCreateProfile(displayName) || !bioFitsLimit())
+                .disabled(submitting || !canCreateProfile(displayName) || !bioFitsLimit())
             } footer: {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Your profile is stored on your device and only shared with your contacts.")
@@ -115,6 +117,7 @@ struct CreateProfile: View {
             .compactSectionSpacing()
         }
         .navigationTitle("Create your profile")
+        .interactiveDismissDisabled(submitting)
         .modifier(ThemedBackground(grouped: true))
         .alert(item: $alert) { a in userProfileAlert(a, $displayName) }
         .confirmationDialog("Profile image", isPresented: $showChooseSource, titleVisibility: .visible) {
@@ -168,6 +171,18 @@ struct CreateProfile: View {
             shortDescr: shortDescr,
             image: profileImage
         )
+        if let onCreate {
+            submitting = true
+            Task {
+                do {
+                    try await onCreate(profile)
+                } catch let error {
+                    await MainActor.run { showCreateProfileAlert(showAlert: { alert = $0 }, error) }
+                }
+                await MainActor.run { submitting = false }
+            }
+            return
+        }
         let m = ChatModel.shared
         do {
             AppChatState.shared.set(.active)
