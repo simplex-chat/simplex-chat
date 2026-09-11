@@ -354,7 +354,10 @@ CREATE TABLE test_chat_schema.chat_items (
     fwd_from_group_link bytea,
     fwd_from_public_group_id bytea,
     fwd_from_member_id bytea,
-    fwd_from_shared_msg_id bytea
+    fwd_from_shared_msg_id bytea,
+    feed_id bigint,
+    feed_item_id bigint,
+    item_feed smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -635,7 +638,8 @@ CREATE TABLE test_chat_schema.contacts (
     grp_direct_inv_from_group_id bigint,
     grp_direct_inv_from_group_member_id bigint,
     grp_direct_inv_from_member_conn_id bigint,
-    grp_direct_inv_started_connection smallint DEFAULT 0 NOT NULL
+    grp_direct_inv_started_connection smallint DEFAULT 0 NOT NULL,
+    drop_feed smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -653,7 +657,7 @@ ALTER TABLE test_chat_schema.contacts ALTER COLUMN contact_id ADD GENERATED ALWA
 
 CREATE TABLE test_chat_schema.delivery_jobs (
     delivery_job_id bigint NOT NULL,
-    group_id bigint NOT NULL,
+    group_id bigint,
     worker_scope text NOT NULL,
     job_scope_spec_tag text,
     job_scope_include_pending smallint,
@@ -665,7 +669,11 @@ CREATE TABLE test_chat_schema.delivery_jobs (
     failed smallint DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    sender_group_member_ids text
+    sender_group_member_ids text,
+    feed_id bigint,
+    chat_item_id bigint,
+    message_ids text,
+    feed_cursor_id bigint
 );
 
 
@@ -744,6 +752,29 @@ ALTER TABLE test_chat_schema.extra_xftp_file_descriptions ALTER COLUMN extra_fil
 
 
 
+CREATE TABLE test_chat_schema.feeds (
+    feed_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    chat_ts timestamp with time zone DEFAULT now() NOT NULL,
+    favorite smallint DEFAULT 0 NOT NULL,
+    unread_chat smallint DEFAULT 0 NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.feeds ALTER COLUMN feed_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.feeds_feed_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
 CREATE TABLE test_chat_schema.files (
     file_id bigint NOT NULL,
     contact_id bigint,
@@ -771,7 +802,8 @@ CREATE TABLE test_chat_schema.files (
     file_type text DEFAULT 'normal'::text NOT NULL,
     roster_transfer_id bigint,
     file_digest bytea,
-    file_expires_at timestamp with time zone
+    file_expires_at timestamp with time zone,
+    feed_id bigint
 );
 
 
@@ -1012,7 +1044,8 @@ CREATE TABLE test_chat_schema.groups (
     roster_blob bytea,
     group_domain_verified smallint,
     stored_roster_version bigint,
-    applied_complete_roster_version bigint
+    applied_complete_roster_version bigint,
+    drop_feed smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -1066,7 +1099,8 @@ CREATE TABLE test_chat_schema.messages (
     forwarded_by_group_member_id bigint,
     broker_ts timestamp with time zone,
     msg_chat_binding text,
-    msg_signatures bytea
+    msg_signatures bytea,
+    feed_id bigint
 );
 
 
@@ -1691,6 +1725,11 @@ ALTER TABLE ONLY test_chat_schema.extra_xftp_file_descriptions
 
 
 
+ALTER TABLE ONLY test_chat_schema.feeds
+    ADD CONSTRAINT feeds_pkey PRIMARY KEY (feed_id);
+
+
+
 ALTER TABLE ONLY test_chat_schema.files
     ADD CONSTRAINT files_pkey PRIMARY KEY (file_id);
 
@@ -2012,6 +2051,22 @@ CREATE UNIQUE INDEX idx_chat_items_direct_shared_msg_id ON test_chat_schema.chat
 
 
 
+CREATE INDEX idx_chat_items_feed_id ON test_chat_schema.chat_items USING btree (feed_id);
+
+
+
+CREATE INDEX idx_chat_items_feed_item_contact ON test_chat_schema.chat_items USING btree (feed_item_id, contact_id);
+
+
+
+CREATE INDEX idx_chat_items_feed_item_group ON test_chat_schema.chat_items USING btree (feed_item_id, group_id);
+
+
+
+CREATE INDEX idx_chat_items_feeds_created_at ON test_chat_schema.chat_items USING btree (user_id, feed_id, created_at);
+
+
+
 CREATE INDEX idx_chat_items_forwarded_by_group_member_id ON test_chat_schema.chat_items USING btree (forwarded_by_group_member_id);
 
 
@@ -2276,11 +2331,23 @@ CREATE INDEX idx_contacts_grp_direct_inv_from_member_conn_id ON test_chat_schema
 
 
 
+CREATE INDEX idx_contacts_user_id ON test_chat_schema.contacts USING btree (user_id, contact_id);
+
+
+
 CREATE INDEX idx_contacts_xcontact_id ON test_chat_schema.contacts USING btree (xcontact_id);
 
 
 
+CREATE INDEX idx_delivery_jobs_chat_item_id ON test_chat_schema.delivery_jobs USING btree (chat_item_id);
+
+
+
 CREATE INDEX idx_delivery_jobs_created_at ON test_chat_schema.delivery_jobs USING btree (created_at);
+
+
+
+CREATE INDEX idx_delivery_jobs_feed_next ON test_chat_schema.delivery_jobs USING btree (feed_id, worker_scope, failed, job_status);
 
 
 
@@ -2336,11 +2403,19 @@ CREATE INDEX idx_extra_xftp_file_descriptions_user_id ON test_chat_schema.extra_
 
 
 
+CREATE INDEX idx_feeds_user_id ON test_chat_schema.feeds USING btree (user_id);
+
+
+
 CREATE INDEX idx_files_chat_item_id ON test_chat_schema.files USING btree (chat_item_id);
 
 
 
 CREATE INDEX idx_files_contact_id ON test_chat_schema.files USING btree (contact_id);
+
+
+
+CREATE INDEX idx_files_feed_id ON test_chat_schema.files USING btree (feed_id);
 
 
 
@@ -2464,6 +2539,10 @@ CREATE INDEX idx_groups_summary_current_members_count ON test_chat_schema.groups
 
 
 
+CREATE INDEX idx_groups_user_id_business_chat ON test_chat_schema.groups USING btree (user_id, business_chat, group_id);
+
+
+
 CREATE INDEX idx_groups_via_group_link_uri_hash ON test_chat_schema.groups USING btree (user_id, via_group_link_uri_hash);
 
 
@@ -2477,6 +2556,10 @@ CREATE INDEX idx_messages_connection_id ON test_chat_schema.messages USING btree
 
 
 CREATE INDEX idx_messages_created_at ON test_chat_schema.messages USING btree (created_at);
+
+
+
+CREATE INDEX idx_messages_feed_id ON test_chat_schema.messages USING btree (feed_id);
 
 
 
@@ -2746,6 +2829,16 @@ ALTER TABLE ONLY test_chat_schema.chat_items
 
 
 ALTER TABLE ONLY test_chat_schema.chat_items
+    ADD CONSTRAINT chat_items_feed_id_fkey FOREIGN KEY (feed_id) REFERENCES test_chat_schema.feeds(feed_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.chat_items
+    ADD CONSTRAINT chat_items_feed_item_id_fkey FOREIGN KEY (feed_item_id) REFERENCES test_chat_schema.chat_items(chat_item_id) ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY test_chat_schema.chat_items
     ADD CONSTRAINT chat_items_forwarded_by_group_member_id_fkey FOREIGN KEY (forwarded_by_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE SET NULL;
 
 
@@ -2936,6 +3029,16 @@ ALTER TABLE ONLY test_chat_schema.contacts
 
 
 ALTER TABLE ONLY test_chat_schema.delivery_jobs
+    ADD CONSTRAINT delivery_jobs_chat_item_id_fkey FOREIGN KEY (chat_item_id) REFERENCES test_chat_schema.chat_items(chat_item_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.delivery_jobs
+    ADD CONSTRAINT delivery_jobs_feed_id_fkey FOREIGN KEY (feed_id) REFERENCES test_chat_schema.feeds(feed_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.delivery_jobs
     ADD CONSTRAINT delivery_jobs_group_id_fkey FOREIGN KEY (group_id) REFERENCES test_chat_schema.groups(group_id) ON DELETE CASCADE;
 
 
@@ -2980,8 +3083,18 @@ ALTER TABLE ONLY test_chat_schema.extra_xftp_file_descriptions
 
 
 
+ALTER TABLE ONLY test_chat_schema.feeds
+    ADD CONSTRAINT feeds_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY test_chat_schema.files
     ADD CONSTRAINT files_contact_id_fkey FOREIGN KEY (contact_id) REFERENCES test_chat_schema.contacts(contact_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.files
+    ADD CONSTRAINT files_feed_id_fkey FOREIGN KEY (feed_id) REFERENCES test_chat_schema.feeds(feed_id) ON DELETE CASCADE;
 
 
 
@@ -3167,6 +3280,11 @@ ALTER TABLE ONLY test_chat_schema.messages
 
 ALTER TABLE ONLY test_chat_schema.messages
     ADD CONSTRAINT messages_connection_id_fkey FOREIGN KEY (connection_id) REFERENCES test_chat_schema.connections(connection_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.messages
+    ADD CONSTRAINT messages_feed_id_fkey FOREIGN KEY (feed_id) REFERENCES test_chat_schema.feeds(feed_id) ON DELETE CASCADE;
 
 
 
