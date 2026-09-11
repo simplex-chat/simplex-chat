@@ -480,10 +480,7 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   return fileCount to bytes
 }
 
-// the limit for sending, shown on the compose screen. The user's own active badge raises the XFTP limit:
-// legend to 5GB, any other (supporter/investor) to 2GB. The badge counts as active until one day after its
-// expiry - the rule the core applies to the send - so the compose screen never offers a size the send refuses.
-// The limit for a received file is decided by the core and reported as CIFile.fileProhibited.
+// the send limit: the user's own badge counts as active for one day past expiry, as the core applies it
 fun getMaxFileSize(fileProtocol: FileProtocol, ownProfile: LocalProfile? = null): Long = when (fileProtocol) {
   FileProtocol.SMP -> MAX_FILE_SIZE_SMP
   FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL

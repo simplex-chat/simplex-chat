@@ -406,7 +406,6 @@ enum SharedContent {
 }
 
 fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedContent, ErrorAlert> {
-    // the user's own badge raises the size they can send, so the share extension shows the same limit as the app
     let ownProfile = ((try? apiGetActiveUser()) ?? nil)?.profile
     if let type = firstMatching(of: [.image, .movie, .fileURL, .url, .text]) {
         switch type {
