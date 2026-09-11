@@ -436,9 +436,19 @@ class CIDeleted_moderated(TypedDict):
     deletedTs: NotRequired[str]  # ISO-8601 timestamp
     byGroupMember: "GroupMember"
 
-CIDeleted = CIDeleted_deleted | CIDeleted_blocked | CIDeleted_blockedByAdmin | CIDeleted_moderated
+class CIDeleted_deleting(TypedDict):
+    type: Literal["deleting"]
+    deletedTs: NotRequired[str]  # ISO-8601 timestamp
 
-CIDeleted_Tag = Literal["deleted", "blocked", "blockedByAdmin", "moderated"]
+CIDeleted = (
+    CIDeleted_deleted
+    | CIDeleted_blocked
+    | CIDeleted_blockedByAdmin
+    | CIDeleted_moderated
+    | CIDeleted_deleting
+)
+
+CIDeleted_Tag = Literal["deleted", "blocked", "blockedByAdmin", "moderated", "deleting"]
 
 class CIDirection_directSnd(TypedDict):
     type: Literal["directSnd"]
@@ -462,6 +472,9 @@ class CIDirection_localSnd(TypedDict):
 class CIDirection_localRcv(TypedDict):
     type: Literal["localRcv"]
 
+class CIDirection_feedSnd(TypedDict):
+    type: Literal["feedSnd"]
+
 CIDirection = (
     CIDirection_directSnd
     | CIDirection_directRcv
@@ -470,9 +483,14 @@ CIDirection = (
     | CIDirection_channelRcv
     | CIDirection_localSnd
     | CIDirection_localRcv
+    | CIDirection_feedSnd
 )
 
-CIDirection_Tag = Literal["directSnd", "directRcv", "groupSnd", "groupRcv", "channelRcv", "localSnd", "localRcv"]
+CIDirection_Tag = Literal["directSnd", "directRcv", "groupSnd", "groupRcv", "channelRcv", "localSnd", "localRcv", "feedSnd"]
+
+# Whether feed edits still apply to the message in this chat.
+
+CIFeed = Literal["linked", "detached"]
 
 class CIFile(TypedDict):
     fileId: int  # int64
@@ -634,6 +652,7 @@ class CIMeta(TypedDict):
     forwardedByMember: NotRequired[int]  # int64
     showGroupAsSender: bool
     msgVerified: NotRequired["MsgVerified"]
+    itemFeed: NotRequired["CIFeed"]
     createdAt: str  # ISO-8601 timestamp
     updatedAt: str  # ISO-8601 timestamp
 
@@ -1147,6 +1166,10 @@ class ChatInfo_local(TypedDict):
     type: Literal["local"]
     noteFolder: "NoteFolder"
 
+class ChatInfo_feed(TypedDict):
+    type: Literal["feed"]
+    feed: "Feed"
+
 class ChatInfo_contactRequest(TypedDict):
     type: Literal["contactRequest"]
     contactRequest: "UserContactRequest"
@@ -1159,11 +1182,12 @@ ChatInfo = (
     ChatInfo_direct
     | ChatInfo_group
     | ChatInfo_local
+    | ChatInfo_feed
     | ChatInfo_contactRequest
     | ChatInfo_contactConnection
 )
 
-ChatInfo_Tag = Literal["direct", "group", "local", "contactRequest", "contactConnection"]
+ChatInfo_Tag = Literal["direct", "group", "local", "feed", "contactRequest", "contactConnection"]
 
 class ChatItem(TypedDict):
     chatDir: "CIDirection"
@@ -1211,6 +1235,7 @@ class ChatSettings(TypedDict):
     enableNtfs: "MsgFilter"
     sendRcpts: NotRequired[bool]
     favorite: bool
+    dropFeed: bool
 
 class ChatStats(TypedDict):
     unreadCount: int  # int
@@ -1219,11 +1244,11 @@ class ChatStats(TypedDict):
     minUnreadItemId: int  # int64
     unreadChat: bool
 
-ChatType = Literal["direct", "group", "local"]
+ChatType = Literal["direct", "group", "local", "feed"]
 
 
 def ChatType_cmd_string(self: ChatType) -> str:
-    return '@' if str(self) == 'direct' else '#' if str(self) == 'group' else '*' if str(self) == 'local' else ''
+    return '@' if str(self) == 'direct' else '#' if str(self) == 'group' else '*' if str(self) == 'local' else '%' if str(self) == 'feed' else ''
 
 class ChatWallpaper(TypedDict):
     preset: NotRequired[str]
@@ -1643,6 +1668,17 @@ ErrorType = (
 ErrorType_Tag = Literal["BLOCK", "SESSION", "CMD", "PROXY", "AUTH", "BLOCKED", "SERVICE", "CRYPTO", "QUOTA", "STORE", "NO_MSG", "LARGE_MSG", "EXPIRED", "INTERNAL", "NAME", "DUPLICATE_"]
 
 FeatureAllowed = Literal["always", "yes", "no"]
+
+# The chat of the messages broadcast to all contacts and customer groups.
+
+class Feed(TypedDict):
+    feedId: int  # int64
+    userId: int  # int64
+    createdAt: str  # ISO-8601 timestamp
+    updatedAt: str  # ISO-8601 timestamp
+    chatTs: str  # ISO-8601 timestamp
+    favorite: bool
+    unread: bool
 
 class FileDescr(TypedDict):
     fileDescrText: str
@@ -3135,6 +3171,17 @@ class StoreError_noteFolderNotFound(TypedDict):
 class StoreError_userNoteFolderNotFound(TypedDict):
     type: Literal["userNoteFolderNotFound"]
 
+class StoreError_feedAlreadyExists(TypedDict):
+    type: Literal["feedAlreadyExists"]
+    feedId: int  # int64
+
+class StoreError_feedNotFound(TypedDict):
+    type: Literal["feedNotFound"]
+    feedId: int  # int64
+
+class StoreError_userFeedNotFound(TypedDict):
+    type: Literal["userFeedNotFound"]
+
 class StoreError_sndFileNotFound(TypedDict):
     type: Literal["sndFileNotFound"]
     fileId: int  # int64
@@ -3381,6 +3428,9 @@ StoreError = (
     | StoreError_noteFolderAlreadyExists
     | StoreError_noteFolderNotFound
     | StoreError_userNoteFolderNotFound
+    | StoreError_feedAlreadyExists
+    | StoreError_feedNotFound
+    | StoreError_userFeedNotFound
     | StoreError_sndFileNotFound
     | StoreError_sndFileInvalid
     | StoreError_rcvFileNotFound
@@ -3436,7 +3486,7 @@ StoreError = (
     | StoreError_workItemError
 )
 
-StoreError_Tag = Literal["duplicateName", "userNotFound", "relayUserNotFound", "userNotFoundByName", "userNotFoundByContactId", "userNotFoundByGroupId", "userNotFoundByFileId", "userNotFoundByContactRequestId", "contactNotFound", "contactNotFoundByName", "contactNotFoundByMemberId", "contactNotReady", "duplicateContactLink", "userContactLinkNotFound", "contactRequestNotFound", "contactRequestNotFoundByName", "invalidContactRequestEntity", "invalidBusinessChatContactRequest", "groupNotFound", "groupNotFoundByName", "groupMemberNameNotFound", "groupMemberNotFound", "groupMemberNotFoundByIndex", "memberRelationsVectorNotFound", "groupHostMemberNotFound", "groupMemberNotFoundByMemberId", "memberContactGroupMemberNotFound", "invalidMemberRelationUpdate", "groupWithoutUser", "duplicateGroupMember", "duplicateMemberId", "groupAlreadyJoined", "groupInvitationNotFound", "noteFolderAlreadyExists", "noteFolderNotFound", "userNoteFolderNotFound", "sndFileNotFound", "sndFileInvalid", "rcvFileNotFound", "rcvFileDescrNotFound", "fileNotFound", "rcvFileInvalid", "rcvFileInvalidDescrPart", "localFileNoTransfer", "sharedMsgIdNotFoundByFileId", "fileIdNotFoundBySharedMsgId", "sndFileNotFoundXFTP", "rcvFileNotFoundXFTP", "connectionNotFound", "connectionNotFoundById", "connectionNotFoundByMemberId", "pendingConnectionNotFound", "uniqueID", "largeMsg", "internalError", "dBException", "dBBusyError", "badChatItem", "chatItemNotFound", "chatItemNotFoundByText", "chatItemSharedMsgIdNotFound", "chatItemNotFoundByFileId", "chatItemNotFoundByContactId", "chatItemNotFoundByGroupId", "profileNotFound", "duplicateGroupLink", "groupLinkNotFound", "hostMemberIdNotFound", "contactNotFoundByFileId", "noGroupSndStatus", "duplicateGroupMessage", "remoteHostNotFound", "remoteHostUnknown", "remoteHostDuplicateCA", "remoteCtrlNotFound", "remoteCtrlDuplicateCA", "prohibitedDeleteUser", "operatorNotFound", "usageConditionsNotFound", "userChatRelayNotFound", "groupRelayNotFound", "groupRelayNotFoundByMemberId", "invalidQuote", "invalidMention", "invalidDeliveryTask", "deliveryTaskNotFound", "invalidDeliveryJob", "deliveryJobNotFound", "workItemError"]
+StoreError_Tag = Literal["duplicateName", "userNotFound", "relayUserNotFound", "userNotFoundByName", "userNotFoundByContactId", "userNotFoundByGroupId", "userNotFoundByFileId", "userNotFoundByContactRequestId", "contactNotFound", "contactNotFoundByName", "contactNotFoundByMemberId", "contactNotReady", "duplicateContactLink", "userContactLinkNotFound", "contactRequestNotFound", "contactRequestNotFoundByName", "invalidContactRequestEntity", "invalidBusinessChatContactRequest", "groupNotFound", "groupNotFoundByName", "groupMemberNameNotFound", "groupMemberNotFound", "groupMemberNotFoundByIndex", "memberRelationsVectorNotFound", "groupHostMemberNotFound", "groupMemberNotFoundByMemberId", "memberContactGroupMemberNotFound", "invalidMemberRelationUpdate", "groupWithoutUser", "duplicateGroupMember", "duplicateMemberId", "groupAlreadyJoined", "groupInvitationNotFound", "noteFolderAlreadyExists", "noteFolderNotFound", "userNoteFolderNotFound", "feedAlreadyExists", "feedNotFound", "userFeedNotFound", "sndFileNotFound", "sndFileInvalid", "rcvFileNotFound", "rcvFileDescrNotFound", "fileNotFound", "rcvFileInvalid", "rcvFileInvalidDescrPart", "localFileNoTransfer", "sharedMsgIdNotFoundByFileId", "fileIdNotFoundBySharedMsgId", "sndFileNotFoundXFTP", "rcvFileNotFoundXFTP", "connectionNotFound", "connectionNotFoundById", "connectionNotFoundByMemberId", "pendingConnectionNotFound", "uniqueID", "largeMsg", "internalError", "dBException", "dBBusyError", "badChatItem", "chatItemNotFound", "chatItemNotFoundByText", "chatItemSharedMsgIdNotFound", "chatItemNotFoundByFileId", "chatItemNotFoundByContactId", "chatItemNotFoundByGroupId", "profileNotFound", "duplicateGroupLink", "groupLinkNotFound", "hostMemberIdNotFound", "contactNotFoundByFileId", "noGroupSndStatus", "duplicateGroupMessage", "remoteHostNotFound", "remoteHostUnknown", "remoteHostDuplicateCA", "remoteCtrlNotFound", "remoteCtrlDuplicateCA", "prohibitedDeleteUser", "operatorNotFound", "usageConditionsNotFound", "userChatRelayNotFound", "groupRelayNotFound", "groupRelayNotFoundByMemberId", "invalidQuote", "invalidMention", "invalidDeliveryTask", "deliveryTaskNotFound", "invalidDeliveryJob", "deliveryJobNotFound", "workItemError"]
 
 class SubscriptionStatus_active(TypedDict):
     type: Literal["active"]
