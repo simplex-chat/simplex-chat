@@ -61,6 +61,7 @@ struct BadgesSupportSimplexView: View {
             .frame(height: g.size.height)
         }
         .frame(maxHeight: .infinity)
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private func whyBuiltButton() -> some View {

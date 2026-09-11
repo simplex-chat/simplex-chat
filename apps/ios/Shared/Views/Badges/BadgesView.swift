@@ -20,10 +20,6 @@ struct BadgesView: View {
         return nil
     }
 
-    private var barCarriesTitle: Bool { shownBadge != nil && !showsAsSheet }
-
-    private var navTitle: LocalizedStringKey { barCarriesTitle ? "Your badge" : "" }
-
     var body: some View {
         Group {
             if let badgeState = shownBadge {
@@ -35,7 +31,5 @@ struct BadgesView: View {
             }
         }
         .animation(.default, value: shownBadge != nil)
-        .navigationTitle(navTitle)
-        .navigationBarTitleDisplayMode(barCarriesTitle ? .large : .inline)
     }
 }
