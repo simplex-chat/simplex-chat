@@ -465,7 +465,7 @@ toMaybeGroupLink _ = Nothing
 
 -- group with its registration and its join link (user_contact_links) in one query
 groupReqQuery :: Query
-groupReqQuery = groupInfoQueryFields <> groupRegFields <> groupLinkFields <> groupInfoQueryFrom <> groupLinkJoin <> groupRegFromCond
+groupReqQuery = "SELECT " <> groupInfoQueryFields <> groupRegFields <> groupLinkFields <> groupInfoQueryFrom <> groupLinkJoin <> groupRegFromCond
   where
     groupRegFields = ", r.group_id, r.user_group_reg_id, r.contact_id, r.owner_member_id, r.group_reg_status, r.group_promoted, r.created_at "
     groupLinkFields = ", uc.user_contact_link_id, uc.conn_req_contact, uc.short_link_contact, uc.short_link_data_set, uc.short_link_large_data_set, uc.group_link_id, uc.group_link_member_role "

@@ -249,7 +249,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward Nothing (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}})
   it "x.msg.update" $
     "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
-      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing
+      #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing Nothing
   it "x.msg.del" $
     "{\"v\":\"9\",\"event\":\"x.msg.del\",\"params\":{\"msgId\":\"AQIDBA==\"}}"
       #==# XMsgDel (SharedMsgId "\1\2\3\4") Nothing Nothing False

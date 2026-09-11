@@ -992,8 +992,9 @@ testMultilineMessage = testChat3 aliceProfile bobProfile cathProfile $ \alice bo
   alice <## "there"
   bob <# "alice> hello"
   bob <## "there"
+  createCCFeed alice
   alice `send` "/feed \"hello\\nthere\"" -- /feed "hello\nthere"
-  alice <##. "/feed (2)"
+  alice <# "% hello"
   alice <## "there"
   bob <# "alice> hello"
   bob <## "there"

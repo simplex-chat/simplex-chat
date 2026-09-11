@@ -568,6 +568,7 @@ deletable' itemContent itemDeleted itemTs allowedInterval currentTs =
     CISndMsgContent _ ->
       case chatTypeI @c of
         SCTLocal -> isNothing itemDeleted
+        SCTFeed -> isNothing itemDeleted
         _ -> diffUTCTime currentTs itemTs < allowedInterval && isNothing itemDeleted
     _ -> False
 
@@ -667,7 +668,6 @@ data MemberReaction = MemberReaction
 type family ChatTypeQuotable (a :: ChatType) :: Constraint where
   ChatTypeQuotable 'CTDirect = ()
   ChatTypeQuotable 'CTGroup = ()
-  ChatTypeQuotable 'CTFeed = ()
   ChatTypeQuotable a =
     (Int ~ Bool, TypeError ('Type.Text "ChatType " ':<>: 'ShowType a ':<>: 'Type.Text " cannot be quoted"))
 
@@ -676,7 +676,6 @@ data CIQDirection (c :: ChatType) where
   CIQDirectRcv :: CIQDirection 'CTDirect
   CIQGroupSnd :: CIQDirection 'CTGroup
   CIQGroupRcv :: Maybe GroupMember -> CIQDirection 'CTGroup -- member can be Nothing in case MsgRef has memberId that the user is not notified about yet
-  CIQFeedSnd :: CIQDirection 'CTFeed
 
 deriving instance Show (CIQDirection c)
 
@@ -689,7 +688,6 @@ jsonCIQDirection = \case
   CIQGroupSnd -> JCIGroupSnd
   CIQGroupRcv (Just m) -> JCIGroupRcv m
   CIQGroupRcv Nothing -> JCIChannelRcv
-  CIQFeedSnd -> JCIFeedSnd
 
 jsonACIQDirection :: JSONCIDirection -> Either String ACIQDirection
 jsonACIQDirection = \case
@@ -700,7 +698,7 @@ jsonACIQDirection = \case
   JCIChannelRcv -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv Nothing
   JCILocalSnd -> Left "unquotable"
   JCILocalRcv -> Left "unquotable"
-  JCIFeedSnd -> Right $ ACIQDirection SCTFeed CIQFeedSnd
+  JCIFeedSnd -> Left "unquotable"
 
 quoteMsgDirection :: CIQDirection c -> MsgDirection
 quoteMsgDirection = \case
@@ -708,7 +706,6 @@ quoteMsgDirection = \case
   CIQDirectRcv -> MDRcv
   CIQGroupSnd -> MDSnd
   CIQGroupRcv _ -> MDRcv
-  CIQFeedSnd -> MDSnd
 
 data CIFile (d :: MsgDirection) = CIFile
   { fileId :: Int64,

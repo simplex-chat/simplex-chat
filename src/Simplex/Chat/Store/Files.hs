@@ -73,6 +73,8 @@ module Simplex.Chat.Store.Files
     getSndFileTransfer,
     getContactFileInfo,
     getNoteFolderFileInfo,
+    getFeedFileInfo,
+    deleteFeedFiles,
     createLocalFile,
     getLocalCryptoFile,
     updateDirectCIFileStatus,
@@ -185,8 +187,8 @@ createSndFileTransferXFTP db User {userId} contactOrGroup_ (CryptoFile filePath 
   let xftpSndFile = Just XFTPSndFile {agentSndFileId, privateSndFileDescr = Nothing, agentSndFileDeleted = False, cryptoArgs}
   DB.execute
     db
-    "INSERT INTO files (contact_id, group_id, user_id, file_name, file_path, file_crypto_key, file_crypto_nonce, file_size, chunk_size, redirect_file_id, agent_snd_file_id, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-    (maybe (Nothing, Nothing) contactAndGroupIds contactOrGroup_ :. (userId, fileName, filePath, CF.fileKey <$> cryptoArgs, CF.fileNonce <$> cryptoArgs, fileSize, chunkSize) :. (xftpRedirectFor, agentSndFileId, CIFSSndStored, FPXFTP, currentTs, currentTs))
+    "INSERT INTO files (contact_id, group_id, feed_id, user_id, file_name, file_path, file_crypto_key, file_crypto_nonce, file_size, chunk_size, redirect_file_id, agent_snd_file_id, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    (maybe (Nothing, Nothing, Nothing) contactAndGroupIds contactOrGroup_ :. (userId, fileName, filePath, CF.fileKey <$> cryptoArgs, CF.fileNonce <$> cryptoArgs, fileSize, chunkSize) :. (xftpRedirectFor, agentSndFileId, CIFSSndStored, FPXFTP, currentTs, currentTs))
   fileId <- insertedRowId db
   pure FileTransferMeta {fileId, xftpSndFile, xftpRedirectFor, fileName, filePath, fileSize, fileInline = Nothing, chunkSize, cancelled = False}
 
@@ -273,7 +275,7 @@ getXFTPSndFileDBIds db aSndFileId =
     DB.query
       db
       [sql|
-        SELECT file_id, contact_id, group_id, note_folder_id
+        SELECT file_id, contact_id, group_id, note_folder_id, feed_id
         FROM files
         WHERE agent_snd_file_id = ?
       |]
@@ -285,19 +287,20 @@ getXFTPRcvFileDBIds db aRcvFileId =
     DB.query
       db
       [sql|
-        SELECT rf.file_id, f.contact_id, f.group_id, f.note_folder_id
+        SELECT rf.file_id, f.contact_id, f.group_id, f.note_folder_id, f.feed_id
         FROM rcv_files rf
         JOIN files f ON f.file_id = rf.file_id
         WHERE rf.agent_rcv_file_id = ?
       |]
       (Only aRcvFileId)
 
-toFileRef :: (FileTransferId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (Maybe ChatRef, FileTransferId)
+toFileRef :: (FileTransferId, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (Maybe ChatRef, FileTransferId)
 toFileRef = \case
-  (fileId, Just contactId, Nothing, Nothing) -> Right (Just $ ChatRef CTDirect contactId Nothing, fileId)
-  (fileId, Nothing, Just groupId, Nothing) -> Right (Just $ ChatRef CTGroup groupId Nothing, fileId)
-  (fileId, Nothing, Nothing, Just folderId) -> Right (Just $ ChatRef CTLocal folderId Nothing, fileId)
-  (fileId, _, _, _) -> Right (Nothing, fileId)
+  (fileId, Just contactId, Nothing, Nothing, Nothing) -> Right (Just $ ChatRef CTDirect contactId Nothing, fileId)
+  (fileId, Nothing, Just groupId, Nothing, Nothing) -> Right (Just $ ChatRef CTGroup groupId Nothing, fileId)
+  (fileId, Nothing, Nothing, Just folderId, Nothing) -> Right (Just $ ChatRef CTLocal folderId Nothing, fileId)
+  (fileId, Nothing, Nothing, Nothing, Just feedId) -> Right (Just $ ChatRef CTFeed feedId Nothing, fileId)
+  (fileId, _, _, _, _) -> Right (Nothing, fileId)
 
 updateFileCancelled :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
 updateFileCancelled db User {userId} fileId ciFileStatus = do
@@ -971,6 +974,24 @@ getNoteFolderFileInfo :: DB.Connection -> User -> NoteFolder -> IO [CIFileInfo]
 getNoteFolderFileInfo db User {userId} NoteFolder {noteFolderId} =
   map toFileInfo
     <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.note_folder_id = ?") (userId, noteFolderId)
+
+getFeedFileInfo :: DB.Connection -> User -> Feed -> IO [CIFileInfo]
+getFeedFileInfo db User {userId} Feed {feedId} =
+  map toFileInfo
+    <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.feed_id = ?") (userId, feedId)
+
+deleteFeedFiles :: DB.Connection -> User -> Feed -> IO ()
+deleteFeedFiles db User {userId} Feed {feedId} =
+  DB.execute
+    db
+    [sql|
+      DELETE FROM files
+      WHERE user_id = ?
+        AND chat_item_id IN (
+          SELECT chat_item_id FROM chat_items WHERE user_id = ? AND feed_id = ?
+        )
+    |]
+    (userId, userId, feedId)
 
 getLocalCryptoFile :: DB.Connection -> UserId -> Int64 -> Bool -> ExceptT StoreError IO CryptoFile
 getLocalCryptoFile db userId fileId sent =

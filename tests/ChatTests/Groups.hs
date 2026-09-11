@@ -6728,8 +6728,9 @@ testMembershipProfileUpdateContactDisabled =
       bob `hasContactProfiles` ["alice", "bob"]
 
       -- bob sends any message to alice, increases auth err counter
+      createCCFeed bob
       bob `send` "/feed hi all"
-      bob <##. "/feed (1)"
+      bob <# "% hi all"
       bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
 
       -- on next profile update from alice member, bob considers contact disabled for purposes of profile update
@@ -12403,7 +12404,7 @@ testChannelMemberUpdateEnforcement ps =
             connId <- relayConnIdToMember bob "dan"
             ts <- getCurrentTime
             let ChatController {smpAgent = bobAgent} = chatController bob
-                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgUpdate sharedId (MCText "forged") M.empty Nothing Nothing Nothing Nothing)
+                chatMsg = ChatMessage chatInitialVRange Nothing (XMsgUpdate sharedId (MCText "forged") M.empty Nothing Nothing Nothing Nothing Nothing)
                 fwd = GrpMsgForward (FwdMember cathMemId "cath") ts
                 body = encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned chatMsg)]
             sent <- runExceptT $ sendMessages bobAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]

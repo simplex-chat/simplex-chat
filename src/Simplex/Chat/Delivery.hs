@@ -12,6 +12,7 @@ module Simplex.Chat.Delivery where
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Messages (ChatItemId, ChatType (..), GroupChatScopeInfo (..), MessageId, ShowGroupAsSender)
@@ -52,6 +53,9 @@ data DeliveryJobKey
 
 data FeedWorkerScope = FWSContacts | FWSGroups
   deriving (Eq, Ord, Show)
+
+feedWorkerScopes :: [FeedWorkerScope]
+feedWorkerScopes = [FWSContacts, FWSGroups]
 
 instance FromField FeedWorkerScope where fromField = fromTextField_ textDecode
 
@@ -217,6 +221,61 @@ data FeedJobActionTag
   | FJATDeleteInternal
   | FJATDeleteMark
   deriving (Show)
+
+feedActionTag :: FeedJobAction -> FeedJobActionTag
+feedActionTag = \case
+  FJANew _ -> FJATNew
+  FJAFileDescr _ -> FJATFileDescr
+  FJAUpdate _ -> FJATUpdate
+  FJADeleteBroadcast _ -> FJATDeleteBroadcast
+  FJADeleteInternal -> FJATDeleteInternal
+  FJADeleteMark -> FJATDeleteMark
+
+feedActionMsgIds :: FeedJobAction -> [MessageId]
+feedActionMsgIds = \case
+  FJANew msgId -> [msgId]
+  FJAFileDescr msgIds -> L.toList msgIds
+  FJAUpdate msgId -> [msgId]
+  FJADeleteBroadcast msgId -> [msgId]
+  FJADeleteInternal -> []
+  FJADeleteMark -> []
+
+feedActionDelivers :: FeedJobAction -> Bool
+feedActionDelivers = \case
+  FJADeleteInternal -> False
+  FJADeleteMark -> False
+  _ -> True
+
+feedActionCreates :: FeedJobAction -> Bool
+feedActionCreates = \case
+  FJANew _ -> True
+  _ -> False
+
+feedActionDeletes :: FeedJobAction -> Bool
+feedActionDeletes = \case
+  FJADeleteBroadcast _ -> True
+  FJADeleteInternal -> True
+  FJADeleteMark -> True
+  _ -> False
+
+-- a marked instance stays in its chat, so the feed item stays in the feed
+feedActionRemovesItem :: FeedJobAction -> Bool
+feedActionRemovesItem = \case
+  FJADeleteBroadcast _ -> True
+  FJADeleteInternal -> True
+  _ -> False
+
+-- which instances of the feed item the action applies to
+data FeedInstanceSpec
+  = FISLinked -- a feed edit skips instances edited or deleted in their chat
+  | FISAny -- a feed deletion retracts the broadcast from detached instances too
+  | FISUndeleted -- a file description follows the message
+
+feedActionInstances :: FeedJobAction -> FeedInstanceSpec
+feedActionInstances = \case
+  FJAUpdate _ -> FISLinked
+  FJAFileDescr _ -> FISUndeleted
+  _ -> FISAny
 
 instance FromField FeedJobActionTag where fromField = fromTextField_ textDecode
 

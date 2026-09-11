@@ -230,11 +230,12 @@ chatTypesDocsData =
     (sti @ChatRef, STRecord, "", [], Param "chatType" <> Param "chatId" <> Optional "" (Param "$0") "chatScope", "Used in API commands. Chat scope can only be passed with groups."),
     (sti @ChatSettings, STRecord, "", [], "", ""),
     (sti @ChatStats, STRecord, "", [], "", ""),
-    (sti @ChatType, STEnum, "CT", ["CTContactRequest", "CTContactConnection"], Choice "self" [("direct", "@"), ("group", "#"), ("local", "*")] "", ""),
+    (sti @ChatType, STEnum, "CT", ["CTContactRequest", "CTContactConnection"], Choice "self" [("direct", "@"), ("group", "#"), ("local", "*"), ("feed", "%")] "", ""),
     (sti @ChatWallpaper, STRecord, "", [], "", ""),
     (sti @ChatWallpaperScale, STEnum, "CWS", [], "", ""),
     (sti @CICallStatus, STEnum, "CISCall", [], "", ""),
     (sti @CIDeleteMode, STEnum, "CIDM", [], "", ""),
+    (sti @CIFeed, STEnum, "CIF", [], "", "Whether feed edits still apply to the message in this chat."),
     (sti @CIForwardedFrom, STUnion, "CIFF", [], "", ""),
     (sti @CIGroupInvitation, STRecord, "", [], "", ""),
     (sti @CIGroupInvitationStatus, STEnum, "CIGIS", [], "", ""),
@@ -266,6 +267,7 @@ chatTypesDocsData =
     (sti @E2EInfo, STRecord, "", [], "", ""),
     (sti @ErrorType, STUnion, "", [], "", ""),
     (sti @FeatureAllowed, STEnum, "FA", [], "", ""),
+    (sti @Feed, STRecord, "", [], "", "The chat of the messages broadcast to all contacts and customer groups."),
     (sti @FileDescr, STRecord, "", [], "", ""),
     (sti @FileError, STUnion, "FileErr", [], "", ""),
     (sti @FileErrorType, STUnion, "", [], "", ""),
@@ -462,6 +464,7 @@ deriving instance Generic ChatWallpaper
 deriving instance Generic ChatWallpaperScale
 deriving instance Generic CICallStatus
 deriving instance Generic CIDeleteMode
+deriving instance Generic CIFeed
 deriving instance Generic CIForwardedFrom
 deriving instance Generic CIGroupInvitation
 deriving instance Generic CIGroupInvitationStatus
@@ -493,6 +496,7 @@ deriving instance Generic DroppedMsg
 deriving instance Generic E2EInfo
 deriving instance Generic ErrorType
 deriving instance Generic FeatureAllowed
+deriving instance Generic Feed
 deriving instance Generic FileDescr
 deriving instance Generic FileError
 deriving instance Generic FileErrorType

@@ -79,6 +79,7 @@ library
       Simplex.Chat.Store.ContactRequest
       Simplex.Chat.Store.Delivery
       Simplex.Chat.Store.Direct
+      Simplex.Chat.Store.Feeds
       Simplex.Chat.Store.Files
       Simplex.Chat.Store.Groups
       Simplex.Chat.Store.Messages
@@ -602,6 +603,7 @@ test-suite simplex-chat-test
       ChatTests.Files
       ChatTests.Forward
       ChatTests.Groups
+      ChatTests.Feed
       ChatTests.Local
       ChatTests.Names
       ChatTests.Profiles

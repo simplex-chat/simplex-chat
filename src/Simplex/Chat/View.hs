@@ -167,7 +167,6 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRGroupChatItemsDeleted u g ciIds byUser member_ -> ttyUser u $ viewGroupChatItemsDeleted g ciIds byUser member_
   CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction u chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CRReactionMembers u memberReactions -> ttyUser u $ viewReactionMembers memberReactions
-  CRBroadcastSent u mc s f t -> ttyUser u $ viewSentBroadcast mc s f ts tz t
   CRCmdOk u_ -> ttyUser' u_ ["ok"]
   CRChatHelp section -> case section of
     HSMain -> chatHelpInfo
@@ -360,6 +359,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
           DirectChat Contact {localDisplayName, activeConn} -> ("@" <> localDisplayName, toCIPreview items Nothing, connStatus <$> activeConn)
           GroupChat GroupInfo {membership, localDisplayName} _scopeInfo -> ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
           LocalChat _ -> ("*", toCIPreview items Nothing, Nothing)
+          FeedChat _ -> ("%", toCIPreview items Nothing, Nothing)
           ContactRequest UserContactRequest {localDisplayName} -> ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
           ContactConnection PendingContactConnection {pccConnId, pccConnStatus} -> (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
           CInfoInvalidJSON {} -> ("invalid chat info", "", Nothing)
@@ -626,6 +626,7 @@ chatItemDeletedText ChatItem {meta = CIMeta {itemDeleted}, content} membership_ 
       CIDeleted _ -> markedDeleted content
       CIBlocked _ -> "blocked"
       CIBlockedByAdmin _ -> "blocked by admin"
+      CIDeleting _ -> "being deleted"
     markedDeleted = \case
       CISndModerated -> "deleted"
       CIRcvModerated -> "deleted"
@@ -762,6 +763,14 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
             from = "* "
         where
           context = maybe [] forwardedFrom itemForwarded
+      FeedChat _ -> case chatDir of
+        CIFeedSnd -> case content of
+          CISndMsgContent mc -> withSndFile to $ sndMsg to context mc
+          _ -> showSndItem to
+          where
+            to = ttyTo "% "
+        where
+          context = maybe [] forwardedFrom itemForwarded
       ContactRequest {} -> []
       ContactConnection {} -> []
       CInfoInvalidJSON {} -> ["invalid chat info"]
@@ -895,6 +904,14 @@ viewItemUpdate chat ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, itemEd
           (maybe [] forwardedFrom itemForwarded)
           (groupQuote g)
           quotedItem
+  FeedChat _ -> case chatDir of
+    CIFeedSnd -> case content of
+      CISndMsgContent mc -> viewSentMessage to context mc ts tz meta
+      _ -> []
+      where
+        to = if itemEdited then ttyTo "% [edited] " else ttyTo "% "
+    where
+      context = maybe [] forwardedFrom itemForwarded
   _ -> []
 
 hideLive :: CIMeta c d -> [StyledString] -> [StyledString]
@@ -964,6 +981,7 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
     (_, CIDirectSnd) -> [sentText]
     (_, CIGroupSnd) -> [sentText]
     (_, CILocalSnd) -> [sentText]
+    (_, CIFeedSnd) -> [sentText]
     (CInfoInvalidJSON {}, _) -> []
   where
     groupReaction g scopeInfo m_ sentBy = case ciMsgContent content of
@@ -1089,6 +1107,7 @@ viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
   DirectChat ct -> [ttyContact' ct <> ": all messages are removed locally ONLY"]
   GroupChat gi _scopeInfo -> [ttyGroup' gi <> ": all messages are removed locally ONLY"]
   LocalChat _ -> ["notes: all messages are removed"]
+  FeedChat _ -> ["feed: all messages are removed"]
   ContactRequest _ -> []
   ContactConnection _ -> []
   CInfoInvalidJSON {} -> []
@@ -2355,13 +2374,6 @@ viewSentMessage to context mc ts tz meta@CIMeta {itemEdited, itemDeleted, itemLi
           Just True -> ttyTo "[LIVE started] "
           Just False -> ttyTo "[LIVE] "
           _ -> ""
-
-viewSentBroadcast :: MsgContent -> Int -> Int -> CurrentTime -> TimeZone -> UTCTime -> [StyledString]
-viewSentBroadcast mc s f ts tz time = prependFirst (highlight' "/feed" <> " (" <> sShow s <> failures <> ") " <> ttyMsgTime ts tz time <> " ") (ttyMsgContent mc)
-  where
-    failures
-      | f > 0 = ", " <> sShow f <> " failures"
-      | otherwise = ""
 
 viewSentFileInvitation :: StyledString -> CIFile d -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
 viewSentFileInvitation to CIFile {fileId, fileSource, fileStatus} ts tz = case fileSource of

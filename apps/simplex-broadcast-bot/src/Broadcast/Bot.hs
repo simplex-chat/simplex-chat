@@ -49,8 +49,8 @@ broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _u
         | allowContent mc ->
             void $ forkIO $
               sendChatCmd cc (SendMessageBroadcast mc) >>= \case
-                Right CRBroadcastSent {successes, failures} ->
-                  sendReply $ "Forwarded to " <> tshow successes <> " contact(s), " <> tshow failures <> " errors"
+                -- delivery to the recipients continues in feed delivery jobs
+                Right CRNewChatItems {} -> sendReply "Message is being delivered to all contacts"
                 r -> putStrLn $ "Error broadcasting message: " <> show r
         | otherwise ->
             sendReply "!1 Message is not supported!"

@@ -26,6 +26,11 @@ module Simplex.Chat.Store.Delivery
     getGroupMembersByCursor,
     updateDeliveryJobCursor,
     deleteDoneDeliveryJobs,
+    createFeedJobs,
+    getNextFeedDeliveryJob,
+    updateFeedDeliveryJobCursor,
+    completeFeedJob,
+    getFeedJobMessages,
   )
 where
 
@@ -33,11 +38,13 @@ import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (isNothing)
+import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe (catMaybes, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Simplex.Chat.Delivery
+import Simplex.Chat.Messages (ChatItemId, ChatType (..), MessageId, SndMessage (..))
 import Simplex.Chat.Protocol hiding (Binary)
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -46,6 +53,7 @@ import Simplex.Messaging.Agent.Store.AgentStore (getWorkItem, getWorkItems, mayb
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding (smpDecode)
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Util (eitherToMaybe, firstRow')
 import Text.Read (readMaybe)
 #if defined(dbPostgres)
@@ -269,22 +277,29 @@ createMsgDeliveryJob db gInfo jobScope senderGMIds body = do
       | null senderGMIds = Nothing
       | otherwise = Just $ T.intercalate "," $ map (T.pack . show) senderGMIds
 
-getPendingDeliveryJobScopes :: DB.Connection -> IO [DeliveryWorkerKey]
+getPendingDeliveryJobScopes :: DB.Connection -> IO [DeliveryJobKey]
 getPendingDeliveryJobScopes db =
-  DB.query
-    db
-    [sql|
-      SELECT DISTINCT group_id, worker_scope
-      FROM delivery_jobs
-      WHERE failed = 0 AND job_status = ?
-    |]
-    (Only DJSPending)
+  mapMaybe toJobKey
+    <$> DB.query
+      db
+      [sql|
+        SELECT DISTINCT group_id, feed_id, worker_scope
+        FROM delivery_jobs
+        WHERE failed = 0 AND job_status = ?
+      |]
+      (Only DJSPending)
+  where
+    toJobKey :: (Maybe GroupId, Maybe FeedId, Text) -> Maybe DeliveryJobKey
+    toJobKey = \case
+      (Just groupId, Nothing, scope) -> DJKGroup groupId <$> (textDecode scope :: Maybe DeliveryWorkerScope)
+      (Nothing, Just feedId, scope) -> DJKFeed feedId <$> (textDecode scope :: Maybe FeedWorkerScope)
+      _ -> Nothing
 
 type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe Text, Binary ByteString, Maybe GroupMemberId)
 
-getNextDeliveryJob :: DB.Connection -> DeliveryWorkerKey -> IO (Either StoreError (Maybe MessageDeliveryJob))
+getNextDeliveryJob :: DB.Connection -> DeliveryWorkerKey -> IO (Either StoreError (Maybe (DeliveryJob 'CTGroup)))
 getNextDeliveryJob db deliveryKey = do
-  getWorkItem "delivery job" getJobId getJob markJobFailed
+  getWorkItem "delivery job" getJobId getJob (markJobFailed db)
   where
     (groupId, workerScope) = deliveryKey
     getJobId :: IO (Maybe Int64)
@@ -301,7 +316,7 @@ getNextDeliveryJob db deliveryKey = do
             LIMIT 1
           |]
           (groupId, workerScope, DJSPending)
-    getJob :: Int64 -> IO (Either StoreError MessageDeliveryJob)
+    getJob :: Int64 -> IO (Either StoreError (DeliveryJob 'CTGroup))
     getJob jobId =
       firstRow' toDeliveryJob (SEDeliveryJobNotFound jobId) $
         DB.query
@@ -316,23 +331,125 @@ getNextDeliveryJob db deliveryKey = do
           |]
           (Only jobId)
       where
-        toDeliveryJob :: MessageDeliveryJobRow -> Either StoreError MessageDeliveryJob
-        toDeliveryJob ((Only jobId') :. jobScopeRow :. (senderGMIdsText_, Binary body, cursorGMId_)) = do
+        toDeliveryJob :: MessageDeliveryJobRow -> Either StoreError (DeliveryJob 'CTGroup)
+        toDeliveryJob ((Only jobId') :. jobScopeRow :. (senderGMIdsText_, Binary body, cursorId_)) = do
           jobScope <- maybe (Left $ SEInvalidDeliveryJob jobId') Right $ toJobScope_ jobScopeRow
-          -- NULL or empty string means []; otherwise the value must parse
-          -- as a comma-separated decimal Int64 list. An unparseable
-          -- segment surfaces as job error rather than silent degradation.
-          senderGMIds <- case senderGMIdsText_ of
-            Nothing -> Right []
-            Just t -> maybe (Left $ SEInvalidDeliveryJob jobId') Right $ parseSenderGMIds t
-          Right $ MessageDeliveryJob {jobId = jobId', jobScope, senderGMIds, body, cursorGMId_}
-        parseSenderGMIds :: Text -> Maybe [GroupMemberId]
-        parseSenderGMIds t
-          | T.null t = Just []
-          | otherwise = traverse (readMaybe . T.unpack) (T.splitOn "," t)
-    markJobFailed :: Int64 -> IO ()
-    markJobFailed jobId =
-      DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)
+          senderGMIds <- parseIds jobId' senderGMIdsText_
+          Right DeliveryJob {jobId = jobId', cursorId_, jobWork = DJWGroup {jobScope, senderGMIds, body}}
+
+-- NULL or empty string means []; otherwise the value must parse as a
+-- comma-separated decimal Int64 list. An unparseable segment surfaces as
+-- job error rather than silent degradation.
+parseIds :: Int64 -> Maybe Text -> Either StoreError [Int64]
+parseIds jobId = \case
+  Nothing -> Right []
+  Just t
+    | T.null t -> Right []
+    | otherwise -> maybe (Left $ SEInvalidDeliveryJob jobId) Right $ traverse (readMaybe . T.unpack) (T.splitOn "," t)
+
+idsColumn :: [Int64] -> Maybe Text
+idsColumn ids
+  | null ids = Nothing
+  | otherwise = Just $ T.intercalate "," $ map (T.pack . show) ids
+
+markJobFailed :: DB.Connection -> Int64 -> IO ()
+markJobFailed db jobId =
+  DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)
+
+createFeedDeliveryJob :: DB.Connection -> FeedId -> ChatItemId -> FeedWorkerScope -> FeedJobAction -> IO ()
+createFeedDeliveryJob db feedId feedItemId scope action = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO delivery_jobs (
+        feed_id, chat_item_id, worker_scope, job_scope_spec_tag, message_ids,
+        job_status, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?)
+    |]
+    (feedId, feedItemId, scope, feedActionTag action, idsColumn (feedActionMsgIds action), DJSPending, currentTs, currentTs)
+
+createFeedJobs :: DB.Connection -> FeedId -> ChatItemId -> FeedJobAction -> IO ()
+createFeedJobs db feedId feedItemId action =
+  mapM_ (\scope -> createFeedDeliveryJob db feedId feedItemId scope action) feedWorkerScopes
+
+type FeedDeliveryJobRow = (Int64, ChatItemId, FeedJobActionTag, Maybe Text, Maybe Int64)
+
+getNextFeedDeliveryJob :: DB.Connection -> FeedId -> FeedWorkerScope -> IO (Either StoreError (Maybe (DeliveryJob 'CTFeed)))
+getNextFeedDeliveryJob db feedId scope = do
+  getWorkItem "feed delivery job" getJobId getJob (markJobFailed db)
+  where
+    getJobId :: IO (Maybe Int64)
+    getJobId =
+      maybeFirstRow fromOnly $
+        DB.query
+          db
+          [sql|
+            SELECT delivery_job_id
+            FROM delivery_jobs
+            WHERE feed_id = ? AND worker_scope = ?
+              AND failed = 0 AND job_status = ?
+            ORDER BY delivery_job_id ASC
+            LIMIT 1
+          |]
+          (feedId, scope, DJSPending)
+    getJob :: Int64 -> IO (Either StoreError (DeliveryJob 'CTFeed))
+    getJob jobId =
+      firstRow' toFeedDeliveryJob (SEDeliveryJobNotFound jobId) $
+        DB.query
+          db
+          [sql|
+            SELECT delivery_job_id, chat_item_id, job_scope_spec_tag, message_ids, feed_cursor_id
+            FROM delivery_jobs
+            WHERE delivery_job_id = ?
+          |]
+          (Only jobId)
+    toFeedDeliveryJob :: FeedDeliveryJobRow -> Either StoreError (DeliveryJob 'CTFeed)
+    toFeedDeliveryJob (jobId, feedItemId, actionTag, msgIdsText_, cursorId_) = do
+      msgIds <- parseIds jobId msgIdsText_
+      feedAction <- case (actionTag, msgIds) of
+        (FJATNew, [msgId]) -> Right $ FJANew msgId
+        (FJATFileDescr, msgId : msgIds') -> Right $ FJAFileDescr (msgId :| msgIds')
+        (FJATUpdate, [msgId]) -> Right $ FJAUpdate msgId
+        (FJATDeleteBroadcast, [msgId]) -> Right $ FJADeleteBroadcast msgId
+        (FJATDeleteInternal, []) -> Right FJADeleteInternal
+        (FJATDeleteMark, []) -> Right FJADeleteMark
+        _ -> Left $ SEInvalidDeliveryJob jobId
+      Right DeliveryJob {jobId, cursorId_, jobWork = DJWFeed {feedItemId, feedAction}}
+
+updateFeedDeliveryJobCursor :: DB.Connection -> Int64 -> Int64 -> IO ()
+updateFeedDeliveryJobCursor db jobId cursorId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE delivery_jobs SET feed_cursor_id = ?, updated_at = ? WHERE delivery_job_id = ?"
+    (cursorId, currentTs, jobId)
+
+-- completes the job and reports whether it was the last job of its feed event
+completeFeedJob :: DB.Connection -> Int64 -> ChatItemId -> FeedJobActionTag -> IO Bool
+completeFeedJob db jobId feedItemId actionTag = do
+  updateDeliveryJobStatus db jobId DJSComplete
+  pending <-
+    maybeFirstRow fromOnly $
+      DB.query
+        db
+        [sql|
+          SELECT COUNT(1)
+          FROM delivery_jobs
+          WHERE chat_item_id = ? AND job_scope_spec_tag = ? AND job_status = ? AND failed = 0
+        |]
+        (feedItemId, actionTag, DJSPending)
+  pure $ pending == Just (0 :: Int)
+
+-- the messages of a feed job action: one, or the parts of one file description
+getFeedJobMessages :: DB.Connection -> [MessageId] -> IO [SndMessage]
+getFeedJobMessages db = fmap catMaybes . mapM getMsg
+  where
+    getMsg msgId =
+      maybeFirstRow toSndMessage $
+        DB.query db "SELECT shared_msg_id, msg_body FROM messages WHERE message_id = ? AND shared_msg_id IS NOT NULL" (Only msgId)
+      where
+        toSndMessage (sharedMsgId, Binary msgBody) = SndMessage {msgId, sharedMsgId, msgBody, signedMsg_ = Nothing}
 
 updateDeliveryJobStatus :: DB.Connection -> Int64 -> DeliveryJobStatus -> IO ()
 updateDeliveryJobStatus db jobId status = updateDeliveryJobStatus_ db jobId status Nothing

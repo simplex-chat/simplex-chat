@@ -304,8 +304,7 @@ CREATE TABLE files(
   file_type TEXT NOT NULL DEFAULT 'normal',
   roster_transfer_id INTEGER,
   file_digest BLOB,
-  file_expires_at TEXT
-  ,
+  file_expires_at TEXT,
   feed_id INTEGER DEFAULT NULL REFERENCES feeds ON DELETE CASCADE
 ) STRICT;
 CREATE TABLE snd_files(
@@ -459,8 +458,7 @@ CREATE TABLE messages(
   forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   broker_ts TEXT,
   msg_chat_binding TEXT,
-  msg_signatures BLOB
-  ,
+  msg_signatures BLOB,
   feed_id INTEGER DEFAULT NULL REFERENCES feeds ON DELETE CASCADE
 ) STRICT;
 CREATE TABLE pending_group_messages(
@@ -526,8 +524,7 @@ CREATE TABLE chat_items(
   fwd_from_group_link BLOB,
   fwd_from_public_group_id BLOB,
   fwd_from_member_id BLOB,
-  fwd_from_shared_msg_id BLOB
-  ,
+  fwd_from_shared_msg_id BLOB,
   feed_id INTEGER DEFAULT NULL REFERENCES feeds ON DELETE CASCADE,
   feed_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL,
   item_feed INTEGER NOT NULL DEFAULT 0
@@ -808,14 +805,11 @@ CREATE TABLE delivery_jobs(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
   ,
-  sender_group_member_ids TEXT
-  ,
+  sender_group_member_ids TEXT,
   feed_id INTEGER REFERENCES feeds ON DELETE CASCADE,
   chat_item_id INTEGER REFERENCES chat_items ON DELETE CASCADE,
-  delete_mode TEXT,
   message_ids TEXT,
-  cursor_contact_id INTEGER,
-  cursor_group_id INTEGER
+  feed_cursor_id INTEGER
 ) STRICT;
 CREATE TABLE group_member_status_predicates(
   member_status TEXT NOT NULL PRIMARY KEY,
@@ -868,6 +862,15 @@ CREATE TABLE rcv_roster_transfers(
   roster_msg_signatures BLOB,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+) STRICT;
+CREATE TABLE feeds(
+  feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
+  chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
+  favorite INTEGER NOT NULL DEFAULT 0,
+  unread_chat INTEGER NOT NULL DEFAULT 0
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1403,6 +1406,35 @@ CREATE INDEX idx_files_roster_transfer_id ON files(roster_transfer_id);
 CREATE INDEX idx_chat_items_item_signed_by_group_member_id ON chat_items(
   item_signed_by_group_member_id
 );
+CREATE INDEX idx_feeds_user_id ON feeds(user_id);
+CREATE INDEX idx_chat_items_feed_id ON chat_items(feed_id);
+CREATE INDEX idx_chat_items_feeds_created_at ON chat_items(
+  user_id,
+  feed_id,
+  created_at
+);
+CREATE INDEX idx_chat_items_feed_item_contact ON chat_items(
+  feed_item_id,
+  contact_id
+);
+CREATE INDEX idx_chat_items_feed_item_group ON chat_items(
+  feed_item_id,
+  group_id
+);
+CREATE INDEX idx_messages_feed_id ON messages(feed_id);
+CREATE INDEX idx_files_feed_id ON files(feed_id);
+CREATE INDEX idx_contacts_user_id ON contacts(user_id);
+CREATE INDEX idx_groups_user_id_business_chat ON groups(
+  user_id,
+  business_chat
+);
+CREATE INDEX idx_delivery_jobs_feed_next ON delivery_jobs(
+  feed_id,
+  worker_scope,
+  failed,
+  job_status
+);
+CREATE INDEX idx_delivery_jobs_chat_item_id ON delivery_jobs(chat_item_id);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW
@@ -1435,41 +1467,3 @@ BEGIN
         )
     WHERE group_id = NEW.group_id;
 END;
-CREATE TABLE feeds(
-  feed_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
-  chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
-  favorite INTEGER NOT NULL DEFAULT 0,
-  unread_chat INTEGER NOT NULL DEFAULT 0
-) STRICT;
-CREATE INDEX idx_feeds_user_id ON feeds(user_id);
-CREATE INDEX idx_chat_items_feed_id ON chat_items(feed_id);
-CREATE INDEX idx_chat_items_feeds_created_at ON chat_items(
-  user_id,
-  feed_id,
-  created_at
-);
-CREATE INDEX idx_chat_items_feed_item_contact ON chat_items(
-  feed_item_id,
-  contact_id
-);
-CREATE INDEX idx_chat_items_feed_item_group ON chat_items(
-  feed_item_id,
-  group_id
-);
-CREATE INDEX idx_messages_feed_id ON messages(feed_id);
-CREATE INDEX idx_files_feed_id ON files(feed_id);
-CREATE INDEX idx_contacts_user_id ON contacts(user_id);
-CREATE INDEX idx_groups_user_id_business_chat ON groups(
-  user_id,
-  business_chat
-);
-CREATE INDEX idx_delivery_jobs_feed_next ON delivery_jobs(
-  feed_id,
-  worker_scope,
-  failed,
-  job_status
-);
-CREATE INDEX idx_delivery_jobs_chat_item_id ON delivery_jobs(chat_item_id);

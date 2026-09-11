@@ -318,28 +318,19 @@ getContactByConnReqHash db cxt user@User {userId} cReqHash1 cReqHash2 = do
     maybeFirstRow (toContact currentTs cxt user []) $
       DB.query
         db
-        [sql|
-          SELECT
-            -- Contact
-            ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
-            ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-            ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
-            cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
-            cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
-            -- Connection
-            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-            c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-            c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-          FROM contacts ct
-          JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-          JOIN connections c ON c.contact_id = ct.contact_id
-          LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
-          WHERE
-            ( (c.user_id = ? AND c.via_contact_uri_hash = ?) OR
-              (c.user_id = ? AND c.via_contact_uri_hash = ?)
-            ) AND ct.contact_status = ? AND ct.deleted = 0
-        |]
+        ( "SELECT "
+            <> contactQueryFields
+            <> [sql|
+                 FROM contacts ct
+                 JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+                 JOIN connections c ON c.contact_id = ct.contact_id
+                 LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
+                 WHERE
+                   ( (c.user_id = ? AND c.via_contact_uri_hash = ?) OR
+                     (c.user_id = ? AND c.via_contact_uri_hash = ?)
+                   ) AND ct.contact_status = ? AND ct.deleted = 0
+               |]
+        )
         (userId, cReqHash1, userId, cReqHash2, CSActive)
   mapM (addDirectChatTags db) ct
 
@@ -969,26 +960,7 @@ getContact_ db cxt user@User {userId} contactId deleted = do
   ExceptT . firstRow (toContact currentTs cxt user chatTags) (SEContactNotFound contactId) $
     DB.query
       db
-      [sql|
-        SELECT
-          -- Contact
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
-          ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-          ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
-          cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
-          cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
-          -- Connection
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-          c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-        FROM contacts ct
-        JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-        LEFT JOIN connections c ON c.contact_id = ct.contact_id
-        LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
-        WHERE ct.user_id = ? AND ct.contact_id = ?
-          AND ct.deleted = ?
-      |]
+      (contactQuery <> " WHERE ct.user_id = ? AND ct.contact_id = ? AND ct.deleted = ?")
       (userId, contactId, BI deleted)
 
 getUserByContactRequestId :: DB.Connection -> Int64 -> ExceptT StoreError IO User
@@ -1078,8 +1050,8 @@ updateConnectionStatus_ db connId connStatus = do
     else DB.execute db "UPDATE connections SET conn_status = ?, updated_at = ? WHERE connection_id = ?" (connStatus, currentTs, connId)
 
 updateContactSettings :: DB.Connection -> User -> Int64 -> ChatSettings -> IO ()
-updateContactSettings db User {userId} contactId ChatSettings {enableNtfs, sendRcpts, favorite} =
-  DB.execute db "UPDATE contacts SET enable_ntfs = ?, send_rcpts = ?, favorite = ? WHERE user_id = ? AND contact_id = ?" (enableNtfs, BI <$> sendRcpts, BI favorite, userId, contactId)
+updateContactSettings db User {userId} contactId ChatSettings {enableNtfs, sendRcpts, favorite, dropFeed} =
+  DB.execute db "UPDATE contacts SET enable_ntfs = ?, send_rcpts = ?, favorite = ?, drop_feed = ? WHERE user_id = ? AND contact_id = ?" (enableNtfs, BI <$> sendRcpts, BI favorite, BI (isTrue dropFeed), userId, contactId)
 
 setConnConnReqInv :: DB.Connection -> User -> Int64 -> ConnReqInvitation -> IO ()
 setConnConnReqInv db User {userId} connId connReq = do

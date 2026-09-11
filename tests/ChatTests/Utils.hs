@@ -29,6 +29,7 @@ import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct (getContact)
+import Simplex.Chat.Store.Feeds (createFeed)
 import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
@@ -679,6 +680,12 @@ createCCNoteFolder cc =
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
       runExceptT (createNoteFolder db user) >>= either (fail . show) pure
+
+createCCFeed :: TestCC -> IO ()
+createCCFeed cc =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (createFeed db user) >>= either (fail . show) pure
 
 getProfilePictureByName :: TestCC -> String -> IO (Maybe String)
 getProfilePictureByName cc displayName =

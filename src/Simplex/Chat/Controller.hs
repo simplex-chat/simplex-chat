@@ -393,7 +393,7 @@ data ChatCommand
   | APIUpdateChatTag ChatTagId ChatTagData
   | APIReorderChatTags (NonEmpty ChatTagId)
   | APICreateChatItems {noteFolderId :: NoteFolderId, composedMessages :: NonEmpty ComposedMessage}
-  | APISendFeedMessage {feedId :: FeedId, composedMessage :: ComposedMessage}
+  | APISendFeedMessage {feedId :: FeedId, feedMessage :: ComposedMessage}
   | APIReportMessage {groupId :: GroupId, chatItemId :: ChatItemId, reportReason :: ReportReason, reportText :: Text}
   | ReportMessage {groupName :: GroupName, contactName_ :: Maybe ContactName, reportReason :: ReportReason, reportedMessage :: Text}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, updatedMessage :: UpdatedMessage}
@@ -824,7 +824,6 @@ data ChatResponse
   | CRReactionMembers {user :: User, memberReactions :: [MemberReaction]}
   | CRChatItemsDeleted {user :: User, chatItemDeletions :: [ChatItemDeletion], byUser :: Bool, timed :: Bool}
   | CRGroupChatItemsDeleted {user :: User, groupInfo :: GroupInfo, chatItemIDs :: [ChatItemId], byUser :: Bool, member_ :: Maybe GroupMember}
-  | CRBroadcastSent {user :: User, msgContent :: MsgContent, successes :: Int, failures :: Int, timestamp :: UTCTime}
   | CRCmdOk {user_ :: Maybe User}
   | CRChatHelp {helpSection :: HelpSection}
   | CRWelcome {user :: User}

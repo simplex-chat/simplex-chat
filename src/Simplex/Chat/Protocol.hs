@@ -624,6 +624,11 @@ cmToQuotedMsg = \case
   ACME _ (XMsgNew MsgContainer {quote = Just quotedMsg}) -> Just quotedMsg
   _ -> Nothing
 
+cmFeed :: AChatMsgEvent -> Bool
+cmFeed = \case
+  ACME _ (XMsgNew MsgContainer {feed = Just True}) -> True
+  _ -> False
+
 data MsgContentTag
   = MCText_
   | MCLink_

@@ -1,5 +1,34 @@
 # Feed: a broadcast chat
 
+Status: the core is implemented and compiles; the schema tests pass and the
+schema dump is regenerated. Deviations from the sections below, made while
+implementing:
+
+- The bucket readers return `(Contact, ChatItemId)` and `(GroupInfo, ChatItemId)`
+  rather than whole instances: with no per-instance events the worker needs
+  the chat (for the connection, preferences and TTL) and the instance id
+  (to delete, mark or set status), and nothing else.
+- `getFeedInstanceContactIdsByRange` and its group counterpart return
+  `Map chatId ChatItemId`, so an instance created by an earlier run of the
+  same bucket is reused rather than skipped.
+- `createFeedInstanceItem` (`Store/Messages.hs`) is the instance writer, in
+  place of calling `createNewChatItem_` from the worker.
+- The feed item's own reactions come from `getFeedCIReactions` inside
+  `getFeedChatItem`, as the direct and group item getters do.
+- `CRBroadcastSent` and `viewSentBroadcast` are removed; the broadcast bot
+  matches `CRNewChatItems` and replies "Message is sent to the feed".
+- Tests create the feed with `createCCFeed` (as `createCCNoteFolder`), since
+  test users are created by `createUserRecordAt` directly.
+
+Written of the Tests section: `tests/ChatTests/Feed.hs` — a broadcast with
+`feedBucketSize = 1` to two contacts and two customer business groups, so
+each stream runs three buckets; it asserts the four recipients receive the
+message, the feed holds one item, and each recipient chat's last item is
+the instance. The three existing tests that used `/feed` are updated.
+
+Not written: the apps, the API docs, the Postgres migration, and the
+remaining tests of the Tests section.
+
 A feed is a per-user chat. Each item in it is a broadcast: one message sent to
 every contact and, for a business, to every customer group. Each recipient chat
 holds an instance of the broadcast as an ordinary sent item, marked as a feed
@@ -45,14 +74,15 @@ message id used here.
   deletion, reactions, forwarding, expiration, disappearing messages. A
   per-chat edit, or a per-chat deletion that keeps the row (a marked or a
   moderated item), detaches the instance: `chat_items.item_feed` changes
-  from 1 (linked) to 2 (detached). Feed edits and feed deletes are applied
-  to linked instances only; feed file descriptions are sent for every
+  from 1 (linked) to 2 (detached). A feed edit is applied to linked
+  instances only, so it does not overwrite the per-chat text; a feed
+  deletion is a retraction of the broadcast and is applied to every
+  instance, linked or detached; a feed file description is sent for every
   undeleted instance. The per-chat `XMsgUpdate` of an instance is sent with
   `feed = Just True`, so a recipient with `dropFeed` discards it. Bulk
   removals (`APIClearChat`, contact or group deletion, chat item expiration,
-  disappearing messages) remove instances; those recipients, and the
-  recipients of detached instances, are outside later feed edits and
-  deletes: the instances are the record of delivery.
+  disappearing messages) remove instances, and those recipients are outside
+  later feed edits and deletions: the instances are the record of delivery.
   `chat_items.feed_item_id` (`ON DELETE SET NULL`) links every instance,
   linked or detached, to the feed item and is the file join; after the feed
   item is removed a remaining instance shows no file.
@@ -92,18 +122,16 @@ message id used here.
 - Content: text, link, image, video, voice, file. One XFTP upload per
   broadcast; one recipient description for everyone. Mentions, live
   messages and the `ttl` parameter are rejected.
-- Quotes: a feed item may quote an earlier item of the same feed. The quote
-  is `QuotedMsg {msgRef = MsgRef {msgId = Just quotedSharedMsgId, sentAt = itemTs, sent = True, memberId = Nothing}, content}`,
-  identical for every recipient (the shared id is the same everywhere), so
-  the body stays one. Direct recipients resolve it by the shared id
-  (`getChatItemQuote_`, `Store/Messages.hs:676`); group recipients show the
-  quote without a link to the item (`memberId = Nothing`, :683 — the
-  behaviour of channel quotes sent as group, `Internal.hs:230`). The
-  sender's feed item has `CIQuote {chatDir = CIQFeedSnd, itemId = Just quotedFeedItemId}`;
-  every instance stores the quote columns and the existing `ri` joins
-  (:2713, :3132) link it to the instance of the quoted broadcast in that
-  chat. A quote of an item outside the feed is rejected with
-  `SEInvalidQuote`.
+- Quotes are rejected: `ChatTypeQuotable 'CTFeed` resolves to the existing
+  `TypeError` case, as for `CTLocal`. The wire format needs no change to
+  allow them later — the quote is part of the container.
+- An instance does not call `updateChatTsStats`: a broadcast keeps the chat
+  list order and does not clear `chat_deleted` (`Store/Messages.hs:414`),
+  and one `UPDATE contacts` per recipient is avoided. A chat's preview line
+  is its last item, so it shows the broadcast on the next read.
+- The job emits no per-instance events: instances are read when the chat is
+  opened. `CEvtNewChatItems`, `CEvtChatItemUpdated` and `CEvtChatItemsDeleted`
+  are emitted for the feed item only, with its status changes.
 - Every feed event (`FeedJobAction`: new, file description, update, delete
   for everyone, delete locally, mark deleted locally) is one job in each of
   the two feed streams; the last of the two to complete finalises the
@@ -169,13 +197,12 @@ returns `(Maybe ContactId, Maybe GroupId, Maybe FeedId)`.
   `jsonACIDirection` (:328).
 - `ChatDirection` (:391): `CDFeedSnd :: Feed -> ChatDirection 'CTFeed 'MDSnd`;
   `toCIDirection` (:400), `toChatInfo` (:410).
-- `ChatTypeQuotable 'CTFeed = ()` (:643); `CIQDirection` (:649):
-  `CIQFeedSnd :: CIQDirection 'CTFeed`; `jsonCIQDirection` (:659)
-  `CIQFeedSnd -> JCIFeedSnd`; `jsonACIQDirection` (:667)
-  `JCIFeedSnd -> Right $ ACIQDirection SCTFeed CIQFeedSnd`;
-  `quoteMsgDirection` (:677) `CIQFeedSnd -> MDSnd`. `createNewSndChatItem`'s
-  `quoteRow` (`Store/Messages.hs:557`) gains `CIQFeedSnd -> (Just True, Nothing)`.
-- `deletable'` (:542): the default branch applies to `SCTFeed`.
+- `ChatTypeQuotable 'CTFeed` resolves to the existing `TypeError` case
+  (:646); `jsonACIQDirection` (:667): `JCIFeedSnd -> Left "unquotable"`.
+- `deletable'` (:542): `SCTFeed` takes the `SCTLocal` branch
+  (`isNothing itemDeleted`), so a feed item stays deletable and editable
+  after a day; the 24-hour limit of a broadcast deletion is enforced by
+  `assertDeletable` (`Commands.hs:891`) for `CIDMBroadcast` only.
 - `CIDeleted` (:1282): `CIDeleting :: Maybe UTCTime -> CIDeleted 'CTFeed`;
   `JSONCIDeleted` (:1292): `JCIDDeleting {deletedTs}`; `jsonCIDeleted`,
   `jsonACIDeleted`, `itemDeletedTs` (:1299-1318). `deletable'` and
@@ -391,7 +418,8 @@ New module `Store/Feeds.hs`:
     + `contactQueryFrom` joins,
     `WHERE i.user_id = ? AND i.feed_item_id = ? AND i.contact_id > ? AND <spec> ORDER BY i.contact_id, c.connection_id LIMIT ?`
     (`idx_chat_items_feed_item_contact`); `<spec>` is `i.item_feed = 1` for
-    `FJAUpdate` and the deletions, `i.item_deleted = 0` for `FJAFileDescr`.
+    `FJAUpdate`, `i.item_feed > 0` for the deletions, `i.item_deleted = 0`
+    for `FJAFileDescr`.
   - `getFeedGroupInstancesByCursor db cxt user feedItemId spec cursor_ count :: IO [(GroupInfo, CChatItem 'CTGroup)]` —
     the `getGroupChatItem` SELECT (:3094-3139) composed with
     `groupInfoQueryFields`, `WHERE i.user_id = ? AND i.feed_item_id = ? AND i.group_id > ? AND <spec> ORDER BY i.group_id LIMIT ?`
@@ -446,7 +474,8 @@ New module `Store/Feeds.hs`:
   transaction per bucket: `updateFeedInstances` (`item_content`, `item_text`,
   `item_edited = 1`, `has_link`, `updated_at` for
   `user_id = ? AND feed_item_id = ? AND item_feed = 1 AND contact_id > ? AND contact_id <= ?`,
-  and the group range), `deleteFeedInstances` and `markFeedInstancesDeleted`
+  and the group range; the deletions use `item_feed > 0`),
+  `deleteFeedInstances` and `markFeedInstancesDeleted`
   by `executeMany` over the ids of each subset (the full-delete split is
   decided in Haskell from `mergedPreferences`), reaction deletion by
   `executeMany` over `(contact_id, shared_msg_id)`, instance statuses by
@@ -599,26 +628,17 @@ the `note_folders` shape (`Store/NoteFolders.hs:61`).
 
 `Commands.hs`, `APISendFeedMessage feedId cm`, under `withFeedLock "sendFeed" feedId`:
 
-1. `assertAllowedContent'`, `assertNoMentions`.
+1. `assertAllowedContent'`, `assertNoMentions`; `quotedItemId` must be absent.
 2. `feed <- getFeed`; `sharedMsgId <- getSharedMsgId` (:5030); `createdAt`.
-   Quote: for `quotedItemId`, `getFeedChatItem` must return an undeleted
-   `CIFeedSnd` item with `CISndMsgContent qmc` and `itemSharedMsgId = Just quotedSmId`
-   (otherwise `SEInvalidQuote`, as `quoteData`, `Internal.hs:227`);
-   `msgRef = MsgRef {msgId = Just quotedSmId, sentAt = itemTs, sent = True, memberId = Nothing}`,
-   `qmc' = quoteContent mc qmc file` (:367), the container is
-   `mcQuote QuotedMsg {msgRef, content = qmc'} mc` and the feed item's quote
-   `CIQuote {chatDir = CIQFeedSnd, itemId = Just quotedItemId, sharedMsgId = Just quotedSmId, sentAt = itemTs, content = qmc', formattedText}`;
-   `createNewChatItemNoMsg` gains the `Maybe (CIQuote c)` parameter for the
-   quote row, and the job passes the same row to every instance.
 3. File: `checkSndFile`; `xftpSndFileTransfer_ user file fileSize 1 (Just $ CGFeed feed)`
    (`Internal.hs:438`; `roundedFDCount 1` yields 4 descriptions, the first is
    used); `xftpSndFileTransfer` (:4911) adds `CGFeed _ -> pure ()` — no
    `snd_files` rows.
 4. Feed item: `updateChatTsStats db cxt user (CDFeedSnd feed) createdAt Nothing`;
-   `createNewChatItemNoMsg db user (CDFeedSnd feed) False (CISndMsgContent mc) (Just sharedMsgId) quotedItem hasLink Nothing createdAt createdAt`;
+   `createNewChatItemNoMsg db user (CDFeedSnd feed) False (CISndMsgContent mc) (Just sharedMsgId) hasLink Nothing createdAt createdAt`;
    `updateFileTransferChatItemId` for the file.
-5. Message: `createFeedSndMessages sharedMsgId (Identity (FeedId feedId, Nothing, XMsgNew container {file = fInv_, feed = Just True}))`
-   (`container` from step 2, `fInv_ :: Maybe FileInvitation` from step 3);
+5. Message: `createFeedSndMessages sharedMsgId (Identity (FeedId feedId, Nothing, XMsgNew (mcSimple mc) {file = fInv_, feed = Just True}))`
+   (`fInv_ :: Maybe FileInvitation` from step 3);
    `insertChatItemMessage_ db feedItemId msgId createdAt`
    (`Store/Messages.hs:669`, added to the module's export list).
 6. Jobs: `createFeedJobs db feedId feedItemId (FJANew msgId)` — one
@@ -686,8 +706,8 @@ delivery, and a crash between delivery and the cursor sends nothing twice.
 `FWSContacts` bucket, one range read: `FJANew` reads
 `getFeedContactsByCursor` and `getContactsTagsByRange`; the other actions
 read `getFeedContactInstancesByCursor` (contact and instance together,
-linked instances for `FJAUpdate` and the deletions, undeleted instances for
-`FJAFileDescr`) and the tags. Then, in memory:
+linked instances for `FJAUpdate`, linked and detached for the deletions,
+undeleted for `FJAFileDescr`) and the tags. Then, in memory:
 
 1. Eligible for `FJANew`: `directOrUsed`, not `contactConnIncognito`,
    `contactSendConn_` returns a connection. For the other actions every
@@ -697,10 +717,9 @@ linked instances for `FJAUpdate` and the deletions, undeleted instances for
    chat's own TTL, with nothing in the body.
 3. `FJANew`: instances first, one transaction: contacts in
    `getFeedInstanceContactIdsByRange` are skipped; for the rest
-   `updateChatTsStats` and `createNewChatItem_` with `CDDirectSnd ct`, no
-   message id, the shared id, `CISndMsgContent` from the container, the
-   feed item's quote row, `Just CIFLinked`, `Just feedItemId`, `timed_`; the
-   items are built with `mkChatItem_`.
+   `createNewChatItem_` with `CDDirectSnd ct`, no message id, the shared id,
+   `CISndMsgContent` from the container, `Just CIFLinked`, `Just feedItemId`,
+   `timed_`. `updateChatTsStats` is not called.
 4. Delivery: one `deliverMessagesB` over
    `(conn, MsgFlags {notification = hasNotification tag}, (vor, msgIds))`
    for the connections of the bucket outside `getDeliveredContactIdsByRange`;
@@ -708,23 +727,19 @@ linked instances for `FJAUpdate` and the deletions, undeleted instances for
    by `executeMany`); `createContactPQSndItem` for contacts whose
    `pqSndEnabled` changed, as `sendDirectContactMessages`
    (`Internal.hs:2170`).
-5. `FJAUpdate`: `updateFeedInstances` for the bucket range; the loaded
-   instances are updated in memory with `updatedChatItem`
-   (`Store/Messages.hs:2564`) and emitted as `CEvtChatItemUpdated`.
+5. `FJAUpdate`: `updateFeedInstances` for the bucket range.
    `FJADeleteBroadcast` delivers `XMsgDel`, then deletes the instances of
    contacts with `featureAllowed SCFFullDelete forUser ct` and marks the
    others (the rule of `APIDeleteChatItem`, `Commands.hs:857`);
-   `FJADeleteInternal` deletes; `FJADeleteMark` marks; marked items are
-   updated in memory as `markDirectChatItemDeleted` does (:2665); the
-   deletions are emitted as `CEvtChatItemsDeleted` with `byUser = True`.
-   `FJAFileDescr`: no instance change.
+   `FJADeleteInternal` deletes; `FJADeleteMark` marks. `FJAFileDescr`: no
+   instance change. The instances' files are not cancelled or deleted: the
+   file is the feed item's.
 6. Timed instances: `startProximateTimedItemThread`.
-7. `FJANew`: `CEvtNewChatItems user instances`.
-8. `updateFeedDeliveryJobCursor` with the last contact id read; after the
+7. `updateFeedDeliveryJobCursor` with the last contact id read; after the
    first bucket of `FJANew` the feed item status becomes
    `CISSndSent SSPPartial` (`updateFeedChatItemStatus`,
    `CEvtChatItemsStatusesUpdated`).
-9. Repeat while the bucket is full.
+8. Repeat while the bucket is full.
 
 `FWSGroups` bucket, two range reads: `FJANew` reads
 `getFeedCustomerGroupsByCursor`; the other actions read
@@ -738,10 +753,10 @@ bucket's request list holds the broadcast body (shared as above) per member
 connection to send to. One `deliverMessagesB` for the bucket;
 `createPendingGroupMessage` by `executeMany` for pending members (the
 message row is the feed's; `sendPendingGroupMessages`, `Internal.hs:2683`,
-delivers it on connection); `FJANew`: instances with `CDGroupSnd g Nothing`,
-`updateChatTsStats` and `timed_ = sndGroupCITimed False g Nothing`, then
-`createMemberSndStatuses` from the per-group results; instance changes as
-for contacts; cursor by group id. The job sends no profile update
+delivers it on connection); `FJANew`: instances with `CDGroupSnd g Nothing`
+and `timed_ = sndGroupCITimed False g Nothing` (no `updateChatTsStats`),
+then `createMemberSndStatuses` from the per-group results; instance changes
+as for contacts; cursor by group id. The job sends no profile update
 (`sendGroupProfileUpdate`, `Internal.hs:2496`): `redactedMemberProfile`
 (:1311) depends on each group's preferences and `presentUserBadge` (:2176)
 produces a proof per presentation, so one body cannot serve all groups; a
@@ -977,7 +992,9 @@ unchanged.
 
 1. `/feed` to three contacts and a customer group: instances in each chat
    and recipients' items with `itemFeed = Just CIFLinked`; the feed item
-   reaches `CISSndSent SSPComplete`.
+   reaches `CISSndSent SSPComplete`. The sender's console shows no per-chat
+   items while the jobs run: instances are read with `/tail @contact`, and
+   the chats keep their order and their `chat_ts`.
 2. Instance statuses after `SENT` and receipts.
 3. A contact with `dropFeed` set receives nothing; a later feed edit and
    delete are silent.
@@ -1015,8 +1032,10 @@ unchanged.
 16. Per-chat edit of one instance: the recipient receives the edit, the
     instance becomes `CIFDetached` with its own versions; a following feed
     edit updates the other instances and recipients, and this chat keeps the
-    per-chat text; a following feed delete keeps this instance and the
-    recipient's message. A per-chat broadcast delete of an instance in a
-    chat without full delete marks and detaches it; a recipient with
-    `dropFeed` set receives nothing from a per-chat edit of a dropped
-    message.
+    per-chat text; a following feed delete still removes this instance and
+    retracts the recipient's message. A per-chat broadcast delete of an
+    instance in a chat without full delete marks and detaches it; a
+    recipient with `dropFeed` set receives nothing from a per-chat edit of a
+    dropped message.
+17. A feed item older than a day is still editable and locally deletable; a
+    broadcast delete of it is rejected by `assertDeletable`.

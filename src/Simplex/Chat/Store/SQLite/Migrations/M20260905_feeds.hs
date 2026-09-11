@@ -79,12 +79,15 @@ DROP INDEX idx_contacts_user_id;
 ALTER TABLE groups DROP COLUMN drop_feed;
 ALTER TABLE contacts DROP COLUMN drop_feed;
 
+DELETE FROM files WHERE feed_id IS NOT NULL;
 DROP INDEX idx_files_feed_id;
 ALTER TABLE files DROP COLUMN feed_id;
 
+DELETE FROM messages WHERE feed_id IS NOT NULL;
 DROP INDEX idx_messages_feed_id;
 ALTER TABLE messages DROP COLUMN feed_id;
 
+DELETE FROM chat_items WHERE feed_id IS NOT NULL;
 DROP INDEX idx_chat_items_feed_item_group;
 DROP INDEX idx_chat_items_feed_item_contact;
 DROP INDEX idx_chat_items_feeds_created_at;

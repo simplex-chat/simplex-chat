@@ -492,17 +492,17 @@ type PreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Ma
 
 type GroupDirectInvitationRow = (Maybe ConnReqInvitation, Maybe GroupId, Maybe GroupMemberId, Maybe Int64, BoolInt)
 
-type ContactRow' = (ProfileId, ContactName, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe BoolInt, Maybe GroupMemberId, BoolInt) :. GroupDirectInvitationRow :. (Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64) :. BadgeRow :. ContactDomainRow
+type ContactRow' = (ProfileId, ContactName, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe BoolInt, Maybe GroupMemberId, BoolInt) :. GroupDirectInvitationRow :. (Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64) :. BadgeRow :. ContactDomainRow
 
 type ContactRow = Only ContactId :. ContactRow'
 
 type ContactDomainRow = (Maybe SimplexDomain, Maybe SimplexDomainProof, Maybe BoolInt)
 
 toContact :: UTCTime -> StoreCxt -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
-toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, rejectionSupported_, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow :. domainRow) :. connRow) =
+toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, BI dropFeed_, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, rejectionSupported_, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow :. domainRow) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, contactDomain = rowToContactDomain domainRow, contactDomainVerified = rowToDomainVerified domainRow, peerType, localBadge = rowToBadge now badgeRow, preferences, localAlias}
       activeConn = toMaybeConnection cxt connRow
-      chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
+      chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite, dropFeed = BoolDef dropFeed_}
       incognito = maybe False connIncognito activeConn
       mergedPreferences = contactUserPreferences user userPreferences preferences incognito
       preparedContact = toPreparedContact preparedContactRow
@@ -689,7 +689,7 @@ type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe Member
 
 type GroupKeysRow = (Maybe C.PrivateKeyEd25519, Maybe C.PublicKeyEd25519, Maybe C.PrivateKeyEd25519)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe VersionRoster, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact, Maybe BoolInt) :. GroupKeysRow :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe VersionRoster, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact, Maybe BoolInt) :. GroupKeysRow :. GroupMemberRow
 
 type PublicGroupAccessRow = (Maybe Text, Maybe SimplexDomain, Maybe BoolInt, Maybe BoolInt, Maybe SimplexDomainProof)
 
@@ -698,9 +698,9 @@ type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, Ver
 type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Preferences) :. BadgeRow :. ContactDomainRow
 
 toGroupInfo :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
-toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri, groupDomainVerified) :. groupKeysRow :. userMemberRow) =
+toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, BI dropFeed_, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri, groupDomainVerified) :. groupKeysRow :. userMemberRow) =
   let membership = (toGroupMember now userContactId userMemberRow) {memberChatVRange = vr cxt}
-      chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
+      chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite, dropFeed = BoolDef dropFeed_}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ (toPublicGroupAccess accessRow)
       groupKeys = toGroupKeys publicGroupId_ groupKeysRow
@@ -794,17 +794,44 @@ toBusinessChatInfo :: Maybe SimplexDomainClaim -> BusinessChatInfoRow -> Maybe B
 toBusinessChatInfo businessDomain (Just chatType, Just businessId, Just customerId) = Just BusinessChatInfo {chatType, businessId, customerId, businessDomain}
 toBusinessChatInfo _ _ = Nothing
 
+contactQuery :: Query
+contactQuery = "SELECT " <> contactQueryFields <> " " <> contactQueryFrom
+
+contactQueryFields :: Query
+contactQueryFields =
+  [sql|
+      -- Contact
+      ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
+      cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
+      ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
+      ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+      cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
+      cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
+      -- Connection
+      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+      c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+  |]
+
+contactQueryFrom :: Query
+contactQueryFrom =
+  [sql|
+    FROM contacts ct
+    JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+    LEFT JOIN connections c ON c.contact_id = ct.contact_id
+    LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
+  |]
+
 groupInfoQuery :: Query
-groupInfoQuery = groupInfoQueryFields <> " " <> groupInfoQueryFrom
+groupInfoQuery = "SELECT " <> groupInfoQueryFields <> " " <> groupInfoQueryFrom
 
 groupInfoQueryFields :: Query
 groupInfoQueryFields =
   [sql|
-    SELECT
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
       gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-      g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
+      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,

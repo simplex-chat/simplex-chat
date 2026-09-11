@@ -33,6 +33,7 @@ module Simplex.Chat.Store.Profiles
     getUserByContactId,
     getUserByGroupId,
     getUserByNoteFolderId,
+    getUserByFeedId,
     getUserByFileId,
     getUserFileInfo,
     deleteUserRecord,
@@ -271,6 +272,12 @@ getUserByNoteFolderId db contactId = do
   now <- liftIO getCurrentTime
   ExceptT . firstRow (toUser now) (SEUserNotFoundByContactId contactId) $
     DB.query db (userQuery <> " JOIN note_folders nf ON nf.user_id = u.user_id WHERE nf.note_folder_id = ?") (Only contactId)
+
+getUserByFeedId :: DB.Connection -> FeedId -> ExceptT StoreError IO User
+getUserByFeedId db feedId = do
+  now <- liftIO getCurrentTime
+  ExceptT . firstRow (toUser now) (SEFeedNotFound feedId) $
+    DB.query db (userQuery <> " JOIN feeds f ON f.user_id = u.user_id WHERE f.feed_id = ?") (Only feedId)
 
 getUserByFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO User
 getUserByFileId db fileId = do

@@ -63,6 +63,7 @@ testBroadcastMessages ps = do
   botLink <-
     withNewTestChat ps botDbPrefix broadcastBotProfile $ \bc_bot ->
       withNewTestChat ps "alice" aliceProfile $ \alice -> do
+        createCCFeed bc_bot
         connectUsers bc_bot alice
         bc_bot ##> "/ad"
         getContactLink bc_bot True
@@ -79,11 +80,14 @@ testBroadcastMessages ps = do
           bob <## "I broadcast messages to all connected users from @alice."
           cath `connectVia` botLink
           alice #> "@broadcast_bot hello all!"
-          alice <# "broadcast_bot> hello all!" -- we broadcast to the sender too, /feed is used by bot
+          -- the bot replies as soon as the feed item is created; the broadcast is delivered by feed jobs
+          alice
+            <### [ WithTime "broadcast_bot> > hello all!",
+                   ConsoleString "      Message is being delivered to all contacts",
+                   WithTime "broadcast_bot> hello all!" -- we broadcast to the sender too, /feed is used by bot
+                 ]
           bob <# "broadcast_bot> hello all!"
           cath <# "broadcast_bot> hello all!"
-          alice <# "broadcast_bot> > hello all!"
-          alice <## "      Forwarded to 3 contact(s), 0 errors"
   where
     cc `connectVia` botLink = do
       cc ##> ("/c " <> botLink)
