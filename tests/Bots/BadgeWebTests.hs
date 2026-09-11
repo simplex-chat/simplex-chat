@@ -154,6 +154,8 @@ badgeWebTests = do
     it "fills the shell's publishable key from the ini at boot" testShellCarriesPublishableKey
     it "caches by where the file is, not by how the request spelled it" testCachingFollowsTheResolvedPath
     it "serves the built web app, exactly as it is shipped" testServesBuiltWebApp
+    it "serves no static routes when serve_webapp is off, and still answers the API" testServeWebappOff
+    it "exports the injected webapp to a folder for a proxy to serve" testExportWebapp
     it "refuses every traversal spelling, by canonicalisation" testTraversalRefused
     it "answers the read fields, with cryptoCurrency lowercase" testInvoiceView
     it "names the confirmations settlement needs, from the speed policy" testViewNamesTheConfirmationsSettlementNeeds
@@ -727,13 +729,43 @@ prepareStaticDir root = do
 testServiceConfig :: FilePath -> Bool -> ServiceConfig
 testServiceConfig staticDir trustForwarded =
   ServiceConfig
-    { listener = ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = staticDir, lTrustForwardedFor = trustForwarded},
+    { listener = ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = staticDir, lServeWebapp = True, lWebappExportDir = Nothing, lTrustForwardedFor = trustForwarded},
       btcpay = Nothing,
       stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
       issuer = Nothing,
       devChatRedeem = False
     }
+
+testServeWebappOff :: IO ()
+testServeWebappOff =
+  withServiceStore $ \st -> do
+    createDirectoryIfMissing True "tests/tmp"
+    withTempDirectory "tests/tmp" "badge-static" $ \root -> do
+      staticDir <- prepareStaticDir root
+      let base = testServiceConfig staticDir False
+          cfg = base {listener = (listener base) {lServeWebapp = False}}
+      withListener [] True holdMicros st cfg $ \_env client -> do
+        (statusOf <$> webGet client "/") >>= (`shouldBe` 404)
+        (statusOf <$> webGet client "/sw.js") >>= (`shouldBe` 404)
+        (statusOf <$> webGet client ("/assets/" <> buildHash <> "/main.js")) >>= (`shouldBe` 404)
+        -- the API is unaffected: an empty create is a 400, never a 404 or a 405
+        created <- webRequest client "POST" "/api/invoice" []
+        statusOf created `shouldSatisfy` (\s -> s /= 404 && s /= 405)
+
+testExportWebapp :: IO ()
+testExportWebapp = do
+  createDirectoryIfMissing True "tests/tmp"
+  withTempDirectory "tests/tmp" "badge-export" $ \root -> do
+    staticDir <- prepareStaticDir root
+    let outDir = root </> "out"
+        lc = ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = staticDir, lServeWebapp = False, lWebappExportDir = Just outDir, lTrustForwardedFor = False}
+        stripeCfg = Just StripeConfig {sSecretKey = "rk_test_x", sPublishableKey = "pk_test_injected", sWebhookSecret = "whsec_x", sReceiptEmail = "card@example.test", sSessionMinutes = 60, sHost = "https://api.stripe.com"}
+    exportWebapp lc stripeCfg
+    idx <- LB.readFile (outDir </> "index.html")
+    LB.toStrict idx `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
+    LB.readFile (outDir </> "sw.js") >>= (`shouldBe` workerJs)
+    LB.readFile (outDir </> "assets" </> buildHash </> "main.js") >>= (`shouldBe` assetJs)
 
 type WebClient = (Manager, String)
 

@@ -7,6 +7,7 @@ module BadgeService.Web.Server
   ( WebEnv (..),
     Limit (..),
     newWebEnv,
+    exportWebapp,
     takeToken,
     maxBuckets,
     maxWebhookBytes,
@@ -27,7 +28,7 @@ import BadgeService.Waiters (Seen, Waiters, awaitStatus, publish)
 import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Logger.Simple (logError, logInfo, logWarn)
-import Control.Monad (when)
+import Control.Monad (forM_, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
@@ -58,7 +59,7 @@ import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..)
 import Simplex.Messaging.Agent.Store.Common (DBStore)
 import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
-import System.Directory (canonicalizePath, doesFileExist)
+import System.Directory (canonicalizePath, copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist, listDirectory, removePathForcibly)
 import System.FilePath (pathSeparator, takeExtension, (</>))
 import Text.Read (readMaybe)
 
@@ -283,11 +284,12 @@ webhookResponse st = responseLBS st [(hCacheControl, "no-store")] ""
 
 webApp :: WebEnv -> Application
 webApp env req respond = case pathInfo req of
-  [] -> only "GET" $ case weShell env of
+  -- With serve_webapp off the static guards fail and these paths fall through to notFound.
+  [] | serving -> only "GET" $ case weShell env of
     Just shell -> respond (responseLBS status200 shellHeaders shell)
     Nothing -> serveStatic env ["index.html"] respond
-  "assets" : rest -> only "GET" $ serveStatic env ("assets" : rest) respond
-  ["sw.js"] -> only "GET" $ serveStatic env ["sw.js"] respond
+  "assets" : rest | serving -> only "GET" $ serveStatic env ("assets" : rest) respond
+  ["sw.js"] | serving -> only "GET" $ serveStatic env ["sw.js"] respond
   ["api", "invoice"] -> only "POST" $ limited env createLimit req respond $ createInvoiceHandler env req respond
   ["api", "invoice", iid] -> only "GET" $ limited env readLimit req respond $ readInvoiceHandler env (InvoiceId iid) req respond
   ["api", "invoice", iid, "cancel"] -> only "POST" $ limited env createLimit req respond $ cancelInvoiceHandler env (InvoiceId iid) respond
@@ -298,6 +300,7 @@ webApp env req respond = case pathInfo req of
   ["webhooks", "stripe"] -> only "POST" $ webhookHandler env PPStripe "POST /webhooks/stripe" req respond
   _ -> respond notFound
   where
+    serving = lServeWebapp (listenerConfig env)
     only method action
       | requestMethod req == method = action
       | otherwise = respond (methodNotAllowed method)
@@ -345,6 +348,34 @@ prepareShell ListenerConfig {lStaticDir} (Just StripeConfig {sPublishableKey}) =
               logWarn ("the shell in " <> T.pack lStaticDir <> " is not valid UTF-8, serving the pristine one: " <> tshow e)
               pure Nothing
             Right html -> pure (Just (LB.fromStrict (encodeUtf8 (injectPublishableKey sPublishableKey html))))
+
+-- | Copy @static_dir@ to @webapp_export_dir@ with the publishable key injected into index.html, for
+-- a reverse proxy to serve. A no-op when no export dir is set.
+exportWebapp :: ListenerConfig -> Maybe StripeConfig -> IO ()
+exportWebapp lc@ListenerConfig {lStaticDir, lWebappExportDir} stripeCfg =
+  forM_ lWebappExportDir $ \out -> do
+    -- emptied first so a redeploy with new asset hashes leaves none of the old build behind
+    emptyDir out
+    copyTree lStaticDir out
+    -- Nothing when no key is set: the copied pristine index.html stands
+    prepareShell lc stripeCfg >>= mapM_ (LB.writeFile (out </> "index.html"))
+    logInfo ("badge service: exported the webapp to " <> T.pack out)
+
+-- | Contents only: the directory itself may be a bind or volume mount point that cannot be removed.
+emptyDir :: FilePath -> IO ()
+emptyDir dir = do
+  createDirectoryIfMissing True dir
+  entries <- listDirectory dir
+  forM_ entries (removePathForcibly . (dir </>))
+
+copyTree :: FilePath -> FilePath -> IO ()
+copyTree src dst = do
+  isDir <- doesDirectoryExist src
+  if isDir
+    then do
+      createDirectoryIfMissing True dst
+      listDirectory src >>= mapM_ (\e -> copyTree (src </> e) (dst </> e))
+    else copyFile src dst
 
 -- | A shell whose meta is not the exact placeholder is left untouched; the served-shell test guards it.
 injectPublishableKey :: Text -> Text -> Text

@@ -30,7 +30,7 @@ import BadgeService.Store
 import BadgeService.Store.Invoices (seedCatalog, truncateToSecond)
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
 import BadgeService.Waiters (Waiters, newWaiters)
-import BadgeService.Web.Server (newWebEnv, runWebListener)
+import BadgeService.Web.Server (exportWebapp, newWebEnv, runWebListener)
 import Control.Applicative (optional)
 import Control.Concurrent.STM
 import Control.Logger.Simple
@@ -169,6 +169,7 @@ badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
       let providers = btc <> str
       hints <- newReadHints
       webEnv <- newWebEnv chatStore sc ws hints providers
+      exportWebapp (listener sc) (stripe sc)
       pollerEnv <- newPollerEnv chatStore ws hints providers (poll sc)
       pure [runWebListener webEnv, runPoller pollerEnv]
 

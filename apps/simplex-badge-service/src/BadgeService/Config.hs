@@ -39,6 +39,8 @@ data ListenerConfig = ListenerConfig
   { lHost :: Text,
     lPort :: Int,
     lStaticDir :: FilePath,
+    lServeWebapp :: Bool,
+    lWebappExportDir :: Maybe FilePath,
     lTrustForwardedFor :: Bool
   }
   deriving (Eq, Show)
@@ -175,7 +177,7 @@ trailingNoise = skipSpace *> skipMany (comment *> skipSpace)
 -- `key_<n>` and it does its own, stricter check.
 knownSettings :: [(Text, [Text])]
 knownSettings =
-  [ ("listener", ["host", "port", "static_dir", "trust_forwarded_for"]),
+  [ ("listener", ["host", "port", "static_dir", "serve_webapp", "webapp_export_dir", "trust_forwarded_for"]),
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "receipt_email", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
@@ -204,6 +206,10 @@ parseConfig ini = do
   lStaticDir <- T.unpack <$> required "listener" "static_dir"
   lHost <- optional "listener" "host" "127.0.0.1"
   lPort <- num "listener" "port" 8080
+  lServeWebapp <- bool "listener" "serve_webapp" True
+  let lWebappExportDir = case fmap T.strip (look "listener" "webapp_export_dir") of
+        Just v | not (T.null v) -> Just (T.unpack v)
+        _ -> Nothing
   lTrustForwardedFor <- bool "listener" "trust_forwarded_for" False
   btc <- btcpaySection
   str <- stripeSection
@@ -213,7 +219,7 @@ parseConfig ini = do
   devRedeem <- bool "dev" "chat_redeem" False
   pure
     ServiceConfig
-      { listener = ListenerConfig {lHost, lPort, lStaticDir, lTrustForwardedFor},
+      { listener = ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor},
         btcpay = btc,
         stripe = str,
         poll = PollConfig {pWaitingSeconds, pIdleSeconds},

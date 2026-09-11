@@ -21,6 +21,7 @@ badgeConfigTests = describe "badge service config" $ do
   it "disables a provider whose section is absent" testAbsentSection
   it "refuses an incomplete provider section, naming the key" testIncompleteSection
   it "refuses a missing static_dir" testAbsentStaticDir
+  it "reads serve_webapp off and a webapp_export_dir" testWebappSplitDeployment
   it "applies every documented stripe default" testStripeDefaults
   it "disables stripe when the section is absent" testStripeAbsent
   it "refuses an incomplete stripe section, naming the key" testStripeIncomplete
@@ -73,10 +74,12 @@ withIni t f = do
 testDefaults :: IO ()
 testDefaults = withIni fullIni $ \p -> do
   Right cfg <- readServiceConfig p
-  let ListenerConfig {lHost, lPort, lStaticDir, lTrustForwardedFor} = listener cfg
+  let ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor} = listener cfg
   lHost `shouldBe` "127.0.0.1"
   lPort `shouldBe` 8080
   lStaticDir `shouldBe` "/srv/badges"
+  lServeWebapp `shouldBe` True
+  lWebappExportDir `shouldBe` Nothing
   lTrustForwardedFor `shouldBe` False
   let PollConfig {pWaitingSeconds, pIdleSeconds} = poll cfg
   pWaitingSeconds `shouldBe` 3
@@ -111,6 +114,14 @@ testAbsentStaticDir :: IO ()
 testAbsentStaticDir =
   withIni (T.replace "static_dir = /srv/badges\n" "" fullIni) $ \p ->
     readServiceConfig p >>= (`shouldSatisfy` isLeft)
+
+testWebappSplitDeployment :: IO ()
+testWebappSplitDeployment =
+  withIni (T.replace "static_dir = /srv/badges\n" "static_dir = /srv/badges\nserve_webapp = off\nwebapp_export_dir = /srv/web\n" fullIni) $ \p -> do
+    Right cfg <- readServiceConfig p
+    let ListenerConfig {lServeWebapp, lWebappExportDir} = listener cfg
+    lServeWebapp `shouldBe` False
+    lWebappExportDir `shouldBe` Just "/srv/web"
 
 fullStripeIni :: T.Text
 fullStripeIni =
