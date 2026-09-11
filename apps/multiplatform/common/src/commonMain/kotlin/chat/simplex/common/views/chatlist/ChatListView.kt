@@ -1476,7 +1476,7 @@ private fun filtered(chat: Chat, activeFilter: ActiveFilter?): Boolean =
   when (activeFilter) {
     is ActiveFilter.PresetTag -> presetTagMatchesChat(activeFilter.tag, chat.chatInfo, chat.chatStats)
     is ActiveFilter.UserTag -> chat.chatInfo.chatTags?.contains(activeFilter.tag.chatTagId) ?: false
-    is ActiveFilter.Unread -> chat.unreadTag
+    is ActiveFilter.Unread -> chat.hasUnread
     else -> true
   }
 

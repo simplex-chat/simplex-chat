@@ -69,8 +69,8 @@ struct LocalAuthView: View {
                 ItemsModel.shared.chatState.clear()
                 ChatModel.shared.secondaryIM?.reversedChatItems = []
                 ChatModel.shared.secondaryIM?.chatState.clear()
-                m.updateChats([])
                 m.users = []
+                m.updateChats([])
                 _ = kcAppPassword.set(password)
                 _ = kcSelfDestructPassword.remove()
                 await NtfManager.shared.removeAllNotifications()

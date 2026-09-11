@@ -41,7 +41,7 @@ Managed by `ChatTagsModel` and `TagListView`:
 | Filter | PresetTag | Description |
 |---|---|---|
 | All | (none) | No filter, shows all chats |
-| Unread | `.unread` | Chats with unread messages |
+| Unread | `.unread` | Chats with unread messages, or unread support chats unless muted to "mute all" |
 | Favorites | `.favorites` | User-favorited chats |
 | Groups | `.groups` | Group conversations only |
 | Contacts | `.contacts` | Direct contacts only |

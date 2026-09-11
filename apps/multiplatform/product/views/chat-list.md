@@ -65,7 +65,7 @@ Managed by `chatModel.userTags`, `chatModel.presetTags`, and `chatModel.activeCh
 | Business | `BUSINESS` | Work | Business chat conversations |
 | Notes | `NOTES` | Folder | Notes to self |
 | Custom tags | `UserTag(ChatTag)` | Label/emoji | User-created tags with custom emoji and name |
-| Unread | `ActiveFilter.Unread` | Filter list icon | Chats with unread messages (toggle via filter button) |
+| Unread | `ActiveFilter.Unread` | Filter list icon | Chats with unread messages, or unread support chats unless muted to "mute all" (toggle via filter button) |
 
 Display logic:
 - When collapsible preset tags exceed 3 total (with user tags), they collapse into a `CollapsedTagsFilterView` dropdown menu

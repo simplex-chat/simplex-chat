@@ -552,7 +552,7 @@ struct ChatListView: View {
             switch chatTagsModel.activeFilter {
             case let .presetTag(tag): presetTagMatchesChat(tag, chat.chatInfo, chat.chatStats)
             case let .userTag(tag): chat.chatInfo.chatTags?.contains(tag.chatTagId) == true
-            case .unread: chat.unreadTag
+            case .unread: chat.hasUnread
             case .none: true
             }
         }

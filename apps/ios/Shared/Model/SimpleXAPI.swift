@@ -1303,10 +1303,13 @@ func deleteContactChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(noti
                 ChatModel.shared.removeChat(cInfo.id)
             case .entity:
                 ChatModel.shared.removeChat(cInfo.id)
-                ChatModel.shared.addChat(Chat(
+                let keptChat = Chat(
                     chatInfo: .direct(contact: ct),
-                    chatItems: chat.chatItems
-                ))
+                    chatItems: chat.chatItems,
+                    chatStats: chat.chatStats
+                )
+                ChatModel.shared.addChat(keptChat)
+                ChatModel.shared.changeUserUnreadCounter(before: 0, after: keptChat.userUnreadCount)
             case .messages:
                 ChatModel.shared.removeChat(cInfo.id)
                 ChatModel.shared.addChat(Chat(
