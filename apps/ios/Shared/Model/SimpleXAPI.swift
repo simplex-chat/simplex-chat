@@ -2270,10 +2270,29 @@ func apiGetBadgeState(_ userId: Int64) async throws -> BadgeState? {
     throw r.unexpected
 }
 
+func apiGetBadgeStateSync(_ userId: Int64) throws -> BadgeState? {
+    let r: ChatResponse2 = try chatSendCmdSync(.apiGetBadgeState(userId: userId))
+    if case let .badgeState(_, badgeState) = r { return badgeState }
+    throw r.unexpected
+}
+
 func apiAckBadgeAlert(_ userId: Int64, _ badgePurchaseId: Int64, _ alertKind: BadgeAlertKind, snooze: Bool, episode: String) async throws -> BadgeState? {
     let r: ChatResponse2 = try await chatSendCmd(.apiAckBadgeAlert(userId: userId, badgePurchaseId: badgePurchaseId, alertKind: alertKind, snooze: snooze, episode: episode))
     if case let .badgeState(_, badgeState) = r { return badgeState }
     throw r.unexpected
+}
+
+// An API call and not a stored flag: the ack is kept on the purchase in core, which then stops
+// raising this occurrence on every pass and across restarts.
+func ackBadgeAlert() async {
+    let badgeModel = BadgeModel.shared
+    guard let userId = badgeModel.userId, let purchaseId = badgeModel.badgeState?.badgePurchaseId, let alert = badgeModel.alert else { return }
+    do {
+        let badgeState = try await apiAckBadgeAlert(userId, purchaseId, alert.kind, snooze: false, episode: alert.episode)
+        await MainActor.run { badgeModel.set(userId: userId, badgeState: badgeState) }
+    } catch let error {
+        logger.error("ackBadgeAlert: \(responseError(error))")
+    }
 }
 
 private func currentUserId(_ funcName: String) throws -> Int64 {
@@ -2446,12 +2465,33 @@ func getUserChatData() throws {
     tm.activeFilter = nil
     tm.userTags = tags
     tm.updateChatTags(m.chats)
+    loadBadgeState()
+}
+
+// Not thrown: a failed badge read must not stop the app starting, and the model is left alone
+// rather than set to nil, which would read as "no badge".
+private func loadBadgeState() {
+    do {
+        let userId = try currentUserId("loadBadgeState")
+        BadgeModel.shared.set(userId: userId, badgeState: try apiGetBadgeStateSync(userId))
+    } catch let error {
+        logger.error("loadBadgeState: \(responseError(error))")
+    }
+}
+
+private func loadBadgeStateAsync(_ userId: Int64) async {
+    do {
+        let badgeState = try await apiGetBadgeState(userId)
+        await MainActor.run { BadgeModel.shared.set(userId: userId, badgeState: badgeState) }
+    } catch let error {
+        logger.error("loadBadgeState: \(responseError(error))")
+    }
 }
 
 private func getUserChatDataAsync(keepingChatId: String?) async throws {
     let m = ChatModel.shared
     let tm = ChatTagsModel.shared
-    if m.currentUser != nil {
+    if let userId = m.currentUser?.userId {
         let userAddress = try await apiGetUserAddressAsync()
         let chatItemTTL = try await getChatItemTTLAsync()
         let chats = try await apiGetChatsAsync()
@@ -2464,6 +2504,7 @@ private func getUserChatDataAsync(keepingChatId: String?) async throws {
             tm.userTags = tags
             tm.updateChatTags(m.chats)
         }
+        await loadBadgeStateAsync(userId)
     } else {
         await MainActor.run {
             m.userAddress = nil
@@ -3048,12 +3089,10 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
             }
         }
-    // support ending raises only this: the worker reports a badge change when it retires or issues a
-    // credential, and a credential outlives the months it was bought with
     case let .badgeAlert(user, badgeAlert):
         if active(user) {
             await MainActor.run {
-                BadgeModel.shared.recomputeForAlert(userId: user.userId, alert: badgeAlert)
+                BadgeModel.shared.setAlert(userId: user.userId, alert: badgeAlert)
             }
         }
     default:

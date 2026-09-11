@@ -154,6 +154,7 @@ struct UserPickerSheetView: View {
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @StateObject private var connectProgressManager = ConnectProgressManager.shared
+    @ObservedObject private var badgeModel = BadgeModel.shared
     @EnvironmentObject var theme: AppTheme
     @Binding var activeUserPickerSheet: UserPickerSheet?
     @State private var showNewChatSheet = false
@@ -426,7 +427,21 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    if !supporterBannerShown && chatModel.chats.count > 3 {
+                    // one slot: a badge the user paid for ending outranks the pitch to get one
+                    if let alert = badgeModel.alert, alert.kind == .supportEnded, badgeModel.userId == chatModel.currentUser?.userId {
+                        SupportSimpleXBanner(
+                            title: "Support ended",
+                            subtitle: "Your support ended on \(alert.dateText).",
+                            confirmsDismiss: false,
+                            onTap: { showBadgesSheet = true },
+                            onDismiss: { Task { await ackBadgeAlert() } }
+                        )
+                            .padding(.vertical, 3)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .zIndex(1)
+                    } else if !supporterBannerShown && chatModel.chats.count > 3 {
                         SupportSimpleXBanner(
                             onTap: { showBadgesSheet = true },
                             onDismiss: { withAnimation { supporterBannerShown = true } }
@@ -537,7 +552,7 @@ struct ChatListView: View {
         VoiceItemState.smallView.values.forEach { $0.audioPlayer?.stop() }
         VoiceItemState.smallView = [:]
     }
-    
+
     // Spec: spec/client/chat-list.md#filteredChats
     private func filteredChats() -> [Chat] {
         if !searchChatFilteredBySimplexLink.isEmpty {

@@ -336,6 +336,8 @@ public struct BadgeState: Codable, Hashable {
     // the same condition core derives BASupportEnded from, and not the alert itself, which stops
     // being raised once it is acked while support stays ended
     public var ended: Bool { monthsLeft == 0 && paidThrough <= Date.now }
+
+    public var paidThroughText: String { badgeDateText(paidThrough) }
 }
 
 public struct BadgeAlert: Codable, Hashable {
@@ -343,6 +345,12 @@ public struct BadgeAlert: Codable, Hashable {
     public var episode: String
     public var date: Date
     public var price: BadgeAlertPrice?
+
+    public var dateText: String { badgeDateText(date) }
+}
+
+private func badgeDateText(_ date: Date) -> String {
+    DateFormatter.localizedString(from: date, dateStyle: .long, timeStyle: .none)
 }
 
 public struct BadgeAlertPrice: Hashable {

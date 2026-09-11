@@ -203,7 +203,7 @@ struct BadgesYourBadgeView: View {
                     BadgeSummary(badgeState: badgeState)
                 }
                 Section {
-                    Text(DateFormatter.localizedString(from: badgeState.paidThrough, dateStyle: .long, timeStyle: .none))
+                    Text(badgeState.paidThroughText)
                 } header: {
                     Text("Ends")
                         .foregroundColor(theme.colors.secondary)

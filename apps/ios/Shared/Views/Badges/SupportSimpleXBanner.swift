@@ -13,6 +13,10 @@ struct SupportSimpleXBanner: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     @State private var showDismissAlert = false
+    var title: LocalizedStringKey = "Support SimpleX"
+    var subtitle: LocalizedStringKey = "Get badge + files up to 5GB"
+    // the confirm's "later in Settings" is wrong for a lapsed badge, whose way back is Redeem
+    var confirmsDismiss = true
     let onTap: () -> Void
     let onDismiss: () -> Void
 
@@ -38,11 +42,11 @@ struct SupportSimpleXBanner: View {
             Button(action: onTap) {
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Support SimpleX")
+                        Text(title)
                             .font(.headline)
                             .foregroundColor(theme.colors.primary)
                             .lineLimit(2)
-                        Text("Get badge + files up to 5GB")
+                        Text(subtitle)
                             .font(.subheadline)
                             .foregroundColor(theme.colors.onBackground)
                             .lineLimit(2)
@@ -71,7 +75,7 @@ struct SupportSimpleXBanner: View {
                 .padding(.trailing, 16)
                 .padding(.leading, 4)
                 .contentShape(Rectangle())
-                .onTapGesture { showDismissAlert = true }
+                .onTapGesture { if confirmsDismiss { showDismissAlert = true } else { onDismiss() } }
         }
         .alert(isPresented: $showDismissAlert) {
             Alert(

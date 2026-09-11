@@ -365,17 +365,19 @@ class BadgeModel: ObservableObject {
     static let shared = BadgeModel()
     @Published private(set) var userId: Int64?
     @Published private(set) var badgeState: BadgeState?
+    @Published private(set) var alert: BadgeAlert?
 
+    // alert follows the state: getUserBadgeState derives it on every read, so a badgeChanged is
+    // never staler than the alert it carries - the invariant a new alert kind must keep
     func set(userId: Int64, badgeState: BadgeState?) {
         self.userId = userId
         self.badgeState = badgeState
+        alert = badgeState?.alert
     }
 
-    // Nothing reads BadgeState.alert yet; publishing it is the point. `ended` is derived from
-    // paidThrough against the clock, so when support lapses no value changes and only this write
-    // makes an open screen re-evaluate. Dropping it, or guarding on a change, breaks that silently.
-    func recomputeForAlert(userId: Int64, alert: BadgeAlert) {
+    func setAlert(userId: Int64, alert: BadgeAlert) {
         if self.userId == userId {
+            self.alert = alert
             badgeState?.alert = alert
         }
     }
