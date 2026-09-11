@@ -2473,7 +2473,8 @@ func getUserChatData() throws {
 private func loadBadgeState() {
     do {
         let userId = try currentUserId("loadBadgeState")
-        BadgeModel.shared.set(userId: userId, badgeState: try apiGetBadgeStateSync(userId))
+        let badgeState = try apiGetBadgeStateSync(userId)
+        BadgeModel.shared.set(userId: userId, badgeState: badgeState)
     } catch let error {
         logger.error("loadBadgeState: \(responseError(error))")
     }

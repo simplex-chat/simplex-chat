@@ -3547,7 +3547,7 @@ processChatCommand cxt nm = \case
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
   AddBadge cred -> withUser $ \user -> addUserBadge user cred >> ok user
   APIRedeemBadgeCode userId codeText -> withUserId userId $ \user -> redeemBadgeCode nm user codeText
-  APIGetBadgeState userId -> withUserId userId $ \user -> do
+  APIGetBadgeState userId -> withUserId' userId $ \user -> do
     -- the read also signals the worker, whose results follow as CEvtBadgeChanged
     lift $ startBadgeWork user
     CRBadgeState user <$> getUserBadgeState user

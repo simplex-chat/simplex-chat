@@ -372,8 +372,14 @@ struct ChatListView: View {
         }
     }
     
+    // the onboarding cards replace the whole chat list, and the support-ended banner lives in the
+    // list - a lapsed supporter is not a newcomer, and must be told even with no conversations yet
     private var shouldShowOnboarding: Bool {
-        !addressCreationCardShown && !chatModel.chats.isEmpty && !hasConversations
+        !addressCreationCardShown && !chatModel.chats.isEmpty && !hasConversations && !supportEnded
+    }
+
+    private var supportEnded: Bool {
+        badgeModel.alert?.kind == .supportEnded && badgeModel.userId == chatModel.currentUser?.userId
     }
 
     private var hasConversations: Bool {
@@ -428,7 +434,7 @@ struct ChatListView: View {
                             .listRowBackground(Color.clear)
                     }
                     // one slot: a badge the user paid for ending outranks the pitch to get one
-                    if let alert = badgeModel.alert, alert.kind == .supportEnded, badgeModel.userId == chatModel.currentUser?.userId {
+                    if supportEnded, let alert = badgeModel.alert {
                         SupportSimpleXBanner(
                             title: "Support ended",
                             subtitle: "Your support ended on \(alert.dateText).",

@@ -36,25 +36,17 @@ struct BadgesRedeemCodeView: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
     @AppStorage(DEFAULT_SUPPORTER_BANNER_SHOWN) private var supporterBannerShown = false
+    @Environment(\.dismiss) var dismiss: DismissAction
     @State private var code = ""
     @State private var canonicalCode: String? = nil
     @State private var submitting = false
     @State private var failure: BadgeRedeemError? = nil
-    @State private var redeemed: RedeemedBadge? = nil
-
-    private struct RedeemedBadge {
-        var badgeState: BadgeState?
-    }
 
     var body: some View {
         GeometryReader { g in
             ScrollView {
                 VStack(alignment: .center, spacing: 16) {
-                    if let redeemed {
-                        redeemedContent(redeemed)
-                    } else {
-                        entryContent(g)
-                    }
+                    entryContent(g)
                 }
                 .padding(.horizontal, 25)
                 .padding(.top, 8)
@@ -64,22 +56,6 @@ struct BadgesRedeemCodeView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    @ViewBuilder
-    private func redeemedContent(_ redeemed: RedeemedBadge) -> some View {
-        Text("Badge added")
-            .font(.largeTitle)
-            .bold()
-            .foregroundColor(theme.colors.primary)
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
-
-        if let badgeState = redeemed.badgeState {
-            BadgeSummary(badgeState: badgeState)
-        }
-
-        Spacer(minLength: 0)
     }
 
     @ViewBuilder
@@ -175,18 +151,22 @@ struct BadgesRedeemCodeView: View {
                     // the response is the only carrier: redeeming raises no event that refreshes the
                     // profile, so without this the badge beside the name is the one from before
                     chatModel.updateUser(redeemedUser)
-                    if let badgeState {
-                        BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
-                    }
                     // a redemption that leaves no badge shown added nothing: core accepts a code
                     // already redeemed against this profile and answers with the badge it bought
                     if let badgeState, !badgeState.shown {
+                        BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
                         failure = .codeUsed
                     } else {
-                        redeemed = RedeemedBadge(badgeState: badgeState)
                         supporterBannerShown = true
-                        code = ""
-                        canonicalCode = nil
+                        dismiss()
+                        // the model is written once the pop has animated: writing it first re-routes the
+                        // parent gate to the badge screen while this view is still pushed from the support
+                        // screen, which tears this view down instead of popping it
+                        if let badgeState {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
+                            }
+                        }
                     }
                 }
             } catch let error {
