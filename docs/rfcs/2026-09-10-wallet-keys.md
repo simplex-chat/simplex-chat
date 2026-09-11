@@ -66,12 +66,12 @@ at the profile level, while what a profile buys sits at the address level.
 Internal API. The names commands will call these; users will not.
 
 ```
-/_wallet                       the next name addresses
-/_wallet create new            generate the seed
-/_wallet create seed=<phrase>  take the seed from a phrase
-/_wallet export                the seed mnemonic
-/_wallet export <name>         one derived secret, as 0x and 64 hex digits
-/_wallet delete                delete the seed
+/_wallet                           the next name addresses
+/_wallet create new                generate the seed
+/_wallet create mnemonic=<phrase>  take the seed from a mnemonic
+/_wallet export                    the seed mnemonic
+/_wallet export <name>             one derived secret, as 0x and 64 hex digits
+/_wallet delete                    delete the seed
 ```
 
 Creating and importing are one command, because they differ only in where the

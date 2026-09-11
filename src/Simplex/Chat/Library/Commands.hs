@@ -5584,7 +5584,7 @@ chatCommandP =
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/_wallet create new" $> APIWalletCreate Nothing,
-      "/_wallet create seed=" *> (APIWalletCreate . Just <$> textP),
+      "/_wallet create mnemonic=" *> (APIWalletCreate . Just <$> textP),
       "/_wallet export " *> (APIWalletExportDerivedSecret <$> keyIndexP),
       "/_wallet export" $> APIWalletExportSeedMnemonic,
       "/_wallet delete" $> APIWalletDelete,
