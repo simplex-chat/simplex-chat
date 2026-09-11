@@ -103,6 +103,7 @@ class GroupDeletedUser(TypedDict):
     user: "T.User"
     groupInfo: "T.GroupInfo"
     msgSigned: bool
+    localDeletion: bool
 
 class GroupLink(TypedDict):
     type: Literal["groupLink"]

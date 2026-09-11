@@ -344,6 +344,7 @@ chatTypesDocsData =
     (sti @ProxyError, STUnion, "", [], "", ""),
     (sti @PublicGroupAccess, STRecord, "", [], "", ""),
     (sti @PublicGroupData, STRecord, "", [], "", ""),
+    (sti @PublicGroupKeys, STRecord, "", [], "", ""),
     (sti @PublicGroupProfile, STRecord, "", [], "", ""),
     (sti @RatchetSyncState, STEnum, "RS", [], "", ""),
     (sti @RCErrorType, STUnion, "RCE", [], "", ""),
@@ -580,6 +581,7 @@ deriving instance Generic ProxyClientError
 deriving instance Generic ProxyError
 deriving instance Generic PublicGroupAccess
 deriving instance Generic PublicGroupData
+deriving instance Generic PublicGroupKeys
 deriving instance Generic PublicGroupProfile
 deriving instance Generic RatchetSyncState
 deriving instance Generic RCErrorType

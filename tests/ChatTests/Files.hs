@@ -1037,11 +1037,11 @@ testProhibitFiles =
     alice <## "Files and media: off"
     concurrentlyN_
       [ do
-          bob <## "alice updated group #team:"
+          bob <## "alice updated group #team: (signed)"
           bob <## "updated group preferences:"
           bob <## "Files and media: off",
         do
-          cath <## "alice updated group #team:"
+          cath <## "alice updated group #team: (signed)"
           cath <## "updated group preferences:"
           cath <## "Files and media: off"
       ]
