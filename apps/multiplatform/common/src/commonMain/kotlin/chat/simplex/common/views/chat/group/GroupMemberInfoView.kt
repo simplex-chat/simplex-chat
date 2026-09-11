@@ -42,13 +42,11 @@ import kotlinx.datetime.Clock
 import kotlinx.coroutines.*
 
 @Composable
-fun GroupMemberInfoView(
+fun ModalData.GroupMemberInfoView(
   rhId: Long?,
   groupInfo: GroupInfo,
-  member: GroupMember,
+  groupMember: GroupMember,
   scrollToItemId: MutableState<Long?>,
-  connectionStats: ConnectionStats?,
-  connectionCode: String?,
   chatModel: ChatModel,
   openedFromSupportChat: Boolean,
   groupRelay: GroupRelay? = null,
@@ -60,10 +58,31 @@ fun GroupMemberInfoView(
   }
   BackHandler(onBack = close)
   val chat = chatModel.chats.value.firstOrNull { ch -> ch.id == chatModel.chatId.value && ch.remoteHostId == rhId }
-  val connStats = remember { mutableStateOf(connectionStats) }
+  // the passed member is shown until the loaded one is added to the model, so that the profile opens without waiting for the core
+  val member = remember(groupMember.groupMemberId) {
+    derivedStateOf { chatModel.getGroupMember(groupMember.groupMemberId) ?: groupMember }
+  }.value
+  val connStats = remember { stateGetOrPutNullable("memberConnectionStats") { null as ConnectionStats? } }
+  val connectionCode = remember { stateGetOrPutNullable("memberConnectionCode") { null as String? } }
+  val connectionLoaded = remember { stateGetOrPut("memberConnectionLoaded") { false } }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   var progressIndicator by remember { mutableStateOf(false) }
   val scope = rememberCoroutineScope()
+
+  // the view is disposed while a sub-screen is open, so the loaded state is kept in ModalData and loaded once per opened profile
+  LaunchedEffect(groupMember.groupMemberId) {
+    if (connectionLoaded.value) return@LaunchedEffect
+    val r = chatModel.controller.apiGroupMemberInfo(rhId, groupInfo.groupId, member.groupMemberId) ?: return@LaunchedEffect
+    val getCode = (member.memberActive || (groupInfo.useRelays && member.memberCurrent)) && member.memberRole != GroupMemberRole.Relay
+    val memCode = if (getCode) chatModel.controller.apiGetGroupMemberCode(rhId, groupInfo.apiId, member.groupMemberId) else null
+    // members are not loaded in large groups, so only the opened member is added to the model
+    withContext(Dispatchers.Main) {
+      chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, memCode?.first ?: r.first)
+    }
+    connStats.value = r.second
+    connectionCode.value = memCode?.second
+    connectionLoaded.value = true
+  }
 
   fun syncMemberConnection() {
     withBGApi {
@@ -91,7 +110,7 @@ fun GroupMemberInfoView(
       connStats,
       newRole,
       developerTools,
-      connectionCode,
+      connectionCode.value,
       groupRelay = groupRelay,
       getContactChat = { chatModel.getContactChat(it) },
       openDirectChat = { contactId ->
@@ -101,6 +120,7 @@ fun GroupMemberInfoView(
         }
       },
       createMemberContact = {
+        val connectionStats = connStats.value
         if (member.sendMsgEnabled) {
           withBGApi {
             progressIndicator = true
@@ -209,7 +229,7 @@ fun GroupMemberInfoView(
           remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
             VerifyCodeView(
               mem.displayName,
-              connectionCode,
+              connectionCode.value,
               mem.verified,
               verify = { code ->
                 chatModel.controller.apiVerifyGroupMember(rhId, mem.groupId, mem.groupMemberId, code)?.let { r ->
