@@ -110,9 +110,13 @@ struct BadgesRedeemCodeView: View {
 
         Spacer(minLength: 0)
 
-        submitButton()
-            .padding(.vertical, 10)
-            .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
+        VStack(spacing: 10) {
+            submitButton()
+                .padding(.vertical, 10)
+            Color.clear
+                .frame(height: 22)
+        }
+        .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
     }
 
     private func codeField() -> some View {
