@@ -1042,6 +1042,8 @@ testPresentationCatchesUp ps =
         length expiries `shouldBe` 2
         let firstMonth = head expiries
             latestMonth = last expiries
+        -- without this bob can receive the presentation after the updates below and never lose it
+        waitPeerBadgeExpiry (chatController bob) latestMonth
         -- the renewal's rows are kept; only its presentation is undone, on both sides
         setBadgeExpiry (chatController alice) "badge_signature" firstMonth
         setBadgeExpiry (chatController bob) "badge_proof" firstMonth
