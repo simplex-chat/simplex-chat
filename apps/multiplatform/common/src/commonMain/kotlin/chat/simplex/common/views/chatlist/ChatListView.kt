@@ -709,6 +709,7 @@ private fun BoxScope.unreadBadge(text: String? = "") {
 @Composable
 private fun ToggleFilterEnabledButton() {
   val showUnread = remember { chatModel.activeChatTagFilter }.value == ActiveFilter.Unread
+  val currentUserUnread = chatModel.users.any { it.user.activeUser && it.unreadCount > 0 }
 
   IconButton(onClick = {
     if (showUnread) {
@@ -718,14 +719,30 @@ private fun ToggleFilterEnabledButton() {
     }
   }) {
     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
+    val primary = MaterialTheme.colors.primary
+    val tint = when {
+      showUnread -> MaterialTheme.colors.background
+      currentUserUnread -> primary
+      else -> MaterialTheme.colors.secondary
+    }
+    val fill = when {
+      showUnread -> primary
+      currentUserUnread -> primary.copy(alpha = 0.12f)
+      else -> Color.Unspecified
+    }
+    val stroke = when {
+      showUnread -> primary
+      currentUserUnread -> primary.copy(alpha = 0.4f)
+      else -> Color.Unspecified
+    }
     Icon(
       painterResource(MR.images.ic_filter_list),
       null,
-      tint = if (showUnread) MaterialTheme.colors.background else MaterialTheme.colors.secondary,
+      tint = tint,
       modifier = Modifier
         .padding(3.dp)
-        .background(color = if (showUnread) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
-        .border(width = 1.dp, color = if (showUnread) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
+        .background(color = fill, shape = RoundedCornerShape(50))
+        .border(width = 1.dp, color = stroke, shape = RoundedCornerShape(50))
         .padding(3.dp)
         .size(sp16)
     )
