@@ -830,7 +830,7 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
 
 -- | What the registry says about a name, for someone deciding whether to register it.
 nameStatus :: SimplexDomain -> SimplexNameAvailability -> B.ByteString
-nameStatus SimplexDomain {subDomain} = \case
+nameStatus d@SimplexDomain {subDomain} = \case
   SNARegistered {expires, graceUntil, reserved} ->
     "registered"
       <> maybe "" ((", expires " <>) . day) expires
@@ -838,9 +838,13 @@ nameStatus SimplexDomain {subDomain} = \case
         -- a reserved name never frees up, so it is given no date
         Just r -> ", and reserved" <> reservedReason r
         Nothing -> maybe "" (\t -> ", free to register from " <> day t <> " unless renewed by owner") graceUntil
+  -- reservedNames is keyed on the 2LD, so a reserved subname means its 2LD is
+  SNAReserved r | not (null subDomain) ->
+    "not registered; " <> twoLD <> " is reserved" <> reservedReason r
   SNAReserved r -> "reserved" <> reservedReason r
-  -- only a second-level name is registrable
-  SNAAvailable {} | not (null subDomain) -> "not registered, and not registrable on its own"
+  -- only a second-level name is registrable, so name who can create this one
+  SNAAvailable {} | not (null subDomain) ->
+    "not registered; subnames are created by the owner of " <> twoLD
   SNAAvailable {yearPriceUSD = Nothing, minLabelLength} ->
     "too short: names need at least " <> B.pack (show minLabelLength) <> " characters"
   -- .testing charges nothing, so a zero price is an answer, not a missing one
@@ -848,6 +852,7 @@ nameStatus SimplexDomain {subDomain} = \case
   SNAAvailable {yearPriceUSD = Just cents} -> "available, " <> usd cents <> " a year"
   where
     day = B.pack . formatTime defaultTimeLocale "%Y-%m-%d"
+    twoLD = encodeUtf8 $ fullDomainName d {subDomain = []}
 
 -- | The registry prices in US cents; dollars and cents is what a person reads.
 usd :: Int64 -> B.ByteString
