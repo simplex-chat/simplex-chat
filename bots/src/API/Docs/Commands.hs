@@ -455,7 +455,6 @@ undocumentedCommands =
     "APIWalletDelete",
     "APIWalletExportDerivedSecret",
     "APIWalletExportSeedMnemonic",
-    "APIWalletImport",
     "CheckChatRunning",
     "ConfirmRemoteCtrl",
     "ConnectRemoteCtrl",

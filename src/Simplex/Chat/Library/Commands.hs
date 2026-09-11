@@ -1498,14 +1498,10 @@ processChatCommand cxt nm = \case
       Just seed -> do
         next <- withFastStore' $ \db -> getNextNameIndex db (wsId seed)
         CRWallet user True <$> nameKeyRows seed next
-  APIWalletCreate -> withUser $ \_ -> do
-    g <- asks random
-    entropy <- atomically $ newSeed MS256 g
-    created <- withFastStore' $ \db -> createSeed db entropy
-    unless created $ throwCmdError "this device already has a wallet key"
-    processChatCommand cxt nm APIWallet
-  APIWalletImport phrase -> withUser $ \_ -> do
-    entropy <- either (const $ throwCmdError "bad recovery phrase") pure $ importRecoveryKey (encodeUtf8 phrase)
+  APIWalletCreate phrase_ -> withUser $ \_ -> do
+    entropy <- case phrase_ of
+      Nothing -> asks random >>= atomically . newSeed MS256
+      Just phrase -> either (const $ throwCmdError "bad recovery phrase") pure $ importRecoveryKey (encodeUtf8 phrase)
     created <- withFastStore' $ \db -> createSeed db entropy
     unless created $ throwCmdError "this device already has a wallet key"
     processChatCommand cxt nm APIWallet
@@ -5587,8 +5583,8 @@ chatCommandP =
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
-      "/_wallet create" $> APIWalletCreate,
-      "/_wallet import " *> (APIWalletImport <$> textP),
+      "/_wallet create new" $> APIWalletCreate Nothing,
+      "/_wallet create seed=" *> (APIWalletCreate . Just <$> textP),
       "/_wallet export " *> (APIWalletExportDerivedSecret <$> keyIndexP),
       "/_wallet export" $> APIWalletExportSeedMnemonic,
       "/_wallet delete" $> APIWalletDelete,

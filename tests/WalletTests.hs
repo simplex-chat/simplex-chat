@@ -75,18 +75,18 @@ testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice <## "no wallet key"
   alice ##> "/_wallet export"
   alice <## "bad chat command: no wallet key on this device"
-  alice ##> "/_wallet create"
+  alice ##> "/_wallet create new"
   rows <- nameRows alice
   map fst rows `shouldBe` ["m/44'/60'/0'/0/1", "m/44'/60'/0'/0/2"]
   length (nub $ map snd rows) `shouldBe` 2
   -- create is for the seed, and this device has one
-  alice ##> "/_wallet create"
+  alice ##> "/_wallet create new"
   alice <## "bad chat command: this device already has a wallet key"
 
 testWalletPersists :: HasCallStack => TestParams -> IO ()
 testWalletPersists ps = do
   rows <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
-    alice ##> "/_wallet create"
+    alice ##> "/_wallet create new"
     nameRows alice
   -- same database, new session: a name bought at that address must stay reachable
   withTestChat ps "alice" $ \alice -> do
@@ -96,7 +96,7 @@ testWalletPersists ps = do
 
 testWalletSharedByProfiles :: HasCallStack => TestParams -> IO ()
 testWalletSharedByProfiles ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
-  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice ##> ("/_wallet create seed=" <> B.unpack testPhrase)
   rows <- nameRows alice
   alice ##> "/create user alisa"
   showActiveUser alice "alisa"
@@ -109,20 +109,20 @@ testWalletSharedByProfiles ps = withNewTestChat ps "alice" aliceProfile $ \alice
 
 testWalletImport :: HasCallStack => TestParams -> IO ()
 testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
-  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice ##> ("/_wallet create seed=" <> B.unpack testPhrase)
   alice <## "m/44'/60'/0'/0/1  0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0"
   alice <## "m/44'/60'/0'/0/2  0xb6716976A3ebe8D39aCEB04372f22Ff8e6802D7A"
   alice ##> "/_wallet export"
   alice <## B.unpack testPhrase
-  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice ##> ("/_wallet create seed=" <> B.unpack testPhrase)
   alice <## "bad chat command: this device already has a wallet key"
   -- a mistyped phrase says nothing about which word was wrong
-  alice ##> ("/_wallet import " <> B.unpack (B.unwords $ replicate 12 "abandon"))
+  alice ##> ("/_wallet create seed=" <> B.unpack (B.unwords $ replicate 12 "abandon"))
   alice <## "bad chat command: bad recovery phrase"
 
 testWalletExportDerivedSecret :: HasCallStack => TestParams -> IO ()
 testWalletExportDerivedSecret ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
-  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice ##> ("/_wallet create seed=" <> B.unpack testPhrase)
   _ <- nameRows alice
   alice ##> "/_wallet export 1"
   alice <## "m/44'/60'/0'/0/1  0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0  0x9a983cb3d832fbde5ab49d692b7a8bf5b5d232479c99333d0fc8e1d21f1b55b6"
@@ -135,22 +135,22 @@ testWalletExportDerivedSecret ps = withNewTestChat ps "alice" aliceProfile $ \al
 
 testWalletDelete :: HasCallStack => TestParams -> IO ()
 testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
-  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice ##> ("/_wallet create seed=" <> B.unpack testPhrase)
   _ <- nameRows alice
   alice ##> "/_wallet delete"
   alice <## "no wallet key"
-  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice ##> ("/_wallet create seed=" <> B.unpack testPhrase)
   _ <- nameRows alice
   pure ()
 
 testWalletImportThenRestore :: HasCallStack => TestParams -> IO ()
 testWalletImportThenRestore ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
-  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice ##> ("/_wallet create seed=" <> B.unpack testPhrase)
   _ <- nameRows alice
   -- restoring the database replaces the seed with what the backup held, which is nothing
   forgetSeed alice
   alice ##> "/_wallet"
   alice <## "no wallet key"
-  alice ##> ("/_wallet import " <> B.unpack testPhrase)
+  alice ##> ("/_wallet create seed=" <> B.unpack testPhrase)
   rows <- nameRows alice
   map fst rows `shouldBe` ["m/44'/60'/0'/0/1", "m/44'/60'/0'/0/2"]

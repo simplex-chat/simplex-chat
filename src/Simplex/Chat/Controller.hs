@@ -418,8 +418,7 @@ data ChatCommand
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
   | APIWallet
-  | APIWalletCreate
-  | APIWalletImport {recoveryPhrase :: Text}
+  | APIWalletCreate {recoveryPhrase :: Maybe Text}
   | APIWalletExportSeedMnemonic
   | APIWalletExportDerivedSecret {nameIndex :: NameIndex}
   | APIWalletDelete
@@ -749,8 +748,7 @@ allowRemoteCommand = \case
   ExecChatStoreSQL _ -> False
   ExecAgentStoreSQL _ -> False
   APIWallet -> False
-  APIWalletCreate -> False
-  APIWalletImport _ -> False
+  APIWalletCreate {} -> False
   APIWalletExportSeedMnemonic -> False
   APIWalletExportDerivedSecret {} -> False
   APIWalletDelete -> False
