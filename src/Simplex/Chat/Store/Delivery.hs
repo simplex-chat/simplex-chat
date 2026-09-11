@@ -39,7 +39,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.Maybe (catMaybes, isNothing, mapMaybe)
+import Data.Maybe (catMaybes, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -53,7 +53,6 @@ import Simplex.Messaging.Agent.Store.AgentStore (getWorkItem, getWorkItems, mayb
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding (smpDecode)
-import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Util (eitherToMaybe, firstRow')
 import Text.Read (readMaybe)
 #if defined(dbPostgres)
@@ -278,22 +277,26 @@ createMsgDeliveryJob db gInfo jobScope senderGMIds body = do
       | otherwise = Just $ T.intercalate "," $ map (T.pack . show) senderGMIds
 
 getPendingDeliveryJobScopes :: DB.Connection -> IO [DeliveryJobKey]
-getPendingDeliveryJobScopes db =
-  mapMaybe toJobKey
-    <$> DB.query
+getPendingDeliveryJobScopes db = do
+  groupScopes <-
+    DB.query
       db
       [sql|
-        SELECT DISTINCT group_id, feed_id, worker_scope
+        SELECT DISTINCT group_id, worker_scope
         FROM delivery_jobs
-        WHERE failed = 0 AND job_status = ?
+        WHERE failed = 0 AND job_status = ? AND group_id IS NOT NULL
       |]
       (Only DJSPending)
-  where
-    toJobKey :: (Maybe GroupId, Maybe FeedId, Text) -> Maybe DeliveryJobKey
-    toJobKey = \case
-      (Just groupId, Nothing, scope) -> DJKGroup groupId <$> (textDecode scope :: Maybe DeliveryWorkerScope)
-      (Nothing, Just feedId, scope) -> DJKFeed feedId <$> (textDecode scope :: Maybe FeedWorkerScope)
-      _ -> Nothing
+  feedScopes <-
+    DB.query
+      db
+      [sql|
+        SELECT DISTINCT feed_id, worker_scope
+        FROM delivery_jobs
+        WHERE failed = 0 AND job_status = ? AND feed_id IS NOT NULL
+      |]
+      (Only DJSPending)
+  pure $ map (uncurry DJKGroup) groupScopes <> map (uncurry DJKFeed) feedScopes
 
 type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe Text, Binary ByteString, Maybe GroupMemberId)
 
@@ -337,9 +340,6 @@ getNextDeliveryJob db deliveryKey = do
           senderGMIds <- parseIds jobId' senderGMIdsText_
           Right DeliveryJob {jobId = jobId', cursorId_, jobWork = DJWGroup {jobScope, senderGMIds, body}}
 
--- NULL or empty string means []; otherwise the value must parse as a
--- comma-separated decimal Int64 list. An unparseable segment surfaces as
--- job error rather than silent degradation.
 parseIds :: Int64 -> Maybe Text -> Either StoreError [Int64]
 parseIds jobId = \case
   Nothing -> Right []
@@ -356,10 +356,14 @@ markJobFailed :: DB.Connection -> Int64 -> IO ()
 markJobFailed db jobId =
   DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)
 
-createFeedDeliveryJob :: DB.Connection -> FeedId -> ChatItemId -> FeedWorkerScope -> FeedJobAction -> IO ()
-createFeedDeliveryJob db feedId feedItemId scope action = do
+createFeedJobs :: DB.Connection -> FeedId -> ChatItemId -> FeedJobAction -> IO ()
+createFeedJobs db feedId feedItemId action = do
   currentTs <- getCurrentTime
   DB.execute
+    db
+    "DELETE FROM delivery_jobs WHERE chat_item_id = ? AND job_scope_spec_tag = ? AND (job_status = ? OR failed = 1)"
+    (feedItemId, tag, DJSError)
+  DB.executeMany
     db
     [sql|
       INSERT INTO delivery_jobs (
@@ -367,11 +371,10 @@ createFeedDeliveryJob db feedId feedItemId scope action = do
         job_status, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?)
     |]
-    (feedId, feedItemId, scope, feedActionTag action, idsColumn (feedActionMsgIds action), DJSPending, currentTs, currentTs)
-
-createFeedJobs :: DB.Connection -> FeedId -> ChatItemId -> FeedJobAction -> IO ()
-createFeedJobs db feedId feedItemId action =
-  mapM_ (\scope -> createFeedDeliveryJob db feedId feedItemId scope action) feedWorkerScopes
+    [(feedId, feedItemId, scope, tag, msgIds, DJSPending, currentTs, currentTs) | scope <- feedWorkerScopes]
+  where
+    tag = feedActionTag action
+    msgIds = idsColumn $ feedActionMsgIds action
 
 type FeedDeliveryJobRow = (Int64, ChatItemId, FeedJobActionTag, Maybe Text, Maybe Int64)
 
@@ -425,23 +428,21 @@ updateFeedDeliveryJobCursor db jobId cursorId = do
     "UPDATE delivery_jobs SET feed_cursor_id = ?, updated_at = ? WHERE delivery_job_id = ?"
     (cursorId, currentTs, jobId)
 
--- completes the job and reports whether it was the last job of its feed event
 completeFeedJob :: DB.Connection -> Int64 -> ChatItemId -> FeedJobActionTag -> IO Bool
 completeFeedJob db jobId feedItemId actionTag = do
   updateDeliveryJobStatus db jobId DJSComplete
-  pending <-
+  unfinished <-
     maybeFirstRow fromOnly $
       DB.query
         db
         [sql|
           SELECT COUNT(1)
           FROM delivery_jobs
-          WHERE chat_item_id = ? AND job_scope_spec_tag = ? AND job_status = ? AND failed = 0
+          WHERE chat_item_id = ? AND job_scope_spec_tag = ? AND job_status != ?
         |]
-        (feedItemId, actionTag, DJSPending)
-  pure $ pending == Just (0 :: Int)
+        (feedItemId, actionTag, DJSComplete)
+  pure $ unfinished == Just (0 :: Int)
 
--- the messages of a feed job action: one, or the parts of one file description
 getFeedJobMessages :: DB.Connection -> [MessageId] -> IO [SndMessage]
 getFeedJobMessages db = fmap catMaybes . mapM getMsg
   where

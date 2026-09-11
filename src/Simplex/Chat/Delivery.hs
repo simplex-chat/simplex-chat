@@ -240,11 +240,14 @@ feedActionMsgIds = \case
   FJADeleteInternal -> []
   FJADeleteMark -> []
 
-feedActionDelivers :: FeedJobAction -> Bool
-feedActionDelivers = \case
-  FJADeleteInternal -> False
-  FJADeleteMark -> False
-  _ -> True
+feedActionEventTag :: FeedJobAction -> CMEventTag 'Json
+feedActionEventTag = \case
+  FJANew _ -> XMsgNew_
+  FJAFileDescr _ -> XMsgFileDescr_
+  FJAUpdate _ -> XMsgUpdate_
+  FJADeleteBroadcast _ -> XMsgDel_
+  FJADeleteInternal -> XMsgDel_
+  FJADeleteMark -> XMsgDel_
 
 feedActionCreates :: FeedJobAction -> Bool
 feedActionCreates = \case
@@ -258,24 +261,25 @@ feedActionDeletes = \case
   FJADeleteMark -> True
   _ -> False
 
--- a marked instance stays in its chat, so the feed item stays in the feed
 feedActionRemovesItem :: FeedJobAction -> Bool
 feedActionRemovesItem = \case
   FJADeleteBroadcast _ -> True
   FJADeleteInternal -> True
   _ -> False
 
--- which instances of the feed item the action applies to
 data FeedInstanceSpec
-  = FISLinked -- a feed edit skips instances edited or deleted in their chat
-  | FISAny -- a feed deletion retracts the broadcast from detached instances too
-  | FISUndeleted -- a file description follows the message
+  = FISLinked
+  | FISAny
+  | FISUndeleted
 
 feedActionInstances :: FeedJobAction -> FeedInstanceSpec
 feedActionInstances = \case
-  FJAUpdate _ -> FISLinked
+  FJANew _ -> FISAny
   FJAFileDescr _ -> FISUndeleted
-  _ -> FISAny
+  FJAUpdate _ -> FISLinked
+  FJADeleteBroadcast _ -> FISAny
+  FJADeleteInternal -> FISAny
+  FJADeleteMark -> FISAny
 
 instance FromField FeedJobActionTag where fromField = fromTextField_ textDecode
 

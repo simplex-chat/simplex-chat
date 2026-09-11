@@ -51,7 +51,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
-import Data.Time.Clock (UTCTime, getCurrentTime, nominalDay)
+import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
@@ -818,7 +818,6 @@ processChatCommand cxt nm = \case
                     when changed $
                       addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
                     let edited = itemLive /= Just True
-                    -- an edit in the chat detaches the instance: feed edits no longer apply to it
                     when (itemFeed == Just CIFLinked) $ Store.detachFeedInstances db [itemId]
                     updateDirectChatItem' db user contactId (detachedInstance ci) (CISndMsgContent mc) edited live Nothing $ Just msgId
                   startUpdatedTimedItemThread user (ChatRef CTDirect contactId Nothing) ci ci'
@@ -855,7 +854,6 @@ processChatCommand cxt nm = \case
                         when changed $
                           addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
                         let edited = itemLive /= Just True
-                        -- an edit in the chat detaches the instance: feed edits no longer apply to it
                         when (itemFeed == Just CIFLinked) $ Store.detachFeedInstances db [itemId]
                         ci' <- updateGroupChatItem db user groupId (detachedInstance ci) (CISndMsgContent mc) edited live $ Just msgId
                         updateGroupCIMentions db gInfo ci' ciMentions
@@ -901,7 +899,6 @@ processChatCommand cxt nm = \case
   APIDeleteChatItem (ChatRef cType chatId scope) itemIds mode -> withUser $ \user -> case cType of
     CTDirect -> withContactLock "deleteChatItem" chatId $ do
       (ct, items) <- getCommandDirectChatItems user chatId itemIds
-      -- a deletion that keeps the row detaches the instance: feed edits no longer apply to it
       let markDeleted items' = do
             items'' <- detachFeedInstances items'
             markDirectCIsDeleted user ct items'' =<< liftIO getCurrentTime
@@ -951,42 +948,35 @@ processChatCommand cxt nm = \case
     CTFeed -> withFeedLock "deleteChatItem" chatId $ do
       (feed, items) <- getCommandFeedChatItems user chatId itemIds
       when (null items) $ throwChatError CEInvalidChatItemDelete
-      case mode of
-        CIDMHistory -> throwChatError CEInvalidChatItemDelete
-        _ -> pure ()
       deletions <- forM items $ \cci -> case cci of
-        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemId, itemSharedMsgId, itemDeleted}} -> do
-          -- the item stays in the feed as CIDeleting until the jobs have removed every instance
-          action <- case (mode, itemDeleted) of
-            (_, Just (CIDeleted _)) -> throwChatError CEInvalidChatItemDelete
-            -- a repeated delete of an item being deleted re-enqueues the jobs with the earlier action
-            (_, Just (CIDeleting _)) -> feedDeleteAction feed itemId itemSharedMsgId CIDMInternal
-            (CIDMBroadcast, _) -> do
-              assertDeletable [cci]
-              feedDeleteAction feed itemId itemSharedMsgId CIDMBroadcast
-            (m, _) -> feedDeleteAction feed itemId itemSharedMsgId m
+        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemId, itemSharedMsgId, itemTs, itemDeleted}} -> do
           deletedTs <- liftIO getCurrentTime
+          action <- case (mode, itemDeleted) of
+            (CIDMHistory, _) -> throwChatError CEInvalidChatItemDelete
+            (_, Just (CIDeleted _)) -> throwChatError CEInvalidChatItemDelete
+            (CIDMBroadcast, _) -> case itemSharedMsgId of
+              Just sharedMsgId | diffUTCTime deletedTs itemTs < deleteMsgInterval -> do
+                msg <- createFeedMessage feed Nothing itemId (XMsgDel sharedMsgId Nothing Nothing False)
+                pure $ FJADeleteBroadcast (msgId' msg)
+              _ -> throwChatError CEInvalidChatItemDelete
+            (CIDMInternalMark, Nothing) -> pure FJADeleteMark
+            _ -> pure FJADeleteInternal
           ci' <- withFastStore' $ \db -> do
             createFeedJobs db chatId itemId action
-            markFeedChatItemDeleted db user chatId ci (itemDeletedState mode deletedTs) deletedTs
+            markFeedChatItemDeleted db user chatId ci (feedItemDeleted action deletedTs) deletedTs
           pure $ ChatItemDeletion (aFeedItem feed cci) (Just $ AChatItem SCTFeed SMDSnd (FeedChat feed) ci')
       startFeedWorkers chatId
       pure $ CRChatItemsDeleted user deletions True False
       where
-        itemDeletedState m deletedTs = case m of
-          CIDMInternalMark -> CIDeleted (Just deletedTs)
+        feedItemDeleted a deletedTs = case a of
+          FJADeleteMark -> CIDeleted (Just deletedTs)
           _ -> CIDeleting (Just deletedTs)
-        feedDeleteAction feed itemId sharedMsgId_ = \case
-          CIDMBroadcast -> case sharedMsgId_ of
-            Nothing -> throwChatError CEInvalidChatItemDelete
-            Just sharedMsgId -> do
-              msg <- createFeedMessage feed Nothing itemId (XMsgDel sharedMsgId Nothing Nothing False)
-              pure $ FJADeleteBroadcast (msgId' msg)
-          CIDMInternalMark -> pure FJADeleteMark
-          _ -> pure FJADeleteInternal
     CTContactRequest -> throwCmdError "not supported"
     CTContactConnection -> throwCmdError "not supported"
     where
+      -- We check with a 6 hour margin compared to CIMeta deletable to account for deletion on the border
+      deleteMsgInterval :: NominalDiffTime
+      deleteMsgInterval = nominalDay + 6 * 3600
       assertDeletable :: forall c. ChatTypeI c => [CChatItem c] -> CM ()
       assertDeletable items = do
         currentTs <- liftIO getCurrentTime
@@ -995,8 +985,7 @@ processChatCommand cxt nm = \case
           itemDeletable :: UTCTime -> CChatItem c -> Bool
           itemDeletable currentTs (CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId, itemTs, itemDeleted}, content}) =
             case msgDir of
-              -- We check with a 6 hour margin compared to CIMeta deletable to account for deletion on the border
-              SMDSnd -> isJust itemSharedMsgId && deletable' content itemDeleted itemTs (nominalDay + 6 * 3600) currentTs
+              SMDSnd -> isJust itemSharedMsgId && deletable' content itemDeleted itemTs deleteMsgInterval currentTs
               SMDRcv -> False
       itemsMsgIds :: [CChatItem c] -> [SharedMsgId]
       itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
@@ -1223,7 +1212,6 @@ processChatCommand cxt nm = \case
         CTContactRequest -> throwCmdError "not supported"
         CTContactConnection -> throwCmdError "not supported"
         where
-          -- the user's own chats are not referenced as the source of a forward
           noRefComposeMsgReq :: CChatItem c -> (MsgContent, Maybe CryptoFile) -> ComposedMessageReq
           noRefComposeMsgReq (CChatItem _ ci) (mc', file) =
             let ciff = forwardCIFF ci Nothing
@@ -1370,7 +1358,6 @@ processChatCommand cxt nm = \case
       user <- withFastStore $ \db -> getUserByNoteFolderId db chatId
       withFastStore' $ \db -> updateLocalChatItemsRead db user chatId
       ok user
-    -- the feed contains sent items only
     CTFeed -> ok =<< withFastStore (\db -> getUserByFeedId db chatId)
     CTContactRequest -> throwCmdError "not supported"
     CTContactConnection -> throwCmdError "not supported"
@@ -1518,7 +1505,6 @@ processChatCommand cxt nm = \case
       withFastStore' $ \db -> deleteNoteFolderFiles db userId nf
       withFastStore' $ \db -> deleteNoteFolderCIs db user nf
       pure $ CRChatCleared user (AChatInfo SCTLocal $ LocalChat nf)
-    -- instances stay in their chats, with feed_item_id set to NULL by the FK
     CTFeed -> withFeedLock "clearChat" chatId $ do
       feed <- withFastStore $ \db -> getFeed db user chatId
       filesInfo <- withFastStore' $ \db -> getFeedFileInfo db user feed
@@ -4253,14 +4239,11 @@ processChatCommand cxt nm = \case
         ciIds <- concat <$> withStore' (\db -> forM items $ \(CChatItem _ ci) -> markMessageReportsDeleted db user gInfo ci membership deletedTs)
         unless (null ciIds) $ toView $ CEvtGroupChatItemsDeleted user gInfo ciIds True (Just membership)
       let m = if moderation then Just membership else Nothing
-      -- a deletion that keeps the row detaches the instance: feed edits no longer apply to it
-      if groupFeatureUserAllowed SGFFullDelete gInfo && not moderation
-        then deleteGroupCIs user gInfo chatScopeInfo items m deletedTs
-        else do
-          items' <- detachFeedInstances items
-          if groupFeatureUserAllowed SGFFullDelete gInfo
-            then deleteGroupCIs user gInfo chatScopeInfo items' m deletedTs
-            else markGroupCIsDeleted user gInfo chatScopeInfo items' m deletedTs
+          fullDelete = groupFeatureUserAllowed SGFFullDelete gInfo
+      items' <- if fullDelete && not moderation then pure items else detachFeedInstances items
+      if fullDelete
+        then deleteGroupCIs user gInfo chatScopeInfo items' m deletedTs
+        else markGroupCIsDeleted user gInfo chatScopeInfo items' m deletedTs
     updateGroupProfileByName :: GroupName -> (GroupProfile -> GroupProfile) -> CM ChatResponse
     updateGroupProfileByName = updateGroupProfileByName_ Nothing
     updateGroupProfileByName_ :: Maybe GroupFeature -> GroupName -> (GroupProfile -> GroupProfile) -> CM ChatResponse
@@ -5024,7 +5007,6 @@ processChatCommand cxt nm = \case
                 withFastStore' $
                   \db -> createSndFTDescrXFTP db user (Just m) conn ft dummyFileDescr
             saveMemberFD _ = pure ()
-        -- one description is sent to every feed recipient, so there are no snd_files rows
         CGFeed _ -> pure ()
       pure (fInv, ciFile)
     prepareSndItemsData ::
@@ -5855,7 +5837,6 @@ chatCommandP =
       ("\\\\ #" <|> "\\\\#") *> (DeleteMemberMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> textP),
       ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> msgTextP),
       ReactToMessage <$> (("+" $> True) <|> ("-" $> False)) <*> reactionP <* A.space <*> chatNameP' <* A.space <*> textP,
-      -- "/feed drop" must precede "/feed <text>": msgTextP consumes any text
       "/feed drop " *> (SetDropFeed <$> chatNameP' <* A.space <*> onOffP),
       "/feed " *> (SendMessageBroadcast . MCText <$> msgTextP),
       ("/chats" <|> "/cs") *> (LastChats <$> (" all" $> Nothing <|> Just <$> (A.space *> A.decimal <|> pure 20))),

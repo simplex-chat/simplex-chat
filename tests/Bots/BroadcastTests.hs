@@ -80,7 +80,6 @@ testBroadcastMessages ps = do
           bob <## "I broadcast messages to all connected users from @alice."
           cath `connectVia` botLink
           alice #> "@broadcast_bot hello all!"
-          -- the bot replies as soon as the feed item is created; the broadcast is delivered by feed jobs
           alice
             <### [ WithTime "broadcast_bot> > hello all!",
                    ConsoleString "      Message is being delivered to all contacts",

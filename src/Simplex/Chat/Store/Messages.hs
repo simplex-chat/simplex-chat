@@ -106,7 +106,7 @@ module Simplex.Chat.Store.Messages
     getGroupReactions,
     setGroupReaction,
     getReactionMembers,
-    getChatItemIdsByAgentMsgId,
+    getGroupChatItemIdsByAgentMsgId,
     getDirectChatItem,
     getDirectCIWithReactions,
     getDirectChatItemBySharedMsgId,
@@ -328,7 +328,6 @@ createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, verifiedMsg, b
             throwError $ SEDuplicateGroupMessage groupId sharedMsgId duplAuthorId duplFwdMemberId
           Nothing -> liftIO $ insertRcvMsg Nothing $ Just groupId
       Nothing -> liftIO $ insertRcvMsg Nothing $ Just groupId
-    -- received messages arrive on a connection, feed messages are only sent
     FeedId _ -> throwError $ SEInternalError "received message with feed entity"
   where
     duplicateGroupMsgMemberIds :: Int64 -> SharedMsgId -> IO (Maybe (Maybe GroupMemberId, Maybe GroupMemberId))
@@ -609,7 +608,6 @@ createNewChatItemNoMsg db user chatDirection showGroupAsSender ciContent sharedM
     quoteRow :: NewQuoteRow
     quoteRow = (Nothing, Nothing, Nothing, Nothing, Nothing)
 
--- an instance of a feed item in a contact or group chat: no message id, the feed item's shared id
 createFeedInstanceItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SharedMsgId -> CIContent 'MDSnd -> ChatItemId -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
 createFeedInstanceItem db user chatDirection sharedMsgId ciContent feedItemId timed hasLink createdAt =
   createNewChatItem_ db user chatDirection False Nothing (Just sharedMsgId) ciContent quoteRow Nothing timed False False hasLink createdAt Nothing Nothing Nothing Nothing (Just CIFLinked) (Just feedItemId) createdAt
@@ -1309,6 +1307,7 @@ getChatContentTypes :: DB.Connection -> User -> ChatRef -> ExceptT StoreError IO
 getChatContentTypes db User {userId} (ChatRef cType chatId chatScope_) = case cType of
   CTDirect -> getTypes " contact_id = ? " ()
   CTLocal -> getTypes " note_folder_id = ? " ()
+  CTFeed -> getTypes " feed_id = ? " ()
   CTGroup -> case chatScope_ of
     Nothing -> getTypes " group_id = ? AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL " ()
     Just (GCSMemberSupport mId_) -> getTypes " group_id = ? AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? " (GCSTMemberSupport_, mId_)
@@ -1347,21 +1346,20 @@ getDirectChatLast_ db user ct contentFilter count search = do
 safeGetDirectItem :: DB.Connection -> User -> Contact -> UTCTime -> ChatItemId -> IO (CChatItem 'CTDirect)
 safeGetDirectItem db user ct currentTs itemId =
   runExceptT (getDirectCIWithReactions db user ct itemId)
-    >>= pure <$> safeToDirectItem currentTs itemId
+    >>= pure <$> safeToChatItem CIDirectSnd currentTs itemId
 
-safeToDirectItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTDirect) -> CChatItem 'CTDirect
-safeToDirectItem currentTs itemId = \case
+safeToChatItem :: CIDirection c 'MDSnd -> UTCTime -> ChatItemId -> Either StoreError (CChatItem c) -> CChatItem c
+safeToChatItem chatDir currentTs itemId = \case
   Right ci -> ci
-  Left e@(SEBadChatItem _ (Just itemTs)) -> badDirectItem itemTs e
-  Left e -> badDirectItem currentTs e
+  Left e@(SEBadChatItem _ (Just itemTs)) -> badChatItem itemTs e
+  Left e -> badChatItem currentTs e
   where
-    badDirectItem :: UTCTime -> StoreError -> CChatItem 'CTDirect
-    badDirectItem ts e =
+    badChatItem ts e =
       let errorText = T.pack $ show e
        in CChatItem
             SMDSnd
             ChatItem
-              { chatDir = CIDirectSnd,
+              { chatDir,
                 meta = dummyMeta itemId ts errorText,
                 content = CIInvalidJSON errorText,
                 mentions = M.empty,
@@ -1699,29 +1697,7 @@ getChatItemIDs db User {userId} cInfo contentFilter range count search = case cI
 safeGetGroupItem :: DB.Connection -> User -> GroupInfo -> UTCTime -> ChatItemId -> IO (CChatItem 'CTGroup)
 safeGetGroupItem db user g currentTs itemId =
   runExceptT (getGroupCIWithReactions db user g itemId)
-    >>= pure <$> safeToGroupItem currentTs itemId
-
-safeToGroupItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTGroup) -> CChatItem 'CTGroup
-safeToGroupItem currentTs itemId = \case
-  Right ci -> ci
-  Left e@(SEBadChatItem _ (Just itemTs)) -> badGroupItem itemTs e
-  Left e -> badGroupItem currentTs e
-  where
-    badGroupItem :: UTCTime -> StoreError -> CChatItem 'CTGroup
-    badGroupItem ts e =
-      let errorText = T.pack $ show e
-       in CChatItem
-            SMDSnd
-            ChatItem
-              { chatDir = CIGroupSnd,
-                meta = dummyMeta itemId ts errorText,
-                content = CIInvalidJSON errorText,
-                mentions = M.empty,
-                formattedText = Nothing,
-                quotedItem = Nothing,
-                reactions = [],
-                file = Nothing
-              }
+    >>= pure <$> safeToChatItem CIGroupSnd currentTs itemId
 
 getGroupMemberChatItemLast :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
@@ -1939,29 +1915,7 @@ getLocalChatLast_ db user nf contentFilter count search = do
 safeGetLocalItem :: DB.Connection -> User -> NoteFolder -> UTCTime -> ChatItemId -> IO (CChatItem 'CTLocal)
 safeGetLocalItem db user NoteFolder {noteFolderId} currentTs itemId =
   runExceptT (getLocalChatItem db user noteFolderId itemId)
-    >>= pure <$> safeToLocalItem currentTs itemId
-
-safeToLocalItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTLocal) -> CChatItem 'CTLocal
-safeToLocalItem currentTs itemId = \case
-  Right ci -> ci
-  Left e@(SEBadChatItem _ (Just itemTs)) -> badLocalItem itemTs e
-  Left e -> badLocalItem currentTs e
-  where
-    badLocalItem :: UTCTime -> StoreError -> CChatItem 'CTLocal
-    badLocalItem ts e =
-      let errorText = T.pack $ show e
-       in CChatItem
-            SMDSnd
-            ChatItem
-              { chatDir = CILocalSnd,
-                meta = dummyMeta itemId ts errorText,
-                content = CIInvalidJSON errorText,
-                mentions = M.empty,
-                formattedText = Nothing,
-                quotedItem = Nothing,
-                reactions = [],
-                file = Nothing
-              }
+    >>= pure <$> safeToChatItem CILocalSnd currentTs itemId
 
 getLocalChatAfter_ :: DB.Connection -> User -> NoteFolder -> Maybe MsgContentTag -> ChatItemId -> Int -> Text -> ExceptT StoreError IO (Chat 'CTLocal)
 getLocalChatAfter_ db user nf@NoteFolder {noteFolderId} contentFilter afterId count search = do
@@ -2608,34 +2562,28 @@ getAllChatItems db cxt user@User {userId} pagination search_ = do
           |]
           (userId, CISRcvNew)
 
--- The second query resolves a feed message delivery to the instance of the
--- broadcast in the chat of the delivery's connection: a feed message is linked
--- to the feed item, not to the instances.
-getChatItemIdsByAgentMsgId :: DB.Connection -> Int64 -> AgentMsgId -> IO [ChatItemId]
-getChatItemIdsByAgentMsgId db connId msgId =
+getDirectChatItemIdsByAgentMsgId :: DB.Connection -> ContactId -> Int64 -> AgentMsgId -> IO [ChatItemId]
+getDirectChatItemIdsByAgentMsgId db = getChatItemIdsByAgentMsgId_ db "contact_id"
+
+getGroupChatItemIdsByAgentMsgId :: DB.Connection -> GroupId -> Int64 -> AgentMsgId -> IO [ChatItemId]
+getGroupChatItemIdsByAgentMsgId db = getChatItemIdsByAgentMsgId_ db "group_id"
+
+getChatItemIdsByAgentMsgId_ :: DB.Connection -> Query -> Int64 -> Int64 -> AgentMsgId -> IO [ChatItemId]
+getChatItemIdsByAgentMsgId_ db chatIdColumn chatId connId msgId =
   map fromOnly
     <$> DB.query
       db
-      [sql|
-        SELECT chat_item_id
-        FROM chat_item_messages
-        WHERE message_id IN (
-          SELECT message_id
-          FROM msg_deliveries
-          WHERE connection_id = ? AND agent_msg_id = ?
-        )
-        UNION
-        SELECT i.chat_item_id
-        FROM msg_deliveries d
-        JOIN chat_item_messages cim ON cim.message_id = d.message_id
-        JOIN connections c ON c.connection_id = d.connection_id
-        LEFT JOIN group_members gm ON gm.group_member_id = c.group_member_id
-        JOIN chat_items i ON i.feed_item_id = cim.chat_item_id
-          AND ((c.contact_id IS NOT NULL AND i.contact_id = c.contact_id)
-            OR (gm.group_id IS NOT NULL AND i.group_id = gm.group_id))
-        WHERE d.connection_id = ? AND d.agent_msg_id = ?
-      |]
-      (connId, msgId, connId, msgId)
+      ( "SELECT chat_item_id FROM chat_item_messages"
+          <> " WHERE message_id IN (SELECT message_id FROM msg_deliveries WHERE connection_id = ? AND agent_msg_id = ?)"
+          <> " UNION"
+          <> " SELECT i.chat_item_id FROM msg_deliveries d"
+          <> " JOIN chat_item_messages cim ON cim.message_id = d.message_id"
+          <> " JOIN chat_items i ON i.feed_item_id = cim.chat_item_id AND i."
+          <> chatIdColumn
+          <> " = ?"
+          <> " WHERE d.connection_id = ? AND d.agent_msg_id = ?"
+      )
+      (connId, msgId, chatId, connId, msgId)
 
 updateDirectChatItemStatus :: forall d. MsgDirectionI d => DB.Connection -> User -> Contact -> ChatItemId -> CIStatus d -> ExceptT StoreError IO (ChatItem 'CTDirect d)
 updateDirectChatItemStatus db user@User {userId} ct@Contact {contactId} itemId itemStatus = do
@@ -2778,7 +2726,7 @@ getDirectChatItemBySharedMsgId db user@User {userId} contactId sharedMsgId = do
 
 getDirectChatItemsByAgentMsgId :: DB.Connection -> User -> ContactId -> Int64 -> AgentMsgId -> IO [CChatItem 'CTDirect]
 getDirectChatItemsByAgentMsgId db user contactId connId msgId = do
-  itemIds <- getChatItemIdsByAgentMsgId db connId msgId
+  itemIds <- getDirectChatItemIdsByAgentMsgId db contactId connId msgId
   catMaybes <$> mapM (fmap eitherToMaybe . runExceptT . getDirectChatItem db user contactId) itemIds
 
 getDirectChatItemIdBySharedMsgId_ :: DB.Connection -> UserId -> Int64 -> SharedMsgId -> ExceptT StoreError IO Int64
@@ -3210,7 +3158,7 @@ getGroupMemberCIBySharedMsgId db user@User {userId} g@GroupInfo {groupId} member
 
 getGroupChatItemsByAgentMsgId :: DB.Connection -> User -> GroupId -> Int64 -> AgentMsgId -> IO [CChatItem 'CTGroup]
 getGroupChatItemsByAgentMsgId db user groupId connId msgId = do
-  itemIds <- getChatItemIdsByAgentMsgId db connId msgId
+  itemIds <- getGroupChatItemIdsByAgentMsgId db groupId connId msgId
   catMaybes <$> mapM (fmap eitherToMaybe . runExceptT . getGroupChatItem db user groupId) itemIds
 
 getGroupChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTGroup)
@@ -3350,7 +3298,6 @@ getLocalChatItem db User {userId} folderId itemId = ExceptT $ do
         |]
         (userId, folderId, itemId)
 
--- a feed item is always sent; its reactions are aggregated from the instances
 toFeedChatItem :: UTCTime -> [CIReactionCount] -> ChatItemRow -> Either StoreError (CChatItem 'CTFeed)
 toFeedChatItem currentTs reactions ((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive, BI userMention, BI hasLink, msgSigned, itemFeed) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_, fileExpires)) =
   chatItem $ fromRight invalid $ dbParseACIContent itemContentText
@@ -3416,7 +3363,6 @@ getFeedChatItem db user@User {userId} feedId itemId = ExceptT $ do
         |]
         (userId, feedId, itemId)
 
--- reactions received on the instances of a broadcast, in every chat it was sent to
 getFeedCIReactions :: DB.Connection -> User -> SharedMsgId -> IO [CIReactionCount]
 getFeedCIReactions db User {userId} itemSharedMsgId =
   map toFeedReaction
@@ -3439,29 +3385,7 @@ getFeedCIReactions db User {userId} itemSharedMsgId =
 safeGetFeedItem :: DB.Connection -> User -> Feed -> UTCTime -> ChatItemId -> IO (CChatItem 'CTFeed)
 safeGetFeedItem db user Feed {feedId} currentTs itemId =
   runExceptT (getFeedChatItem db user feedId itemId)
-    >>= pure <$> safeToFeedItem currentTs itemId
-
-safeToFeedItem :: UTCTime -> ChatItemId -> Either StoreError (CChatItem 'CTFeed) -> CChatItem 'CTFeed
-safeToFeedItem currentTs itemId = \case
-  Right ci -> ci
-  Left e@(SEBadChatItem _ (Just itemTs)) -> badFeedItem itemTs e
-  Left e -> badFeedItem currentTs e
-  where
-    badFeedItem :: UTCTime -> StoreError -> CChatItem 'CTFeed
-    badFeedItem ts e =
-      let errorText = T.pack $ show e
-       in CChatItem
-            SMDSnd
-            ChatItem
-              { chatDir = CIFeedSnd,
-                meta = dummyMeta itemId ts errorText,
-                content = CIInvalidJSON errorText,
-                mentions = M.empty,
-                formattedText = Nothing,
-                quotedItem = Nothing,
-                reactions = [],
-                file = Nothing
-              }
+    >>= pure <$> safeToChatItem CIFeedSnd currentTs itemId
 
 getFeedChat :: DB.Connection -> User -> FeedId -> Maybe MsgContentTag -> ChatPagination -> Maybe Text -> ExceptT StoreError IO (Chat 'CTFeed, Maybe NavigationInfo)
 getFeedChat db user feedId contentFilter pagination search_ = do

@@ -38,6 +38,7 @@ module Simplex.Chat.Store.Feeds
   )
 where
 
+import Control.Monad (forM_, unless)
 import Control.Monad.Except (ExceptT (..), throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Int (Int64)
@@ -55,10 +56,10 @@ import Simplex.Messaging.Agent.Store.AgentStore (firstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
+import Database.PostgreSQL.Simple (In (..), Only (..), Query, ToRow, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
-import Database.SQLite.Simple (Only (..), Query, (:.) (..))
+import Database.SQLite.Simple (Only (..), Query, ToRow, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
@@ -93,13 +94,11 @@ updateFeedUnreadChat db User {userId} Feed {feedId} unreadChat = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE feeds SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND feed_id = ?" (BI unreadChat, updatedAt, userId, feedId)
 
--- messages are deleted first: chat_item_messages rows cascade with chat items
 deleteFeedCIs :: DB.Connection -> User -> Feed -> IO ()
 deleteFeedCIs db User {userId} Feed {feedId} = do
   DB.execute db "DELETE FROM messages WHERE feed_id = ?" (Only feedId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND feed_id = ?" (userId, feedId)
 
--- the chats of a bucket are read without their chat tags, which a job does not use
 getFeedContactsByCursor :: DB.Connection -> StoreCxt -> User -> Maybe ContactId -> Int -> IO [Contact]
 getFeedContactsByCursor db cxt user@User {userId} cursorId_ count = do
   currentTs <- getCurrentTime
@@ -118,7 +117,6 @@ getFeedCustomerGroupsByCursor db cxt User {userId, userContactId} cursorId_ coun
       (groupInfoQuery <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.business_chat = ? AND g.group_id > ? ORDER BY g.group_id ASC LIMIT ?")
       (userId, userContactId, BCCustomer, cursorId cursorId_, count)
 
--- members of the user's customer groups in the group id range, without the user's own membership
 getCustomerGroupsMembersByRange :: DB.Connection -> StoreCxt -> User -> GroupId -> GroupId -> IO (Map GroupId [GroupMember])
 getCustomerGroupsMembersByRange db cxt user@User {userId, userContactId} fromId toId = do
   currentTs <- getCurrentTime
@@ -138,7 +136,6 @@ getCustomerGroupsMembersByRange db cxt user@User {userId, userContactId} fromId 
     foldMembers = foldr (\m -> M.insertWith (<>) (memberGroupId m) [m]) M.empty
     memberGroupId GroupMember {groupId} = groupId
 
--- the part of a feed item that is repeated in its instances
 data FeedItemMsg = FeedItemMsg
   { feedSharedMsgId :: SharedMsgId,
     feedContent :: CIContent 'MDSnd,
@@ -193,7 +190,6 @@ getFeedGroupInstancesByCursor db cxt User {userId, userContactId} feedItemId spe
       )
       (userId, userContactId, feedItemId, cursorId cursorId_, count)
 
--- instances created by an earlier run of the same bucket, by chat
 getFeedInstanceContactIdsByRange :: DB.Connection -> User -> ChatItemId -> ContactId -> ContactId -> IO (Map ContactId ChatItemId)
 getFeedInstanceContactIdsByRange db user feedItemId = getFeedInstanceIdsByRange_ db user feedItemId "contact_id"
 
@@ -214,12 +210,12 @@ getFeedInstanceIdsByRange_ db User {userId} feedItemId chatIdColumn fromId toId 
 updateFeedInstanceStatuses :: DB.Connection -> [(ChatItemId, CIStatus 'MDSnd)] -> IO ()
 updateFeedInstanceStatuses db statuses = do
   currentTs <- getCurrentTime
-  DB.executeMany
-    db
-    "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE chat_item_id = ?"
-    (map (\(itemId, status) -> (status, currentTs, itemId)) statuses)
+  forM_ statuses $ \(itemId, status) ->
+    DB.execute
+      db
+      "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE chat_item_id = ?"
+      (status, currentTs, itemId)
 
--- a msg_deliveries row exists once the agent accepted the message for the connection
 getDeliveredContactIdsByRange :: DB.Connection -> MessageId -> ContactId -> ContactId -> IO [ContactId]
 getDeliveredContactIdsByRange db msgId fromId toId =
   map fromOnly
@@ -266,36 +262,43 @@ updateFeedInstances_ db User {userId} feedItemId chatIdColumn fromId toId FeedIt
 
 deleteFeedInstances :: DB.Connection -> [ChatItemId] -> IO ()
 deleteFeedInstances db itemIds = do
-  DB.executeMany db "DELETE FROM chat_item_messages WHERE chat_item_id = ?" (map Only itemIds)
-  DB.executeMany db "DELETE FROM chat_item_versions WHERE chat_item_id = ?" (map Only itemIds)
-  DB.executeMany db "DELETE FROM chat_items WHERE chat_item_id = ?" (map Only itemIds)
+  itemIdsStmt db "DELETE FROM chat_item_messages WHERE chat_item_id" () itemIds
+  itemIdsStmt db "DELETE FROM chat_item_versions WHERE chat_item_id" () itemIds
+  itemIdsStmt db "DELETE FROM chat_items WHERE chat_item_id" () itemIds
 
 markFeedInstancesDeleted :: DB.Connection -> [ChatItemId] -> UTCTime -> IO ()
 markFeedInstancesDeleted db itemIds deletedTs = do
   currentTs <- getCurrentTime
-  DB.executeMany
+  itemIdsStmt
     db
-    "UPDATE chat_items SET item_deleted = 1, item_deleted_ts = ?, updated_at = ? WHERE chat_item_id = ?"
-    (map (deletedTs,currentTs,) itemIds)
+    "UPDATE chat_items SET item_deleted = 1, item_deleted_ts = ?, updated_at = ? WHERE chat_item_id"
+    (deletedTs, currentTs)
+    itemIds
 
 detachFeedInstances :: DB.Connection -> [ChatItemId] -> IO ()
 detachFeedInstances db itemIds =
-  DB.executeMany db "UPDATE chat_items SET item_feed = 2 WHERE chat_item_id = ? AND item_feed = 1" (map Only itemIds)
+  itemIdsStmt db "UPDATE chat_items SET item_feed = 2 WHERE item_feed = 1 AND chat_item_id" () itemIds
 
 deleteFeedContactReactions :: DB.Connection -> SharedMsgId -> [ContactId] -> IO ()
 deleteFeedContactReactions db sharedMsgId contactIds =
-  DB.executeMany
-    db
-    "DELETE FROM chat_item_reactions WHERE contact_id = ? AND shared_msg_id = ?"
-    (map (,sharedMsgId) contactIds)
+  itemIdsStmt db "DELETE FROM chat_item_reactions WHERE shared_msg_id = ? AND contact_id" (Only sharedMsgId) contactIds
 
--- reactions to the user's own group items are stored with the membership member id
 deleteFeedGroupReactions :: DB.Connection -> SharedMsgId -> [(GroupId, MemberId)] -> IO ()
 deleteFeedGroupReactions db sharedMsgId groupMemberIds =
-  DB.executeMany
-    db
-    "DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id = ?"
-    (map (\(gId, memId) -> (gId, sharedMsgId, memId)) groupMemberIds)
+  forM_ groupMemberIds $ \(groupId, memberId) ->
+    DB.execute
+      db
+      "DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id = ?"
+      (groupId, sharedMsgId, memberId)
+
+itemIdsStmt :: ToRow p => DB.Connection -> Query -> p -> [Int64] -> IO ()
+itemIdsStmt db stmt params itemIds = unless (null itemIds) execIds
+  where
+#if defined(dbPostgres)
+    execIds = DB.execute db (stmt <> " IN ?") (params :. Only (In itemIds))
+#else
+    execIds = forM_ itemIds $ \itemId -> DB.execute db (stmt <> " = ?") (params :. Only itemId)
+#endif
 
 cursorId :: Maybe Int64 -> Int64
 cursorId = fromMaybe 0

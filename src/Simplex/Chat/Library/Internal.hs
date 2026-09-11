@@ -521,7 +521,6 @@ deleteFilesLocally files =
     withFilesFolder :: (FilePath -> CM ()) -> CM ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
 
--- a sender's feed instance renders the file of the feed item, which is not deleted with the instance
 itemsFilesInfo :: [CChatItem c] -> [CIFileInfo]
 itemsFilesInfo = mapMaybe itemFileInfo
   where
@@ -529,7 +528,6 @@ itemsFilesInfo = mapMaybe itemFileInfo
       SMDSnd | isJust itemFeed -> Nothing
       _ -> mkCIFileInfo <$> file
 
--- a per-chat edit or deletion detaches an instance: feed edits no longer apply to it
 detachFeedInstances :: forall c. [CChatItem c] -> CM [CChatItem c]
 detachFeedInstances items = do
   unless (null linkedIds) $ withStore' $ \db -> Store.detachFeedInstances db linkedIds
@@ -2273,10 +2271,6 @@ createSndMessage chatMsgEvent connOrGroupId =
 createSndMessages :: forall e t. (MsgEncodingI e, Traversable t) => t (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent e) -> CM' (t (Either ChatError SndMessage))
 createSndMessages = createSndMessages_ Nothing
 
--- One message of a broadcast, linked to the feed item. The message of a new
--- broadcast takes the id of the feed item, so that the item of every recipient
--- has that id; the messages that follow take their own ids, as a group rejects
--- a repeated message id (createNewRcvMessage, Store/Messages.hs:324).
 createFeedMessage :: Feed -> Maybe SharedMsgId -> ChatItemId -> ChatMsgEvent 'Json -> CM SndMessage
 createFeedMessage feed sharedMsgId_ feedItemId event = do
   msg <- liftEither . runIdentity =<< lift (createSndMessages_ sharedMsgId_ $ Identity (FeedId (feedId' feed), Nothing, event))
@@ -2662,7 +2656,6 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
       where
         mId = groupMemberId' m
         mIds' = S.insert mId mIds
-    -- the two batch modes share one deliverMessagesB call, so their body references do not overlap
     prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> ([(GroupMember, Connection)], [(GroupMember, Connection)]) -> ([GroupMemberId], [Either ChatError ChatMsgReq])
     prepareMsgReqs msgFlags msgs (toSendBin, toSendJson) =
       batchReqs 1 BMBinary toSendBin <> batchReqs 2 BMJson toSendJson
@@ -2687,8 +2680,6 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
     createPendingMsg db (groupMemberId, msgId) =
       createPendingGroupMessage db groupMemberId msgId $> Right ()
 
--- The first recipient of a body sends it as a value, the rest reference it,
--- so one encoded body is delivered to all of them.
 sharedBodyReqs :: forall r a. MsgFlags -> Int -> (Maybe Int -> Int -> a -> (ValueOrRef MsgBody, [MessageId])) -> NonEmpty (Either ChatError a) -> [(r, Connection)] -> ([r], [Either ChatError ChatMsgReq])
 sharedBodyReqs msgFlags lastRef mkMb mbs recipients = snd $ foldr' foldMsgBodies (lastIdx_, ([], [])) recipients
   where
