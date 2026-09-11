@@ -26,6 +26,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.BadgesSupportSimplexView
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrateFromDeviceView
@@ -100,6 +101,17 @@ fun SettingsLayout(
       SettingsActionItem(painterResource(MR.images.ic_help), stringResource(MR.strings.help_and_support), showSettingsModal { HelpAndSupportView(it, showModal, showCustomModal) })
       DatabaseItem(encrypted, passphraseSaved, showSettingsModal { DatabaseView() }, stopped)
       SettingsActionItem(painterResource(MR.images.ic_ios_share), stringResource(MR.strings.migrate_from_device_to_another_device), { withAuth(generalGetString(MR.strings.auth_open_migration_to_another_device), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.fullscreen.showCustomModal { close -> MigrateFromDeviceView(close) } } }, disabled = stopped)
+    }
+    SectionDividerSpaced()
+
+    SectionView {
+      // Direct showModal (no settings / cardScreen flags) — settings-style card chrome would render
+      // a gray top bar / back button that badges views don't want (they have their own inline titles).
+      SectionItemView(click = { ModalManager.start.showModal { BadgesSupportSimplexView() } }) {
+        Image(painterResource(MR.images.badge_supporter), stringResource(MR.strings.supporter_perks), Modifier.size(24.dp))
+        TextIconSpaced()
+        Text(stringResource(MR.strings.supporter_perks))
+      }
     }
     SectionDividerSpaced()
 

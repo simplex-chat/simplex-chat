@@ -47,16 +47,17 @@ chatBotRepl welcome answer _user cc = do
     contactConnected Contact {localDisplayName} = putStrLn $ T.unpack localDisplayName <> " connected"
 
 initializeBotAddress :: ChatController -> IO ()
-initializeBotAddress = initializeBotAddress' True
+initializeBotAddress = initializeBotAddress' True Nothing True
 
-initializeBotAddress' :: Bool -> ChatController -> IO ()
-initializeBotAddress' logAddress cc = do
+-- pqRatchet_ selects the address type when creating: Just True (IKUsePQ) is required for service RPC, Nothing is the legacy non-DR contact address.
+initializeBotAddress' :: Bool -> Maybe Bool -> Bool -> ChatController -> IO ()
+initializeBotAddress' logAddress pqRatchet_ doAutoAccept cc = do
   sendChatCmd cc ShowMyAddress >>= \case
     Right (CRUserContactLink _ UserContactLink {connLinkContact}) -> showBotAddress connLinkContact
     Left (ChatErrorStore SEUserContactLinkNotFound) -> do
       when logAddress $ putStrLn "No bot address, creating..."
       -- TODO [short links] create short link by default
-      sendChatCmd cc (CreateMyAddress Nothing) >>= \case
+      sendChatCmd cc (CreateMyAddress pqRatchet_) >>= \case
         Right (CRUserContactLinkCreated _ ccLink) -> showBotAddress ccLink
         _ -> putStrLn "can't create bot address" >> exitFailure
     _ -> putStrLn "unexpected response" >> exitFailure
@@ -65,7 +66,8 @@ initializeBotAddress' logAddress cc = do
       when logAddress $ do
         putStrLn $ "Bot's contact address is: " <> B.unpack (maybe (strEncode uri) strEncode shortUri)
         when (isJust shortUri) $ putStrLn $ "Full contact address for old clients: " <> B.unpack (strEncode uri)
-      let settings = AddressSettings {businessAddress = False, autoAccept = Just AutoAccept {acceptIncognito = False}, autoReply = Nothing}
+      let aa = if doAutoAccept then Just AutoAccept {acceptIncognito = False} else Nothing
+          settings = AddressSettings {businessAddress = False, autoAccept = aa, autoReply = Nothing}
       void $ sendChatCmd cc $ SetAddressSettings Nothing settings
 
 sendMessage :: ChatController -> Contact -> Text -> IO ()

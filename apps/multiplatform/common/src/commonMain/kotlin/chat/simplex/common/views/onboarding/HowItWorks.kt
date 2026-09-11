@@ -7,6 +7,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
@@ -22,12 +23,12 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 
 @Composable
-fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null) {
+fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null, titleColor: Color = Color.Unspecified) {
   Column(Modifier.fillMaxSize().padding(horizontal = if (appPlatform.isDesktop) DEFAULT_PADDING * 2 else DEFAULT_PADDING)) {
     Spacer(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
     val paraPadding = PaddingValues(bottom = if (appPlatform.isDesktop) 10.dp else 12.dp)
     Column(Modifier.weight(1f).padding(bottom = DEFAULT_PADDING).verticalScroll(rememberScrollState())) {
-      Text(stringResource(MR.strings.why_built_heading), style = MaterialTheme.typography.h1, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
+      Text(stringResource(MR.strings.why_built_heading), style = MaterialTheme.typography.h1, color = titleColor, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
       ReadableText(MR.strings.why_built_p1, padding = paraPadding)
       ReadableText(MR.strings.why_built_p2, padding = paraPadding)
       ReadableText(MR.strings.why_built_p3, padding = paraPadding)
@@ -45,6 +46,11 @@ fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? 
         OnboardingActionButton(user, onboardingStage, onclick = { ModalManager.fullscreen.closeModal() })
         TextButtonBelowOnboardingButton("", null)
       }
+    } else {
+      // No button below — add breathing room at the bottom on both platforms.
+      // Android also gets nav-bar inset so content doesn't run under the gesture bar.
+      Spacer(Modifier.height(DEFAULT_PADDING))
+      if (appPlatform.isAndroid) Spacer(Modifier.navigationBarsPadding())
     }
   }
 }
