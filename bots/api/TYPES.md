@@ -2140,12 +2140,15 @@ NO_FILE:
 
 Bold:
 - type: "bold"
+- mark: string
 
 Italic:
 - type: "italic"
+- mark: string
 
 StrikeThrough:
 - type: "strikeThrough"
+- mark: string
 
 Snippet:
 - type: "snippet"

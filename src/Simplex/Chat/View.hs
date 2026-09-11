@@ -973,7 +973,7 @@ viewItemReactions ChatItem {reactions} = ["      " <> viewReactions reactions | 
     viewReactions = mconcat . intersperse " " . map viewReaction
     viewReaction CIReactionCount {reaction = MRUnknown {}} = "?"
     viewReaction CIReactionCount {reaction = MREmoji (MREmojiChar emoji), userReacted, totalReacted} =
-      plain [emoji, ' '] <> (if userReacted then styled Italic else plain) (show totalReacted)
+      plain [emoji, ' '] <> (if userReacted then styled (Italic "*") else plain) (show totalReacted)
 
 viewTestInfo :: Bool -> ChatItem c d -> [StyledString]
 viewTestInfo testView ChatItem {content} = maybe [] (viewMsgTestInfo testView) $ ciMsgContent content
@@ -2088,7 +2088,7 @@ viewGroupDescription GroupInfo {groupProfile = GroupProfile {description}} =
   maybe ["No welcome message!"] ((bold' "Welcome message:" :) . map plain . T.lines) description
 
 bold' :: String -> StyledString
-bold' = styled Bold
+bold' = styled (Bold "**")
 
 viewContactAliasUpdated :: Contact -> [StyledString]
 viewContactAliasUpdated ct@Contact {profile = LocalProfile {localAlias}}

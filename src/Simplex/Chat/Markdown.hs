@@ -49,9 +49,12 @@ data Markdown = Markdown (Maybe Format) Text | Markdown :|: Markdown
   deriving (Eq, Show)
 
 data Format
-  = Bold
-  | Italic
-  | StrikeThrough
+  -- mark is the delimiter used in the source text: several spellings map to the
+  -- same format (*x* and _x_ are both italic, ~x~ and ~~x~~ both strikethrough),
+  -- so it is recorded here for markdownText to render the text back unchanged
+  = Bold {mark :: Text}
+  | Italic {mark :: Text}
+  | StrikeThrough {mark :: Text}
   | Snippet
   | Secret
   | Small
@@ -211,10 +214,10 @@ markdownP = mconcat <$> A.many' fragmentP
         Just c -> case c of
           ' ' -> unmarked <$> A.takeWhile (== ' ')
           '+' -> phoneP <|> wordP
-          '*' -> formattedP '*' Bold
-          '_' -> formattedP '_' Italic
-          '~' -> formattedP '~' StrikeThrough
-          '`' -> formattedP '`' Snippet
+          '*' -> formattedP2 '*' Italic Bold
+          '_' -> formattedP2 '_' Italic Bold
+          '~' -> formattedP2 '~' StrikeThrough StrikeThrough
+          '`' -> formattedP1 '`' Snippet
           '#' -> A.char '#' *> (secretP <|> nameRefP '#' <|> secretFallback)
           '!' -> styledP <|> wordP
           '@' -> (A.char '@' *> nameRefP '@') <|> mentionP <|> wordP
@@ -224,15 +227,37 @@ markdownP = mconcat <$> A.many' fragmentP
             | isDigit c -> phoneP <|> wordP
             | otherwise -> wordP
         Nothing -> fail ""
-    formattedP :: Char -> Format -> Parser Markdown
-    formattedP c f = do
+
+    -- Single-char formatter (for `)
+    formattedP1 :: Char -> Format -> Parser Markdown
+    formattedP1 c f = do
       s <- A.char c *> A.takeTill (== c)
       (A.char c $> md c f s) <|> noFormat (c `T.cons` s)
+    -- Dual-char formatter (for *, _ and ~): f1 for a single delimiter, f2 for a doubled one
+    formattedP2 :: Char -> (Text -> Format) -> (Text -> Format) -> Parser Markdown
+    formattedP2 c f1 f2 = do
+      _ <- A.char c
+      isDouble <- (True <$ A.char c) <|> pure False
+      if isDouble
+        then do
+          s <- A.takeTill (== c)
+          let m = T.pack [c, c]
+          (A.string m $> mdDouble c (f2 m) s) <|> noFormat (c `T.cons` c `T.cons` s)
+        else do
+          s <- A.takeTill (== c)
+          let m = T.singleton c
+          (A.char c $> md c (f1 m) s) <|> noFormat (c `T.cons` s)
     md :: Char -> Format -> Text -> Markdown
     md c f s
       | T.null s || T.head s == ' ' || T.last s == ' ' =
           unmarked $ c `T.cons` s `T.snoc` c
       | otherwise = markdown f s
+    mdDouble :: Char -> Format -> Text -> Markdown
+    mdDouble c f s
+      | T.null s || T.head s == ' ' || T.last s == ' ' =
+          unmarked $ c `T.cons` c `T.cons` s `T.snoc` c `T.snoc` c
+      | otherwise = markdown f s
+
     secretP :: Parser Markdown
     secretP = secret <$?> ((,,) <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile1 (== '#'))
     secret :: (Text, Text, Text) -> Either String Markdown
@@ -467,9 +492,9 @@ markdownText :: FormattedText -> Text
 markdownText (FormattedText f_ t) = case f_ of
   Nothing -> t
   Just f -> case f of
-    Bold -> around '*'
-    Italic -> around '_'
-    StrikeThrough -> around '~'
+    Bold m -> marked m
+    Italic m -> marked m
+    StrikeThrough m -> marked m
     Snippet -> around '`'
     Secret -> around '#'
     Small -> "!- " <> t <> "!"
@@ -485,6 +510,7 @@ markdownText (FormattedText f_ t) = case f_ of
     Unknown _ -> t
     where
       around c = c `T.cons` t `T.snoc` c
+      marked m = m <> t <> m
       color c = case colorStr c of
         Just cStr -> cStr <> t `T.snoc` '!'
         Nothing -> t

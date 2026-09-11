@@ -54,26 +54,85 @@ s <<== ft = T.concat (map markdownText ft) `shouldBe` s
 (<<==>>) :: Text -> MarkdownList -> Expectation
 s <<==>> ft = (s ==>> ft) >> (s <<== ft)
 
+-- formats carry the delimiter used in the source text, so each spelling has its
+-- own helper and round-trips back to exactly what was written
 bold :: Text -> Markdown
-bold = markdown Bold
+bold = markdown (Bold "**")
 
+boldU :: Text -> Markdown
+boldU = markdown (Bold "__")
+
+italic :: Text -> Markdown
+italic = markdown (Italic "*")
+
+italicU :: Text -> Markdown
+italicU = markdown (Italic "_")
+
+strikethrough :: Text -> Markdown
+strikethrough = markdown (StrikeThrough "~")
+
+strikethrough2 :: Text -> Markdown
+strikethrough2 = markdown (StrikeThrough "~~")
+
+-- Text format tests: standard Markdown syntax
+-- * = italic (single asterisk)
+-- ** = bold (double asterisk)
+-- _ = italic (single underscore)
+-- __ = bold (double underscore)
+-- ~ or ~~ = strikethrough
 textFormat :: Spec
-textFormat = describe "text format (bold)" do
-  it "correct markdown" do
-    "this is *bold formatted* text"
+textFormat = describe "text format (standard markdown)" do
+  it "correct markdown - single asterisk for italic" do
+    "this is *italic formatted* text"
+      <==> "this is " <> italic "italic formatted" <> " text"
+    "*italic formatted* text"
+      <==> italic "italic formatted" <> " text"
+    "this is *italic*"
+      <==> "this is " <> italic "italic"
+    " *italic* text"
+      <==> " " <> italic "italic" <> " text"
+    "   *italic* text"
+      <==> "   " <> italic "italic" <> " text"
+    "this is *italic* "
+      <==> "this is " <> italic "italic" <> " "
+    "this is *italic*   "
+      <==> "this is " <> italic "italic" <> "   "
+  it "correct markdown - double asterisk for bold" do
+    "this is **bold formatted** text"
       <==> "this is " <> bold "bold formatted" <> " text"
-    "*bold formatted* text"
+    "**bold formatted** text"
       <==> bold "bold formatted" <> " text"
-    "this is *bold*"
+    "this is **bold**"
       <==> "this is " <> bold "bold"
-    " *bold* text"
+    " **bold** text"
       <==> " " <> bold "bold" <> " text"
-    "   *bold* text"
+    "   **bold** text"
       <==> "   " <> bold "bold" <> " text"
-    "this is *bold* "
+    "this is **bold** "
       <==> "this is " <> bold "bold" <> " "
-    "this is *bold*   "
+    "this is **bold**   "
       <==> "this is " <> bold "bold" <> "   "
+  it "correct markdown - single underscore for italic" do
+    "this is _italic formatted_ text"
+      <==> "this is " <> italicU "italic formatted" <> " text"
+    "_italic formatted_ text"
+      <==> italicU "italic formatted" <> " text"
+    "this is _italic_"
+      <==> "this is " <> italicU "italic"
+  it "correct markdown - double underscore for bold" do
+    "this is __bold formatted__ text"
+      <==> "this is " <> boldU "bold formatted" <> " text"
+    "__bold formatted__ text"
+      <==> boldU "bold formatted" <> " text"
+    "this is __bold__"
+      <==> "this is " <> boldU "bold"
+  it "correct markdown - strikethrough" do
+    "this is ~struck~ text"
+      <==> "this is " <> strikethrough "struck" <> " text"
+    "this is ~~struck~~ text"
+      <==> "this is " <> strikethrough2 "struck" <> " text"
+    "~struck~ text"
+      <==> strikethrough "struck" <> " text"
   it "ignored as markdown" do
     "this is * unformatted * text"
       <==> "this is * unformatted * text"
@@ -81,19 +140,21 @@ textFormat = describe "text format (bold)" do
       <==> "this is *unformatted * text"
     "this is * unformatted* text"
       <==> "this is * unformatted* text"
-    "this is **unformatted** text"
-      <==> "this is **unformatted** text"
+    "this is ** unformatted ** text"
+      <==> "this is ** unformatted ** text"
+    "this is **unformatted ** text"
+      <==> "this is **unformatted ** text"
     "this is*unformatted* text"
       <==> "this is*unformatted* text"
     "this is *unformatted text"
       <==> "this is *unformatted text"
     "*this* is *unformatted text"
-      <==> bold "this" <> " is *unformatted text"
+      <==> italic "this" <> " is *unformatted text"
   it "ignored internal markdown" do
     "this is *long _bold_ (not italic)* text"
-      <==> "this is " <> bold "long _bold_ (not italic)" <> " text"
-    "snippet: `this is *bold text*`"
-      <==> "snippet: " <> markdown Snippet "this is *bold text*"
+      <==> "this is " <> italic "long _bold_ (not italic)" <> " text"
+    "snippet: `this is *italic text*`"
+      <==> "snippet: " <> markdown Snippet "this is *italic text*"
 
 secretText :: Spec
 secretText = describe "secret text" do
@@ -130,7 +191,7 @@ secretText = describe "secret text" do
     "this is #unformatted text"
       <==> "this is " <> sname NTPublicGroup TLDSimplex "unformatted" [] "unformatted" <> " text"
     "*this* is #unformatted text"
-      <==> bold "this" <> " is " <> sname NTPublicGroup TLDSimplex "unformatted" [] "unformatted" <> " text"
+      <==> italic "this" <> " is " <> sname NTPublicGroup TLDSimplex "unformatted" [] "unformatted" <> " text"
   it "ignored internal markdown" do
     "snippet: `this is #secret_text#`"
       <==> "snippet: " <> markdown Snippet "this is #secret_text#"
@@ -191,14 +252,12 @@ textColor = describe "text color (red)" do
       <==> "this is !1 unformatted ! text"
     "this is !1  unformatted! text"
       <==> "this is !1  unformatted! text"
-    -- "this is !!1 unformatted!! text"
-    --   <==> "this is " <> "!!1" <> "unformatted!! text"
     "this is!1 unformatted! text"
       <==> "this is!1 unformatted! text"
     "this is !1 unformatted text"
       <==> "this is !1 unformatted text"
     "*this* is !1 unformatted text"
-      <==> bold "this" <> " is !1 unformatted text"
+      <==> italic "this" <> " is !1 unformatted text"
   it "ignored internal markdown" do
     "this is !1 long *red* (not bold)! text"
       <==> "this is " <> red "long *red* (not bold)" <> " text"
@@ -322,7 +381,7 @@ textWithEmail = describe "text with Email" do
     "this is chat @simplex.chat" <==> "this is chat " <> sname NTContact TLDWeb "simplex.chat" [] "simplex.chat"
     "this is chat@ simplex.chat" <==> "this is chat@ " <> uri "simplex.chat"
     "this is chat @ simplex.chat" <==> "this is chat @ " <> uri "simplex.chat"
-    "*this* is chat @ simplex.chat" <==> bold "this" <> " is chat @ " <> uri "simplex.chat"
+    "*this* is chat @ simplex.chat" <==> italic "this" <> " is chat @ " <> uri "simplex.chat"
 
 phone :: Text -> Markdown
 phone = Markdown $ Just Phone
@@ -344,7 +403,7 @@ textWithPhone = describe "text with Phone" do
     "test 077777 test" <==> "test 077777 test"
   it "ignored as markdown (double spaces)" $ do
     "test 07777  777  777 test" <==> "test 07777  777  777 test"
-    "*test* 07777  777  777 test" <==> bold "test" <> " 07777  777  777 test"
+    "*test* 07777  777  777 test" <==> italic "test" <> " 07777  777  777 test"
 
 mention :: Text -> Text -> Markdown
 mention = Markdown . Just . Mention
