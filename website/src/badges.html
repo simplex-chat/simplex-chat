@@ -192,6 +192,9 @@ templateEngineOverride: njk
                 if (e.data.type === "simplex-embed-ready") {
                     post({ type: "simplex-theme", theme: siteTheme() });
                     postColors();
+                    // A card confirm redirects the top window to this URL; the frame hands it to Stripe
+                    // so the redirect returns to the site, not to the frame's own standalone page.
+                    post({ type: "simplex-return-url", url: location.origin + location.pathname });
                 }
                 // The buyer used the theme switch inside the frame; keep the site in step.
                 if (e.data.type === "simplex-theme") { applySiteTheme(e.data.theme); postColors(); }
