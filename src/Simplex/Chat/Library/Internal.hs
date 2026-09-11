@@ -53,7 +53,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), ProofPresHeader (..), BadgeProof (..), BadgeProofKind (..), BadgeStatus (..), FileSizeLimits (..), LocalBadge (..), badgeProof, localBadgeInfo, maxXFTPFileSize, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), ProofPresHeader (..), BadgeProof (..), BadgeProofKind (..), BadgeStatus (..), FileSizeLimits (..), LocalBadge (..), badgeProof, localBadgeStatus, maxXFTPFileSize, mkBadgeStatus, verifyBadge)
 import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -1463,22 +1463,27 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
               (rfd, invBadge, descrBadge) <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
               (invBadge', descrBadge') <- refreshSndBadges fileId invBadge descrBadge
               pure $ invCompleteDescr ciFile rfd invBadge' descrBadge'
-        -- a proof made with a badge that has since expired is re-made with the current badge over the same header
+        -- both proofs are made with the same badge; once the receiver would no longer accept it,
+        -- they are re-made with the current badge over the stored headers
         refreshSndBadges :: FileTransferId -> Maybe BadgeProof -> Maybe BadgeProof -> CM (Maybe BadgeProof, Maybe BadgeProof)
         refreshSndBadges fileId invBadge descrBadge = do
           now <- liftIO getCurrentTime
-          inv_ <- reProve now invBadge
-          descr_ <- reProve now descrBadge
-          let proofs = catMaybes [(BPKInvitation,) <$> inv_, (BPKDescription,) <$> descr_]
-          unless (null proofs) $ withStore' $ \db -> forM_ proofs $ \(kind, p) -> setFileBadgeProof db fileId kind p
-          pure (inv_ <|> invBadge, descr_ <|> descrBadge)
+          -- the user made these proofs, so they verify
+          let stale BadgeProof {badgeInfo} = mkBadgeStatus now (Just True) badgeInfo /= BSActive
+          if ownBadgeActive && any stale (catMaybes [invBadge, descrBadge])
+            then do
+              invBadge' <- mapM reProve invBadge
+              descrBadge' <- mapM reProve descrBadge
+              withStore' $ \db -> do
+                forM_ invBadge' $ createFileBadgeProof db fileId BPKInvitation
+                forM_ descrBadge' $ createFileBadgeProof db fileId BPKDescription
+              pure (invBadge', descrBadge')
+            else pure (invBadge, descrBadge)
           where
-            reProve now = \case
-              Just BadgeProof {presHeader = BBSPresHeader ph, badgeInfo = BadgeInfo {badgeExpiry}}
-                | badgeExpiry < now && ownBadgeExpiry > Just badgeExpiry ->
-                    pure (eitherToMaybe $ strDecode ph) $>>= sndBadgeProof user
-              _ -> pure Nothing
-            ownBadgeExpiry = (\BadgeInfo {badgeExpiry} -> badgeExpiry) . localBadgeInfo <$> localBadge
+            reProve badge@BadgeProof {presHeader = BBSPresHeader ph} = case strDecode ph of
+              Left _ -> pure badge
+              Right header -> fromMaybe badge <$> sndBadgeProof user header
+            ownBadgeActive = maybe False ((BSActive ==) . localBadgeStatus) localBadge
             User {profile = LocalProfile {localBadge}} = user
         fileExpired :: Maybe UTCTime -> CM Bool
         fileExpired fileExpires = do

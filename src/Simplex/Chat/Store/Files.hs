@@ -45,7 +45,7 @@ module Simplex.Chat.Store.Files
     updateSndFileStatus,
     createRcvFileTransfer,
     createRcvGroupFileTransfer,
-    setFileBadgeProof,
+    createFileBadgeProof,
     createRosterRcvFile,
     createRcvStandaloneFileTransfer,
     appendRcvFD,
@@ -190,7 +190,7 @@ createSndFileTransferXFTP db User {userId} contactOrGroup_ (CryptoFile filePath 
     "INSERT INTO files (contact_id, group_id, user_id, file_name, file_path, file_crypto_key, file_crypto_nonce, file_size, chunk_size, redirect_file_id, agent_snd_file_id, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
     (maybe (Nothing, Nothing) contactAndGroupIds contactOrGroup_ :. (userId, fileName, filePath, CF.fileKey <$> cryptoArgs, CF.fileNonce <$> cryptoArgs, fileSize, chunkSize) :. (xftpRedirectFor, agentSndFileId, CIFSSndStored, FPXFTP, currentTs, currentTs))
   fileId <- insertedRowId db
-  forM_ fileBadge $ setFileBadgeProof db fileId BPKInvitation
+  forM_ fileBadge $ createFileBadgeProof db fileId BPKInvitation
   pure FileTransferMeta {fileId, xftpSndFile, xftpRedirectFor, fileName, filePath, fileSize, fileInline = Nothing, chunkSize, cancelled = False}
 
 createSndFTDescrXFTP :: DB.Connection -> User -> Maybe GroupMember -> Connection -> FileTransferMeta -> FileDescr -> IO ()
@@ -467,7 +467,7 @@ createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@File
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, rfdId, currentTs, currentTs)
-    forM_ fileBadge $ setFileBadgeProof db fileId BPKInvitation
+    forM_ fileBadge $ createFileBadgeProof db fileId BPKInvitation
   pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileProhibited = prohibited_, fileStatus = RFSNew, fileType = FTNormal, rcvFileInline, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Nothing, cryptoArgs = Nothing}
 
 prohibitedRow :: Maybe FileProhibited -> (Maybe Integer, Maybe BadgeStatus)
@@ -475,8 +475,8 @@ prohibitedRow = \case
   Just FileProhibited {maxSize, badgeStatus} -> (Just maxSize, badgeStatus)
   Nothing -> (Nothing, Nothing)
 
-setFileBadgeProof :: DB.Connection -> Int64 -> BadgeProofKind -> BadgeProof -> IO ()
-setFileBadgeProof db fileId kind badge = do
+createFileBadgeProof :: DB.Connection -> Int64 -> BadgeProofKind -> BadgeProof -> IO ()
+createFileBadgeProof db fileId kind badge = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -515,7 +515,7 @@ createRcvGroupFileTransfer db userId GroupInfo {groupId, localDisplayName = gNam
       db
       "INSERT INTO rcv_files (file_id, file_status, file_queue_info, file_inline, rcv_file_inline, group_member_id, file_descr_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
       (fileId, FSNew, fileConnReq, fileInline, rcvFileInline, grpMemberId_, rfdId, currentTs, currentTs)
-    forM_ fileBadge $ setFileBadgeProof db fileId BPKInvitation
+    forM_ fileBadge $ createFileBadgeProof db fileId BPKInvitation
   pure RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = f, fileProhibited = prohibited_, fileStatus = RFSNew, fileType, rcvFileInline, senderDisplayName = senderName, chunkSize, cancelled = False, grpMemberId = grpMemberId_, cryptoArgs = Nothing}
 
 -- Roster scratch file owned by a per-source transfer: group_member_id is the delivering relay (so chunk

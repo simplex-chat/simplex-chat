@@ -241,7 +241,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                          in sndBadgeProof user PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash = FD.sharedDescriptionHash fd, fileExpires}
                       withStore' $ \db -> do
                         createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
-                        forM_ descrBadge $ setFileBadgeProof db fileId BPKDescription
+                        forM_ descrBadge $ createFileBadgeProof db fileId BPKDescription
                       sendFileDescriptions (ConnectionId connId) ((conn, sft, fileDescrText rfd) :| []) sharedMsgId fileExpires descrBadge >>= \case
                         Just rs -> case L.last rs of
                           Right ([msgDeliveryId], _) ->
@@ -262,7 +262,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                          in sndBadgeProof user PHFileDescr {chatBinding, fileSize = fromInteger fileSize, descrHash = FD.sharedDescriptionHash fd, fileExpires}
                       withStore' $ \db -> do
                         createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
-                        forM_ descrBadge $ setFileBadgeProof db fileId BPKDescription
+                        forM_ descrBadge $ createFileBadgeProof db fileId BPKDescription
                       forM_ (L.nonEmpty rfdsMemberFTs) $ \rfdsMemberFTs' ->
                         sendFileDescriptions (GroupId groupId) rfdsMemberFTs' sharedMsgId fileExpires descrBadge
                       ci' <- withStore $ \db -> do
@@ -1970,7 +1970,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         badgeOk <- if descrBadgeRequired then descrBadgeVerified binding_ fileSize rfd fileExpires fileBadge else pure True
         if badgeOk
           then do
-            when descrBadgeRequired $ forM_ fileBadge $ \badge -> withStore' $ \db -> setFileBadgeProof db fileId BPKDescription badge
+            when descrBadgeRequired $ forM_ fileBadge $ \badge -> withStore' $ \db -> createFileBadgeProof db fileId BPKDescription badge
             case (fileStatus, xftpRcvFile) of
               (RFSAccepted _, Just XFTPRcvFile {userApprovedRelays}) -> receiveViaCompleteFD user fileId rfd fileSize userApprovedRelays cryptoArgs
               _ -> pure ()
