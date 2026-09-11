@@ -1535,7 +1535,7 @@ ALTER TABLE test_chat_schema.users ALTER COLUMN user_id ADD GENERATED ALWAYS AS 
 
 CREATE TABLE test_chat_schema.wallet_seeds (
     wallet_seed_id bigint NOT NULL,
-    seed bytea NOT NULL,
+    entropy bytea NOT NULL,
     next_name_index bigint DEFAULT 1 NOT NULL,
     single_seed smallint DEFAULT 1 NOT NULL
 );

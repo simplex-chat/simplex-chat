@@ -28,7 +28,7 @@ toSeed (sId, seed) = WalletSeed {wsId = sId, wsEntropy = seed}
 getDeviceSeed :: DB.Connection -> IO (Maybe WalletSeed)
 getDeviceSeed db =
   maybeFirstRow toSeed $
-    DB.query_ db "SELECT wallet_seed_id, seed FROM wallet_seeds ORDER BY wallet_seed_id LIMIT 1"
+    DB.query_ db "SELECT wallet_seed_id, entropy FROM wallet_seeds ORDER BY wallet_seed_id LIMIT 1"
 
 -- | The index the next name bought on this device takes.
 getNextNameIndex :: DB.Connection -> SeedId -> IO NameIndex
@@ -43,7 +43,7 @@ createSeed :: DB.Connection -> ByteString -> IO Bool
 createSeed db entropy =
   getDeviceSeed db >>= \case
     Just _ -> pure False
-    Nothing -> True <$ DB.execute db "INSERT INTO wallet_seeds (seed) VALUES (?)" (Only $ DB.Binary entropy)
+    Nothing -> True <$ DB.execute db "INSERT INTO wallet_seeds (entropy) VALUES (?)" (Only $ DB.Binary entropy)
 
 deleteSeed :: DB.Connection -> SeedId -> IO ()
 deleteSeed db sId = DB.execute db "DELETE FROM wallet_seeds WHERE wallet_seed_id = ?" (Only sId)

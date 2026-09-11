@@ -11,7 +11,7 @@ m20260908_wallet_seeds =
   [r|
 CREATE TABLE wallet_seeds (
   wallet_seed_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  seed BYTEA NOT NULL,
+  entropy BYTEA NOT NULL,
   -- see the SQLite migration
   next_name_index BIGINT NOT NULL DEFAULT 1,
   -- one seed per device for now

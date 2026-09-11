@@ -68,7 +68,7 @@ Internal API. The names commands will call these; users will not.
 ```
 /_wallet                           the next name addresses
 /_wallet create new                generate the seed
-/_wallet create mnemonic=<phrase>  take the seed from a mnemonic
+/_wallet create mnemonic=<phrase>  take the entropy from a mnemonic
 /_wallet export                    the seed mnemonic
 /_wallet export <name>             one derived secret, as 0x and 64 hex digits
 /_wallet delete                    delete the seed
@@ -86,13 +86,18 @@ not leave the device, and the raw command would be logged there.
 ```sql
 CREATE TABLE wallet_seeds (
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  seed BLOB NOT NULL,
+  entropy BLOB NOT NULL,
   next_name_index INTEGER NOT NULL DEFAULT 1,
   single_seed INTEGER NOT NULL DEFAULT 1
 );
 ```
 
 No other table is touched.
+
+What is stored is the BIP-39 entropy, 16 to 32 bytes. The mnemonic comes back
+from it exactly, as the entropy and its checksum determine the words, and that
+is what export returns. The seed itself, the 64 bytes PBKDF2 derives from the
+mnemonic, is computed when a key is needed and never stored.
 
 `next_name_index` is a high-water mark, not a count of names held. A name a
 device no longer tracks still owns its address, so an index is never reused.

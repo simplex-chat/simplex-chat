@@ -854,7 +854,7 @@ CREATE TABLE rcv_roster_transfers(
 ) STRICT;
 CREATE TABLE wallet_seeds(
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  seed BLOB NOT NULL, -- BIP-39 entropy, 16-32 bytes
+  entropy BLOB NOT NULL,
   -- known issue: after an import this starts at 1, so it can hand out a name
   -- key at a path that already owns a name
   next_name_index INTEGER NOT NULL DEFAULT 1,
