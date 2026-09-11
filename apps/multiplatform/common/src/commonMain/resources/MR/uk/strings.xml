@@ -1710,7 +1710,6 @@
     <string name="v5_7_forward_descr">Джерело повідомлення залишається приватним.</string>
     <string name="network_smp_proxy_mode_always">Завжди</string>
     <string name="network_smp_proxy_mode_always_description">Завжди використовуйте приватну маршрутизацію.</string>
-    <string name="update_network_smp_proxy_mode_question">Режим маршрутизації повідомлень</string>
     <string name="network_smp_proxy_mode_never_description">НЕ використовуйте приватну маршрутизацію.</string>
     <string name="network_smp_proxy_fallback_prohibit">Ні</string>
     <string name="network_smp_proxy_fallback_prohibit_description">НЕ надсилайте повідомлення напряму, навіть якщо ваш сервер або сервер призначення не підтримує приватну маршрутизацію.</string>
@@ -1738,7 +1737,6 @@
     <string name="group_members_can_send_simplex_links">Учасники можуть надсилати посилання SimpleX.</string>
     <string name="v5_7_call_sounds">Звуки вхідного дзвінка</string>
     <string name="chat_theme_apply_to_light_mode">Світлий режим</string>
-    <string name="update_network_smp_proxy_fallback_question">Запасний варіант маршрутизації повідомлень</string>
     <string name="settings_section_title_private_message_routing">Маршрутизація приватних повідомлень</string>
     <string name="forwarded_description">переслано</string>
     <string name="network_type_other">Інше</string>
@@ -1791,7 +1789,6 @@
     <string name="network_smp_proxy_fallback_allow_description">Надсилайте повідомлення напряму, якщо ваш сервер або сервер призначення не підтримує приватну маршрутизацію.</string>
     <string name="chat_theme_set_default_theme">Встановлення теми за замовчуванням</string>
     <string name="color_sent_quote">Надіслано відповідь</string>
-    <string name="chat_list_always_visible">Показати список чату в новому вікні</string>
     <string name="network_smp_proxy_mode_unknown_description">Використовуйте приватну маршрутизацію з невідомими серверами.</string>
     <string name="network_smp_proxy_mode_unprotected_description">Використовуйте приватну маршрутизацію з невідомими серверами, якщо IP-адреса не захищена.</string>
     <string name="color_wallpaper_background">Фон шпалер</string>
@@ -1876,7 +1873,6 @@
     <string name="v6_0_new_chat_experience">Новий досвід чату 🎉</string>
     <string name="server_address">Адреса сервера</string>
     <string name="confirm_delete_contact_question">Підтвердити видалення контакту?</string>
-    <string name="info_view_connect_button">підключитися</string>
     <string name="proxy_destination_error_failed_to_connect">Сервер переадресації %1$s не зміг з\'єднатися з цільовим сервером %2$s. Будь ласка, спробуйте пізніше.</string>
     <string name="member_inactive_desc">Повідомлення може бути доставлено пізніше, якщо учасник стане активним.</string>
     <string name="selected_chat_items_nothing_selected">Нічого не вибрано</string>
@@ -1991,7 +1987,6 @@
     <string name="info_view_message_button">повідомлення</string>
     <string name="info_view_call_button">дзвінок</string>
     <string name="keep_conversation">Зберегти розмову</string>
-    <string name="info_view_open_button">відкрити</string>
     <string name="info_view_search_button">пошук</string>
     <string name="you_can_still_view_conversation_with_contact">Ви все ще можете переглядати розмову з %1$s у списку чатів.</string>
     <string name="contact_deleted">Контакт видалено!</string>
@@ -2130,17 +2125,12 @@
     <string name="or_to_share_privately">Або поділитися приватно</string>
     <string name="onboarding_choose_server_operators">Оператори серверів</string>
     <string name="onboarding_network_operators">Мережеві оператори</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Умови будуть прийняті для ввімкнених операторів через 30 днів.</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Наприклад, якщо ваш контакт отримує повідомлення через сервер SimpleX Chat, ваш додаток доставлятиме їх через сервер Flux.</string>
-    <string name="onboarding_select_network_operators_to_use">Виберіть мережевих операторів для використання.</string>
     <string name="onboarding_network_operators_configure_via_settings">Ви можете налаштувати сервери за допомогою налаштувань.</string>
-    <string name="onboarding_network_operators_review_later">Перегляньте пізніше</string>
-    <string name="onboarding_network_operators_update">Оновлення</string>
     <string name="operator_conditions_accepted">Прийняті умови</string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">Умови будуть автоматично прийняті для увімкнених операторів: %s.</string>
     <string name="operator_info_title">Оператор мережі</string>
     <string name="operator_servers_title">%s сервери</string>
-    <string name="operator_website">Вебсайт</string>
     <string name="your_servers">Ваші сервери</string>
     <string name="use_servers_of_operator_x">Використовувати %s</string>
     <string name="operator_use_operator_toggle_description">Використовувати сервери</string>
@@ -2187,7 +2177,6 @@
     <string name="onboarding_network_operators_continue">Продовжити</string>
     <string name="create_1_time_link">Створити одноразове посилання</string>
     <string name="error_updating_server_title">Помилка оновлення сервера</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">для кращої конфіденційності метаданих.</string>
     <string name="v6_2_network_decentralization">Децентралізація мережі</string>
     <string name="operator">Оператор</string>
     <string name="no_message_servers_configured_for_receiving">Немає серверів для отримання повідомлень.</string>
@@ -2201,12 +2190,9 @@
     <string name="share_simplex_address_on_social_media">Поділіться адресою SimpleX у соціальних мережах.</string>
     <string name="simplex_address_and_1_time_links_are_safe_to_share">SimpleX-адреси та одноразові посилання можна безпечно ділитися через будь-який месенджер.</string>
     <string name="connection_error_quota_desc">З\'єднання досягло ліміту недоставлених повідомлень, ваш контакт може бути офлайн.</string>
-    <string name="address_creation_instruction">Натисніть Створити адресу SimpleX у меню, щоб створити її пізніше.</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Додаток захищає вашу конфіденційність, використовуючи різних операторів у кожній розмові.</string>
     <string name="operator_use_for_messages">Використовувати для повідомлень</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Ви можете налаштувати операторів у налаштуваннях Мережі та серверів.</string>
     <string name="chat_archive">Або імпортуйте архівний файл</string>
-    <string name="remote_hosts_section">Віддалені мобільні</string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Пристрої Xiaomi</b>: будь ласка, увімкніть Автозапуск у налаштуваннях системи, щоб сповіщення працювали.]]></string>
     <string name="maximum_message_size_title">Повідомлення занадто велике!</string>
     <string name="maximum_message_size_reached_non_text">Будь ласка, зменшіть розмір повідомлення або видаліть медіа та надішліть знову.</string>
@@ -2293,7 +2279,6 @@
     <string name="report_item_visibility_moderators">Тільки відправник і модератори бачать це</string>
     <string name="report_verb">Повідомити</string>
     <string name="report_compose_reason_header_community">Повідомити про порушення: тільки модератори групи побачать це.</string>
-    <string name="report_archive_alert_desc">Повідомлення буде архівоване для вас.</string>
     <string name="report_reason_other">Інша причина</string>
     <string name="report_item_archived">архівование повідомлення</string>
     <string name="archive_verb">Архів</string>
@@ -2335,7 +2320,6 @@
     <string name="network_smp_web_port_footer">Використовувати TCP-порт %1$s, якщо порт не вказано.</string>
     <string name="network_smp_web_port_toggle">Використовувати веб-порт</string>
     <string name="mute_all_chat">Вимкнути звук</string>
-    <string name="unread_mentions">Непрочитані згадки</string>
     <string name="max_group_mentions_per_message_reached">Ви можете згадувати до %1$s учасників у кожному повідомленні!</string>
     <string name="report_archive_alert_desc_all">Усі звіти будуть архівовані для вас.</string>
     <string name="report_archive_alert_title_all">Архівувати всі звіти?</string>
@@ -2485,7 +2469,6 @@
     <string name="compose_view_send_request">Надіслати запит</string>
     <string name="compose_view_send_request_without_message">Надіслати запит без повідомлення</string>
     <string name="v6_4_support_chat_descr">Надсилайте свої приватні відгуки до груп.</string>
-    <string name="sent_to_your_contact_after_connection">Відправлено вашому контакту після з\'єднання.</string>
     <string name="v6_4_1_welcome_contacts_descr">Налаштуйте біографію профілю та вітальне повідомлення.</string>
     <string name="share_old_address_alert_button">Поділіться старою адресою</string>
     <string name="share_old_link_alert_button">Поділіться старим посиланням</string>
@@ -2550,11 +2533,9 @@
     <string name="channel_subscriber_count_singular">%1$d підписник</string>
     <string name="channel_subscriber_count_plural">%1$d підписники</string>
     <string name="badge_supported_simplex">%1$s підтримував SimpleX Chat. Завершення дії значка %2$s.</string>
-    <string name="settings_section_title_about">Про</string>
     <string name="relay_status_accepted">підтверджено</string>
     <string name="relay_status_acknowledged_roster">затверджений список</string>
     <string name="relay_status_active">активний</string>
-    <string name="add_button">Додати</string>
     <string name="add_relay_button">Додати перемикач</string>
     <string name="add_relays_title">Додати перемикачі</string>
     <string name="relay_bar_owner_no_delivery">Додайте перемикачі для відновлення доставки повідомлень.</string>
@@ -2592,7 +2573,6 @@
     <string name="channel_no_active_relays_try_later">Канал не має активних перемикачів. Будь ласка, спробуйте підключитися пізніше.</string>
     <string name="channel_link">Посилання на канал</string>
     <string name="chat_link_channel">Посилання на канал</string>
-    <string name="button_channel_members">Учасники каналу</string>
     <string name="channel_display_name_field">Імʼя каналу</string>
     <string name="channel_preferences">Налаштування каналів</string>
     <string name="channel_profile_is_stored_on_subscribers_devices">Профіль каналу зберігається на пристроях підписників та на ретрансляторах чату.</string>
@@ -2622,8 +2602,6 @@
     <string name="relay_test_step_connect">Підключитися</string>
     <string name="relay_conn_status_connected">підключено</string>
     <string name="relay_conn_status_connecting">підключення</string>
-    <string name="channel_name_requires_newer_app_version">Для підключення за назвою каналу потрібна новіша версія додатка.</string>
-    <string name="contact_name_requires_newer_app_version">Для підключення за іменем контакту потрібна новіша версія додатка.</string>
     <string name="info_row_connection_failed">Підключення не вдалося</string>
     <string name="connect_via_link_or_qr_code">Підключитися через посилання або QR код</string>
     <string name="settings_section_title_contact">Контакт</string>
@@ -2648,7 +2626,6 @@
     <string name="enter_webpage_url">Введіть URL веб-сторінки</string>
     <string name="error_prefix">Помилка</string>
     <string name="error_deleting_message">Помилка видалення повідомлення</string>
-    <string name="error_opening_channel">Помилка відкриття каналу</string>
     <string name="rcv_msg_error_parse">помилка: %s</string>
     <string name="error_saving_channel_profile">Помилка збереження профілю каналу</string>
     <string name="delete_relay">Видалити реле</string>
@@ -2674,7 +2651,6 @@
     <string name="relay_conn_status_failed">помилка</string>
     <string name="relay_status_failed">помилка</string>
     <string name="content_filter_files">Файли</string>
-    <string name="content_filter_menu_item">Фільтр</string>
     <string name="proxy_destination_error_unknown_ca">Відбиток в адресі цільового сервера не збігається із сертифікатом: %1$s.</string>
     <string name="for_anyone_to_reach_you">Щоб будь-хто міг з вами зв’язатися</string>
     <string name="from_history">З історії</string>

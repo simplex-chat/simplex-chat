@@ -1749,11 +1749,9 @@
     <string name="network_smp_proxy_mode_private_routing">Privát útválasztás</string>
     <string name="network_smp_proxy_mode_unknown_description">Privát útválasztás használata az ismeretlen kiszolgálókhoz.</string>
     <string name="network_smp_proxy_mode_always_description">Privát útválasztás használata minden esetben.</string>
-    <string name="update_network_smp_proxy_mode_question">Üzenet-útválasztási mód</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Közvetlen üzenetküldés, ha az IP-cím védett és a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="network_smp_proxy_fallback_allow_description">Közvetlen üzenetküldés, ha a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="private_routing_explanation">Az IP-cím védelmének érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.</string>
-    <string name="update_network_smp_proxy_fallback_question">Üzenet-útválasztási tartalék</string>
     <string name="settings_section_title_private_message_routing">Privát üzenet-útválasztás</string>
     <string name="network_smp_proxy_mode_unprotected_description">Privát útválasztás használata az ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</string>
     <string name="network_smp_proxy_fallback_prohibit_description">NE küldjön üzeneteket közvetlenül, még akkor sem, ha a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
@@ -1778,7 +1776,6 @@
     <string name="settings_section_title_chat_theme">Csevegés témája</string>
     <string name="wallpaper_scale_fill">Kitöltés</string>
     <string name="settings_section_title_user_theme">Profiltéma</string>
-    <string name="chat_list_always_visible">Csevegési lista megjelenítése új ablakban</string>
     <string name="color_mode_light">Világos</string>
     <string name="chat_theme_apply_to_light_mode">Világos mód</string>
     <string name="color_received_quote">Fogadott válaszüzenet-buborék színe</string>
@@ -1952,7 +1949,6 @@
     <string name="info_view_call_button">hívás</string>
     <string name="delete_contact_cannot_undo_warning">A partner törölve lesz – ez a művelet nem vonható vissza!</string>
     <string name="only_delete_conversation">Csak a beszélgetés törlése</string>
-    <string name="info_view_open_button">megnyitás</string>
     <string name="conversation_deleted">Beszélgetés törölve!</string>
     <string name="contact_deleted">Partner törölve!</string>
     <string name="deleted_chats">Archivált partnerek</string>
@@ -1969,7 +1965,6 @@
     <string name="info_view_message_button">üzenet</string>
     <string name="keep_conversation">Beszélgetés megtartása</string>
     <string name="confirm_delete_contact_question">Biztosan törli a partnert?</string>
-    <string name="info_view_connect_button">kapcsolódás</string>
     <string name="one_hand_ui">Könnyen elérhető eszköztárak</string>
     <string name="delete_without_notification">Törlés értesítés nélkül</string>
     <string name="toolbar_settings">Beállítások</string>
@@ -2098,7 +2093,6 @@
     <string name="connection_error_quota_desc">A kapcsolat elérte a kézbesítetlen üzenetek számának határát, a partnere lehet, hogy offline állapotban van.</string>
     <string name="message_deleted_or_not_received_error_title">Nincs üzenet</string>
     <string name="message_deleted_or_not_received_error_desc">Ez az üzenet törölve lett vagy még nem érkezett meg.</string>
-    <string name="address_creation_instruction">Koppintson a SimpleX-cím létrehozása menüpontra a későbbi létrehozáshoz.</string>
     <string name="share_address_publicly">Cím nyilvános megosztása</string>
     <string name="share_simplex_address_on_social_media">SimpleX-cím megosztása a közösségi médiában.</string>
     <string name="share_1_time_link_with_a_friend">Egyszer használható meghívó megosztása egy baráttal</string>
@@ -2115,12 +2109,7 @@
     <string name="onboarding_network_operators">Hálózatüzemeltetők</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Az alkalmazás úgy védi az adatait, hogy minden egyes beszélgetéshez más-más üzemeltetőt használ.</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Például, ha a partnere egy SimpleX Chat kiszolgálón keresztül fogadja az üzeneteket, akkor az Ön alkalmazása egy Flux kiszolgálón keresztül fogja azokat kézbesíteni.</string>
-    <string name="onboarding_select_network_operators_to_use">Jelölje ki a használni kívánt hálózatüzemeltetőket.</string>
-    <string name="onboarding_network_operators_review_later">Felülvizsgálat később</string>
     <string name="onboarding_network_operators_configure_via_settings">A kiszolgálókat a „Hálózat és kiszolgálók” menüben konfigurálhatja.</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">A feltételek 30 nap elteltével lesznek elfogadva az engedélyezett üzemeltetők számára.</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Az üzemeltetőket a „Hálózat és kiszolgálók” menüben konfigurálhatja.</string>
-    <string name="onboarding_network_operators_update">Frissítés</string>
     <string name="onboarding_network_operators_continue">Folytatás</string>
     <string name="operator_review_conditions">Feltételek felülvizsgálata</string>
     <string name="operator_conditions_accepted">Elfogadott feltételek</string>
@@ -2130,7 +2119,6 @@
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[A feltételek el lesznek fogadva a következő üzemeltető(k) számára: <b>%s</b>.]]></string>
     <string name="operator_servers_title">%s kiszolgáló</string>
     <string name="operator_info_title">Hálózatüzemeltető</string>
-    <string name="operator_website">Weboldal</string>
     <string name="operator_conditions_accepted_on">Feltételek elfogadásának ideje: %s.</string>
     <string name="operator_conditions_will_be_accepted_on">A feltételek el lesznek fogadva a következő időpontban: %s.</string>
     <string name="operator_use_operator_toggle_description">Kiszolgálók használata</string>
@@ -2166,13 +2154,11 @@
     <string name="v6_2_network_decentralization_descr">A második előre beállított üzemeltető az alkalmazásban!</string>
     <string name="v6_2_network_decentralization_enable_flux">A Flux kiszolgálókat engedélyezheti a beállításokban, a „Hálózat és kiszolgálók” menüben, a metaadatok jobb védelme érdekében.</string>
     <string name="appearance_app_toolbars">Eszköztárak</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">a metaadatok jobb védelme érdekében.</string>
     <string name="v6_2_improved_chat_navigation">Továbbfejlesztett csevegési navigáció</string>
     <string name="v6_2_improved_chat_navigation_descr">- Csevegés megnyitása az első olvasatlan üzenetnél.\n- Ugrás az idézett üzenetekre.</string>
     <string name="view_updated_conditions">Frissített feltételek megtekintése</string>
     <string name="xftp_servers_per_user">A jelenlegi csevegési profiljához tartozó új fájlok kiszolgálói</string>
     <string name="chat_archive">Vagy archívumfájl importálása</string>
-    <string name="remote_hosts_section">Távoli hordozható eszközök</string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi eszközök</b>: engedélyezze az automatikus indítást a rendszerbeállításokban, hogy az értesítések működjenek.]]></string>
     <string name="maximum_message_size_reached_forwarding">Másolhatja és csökkentheti az üzenet méretét a küldéshez.</string>
     <string name="add_your_team_members_to_conversations">Adja hozzá a munkatársait a beszélgetésekhez.</string>
@@ -2253,7 +2239,6 @@
     <string name="change_order_chat_list_menu_action">Elrendezés módosítása</string>
     <string name="error_creating_report">Hiba történt a jelentés létrehozásakor</string>
     <string name="prefs_error_saving_settings">Hiba történt a beállítások mentésekor</string>
-    <string name="report_archive_alert_desc">A jelentés archiválva lesz az Ön számára.</string>
     <string name="report_compose_reason_header_illegal">Tartalom jelentése: csak a csoport moderátorai látják.</string>
     <string name="archive_verb">Archívum</string>
     <string name="report_archive_alert_title">Archiválja a jelentést?</string>
@@ -2302,7 +2287,6 @@
     <string name="network_smp_web_port_footer">A következő TCP-port használata, amikor nincs port megadva: %1$s.</string>
     <string name="network_smp_web_port_section_title">TCP-port az üzenetváltáshoz</string>
     <string name="network_smp_web_port_toggle">Webport használata</string>
-    <string name="unread_mentions">Olvasatlan említések</string>
     <string name="mute_all_chat">Összes némítása</string>
     <string name="max_group_mentions_per_message_reached">Legfeljebb %1$s tagot említhet meg egy üzenetben!</string>
     <string name="enable_sending_member_reports">Az üzenetek jelentése a moderátorok felé engedélyezve van.</string>
@@ -2431,7 +2415,6 @@
     <string name="reject_contact_request">Partneri kapcsolatkérés elutasítása</string>
     <string name="the_sender_will_not_be_notified">A kérés küldője NEM lesz értesítve.</string>
     <string name="context_user_picker_your_profile">Saját profil</string>
-    <string name="sent_to_your_contact_after_connection">Elküldés a partnernek a kapcsolódást követően.</string>
     <string name="address_welcome_message">Üdvözlőüzenet</string>
     <string name="share_profile_via_link">Frissíti a címet?</string>
     <string name="share_profile_via_link_alert_text">A cím rövid lesz és a profil meg lesz osztva a címen keresztül.</string>
@@ -2486,7 +2469,6 @@
     <string name="settings_section_title_contact_requests_from_groups">Partneri kapcsolatkérések a csoportok tagjaitól</string>
     <string name="member_is_deleted_cant_accept_request">A tag törölve lett – nem lehet elfogadni a kérést</string>
     <string name="rcv_direct_event_group_inv_link_received">a(z) %1$s nevű csoportból partneri kapcsolatot kért</string>
-    <string name="this_setting_is_for_your_current_profile">Ez a beállítás a jelenlegi profiljára vonatkozik</string>
     <string name="open_to_use_bot">Megnyitás a bot használatához</string>
     <string name="chat_banner_connect_to_use_bot">Koppintson a „Kapcsolódás” gombra a bot használatához</string>
     <string name="chat_banner_bot">Bot</string>
@@ -2516,7 +2498,6 @@
     <string name="remove_member_delete_messages_confirmation">Eltávolítás és az üzeneteinek törlése</string>
     <string name="content_filter_all_messages">Összes üzenet</string>
     <string name="content_filter_files">Fájlok</string>
-    <string name="content_filter_menu_item">Szűrő</string>
     <string name="content_filter_images">Képek</string>
     <string name="content_filter_links">Hivatkozások</string>
     <string name="placeholder_search_files">Fájlok keresése</string>
@@ -2535,7 +2516,6 @@
     <string name="chat_banner_channel">Csatorna</string>
     <string name="info_row_channel">Csatorna</string>
     <string name="channel_link">Csatornahivatkozás</string>
-    <string name="button_channel_members">Csatornatagok</string>
     <string name="channel_display_name_field">Csatorna neve</string>
     <string name="relay_test_step_connect">Kapcsolódás</string>
     <string name="relay_conn_status_connected">kapcsolódott</string>
@@ -2550,7 +2530,6 @@
     <string name="relay_status_new">új</string>
     <string name="relay_status_invited">meghíva</string>
     <string name="connect_plan_open_channel">Csatorna megnyitása</string>
-    <string name="connect_plan_open_new_channel">Új csatorna megnyitása</string>
     <string name="member_info_section_title_owner">Tulajdonos</string>
     <string name="channel_members_section_owners">Tulajdonosok és közreműködők</string>
     <string name="button_leave_channel">Csatorna elhagyása</string>
@@ -2633,7 +2612,6 @@
     <string name="relay_address_alert_title">Átjátszó címe</string>
     <string name="relay_address_alert_message">Ez egy csevegési átjátszó címe, nem használható kapcsolódásra.</string>
     <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[Ez a saját hivatkozása a(z) <b>%1$s</b> nevű csatornához!]]></string>
-    <string name="error_opening_channel">Hiba történt a csatorna megnyitásakor</string>
     <string name="unblock_subscriber_for_all_question">Az összes feliratkozó számára feloldja a feliratkozó letiltását?</string>
     <string name="test_relay_to_retrieve_name"><![CDATA[<b>Átjátszó tesztelése</b> a nevének lekéréséhez.]]></string>
     <string name="channel_full_name_field">Csatorna teljes neve:</string>
@@ -2773,7 +2751,6 @@
     <string name="one_hand_ui_top_bar">Felső sáv</string>
     <string name="cancel_channel_alert_msg">Az új %1$s nevű csatornája %3$d átjátszóból %2$d átjátszóhoz kapcsolódott.\nHa visszavonja, akkor a csatorna törlődni fog – de később újra létrehozhatja.</string>
     <string name="button_cancel_and_delete_channel">Visszavonás és a csatorna törlése</string>
-    <string name="add_button">Hozzáadás</string>
     <string name="add_relay_button">Átjátszó hozzáadása</string>
     <string name="add_relays_title">Átjátszók hozzáadása</string>
     <string name="num_relays_selected">%d átjátszó kiválasztva</string>
@@ -2805,14 +2782,8 @@
     <string name="member_info_relay_status_rejected_by_operator">az átjátszó üzemeltetője elutasította</string>
     <string name="another_instance_title">Az alkalmazás már fut</string>
     <string name="another_instance_not_responding">Lehet, hogy egy másik alkalmazáspéldány fut, vagy nem zárult be megfelelően. Így is elindítja?</string>
-    <string name="unsupported_channel_name">Nem támogatott csatornanév</string>
-    <string name="unsupported_contact_name">Nem támogatott partnernév</string>
-    <string name="channel_name_requires_newer_app_version">A csatorna nevén keresztüli kapcsolódáshoz újabb alkalmazásverzió szükséges.</string>
-    <string name="contact_name_requires_newer_app_version">A partner nevén keresztüli kapcsolódáshoz újabb alkalmazásverzió szükséges.</string>
-    <string name="please_upgrade_the_app">Frissítse az alkalmazást.</string>
     <string name="app_update_required">Alkalmazásfrissítés szükséges</string>
     <string name="group_link_requires_newer_version">Ehhez a csoporthoz az alkalmazás újabb verziója szükséges. A csatlakozáshoz frissítse az alkalmazást.</string>
-    <string name="settings_section_title_about">Névjegy</string>
     <string name="settings_section_title_contact">Kapcsolat</string>
     <string name="settings_section_title_support_project">A projekt támogatása</string>
     <string name="chat_data">Csevegési adatok</string>
@@ -2862,7 +2833,6 @@
     <string name="verify_simplex_name_action">Név ellenőrzése</string>
     <string name="verify_simplex_names">SimpleX-nevek ellenőrzése</string>
     <string name="simplex_name_not_verified">Nincs ellenőrizve a SimpleX-név</string>
-    <string name="simplex_name">SimpleX-név</string>
     <string name="your_simplex_name">Saját SimpleX-név</string>
     <string name="set_simplex_name">SimpleX-név beállítása</string>
     <string name="error_saving_simplex_name">Hiba történt a név mentésekor</string>

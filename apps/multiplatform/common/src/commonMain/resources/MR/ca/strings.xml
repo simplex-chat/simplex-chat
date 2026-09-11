@@ -493,7 +493,6 @@
     <string name="auth_confirm_credential">Confirmeu les credencials</string>
     <string name="your_chats">Xats</string>
     <string name="chat_with_developers">Parleu amb els desenvolupadors</string>
-    <string name="info_view_connect_button">connecta</string>
     <string name="confirm_delete_contact_question">Confirmeu l\'eliminació del contacte?</string>
     <string name="icon_descr_server_status_connected">Connectat</string>
     <string name="confirm_verb">Confirma</string>
@@ -740,7 +739,6 @@
     <string name="toolbar_settings">Configuració</string>
     <string name="settings_shutdown">Tanca</string>
     <string name="contact_connection_pending">s\'està connectant…</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Les condicions s\'acceptaran per als operadors habilitats després de 30 dies.</string>
     <string name="system_restricted_background_desc">SimpleX no pot funcionar en segon pla. Només rebreu les notificacions quan obriu l\'aplicació.</string>
     <string name="ntf_channel_calls">Trucades de SimpleX Chat</string>
     <string name="ntf_channel_messages">Missatges de xat de SimpleX</string>
@@ -1006,7 +1004,6 @@
     <string name="servers_info_files_tab">Fitxers</string>
     <string name="fix_connection_not_supported_by_contact">Correcció no suportada pel contacte</string>
     <string name="fix_connection_confirm">Arreglar</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">per a una millor privadesa de les metadades.</string>
     <string name="wallpaper_preview_hello_alice">Bona tarda!</string>
     <string name="migrate_from_device_exported_file_doesnt_exist">El fitxer exportat no existeix</string>
     <string name="v5_7_forward">Reenvia i desa missatges</string>
@@ -1090,7 +1087,6 @@
     <string name="permissions_record_audio">Micròfon</string>
     <string name="icon_descr_call_missed">Trucada perduda</string>
     <string name="privacy_message_draft">Esborrany</string>
-    <string name="remote_hosts_section">Mòbils remots</string>
     <string name="remove_passphrase">Elimina</string>
     <string name="remove_member_confirmation">Expulsa</string>
     <string name="rcv_group_event_user_deleted">t\'ha expulsat</string>
@@ -1226,9 +1222,6 @@
     <string name="onboarding_network_operators_app_will_use_different_operators">L\'aplicació protegeix la teva privadesa utilitzant diferents operadors en cada conversa.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Quan hi ha més d\'un operador habilitat, cap d\'ells té metadades per saber qui es comunica amb qui.</string>
     <string name="how_it_helps_privacy">Com ajuda a la privadesa</string>
-    <string name="onboarding_network_operators_review_later">Revisar més tard</string>
-    <string name="onboarding_network_operators_update">Actualitzar</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Podeu configurar els operadors a la configuració: Xarxa i Servidors.</string>
     <string name="video_call_no_encryption">videotrucada (sense xifrar)</string>
     <string name="ignore">Ignorar</string>
     <string name="reject">Rebutjar</string>
@@ -1307,7 +1300,6 @@
     <string name="member_role_will_be_changed_with_invitation">El rol es canviarà a %s. El membre rebrà una nova invitació.</string>
     <string name="network_status">Estat de la xarxa</string>
     <string name="operator">Operador</string>
-    <string name="operator_website">Lloc web</string>
     <string name="operator_use_for_sending">Per a enviar</string>
     <string name="network_options_reset_to_defaults">Restablir valors predeterminats</string>
     <string name="network_option_ping_count">Compte PING</string>
@@ -1746,7 +1738,6 @@
     <string name="contact_sent_large_file">El vostre contacte ha enviat un fitxer més gran que la mida màxima admesa actualment (%1$s).</string>
     <string name="loading_remote_file_title">Carregant el fitxer</string>
     <string name="notifications">Notificacions</string>
-    <string name="info_view_open_button">obrir</string>
     <string name="loading_remote_file_desc">Si us plau, espereu mentre es carrega el fitxer des del mòbil enllaçat</string>
     <string name="temporary_file_error">Error de fitxer temporal</string>
     <string name="voice_message">Missatge de veu</string>
@@ -1905,8 +1896,6 @@
     <string name="network_use_onion_hosts_prefer">Si disponibles</string>
     <string name="network_proxy_auth_mode_username_password">Les vostres credencials es podrien enviar sense xifrar.</string>
     <string name="theme_colors_section_title">Colors de la interfície</string>
-    <string name="update_network_smp_proxy_fallback_question">Alternativa d\'encaminament de missatges</string>
-    <string name="update_network_smp_proxy_mode_question">Mode d\'encaminament de missatges</string>
     <string name="app_check_for_updates_button_open">Obrir ubicació del fitxer</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Envieu missatges directament quan l\'adreça IP està protegida i el vostre servidor de destinació no admet l\'encaminament privat.</string>
     <string name="network_smp_proxy_fallback_allow_description">Enviar missatges directament quan el vostre servidor de destinació no admet l\'encaminament privat.</string>
@@ -1936,7 +1925,6 @@
     <string name="onboarding_network_operators">Operadors de xarxa</string>
     <string name="onboarding_notifications_mode_battery">Notificacions i bateria</string>
     <string name="you_can_change_it_later">La contrasenya aleatòria s\'emmagatzema a la configuració com a text pla.\nPodeu canviar-ho més tard.</string>
-    <string name="onboarding_select_network_operators_to_use">Seleccioneu els operadors de xarxa que voleu utilitzar.</string>
     <string name="onboarding_choose_server_operators">Operadors de servidor</string>
     <string name="setup_database_passphrase">Configura la contrasenya de la base de dades</string>
     <string name="use_random_passphrase">Utilitzar contrasenya aleatòria</string>
@@ -1978,7 +1966,6 @@
     <string name="restore_passphrase_not_found_desc">No s\'ha trobat la contrasenya a Keystore, introduïu-la manualment. Això pot haver passat si vau restaurar les dades de l\'aplicació mitjançant una eina de còpia de seguretat. Si no és el cas, poseu-vos en contacte amb els desenvolupadors.</string>
     <string name="one_hand_ui">Barres d\'eines d\'aplicacions accessible</string>
     <string name="chat_bottom_bar">Barres d\'eines de xat accessible</string>
-    <string name="chat_list_always_visible">Mostra la llista de xat en una finestra nova</string>
     <string name="terminal_always_visible">Mostrar consola en finestra nova</string>
     <string name="one_hand_ui_change_instruction">Podeu canviar-la a la configuració de l\'aparença.</string>
     <string name="upgrade_and_open_chat">Actualitzar i obrir el xat</string>
@@ -2135,7 +2122,6 @@
     <string name="v5_5_new_interface_languages">IU en hongarès i turc</string>
     <string name="passcode_not_changed">Codi d\'accés no canviat!</string>
     <string name="v5_8_private_routing_descr">Protegiu la vostra adreça IP dels servidors de retransmissió de missatgeria escollits pels vostres contactes.\nActiva a la configuració de *Xarxa i servidors*.</string>
-    <string name="address_creation_instruction">Toqueu Crea adreça SimpleX al menú per crear-la més tard.</string>
     <string name="v4_5_private_filenames_descr">Per protegir la zona horària els fitxers d\'imatge/veu utilitzen UTC.</string>
     <string name="unblock_member_confirmation">Desbloca</string>
     <string name="migrate_from_device_upload_failed">La càrrega ha fallat</string>
@@ -2262,7 +2248,6 @@
     <string name="report_reason_illegal">Contingut inadequat</string>
     <string name="report_reason_profile">Perfil inadequat</string>
     <string name="delete_report">Suprimeix l\'informe</string>
-    <string name="report_archive_alert_desc">L\'informe s\'arxivarà.</string>
     <string name="report_verb">Informar</string>
     <string name="blocking_reason_spam">Spam</string>
     <string name="blocking_reason_content">El contingut infringeix les condicions d\'ús</string>
@@ -2300,7 +2285,6 @@
     <string name="network_smp_web_port_toggle">Emprar port web</string>
     <string name="network_smp_web_port_footer">Emprar el port TCP %1$s quan no se n\'especifica cap.</string>
     <string name="mute_all_chat">Silenciar tot</string>
-    <string name="unread_mentions">Mencions no llegides</string>
     <string name="max_group_mentions_per_message_reached">Podeu mencionar fins a %1$s membres per missatge!</string>
     <string name="enable_sending_member_reports">Permetre denunciar missatges a moderació.</string>
     <string name="disable_sending_member_reports">No permetre denunciar missatges a moderació.</string>
@@ -2427,7 +2411,6 @@
     <string name="compose_view_send_contact_request_alert_question">Enviar sol·licitud de contacte?</string>
     <string name="compose_view_send_request">Enviar sol·licitud</string>
     <string name="compose_view_send_request_without_message">Enviar sol·licitud sense missatge</string>
-    <string name="sent_to_your_contact_after_connection">Enviat al contacte després de la connexió.</string>
     <string name="share_group_profile_via_link">Actualitzar l\'enllaç del grup?</string>
     <string name="share_profile_via_link_alert_confirm">Actualitzar</string>
     <string name="share_profile_via_link">Actualitzar l\'adreça?</string>
@@ -2482,7 +2465,6 @@
     <string name="settings_section_title_contact_requests_from_groups">Sol·licituds de contacte de grups</string>
     <string name="member_is_deleted_cant_accept_request">Membre eliminat(da); no es pot acceptar la sol·licitud.</string>
     <string name="rcv_direct_event_group_inv_link_received">connexió sol·licitada del grup %1$s</string>
-    <string name="this_setting_is_for_your_current_profile">Aquesta configuració és per al perfil actual</string>
     <string name="allow_files_and_media_only_if">Permetre fitxers i contingut multimèdia només si el vostre contacte ho permet.</string>
     <string name="allow_your_contacts_to_send_files_and_media">Permetre que els contactes enviïn fitxers i contingut multimèdia.</string>
     <string name="chat_banner_bot">Bot</string>

@@ -1821,7 +1821,6 @@
 \n*ネットワークとサーバー*設定から有効にして下さい。</string>
     <string name="network_smp_proxy_fallback_prohibit">いいえ</string>
     <string name="network_smp_proxy_fallback_allow">はい</string>
-    <string name="update_network_smp_proxy_mode_question">メッセージルーティングモード</string>
     <string name="appearance_font_size">フォントサイズ</string>
     <string name="app_check_for_updates_beta">ベータ</string>
     <string name="app_check_for_updates_notice_title">アップデートを確認</string>
@@ -1847,7 +1846,6 @@
     <string name="all_users">全てのプロフィール</string>
     <string name="info_view_call_button">通話</string>
     <string name="confirm_delete_contact_question">連絡先の削除を確認しますか？</string>
-    <string name="info_view_connect_button">接続</string>
     <string name="delete_contact_cannot_undo_warning">連絡先が削除されます - この操作は取り消せません！</string>
     <string name="switching_profile_error_title">プロフィールの切り替えエラー</string>
     <string name="privacy_media_blur_radius">メディアのぼかし</string>
@@ -1965,7 +1963,6 @@
     <string name="servers_info_missing">情報がありません、リロードしてください</string>
     <string name="smp_server">SMPサーバ</string>
     <string name="info_view_message_button">メッセージ</string>
-    <string name="operator_website">ウェブサイト</string>
     <string name="info_view_video_button">ビデオ</string>
     <string name="onboarding_network_operators_configure_via_settings">設定画面からサーバを構成できます。</string>
     <string name="operator_open_changes">改定履歴を開く</string>
@@ -1995,7 +1992,6 @@
     <string name="onboarding_notifications_mode_off_desc_short">バックグラウンドサービスを使用しません</string>
     <string name="accept_conditions">利用条件の承諾</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Conditions are already accepted for following operator(s):既にオペレータ <b>%s</b> の利用条件に承諾しています。]]></string>
-    <string name="address_creation_instruction">後で作成する場合はメニューから「SimpleXのアドレスを作成」を選択してください。</string>
     <string name="onboarding_network_about_operators">運営者について</string>
     <string name="chat_item_ttl_year">1年</string>
     <string name="group_reports_active_one">1 件のレポート</string>
@@ -2053,7 +2049,6 @@
     <string name="content_filter_links">リンク</string>
     <string name="content_filter_all_messages">すべて</string>
     <string name="content_filter_voice_messages">音声メッセージ</string>
-    <string name="content_filter_menu_item">フィルター</string>
     <string name="accept_pending_member_alert_confirmation_as_member">メンバーとして承認する</string>
     <string name="accept_pending_member_alert_confirmation_as_observer">オブザーバーとして承認する</string>
     <string name="blocking_reason_spam">スパム</string>
@@ -2097,11 +2092,6 @@
     <string name="file_not_approved_descr">Tor または VPN を使用しない場合、あなたのIPアドレスはこれらのXFTPリレーに表示されます：\n%1$s。</string>
     <string name="unsupported_connection_link">サポートされていない接続リンク</string>
     <string name="link_requires_newer_app_version_please_upgrade">このリンクには新しいバージョンのアプリが必要です。アプリをアップグレードするか、互換性のあるリンクを送るよう連絡先に依頼してください。</string>
-    <string name="unsupported_channel_name">サポートされていないチャンネル名</string>
-    <string name="unsupported_contact_name">サポートされていない連絡先名</string>
-    <string name="channel_name_requires_newer_app_version">チャンネル名による接続には新しいバージョンのアプリが必要です。</string>
-    <string name="contact_name_requires_newer_app_version">連絡先名による接続には新しいバージョンのアプリが必要です。</string>
-    <string name="please_upgrade_the_app">アプリをアップグレードしてください。</string>
     <string name="channel_temporarily_unavailable">チャンネルは一時的に利用できません</string>
     <string name="channel_no_active_relays_try_later">チャンネルにアクティブなリレーがありません。後でもう一度参加をお試しください。</string>
     <string name="app_update_required">アプリの更新が必要です</string>
@@ -2126,7 +2116,6 @@
     <string name="report_archive_alert_title">報告をアーカイブしますか？</string>
     <string name="report_archive_alert_title_nth">%d件の報告をアーカイブしますか？</string>
     <string name="report_archive_alert_title_all">すべての報告をアーカイブしますか？</string>
-    <string name="report_archive_alert_desc">報告はあなたのためにアーカイブされます。</string>
     <string name="report_archive_alert_desc_all">すべての報告があなたのためにアーカイブされます。</string>
     <string name="report_archive_for_me">自分のみ</string>
     <string name="report_archive_for_all_moderators">すべてのモデレーター向け</string>
@@ -2265,7 +2254,6 @@
     <string name="change_automatic_chat_deletion_message">この操作は元に戻せません - このチャットで選択した時点より前に送受信したメッセージは削除されます。</string>
     <string name="disable_automatic_deletion">メッセージ削除を無効にする</string>
     <string name="chat_ttl_options_footer">デバイスからチャットメッセージを削除します。</string>
-    <string name="info_view_open_button">開く</string>
     <string name="info_view_search_button">検索</string>
     <string name="keep_conversation">会話を保持</string>
     <string name="only_delete_conversation">会話のみ削除</string>
@@ -2281,7 +2269,6 @@
     <string name="the_sender_will_not_be_notified">送信者には通知されません。</string>
     <string name="member_is_deleted_cant_accept_request">メンバーが削除されています - リクエストを承諾できません</string>
     <string name="mute_all_chat">すべてミュート</string>
-    <string name="unread_mentions">未読のメンション</string>
     <string name="change_list">リストを変更</string>
     <string name="duplicated_list_error">リスト名と絵文字はすべてのリストで異なる必要があります。</string>
     <string name="change_order_chat_list_menu_action">順序を変更</string>
@@ -2321,7 +2308,6 @@
     <string name="network_smp_proxy_fallback_allow_protected">IPが隠されている場合</string>
     <string name="network_smp_proxy_fallback_allow_description">あなたまたは宛先のサーバがプライベートルーティングをサポートしていない場合、メッセージを直接送信します。</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">IPアドレスが保護されており、かつあなたまたは宛先のサーバがプライベートルーティングをサポートしていない場合、メッセージを直接送信します。</string>
-    <string name="update_network_smp_proxy_fallback_question">メッセージルーティングのフォールバック</string>
     <string name="private_routing_explanation">IPアドレスを保護するため、プライベートルーティングはあなたのSMPサーバを使用してメッセージを配信します。</string>
     <string name="network_smp_web_port_section_title">メッセージング用のTCPポート</string>
     <string name="network_smp_web_port_toggle">Webポートを使用</string>
@@ -2342,7 +2328,6 @@
     <string name="app_check_for_updates_notice_desc">新しいリリースの通知を受け取るには、安定版またはベータ版の定期チェックをオンにしてください。</string>
     <string name="deprecated_options_section">非推奨のオプション</string>
     <string name="prefs_error_saving_settings">設定の保存エラー</string>
-    <string name="sent_to_your_contact_after_connection">接続後に連絡先に送信されます。</string>
     <string name="address_welcome_message">ウェルカムメッセージ</string>
     <string name="or_to_share_privately">またはプライベートに共有する場合</string>
     <string name="simplex_address_or_1_time_link">SimpleXアドレスまたはワンタイムリンク？</string>
@@ -2389,12 +2374,7 @@
     <string name="onboarding_network_operators_app_will_use_different_operators">アプリは会話ごとに異なる運営者を使用することで、あなたのプライバシーを保護します。</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">複数の運営者が有効な場合、どの運営者も誰が誰と通信しているかを知るためのメタデータを持ちません。</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">例えば、あなたの連絡先がSimpleX Chatのサーバ経由でメッセージを受信する場合、あなたのアプリはFluxのサーバ経由でそれらを配信します。</string>
-    <string name="onboarding_select_network_operators_to_use">使用するネットワーク運営者を選択してください。</string>
     <string name="how_it_helps_privacy">プライバシーにどう役立つか</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">有効な運営者の条件は30日後に承諾されます。</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">運営者は「ネットワークとサーバ」設定で構成できます。</string>
-    <string name="onboarding_network_operators_review_later">後で確認</string>
-    <string name="onboarding_network_operators_update">更新</string>
     <string name="onboarding_your_network">あなたのネットワーク</string>
     <string name="onboarding_network_routers_cannot_know">ネットワークのルーターは\n誰が誰と話しているかを知ることができません</string>
     <string name="onboarding_configure_routers">ルーターを設定</string>
@@ -2411,7 +2391,6 @@
     <string name="app_will_ask_to_confirm_unknown_file_servers">アプリは不明なファイルサーバからのダウンロードの確認を求めます（.onion の場合、またはSOCKSプロキシが有効な場合を除く）。</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor または VPN を使用しない場合、あなたのIPアドレスはファイルサーバに表示されます。</string>
     <string name="sanitize_links_toggle">リンクのトラッキングを削除</string>
-    <string name="this_setting_is_for_your_current_profile">この設定は現在のプロフィールに適用されます</string>
     <string name="privacy_chat_list_open_links">チャット一覧からリンクを開く</string>
     <string name="privacy_chat_list_open_links_yes">はい</string>
     <string name="privacy_chat_list_open_links_no">いいえ</string>
@@ -2421,7 +2400,6 @@
     <string name="privacy_chat_list_open_full_web_link">完全なリンクを開く</string>
     <string name="privacy_chat_list_open_clean_web_link">クリーンなリンクを開く</string>
     <string name="settings_section_title_contact_requests_from_groups">グループからの連絡先リクエスト</string>
-    <string name="remote_hosts_section">リモートのモバイル端末</string>
     <string name="chat_item_ttl_default">デフォルト（%s）</string>
     <string name="chat_database_exported_save">エクスポートしたアーカイブを保存できます。</string>
     <string name="chat_database_exported_migrate">エクスポートしたデータベースを移行できます。</string>
@@ -2433,7 +2411,6 @@
     <string name="chat_bottom_bar">手の届くチャットツールバー</string>
     <string name="one_hand_ui_bottom_bar">下部のバー</string>
     <string name="one_hand_ui_top_bar">上部のバー</string>
-    <string name="chat_list_always_visible">新しいウィンドウでチャット一覧を表示</string>
     <string name="down_migration_warning_chat_relays">チャンネルに参加または作成した場合、それらは恒久的に機能しなくなります。</string>
     <string name="leave_channel_question">チャンネルから退出しますか？</string>
     <string name="leave_chat_question">チャットから退出しますか？</string>
@@ -2475,7 +2452,6 @@
     <string name="only_chat_owners_can_change_prefs">設定を変更できるのはチャットのオーナーだけです。</string>
     <string name="action_button_channel_link">リンク</string>
     <string name="button_support_chat">管理者とのチャット</string>
-    <string name="button_channel_members">チャンネルのメンバー</string>
     <string name="button_channel_relays">チャットリレー</string>
     <string name="button_remove_subscriber_question">購読者を削除しますか？</string>
     <string name="button_remove_members_question">メンバーを削除しますか？</string>
@@ -2616,7 +2592,6 @@
     <string name="v6_2_network_decentralization">ネットワークの分散化</string>
     <string name="v6_2_network_decentralization_descr">アプリに2番目のプリセット運営者が登場！</string>
     <string name="v6_2_network_decentralization_enable_flux">メタデータのプライバシー向上のため、「ネットワークとサーバ」設定でFluxを有効にしてください。</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">メタデータのプライバシー向上のため。</string>
     <string name="v6_2_improved_chat_navigation">チャットナビゲーションの改善</string>
     <string name="v6_2_improved_chat_navigation_descr">- 最初の未読メッセージでチャットを開きます。\n- 引用されたメッセージにジャンプします。</string>
     <string name="v6_2_business_chats">ビジネスチャット</string>
@@ -2801,7 +2776,6 @@
     <string name="your_profile_shared_with_channel_relays">あなたのプロフィール %1$s はチャンネルのリレーと購読者に共有されます。\nリレーはチャンネルのメッセージにアクセスできます。</string>
     <string name="configure_relays">リレーを構成</string>
     <string name="relay_status_failed">失敗</string>
-    <string name="add_button">追加</string>
     <string name="add_relay_button">リレーを追加</string>
     <string name="add_relays_title">リレーを追加</string>
     <string name="no_available_relays">利用可能なリレーがありません</string>
@@ -2817,10 +2791,8 @@
     <string name="relay_address_alert_title">リレーアドレス</string>
     <string name="relay_address_alert_message">これはチャットリレーのアドレスであり、接続には使用できません。</string>
     <string name="connect_plan_open_channel">チャンネルを開く</string>
-    <string name="connect_plan_open_new_channel">新しいチャンネルを開く</string>
     <string name="connect_plan_this_is_your_link_for_channel">あなたのチャンネル</string>
     <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[これはチャンネル <b>%1$s</b> 用のあなたのリンクです！]]></string>
-    <string name="error_opening_channel">チャンネルを開く際のエラー</string>
     <string name="unblock_subscriber_for_all_question">全員に対して購読者のブロックを解除しますか？</string>
     <string name="link_previews_alert_title">リンクプレビューを有効にしますか？</string>
     <string name="link_previews_alert_desc">リンクプレビューを送信すると、あなたのIPアドレスがWebサイトに知られる可能性があります。これは後でプライバシー設定で変更できます。</string>

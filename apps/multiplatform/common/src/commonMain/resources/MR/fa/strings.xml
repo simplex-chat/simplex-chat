@@ -1576,10 +1576,8 @@
     <string name="network_smp_proxy_mode_never">هرگز</string>
     <string name="network_smp_proxy_mode_unknown_description">استفاده از مسیریابی خصوصی با سرورهای ناشناخته.</string>
     <string name="network_smp_proxy_mode_unprotected_description">استفاده از مسیریابی خصوصی با سرورهای ناشناخته وقتی نشانی IP محافظت نشده است.</string>
-    <string name="update_network_smp_proxy_mode_question">حالت مسیریابی پیام</string>
     <string name="network_smp_proxy_fallback_allow">بله</string>
     <string name="network_smp_proxy_fallback_prohibit_description">پیام‌ها مستقیما فرستاده نشود، حتی اگر سرور مقصد شما از مسیریابی خصوصی پشتیبانی نکند.</string>
-    <string name="update_network_smp_proxy_fallback_question">گزینه پس‌رفت مسیریابی پیام</string>
     <string name="private_routing_show_message_status">نمایش وضعیت پیام</string>
     <string name="private_routing_explanation">برای محافظت از نشانی IP شما، مسیریابی خصوصی از سرورهای SMP شما به منظور تحویل پیام‌ها استفاده می‌کند.</string>
     <string name="settings_section_title_private_message_routing">مسیریابی پیام خصوصی</string>
@@ -1797,7 +1795,6 @@
     <string name="message_queue_info_server_info">اطلاعات صف سرور: %1$s
 \n
 \nآخرین پیام دریافتی: %2$s</string>
-    <string name="chat_list_always_visible">نمایش فهرست چت در پنجره جدید</string>
     <string name="chat_theme_apply_to_dark_mode">حالت تاریک</string>
     <string name="theme_black">سیاه</string>
     <string name="color_mode">حالت رنگ</string>
@@ -1972,7 +1969,6 @@
     <string name="call_desktop_permission_denied_chrome">برای مجوز میکروفون، روی آیکون اطلاعات کنار نوار آدرس کلیک کنید</string>
     <string name="completed">تکمیل شد</string>
     <string name="confirm_delete_contact_question">تایید حذف مخاطب؟</string>
-    <string name="info_view_connect_button">اتصال</string>
     <string name="compose_view_connect">اتصال</string>
     <string name="servers_info_sessions_connected">متصل</string>
     <string name="v6_4_connect_faster">اتصال سریع تر! 🚀</string>
@@ -2049,7 +2045,6 @@
     <string name="group_member_status_rejected">رد شده</string>
     <string name="reject_pending_member_alert_title">رد کردن عضو؟</string>
     <string name="app_check_for_updates_button_remind_later">بعداً یادآوری کن</string>
-    <string name="remote_hosts_section">موبایل‌های از راه دور</string>
     <string name="migrate_from_device_remove_archive_question">حذف کردن آرشیو؟</string>
     <string name="cant_send_message_mem_removed">از گروه حذف شد</string>
     <string name="button_remove_members_question">اعضا حذف شوند؟</string>
@@ -2075,7 +2070,6 @@
     <string name="operator_review_conditions">بررسی شرایط</string>
     <string name="reviewed_by_admins">بررسی شده توسط مدیران</string>
     <string name="v6_4_review_members">بررسی اعضای گروه</string>
-    <string name="onboarding_network_operators_review_later">بعداً بررسی شود</string>
     <string name="admission_stage_review">بررسی اعضا</string>
     <string name="admission_stage_review_descr">بررسی اعضا قبل از پذیرش (کوبیدن).</string>
     <string name="save_admission_question">آیا تنظیمات پذیرش ذخیره شود؟</string>
@@ -2089,7 +2083,6 @@
     <string name="select_chat_profile">انتخاب پروفایل چت</string>
     <string name="cannot_share_message_alert_text">تنظیمات برگزیده چت، این پیام را ممنوع می‌کند.</string>
     <string name="selected_chat_items_selected_n">%d انتخاب شده</string>
-    <string name="onboarding_select_network_operators_to_use">اپراتورهای شبکه را برای استفاده انتخاب کنید.</string>
     <string name="set_member_admission">تنظیم پذیرش اعضا</string>
     <string name="v6_3_set_message_expiration_in_chats">تنظیم انقضای پیام در چت‌ها.</string>
     <string name="toolbar_settings">تنظیمات</string>
@@ -2131,7 +2124,6 @@
     <string name="settings_message_shape_tail">انتها</string>
     <string name="chat_banner_connect_to_chat">برای چت، روی \"اتصال\" ضربه بزنید.</string>
     <string name="chat_banner_send_request_to_connect">برای ارسال درخواست، روی \"اتصال\" ضربه بزنید.</string>
-    <string name="address_creation_instruction">برای ایجاد آدرس SimpleX در آینده، در منو روی \"ایجاد آدرس SimpleX\" ضربه بزنید.</string>
     <string name="chat_banner_join_group">روی \"پیوستن به گروه\" ضربه بزنید.</string>
     <string name="network_option_tcp_connection">اتصال TCP</string>
     <string name="network_option_tcp_connection_timeout_background">وقفه زمانی اتصال TCP در پس‌زمینه</string>
@@ -2181,7 +2173,6 @@
     <string name="chunks_uploaded">بخش‌ها بارگذاری شدند</string>
     <string name="operator_conditions_accepted_on">شرایط در %s پذیرفته شد.</string>
     <string name="operator_conditions_of_use">شرایط استفاده</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">شرایط برای اپراتورهای فعال پس از ۳۰ روز پذیرفته خواهد شد.</string>
     <string name="operator_conditions_will_be_accepted_on">شرایط در: %s پذیرفته خواهد شد.</string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">شرایط به‌طور خودکار برای اپراتورهای فعال در: %s پذیرفته خواهد شد.</string>
     <string name="smp_servers_configured">سرورهای SMP پیکربندی‌شده</string>
@@ -2307,7 +2298,6 @@
     <string name="network_smp_web_port_off">خاموش</string>
     <string name="only_chat_owners_can_change_prefs">فقط مالکین چت می‌توانند تنظیمات را تغییر دهند.</string>
     <string name="only_delete_conversation">فقط گفتگو حذف شود</string>
-    <string name="info_view_open_button">باز کردن</string>
     <string name="operator_open_changes">باز کردن تغییرات</string>
     <string name="v6_2_improved_chat_navigation_descr">- باز کردن چت برای اولین پیام خوانده نشده.\n- پرش به پیام‌های نقل‌قول شده.</string>
     <string name="operator_open_conditions">شرایط باز کردن</string>
@@ -2354,7 +2344,6 @@
     <string name="sync_connection_question">اتصال اصلاح شود؟</string>
     <string name="appearance_font_size">اندازه فونت</string>
     <string name="report_archive_for_all_moderators">برای همه مدیران</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">برای بهبود حریم خصوصی فراداده.</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">به عنوان مثال، اگر مخاطب شما پیام‌ها را از طریق یک سرور چت SimpleX دریافت کند، برنامه شما آن‌ها را از طریق یک سرور Flux تحویل خواهد داد.</string>
     <string name="report_archive_for_me">برای من</string>
     <string name="operator_use_for_messages_private_routing">برای مسیریابی خصوصی</string>
@@ -2407,7 +2396,6 @@
     <string name="sent_directly">مستقیم ارسال شد</string>
     <string name="servers_info_detailed_statistics_sent_messages_header">پیام‌های ارسال شده</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">تعداد کل ارسال شده</string>
-    <string name="sent_to_your_contact_after_connection">پس از اتصال به مخاطب شما ارسال شد.</string>
     <string name="sent_via_proxy">توسط پروکسی ارسال شد</string>
     <string name="network_session_mode_server">سرور</string>
     <string name="server_added_to_operator__name">سرور به اپراتور %s اضافه شد.</string>
@@ -2418,7 +2406,6 @@
     <string name="servers_info">اطلاعات سرورها</string>
     <string name="servers_info_reset_stats_alert_message">آمار سرورها بازنشانی خواهد شد - این عمل غیرقابل بازگشت است!</string>
     <string name="text_field_set_chat_placeholder">نام چت را تنظیم کنید…</string>
-    <string name="report_archive_alert_desc">گزارش برای شما بایگانی خواهد شد.</string>
     <string name="member_role_will_be_changed_with_notification_chat">نقش به %s تغییر خواهد کرد. همه در چت مطلع خواهند شد.</string>
     <string name="v6_2_network_decentralization_descr">دومین اپراتور پیش‌فرض در برنامه!</string>
     <string name="the_sender_will_not_be_notified">فرستنده مطلع نخواهد شد.</string>
@@ -2437,8 +2424,6 @@
     <string name="appearance_in_app_bars_alpha">شفافیت</string>
     <string name="servers_info_transport_sessions_section_header">جلسات Transport</string>
     <string name="unblock_members_for_all_question">رفع انسداد اعضا برای همه؟</string>
-    <string name="unread_mentions">منشن‌های خوانده نشده</string>
-    <string name="onboarding_network_operators_update">به‌روزرسانی</string>
     <string name="app_check_for_updates_update_available">به‌روزرسانی موجود است: %s</string>
     <string name="operator_updated_conditions">شرایط به‌روزرسانی شده</string>
     <string name="app_check_for_updates_canceled">دانلود به‌روزرسانی لغو شد</string>
@@ -2461,7 +2446,6 @@
     <string name="info_view_video_button">ویدئو</string>
     <string name="view_conditions">مشاهده شرایط</string>
     <string name="view_updated_conditions">مشاهده شرایط به‌روزرسانی شده</string>
-    <string name="operator_website">وب‌سایت</string>
     <string name="address_welcome_message">پیام خوش‌آمدگویی</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">زمانی که بیش از یک اپراتور فعال است، هیچ‌کدام از آن‌ها فراداده‌ای برای فهمیدن اینکه چه کسی با چه کسی ارتباط برقرار می‌کند، ندارند.</string>
     <string name="xftp_server">سرور XFTP</string>
@@ -2469,7 +2453,6 @@
     <string name="snd_group_event_member_accepted">شما این عضو را پذیرفتید</string>
     <string name="servers_info_proxied_servers_section_footer">شما به این سرورها متصل نیستید. از مسیریابی خصوصی برای ارسال پیام‌ها به آن‌ها استفاده می‌شود.</string>
     <string name="one_hand_ui_change_instruction">شما می‌توانید آن را در تنظیمات ظاهر تغییر دهید.</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">شما می‌توانید اپراتورها را در تنظیمات شبکه و سرورها پیکربندی کنید.</string>
     <string name="onboarding_network_operators_configure_via_settings">شما می‌توانید سرورها را از طریق تنظیمات پیکربندی کنید.</string>
     <string name="maximum_message_size_reached_forwarding">شما می‌توانید پیام را کپی کرده و اندازه آن را کاهش دهید تا ارسال شود.</string>
     <string name="max_group_mentions_per_message_reached">شما می‌توانید در هر پیام تا %1$s عضو را منشن کنید!</string>
@@ -2510,7 +2493,6 @@
     <string name="v6_4_1_new_interface_languages">۴ زبان جدید رابط کاربری</string>
     <string name="v6_4_1_new_interface_languages_descr">کاتالان، اندونزیایی، رومانیایی و ویتنامی - با تشکر از کاربران ما!</string>
     <string name="member_is_deleted_cant_accept_request">عضو حذف شده است - نمی‌توان درخواست را قبول کرد</string>
-    <string name="this_setting_is_for_your_current_profile">این تنظیمات برای پروفایل فعلی شماست</string>
     <string name="settings_section_title_contact_requests_from_groups">درخواست‌های تماس از گروه‌ها</string>
     <string name="rcv_direct_event_group_inv_link_received">درخواست اتصال از گروه %1$s</string>
     <string name="open_to_use_bot">برای استفاده از ربات باز کنید</string>

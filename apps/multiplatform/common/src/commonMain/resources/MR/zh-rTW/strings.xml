@@ -1437,7 +1437,6 @@
     <string name="files_and_media_prohibited">禁止檔案和媒體！</string>
     <string name="loading_remote_file_title">檔案載入中</string>
     <string name="file_error">檔案錯誤</string>
-    <string name="update_network_smp_proxy_fallback_question">備用訊息路由</string>
     <string name="network_smp_proxy_fallback_prohibit_description">如果你或你的目標伺服器不支持私密路由，將不直接傳送訊息。</string>
     <string name="create_another_profile_button">建立個人檔案</string>
     <string name="migrate_from_another_device">從另一台裝置轉移</string>
@@ -1533,7 +1532,6 @@
     <string name="error_aborting_address_change">中止地址更改時出錯</string>
     <string name="error_showing_desktop_notification">顯示通知出錯，請聯繫開發者。</string>
     <string name="delete_and_notify_contact">刪除並通知聯絡人</string>
-    <string name="update_network_smp_proxy_mode_question">訊息路由模式</string>
     <string name="network_smp_proxy_mode_never_description">不使用私密路由。</string>
     <string name="permissions_grant">要進行通話請授予一項或多項權限</string>
     <string name="permissions_find_in_settings_and_grant">在 Android 系統設定中找到此權限並手動授予權限。</string>
@@ -1664,7 +1662,6 @@
     <string name="member_inactive_title">成員非活躍</string>
     <string name="compose_message_placeholder">訊息</string>
     <string name="delete_messages_mark_deleted_warning">訊息將被標記為刪除。收信人可以揭示這些訊息。</string>
-    <string name="info_view_connect_button">連接</string>
     <string name="info_view_message_button">訊息</string>
     <string name="app_check_for_updates_notice_disable">停用</string>
     <string name="app_check_for_updates_download_started">下載更新中，請不要關閉應用</string>
@@ -1754,7 +1751,6 @@
     <string name="private_routing_error">私密路由出錯</string>
     <string name="message_forwarded_desc">尚無直接連接，訊息由管理員轉發。</string>
     <string name="selected_chat_items_nothing_selected">什麼也沒選中</string>
-    <string name="info_view_open_button">開啟</string>
     <string name="network_smp_proxy_mode_private_routing">私密路由</string>
     <string name="open_database_folder">打開資料庫文件夾</string>
     <string name="settings_section_title_private_message_routing">私密訊息路由</string>
@@ -1859,7 +1855,6 @@
     <string name="network_smp_proxy_fallback_allow">是</string>
     <string name="audio_device_speaker">喇叭</string>
     <string name="unblock_member_confirmation">解除封鎖</string>
-    <string name="operator_website">網站</string>
     <string name="appearance_in_app_bars_alpha">透明度</string>
     <string name="wallpaper_scale_repeat">重複</string>
     <string name="edit_chat_list_menu_action">編輯</string>
@@ -1867,7 +1862,6 @@
     <string name="select_verb">選擇</string>
     <string name="network_proxy_username">使用者名稱</string>
     <string name="network_proxy_password">密碼</string>
-    <string name="onboarding_network_operators_update">更新</string>
     <string name="onboarding_network_operators_continue">繼續</string>
     <string name="group_member_status_rejected">已拒絕</string>
     <string name="color_mode_system">系統</string>
@@ -2028,7 +2022,6 @@
     <string name="cant_send_message_contact_deleted">聯絡人已刪除</string>
     <string name="cant_send_message_contact_not_synchronized">未同步</string>
     <string name="cant_send_message_contact_disabled">聯絡人已停用</string>
-    <string name="onboarding_network_operators_review_later">稍後審核</string>
     <string name="new_chat_share_profile">分享個人檔案</string>
     <string name="full_link_button_text">完整連結</string>
     <string name="uploaded_files">已上載檔案</string>
@@ -2077,7 +2070,6 @@
     <string name="snd_group_event_member_blocked">你已封鎖 %s</string>
     <string name="connection_not_ready">連接未就緒。</string>
     <string name="v6_1_message_dates_descr">更好的訊息日期。</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">為了更好的元資料隱私。</string>
     <string name="migrate_to_device_try_again">你可以再試一次。</string>
     <string name="connect_use_incognito_profile">使用匿名個人檔案</string>
     <string name="connect_plan_open_chat">開啟聊天</string>
@@ -2137,7 +2129,6 @@
     <string name="content_filter_videos">影片</string>
     <string name="content_filter_files">檔案</string>
     <string name="content_filter_links">連結</string>
-    <string name="content_filter_menu_item">過濾器</string>
     <string name="group_reports_active">%d 個舉報</string>
     <string name="deprecated_options_section">已棄用的選項</string>
     <string name="server_no_sub">無訂閱</string>
@@ -2226,11 +2217,6 @@
     <string name="error_deleting_member_support_chat">刪除聊天時發生錯誤</string>
     <string name="unsupported_connection_link">不支援的連線連結</string>
     <string name="link_requires_newer_app_version_please_upgrade">此連結需要較新的應用程式版本。請升級應用程式，或請你的聯絡人傳送相容的連結。</string>
-    <string name="unsupported_channel_name">不支援的頻道名稱</string>
-    <string name="unsupported_contact_name">不支援的聯絡人名稱</string>
-    <string name="channel_name_requires_newer_app_version">透過頻道名稱連線需要較新的應用程式版本。</string>
-    <string name="contact_name_requires_newer_app_version">透過聯絡人名稱連線需要較新的應用程式版本。</string>
-    <string name="please_upgrade_the_app">請升級應用程式。</string>
     <string name="channel_temporarily_unavailable">頻道暫時無法使用</string>
     <string name="channel_no_active_relays_try_later">頻道沒有啟用中的中繼。請稍後再嘗試加入。</string>
     <string name="app_update_required">需要更新應用程式</string>
@@ -2250,7 +2236,6 @@
     <string name="system_restricted_background_in_call_warn"><![CDATA[若要在背景中進行通話，請在應用程式設定中選擇<b>應用程式電池用量</b> / <b>不受限制</b>。]]></string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi 裝置</b>：請在系統設定中啟用自動啟動，以便通知正常運作。]]></string>
     <string name="message_deleted_or_not_received_error_desc">此訊息已刪除或尚未接收。</string>
-    <string name="report_archive_alert_desc">該檢舉報告將為你封存。</string>
     <string name="report_archive_alert_desc_all">所有檢舉報告將為你封存。</string>
     <string name="snd_error_auth">金鑰錯誤或未知連線——此連線很可能已刪除。</string>
     <string name="srv_error_host">伺服器地址與網路設定不相容。</string>
@@ -2273,7 +2258,6 @@
     <string name="for_anyone_to_reach_you">讓任何人都能聯絡你</string>
     <string name="no_chats_in_list">列表 %s 中沒有聊天。</string>
     <string name="contact_should_accept">聯絡人需要接受…</string>
-    <string name="address_creation_instruction">稍後可點選選單中的「建立 SimpleX 地址」來建立。</string>
     <string name="forward_alert_title_nothing_to_forward">沒有可轉發的內容！</string>
     <string name="forward_alert_forward_messages_without_files">要轉發不含檔案的訊息嗎？</string>
     <string name="forward_files_messages_deleted_after_selection_desc">這些訊息在你選取後已被刪除。</string>
@@ -2341,7 +2325,6 @@
     <string name="reject_contact_request">拒絕聯絡請求</string>
     <string name="the_sender_will_not_be_notified">傳送者不會收到通知。</string>
     <string name="member_is_deleted_cant_accept_request">成員已刪除，無法接受請求</string>
-    <string name="unread_mentions">未讀提及</string>
     <string name="duplicated_list_error">所有列表的名稱和 emoji 都應不同。</string>
     <string name="delete_chat_list_warning">所有聊天都將從列表 %s 中移除，且該列表會被刪除</string>
     <string name="share_simplex_address_on_social_media">在社交媒體上分享 SimpleX 地址。</string>
@@ -2380,7 +2363,6 @@
     <string name="app_check_for_updates_notice_desc">若要接收新版本通知，請開啟穩定版或 Beta 版的定期檢查。</string>
     <string name="show_slow_api_calls">顯示較慢的 API 呼叫</string>
     <string name="prefs_error_saving_settings">儲存設定時發生錯誤</string>
-    <string name="sent_to_your_contact_after_connection">連線後會傳送給你的聯絡人。</string>
     <string name="or_to_share_privately">或私下分享</string>
     <string name="simplex_address_or_1_time_link">SimpleX 地址還是一次性連結？</string>
     <string name="new_1_time_link">新的一次性連結</string>
@@ -2429,11 +2411,8 @@
     <string name="onboarding_network_operators_app_will_use_different_operators">應用程式會在每個對話中使用不同營運商，以保護你的私隱。</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">啟用多於一個營運商時，沒有任何一方擁有足以得知誰與誰通訊的中繼資料。</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">例如，如果你的聯絡人透過 SimpleX Chat 伺服器接收訊息，你的應用程式會透過 Flux 伺服器傳送訊息。</string>
-    <string name="onboarding_select_network_operators_to_use">選擇要使用的網路營運商。</string>
     <string name="how_it_helps_privacy">這如何有助於私隱</string>
     <string name="onboarding_network_operators_configure_via_settings">你可以透過設定配置伺服器。</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">30 天後，將會接受已啟用營運商的條件。</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">你可以在「網路與伺服器」設定中配置營運商。</string>
     <string name="onboarding_your_network">你的網路</string>
     <string name="onboarding_network_routers_cannot_know">網路路由器無法知道\n誰在和誰交談</string>
     <string name="onboarding_configure_routers">設定路由器</string>
@@ -2450,7 +2429,6 @@
     <string name="app_will_ask_to_confirm_unknown_file_servers">應用程式會要求確認來自未知檔案伺服器的下載（.onion 或啟用 SOCKS 代理時除外）。</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">未使用 Tor 或 VPN 時，你的 IP 地址會對檔案伺服器可見。</string>
     <string name="sanitize_links_toggle">移除連結追蹤</string>
-    <string name="this_setting_is_for_your_current_profile">此設定適用於你目前的個人檔案</string>
     <string name="these_settings_are_for_your_current_profile">這些設定適用於你目前的個人檔案</string>
     <string name="receipts_section_description_1">可在聯絡人和群組設定中覆寫這些設定。</string>
     <string name="receipts_contacts_override_enabled">已為 %d 個聯絡人啟用送達回條</string>
@@ -2464,14 +2442,12 @@
     <string name="privacy_chat_list_open_clean_web_link">開啟乾淨連結</string>
     <string name="settings_section_title_delivery_receipts">傳送送達回條給</string>
     <string name="settings_section_title_contact_requests_from_groups">來自群組的聯絡請求</string>
-    <string name="settings_section_title_about">關於</string>
     <string name="settings_section_title_contact">聯絡</string>
     <string name="settings_section_title_support_project">支持此專案</string>
     <string name="chat_data">聊天數據</string>
     <string name="help_and_support">說明與支援</string>
     <string name="more_privacy">更多私隱</string>
     <string name="advanced_settings">進階設定</string>
-    <string name="remote_hosts_section">遠端行動裝置</string>
     <string name="chat_database_exported_save">你可以儲存匯出的封存檔。</string>
     <string name="chat_database_exported_migrate">你可以遷移匯出的數據庫。</string>
     <string name="chat_database_exported_not_all_files">部分檔案未匯出</string>
@@ -2486,7 +2462,6 @@
     <string name="one_hand_ui_bottom_bar">底部列</string>
     <string name="one_hand_ui_top_bar">頂部列</string>
     <string name="terminal_always_visible">在新視窗中顯示控制台</string>
-    <string name="chat_list_always_visible">在新視窗中顯示聊天列表</string>
     <string name="down_migration_warning_chat_relays">如果你加入或建立了頻道，它們將永久停止運作。</string>
     <string name="leave_channel_question">要離開頻道嗎？</string>
     <string name="you_will_stop_receiving_messages_from_this_channel_chat_history_will_be_preserved">你將停止接收此頻道的訊息。聊天記錄將會保留。</string>
@@ -2535,7 +2510,6 @@
     <string name="only_chat_owners_can_change_prefs">只有聊天擁有者可以變更偏好設定。</string>
     <string name="send_receipts_disabled_alert_msg">此群組有超過 %1$d 名成員，不會傳送送達回條。</string>
     <string name="action_button_channel_link">連結</string>
-    <string name="button_channel_members">頻道成員</string>
     <string name="button_channel_relays">聊天中繼</string>
     <string name="button_remove_subscriber_question">要移除訂閱者嗎？</string>
     <string name="button_delete_member_messages_question">要刪除成員訊息嗎？</string>
@@ -2827,7 +2801,6 @@
     <string name="your_profile_shared_with_channel_relays">你的個人檔案 %1$s 將與頻道中繼和訂閱者共享。\n中繼可以存取頻道訊息。</string>
     <string name="configure_relays">設定中繼</string>
     <string name="relay_status_failed">失敗</string>
-    <string name="add_button">新增</string>
     <string name="add_relay_button">新增中繼</string>
     <string name="add_relays_title">新增中繼</string>
     <string name="no_available_relays">沒有可用的中繼</string>
@@ -2843,10 +2816,8 @@
     <string name="relay_address_alert_title">中繼地址</string>
     <string name="relay_address_alert_message">這是聊天中繼地址，不能用於連接。</string>
     <string name="connect_plan_open_channel">開啟頻道</string>
-    <string name="connect_plan_open_new_channel">開啟新頻道</string>
     <string name="connect_plan_this_is_your_link_for_channel">你的頻道</string>
     <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[這是你用於頻道 <b>%1$s</b> 的連結！]]></string>
-    <string name="error_opening_channel">開啟頻道時發生錯誤</string>
     <string name="unblock_subscriber_for_all_question">要對全部解除封鎖訂閱者嗎？</string>
     <string name="link_previews_alert_title">要啟用連結預覽嗎？</string>
     <string name="link_previews_alert_desc">傳送連結預覽可能會向網站透露你的 IP 地址。你可以稍後在「私隱」設定中變更此設定。</string>

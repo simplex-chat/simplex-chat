@@ -137,7 +137,6 @@
     <string name="delete_messages__question">Odstraniti %d poruke?</string>
     <string name="delete_verb">Odstraniti</string>
     <string name="toolbar_settings">Podešavanje</string>
-    <string name="onboarding_network_operators_update">Ažuriraj</string>
     <string name="delete_files_and_media_all">Odstraniti sve datoteke</string>
     <string name="delete_chat_profile_question">Odstraniti profil razgovora?</string>
     <string name="messages_section_title">Poruke</string>
@@ -196,7 +195,6 @@
     <string name="button_add_friends">Dodaj prijatelja</string>
     <string name="button_add_team_members">Dodaj člana tima</string>
     <string name="archive_verb">Arhiva</string>
-    <string name="info_view_connect_button">poveži</string>
     <string name="use_camera_button">Kamera</string>
     <string name="icon_descr_more_button">Više</string>
     <string name="auth_unlock">Otključaj</string>
@@ -502,7 +500,6 @@
     <string name="contact_list_header_title">Vaši kontakti</string>
     <string name="network_use_onion_hosts_no">Ne</string>
     <string name="start_chat_question">Započeti razgovor?</string>
-    <string name="info_view_open_button">otvoriti</string>
     <string name="onboarding_network_operators_continue">Nastaviti</string>
     <string name="rcv_group_event_open_chat">Otvoriti</string>
     <string name="color_background">Pozadina</string>
@@ -865,7 +862,6 @@
     <string name="group_member_role_author">autor</string>
     <string name="export_theme">Izvesti temu</string>
     <string name="v4_4_live_messages">Žive poruke</string>
-    <string name="operator_website">Website</string>
     <string name="custom_time_unit_days">dani</string>
     <string name="compose_forward_messages_n">Prosleđivanje %1$s poruka</string>
     <string name="network_use_onion_hosts_prefer">Kada je dostupno</string>
@@ -880,7 +876,6 @@
     <string name="paste_the_link_you_received">Nalepiti link koji ste primili</string>
     <string name="rate_the_app">Oceniti aplikaciju</string>
     <string name="no_unread_chats">Nema nepročitanih razgovora</string>
-    <string name="report_archive_alert_desc">Izveštaj će biti arhiviran za Vas.</string>
     <string name="keep_unused_invitation_question">Sačuvati neiskorišćenu pozivnicu?</string>
     <string name="voice_message_send_text">Glasovna poruka…</string>
     <string name="connect_use_current_profile">Koristiti trenutni profil</string>
@@ -1110,7 +1105,6 @@
     <string name="la_lock_mode_passcode">Unos pin koda</string>
     <string name="message_forwarded_title">Prosleđena poruka</string>
     <string name="forward_alert_title_nothing_to_forward">Ništa za prosleđivanje</string>
-    <string name="onboarding_network_operators_review_later">Pregledati kasnije</string>
     <string name="status_contact_has_e2e_encryption">kontakt ima e2e šifrovanje</string>
     <string name="lock_after">Zaključati nakon</string>
     <string name="notification_preview_somebody">Skriven kontakt:</string>

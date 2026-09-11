@@ -1780,7 +1780,6 @@
     <string name="forward_alert_forward_messages_without_files">Препращане на съобщенията без файловете?</string>
     <string name="network_smp_proxy_mode_unknown">Неизвестни сървъри</string>
     <string name="settings_section_title_files">Файлове</string>
-    <string name="chat_list_always_visible">Показване на списъка на чатовете в нов прозорец</string>
     <string name="color_mode_system">Системна</string>
     <string name="color_mode_dark">Тъмна</string>
     <string name="theme_black">Черна</string>
@@ -1833,7 +1832,6 @@
     <string name="network_smp_proxy_mode_always">Винаги</string>
     <string name="network_smp_proxy_fallback_prohibit">Не</string>
     <string name="network_smp_proxy_mode_never">Никога</string>
-    <string name="update_network_smp_proxy_mode_question">Режим за рутиране на съобщения</string>
     <string name="network_smp_proxy_mode_unprotected_description">Използвай поверително рутиране с неизвестни сървъри, когато IP адресът не е защитен.</string>
     <string name="color_mode_light">Светла</string>
     <string name="network_smp_proxy_fallback_allow">Да</string>
@@ -2053,11 +2051,9 @@
     <string name="selected_chat_items_selected_n">Избрано %d</string>
     <string name="selected_chat_items_nothing_selected">Нищо не е избрано</string>
     <string name="compose_message_placeholder">Съобщение</string>
-    <string name="info_view_open_button">отвори</string>
     <string name="info_view_message_button">съобщение</string>
     <string name="info_view_call_button">обаждане</string>
     <string name="delete_contact_cannot_undo_warning">Контактът ще бъде изтрит - това не може да бъде отменено!</string>
-    <string name="info_view_connect_button">свързване</string>
     <string name="delete_without_notification">Изтрий без известие</string>
     <string name="conversation_deleted">Разговорът е изтрит!</string>
     <string name="you_can_still_view_conversation_with_contact">Все още ще можете да видите разговора с %1$s в списъка с чатовете.</string>
@@ -2125,8 +2121,6 @@
     <string name="onboarding_network_operators_app_will_use_for_routing">Например, ако контактът ви получава съобщения чрез SimpleX Chat сървър, приложението ви ще ги достави чрез Flux сървър.</string>
     <string name="onboarding_choose_server_operators">Сървърни оператори</string>
     <string name="onboarding_network_operators">Мрежови оператори</string>
-    <string name="onboarding_network_operators_review_later">Преглед по-късно</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Можете да конфигурирате операторите в Мрежа и сървъри.</string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">Условията ще бъдат автоматично приети за активираните оператори на: %s.</string>
     <string name="your_servers">Вашите сървъри</string>
     <string name="operator_conditions_will_be_accepted_on">Условията ще бъдат приети на: %s.</string>
@@ -2140,16 +2134,13 @@
     <string name="operator_added_message_servers">Добавени сървъри за съобщения</string>
     <string name="operator_use_for_files">Използвай за файлове</string>
     <string name="v6_2_improved_chat_navigation_descr">- Отворете чата при първото непрочетено съобщение.\n- Преминете към цитирани съобщения.</string>
-    <string name="update_network_smp_proxy_fallback_question">Резервно рутиране на съобщения</string>
     <string name="debug_logs">Активирай логовете</string>
     <string name="add_your_team_members_to_conversations">Добавете членовете на вашия екип към разговорите.</string>
     <string name="strikethrough_text">задраскан</string>
     <string name="onboarding_network_operators_continue">Продължи</string>
     <string name="button_add_friends">Добави приятели</string>
     <string name="operators_conditions_accepted_for"><![CDATA[ Условия са приети за оператора(ите): <b>%s</b>.]]></string>
-    <string name="operator_website">Уеб страница</string>
     <string name="operator_conditions_accepted_on">Условия, приети на: %s.</string>
-    <string name="remote_hosts_section">Дистанционни мобилни устройства</string>
     <string name="network_preset_servers_title">Предварително зададени сървъри</string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[Ще бъдат приети условия за оператора(ите): <b>%s</b>.]]></string>
     <string name="operator_open_changes">Отвори промените</string>
@@ -2160,7 +2151,6 @@
     <string name="v6_1_customizable_message_descr">Персонализирана форма на съобщенията.</string>
     <string name="v6_1_message_dates_descr">По-добри дати на съобщението.</string>
     <string name="v6_2_network_decentralization_enable_flux">Активиране на Flux в настройките Мрежа и сървъри за по -добра поверителност на метаданните.</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">за по-добра поверителност на метаданните.</string>
     <string name="v6_2_improved_chat_navigation">Подобрена навигация в чата</string>
     <string name="error_saving_database">Грешка при запазване на базата данни</string>
     <string name="chat_main_profile_sent">Вашият профил ще бъде изпратен до членовете</string>
@@ -2179,9 +2169,7 @@
     <string name="onboarding_notifications_mode_periodic_desc_short">Проверявай за съобщения на всеки 10 минути</string>
     <string name="onboarding_notifications_mode_service_desc_short">Приложението винаги работи във фонов режим</string>
     <string name="onboarding_notifications_mode_battery">Известия и батерия</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Условията ще бъдат приети за активираните оператори след 30 дни.</string>
     <string name="onboarding_network_operators_configure_via_settings">Можете да конфигурирате сървърите през настройките.</string>
-    <string name="onboarding_network_operators_update">Актуализация</string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Ще се приемат условия за оператора(ите): <b>%s</b>.]]></string>
     <string name="operator_use_for_messages">Използвай за съобщения</string>
     <string name="direct_messages_are_prohibited">Личните съобщения между членовете са забранени.</string>
@@ -2195,7 +2183,6 @@
     <string name="error_loading_chat_tags">Грешка при зареждането на чат списъка</string>
     <string name="no_chats_in_list">Няма чатове в списъка %s.</string>
     <string name="no_unread_chats">Няма непрочетени чатове</string>
-    <string name="address_creation_instruction">Докосни Създаване на SimpleX адрес в менюто, за да го създадете по-късно.</string>
     <string name="no_chats">Няма чатове</string>
     <string name="no_chats_found">Няма намерени чатове</string>
     <string name="chat_list_favorites">Любими</string>
@@ -2267,7 +2254,6 @@
     <string name="sync_connection_desc">Връзката изисква предоговаряне на криптирането.</string>
     <string name="share_1_time_link_with_a_friend">Сподели еднократен линк за връзка с приятел</string>
     <string name="address_settings">Настройки на адреса</string>
-    <string name="onboarding_select_network_operators_to_use">Изберете мрежови оператори за използване.</string>
     <string name="how_it_helps_privacy">Как помага за поверителността</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Ще спрете да получавате съобщения от този чат. Историята на чата ще бъде запазена.</string>
     <string name="button_add_team_members">Добави членове на екипа</string>
@@ -2455,7 +2441,6 @@
     <string name="compose_view_send_request">Изпрати заявка</string>
     <string name="compose_view_send_request_without_message">Изпрати заявка без съобщение</string>
     <string name="v6_4_support_chat_descr">Изпрати личната си обратна връзка до групи.</string>
-    <string name="sent_to_your_contact_after_connection">Изпратено до вашия контакт след осъществяване на връзка.</string>
     <string name="text_field_set_chat_placeholder">Задаване на име на чат…</string>
     <string name="set_member_admission">Задаване на достъп за членове</string>
     <string name="v6_3_set_message_expiration_in_chats">Задаване на срок на валидност на съобщенията в чатовете.</string>
@@ -2474,14 +2459,12 @@
     <string name="chat_banner_send_request_to_connect">Докосни Свързване за изпращане на заявка</string>
     <string name="chat_banner_join_group">Докосни Присъединяване към групата</string>
     <string name="network_smp_web_port_section_title">TCP порт за съобщения</string>
-    <string name="report_archive_alert_desc">Докладът ще бъде архивиран за вас.</string>
     <string name="the_sender_will_not_be_notified">Подателят НЯМА да бъде уведомен.</string>
     <string name="change_automatic_chat_deletion_message">Това действие не може да бъде отменено - съобщенията, изпратени и получени в този чат по-рано от избраното, ще бъдат изтрити.</string>
     <string name="link_requires_newer_app_version_please_upgrade">Тази връзка изисква по-нова версия на приложението. Моля, актуализирайте приложението или помолете контакта да ви изпрати съвместим линк.</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">Времето за изчезване е зададено само за нови контакти.</string>
     <string name="context_user_picker_cant_change_profile_alert_message">За да използвате друг профил след опит за връзка, изтрийте чата и използвайте линка отново.</string>
     <string name="unblock_members_for_all_question">Отблокиране за всички членове?</string>
-    <string name="unread_mentions">Непрочетени споменавания</string>
     <string name="unsupported_connection_link">Неподдържан линк за връзка</string>
     <string name="operator_updated_conditions">Актуализирани условия</string>
     <string name="v6_4_1_short_address_update">Актуализирайте адреса си</string>
@@ -2508,7 +2491,6 @@
     <string name="settings_section_title_contact_requests_from_groups">Заявки за контакт от групи</string>
     <string name="member_is_deleted_cant_accept_request">Членът е изтрит - не може да се приеме заявката</string>
     <string name="rcv_direct_event_group_inv_link_received">заявка за връзка от група %1$s</string>
-    <string name="this_setting_is_for_your_current_profile">Тази настройка е за текущия профил</string>
     <string name="allow_files_and_media_only_if">Разреши файлове и медия само ако вашият контакт ги разрешава.</string>
     <string name="allow_your_contacts_to_send_files_and_media">Позволи на вашите контактите да изпращат файлове и медия.</string>
     <string name="chat_banner_bot">Бот</string>

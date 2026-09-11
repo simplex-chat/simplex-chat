@@ -1774,12 +1774,10 @@
     <string name="network_smp_proxy_mode_unknown">Bilinmeyen sunucular</string>
     <string name="network_smp_proxy_mode_always_description">Her zaman gizli yönlendirmeyi kullan.</string>
     <string name="network_smp_proxy_mode_never_description">Gizli yönlendirmeyi KULLANMA.</string>
-    <string name="update_network_smp_proxy_mode_question">Mesaj yönlendirme modu</string>
     <string name="network_smp_proxy_mode_never">Hiçbir zaman</string>
     <string name="network_smp_proxy_mode_unknown_description">Bilinmeyen sunucularla gizli yönlendirme kullan.</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Sürüm düşürmeye izin ver</string>
     <string name="network_smp_proxy_fallback_prohibit">Hayır</string>
-    <string name="update_network_smp_proxy_fallback_question">Mesaj yönlendirme yedeklemesi</string>
     <string name="network_smp_proxy_mode_always">Her zaman</string>
     <string name="network_smp_proxy_fallback_prohibit_description">Sizin veya hedef sunucunun özel yönlendirmeyi desteklememesi durumunda bile mesajları doğrudan GÖNDERMEYİN.</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">IP adresi korumalı olduğunda ve sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.</string>
@@ -1819,7 +1817,6 @@
     <string name="theme_remove_image">Resmi kaldır</string>
     <string name="wallpaper_scale_repeat">Tekrarla</string>
     <string name="reset_single_color">Rengi sıfırla</string>
-    <string name="chat_list_always_visible">Sohbet listesini yeni pencerede göster</string>
     <string name="file_not_approved_title">Bilinmeyen sunucular!</string>
     <string name="file_not_approved_descr">Tor veya VPN olmadan, IP adresiniz bu XFTP yönlendiricileri tarafından görülebilir:
 \n%1$s.</string>
@@ -1871,11 +1868,9 @@
     <string name="forward_multiple">Mesajları ilet..</string>
     <string name="compose_forward_messages_n">%1$s mesaj iletiliyor</string>
     <string name="compose_save_messages_n">%1$s Mesaj kayıt ediliyor.</string>
-    <string name="info_view_connect_button">bağlan</string>
     <string name="info_view_call_button">Ara</string>
     <string name="info_view_message_button">mesaj</string>
     <string name="only_delete_conversation">Sadece sohbeti sil</string>
-    <string name="info_view_open_button">açık</string>
     <string name="info_view_search_button">ara</string>
     <string name="switching_profile_error_title">Profil değiştirme sırasında hata oluştu.</string>
     <string name="select_chat_profile">Sohbet profili seç</string>
@@ -2167,9 +2162,7 @@
     <string name="delete_chat_question">Sohbet silinsin mi?</string>
     <string name="connection_not_ready">Bağlantı hazır değil.</string>
     <string name="operator_conditions_of_use">Kullanım şartları</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">daha iyi üstveri gizliliği için.</string>
     <string name="failed_to_save_servers">Sunucuları kaydederken hata oluştu</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Şartlar 30 gün sonra etkin operatörler için kabul edilecektir.</string>
     <string name="delete_report">Raporu sil</string>
     <string name="change_list">Listeyi değiştir</string>
     <string name="operators_conditions_will_also_apply"><![CDATA[Bu koşullar aynı zamanda: <b>%s</b> için de geçerli olacaktır.]]></string>
@@ -2315,7 +2308,6 @@
     <string name="operator_updated_conditions">Güncellenen koşullar</string>
     <string name="report_item_visibility_submitter">Sadece siz ve moderatörler görebilir.</string>
     <string name="report_item_visibility_moderators">Sadece gönderen ve moderatörler görebilir.</string>
-    <string name="address_creation_instruction">Daha sonra oluşturmak için menüden SimpleX adresi oluştur seçeneğine dokunun.</string>
     <string name="operator">Operatör</string>
     <string name="operator_use_for_files">Dosyalar için kullanın</string>
     <string name="v6_3_set_message_expiration_in_chats">Sohbetlerde mesajların geçerlilik süresini ayarlayın.</string>
@@ -2339,7 +2331,6 @@
     <string name="blocking_reason_spam">İstenmeyen</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Uygulama, her konuşmada farklı operatörler kullanarak gizliliğinizi korur.</string>
     <string name="member_role_will_be_changed_with_notification_chat">Rol %s olarak değiştirilecek. Sohbetteki herkes bilgilendirilecek.</string>
-    <string name="unread_mentions">Okunmamış bahsetmeler</string>
     <string name="operator_review_conditions">Koşulları gözden geçirin</string>
     <string name="chat_main_profile_sent">Sohbet profiliniz sohbet üyelerine gönderilecektir.</string>
     <string name="your_servers">Sunucularınız</string>
@@ -2347,7 +2338,6 @@
     <string name="change_automatic_chat_deletion_message">Bu işlem geri alınamaz - seçilen tarihten önce bu sohbette gönderilen ve alınan mesajlar silinecektir.</string>
     <string name="you_can_set_connection_name_to_remember">Bağlantının kimlerle paylaşıldığını hatırlamak için bağlantı adını ayarlayabilirsiniz.</string>
     <string name="share_simplex_address_on_social_media">SimpleX adresini sosyal medyada paylaşın.</string>
-    <string name="operator_website">Web sitesi</string>
     <string name="unsupported_connection_link">Desteklenmeyen bağlantı bağlantısı</string>
     <string name="report_verb">Rapor</string>
     <string name="simplex_address_and_1_time_links_are_safe_to_share">SimpleX adresi ve tek kullanımlık bağlantılar herhangi bir mesajlaşma uygulaması üzerinden güvenle paylaşılabilir.</string>
@@ -2355,9 +2345,6 @@
     <string name="save_admission_question">Giriş ayarlarını kaydetmek ister misiniz?</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Operatörler şunları taahhüt eder:\n- Bağımsız olun\n- Meta veri kullanımını en aza indirin\n- Doğrulanmış açık kaynak kodunu çalıştırın</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Birden fazla operatör etkinleştirildiğinde, hiçbirinin kimin kiminle iletişim kurduğunu öğrenmek için meta verisi yoktur.</string>
-    <string name="onboarding_select_network_operators_to_use">Kullanılacak ağ operatörlerini seçin.</string>
-    <string name="onboarding_network_operators_update">Güncelleme</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Ağ ve sunucular ayarlarında operatörleri yapılandırabilirsiniz.</string>
     <string name="privacy_chat_list_open_web_link">Bağlantıyı aç</string>
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">Anahtar deposundaki parola okunamıyor, lütfen elle girin. Bu, uygulamayla uyumsuz bir sistem güncellemesinden sonra meydana gelmiş olabilir. Eğer durum bu değilse, lütfen geliştiricilerle iletişime geçin.</string>
     <string name="snd_group_event_member_accepted">Bu üyeyi kabul ettiniz.</string>
@@ -2368,7 +2355,6 @@
     <string name="v6_2_network_decentralization_descr">Uygulamadaki ikinci önceden ayarlanmış operatör!</string>
     <string name="add_short_link">Adresi güncelle</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Gizlilik politikası ve kullanım koşulları.</string>
-    <string name="onboarding_network_operators_review_later">Daha sonra incele</string>
     <string name="onboarding_choose_server_operators">Sunucu operatörleri</string>
     <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat ve Flux, Flux tarafından işletilen sunucuların uygulamaya dahil edilmesi konusunda bir anlaşma yaptı.</string>
     <string name="privacy_chat_list_open_links">Sohbet listesinden bağlantıları aç</string>
@@ -2409,7 +2395,6 @@
     <string name="report_sent_alert_title">Moderatörlere gönderilen rapor</string>
     <string name="report_sent_alert_msg_view_in_support_chat">Raporlarınızı yöneticilerle sohbet bölümünde görüntüleyebilirsiniz.</string>
     <string name="onboarding_network_operators_configure_via_settings">Ayarlar aracılığıyla sunucuları yapılandırabilirsiniz.</string>
-    <string name="remote_hosts_section">Uzaktan kumandalı cep telefonları</string>
     <string name="member_criteria_off">kapalı</string>
     <string name="admission_stage_review">İnceleme üyeleri</string>
     <string name="admission_stage_review_descr">Kabul etmeden önce üyeleri inceleyin (kapıyı çalın).</string>
@@ -2428,7 +2413,6 @@
     <string name="connection_error_quota_desc">Bağlantı, teslim edilemeyen mesajların sınırına ulaştı, bağlantınız çevrimdışı olabilir.</string>
     <string name="link_requires_newer_app_version_please_upgrade">Bu bağlantı için daha yeni bir uygulama sürümü gereklidir. Lütfen uygulamayı güncelleyin veya irtibat kişinizden uyumlu bir bağlantı göndermesini isteyin.</string>
     <string name="report_reason_alert_title">Rapor nedeni?</string>
-    <string name="report_archive_alert_desc">Rapor sizin için arşivlenecektir.</string>
     <string name="no_unread_chats">Okunmamış sohbet yok</string>
     <string name="notification_group_report">Rapor: %s</string>
     <string name="chat_list_group_reports">Raporlar</string>
@@ -2480,7 +2464,6 @@
     <string name="compose_view_send_request">Talep gönder</string>
     <string name="compose_view_send_request_without_message">Mesaj olmadan istek gönder</string>
     <string name="v6_4_support_chat_descr">Özel geri bildirimlerinizi gruplara gönderin.</string>
-    <string name="sent_to_your_contact_after_connection">Bağlantı kurulduktan sonra kişinize gönderilir.</string>
     <string name="share_group_profile_via_link">Grup linki güncellensin mi?</string>
     <string name="share_profile_via_link_alert_confirm">Güncelle</string>
     <string name="share_profile_via_link">Adres güncellensin mi?</string>
@@ -2533,11 +2516,9 @@
     <string name="channel_subscriber_count_plural">%1$d aboneler</string>
     <string name="badge_supported_simplex">%1$s SimpleX Chat’i destekledi. Rozet %2$s tarihinde geçerliliğini yitirdi.</string>
     <string name="v6_4_1_new_interface_languages">4 yeni arayüz dili</string>
-    <string name="settings_section_title_about">Hakkında</string>
     <string name="relay_status_accepted">kabul edildi</string>
     <string name="relay_status_acknowledged_roster">onaylanan kadro</string>
     <string name="relay_status_active">aktif</string>
-    <string name="add_button">Ekle</string>
     <string name="add_relay_button">Röle ekle</string>
     <string name="add_relays_title">Röleler ekle</string>
     <string name="relay_bar_owner_no_delivery">Mesaj iletimini geri yüklemek için röle ekleyin.</string>
@@ -2579,7 +2560,6 @@
     <string name="channel_no_active_relays_try_later">Kanalda aktif röle bulunmuyor. Lütfen daha sonra katılmayı deneyin.</string>
     <string name="chat_link_channel">Kanal bağlantısı</string>
     <string name="channel_link">Kanal bağlantısı</string>
-    <string name="button_channel_members">Kanal üyeleri</string>
     <string name="channel_display_name_field">Kanal adı</string>
     <string name="channel_preferences">Kanal tercihleri</string>
     <string name="channel_profile_is_stored_on_subscribers_devices">Kanal profili abonelerin cihazlarında ve sohbet rölelerinde saklanır.</string>
@@ -2609,8 +2589,6 @@
     <string name="relay_test_step_connect">Bağlan</string>
     <string name="relay_conn_status_connected">bağlı</string>
     <string name="relay_conn_status_connecting">bağlanılıyor</string>
-    <string name="channel_name_requires_newer_app_version">Kanal adı üzerinden bağlanmak için daha yeni bir uygulama sürümü gerekir.</string>
-    <string name="contact_name_requires_newer_app_version">Kişi adı ile bağlanmak için daha yeni bir uygulama sürümü gerekir.</string>
     <string name="info_row_connection_failed">Bağlantı başarısız</string>
     <string name="connect_via_link_or_qr_code">Bağlantı veya kare kod ile bağlanın</string>
     <string name="settings_section_title_contact">İletişim</string>
@@ -2658,7 +2636,6 @@
     <string name="error_creating_channel">Kanal oluşturulurken hata oluştu</string>
     <string name="error_deleting_message">Mesaj silinirken hata oluştu</string>
     <string name="error_marking_member_support_chat_read">Okundu olarak işaretlenirken hata</string>
-    <string name="error_opening_channel">Kanal açılırken hata oluştu</string>
     <string name="rcv_msg_error_parse">hata: %s</string>
     <string name="error_saving_channel_profile">Kanal profili kaydedilirken hata oluştu</string>
     <string name="error_saving_simplex_name">İsim kaydedilirken hata oluştu</string>
@@ -2668,7 +2645,6 @@
     <string name="relay_status_failed">başarısız oldu</string>
     <string name="content_filter_files">Dosyalar</string>
     <string name="files_prohibited_in_this_chat">Bu sohbette dosya ve medya yasaktır.</string>
-    <string name="content_filter_menu_item">Filtre</string>
     <string name="proxy_destination_error_unknown_ca">Hedef sunucu adresindeki parmak izi sertifika ile eşleşmiyor: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">Yönlendirme sunucusu adresindeki parmak izi sertifika ile eşleşmiyor: %1$s.</string>
     <string name="network_error_unknown_ca">Sunucu adresindeki parmak izi sertifika ile eşleşmiyor: %1$s.</string>
@@ -2741,14 +2717,12 @@
     <string name="privacy_chat_list_open_clean_web_link">Temiz bağlantıyı aç</string>
     <string name="open_external_link_title">Harici bağlantı açılsın mı?</string>
     <string name="privacy_chat_list_open_full_web_link">Tam bağlantıyı aç</string>
-    <string name="connect_plan_open_new_channel">Yeni kanal açın</string>
     <string name="v6_5_safe_web_links_descr">- bağlantı önizlemelerini göndermeyi tercih edin.\n- etkinleştirilmişse SOCKS proxy kullanın.\n- köprü kimlik avını önleyin.\n- bağlantı izlemeyi kaldırın.</string>
     <string name="onboarding_or_show_qr_code">Ya da kare kodu şahsen veya görüntülü arama yoluyla gösterin.</string>
     <string name="onboarding_or_use_qr_code">Ya da bu kare kodu kullanın - yazdırın veya çevrimiçi gösterin.</string>
     <string name="member_info_section_title_owner">Sahip</string>
     <string name="channel_members_section_owners">Sahipler ve katkıda bulunanlar</string>
     <string name="v6_5_ownership">Sahiplik: kendi aktarıcılarınızı çalıştırabilirsiniz.</string>
-    <string name="please_upgrade_the_app">Lütfen uygulamayı güncelleyin.</string>
     <string name="preset_relay_address">Önceden ayarlanmış aktarıcı adresi</string>
     <string name="preset_relay_name">Önceden ayarlanmış aktarıcı adı</string>
     <string name="v6_5_privacy">Gizlilik: sahipler ve aboneler için.</string>
@@ -2813,7 +2787,6 @@
     <string name="owner_verification_failed">⚠️ İmza doğrulama başarısız oldu: %s.</string>
     <string name="tray_tooltip">SimpleX</string>
     <string name="tray_tooltip_unread">SimpleX - %d okunmamış</string>
-    <string name="simplex_name">SimpleX adı</string>
     <string name="simplex_name_error">SimpleX ad hatası</string>
     <string name="simplex_name_not_verified">SimpleX adı doğrulanmadı</string>
     <string name="badge_invested">SimpleX Chat kitlesel fonlamasına yatırım yapan %s\'ler.</string>
@@ -2858,15 +2831,12 @@
     <string name="relay_address_alert_message">Bu bir sohbet aktarım adresidir, bağlanmak için kullanılamaz.</string>
     <string name="last_active_relay_warning">Bu son aktif aktarıcıdır. Kaldırılması abonelere mesaj iletimini engelleyecektir.</string>
     <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[Bu <b>%1$s</b> kanalı için bağlantınız!]]></string>
-    <string name="this_setting_is_for_your_current_profile">Bu ayar mevcut profiliniz içindir</string>
     <string name="simplex_name_not_found_desc">Bu SimpleX adı kayıtlı değil. Lütfen ismi kontrol edin.</string>
     <string name="v6_5_non_profit_governance_descr">SimpleX Ağını kalıcı kılmak için.</string>
     <string name="one_hand_ui_top_bar">Üst çubuk</string>
     <string name="operator_use_for_names">İsimleri çözümlemek için</string>
     <string name="unblock_subscriber_for_all_question">Herkes için abone engeli kaldırılsın mı?</string>
     <string name="simplex_name_unconfirmed">Onaylanmamış isim</string>
-    <string name="unsupported_channel_name">Desteklenmeyen kanal adı</string>
-    <string name="unsupported_contact_name">Desteklenmeyen kişi adı</string>
     <string name="badge_unverified_title">Doğrulanmamış rozet</string>
     <string name="rcv_channel_event_updated_channel_profile">güncellenen kanal profili</string>
     <string name="v6_4_1_short_address_update">Adresinizi güncelleyin</string>
