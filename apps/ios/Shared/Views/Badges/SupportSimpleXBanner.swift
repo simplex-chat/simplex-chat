@@ -12,11 +12,8 @@ import SimpleXChat
 struct SupportSimpleXBanner: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme
-    @State private var showDismissAlert = false
     var title: LocalizedStringKey = "Support SimpleX"
     var subtitle: LocalizedStringKey = "Get badge + files up to 5GB"
-    // the confirm's "later in Settings" is wrong for a lapsed badge, whose way back is Redeem
-    var confirmsDismiss = true
     let onTap: () -> Void
     let onDismiss: () -> Void
 
@@ -75,14 +72,7 @@ struct SupportSimpleXBanner: View {
                 .padding(.trailing, 16)
                 .padding(.leading, 4)
                 .contentShape(Rectangle())
-                .onTapGesture { if confirmsDismiss { showDismissAlert = true } else { onDismiss() } }
-        }
-        .alert(isPresented: $showDismissAlert) {
-            Alert(
-                title: Text("Support SimpleX"),
-                message: Text("You can support SimpleX later in Settings."),
-                dismissButton: .default(Text("Ok"), action: onDismiss)
-            )
+                .onTapGesture(perform: onDismiss)
         }
     }
 

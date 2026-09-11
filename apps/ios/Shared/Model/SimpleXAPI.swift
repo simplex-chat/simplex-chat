@@ -2197,6 +2197,7 @@ enum BadgeRedeemError: Error {
     case credentialNotVerified
     case unsupportedVersion
     case networkError
+    case badgeEnded
     case unknown
 }
 
@@ -2250,12 +2251,11 @@ private func badgeServiceError(_ tag: String) -> BadgeRedeemError {
 
 // log: false because the code is a bearer secret until it is redeemed - it is in the command, and a
 // service response echoed into an error message would carry it into the terminal with the response.
-func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> User {
+func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: User, newBadge: Bool) {
     let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiRedeemBadgeCode(userId: userId, code: code), log: false)
     switch r {
-    // only the user: its profile carries the badge to show, redeemedBadge is the credential rather
-    // than what is on the profile, and newBadge is false only for a replay, which adds nothing
-    case let .result(.badgeRedeemed(user, _, _)): return user
+    // redeemedBadge is dropped: it is the credential, and the user's profile carries what is shown
+    case let .result(.badgeRedeemed(user, _, newBadge)): return (user, newBadge)
     case let .error(e): throw badgeRedeemError(e)
     default:
         // the response type alone - it names a case or a JSON key, never the service's message
@@ -2283,12 +2283,12 @@ func apiAckBadgeAlert(_ userId: Int64, _ badgePurchaseId: Int64, _ alertKind: Ba
 }
 
 // An API call and not a stored flag: the ack is kept on the purchase in core, which then stops
-// raising this occurrence on every pass and across restarts.
-func ackBadgeAlert() async {
+// raising this occurrence on every pass and across restarts, or until a snooze lapses.
+func ackBadgeAlert(snooze: Bool) async {
     let badgeModel = BadgeModel.shared
     guard let userId = badgeModel.userId, let purchaseId = badgeModel.badgeState?.badgePurchaseId, let alert = badgeModel.alert else { return }
     do {
-        let badgeState = try await apiAckBadgeAlert(userId, purchaseId, alert.kind, snooze: false, episode: alert.episode)
+        let badgeState = try await apiAckBadgeAlert(userId, purchaseId, alert.kind, snooze: snooze, episode: alert.episode)
         await MainActor.run { badgeModel.set(userId: userId, badgeState: badgeState) }
     } catch let error {
         logger.error("ackBadgeAlert: \(responseError(error))")

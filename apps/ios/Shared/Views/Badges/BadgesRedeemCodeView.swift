@@ -144,18 +144,17 @@ struct BadgesRedeemCodeView: View {
         failure = nil
         Task {
             do {
-                let redeemedUser = try await apiRedeemBadgeCode(user.userId, sending)
+                let (redeemedUser, newBadge) = try await apiRedeemBadgeCode(user.userId, sending)
                 let badgeState = try? await apiGetBadgeState(user.userId)
                 await MainActor.run {
                     submitting = false
                     // the response is the only carrier: redeeming raises no event that refreshes the
                     // profile, so without this the badge beside the name is the one from before
                     chatModel.updateUser(redeemedUser)
-                    // a redemption that leaves no badge shown added nothing: core accepts a code
-                    // already redeemed against this profile and answers with the badge it bought
                     if let badgeState, !badgeState.shown {
                         BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
-                        failure = .codeUsed
+                        // a replay adds no purchase; a fresh code's badge can be retired on arrival
+                        failure = newBadge ? .badgeEnded : .codeUsed
                     } else {
                         supporterBannerShown = true
                         dismiss()
@@ -195,6 +194,7 @@ struct BadgesRedeemCodeView: View {
         case .credentialNotVerified: "This app version cannot verify this badge. Please update the app."
         case .unsupportedVersion: "This app version is too old for the badge service. Please update the app."
         case .networkError: "Connection error. Please check your network connection."
+        case .badgeEnded: "The code was accepted, but the badge it grants has already ended."
         case .unknown: "The code could not be redeemed."
         }
     }

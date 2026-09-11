@@ -382,6 +382,30 @@ struct ChatListView: View {
         badgeModel.alert?.kind == .supportEnded && badgeModel.userId == chatModel.currentUser?.userId
     }
 
+    private func showSupportEndedDismissAlert() {
+        showAlert(NSLocalizedString("Support ended", comment: "alert title")) {
+            [
+                UIAlertAction(title: NSLocalizedString("Remind me later", comment: "alert button"), style: .default) { _ in
+                    Task { await ackBadgeAlert(snooze: true) }
+                },
+                UIAlertAction(title: NSLocalizedString("Dismiss", comment: "alert button"), style: .default) { _ in
+                    Task { await ackBadgeAlert(snooze: false) }
+                },
+                cancelAlertAction
+            ]
+        }
+    }
+
+    private func showSupportSimpleXDismissAlert() {
+        showAlert(
+            title: NSLocalizedString("Support SimpleX", comment: "alert title"),
+            message: NSLocalizedString("You can support SimpleX later in Settings.", comment: "alert message"),
+            buttonTitle: NSLocalizedString("Ok", comment: "alert button"),
+            buttonAction: { withAnimation { supporterBannerShown = true } },
+            cancelButton: false
+        )
+    }
+
     private var hasConversations: Bool {
         chatModel.chats.contains { chat in
             switch chat.chatInfo {
@@ -438,9 +462,8 @@ struct ChatListView: View {
                         SupportSimpleXBanner(
                             title: "Support ended",
                             subtitle: "Your support ended on \(alert.dateText).",
-                            confirmsDismiss: false,
                             onTap: { showBadgesSheet = true },
-                            onDismiss: { Task { await ackBadgeAlert() } }
+                            onDismiss: showSupportEndedDismissAlert
                         )
                             .padding(.vertical, 3)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -450,7 +473,7 @@ struct ChatListView: View {
                     } else if !supporterBannerShown && chatModel.chats.count > 3 {
                         SupportSimpleXBanner(
                             onTap: { showBadgesSheet = true },
-                            onDismiss: { withAnimation { supporterBannerShown = true } }
+                            onDismiss: showSupportSimpleXDismissAlert
                         )
                             .padding(.vertical, 3)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
