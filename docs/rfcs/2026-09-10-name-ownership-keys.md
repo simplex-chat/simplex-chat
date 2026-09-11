@@ -48,6 +48,13 @@ the point of the layout.
 Stealth addresses will attach at purpose `5564'`, at the profile level. Only
 purpose `44'` is used here.
 
+The plan is one meta address per profile: a spend key and a viewing key, whose
+public halves are published with the chat profile, opt-in. A sender derives a
+fresh destination from it without a handshake, so one meta address serves any
+number of names received that way, and those keys are not at a derivation path.
+That is why it belongs at the profile level, while the names a profile buys sit
+at the address level.
+
 ## Commands
 
 Internal API. The names commands will call these; users will not.
