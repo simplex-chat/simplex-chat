@@ -29,6 +29,7 @@ module Simplex.Chat.Badges
     defaultFileSizeLimits,
     maxXFTPFileSize,
     maxSndXFTPFileSize,
+    badgeSndGraceInterval,
     badgeServerCredential,
     maxFileSizeSupporter,
     maxFileSizeLegend,
