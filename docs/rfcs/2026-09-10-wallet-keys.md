@@ -42,11 +42,14 @@ find the rest. A key per name leaves no such link. It also keeps an export
 narrow, as a name's secret is a leaf, with no chain code, so handing it over
 hands over that name only.
 
-**Why the account is a counter and not a hash of the profile.** A hashed index
-would survive a restore in any profile order, and would leave no gap to disclose
-a hidden profile. It would also change when a profile is renamed, and it would
-move profile accounts off the list MetaMask and Ledger Live enumerate, which is
-the point of the layout.
+**Why the account is a counter and not a hash of the profile.** A counter keeps
+every profile on the account list MetaMask and Ledger Live enumerate, which is
+the compatibility this layout is for. A hash of the display name would not, and
+it would change whenever a profile is renamed.
+
+It costs two things a hash would give: the same account after a restore whatever
+order the profiles were recreated in, and indexes with no gap to disclose a
+hidden profile.
 
 Stealth addresses will attach at purpose `5564'`, at the profile level. Only
 purpose `44'` is used here.
