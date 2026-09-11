@@ -148,6 +148,8 @@ struct BadgesRedeemCodeView: View {
                 let badgeState = try? await apiGetBadgeState(user.userId)
                 await MainActor.run {
                     submitting = false
+                    // written before the pop: BadgesView swaps its content under this pushed view, so
+                    // the pop reveals Your Badge already in place rather than animating it afterwards
                     if let badgeState {
                         BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
                     }

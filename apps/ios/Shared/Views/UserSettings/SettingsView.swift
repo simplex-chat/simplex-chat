@@ -346,7 +346,7 @@ struct SettingsView: View {
 
             Section {
                 NavigationLink {
-                    BadgesSupportSimplexView()
+                    BadgesView()
                         .modifier(ThemedBackground())
                 } label: {
                     let badgeType = chatModel.currentUser?.profile.localBadge?.badge.badgeType ?? .supporter

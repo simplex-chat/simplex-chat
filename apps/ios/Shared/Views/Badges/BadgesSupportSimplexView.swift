@@ -11,66 +11,14 @@ import SimpleXChat
 
 struct BadgesSupportSimplexView: View {
     @EnvironmentObject var theme: AppTheme
-    @EnvironmentObject var chatModel: ChatModel
-    @ObservedObject private var badgeModel = BadgeModel.shared
     // set true when presented as a sheet root (from the chat-list banner) — that path doesn't
     // reserve nav-bar space like a NavigationLink push does, so the title lands too close to the top
     var showsAsSheet: Bool = false
     @State private var whyBuiltActive = false
     @State private var howItWorksActive = false
     @State private var redeemCodeActive = false
-    @State private var badgeStateUnavailable = false
-
-    private enum Screen {
-        case loading
-        case support
-        case badge(BadgeState)
-    }
-
-    private var screen: Screen {
-        // a gate must not re-route while a view pushed from one of its routes is on screen
-        if redeemCodeActive { return .support }
-        guard let userId = chatModel.currentUser?.userId else { return .loading }
-        // a read that failed must not reach the model, where it would be indistinguishable from
-        // this profile having no badge, so it is held here and falls back to the support screen
-        if badgeStateUnavailable { return .support }
-        guard badgeModel.userId == userId else { return .loading }
-        if let badgeState = badgeModel.badgeState, badgeState.shown { return .badge(badgeState) }
-        return .support
-    }
 
     var body: some View {
-        Group {
-            switch screen {
-            case .loading:
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .support:
-                supportSimpleX
-            case let .badge(badgeState):
-                BadgesYourBadgeView(badgeState: badgeState, showsAsSheet: showsAsSheet)
-            }
-        }
-        .task(id: chatModel.currentUser?.userId) { await loadBadgeState() }
-    }
-
-    private func loadBadgeState() async {
-        guard let user = chatModel.currentUser else { return }
-        await MainActor.run { badgeStateUnavailable = false }
-        do {
-            let badgeState = try await apiGetBadgeState(user.userId)
-            // switching profile cancels this task, and an answer that arrives after it must not
-            // land on the profile that replaced it - it would leave the screen loading for good
-            guard !Task.isCancelled else { return }
-            await MainActor.run { BadgeModel.shared.set(userId: user.userId, badgeState: badgeState) }
-        } catch let error {
-            guard !Task.isCancelled else { return }
-            logger.error("apiGetBadgeState: \(responseError(error))")
-            await MainActor.run { badgeStateUnavailable = true }
-        }
-    }
-
-    private var supportSimpleX: some View {
         GeometryReader { g in
             VStack(alignment: .center, spacing: 16) {
                 Text("Support SimpleX")
