@@ -1016,17 +1016,6 @@ SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
             SELECT delivery_job_id
             FROM delivery_jobs
-            WHERE feed_id = ? AND worker_scope = ?
-              AND failed = 0 AND job_status = ?
-            ORDER BY delivery_job_id ASC
-            LIMIT 1
-          
-Plan:
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_feed_next (feed_id=? AND worker_scope=? AND failed=? AND job_status=?)
-
-Query: 
-            SELECT delivery_job_id
-            FROM delivery_jobs
             WHERE group_id = ? AND worker_scope = ?
               AND failed = 0 AND job_status = ?
             ORDER BY delivery_job_id ASC
@@ -1034,14 +1023,6 @@ Query:
           
 Plan:
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_next (group_id=? AND worker_scope=? AND failed=? AND job_status=?)
-
-Query: 
-            SELECT delivery_job_id, chat_item_id, job_scope_spec_tag, message_ids, feed_cursor_id
-            FROM delivery_jobs
-            WHERE delivery_job_id = ?
-          
-Plan:
-SEARCH delivery_jobs USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             SELECT delivery_task_id
@@ -1053,6 +1034,25 @@ Query:
           
 Plan:
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_next (group_id=? AND worker_scope=? AND failed=? AND task_status=?)
+
+Query: 
+            SELECT feed_job_id
+            FROM feed_jobs
+            WHERE feed_id = ? AND worker_scope = ?
+              AND failed = 0 AND job_status = ?
+            ORDER BY feed_job_id ASC
+            LIMIT 1
+          
+Plan:
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_next (feed_id=? AND worker_scope=? AND failed=? AND job_status=?)
+
+Query: 
+            SELECT feed_job_id, chat_item_id, action_tag, message_ids, cursor_id
+            FROM feed_jobs
+            WHERE feed_job_id = ?
+          
+Plan:
+SEARCH feed_jobs USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             SELECT group_id
@@ -1497,11 +1497,11 @@ SEARCH users USING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
 Query: 
           SELECT COUNT(1)
-          FROM delivery_jobs
-          WHERE chat_item_id = ? AND job_scope_spec_tag = ? AND job_status = ? AND failed = 0
+          FROM feed_jobs
+          WHERE chat_item_id = ? AND action_tag = ? AND job_status != ?
         
 Plan:
-SEARCH delivery_jobs USING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING INDEX idx_feed_jobs_chat_item_id (chat_item_id=? AND action_tag=?)
 
 Query: 
           SELECT agent_conn_id FROM (
@@ -3603,15 +3603,6 @@ Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_notes (user_id=? AND note_folder_id=? AND item_status=?)
 
 Query: 
-        SELECT DISTINCT group_id, feed_id, worker_scope
-        FROM delivery_jobs
-        WHERE failed = 0 AND job_status = ?
-      
-Plan:
-SCAN delivery_jobs USING INDEX idx_delivery_jobs_next
-USE TEMP B-TREE FOR DISTINCT
-
-Query: 
         SELECT EXISTS (
           SELECT 1
           FROM groups
@@ -3717,38 +3708,6 @@ Query:
 Plan:
 SEARCH d USING INDEX idx_msg_deliveries_message_id (message_id=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-        SELECT chat_item_id
-        FROM chat_item_messages
-        WHERE message_id IN (
-          SELECT message_id
-          FROM msg_deliveries
-          WHERE connection_id = ? AND agent_msg_id = ?
-        )
-        UNION
-        SELECT i.chat_item_id
-        FROM msg_deliveries d
-        JOIN chat_item_messages cim ON cim.message_id = d.message_id
-        JOIN connections c ON c.connection_id = d.connection_id
-        LEFT JOIN group_members gm ON gm.group_member_id = c.group_member_id
-        JOIN chat_items i ON i.feed_item_id = cim.chat_item_id
-          AND ((c.contact_id IS NOT NULL AND i.contact_id = c.contact_id)
-            OR (gm.group_id IS NOT NULL AND i.group_id = gm.group_id))
-        WHERE d.connection_id = ? AND d.agent_msg_id = ?
-      
-Plan:
-COMPOUND QUERY
-LEFT-MOST SUBQUERY
-SEARCH chat_item_messages USING INDEX sqlite_autoindex_chat_item_messages_1 (message_id=?)
-LIST SUBQUERY 1
-SEARCH msg_deliveries USING INDEX idx_msg_deliveries_agent_msg_id (connection_id=? AND agent_msg_id=?)
-UNION USING TEMP B-TREE
-SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH d USING INDEX idx_msg_deliveries_agent_msg_id (connection_id=? AND agent_msg_id=?)
-SEARCH cim USING INDEX sqlite_autoindex_chat_item_messages_1 (message_id=?)
-SEARCH gm USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-SEARCH i USING INDEX idx_chat_items_feed_item_group (feed_item_id=?)
 
 Query: 
         SELECT chat_item_id
@@ -4574,7 +4533,7 @@ Query:
     
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_chat_item_id (chat_item_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -4591,7 +4550,7 @@ Query:
     
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_chat_item_id (chat_item_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -4608,7 +4567,7 @@ Query:
     
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_chat_item_id (chat_item_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -4625,7 +4584,7 @@ Query:
     
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_chat_item_id (chat_item_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -5157,14 +5116,6 @@ SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profil
 
 Query: 
       INSERT INTO delivery_jobs (
-        feed_id, chat_item_id, worker_scope, job_scope_spec_tag, message_ids,
-        job_status, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?)
-    
-Plan:
-
-Query: 
-      INSERT INTO delivery_jobs (
         group_id,
         worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
         sender_group_member_ids, body, job_status, created_at, updated_at
@@ -5179,6 +5130,14 @@ Query:
         sender_group_member_id, message_id, message_from_channel, task_status,
         created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    
+Plan:
+
+Query: 
+      INSERT INTO feed_jobs (
+        feed_id, chat_item_id, worker_scope, action_tag, message_ids,
+        job_status, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -5236,6 +5195,22 @@ Query:
     
 Plan:
 SEARCH group_members USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
+
+Query: 
+      SELECT DISTINCT feed_id, worker_scope
+      FROM feed_jobs
+      WHERE failed = 0 AND job_status = ?
+    
+Plan:
+SCAN feed_jobs USING COVERING INDEX idx_feed_jobs_next
+
+Query: 
+      SELECT DISTINCT group_id, worker_scope
+      FROM delivery_jobs
+      WHERE failed = 0 AND job_status = ?
+    
+Plan:
+SCAN delivery_jobs USING COVERING INDEX idx_delivery_jobs_next
 
 Query: 
       SELECT DISTINCT group_id, worker_scope
@@ -6734,10 +6709,6 @@ Query: DELETE FROM chat_item_mentions WHERE chat_item_id = ?
 Plan:
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 
-Query: DELETE FROM chat_item_messages WHERE chat_item_id = ?
-Plan:
-SEARCH chat_item_messages USING COVERING INDEX sqlite_autoindex_chat_item_messages_2 (chat_item_id=?)
-
 Query: DELETE FROM chat_item_reactions WHERE contact_id = ?
 Plan:
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_contact_id (contact_id=?)
@@ -6754,10 +6725,6 @@ Query: DELETE FROM chat_item_reactions WHERE group_id = ?
 Plan:
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_id (group_id=?)
 
-Query: DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id = ?
-Plan:
-SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
-
 Query: DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id IS NOT DISTINCT FROM ?
 Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
@@ -6766,24 +6733,10 @@ Query: DELETE FROM chat_item_versions WHERE chat_item_id = ?
 Plan:
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
 
-Query: DELETE FROM chat_items WHERE chat_item_id = ?
-Plan:
-SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
-SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
-SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
-SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
-SEARCH calls USING COVERING INDEX idx_calls_chat_item_id (chat_item_id=?)
-SEARCH chat_item_messages USING COVERING INDEX sqlite_autoindex_chat_item_messages_2 (chat_item_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_feed_item_group (feed_item_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_chat_item_id (fwd_from_chat_item_id=?)
-SEARCH files USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
-SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
-
 Query: DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_item_viewed (user_id=? AND contact_id=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_chat_item_id (chat_item_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -6797,7 +6750,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 Query: DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND created_at <= ? AND item_content_tag != 'chatBanner'
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=? AND created_at<?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_chat_item_id (chat_item_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -6811,7 +6764,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 Query: DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND item_content_tag != 'chatBanner'
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_contacts_item_viewed (user_id=? AND contact_id=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_chat_item_id (chat_item_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -6825,7 +6778,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 Query: DELETE FROM chat_items WHERE user_id = ? AND feed_id = ? AND chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_chat_item_id (chat_item_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -6839,7 +6792,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 Query: DELETE FROM chat_items WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_item_viewed (user_id=? AND group_id=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_chat_item_id (chat_item_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -6853,7 +6806,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 Query: DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_chat_item_id (chat_item_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -6867,7 +6820,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 Query: DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ?
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND group_id=? AND group_member_id=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_chat_item_id (chat_item_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -6881,7 +6834,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 Query: DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_content_tag != 'chatBanner'
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_groups_item_viewed (user_id=? AND group_id=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_chat_item_id (chat_item_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -6895,7 +6848,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 Query: DELETE FROM chat_items WHERE user_id = ? AND note_folder_id = ?
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=? AND note_folder_id=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_chat_item_id (chat_item_id=?)
+SEARCH feed_jobs USING COVERING INDEX idx_feed_jobs_chat_item_id (chat_item_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -6993,6 +6946,14 @@ SEARCH group_members USING COVERING INDEX idx_group_members_user_id_local_displa
 SEARCH groups USING COVERING INDEX sqlite_autoindex_groups_1 (user_id=? AND local_display_name=?)
 SEARCH contacts USING COVERING INDEX sqlite_autoindex_contacts_1 (user_id=? AND local_display_name=?)
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: DELETE FROM feed_jobs WHERE chat_item_id = ? AND action_tag = ? AND (job_status = ? OR failed = 1)
+Plan:
+SEARCH feed_jobs USING INDEX idx_feed_jobs_chat_item_id (chat_item_id=? AND action_tag=?)
+
+Query: DELETE FROM feed_jobs WHERE created_at <= ? AND (job_status = ? OR failed = 1)
+Plan:
+SCAN feed_jobs
 
 Query: DELETE FROM files WHERE roster_transfer_id = ?
 Plan:
@@ -7444,30 +7405,6 @@ SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
 SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: SELECT 
-      -- Contact
-      ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
-      cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
-      ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-      ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
-      cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
-      cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
-      -- Connection
-      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-      c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-   
-    FROM contacts ct
-    JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-    LEFT JOIN connections c ON c.contact_id = ct.contact_id
-    LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
-   WHERE ct.user_id = ? AND ct.deleted = 0 AND ct.is_user = 0 AND ct.contact_id > ? ORDER BY ct.contact_id ASC LIMIT ?
-Plan:
-SEARCH ct USING INDEX idx_contacts_user_id (user_id=? AND contact_id>?)
-SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
-SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
-
-Query: SELECT 
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
       gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
@@ -7564,36 +7501,6 @@ SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT 
-      -- GroupInfo
-      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
-      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
-      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
-      g.business_chat, g.business_member_id, g.customer_member_id,
-      g.use_relays, g.relay_own_status,
-      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
-      g.root_priv_key, g.root_pub_key, g.member_priv_key,
-      -- GroupMember - membership
-      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
-      mu.created_at, mu.updated_at,
-      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
-   
-    FROM groups g
-    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-    JOIN group_members mu ON mu.group_id = g.group_id
-    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-   WHERE g.user_id = ? AND mu.contact_id = ? AND g.business_chat = ? AND g.group_id > ? ORDER BY g.group_id ASC LIMIT ?
-Plan:
-SEARCH g USING INDEX idx_groups_user_id_business_chat (user_id=? AND business_chat=? AND group_id>?)
-SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
-SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
-
 Query: SELECT 1 FROM settings WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH settings USING COVERING INDEX idx_settings_user_id (user_id=?)
@@ -7685,6 +7592,30 @@ Query: SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group
 Plan:
 SCAN m USING COVERING INDEX idx_group_members_user_id_local_display_name
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?)
+
+Query: SELECT chat_item_id FROM chat_item_messages WHERE message_id IN (SELECT message_id FROM msg_deliveries WHERE connection_id = ? AND agent_msg_id = ?) UNION SELECT i.chat_item_id FROM msg_deliveries d JOIN chat_item_messages cim ON cim.message_id = d.message_id JOIN chat_items i ON i.feed_item_id = cim.chat_item_id AND i.contact_id = ? WHERE d.connection_id = ? AND d.agent_msg_id = ?
+Plan:
+COMPOUND QUERY
+LEFT-MOST SUBQUERY
+SEARCH chat_item_messages USING INDEX sqlite_autoindex_chat_item_messages_1 (message_id=?)
+LIST SUBQUERY 1
+SEARCH msg_deliveries USING INDEX idx_msg_deliveries_agent_msg_id (connection_id=? AND agent_msg_id=?)
+UNION USING TEMP B-TREE
+SEARCH d USING INDEX idx_msg_deliveries_agent_msg_id (connection_id=? AND agent_msg_id=?)
+SEARCH cim USING INDEX sqlite_autoindex_chat_item_messages_1 (message_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_feed_item_contact (feed_item_id=? AND contact_id=?)
+
+Query: SELECT chat_item_id FROM chat_item_messages WHERE message_id IN (SELECT message_id FROM msg_deliveries WHERE connection_id = ? AND agent_msg_id = ?) UNION SELECT i.chat_item_id FROM msg_deliveries d JOIN chat_item_messages cim ON cim.message_id = d.message_id JOIN chat_items i ON i.feed_item_id = cim.chat_item_id AND i.group_id = ? WHERE d.connection_id = ? AND d.agent_msg_id = ?
+Plan:
+COMPOUND QUERY
+LEFT-MOST SUBQUERY
+SEARCH chat_item_messages USING INDEX sqlite_autoindex_chat_item_messages_1 (message_id=?)
+LIST SUBQUERY 1
+SEARCH msg_deliveries USING INDEX idx_msg_deliveries_agent_msg_id (connection_id=? AND agent_msg_id=?)
+UNION USING TEMP B-TREE
+SEARCH d USING INDEX idx_msg_deliveries_agent_msg_id (connection_id=? AND agent_msg_id=?)
+SEARCH cim USING INDEX sqlite_autoindex_chat_item_messages_1 (message_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_feed_item_group (feed_item_id=? AND group_id=?)
 
 Query: SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_support' ORDER BY chat_item_id DESC LIMIT 1
 Plan:
@@ -7786,10 +7717,6 @@ Query: SELECT contact_id FROM group_members WHERE contact_id = ? LIMIT 1
 Plan:
 SEARCH group_members USING COVERING INDEX idx_group_members_contact_id (contact_id=?)
 
-Query: SELECT contact_id, chat_item_id FROM chat_items WHERE user_id = ? AND feed_item_id = ? AND contact_id > ? AND contact_id <= ?
-Plan:
-SEARCH chat_items USING INDEX idx_chat_items_feed_item_contact (feed_item_id=? AND contact_id>? AND contact_id<?)
-
 Query: SELECT contact_id, conn_full_link_to_connect FROM contacts WHERE user_id = ? AND conn_short_link_to_connect = ?
 Plan:
 SEARCH contacts USING INDEX idx_contacts_user_id (user_id=?)
@@ -7870,10 +7797,6 @@ Query: SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contac
 Plan:
 SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT group_id, chat_item_id FROM chat_items WHERE user_id = ? AND feed_item_id = ? AND group_id > ? AND group_id <= ?
-Plan:
-SEARCH chat_items USING INDEX idx_chat_items_feed_item_group (feed_item_id=? AND group_id>? AND group_id<?)
-
 Query: SELECT group_id, relay_own_status FROM groups WHERE relay_own_status IS NOT NULL ORDER BY group_id
 Plan:
 SCAN groups
@@ -7893,6 +7816,31 @@ SEARCH group_members USING INDEX idx_group_members_group_id (user_id=? AND group
 Query: SELECT group_member_id, member_category FROM group_members WHERE user_id = ? AND group_id = ? AND member_id = ?
 Plan:
 SEARCH group_members USING INDEX sqlite_autoindex_group_members_1 (group_id=? AND member_id=?)
+
+Query: SELECT i.chat_item_id, 
+      -- Contact
+      ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
+      cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
+      ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
+      ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+      cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
+      cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
+      -- Connection
+      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+      c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+   
+    FROM contacts ct
+    JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+    LEFT JOIN connections c ON c.contact_id = ct.contact_id
+    LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
+   JOIN chat_items i ON i.contact_id = ct.contact_id WHERE i.user_id = ? AND i.feed_item_id = ? AND i.contact_id > ? AND i.item_deleted = 0 ORDER BY i.contact_id ASC LIMIT ?
+Plan:
+SEARCH i USING INDEX idx_chat_items_feed_item_contact (feed_item_id=? AND contact_id>?)
+SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
+SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: SELECT i.chat_item_id, 
       -- Contact
@@ -7943,6 +7891,62 @@ SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
 SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: SELECT i.chat_item_id, 
+      -- Contact
+      ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite, ct.drop_feed,
+      cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
+      ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
+      ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+      cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
+      cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
+      -- Connection
+      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+      c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+   
+    FROM contacts ct
+    JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+    LEFT JOIN connections c ON c.contact_id = ct.contact_id
+    LEFT JOIN contact_requests cr2 ON cr2.contact_request_id = ct.contact_request_id
+   LEFT JOIN chat_items i ON i.feed_item_id = ? AND i.contact_id = ct.contact_id WHERE ct.user_id = ? AND ct.deleted = 0 AND ct.is_user = 0 AND ct.contact_id > ? ORDER BY ct.contact_id ASC LIMIT ?
+Plan:
+SEARCH ct USING INDEX idx_contacts_user_id (user_id=? AND contact_id>?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
+SEARCH cr2 USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+SEARCH i USING COVERING INDEX idx_chat_items_feed_item_contact (feed_item_id=? AND contact_id=?) LEFT-JOIN
+
+Query: SELECT i.chat_item_id, 
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
+      g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+   
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   JOIN chat_items i ON i.group_id = g.group_id WHERE i.user_id = ? AND mu.contact_id = ? AND i.feed_item_id = ? AND i.group_id > ? AND i.item_deleted = 0 ORDER BY i.group_id ASC LIMIT ?
+Plan:
+SEARCH i USING INDEX idx_chat_items_feed_item_group (feed_item_id=? AND group_id>?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT i.chat_item_id, 
       -- GroupInfo
@@ -8005,6 +8009,37 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT i.chat_item_id, 
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
+      gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
+      g.enable_ntfs, g.send_rcpts, g.favorite, g.drop_feed, gp.preferences, gp.member_admission,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
+      g.ui_themes, g.summary_current_members_count, g.public_member_count, g.roster_version, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri, g.group_domain_verified,
+      g.root_priv_key, g.root_pub_key, g.member_priv_key,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
+   
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   LEFT JOIN chat_items i ON i.feed_item_id = ? AND i.group_id = g.group_id WHERE g.user_id = ? AND mu.contact_id = ? AND g.business_chat = ? AND g.group_id > ? ORDER BY g.group_id ASC LIMIT ?
+Plan:
+SEARCH g USING INDEX idx_groups_user_id_business_chat (user_id=? AND business_chat=? AND group_id>?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH mu USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH i USING COVERING INDEX idx_chat_items_feed_item_group (feed_item_id=? AND group_id=?) LEFT-JOIN
 
 Query: SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1
 Plan:
@@ -8186,6 +8221,10 @@ Query: UPDATE chat_items SET item_deleted = 1, item_deleted_ts = ?, updated_at =
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE chat_items SET item_feed = 2 WHERE item_feed = 1 AND chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ? AND include_in_history = 1
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
@@ -8193,10 +8232,6 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE chat_items SET item_status = ?, item_viewed = 1, updated_at = ? WHERE user_id = ? AND item_status = ?
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_user_id_item_status (user_id=? AND item_status=?)
-
-Query: UPDATE chat_items SET item_status = ?, updated_at = ? WHERE chat_item_id = ?
-Plan:
-SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
 Plan:
@@ -8338,10 +8373,6 @@ Query: UPDATE delivery_jobs SET cursor_group_member_id = ?, updated_at = ? WHERE
 Plan:
 SEARCH delivery_jobs USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE delivery_jobs SET feed_cursor_id = ?, updated_at = ? WHERE delivery_job_id = ?
-Plan:
-SEARCH delivery_jobs USING INTEGER PRIMARY KEY (rowid=?)
-
 Query: UPDATE delivery_jobs SET job_status = ?, job_err_reason = ?, updated_at = ? WHERE delivery_job_id = ?
 Plan:
 SEARCH delivery_jobs USING INTEGER PRIMARY KEY (rowid=?)
@@ -8350,9 +8381,25 @@ Query: UPDATE delivery_tasks SET task_status = ?, task_err_reason = ?, updated_a
 Plan:
 SEARCH delivery_tasks USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE feed_jobs SET cursor_id = ?, updated_at = ? WHERE feed_job_id = ?
+Plan:
+SEARCH feed_jobs USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE feed_jobs SET job_status = ?, job_err_reason = ?, updated_at = ? WHERE feed_job_id = ?
+Plan:
+SEARCH feed_jobs USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE feed_jobs SET job_status = ?, updated_at = ? WHERE failed = 0 AND job_status = ?
+Plan:
+SCAN feed_jobs
+
 Query: UPDATE feeds SET chat_ts = ? WHERE user_id = ? AND feed_id = ?
 Plan:
 SEARCH feeds USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE feeds SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND unread_chat = ?
+Plan:
+SEARCH feeds USING INDEX idx_feeds_user_id (user_id=?)
 
 Query: UPDATE files SET agent_snd_file_deleted = 1, updated_at = ? WHERE user_id = ? AND file_id = ?
 Plan:
