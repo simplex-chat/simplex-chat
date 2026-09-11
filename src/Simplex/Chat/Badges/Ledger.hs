@@ -115,24 +115,27 @@ issueEntry t entryId e@StatementEntry {balanceMonths, balanceStartTs}
           }
 
 -- Generous because postdating only writes off a month by crossing a month boundary, which takes
--- days, while a device clock a few minutes slow would otherwise mark every arriving row bad.
+-- days, while a device clock a few minutes slow would otherwise leave every row unverified.
 maxCreatedAtSkew :: NominalDiffTime
 maxCreatedAtSkew = 60 * 60
 
 -- | Each entry is checked by re-running the operation it claims. Checking only that its numbers
 -- follow from the previous entry would pass a lapse of three months where one elapsed.
--- 'Nothing' means this version has no operation for that entry type, so nothing was re-run.
+-- 'Nothing' is "not re-run" - no operation rebuilds that type, or its timestamp is not credible.
 balanceChecked :: UTCTime -> BadgeType -> Maybe StatementEntry -> [StatementEntry] -> [(StatementEntry, Maybe Bool)]
 balanceChecked _ _ _ [] = []
 balanceChecked now badgeType tip entries@(first : _) = zipWith withVerdict (opening : entries) entries
   where
     -- the purchase's own type, not the statement's: on the seed path nothing else contradicts it
     opening = fromMaybe (emptyEntry (createdAt first) badgeType) tip
-    withVerdict prev e = (e, entryChecked now prev e)
+    withVerdict prev e = (e, entryChecked now badgeType prev e)
 
-entryChecked :: UTCTime -> StatementEntry -> StatementEntry -> Maybe Bool
-entryChecked now prev e
-  | postdated || backdated = Just False
+entryChecked :: UTCTime -> BadgeType -> StatementEntry -> StatementEntry -> Maybe Bool
+entryChecked now badgeType prev e
+  -- the recompute runs on createdAt, so a stamp our own clock contradicts makes every verdict
+  -- below meaningless - which is not the same as the row being wrong, and is not marked as it
+  | postdated = Nothing
+  | backdated = Just False
   | otherwise = case entryType e of
       SEDebit SDLapse -> maybe (Just False) matches $ lapseEntry t "" prev
       SEDebit SDBadge -> maybe (Just False) matches $ issueEntry t "" prev
@@ -141,6 +144,9 @@ entryChecked now prev e
       SEDebit SDTransferOut {} -> uncontradicted
       SEDebit SDSupport -> uncontradicted
       SEDebit SDUnknown {} -> uncontradicted
+      -- an opening credit resets the ledger to the amount it states, with no relation to the entry
+      -- before it (badges-rpc.md), so it is checked against nothing but itself
+      SECredit SCOpening -> Just restated
       SECredit SCUnknown {} -> uncontradicted
       SECredit c
         -- grantEntry is given the row's month count, so the check agrees with whatever it claims -
@@ -151,9 +157,11 @@ entryChecked now prev e
   where
     t = createdAt e
     postdated = t > addUTCTime maxCreatedAtSkew now
-    -- equal is not behind: a service pass writes its lapse and its issue with one clock reading
+    -- two of the service's own stamps, so no allowance and no doubt about whose clock is wrong.
+    -- Equal is not behind: a service pass writes its lapse and its issue with one clock reading
     backdated = t < createdAt prev
     matches = Just . sameBalance e
+    restated = balanceMonths e == changeMonths e && balanceMonths e >= 0 && balanceBadgeType e == badgeType
     uncontradicted
       | balanceMonths e /= balanceMonths prev + changeMonths e = Just False
       | balanceMonths e < 0 = Just False

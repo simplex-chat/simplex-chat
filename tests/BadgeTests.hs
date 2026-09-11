@@ -66,11 +66,12 @@ badgeTests = do
     it "checks the second entry against the first, not against the tip" testChecksAgainstStatement
     it "accepts an opening credit with no predecessor, and rejects anything else" testChecksOpening
     it "rejects an opening credit naming a badge type the purchase is not for" testChecksOpeningBadgeType
+    it "accepts an opening credit restating the balance over a tip it does not follow" testChecksOpeningRestatement
     it "rejects a lapse writing off months that had not elapsed" testChecksOverLapse
     it "rejects a debit whose start or anchor moved" testChecksMovedStart
     it "rejects a grant restarting a run the predecessor still funds" testChecksGrantRestart
     it "rejects a credit of negative months" testChecksNegativeCredit
-    it "rejects an entry ahead of the clock or behind the one it follows" testChecksTimestamps
+    it "leaves an entry ahead of the clock unjudged, and rejects one behind the entry it follows" testChecksTimestamps
     it "leaves an entry type it cannot derive unchecked, its months still checked" testChecksUnknownType
     it "rejects an entry it cannot rebuild whose coverage or months contradict the ledger" testChecksUncheckedInvariants
   describe "worker retry" $ do
@@ -478,6 +479,20 @@ testChecksOpeningBadgeType = do
   verdicts t Nothing [opening] `shouldBe` [Just True]
   verdicts t Nothing [opening {balanceBadgeType = BTLegend}] `shouldBe` [Just False]
 
+-- An opening credit resets the ledger to the amount it states, so it is the one entry whose
+-- balance owes nothing to the row before it - a new device, or history discarded into a balance
+-- brought forward. It still cannot state a balance other than the months it credits.
+testChecksOpeningRestatement :: IO ()
+testChecksOpeningRestatement = do
+  let start = at 2026 3 10
+      granted = grant start 3 (newBalance start)
+      restated = granted {entryType = SECredit SCOpening, changeMonths = 3, balanceMonths = 3}
+  -- the tip funds two months from April; the opening restates three from March and still holds
+  Just spent <- pure $ issue start granted
+  verdicts start (Just spent) [restated] `shouldBe` [Just True]
+  verdicts start (Just spent) [restated {balanceMonths = 9}] `shouldBe` [Just False]
+  verdicts start (Just spent) [restated {balanceBadgeType = BTLegend}] `shouldBe` [Just False]
+
 -- Over-lapsing empties the balance while paidThrough stays where it was: the badge stops renewing
 -- and the ledger still reads as paid up. The row is self-consistent with the one before it, so only
 -- re-running the lapse against its own timestamp catches it.
@@ -532,7 +547,9 @@ testChecksTimestamps = do
   Just issued <- pure $ issue start granted
   -- the two clocks are not the same clock, so a row from just ahead of this one is not evidence
   verdicts start (Just granted) [stampedAt (addUTCTime (30 * 60) start) issued] `shouldBe` [Just True]
-  verdicts start (Just granted) [stampedAt (addUTCTime (2 * 3600) start) issued] `shouldBe` [Just False]
+  -- further ahead than that, we cannot tell their clock from ours, so the row is left unjudged
+  verdicts start (Just granted) [stampedAt (addUTCTime (2 * 3600) start) issued] `shouldBe` [Nothing]
+  -- behind the row it follows is the service against itself, with no clock of ours in it
   verdicts start (Just granted) [stampedAt (at 2026 3 1) issued] `shouldBe` [Just False]
 
 -- Marking a row this version has no operation for as broken would report a newer service as
