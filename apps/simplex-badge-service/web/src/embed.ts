@@ -11,6 +11,7 @@ export const ROUTE_MESSAGE = "simplex-route";
 export const HEIGHT_MESSAGE = "simplex-height"; // frame -> host: our content height (with `min`, the welcome floor), to size the iframe
 export const COLORS_MESSAGE = "simplex-colors"; // host -> frame: the site's page background, to match it
 export const NEW_PURCHASE_MESSAGE = "simplex-new-purchase"; // host -> frame: the site's "Buy a code", start fresh
+export const RETURN_URL_MESSAGE = "simplex-return-url"; // host -> frame: the host page URL, for a card confirm's return
 // frame -> host: the frame's current SHAREABLE route, announced after each navigation, for the host
 // to persist (in its URL) and hand back on the next load. The contract turns on empty vs non-empty:
 //   non-empty ("#/tier", "#/codes") — a wizard step or the codes list: shareable, so the host stores
@@ -48,6 +49,20 @@ export function routeFromMessage(data: unknown): string | undefined {
   const d = data as { type?: unknown; hash?: unknown };
   if (d.type !== ROUTE_MESSAGE || typeof d.hash !== "string") return undefined;
   return ROUTE_HASHES.includes(d.hash) ? d.hash : undefined;
+}
+
+/** The host page URL carried by a well-formed return-url message, or undefined to ignore. Only a
+ * parseable http(s) URL is taken; the caller has already checked the sender is the trusted host. */
+export function returnUrlFromMessage(data: unknown): string | undefined {
+  if (typeof data !== "object" || data === null) return undefined;
+  const d = data as { type?: unknown; url?: unknown };
+  if (d.type !== RETURN_URL_MESSAGE || typeof d.url !== "string") return undefined;
+  try {
+    const u = new URL(d.url);
+    return u.protocol === "https:" || u.protocol === "http:" ? d.url : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** Only simplex.chat and its subdomains, and only over https, may drive the theme. `endsWith` on a

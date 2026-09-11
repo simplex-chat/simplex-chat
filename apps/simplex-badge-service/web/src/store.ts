@@ -23,8 +23,6 @@ const ORDERS_KEY = "sb.orders.v1";
 // A key of its own, because the theme belongs to the device: it survives a checkout,
 // which clears the session, and [ Forget everything on this device ], which is about codes.
 const THEME_KEY = "sb.theme.v1";
-// The order a card confirm is redirecting the page for. Stripe navigates the whole page to the return
-// URL, which carries no order id, so the id is kept here across the reload — see `rememberCardReturn`.
 const CARD_RETURN_KEY = "sb.cardReturn.v1";
 const CAP = 50;
 
@@ -185,19 +183,22 @@ export class Store {
     return this.write(THEME_KEY, theme);
   }
 
-  /** The order a card confirm is about to redirect the page for. Stripe's confirm navigates the whole
-   * page to the return URL, so the id of the order being paid is kept here — never in the URL handed to
-   * Stripe — for the reload to resume the right one, even with other unpaid orders in the list. */
-  rememberCardReturn(orderId: string): boolean {
-    return this.write(CARD_RETURN_KEY, orderId);
+  rememberCardReturn(orderId: string, atMs: number): boolean {
+    return this.write(CARD_RETURN_KEY, { orderId, at: atMs });
   }
 
-  /** Read the remembered card-return order and clear it: it is spent on the one reload that follows the
-   * redirect, so a later plain load never resumes a stale order. */
-  takeCardReturn(): string | undefined {
+  /** The remembered order, cleared, if it was remembered within `withinMs` of `nowMs`; else undefined. */
+  takeCardReturn(withinMs: number, nowMs: number): string | undefined {
     const held = this.read(CARD_RETURN_KEY);
     this.forget(CARD_RETURN_KEY);
-    return typeof held === "string" && held !== "" ? held : undefined;
+    if (typeof held !== "object" || held === null) return undefined;
+    const { orderId, at } = held as { orderId?: unknown; at?: unknown };
+    if (typeof orderId !== "string" || orderId === "" || typeof at !== "number") return undefined;
+    return nowMs - at <= withinMs ? orderId : undefined;
+  }
+
+  clearCardReturn(): void {
+    this.forget(CARD_RETURN_KEY);
   }
 
   /** One `try` for both would let a throw on the first key leave the second one written. */

@@ -28,7 +28,7 @@ import { appearanceFor, cardPlan, loadStripeJs, mountCard, publishableKey, type 
 import { Store, type StorageLike } from "./store.js";
 import { STEPS } from "./domain.js";
 import type { Method, OrderRecord, SessionRecord, Step, Theme } from "./domain.js";
-import { EMBED_READY, HEIGHT_MESSAGE, NAV_MESSAGE, THEME_MESSAGE, bgFromMessage, isNewPurchaseMessage, routeFromMessage, themeFromMessage, trustedHost } from "./embed.js";
+import { EMBED_READY, HEIGHT_MESSAGE, NAV_MESSAGE, THEME_MESSAGE, bgFromMessage, isNewPurchaseMessage, returnUrlFromMessage, routeFromMessage, themeFromMessage, trustedHost } from "./embed.js";
 
 const app = document.getElementById("app");
 if (app === null) throw new Error("main: #app is missing from the shell");
@@ -142,6 +142,9 @@ function applyTheme(theme: Theme): void {
 // it, and this frame only posts back to the host it actually has.
 let hostOrigin: string | undefined;
 
+// The host page URL, posted by the host on ready; the card confirm's return URL (see cardReturnUrl).
+let hostReturnUrl: string | undefined;
+
 // `echo` is false for a theme that arrived from the host: applying it must not post it straight back.
 function setTheme(theme: Theme, echo: boolean): void {
   store.saveTheme(theme);
@@ -211,6 +214,9 @@ if (embedded) {
     // reached step this way); both arrive as a route the frame applies through its own router.
     const hash = routeFromMessage(event.data);
     if (hash !== undefined) { hostOrigin = event.origin; applyRoute(hash); return; }
+    // The host page's URL, for a card confirm's Stripe return URL (see cardReturnUrl).
+    const returnUrl = returnUrlFromMessage(event.data);
+    if (returnUrl !== undefined) { hostOrigin = event.origin; hostReturnUrl = returnUrl; return; }
     // The site hands in its page background so the frame matches it rather than showing its own.
     const bg = bgFromMessage(event.data);
     if (bg !== undefined) { hostOrigin = event.origin; document.documentElement.style.setProperty("--bg", bg); }
@@ -232,14 +238,12 @@ function cardAppearance(): ReturnType<typeof appearanceFor> {
   return appearanceFor(store.theme(), prefersDark());
 }
 
-// Stripe redirects the page to this URL when a card confirm completes (always, not only for a 3DS
-// challenge). It carries no `?order=`: the order id is a bearer capability this service never hands
-// to Stripe, and a return_url is stored on the session and visible in the Dashboard. It carries only
-// this marker, so the reload resumes the order from local state (see syncFromLocation) rather than
-// landing on the welcome page.
-const CARD_RETURN_PARAM = "sb_return";
+// A remembered return older than this is a stale attempt, not the buyer coming back from the redirect.
+const CARD_RETURN_WINDOW_MS = 15 * 60 * 1000;
+// Stripe redirects the top window here on confirm. Embedded, it must be the host page, not this frame's
+// own URL, or the redirect pulls the whole tab out of the site onto the standalone webapp.
 function cardReturnUrl(): string {
-  return location.origin + location.pathname + "?" + CARD_RETURN_PARAM;
+  return embedded && hostReturnUrl !== undefined ? hostReturnUrl : location.origin + location.pathname;
 }
 
 // In `system` mode the OS can flip under us: re-resolve the navbar's `.dark` class, and re-mount
@@ -710,6 +714,7 @@ async function cancelInvoiceOnce(orderId: string): Promise<void> {
 function resetToLanding(nav: "push" | "replace"): void {
   stopCountdowns();
   flow.stopAll();
+  store.clearCardReturn();
   if (nav === "push") history.pushState(null, "", "/");
   else history.replaceState(null, "", "/");
   panels.length = 0;
@@ -733,6 +738,7 @@ function startPurchase(): void {
   // as reaching it from the landing does — "Buy a code" is a shortcut to the picker, not a reset.
   stopCountdowns();
   flow.stopAll();
+  store.clearCardReturn();
   history.replaceState(null, "", "/");
   history.pushState(null, "", hashForIndex(1));
   panels.length = 0;
@@ -844,12 +850,13 @@ function renderCardForm(view: CardView): void {
       if (confirm === null) return;
       fields.busy(true);
       cardConfirmPending = true;
-      // Stripe's confirm redirects the whole page to the return URL; remember which order it is for, so
-      // the reload resumes this one and not merely the newest when other unpaid orders sit in the list.
-      store.rememberCardReturn(view.order.orderId);
+      // Remembered before the confirm, which redirects the page; the return resumes this exact order.
+      store.rememberCardReturn(view.order.orderId, Date.now());
       void confirm().then((outcome) => {
         cardConfirmPending = false;
         if (outcome.kind === "submitted") { cardConfirmed(view, node); return; }
+        // A declined card did not redirect, so there is no return: forget it, or a reload resumes it.
+        store.clearCardReturn();
         // a repaint was suppressed while this was in flight; if the buyer has navigated since,
         // the form this error belongs to is not on screen and the current one is owed the paint
         if (root.firstChild !== node) {
@@ -974,24 +981,17 @@ function syncFromLocation(fresh: boolean): void {
     announceLocation();
     return;
   }
-  // A card checkout returns here after Stripe's redirect: the return URL carries this marker and no
-  // order id, so resume the exact order the confirm was for, kept in local state before the redirect
-  // (see rememberCardReturn). It resumes the right one even with other unpaid orders in the list, and
-  // whether the card settled during the redirect (paid) or has not yet (open) — resolveLoad's
-  // newestOpen would miss a paid one and drop the buyer on the welcome page instead of their code.
-  if (orderId === null && fresh && params.has(CARD_RETURN_PARAM)) {
-    // The newest order is the fallback only if the remembered id was lost, so a return still lands on
-    // an order rather than the welcome page.
-    const resumeId = store.takeCardReturn() ?? store.orders()[0]?.orderId;
+  // Resume the order a card confirm redirected for, remembered before the redirect: it shows the code
+  // (or the screen that polls to it), not the welcome page. Needs no marker, so any embedder that
+  // reloads works, standalone too.
+  if (orderId === null && fresh) {
+    const resumeId = store.takeCardReturn(CARD_RETURN_WINDOW_MS, Date.now());
     if (resumeId !== undefined) {
       history.replaceState(null, "", `?order=${encodeURIComponent(resumeId)}`);
       openOrder(resumeId);
       announceLocation();
       return;
     }
-    // Nothing to resume (an empty store, or one too full to save the order): drop the marker and load
-    // normally rather than sit on a URL with nothing behind it.
-    history.replaceState(null, "", location.pathname);
   }
   const load = resolveLoad({ search: location.search }, fresh ? store.newestOpen() : undefined);
   if (load.kind === "order") {

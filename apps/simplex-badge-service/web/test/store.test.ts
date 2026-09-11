@@ -293,3 +293,18 @@ storeTest("store: forgetting everything is countable, so a write awaited across 
   s.forgetEverything();
   assert.equal(s.wipeCount, before + 2, "each one counts: two answers may be in flight");
 });
+
+storeTest("store: a card-return is returned within the window, cleared on read, and dropped when stale", () => {
+  const s = new Store(new MemoryStorage());
+  const NOW = 1_000_000;
+  const WINDOW = 60_000;
+  assert.equal(s.takeCardReturn(WINDOW, NOW), undefined, "nothing remembered yet");
+  s.rememberCardReturn("inv_1", NOW);
+  assert.equal(s.takeCardReturn(WINDOW, NOW + WINDOW), "inv_1", "at the edge of the window it is the return");
+  assert.equal(s.takeCardReturn(WINDOW, NOW + WINDOW), undefined, "and it was cleared on the read");
+  s.rememberCardReturn("inv_2", NOW);
+  assert.equal(s.takeCardReturn(WINDOW, NOW + WINDOW + 1), undefined, "past the window it is a stale attempt");
+  s.rememberCardReturn("inv_3", NOW);
+  s.clearCardReturn();
+  assert.equal(s.takeCardReturn(WINDOW, NOW), undefined, "an explicit clear forgets it");
+});
