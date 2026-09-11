@@ -271,20 +271,6 @@ feedActionRemovesItem = \case
   FJADeleteInternal -> True
   _ -> False
 
-data FeedInstanceSpec
-  = FISLinked
-  | FISAny
-  | FISUndeleted
-
-feedActionInstances :: FeedJobAction -> FeedInstanceSpec
-feedActionInstances = \case
-  FJANew _ -> FISAny
-  FJAFileDescr _ -> FISUndeleted
-  FJAUpdate _ -> FISLinked
-  FJADeleteBroadcast _ -> FISAny
-  FJADeleteInternal -> FISAny
-  FJADeleteMark -> FISAny
-
 instance FromField FeedJobActionTag where fromField = fromTextField_ textDecode
 
 instance ToField FeedJobActionTag where toField = toField . textEncode

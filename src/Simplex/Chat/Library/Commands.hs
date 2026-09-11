@@ -5354,7 +5354,6 @@ cleanupManager = do
       cleanupMessages `catchAllErrors` eToView
       cleanupDeliveryTasks `catchAllErrors` eToView
       cleanupDeliveryJobs `catchAllErrors` eToView
-      cleanupFeedJobs `catchAllErrors` eToView
       -- TODO possibly, also cleanup async commands
       cleanupProbes `catchAllErrors` eToView
     liftIO $ threadDelay' $ diffToMicroseconds interval
@@ -5422,9 +5421,6 @@ cleanupManager = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(7 * nominalDay)) ts
       withStore' (`deleteDoneDeliveryJobs` cutoffTs)
-    cleanupFeedJobs = do
-      ts <- liftIO getCurrentTime
-      let cutoffTs = addUTCTime (-(7 * nominalDay)) ts
       withStore' (`deleteDoneFeedJobs` cutoffTs)
     cleanupProbes = do
       ts <- liftIO getCurrentTime

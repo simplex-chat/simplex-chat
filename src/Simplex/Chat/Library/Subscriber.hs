@@ -4462,36 +4462,32 @@ sndFeedTimed chatTTL createdAt =
 feedContactsBucket :: StoreCxt -> User -> ChatItemId -> FeedJobAction -> FeedItemMsg -> Int -> [SndMessage] -> Maybe ContactId -> CM (Maybe ContactId)
 feedContactsBucket cxt user feedItemId action item bucketSize msgs cursor_ = case action of
   FJANew _ -> do
-    cts <- withStore' $ \db -> getFeedContactsByCursor db cxt user cursor_ bucketSize
-    let ctIds = map contactId' cts
-    forM_ (lastId ctIds) $ \lastCtId -> do
-      existing <- withStore' $ \db -> getFeedInstanceContactIdsByRange db user feedItemId fromId lastCtId
+    cts <- withStore' $ \db -> getFeedContactsByCursor db cxt user feedItemId cursor_ bucketSize
+    runBucket bucketSize (map (contactId' . fst) cts) $ \lastCtId -> do
       createdAt <- liftIO getCurrentTime
-      (errs, recipients) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (instanceRecipient db createdAt existing) (mapMaybe feedRecipient cts))
+      (errs, recipients) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (instanceRecipient db createdAt) (mapMaybe feedCtRecipient cts))
       unless (null errs) $ toView $ CEvtChatErrors errs
       forM_ recipients $ \(ctId, itemId, _, newTimed_) ->
         forM_ (newTimed_ >>= timedDeleteAt') $
           startProximateTimedItemThread user (ChatRef CTDirect ctId Nothing, itemId)
       results <- deliverBucket lastCtId [(ctId, itemId, conn) | (ctId, itemId, conn, _) <- recipients]
       withStore' $ \db -> updateFeedInstanceStatuses db (sendErrorStatuses results)
-    pure $ bucketCursor bucketSize ctIds
   _ -> do
-    instances <- withStore' $ \db -> getFeedContactInstancesByCursor db cxt user feedItemId (feedActionInstances action) cursor_ bucketSize
-    let ctIds = map (contactId' . fst) instances
-    unless (null msgs) $
-      forM_ (lastId ctIds) $ \lastCtId ->
-        void $ deliverBucket lastCtId [(contactId' ct, itemId, conn) | (ct, itemId) <- instances, Just (_, conn) <- [feedRecipient ct]]
-    applyContactAction user feedItemId action item instances fromId (fromMaybe 0 $ lastId ctIds)
-    pure $ bucketCursor bucketSize ctIds
+    instances <- withStore' $ \db -> getFeedContactInstancesByCursor db cxt user feedItemId action cursor_ bucketSize
+    runBucket bucketSize (map (contactId' . fst) instances) $ \lastCtId -> do
+      unless (null msgs) $
+        void $ deliverBucket lastCtId [(contactId' ct, itemId, conn) | (ct, itemId) <- instances, Just conn <- [feedConn ct]]
+      applyContactAction user feedItemId action item instances fromId lastCtId
   where
     FeedItemMsg {feedSharedMsgId, feedContent, feedHasLink} = item
     fromId = fromMaybe 0 cursor_
-    feedRecipient ct = case contactSendConn_ ct of
-      Right conn | directOrUsed ct && not (connIncognito conn) -> Just (ct, conn)
+    feedConn ct = case contactSendConn_ ct of
+      Right conn | directOrUsed ct && not (connIncognito conn) -> Just conn
       _ -> Nothing
-    instanceRecipient db createdAt existing (ct, conn) =
+    feedCtRecipient (ct, itemId_) = (ct,itemId_,) <$> feedConn ct
+    instanceRecipient db createdAt (ct, itemId_, conn) =
       let timed_ = sndFeedTimed (contactTimedTTL ct) createdAt
-       in case M.lookup (contactId' ct) existing of
+       in case itemId_ of
             Just itemId -> pure $ Right (contactId' ct, itemId, conn, Nothing)
             Nothing -> do
               itemId <- createFeedInstanceItem db user (CDDirectSnd ct) feedSharedMsgId feedContent feedItemId timed_ feedHasLink createdAt
@@ -4506,9 +4502,9 @@ applyContactAction user feedItemId action item instances fromId toId = case acti
   FJADeleteBroadcast _ -> do
     let (toDelete, toMark) = partition (fullDelete . fst) instances
     deleteItems toDelete
-    markDeleted toMark
+    markFeedInstances toMark
   FJADeleteInternal -> deleteItems instances
-  FJADeleteMark -> markDeleted instances
+  FJADeleteMark -> markFeedInstances instances
   _ -> pure ()
   where
     FeedItemMsg {feedSharedMsgId} = item
@@ -4516,20 +4512,15 @@ applyContactAction user feedItemId action item instances fromId toId = case acti
     deleteItems cts = withStore' $ \db -> do
       deleteFeedContactReactions db feedSharedMsgId (map (contactId' . fst) cts)
       deleteFeedInstances db (map snd cts)
-    markDeleted cts = do
-      deletedTs <- liftIO getCurrentTime
-      withStore' $ \db -> markFeedInstancesDeleted db (map snd cts) deletedTs
 
 feedGroupsBucket :: StoreCxt -> User -> ChatItemId -> FeedJobAction -> FeedItemMsg -> Int -> [SndMessage] -> Maybe GroupId -> CM (Maybe GroupId)
 feedGroupsBucket cxt user feedItemId action item bucketSize msgs cursor_ = case action of
   FJANew _ -> do
-    gs <- withStore' $ \db -> getFeedCustomerGroupsByCursor db cxt user cursor_ bucketSize
-    let gIds = map groupId' gs
-    forM_ (lastId gIds) $ \lastGId -> do
+    gs <- withStore' $ \db -> getFeedCustomerGroupsByCursor db cxt user feedItemId cursor_ bucketSize
+    runBucket bucketSize (map (groupId' . fst) gs) $ \lastGId -> do
       members <- withStore' $ \db -> getCustomerGroupsMembersByRange db cxt user fromId lastGId
-      existing <- withStore' $ \db -> getFeedInstanceGroupIdsByRange db user feedItemId fromId lastGId
       createdAt <- liftIO getCurrentTime
-      (errs, recipients) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (instanceRecipient db members createdAt existing) (filter feedGroup gs))
+      (errs, recipients) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (instanceRecipient db members createdAt) (filter (feedGroup . fst) gs))
       unless (null errs) $ toView $ CEvtChatErrors errs
       forM_ recipients $ \(gId, itemId, _, newTimed_) ->
         forM_ (newTimed_ >>= timedDeleteAt') $
@@ -4537,16 +4528,13 @@ feedGroupsBucket cxt user feedItemId action item bucketSize msgs cursor_ = case 
       results <- deliverBucket lastGId [(itemId, ms) | (_, itemId, ms, _) <- recipients]
       withStore' $ \db -> forM_ results $ \((itemId, mId), r) ->
         forM_ (resultSndError r) $ \e -> updateGroupSndStatus db itemId mId (GSSError e)
-    pure $ bucketCursor bucketSize gIds
   _ -> do
-    instances <- withStore' $ \db -> getFeedGroupInstancesByCursor db cxt user feedItemId (feedActionInstances action) cursor_ bucketSize
-    let gIds = map (groupId' . fst) instances
-    unless (null msgs) $
-      forM_ (lastId gIds) $ \lastGId -> do
+    instances <- withStore' $ \db -> getFeedGroupInstancesByCursor db cxt user feedItemId action cursor_ bucketSize
+    runBucket bucketSize (map (groupId' . fst) instances) $ \lastGId -> do
+      unless (null msgs) $ do
         members <- withStore' $ \db -> getCustomerGroupsMembersByRange db cxt user fromId lastGId
         void $ deliverBucket lastGId [(itemId, groupMembers members g) | (g, itemId) <- instances]
-    applyGroupAction user feedItemId action item instances fromId (fromMaybe 0 $ lastId gIds)
-    pure $ bucketCursor bucketSize gIds
+      applyGroupAction user feedItemId action item instances fromId lastGId
   where
     FeedItemMsg {feedSharedMsgId, feedContent, feedHasLink} = item
     fromId = fromMaybe 0 cursor_
@@ -4554,10 +4542,10 @@ feedGroupsBucket cxt user feedItemId action item bucketSize msgs cursor_ = case 
       not (incognitoMembership g) && memberCurrent membership && memberActive membership
     groupMembers members g =
       [(m, conn) | m <- filter memberCurrent (M.findWithDefault [] (groupId' g) members), Just (_, conn) <- [readyMemberConn m]]
-    instanceRecipient db members createdAt existing g =
+    instanceRecipient db members createdAt (g, itemId_) =
       let ms = groupMembers members g
           timed_ = sndFeedTimed (groupTimedTTL g) createdAt
-       in case M.lookup (groupId' g) existing of
+       in case itemId_ of
             Just itemId -> pure $ Right (groupId' g, itemId, ms, Nothing)
             Nothing -> do
               itemId <- createFeedInstanceItem db user (CDGroupSnd g Nothing) feedSharedMsgId feedContent feedItemId timed_ feedHasLink createdAt
@@ -4574,19 +4562,21 @@ applyGroupAction user feedItemId action item instances fromId toId = case action
   FJADeleteBroadcast _ -> do
     let (toDelete, toMark) = partition (groupFeatureUserAllowed SGFFullDelete . fst) instances
     deleteItems toDelete
-    markDeleted toMark
+    markFeedInstances toMark
   FJADeleteInternal -> deleteItems instances
-  FJADeleteMark -> markDeleted instances
+  FJADeleteMark -> markFeedInstances instances
   _ -> pure ()
   where
     FeedItemMsg {feedSharedMsgId} = item
     deleteItems gs = withStore' $ \db -> do
       deleteFeedGroupReactions db feedSharedMsgId (map (membershipId . fst) gs)
       deleteFeedInstances db (map snd gs)
-    markDeleted gs = do
-      deletedTs <- liftIO getCurrentTime
-      withStore' $ \db -> markFeedInstancesDeleted db (map snd gs) deletedTs
     membershipId GroupInfo {groupId, membership} = (groupId, memberId' membership)
+
+markFeedInstances :: [(c, ChatItemId)] -> CM ()
+markFeedInstances instances = do
+  deletedTs <- liftIO getCurrentTime
+  withStore' $ \db -> markFeedInstancesDeleted db (map snd instances) deletedTs
 
 deliverFeedBucket :: FeedJobAction -> [SndMessage] -> [(r, Connection)] -> CM [(r, Either ChatError ([Int64], PQEncryption))]
 deliverFeedBucket action msgs recipients = case (L.nonEmpty msgs, recipients) of
@@ -4617,15 +4607,14 @@ firstMsgId = \case
   SndMessage {msgId} : _ -> msgId
   [] -> 0
 
-lastId :: [Int64] -> Maybe Int64
-lastId ids = case reverse ids of
-  i : _ -> Just i
-  [] -> Nothing
-
-bucketCursor :: Int -> [Int64] -> Maybe Int64
-bucketCursor bucketSize ids
-  | length ids < bucketSize = Nothing
-  | otherwise = lastId ids
+runBucket :: Int -> [Int64] -> (Int64 -> CM ()) -> CM (Maybe Int64)
+runBucket bucketSize ids action = do
+  forM_ lastId action
+  pure $ if length ids < bucketSize then Nothing else lastId
+  where
+    lastId = case reverse ids of
+      i : _ -> Just i
+      [] -> Nothing
 
 finishFeedEvent :: User -> Feed -> ChatItemId -> FeedJobAction -> CM ()
 finishFeedEvent user feed@Feed {feedId} feedItemId action

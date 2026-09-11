@@ -30,10 +30,7 @@ testFeedBuckets =
       createCCFeed biz
       connectUsers biz alice
       connectUsers biz bob
-      biz ##> "/ad"
-      cLink <- getContactLink biz True
-      biz ##> "/auto_accept on business"
-      biz <## "auto_accept on, business"
+      cLink <- businessAddress biz
       connectToBusiness biz cath cLink "cath" "Catherine"
       connectToBusiness biz dan cLink "dan" "Daniel"
 
@@ -57,10 +54,7 @@ testFeedEditDelete =
       createCCFeed biz
       connectUsers biz alice
       connectUsers biz bob
-      biz ##> "/ad"
-      cLink <- getContactLink biz True
-      biz ##> "/auto_accept on business"
-      biz <## "auto_accept on, business"
+      cLink <- businessAddress biz
       connectToBusiness biz cath cLink "cath" "Catherine"
 
       biz `send` "/feed hello everyone"
@@ -204,6 +198,14 @@ chatItems :: HasCallStack => TestCC -> String -> Int -> IO [(Int, String)]
 chatItems cc chatRef count = do
   cc ##> ("/_get chat " <> chatRef <> " count=" <> show count)
   chat <$> getTermLine cc
+
+businessAddress :: HasCallStack => TestCC -> IO String
+businessAddress biz = do
+  biz ##> "/ad"
+  cLink <- getContactLink biz True
+  biz ##> "/auto_accept on business"
+  biz <## "auto_accept on, business"
+  pure cLink
 
 connectToBusiness :: HasCallStack => TestCC -> TestCC -> String -> String -> String -> IO ()
 connectToBusiness biz cc cLink name fullName = do

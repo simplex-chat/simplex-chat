@@ -21,8 +21,6 @@ module Simplex.Chat.Store.Feeds
     getCustomerGroupsMembersByRange,
     getFeedContactInstancesByCursor,
     getFeedGroupInstancesByCursor,
-    getFeedInstanceContactIdsByRange,
-    getFeedInstanceGroupIdsByRange,
     updateFeedInstanceStatuses,
     getDeliveredContactIdsByRange,
     getDeliveredMemberIdsByRange,
@@ -109,23 +107,37 @@ deleteFeedCIs db User {userId} Feed {feedId} = do
   DB.execute db "DELETE FROM messages WHERE feed_id = ?" (Only feedId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND feed_id = ?" (userId, feedId)
 
-getFeedContactsByCursor :: DB.Connection -> StoreCxt -> User -> Maybe ContactId -> Int -> IO [Contact]
-getFeedContactsByCursor db cxt user@User {userId} cursorId_ count = do
+getFeedContactsByCursor :: DB.Connection -> StoreCxt -> User -> ChatItemId -> Maybe ContactId -> Int -> IO [(Contact, Maybe ChatItemId)]
+getFeedContactsByCursor db cxt user@User {userId} feedItemId cursorId_ count = do
   currentTs <- getCurrentTime
-  map (toContact currentTs cxt user [])
+  map (\(Only itemId_ :. row) -> (toContact currentTs cxt user [] row, itemId_))
     <$> DB.query
       db
-      (contactQuery <> " WHERE ct.user_id = ? AND ct.deleted = 0 AND ct.is_user = 0 AND ct.contact_id > ? ORDER BY ct.contact_id ASC LIMIT ?")
-      (userId, cursorId cursorId_, count)
+      ( "SELECT i.chat_item_id, "
+          <> contactQueryFields
+          <> " "
+          <> contactQueryFrom
+          <> " LEFT JOIN chat_items i ON i.feed_item_id = ? AND i.contact_id = ct.contact_id"
+          <> " WHERE ct.user_id = ? AND ct.deleted = 0 AND ct.is_user = 0 AND ct.contact_id > ?"
+          <> " ORDER BY ct.contact_id ASC LIMIT ?"
+      )
+      (feedItemId, userId, cursorId cursorId_, count)
 
-getFeedCustomerGroupsByCursor :: DB.Connection -> StoreCxt -> User -> Maybe GroupId -> Int -> IO [GroupInfo]
-getFeedCustomerGroupsByCursor db cxt User {userId, userContactId} cursorId_ count = do
+getFeedCustomerGroupsByCursor :: DB.Connection -> StoreCxt -> User -> ChatItemId -> Maybe GroupId -> Int -> IO [(GroupInfo, Maybe ChatItemId)]
+getFeedCustomerGroupsByCursor db cxt User {userId, userContactId} feedItemId cursorId_ count = do
   currentTs <- getCurrentTime
-  map (toGroupInfo currentTs cxt userContactId [])
+  map (\(Only itemId_ :. row) -> (toGroupInfo currentTs cxt userContactId [] row, itemId_))
     <$> DB.query
       db
-      (groupInfoQuery <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.business_chat = ? AND g.group_id > ? ORDER BY g.group_id ASC LIMIT ?")
-      (userId, userContactId, BCCustomer, cursorId cursorId_, count)
+      ( "SELECT i.chat_item_id, "
+          <> groupInfoQueryFields
+          <> " "
+          <> groupInfoQueryFrom
+          <> " LEFT JOIN chat_items i ON i.feed_item_id = ? AND i.group_id = g.group_id"
+          <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.business_chat = ? AND g.group_id > ?"
+          <> " ORDER BY g.group_id ASC LIMIT ?"
+      )
+      (feedItemId, userId, userContactId, BCCustomer, cursorId cursorId_, count)
 
 getCustomerGroupsMembersByRange :: DB.Connection -> StoreCxt -> User -> GroupId -> GroupId -> IO (Map GroupId [GroupMember])
 getCustomerGroupsMembersByRange db cxt user@User {userId, userContactId} fromId toId = do
@@ -160,13 +172,13 @@ feedItemMsg (CChatItem _ ChatItem {content, meta = CIMeta {itemSharedMsgId, item
       <$> itemSharedMsgId
   _ -> Nothing
 
-instanceSpecCond :: FeedInstanceSpec -> Query
+instanceSpecCond :: FeedJobAction -> Query
 instanceSpecCond = \case
-  FISLinked -> " AND i.item_feed = 1"
-  FISAny -> " AND i.item_feed > 0"
-  FISUndeleted -> " AND i.item_deleted = 0"
+  FJAUpdate _ -> " AND i.item_feed = 1"
+  FJAFileDescr _ -> " AND i.item_deleted = 0"
+  _ -> " AND i.item_feed > 0"
 
-getFeedContactInstancesByCursor :: DB.Connection -> StoreCxt -> User -> ChatItemId -> FeedInstanceSpec -> Maybe ContactId -> Int -> IO [(Contact, ChatItemId)]
+getFeedContactInstancesByCursor :: DB.Connection -> StoreCxt -> User -> ChatItemId -> FeedJobAction -> Maybe ContactId -> Int -> IO [(Contact, ChatItemId)]
 getFeedContactInstancesByCursor db cxt user@User {userId} feedItemId spec cursorId_ count = do
   currentTs <- getCurrentTime
   map (\(Only itemId :. row) -> (toContact currentTs cxt user [] row, itemId))
@@ -183,7 +195,7 @@ getFeedContactInstancesByCursor db cxt user@User {userId} feedItemId spec cursor
       )
       (userId, feedItemId, cursorId cursorId_, count)
 
-getFeedGroupInstancesByCursor :: DB.Connection -> StoreCxt -> User -> ChatItemId -> FeedInstanceSpec -> Maybe GroupId -> Int -> IO [(GroupInfo, ChatItemId)]
+getFeedGroupInstancesByCursor :: DB.Connection -> StoreCxt -> User -> ChatItemId -> FeedJobAction -> Maybe GroupId -> Int -> IO [(GroupInfo, ChatItemId)]
 getFeedGroupInstancesByCursor db cxt User {userId, userContactId} feedItemId spec cursorId_ count = do
   currentTs <- getCurrentTime
   map (\(Only itemId :. row) -> (toGroupInfo currentTs cxt userContactId [] row, itemId))
@@ -199,23 +211,6 @@ getFeedGroupInstancesByCursor db cxt User {userId, userContactId} feedItemId spe
           <> " ORDER BY i.group_id ASC LIMIT ?"
       )
       (userId, userContactId, feedItemId, cursorId cursorId_, count)
-
-getFeedInstanceContactIdsByRange :: DB.Connection -> User -> ChatItemId -> ContactId -> ContactId -> IO (Map ContactId ChatItemId)
-getFeedInstanceContactIdsByRange db user feedItemId = getFeedInstanceIdsByRange_ db user feedItemId "contact_id"
-
-getFeedInstanceGroupIdsByRange :: DB.Connection -> User -> ChatItemId -> GroupId -> GroupId -> IO (Map GroupId ChatItemId)
-getFeedInstanceGroupIdsByRange db user feedItemId = getFeedInstanceIdsByRange_ db user feedItemId "group_id"
-
-getFeedInstanceIdsByRange_ :: DB.Connection -> User -> ChatItemId -> Query -> Int64 -> Int64 -> IO (Map Int64 ChatItemId)
-getFeedInstanceIdsByRange_ db User {userId} feedItemId chatIdColumn fromId toId =
-  M.fromList
-    <$> DB.query
-      db
-      ( "SELECT " <> chatIdColumn <> ", chat_item_id FROM chat_items"
-          <> " WHERE user_id = ? AND feed_item_id = ?"
-          <> " AND " <> chatIdColumn <> " > ? AND " <> chatIdColumn <> " <= ?"
-      )
-      (userId, feedItemId, fromId, toId)
 
 updateFeedInstanceStatuses :: DB.Connection -> [(ChatItemId, CIStatus 'MDSnd)] -> IO ()
 updateFeedInstanceStatuses db statuses = do
@@ -405,20 +400,19 @@ updateFeedJobCursor db jobId cursorId_ = do
     (cursorId_, currentTs, jobId)
 
 setFeedJobErrStatus :: DB.Connection -> Int64 -> Text -> IO ()
-setFeedJobErrStatus db jobId errReason = do
+setFeedJobErrStatus db jobId errReason = updateFeedJobStatus_ db jobId DJSError (Just errReason)
+
+updateFeedJobStatus_ :: DB.Connection -> Int64 -> DeliveryJobStatus -> Maybe Text -> IO ()
+updateFeedJobStatus_ db jobId status errReason_ = do
   currentTs <- getCurrentTime
   DB.execute
     db
     "UPDATE feed_jobs SET job_status = ?, job_err_reason = ?, updated_at = ? WHERE feed_job_id = ?"
-    (DJSError, errReason, currentTs, jobId)
+    (status, errReason_, currentTs, jobId)
 
 completeFeedJob :: DB.Connection -> Int64 -> ChatItemId -> FeedJobActionTag -> IO Bool
 completeFeedJob db jobId feedItemId actionTag = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    "UPDATE feed_jobs SET job_status = ?, updated_at = ? WHERE feed_job_id = ?"
-    (DJSComplete, currentTs, jobId)
+  updateFeedJobStatus_ db jobId DJSComplete Nothing
   unfinished <-
     maybeFirstRow fromOnly $
       DB.query
