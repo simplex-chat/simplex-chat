@@ -1423,10 +1423,11 @@ CREATE INDEX idx_chat_items_feed_item_group ON chat_items(
 );
 CREATE INDEX idx_messages_feed_id ON messages(feed_id);
 CREATE INDEX idx_files_feed_id ON files(feed_id);
-CREATE INDEX idx_contacts_user_id ON contacts(user_id);
+CREATE INDEX idx_contacts_user_id ON contacts(user_id, contact_id);
 CREATE INDEX idx_groups_user_id_business_chat ON groups(
   user_id,
-  business_chat
+  business_chat,
+  group_id
 );
 CREATE INDEX idx_delivery_jobs_feed_next ON delivery_jobs(
   feed_id,
