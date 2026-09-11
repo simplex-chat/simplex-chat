@@ -28,6 +28,8 @@ struct BadgesSupportSimplexView: View {
     }
 
     private var screen: Screen {
+        // a gate must not re-route while a view pushed from one of its routes is on screen
+        if redeemCodeActive { return .support }
         guard let userId = chatModel.currentUser?.userId else { return .loading }
         // a read that failed must not reach the model, where it would be indistinguishable from
         // this profile having no badge, so it is held here and falls back to the support screen

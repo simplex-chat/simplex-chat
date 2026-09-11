@@ -148,24 +148,18 @@ struct BadgesRedeemCodeView: View {
                 let badgeState = try? await apiGetBadgeState(user.userId)
                 await MainActor.run {
                     submitting = false
+                    if let badgeState {
+                        BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
+                    }
                     // the response is the only carrier: redeeming raises no event that refreshes the
                     // profile, so without this the badge beside the name is the one from before
                     chatModel.updateUser(redeemedUser)
                     if let badgeState, !badgeState.shown {
-                        BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
                         // a replay adds no purchase; a fresh code's badge can be retired on arrival
                         failure = newBadge ? .badgeEnded : .codeUsed
                     } else {
                         supporterBannerShown = true
                         dismiss()
-                        // the model is written once the pop has animated: writing it first re-routes the
-                        // parent gate to the badge screen while this view is still pushed from the support
-                        // screen, which tears this view down instead of popping it
-                        if let badgeState {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                                BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
-                            }
-                        }
                     }
                 }
             } catch let error {
