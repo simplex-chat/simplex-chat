@@ -12,14 +12,16 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Logger.Simple
+import Control.Monad.Except (runExceptT)
+import Control.Monad.Reader (runReaderT)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Network.HTTP.Types.URI (urlEncode)
 import Data.Time.Clock (addUTCTime, getCurrentTime, nominalDay)
-import Simplex.Chat.Badges (BadgeType (..), FileSizeLimits (..), defaultFileSizeLimits)
+import Simplex.Chat.Badges (BadgeProof, BadgeStatus (..), BadgeType (..), FileSizeLimits (..), ProofPresHeader (..), badgeProof, defaultFileSizeLimits)
 import Simplex.Chat.Controller (ChatConfig (..))
-import Simplex.Chat.Library.Internal (roundedFDCount)
+import Simplex.Chat.Library.Internal (badgeProofStatus, roundedFDCount)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), XFTPStoreConfig (..))
@@ -74,6 +76,7 @@ chatFileTests = do
     it "file above the limit the badge allows is not accepted" testXFTPFileBadgeAboveLimit
     it "sending file above the limit the badge allows fails" testXFTPSndFileBadgeLimit
     it "sending file with a badge expired past the send grace fails" testXFTPSndFileBadgeGrace
+    it "file proof is rejected under another binding, size or expired badge" testFileBadgeProofStatus
 
 runTestMessageWithFile :: HasCallStack => TestParams -> IO ()
 runTestMessageWithFile = testChat2 aliceProfile bobProfile $ \alice bob -> withXFTPServer $ do
@@ -910,6 +913,30 @@ testXFTPSndFileBadgeGrace ps = do
             bob <# "alice *> sends file test.pdf (266.0 KiB / 272376 bytes)"
             bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
         ]
+
+testFileBadgeProofStatus :: HasCallStack => TestParams -> IO ()
+testFileBadgeProofStatus ps = do
+  Right (pk, sk) <- bbsKeyGen
+  withNewTestChatCfg ps (badgeFileCfg pk) "alice" aliceProfile $ \alice -> do
+    now <- getCurrentTime
+    let ph = PHFileInv {chatBinding = "Dalice-binding", fileSize = 272376}
+        otherBinding = (ph :: ProofPresHeader) {chatBinding = "Dbob-binding"}
+        otherSize = (ph :: ProofPresHeader) {fileSize = 1}
+        proofFor expiry = do
+          cred <- issueTestBadge sk expiry
+          Right badge <- badgeProof pk cred ph
+          pure badge
+        statusOf expected badge = do
+          Right st <- runExceptT (badgeProofStatus expected badge) `runReaderT` chatController alice
+          pure st
+    badge <- proofFor futureDate
+    statusOf (Just ph) badge `shouldReturn` BSActive
+    statusOf (Just otherBinding) badge `shouldReturn` BSFailed
+    statusOf (Just otherSize) badge `shouldReturn` BSFailed
+    -- the receiver has no binding for the sender, so no header can be expected
+    statusOf Nothing badge `shouldReturn` BSFailed
+    expired <- proofFor $ addUTCTime (-10 * nominalDay) now
+    statusOf (Just ph) expired `shouldReturn` BSExpired
 
 testXFTPDeleteUploadedFile :: HasCallStack => TestParams -> IO ()
 testXFTPDeleteUploadedFile =
