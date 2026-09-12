@@ -1396,6 +1396,11 @@ describe("/broadcast Command (Team Group)", () => {
     expect(chat.rawCmds).toEqual(['/feed "line \\"one\\"\\nline two"'])
   })
 
+  test("/broadcast with extra spaces → text has no leading whitespace", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast   hello"))
+    expect(chat.rawCmds).toEqual(['/feed "hello"'])
+  })
+
   test("/broadcast on its own line → text starts after the newline", async () => {
     await bot.onNewChatItems(teamGroupMessage("/broadcast\nline one\nline two"))
     expect(chat.rawCmds).toEqual(['/feed "line one\\nline two"'])

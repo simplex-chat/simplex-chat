@@ -857,7 +857,7 @@ export class SupportBot {
       await this.sendToGroup(teamGroupId, `Error: contact ${senderContactId} is not allowed to broadcast`)
       return
     }
-    const text = (util.ciContentText(chatItem)?.trim() ?? "").replace(/^\/broadcast\s?/, "")
+    const text = (util.ciContentText(chatItem)?.trim() ?? "").replace(/^\/broadcast\s*/, "")
     if (text === "") {
       await this.sendToGroup(teamGroupId, "Error: broadcast text is empty")
       return
