@@ -13,7 +13,6 @@ import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.helpers.ModalManager
 import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
-import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
 import coil.size.Scale
@@ -49,8 +48,6 @@ private val imageLoader = ImageLoader.Builder(androidAppContext)
   .components {
     if (SDK_INT >= 28) {
       add(ImageDecoderDecoder.Factory())
-    } else {
-      add(GifDecoder.Factory())
     }
   }
   .build()

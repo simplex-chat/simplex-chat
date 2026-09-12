@@ -3,7 +3,6 @@ package chat.simplex.common.views.helpers
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
-import android.graphics.drawable.Drawable
 import android.media.MediaMetadataRetriever
 import android.os.*
 import android.provider.OpenableColumns
@@ -274,7 +273,7 @@ actual fun getDrawableFromUri(uri: URI, withAlertOnException: Boolean): Any? {
       null
     }
   } else {
-    Drawable.createFromPath(getAppFilePath(uri))
+    null
   }
 }
 
