@@ -166,6 +166,7 @@ data ChatConfig = ChatConfig
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
     feedBucketSize :: Int,
+    showFeedChat :: Bool,
     webPreviewConfig :: Maybe WebPreviewConfig,
     channelSubscriberRole :: GroupMemberRole, -- TODO [relays] starting role should be communicated in protocol from owner to relays
     relayChecksInterval :: NominalDiffTime,

@@ -121,6 +121,7 @@ defaultChatConfig =
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,
       feedBucketSize = 1000,
+      showFeedChat = False,
       webPreviewConfig = Nothing,
       channelSubscriberRole = GRObserver,
       relayChecksInterval = 15 * 60, -- 15 minutes

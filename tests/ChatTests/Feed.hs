@@ -16,6 +16,7 @@ chatFeedTests = do
     it "broadcast to contacts and customer groups in several buckets" testFeedBuckets
     it "edit and delete the broadcast in every chat" testFeedEditDelete
     it "recipient with dropped feed receives nothing" testFeedDropped
+    it "dropped feed keeps applying edits to earlier items" testFeedDroppedAfterReceiving
     it "instance edited in its chat is detached from the feed" testFeedDetached
     it "broadcast a file to all contacts" testFeedFile
     it "incognito contact is excluded from the broadcast" testFeedSkipsIncognito
@@ -46,6 +47,7 @@ testFeedBuckets =
       chatItems biz "@3" 1 `shouldReturn` [(1, "hello everyone")]
       chatItems biz "#1" 1 `shouldReturn` [(1, "hello everyone")]
       chatItems biz "#2" 1 `shouldReturn` [(1, "hello everyone")]
+      biz @@@ [("%", "hello everyone"), ("@alice", "hello everyone"), ("@bob", "hello everyone"), ("#cath", "hello everyone"), ("#dan", "hello everyone")]
 
 testFeedEditDelete :: HasCallStack => TestParams -> IO ()
 testFeedEditDelete =
@@ -109,6 +111,37 @@ testFeedDropped =
       alice <# "biz> [marked deleted] hello again"
       (bob </)
       chatItems bob "@2" 1 `shouldReturn` [(0, "Audio/video calls: enabled")]
+
+testFeedDroppedAfterReceiving :: HasCallStack => TestParams -> IO ()
+testFeedDroppedAfterReceiving =
+  testChatCfg3 feedTestCfg businessProfile aliceProfile cathProfile $
+    \biz alice cath -> do
+      createCCFeed biz
+      connectUsers biz alice
+      cLink <- businessAddress biz
+      connectToBusiness biz cath cLink "cath" "Catherine"
+
+      biz `send` "/feed hello everyone"
+      biz <# "% hello everyone"
+      alice <# "biz> hello everyone"
+      cath <# "#biz biz_1> hello everyone"
+
+      alice ##> "/feed drop @biz on"
+      alice <## "ok"
+      cath ##> "/feed drop #biz on"
+      cath <## "ok"
+
+      biz `send` "/feed second"
+      biz <# "% second"
+      (alice </)
+      (cath </)
+
+      biz ##> "! % (hello everyone) hello again"
+      biz <# "% [edited] hello again"
+      alice <# "biz> [edited] hello again"
+      cath <# "#biz biz_1> [edited] hello again"
+      chatItems alice "@2" 100 >>= (`shouldContain` [(0, "hello again")])
+      chatItems cath "#1" 100 >>= (`shouldContain` [(0, "hello again")])
 
 testFeedDetached :: HasCallStack => TestParams -> IO ()
 testFeedDetached =

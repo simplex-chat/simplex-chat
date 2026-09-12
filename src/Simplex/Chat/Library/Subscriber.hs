@@ -2244,7 +2244,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
     groupMessageUpdate gInfo@GroupInfo {groupId, chatSettings} m_ sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId, msgSigned, signedMsg_, signedByGMId_} brokerTs ttl_ live_ asGroup_ feed_
       | Just m <- m_, prohibitedSimplexLinks gInfo m mc ft_ =
           messageWarning ("x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks) $> Nothing
-      | dropsFeed chatSettings feed_ = pure Nothing
       | otherwise = do
           updateRcvChatItem `catchCINotFound` \_ -> do
             -- This patches initial sharedMsgId into chat item when locally deleted chat item
@@ -2253,9 +2252,11 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             let itemTTL' = if feed_ == Just True then join (groupTimedTTL gInfo) else ttl_
                 timed_ = rcvGroupCITimed gInfo itemTTL'
                 showGroupAsSender = fromMaybe (isNothing m_) asGroup_
-            if showGroupAsSender && maybe False (\m -> memberRole' m < GROwner) m_
-              then messageError "x.msg.update: member attempted to update as group" $> Nothing
-              else do
+            if
+              | dropsFeed chatSettings feed_ -> pure Nothing
+              | showGroupAsSender && maybe False (\m -> memberRole' m < GROwner) m_ ->
+                  messageError "x.msg.update: member attempted to update as group" $> Nothing
+              | otherwise -> do
                 (gInfo', chatDir, mentions', scopeInfo) <-
                   if showGroupAsSender
                     then pure (gInfo, CDChannelRcv gInfo Nothing, mentions, Nothing)
@@ -4388,6 +4389,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                               Nothing -> VRValue Nothing msgBody -- sending to one member, do not reference body
                               Just 1 -> VRValue (Just 1) msgBody
                               Just _ -> VRRef 1
+
 runFeedJobWorker :: AgentClient -> FeedJobKey -> Worker -> CM ()
 runFeedJobWorker a feedKey@(feedId, scope) Worker {doWork} = do
   delay <- asks $ deliveryWorkerDelay . config

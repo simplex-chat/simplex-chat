@@ -27,6 +27,8 @@ implementing:
   `SELECT` inside the fields fragment as `groupInfoQueryFields` does.
 - Tests create the feed with `createCCFeed` (as `createCCNoteFolder`), since
   test users are created by `createUserRecordAt` directly.
+- `APIGetChats` includes the feed chat only under `ChatConfig {showFeedChat = True}`,
+  off by default until the apps render it; the feed tests turn it on.
 
 Written of the Tests section: `tests/ChatTests/Feed.hs` — a broadcast with
 `feedBucketSize = 1` to two contacts and two customer business groups, so

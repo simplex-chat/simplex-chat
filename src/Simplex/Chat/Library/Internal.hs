@@ -57,6 +57,7 @@ import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgePro
 import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
+import Simplex.Chat.Delivery (FeedJobAction (..))
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
@@ -66,7 +67,6 @@ import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
-import Simplex.Chat.Delivery (FeedJobAction (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Direct

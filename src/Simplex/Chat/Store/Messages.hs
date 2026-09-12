@@ -773,12 +773,12 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
         ciQuoteGroup [] = ciQuote Nothing $ CIQGroupRcv Nothing
         ciQuoteGroup ((Only itemId :. memberRow) : _) = ciQuote itemId . CIQGroupRcv . Just $ toGroupMember currentTs userContactId memberRow
 
-getChatPreviews :: DB.Connection -> StoreCxt -> User -> Bool -> PaginationByTime -> ChatListQuery -> IO [Either StoreError AChat]
-getChatPreviews db cxt user withPCC pagination query = do
+getChatPreviews :: DB.Connection -> StoreCxt -> User -> Bool -> Bool -> PaginationByTime -> ChatListQuery -> IO [Either StoreError AChat]
+getChatPreviews db cxt user withPCC withFeed pagination query = do
   directChats <- findDirectChatPreviews_ db user pagination query
   groupChats <- findGroupChatPreviews_ db user pagination query
   localChats <- findLocalChatPreviews_ db user pagination query
-  feedChats <- findFeedChatPreviews_ db user pagination query
+  feedChats <- if withFeed then findFeedChatPreviews_ db user pagination query else pure []
   cReqChats <- getContactRequestChatPreviews_ db user pagination query
   connChats <- if withPCC then getContactConnectionChatPreviews_ db user pagination query else pure []
   let refs = sortTake $ concat [directChats, groupChats, localChats, feedChats, cReqChats, connChats]
