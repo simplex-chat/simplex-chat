@@ -1,0 +1,44 @@
+[listener]
+host = 0.0.0.0
+port = 8080
+; the built webapp in the image, read as the export source
+static_dir = /srv/web
+; split deployment: Caddy serves the exported folder; this service is the API and webhooks only.
+; Set to on for an all-in-one deployment where this service serves the webapp itself.
+serve_webapp = off
+; the webapp is written here at boot with the publishable key injected; compose bind-mounts it to a
+; host path Caddy serves. Unset it when serve_webapp = on.
+webapp_export_dir = /srv/webapp
+; on because Caddy proxies /api and /webhooks to this service; without it the rate limiter keys on
+; Caddy's address and shares one bucket across all callers
+trust_forwarded_for = on
+
+[btcpay]
+host = https://btcpay.example.org
+api_key = replace-me
+store_id = replace-me
+webhook_secret = replace-me
+expiry_minutes = 60
+speed_policy = MediumSpeed
+payment_tolerance = 0.5
+
+; optional; omit the whole [stripe] section to disable card payments
+[stripe]
+; restricted key (rk_): Payment Intents write + Charges read — never a full secret key (sk_)
+secret_key = rk_test_replace-me
+publishable_key = pk_test_replace-me
+; the signing secret of the /webhooks/stripe endpoint configured in the Dashboard
+webhook_secret = whsec_replace-me
+; minutes the service holds an unpaid card invoice open before it expires it; 31-1439
+session_minutes = 60
+
+[poll]
+waiting_seconds = 3
+idle_seconds = 60
+
+[issuer]
+default = key_1
+key_1 = replace-me
+
+[dev]
+chat_redeem = on

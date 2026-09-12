@@ -1,0 +1,19 @@
+services:
+  badge-service:
+    image: simplex-badge-service:latest
+    build:
+      context: ../..
+      dockerfile: scripts/badge-service/Dockerfile
+      args:
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
+    restart: on-failure:5
+    user: "${USER_UID:-1000}:${USER_GID:-1000}"
+    tty: true
+    volumes:
+      - ./badge_service.ini:/etc/simplex-badge-service/badge_service.ini:ro
+      - ./data:/data
+      - ./web:/srv/webapp
+    ports:
+      - "127.0.0.1:7800:8080"
+    stop_grace_period: 10s

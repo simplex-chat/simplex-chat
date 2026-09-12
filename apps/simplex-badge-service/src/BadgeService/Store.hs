@@ -21,9 +21,11 @@ module BadgeService.Store
     appendLedgerPlan,
     createCodePurchase,
     insertBadgeCode,
+    revokeCode,
   )
 where
 
+import BadgeService.Store.Invoices (executeChanging)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -51,7 +53,12 @@ import Database.SQLite.Simple.QQ (sql)
 data IssuedCode = IssuedCode
   { badgeCodeId :: Int64,
     badgeType :: BadgeType,
+    -- what was sold: the checkout writes 1, 3 or 12, and redemption grants that many
     months :: Int,
+    -- a code the web checkout wrote is unpaid until settlement, and must not redeem
+    paymentStatus :: BadgeCodePaymentStatus,
+    revokedAt :: Maybe UTCTime,
+    expiresAt :: Maybe UTCTime,
     redemption :: CodeRedemption
   }
 
@@ -89,7 +96,8 @@ getBadgeCode db codeHash =
     DB.query
       db
       [sql|
-        SELECT c.badge_code_id, c.badge_type, c.months, p.badge_purchase_id, p.purchase_key, i.credential
+        SELECT c.badge_code_id, c.badge_type, c.months, c.code_payment_status, c.revoked_at,
+               c.expires_at, p.badge_purchase_id, p.purchase_key, i.credential
         FROM sx_badge_service_badge_codes c
         LEFT JOIN sx_badge_service_badge_purchases p ON p.badge_code_id = c.badge_code_id
         LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
@@ -99,8 +107,8 @@ getBadgeCode db codeHash =
       |]
       (Only (Binary codeHash))
   where
-    toCode (badgeCodeId, badgeType, months, purchaseId_, purchaseKey_, credential_) =
-      IssuedCode {badgeCodeId, badgeType, months, redemption = codeRedemption purchaseId_ purchaseKey_ credential_}
+    toCode (badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, purchaseId_, purchaseKey_, credential_) =
+      IssuedCode {badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, redemption = codeRedemption purchaseId_ purchaseKey_ credential_}
     codeRedemption purchaseId_ purchaseKey_ credential_ = case (purchaseId_, purchaseKey_) of
       (Just badgePurchaseId, Just purchaseKey) -> case decodeCredential =<< credential_ of
         Just credential -> CodeRedeemed RedeemedCode {badgePurchaseId, purchaseKey, credential}
@@ -244,6 +252,15 @@ createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey = Bad
   purchaseId <- insertedRowId db
   DB.execute db "UPDATE sx_badge_service_badge_codes SET redeemed_at = ? WHERE badge_code_id = ?" (now, badgeCodeId)
   pure purchaseId
+
+-- | False when there is no such code, or it was revoked already.
+revokeCode :: DB.Connection -> ByteString -> UTCTime -> IO Bool
+revokeCode db codeHash now =
+  (> 0)
+    <$> executeChanging
+      db
+      "UPDATE sx_badge_service_badge_codes SET revoked_at = ? WHERE code_hash = ? AND revoked_at IS NULL"
+      (now, Binary codeHash)
 
 insertBadgeCode :: DB.Connection -> ByteString -> BadgeType -> Int -> BadgeCodePaymentStatus -> UTCTime -> IO ()
 insertBadgeCode db codeHash badgeType months paymentStatus now =

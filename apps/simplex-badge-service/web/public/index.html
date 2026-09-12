@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<!-- Let the browser paint its dark canvas on a reload's blank frame, so a dark-theme buyer is not
+     flashed white before the stylesheet lands. The stylesheet declares `color-scheme` per theme; this
+     is the earliest hint, read before the stylesheet parses. -->
+<meta name="color-scheme" content="light dark">
+<!-- the `publishable_key`: public by design, and empty here. The deployment
+     substitutes its own when it serves this file; `mock/server.py` does it from
+     $STRIPE_PUBLISHABLE_KEY. Empty means no card form and a development
+     stand-in (`src/stripe.ts`). A real key is never committed. -->
+<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">
+<!-- The two page grounds, so the browser paints the right one before the
+     stylesheet lands rather than flashing white into the dark theme. -->
+<meta name="theme-color" content="#F7F7F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141416" media="(prefers-color-scheme: dark)">
+<title>Support SimpleX</title>
+<!-- The official symbol, both variants, served from the build hash like every
+     other asset so the worker precaches it. -->
+<link rel="icon" type="image/svg+xml" href="/assets/739d52f9757c35e4/symbol-light.svg" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/svg+xml" href="/assets/739d52f9757c35e4/symbol-dark.svg" media="(prefers-color-scheme: dark)">
+<!-- The stylesheet before the script, not after: a classic script waits for a preceding stylesheet
+     to load before it runs, which holds the parser here until the CSS is in. Firefox otherwise paints
+     the parsed body unstyled while the stylesheet is still in flight (Chrome does not); blocking the
+     parser at this point keeps that unstyled frame off the screen. -->
+<link rel="stylesheet" href="/assets/739d52f9757c35e4/styles.css">
+<!-- The pre-paint bootstrap: sets the saved theme and marks a non-landing reload before the first
+     paint. Classic and blocking, served under the build hash (see `assets` in build.js) so it is
+     precached and cannot skew. Its wait on the stylesheet above still finishes before the first paint. -->
+<script src="/assets/739d52f9757c35e4/init.js"></script>
+</head>
+<body>
+  <!-- The app shell. `build.js` fills these two slots at build time with the serialized output of
+       chrome() and landing() from screens.ts (see `prerenderShell`), so the first paint is the real
+       first screen, not an empty page — no reload flashes blank — and the markup can never drift from
+       what `main.ts` builds and swaps in, because it IS that output. The markers stay; only the bytes
+       between them are rewritten. Embedded, the site owns the navbar, so `.embedded #chrome` hides
+       this copy just as the built one is not rendered there. -->
+  <div id="chrome"><!--shell:chrome--><header class="chrome-bar"><a class="brand" href="/" aria-label="SimpleX"></a><nav class="menu-wrap"><button class="menu-button" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menu"><svg xmlns="http://www.w3.org/2000/svg" class="bars" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><line x1="3" y1="7" x2="21" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line><line x1="3" y1="17" x2="21" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line></svg></button><div class="menu" id="menu" hidden="" role="dialog" aria-label="Menu"><div class="menu-section"><div class="menu-row"><span class="menu-label">Theme</span><div class="segmented" role="group" aria-label="Theme"><button class="segment" type="button" aria-pressed="false">Light</button><button class="segment" type="button" aria-pressed="false">Dark</button><button class="segment" type="button" aria-pressed="true">System</button></div></div></div><div class="menu-section"><button class="menu-item" type="button">Buy a code</button><button class="menu-item" type="button">Your codes</button></div></div></nav></header><!--/shell:chrome--></div>
+  <main id="app" aria-live="polite"><!--shell:app--><div class="track"><div class="rail"><section class="panel"><h1>Support SimpleX</h1><p class="lede">SimpleX has no ads, no user accounts and nothing to sell.</p><p class="lede">A supporter badge helps pay for the people who build it.</p><div class="hero" role="presentation"></div><button class="primary" type="button">Choose your level</button><div class="info"><span class="title">Already bought a code?</span><p>Redeem it in the app: Settings, Supporter perks.</p></div><p class="muted">The badge shows on your profile. Nothing renews by itself, and no account is created.</p></section></div></div><!--/shell:app--></main>
+  <!-- Named, so `main.ts` can take it out of the accessibility tree with the
+       screen while the menu is open. -->
+  <footer id="contact"><a href="https://simplex.chat/contact">simplex.chat/contact</a></footer>
+  <script type="module" src="/assets/739d52f9757c35e4/main.js"></script>
+</body>
+</html>

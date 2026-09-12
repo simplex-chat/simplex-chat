@@ -1,0 +1,43 @@
+{
+  "_fixture": "A list response with `paymentMethods` ABSENT, which is what a server that did not honour includePaymentMethods sends. Hand-written from the documented schema. This must FAIL the pass: skipping it would answer `Right []` and report health for as long as nothing ever settled.",
+  "response": [
+    {
+      "metadata": {},
+      "checkout": {
+        "speedPolicy": "MediumSpeed",
+        "paymentMethods": [
+          "BTC-CHAIN"
+        ],
+        "defaultPaymentMethod": null,
+        "expirationMinutes": 60,
+        "monitoringMinutes": 4320,
+        "paymentTolerance": 0.5,
+        "redirectURL": null,
+        "redirectAutomatically": false,
+        "requiresRefundEmail": false,
+        "defaultLanguage": null
+      },
+      "receipt": {
+        "enabled": null,
+        "showQR": null,
+        "showPayments": null
+      },
+      "id": "NoMethodsInvoiceRefEE",
+      "storeId": "BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHnT",
+      "amount": "54.00",
+      "currency": "USD",
+      "type": "Standard",
+      "checkoutLink": "https://btcpay.example.org/i/NoMethodsInvoiceRefEE",
+      "createdTime": 1700000000,
+      "expirationTime": 1700003600,
+      "monitoringExpiration": 1700259200,
+      "status": "Settled",
+      "additionalStatus": "None",
+      "availableStatusesForManualMarking": [
+        "Settled",
+        "Invalid"
+      ],
+      "archived": false
+    }
+  ]
+}

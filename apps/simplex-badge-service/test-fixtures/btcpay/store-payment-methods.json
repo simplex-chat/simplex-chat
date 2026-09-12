@@ -1,0 +1,21 @@
+{
+  "_fixture": "GET /api/v1/stores/{storeId}/payment-methods -- StorePaymentMethodDataList, from BTCPay's DOCUMENTED Greenfield schema (BTCPay 2.x naming, where a payment method id is CODE-CHAIN). NOT captured from a live instance; replace `response` with a recorded body and rewrite this line.",
+  "response": [
+    {
+      "paymentMethodId": "BTC-CHAIN",
+      "enabled": true,
+      "config": {
+        "accountDerivation": "xpub661MyMwAqRbcExampleAccountDerivation-[p2wpkh]",
+        "label": "",
+        "accountKeyPath": ""
+      }
+    },
+    {
+      "paymentMethodId": "XMR-CHAIN",
+      "enabled": true,
+      "config": {
+        "accountIndex": 0
+      }
+    }
+  ]
+}

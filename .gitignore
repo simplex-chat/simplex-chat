@@ -86,4 +86,11 @@ website/.cache
 website/test/stubs-layout-cache/_includes/*.js
 apps/android/app/release
 apps/multiplatform/.kotlin/sessions
+# anywhere in the tree: this file holds a real BTCPay api_key and webhook_secret
+badge_service.ini
 
+# Badge service Docker deployment: the Dockerfile, compose, and example config are tracked; the
+# live config (a secret) and its data volume are not.
+scripts/badge-service/badge_service.ini
+scripts/badge-service/data/
+scripts/badge-service/web/
