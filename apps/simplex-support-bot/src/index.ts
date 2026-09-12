@@ -1,7 +1,7 @@
 import {readFileSync, writeFileSync, existsSync} from "fs"
 import {api, bot, util} from "simplex-chat"
 import {T} from "@simplex-chat/types"
-import {parseConfig} from "./config.js"
+import {IdName, parseConfig} from "./config.js"
 import {SupportBot} from "./bot.js"
 import {GrokApiClient, GrokMessage} from "./grok.js"
 import {loadGrokContext} from "./context.js"
@@ -31,6 +31,7 @@ async function main(): Promise<void> {
     backend: config.db.type,
     teamGroup: config.teamGroup,
     teamMembers: config.teamMembers,
+    broadcasters: config.broadcasters,
     timezone: config.timezone,
     completeHours: config.completeHours,
   })
@@ -113,6 +114,7 @@ async function main(): Promise<void> {
       newMemberContactReceivedInv: (evt) => supportBot?.onMemberContactReceivedInv(evt),
       contactConnected: (evt) => supportBot?.onContactConnected(evt),
       contactSndReady: (evt) => supportBot?.onContactSndReady(evt),
+      chatItemsStatusesUpdated: (evt) => supportBot?.onChatItemsStatusesUpdated(evt),
     },
   })
   log(`Main bot user: ${mainUser.profile.displayName} (userId=${mainUser.userId})`)
@@ -229,6 +231,7 @@ async function main(): Promise<void> {
     fullDelete: {enable: T.GroupFeatureEnabled.On},
     commands: [
       {type: "command", keyword: "join", label: "Join customer chat", params: "groupId"},
+      {type: "command", keyword: "broadcast", label: "Broadcast to all chats", params: "text"},
     ],
   }
 
@@ -300,20 +303,24 @@ async function main(): Promise<void> {
     inviteLinkTimer.unref()
   }
 
-  // Step 9: Validate team members (lookup by ID, one round-trip per member)
-  if (config.teamMembers.length > 0) {
-    log("Validating team members...")
-    for (const member of config.teamMembers) {
-      const contact = await getContact(chat, member.id)
+  // Step 9: Validate team members and broadcasters (lookup by ID, one round-trip per contact)
+  await validateContacts("Team member", config.teamMembers)
+  await validateContacts("Broadcaster", config.broadcasters)
+
+  async function validateContacts(role: string, contacts: IdName[]): Promise<void> {
+    if (contacts.length === 0) return
+    log(`Validating ${role.toLowerCase()}s...`)
+    for (const {id, name} of contacts) {
+      const contact = await getContact(chat, id)
       if (!contact) {
-        console.error(`Team member not found: ID=${member.id}`)
+        console.error(`${role} not found: ID=${id}`)
         process.exit(1)
       }
-      if (contact.profile.displayName !== member.name) {
-        console.error(`Team member name mismatch: expected "${member.name}", got "${contact.profile.displayName}" (ID=${member.id})`)
+      if (contact.profile.displayName !== name) {
+        console.error(`${role} name mismatch: expected "${name}", got "${contact.profile.displayName}" (ID=${id})`)
         process.exit(1)
       }
-      log(`Team member validated: ${member.id}:${member.name}`)
+      log(`${role} validated: ${id}:${name}`)
     }
   }
 

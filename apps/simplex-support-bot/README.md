@@ -65,11 +65,16 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 | `--pg-conn` | postgres | yes | — | PostgreSQL connection string |
 | `--pg-schema` | postgres | no | `simplex_v1` | schema prefix used for bot tables |
 | `-a` / `--auto-add-team-members` | both | no | | comma-separated `ID:name` pairs (e.g. `1:Alice,2:Bob`) |
+| `--broadcasters` | both | no | | comma-separated `ID:name` pairs of contacts allowed to use `/broadcast` in the team group |
 | `--timezone` | both | no | `UTC` | IANA zone for weekend detection |
 | `--complete-hours` | both | no | `3` | auto-complete chats after N hours idle (`0` disables) |
 | `--card-flush-seconds` | both | no | `300` | debounce card state writes |
 | `--context-file` | both | required with `GROK_API_KEY` | | text file with Grok system context |
 | `-h` / `--help` | both | no | | show usage and exit |
+
+## Broadcasts
+
+A contact listed in `--broadcasters` sends `/broadcast <text>` in the team group. The bot sends the text as a feed message to every customer group and every direct contact of the bot, replies that the broadcast is queued, and replies again when delivery completes or fails. The text after `/broadcast` may span several lines.
 
 ## Environment variables
 

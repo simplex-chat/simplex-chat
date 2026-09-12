@@ -157,8 +157,14 @@ class MockChatApi {
   }
 
   rawCmds: string[] = []
+  feedItemIds: number[] = []
   async sendChatCmd(cmd: string) {
     this.rawCmds.push(cmd)
+    if (cmd.startsWith("/feed ")) {
+      const itemId = nextItemId++
+      this.feedItemIds.push(itemId)
+      return {type: "newChatItems", user: makeUser(MAIN_USER_ID), chatItems: [makeFeedAChatItem(itemId, {type: "sndNew"})]}
+    }
     return {type: "cmdOk"}
   }
 
@@ -266,6 +272,7 @@ function makeConfig(overrides: Partial<any> = {}) {
       {id: TEAM_MEMBER_1_ID, name: "Alice"},
       {id: TEAM_MEMBER_2_ID, name: "Bob"},
     ],
+    broadcasters: [{id: TEAM_MEMBER_1_ID, name: "Alice"}],
     groupLinks: "",
     timezone: "UTC",
     completeHours: 3,
@@ -357,6 +364,13 @@ function makeDirectAChatItem(chatItem: any, contactId: number): any {
   return {
     chatInfo: {type: "direct", contact: {contactId, profile: {displayName: "Someone"}}},
     chatItem,
+  }
+}
+
+function makeFeedAChatItem(itemId: number, itemStatus: any): any {
+  return {
+    chatInfo: {type: "feed", feed: {feedId: 1, userId: MAIN_USER_ID}},
+    chatItem: {chatDir: {type: "feedSnd"}, meta: {itemId, itemStatus}, content: {type: "sndMsgContent", msgContent: {type: "text", text: ""}}},
   }
 }
 
@@ -1357,6 +1371,75 @@ describe("/join Command (Team Group)", () => {
     await bot.onNewChatItems(teamGroupMessage("/join abc"))
     expectSentToGroup(TEAM_GROUP_ID, `Error: invalid group id "abc"`)
     expect(chat.added.length).toBe(0)
+  })
+})
+
+describe("/broadcast Command (Team Group)", () => {
+  beforeEach(() => setup())
+
+  function statusEvent(itemId: number, itemStatus: any): any {
+    return {
+      type: "chatItemsStatusesUpdated" as const,
+      user: makeUser(MAIN_USER_ID),
+      chatItems: [makeFeedAChatItem(itemId, itemStatus)],
+    }
+  }
+
+  test("/broadcast from broadcaster → /feed sent with JSON text, queued reply", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast hello everyone"))
+    expect(chat.rawCmds).toEqual(['/feed "hello everyone"'])
+    expectSentToGroup(TEAM_GROUP_ID, `Broadcast ${chat.feedItemIds[0]} queued`)
+  })
+
+  test("/broadcast keeps newlines and quotes", async () => {
+    await bot.onNewChatItems(teamGroupMessage('/broadcast line "one"\nline two'))
+    expect(chat.rawCmds).toEqual(['/feed "line \\"one\\"\\nline two"'])
+  })
+
+  test("/broadcast on its own line → text starts after the newline", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast\nline one\nline two"))
+    expect(chat.rawCmds).toEqual(['/feed "line one\\nline two"'])
+  })
+
+  test("/broadcast from a non-broadcaster → error reply, nothing sent", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast hello", TEAM_MEMBER_2_ID))
+    expect(chat.rawCmds.length).toBe(0)
+    expectSentToGroup(TEAM_GROUP_ID, `Error: contact ${TEAM_MEMBER_2_ID} is not allowed to broadcast`)
+  })
+
+  test("/broadcast without text → error reply, nothing sent", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast  "))
+    expect(chat.rawCmds.length).toBe(0)
+    expectSentToGroup(TEAM_GROUP_ID, "Error: broadcast text is empty")
+  })
+
+  test("customer sending /broadcast in customer group → treated as normal message", async () => {
+    await bot.onNewChatItems(customerMessage("/broadcast hello"))
+    expect(chat.rawCmds.length).toBe(0)
+    expectSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
+  })
+
+  test("feed item complete → delivered reply once", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast hello"))
+    const itemId = chat.feedItemIds[0]
+    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndSent", sndProgress: "partial"}))
+    expectNotSentToGroup(TEAM_GROUP_ID, "delivered")
+    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndSent", sndProgress: "complete"}))
+    expectSentToGroup(TEAM_GROUP_ID, `Broadcast ${itemId} delivered to all chats`)
+    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndSent", sndProgress: "complete"}))
+    expect(chat.sentTo(TEAM_GROUP_ID).filter(m => m.includes("delivered")).length).toBe(1)
+  })
+
+  test("feed item error → failure reply", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast hello"))
+    const itemId = chat.feedItemIds[0]
+    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndError", agentError: {type: "other", sndError: "boom"}}))
+    expectSentToGroup(TEAM_GROUP_ID, `Broadcast ${itemId} failed`)
+  })
+
+  test("status of an unknown feed item → ignored", async () => {
+    await bot.onChatItemsStatusesUpdated(statusEvent(4242, {type: "sndSent", sndProgress: "complete"}))
+    expect(chat.sentTo(TEAM_GROUP_ID).length).toBe(0)
   })
 })
 
@@ -2456,6 +2539,13 @@ describe("parseConfig Validation", () => {
   test("sqlite backend with --sqlite-key → DbConfig carries encryptionKey", () => {
     const cfg = parseConfig([...baseArgs, "--sqlite-key", "secret"])
     expect(cfg.db).toEqual({type: "sqlite", filePrefix: "./data/simplex", encryptionKey: "secret"})
+  })
+
+  test("--broadcasters → parsed as ID:name pairs, empty when absent", () => {
+    expect(parseConfig(baseArgs).broadcasters).toEqual([])
+    const cfg = parseConfig([...baseArgs, "--broadcasters", "3:Carol,4:Dave"])
+    expect(cfg.broadcasters).toEqual([{id: 3, name: "Carol"}, {id: 4, name: "Dave"}])
+    expect(() => parseConfig([...baseArgs, "--broadcasters", "Carol"])).toThrow(/Invalid ID:name format/)
   })
 
   test("unknown flag → parseArgs throws", () => {

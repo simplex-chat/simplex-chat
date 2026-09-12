@@ -67,6 +67,8 @@ export class SupportBot {
   // Contacts that already received the team DM (dedup)
   private sentTeamDMs = new Set<number>()
 
+  private pendingBroadcasts = new Set<number>()
+
   // Tracked fire-and-forget operations (for testing)
   private _pendingOps: Promise<void>[] = []
 
@@ -311,6 +313,25 @@ export class SupportBot {
   async onContactSndReady(evt: CEvt.ContactSndReady): Promise<void> {
     if (evt.user.userId !== this.mainUserId) return
     await this.deliverPendingDM(evt.contact.contactId)
+  }
+
+  async onChatItemsStatusesUpdated(evt: CEvt.ChatItemsStatusesUpdated): Promise<void> {
+    if (evt.user.userId !== this.mainUserId) return
+    for (const {chatInfo, chatItem} of evt.chatItems) {
+      if (chatInfo.type !== "feed") continue
+      const itemId = chatItem.meta.itemId
+      if (!this.pendingBroadcasts.has(itemId)) continue
+      const status = chatItem.meta.itemStatus
+      let report: string | undefined
+      if (status.type === "sndSent" && status.sndProgress === T.SndCIStatusProgress.Complete) {
+        report = `Broadcast ${itemId} delivered to all chats`
+      } else if (status.type === "sndError") {
+        report = `Broadcast ${itemId} failed: ${JSON.stringify(status.agentError)}`
+      }
+      if (report === undefined) continue
+      this.pendingBroadcasts.delete(itemId)
+      await this.sendToGroup(this.config.teamGroup.id, report)
+    }
   }
 
   private async deliverPendingDM(contactId: number): Promise<void> {
@@ -814,14 +835,44 @@ export class SupportBot {
     if (!senderContactId) return
 
     const cmd = util.ciBotCommand(chatItem)
-    if (cmd?.keyword !== "join") return
+    switch (cmd?.keyword) {
+      case "join": {
+        const targetGroupId = Number.parseInt(cmd.params, 10)
+        if (Number.isNaN(targetGroupId) || targetGroupId <= 0) {
+          await this.sendToGroup(this.config.teamGroup.id, `Error: invalid group id "${cmd.params}"`)
+          return
+        }
+        await this.handleJoinCommand(targetGroupId, senderContactId)
+        break
+      }
+      case "broadcast":
+        await this.handleBroadcastCommand(chatItem, senderContactId)
+        break
+    }
+  }
 
-    const targetGroupId = Number.parseInt(cmd.params, 10)
-    if (Number.isNaN(targetGroupId) || targetGroupId <= 0) {
-      await this.sendToGroup(this.config.teamGroup.id, `Error: invalid group id "${cmd.params}"`)
+  private async handleBroadcastCommand(chatItem: T.ChatItem, senderContactId: number): Promise<void> {
+    const teamGroupId = this.config.teamGroup.id
+    if (!this.config.broadcasters.some(b => b.id === senderContactId)) {
+      await this.sendToGroup(teamGroupId, `Error: contact ${senderContactId} is not allowed to broadcast`)
       return
     }
-    await this.handleJoinCommand(targetGroupId, senderContactId)
+    const text = (util.ciContentText(chatItem)?.trim() ?? "").replace(/^\/broadcast\s?/, "")
+    if (text === "") {
+      await this.sendToGroup(teamGroupId, "Error: broadcast text is empty")
+      return
+    }
+    try {
+      const r = await this.withMainProfile(() => this.chat.sendChatCmd(`/feed ${JSON.stringify(text)}`))
+      if (r.type !== "newChatItems") throw new Error(`unexpected response ${r.type}`)
+      const itemId = r.chatItems[0]?.chatItem.meta.itemId
+      if (itemId === undefined) throw new Error("no feed item in response")
+      this.pendingBroadcasts.add(itemId)
+      await this.sendToGroup(teamGroupId, `Broadcast ${itemId} queued for delivery to all chats`)
+    } catch (err) {
+      logError("/broadcast failed", err)
+      await this.sendToGroup(teamGroupId, "Error sending broadcast")
+    }
   }
 
   private async handleJoinCommand(targetGroupId: number, senderContactId: number): Promise<void> {
