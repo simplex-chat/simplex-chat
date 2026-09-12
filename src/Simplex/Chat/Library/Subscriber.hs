@@ -135,10 +135,33 @@ processAgentMessage corrId connId msg = do
   lockEntity <- critical connId (withStore (`getChatLockEntity` AgentConnId connId))
   withEntityLock "processAgentMessage" lockEntity $ do
     cxt <- chatStoreCxt
-    -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
-    critical connId (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
-      Just user -> processAgentMessageConn cxt user corrId connId msg `catchAllErrors` eToView
+    -- Missing connection/entity errors here will be sent to the view but not shown as CRITICAL alert,
+    -- as in this case no need to ACK message - we can't process messages for this connection anyway.
+    critical connId (withStore $ getUserEntity cxt) >>= \case
+      Just (user, entity) -> processAgentMessageConn cxt user entity corrId connId msg `catchAllErrors` eToView
       _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
+  where
+    getUserEntity :: StoreCxt -> DB.Connection -> ExceptT StoreError IO (Maybe (User, ConnectionEntity))
+    getUserEntity cxt db =
+      liftIO (getUserByAConnId db $ AgentConnId connId)
+        >>= mapM (\user -> (user,) <$> (getConnectionEntity db cxt user (AgentConnId connId) >>= liftIO . updateConnStatus db))
+
+    updateConnStatus :: DB.Connection -> ConnectionEntity -> IO ConnectionEntity
+    updateConnStatus db acEntity = case agentMsgConnStatus (entityConnection acEntity) msg of
+      Just connStatus -> do
+        let conn = (entityConnection acEntity) {connStatus}
+        updateConnectionStatus db conn connStatus
+        pure $ updateEntityConnStatus acEntity connStatus
+      Nothing -> pure acEntity
+
+    agentMsgConnStatus :: Connection -> AEvent e -> Maybe ConnStatus
+    agentMsgConnStatus Connection {connStatus = cs} = \case
+      JOINED True -> Just ConnSndReady
+      CONF {} -> Just ConnRequested
+      INFO {} -> Just ConnSndReady
+      CON _ -> Just ConnReady
+      ERR err | cs /= ConnReady && not (temporaryOrHostError err) -> Just $ ConnFailed (tshow err)
+      _ -> Nothing
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
 -- SEDBBusyError will only be thrown on IO exceptions or SQLError during DB queries,
@@ -408,11 +431,8 @@ processAgentMsgRcvFile _corrId aFileId msg = do
 
 type ShouldDeleteGroupConns = Bool
 
-processAgentMessageConn :: StoreCxt -> User -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
-processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage = do
-  -- Missing connection/entity errors here will be sent to the view but not shown as CRITICAL alert,
-  -- as in this case no need to ACK message - we can't process messages for this connection anyway.
-  entity <- critical agentConnId $ withStore (\db -> getConnectionEntity db cxt user $ AgentConnId agentConnId) >>= updateConnStatus
+processAgentMessageConn :: StoreCxt -> User -> ConnectionEntity -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
+processAgentMessageConn cxt user@User {userId} entity corrId agentConnId agentMessage =
   case agentMessage of
     END -> case entity of
       RcvDirectMsgConnection _ (Just ct) -> toView $ CEvtContactAnotherClient user ct
@@ -426,23 +446,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       UserContactConnection conn uc ->
         processContactConnMessage agentMessage entity conn uc
   where
-    updateConnStatus :: ConnectionEntity -> CM ConnectionEntity
-    updateConnStatus acEntity = case agentMsgConnStatus (entityConnection acEntity) agentMessage of
-      Just connStatus -> do
-        let conn = (entityConnection acEntity) {connStatus}
-        withStore' $ \db -> updateConnectionStatus db conn connStatus
-        pure $ updateEntityConnStatus acEntity connStatus
-      Nothing -> pure acEntity
-
-    agentMsgConnStatus :: Connection -> AEvent e -> Maybe ConnStatus
-    agentMsgConnStatus Connection {connStatus = cs} = \case
-      JOINED True -> Just ConnSndReady
-      CONF {} -> Just ConnRequested
-      INFO {} -> Just ConnSndReady
-      CON _ -> Just ConnReady
-      ERR err | cs /= ConnReady && not (temporaryOrHostError err) -> Just $ ConnFailed (tshow err)
-      _ -> Nothing
-
     processCONFpqSupport :: Connection -> PQSupport -> CM Connection
     processCONFpqSupport conn@Connection {connId, pqSupport = pq} pq'
       | pq == PQSupportOn && pq' == PQSupportOff = do
