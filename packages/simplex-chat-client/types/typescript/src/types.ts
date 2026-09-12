@@ -699,6 +699,7 @@ export interface CIFile {
   fileStatus: CIFileStatus
   fileProtocol: FileProtocol
   fileExpires?: string // ISO-8601 timestamp
+  fileProhibited?: FileProhibited
 }
 
 export type CIFileStatus = 
@@ -2440,6 +2441,12 @@ export interface FileInvitation {
   fileConnReq?: string
   fileInline?: InlineFileMode
   fileDescr?: FileDescr
+  fileBadge?: BadgeProof
+}
+
+export interface FileProhibited {
+  maxSize: number // int64
+  badgeStatus?: BadgeStatus
 }
 
 export enum FileProtocol {
@@ -3801,6 +3808,7 @@ export interface RcvFileTransfer {
   fileId: number // int64
   xftpRcvFile?: XFTPRcvFile
   fileInvitation: FileInvitation
+  fileProhibited?: FileProhibited
   fileStatus: RcvFileStatus
   fileType: FileType
   rcvFileInline?: InlineFileMode

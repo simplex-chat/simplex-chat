@@ -668,10 +668,9 @@ struct ComposeView: View {
                         fileSize <= maxFileSize {
                         composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent, file: fileURL))
                     } else {
-                        let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: maxFileSize, countStyle: .binary)
-                        AlertManager.shared.showAlertMsg(
-                            title: "Large file!",
-                            message: "Currently maximum supported file size is \(prettyMaxFileSize)."
+                        showAlert(
+                            NSLocalizedString("Large file!", comment: "file alert title"),
+                            message: largeFileMessage(Int64(fileSize ?? 0), incognito: sendIncognito, badgeIssue: expiredBadgeReason(Int64(fileSize ?? 0), sendProfile))
                         )
                     }
                 } catch {
@@ -1266,11 +1265,14 @@ struct ComposeView: View {
         }
     }
 
-    private var maxFileSize: Int64 {
-        // the user's active badge raises the limit, but not in incognito chats where no badge is presented
-        let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
-        return getMaxFileSize(.xftp, incognito ? nil : chatModel.currentUser?.profile)
+    // no badge is presented in incognito chats, so it does not raise the limit there
+    private var sendIncognito: Bool {
+        chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
     }
+
+    private var sendProfile: LocalProfile? { sendIncognito ? nil : chatModel.currentUser?.profile }
+
+    private var maxFileSize: Int64 { getMaxFileSize(.xftp, sendProfile) }
 
     // Spec: spec/client/compose.md#sendLiveMessage
     private func sendLiveMessage() async {

@@ -4245,6 +4245,13 @@ enum class MREmojiChar(val value: String) {
   @SerialName("✅") Check("✅");
 }
 
+// set by the core when the file is above the size the sender's badge allows; badgeStatus is null when no proof was sent
+@Serializable
+data class FileProhibited(
+  val maxSize: Long,
+  val badgeStatus: BadgeStatus? = null
+)
+
 @Serializable
 data class CIFile(
   val fileId: Long,
@@ -4253,7 +4260,8 @@ data class CIFile(
   val fileSource: CryptoFile? = null,
   val fileStatus: CIFileStatus,
   val fileProtocol: FileProtocol,
-  val fileExpires: Instant? = null
+  val fileExpires: Instant? = null,
+  val fileProhibited: FileProhibited? = null
 ) {
   val expired: Boolean = fileExpires != null && fileExpires < Clock.System.now()
 

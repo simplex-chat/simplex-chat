@@ -274,6 +274,7 @@ chatTypesDocsData =
     (sti @FileError, STUnion, "FileErr", [], "", ""),
     (sti @FileErrorType, STUnion, "", [], "", ""),
     (sti @FileInvitation, STRecord, "", [], "", ""),
+    (sti @FileProhibited, STRecord, "", [], "", ""),
     (sti @FileProtocol, STEnum' (consLower "FP"), "", [], "", ""),
     (sti @FileStatus, STEnum, "FS", [], "", ""),
     (sti @FileTransferMeta, STRecord, "", [], "", ""),
@@ -507,6 +508,7 @@ deriving instance Generic FileDescr
 deriving instance Generic FileError
 deriving instance Generic FileErrorType
 deriving instance Generic FileInvitation
+deriving instance Generic FileProhibited
 deriving instance Generic FileProtocol
 deriving instance Generic FileStatus
 deriving instance Generic FileTransferMeta

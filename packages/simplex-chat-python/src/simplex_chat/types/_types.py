@@ -488,6 +488,7 @@ class CIFile(TypedDict):
     fileStatus: "CIFileStatus"
     fileProtocol: "FileProtocol"
     fileExpires: NotRequired[str]  # ISO-8601 timestamp
+    fileProhibited: NotRequired["FileProhibited"]
 
 class CIFileStatus_sndStored(TypedDict):
     type: Literal["sndStored"]
@@ -1725,6 +1726,11 @@ class FileInvitation(TypedDict):
     fileConnReq: NotRequired[str]
     fileInline: NotRequired["InlineFileMode"]
     fileDescr: NotRequired["FileDescr"]
+    fileBadge: NotRequired["BadgeProof"]
+
+class FileProhibited(TypedDict):
+    maxSize: int  # int64
+    badgeStatus: NotRequired["BadgeStatus"]
 
 FileProtocol = Literal["SMP", "XFTP", "LOCAL"]
 
@@ -2670,6 +2676,7 @@ class RcvFileTransfer(TypedDict):
     fileId: int  # int64
     xftpRcvFile: NotRequired["XFTPRcvFile"]
     fileInvitation: "FileInvitation"
+    fileProhibited: NotRequired["FileProhibited"]
     fileStatus: "RcvFileStatus"
     fileType: "FileType"
     rcvFileInline: NotRequired["InlineFileMode"]

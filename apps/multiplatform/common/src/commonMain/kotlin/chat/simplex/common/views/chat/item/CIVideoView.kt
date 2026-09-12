@@ -35,7 +35,6 @@ fun CIVideoView(
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
   smallView: Boolean = false,
-  senderProfile: LocalProfile?,
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
@@ -99,7 +98,7 @@ fun CIVideoView(
           if (file != null) {
             when (file.fileStatus) {
               CIFileStatus.RcvInvitation, CIFileStatus.RcvAborted ->
-                receiveFileIfValidSize(file, senderProfile, receiveFile)
+                receiveFileIfValidSize(file, receiveFile)
               CIFileStatus.RcvAccepted ->
                 when (file.fileProtocol) {
                   FileProtocol.XFTP ->
@@ -129,16 +128,16 @@ fun CIVideoView(
           DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(duration * 1000L) }, remember { mutableStateOf(0L) }/*, soundEnabled*/)
         }
         if (showDownloadButton(file?.fileStatus) && !blurred.value && file != null) {
-          PlayButton(error = false, sizeMultiplier, { showMenu.value = true }) { receiveFileIfValidSize(file, senderProfile, receiveFile) }
+          PlayButton(error = false, sizeMultiplier, { showMenu.value = true }) { receiveFileIfValidSize(file, receiveFile) }
         }
       }
     }
     // Do not show download icon when the view is blurred
     if (!smallView && (!showDownloadButton(file?.fileStatus) || !blurred.value)) {
-      fileStatusIcon(file, false, senderProfile)
+      fileStatusIcon(file, false)
     } else if (smallView && file?.showStatusIconInSmallView == true) {
       Box(Modifier.align(Alignment.Center)) {
-        fileStatusIcon(file, true, senderProfile)
+        fileStatusIcon(file, true)
       }
     }
   }
@@ -486,7 +485,7 @@ private fun progressCircle(progress: Long, total: Long) {
 }
 
 @Composable
-private fun fileStatusIcon(file: CIFile?, smallView: Boolean, senderProfile: LocalProfile?) {
+private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
   if (file != null) {
     Box(
       Modifier
@@ -526,7 +525,7 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean, senderProfile: Loc
             }
           )
         is CIFileStatus.RcvInvitation ->
-          if (file.expired && fileSizeValid(file, senderProfile))
+          if (file.expired && fileSizeValid(file))
             fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           else
             fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_video_asked_to_receive)
@@ -565,14 +564,11 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean, senderProfile: Loc
 private fun showDownloadButton(status: CIFileStatus?): Boolean =
   status is CIFileStatus.RcvInvitation || status is CIFileStatus.RcvAborted
 
-private fun receiveFileIfValidSize(file: CIFile, senderProfile: LocalProfile?, receiveFile: (Long) -> Unit) {
-  if (fileSizeValid(file, senderProfile)) {
-    receiveFile(file.fileId)
+private fun receiveFileIfValidSize(file: CIFile, receiveFile: (Long) -> Unit) {
+  if (file.fileProhibited != null) {
+    showProhibitedFileAlert(file, file.fileProhibited)
   } else {
-    AlertManager.shared.showAlertMsg(
-      generalGetString(MR.strings.large_file),
-      String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol, senderProfile)))
-    )
+    receiveFile(file.fileId)
   }
 }
 
