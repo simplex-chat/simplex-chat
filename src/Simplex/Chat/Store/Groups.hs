@@ -425,7 +425,7 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile useRelays
       insertedRowId db
     let memberPubKey = C.publicKey . memberPrivKey <$> groupKeys
     membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole memberId GROwner) GCUserMember GSMemCreator IBUser customUserProfileId memberPubKey currentTs (vr cxt)
-    let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
+    let chatSettings = defaultChatSettings
     pure
       GroupInfo
         { groupId,
@@ -504,7 +504,7 @@ createGroupInvitation db cxt user@User {userId} contact@Contact {contactId, acti
           let hostVRange = adjustedMemberVRange (vr cxt) peerChatVRange
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing ((\(MemberKey k) -> k) <$> fromMemberKey) currentTs hostVRange
           membership <- createContactMemberInv_ db user groupId (Just groupMemberId) user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId (Just $ fst memberKeys) currentTs (vr cxt)
-          let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
+          let chatSettings = defaultChatSettings
           pure
             ( GroupInfo
                 { groupId,
@@ -3185,8 +3185,8 @@ deleteOldProbes db createdAtCutoff = do
   DB.execute db "DELETE FROM received_probes WHERE created_at <= ?" (Only createdAtCutoff)
 
 updateGroupSettings :: DB.Connection -> User -> Int64 -> ChatSettings -> IO ()
-updateGroupSettings db User {userId} groupId ChatSettings {enableNtfs, sendRcpts, favorite} =
-  DB.execute db "UPDATE groups SET enable_ntfs = ?, send_rcpts = ?, favorite = ? WHERE user_id = ? AND group_id = ?" (enableNtfs, BI <$> sendRcpts, BI favorite, userId, groupId)
+updateGroupSettings db User {userId} groupId ChatSettings {enableNtfs, sendRcpts, favorite, dropFeed} =
+  DB.execute db "UPDATE groups SET enable_ntfs = ?, send_rcpts = ?, favorite = ?, drop_feed = ? WHERE user_id = ? AND group_id = ?" (enableNtfs, BI <$> sendRcpts, BI favorite, BI (isTrue dropFeed), userId, groupId)
 
 updateGroupMemberSettings :: DB.Connection -> User -> GroupId -> GroupMemberId -> GroupMemberSettings -> IO ()
 updateGroupMemberSettings db User {userId} gId gMemberId GroupMemberSettings {showMessages} = do

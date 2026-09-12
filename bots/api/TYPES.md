@@ -26,6 +26,7 @@ This file is generated automatically.
 - [CIDeleteMode](#cideletemode)
 - [CIDeleted](#cideleted)
 - [CIDirection](#cidirection)
+- [CIFeed](#cifeed)
 - [CIFile](#cifile)
 - [CIFileStatus](#cifilestatus)
 - [CIForwardedFrom](#ciforwardedfrom)
@@ -83,6 +84,7 @@ This file is generated automatically.
 - [E2EInfo](#e2einfo)
 - [ErrorType](#errortype)
 - [FeatureAllowed](#featureallowed)
+- [Feed](#feed)
 - [FileDescr](#filedescr)
 - [FileError](#fileerror)
 - [FileErrorType](#fileerrortype)
@@ -725,6 +727,10 @@ Moderated:
 - deletedTs: UTCTime?
 - byGroupMember: [GroupMember](#groupmember)
 
+Deleting:
+- type: "deleting"
+- deletedTs: UTCTime?
+
 
 ---
 
@@ -753,6 +759,20 @@ LocalSnd:
 
 LocalRcv:
 - type: "localRcv"
+
+FeedSnd:
+- type: "feedSnd"
+
+
+---
+
+## CIFeed
+
+Whether feed edits still apply to the message in this chat.
+
+**Enum type**:
+- "linked"
+- "detached"
 
 
 ---
@@ -934,6 +954,7 @@ GroupLink:
 - forwardedByMember: int64?
 - showGroupAsSender: bool
 - msgVerified: [MsgVerified](#msgverified)?
+- itemFeed: [CIFeed](#cifeed)?
 - createdAt: UTCTime
 - updatedAt: UTCTime
 
@@ -1424,6 +1445,10 @@ Local:
 - type: "local"
 - noteFolder: [NoteFolder](#notefolder)
 
+Feed:
+- type: "feed"
+- feed: [Feed](#feed)
+
 ContactRequest:
 - type: "contactRequest"
 - contactRequest: [UserContactRequest](#usercontactrequest)
@@ -1519,6 +1544,7 @@ ChatType_cmd_string(chatType) + str(chatId) + ((GroupChatScope_cmd_string(chatSc
 - enableNtfs: [MsgFilter](#msgfilter)
 - sendRcpts: bool?
 - favorite: bool
+- dropFeed: bool
 
 
 ---
@@ -1541,19 +1567,20 @@ ChatType_cmd_string(chatType) + str(chatId) + ((GroupChatScope_cmd_string(chatSc
 - "direct"
 - "group"
 - "local"
+- "feed"
 
 **Syntax**:
 
 ```
-@|#|*|
+@|#|*|%|
 ```
 
 ```javascript
-self == 'direct' ? '@' : self == 'group' ? '#' : self == 'local' ? '*' : '' // JavaScript
+self == 'direct' ? '@' : self == 'group' ? '#' : self == 'local' ? '*' : self == 'feed' ? '%' : '' // JavaScript
 ```
 
 ```python
-'@' if str(self) == 'direct' else '#' if str(self) == 'group' else '*' if str(self) == 'local' else '' # Python
+'@' if str(self) == 'direct' else '#' if str(self) == 'group' else '*' if str(self) == 'local' else '%' if str(self) == 'feed' else '' # Python
 ```
 
 
@@ -2084,6 +2111,22 @@ DUPLICATE_:
 - "always"
 - "yes"
 - "no"
+
+
+---
+
+## Feed
+
+The chat of the messages broadcast to all contacts and customer groups.
+
+**Record type**:
+- feedId: int64
+- userId: int64
+- createdAt: UTCTime
+- updatedAt: UTCTime
+- chatTs: UTCTime
+- favorite: bool
+- unread: bool
 
 
 ---
@@ -4130,6 +4173,17 @@ NoteFolderNotFound:
 UserNoteFolderNotFound:
 - type: "userNoteFolderNotFound"
 
+FeedAlreadyExists:
+- type: "feedAlreadyExists"
+- feedId: int64
+
+FeedNotFound:
+- type: "feedNotFound"
+- feedId: int64
+
+UserFeedNotFound:
+- type: "userFeedNotFound"
+
 SndFileNotFound:
 - type: "sndFileNotFound"
 - fileId: int64
@@ -4334,6 +4388,14 @@ InvalidDeliveryJob:
 DeliveryJobNotFound:
 - type: "deliveryJobNotFound"
 - jobId: int64
+
+InvalidFeedJob:
+- type: "invalidFeedJob"
+- feedJobId: int64
+
+FeedJobNotFound:
+- type: "feedJobNotFound"
+- feedJobId: int64
 
 WorkItemError:
 - type: "workItemError"

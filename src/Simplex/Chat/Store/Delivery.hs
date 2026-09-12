@@ -319,17 +319,8 @@ getNextDeliveryJob db deliveryKey = do
         toDeliveryJob :: MessageDeliveryJobRow -> Either StoreError MessageDeliveryJob
         toDeliveryJob ((Only jobId') :. jobScopeRow :. (senderGMIdsText_, Binary body, cursorGMId_)) = do
           jobScope <- maybe (Left $ SEInvalidDeliveryJob jobId') Right $ toJobScope_ jobScopeRow
-          -- NULL or empty string means []; otherwise the value must parse
-          -- as a comma-separated decimal Int64 list. An unparseable
-          -- segment surfaces as job error rather than silent degradation.
-          senderGMIds <- case senderGMIdsText_ of
-            Nothing -> Right []
-            Just t -> maybe (Left $ SEInvalidDeliveryJob jobId') Right $ parseSenderGMIds t
+          senderGMIds <- maybe (Left $ SEInvalidDeliveryJob jobId') Right $ parseIds senderGMIdsText_
           Right $ MessageDeliveryJob {jobId = jobId', jobScope, senderGMIds, body, cursorGMId_}
-        parseSenderGMIds :: Text -> Maybe [GroupMemberId]
-        parseSenderGMIds t
-          | T.null t = Just []
-          | otherwise = traverse (readMaybe . T.unpack) (T.splitOn "," t)
     markJobFailed :: Int64 -> IO ()
     markJobFailed jobId =
       DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)

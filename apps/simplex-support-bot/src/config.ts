@@ -13,11 +13,14 @@ export interface Config {
   db: api.DbConfig           // passed to ChatApi.init / bot.run
   teamGroup: IdName          // name from CLI, id resolved at startup from state file
   teamMembers: IdName[]      // optional, empty if not provided
+  broadcasters: IdName[]     // optional, empty if not provided
   grokContactId: number | null  // resolved at startup
   timezone: string
   completeHours: number
   cardFlushSeconds: number
   contextFile: string | null
+  dryRun: boolean
+  allowMigrations: boolean
   grokApiKey: string | null
 }
 
@@ -41,6 +44,10 @@ export function parseIdName(s: string): IdName {
   return {id, name: s.slice(i + 1)}
 }
 
+function parseIdNames(list: string | undefined): IdName[] {
+  return list ? list.split(",").map(parseIdName) : []
+}
+
 function parseNonNegativeInt(flag: string) {
   return (raw: string): number => {
     const n = parseInt(raw, 10)
@@ -62,10 +69,13 @@ function buildCommand(): Command {
     .option("--pg-conn <conn>", "PostgreSQL connection string (required for postgres)")
     .option("--pg-schema <prefix>", "PostgreSQL schema prefix (default: simplex_v1)")
     .option("-a, --auto-add-team-members <list>", "comma-separated ID:name pairs (e.g. 1:Alice,2:Bob)")
+    .option("--broadcasters <list>", "comma-separated ID:name pairs of contacts allowed to use /broadcast in the team group")
     .option("--timezone <iana>", "IANA timezone for weekend detection", "UTC")
     .option("--complete-hours <n>", "auto-complete chats after N hours idle (0 disables)", parseNonNegativeInt("--complete-hours"), 3)
     .option("--card-flush-seconds <n>", "debounce card state writes", parseNonNegativeInt("--card-flush-seconds"), 300)
     .option("--context-file <path>", "text file with Grok system context (required if GROK_API_KEY set)")
+    .option("--dry-run", "check config, database and state, then exit without starting chat")
+    .option("--allow-migrations", "with --dry-run: apply pending migrations instead of reporting them")
     .addHelpText("after", "\nEnvironment:\n  GROK_API_KEY     xAI API key — enables Grok replies\n  SIMPLEX_BACKEND  sqlite | postgres — alternative to .npmrc for backend selection\n")
 }
 
@@ -77,10 +87,13 @@ interface RawOpts {
   pgConn?: string
   pgSchema?: string
   autoAddTeamMembers?: string
+  broadcasters?: string
   timezone: string
   completeHours: number
   cardFlushSeconds: number
   contextFile?: string
+  dryRun?: boolean
+  allowMigrations?: boolean
 }
 
 export function parseConfig(args: string[]): Config {
@@ -113,10 +126,8 @@ export function parseConfig(args: string[]): Config {
 
   const teamGroup: IdName = {id: 0, name: opts.teamGroup}
 
-  const teamMembersRaw = opts.autoAddTeamMembers ?? ""
-  const teamMembers = teamMembersRaw
-    ? teamMembersRaw.split(",").map(parseIdName)
-    : []
+  const teamMembers = parseIdNames(opts.autoAddTeamMembers)
+  const broadcasters = parseIdNames(opts.broadcasters)
 
   try {
     new Intl.DateTimeFormat("en-US", {timeZone: opts.timezone, weekday: "short"})
@@ -134,11 +145,14 @@ export function parseConfig(args: string[]): Config {
     db,
     teamGroup,
     teamMembers,
+    broadcasters,
     grokContactId: null,
     timezone: opts.timezone,
     completeHours: opts.completeHours,
     cardFlushSeconds: opts.cardFlushSeconds,
     contextFile,
+    dryRun: opts.dryRun ?? false,
+    allowMigrations: opts.allowMigrations ?? false,
     grokApiKey,
   }
 }

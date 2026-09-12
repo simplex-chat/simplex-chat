@@ -8,6 +8,7 @@ import {CardManager} from "./src/cards.js"
 import {parseConfig} from "./src/config.js"
 import {GrokApiClient} from "./src/grok.js"
 import {loadGrokContext} from "./src/context.js"
+import {dryRun} from "./src/dryRun.js"
 import {welcomeMessage, queueMessage, grokActivatedMessage, teamLockedMessage, teamAlreadyInvitedMessage} from "./src/messages.js"
 
 // Silence console output during tests
@@ -157,8 +158,14 @@ class MockChatApi {
   }
 
   rawCmds: string[] = []
+  feedItemIds: number[] = []
   async sendChatCmd(cmd: string) {
     this.rawCmds.push(cmd)
+    if (cmd.startsWith("/feed ")) {
+      const itemId = nextItemId++
+      this.feedItemIds.push(itemId)
+      return {type: "newChatItems", user: makeUser(MAIN_USER_ID), chatItems: [makeFeedAChatItem(itemId, {type: "sndNew"})]}
+    }
     return {type: "cmdOk"}
   }
 
@@ -266,6 +273,7 @@ function makeConfig(overrides: Partial<any> = {}) {
       {id: TEAM_MEMBER_1_ID, name: "Alice"},
       {id: TEAM_MEMBER_2_ID, name: "Bob"},
     ],
+    broadcasters: [{id: TEAM_MEMBER_1_ID, name: "Alice"}],
     groupLinks: "",
     timezone: "UTC",
     completeHours: 3,
@@ -357,6 +365,13 @@ function makeDirectAChatItem(chatItem: any, contactId: number): any {
   return {
     chatInfo: {type: "direct", contact: {contactId, profile: {displayName: "Someone"}}},
     chatItem,
+  }
+}
+
+function makeFeedAChatItem(itemId: number, itemStatus: any): any {
+  return {
+    chatInfo: {type: "feed", feed: {feedId: 1, userId: MAIN_USER_ID}},
+    chatItem: {chatDir: {type: "feedSnd"}, meta: {itemId, itemStatus}, content: {type: "sndMsgContent", msgContent: {type: "text", text: ""}}},
   }
 }
 
@@ -1357,6 +1372,80 @@ describe("/join Command (Team Group)", () => {
     await bot.onNewChatItems(teamGroupMessage("/join abc"))
     expectSentToGroup(TEAM_GROUP_ID, `Error: invalid group id "abc"`)
     expect(chat.added.length).toBe(0)
+  })
+})
+
+describe("/broadcast Command (Team Group)", () => {
+  beforeEach(() => setup())
+
+  function statusEvent(itemId: number, itemStatus: any): any {
+    return {
+      type: "chatItemsStatusesUpdated" as const,
+      user: makeUser(MAIN_USER_ID),
+      chatItems: [makeFeedAChatItem(itemId, itemStatus)],
+    }
+  }
+
+  test("/broadcast from broadcaster → /feed sent with JSON text, queued reply", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast hello everyone"))
+    expect(chat.rawCmds).toEqual(['/feed "hello everyone"'])
+    expectSentToGroup(TEAM_GROUP_ID, `Broadcast ${chat.feedItemIds[0]} queued`)
+  })
+
+  test("/broadcast keeps newlines and quotes", async () => {
+    await bot.onNewChatItems(teamGroupMessage('/broadcast line "one"\nline two'))
+    expect(chat.rawCmds).toEqual(['/feed "line \\"one\\"\\nline two"'])
+  })
+
+  test("/broadcast with extra spaces → text has no leading whitespace", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast   hello"))
+    expect(chat.rawCmds).toEqual(['/feed "hello"'])
+  })
+
+  test("/broadcast on its own line → text starts after the newline", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast\nline one\nline two"))
+    expect(chat.rawCmds).toEqual(['/feed "line one\\nline two"'])
+  })
+
+  test("/broadcast from a non-broadcaster → error reply, nothing sent", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast hello", TEAM_MEMBER_2_ID))
+    expect(chat.rawCmds.length).toBe(0)
+    expectSentToGroup(TEAM_GROUP_ID, `Error: contact ${TEAM_MEMBER_2_ID} is not allowed to broadcast`)
+  })
+
+  test("/broadcast without text → error reply, nothing sent", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast  "))
+    expect(chat.rawCmds.length).toBe(0)
+    expectSentToGroup(TEAM_GROUP_ID, "Error: broadcast text is empty")
+  })
+
+  test("customer sending /broadcast in customer group → treated as normal message", async () => {
+    await bot.onNewChatItems(customerMessage("/broadcast hello"))
+    expect(chat.rawCmds.length).toBe(0)
+    expectSentToGroup(CUSTOMER_GROUP_ID, "The team will reply to your message")
+  })
+
+  test("feed item complete → delivered reply once", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast hello"))
+    const itemId = chat.feedItemIds[0]
+    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndSent", sndProgress: "partial"}))
+    expectNotSentToGroup(TEAM_GROUP_ID, "delivered")
+    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndSent", sndProgress: "complete"}))
+    expectSentToGroup(TEAM_GROUP_ID, `Broadcast ${itemId} delivered to all chats`)
+    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndSent", sndProgress: "complete"}))
+    expect(chat.sentTo(TEAM_GROUP_ID).filter(m => m.includes("delivered")).length).toBe(1)
+  })
+
+  test("feed item error → failure reply", async () => {
+    await bot.onNewChatItems(teamGroupMessage("/broadcast hello"))
+    const itemId = chat.feedItemIds[0]
+    await bot.onChatItemsStatusesUpdated(statusEvent(itemId, {type: "sndError", agentError: {type: "other", sndError: "boom"}}))
+    expectSentToGroup(TEAM_GROUP_ID, `Broadcast ${itemId} failed`)
+  })
+
+  test("status of an unknown feed item → ignored", async () => {
+    await bot.onChatItemsStatusesUpdated(statusEvent(4242, {type: "sndSent", sndProgress: "complete"}))
+    expect(chat.sentTo(TEAM_GROUP_ID).length).toBe(0)
   })
 })
 
@@ -2458,6 +2547,22 @@ describe("parseConfig Validation", () => {
     expect(cfg.db).toEqual({type: "sqlite", filePrefix: "./data/simplex", encryptionKey: "secret"})
   })
 
+  test("--dry-run and --allow-migrations default to false and parse when given", () => {
+    const base = ["--team-group", "Team"]
+    expect(parseConfig(base).dryRun).toBe(false)
+    expect(parseConfig(base).allowMigrations).toBe(false)
+    const cfg = parseConfig([...base, "--dry-run", "--allow-migrations"])
+    expect(cfg.dryRun).toBe(true)
+    expect(cfg.allowMigrations).toBe(true)
+  })
+
+  test("--broadcasters → parsed as ID:name pairs, empty when absent", () => {
+    expect(parseConfig(baseArgs).broadcasters).toEqual([])
+    const cfg = parseConfig([...baseArgs, "--broadcasters", "3:Carol,4:Dave"])
+    expect(cfg.broadcasters).toEqual([{id: 3, name: "Carol"}, {id: 4, name: "Dave"}])
+    expect(() => parseConfig([...baseArgs, "--broadcasters", "Carol"])).toThrow(/Invalid ID:name format/)
+  })
+
   test("unknown flag → parseArgs throws", () => {
     expect(() => parseConfig([...baseArgs, "--team-gropu", "typo"]))
       .toThrow()
@@ -2704,5 +2809,87 @@ describe("loadGrokContext", () => {
 
   test("missing file throws ENOENT", () => {
     expect(() => loadGrokContext(join(dir, "does-not-exist.yaml"))).toThrow()
+  })
+})
+
+describe("Dry Run", () => {
+  const directChat = (contactId: number, displayName: string) => ({
+    chatInfo: {type: "direct", contact: {contactId, profile: {displayName}}},
+  })
+  const groupChat = (groupId: number, displayName: string) => ({
+    chatInfo: {type: "group", groupInfo: {groupId, groupProfile: {displayName}}},
+  })
+
+  function mkChat(chats: unknown[], users: number[] = [1]) {
+    return {
+      apiGetActiveUser: async () => ({userId: 1, profile: {displayName: "Ask SimpleX Team"}}),
+      apiListUsers: async () => users.map(userId => ({user: {userId, profile: {displayName: `user${userId}`}}})),
+      apiGetChats: async (_userId: number, _pagination: unknown, query?: {type: string; search?: string}) =>
+        query?.type === "search"
+          ? chats.filter((c: any) =>
+              (c.chatInfo.contact?.profile.displayName ?? c.chatInfo.groupInfo?.groupProfile.displayName) === query.search)
+          : chats,
+    } as any
+  }
+
+  const config = (over: object = {}) =>
+    ({
+      teamGroup: {id: 0, name: "Support Team"},
+      teamMembers: [],
+      broadcasters: [],
+      contextFile: null,
+      ...over,
+    }) as any
+
+  test("all ids resolve → passes", async () => {
+    const chat = mkChat([groupChat(1, "Support Team"), directChat(3, "alice")])
+    const ok = await dryRun(chat, config({broadcasters: [{id: 3, name: "alice"}]}), {teamGroupId: 1})
+    expect(ok).toBe(true)
+  })
+
+  test("missing team group → reports it would be created, still passes", async () => {
+    const chat = mkChat([])
+    expect(await dryRun(chat, config(), {})).toBe(true)
+  })
+
+  // Absence is unverifiable with the chat stopped: getChatPreviews filters on
+  // contacts.contact_used, so these ids are reported, not failed.
+  test("team group id not in chat previews → reported, still passes", async () => {
+    const chat = mkChat([groupChat(7, "Support Team")])
+    expect(await dryRun(chat, config(), {teamGroupId: 1})).toBe(true)
+  })
+
+  test("broadcaster id not in chat previews → reported, still passes", async () => {
+    const chat = mkChat([groupChat(1, "Support Team")])
+    expect(await dryRun(chat, config({broadcasters: [{id: 3, name: "alice"}]}), {teamGroupId: 1})).toBe(true)
+  })
+
+  test("broadcaster name mismatch → fails even though the id exists", async () => {
+    const chat = mkChat([groupChat(1, "Support Team"), directChat(3, "alice")])
+    expect(await dryRun(chat, config({broadcasters: [{id: 3, name: "bob"}]}), {teamGroupId: 1})).toBe(false)
+  })
+
+  test("persisted Grok user missing → fails", async () => {
+    const chat = mkChat([groupChat(1, "Support Team")], [1])
+    expect(await dryRun(chat, config(), {teamGroupId: 1, grokUserId: 2})).toBe(false)
+  })
+
+  test("persisted Grok user present → passes", async () => {
+    const chat = mkChat([groupChat(1, "Support Team")], [1, 2])
+    expect(await dryRun(chat, config(), {teamGroupId: 1, grokUserId: 2})).toBe(true)
+  })
+
+  test("malformed context file → fails", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "support-bot-dryrun-"))
+    const path = join(dir, "ctx.yaml")
+    writeFileSync(path, "- role: user\n  message: [unclosed\n")
+    const chat = mkChat([groupChat(1, "Support Team")])
+    expect(await dryRun(chat, config({contextFile: path}), {teamGroupId: 1})).toBe(false)
+  })
+
+  test("missing context file → warning only, passes", async () => {
+    const chat = mkChat([groupChat(1, "Support Team")])
+    const cfg = config({contextFile: join(tmpdir(), "no-such-context.txt")})
+    expect(await dryRun(chat, cfg, {teamGroupId: 1})).toBe(true)
   })
 })

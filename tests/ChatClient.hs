@@ -224,6 +224,7 @@ testCfg =
       testView = True,
       tbqSize = 16,
       channelSubscriberRole = GRObserver,
+      showFeedChat = True,
       confirmMigrations = MCYesUp
     }
 

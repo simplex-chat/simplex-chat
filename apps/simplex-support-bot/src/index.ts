@@ -1,8 +1,9 @@
 import {readFileSync, writeFileSync, existsSync} from "fs"
-import {api, bot, util} from "simplex-chat"
+import {api, bot, core, util} from "simplex-chat"
 import {T} from "@simplex-chat/types"
-import {parseConfig} from "./config.js"
+import {Config, IdName, parseConfig} from "./config.js"
 import {SupportBot} from "./bot.js"
+import {dryRun} from "./dryRun.js"
 import {GrokApiClient, GrokMessage} from "./grok.js"
 import {loadGrokContext} from "./context.js"
 import {welcomeMessage} from "./messages.js"
@@ -31,6 +32,7 @@ async function main(): Promise<void> {
     backend: config.db.type,
     teamGroup: config.teamGroup,
     teamMembers: config.teamMembers,
+    broadcasters: config.broadcasters,
     timezone: config.timezone,
     completeHours: config.completeHours,
   })
@@ -39,6 +41,10 @@ async function main(): Promise<void> {
 
   const stateFilePath = config.stateFile
   const state = readState(stateFilePath)
+
+  if (config.dryRun) {
+    process.exit((await runDryRun(config, state)) ? 0 : 1)
+  }
 
   // Forward-reference for event handlers during init
   let supportBot: SupportBot | undefined
@@ -113,6 +119,7 @@ async function main(): Promise<void> {
       newMemberContactReceivedInv: (evt) => supportBot?.onMemberContactReceivedInv(evt),
       contactConnected: (evt) => supportBot?.onContactConnected(evt),
       contactSndReady: (evt) => supportBot?.onContactSndReady(evt),
+      chatItemsStatusesUpdated: (evt) => supportBot?.onChatItemsStatusesUpdated(evt),
     },
   })
   log(`Main bot user: ${mainUser.profile.displayName} (userId=${mainUser.userId})`)
@@ -229,6 +236,7 @@ async function main(): Promise<void> {
     fullDelete: {enable: T.GroupFeatureEnabled.On},
     commands: [
       {type: "command", keyword: "join", label: "Join customer chat", params: "groupId"},
+      {type: "command", keyword: "broadcast", label: "Broadcast to all chats", params: "text"},
     ],
   }
 
@@ -300,20 +308,24 @@ async function main(): Promise<void> {
     inviteLinkTimer.unref()
   }
 
-  // Step 9: Validate team members (lookup by ID, one round-trip per member)
-  if (config.teamMembers.length > 0) {
-    log("Validating team members...")
-    for (const member of config.teamMembers) {
-      const contact = await getContact(chat, member.id)
+  // Step 9: Validate team members and broadcasters (lookup by ID, one round-trip per contact)
+  await validateContacts("Team member", config.teamMembers)
+  await validateContacts("Broadcaster", config.broadcasters)
+
+  async function validateContacts(role: string, contacts: IdName[]): Promise<void> {
+    if (contacts.length === 0) return
+    log(`Validating ${role.toLowerCase()}s...`)
+    for (const {id, name} of contacts) {
+      const contact = await getContact(chat, id)
       if (!contact) {
-        console.error(`Team member not found: ID=${member.id}`)
+        console.error(`${role} not found: ID=${id}`)
         process.exit(1)
       }
-      if (contact.profile.displayName !== member.name) {
-        console.error(`Team member name mismatch: expected "${member.name}", got "${contact.profile.displayName}" (ID=${member.id})`)
+      if (contact.profile.displayName !== name) {
+        console.error(`${role} name mismatch: expected "${name}", got "${contact.profile.displayName}" (ID=${id})`)
         process.exit(1)
       }
-      log(`Team member validated: ${member.id}:${member.name}`)
+      log(`${role} validated: ${id}:${name}`)
     }
   }
 
@@ -368,6 +380,78 @@ async function main(): Promise<void> {
   }
   process.on("SIGINT", () => shutdown("SIGINT"))
   process.on("SIGTERM", () => shutdown("SIGTERM"))
+}
+
+// Opens the database without starting chat, so nothing reaches the network.
+// MigrationConfirmation.Error makes a pending migration a report instead of an
+// upgrade — a dry run must not change the database it is inspecting.
+async function runDryRun(config: Config, state: BotState): Promise<boolean> {
+  const probe = await probeDatabase(config.db)
+  if (probe.type === "failed") {
+    console.log(`FAIL  database: ${probe.text}`)
+    return false
+  }
+  const pending = probe.type === "pending" ? probe.names : []
+  if (pending.length > 0 && !config.allowMigrations) {
+    console.log(`FAIL  database: ${pending.length} migration(s) pending, a real start would apply them: ${pending.join(", ")}`)
+    return false
+  }
+  const migrating = pending.length > 0
+  let chat: api.ChatApi
+  try {
+    chat = await api.ChatApi.init(
+      config.db,
+      migrating ? core.MigrationConfirmation.YesUp : core.MigrationConfirmation.Error
+    )
+  } catch (err) {
+    console.log(`FAIL  database: ${migrationErrorText(err)}`)
+    return false
+  }
+  const schemaState = migrating ? `applied ${pending.length} migration(s): ${pending.join(", ")}` : "schema up to date"
+  console.log(`ok    database ${config.db.type} opened, ${schemaState}`)
+  try {
+    return await dryRun(chat, config, state)
+  } finally {
+    await chat.close()
+  }
+}
+
+// Opening with Error never changes the database, so this reports what a real
+// start would migrate. Anything other than pending up-migrations is fatal: a
+// wrong key, an unreachable server or a newer database cannot be migrated away.
+type DbProbe = {type: "current"} | {type: "pending"; names: string[]} | {type: "failed"; text: string}
+
+async function probeDatabase(db: api.DbConfig): Promise<DbProbe> {
+  try {
+    const chat = await api.ChatApi.init(db, core.MigrationConfirmation.Error)
+    await chat.close()
+    return {type: "current"}
+  } catch (err) {
+    const dbErr = (err as core.ChatInitError).dbMigrationError
+    if (dbErr?.type === "errorMigration" && dbErr.migrationError.type === "upgrade") {
+      return {type: "pending", names: dbErr.migrationError.upMigrations.map(m => m.upName)}
+    }
+    return {type: "failed", text: migrationErrorText(err)}
+  }
+}
+
+// The library reports a pending migration as one opaque message; the names are
+// in the error payload, and they are what an operator needs before upgrading.
+function migrationErrorText(err: unknown): string {
+  const e = err as core.ChatInitError
+  const dbErr = e.dbMigrationError
+  if (dbErr?.type === "errorMigration") {
+    const me = dbErr.migrationError
+    switch (me.type) {
+      case "upgrade":
+        return `${me.upMigrations.length} migration(s) pending: ${me.upMigrations.map(m => m.upName).join(", ")}`
+      case "downgrade":
+        return `database is newer than this build, it would refuse to start; migrations to roll back: ${me.downMigrations.join(", ")}`
+      default:
+        return `migration state error: ${JSON.stringify(me)}`
+    }
+  }
+  return e.message
 }
 
 main().catch(err => {

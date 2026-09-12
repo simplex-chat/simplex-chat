@@ -606,10 +606,15 @@ export enum CIDeleteMode {
   History = "history",
 }
 
-export type CIDeleted = CIDeleted.Deleted | CIDeleted.Blocked | CIDeleted.BlockedByAdmin | CIDeleted.Moderated
+export type CIDeleted = 
+  | CIDeleted.Deleted
+  | CIDeleted.Blocked
+  | CIDeleted.BlockedByAdmin
+  | CIDeleted.Moderated
+  | CIDeleted.Deleting
 
 export namespace CIDeleted {
-  export type Tag = "deleted" | "blocked" | "blockedByAdmin" | "moderated"
+  export type Tag = "deleted" | "blocked" | "blockedByAdmin" | "moderated" | "deleting"
 
   interface Interface {
     type: Tag
@@ -636,6 +641,11 @@ export namespace CIDeleted {
     deletedTs?: string // ISO-8601 timestamp
     byGroupMember: GroupMember
   }
+
+  export interface Deleting extends Interface {
+    type: "deleting"
+    deletedTs?: string // ISO-8601 timestamp
+  }
 }
 
 export type CIDirection = 
@@ -646,6 +656,7 @@ export type CIDirection =
   | CIDirection.ChannelRcv
   | CIDirection.LocalSnd
   | CIDirection.LocalRcv
+  | CIDirection.FeedSnd
 
 export namespace CIDirection {
   export type Tag = 
@@ -656,6 +667,7 @@ export namespace CIDirection {
     | "channelRcv"
     | "localSnd"
     | "localRcv"
+    | "feedSnd"
 
   interface Interface {
     type: Tag
@@ -689,6 +701,16 @@ export namespace CIDirection {
   export interface LocalRcv extends Interface {
     type: "localRcv"
   }
+
+  export interface FeedSnd extends Interface {
+    type: "feedSnd"
+  }
+}
+// Whether feed edits still apply to the message in this chat.
+
+export enum CIFeed {
+  Linked = "linked",
+  Detached = "detached",
 }
 
 export interface CIFile {
@@ -905,6 +927,7 @@ export interface CIMeta {
   forwardedByMember?: number // int64
   showGroupAsSender: boolean
   msgVerified?: MsgVerified
+  itemFeed?: CIFeed
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
 }
@@ -1628,11 +1651,12 @@ export type ChatInfo =
   | ChatInfo.Direct
   | ChatInfo.Group
   | ChatInfo.Local
+  | ChatInfo.Feed
   | ChatInfo.ContactRequest
   | ChatInfo.ContactConnection
 
 export namespace ChatInfo {
-  export type Tag = "direct" | "group" | "local" | "contactRequest" | "contactConnection"
+  export type Tag = "direct" | "group" | "local" | "feed" | "contactRequest" | "contactConnection"
 
   interface Interface {
     type: Tag
@@ -1652,6 +1676,11 @@ export namespace ChatInfo {
   export interface Local extends Interface {
     type: "local"
     noteFolder: NoteFolder
+  }
+
+  export interface Feed extends Interface {
+    type: "feed"
+    feed: Feed
   }
 
   export interface ContactRequest extends Interface {
@@ -1726,6 +1755,7 @@ export interface ChatSettings {
   enableNtfs: MsgFilter
   sendRcpts?: boolean
   favorite: boolean
+  dropFeed: boolean
 }
 
 export interface ChatStats {
@@ -1740,11 +1770,12 @@ export enum ChatType {
   Direct = "direct",
   Group = "group",
   Local = "local",
+  Feed = "feed",
 }
 
 export namespace ChatType {
   export function cmdString(self: ChatType): string {
-    return self == 'direct' ? '@' : self == 'group' ? '#' : self == 'local' ? '*' : ''
+    return self == 'direct' ? '@' : self == 'group' ? '#' : self == 'local' ? '*' : self == 'feed' ? '%' : ''
   }
 }
 
@@ -2350,6 +2381,17 @@ export enum FeatureAllowed {
   Always = "always",
   Yes = "yes",
   No = "no",
+}
+// The chat of the messages broadcast to all contacts and customer groups.
+
+export interface Feed {
+  feedId: number // int64
+  userId: number // int64
+  createdAt: string // ISO-8601 timestamp
+  updatedAt: string // ISO-8601 timestamp
+  chatTs: string // ISO-8601 timestamp
+  favorite: boolean
+  unread: boolean
 }
 
 export interface FileDescr {
@@ -4448,6 +4490,9 @@ export type StoreError =
   | StoreError.NoteFolderAlreadyExists
   | StoreError.NoteFolderNotFound
   | StoreError.UserNoteFolderNotFound
+  | StoreError.FeedAlreadyExists
+  | StoreError.FeedNotFound
+  | StoreError.UserFeedNotFound
   | StoreError.SndFileNotFound
   | StoreError.SndFileInvalid
   | StoreError.RcvFileNotFound
@@ -4500,6 +4545,8 @@ export type StoreError =
   | StoreError.DeliveryTaskNotFound
   | StoreError.InvalidDeliveryJob
   | StoreError.DeliveryJobNotFound
+  | StoreError.InvalidFeedJob
+  | StoreError.FeedJobNotFound
   | StoreError.WorkItemError
 
 export namespace StoreError {
@@ -4540,6 +4587,9 @@ export namespace StoreError {
     | "noteFolderAlreadyExists"
     | "noteFolderNotFound"
     | "userNoteFolderNotFound"
+    | "feedAlreadyExists"
+    | "feedNotFound"
+    | "userFeedNotFound"
     | "sndFileNotFound"
     | "sndFileInvalid"
     | "rcvFileNotFound"
@@ -4592,6 +4642,8 @@ export namespace StoreError {
     | "deliveryTaskNotFound"
     | "invalidDeliveryJob"
     | "deliveryJobNotFound"
+    | "invalidFeedJob"
+    | "feedJobNotFound"
     | "workItemError"
 
   interface Interface {
@@ -4765,6 +4817,20 @@ export namespace StoreError {
 
   export interface UserNoteFolderNotFound extends Interface {
     type: "userNoteFolderNotFound"
+  }
+
+  export interface FeedAlreadyExists extends Interface {
+    type: "feedAlreadyExists"
+    feedId: number // int64
+  }
+
+  export interface FeedNotFound extends Interface {
+    type: "feedNotFound"
+    feedId: number // int64
+  }
+
+  export interface UserFeedNotFound extends Interface {
+    type: "userFeedNotFound"
   }
 
   export interface SndFileNotFound extends Interface {
@@ -5022,6 +5088,16 @@ export namespace StoreError {
   export interface DeliveryJobNotFound extends Interface {
     type: "deliveryJobNotFound"
     jobId: number // int64
+  }
+
+  export interface InvalidFeedJob extends Interface {
+    type: "invalidFeedJob"
+    feedJobId: number // int64
+  }
+
+  export interface FeedJobNotFound extends Interface {
+    type: "feedJobNotFound"
+    feedJobId: number // int64
   }
 
   export interface WorkItemError extends Interface {

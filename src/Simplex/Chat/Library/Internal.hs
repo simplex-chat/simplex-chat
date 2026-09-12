@@ -57,6 +57,7 @@ import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), ProofPresHeade
 import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
+import Simplex.Chat.Delivery (FeedJobAction (..))
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
@@ -69,6 +70,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Direct
+import Simplex.Chat.Store.Feeds
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Messages
@@ -159,6 +161,10 @@ withContactRequestLock name = withEntityLock name . CLContactRequest
 withFileLock :: Text -> Int64 -> CM a -> CM a
 withFileLock name = withEntityLock name . CLFile
 {-# INLINE withFileLock #-}
+
+withFeedLock :: Text -> FeedId -> CM a -> CM a
+withFeedLock name = withEntityLock name . CLFeed
+{-# INLINE withFeedLock #-}
 
 useServerCfgs :: forall p. UserProtocol p => SProtocolType p -> RandomAgentServers -> [(Text, ServerOperator)] -> [UserServer p] -> NonEmpty (ServerCfg p)
 useServerCfgs p RandomAgentServers {smpServers, xftpServers} opDomains =
@@ -541,9 +547,36 @@ deleteFilesLocally files =
     withFilesFolder :: (FilePath -> CM ()) -> CM ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
 
+itemsFilesInfo :: [CChatItem c] -> [CIFileInfo]
+itemsFilesInfo = mapMaybe itemFileInfo
+  where
+    itemFileInfo (CChatItem md ChatItem {file, meta = CIMeta {itemFeed}}) = case md of
+      SMDSnd | isJust itemFeed -> Nothing
+      _ -> mkCIFileInfo <$> file
+
+detachFeedItems :: forall c. [CChatItem c] -> CM [CChatItem c]
+detachFeedItems items = do
+  unless (null linkedIds) $ withStore' $ \db -> detachFeedInstances db linkedIds
+  pure $ map detached items
+  where
+    linkedIds = mapMaybe linkedItemId items
+    linkedItemId :: CChatItem c -> Maybe ChatItemId
+    linkedItemId (CChatItem md ChatItem {meta = CIMeta {itemId, itemFeed}}) = case md of
+      SMDSnd | itemFeed == Just CIFLinked -> Just itemId
+      _ -> Nothing
+    detached :: CChatItem c -> CChatItem c
+    detached (CChatItem md ci) = case md of
+      SMDSnd -> CChatItem md (detachedInstance ci)
+      SMDRcv -> CChatItem md ci
+
+detachedInstance :: ChatItem c 'MDSnd -> ChatItem c 'MDSnd
+detachedInstance ci@ChatItem {meta}
+  | itemFeed meta == Just CIFLinked = ci {meta = meta {itemFeed = Just CIFDetached}}
+  | otherwise = ci
+
 deleteDirectCIs :: User -> Contact -> [CChatItem 'CTDirect] -> CM [ChatItemDeletion]
 deleteDirectCIs user ct items = do
-  let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
+  let ciFilesInfo = itemsFilesInfo items
   deleteCIFiles user ciFilesInfo
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (deleteItem db) items)
   unless (null errs) $ toView $ CEvtChatErrors errs
@@ -555,7 +588,7 @@ deleteDirectCIs user ct items = do
 
 deleteGroupCIs :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [CChatItem 'CTGroup] -> Maybe GroupMember -> UTCTime -> CM [ChatItemDeletion]
 deleteGroupCIs user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
-  let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
+  let ciFilesInfo = itemsFilesInfo items
   deleteCIFiles user ciFilesInfo
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (deleteItem db) items)
   unless (null errs) $ toView $ CEvtChatErrors errs
@@ -619,7 +652,7 @@ deleteGroupMemberCIs_ db user gInfo member = do
 
 deleteLocalCIs :: User -> NoteFolder -> [CChatItem 'CTLocal] -> Bool -> Bool -> CM ChatResponse
 deleteLocalCIs user nf items byUser timed = do
-  let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
+  let ciFilesInfo = itemsFilesInfo items
   deleteFilesLocally ciFilesInfo
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (deleteItem db) items)
   unless (null errs) $ toView $ CEvtChatErrors errs
@@ -638,7 +671,7 @@ deleteCIFiles user filesInfo = do
 
 markDirectCIsDeleted :: User -> Contact -> [CChatItem 'CTDirect] -> UTCTime -> CM [ChatItemDeletion]
 markDirectCIsDeleted user ct items deletedTs = do
-  let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
+  let ciFilesInfo = itemsFilesInfo items
   cancelFilesInProgress user ciFilesInfo
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (markDeleted db) items)
   unless (null errs) $ toView $ CEvtChatErrors errs
@@ -650,7 +683,7 @@ markDirectCIsDeleted user ct items deletedTs = do
 
 markGroupCIsDeleted :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [CChatItem 'CTGroup] -> Maybe GroupMember -> UTCTime -> CM [ChatItemDeletion]
 markGroupCIsDeleted user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
-  let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
+  let ciFilesInfo = itemsFilesInfo items
   cancelFilesInProgress user ciFilesInfo
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (markDeleted db) items)
   unless (null errs) $ toView $ CEvtChatErrors errs
@@ -1532,7 +1565,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                 (Just (_, fileDescrText, fileExpires, descrBadge), Just msgId) -> do
                   partSize <- asks $ xftpDescrPartSize . config
                   let parts = splitFileDescr partSize (maybe partSize (const badgeDescrPartSize) descrBadge) fileDescrText
-                  pure . L.toList $ L.map (\fd@FileDescr {fileDescrComplete} -> XMsgFileDescr msgId fd fileExpires (if fileDescrComplete then descrBadge else Nothing)) parts
+                  pure . L.toList $ L.map (\fd@FileDescr {fileDescrComplete} -> XMsgFileDescr msgId fd fileExpires (if fileDescrComplete then descrBadge else Nothing) Nothing) parts
                 _ -> pure []
               let fileDescrVMs = map (VMUnsigned . ChatMessage senderVRange Nothing) fileDescrEvents
               pure $ map ((,) fwd) (contentVM : fileDescrVMs)
@@ -2303,10 +2336,37 @@ createSndMessages idsEvents = do
   where
     createMsg :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent e) -> IO (Either ChatError SndMessage)
     createMsg db g vr (connOrGroupId, msgSigning_, evnt) = runExceptT $ do
-      withExceptT ChatErrorStore $ createNewSndMessage db g connOrGroupId evnt msgSigning_ encodeMessage
+      withExceptT ChatErrorStore $ createNewSndMessage db g connOrGroupId Nothing evnt msgSigning_ encodeMessage
       where
         encodeMessage sharedMsgId =
           encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
+
+feedMessageMaker :: CM (DB.Connection -> Feed -> Maybe SharedMsgId -> ChatItemId -> ChatMsgEvent 'Json -> UTCTime -> ExceptT StoreError IO SndMessage)
+feedMessageMaker = do
+  g <- asks random
+  vr <- chatVersionRange
+  pure $ \db feed sharedMsgId_ feedItemId event createdAt -> do
+    let encodeMessage smId = encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just smId, chatMsgEvent = event}
+    msg <- createNewSndMessage db g (FeedId (feedId' feed)) sharedMsgId_ event Nothing encodeMessage
+    liftIO $ insertChatItemMessage_ db feedItemId (msgId' msg) createdAt
+    pure msg
+
+createFeedFileDescrJobs :: Feed -> ChatItemId -> NonEmpty (ChatMsgEvent 'Json) -> CM ()
+createFeedFileDescrJobs feed feedItemId events = do
+  mkMsg <- feedMessageMaker
+  createdAt <- liftIO getCurrentTime
+  withStore $ \db -> do
+    msgs <- mapM (\evt -> mkMsg db feed Nothing feedItemId evt createdAt) events
+    liftIO $ createFeedJobs db (feedId' feed) feedItemId $ FJAFileDescr (L.map msgId' msgs)
+
+feedId' :: Feed -> FeedId
+feedId' Feed {feedId} = feedId
+
+msgId' :: SndMessage -> MessageId
+msgId' SndMessage {msgId} = msgId
+
+aFeedItem :: Feed -> CChatItem 'CTFeed -> AChatItem
+aFeedItem feed (CChatItem md ci) = AChatItem SCTFeed md (FeedChat feed) ci
 
 groupMsgSigning :: Bool -> GroupInfo -> ChatMsgEvent e -> Maybe MsgSigning
 groupMsgSigning sign GroupInfo {membership = GroupMember {memberId}, groupKeys} evt = case groupKeys of
@@ -2727,26 +2787,10 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
       where
         batchReqs _ _ [] = ([], [])
         batchReqs n mode toSend' = case L.nonEmpty (batchSndMessagesJSON mode msgs) of
-          Just batched -> foldMembers (n * (length batched + length msgs)) msgBatchMBR batched toSend'
+          Just batched ->
+            sharedBodyReqs msgFlags (n * (length batched + length msgs)) msgBatchMBR batched $
+              map (\(m, conn) -> (groupMemberId' m, conn)) toSend'
           Nothing -> ([], [])
-        foldMembers :: forall a. Int -> (Maybe Int -> Int -> a -> (ValueOrRef MsgBody, [MessageId])) -> NonEmpty (Either ChatError a) -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
-        foldMembers lastRef mkMb mbs mems = snd $ foldr' foldMsgBodies (lastMemIdx_, ([], [])) mems
-          where
-            lastMemIdx_ = let len = length mems in if len > 1 then Just len else Nothing
-            foldMsgBodies :: (GroupMember, Connection) -> (Maybe Int, ([GroupMemberId], [Either ChatError ChatMsgReq])) -> (Maybe Int, ([GroupMemberId], [Either ChatError ChatMsgReq]))
-            foldMsgBodies (GroupMember {groupMemberId}, conn) (memIdx_, memIdsReqs) =
-              (subtract 1 <$> memIdx_,) $ snd $ foldr' addBody (lastRef, memIdsReqs) mbs
-              where
-                addBody :: Either ChatError a -> (Int, ([GroupMemberId], [Either ChatError ChatMsgReq])) -> (Int, ([GroupMemberId], [Either ChatError ChatMsgReq]))
-                addBody mb (i, (memIds, reqs)) =
-                  let req = (conn,msgFlags,) . mkMb memIdx_ i <$> mb
-                   in (i - 1, (groupMemberId : memIds, req : reqs))
-        msgBatchMBR :: Maybe Int -> Int -> MsgBatch -> (ValueOrRef MsgBody, [MessageId])
-        msgBatchMBR memIdx_ i (MsgBatch batchBody sndMsgs) = (vrValue_ memIdx_ i batchBody, map (\SndMessage {msgId} -> msgId) sndMsgs)
-        vrValue_ memIdx_ i v = case memIdx_ of
-          Nothing -> VRValue Nothing v -- sending to one member, do not reference bodies
-          Just 1 -> VRValue (Just i) v
-          Just _ -> VRRef i
     preparePending :: NonEmpty (Either ChatError SndMessage) -> [GroupMember] -> ([GroupMemberId], [Either ChatError (GroupMemberId, MessageId)])
     preparePending msgs_ =
       foldr' foldMsgs ([], [])
@@ -2760,6 +2804,27 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
     createPendingMsg :: DB.Connection -> (GroupMemberId, MessageId) -> IO (Either ChatError ())
     createPendingMsg db (groupMemberId, msgId) =
       createPendingGroupMessage db groupMemberId msgId $> Right ()
+
+sharedBodyReqs :: forall r a. MsgFlags -> Int -> (Maybe Int -> Int -> a -> (ValueOrRef MsgBody, [MessageId])) -> NonEmpty (Either ChatError a) -> [(r, Connection)] -> ([r], [Either ChatError ChatMsgReq])
+sharedBodyReqs msgFlags lastRef mkMb mbs recipients = snd $ foldr' foldMsgBodies (lastIdx_, ([], [])) recipients
+  where
+    lastIdx_ = let len = length recipients in if len > 1 then Just len else Nothing
+    foldMsgBodies :: (r, Connection) -> (Maybe Int, ([r], [Either ChatError ChatMsgReq])) -> (Maybe Int, ([r], [Either ChatError ChatMsgReq]))
+    foldMsgBodies (r, conn) (idx_, rsReqs) =
+      (subtract 1 <$> idx_,) $ snd $ foldr' addBody (lastRef, rsReqs) mbs
+      where
+        addBody :: Either ChatError a -> (Int, ([r], [Either ChatError ChatMsgReq])) -> (Int, ([r], [Either ChatError ChatMsgReq]))
+        addBody mb (i, (rs, reqs)) =
+          let req = (conn,msgFlags,) . mkMb idx_ i <$> mb
+           in (i - 1, (r : rs, req : reqs))
+
+msgBatchMBR :: Maybe Int -> Int -> MsgBatch -> (ValueOrRef MsgBody, [MessageId])
+msgBatchMBR idx_ i (MsgBatch batchBody sndMsgs) = (vrValue_ idx_ i batchBody, map (\SndMessage {msgId} -> msgId) sndMsgs)
+  where
+    vrValue_ memIdx_ i' v = case memIdx_ of
+      Nothing -> VRValue Nothing v -- sending to one recipient, do not reference bodies
+      Just 1 -> VRValue (Just i') v
+      Just _ -> VRRef i'
 
 batchMode :: GroupInfo -> GroupMember -> BatchMode
 batchMode gInfo m
@@ -2946,7 +3011,7 @@ saveSndChatItems user cd showGroupAsSender itemsData itemTimed live = do
       let hasLink_ = ciContentHasLink content (snd itemTexts)
       ciId <- createNewSndChatItem db user cd showGroupAsSender msg content quotedItem itemForwarded itemTimed live hasLink_ createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      let ci = mkChatItem_ cd showGroupAsSender ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False hasLink_ createdAt Nothing (toMsgVerified (signMessagesRequired cd) (MSSVerified <$ signedMsg_)) createdAt
+      let ci = mkChatItem_ cd showGroupAsSender ciId content itemTexts ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live False hasLink_ createdAt Nothing (toMsgVerified (signMessagesRequired cd) (MSSVerified <$ signedMsg_)) Nothing createdAt
       Right <$> case cd of
         CDGroupSnd g _scope | not (null itemMentions) -> createGroupCIMentions db g ci itemMentions
         _ -> pure ci
@@ -2978,7 +3043,8 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, msgSigned, forwardedByMem
     itemForwarded <- rcvForwardedFrom db user cd msg
     (ciId, quotedItem) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemForwarded itemTimed live userMention hasLink_ brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-    let ci = mkChatItem_ cd showAsGroup ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention hasLink_ brokerTs forwardedByMember (toMsgVerified (signMessagesRequired cd) msgSigned) createdAt
+    let itemFeed = if cmFeed chatMsgEvent then Just CIFLinked else Nothing
+        ci = mkChatItem_ cd showAsGroup ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention hasLink_ brokerTs forwardedByMember (toMsgVerified (signMessagesRequired cd) msgSigned) itemFeed createdAt
     ci' <- case toChatInfo cd of
       GroupChat g _ | not (null mentions') -> createGroupCIMentions db g ci mentions'
       _ -> pure ci
@@ -3010,12 +3076,12 @@ mkChatItem :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAs
 mkChatItem cd showGroupAsSender ciId content file quotedItem sharedMsgId itemForwarded itemTimed live userMention itemTs forwardedByMember msgVerified currentTs =
   let ts@(_, ft_) = ciContentTexts content
       hasLink_ = ciContentHasLink content ft_
-   in mkChatItem_ cd showGroupAsSender ciId content ts file quotedItem sharedMsgId itemForwarded itemTimed live userMention hasLink_ itemTs forwardedByMember msgVerified currentTs
+   in mkChatItem_ cd showGroupAsSender ciId content ts file quotedItem sharedMsgId itemForwarded itemTimed live userMention hasLink_ itemTs forwardedByMember msgVerified Nothing currentTs
 
-mkChatItem_ :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAsSender -> ChatItemId -> CIContent d -> (Text, Maybe MarkdownList) -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> Maybe MsgVerified -> UTCTime -> ChatItem c d
-mkChatItem_ cd showGroupAsSender ciId content (itemText, formattedText) file quotedItem sharedMsgId itemForwarded itemTimed live userMention hasLink_ itemTs forwardedByMember msgVerified currentTs =
+mkChatItem_ :: (ChatTypeI c, MsgDirectionI d) => ChatDirection c d -> ShowGroupAsSender -> ChatItemId -> CIContent d -> (Text, Maybe MarkdownList) -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> Bool -> ChatItemTs -> Maybe GroupMemberId -> Maybe MsgVerified -> Maybe CIFeed -> UTCTime -> ChatItem c d
+mkChatItem_ cd showGroupAsSender ciId content (itemText, formattedText) file quotedItem sharedMsgId itemForwarded itemTimed live userMention hasLink_ itemTs forwardedByMember msgVerified itemFeed currentTs =
   let itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgVerified currentTs currentTs
+      meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgVerified itemFeed currentTs currentTs
    in ChatItem {chatDir = toCIDirection cd, meta, content, mentions = M.empty, formattedText, quotedItem, reactions = [], file}
 
 ciContentHasLink :: CIContent d -> Maybe MarkdownList -> Bool
@@ -3347,9 +3413,9 @@ createLocalChatItems user cd itemsData createdAt = do
     createItem :: DB.Connection -> (CIContent 'MDSnd, Maybe (CIFile 'MDSnd), Maybe CIForwardedFrom, (Text, Maybe MarkdownList)) -> IO (ChatItem 'CTLocal 'MDSnd)
     createItem db (content, ciFile, itemForwarded, ts@(_, ft_)) = do
       let hasLink_ = ciContentHasLink content ft_
-      ciId <- createNewChatItem_ db user cd False Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False hasLink_ createdAt Nothing Nothing Nothing Nothing createdAt
+      ciId <- createNewChatItem_ db user cd False Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False False hasLink_ createdAt Nothing Nothing Nothing Nothing Nothing Nothing createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      pure $ mkChatItem_ cd False ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False hasLink_ createdAt Nothing Nothing createdAt
+      pure $ mkChatItem_ cd False ciId content ts ciFile Nothing Nothing itemForwarded Nothing False False hasLink_ createdAt Nothing Nothing Nothing createdAt
 
 withUser' :: (User -> CM ChatResponse) -> CM ChatResponse
 withUser' action =

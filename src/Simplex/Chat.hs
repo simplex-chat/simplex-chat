@@ -121,6 +121,8 @@ defaultChatConfig =
       highlyAvailable = False,
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,
+      feedBucketSize = 1000,
+      showFeedChat = False,
       webPreviewConfig = Nothing,
       channelSubscriberRole = GRObserver,
       relayChecksInterval = 15 * 60, -- 15 minutes
@@ -188,6 +190,7 @@ newChatController
         chatStoreChanged <- newTVarIO False
         deliveryTaskWorkers <- TM.emptyIO
         deliveryJobWorkers <- TM.emptyIO
+        feedJobWorkers <- TM.emptyIO
         relayRequestWorkers <- TM.emptyIO
         relayGroupLinkChecksAsync <- newTVarIO Nothing
         webPreviewState <- forM webPreviewConfig $ \_ -> newWebPreviewState
@@ -234,6 +237,7 @@ newChatController
               filesFolder,
               deliveryTaskWorkers,
               deliveryJobWorkers,
+              feedJobWorkers,
               relayRequestWorkers,
               relayGroupLinkChecksAsync,
               webPreviewState,
