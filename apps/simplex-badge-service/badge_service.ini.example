@@ -28,7 +28,7 @@ payment_tolerance = 0.5
 
 ; omit this whole section to disable card payments (the browser shows the provider-unavailable screen)
 [stripe]
-; restricted key (rk_): Checkout Sessions write + PaymentIntents/Charges read — never a full secret key (sk_)
+; restricted key (rk_): Payment Intents write + Charges read — never a full secret key (sk_)
 secret_key = rk_test_replace-me
 publishable_key = pk_test_replace-me
 ; the signing secret of the /webhooks/stripe endpoint configured in the Dashboard
