@@ -3,7 +3,6 @@ package chat.simplex.common.views.helpers
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
-import android.graphics.drawable.Drawable
 import android.media.MediaMetadataRetriever
 import android.os.*
 import android.provider.OpenableColumns
@@ -183,7 +182,7 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
       } else {
         File(getAppFilePath(file.fileName)).readBytes()
       }
-      decodeSampledBitmapFromByteArray(data, 1000, 1000).asImageBitmap() to data
+      decodeImageBitmap(ByteArrayInputStream(data), MAX_THUMBNAIL_DIMENSION) to data
     } catch (e: Exception) {
       Log.e(TAG, e.stackTraceToString())
       null
@@ -191,40 +190,6 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
   } else {
     null
   }
-}
-
-// https://developer.android.com/topic/performance/graphics/load-bitmap#load-bitmap
-private fun decodeSampledBitmapFromByteArray(data: ByteArray, reqWidth: Int, reqHeight: Int): Bitmap {
-  // First decode with inJustDecodeBounds=true to check dimensions
-  return BitmapFactory.Options().run {
-    inJustDecodeBounds = true
-    BitmapFactory.decodeByteArray(data, 0, data.size, this)
-    // Calculate inSampleSize
-    inSampleSize = calculateInSampleSize(this, reqWidth, reqHeight)
-    // Decode bitmap with inSampleSize set
-    inJustDecodeBounds = false
-
-    BitmapFactory.decodeByteArray(data, 0, data.size, this)
-      ?: throw IOException("Unable to decode image")
-  }
-}
-
-private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
-  // Raw height and width of image
-  val (height: Int, width: Int) = options.run { outHeight to outWidth }
-  var inSampleSize = 1
-
-  if (height > reqHeight || width > reqWidth) {
-    val halfHeight: Int = height / 2
-    val halfWidth: Int = width / 2
-    // Calculate the largest inSampleSize value that is a power of 2 and keeps both
-    // height and width larger than the requested height and width.
-    while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
-      inSampleSize *= 2
-    }
-  }
-
-  return inSampleSize
 }
 
 actual fun getFileName(uri: URI): String? {
@@ -257,19 +222,23 @@ actual fun getFileSize(uri: URI): Long? {
 }
 
 actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitmap? {
-  return if (Build.VERSION.SDK_INT >= 28) {
-    try {
+  return try {
+    if (Build.VERSION.SDK_INT >= 28) {
       val source = ImageDecoder.createSource(androidAppContext.contentResolver, uri.toUri())
-      ImageDecoder.decodeBitmap(source)
-    } catch (e: Exception) {
-      Log.e(TAG, "Unable to decode the image: ${e.stackTraceToString()}")
-      if (withAlertOnException) showImageDecodingException()
-
-      null
+      ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+        val sampleSize = boundedImageSampleSize(info.size.width, info.size.height, MAX_IMAGE_DIMENSION)
+          ?: throw IOException("Image dimensions exceed limit")
+        decoder.setTargetSampleSize(sampleSize)
+      }.asImageBitmap()
+    } else {
+      val path = getAppFilePath(uri) ?: throw IOException("Unable to resolve image path")
+      FileInputStream(path).use(::loadImageBitmap)
     }
-  } else {
-    BitmapFactory.decodeFile(getAppFilePath(uri))
-  }?.asImageBitmap()
+  } catch (e: Exception) {
+    Log.e(TAG, "Unable to decode the image: ${e.stackTraceToString()}")
+    if (withAlertOnException) showImageDecodingException()
+    null
+  }
 }
 
 actual fun getBitmapFromByteArray(data: ByteArray, withAlertOnException: Boolean): ImageBitmap? {
@@ -292,7 +261,11 @@ actual fun getDrawableFromUri(uri: URI, withAlertOnException: Boolean): Any? {
   return if (Build.VERSION.SDK_INT >= 28) {
     try {
       val source = ImageDecoder.createSource(androidAppContext.contentResolver, uri.toUri())
-      ImageDecoder.decodeDrawable(source)
+      ImageDecoder.decodeDrawable(source) { decoder, info, _ ->
+        val sampleSize = boundedImageSampleSize(info.size.width, info.size.height, MAX_IMAGE_DIMENSION)
+          ?: throw IOException("Image dimensions exceed limit")
+        decoder.setTargetSampleSize(sampleSize)
+      }
     } catch (e: Exception) {
       Log.e(TAG, "Error while decoding drawable: ${e.stackTraceToString()}")
       if (withAlertOnException) showImageDecodingException()
@@ -300,7 +273,7 @@ actual fun getDrawableFromUri(uri: URI, withAlertOnException: Boolean): Any? {
       null
     }
   } else {
-    Drawable.createFromPath(getAppFilePath(uri))
+    null
   }
 }
 
