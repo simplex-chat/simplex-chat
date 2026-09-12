@@ -145,6 +145,7 @@ getCustomerGroupsMembersByRange db cxt user@User {userId, userContactId} fromId 
     <$> DB.query
       db
       ( groupMemberQuery
+          <> " "
           <> [sql|
                 JOIN groups g ON g.group_id = m.group_id
                 WHERE m.user_id = ? AND g.business_chat = ?
