@@ -4065,10 +4065,20 @@ export interface SimplexDomainClaim {
   proof?: SimplexDomainProof
 }
 
-export type SimplexDomainError = SimplexDomainError.NoValidLink | SimplexDomainError.UnknownDomain
+export type SimplexDomainError = 
+  | SimplexDomainError.NoValidLink
+  | SimplexDomainError.UnknownDomain
+  | SimplexDomainError.Unavailable
+  | SimplexDomainError.ResolvesElsewhere
+  | SimplexDomainError.NotRegistered
 
 export namespace SimplexDomainError {
-  export type Tag = "noValidLink" | "unknownDomain"
+  export type Tag = 
+    | "noValidLink"
+    | "unknownDomain"
+    | "unavailable"
+    | "resolvesElsewhere"
+    | "notRegistered"
 
   interface Interface {
     type: Tag
@@ -4080,6 +4090,22 @@ export namespace SimplexDomainError {
 
   export interface UnknownDomain extends Interface {
     type: "unknownDomain"
+    claimedDomain?: SimplexDomain
+  }
+
+  export interface Unavailable extends Interface {
+    type: "unavailable"
+    availability: SimplexNameAvailability
+  }
+
+  export interface ResolvesElsewhere extends Interface {
+    type: "resolvesElsewhere"
+    claimNameType: SimplexNameType
+    resolvedLinks: string[]
+  }
+
+  export interface NotRegistered extends Interface {
+    type: "notRegistered"
   }
 }
 
@@ -4095,6 +4121,38 @@ export enum SimplexLinkType {
   Group = "group",
   Channel = "channel",
   Relay = "relay",
+}
+// What the registry says about a name. `yearPriceUSD` is US cents per year, absent when the label is shorter than `minLabelLength`.
+
+export type SimplexNameAvailability = 
+  | SimplexNameAvailability.Registered
+  | SimplexNameAvailability.Available
+  | SimplexNameAvailability.Reserved
+
+export namespace SimplexNameAvailability {
+  export type Tag = "registered" | "available" | "reserved"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Registered extends Interface {
+    type: "registered"
+    expires?: string // ISO-8601 timestamp
+    graceUntil?: string // ISO-8601 timestamp
+    reserved?: string
+  }
+
+  export interface Available extends Interface {
+    type: "available"
+    yearPriceUSD?: number // int64
+    minLabelLength: number // int
+  }
+
+  export interface Reserved extends Interface {
+    type: "reserved"
+    reason: string
+  }
 }
 
 export interface SimplexNameInfo {

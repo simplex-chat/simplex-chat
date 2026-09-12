@@ -91,7 +91,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NameReservedReason, NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
@@ -547,6 +547,8 @@ data ChatCommand
   | APIConnectPreparedGroup {groupId :: GroupId, incognito :: IncognitoEnabled, ownerContact :: Maybe GroupOwnerContact, msgContent_ :: Maybe MsgContent}
   | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
   | Connect {incognito :: IncognitoEnabled, connTarget_ :: Maybe AConnectTarget}
+  | APIGetNameStatus {userId :: UserId, statusDomain :: SimplexDomain}
+  | ShowNameStatus {statusDomain :: SimplexDomain}
   | APIVerifyContactDomain {contactId :: ContactId}
   | APIVerifyGroupDomain {groupId :: GroupId}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
@@ -811,6 +813,7 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
+  | CRNameStatus {user :: User, statusDomain :: SimplexDomain, availability :: SimplexNameAvailability}
   | CRContactDomainVerified {user :: User, contact :: Contact, verificationFailure :: Maybe Text}
   | CRGroupDomainVerified {user :: User, groupInfo :: GroupInfo, verificationFailure :: Maybe Text}
   | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
@@ -1442,10 +1445,31 @@ data ChatError
   | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
--- why a resolved SimpleX name could not be used (the name itself resolved; an unregistered name is the agent's NAME NOT_FOUND)
+-- why a resolved SimpleX name could not be used
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
-  | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
+  | SDEUnknownDomain {claimedDomain :: Maybe SimplexDomain} -- the name the resolved address claims, if any
+  | SDEUnavailable {availability :: SimplexNameAvailability} -- what the registry says instead
+  | SDEResolvesElsewhere {claimNameType :: SimplexNameType, resolvedLinks :: [Text]} -- resolves, but elsewhere
+  | SDENotRegistered -- connecting only needs to know the name reaches no one
+  deriving (Eq, Show)
+
+-- | What the registry says about a name, as this client words it. The price is
+-- worked out here rather than by the router, which cannot see the label behind
+-- a hash and so knows neither its tier nor whether it is long enough.
+data SimplexNameAvailability
+  = SNARegistered
+      { expires :: Maybe UTCTime,
+        graceUntil :: Maybe UTCTime,
+        -- | held back as well, which is why it will not free up at expiry
+        reserved :: Maybe NameReservedReason
+      }
+  | SNAAvailable
+      { -- | US cents for one year; Nothing when the label is too short
+        yearPriceUSD :: Maybe Int64,
+        minLabelLength :: Int
+      }
+  | SNAReserved {reason :: NameReservedReason}
   deriving (Eq, Show)
 
 data ChatErrorType
@@ -1801,6 +1825,8 @@ $(JQ.deriveJSON defaultJSON ''GroupLinkOwner)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SNA") ''SimplexNameAvailability)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
 

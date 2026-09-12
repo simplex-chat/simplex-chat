@@ -213,6 +213,7 @@ toTypeInfo tr =
         "GroupLinkId",
         "ImageData",
         "MemberId",
+        "NameReservedReason",
         "Text",
         "MREmojiChar",
         "PrivateKey",

@@ -5,7 +5,7 @@ module ChatTests.Names where
 
 import ChatClient
 import ChatTests.DBUtils
-import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
+import ChatTests.Groups (memberJoinChannel, prepareChannel', prepareChannel1Relay)
 import ChatTests.Utils
 import Control.Concurrent.Async (concurrently_)
 import qualified Data.Text as T
@@ -20,6 +20,10 @@ chatNamesTests = do
   it "connect by name to a known contact not claimed in profile is rejected" testConnectByNameKnownContactNotClaimed
   it "connect by unregistered name fails to resolve" testConnectByNameNotFound
   it "set name not resolving to own address is rejected" testSetNameNotOwnAddress
+  it "name status reports what the registry says" testNameStatus
+  it "claim channel name resolving to another channel is rejected" testClaimChannelNameElsewhere
+  it "claim unregistered channel name reports the price" testClaimChannelNameUnregistered
+  it "join channel by unregistered name fails to resolve" testJoinChannelNameUnregistered
   it "channel name is not verified just by joining via link" testChannelDomainLinkJoinUnverified
   it "verify channel name, fail on re-point, retain status on refresh" testChannelDomainVerify
   it "connect by channel name" testConnectByChannelName
@@ -73,7 +77,7 @@ testConnectByNameNotClaimed ps = withSmpServerAndNames $ \reg ->
       (shortLink, _) <- getContactLinks alice True
       registerName reg aliceName (contactNameRecord "alice" (T.pack shortLink))
       bob ##> "/c @alice.simplex"
-      bob <## "SimpleX name alice.simplex is not included in the connection link's profile"
+      bob <## "SimpleX name alice.simplex resolves to an address that claims no name"
 
 testConnectByNameKnownContactNotClaimed :: HasCallStack => TestParams -> IO ()
 testConnectByNameKnownContactNotClaimed ps = withSmpServerAndNames $ \reg ->
@@ -96,7 +100,7 @@ testConnectByNameKnownContactNotClaimed ps = withSmpServerAndNames $ \reg ->
         (alice <## "bob (Bob): contact is connected")
       registerName reg aliceName (contactNameRecord "alice" (T.pack shortLink))
       bob ##> "/c @alice.simplex"
-      bob <## "SimpleX name alice.simplex is not included in the connection link's profile"
+      bob <## "SimpleX name alice.simplex resolves to an address that claims no name"
 
 testConnectByNameNotFound :: HasCallStack => TestParams -> IO ()
 testConnectByNameNotFound ps = withSmpServerAndNames $ \_reg ->
@@ -105,7 +109,7 @@ testConnectByNameNotFound ps = withSmpServerAndNames $ \_reg ->
     test _alice bob = do
       enableNamesRole bob
       bob ##> "/c @nobody.simplex"
-      bob .<## "smpErr = NAME {nameErr = NOT_FOUND}}"
+      bob <## "SimpleX name nobody.simplex is not registered"
 
 testSetNameNotOwnAddress :: HasCallStack => TestParams -> IO ()
 testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
@@ -120,7 +124,60 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
       alice ##> "/ad"
       _ <- getContactLinks alice True
       alice ##> "/_set domain 1 alice.simplex"
-      alice <## "SimpleX name alice.simplex has no valid connection link"
+      alice <## "SimpleX name alice.simplex does not resolve to this address, it resolves to:"
+      alice <## ("  " <> bobShortLink)
+
+-- context 3: what the registry says, for someone deciding whether to register
+testNameStatus :: HasCallStack => TestParams -> IO ()
+testNameStatus ps = withSmpServerAndNames $ \reg ->
+  testChat2 aliceProfile bobProfile (test reg) ps
+  where
+    aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
+    test reg alice _bob = do
+      enableNamesRole alice
+      alice ##> "/name nobody.simplex"
+      alice <## "nobody.simplex available, $1.00 a year"
+      alice ##> "/name ab.simplex"
+      alice <## "ab.simplex too short: names need at least 3 characters"
+      registerName reg aliceName (contactNameRecord "alice" "https://simplex.chat/contact#/?v=2")
+      alice ##> "/name alice.simplex"
+      alice <## "alice.simplex registered, expires 2027-06-24, free to register from 2027-09-22 unless renewed by owner"
+
+-- claiming a channel name: the three ways it can fail, worded for someone
+-- attaching a name they mean to own
+testClaimChannelNameElsewhere :: HasCallStack => TestParams -> IO ()
+testClaimChannelNameElsewhere ps = withSmpServerAndNames $ \reg ->
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+      mapM_ enableNamesRole [alice, cath]
+      (shortLink, _) <- prepareChannel1Relay "team" alice cath
+      (otherLink, _) <- prepareChannel' 2 "other" alice cath
+      -- the name resolves to a different channel's link
+      registerName reg teamName (channelNameRecord "team" (T.pack otherLink))
+      alice ##> "/public group access #team domain=team.simplex"
+      alice <## "SimpleX name team.simplex does not resolve to this channel, it resolves to:"
+      alice <## ("  " <> otherLink)
+      shortLink `shouldNotBe` otherLink
+  where
+    teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
+
+testClaimChannelNameUnregistered :: HasCallStack => TestParams -> IO ()
+testClaimChannelNameUnregistered ps = withSmpServerAndNames $ \_reg ->
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+      mapM_ enableNamesRole [alice, cath]
+      _ <- prepareChannel1Relay "team" alice cath
+      alice ##> "/public group access #team domain=nobody.simplex"
+      alice <## "SimpleX name nobody.simplex is available, $1.00 a year"
+
+testJoinChannelNameUnregistered :: HasCallStack => TestParams -> IO ()
+testJoinChannelNameUnregistered ps = withSmpServerAndNames $ \_reg ->
+  testChat2 aliceProfile bobProfile test ps
+  where
+    test _alice bob = do
+      enableNamesRole bob
+      bob ##> "/c #nobody.simplex"
+      bob <## "SimpleX name nobody.simplex is not registered"
 
 -- a self-claimed name is never auto-verified from link data: the claim is not proof of ownership
 testChannelDomainLinkJoinUnverified :: HasCallStack => TestParams -> IO ()

@@ -182,6 +182,7 @@ This file is generated automatically.
 - [SimplexDomainError](#simplexdomainerror)
 - [SimplexDomainProof](#simplexdomainproof)
 - [SimplexLinkType](#simplexlinktype)
+- [SimplexNameAvailability](#simplexnameavailability)
 - [SimplexNameInfo](#simplexnameinfo)
 - [SimplexNameType](#simplexnametype)
 - [SimplexTLD](#simplextld)
@@ -3689,6 +3690,19 @@ NoValidLink:
 
 UnknownDomain:
 - type: "unknownDomain"
+- claimedDomain: [SimplexDomain](#simplexdomain)?
+
+Unavailable:
+- type: "unavailable"
+- availability: [SimplexNameAvailability](#simplexnameavailability)
+
+ResolvesElsewhere:
+- type: "resolvesElsewhere"
+- claimNameType: [SimplexNameType](#simplexnametype)
+- resolvedLinks: [string]
+
+NotRegistered:
+- type: "notRegistered"
 
 
 ---
@@ -3711,6 +3725,30 @@ UnknownDomain:
 - "group"
 - "channel"
 - "relay"
+
+
+---
+
+## SimplexNameAvailability
+
+What the registry says about a name. `yearPriceUSD` is US cents per year, absent when the label is shorter than `minLabelLength`.
+
+**Discriminated union type**:
+
+Registered:
+- type: "registered"
+- expires: UTCTime?
+- graceUntil: UTCTime?
+- reserved: string?
+
+Available:
+- type: "available"
+- yearPriceUSD: int64?
+- minLabelLength: int
+
+Reserved:
+- type: "reserved"
+- reason: string
 
 
 ---

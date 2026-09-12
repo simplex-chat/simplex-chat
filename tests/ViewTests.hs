@@ -1,14 +1,79 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module ViewTests where
 
+import qualified Data.Map.Strict as M
 import Data.Time
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import NameResolver (contactNameRecord)
+import Simplex.Chat.Controller (SimplexNameAvailability (..))
+import Simplex.Chat.Library.Commands (nameAvailability)
 import Simplex.Chat.View
+import Simplex.Messaging.Names.Record (NamePricing (..), NameRegistration (..), NameReservedReason (..), USDCents (..))
+import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexTLD (..))
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 import Test.Hspec
 
 viewTests :: Spec
 viewTests = do
   testRecent
+  testPremiumUsd
+  testNameAvailability
+
+-- SimplexNameAvailability restates NameRegistration so the chat API stays
+-- independent of the wire format. The two have drifted twice; this pins the map.
+testNameAvailability :: Spec
+testNameAvailability = describe "name availability" $ do
+  let dom d = SimplexDomain {nameTLD = TLDSimplex, domain = d, subDomain = []}
+      -- 3 and 4 priced specially, everything else basePrice, under 3 unregistrable
+      prices =
+        NamePricing
+          { registrationPrices = M.fromList [(3, USDCents 30000), (4, USDCents 4000)],
+            basePrice = USDCents 500,
+            minLabelLength = 3
+          }
+      registered e g r =
+        NRRegistered
+          { expires = RoundedSystemTime <$> e,
+            graceUntil = RoundedSystemTime <$> g,
+            reservedReason_ = r,
+            nameRecord = contactNameRecord "abc.simplex" "https://simplex.chat/contact#/?v=2"
+          }
+  it "carries the dates over as UTC, and the reservation with them" $
+    nameAvailability (dom "abc") (registered (Just 1780000000) (Just 1787776000) (Just NRRInternal))
+      `shouldBe` SNARegistered
+        { expires = Just (posixSecondsToUTCTime 1780000000),
+          graceUntil = Just (posixSecondsToUTCTime 1787776000),
+          reserved = Just NRRInternal
+        }
+  it "a v20/v21 router sent the record alone, so there are no dates" $
+    nameAvailability (dom "abc") (registered Nothing Nothing Nothing)
+      `shouldBe` SNARegistered {expires = Nothing, graceUntil = Nothing, reserved = Nothing}
+  it "prices the label's own length, which only this side knows" $
+    nameAvailability (dom "abc") NRAvailable {pricing = prices}
+      `shouldBe` SNAAvailable {yearPriceUSD = Just 30000, minLabelLength = 3}
+  it "falls back to basePrice for a length the registry does not price specially" $
+    nameAvailability (dom "abcdefgh") NRAvailable {pricing = prices}
+      `shouldBe` SNAAvailable {yearPriceUSD = Just 500, minLabelLength = 3}
+  it "quotes nothing for a label the registry would refuse" $
+    nameAvailability (dom "ab") NRAvailable {pricing = prices}
+      `shouldBe` SNAAvailable {yearPriceUSD = Nothing, minLabelLength = 3}
+  it "a reserved name carries its reason" $
+    nameAvailability (dom "abc") NRReserved {reservedReason = NRRTrademark}
+      `shouldBe` SNAReserved {reason = NRRTrademark}
+
+-- the registry prices in cents, which no one reads at a glance
+testPremiumUsd :: Spec
+testPremiumUsd = describe "name price in USD" $ do
+  it "shows dollars and cents" $ do
+    usd 12793 `shouldBe` "$127.93"
+    usd 100 `shouldBe` "$1.00"
+  it "pads the cents" $ do
+    usd 105 `shouldBe` "$1.05"
+    usd 5 `shouldBe` "$0.05"
+  it "shows a free name as zero rather than blank" $
+    usd 0 `shouldBe` "$0.00"
 
 testRecent :: Spec
 testRecent = describe "recent" $ do

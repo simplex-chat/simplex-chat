@@ -2849,10 +2849,29 @@ class SimplexDomainError_noValidLink(TypedDict):
 
 class SimplexDomainError_unknownDomain(TypedDict):
     type: Literal["unknownDomain"]
+    claimedDomain: NotRequired["SimplexDomain"]
 
-SimplexDomainError = SimplexDomainError_noValidLink | SimplexDomainError_unknownDomain
+class SimplexDomainError_unavailable(TypedDict):
+    type: Literal["unavailable"]
+    availability: "SimplexNameAvailability"
 
-SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain"]
+class SimplexDomainError_resolvesElsewhere(TypedDict):
+    type: Literal["resolvesElsewhere"]
+    claimNameType: "SimplexNameType"
+    resolvedLinks: list[str]
+
+class SimplexDomainError_notRegistered(TypedDict):
+    type: Literal["notRegistered"]
+
+SimplexDomainError = (
+    SimplexDomainError_noValidLink
+    | SimplexDomainError_unknownDomain
+    | SimplexDomainError_unavailable
+    | SimplexDomainError_resolvesElsewhere
+    | SimplexDomainError_notRegistered
+)
+
+SimplexDomainError_Tag = Literal["noValidLink", "unknownDomain", "unavailable", "resolvesElsewhere", "notRegistered"]
 
 class SimplexDomainProof(TypedDict):
     linkOwnerId: NotRequired[str]
@@ -2860,6 +2879,31 @@ class SimplexDomainProof(TypedDict):
     signature: str
 
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
+
+# What the registry says about a name. `yearPriceUSD` is US cents per year, absent when the label is shorter than `minLabelLength`.
+
+class SimplexNameAvailability_registered(TypedDict):
+    type: Literal["registered"]
+    expires: NotRequired[str]  # ISO-8601 timestamp
+    graceUntil: NotRequired[str]  # ISO-8601 timestamp
+    reserved: NotRequired[str]
+
+class SimplexNameAvailability_available(TypedDict):
+    type: Literal["available"]
+    yearPriceUSD: NotRequired[int]  # int64
+    minLabelLength: int  # int
+
+class SimplexNameAvailability_reserved(TypedDict):
+    type: Literal["reserved"]
+    reason: str
+
+SimplexNameAvailability = (
+    SimplexNameAvailability_registered
+    | SimplexNameAvailability_available
+    | SimplexNameAvailability_reserved
+)
+
+SimplexNameAvailability_Tag = Literal["registered", "available", "reserved"]
 
 class SimplexNameInfo(TypedDict):
     nameType: "SimplexNameType"

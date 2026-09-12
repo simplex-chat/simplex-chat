@@ -30,7 +30,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeLatin1)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
 import Data.Time.Calendar (addDays)
 import Data.Time.Clock (UTCTime)
@@ -70,7 +70,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NameReservedReason (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
@@ -152,6 +152,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
+  CRNameStatus u domain availability -> ttyUser u [plain $ strEncode domain <> " " <> nameStatus domain availability]
   CRContactDomainVerified u (Contact {profile = LocalProfile {contactDomain}}) result -> ttyUser u $ viewDomainVerified NTContact (claimDomain <$> contactDomain) result
   CRGroupDomainVerified u g result -> ttyUser u $ viewDomainVerified NTPublicGroup (groupSimplexDomain g) result
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
@@ -826,6 +827,46 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
           Just (CIFFGroup g _ _ _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]
           Just (CIFFGroupLink g _ _ _ _ _ _) -> ["forwarded from: #" <> (plain . viewName) g]
           _ -> []
+
+-- | What the registry says about a name, for someone deciding whether to register it.
+nameStatus :: SimplexDomain -> SimplexNameAvailability -> B.ByteString
+nameStatus d@SimplexDomain {subDomain} = \case
+  SNARegistered {expires, graceUntil, reserved} ->
+    "registered"
+      <> maybe "" ((", expires " <>) . day) expires
+      <> case reserved of
+        -- a reserved name never frees up, so it is given no date
+        Just r -> ", and reserved" <> reservedReason r
+        Nothing -> maybe "" (\t -> ", free to register from " <> day t <> " unless renewed by owner") graceUntil
+  -- reservedNames is keyed on the 2LD, so a reserved subname means its 2LD is
+  SNAReserved r | not (null subDomain) ->
+    "not registered; " <> twoLD <> " is reserved" <> reservedReason r
+  SNAReserved r -> "reserved" <> reservedReason r
+  -- only a second-level name is registrable, so name who can create this one
+  SNAAvailable {} | not (null subDomain) ->
+    "not registered; subnames are created by the owner of " <> twoLD
+  SNAAvailable {yearPriceUSD = Nothing, minLabelLength} ->
+    "too short: names need at least " <> B.pack (show minLabelLength) <> " characters"
+  -- .testing charges nothing, so a zero price is an answer, not a missing one
+  SNAAvailable {yearPriceUSD = Just 0} -> "available, free"
+  SNAAvailable {yearPriceUSD = Just cents} -> "available, " <> usd cents <> " a year"
+  where
+    day = B.pack . formatTime defaultTimeLocale "%Y-%m-%d"
+    twoLD = encodeUtf8 $ fullDomainName d {subDomain = []}
+
+-- | The registry prices in US cents; dollars and cents is what a person reads.
+usd :: Int64 -> B.ByteString
+usd cents = "$" <> B.pack (show d) <> "." <> B.pack (pad (show c))
+  where
+    (d, c) = cents `divMod` 100
+    pad t = replicate (2 - length t) '0' <> t
+
+reservedReason :: NameReservedReason -> B.ByteString
+reservedReason = \case
+  NRRInternal -> " for SimpleX"
+  NRRTrademark -> " to protect a trademark"
+  NRRCommunity -> " for the community"
+  NRRUnknown t -> " (" <> encodeUtf8 t <> ")"
 
 localTs :: TimeZone -> UTCTime -> String
 localTs tz ts = do
@@ -2731,10 +2772,17 @@ viewChatError isCmd logLevel testView = \case
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
     CESimplexDomainNotReady domain domainErr ->
-      let reason = case domainErr of
-            SDENoValidLink -> "has no valid connection link"
-            SDEUnknownDomain -> "is not included in the connection link's profile"
-       in [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
+      let name = "SimpleX name " <> strEncode domain <> " "
+       in case domainErr of
+            SDENoValidLink -> [plain $ name <> "has no valid connection link"]
+            SDEUnknownDomain claimed_ ->
+              [plain $ name <> "resolves to an address that claims " <> maybe "no name" strEncode claimed_]
+            SDENotRegistered -> [plain $ name <> "is not registered"]
+            SDEUnavailable a -> [plain $ name <> "is " <> nameStatus domain a]
+            SDEResolvesElsewhere nameType links ->
+              let here = case nameType of NTContact -> "address"; NTPublicGroup -> "channel"
+               in plain (name <> "does not resolve to this " <> here <> ", it resolves to:")
+                    : map (plain . ("  " <>) . encodeUtf8) links
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
