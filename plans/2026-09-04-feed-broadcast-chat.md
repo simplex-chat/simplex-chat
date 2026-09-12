@@ -131,7 +131,9 @@ message id used here.
   messages are stored with `chat_items.item_feed = 1`.
 - Content: text, link, image, video, voice, file. One XFTP upload per
   broadcast; one recipient description for everyone. Mentions, live
-  messages and the `ttl` parameter are rejected.
+  messages and the `ttl` parameter are rejected. A feed file is capped at
+  the no-badge size limit (`checkSndFile Nothing`) and carries no badge
+  proof: a proof binds one chat, and the description is shared by all.
 - Quotes are rejected: `ChatTypeQuotable 'CTFeed` resolves to the existing
   `TypeError` case, as for `CTLocal`. The wire format needs no change to
   allow them later — the quote is part of the container.
