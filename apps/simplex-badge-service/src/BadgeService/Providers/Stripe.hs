@@ -68,7 +68,7 @@ import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 maxErrorBytes :: Int64
 maxErrorBytes = 4000
 
--- | A Checkout Session is a couple of kilobytes; ten megabytes is far above anything Stripe
+-- | A PaymentIntent is a couple of kilobytes; ten megabytes is far above anything Stripe
 -- sends and far below what would cost the poller its thread.
 maxProviderBytes :: Int64
 maxProviderBytes = 10 * 1024 * 1024
@@ -88,7 +88,7 @@ pageCapReason :: Text
 pageCapReason =
   "stripe: the list stopped at "
     <> tshow maxListPages
-    <> " pages, so any session past the first "
+    <> " pages, so any intent past the first "
     <> tshow (maxListPages * listPageSize)
     <> " was not read — and will not be read by a later pass either"
 
@@ -96,7 +96,7 @@ pageCapReason =
 -- the rest cannot be walked; recorded rather than reported as a clean, fully accounted pass.
 untraversableReason :: Text
 untraversableReason =
-  "stripe: the list reports more pages but the last row carries no id to page from, so any session past this page was not read"
+  "stripe: the list reports more pages but the last row carries no id to page from, so any intent past this page was not read"
 
 -- | The events worth queueing a read for. Anything else Stripe sends says nothing this service
 -- acts on, and a hint it cannot use costs a queue slot.
@@ -130,14 +130,14 @@ stripeProvider cfg = do
         pVerifyWebhook = verifyStripeSig (sWebhookSecret cfg)
       }
 
--- | Lists sessions created within the settle window and pages with @starting_after@ while Stripe
--- reports more. Not filtered on @status=open@: that would return only open sessions, which carry
--- no signal, so a settlement missed by the webhook would never be caught. The window mirrors the
--- BTCPay list: the settle window plus a session's own lifetime, since a session created that long
--- ago can still be paid. List rows carry no expanded charge, so a settled row settles at read time
--- via 'signalOf'. A non-2xx from the shared helper, a 429 among them, aborts the whole pass: a
--- payment may have landed where a partial list cannot see it, and the poller must not expire an
--- order over money missed.
+-- | Lists PaymentIntents created within the settle window and pages with @starting_after@ while
+-- Stripe reports more. The list carries every status and 'signalOf' classifies each row, so a
+-- settlement the webhook missed is still caught. The window mirrors the BTCPay list: the settle
+-- window plus an invoice's own lifetime, since an intent created that long ago can still be paid.
+-- List rows carry no expanded charge, so a settled row settles at read time via 'signalOf'. A
+-- non-2xx from the shared helper, a 429 among them, aborts the whole pass: a payment may have
+-- landed where a partial list cannot see it, and the poller must not expire an order over money
+-- missed.
 listOpen :: StripeEnv -> IO (Either ProviderError ListPass)
 listOpen env@StripeEnv {seCfg} = do
   now <- getCurrentTime
