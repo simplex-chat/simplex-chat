@@ -2350,11 +2350,10 @@ export type FileError =
   | FileError.Blocked
   | FileError.NoFile
   | FileError.Relay
-  | FileError.BadgeProof
   | FileError.Other
 
 export namespace FileError {
-  export type Tag = "auth" | "blocked" | "noFile" | "relay" | "badgeProof" | "other"
+  export type Tag = "auth" | "blocked" | "noFile" | "relay" | "other"
 
   interface Interface {
     type: Tag
@@ -2377,10 +2376,6 @@ export namespace FileError {
   export interface Relay extends Interface {
     type: "relay"
     srvError: SrvError
-  }
-
-  export interface BadgeProof extends Interface {
-    type: "badgeProof"
   }
 
   export interface Other extends Interface {
@@ -3800,6 +3795,7 @@ export interface RcvFileTransfer {
   fileId: number // int64
   xftpRcvFile?: XFTPRcvFile
   fileInvitation: FileInvitation
+  fileProhibited?: FileProhibited
   fileStatus: RcvFileStatus
   fileType: FileType
   rcvFileInline?: InlineFileMode

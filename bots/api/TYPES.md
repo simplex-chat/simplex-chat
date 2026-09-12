@@ -2088,9 +2088,6 @@ Relay:
 - type: "relay"
 - srvError: [SrvError](#srverror)
 
-BadgeProof:
-- type: "badgeProof"
-
 Other:
 - type: "other"
 - fileError: string
@@ -3466,6 +3463,7 @@ Cancelled:
 - fileId: int64
 - xftpRcvFile: [XFTPRcvFile](#xftprcvfile)?
 - fileInvitation: [FileInvitation](#fileinvitation)
+- fileProhibited: [FileProhibited](#fileprohibited)?
 - fileStatus: [RcvFileStatus](#rcvfilestatus)
 - fileType: [FileType](#filetype)
 - rcvFileInline: [InlineFileMode](#inlinefilemode)?

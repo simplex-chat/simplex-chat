@@ -1665,9 +1665,6 @@ class FileError_relay(TypedDict):
     type: Literal["relay"]
     srvError: "SrvError"
 
-class FileError_badgeProof(TypedDict):
-    type: Literal["badgeProof"]
-
 class FileError_other(TypedDict):
     type: Literal["other"]
     fileError: str
@@ -1677,11 +1674,10 @@ FileError = (
     | FileError_blocked
     | FileError_noFile
     | FileError_relay
-    | FileError_badgeProof
     | FileError_other
 )
 
-FileError_Tag = Literal["auth", "blocked", "noFile", "relay", "badgeProof", "other"]
+FileError_Tag = Literal["auth", "blocked", "noFile", "relay", "other"]
 
 class FileErrorType_NOT_APPROVED(TypedDict):
     type: Literal["NOT_APPROVED"]
@@ -2667,6 +2663,7 @@ class RcvFileTransfer(TypedDict):
     fileId: int  # int64
     xftpRcvFile: NotRequired["XFTPRcvFile"]
     fileInvitation: "FileInvitation"
+    fileProhibited: NotRequired["FileProhibited"]
     fileStatus: "RcvFileStatus"
     fileType: "FileType"
     rcvFileInline: NotRequired["InlineFileMode"]
