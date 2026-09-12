@@ -318,6 +318,7 @@ instance StrEncoding ProofPresHeader where
         pure PHFileDescr {chatBinding, fileSize, descrHash, fileExpires = systemToUTCTime <$> expires_}
       PHUnknownTag c -> PHUnknown c <$> A.takeByteString
 
+-- v6.5.x accepts both; v7 will reject PHTest/PHUnknown
 proofPresHeaderAccepted :: ProofPresHeader -> Bool
 proofPresHeaderAccepted = \case
   PHTest _ -> True

@@ -311,7 +311,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
               where
                 splitText :: (Connection, SndFileTransfer, RcvFileDescrText) -> [(Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json))]
                 splitText (conn, _, rfdText) =
-                  map (\fileDescr@FileDescr {fileDescrComplete} -> (conn, (connOrGroupId, Nothing, XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires, fileBadge = if fileDescrComplete then descrBadge else Nothing}))) (L.toList $ splitFileDescr partSize rfdText)
+                  map (\fileDescr@FileDescr {fileDescrComplete} -> (conn, (connOrGroupId, Nothing, XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires, fileBadge = if fileDescrComplete then descrBadge else Nothing}))) (L.toList $ splitFileDescr partSize (maybe partSize (const badgeDescrPartSize) descrBadge) rfdText)
             toMsgReq :: (Connection, (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)) -> SndMessage -> ChatMsgReq
             toMsgReq (conn, _) SndMessage {msgId, msgBody} =
               (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, (vrValue msgBody, [msgId]))
@@ -1982,9 +1982,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           Nothing -> case (fileStatus, xftpRcvFile) of
             (RFSAccepted _, Just XFTPRcvFile {userApprovedRelays}) -> receiveViaCompleteFD user fileId rfd fileSize userApprovedRelays cryptoArgs
             _ -> pure ()
+          -- the file may already be accepted, so it is reset to an invitation the apps refuse by its prohibition
           Just prohibited -> do
             withStore' $ \db -> setFileProhibited db user fileId prohibited
-            aci_ <- withStore $ \db -> lookupChatItemByFileId db cxt user fileId
+            aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
             forM_ aci_ $ \aci' -> toView $ CEvtChatItemUpdated user aci'
 
     descrBadgeStatus :: Maybe ByteString -> Integer -> RcvFileDescr -> Maybe UTCTime -> BadgeProof -> CM BadgeStatus

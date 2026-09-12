@@ -1531,7 +1531,7 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
               fileDescrEvents <- case (fInvDescr_, itemSharedMsgId) of
                 (Just (_, fileDescrText, fileExpires, descrBadge), Just msgId) -> do
                   partSize <- asks $ xftpDescrPartSize . config
-                  let parts = splitFileDescr partSize fileDescrText
+                  let parts = splitFileDescr partSize (maybe partSize (const badgeDescrPartSize) descrBadge) fileDescrText
                   pure . L.toList $ L.map (\fd@FileDescr {fileDescrComplete} -> XMsgFileDescr msgId fd fileExpires (if fileDescrComplete then descrBadge else Nothing)) parts
                 _ -> pure []
               let fileDescrVMs = map (VMUnsigned . ChatMessage senderVRange Nothing) fileDescrEvents
@@ -1542,11 +1542,16 @@ memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}}
   | T.length displayName <= 16 = displayName
   | otherwise = T.take 16 displayName `T.snoc` '…'
 
-splitFileDescr :: Int -> RcvFileDescrText -> NonEmpty FileDescr
-splitFileDescr partSize rfdText = splitParts 1 rfdText
+-- the description proof travels on the last part, so that part leaves room for it
+badgeDescrPartSize :: Int
+badgeDescrPartSize = 13500
+
+splitFileDescr :: Int -> Int -> RcvFileDescrText -> NonEmpty FileDescr
+splitFileDescr partSize lastSize rfdText = splitParts 1 rfdText
   where
     splitParts partNo remText =
-      let (part, rest) = T.splitAt partSize remText
+      let n = T.length remText
+          (part, rest) = T.splitAt (if n <= lastSize then n else if n <= partSize then lastSize else partSize) remText
           complete = T.null rest
           fileDescr = FileDescr {fileDescrText = part, fileDescrPartNo = partNo, fileDescrComplete = complete}
        in if complete

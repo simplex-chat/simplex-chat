@@ -18,7 +18,7 @@ The changes:
 5. Forwarding a file above the forwarder's limit is refused with an alert before the forwarding sheet opens, and again, for the chosen destination, before anything is uploaded.
 6. A received file keeps its two proofs, so a file re-sent to a new member as part of history keeps them; the sender's own files get fresh proofs from the credential.
 
-Two new columns on `files`, a new table `rcv_badge_proofs` holding proofs, and two columns on `rcv_files` referencing the invitation proof and the description proof of a received file, kept for history. One new function in simplexmq, the hash of the fields shared by all descriptions of one upload.
+Two new columns on `files`, and a new table `file_badge_proofs` holding the invitation proof and the description proof of a file, kept for history. One new function in simplexmq, the hash of the fields shared by all descriptions of one upload.
 
 ## Terms
 
@@ -162,7 +162,7 @@ The sender's profile badge plays no part. An invitation without a proof gets the
 
 **Storage.** Two new columns on `files`: `file_max_size INTEGER`, the limit that applied, and `file_badge_status TEXT`, the badge status, both NULL when the file is allowed. A file is prohibited when `file_max_size` is set; `file_badge_status` is NULL when the invitation had no proof. `BadgeStatus` gains `TextEncoding` and field instances for the column, as `MsgSigStatus` has (`Types/Shared.hs:137`). `createRcvFileTransfer` and `createRcvGroupFileTransfer` (`Store/Files.hs:448, 469`) write both. Sent and local files, and rows from before this change, hold NULL.
 
-On a received file the proof is stored as received in `rcv_badge_proofs` (section 12), referenced from `rcv_files.badge_inv_proof_id`, for history (section 9). Nothing is stored for a sent file; the sender regenerates proofs from its credential.
+A proof that verifies is stored in `file_badge_proofs` (section 12) with kind `inv`, for history (section 9); a proof that failed is not stored, as `files.file_badge_status` records that it failed. A sent file stores its own proof the same way.
 
 **The chat item.** `CIFile` (`Messages.hs:684`) gains `fileProhibited :: Maybe FileProhibited`. `MaybeCIFIleRow` (`Store/Messages.hs:2279`) gains the column, the three queries that select the file columns gain `f.file_max_size, f.file_badge_status`, and the two `maybeCIFile` constructors and the five other `CIFile` constructions (`Internal.hs:449`, `Subscriber.hs:2001, 2456, 2472`, `Commands.hs:5009`) set it.
 
@@ -178,7 +178,7 @@ In the `SFDONE` handler (`Subscriber.hs:209`), when the file is above the defaul
 
 **Verification.** When the file is allowed and above the default limit:
 
-1. The part that completes the description must have a proof. `processFDMessage` (`Subscriber.hs:1940`) receives every part and calls `receiveViaCompleteFD` when the description is complete and the file was accepted. It verifies the proof on the completing part, before that call, and on success stores it in `rcv_badge_proofs`, referenced from `rcv_files.badge_descr_proof_id`. On failure it sets the chat item file status to `CIFSRcvError` and cancels the transfer, as the digest mismatch does (`resetRcvCIFileStatus`, `:360`). A later accept of a cancelled transfer fails with `CEFileCancelled`.
+1. The part that completes the description must have a proof. `processFDMessage` (`Subscriber.hs:1940`) receives every part and calls `receiveViaCompleteFD` when the description is complete and the file was accepted. It verifies the proof on the completing part, before that call, and on success stores it in `file_badge_proofs` with kind `descr`. On failure it records the same decision as a failed invitation proof — the default limit and the badge status on `files` — so the file is refused by `acceptFileReceive` and the apps show the reason from one field. A file that requires a badge is received from the description message: `validateFileInvitation` stores its description as incomplete, so a complete description in an invitation cannot start a download unverified.
 2. Check the header: binding, name, size as at the invitation; the hash equal to `sharedDescriptionHash` of the parsed description; the expiration equal to `fileExpires` from the message.
 3. If the expiration is present and in the past, fail.
 4. If the expiration is absent, accept. Older servers grant no expiration. This is tightened once servers are upgraded.
@@ -199,7 +199,7 @@ Because the hash ignores replicas, one proof is valid for every recipient's desc
 
 `sendHistory` (`Internal.hs:1366-1481`) re-sends a file item to a new member as a new invitation built from the stored name and size (`invCompleteDescr`, `:1445`) with the description in `XMsgFileDescr` parts (`:1481`). Content is not signed, so nothing from the original messages survives.
 
-For a file received from another member, `invCompleteDescr` sets `fileBadge` from the proof `rcv_files.badge_inv_proof_id` references, and the last description part gets the proof `rcv_files.badge_descr_proof_id` references. Both are bound to the original sender, and history names the original sender (`fwdSender`, `:1466`), so the new member verifies them against that member's binding. For the host's own files both proofs are generated afresh from the credential, with the same headers.
+Both proofs are read from `file_badge_proofs` by kind. For a file received from another member they are re-sent unchanged: they are bound to the original sender, and history names that sender (`fwdSender`, `:1466`), so the new member verifies them against that member's binding. For the host's own files the stored proofs are re-sent too, and are re-made from the credential over the stored headers only when the badge that made them is past the send grace and the current badge is active — never for a signed item, whose original bytes are forwarded.
 
 `fileExpired` (`:1439-1443`) decides which files history re-sends by the item's age against `rcvFilesTTL`, two days, and ignores the granted expiration stored with the file. That check should use the stored `fileExpires`; it is noted here because it bounds when the stored proofs are read.
 
@@ -222,7 +222,7 @@ The receive decision is computed in eleven places from the sender's profile: `ge
 - `getMaxFileSize` loses the profile argument for received files. The compose screen keeps computing the sender's own limit from the user's own badge (`ComposeView.swift:1272`, `ComposeView.kt:1423`), with the one-day rule of section 5 instead of the seven-day status; `ShareModel.swift:448, 539` and `ComposeView.kt:118` start passing the profile, so they stop showing 1GB to a badge holder.
 - `ciSenderProfile` and the `senderProfile` parameters are removed from the file, image and video views and their call sites in `FramedItemView` and `ChatPreviewView`.
 - `FileError` gains the new value in `ChatTypes.swift` and `ChatModel.kt`, with a message for it.
-- The generated API mirrors — `bots/api/TYPES.md`, `types.ts`, `_types.py` — are regenerated for `CIFile`, `FileError` and the new chat error.
+- The generated API mirrors — `bots/api/TYPES.md`, `types.ts`, `_types.py` — are regenerated for `CIFile`, `FileProhibited` and `FileInvitation`.
 
 ## 12. Schema and fixtures
 
@@ -232,9 +232,10 @@ Migration `M20260904_file_badges`, SQLite and Postgres:
 ALTER TABLE files ADD COLUMN file_max_size INTEGER;
 ALTER TABLE files ADD COLUMN file_badge_status TEXT;
 
-CREATE TABLE rcv_badge_proofs(
+CREATE TABLE file_badge_proofs(
   badge_proof_id INTEGER PRIMARY KEY AUTOINCREMENT,
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
+  proof_kind TEXT NOT NULL,
   badge_proof BLOB NOT NULL,
   badge_pres_header BLOB NOT NULL,
   badge_key_idx INTEGER NOT NULL,
@@ -245,16 +246,10 @@ CREATE TABLE rcv_badge_proofs(
   updated_at TEXT NOT NULL
 ) STRICT;
 
-CREATE INDEX idx_rcv_badge_proofs_file_id ON rcv_badge_proofs(file_id);
-
-ALTER TABLE rcv_files ADD COLUMN badge_inv_proof_id INTEGER REFERENCES rcv_badge_proofs ON DELETE SET NULL;
-ALTER TABLE rcv_files ADD COLUMN badge_descr_proof_id INTEGER REFERENCES rcv_badge_proofs ON DELETE SET NULL;
-
-CREATE INDEX idx_rcv_files_badge_inv_proof_id ON rcv_files(badge_inv_proof_id);
-CREATE INDEX idx_rcv_files_badge_descr_proof_id ON rcv_files(badge_descr_proof_id);
+CREATE UNIQUE INDEX idx_file_badge_proofs_file_id_kind ON file_badge_proofs(file_id, proof_kind);
 ```
 
-The six proof columns are the fields of `BadgeProof` — the proof, the presentation header, the issuer key index, and the disclosed type, expiry and extra — with a conversion of its own. The two references follow the pattern of `rcv_files.file_descr_id`, which references `xftp_file_descriptions` the same way (`chat_schema.sql:328`). File rows are removed by cascade from chat items, contacts and groups rather than by one function, and description rows referenced this way are left behind today. The proof row therefore also references the file with `ON DELETE CASCADE`, so it is removed with the file; the two columns on `rcv_files` say which proof is which. Postgres uses `BYTEA`, `BIGINT` and `GENERATED ALWAYS AS IDENTITY`. Register in both `Migrations.hs` lists and in `simplex-chat.cabal`. Update both `chat_schema.sql` files and `chat_query_plans.txt`; `SchemaDump.hs` compares them.
+The six proof columns are the fields of `BadgeProof` — the proof, the presentation header, the issuer key index, and the disclosed type, expiry and extra — with a conversion of its own. A file is one direction, so it has at most two proofs; `proof_kind` is `inv` or `descr`, and the unique index makes each a single upsert. The row references the file with `ON DELETE CASCADE`, so it is removed with the file, which is how file rows are removed today — by cascade from chat items, contacts and groups rather than by one function. Postgres uses `BYTEA`, `BIGINT` and `GENERATED ALWAYS AS IDENTITY`. Register in both `Migrations.hs` lists and in `simplex-chat.cabal`. Update both `chat_schema.sql` files and `chat_query_plans.txt`; `SchemaDump.hs` compares them.
 
 ## 13. Tests
 
