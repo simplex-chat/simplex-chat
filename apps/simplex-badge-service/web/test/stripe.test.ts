@@ -87,26 +87,27 @@ cardTest("stripe: the script URL is Stripe's own origin, which may not be self-h
 // ----------------------------------------------------------------- the mount
 
 interface Trace {
-  calls: string[]; target: unknown; secret: string; key: string; elementArgs: number;
-  /** The appearance theme handed to the SDK, or "" if none was passed. */
+  calls: string[]; target: unknown; secret: string; key: string;
+  /** The element kind passed to elements.create(), or "" if it was not reached. */
+  createArg: string;
+  /** The appearance theme handed to elements(), or "" if none was passed. */
   appearance: string;
-  /** The returnUrl handed to confirm(), or "" if confirm was not reached. */
+  /** The return_url handed to confirmPayment(), or "" if confirm was not reached. */
   returnUrl: string;
   /** How many times the Element was actually torn down. */
   destroys: number;
 }
 
 function fakeStripe(over: {
-  initFails?: boolean; mountThrows?: boolean; destroyThrows?: boolean;
-  confirmResult?: import("../src/stripe.js").ConfirmResult; confirmRejects?: boolean;
-  loadActionsError?: string;
+  elementsFails?: boolean; mountThrows?: boolean; destroyThrows?: boolean;
+  confirmResult?: import("../src/stripe.js").PaymentIntentResult; confirmRejects?: boolean;
 } = {}): { load: import("../src/stripe.js").LoadStripeJs; trace: Trace; loaded: string[] } {
-  const trace: Trace = { calls: [], target: null, secret: "", key: "", elementArgs: -1, appearance: "", returnUrl: "", destroys: 0 };
+  const trace: Trace = { calls: [], target: null, secret: "", key: "", createArg: "", appearance: "", returnUrl: "", destroys: 0 };
   const loaded: string[] = [];
-  const sdk = {
-    createPaymentElement: (...args: unknown[]) => {
-      trace.calls.push("createPaymentElement");
-      trace.elementArgs = args.length;
+  const elements = {
+    create: (kind: "payment") => {
+      trace.calls.push("create");
+      trace.createArg = kind;
       return {
         mount: (target: unknown) => {
           trace.calls.push("mount");
@@ -120,23 +121,6 @@ function fakeStripe(over: {
         },
       };
     },
-    loadActions: async () => {
-      trace.calls.push("loadActions");
-      if (over.loadActionsError !== undefined) {
-        return { type: "error" as const, error: { message: over.loadActionsError } };
-      }
-      return {
-        type: "success" as const,
-        actions: {
-          confirm: async (options: { returnUrl: string }) => {
-            trace.calls.push("confirm");
-            trace.returnUrl = options.returnUrl;
-            if (over.confirmRejects === true) throw new Error("network");
-            return over.confirmResult ?? {};
-          },
-        },
-      };
-    },
   };
   const load: import("../src/stripe.js").LoadStripeJs = async (src) => {
     loaded.push(src);
@@ -144,12 +128,18 @@ function fakeStripe(over: {
       trace.calls.push("Stripe");
       trace.key = key;
       return {
-        initCheckoutElementsSdk: async (options: { clientSecret: string; elementsOptions?: { appearance?: { theme?: string } } }) => {
-          trace.calls.push("initCheckoutElementsSdk");
+        elements: (options: { clientSecret: string; appearance?: { theme?: string } }) => {
+          trace.calls.push("elements");
           trace.secret = options.clientSecret;
-          trace.appearance = options.elementsOptions?.appearance?.theme ?? "";
-          if (over.initFails === true) throw new Error("no such session");
-          return sdk;
+          trace.appearance = options.appearance?.theme ?? "";
+          if (over.elementsFails === true) throw new Error("no such intent");
+          return elements;
+        },
+        confirmPayment: async (options: { confirmParams: { return_url: string } }) => {
+          trace.calls.push("confirmPayment");
+          trace.returnUrl = options.confirmParams.return_url;
+          if (over.confirmRejects === true) throw new Error("network");
+          return over.confirmResult ?? { paymentIntent: { status: "succeeded" } };
         },
       };
     };
@@ -168,14 +158,12 @@ cardTest("stripe: mounting follows Stripe's script rule — init the SDK, create
   const target = { the: "mount point" };
   const result = await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target, appearance: APPEARANCE, returnUrl: RETURN_URL, loadStripe: load });
   assert.equal(result.kind, "mounted");
-  assert.deepEqual(trace.calls, ["Stripe", "initCheckoutElementsSdk", "createPaymentElement", "mount"]);
+  assert.deepEqual(trace.calls, ["Stripe", "elements", "create", "mount"]);
   assert.deepEqual(loaded, [stripe.STRIPE_JS_URL], "loaded once, from js.stripe.com");
   assert.equal(trace.key, PUBLISHABLE_KEY);
   assert.equal(trace.secret, CLIENT_SECRET, "the client_secret, and nothing else about the order");
   assert.equal(trace.target, target, "the Element goes into the node it was handed");
-  // Stripe's script rule: `ui_mode: elements` with no email field, since the fields are the ones we
-  // render, and we render none. Passing options here is how one would creep in.
-  assert.equal(trace.elementArgs, 0, "createPaymentElement takes no field configuration");
+  assert.equal(trace.createArg, "payment", "the Payment Element, with no field configuration of ours");
 });
 
 cardTest("stripe: the appearance follows the site theme, resolving system by the OS", () => {
@@ -188,7 +176,7 @@ cardTest("stripe: the appearance follows the site theme, resolving system by the
 cardTest("stripe: the chosen appearance is handed to the SDK, so the Element matches the page", async () => {
   const { load, trace } = fakeStripe();
   await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target: {}, appearance: { theme: "night" }, returnUrl: RETURN_URL, loadStripe: load });
-  assert.equal(trace.appearance, "night", "the dark theme reached initCheckoutElementsSdk");
+  assert.equal(trace.appearance, "night", "the dark theme reached elements()");
 });
 
 cardTest("stripe: a mounted form can be torn down, once, and a throwing teardown is survivable", async () => {
@@ -222,7 +210,7 @@ cardTest("stripe: a script that does not load is a failure, and nothing is mount
 });
 
 cardTest("stripe: an SDK that refuses the client secret is its own failure", async () => {
-  const { load } = fakeStripe({ initFails: true });
+  const { load } = fakeStripe({ elementsFails: true });
   const result = await stripe.mountCard({ plan: loadPlan(), clientSecret: "cs_gone", target: {}, appearance: APPEARANCE, returnUrl: RETURN_URL, loadStripe: load });
   assert.equal(result.kind, "failed");
   assert.equal(result.kind === "failed" ? result.reason : "", "sdk");
@@ -246,35 +234,39 @@ async function confirmWith(over: Parameters<typeof fakeStripe>[0]): Promise<{
   return { outcome: await mounted.confirm(), trace };
 }
 
-cardTest("stripe: confirming is loadActions() then confirm(), and success is `submitted` only", async () => {
+cardTest("stripe: confirming is confirmPayment(), and a succeeded intent is `submitted` only", async () => {
   const { outcome, trace } = await confirmWith({});
   assert.deepEqual(outcome, { kind: "submitted" });
-  assert.deepEqual(trace.calls.slice(-2), ["loadActions", "confirm"]);
+  assert.equal(trace.calls.at(-1), "confirmPayment");
   assert.equal(trace.returnUrl, RETURN_URL, "confirm is handed the return URL Stripe requires");
   // the watch loop and the give-up rule: success is not proof of payment. Nothing here says paid,
   // carries a settlement time, or could be read as one.
   assert.ok(!("paid" in outcome) && !("settledAt" in outcome));
 });
 
+cardTest("stripe: a processing intent is also `submitted` — the poller settles it", async () => {
+  const { outcome } = await confirmWith({ confirmResult: { paymentIntent: { status: "processing" } } });
+  assert.deepEqual(outcome, { kind: "submitted" });
+});
+
 cardTest("stripe: a refusal is the reason Stripe gave, and the form stays", async () => {
-  const { outcome } = await confirmWith({ confirmResult: { type: "error", error: { message: "Your card was declined." } } });
+  const { outcome } = await confirmWith({ confirmResult: { error: { message: "Your card was declined." } } });
   assert.deepEqual(outcome, { kind: "error", message: "Your card was declined." });
 });
 
 cardTest("stripe: an error with no message of its own still says something usable", async () => {
-  const { outcome } = await confirmWith({ confirmResult: { type: "error" } });
+  const { outcome } = await confirmWith({ confirmResult: { error: {} } });
+  assert.deepEqual(outcome, { kind: "error", message: stripe.CONFIRM_FAILED });
+});
+
+cardTest("stripe: an intent left in a non-terminal status is an error, not a submission", async () => {
+  const { outcome } = await confirmWith({ confirmResult: { paymentIntent: { status: "requires_payment_method" } } });
   assert.deepEqual(outcome, { kind: "error", message: stripe.CONFIRM_FAILED });
 });
 
 cardTest("stripe: a confirm that THREW is an error, and never a submission", async () => {
   const { outcome } = await confirmWith({ confirmRejects: true });
   assert.equal(outcome.kind, "error", "a rejected confirm must not move the page to the confirming screen");
-});
-
-cardTest("stripe: a session that cannot load its actions surfaces that reason, not the generic", async () => {
-  const { outcome, trace } = await confirmWith({ loadActionsError: "A valid email is required." });
-  assert.deepEqual(outcome, { kind: "error", message: "A valid email is required." });
-  assert.ok(!trace.calls.includes("confirm"), "a failed loadActions never reaches confirm");
 });
 
 // ------------------------------------------------------------- the screens
@@ -458,7 +450,7 @@ cardTest("main: the stand-in's confirm lands on the confirming screen, WHICH WAI
   const stored = JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, string>>;
   assert.ok(!screen().serialize().includes(stored[0]!.code!), "the store rules: no code while the order is unpaid");
   assert.equal(stored[0]!.status, "open", "and the order is still open");
-  // the watch loop as amended: a successful actions.confirm() writes `submitted` onto
+  // the watch loop as amended: a successful confirmPayment() writes `submitted` onto
   // this order, where the next checkout's `clearSession` cannot reach it.
   assert.equal(stored.find((o) => o.orderId === "inv_card_1")!.submitted, true);
   assert.equal(storage.getItem("sb.session.v1"), null,
@@ -581,10 +573,11 @@ function holdNextConfirm(): void {
 (globalThis as unknown as { window: Record<string, unknown> }).window.Stripe = (key: string) => {
   assert.equal(key, PUBLISHABLE_KEY, "the page's own configured key, and no other");
   return {
-    initCheckoutElementsSdk: async (options: { clientSecret: string }) => {
+    elements: (options: { clientSecret: string }) => {
       assert.equal(options.clientSecret, CLIENT_SECRET);
       return {
-        createPaymentElement: () => {
+        create: (kind: string) => {
+          assert.equal(kind, "payment", "the Payment Element, not a bare card field");
           const element = { node: null as unknown, destroyed: false };
           elements.push(element);
           return {
@@ -592,18 +585,13 @@ function holdNextConfirm(): void {
             destroy: () => { element.destroyed = true; },
           };
         },
-        loadActions: async () => ({
-          type: "success" as const,
-          actions: {
-            confirm: async (options: { returnUrl: string }) => {
-              confirms.push(1);
-              lastReturnUrl = options.returnUrl;
-              if (heldConfirm !== null) await heldConfirm.promise;
-              return {};
-            },
-          },
-        }),
       };
+    },
+    confirmPayment: async (options: { confirmParams: { return_url: string } }) => {
+      confirms.push(1);
+      lastReturnUrl = options.confirmParams.return_url;
+      if (heldConfirm !== null) await heldConfirm.promise;
+      return { paymentIntent: { status: "succeeded" } };
     },
   };
 };

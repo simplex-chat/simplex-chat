@@ -62,26 +62,15 @@ export interface StripeError {
   message?: string;
 }
 
-export interface ConfirmResult {
-  type?: string;
+export interface StripeElements {
+  create(kind: "payment"): PaymentElement;
+}
+
+// What confirmPayment resolves with when it does not redirect. A card never redirects (see confirm),
+// so this is the normal result: the PaymentIntent with its status, or an error.
+export interface PaymentIntentResult {
+  paymentIntent?: { status?: string };
   error?: StripeError;
-}
-
-export interface CheckoutActions {
-  // Stripe requires a return URL even for a card: it is where a 3DS full-page redirect lands. It
-  // must carry no order id, since that is a bearer capability this integration never sends Stripe.
-  confirm(options: { returnUrl: string }): Promise<ConfirmResult>;
-}
-
-// loadActions resolves to this discriminated result, not a bare object: a session that cannot be
-// actioned (a missing required field, say) resolves with `type: "error"` rather than throwing.
-export type LoadActionsResult =
-  | { type: "success"; actions: CheckoutActions }
-  | { type: "error"; error?: StripeError };
-
-export interface CheckoutSdk {
-  createPaymentElement(): PaymentElement;
-  loadActions(): Promise<LoadActionsResult>;
 }
 
 // Stripe.js ships a few built-in appearances; `stripe` is its light default and `night` its dark.
@@ -90,7 +79,12 @@ export interface Appearance {
 }
 
 export interface StripeInstance {
-  initCheckoutElementsSdk(options: { clientSecret: string; elementsOptions?: { appearance?: Appearance } }): Promise<CheckoutSdk>;
+  elements(options: { clientSecret: string; appearance?: Appearance }): StripeElements;
+  confirmPayment(options: {
+    elements: StripeElements;
+    confirmParams: { return_url: string };
+    redirect: "if_required";
+  }): Promise<PaymentIntentResult>;
 }
 
 // The Payment Element does not read the page's theme, so map the site's setting to a built-in
@@ -160,16 +154,14 @@ export async function mountCard(req: MountRequest): Promise<MountResult> {
     return { kind: "failed", reason: "script" };
   }
   try {
-    const sdk = await stripe(req.plan.publishableKey).initCheckoutElementsSdk({
-      clientSecret: req.clientSecret,
-      elementsOptions: { appearance: req.appearance },
-    });
-    const element = sdk.createPaymentElement();
+    const sdk = stripe(req.plan.publishableKey);
+    const elements = sdk.elements({ clientSecret: req.clientSecret, appearance: req.appearance });
+    const element = elements.create("payment");
     element.mount(req.target);
     let destroyed = false;
     return {
       kind: "mounted",
-      confirm: () => confirmWith(sdk, req.returnUrl),
+      confirm: () => confirmWith(sdk, elements, req.returnUrl),
       destroy: () => {
         if (destroyed) return;
         destroyed = true;
@@ -181,22 +173,16 @@ export async function mountCard(req: MountRequest): Promise<MountResult> {
   }
 }
 
-// A confirm that threw did not succeed. Treating it as success would move the page to the confirming screen
-// for a payment nobody attempted.
-async function confirmWith(sdk: CheckoutSdk, returnUrl: string): Promise<ConfirmOutcome> {
+// A confirm that threw did not succeed. Treating it as success would move the page to the confirming
+// screen for a payment nobody attempted. redirect:"if_required" keeps a card in-frame (a card is not
+// a redirect-based method), resolving with the PaymentIntent; a declined card carries its reason.
+async function confirmWith(sdk: StripeInstance, elements: StripeElements, returnUrl: string): Promise<ConfirmOutcome> {
   try {
-    const loaded = await sdk.loadActions();
-    // The real reason a session cannot be confirmed (a required field, a declined card) is on
-    // `error.message`; surface it rather than the generic, and keep the generic only for a throw
-    // or an error with nothing to say.
-    if (loaded.type === "error") {
-      return { kind: "error", message: loaded.error?.message ?? CONFIRM_FAILED };
-    }
-    const result = await loaded.actions.confirm({ returnUrl });
-    if (result?.type === "error" || result?.error?.message !== undefined) {
-      return { kind: "error", message: result?.error?.message ?? CONFIRM_FAILED };
-    }
-    return { kind: "submitted" };
+    const r = await sdk.confirmPayment({ elements, confirmParams: { return_url: returnUrl }, redirect: "if_required" });
+    if (r.error) return { kind: "error", message: r.error.message ?? CONFIRM_FAILED };
+    const status = r.paymentIntent?.status;
+    if (status === "succeeded" || status === "processing") return { kind: "submitted" };
+    return { kind: "error", message: CONFIRM_FAILED };
   } catch {
     return { kind: "error", message: CONFIRM_FAILED };
   }
