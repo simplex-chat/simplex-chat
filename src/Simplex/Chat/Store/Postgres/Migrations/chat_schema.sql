@@ -1533,6 +1533,26 @@ ALTER TABLE test_chat_schema.users ALTER COLUMN user_id ADD GENERATED ALWAYS AS 
 
 
 
+CREATE TABLE test_chat_schema.wallet_seeds (
+    wallet_seed_id bigint NOT NULL,
+    entropy bytea NOT NULL,
+    next_name_index bigint DEFAULT 1 NOT NULL,
+    single_seed smallint DEFAULT 1 NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.wallet_seeds ALTER COLUMN wallet_seed_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.wallet_seeds_wallet_seed_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
 CREATE TABLE test_chat_schema.xftp_file_descriptions (
     file_descr_id bigint NOT NULL,
     user_id bigint NOT NULL,
@@ -1888,6 +1908,11 @@ ALTER TABLE ONLY test_chat_schema.users
 
 ALTER TABLE ONLY test_chat_schema.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (user_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.wallet_seeds
+    ADD CONSTRAINT wallet_seeds_pkey PRIMARY KEY (wallet_seed_id);
 
 
 
@@ -2637,6 +2662,10 @@ CREATE UNIQUE INDEX idx_snd_files_last_inline_msg_delivery_id ON test_chat_schem
 
 
 CREATE UNIQUE INDEX idx_user_contact_links_group_id ON test_chat_schema.user_contact_links USING btree (group_id);
+
+
+
+CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON test_chat_schema.wallet_seeds USING btree (single_seed);
 
 
 

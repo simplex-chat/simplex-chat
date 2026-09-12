@@ -58,6 +58,9 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
+import Simplex.Chat.Store.Wallets (createSeed, deleteSeed, getDeviceSeed, getNextNameIndex)
+import Simplex.Chat.Wallet (NameIndex, WalletSeed (..), deriveNameKey, importRecoveryKey, nameKeySecret, newSeed, recoveryKeyPhrase, renderNameKeyPath, seedMaster)
+import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -104,6 +107,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BIP39 (MnemonicStrength (..))
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -1488,6 +1492,31 @@ processChatCommand cxt nm = \case
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
+  APIWallet -> withUser $ \user -> do
+    withFastStore' getDeviceSeed >>= \case
+      Nothing -> pure $ CRWallet user False []
+      Just seed -> do
+        next <- withFastStore' $ \db -> getNextNameIndex db (wsId seed)
+        CRWallet user True <$> nameKeyRows seed next
+  APIWalletCreate phrase_ -> withUser $ \_ -> do
+    entropy <- case phrase_ of
+      Nothing -> asks random >>= atomically . newSeed MS256
+      Just phrase -> either (const $ throwCmdError "bad recovery phrase") pure $ importRecoveryKey (encodeUtf8 phrase)
+    created <- withFastStore' $ \db -> createSeed db entropy
+    unless created $ throwCmdError "this device already has a wallet key"
+    processChatCommand cxt nm APIWallet
+  APIWalletExportSeedMnemonic -> withUser $ \user -> do
+    seed <- deviceSeed
+    phrase <- either throwCmdError pure $ recoveryKeyPhrase seed
+    pure $ CRWalletSeedMnemonic user (safeDecodeUtf8 phrase)
+  APIWalletExportDerivedSecret nameIdx -> withUser $ \user -> do
+    seed <- deviceSeed
+    k <- either throwCmdError pure $ seedMaster seed >>= \m -> deriveNameKey m nameIdx
+    pure $ CRWalletDerivedSecret user (renderNameKeyPath nameIdx) (decodeLatin1 . strEncode $ addressFromPrivateKey k) (safeDecodeUtf8 $ nameKeySecret k)
+  APIWalletDelete -> withUser $ \_ -> do
+    seed <- deviceSeed
+    withFastStore' $ \db -> deleteSeed db (wsId seed)
+    processChatCommand cxt nm APIWallet
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db cxt user contactId
@@ -5430,6 +5459,18 @@ withExpirationDate globalTTL chatItemTTL action = do
   let ttl = fromMaybe globalTTL chatItemTTL
   when (ttl > 0) $ action $ addUTCTime (-1 * fromIntegral ttl) currentTs
 
+walletNamesShown :: Int
+walletNamesShown = 2
+
+deviceSeed :: CM WalletSeed
+deviceSeed = withFastStore' getDeviceSeed >>= maybe (throwCmdError "no wallet key on this device") pure
+
+nameKeyRows :: WalletSeed -> NameIndex -> CM [(Text, Text)]
+nameKeyRows seed next = either throwCmdError pure $ do
+  master <- seedMaster seed
+  forM (take walletNamesShown [next ..]) $ \nm ->
+    (renderNameKeyPath nm,) . decodeLatin1 . strEncode . addressFromPrivateKey <$> deriveNameKey master nm
+
 chatCommandP :: Parser ChatCommand
 chatCommandP =
   choice
@@ -5548,6 +5589,12 @@ chatCommandP =
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
+      "/_wallet create new" $> APIWalletCreate Nothing,
+      "/_wallet create mnemonic=" *> (APIWalletCreate . Just <$> textP),
+      "/_wallet export " *> (APIWalletExportDerivedSecret <$> keyIndexP),
+      "/_wallet export" $> APIWalletExportSeedMnemonic,
+      "/_wallet delete" $> APIWalletDelete,
+      "/_wallet" $> APIWallet,
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),
@@ -6088,6 +6135,12 @@ chatCommandP =
     quotedP = safeDecodeUtf8 <$> (A.char '"' *> A.takeTill (== '"') <* A.char '"')
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
+    -- BIP-32 hardens at 2^31, and Word32 would wrap. Digits are counted before
+    -- they are read, as reading a very long number is not free.
+    keyIndexP = do
+      ds <- A.takeWhile1 isDigit
+      let i = read (B.unpack ds) :: Integer
+      if B.length ds <= 10 && i < 0x80000000 then pure (fromIntegral i) else fail "key index too large"
 
 displayNameP :: Parser Text
 displayNameP = safeDecodeUtf8 <$> displayNameP_

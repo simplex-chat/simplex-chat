@@ -852,6 +852,15 @@ CREATE TABLE rcv_roster_transfers(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 ) STRICT;
+CREATE TABLE wallet_seeds(
+  wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  entropy BLOB NOT NULL,
+  -- known issue: after an import this starts at 1, so it can hand out a name
+  -- key at a path that already owns a name
+  next_name_index INTEGER NOT NULL DEFAULT 1,
+  -- one seed per device for now
+  single_seed INTEGER NOT NULL DEFAULT 1
+) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -1386,6 +1395,7 @@ CREATE INDEX idx_files_roster_transfer_id ON files(roster_transfer_id);
 CREATE INDEX idx_chat_items_item_signed_by_group_member_id ON chat_items(
   item_signed_by_group_member_id
 );
+CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON wallet_seeds(single_seed);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW
