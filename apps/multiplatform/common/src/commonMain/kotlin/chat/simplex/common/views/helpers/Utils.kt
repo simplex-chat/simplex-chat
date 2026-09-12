@@ -480,24 +480,43 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   return fileCount to bytes
 }
 
-fun requiredBadgeName(fileSize: Long): String =
-  generalGetString(if (fileSize <= MAX_FILE_SIZE_XFTP_SUPPORTER) MR.strings.supporter_badge else MR.strings.legend_badge)
+fun badgeMaxFileSize(badge: LocalBadge): Long =
+  if (badge.badge.badgeType == BadgeType.Legend) MAX_FILE_SIZE_XFTP_LEGEND else MAX_FILE_SIZE_XFTP_SUPPORTER
 
-fun largeFileMessage(fileSize: Long, maxSize: Long): String =
-  if (fileSize > MAX_FILE_SIZE_XFTP_LEGEND)
+// a badge raises the limit at send until one day past its expiry, as the core applies it
+fun badgeActiveForSend(badge: LocalBadge): Boolean =
+  badge.status == BadgeStatus.Active && badge.badge.badgeExpiry + BADGE_SND_GRACE_INTERVAL >= Clock.System.now()
+
+// in incognito chats and above the largest badge's limit no badge applies, so badgeIssue is not used
+fun largeFileMessage(fileSize: Long, incognito: Boolean = false, badgeIssue: String = ""): String =
+  if (incognito) {
+    String.format(generalGetString(MR.strings.large_file_incognito), formatBytes(MAX_FILE_SIZE_XFTP))
+  } else if (fileSize > MAX_FILE_SIZE_XFTP_LEGEND) {
     String.format(generalGetString(MR.strings.max_file_size_with_badge), formatBytes(MAX_FILE_SIZE_XFTP_LEGEND), generalGetString(MR.strings.legend_badge))
-  else
-    String.format(generalGetString(MR.strings.large_file_requires_badge), formatBytes(maxSize), requiredBadgeName(fileSize))
+  } else {
+    val supporter = fileSize <= MAX_FILE_SIZE_XFTP_SUPPORTER
+    val message = String.format(
+      generalGetString(MR.strings.large_file_requires_badge),
+      generalGetString(if (supporter) MR.strings.supporter_badge else MR.strings.legend_badge),
+      formatBytes(if (supporter) MAX_FILE_SIZE_XFTP else MAX_FILE_SIZE_XFTP_SUPPORTER)
+    )
+    if (badgeIssue.isEmpty()) message else message + " " + badgeIssue
+  }
 
-// the send limit: the user's own badge counts as active for one day past expiry, as the core applies it
+// the badge lapsed, and while active it would have allowed this file
+fun expiredBadgeReason(fileSize: Long, senderProfile: LocalProfile?): String {
+  val badge = senderProfile?.localBadge
+  return if (badge != null && !badgeActiveForSend(badge) && badgeMaxFileSize(badge) >= fileSize) {
+    generalGetString(MR.strings.your_badge_expired)
+  } else ""
+}
+
 fun getMaxFileSize(fileProtocol: FileProtocol, senderProfile: LocalProfile? = null): Long = when (fileProtocol) {
   FileProtocol.SMP -> MAX_FILE_SIZE_SMP
   FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
   FileProtocol.XFTP -> {
     val badge = senderProfile?.localBadge
-    if (badge == null || badge.status != BadgeStatus.Active || badge.badge.badgeExpiry + BADGE_SND_GRACE_INTERVAL < Clock.System.now()) MAX_FILE_SIZE_XFTP
-    else if (badge.badge.badgeType == BadgeType.Legend) MAX_FILE_SIZE_XFTP_LEGEND
-    else MAX_FILE_SIZE_XFTP_SUPPORTER
+    if (badge != null && badgeActiveForSend(badge)) badgeMaxFileSize(badge) else MAX_FILE_SIZE_XFTP
   }
 }
 

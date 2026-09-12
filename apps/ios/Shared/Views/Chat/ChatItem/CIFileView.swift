@@ -239,18 +239,15 @@ func fileSizeValid(_ file: CIFile?) -> Bool {
 }
 
 func showProhibitedFileAlert(_ file: CIFile, _ prohibited: FileProhibited) {
-    // above the largest badge's limit the contact's badge is irrelevant
-    let badgeIssue = if file.fileSize > MAX_FILE_SIZE_XFTP_LEGEND { "" } else {
-        switch prohibited.badgeStatus {
-        case .none, .some(.active): ""
-        case .some(.expired), .some(.expiredOld): NSLocalizedString("Contact's badge expired.", comment: "file alert")
-        case .some(.failed): NSLocalizedString("Contact's badge verification failed.", comment: "file alert")
-        case .some(.unknownKey): NSLocalizedString("No key to verify contact's badge.", comment: "file alert")
-        }
+    let badgeIssue = switch prohibited.badgeStatus {
+    case .none, .some(.active): ""
+    case .some(.expired), .some(.expiredOld): NSLocalizedString("Contact's badge expired.", comment: "file alert")
+    case .some(.failed): NSLocalizedString("Contact's badge verification failed.", comment: "file alert")
+    case .some(.unknownKey): NSLocalizedString("No key to verify contact's badge.", comment: "file alert")
     }
     showAlert(
         NSLocalizedString("Large file!", comment: "file alert title"),
-        message: largeFileMessage(file.fileSize, prohibited.maxSize) + " " + badgeIssue
+        message: largeFileMessage(file.fileSize, badgeIssue: badgeIssue)
     )
 }
 

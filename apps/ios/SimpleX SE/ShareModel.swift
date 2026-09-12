@@ -462,7 +462,7 @@ fileprivate func getSharedContent(_ ip: NSItemProvider, _ senderProfile: LocalPr
                     return .failure(
                         ErrorAlert(
                             title: "Large file!",
-                            message: LocalizedStringKey(largeFileMessage(size, maxSize))
+                            message: LocalizedStringKey(largeFileMessage(size, badgeIssue: expiredBadgeReason(size, senderProfile)))
                         )
                     )
                 }

@@ -240,8 +240,7 @@ fun CIFileView(
 fun fileSizeValid(file: CIFile): Boolean = file.fileProhibited == null
 
 fun showProhibitedFileAlert(file: CIFile, prohibited: FileProhibited) {
-  // above the largest badge's limit the contact's badge is irrelevant
-  val badgeIssue = if (file.fileSize > MAX_FILE_SIZE_XFTP_LEGEND) "" else when (prohibited.badgeStatus) {
+  val badgeIssue = when (prohibited.badgeStatus) {
     null, BadgeStatus.Active -> ""
     BadgeStatus.Expired, BadgeStatus.ExpiredOld -> generalGetString(MR.strings.badge_expired)
     BadgeStatus.Failed -> generalGetString(MR.strings.badge_verification_failed)
@@ -249,7 +248,7 @@ fun showProhibitedFileAlert(file: CIFile, prohibited: FileProhibited) {
   }
   AlertManager.shared.showAlertMsg(
     generalGetString(MR.strings.large_file),
-    largeFileMessage(file.fileSize, prohibited.maxSize) + " " + badgeIssue
+    largeFileMessage(file.fileSize, badgeIssue = badgeIssue)
   )
 }
 
