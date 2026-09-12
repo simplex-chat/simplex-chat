@@ -655,10 +655,10 @@ data ChatCommand
   | DeleteRemoteHost RemoteHostId -- Unregister remote host and remove its data
   | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
   | GetRemoteFile {remoteHostId :: RemoteHostId, file :: RemoteFile}
-  | ConnectRemoteCtrl RCSignedInvitation -- Connect new or existing controller via OOB data
+  | ConnectRemoteCtrl {inv :: RCSignedInvitation} -- Connect new or existing controller via OOB data
   | FindKnownRemoteCtrl -- Start listening for announcements from all existing controllers
   | ConfirmRemoteCtrl RemoteCtrlId -- Confirm the connection with found controller
-  | VerifyRemoteCtrlSession Text -- Verify remote controller session
+  | VerifyRemoteCtrlSession {sessionCode :: Text} -- Verify remote controller session
   | ListRemoteCtrls
   | StopRemoteCtrl -- Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- Remove all local data associated with a remote controller session

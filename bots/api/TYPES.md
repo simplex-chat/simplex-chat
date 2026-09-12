@@ -10,6 +10,7 @@ This file is generated automatically.
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
 - [AgentServiceError](#agentserviceerror)
+- [AppVersionRange](#appversionrange)
 - [AutoAccept](#autoaccept)
 - [BadgeInfo](#badgeinfo)
 - [BadgeProof](#badgeproof)
@@ -77,6 +78,7 @@ This file is generated automatically.
 - [CreatedConnLink](#createdconnlink)
 - [CryptoFile](#cryptofile)
 - [CryptoFileArgs](#cryptofileargs)
+- [CtrlAppInfo](#ctrlappinfo)
 - [DroppedMsg](#droppedmsg)
 - [E2EInfo](#e2einfo)
 - [ErrorType](#errortype)
@@ -170,8 +172,12 @@ This file is generated automatically.
 - [RcvGroupEvent](#rcvgroupevent)
 - [RcvMsgError](#rcvmsgerror)
 - [RelayCapabilities](#relaycapabilities)
+- [RelayConnectionResult](#relayconnectionresult)
 - [RelayProfile](#relayprofile)
 - [RelayStatus](#relaystatus)
+- [RemoteCtrlInfo](#remotectrlinfo)
+- [RemoteCtrlSessionState](#remotectrlsessionstate)
+- [RemoteCtrlStopReason](#remotectrlstopreason)
 - [ReportReason](#reportreason)
 - [RoleGroupPreference](#rolegrouppreference)
 - [SMPAgentError](#smpagenterror)
@@ -384,6 +390,17 @@ NotDRAddress:
 
 BadSignature:
 - type: "badSignature"
+
+
+---
+
+## AppVersionRange
+
+Remote controller app version range (min and max as version strings).
+
+**Record type**:
+- minVersion: string
+- maxVersion: string
 
 
 ---
@@ -1965,6 +1982,18 @@ connFullLink + ((' ' + connShortLink) if connShortLink is not None else '') # Py
 **Record type**:
 - fileKey: string
 - fileNonce: string
+
+
+---
+
+## CtrlAppInfo
+
+Remote controller application info.
+
+**Record type**:
+- appVersionRange: [AppVersionRange](#appversionrange)
+- deviceName: string
+- compression: bool
 
 
 ---
@@ -3560,6 +3589,15 @@ ParseError:
 
 ---
 
+## RelayConnectionResult
+
+**Record type**:
+- relayMember: [GroupMember](#groupmember)
+- relayError: [ChatError](#chaterror)?
+
+
+---
+
 ## RelayProfile
 
 **Record type**:
@@ -3581,6 +3619,62 @@ ParseError:
 - "active"
 - "inactive"
 - "rejected"
+
+
+---
+
+## RemoteCtrlInfo
+
+**Record type**:
+- remoteCtrlId: int64
+- ctrlDeviceName: string
+- sessionState: [RemoteCtrlSessionState](#remotectrlsessionstate)?
+
+
+---
+
+## RemoteCtrlSessionState
+
+**Discriminated union type**:
+
+Starting:
+- type: "starting"
+
+Searching:
+- type: "searching"
+
+Connecting:
+- type: "connecting"
+
+PendingConfirmation:
+- type: "pendingConfirmation"
+- sessionCode: string
+
+Connected:
+- type: "connected"
+- sessionCode: string
+
+
+---
+
+## RemoteCtrlStopReason
+
+**Discriminated union type**:
+
+DiscoveryFailed:
+- type: "discoveryFailed"
+- chatError: [ChatError](#chaterror)
+
+ConnectionFailed:
+- type: "connectionFailed"
+- chatError: [ChatError](#chaterror)
+
+SetupFailed:
+- type: "setupFailed"
+- chatError: [ChatError](#chaterror)
+
+Disconnected:
+- type: "disconnected"
 
 
 ---
