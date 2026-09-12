@@ -803,11 +803,11 @@ APIStopChat_Response = CR.ChatStopped
 # Connect to a remote controller using an OOB invitation link.
 # Network usage: interactive.
 class ConnectRemoteCtrl(TypedDict):
-    inv: str
+    remoteInvitation: str
 
 
 def ConnectRemoteCtrl_cmd_string(self: ConnectRemoteCtrl) -> str:
-    return '/crc ' + self['inv']
+    return '/crc ' + self['remoteInvitation']
 
 ConnectRemoteCtrl_Response = CR.RemoteCtrlConnecting | CR.ChatCmdError
 

@@ -912,14 +912,14 @@ export namespace APIStopChat {
 // Connect to a remote controller using an OOB invitation link.
 // Network usage: interactive.
 export interface ConnectRemoteCtrl {
-  inv: string
+  remoteInvitation: string
 }
 
 export namespace ConnectRemoteCtrl {
   export type Response = CR.RemoteCtrlConnecting | CR.ChatCmdError
 
   export function cmdString(self: ConnectRemoteCtrl): string {
-    return '/crc ' + self.inv
+    return '/crc ' + self.remoteInvitation
   }
 }
 

@@ -205,7 +205,7 @@ chatCommandsDocsData =
     ),
     ( "Remote control commands",
       "Allows a bot to accept an incoming remote control session from a SimpleX Desktop client, giving the desktop live access to the bot's SimpleX instance.",
-      [ ("ConnectRemoteCtrl", [], "Connect to a remote controller using an OOB invitation link.", ["CRRemoteCtrlConnecting", "CRChatCmdError"], [], Just UNInteractive, "/crc " <> Param "inv"),
+      [ ("ConnectRemoteCtrl", [], "Connect to a remote controller using an OOB invitation link.", ["CRRemoteCtrlConnecting", "CRChatCmdError"], [], Just UNInteractive, "/crc " <> Param "remoteInvitation"),
         ("VerifyRemoteCtrlSession", [], "Verify the remote controller session code to complete the connection.", ["CRRemoteCtrlConnected", "CRChatCmdError"], [], Nothing, "/verify remote ctrl " <> Param "sessionCode")
       ]
     )

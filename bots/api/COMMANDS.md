@@ -2419,20 +2419,20 @@ Connect to a remote controller using an OOB invitation link.
 *Network usage*: interactive.
 
 **Parameters**:
-- inv: string
+- remoteInvitation: string
 
 **Syntax**:
 
 ```
-/crc <inv>
+/crc <remoteInvitation>
 ```
 
 ```javascript
-'/crc ' + inv // JavaScript
+'/crc ' + remoteInvitation // JavaScript
 ```
 
 ```python
-'/crc ' + inv # Python
+'/crc ' + remoteInvitation # Python
 ```
 
 **Responses**:
