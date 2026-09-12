@@ -70,6 +70,8 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 | `--complete-hours` | both | no | `3` | auto-complete chats after N hours idle (`0` disables) |
 | `--card-flush-seconds` | both | no | `300` | debounce card state writes |
 | `--context-file` | both | required with `GROK_API_KEY` | | text file with Grok system context |
+| `--dry-run` | both | no | | check config, database and state, then exit |
+| `--allow-migrations` | both | no | | with `--dry-run`: apply pending migrations instead of reporting them |
 | `-h` / `--help` | both | no | | show usage and exit |
 
 ## Broadcasts
@@ -112,6 +114,32 @@ SIMPLEX_LIBS_DIR=$libs npm install --no-save \
 ```
 
 `SIMPLEX_LIBS_DIR` is needed in the last step too: npm re-runs the linked library's preinstall, which downloads the released libs without it. `rm -rf node_modules && npm ci` reverts.
+
+## Dry run
+
+`--dry-run` opens the database, checks what the next start would do, and exits — it never calls `startChat`, so nothing reaches the network, and migrations are reported rather than applied.
+
+```bash
+npm start -- --dry-run --team-group "Support Team" --pg-conn "postgres://user:pass@host/db" \
+             --broadcasters 3:alice --context-file ./data/grok-context.yaml
+```
+
+```
+ok    database postgres opened, schema up to date
+ok    active user: 1:Ask SimpleX Team
+ok    team group 1: Support Team
+FAIL  broadcaster 3:bob has display name "alice", the bot would exit
+```
+
+A pending migration stops it, since the checks need an open database and opening one can only upgrade or refuse:
+
+```
+FAIL  database: 21 migration(s) pending, a real start would apply them: 20260507_relay_inactive_at, …
+```
+
+`--allow-migrations` lets it apply them first (`applied 21 migration(s): …`) and then run the remaining checks — which makes it a migration rehearsal, so point it at a restored copy unless you mean to migrate for real. The bot must be stopped either way; migrating under a running instance is what breaks things, and the upgrade is one-way.
+
+Exit code is 0 when every line is `ok`, 1 otherwise. It verifies the database connection, that no migration is pending, that the persisted team group and Grok user still exist (so neither would be recreated), that every `--broadcasters` / `--auto-add-team-members` id resolves to a contact with the expected display name, and that `--context-file` parses.
 
 ## Troubleshooting
 

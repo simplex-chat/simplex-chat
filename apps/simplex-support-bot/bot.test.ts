@@ -8,6 +8,7 @@ import {CardManager} from "./src/cards.js"
 import {parseConfig} from "./src/config.js"
 import {GrokApiClient} from "./src/grok.js"
 import {loadGrokContext} from "./src/context.js"
+import {dryRun} from "./src/dryRun.js"
 import {welcomeMessage, queueMessage, grokActivatedMessage, teamLockedMessage, teamAlreadyInvitedMessage} from "./src/messages.js"
 
 // Silence console output during tests
@@ -2546,6 +2547,15 @@ describe("parseConfig Validation", () => {
     expect(cfg.db).toEqual({type: "sqlite", filePrefix: "./data/simplex", encryptionKey: "secret"})
   })
 
+  test("--dry-run and --allow-migrations default to false and parse when given", () => {
+    const base = ["--team-group", "Team"]
+    expect(parseConfig(base).dryRun).toBe(false)
+    expect(parseConfig(base).allowMigrations).toBe(false)
+    const cfg = parseConfig([...base, "--dry-run", "--allow-migrations"])
+    expect(cfg.dryRun).toBe(true)
+    expect(cfg.allowMigrations).toBe(true)
+  })
+
   test("--broadcasters → parsed as ID:name pairs, empty when absent", () => {
     expect(parseConfig(baseArgs).broadcasters).toEqual([])
     const cfg = parseConfig([...baseArgs, "--broadcasters", "3:Carol,4:Dave"])
@@ -2799,5 +2809,85 @@ describe("loadGrokContext", () => {
 
   test("missing file throws ENOENT", () => {
     expect(() => loadGrokContext(join(dir, "does-not-exist.yaml"))).toThrow()
+  })
+})
+
+describe("Dry Run", () => {
+  const directChat = (contactId: number, displayName: string) => ({
+    chatInfo: {type: "direct", contact: {contactId, profile: {displayName}}},
+  })
+  const groupChat = (groupId: number, displayName: string) => ({
+    chatInfo: {type: "group", groupInfo: {groupId, groupProfile: {displayName}}},
+  })
+
+  function mkChat(chats: unknown[], users: number[] = [1]) {
+    return {
+      apiGetActiveUser: async () => ({userId: 1, profile: {displayName: "Ask SimpleX Team"}}),
+      apiListUsers: async () => users.map(userId => ({user: {userId, profile: {displayName: `user${userId}`}}})),
+      apiGetChats: async (_userId: number, _pagination: unknown, query?: {type: string; search?: string}) =>
+        query?.type === "search"
+          ? chats.filter((c: any) =>
+              (c.chatInfo.contact?.profile.displayName ?? c.chatInfo.groupInfo?.groupProfile.displayName) === query.search)
+          : chats,
+    } as any
+  }
+
+  const config = (over: object = {}) =>
+    ({
+      teamGroup: {id: 0, name: "Support Team"},
+      teamMembers: [],
+      broadcasters: [],
+      contextFile: null,
+      ...over,
+    }) as any
+
+  test("all ids resolve → passes", async () => {
+    const chat = mkChat([groupChat(1, "Support Team"), directChat(3, "alice")])
+    const ok = await dryRun(chat, config({broadcasters: [{id: 3, name: "alice"}]}), {teamGroupId: 1})
+    expect(ok).toBe(true)
+  })
+
+  test("missing team group → reports it would be created, still passes", async () => {
+    const chat = mkChat([])
+    expect(await dryRun(chat, config(), {})).toBe(true)
+  })
+
+  test("team group id not in database → fails", async () => {
+    const chat = mkChat([groupChat(7, "Support Team")])
+    expect(await dryRun(chat, config(), {teamGroupId: 1})).toBe(false)
+  })
+
+  test("broadcaster id missing → fails", async () => {
+    const chat = mkChat([groupChat(1, "Support Team")])
+    expect(await dryRun(chat, config({broadcasters: [{id: 3, name: "alice"}]}), {teamGroupId: 1})).toBe(false)
+  })
+
+  test("broadcaster name mismatch → fails even though the id exists", async () => {
+    const chat = mkChat([groupChat(1, "Support Team"), directChat(3, "alice")])
+    expect(await dryRun(chat, config({broadcasters: [{id: 3, name: "bob"}]}), {teamGroupId: 1})).toBe(false)
+  })
+
+  test("persisted Grok user missing → fails", async () => {
+    const chat = mkChat([groupChat(1, "Support Team")], [1])
+    expect(await dryRun(chat, config(), {teamGroupId: 1, grokUserId: 2})).toBe(false)
+  })
+
+  test("persisted Grok user present → passes", async () => {
+    const chat = mkChat([groupChat(1, "Support Team")], [1, 2])
+    expect(await dryRun(chat, config(), {teamGroupId: 1, grokUserId: 2})).toBe(true)
+  })
+
+  test("malformed context file → fails", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "support-bot-dryrun-"))
+    const path = join(dir, "ctx.yaml")
+    writeFileSync(path, "- role: user\n  message: [unclosed\n")
+    const chat = mkChat([groupChat(1, "Support Team")])
+    expect(await dryRun(chat, config({contextFile: path}), {teamGroupId: 1})).toBe(false)
+  })
+
+  test("missing context file → warning only, passes", async () => {
+    const chat = mkChat([groupChat(1, "Support Team")])
+    const cfg = config({contextFile: join(tmpdir(), "no-such-context.txt")})
+    expect(await dryRun(chat, cfg, {teamGroupId: 1})).toBe(true)
   })
 })

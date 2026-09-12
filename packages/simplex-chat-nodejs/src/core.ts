@@ -168,7 +168,7 @@ export namespace MigrationError {
 
   export interface MEUpgrade extends Interface {
     type: "upgrade"
-    upMigrations: UpMigration
+    upMigrations: UpMigration[]
   }
 
   export interface MEDowngrade extends Interface {
@@ -200,7 +200,7 @@ export namespace MTRError {
 
   export interface MTRENoDown extends Interface {
     type: "noDown"
-    upMigrations: UpMigration
+    dbMigrations: string[]
   }
 
   export interface MTREDifferent extends Interface {

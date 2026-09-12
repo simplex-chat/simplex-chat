@@ -1,8 +1,9 @@
 import {readFileSync, writeFileSync, existsSync} from "fs"
-import {api, bot, util} from "simplex-chat"
+import {api, bot, core, util} from "simplex-chat"
 import {T} from "@simplex-chat/types"
-import {IdName, parseConfig} from "./config.js"
+import {Config, IdName, parseConfig} from "./config.js"
 import {SupportBot} from "./bot.js"
+import {dryRun} from "./dryRun.js"
 import {GrokApiClient, GrokMessage} from "./grok.js"
 import {loadGrokContext} from "./context.js"
 import {welcomeMessage} from "./messages.js"
@@ -40,6 +41,10 @@ async function main(): Promise<void> {
 
   const stateFilePath = config.stateFile
   const state = readState(stateFilePath)
+
+  if (config.dryRun) {
+    process.exit((await runDryRun(config, state)) ? 0 : 1)
+  }
 
   // Forward-reference for event handlers during init
   let supportBot: SupportBot | undefined
@@ -375,6 +380,78 @@ async function main(): Promise<void> {
   }
   process.on("SIGINT", () => shutdown("SIGINT"))
   process.on("SIGTERM", () => shutdown("SIGTERM"))
+}
+
+// Opens the database without starting chat, so nothing reaches the network.
+// MigrationConfirmation.Error makes a pending migration a report instead of an
+// upgrade — a dry run must not change the database it is inspecting.
+async function runDryRun(config: Config, state: BotState): Promise<boolean> {
+  const probe = await probeDatabase(config.db)
+  if (probe.type === "failed") {
+    console.log(`FAIL  database: ${probe.text}`)
+    return false
+  }
+  const pending = probe.type === "pending" ? probe.names : []
+  if (pending.length > 0 && !config.allowMigrations) {
+    console.log(`FAIL  database: ${pending.length} migration(s) pending, a real start would apply them: ${pending.join(", ")}`)
+    return false
+  }
+  const migrating = pending.length > 0
+  let chat: api.ChatApi
+  try {
+    chat = await api.ChatApi.init(
+      config.db,
+      migrating ? core.MigrationConfirmation.YesUp : core.MigrationConfirmation.Error
+    )
+  } catch (err) {
+    console.log(`FAIL  database: ${migrationErrorText(err)}`)
+    return false
+  }
+  const schemaState = migrating ? `applied ${pending.length} migration(s): ${pending.join(", ")}` : "schema up to date"
+  console.log(`ok    database ${config.db.type} opened, ${schemaState}`)
+  try {
+    return await dryRun(chat, config, state)
+  } finally {
+    await chat.close()
+  }
+}
+
+// Opening with Error never changes the database, so this reports what a real
+// start would migrate. Anything other than pending up-migrations is fatal: a
+// wrong key, an unreachable server or a newer database cannot be migrated away.
+type DbProbe = {type: "current"} | {type: "pending"; names: string[]} | {type: "failed"; text: string}
+
+async function probeDatabase(db: api.DbConfig): Promise<DbProbe> {
+  try {
+    const chat = await api.ChatApi.init(db, core.MigrationConfirmation.Error)
+    await chat.close()
+    return {type: "current"}
+  } catch (err) {
+    const dbErr = (err as core.ChatInitError).dbMigrationError
+    if (dbErr?.type === "errorMigration" && dbErr.migrationError.type === "upgrade") {
+      return {type: "pending", names: dbErr.migrationError.upMigrations.map(m => m.upName)}
+    }
+    return {type: "failed", text: migrationErrorText(err)}
+  }
+}
+
+// The library reports a pending migration as one opaque message; the names are
+// in the error payload, and they are what an operator needs before upgrading.
+function migrationErrorText(err: unknown): string {
+  const e = err as core.ChatInitError
+  const dbErr = e.dbMigrationError
+  if (dbErr?.type === "errorMigration") {
+    const me = dbErr.migrationError
+    switch (me.type) {
+      case "upgrade":
+        return `${me.upMigrations.length} migration(s) pending: ${me.upMigrations.map(m => m.upName).join(", ")}`
+      case "downgrade":
+        return `database is newer than this build, it would refuse to start; migrations to roll back: ${me.downMigrations.join(", ")}`
+      default:
+        return `migration state error: ${JSON.stringify(me)}`
+    }
+  }
+  return e.message
 }
 
 main().catch(err => {
