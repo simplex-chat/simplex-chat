@@ -28,7 +28,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime, nominalDay)
-import Simplex.Chat.Badges (badgeServerCredential)
+import Simplex.Chat.Badges (badgeServerCredential, defaultFileSizeLimits)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
@@ -106,6 +106,7 @@ defaultChatConfig =
       xftpDescrPartSize = 14000,
       inlineFiles = defaultInlineFilesConfig,
       autoAcceptFileSize = 0,
+      fileSizeLimits = defaultFileSizeLimits,
       showReactions = False,
       showFullLinks = False,
       showReceipts = False,

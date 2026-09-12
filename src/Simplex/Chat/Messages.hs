@@ -714,7 +714,8 @@ data CIFile (d :: MsgDirection) = CIFile
     fileSource :: Maybe CryptoFile, -- local file path with optional key and nonce
     fileStatus :: CIFileStatus d,
     fileProtocol :: FileProtocol,
-    fileExpires :: Maybe UTCTime
+    fileExpires :: Maybe UTCTime,
+    fileProhibited :: Maybe FileProhibited
   }
   deriving (Show)
 

@@ -50,7 +50,7 @@ import Data.Time.Clock.System (systemToUTCTime, utcToSystemTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Data.Word (Word16, Word32)
-import Simplex.Chat.Badges (LocalBadge)
+import Simplex.Chat.Badges (BadgeProof, LocalBadge)
 import Simplex.Chat.Call
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types
@@ -451,7 +451,7 @@ signChatMsgBody MsgSigning {bindingTag, bindingData, keyRef, privKey} msgBody =
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
-  XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr, fileExpires :: Maybe UTCTime, feed :: Maybe Bool} -> ChatMsgEvent 'Json
+  XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr, fileExpires :: Maybe UTCTime, fileBadge :: Maybe BadgeProof, feed :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool, feed :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, onlyHistory :: Bool, feed :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
@@ -1404,7 +1404,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
     msg :: CMEventTag 'Json -> Either String (ChatMsgEvent 'Json)
     msg = \case
       XMsgNew_ -> XMsgNew <$> JT.parseEither parseJSON (J.Object params)
-      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr" <*> opt "fileExpires" <*> opt "feed"
+      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr" <*> opt "fileExpires" <*> opt "fileBadge" <*> opt "feed"
       XMsgUpdate_ -> do
         msgId' <- p "msgId"
         content <- p "content"
@@ -1497,7 +1497,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XMsgNew mc -> case toJSON mc of
         J.Object obj -> obj
         _ -> JM.empty
-      XMsgFileDescr msgId' fileDescr fileExpires feed -> o $ ("feed" .=? feed) $ ("fileExpires" .=? fileExpires) ["msgId" .= msgId', "fileDescr" .= fileDescr]
+      XMsgFileDescr msgId' fileDescr fileExpires fileBadge feed -> o $ ("feed" .=? feed) $ ("fileExpires" .=? fileExpires) $ ("fileBadge" .=? fileBadge) ["msgId" .= msgId', "fileDescr" .= fileDescr]
       XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup, feed} -> o $ ("feed" .=? feed) $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId scope onlyHistory feed -> o $ ("feed" .=? feed) $ ("memberId" .=? memberId) $ ("scope" .=? scope) $ ("onlyHistory" .=? justTrue onlyHistory) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty

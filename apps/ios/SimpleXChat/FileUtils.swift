@@ -29,9 +29,12 @@ public let MAX_VIDEO_SIZE_AUTO_RCV: Int64 = 1_047_552 // 1023KB
 // Spec: spec/services/files.md#MAX_FILE_SIZE_XFTP
 public let MAX_FILE_SIZE_XFTP: Int64 = 1_073_741_824 // 1GB
 
-// raised XFTP receive limits for files from a sender with a supporter badge (also investor) or a legend badge
+// raised XFTP limits for a user with a supporter badge (also investor) or a legend badge
 public let MAX_FILE_SIZE_XFTP_SUPPORTER: Int64 = 2_147_483_648 // 2GB
 public let MAX_FILE_SIZE_XFTP_LEGEND: Int64 = 5_368_709_120 // 5GB
+
+// a badge raises the limit at send for this long after its expiry, shorter than the receiver's grace
+public let BADGE_SND_GRACE_INTERVAL = TimeInterval(86400)
 
 public let MAX_FILE_SIZE_LOCAL: Int64 = Int64.max
 
@@ -277,26 +280,60 @@ public func cleanupFile(_ aChatItem: AChatItem) {
     }
 }
 
+public func badgeMaxFileSize(_ badge: LocalBadge) -> Int64 {
+    badge.badge.badgeType == .legend ? MAX_FILE_SIZE_XFTP_LEGEND : MAX_FILE_SIZE_XFTP_SUPPORTER
+}
+
+// a badge raises the limit at send until one day past its expiry, as the core applies it
+public func badgeActiveForSend(_ badge: LocalBadge) -> Bool {
+    badge.status == .active && badge.badge.badgeExpiry.addingTimeInterval(BADGE_SND_GRACE_INTERVAL) >= Date.now
+}
+
+// in incognito chats and above the largest badge's limit no badge applies, so badgeIssue is not used
+public func largeFileMessage(_ fileSize: Int64, incognito: Bool = false, badgeIssue: String = "") -> String {
+    if incognito {
+        return String.localizedStringWithFormat(
+            NSLocalizedString("Files larger than %@ cannot be sent in incognito chats.", comment: "file alert"),
+            ByteCountFormatter.string(fromByteCount: MAX_FILE_SIZE_XFTP, countStyle: .binary)
+        )
+    }
+    if fileSize > MAX_FILE_SIZE_XFTP_LEGEND {
+        return String.localizedStringWithFormat(
+            NSLocalizedString("Maximum supported file size is %1$@, with a %2$@.", comment: "file alert"),
+            ByteCountFormatter.string(fromByteCount: MAX_FILE_SIZE_XFTP_LEGEND, countStyle: .binary),
+            NSLocalizedString("legend badge", comment: "badge required to send a large file")
+        )
+    }
+    let supporter = fileSize <= MAX_FILE_SIZE_XFTP_SUPPORTER
+    let message = String.localizedStringWithFormat(
+        NSLocalizedString("You need a %1$@ to send files larger than %2$@.", comment: "file alert"),
+        supporter
+        ? NSLocalizedString("supporter badge", comment: "badge required to send a large file")
+        : NSLocalizedString("legend badge", comment: "badge required to send a large file"),
+        ByteCountFormatter.string(fromByteCount: supporter ? MAX_FILE_SIZE_XFTP : MAX_FILE_SIZE_XFTP_SUPPORTER, countStyle: .binary)
+    )
+    return badgeIssue.isEmpty ? message : message + " " + badgeIssue
+}
+
+// the badge lapsed, and while active it would have allowed this file
+public func expiredBadgeReason(_ fileSize: Int64, _ senderProfile: LocalProfile?) -> String {
+    if let badge = senderProfile?.localBadge, !badgeActiveForSend(badge), badgeMaxFileSize(badge) >= fileSize {
+        NSLocalizedString("Your badge expired.", comment: "file alert")
+    } else {
+        ""
+    }
+}
+
 public func getMaxFileSize(_ fileProtocol: FileProtocol, _ senderProfile: LocalProfile? = nil) -> Int64 {
     switch fileProtocol {
     case .smp: MAX_FILE_SIZE_SMP
     case .local: MAX_FILE_SIZE_LOCAL
-    // a sender's active badge raises the XFTP limit: legend to 5GB, any other (supporter/investor) to 2GB
     case .xftp:
-        if let badge = senderProfile?.localBadge, badge.status == .active {
-            badge.badge.badgeType == .legend ? MAX_FILE_SIZE_XFTP_LEGEND : MAX_FILE_SIZE_XFTP_SUPPORTER
+        if let badge = senderProfile?.localBadge, badgeActiveForSend(badge) {
+            badgeMaxFileSize(badge)
         } else {
             MAX_FILE_SIZE_XFTP
         }
-    }
-}
-
-// the profile of whoever sent a received chat item - the group member, or the direct chat's contact
-public func ciSenderProfile(_ ci: ChatItem, _ chatInfo: ChatInfo) -> LocalProfile? {
-    switch (ci.chatDir, chatInfo) {
-    case let (.groupRcv(groupMember), _): return groupMember.memberProfile
-    case let (.directRcv, .direct(contact)): return contact.profile
-    default: return nil
     }
 }
 

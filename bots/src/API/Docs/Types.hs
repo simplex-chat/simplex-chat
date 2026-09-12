@@ -49,6 +49,8 @@ import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
 import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NetworkError (..), ProxyError (..))
 import Simplex.Messaging.Protocol.Types (ClientNotice (..))
 import Simplex.Messaging.Transport
+import Simplex.Chat.Remote.AppVersion (AppVersion, AppVersionRange)
+import Simplex.Chat.Remote.Types (CtrlAppInfo (..))
 import Simplex.RemoteControl.Types
 import System.Console.ANSI.Types (Color (..))
 
@@ -211,6 +213,7 @@ chatTypesDocsData =
     (sti @AgentCryptoError, STUnion, "", ["RATCHET_EARLIER", "RATCHET_SKIPPED"], "", ""), -- TODO add fields to types
     (sti @AgentErrorType, STUnion, "", [], "", ""),
     (sti @AgentServiceError, STUnion, "ASE", [], "", ""),
+    (STI "AppVersionRange" [RecordTypeInfo "AppVersionRange" [FieldInfo "minVersion" (TIType (ST TString [])), FieldInfo "maxVersion" (TIType (ST TString []))]], STRecord, "", [], "", "Remote controller app version range (min and max as version strings)."),
     (sti @AutoAccept, STRecord, "", [], "", ""),
     (sti @BadgeProof, STRecord, "", [], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),
@@ -244,6 +247,7 @@ chatTypesDocsData =
     (sti @CIReactionCount, STRecord, "", [], "", ""),
     (sti @CITimed, STRecord, "", [], "", ""),
     (sti @ClientNotice, STRecord, "", [], "", ""),
+    (sti @CtrlAppInfo, STRecord, "", [], "", "Remote controller application info."),
     (sti @Color, STEnum, "", [], "", ""),
     (sti @CommandError, STUnion, "", [], "", ""),
     (sti @CommandErrorType, STUnion, "", [], "", ""),
@@ -272,6 +276,7 @@ chatTypesDocsData =
     (sti @FileError, STUnion, "FileErr", [], "", ""),
     (sti @FileErrorType, STUnion, "", [], "", ""),
     (sti @FileInvitation, STRecord, "", [], "", ""),
+    (sti @FileProhibited, STRecord, "", [], "", ""),
     (sti @FileProtocol, STEnum' (consLower "FP"), "", [], "", ""),
     (sti @FileStatus, STEnum, "FS", [], "", ""),
     (sti @FileTransferMeta, STRecord, "", [], "", ""),
@@ -356,8 +361,12 @@ chatTypesDocsData =
     (sti @RcvGroupEvent, STUnion, "RGE", [], "", ""),
     (sti @RcvMsgError, STUnion, "RME", [], "", ""),
     (sti @RelayCapabilities, STRecord, "", [], "", ""),
+    (sti @RelayConnectionResult, STRecord, "", [], "", ""),
     (sti @RelayProfile, STRecord, "", [], "", ""),
     (sti @RelayStatus, STEnum, "RS", [], "", ""),
+    (sti @RemoteCtrlInfo, STRecord, "", [], "", ""),
+    (sti @RemoteCtrlSessionState, STUnion, "RCS", [], "", ""),
+    (sti @RemoteCtrlStopReason, STUnion, "RCSR", [], "", ""),
     (sti @ReportReason, STEnum' (dropPfxSfx "RR" ""), "", ["RRUnknown"], "", ""),
     (sti @RoleGroupPreference, STRecord, "", [], "", ""),
     (sti @SecurityCode, STRecord, "", [], "", ""),
@@ -474,6 +483,7 @@ deriving instance Generic CIMentionMember
 deriving instance Generic CIReactionCount
 deriving instance Generic CITimed
 deriving instance Generic ClientNotice
+deriving instance Generic CtrlAppInfo
 deriving instance Generic Color
 deriving instance Generic CommandError
 deriving instance Generic CommandErrorType
@@ -502,6 +512,7 @@ deriving instance Generic FileDescr
 deriving instance Generic FileError
 deriving instance Generic FileErrorType
 deriving instance Generic FileInvitation
+deriving instance Generic FileProhibited
 deriving instance Generic FileProtocol
 deriving instance Generic FileStatus
 deriving instance Generic FileTransferMeta
@@ -593,8 +604,12 @@ deriving instance Generic RcvFileTransfer
 deriving instance Generic RcvGroupEvent
 deriving instance Generic RcvMsgError
 deriving instance Generic RelayCapabilities
+deriving instance Generic RelayConnectionResult
 deriving instance Generic RelayProfile
 deriving instance Generic RelayStatus
+deriving instance Generic RemoteCtrlInfo
+deriving instance Generic RemoteCtrlSessionState
+deriving instance Generic RemoteCtrlStopReason
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
 deriving instance Generic SimplexDomain

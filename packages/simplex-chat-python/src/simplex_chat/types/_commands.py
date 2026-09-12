@@ -56,7 +56,7 @@ class APISetProfileAddress(TypedDict):
 def APISetProfileAddress_cmd_string(self: APISetProfileAddress) -> str:
     return '/_profile_address ' + str(self['userId']) + ' ' + ('on' if self['enable'] else 'off')
 
-APISetProfileAddress_Response = CR.UserProfileUpdated | CR.ChatCmdError
+APISetProfileAddress_Response = CR.UserProfileUpdated | CR.UserProfileNoChange | CR.ChatCmdError
 
 
 # Set bot address settings.
@@ -156,7 +156,7 @@ class APIShareMyAddress(TypedDict):
 
 
 def APIShareMyAddress_cmd_string(self: APIShareMyAddress) -> str:
-    return '/_share address' + T.ChatRef_cmd_string(self['toSendRef'])
+    return '/_share address ' + T.ChatRef_cmd_string(self['toSendRef'])
 
 APIShareMyAddress_Response = CR.ChatMsgContent
 
@@ -513,7 +513,16 @@ class Connect(TypedDict):
 def Connect_cmd_string(self: Connect) -> str:
     return '/connect' + ((' ' + self.get('connTarget_')) if self.get('connTarget_') is not None else '')
 
-Connect_Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
+Connect_Response = (
+    CR.SentConfirmation
+    | CR.ContactAlreadyExists
+    | CR.SentInvitation
+    | CR.ConnectionPlan
+    | CR.SentInvitationToContact
+    | CR.StartedConnectionToContact
+    | CR.StartedConnectionToGroup
+    | CR.ChatCmdError
+)
 
 
 # Accept contact request.
@@ -786,4 +795,31 @@ def APIStopChat_cmd_string(self: APIStopChat) -> str:
     return '/_stop'
 
 APIStopChat_Response = CR.ChatStopped
+
+
+# Remote control commands
+# Allows a bot to accept an incoming remote control session from a SimpleX Desktop client, giving the desktop live access to the bot's SimpleX instance.
+
+# Connect to a remote controller using an OOB invitation link.
+# Network usage: interactive.
+class ConnectRemoteCtrl(TypedDict):
+    remoteInvitation: str
+
+
+def ConnectRemoteCtrl_cmd_string(self: ConnectRemoteCtrl) -> str:
+    return '/crc ' + self['remoteInvitation']
+
+ConnectRemoteCtrl_Response = CR.RemoteCtrlConnecting | CR.ChatCmdError
+
+
+# Verify the remote controller session code to complete the connection.
+# Network usage: no.
+class VerifyRemoteCtrlSession(TypedDict):
+    sessionCode: str
+
+
+def VerifyRemoteCtrlSession_cmd_string(self: VerifyRemoteCtrlSession) -> str:
+    return '/verify remote ctrl ' + self['sessionCode']
+
+VerifyRemoteCtrlSession_Response = CR.RemoteCtrlConnected | CR.ChatCmdError
 

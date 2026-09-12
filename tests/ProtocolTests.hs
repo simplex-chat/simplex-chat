@@ -225,10 +225,10 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ mcForward (Just (testForwardLink {memberId = Nothing} :: ForwardLink)) (MCText "hello"))
   it "x.msg.new simple text with file" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
-      #==# XMsgNew ((mcSimple (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}})
+      #==# XMsgNew ((mcSimple (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}})
   it "x.msg.new simple file with file" $
     "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"type\":\"file\"},\"file\":{\"fileSize\":12345,\"fileName\":\"file.txt\"}}}"
-      #==# XMsgNew ((mcSimple (MCFile "")) {file = Just FileInvitation {fileName = "file.txt", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}})
+      #==# XMsgNew ((mcSimple (MCFile "")) {file = Just FileInvitation {fileName = "file.txt", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}})
   it "x.msg.new quote with file" $
     "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
       ##==## ChatMessage
@@ -236,7 +236,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
         (Just $ SharedMsgId "\1\2\3\4")
         ( XMsgNew
             (mcQuote quotedMsg (MCText "hello to you too"))
-              {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}}
+              {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}}
         )
   it "x.msg.new report" $
     "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"reason\":\"spam\",\"type\":\"report\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
@@ -246,7 +246,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
         (XMsgNew (mcQuote quotedMsg (MCReport "" RRSpam)))
   it "x.msg.new forward with file" $
     "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"},\"forward\":true}}"
-      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward Nothing (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}})
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward Nothing (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}})
   it "x.msg.new broadcast" $
     "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"feed\":true}}"
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcSimple (MCText "hello")) {feed = Just True})
@@ -267,10 +267,10 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XMsgDeleted
   it "x.file" $
     "{\"v\":\"9\",\"event\":\"x.file\",\"params\":{\"file\":{\"fileConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
-      #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Just testConnReq, fileInline = Nothing, fileDescr = Nothing}
+      #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Just testConnReq, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}
   it "x.file without file invitation" $
     "{\"v\":\"9\",\"event\":\"x.file\",\"params\":{\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
-      #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}
+      #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}
   it "x.file.acpt" $
     "{\"v\":\"9\",\"event\":\"x.file.acpt\",\"params\":{\"fileName\":\"photo.jpg\"}}"
       #==# XFileAcpt "photo.jpg"

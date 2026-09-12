@@ -53,7 +53,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (BadgeCredential (..), ProofPresHeader (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), badgeProof, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), ProofPresHeader (..), BadgeProof (..), BadgeProofKind (..), BadgeStatus (..), FileSizeLimits (..), LocalBadge (..), badgeProof, badgeSndGraceInterval, generateBadgeProof, localBadgeStatus, maxXFTPFileSize, mkBadgeStatus, verifyBadge)
 import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -100,7 +100,8 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import Simplex.Messaging.Encoding (smpEncode)
+import Simplex.Messaging.Crypto.BBS (BBSPresHeader (..))
+import Simplex.Messaging.Encoding (smpDecode, smpEncode)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (MsgBody, MsgFlags (..), ProtoServerWithAuth (..), ProtocolServer, ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer)
 import qualified Simplex.Messaging.Protocol as SMP
@@ -441,10 +442,11 @@ roundedFDCount n
   | n <= 0 = 4
   | otherwise = max 4 $ fromIntegral $ (2 :: Integer) ^ (ceiling (logBase 2 (fromIntegral n) :: Double) :: Integer)
 
-xftpSndFileTransfer_ :: User -> CryptoFile -> Integer -> Int -> Maybe ContactOrGroup -> CM (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
-xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOrGroup_ = do
+xftpSndFileTransfer_ :: User -> CryptoFile -> Integer -> Int -> Maybe ContactOrGroup -> Maybe ByteString -> CM (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
+xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOrGroup_ binding_ = do
+  fileBadge <- pure binding_ $>>= \chatBinding -> sndBadgeProof user PHFileInv {chatBinding, fileSize = fromInteger fileSize}
   let fileName = takeFileName filePath
-      fInv = xftpFileInvitation fileName fileSize dummyFileDescr
+      fInv = (xftpFileInvitation fileName fileSize dummyFileDescr :: FileInvitation) {fileBadge}
   fsFilePath <- lift $ toFSFilePath filePath
   let srcFile = CryptoFile fsFilePath cfArgs
   aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) srcFile (roundedFDCount n) Nothing
@@ -452,8 +454,31 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
   chSize <- asks $ fileChunkSize . config
   ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup_ file fInv (AgentSndFileId aFileId) Nothing chSize
   let fileSource = Just $ CryptoFile filePath cfArgs
-      ciFile = CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndStored, fileProtocol = FPXFTP, fileExpires = Nothing}
+      ciFile = CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndStored, fileProtocol = FPXFTP, fileExpires = Nothing, fileProhibited = Nothing}
   pure (fInv, ciFile, ft)
+
+fileNeedsBadge :: Integer -> CM Bool
+fileNeedsBadge fileSize = (fileSize >) . noBadge <$> asks (fileSizeLimits . config)
+
+sndBadgeProof :: User -> ProofPresHeader -> CM (Maybe BadgeProof)
+sndBadgeProof user = sndBadgeProof_ user . BBSPresHeader . strEncode
+
+sndBadgeProof_ :: User -> BBSPresHeader -> CM (Maybe BadgeProof)
+sndBadgeProof_ User {profile = LocalProfile {localBadge}} ph = case localBadge of
+  Just (OwnBadge cred@(BadgeCredential keyIdx _ _ _) _) -> do
+    keys <- asks $ badgePublicKeys . config
+    case M.lookup keyIdx keys of
+      Nothing -> Nothing <$ logError "sndBadgeProof: badge key index not in config"
+      Just key ->
+        liftIO (generateBadgeProof key cred ph) >>= \case
+          Right proof -> pure $ Just proof
+          Left e -> Nothing <$ logError ("sndBadgeProof: proof generation failed: " <> T.pack e)
+  _ -> pure Nothing
+
+sndGroupChatBinding :: GroupInfo -> ShowGroupAsSender -> Maybe ByteString
+sndGroupChatBinding GroupInfo {groupKeys, membership = GroupMember {memberId}} asGroup
+  | asGroup = (\PublicGroupKeys {publicGroupId} -> encodeChatBinding CBChannel $ smpEncode publicGroupId) <$> (groupKeys >>= publicGroupKeys)
+  | otherwise = (\GroupKeys {memberPrivKey} -> encodeChatBinding CBGroup $ groupBindingData groupKeys memberId (C.publicKey memberPrivKey)) <$> groupKeys
 
 cryptoFileDigest :: CryptoFile -> CM FD.FileDigest
 cryptoFileDigest (CryptoFile filePath cfArgs) = do
@@ -777,10 +802,11 @@ rctFileCancelled = \case
   _ -> False
 
 acceptFileReceive :: User -> RcvFileTransfer -> Bool -> Maybe Bool -> Maybe FilePath -> CM AChatItem
-acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId, cryptoArgs} userApprovedRelays rcvInline_ filePath_ = do
+acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileProhibited, fileStatus, grpMemberId, cryptoArgs} userApprovedRelays rcvInline_ filePath_ = do
   unless (fileStatus == RFSNew) $ case fileStatus of
     RFSCancelled _ -> throwChatError $ CEFileCancelled fName
     _ -> throwChatError $ CEFileAlreadyReceiving fName
+  when (isJust fileProhibited) $ throwChatError $ CEFileSize fName
   cxt <- chatStoreCxt
   case (xftpRcvFile, fileConnReq) of
     -- XFTP
@@ -1452,15 +1478,17 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
         resolveAuthor (Just gmId) = do
           cxt <- chatStoreCxt
           eitherToMaybe <$> withStore' (\db -> runExceptT $ getGroupMemberById db cxt user gmId)
-        getRcvFileInvDescr :: CIFile 'MDRcv -> CM (Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime))
+        getRcvFileInvDescr :: CIFile 'MDRcv -> CM (Maybe HistoryFile)
         getRcvFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus, fileExpires} = do
           expired <- fileExpired fileExpires
           if fileProtocol /= FPXFTP || fileStatus == CIFSRcvCancelled || expired
             then pure Nothing
             else do
-              rfd <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
-              pure $ invCompleteDescr ciFile rfd
-        getSndFileInvDescr :: CIFile 'MDSnd -> CM (Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime))
+              (rfd, (invBadge, descrBadge)) <- withStore $ \db -> do
+                rfd <- getRcvFileDescrByRcvFileId db fileId
+                (rfd,) <$> liftIO (getFileBadgeProofs db fileId)
+              pure $ invCompleteDescr ciFile rfd invBadge descrBadge
+        getSndFileInvDescr :: CIFile 'MDSnd -> CM (Maybe HistoryFile)
         getSndFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus, fileExpires} = do
           expired <- fileExpired fileExpires
           if fileProtocol /= FPXFTP || fileStatus == CIFSSndCancelled || expired
@@ -1468,28 +1496,54 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
             else do
               -- can also lookup in extra_xftp_file_descriptions, though it can be empty;
               -- would be best if snd file had a single rcv description for all members saved in files table
-              rfd <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
-              pure $ invCompleteDescr ciFile rfd
+              now <- liftIO getCurrentTime
+              (rfd, (invBadge, descrBadge)) <- withStore $ \db -> do
+                rfd <- getRcvFileDescrBySndFileId db fileId
+                (rfd,) <$> liftIO (getFileBadgeProofs db fileId)
+              -- a signed item forwards the author's original bytes, so its invitation proof cannot be replaced
+              (invBadge', descrBadge') <-
+                if isNothing signedMsg_ && ownBadgeActive && (staleBadge now invBadge || staleBadge now descrBadge)
+                  then refreshSndBadges fileId invBadge descrBadge
+                  else pure (invBadge, descrBadge)
+              pure $ invCompleteDescr ciFile rfd invBadge' descrBadge'
+        staleBadge :: UTCTime -> Maybe BadgeProof -> Bool
+        staleBadge now = \case
+          Just BadgeProof {badgeInfo = BadgeInfo {badgeExpiry}} -> addUTCTime badgeSndGraceInterval badgeExpiry < now
+          Nothing -> False
+        ownBadgeActive :: Bool
+        ownBadgeActive = maybe False ((BSActive ==) . localBadgeStatus) localBadge
+          where
+            User {profile = LocalProfile {localBadge}} = user
+        -- both proofs are made with the same badge, and are re-made with the current badge over the stored headers
+        refreshSndBadges :: FileTransferId -> Maybe BadgeProof -> Maybe BadgeProof -> CM (Maybe BadgeProof, Maybe BadgeProof)
+        refreshSndBadges fileId invBadge descrBadge = do
+          invBadge' <- mapM reProve invBadge
+          descrBadge' <- mapM reProve descrBadge
+          withStore' $ \db -> do
+            forM_ invBadge' $ createFileBadgeProof db fileId BPKInvitation
+            forM_ descrBadge' $ createFileBadgeProof db fileId BPKDescription
+          pure (invBadge', descrBadge')
+          where
+            reProve badge@BadgeProof {presHeader} = fromMaybe badge <$> sndBadgeProof_ user presHeader
         fileExpired :: Maybe UTCTime -> CM Bool
         fileExpired fileExpires = do
           ttl <- asks $ rcvFilesTTL . agentConfig . config
           now <- liftIO getCurrentTime
           pure $ fromMaybe (addUTCTime ttl $ chatItemTs cci) fileExpires < now
-        invCompleteDescr :: CIFile d -> RcvFileDescr -> Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime)
-        invCompleteDescr CIFile {fileName, fileSize, fileExpires} RcvFileDescr {fileDescrText, fileDescrComplete}
+        invCompleteDescr :: CIFile d -> RcvFileDescr -> Maybe BadgeProof -> Maybe BadgeProof -> Maybe HistoryFile
+        invCompleteDescr CIFile {fileName, fileSize, fileExpires} RcvFileDescr {fileDescrText, fileDescrComplete} invBadge descrBadge
           | fileDescrComplete =
-              let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
-                  fInv = xftpFileInvitation fileName fileSize fInvDescr
-               in Just (fInv, fileDescrText, fileExpires)
+              let fInv = (xftpFileInvitation fileName fileSize dummyFileDescr :: FileInvitation) {fileBadge = invBadge}
+               in Just (fInv, fileDescrText, fileExpires, descrBadge)
           | otherwise = Nothing
-        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText, Maybe UTCTime) -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
+        processContentItem :: Maybe GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe HistoryFile -> CM [(GrpMsgForward, VerifiedMsg 'Json)]
         processContentItem member_ ChatItem {formattedText, meta, quotedItem, mentions} mc fInvDescr_ =
           if isNothing fInvDescr_ && not (msgContentHasText mc)
             then pure []
             else do
               let CIMeta {itemTs, itemSharedMsgId, itemTimed, showGroupAsSender} = meta
                   quotedItemId_ = quoteItemId =<< quotedItem
-                  fInv_ = (\(fInv, _, _) -> fInv) <$> fInvDescr_
+                  fInv_ = (\(fInv, _, _, _) -> fInv) <$> fInvDescr_
                   (mc', _, mentions') = updatedMentionNames mc formattedText mentions
                   mentions'' = M.map (\CIMention {memberId} -> MsgMention {memberId}) mentions'
                   -- for channel messages default chat version range to membership range
@@ -1508,10 +1562,10 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
                   (chatMsgEvent, _) <- withStore $ \db -> prepareGroupMsg db user gInfo Nothing showGroupAsSender mc' mentions'' quotedItemId_ Nothing fInv_ itemTimed False
                   pure $ VMUnsigned ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent}
               fileDescrEvents <- case (fInvDescr_, itemSharedMsgId) of
-                (Just (_, fileDescrText, fileExpires), Just msgId) -> do
+                (Just (_, fileDescrText, fileExpires, descrBadge), Just msgId) -> do
                   partSize <- asks $ xftpDescrPartSize . config
-                  let parts = splitFileDescr partSize fileDescrText
-                  pure . L.toList $ L.map (\fd -> XMsgFileDescr msgId fd fileExpires Nothing) parts
+                  let parts = splitFileDescr partSize (maybe partSize (const badgeDescrPartSize) descrBadge) fileDescrText
+                  pure . L.toList $ L.map (\fd@FileDescr {fileDescrComplete} -> XMsgFileDescr msgId fd fileExpires (if fileDescrComplete then descrBadge else Nothing) Nothing) parts
                 _ -> pure []
               let fileDescrVMs = map (VMUnsigned . ChatMessage senderVRange Nothing) fileDescrEvents
               pure $ map ((,) fwd) (contentVM : fileDescrVMs)
@@ -1521,11 +1575,16 @@ memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}}
   | T.length displayName <= 16 = displayName
   | otherwise = T.take 16 displayName `T.snoc` '…'
 
-splitFileDescr :: Int -> RcvFileDescrText -> NonEmpty FileDescr
-splitFileDescr partSize rfdText = splitParts 1 rfdText
+-- the description proof travels on the last part, so that part leaves room for it
+badgeDescrPartSize :: Int
+badgeDescrPartSize = 13500
+
+splitFileDescr :: Int -> Int -> RcvFileDescrText -> NonEmpty FileDescr
+splitFileDescr partSize lastSize rfdText = splitParts 1 rfdText
   where
     splitParts partNo remText =
-      let (part, rest) = T.splitAt partSize remText
+      let n = T.length remText
+          (part, rest) = T.splitAt (if n <= lastSize then n else if n <= partSize then lastSize else partSize) remText
           complete = T.null rest
           fileDescr = FileDescr {fileDescrText = part, fileDescrPartNo = partNo, fileDescrComplete = complete}
        in if complete
@@ -2322,6 +2381,71 @@ groupBindingData :: Maybe GroupKeys -> MemberId -> C.PublicKeyEd25519 -> ByteStr
 groupBindingData gks memberId memberKey = case gks >>= publicGroupKeys of
   Just PublicGroupKeys {publicGroupId} -> smpEncode (publicGroupId, memberId)
   Nothing -> smpEncode (memberId, memberKey)
+
+type HistoryFile = (FileInvitation, RcvFileDescrText, Maybe UTCTime, Maybe BadgeProof)
+
+directChatBinding :: Contact -> CM (Maybe ByteString)
+directChatBinding ct =
+  forM (contactConn ct) $ \conn ->
+    encodeChatBinding CBDirect <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
+
+rcvGroupChatBinding :: GroupInfo -> Maybe GroupMember -> ShowGroupAsSender -> Maybe BadgeProof -> Maybe ByteString
+rcvGroupChatBinding GroupInfo {groupKeys} m_ asGroup badge_ =
+  case (groupKeys >>= publicGroupKeys, asGroup, m_) of
+    (Just PublicGroupKeys {publicGroupId}, True, _) ->
+      Just $ encodeChatBinding CBChannel $ smpEncode publicGroupId
+    (Just PublicGroupKeys {publicGroupId}, False, Just GroupMember {memberId}) ->
+      Just $ encodeChatBinding CBGroup $ smpEncode (publicGroupId, memberId)
+    (Nothing, False, Just GroupMember {memberId, memberPubKey}) ->
+      (\k -> encodeChatBinding CBGroup $ smpEncode (memberId, k)) <$> (memberPubKey <|> proofMemberKey memberId badge_)
+    _ -> Nothing
+
+proofMemberKey :: MemberId -> Maybe BadgeProof -> Maybe C.PublicKeyEd25519
+proofMemberKey memberId badge_ = do
+  BadgeProof _ (BBSPresHeader phBytes) _ _ <- badge_
+  binding <- headerChatBinding =<< eitherToMaybe (strDecode phBytes)
+  d <- B.stripPrefix (smpEncode CBGroup) binding
+  (mId, k) <- eitherToMaybe (smpDecode d :: Either String (MemberId, C.PublicKeyEd25519))
+  if mId == memberId then Just k else Nothing
+  where
+    headerChatBinding = \case
+      PHFileInv {chatBinding} -> Just chatBinding
+      PHFileDescr {chatBinding} -> Just chatBinding
+      _ -> Nothing
+
+badgeProofStatus :: Maybe ProofPresHeader -> BadgeProof -> CM BadgeStatus
+badgeProofStatus expected_ badge@BadgeProof {presHeader = BBSPresHeader phBytes, badgeInfo} =
+  case expected_ of
+    Just expected | phBytes == strEncode expected -> do
+      keys <- asks $ badgePublicKeys . config
+      verified <- liftIO $ verifyBadge keys badge
+      now <- liftIO getCurrentTime
+      pure $ mkBadgeStatus now verified badgeInfo
+    _ -> pure BSFailed
+
+rcvDirectFileProhibited :: Contact -> FileInvitation -> CM (Maybe FileProhibited)
+rcvDirectFileProhibited ct fInv@FileInvitation {fileBadge} = do
+  binding_ <- if isJust fileBadge then directChatBinding ct else pure Nothing
+  rcvFileProhibited binding_ fInv
+
+rcvGroupFileProhibited :: GroupInfo -> Maybe GroupMember -> ShowGroupAsSender -> FileInvitation -> CM (Maybe FileProhibited)
+rcvGroupFileProhibited gInfo m_ asGroup fInv@FileInvitation {fileBadge} =
+  rcvFileProhibited (rcvGroupChatBinding gInfo m_ asGroup fileBadge) fInv
+
+rcvFileProhibited :: Maybe ByteString -> FileInvitation -> CM (Maybe FileProhibited)
+rcvFileProhibited binding_ FileInvitation {fileSize, fileBadge} = do
+  lims <- asks $ fileSizeLimits . config
+  if fileSize <= noBadge lims
+    then pure Nothing
+    else case fileBadge of
+      Nothing -> pure $ Just FileProhibited {maxSize = noBadge lims, badgeStatus = Nothing}
+      Just badge -> do
+        st <- badgeProofStatus ((\chatBinding -> PHFileInv {chatBinding, fileSize = fromInteger fileSize}) <$> binding_) badge
+        let maxSize = maxXFTPFileSize lims $ Just $ PeerBadge badge st
+        pure $
+          if fileSize <= maxSize
+            then Nothing
+            else Just FileProhibited {maxSize, badgeStatus = Just st}
 
 createUserMemberKey :: GroupInfo -> CM GroupInfo
 createUserMemberKey gInfo@GroupInfo {groupId, membership, groupKeys}

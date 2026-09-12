@@ -1561,7 +1561,8 @@ data FileInvitation = FileInvitation
     fileDigest :: Maybe FileDigest,
     fileConnReq :: Maybe ConnReqInvitation,
     fileInline :: Maybe InlineFileMode,
-    fileDescr :: Maybe FileDescr
+    fileDescr :: Maybe FileDescr,
+    fileBadge :: Maybe BadgeProof
   }
   deriving (Eq, Show)
 
@@ -1576,7 +1577,8 @@ xftpFileInvitation fileName fileSize fileDescr =
       fileDigest = Nothing,
       fileConnReq = Nothing,
       fileInline = Nothing,
-      fileDescr = Just fileDescr
+      fileDescr = Just fileDescr,
+      fileBadge = Nothing
     }
 
 data InlineFileMode
@@ -1630,10 +1632,14 @@ instance ToJSON FileType where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
 
+data FileProhibited = FileProhibited {maxSize :: Integer, badgeStatus :: Maybe BadgeStatus}
+  deriving (Eq, Show)
+
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,
     xftpRcvFile :: Maybe XFTPRcvFile,
     fileInvitation :: FileInvitation,
+    fileProhibited :: Maybe FileProhibited,
     fileStatus :: RcvFileStatus,
     fileType :: FileType,
     rcvFileInline :: Maybe InlineFileMode,
@@ -2394,6 +2400,8 @@ $(JQ.deriveJSON defaultJSON ''MemberRestrictions)
 $(JQ.deriveJSON defaultJSON ''GroupMemberRef)
 
 $(JQ.deriveJSON defaultJSON ''FileDescr)
+
+$(JQ.deriveJSON defaultJSON ''FileProhibited)
 
 $(JQ.deriveJSON defaultJSON ''FileInvitation)
 

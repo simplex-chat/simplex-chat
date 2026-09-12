@@ -173,6 +173,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
+import Simplex.Chat.Badges (BadgeStatus)
 import Simplex.Chat.Controller (ChatListQuery (..), ChatPagination (..), PaginationByTime (..))
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
@@ -1176,7 +1177,7 @@ getFeedChatPreview_ db user (FeedChatPD _ feedId lastItemId_ stats) = do
 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
 toLocalChatItem :: UTCTime -> ChatItemRow -> Either StoreError (CChatItem 'CTLocal)
-toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive, BI userMention, BI hasLink, msgSigned, itemFeed) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_, fileExpires)) =
+toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive, BI userMention, BI hasLink, msgSigned, itemFeed) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_, fileExpires) :. (fileMaxSize_, fileBadgeStatus_)) =
   chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
     invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
@@ -1196,7 +1197,8 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
         (Just fileId, Just fileName, Just fileSize, Just fileProtocol) ->
           let cfArgs = CFArgs <$> fileKey <*> fileNonce
               fileSource = (`CryptoFile` cfArgs) <$> filePath
-           in Just CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol, fileExpires}
+              fileProhibited = (\maxSize -> FileProhibited {maxSize, badgeStatus = fileBadgeStatus_}) <$> fileMaxSize_
+           in Just CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol, fileExpires, fileProhibited}
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTLocal d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTLocal
     cItem d chatDir ciStatus content file =
@@ -2368,7 +2370,7 @@ updateLocalChatItemsRead db User {userId} noteFolderId = do
     |]
     (CISRcvRead, currentTs, userId, noteFolderId, CISRcvNew)
 
-type MaybeCIFIleRow = (Maybe Int64, Maybe String, Maybe Integer, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe ACIFileStatus, Maybe FileProtocol, Maybe UTCTime)
+type MaybeCIFIleRow = (Maybe Int64, Maybe String, Maybe Integer, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe ACIFileStatus, Maybe FileProtocol, Maybe UTCTime) :. (Maybe Integer, Maybe BadgeStatus)
 
 type ChatItemModeRow = (Maybe Int, Maybe UTCTime, Maybe BoolInt, BoolInt, BoolInt, Maybe MsgVerified, Int)
 
@@ -2396,7 +2398,7 @@ toQuote (quotedItemId, quotedSharedMsgId, quotedSentAt, quotedMsgContent, _) dir
 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
 toDirectChatItem :: UTCTime -> ChatItemRow :. QuoteRow -> Either StoreError (CChatItem 'CTDirect)
-toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive, BI userMention, BI hasLink, msgSigned, itemFeed) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_, fileExpires)) :. quoteRow) =
+toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive, BI userMention, BI hasLink, msgSigned, itemFeed) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_, fileExpires) :. (fileMaxSize_, fileBadgeStatus_)) :. quoteRow) =
   chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
     invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
@@ -2416,7 +2418,8 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
         (Just fileId, Just fileName, Just fileSize, Just fileProtocol) ->
           let cfArgs = CFArgs <$> fileKey <*> fileNonce
               fileSource = (`CryptoFile` cfArgs) <$> filePath
-           in Just CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol, fileExpires}
+              fileProhibited = (\maxSize -> FileProhibited {maxSize, badgeStatus = fileBadgeStatus_}) <$> fileMaxSize_
+           in Just CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol, fileExpires, fileProhibited}
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTDirect
     cItem d chatDir ciStatus content file =
@@ -2472,6 +2475,7 @@ toGroupChatItem
         :. forwardedFromRow
         :. (timedTTL, timedDeleteAt, itemLive, BI userMention, BI hasLink, msgSigned, itemFeed)
         :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_, fileExpires)
+        :. (fileMaxSize_, fileBadgeStatus_)
       )
       :. (forwardedByMember, BI showGroupAsSender)
       :. memberRow_
@@ -2506,7 +2510,8 @@ toGroupChatItem
           (Just fileId, Just fileName, Just fileSize, Just fileProtocol) ->
             let cfArgs = CFArgs <$> fileKey <*> fileNonce
                 fileSource = (`CryptoFile` cfArgs) <$> filePath
-             in Just CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol, fileExpires}
+                fileProhibited = (\maxSize -> FileProhibited {maxSize, badgeStatus = fileBadgeStatus_}) <$> fileMaxSize_
+             in Just CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol, fileExpires, fileProhibited}
           _ -> Nothing
       cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTGroup
       cItem d chatDir ciStatus content file =
@@ -2804,7 +2809,7 @@ getDirectChatItem db User {userId} contactId itemId = ExceptT $ do
             i.fwd_from_group_type, i.fwd_from_group_link, i.fwd_from_public_group_id, i.fwd_from_member_id, i.fwd_from_shared_msg_id,
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed, i.item_feed,
             -- CIFile
-            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at,
+            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at, f.file_max_size, f.file_badge_status,
             -- DirectQuote
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
           FROM chat_items i
@@ -3222,7 +3227,7 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
             i.fwd_from_group_type, i.fwd_from_group_link, i.fwd_from_public_group_id, i.fwd_from_member_id, i.fwd_from_shared_msg_id,
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed, i.item_feed,
             -- CIFile
-            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at,
+            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at, f.file_max_size, f.file_badge_status,
             -- CIMeta forwardedByMember, showGroupAsSender
             i.forwarded_by_group_member_id, i.show_group_as_sender,
             -- GroupMember
@@ -3335,7 +3340,7 @@ getLocalChatItem db User {userId} folderId itemId = ExceptT $ do
             i.fwd_from_group_type, i.fwd_from_group_link, i.fwd_from_public_group_id, i.fwd_from_member_id, i.fwd_from_shared_msg_id,
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed, i.item_feed,
             -- CIFile
-            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at
+            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at, f.file_max_size, f.file_badge_status
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           WHERE i.user_id = ? AND i.note_folder_id = ? AND i.chat_item_id = ?
@@ -3343,7 +3348,7 @@ getLocalChatItem db User {userId} folderId itemId = ExceptT $ do
         (userId, folderId, itemId)
 
 toFeedChatItem :: UTCTime -> [CIReactionCount] -> ChatItemRow -> Either StoreError (CChatItem 'CTFeed)
-toFeedChatItem currentTs reactions ((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive, BI userMention, BI hasLink, msgSigned, itemFeed) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_, fileExpires)) =
+toFeedChatItem currentTs reactions ((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sentViaProxy, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. forwardedFromRow :. (timedTTL, timedDeleteAt, itemLive, BI userMention, BI hasLink, msgSigned, itemFeed) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_, fileExpires) :. (fileMaxSize_, fileBadgeStatus_)) =
   chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
     invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
@@ -3359,7 +3364,8 @@ toFeedChatItem currentTs reactions ((itemId, itemTs, AMsgDirection msgDir, itemC
         (Just fileId, Just fileName, Just fileSize, Just fileProtocol) ->
           let cfArgs = CFArgs <$> fileKey <*> fileNonce
               fileSource = (`CryptoFile` cfArgs) <$> filePath
-           in Just CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol, fileExpires}
+              fileProhibited = (\maxSize -> FileProhibited {maxSize, badgeStatus = fileBadgeStatus_}) <$> fileMaxSize_
+           in Just CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol, fileExpires, fileProhibited}
         _ -> Nothing
     cItem :: CIStatus 'MDSnd -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> CChatItem 'CTFeed
     cItem ciStatus content file =
@@ -3400,7 +3406,7 @@ getFeedChatItem db user@User {userId} feedId itemId = ExceptT $ do
             i.fwd_from_group_type, i.fwd_from_group_link, i.fwd_from_public_group_id, i.fwd_from_member_id, i.fwd_from_shared_msg_id,
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed, i.item_feed,
             -- CIFile
-            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at
+            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at, f.file_max_size, f.file_badge_status
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           WHERE i.user_id = ? AND i.feed_id = ? AND i.chat_item_id = ?
