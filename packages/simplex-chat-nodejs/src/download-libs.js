@@ -6,6 +6,10 @@ const extract = require('extract-zip');
 const GITHUB_REPO = 'simplex-chat/simplex-chat-libs';
 const RELEASE_TAG = 'v7.1.0-beta.2';
 const BACKEND = (process.env.SIMPLEX_BACKEND || process.env.npm_config_simplex_backend || 'sqlite').toLowerCase();
+// A locally built libsimplex, copied into libs/ rather than loaded in place:
+// the addon's RUNPATH is $ORIGIN/../../libs.
+const LIBS_DIR_OVERRIDE = process.env.SIMPLEX_LIBS_DIR || process.env.npm_config_simplex_libs_dir;
+const LIB_NAMES = ['libsimplex.so', 'libsimplex.dylib', 'libsimplex.dll'];
 
 if (BACKEND !== 'sqlite' && BACKEND !== 'postgres') {
   console.error(`✗ Invalid SIMPLEX_BACKEND: "${BACKEND}". Must be "sqlite" or "postgres".`);
@@ -83,8 +87,31 @@ function isAlreadyInstalled() {
   }
 }
 
+// No version check: the files behind SIMPLEX_LIBS_DIR change on every rebuild.
+function installFromOverride() {
+  if (!fs.existsSync(LIBS_DIR_OVERRIDE)) {
+    throw new Error(`SIMPLEX_LIBS_DIR does not exist: ${LIBS_DIR_OVERRIDE}`);
+  }
+  const lib = LIB_NAMES.find((name) => fs.existsSync(path.join(LIBS_DIR_OVERRIDE, name)));
+  if (!lib) {
+    throw new Error(`No ${LIB_NAMES.join(' / ')} in SIMPLEX_LIBS_DIR: ${LIBS_DIR_OVERRIDE}`);
+  }
+  console.log(`Using libraries from SIMPLEX_LIBS_DIR: ${LIBS_DIR_OVERRIDE}`);
+  cleanLibsDirectory();
+  copyDirSync(LIBS_DIR_OVERRIDE, LIBS_DIR);
+  // Not a release tag: a later install without the variable sees a mismatch
+  // and replaces these files with the released ones.
+  fs.writeFileSync(INSTALLED_FILE, `${LIBS_DIR_OVERRIDE}:${BACKEND}`, 'utf-8');
+  console.log(`✓ Installed ${lib} and its runtime libraries from ${LIBS_DIR_OVERRIDE}`);
+}
+
 async function install() {
   try {
+    if (LIBS_DIR_OVERRIDE) {
+      installFromOverride();
+      return;
+    }
+
     // Check if already installed
     if (isAlreadyInstalled()) {
       return;

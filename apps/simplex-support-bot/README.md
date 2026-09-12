@@ -76,26 +76,42 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 
 A contact listed in `--broadcasters` sends `/broadcast <text>` in the team group. The bot sends the text as a feed message to every customer group and every direct contact of the bot, replies that the broadcast is queued, and replies again when delivery completes or fails. The text after `/broadcast` may span several lines.
 
+A broadcaster must be a *contact* of the bot, not only a team group member: the bot authorises the sender by `memberContactId`. The bot DMs every team group member the contact id it knows them by; pass that id to `--broadcasters` and restart.
+
+Feeds are part of the core, so `/broadcast` needs a `libsimplex` and types built from this tree — no released version has them. See [Running against this tree](#running-against-this-tree).
+
 ## Environment variables
 
 | Var | Purpose |
 |---|---|
 | `GROK_API_KEY` | xAI API key; enables Grok replies |
 | `SIMPLEX_BACKEND` | alternative to `.npmrc` for selecting the install backend (`sqlite` or `postgres`) |
+| `SIMPLEX_LIBS_DIR` | read by `simplex-chat`'s preinstall: install the `libsimplex` in this directory instead of downloading the release |
+| `NODE_OPTIONS` | `--max-old-space-size=8192` on a bot with many chats: single API responses outgrow the default heap |
 
-## Local development against unreleased lib changes
+## Running against this tree
 
-This package depends on `simplex-chat` from npm. To test against an in-tree version:
+The manifest points at the released `simplex-chat` and `@simplex-chat/types`, which is what a deployment installs. `scripts/support-bot/Dockerfile` builds both from this checkout instead, with the core; by hand:
 
 ```bash
-# In packages/simplex-chat-nodejs
-npm link
+scripts/desktop/build-lib-linux.sh     # libsimplex, hours on a cold cabal store
+libs=$(pwd)/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-$(uname -m)
 
-# In apps/simplex-support-bot
-npm link simplex-chat
+(cd packages/simplex-chat-client/types/typescript && npm install && npx tsc)
+
+cd packages/simplex-chat-nodejs
+SIMPLEX_LIBS_DIR=$libs npm install
+npm install --no-save ../simplex-chat-client/types/typescript
+npx tsc && cp src/simplex.* dist/
+
+cd ../../apps/simplex-support-bot
+npm ci
+SIMPLEX_LIBS_DIR=$libs npm install --no-save \
+  ../../packages/simplex-chat-nodejs \
+  ../../packages/simplex-chat-client/types/typescript
 ```
 
-`npm unlink simplex-chat && npm install` reverts to the registry version.
+`SIMPLEX_LIBS_DIR` is needed in the last step too: npm re-runs the linked library's preinstall, which downloads the released libs without it. `rm -rf node_modules && npm ci` reverts.
 
 ## Troubleshooting
 
@@ -103,4 +119,5 @@ npm link simplex-chat
 - **`libpq5` errors at startup** — install `libpq5` on the host (`apt install libpq5` on Debian/Ubuntu).
 - **`ENOENT: no such file or directory, open './data/state.json'`** — the parent directory of `--state-file` must exist; `mkdir -p data` before starting.
 - **Wrong backend installed** — check `node_modules/simplex-chat/libs/installed.txt`. Edit `.npmrc`, then `rm -rf node_modules && npm install` to switch (`npm install` alone won't re-run the dep's preinstall).
+- **`JavaScript heap out of memory`** — a response outgrew the default heap; restart with `NODE_OPTIONS=--max-old-space-size=8192`.
 - **`libpq` connection error** at startup with sqlite-flavored config (or vice versa) — `.npmrc` was changed but libs weren't reinstalled. See "Switching backends" above.
