@@ -139,7 +139,9 @@ FAIL  database: 21 migration(s) pending, a real start would apply them: 20260507
 
 `--allow-migrations` lets it apply them first (`applied 21 migration(s): …`) and then run the remaining checks — which makes it a migration rehearsal, so point it at a restored copy unless you mean to migrate for real. The bot must be stopped either way; migrating under a running instance is what breaks things, and the upgrade is one-way.
 
-Exit code is 0 when every line is `ok`, 1 otherwise. It verifies the database connection, that no migration is pending, that the persisted team group and Grok user still exist (so neither would be recreated), that every `--broadcasters` / `--auto-add-team-members` id resolves to a contact with the expected display name, and that `--context-file` parses.
+Lines are `ok`, `FAIL`, or `?`. A `?` means the check could not be made offline: `getChatPreviews` — the only chat query that works with the chat stopped — filters on `contacts.contact_used`, so a contact whose direct chat was never used is invisible here even though the bot finds it at startup. Those ids are reported, not failed.
+
+Exit code is 0 when no line is `FAIL`, 1 otherwise. It verifies the database connection, that no migration is pending, that the persisted team group and Grok user still exist (so neither would be recreated), that every `--broadcasters` / `--auto-add-team-members` id resolves to a contact with the expected display name, and that `--context-file` parses.
 
 ## Troubleshooting
 

@@ -26,6 +26,10 @@ export async function dryRun(chat: api.ChatApi, config: Config, state: DryRunSta
     results.push(ok)
     console.log(`${ok ? "ok  " : "FAIL"}  ${msg}`)
   }
+  // Absence cannot be proven with the chat stopped: getChatPreviews filters on
+  // contacts.contact_used, so a contact whose direct chat was never used is
+  // invisible here even though the bot finds it at startup.
+  const unverified = (msg: string): void => console.log(`?     ${msg}`)
 
   if (config.contextFile) {
     try {
@@ -53,7 +57,11 @@ export async function dryRun(chat: api.ChatApi, config: Config, state: DryRunSta
 
   if (state.teamGroupId !== undefined) {
     const group = await findGroup(chat, user.userId, config.teamGroup.name, state.teamGroupId)
-    check(!!group, `team group ${state.teamGroupId}: ${group ? group.groupProfile.displayName : "not found, would be created"}`)
+    if (!group) {
+      unverified(`team group ${state.teamGroupId} not in chat previews, the bot verifies it at startup`)
+    } else {
+      check(true, `team group ${state.teamGroupId}: ${group.groupProfile.displayName}`)
+    }
     if (group && group.groupProfile.displayName !== config.teamGroup.name) {
       check(true, `team group name differs from --team-group, profile would be updated to "${config.teamGroup.name}"`)
     }
@@ -63,11 +71,12 @@ export async function dryRun(chat: api.ChatApi, config: Config, state: DryRunSta
 
   if (state.grokContactId !== undefined) {
     const contact = await findContact(chat, user.userId, GROK_PROFILE_NAME, state.grokContactId)
-    check(!!contact, `Grok contact ${state.grokContactId}: ${contact ? contact.profile.displayName : "not found, would reconnect"}`)
+    if (contact) check(true, `Grok contact ${state.grokContactId}: ${contact.profile.displayName}`)
+    else unverified(`Grok contact ${state.grokContactId} not in chat previews, the bot verifies it at startup`)
   }
 
-  await checkContacts(chat, user.userId, "team member", config.teamMembers, check)
-  await checkContacts(chat, user.userId, "broadcaster", config.broadcasters, check)
+  await checkContacts(chat, user.userId, "team member", config.teamMembers, check, unverified)
+  await checkContacts(chat, user.userId, "broadcaster", config.broadcasters, check, unverified)
 
   return results.every(Boolean)
 }
@@ -77,12 +86,13 @@ async function checkContacts(
   userId: number,
   role: string,
   contacts: IdName[],
-  check: (ok: boolean, msg: string) => void
+  check: (ok: boolean, msg: string) => void,
+  unverified: (msg: string) => void
 ): Promise<void> {
   for (const {id, name} of contacts) {
     const contact = await findContact(chat, userId, name, id)
     if (!contact) {
-      check(false, `${role} ${id}:${name}: not found, the bot would exit`)
+      unverified(`${role} ${id}:${name} not in chat previews, the bot verifies it at startup`)
     } else {
       const match = contact.profile.displayName === name
       check(match, `${role} ${id}:${name}${match ? "" : ` has display name "${contact.profile.displayName}", the bot would exit`}`)

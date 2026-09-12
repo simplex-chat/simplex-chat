@@ -2852,14 +2852,16 @@ describe("Dry Run", () => {
     expect(await dryRun(chat, config(), {})).toBe(true)
   })
 
-  test("team group id not in database → fails", async () => {
+  // Absence is unverifiable with the chat stopped: getChatPreviews filters on
+  // contacts.contact_used, so these ids are reported, not failed.
+  test("team group id not in chat previews → reported, still passes", async () => {
     const chat = mkChat([groupChat(7, "Support Team")])
-    expect(await dryRun(chat, config(), {teamGroupId: 1})).toBe(false)
+    expect(await dryRun(chat, config(), {teamGroupId: 1})).toBe(true)
   })
 
-  test("broadcaster id missing → fails", async () => {
+  test("broadcaster id not in chat previews → reported, still passes", async () => {
     const chat = mkChat([groupChat(1, "Support Team")])
-    expect(await dryRun(chat, config({broadcasters: [{id: 3, name: "alice"}]}), {teamGroupId: 1})).toBe(false)
+    expect(await dryRun(chat, config({broadcasters: [{id: 3, name: "alice"}]}), {teamGroupId: 1})).toBe(true)
   })
 
   test("broadcaster name mismatch → fails even though the id exists", async () => {
