@@ -690,6 +690,7 @@
   <string name="supporter_badge">supporter badge</string>
   <string name="legend_badge">legend badge</string>
   <string name="large_file_requires_badge">Sending file larger than %1$s requires a %2$s.</string>
+  <string name="max_file_size_with_badge">Maximum supported file size is %1$s, with a %2$s.</string>
   <string name="badge_expired">Contact\'s badge expired.</string>
   <string name="badge_verification_failed">Contact\'s badge verification failed.</string>
   <string name="badge_no_key">No key to verify contact\'s badge.</string>

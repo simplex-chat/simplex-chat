@@ -280,6 +280,26 @@ public func cleanupFile(_ aChatItem: AChatItem) {
     }
 }
 
+public func requiredBadgeName(_ fileSize: Int64) -> String {
+    fileSize <= MAX_FILE_SIZE_XFTP_SUPPORTER
+    ? NSLocalizedString("supporter badge", comment: "badge required to send a large file")
+    : NSLocalizedString("legend badge", comment: "badge required to send a large file")
+}
+
+public func largeFileMessage(_ fileSize: Int64, _ maxSize: Int64) -> String {
+    fileSize > MAX_FILE_SIZE_XFTP_LEGEND
+    ? String.localizedStringWithFormat(
+        NSLocalizedString("Maximum supported file size is %1$@, with a %2$@.", comment: "file alert"),
+        ByteCountFormatter.string(fromByteCount: MAX_FILE_SIZE_XFTP_LEGEND, countStyle: .binary),
+        NSLocalizedString("legend badge", comment: "badge required to send a large file")
+      )
+    : String.localizedStringWithFormat(
+        NSLocalizedString("Sending file larger than %1$@ requires a %2$@.", comment: "file alert"),
+        ByteCountFormatter.string(fromByteCount: maxSize, countStyle: .binary),
+        requiredBadgeName(fileSize)
+      )
+}
+
 // the send limit: the user's own badge counts as active for one day past expiry, as the core applies it
 public func getMaxFileSize(_ fileProtocol: FileProtocol, _ senderProfile: LocalProfile? = nil) -> Int64 {
     switch fileProtocol {

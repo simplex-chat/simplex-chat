@@ -480,6 +480,15 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   return fileCount to bytes
 }
 
+fun requiredBadgeName(fileSize: Long): String =
+  generalGetString(if (fileSize <= MAX_FILE_SIZE_XFTP_SUPPORTER) MR.strings.supporter_badge else MR.strings.legend_badge)
+
+fun largeFileMessage(fileSize: Long, maxSize: Long): String =
+  if (fileSize > MAX_FILE_SIZE_XFTP_LEGEND)
+    String.format(generalGetString(MR.strings.max_file_size_with_badge), formatBytes(MAX_FILE_SIZE_XFTP_LEGEND), generalGetString(MR.strings.legend_badge))
+  else
+    String.format(generalGetString(MR.strings.large_file_requires_badge), formatBytes(maxSize), requiredBadgeName(fileSize))
+
 // the send limit: the user's own badge counts as active for one day past expiry, as the core applies it
 fun getMaxFileSize(fileProtocol: FileProtocol, senderProfile: LocalProfile? = null): Long = when (fileProtocol) {
   FileProtocol.SMP -> MAX_FILE_SIZE_SMP

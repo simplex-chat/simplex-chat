@@ -331,7 +331,7 @@ fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
     } else if (fileSize != null) {
       AlertManager.shared.showAlertMsg(
         generalGetString(MR.strings.large_file),
-        String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
+        largeFileMessage(fileSize, maxFileSize)
       )
     } else {
       showWrongUriAlert()
@@ -360,7 +360,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
             bitmap = null
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.large_file),
-              String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
+              largeFileMessage(fileSize ?: 0, maxFileSize)
             )
             null
           }

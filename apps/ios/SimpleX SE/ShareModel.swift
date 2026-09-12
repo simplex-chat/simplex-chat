@@ -456,15 +456,13 @@ fileprivate func getSharedContent(_ ip: NSItemProvider, _ senderProfile: LocalPr
         // Prepare Data message
         case .fileURL:
             if let url = try? await inPlaceUrl(type: .data) {
-                if isFileTooLarge(for: url, senderProfile) {
-                    let sizeString = ByteCountFormatter.string(
-                        fromByteCount: Int64(getMaxFileSize(.xftp, senderProfile)),
-                        countStyle: .binary
-                    )
+                let size = Int64(fileSize(url) ?? 0)
+                let maxSize = getMaxFileSize(.xftp, senderProfile)
+                if size > maxSize {
                     return .failure(
                         ErrorAlert(
                             title: "Large file!",
-                            message: "Currently maximum supported file size is \(sizeString)."
+                            message: LocalizedStringKey(largeFileMessage(size, maxSize))
                         )
                     )
                 }
@@ -545,11 +543,5 @@ fileprivate func transcodeVideo(from input: URL) async -> URL? {
         try? FileManager.default.removeItem(at: outputUrl)
         return nil
     }
-}
-
-fileprivate func isFileTooLarge(for url: URL, _ senderProfile: LocalProfile) -> Bool {
-    fileSize(url)
-        .map { $0 > getMaxFileSize(.xftp, senderProfile) }
-        ?? false
 }
 
