@@ -223,6 +223,12 @@ export namespace AgentServiceError {
     type: "badSignature"
   }
 }
+// Remote controller app version range (min and max as version strings).
+
+export interface AppVersionRange {
+  minVersion: string
+  maxVersion: string
+}
 
 export interface AutoAccept {
   acceptIncognito: boolean
@@ -2210,6 +2216,13 @@ export interface CryptoFileArgs {
   fileKey: string
   fileNonce: string
 }
+// Remote controller application info.
+
+export interface CtrlAppInfo {
+  appVersionRange: AppVersionRange
+  deviceName: string
+  compression: boolean
+}
 
 export interface DroppedMsg {
   brokerTs: string // ISO-8601 timestamp
@@ -3950,6 +3963,11 @@ export interface RelayCapabilities {
   webDomain?: string
 }
 
+export interface RelayConnectionResult {
+  relayMember: GroupMember
+  relayError?: ChatError
+}
+
 export interface RelayProfile {
   displayName: string
   fullName: string
@@ -3965,6 +3983,87 @@ export enum RelayStatus {
   Active = "active",
   Inactive = "inactive",
   Rejected = "rejected",
+}
+
+export interface RemoteCtrlInfo {
+  remoteCtrlId: number // int64
+  ctrlDeviceName: string
+  sessionState?: RemoteCtrlSessionState
+}
+
+export type RemoteCtrlSessionState = 
+  | RemoteCtrlSessionState.Starting
+  | RemoteCtrlSessionState.Searching
+  | RemoteCtrlSessionState.Connecting
+  | RemoteCtrlSessionState.PendingConfirmation
+  | RemoteCtrlSessionState.Connected
+
+export namespace RemoteCtrlSessionState {
+  export type Tag = 
+    | "starting"
+    | "searching"
+    | "connecting"
+    | "pendingConfirmation"
+    | "connected"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Starting extends Interface {
+    type: "starting"
+  }
+
+  export interface Searching extends Interface {
+    type: "searching"
+  }
+
+  export interface Connecting extends Interface {
+    type: "connecting"
+  }
+
+  export interface PendingConfirmation extends Interface {
+    type: "pendingConfirmation"
+    sessionCode: string
+  }
+
+  export interface Connected extends Interface {
+    type: "connected"
+    sessionCode: string
+  }
+}
+
+export type RemoteCtrlStopReason = 
+  | RemoteCtrlStopReason.DiscoveryFailed
+  | RemoteCtrlStopReason.ConnectionFailed
+  | RemoteCtrlStopReason.SetupFailed
+  | RemoteCtrlStopReason.Disconnected
+
+export namespace RemoteCtrlStopReason {
+  export type Tag = "discoveryFailed" | "connectionFailed" | "setupFailed" | "disconnected"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface DiscoveryFailed extends Interface {
+    type: "discoveryFailed"
+    chatError: ChatError
+  }
+
+  export interface ConnectionFailed extends Interface {
+    type: "connectionFailed"
+    chatError: ChatError
+  }
+
+  export interface SetupFailed extends Interface {
+    type: "setupFailed"
+    chatError: ChatError
+  }
+
+  export interface Disconnected extends Interface {
+    type: "disconnected"
+  }
 }
 
 export enum ReportReason {

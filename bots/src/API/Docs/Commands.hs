@@ -80,7 +80,7 @@ chatCommandsDocsData =
       [ ("APICreateMyAddress", ["server_"], "Create bot address.", ["CRUserContactLinkCreated", "CRChatCmdError"], [], Just UNInteractive, "/_address " <> Param "userId" <> OnOffParam "pq_ratchet" "pqRatchet" Nothing),
         ("APIDeleteMyAddress", [], "Delete bot address.", ["CRUserContactLinkDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete_address " <> Param "userId"),
         ("APIShowMyAddress", [], "Get bot address and settings.", ["CRUserContactLink", "CRChatCmdError"], [], Nothing, "/_show_address " <> Param "userId"),
-        ("APISetProfileAddress", [], "Add address to bot profile.", ["CRUserProfileUpdated", "CRChatCmdError"], [], Just UNInteractive, "/_profile_address " <> Param "userId" <> " " <> OnOff "enable"),
+        ("APISetProfileAddress", [], "Add address to bot profile.", ["CRUserProfileUpdated", "CRUserProfileNoChange", "CRChatCmdError"], [], Just UNInteractive, "/_profile_address " <> Param "userId" <> " " <> OnOff "enable"),
         ("APISetAddressSettings", [], "Set bot address settings.", ["CRUserContactLinkUpdated", "CRChatCmdError"], [], Just UNInteractive, "/_address_settings " <> Param "userId" <> OnOffParam "pq_ratchet" "pqRatchet" Nothing <> " " <> Json "settings")
       ]
     ),
@@ -98,7 +98,7 @@ chatCommandsDocsData =
         ("APIDeleteChatItem", [], "Delete message.", ["CRChatItemsDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete item " <> Param "chatRef" <> " " <> Join ',' "chatItemIds" <> " " <> Param "deleteMode"),
         ("APIDeleteMemberChatItem", [], "Moderate message. Requires Moderator role (and higher than message author's).", ["CRChatItemsDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete member item #" <> Param "groupId" <> " " <> Join ',' "chatItemIds"),
         ("APIChatItemReaction", [], "Add/remove message reaction.", ["CRChatItemReaction", "CRChatCmdError"], [], Just UNBackground, "/_reaction " <> Param "chatRef" <> " " <> Param "chatItemId" <> " " <> OnOff "add" <> " " <> Json "reaction"),
-        ("APIShareMyAddress", [], "Share user address card", ["CRChatMsgContent"], [], Nothing, "/_share address" <> Param "toSendRef"),
+        ("APIShareMyAddress", [], "Share user address card", ["CRChatMsgContent"], [], Nothing, "/_share address " <> Param "toSendRef"),
         ("APIShareChatMsgContent", [], "Share channel address", ["CRChatMsgContent"], [], Nothing, "/_share chat content " <> Param "shareChatRef" <> " " <> Param "toSendRef")
       ]
     ),
@@ -141,7 +141,7 @@ chatCommandsDocsData =
         -- `Maybe` in `connectTarget :: Maybe ConnectTarget` is used to signal parse failure to the runtime (the handler returns CEInvalidConnReq on Nothing); it is NOT API-level optionality. The parameter is required from callers.
         ("APIConnectPlan", [], "Determine SimpleX link type and if the bot is already connected via this link or name.", ["CRConnectionPlan", "CRChatCmdError"], [], Just UNInteractive, "/_connect plan " <> Param "userId" <> " " <> Param "connectTarget"),
         ("APIConnect", [], "Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> Optional "" (" " <> Param "$0") "preparedLink_"),
-        ("Connect", [], "Connect via SimpleX link or name as string in the active user profile.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/connect" <> Optional "" (" " <> Param "$0") "connTarget_"),
+        ("Connect", [], "Connect via SimpleX link or name as string in the active user profile.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRConnectionPlan", "CRSentInvitationToContact", "CRStartedConnectionToContact", "CRStartedConnectionToGroup", "CRChatCmdError"], [], Just UNInteractive, "/connect" <> Optional "" (" " <> Param "$0") "connTarget_"),
         ("APIAcceptContact", ["incognito"], "Accept contact request.", ["CRAcceptingContactRequest", "CRChatCmdError"], [], Just UNInteractive, "/_accept " <> Param "contactReqId"),
         ("APIRejectContact", [], "Reject contact request. The user who sent the request is **not notified**.", ["CRContactRequestRejected", "CRChatCmdError"], [], Nothing, "/_reject " <> Param "contactReqId")
       ]
@@ -201,6 +201,12 @@ chatCommandsDocsData =
       "These commands should not be used with CLI-based bots",
       [ ("StartChat", [], "Start chat controller.", ["CRChatStarted", "CRChatRunning"], [], Nothing, "/_start" <> OnOffParam "main" "mainApp" Nothing <> OnOffParam "snd_files" "enableSndFiles" (Just True) <> OnOffParam "service_requests" "serviceRequests" (Just False)),
         ("APIStopChat", [], "Stop chat controller.", ["CRChatStopped"], [], Nothing, "/_stop")
+      ]
+    ),
+    ( "Remote control commands",
+      "Allows a bot to accept an incoming remote control session from a SimpleX Desktop client, giving the desktop live access to the bot's SimpleX instance.",
+      [ ("ConnectRemoteCtrl", [], "Connect to a remote controller using an OOB invitation link.", ["CRRemoteCtrlConnecting", "CRChatCmdError"], [], Just UNInteractive, "/crc " <> Param "remoteInvitation"),
+        ("VerifyRemoteCtrlSession", [], "Verify the remote controller session code to complete the connection.", ["CRRemoteCtrlConnected", "CRChatCmdError"], [], Nothing, "/verify remote ctrl " <> Param "sessionCode")
       ]
     )
   ]
@@ -452,7 +458,6 @@ undocumentedCommands =
     "APIVerifyToken",
     "CheckChatRunning",
     "ConfirmRemoteCtrl",
-    "ConnectRemoteCtrl",
     "CustomChatCommand",
     "DebugEvent",
     "DebugLocks",
@@ -499,6 +504,5 @@ undocumentedCommands =
     "SwitchRemoteHost",
     "TestChatRelay",
     "TestProtoServer",
-    "TestStorageEncryption",
-    "VerifyRemoteCtrlSession"
+    "TestStorageEncryption"
   ]

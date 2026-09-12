@@ -152,6 +152,13 @@ chatEventsDocsData =
       ],
       []
     ),
+    ( "Remote control events",
+      "Bots that act as remote control hosts receive these events during the remote control session lifecycle.",
+      [ ("CEvtRemoteCtrlSessionCode", "Remote controller session code ready for verification.\n\nUse [VerifyRemoteCtrlSession](./COMMANDS.md#verifyremotectrlsession) to complete the connection."),
+        ("CEvtRemoteCtrlStopped", "Remote controller session stopped.")
+      ],
+      []
+    ),
     ( "Error events",
       "Bots may log these events for debugging. \
       \There will be many error events - this does NOT indicate a malfunction - \
@@ -203,8 +210,6 @@ undocumentedEvents =
     "CEvtRcvFileProgressXFTP",
     "CEvtRcvStandaloneFileComplete",
     "CEvtRemoteCtrlFound",
-    "CEvtRemoteCtrlSessionCode",
-    "CEvtRemoteCtrlStopped",
     "CEvtRemoteHostConnected",
     "CEvtRemoteHostSessionCode",
     "CEvtRemoteHostStopped",

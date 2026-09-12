@@ -52,6 +52,8 @@ export type ChatEvent =
   | CEvt.SubscriptionStatus
   | CEvt.ServiceRequest
   | CEvt.ServiceReplySent
+  | CEvt.RemoteCtrlSessionCode
+  | CEvt.RemoteCtrlStopped
   | CEvt.MessageError
   | CEvt.ChatError
   | CEvt.ChatErrors
@@ -106,6 +108,8 @@ export namespace CEvt {
     | "subscriptionStatus"
     | "serviceRequest"
     | "serviceReplySent"
+    | "remoteCtrlSessionCode"
+    | "remoteCtrlStopped"
     | "messageError"
     | "chatError"
     | "chatErrors"
@@ -469,6 +473,18 @@ export namespace CEvt {
   export interface ServiceReplySent extends Interface {
     type: "serviceReplySent"
     connectionId: string
+  }
+
+  export interface RemoteCtrlSessionCode extends Interface {
+    type: "remoteCtrlSessionCode"
+    remoteCtrl_?: T.RemoteCtrlInfo
+    sessionCode: string
+  }
+
+  export interface RemoteCtrlStopped extends Interface {
+    type: "remoteCtrlStopped"
+    rcsState: T.RemoteCtrlSessionState
+    rcStopReason: T.RemoteCtrlStopReason
   }
 
   export interface MessageError extends Interface {
