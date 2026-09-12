@@ -782,9 +782,9 @@ processChatCommand cxt nm = \case
       startFeedWorkers feedId
       pure $ CRNewChatItems user [aFeedItem feed ci]
     where
-      setupSndFileTransfer user@User {profile = LocalProfile {localBadge}} feed = forM file_ $ \file -> do
-        fileSize <- checkSndFile localBadge file
-        (fInv, ciFile, _) <- xftpSndFileTransfer_ user file fileSize 1 (Just $ CGFeed feed)
+      setupSndFileTransfer user feed = forM file_ $ \file -> do
+        fileSize <- checkSndFile Nothing file
+        (fInv, ciFile, _) <- xftpSndFileTransfer_ user file fileSize 1 (Just $ CGFeed feed) Nothing
         pure (fInv, ciFile)
       unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
       unzipMaybe = maybe (Nothing, Nothing) (\(a, b) -> (Just a, Just b))

@@ -285,8 +285,8 @@ processAgentMsgSndFile _corrId aFileId msg = do
                     (rfd : _, _, SMDSnd, FeedChat feed@Feed {feedId}) -> do
                       let feedItemId = fileItemId
                       partSize <- asks $ xftpDescrPartSize . config
-                      let parts = splitFileDescr partSize (fileDescrText rfd)
-                          events = L.map (\fileDescr -> XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires, feed = Just True}) parts
+                      let parts = splitFileDescr partSize partSize (fileDescrText rfd)
+                          events = L.map (\fileDescr -> XMsgFileDescr {msgId = sharedMsgId, fileDescr, fileExpires, fileBadge = Nothing, feed = Just True}) parts
                       createFeedFileDescrJobs feed feedItemId events
                       startFeedWorkers feedId
                       ci' <- withStore $ \db -> do
