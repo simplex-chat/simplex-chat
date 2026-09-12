@@ -97,11 +97,16 @@ class SimplexService: Service() {
     isServiceStarting = false
     isServiceStarted = false
     stopAfterStart = false
-    saveServiceState(this, ServiceState.STOPPED)
+    val serviceState = serviceStateOnDestroy(
+      allowRestart = SimplexApp.context.allowToStartServiceAfterAppExit(),
+      stopRequested = serviceStopRequested,
+    )
+    saveServiceState(this, serviceState)
 
     // If notification service is enabled and battery optimization is disabled, restart the service
-    if (SimplexApp.context.allowToStartServiceAfterAppExit())
+    if (serviceState == ServiceState.STARTED)
       sendBroadcast(Intent(this, AutoRestartReceiver::class.java))
+    serviceStopRequested = false
     super.onDestroy()
   }
 
@@ -323,6 +328,7 @@ class SimplexService: Service() {
     var isServiceStarting = false
     var isServiceStarted = false
     private var stopAfterStart = false
+    private var serviceStopRequested = false
 
     fun scheduleStart(context: Context) {
       Log.d(TAG, "Enqueuing work to start subscriber service")
@@ -338,6 +344,7 @@ class SimplexService: Service() {
      * exception related to foreground services lifecycle
      * */
     fun safeStopService() {
+      serviceStopRequested = true
       if (isServiceStarted) {
         androidAppContext.stopService(Intent(androidAppContext, SimplexService::class.java))
       } else if (isServiceStarting) {
@@ -351,6 +358,9 @@ class SimplexService: Service() {
         return
       }
       Log.d(TAG, "SimplexService serviceAction: ${action.name}")
+      if (action == Action.START) {
+        serviceStopRequested = false
+      }
       withContext(Dispatchers.IO) {
         Intent(androidAppContext, SimplexService::class.java).also {
           it.action = action.name
@@ -365,6 +375,9 @@ class SimplexService: Service() {
         context.stopService(intent) // Service will auto-restart
       }
     }
+
+    internal fun serviceStateOnDestroy(allowRestart: Boolean, stopRequested: Boolean): ServiceState =
+      if (allowRestart && !stopRequested) ServiceState.STARTED else ServiceState.STOPPED
 
     fun saveServiceState(context: Context, state: ServiceState) {
       getPreferences(context).edit()
