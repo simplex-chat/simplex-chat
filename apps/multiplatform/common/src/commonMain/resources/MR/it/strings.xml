@@ -2952,4 +2952,13 @@
     <string name="file_expired">File scaduto</string>
     <string name="info_row_file_expired">Il file era disponibile fino al</string>
     <string name="file_error_expired">Il file era disponibile fino al %1$s.</string>
+    <string name="badge_expired">La targhetta del contatto è scaduta.</string>
+    <string name="badge_verification_failed">Verifica della targhetta del contatto fallita.</string>
+    <string name="max_file_size_with_badge">La dimensione massima dei file è %1$s, con una %2$s.</string>
+    <string name="badge_no_key">Nessuna chiave per verificare la targhetta del contatto.</string>
+    <string name="large_file_incognito">I file più grandi di %1$s non possono essere inviati nelle chat in incognito.</string>
+    <string name="legend_badge">targhetta leggenda</string>
+    <string name="supporter_badge">targhetta sostenitore</string>
+    <string name="large_file_requires_badge">Ti serve una %1$s per inviare file più grandi di %2$s.</string>
+    <string name="your_badge_expired">La tua targhetta è scaduta.</string>
 </resources>
