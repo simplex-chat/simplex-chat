@@ -1376,7 +1376,7 @@ Query:
             i.fwd_from_group_type, i.fwd_from_group_link, i.fwd_from_public_group_id, i.fwd_from_member_id, i.fwd_from_shared_msg_id,
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed, i.item_feed,
             -- CIFile
-            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at
+            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at, f.file_max_size, f.file_badge_status
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           WHERE i.user_id = ? AND i.feed_id = ? AND i.chat_item_id = ?
@@ -6306,7 +6306,7 @@ Query:
     FROM group_members m
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
-  
+   
                 JOIN groups g ON g.group_id = m.group_id
                 WHERE m.user_id = ? AND g.business_chat = ?
                   AND m.group_id > ? AND m.group_id <= ?
