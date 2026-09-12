@@ -90,6 +90,7 @@ Channel creation happens in `createNtfChannelsMaybeShowAlert()` ([line 298](../.
 [Line 102](../../android/src/main/java/chat/simplex/app/model/NtfManager.android.kt#L102):
 
 - Uses `NotificationCompat.Builder` with `MessageChannel`.
+- Sets the chat avatar as the large icon, clipped to a circle -- the contact's profile image for direct chats, the group's image for groups. No large icon is set when the chat has no image or `NotificationPreviewMode.HIDDEN` is set, except for notifications with action buttons, which fall back to the app icon.
 - Groups notifications using `MessageGroup` with `GROUP_ALERT_CHILDREN` behavior.
 - Applies rate limiting: silent mode if notification for the same `(userId, chatId)` was shown within 30 seconds (`msgNtfTimeoutMs`).
 - Creates a group summary notification ([line 142](../../android/src/main/java/chat/simplex/app/model/NtfManager.android.kt#L142)) with `setGroupSummary(true)`.
