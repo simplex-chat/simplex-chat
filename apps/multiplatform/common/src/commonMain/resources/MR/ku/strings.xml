@@ -157,7 +157,7 @@
     <string name="is_not_verified">%s ne tesdîqkirî ye</string>
     <string name="your_settings">Eyarên te</string>
     <string name="your_simplex_contact_address">Adresa te yî SimpleXê</string>
-    <string name="about_simplex_chat">Li ser SimpleX Chat</string>
+    <string name="about_simplex_chat">Li ser SimpleX Chatê</string>
     <string name="how_to_use_simplex_chat">Çawa tê şuxulandin</string>
     <string name="markdown_help">Arîkariya Markdownê</string>
     <string name="chat_with_the_founder">Pirsan û fikran bişîne</string>
@@ -363,7 +363,7 @@
     <string name="send_disappearing_message_1_minute">1 deqe</string>
     <string name="chat_item_ttl_month">1 heyv</string>
     <string name="one_time_link_short">lînka 1-carê</string>
-    <string name="chat_item_ttl_week">1 heftî</string>
+    <string name="chat_item_ttl_week">1 ḧeftî</string>
     <string name="chat_item_ttl_year">1 sal</string>
     <string name="send_disappearing_message_30_seconds">30 saniye</string>
     <string name="send_disappearing_message_5_minutes">5 deqe</string>
@@ -661,7 +661,7 @@
     <string name="group_member_role_moderator">moderator</string>
     <string name="group_member_role_owner">xwedî</string>
     <string name="group_member_status_rejected">redkirî</string>
-    <string name="group_member_status_removed">derxistî</string>
+    <string name="group_member_status_removed">derxist</string>
     <string name="group_member_status_left">derketiye</string>
     <string name="group_member_status_unknown_short">nayê zanîn</string>
     <string name="past_member_vName">Endam %1$s</string>
@@ -833,4 +833,27 @@
     <string name="restart_chat_button">Siḧbetê ji nû ve veke</string>
     <string name="migrate_from_device_stopping_chat">Siḧbet tê sekinandin</string>
     <string name="migrate_from_device_start_chat">Siḧbetê bide destpêkirin</string>
+    <string name="countdown_hrs_min_sec">%1$02d st %2$02d dq %3$02d sn</string>
+    <string name="chat_link_from_owner">(ji xwedî)</string>
+    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(skan bike yan jî bizeliqîne)</string>
+    <string name="only_stored_on_members_devices">(tenê ji endamên komê tê qeydkirin)</string>
+    <string name="callstate_received_answer">cewab stand…</string>
+    <string name="callstate_received_confirmation">tesdîqkirin stand…</string>
+    <string name="settings_section_title_about">Li ser</string>
+    <string name="rcv_group_event_member_deleted">%1$s hat jêbirin</string>
+    <string name="rcv_group_event_user_deleted">te derxist</string>
+    <string name="rcv_group_event_1_member_connected">%s hat girêdan</string>
+    <string name="rcv_group_event_2_members_connected">%s û %s hatin girêdan</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s û %d endamên dî hatin girêdan</string>
+    <string name="group_member_role_relay">relay</string>
+    <string name="sender_at_ts">%s li %s</string>
+    <string name="feature_received_prohibited">standî, memnû</string>
+    <string name="ttl_s">%dsn</string>
+    <string name="ttl_m">%ddq</string>
+    <string name="ttl_h">%dst</string>
+    <string name="ttl_w">%dḧ</string>
+    <string name="feature_roles_owners">xwedî</string>
+    <string name="relay_conn_status_removed">derxist</string>
+    <string name="relay_status_rejected">redkirî</string>
+    <string name="tray_tooltip">SimpleX</string>
 </resources>
