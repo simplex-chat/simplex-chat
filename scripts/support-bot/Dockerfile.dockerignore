@@ -1,0 +1,25 @@
+# The build context is the repository root: everything is excluded, then what the
+# image is built from is added back.
+*
+
+!cabal.project
+!simplex-chat.cabal
+!README.md
+!PRIVACY.md
+!libsimplex.dll.def
+!flake.nix
+!src
+!scripts/cabal.project.local.linux
+!scripts/desktop
+!packages/simplex-chat-client
+!packages/simplex-chat-nodejs
+!apps/simplex-support-bot
+
+# Build output and local state in those directories; the image builds its own.
+**/node_modules
+**/dist
+**/build
+**/libs
+**/data
+**/.env
+**/.npmrc
