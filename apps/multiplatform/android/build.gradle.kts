@@ -135,7 +135,7 @@ android {
                 if (isRelease) {
                     include("arm64-v8a", "armeabi-v7a")
                 } else {
-                    include("arm64-v8a", "armeabi-v7a")
+                    include("arm64-v8a")
                     isUniversalApk = false
                 }
             }

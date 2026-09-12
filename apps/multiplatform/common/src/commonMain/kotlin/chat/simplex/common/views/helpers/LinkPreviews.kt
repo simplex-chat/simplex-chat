@@ -194,7 +194,7 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
 
 @Composable
 fun ChatItemLinkView(linkPreview: LinkPreview, showMenu: State<Boolean>, onLongClick: () -> Unit) {
-  val image = base64ToBitmap(linkPreview.image)
+  val image = remember(linkPreview.image) { base64ToBitmap(linkPreview.image) }
   Column(
     Modifier
     .layoutId(CHAT_IMAGE_LAYOUT_ID)
@@ -207,7 +207,7 @@ fun ChatItemLinkView(linkPreview: LinkPreview, showMenu: State<Boolean>, onLongC
       modifier = Modifier
         .fillMaxWidth()
         .desktopModifyBlurredState(true, blurred, showMenu)
-        .privacyBlur(true, blurred, chatViewScrollState.collectAsState(), onLongClick = onLongClick),
+        .privacyBlur(true, image, blurred, chatViewScrollState.collectAsState(), onLongClick = onLongClick),
       contentScale = ContentScale.FillWidth,
     )
     Column(Modifier.padding(top = 6.dp).padding(horizontal = 12.dp)) {
