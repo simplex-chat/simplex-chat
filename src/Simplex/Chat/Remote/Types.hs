@@ -1,7 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
@@ -13,7 +12,6 @@
 module Simplex.Chat.Remote.Types where
 
 import Control.Concurrent.Async (Async)
-import GHC.Generics (Generic)
 import Control.Concurrent.STM
 import Control.Exception (Exception)
 import Control.Monad (when)
@@ -226,7 +224,7 @@ data CtrlAppInfo = CtrlAppInfo
     deviceName :: Text,
     compression :: BoolDef
   }
-  deriving (Show, Generic)
+  deriving (Show)
 
 data HostAppInfo = HostAppInfo
   { appVersion :: AppVersion,

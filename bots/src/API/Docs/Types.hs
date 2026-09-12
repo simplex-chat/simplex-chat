@@ -479,6 +479,7 @@ deriving instance Generic CIMentionMember
 deriving instance Generic CIReactionCount
 deriving instance Generic CITimed
 deriving instance Generic ClientNotice
+deriving instance Generic CtrlAppInfo
 deriving instance Generic Color
 deriving instance Generic CommandError
 deriving instance Generic CommandErrorType
