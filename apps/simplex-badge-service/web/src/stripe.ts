@@ -129,7 +129,7 @@ export interface MountRequest {
   clientSecret: string;
   target: unknown;
   appearance: Appearance;
-  // Where a 3DS redirect returns; must carry no order id (see CheckoutActions.confirm).
+  // Where a 3DS redirect returns; must carry no order id (see cardReturnUrl in main.ts).
   returnUrl: string;
   loadStripe: LoadStripeJs;
 }
