@@ -2935,4 +2935,13 @@
     <string name="file_expired">文件已到期</string>
     <string name="info_row_file_expired">文件到期日</string>
     <string name="file_error_expired">文件到期日 %1$s。</string>
+    <string name="badge_expired">联系人徽章已过期。</string>
+    <string name="badge_verification_failed">联系人徽章验证失败。</string>
+    <string name="large_file_incognito">隐身聊天中无法发送超过 %1$s 的文件。</string>
+    <string name="legend_badge">传奇徽章</string>
+    <string name="max_file_size_with_badge">最大支持的文件大小是 %1$s，有 %2$s。</string>
+    <string name="badge_no_key">没有密钥来验证联系人的徽章。</string>
+    <string name="supporter_badge">支持者徽章</string>
+    <string name="large_file_requires_badge">你需要一枚 %1$s 来发送超过 %2$s 的文件。</string>
+    <string name="your_badge_expired">你的徽章过期了。</string>
 </resources>
