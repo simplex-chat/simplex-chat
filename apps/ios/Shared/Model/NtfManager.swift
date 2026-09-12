@@ -15,6 +15,7 @@ import SimpleXChat
 let ntfActionAcceptContact = "NTF_ACT_ACCEPT_CONTACT"
 let ntfActionAcceptCall = "NTF_ACT_ACCEPT_CALL"
 let ntfActionRejectCall = "NTF_ACT_REJECT_CALL"
+let ntfActionReply = "NTF_ACT_REPLY"
 
 private let ntfTimeInterval: TimeInterval = 1
 
@@ -39,8 +40,13 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     // Handle notification when app is in background
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
-                                withCompletionHandler handler: () -> Void) {
+                                withCompletionHandler handler: @escaping () -> Void) {
         logger.debug("NtfManager.userNotificationCenter: didReceive")
+        // quick reply is delivered to the app (not the NSE); sendReplyFromNotification calls handler() itself
+        if response.actionIdentifier == ntfActionReply {
+            sendReplyFromNotification(response, handler)
+            return
+        }
         if appStateGroupDefault.get() == .active {
             processNotificationResponse(response)
         } else {
@@ -84,6 +90,44 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         }
     }
 
+    // a non-foreground reply action launches the app in the background; take the core like the share
+    // extension does (ShareModel.send), send, and finish under a background task
+    func sendReplyFromNotification(_ response: UNNotificationResponse, _ handler: @escaping () -> Void) {
+        let content = response.notification.request.content
+        guard let textResponse = response as? UNTextInputNotificationResponse,
+              let chatId = content.targetContentIdentifier,
+              !textResponse.userText.isEmpty
+        else {
+            handler()
+            return
+        }
+        let text = textResponse.userText
+        let userId = content.userInfo["userId"] as? Int64
+        // finish() runs the handler and ends the bg task once; it is also the expiration handler, so it always runs
+        let finish = beginBGTask(handler)
+        if !ChatModel.shared.chatInitialized {
+            initChatAndMigrate()
+        }
+        startChatAndActivate {
+            Task {
+                if let userId = userId, userId != ChatModel.shared.currentUser?.userId {
+                    await MainActor.run { changeActiveUser(userId, viewPwd: nil) }
+                }
+                if let chat = ChatModel.shared.getChat(chatId),
+                   chat.chatInfo.chatType == .direct || chat.chatInfo.chatType == .group,
+                   chat.chatInfo.sendMsgEnabled {
+                    _ = await apiSendMessages(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        scope: chat.chatInfo.groupChatScope(),
+                        composedMessages: [ComposedMessage(msgContent: .text(text))]
+                    )
+                }
+                finish()
+            }
+        }
+    }
+
     private func ntfCallAction(_ content: UNNotificationContent, _ action: String) -> (ChatId, NtfCallAction)? {
         if content.categoryIdentifier == ntfCategoryCallInvitation,
            let chatId = content.userInfo["chatId"] as? String {
@@ -108,7 +152,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         let model = ChatModel.shared
         if UIApplication.shared.applicationState == .active {
             switch content.categoryIdentifier {
-            case ntfCategoryMessageReceived:
+            case ntfCategoryMessageReceived, ntfCategoryMessageReceivedReply:
                 let recent = recentInTheSameChat(content)
                 let userId = content.userInfo["userId"] as? Int64
                 if let userId = userId, let user = model.getUser(userId), !user.showNotifications {
@@ -177,6 +221,20 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             UNNotificationCategory(
                 identifier: ntfCategoryMessageReceived,
                 actions: [],
+                intentIdentifiers: [],
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("New message", comment: "notification")
+            ),
+            UNNotificationCategory(
+                identifier: ntfCategoryMessageReceivedReply,
+                actions: [
+                    UNTextInputNotificationAction(
+                        identifier: ntfActionReply,
+                        title: NSLocalizedString("Reply", comment: "notification action"),
+                        options: [.authenticationRequired],
+                        textInputButtonTitle: NSLocalizedString("Send", comment: "notification reply button"),
+                        textInputPlaceholder: NSLocalizedString("Message", comment: "notification reply placeholder")
+                    )
+                ],
                 intentIdentifiers: [],
                 hiddenPreviewsBodyPlaceholder: NSLocalizedString("New message", comment: "notification")
             ),
