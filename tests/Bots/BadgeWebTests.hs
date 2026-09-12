@@ -19,7 +19,7 @@ import BadgeService.Waiters (awaitStatus, newWaiters, publish, waitingCount)
 import BadgeService.Web.Server
 import Bots.BadgeCatalogTests (WebOffer (..), WebPrice (..), parseCatalogSource)
 import Bots.FakeBTCPay
-import Bots.FakeStripe (FakeStripe (..), setSessionState, stripeEvent, stripeSigHeader, withFakeStripe)
+import Bots.FakeStripe (FakeStripe (..), setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.Async (async, wait)
 import qualified Control.Concurrent.Async as Async
@@ -253,9 +253,9 @@ badgeWebTests = do
     it "answers a provider that failed to create with provider_unavailable, writing nothing" testProviderFailureWritesNothing
     it "refuses the sixth create in a minute, without reaching the provider" testCreateRateLimit
   describe "badge service card" $ do
-    it "creates a Stripe session, carrying its clientSecret and a stripe invoice row" testCardCreatesSession
+    it "creates a Stripe PaymentIntent, carrying its clientSecret and a stripe invoice row" testCardCreatesSession
     it "derives the shown expiry from stripe.session_minutes, not the btcpay window" testCardExpiryFollowsSessionMinutes
-    it "settles a card invoice from a signed checkout.session.completed and a pass" testCardWebhookSettles
+    it "settles a card invoice from a signed payment_intent.succeeded and a pass" testCardWebhookSettles
   describe "badge service cancel" $ do
     it "expires the invoice here and invalidates it at the provider" testCancelClosesTheInvoiceAtBothEnds
     it "wakes a hold another tab is sitting on" testCancelWakesAHeldRequest
@@ -760,7 +760,7 @@ testExportWebapp = do
     staticDir <- prepareStaticDir root
     let outDir = root </> "out"
         lc = ListenerConfig {lHost = "127.0.0.1", lPort = 0, lStaticDir = staticDir, lServeWebapp = False, lWebappExportDir = Just outDir, lTrustForwardedFor = False}
-        stripeCfg = Just StripeConfig {sSecretKey = "rk_test_x", sPublishableKey = "pk_test_injected", sWebhookSecret = "whsec_x", sReceiptEmail = "card@example.test", sSessionMinutes = 60, sHost = "https://api.stripe.com"}
+        stripeCfg = Just StripeConfig {sSecretKey = "rk_test_x", sPublishableKey = "pk_test_injected", sWebhookSecret = "whsec_x", sSessionMinutes = 60, sHost = "https://api.stripe.com"}
     exportWebapp lc stripeCfg
     idx <- LB.readFile (outDir </> "index.html")
     LB.toStrict idx `shouldSatisfy` BC.isInfixOf "content=\"pk_test_injected\""
@@ -922,7 +922,6 @@ publishTestStripe =
     { sSecretKey = "rk_test_x",
       sPublishableKey = "pk_test_injected",
       sWebhookSecret = "whsec_x",
-      sReceiptEmail = "card@example.test",
       sSessionMinutes = 60,
       sHost = "https://api.stripe.com"
     }
@@ -1630,8 +1629,8 @@ testCardCreatesSession = bounded "card creates a session" $ withFakeStripePoller
 cardSessionMinutes :: Int
 cardSessionMinutes = 90
 
--- | The deadline shown and stored for a card order must come from stripe.session_minutes, the same
--- key the adapter sets the session's real expires_at from, not the btcpay window.
+-- | The deadline shown and stored for a card order comes from stripe.session_minutes, the service's
+-- own invoice window, not the btcpay window. A PaymentIntent carries no Stripe-side expiry.
 testCardExpiryFollowsSessionMinutes :: IO ()
 testCardExpiryFollowsSessionMinutes = bounded "card expiry from session_minutes" $
   withFakeStripe $ \fake ->
@@ -1660,9 +1659,9 @@ testCardWebhookSettles = bounded "card webhook settles" $ withFakeStripePoller $
   o <- jsonObject r
   iid <- InvoiceId <$> stringField o "invoiceId"
   Just row <- getInvoice (weStore env) iid
-  let sid = irProviderRef row
-  setSessionState fake sid ["status" .= ("complete" :: Text), "payment_status" .= ("paid" :: Text)]
-  (hdrs, body) <- signedStripeEvent fake "checkout.session.completed" sid
+  let pid = irProviderRef row
+  setIntentState fake pid ["status" .= ("succeeded" :: Text)]
+  (hdrs, body) <- signedStripeEvent fake "payment_intent.succeeded" pid
   delivered <- postStripeWebhook client hdrs body
   statusOf delivered `shouldBe` 200
   responseBody delivered `shouldBe` ""

@@ -8,13 +8,12 @@ module Bots.FakeStripe
     FakeRequest (..),
     withFakeStripe,
     fakeSessionMinutes,
-    fakeReceiptEmail,
-    setSessionState,
+    setIntentState,
     failNextCalls,
     useListPageSize,
     useListFixture,
     apiRequests,
-    fakeSessionIds,
+    fakeIntentIds,
     stripeSigHeader,
     stripeHexSig,
     stripeEvent,
@@ -90,11 +89,10 @@ data FakeRequest = FakeRequest
   }
   deriving (Eq, Show)
 
-data SessionState = SessionState
-  { ssStatus :: Text,
-    ssPaymentStatus :: Text,
-    ssAmountTotal :: Int,
-    ssCurrency :: Text
+data IntentState = IntentState
+  { isStatus :: Text,
+    isAmount :: Int,
+    isCurrency :: Text
   }
   deriving (Eq, Show)
 
@@ -102,7 +100,7 @@ data FailPlan = FailPlan {fpCalls :: Int, fpStatus :: Int}
   deriving (Eq, Show)
 
 data FakeState = FakeState
-  { fsSessions :: M.Map Text SessionState,
+  { fsIntents :: M.Map Text IntentState,
     fsNextId :: Int,
     fsFail :: FailPlan,
     fsList :: Text,
@@ -113,10 +111,10 @@ data FakeState = FakeState
 initialState :: FakeState
 initialState =
   FakeState
-    { fsSessions = M.empty,
+    { fsIntents = M.empty,
       fsNextId = 1,
       fsFail = FailPlan {fpCalls = 0, fpStatus = 0},
-      fsList = "session-list",
+      fsList = "intent-list",
       fsPageSize = Nothing,
       fsRequests = []
     }
@@ -145,13 +143,9 @@ fakeConfig host =
     { sSecretKey = fakeSecretKey,
       sPublishableKey = "pk_test_x",
       sWebhookSecret = fakeWebhookSecret,
-      sReceiptEmail = fakeReceiptEmail,
       sSessionMinutes = fakeSessionMinutes,
       sHost = host
     }
-
-fakeReceiptEmail :: Text
-fakeReceiptEmail = "card@example.test"
 
 -- | Stripe-Signature: t=<unix>,v1=<hex HMAC-SHA256 of "t.body">.
 stripeSigHeader :: Text -> Int -> LB.ByteString -> [Header]
@@ -165,11 +159,11 @@ stripeHexSig secret t body = convertToBase Base16 digest
     digest :: Digest SHA256
     digest = hmacGetDigest (hmac (TE.encodeUtf8 secret) signed :: HMAC SHA256)
 
--- | A minimal Checkout Session event: @{type, data:{object:{id}}}@. The verify signs these exact
--- bytes, so a valid signature cannot mean two different things.
+-- | A minimal event: @{type, data:{object:{id}}}@. The verify signs these exact bytes, so a valid
+-- signature cannot mean two different things.
 stripeEvent :: Text -> Text -> LB.ByteString
-stripeEvent eventType sid =
-  J.encode (J.object ["type" J..= eventType, "data" J..= J.object ["object" J..= J.object ["id" J..= sid]]])
+stripeEvent eventType pid =
+  J.encode (J.object ["type" J..= eventType, "data" J..= J.object ["object" J..= J.object ["id" J..= pid]]])
 
 fixtureResponse :: Text -> IO J.Value
 fixtureResponse name = do
@@ -183,23 +177,22 @@ fixtureResponse name = do
   where
     path = fixtureDir </> T.unpack name <> ".json"
 
--- | The served body is chosen by status and payment_status, then patched to the session's own
--- state. An unknown status falls back to the open body and is patched to whatever was set, so a
--- status this build has never seen still reaches the adapter verbatim.
-sessionFixture :: SessionState -> Text
-sessionFixture SessionState {ssStatus, ssPaymentStatus} = case (ssStatus, ssPaymentStatus) of
-  ("complete", "paid") -> "session-complete-paid"
-  ("complete", _) -> "session-complete-unpaid"
-  ("expired", _) -> "session-expired"
-  _ -> "session-open"
+-- | The served body is chosen by status, then patched to the intent's own state. An unknown status
+-- falls back to the open body and is patched to whatever was set, so a status this build has never
+-- seen still reaches the adapter verbatim.
+intentFixture :: IntentState -> Text
+intentFixture IntentState {isStatus} = case isStatus of
+  "succeeded" -> "intent-succeeded"
+  "canceled" -> "intent-canceled"
+  _ -> "intent-open"
 
-patchSession :: Text -> SessionState -> J.Value -> J.Value
-patchSession sid SessionState {ssStatus, ssPaymentStatus, ssAmountTotal, ssCurrency} =
-  setField "id" (J.String sid)
-    . setField "status" (J.String ssStatus)
-    . setField "payment_status" (J.String ssPaymentStatus)
-    . setField "amount_total" (J.toJSON ssAmountTotal)
-    . setField "currency" (J.String ssCurrency)
+patchIntent :: Text -> IntentState -> J.Value -> J.Value
+patchIntent pid IntentState {isStatus, isAmount, isCurrency} =
+  setField "id" (J.String pid)
+    . setField "client_secret" (J.String (pid <> "_secret_test"))
+    . setField "status" (J.String isStatus)
+    . setField "amount_received" (J.toJSON (if isStatus == "succeeded" then isAmount else (0 :: Int)))
+    . setField "currency" (J.String isCurrency)
 
 setField :: Key -> J.Value -> J.Value -> J.Value
 setField k v = \case
@@ -210,11 +203,11 @@ fakeApp :: TVar FakeState -> Application
 fakeApp stv req respond = do
   body <- strictRequestBody req
   case pathInfo req of
-    ["_state", sid] | isPost -> control body (setState sid)
+    ["_state", pid] | isPost -> control body (setState pid)
     ["_fail"] | isPost -> control body setFail
     ["_paging"] | isPost -> control body setPaging
     ["_fixtures"] | isPost -> control body setFixtures
-    "v1" : "checkout" : "sessions" : rest -> apiCall body rest
+    "v1" : "payment_intents" : rest -> apiCall body rest
     _ -> refuse notFound404 "no such path on the fake stripe"
   where
     verb = requestMethod req
@@ -230,19 +223,15 @@ fakeApp stv req respond = do
           Just message -> refuse badRequest400 message
       _ -> refuse badRequest400 "a control call takes a JSON object"
 
-    setState sid o = case unknownKeys stateKeys o of
+    setState pid o = case unknownKeys stateKeys o of
       Just message -> pure (Just message)
       Nothing -> atomically $ do
         st <- readTVar stv
-        case M.lookup sid (fsSessions st) of
-          Nothing -> pure (Just ("no session " <> sid <> " was created here"))
+        case M.lookup pid (fsIntents st) of
+          Nothing -> pure (Just ("no intent " <> pid <> " was created here"))
           Just s -> do
-            let s' =
-                  s
-                    { ssStatus = fromMaybe (ssStatus s) (textField "status" o),
-                      ssPaymentStatus = fromMaybe (ssPaymentStatus s) (textField "payment_status" o)
-                    }
-            writeTVar stv st {fsSessions = M.insert sid s' (fsSessions st)}
+            let s' = s {isStatus = fromMaybe (isStatus s) (textField "status" o)}
+            writeTVar stv st {fsIntents = M.insert pid s' (fsIntents st)}
             pure Nothing
 
     setFail o = case unknownKeys ["calls", "status"] o of
@@ -294,27 +283,27 @@ fakeApp stv req respond = do
         Nothing -> act
 
     route b = \case
-      [] | isPost -> createSession b
-      [] | isGet -> listSessions
-      [sid] | isGet -> withSession sid $ \s -> serve (sessionFixture s) (patchSession sid s)
-      [sid, "expire"] | isPost -> withSession sid $ \_ -> respond (jsonResponse ok200 (J.object ["id" J..= sid, "status" J..= ("expired" :: Text)]))
-      _ -> refuse notFound404 "no such checkout path on the fake stripe"
+      [] | isPost -> createIntent b
+      [] | isGet -> listIntents
+      [pid] | isGet -> withIntent pid $ \s -> serve (intentFixture s) (patchIntent pid s)
+      [pid, "cancel"] | isPost -> withIntent pid $ \_ -> respond (jsonResponse ok200 (J.object ["id" J..= pid, "status" J..= ("canceled" :: Text)]))
+      _ -> refuse notFound404 "no such payment_intents path on the fake stripe"
 
-    createSession b = do
+    createIntent b = do
       let form = parseSimpleQuery (LB.toStrict b)
-          amount = fromMaybe 0 (lookup "line_items[0][price_data][unit_amount]" form >>= readMaybe . B8.unpack)
-          currency = maybe "usd" TE.decodeUtf8 (lookup "line_items[0][price_data][currency]" form)
-      (sid, s) <- atomically $ do
+          amount = fromMaybe 0 (lookup "amount" form >>= readMaybe . B8.unpack)
+          currency = maybe "usd" TE.decodeUtf8 (lookup "currency" form)
+      (pid, s) <- atomically $ do
         st <- readTVar stv
-        let sid = "cs_test_" <> T.justifyRight 4 '0' (tshow (fsNextId st))
-            s = SessionState {ssStatus = "open", ssPaymentStatus = "unpaid", ssAmountTotal = amount, ssCurrency = currency}
-        writeTVar stv st {fsNextId = fsNextId st + 1, fsSessions = M.insert sid s (fsSessions st)}
-        pure (sid, s)
-      serve (sessionFixture s) (patchSession sid s)
+        let pid = "pi_test_" <> T.justifyRight 4 '0' (tshow (fsNextId st))
+            s = IntentState {isStatus = "requires_payment_method", isAmount = amount, isCurrency = currency}
+        writeTVar stv st {fsNextId = fsNextId st + 1, fsIntents = M.insert pid s (fsIntents st)}
+        pure (pid, s)
+      serve (intentFixture s) (patchIntent pid s)
 
-    -- Serves session-list.json. With a page size set the `data` array is paginated by
+    -- Serves intent-list.json. With a page size set the `data` array is paginated by
     -- `starting_after` and `has_more`, so a test can drive the adapter across pages.
-    listSessions = do
+    listIntents = do
       st <- readTVarIO stv
       full <- fixtureResponse (fsList st)
       let (page, more) = pageItems (fsPageSize st) (queryText "starting_after" (queryString req)) (listItems full)
@@ -324,11 +313,11 @@ fakeApp stv req respond = do
       v <- fixtureResponse name
       respond (jsonResponse ok200 (patch v))
 
-    withSession sid act = do
-      sessions <- fsSessions <$> readTVarIO stv
-      case M.lookup sid sessions of
+    withIntent pid act = do
+      intents <- fsIntents <$> readTVarIO stv
+      case M.lookup pid intents of
         Just s -> act s
-        Nothing -> refuse notFound404 ("no session " <> sid <> " on the fake stripe")
+        Nothing -> refuse notFound404 ("no intent " <> pid <> " on the fake stripe")
 
 listItems :: J.Value -> [J.Value]
 listItems = \case
@@ -345,10 +334,10 @@ pageItems (Just size) after items = (take size rest, length rest > size)
   where
     rest = case after of
       Nothing -> items
-      Just a -> drop 1 (dropWhile ((/= Just a) . sessionId) items)
+      Just a -> drop 1 (dropWhile ((/= Just a) . intentId) items)
 
-sessionId :: J.Value -> Maybe Text
-sessionId = \case
+intentId :: J.Value -> Maybe Text
+intentId = \case
   J.Object o -> case KM.lookup "id" o of
     Just (J.String i) -> Just i
     _ -> Nothing
@@ -366,7 +355,7 @@ errorResponse :: Status -> Text -> Response
 errorResponse st message = jsonResponse st (J.object ["error" J..= J.object ["message" J..= message, "code" J..= TE.decodeUtf8 (statusMessage st)]])
 
 stateKeys :: [Key]
-stateKeys = ["status", "payment_status"]
+stateKeys = ["status"]
 
 unknownKeys :: [Key] -> J.Object -> Maybe Text
 unknownKeys known o = case filter (`notElem` known) (KM.keys o) of
@@ -393,13 +382,13 @@ controlPost FakeStripe {fsBaseUrl, fsManager} path v = do
     200 -> pure ()
     code -> fail ("fake stripe " <> path <> " answered " <> show code <> ": " <> show (HTTP.responseBody r))
 
-setSessionState :: FakeStripe -> Text -> [Pair] -> IO ()
-setSessionState fake sid fields = controlPost fake ("/_state/" <> T.unpack sid) (J.object fields)
+setIntentState :: FakeStripe -> Text -> [Pair] -> IO ()
+setIntentState fake pid fields = controlPost fake ("/_state/" <> T.unpack pid) (J.object fields)
 
 failNextCalls :: FakeStripe -> Int -> Int -> IO ()
 failNextCalls fake calls code = controlPost fake "/_fail" (J.object ["calls" J..= calls, "status" J..= code])
 
--- | Paginate the served list at this many sessions per page, so a test can walk starting_after.
+-- | Paginate the served list at this many intents per page, so a test can walk starting_after.
 useListPageSize :: FakeStripe -> Int -> IO ()
 useListPageSize fake size = controlPost fake "/_paging" (J.object ["size" J..= size])
 
@@ -410,11 +399,11 @@ useListFixture fake name = controlPost fake "/_fixtures" (J.object ["list" J..= 
 fakeRequests :: FakeStripe -> IO [FakeRequest]
 fakeRequests FakeStripe {fsState} = reverse . fsRequests <$> readTVarIO fsState
 
-fakeSessionIds :: FakeStripe -> IO [Text]
-fakeSessionIds FakeStripe {fsState} = M.keys . fsSessions <$> readTVarIO fsState
+fakeIntentIds :: FakeStripe -> IO [Text]
+fakeIntentIds FakeStripe {fsState} = M.keys . fsIntents <$> readTVarIO fsState
 
 apiRequests :: FakeStripe -> ByteString -> [Text] -> IO [FakeRequest]
 apiRequests fake verb segments = filter matching <$> fakeRequests fake
   where
     matching FakeRequest {frMethod, frPath} =
-      frMethod == verb && frPath == ["v1", "checkout", "sessions"] <> segments
+      frMethod == verb && frPath == ["v1", "payment_intents"] <> segments

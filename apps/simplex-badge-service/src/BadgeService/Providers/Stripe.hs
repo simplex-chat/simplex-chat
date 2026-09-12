@@ -6,7 +6,7 @@
 module BadgeService.Providers.Stripe
   ( stripeProvider,
     signalOf,
-    SessionRead (..),
+    IntentRead (..),
   )
 where
 
@@ -41,7 +41,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
-import Data.Time.Clock.POSIX (POSIXTime, getPOSIXTime, posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
+import Data.Time.Clock.POSIX (POSIXTime, posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word32)
 import Network.HTTP.Client
   ( HttpException,
@@ -101,20 +101,16 @@ untraversableReason =
 -- | The events worth queueing a read for. Anything else Stripe sends says nothing this service
 -- acts on, and a hint it cannot use costs a queue slot.
 actedOnStripeEvents :: [Text]
-actedOnStripeEvents = ["checkout.session.completed", "checkout.session.expired"]
+actedOnStripeEvents = ["payment_intent.succeeded", "payment_intent.payment_failed", "payment_intent.canceled"]
 
 sigHeaderName :: HeaderName
 sigHeaderName = "Stripe-Signature"
 
 listWhat :: Text
-listWhat = "list sessions"
+listWhat = "list intents"
 
-productName :: ByteString
-productName = "SimpleX supporter badge"
-
--- | @ui_mode=elements@ and the response shapes this adapter parses require this API version or
--- later (before it the value was @custom@). Pinning it keeps create off the account's default
--- version, which could be older and would 400 the create.
+-- | Pins every call off the account's default version, so the PaymentIntent response shapes this
+-- adapter parses do not shift under it.
 stripeApiVersion :: ByteString
 stripeApiVersion = "2026-03-25.dahlia"
 
@@ -157,34 +153,34 @@ listOpen env@StripeEnv {seCfg} = do
           let q =
                 [("created[gte]", Just createdGte), ("limit", Just (B8.pack (show listPageSize)))]
                   <> maybe [] (\a -> [("starting_after", Just (TE.encodeUtf8 a))]) after
-          got <- stripeApi env listWhat methodGet ["v1", "checkout", "sessions"] q Nothing
+          got <- stripeApi env listWhat methodGet ["v1", "payment_intents"] q Nothing
           case got >>= decodeStripe listWhat of
             Left e -> pure (Left e)
-            Right SessionList {slData, slHasMore} ->
-              let acc' = merge acc (sessionsPass now slData)
-               in if slHasMore
-                    then case lastId slData of
+            Right IntentList {ilData, ilHasMore} ->
+              let acc' = merge acc (intentsPass now ilData)
+               in if ilHasMore
+                    then case lastId ilData of
                       Just next -> go now createdGte (Just next) (pagesLeft - 1) acc'
                       Nothing -> pure (Right acc' {lpSkipped = lpSkipped acc' <> [(Nothing, untraversableReason)]})
                     else pure (Right acc')
     merge a b = ListPass {lpMoved = lpMoved a <> lpMoved b, lpSkipped = lpSkipped a <> lpSkipped b}
 
--- | One session at a time, so a single row this build cannot read is skipped rather than failing
+-- | One intent at a time, so a single row this build cannot read is skipped rather than failing
 -- the whole page: a row with no @id@ is a skip the pass cannot name, one whose status this build
 -- does not know is a skip that names it. No row fails the pass, so this is total.
-sessionsPass :: UTCTime -> [J.Value] -> ListPass
-sessionsPass now = foldr add (ListPass [] [])
+intentsPass :: UTCTime -> [J.Value] -> ListPass
+intentsPass now = foldr add (ListPass [] [])
   where
-    add v pass = case J.fromJSON v :: J.Result SessionRead of
-      J.Error e -> pass {lpSkipped = (sessionIdOf v, T.pack e) : lpSkipped pass}
-      J.Success sr -> case signalOf now sr of
-        Left (ProviderError e) -> pass {lpSkipped = (Just (srId sr), e) : lpSkipped pass}
+    add v pass = case J.fromJSON v :: J.Result IntentRead of
+      J.Error e -> pass {lpSkipped = (intentIdOf v, T.pack e) : lpSkipped pass}
+      J.Success ir -> case signalOf now ir of
+        Left (ProviderError e) -> pass {lpSkipped = (Just (irId ir), e) : lpSkipped pass}
         Right Nothing -> pass
-        Right (Just sig) -> pass {lpMoved = (srId sr, sig) : lpMoved pass}
+        Right (Just sig) -> pass {lpMoved = (irId ir, sig) : lpMoved pass}
 
--- | The id of a session we could not otherwise read, so the skip can name it.
-sessionIdOf :: J.Value -> Maybe Text
-sessionIdOf v = case J.fromJSON v :: J.Result (KM.KeyMap J.Value) of
+-- | The id of an intent we could not otherwise read, so the skip can name it.
+intentIdOf :: J.Value -> Maybe Text
+intentIdOf v = case J.fromJSON v :: J.Result (KM.KeyMap J.Value) of
   J.Success o -> case KM.lookup "id" o of
     Just (J.String i) -> Just i
     _ -> Nothing
@@ -193,13 +189,13 @@ sessionIdOf v = case J.fromJSON v :: J.Result (KM.KeyMap J.Value) of
 lastId :: [J.Value] -> Maybe Text
 lastId vs = case vs of
   [] -> Nothing
-  _ -> sessionIdOf (last vs)
+  _ -> intentIdOf (last vs)
 
-data SessionList = SessionList {slData :: [J.Value], slHasMore :: Bool}
+data IntentList = IntentList {ilData :: [J.Value], ilHasMore :: Bool}
 
-instance J.FromJSON SessionList where
-  parseJSON = J.withObject "session list" $ \o ->
-    SessionList <$> o J..: "data" <*> o J..:? "has_more" J..!= False
+instance J.FromJSON IntentList where
+  parseJSON = J.withObject "intent list" $ \o ->
+    IntentList <$> o J..: "data" <*> o J..:? "has_more" J..!= False
 
 -- | Constant-time over the raw bytes. Stripe signs @"{t}.{body}"@, so the signed payload is the
 -- timestamp, a literal dot, then the body exactly as it arrived. The interface is pure and holds
@@ -222,8 +218,8 @@ verifyStripeSig secret hdrs body = do
       Right (bs :: ByteString) -> Right bs
       Left (_ :: String) -> Left (WebhookError "Stripe-Signature v1 is not hex")
     actedOn = do
-      SEvent {seType, seSessionId} <- J.decodeStrict' body
-      if seType `elem` actedOnStripeEvents then Just seSessionId else Nothing
+      SEvent {seType, seRef} <- J.decodeStrict' body
+      if seType `elem` actedOnStripeEvents then Just seRef else Nothing
 
 -- | Reads @t@ and every @v1@ from Stripe's comma-separated @k=v@ header. A rotation sends one
 -- @v1@ per active secret, so all are kept. Extra schemes (@v0@, and the rest) are ignored; a
@@ -236,73 +232,67 @@ parseStripeSig raw = do
     [] -> Nothing
     v1s -> Just (t, v1s)
 
-data SEvent = SEvent {seType :: Text, seSessionId :: Text}
+-- | The PaymentIntent id (@data.object.id@, a @pi_…@) an acted-on event carries, which the poller
+-- reads back. The provider ref is that id, so no metadata round-trip is needed.
+data SEvent = SEvent {seType :: Text, seRef :: Text}
 
 instance J.FromJSON SEvent where
   parseJSON = J.withObject "stripe event" $ \o -> do
     seType <- o J..: "type"
     dataO <- o J..: "data"
     obj <- dataO J..: "object"
-    seSessionId <- obj J..: "id"
-    pure SEvent {seType, seSessionId}
+    seRef <- obj J..: "id"
+    pure SEvent {seType, seRef}
 
-data CreatedSession = CreatedSession {csId :: Text, csClientSecret :: Text}
+data CreatedIntent = CreatedIntent {ciId :: Text, ciClientSecret :: Text}
 
-instance J.FromJSON CreatedSession where
-  parseJSON = J.withObject "checkout session" $ \o ->
-    CreatedSession <$> o J..: "id" <*> o J..: "client_secret"
+instance J.FromJSON CreatedIntent where
+  parseJSON = J.withObject "payment_intent" $ \o ->
+    CreatedIntent <$> o J..: "id" <*> o J..: "client_secret"
 
 createInvoice :: StripeEnv -> ServicePaymentMethod -> OrderDraft -> IO (Either ProviderError ProviderInvoice)
 createInvoice _ (SPMCrypto _) _ = pure (Left (ProviderError "stripe offers no crypto payment method"))
 createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor, odCurrency} = do
-  now <- getPOSIXTime
-  let expiresAt = round now + toInteger (sSessionMinutes (seCfg env)) * toInteger secondsPerMinute :: Integer
-      form =
-        [ ("mode", "payment"),
-          ("ui_mode", "elements"),
-          ("expires_at", B8.pack (show expiresAt)),
-          -- a fixed address, so Stripe's mandatory confirm email is met without the buyer entering one
-          ("customer_email", TE.encodeUtf8 (sReceiptEmail (seCfg env))),
-          ("line_items[0][quantity]", "1"),
-          ("line_items[0][price_data][currency]", TE.encodeUtf8 (T.toLower odCurrency)),
-          ("line_items[0][price_data][unit_amount]", B8.pack (show minor)),
-          ("line_items[0][price_data][product_data][name]", productName)
+  let form =
+        [ ("amount", B8.pack (show minor)),
+          ("currency", TE.encodeUtf8 (T.toLower odCurrency)),
+          -- card only: no redirect-based method is offered, so the client confirm never navigates the
+          -- top window; the buyer stays in the embedded frame
+          ("allowed_payment_method_types[]", "card")
         ]
-  created <- stripeApi env what methodPost ["v1", "checkout", "sessions"] [] (Just form)
-  pure $ created >>= decodeStripe what <&> \CreatedSession {csId, csClientSecret} ->
-    ProviderInvoice {piProviderRef = csId, piDestination = SPDCard CPStripe csClientSecret}
+  created <- stripeApi env what methodPost ["v1", "payment_intents"] [] (Just form)
+  pure $ created >>= decodeStripe what <&> \CreatedIntent {ciId, ciClientSecret} ->
+    ProviderInvoice {piProviderRef = ciId, piDestination = SPDCard CPStripe ciClientSecret}
   where
-    what = "create session"
+    what = "create intent"
 
 cancelInvoice :: StripeEnv -> Text -> IO (Either ProviderError ())
-cancelInvoice env sid =
-  fmap (fmap (const ())) $ stripeApi env "expire session" methodPost ["v1", "checkout", "sessions", sid, "expire"] [] (Just [])
+cancelInvoice env pid =
+  fmap (fmap (const ())) $ stripeApi env "cancel intent" methodPost ["v1", "payment_intents", pid, "cancel"] [] (Just [])
 
 readInvoice :: StripeEnv -> Text -> IO (Either ProviderError (Maybe PaymentSignal))
-readInvoice env sid = do
+readInvoice env pid = do
   now <- getCurrentTime
-  got <- stripeApi env what methodGet ["v1", "checkout", "sessions", sid] [("expand[]", Just "payment_intent.latest_charge")] Nothing
+  got <- stripeApi env what methodGet ["v1", "payment_intents", pid] [("expand[]", Just "latest_charge")] Nothing
   pure $ got >>= decodeStripe what >>= signalOf now
   where
-    what = "read session " <> sid
+    what = "read intent " <> pid
 
--- | Settlement keys on payment_status read from the provider, never on status alone. There is no
--- card partial, so this never produces 'SigFunded'. Shared with the list pass, so it is top-level
--- and takes the read time (a list row carries no expanded charge).
-signalOf :: UTCTime -> SessionRead -> Either ProviderError (Maybe PaymentSignal)
-signalOf now SessionRead {srStatus, srPaymentStatus, srAmountTotal, srChargeCreated} =
-  case (srStatus, srPaymentStatus) of
-    ("complete", "paid") -> Right (Just (SigSettled (received srAmountTotal) settledAt))
-    ("complete", _) -> Right Nothing
-    -- an expired card session captured nothing (a paid one becomes complete, never expired), so its
-    -- received amount is zero: @amount_total@ here is owed, not paid, and a nonzero amount would write
-    -- a phantom payment row, since the settlement store only suppresses that row at zero received.
-    ("expired", _) -> Right (Just (SigClosed (received 0)))
-    ("open", _) -> Right Nothing
-    (other, _) -> Left (ProviderError ("stripe session: unknown status " <> other))
+-- | Settlement keys on the PaymentIntent status read from the provider, never on status alone in the
+-- record. There is no card partial, so this never produces 'SigFunded'. Shared with the list pass, so
+-- it is top-level and takes the read time (a list row carries no expanded charge). @amount_received@
+-- is what the buyer actually paid; a canceled intent captured nothing, so its received amount is zero.
+signalOf :: UTCTime -> IntentRead -> Either ProviderError (Maybe PaymentSignal)
+signalOf now IntentRead {irStatus, irAmountReceived, irChargeCreated} =
+  case irStatus of
+    "succeeded" -> Right (Just (SigSettled (received irAmountReceived) settledAt))
+    "canceled" -> Right (Just (SigClosed (received 0)))
+    s | s `elem` openStatuses -> Right Nothing
+      | otherwise -> Left (ProviderError ("stripe payment_intent: unknown status " <> s))
   where
+    openStatuses = ["requires_payment_method", "requires_confirmation", "requires_action", "processing", "requires_capture"]
     received amt = Received {rcvAmount = amountFrom amt, rcvCrypto = Nothing, rcvDue = Nothing}
-    settledAt = maybe now posixSecondsToUTCTime srChargeCreated
+    settledAt = maybe now posixSecondsToUTCTime irChargeCreated
 
 -- | Stripe sends the total in minor units as an integer. The clamp stops a wildly wrong figure
 -- wrapping a Word32 and coming out small.
@@ -311,29 +301,26 @@ amountFrom n = CurrencyAmount (fromInteger (max 0 (min largestAmount (toInteger 
   where
     largestAmount = toInteger (maxBound :: Word32)
 
-data SessionRead = SessionRead
-  { srId :: Text,
-    srStatus :: Text,
-    srPaymentStatus :: Text,
-    srAmountTotal :: Int64,
-    srChargeCreated :: Maybe POSIXTime
+data IntentRead = IntentRead
+  { irId :: Text,
+    irStatus :: Text,
+    irAmountReceived :: Int64,
+    irChargeCreated :: Maybe POSIXTime
   }
 
-instance J.FromJSON SessionRead where
-  parseJSON = J.withObject "checkout session" $ \o -> do
-    srId <- o J..: "id"
-    srStatus <- o J..: "status"
-    srPaymentStatus <- o J..:? "payment_status" J..!= "unpaid"
-    srAmountTotal <- o J..:? "amount_total" J..!= 0
-    pi_ <- o J..:? "payment_intent"
-    let srChargeCreated = fmap fromInteger (chargeCreated pi_)
-    pure SessionRead {srId, srStatus, srPaymentStatus, srAmountTotal, srChargeCreated}
+instance J.FromJSON IntentRead where
+  parseJSON = J.withObject "payment_intent" $ \o -> do
+    irId <- o J..: "id"
+    irStatus <- o J..: "status"
+    irAmountReceived <- o J..:? "amount_received" J..!= 0
+    -- expand[]=latest_charge makes this the charge object; unexpanded it is a string id we ignore
+    latest <- o J..:? "latest_charge"
+    let irChargeCreated = fmap fromInteger (chargeCreated latest)
+    pure IntentRead {irId, irStatus, irAmountReceived, irChargeCreated}
 
 chargeCreated :: Maybe J.Value -> Maybe Integer
 chargeCreated = \case
-  Just (J.Object p) -> case KM.lookup "latest_charge" p of
-    Just (J.Object c) -> KM.lookup "created" c >>= asInteger
-    _ -> Nothing
+  Just (J.Object c) -> KM.lookup "created" c >>= asInteger
   _ -> Nothing
 
 asInteger :: J.Value -> Maybe Integer

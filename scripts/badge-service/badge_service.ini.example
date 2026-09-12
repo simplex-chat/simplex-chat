@@ -29,10 +29,7 @@ secret_key = rk_test_replace-me
 publishable_key = pk_test_replace-me
 ; the signing secret of the /webhooks/stripe endpoint configured in the Dashboard
 webhook_secret = whsec_replace-me
-; a fixed address sent as customer_email so buyers never enter one (Stripe requires an email to
-; confirm); use an address you own with receipts turned off, never one derived from the order id
-receipt_email = noreply@example.org
-; minutes until an unpaid checkout session expires; 31-1439 (a minute inside Stripe's 30-minute-to-24-hour window)
+; minutes the service holds an unpaid card invoice open before it expires it; 31-1439
 session_minutes = 60
 
 [poll]
