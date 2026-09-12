@@ -16,6 +16,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
+import coil.size.Scale
 
 @Composable
 actual fun SimpleAndAnimatedImageView(
@@ -28,7 +29,7 @@ actual fun SimpleAndAnimatedImageView(
 ) {
   val context = LocalContext.current
   val imagePainter = rememberAsyncImagePainter(
-    ImageRequest.Builder(context).data(data = data).size(coil.size.Size.ORIGINAL).build(),
+    ImageRequest.Builder(context).data(data = data).size(MAX_THUMBNAIL_DIMENSION, MAX_THUMBNAIL_DIMENSION).scale(Scale.FIT).build(),
     placeholder = BitmapPainter(imageBitmap), // show original image while it's still loading by coil
     imageLoader = imageLoader
   )
