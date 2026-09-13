@@ -281,10 +281,13 @@ futureDate = posixSecondsToUTCTime 4102444800 -- 2100-01-01
 
 -- issue a supporter badge credential with the given expiry (test issuer)
 issueTestBadge :: BBSSecretKey -> UTCTime -> IO BadgeCredential
-issueTestBadge sk badgeExpiry = do
+issueTestBadge sk = issueTestBadgeType sk BTSupporter
+
+issueTestBadgeType :: BBSSecretKey -> BadgeType -> UTCTime -> IO BadgeCredential
+issueTestBadgeType sk badgeType badgeExpiry = do
   drg <- C.newRandom
   mk <- generateMasterKey drg
-  let info = BadgeInfo {badgeType = BTSupporter, badgeExpiry, badgeExtra = ""}
+  let info = BadgeInfo {badgeType, badgeExpiry, badgeExtra = ""}
   Just vreq <- verifyPayment (BPRedeemCode "TEST") BadgeRequest {masterKey = mk, badgeInfo = info}
   Right cred <- issueBadge 1 sk vreq
   pure cred

@@ -83,7 +83,7 @@ import Simplex.Messaging.Agent.Store.DB (SQLError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Chat.Badges (BadgeCredential)
+import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -148,10 +148,12 @@ data ChatConfig = ChatConfig
     shortLinkPresetServers :: NonEmpty SMPServer,
     presetDomains :: [HostName],
     tbqSize :: Natural,
+    maxChats :: Int,
     fileChunkSize :: Integer,
     xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
     autoAcceptFileSize :: Integer,
+    fileSizeLimits :: FileSizeLimits,
     showReactions :: Bool,
     showFullLinks :: Bool,
     showReceipts :: Bool,
@@ -380,7 +382,7 @@ data ChatCommand
   | APISaveAppSettings AppSettings
   | APIGetAppSettings (Maybe AppSettings)
   | APIGetChatTags UserId
-  | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
+  | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: Maybe PaginationByTime, query :: ChatListQuery}
   | APIGetChat {chatRef :: ChatRef, contentTag :: Maybe MsgContentTag, chatPagination :: ChatPagination, search :: Maybe Text}
   | APIGetChatContentTypes ChatRef
   | APIGetChatItems {chatPagination :: ChatPagination, search :: Maybe Text}
@@ -655,10 +657,10 @@ data ChatCommand
   | DeleteRemoteHost RemoteHostId -- Unregister remote host and remove its data
   | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
   | GetRemoteFile {remoteHostId :: RemoteHostId, file :: RemoteFile}
-  | ConnectRemoteCtrl RCSignedInvitation -- Connect new or existing controller via OOB data
+  | ConnectRemoteCtrl {remoteInvitation :: RCSignedInvitation} -- Connect new or existing controller via OOB data
   | FindKnownRemoteCtrl -- Start listening for announcements from all existing controllers
   | ConfirmRemoteCtrl RemoteCtrlId -- Confirm the connection with found controller
-  | VerifyRemoteCtrlSession Text -- Verify remote controller session
+  | VerifyRemoteCtrlSession {sessionCode :: Text} -- Verify remote controller session
   | ListRemoteCtrls
   | StopRemoteCtrl -- Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- Remove all local data associated with a remote controller session

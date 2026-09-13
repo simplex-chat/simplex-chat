@@ -28,7 +28,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime, nominalDay)
-import Simplex.Chat.Badges (badgeServerCredential)
+import Simplex.Chat.Badges (badgeServerCredential, defaultFileSizeLimits)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
@@ -102,10 +102,12 @@ defaultChatConfig =
       shortLinkPresetServers = allPresetServers,
       presetDomains = [".simplex.im", ".simplexonflux.com"],
       tbqSize = 1024,
+      maxChats = 5000,
       fileChunkSize = 15780, -- do not change
       xftpDescrPartSize = 14000,
       inlineFiles = defaultInlineFilesConfig,
       autoAcceptFileSize = 0,
+      fileSizeLimits = defaultFileSizeLimits,
       showReactions = False,
       showFullLinks = False,
       showReceipts = False,
@@ -146,11 +148,11 @@ newChatController
   ChatDatabase {chatStore, agentStore}
   user
   cfg@ChatConfig {agentConfig = aCfg, presetServers, inlineFiles, deviceNameForRemote, confirmMigrations}
-  ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, deviceName, webPreviewConfig, highlyAvailable, yesToUpMigrations}, optFilesFolder, optTempDirectory, showReactions, showFullLinks, allowInstantFiles, autoAcceptFileSize}
+  ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, maxChats, deviceName, webPreviewConfig, highlyAvailable, yesToUpMigrations}, optFilesFolder, optTempDirectory, showReactions, showFullLinks, allowInstantFiles, autoAcceptFileSize}
   backgroundMode = do
     let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
         confirmMigrations' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
-        config = cfg {logLevel, showReactions, showFullLinks, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, presetServers = presetServers', inlineFiles = inlineFiles', autoAcceptFileSize, webPreviewConfig, highlyAvailable, confirmMigrations = confirmMigrations'}
+        config = cfg {logLevel, showReactions, showFullLinks, tbqSize, maxChats, subscriptionEvents = logConnections, hostEvents = logServerHosts, presetServers = presetServers', inlineFiles = inlineFiles', autoAcceptFileSize, webPreviewConfig, highlyAvailable, confirmMigrations = confirmMigrations'}
     randomPresetServers <- chooseRandomServers presetServers'
     let rndSrvs = L.toList randomPresetServers
         operatorWithId (i, op) = (\o -> o {operatorId = DBEntityId i}) <$> pOperator op

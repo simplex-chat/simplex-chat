@@ -2453,11 +2453,25 @@ viewReceivedFileInvitation :: StyledString -> CIFile d -> CurrentTime -> TimeZon
 viewReceivedFileInvitation from file ts tz meta = receivedWithTime_ ts tz from [] meta (receivedFileInvitation_ file) False
 
 receivedFileInvitation_ :: CIFile d -> [StyledString]
-receivedFileInvitation_ CIFile {fileId, fileName, fileSize, fileStatus} =
+receivedFileInvitation_ CIFile {fileId, fileName, fileSize, fileStatus, fileProhibited} =
   ["sends file " <> ttyFilePath fileName <> " (" <> humanReadableSize fileSize <> " / " <> sShow fileSize <> " bytes)"]
-    <> case fileStatus of
-      CIFSRcvAccepted -> []
-      _ -> ["use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"]
+    <> case fileProhibited of
+      Just fp -> [prohibitedFileReason fp]
+      Nothing -> case fileStatus of
+        CIFSRcvAccepted -> []
+        _ -> ["use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"]
+
+prohibitedFileReason :: FileProhibited -> StyledString
+prohibitedFileReason FileProhibited {maxSize, badgeStatus} =
+  "file is above the limit of " <> sShow maxSize <> " bytes: " <> reason
+  where
+    reason = case badgeStatus of
+      Nothing -> "sender has no badge"
+      Just BSActive -> "above the limit of the sender badge"
+      Just BSExpired -> "sender badge expired"
+      Just BSExpiredOld -> "sender badge expired"
+      Just BSFailed -> "sender badge did not verify"
+      Just BSUnknownKey -> "sender badge key is not known"
 
 humanReadableSize :: Integer -> StyledString
 humanReadableSize size

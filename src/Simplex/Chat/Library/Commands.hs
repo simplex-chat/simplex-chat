@@ -56,7 +56,7 @@ import Data.Type.Equality
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
-import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxSndXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -652,7 +652,9 @@ processChatCommand cxt nm = \case
     tags <- withFastStore' (`getUserChatTags` user)
     pure $ CRChatTags user tags
   APIGetChats {userId, pendingConnections, pagination, query} -> withUserId' userId $ \user -> do
-    (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db cxt user pendingConnections pagination query)
+    ChatConfig {maxChats} <- asks config
+    let pagination' = fromMaybe (PTLast maxChats) pagination
+    (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db cxt user pendingConnections pagination' query)
     unless (null errs) $ toView $ CEvtChatErrors (map ChatErrorStore errs)
     pure $ CRApiChats user previews
   APIGetChat (ChatRef cType cId scope_) contentFilter pagination search -> withUser $ \user -> case cType of
@@ -3431,7 +3433,8 @@ processChatCommand cxt nm = \case
     folderId <- withFastStore (`getUserNoteFolderId` user)
     processChatCommand cxt nm $ APIClearChat (ChatRef CTLocal folderId Nothing)
   LastChats count_ -> withUser' $ \user -> do
-    let count = fromMaybe 5000 count_
+    ChatConfig {maxChats} <- asks config
+    let count = fromMaybe maxChats count_
     (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db cxt user False (PTLast count) clqNoFilters)
     unless (null errs) $ toView $ CEvtChatErrors (map ChatErrorStore errs)
     pure $ CRChats previews
@@ -3626,7 +3629,7 @@ processChatCommand cxt nm = \case
     fsFilePath <- lift $ toFSFilePath filePath
     fileSize <- liftIO $ CF.getFileContentsSize file {filePath = fsFilePath}
     when (fileSize > toInteger maxFileSizeHard) $ throwChatError $ CEFileSize filePath
-    (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing
+    (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing Nothing
     pure CRSndStandaloneFileCreated {user, fileTransferMeta}
   APIStandaloneFileInfo FileDescriptionURI {clientData} -> pure . CRStandaloneFileInfo $ clientData >>= J.decodeStrict . encodeUtf8
   APIDownloadStandaloneFile userId uri file -> withUserId userId $ \user -> do
@@ -3975,7 +3978,9 @@ processChatCommand cxt nm = \case
       fsFilePath <- lift $ toFSFilePath f
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
       fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cfArgs
-      when (fromInteger fileSize > maxXFTPFileSize sndBadge) $ throwChatError $ CEFileSize f
+      lims <- asks $ fileSizeLimits . config
+      now <- liftIO getCurrentTime
+      when (fileSize > maxSndXFTPFileSize lims now sndBadge) $ throwChatError $ CEFileSize f
       pure fileSize
     updateProfile :: User -> Profile -> CM ChatResponse
     updateProfile user p' = updateProfile_ user p' True $ withFastStore $ \db -> updateUserProfile db user p'
@@ -4771,7 +4776,8 @@ processChatCommand cxt nm = \case
                 Just file -> do
                   let User {profile = LocalProfile {localBadge}} = user
                   fileSize <- checkSndFile (if contactConnIncognito ct then Nothing else localBadge) file
-                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize 1 $ CGContact ct
+                  binding_ <- ifM ((not (contactConnIncognito ct) &&) <$> fileNeedsBadge fileSize) (directChatBinding ct) (pure Nothing)
+                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize 1 (CGContact ct) binding_
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
             prepareMsgs :: NonEmpty (ComposedMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTDirect)))
@@ -4802,8 +4808,10 @@ processChatCommand cxt nm = \case
     sendGroupContentMessages user gInfo scope showGroupAsSender live itemTTL sign cmrs = do
       assertMultiSendable live cmrs
       chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
-      recipients <- getGroupRecipients cxt user gInfo chatScopeInfo modsCompatVersion
-      sendGroupContentMessages_ user gInfo scope showGroupAsSender chatScopeInfo recipients live itemTTL sign cmrs
+      -- the member key is created before the send, so that signatures and file badge proofs assert the same key
+      gInfo' <- createUserMemberKey gInfo
+      recipients <- getGroupRecipients cxt user gInfo' chatScopeInfo modsCompatVersion
+      sendGroupContentMessages_ user gInfo' scope showGroupAsSender chatScopeInfo recipients live itemTTL sign cmrs
         where
           hasReport = any (\(ComposedMessage {msgContent}, _, _, _) -> isReport msgContent) cmrs
           modsCompatVersion = if hasReport then contentReportsVersion else groupKnockingVersion
@@ -4856,7 +4864,9 @@ processChatCommand cxt nm = \case
                 Just file -> do
                   let User {profile = LocalProfile {localBadge}} = user
                   fileSize <- checkSndFile (if incognitoMembership gInfo then Nothing else localBadge) file
-                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo recipients
+                  needsBadge <- fileNeedsBadge fileSize
+                  let binding_ = if needsBadge && not (incognitoMembership gInfo) then sndGroupChatBinding gInfo showGroupAsSender else Nothing
+                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n (CGGroup gInfo recipients) binding_
                   fInv' <-
                     if signMsgs && useRelays' gInfo
                       then (\d -> (fInv :: FileInvitation) {fileDigest = Just d}) <$> cryptoFileDigest file
@@ -4914,9 +4924,9 @@ processChatCommand cxt nm = \case
           -- batching retrieval of quoted messages (prepareMsgs).
           when (live || length (L.filter (\(ComposedMessage {quotedItemId}, _, _, _) -> isJust quotedItemId) cmrs) > 1) $
             throwCmdError "invalid multi send: live and more than one quote not supported"
-    xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> CM (FileInvitation, CIFile 'MDSnd)
-    xftpSndFileTransfer user file fileSize n contactOrGroup = do
-      (fInv, ciFile, ft) <- xftpSndFileTransfer_ user file fileSize n $ Just contactOrGroup
+    xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> Maybe ByteString -> CM (FileInvitation, CIFile 'MDSnd)
+    xftpSndFileTransfer user file fileSize n contactOrGroup binding_ = do
+      (fInv, ciFile, ft) <- xftpSndFileTransfer_ user file fileSize n (Just contactOrGroup) binding_
       case contactOrGroup of
         CGContact Contact {activeConn} -> forM_ activeConn $ \conn ->
           withFastStore' $ \db -> createSndFTDescrXFTP db user Nothing conn ft dummyFileDescr
@@ -5006,7 +5016,7 @@ processChatCommand cxt nm = \case
               chunkSize <- asks $ fileChunkSize . config
               withFastStore' $ \db -> do
                 fileId <- createLocalFile CIFSSndStored db user nf createdAt cf fileSize chunkSize
-                pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal, fileExpires = Nothing}
+                pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal, fileExpires = Nothing, fileProhibited = Nothing}
         prepareLocalItemsData ::
           NonEmpty ComposedMessageReq ->
           NonEmpty (Maybe (CIFile 'MDSnd)) ->
@@ -5510,7 +5520,7 @@ chatCommandP =
         *> ( APIGetChats
               <$> A.decimal
               <*> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)
-              <*> (A.space *> paginationByTimeP <|> pure (PTLast 5000))
+              <*> optional (A.space *> paginationByTimeP)
               <*> (A.space *> jsonP <|> pure clqNoFilters)
            ),
       "/_get chat " *> (APIGetChat <$> chatRefP <*> optional (" content=" *> strP) <* A.space <*> chatPaginationP <*> optional (" search=" *> textP)),

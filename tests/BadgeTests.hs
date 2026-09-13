@@ -6,6 +6,7 @@
 
 module BadgeTests (badgeTests) where
 
+import Data.ByteString.Char8 (ByteString)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
@@ -14,6 +15,7 @@ import qualified Data.Aeson as J
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges
 import Simplex.Messaging.Crypto.BBS
+import Simplex.Messaging.Encoding.String
 import Test.Hspec
 
 badgeTests :: Spec
@@ -26,6 +28,8 @@ badgeTests = do
   it "should compute badge status correctly" testExpiryCheck
   it "should accept unknown badge types" testUnknownBadgeType
   it "credential serializes to a paste-able token and back" testCredentialSerialization
+  it "presentation headers encode and decode" testPresHeaderEncoding
+  it "should reject a proof presented under another chat binding" testOtherChatBinding
 
 proofOf :: BadgeProof -> BBSProof
 proofOf (BadgeProof _ _ p _) = p
@@ -125,12 +129,41 @@ futureTime = posixSecondsToUTCTime 4102444800 -- 2099-12-31
 pastTime :: UTCTime
 pastTime = posixSecondsToUTCTime 1577836800 -- 2020-01-01
 
+testPresHeaderEncoding :: IO ()
+testPresHeaderEncoding =
+  mapM_
+    (\ph -> strDecode (strEncode ph) `shouldBe` Right ph)
+    [ PHTest "nonce",
+      PHChat aliceBinding,
+      PHFileInv {chatBinding = aliceBinding, fileSize = 139737},
+      PHFileDescr {chatBinding = aliceBinding, fileSize = 139737, descrHash = "descr-hash", fileExpires = Nothing},
+      PHFileDescr {chatBinding = aliceBinding, fileSize = 139737, descrHash = "descr-hash", fileExpires = Just futureTime},
+      PHUnknown 'Z' "payload"
+    ]
+
+testOtherChatBinding :: IO ()
+testOtherChatBinding = do
+  let ph = PHFileInv {chatBinding = aliceBinding, fileSize = 139737}
+      otherPh = PHFileInv {chatBinding = bobBinding, fileSize = 139737}
+  (pk, BadgeProof idx _ p info) <- issueBadgeProofHeader BTSupporter futureTime ph
+  verifyBadge (keysFor pk) (BadgeProof idx (BBSPresHeader $ strEncode ph) p info) >>= (`shouldBe` Just True)
+  verifyBadge (keysFor pk) (BadgeProof idx (BBSPresHeader $ strEncode otherPh) p info) >>= (`shouldBe` Just False)
+
+aliceBinding :: ByteString
+aliceBinding = "Galice-member-id"
+
+bobBinding :: ByteString
+bobBinding = "Gbob-member-id"
+
 issueBadgeProof :: BadgeType -> UTCTime -> IO (BBSPublicKey, BadgeProof)
-issueBadgeProof bt expiry = do
+issueBadgeProof bt expiry = issueBadgeProofHeader bt expiry (PHTest "test-nonce")
+
+issueBadgeProofHeader :: BadgeType -> UTCTime -> ProofPresHeader -> IO (BBSPublicKey, BadgeProof)
+issueBadgeProofHeader bt expiry ph = do
   Right (pk, sk) <- bbsKeyGen
   drg <- C.newRandom
   mk <- generateMasterKey drg
   let vreq = VerifiedBadgeRequest BadgeRequest {masterKey = mk, badgeInfo = BadgeInfo {badgeType = bt, badgeExpiry = expiry, badgeExtra = ""}}
   Right cred <- issueBadge testKeyIdx sk vreq
-  Right badge <- generateBadgeProof pk cred (BBSPresHeader "test-nonce")
+  Right badge <- badgeProof pk cred ph
   pure (pk, badge)

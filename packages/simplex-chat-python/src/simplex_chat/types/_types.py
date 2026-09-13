@@ -165,6 +165,12 @@ AgentServiceError = (
 
 AgentServiceError_Tag = Literal["rejected", "timeout", "noPendingRequest", "notDRAddress", "badSignature"]
 
+# Remote controller app version range (min and max as version strings).
+
+class AppVersionRange(TypedDict):
+    minVersion: str
+    maxVersion: str
+
 class AutoAccept(TypedDict):
     acceptIncognito: bool
 
@@ -482,6 +488,7 @@ class CIFile(TypedDict):
     fileStatus: "CIFileStatus"
     fileProtocol: "FileProtocol"
     fileExpires: NotRequired[str]  # ISO-8601 timestamp
+    fileProhibited: NotRequired["FileProhibited"]
 
 class CIFileStatus_sndStored(TypedDict):
     type: Literal["sndStored"]
@@ -1560,6 +1567,13 @@ class CryptoFileArgs(TypedDict):
     fileKey: str
     fileNonce: str
 
+# Remote controller application info.
+
+class CtrlAppInfo(TypedDict):
+    appVersionRange: "AppVersionRange"
+    deviceName: str
+    compression: bool
+
 class DroppedMsg(TypedDict):
     brokerTs: str  # ISO-8601 timestamp
     attempts: int  # int
@@ -1712,6 +1726,11 @@ class FileInvitation(TypedDict):
     fileConnReq: NotRequired[str]
     fileInline: NotRequired["InlineFileMode"]
     fileDescr: NotRequired["FileDescr"]
+    fileBadge: NotRequired["BadgeProof"]
+
+class FileProhibited(TypedDict):
+    maxSize: int  # int64
+    badgeStatus: NotRequired["BadgeStatus"]
 
 FileProtocol = Literal["SMP", "XFTP", "LOCAL"]
 
@@ -2657,6 +2676,7 @@ class RcvFileTransfer(TypedDict):
     fileId: int  # int64
     xftpRcvFile: NotRequired["XFTPRcvFile"]
     fileInvitation: "FileInvitation"
+    fileProhibited: NotRequired["FileProhibited"]
     fileStatus: "RcvFileStatus"
     fileType: "FileType"
     rcvFileInline: NotRequired["InlineFileMode"]
@@ -2770,6 +2790,10 @@ RcvMsgError_Tag = Literal["dropped", "parseError"]
 class RelayCapabilities(TypedDict):
     webDomain: NotRequired[str]
 
+class RelayConnectionResult(TypedDict):
+    relayMember: "GroupMember"
+    relayError: NotRequired["ChatError"]
+
 class RelayProfile(TypedDict):
     displayName: str
     fullName: str
@@ -2777,6 +2801,62 @@ class RelayProfile(TypedDict):
     image: NotRequired[str]
 
 RelayStatus = Literal["new", "invited", "accepted", "acknowledgedRoster", "active", "inactive", "rejected"]
+
+class RemoteCtrlInfo(TypedDict):
+    remoteCtrlId: int  # int64
+    ctrlDeviceName: str
+    sessionState: NotRequired["RemoteCtrlSessionState"]
+
+class RemoteCtrlSessionState_starting(TypedDict):
+    type: Literal["starting"]
+
+class RemoteCtrlSessionState_searching(TypedDict):
+    type: Literal["searching"]
+
+class RemoteCtrlSessionState_connecting(TypedDict):
+    type: Literal["connecting"]
+
+class RemoteCtrlSessionState_pendingConfirmation(TypedDict):
+    type: Literal["pendingConfirmation"]
+    sessionCode: str
+
+class RemoteCtrlSessionState_connected(TypedDict):
+    type: Literal["connected"]
+    sessionCode: str
+
+RemoteCtrlSessionState = (
+    RemoteCtrlSessionState_starting
+    | RemoteCtrlSessionState_searching
+    | RemoteCtrlSessionState_connecting
+    | RemoteCtrlSessionState_pendingConfirmation
+    | RemoteCtrlSessionState_connected
+)
+
+RemoteCtrlSessionState_Tag = Literal["starting", "searching", "connecting", "pendingConfirmation", "connected"]
+
+class RemoteCtrlStopReason_discoveryFailed(TypedDict):
+    type: Literal["discoveryFailed"]
+    chatError: "ChatError"
+
+class RemoteCtrlStopReason_connectionFailed(TypedDict):
+    type: Literal["connectionFailed"]
+    chatError: "ChatError"
+
+class RemoteCtrlStopReason_setupFailed(TypedDict):
+    type: Literal["setupFailed"]
+    chatError: "ChatError"
+
+class RemoteCtrlStopReason_disconnected(TypedDict):
+    type: Literal["disconnected"]
+
+RemoteCtrlStopReason = (
+    RemoteCtrlStopReason_discoveryFailed
+    | RemoteCtrlStopReason_connectionFailed
+    | RemoteCtrlStopReason_setupFailed
+    | RemoteCtrlStopReason_disconnected
+)
+
+RemoteCtrlStopReason_Tag = Literal["discoveryFailed", "connectionFailed", "setupFailed", "disconnected"]
 
 ReportReason = Literal["spam", "content", "community", "profile", "other"]
 
