@@ -709,10 +709,10 @@ getCtConn cc contactId = getTestCCContact cc contactId >>= maybe (fail "no conne
 
 getTestCCContact :: TestCC -> ContactId -> IO Contact
 getTestCCContact cc contactId = do
-  let TestCC {chatController = ChatController {config}} = cc
+  let TestCC {chatController = ChatController {config, random}} = cc
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
-      runExceptT (getContact db (mkStoreCxt config) user contactId) >>= either (fail . show) pure
+      runExceptT (getContact db (mkStoreCxt config random) user contactId) >>= either (fail . show) pure
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do

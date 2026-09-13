@@ -289,8 +289,6 @@ chatTypesDocsData =
     (sti @GroupFeature, STEnum, "GF", [], "", ""),
     (sti @GroupFeatureEnabled, STEnum, "FE", [], "", ""),
     (sti @GroupInfo, STRecord, "", [], "", ""),
-    (sti @GroupKeys, STRecord, "", [], "", ""),
-    (sti @GroupRootKey, STUnion, "GRK", [], "", ""),
     (sti @GroupLink, STRecord, "", [], "", ""),
     (sti @GroupLinkOwner, STRecord, "", [], "", ""),
     (sti @GroupLinkPlan, STUnion, "GLP", [], "", ""),
@@ -347,7 +345,6 @@ chatTypesDocsData =
     (sti @ProxyError, STUnion, "", [], "", ""),
     (sti @PublicGroupAccess, STRecord, "", [], "", ""),
     (sti @PublicGroupData, STRecord, "", [], "", ""),
-    (sti @PublicGroupKeys, STRecord, "", [], "", ""),
     (sti @PublicGroupProfile, STRecord, "", [], "", ""),
     (sti @RatchetSyncState, STEnum, "RS", [], "", ""),
     (sti @RCErrorType, STUnion, "RCE", [], "", ""),
@@ -523,8 +520,6 @@ deriving instance Generic GroupChatScopeInfo
 deriving instance Generic GroupFeature
 deriving instance Generic GroupFeatureEnabled
 deriving instance Generic GroupInfo
-deriving instance Generic GroupKeys
-deriving instance Generic GroupRootKey
 deriving instance Generic GroupLink
 deriving instance Generic GroupLinkOwner
 deriving instance Generic GroupLinkPlan
@@ -588,7 +583,6 @@ deriving instance Generic ProxyClientError
 deriving instance Generic ProxyError
 deriving instance Generic PublicGroupAccess
 deriving instance Generic PublicGroupData
-deriving instance Generic PublicGroupKeys
 deriving instance Generic PublicGroupProfile
 deriving instance Generic RatchetSyncState
 deriving instance Generic RCErrorType
