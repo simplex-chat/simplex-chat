@@ -215,7 +215,7 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
-import Data.Bifunctor (first, second)
+import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Char (toLower)
@@ -404,11 +404,11 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile useRelays
             (display_name, full_name, short_descr, description, image,
              group_type, group_link, public_group_id,
              group_web_page, group_domain, domain_web_page, allow_embedding, group_domain_proof,
-             user_id, preferences, member_admission, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             user_id, preferences, preferences_json, member_admission, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. publicGroupAccessRow publicGroup
-          :. (userId, groupPreferences, memberAdmission, currentTs, currentTs))
+          :. Only userId :. prefsToRow groupPreferences :. (memberAdmission, currentTs, currentTs))
       profileId <- insertedRowId db
       DB.execute
         db
@@ -488,8 +488,8 @@ createGroupInvitation db cxt user@User {userId} contact@Contact {contactId, acti
           groupId <- liftIO $ do
             DB.execute
               db
-              "INSERT INTO group_profiles (display_name, full_name, short_descr, description, image, user_id, preferences, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
-              (displayName, fullName, shortDescr, description, image, userId, groupPreferences, memberAdmission, currentTs, currentTs)
+              "INSERT INTO group_profiles (display_name, full_name, short_descr, description, image, user_id, preferences, preferences_json, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+              ((displayName, fullName, shortDescr, description, image, userId) :. prefsToRow groupPreferences :. (memberAdmission, currentTs, currentTs))
             profileId <- insertedRowId db
             DB.execute
               db
@@ -919,11 +919,11 @@ createGroup_ db userId groupProfile prepared business useRelays relayOwnStatus p
             (display_name, full_name, short_descr, description, image,
              group_type, group_link, public_group_id,
              group_web_page, group_domain, domain_web_page, allow_embedding, group_domain_proof,
-             user_id, preferences, member_admission, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             user_id, preferences, preferences_json, member_admission, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. publicGroupAccessRow publicGroup
-          :. (userId, groupPreferences, memberAdmission, currentTs, currentTs))
+          :. Only userId :. prefsToRow groupPreferences :. (memberAdmission, currentTs, currentTs))
       profileId <- insertedRowId db
       DB.execute
         db
@@ -1070,11 +1070,11 @@ getBaseGroupDetails db cxt User {userId, userContactId} _contactId_ search_ = do
 
 getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [(GroupMemberRole, FullGroupPreferences)]
 getContactGroupPreferences db User {userId} Contact {contactId} = do
-  map (second mergeGroupPreferences)
+  map (\(role, prefs, prefsJSON) -> (role, mergeGroupPreferences $ storedGroupPrefs prefs prefsJSON))
     <$> DB.query
       db
       [sql|
-        SELECT m.member_role, gp.preferences
+        SELECT m.member_role, gp.preferences, gp.preferences_json
         FROM groups g
         JOIN group_profiles gp USING (group_profile_id)
         JOIN group_members m USING (group_id)
@@ -2091,8 +2091,8 @@ createJoiningMember
       liftIO $
         DB.execute
           db
-          "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-          ((displayName, fullName, shortDescr, description, image, contactLink, userId, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
+          "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, preferences, preferences_json, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+          ((displayName, fullName, shortDescr, description, image, contactLink, userId) :. prefsToRow preferences :. (currentTs, currentTs) :. badgeToRow badge badgeVerified)
       profileId <- liftIO $ insertedRowId db
       case cReqMemberId_ of
         Just memberId -> do
@@ -2173,8 +2173,8 @@ createBusinessRequestGroup
         liftIO $
           DB.execute
             db
-            "INSERT INTO group_profiles (display_name, full_name, short_descr, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-            (displayName, fullName, shortDescr, image, userId, groupPreferences, currentTs, currentTs)
+            "INSERT INTO group_profiles (display_name, full_name, short_descr, image, user_id, preferences, preferences_json, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+            ((displayName, fullName, shortDescr, image, userId) :. prefsToRow groupPreferences :. (currentTs, currentTs))
         groupProfileId <- liftIO $ insertedRowId db
         liftIO $
           DB.execute
@@ -2459,8 +2459,8 @@ createNewMemberProfile_ db cxt User {userId} Profile {displayName, fullName, sho
     badgeVerified <- verifyBadge_ (badgeKeys cxt) badge
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-      ((displayName, fullName, shortDescr, description, image, contactLink, userId, preferences, createdAt, createdAt) :. badgeToRow badge badgeVerified)
+      "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, preferences, preferences_json, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+      ((displayName, fullName, shortDescr, description, image, contactLink, userId) :. prefsToRow preferences :. (createdAt, createdAt) :. badgeToRow badge badgeVerified)
     profileId <- insertedRowId db
     pure $ Right (ldn, profileId, badgeVerified)
 
@@ -2741,7 +2741,7 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
               SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
                   group_type = ?, group_link = ?,
                   group_web_page = ?, group_domain = CASE WHEN ? THEN ? ELSE group_domain END, domain_web_page = ?, allow_embedding = ?, group_domain_proof = ?,
-                  preferences = ?, member_admission = ?, updated_at = ?
+                  preferences = ?, preferences_json = ?, member_admission = ?, updated_at = ?
               WHERE group_profile_id IN (
                 SELECT group_profile_id
                 FROM groups
@@ -2750,7 +2750,8 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
             |]
             ( (newName, fullName, shortDescr, description, image, groupType_, groupLink_)
                 :. (groupWebPage_, isJust publicGroup, groupDomain_, domainWebPage_, allowEmbedding_, groupDomainProof_)
-                :. (groupPreferences, memberAdmission, currentTs, userId, groupId)
+                :. prefsToRow groupPreferences
+                :. (memberAdmission, currentTs, userId, groupId)
             )
     updateGroup_ ldn currentTs = do
       DB.execute
@@ -2787,14 +2788,14 @@ updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} 
     db
     [sql|
       UPDATE group_profiles
-      SET preferences = ?, updated_at = ?
+      SET preferences = ?, preferences_json = ?, updated_at = ?
       WHERE group_profile_id IN (
         SELECT group_profile_id
         FROM groups
         WHERE user_id = ? AND group_id = ?
       )
     |]
-    (ps, currentTs, userId, groupId)
+    (prefsToRow (Just ps) :. (currentTs, userId, groupId))
   pure (g :: GroupInfo) {groupProfile = p {groupPreferences = Just ps}, fullGroupPreferences = mergeGroupPreferences $ Just ps}
 
 updateGroupProfileFromMember :: DB.Connection -> User -> GroupInfo -> Profile -> ExceptT StoreError IO GroupInfo
@@ -2814,15 +2815,16 @@ getGroupProfileById db groupId =
         SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image,
                gp.group_type, gp.group_link, gp.public_group_id,
                gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-               gp.preferences, gp.member_admission
+               gp.preferences, gp.preferences_json, gp.member_admission
         FROM group_profiles gp
         JOIN groups g ON gp.group_profile_id = g.group_profile_id
         WHERE g.group_id = ?
       |]
       (Only groupId)
   where
-    toGroupProfile ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (groupPreferences, memberAdmission)) =
-      let publicGroupAccess = toPublicGroupAccess accessRow
+    toGroupProfile ((displayName, fullName, shortDescr, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (prefs, prefsJSON, memberAdmission)) =
+      let groupPreferences = storedGroupPrefs prefs prefsJSON
+          publicGroupAccess = toPublicGroupAccess accessRow
        in GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ publicGroupAccess, groupPreferences, memberAdmission}
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> StoreCxt -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)

@@ -33,6 +33,42 @@ protocolTests = do
   decodeChatMessageTest
   shortLinkDataTests
   batchLimitTests
+  preferencesJSONTests
+
+preferencesJSONTests :: Spec
+preferencesJSONTests = describe "preferences JSON" $ do
+  it "keeps no JSON when preferences encode to what was received" $ do
+    ps <- prefs "{\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"no\"}}"
+    prefsJSON_ ps `shouldBe` PrefsJSON Nothing
+  it "keeps no JSON when group preferences encode to what was received" $ do
+    ps <- groupPrefs "{\"voice\":{\"enable\":\"on\"},\"reactions\":{\"enable\":\"off\"}}"
+    prefsJSON_ ps `shouldBe` PrefsJSON Nothing
+  it "keeps JSON with a preference that is not defined" $ do
+    let s = "{\"voice\":{\"enable\":\"on\"},\"polls\":{\"enable\":\"on\"}}"
+    ps <- groupPrefs s
+    prefsJSON_ ps `shouldBe` PrefsJSON (Just $ object s)
+    J.toJSON ps `shouldBe` object "{\"voice\":{\"enable\":\"on\"}}"
+  it "keeps JSON with a field that is not defined in a preference" $ do
+    let s = "{\"voice\":{\"enable\":\"on\",\"exceptRole\":\"observer\"}}"
+    ps <- groupPrefs s
+    prefsJSON_ ps `shouldBe` PrefsJSON (Just $ object s)
+  it "reads the received preferences from the stored JSON" $
+    storedGroupPrefs (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"off\"}}")
+      `shouldBe` groupPrefs_ "{\"voice\":{\"enable\":\"off\"}}"
+  it "reads the stored preferences when the received JSON does not parse" $
+    storedGroupPrefs (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"sometimes\"}}")
+      `shouldBe` groupPrefs_ "{\"voice\":{\"enable\":\"on\"}}"
+  where
+    prefs :: ByteString -> IO Preferences
+    prefs = either fail pure . J.eitherDecodeStrict'
+    groupPrefs :: ByteString -> IO GroupPreferences
+    groupPrefs = either fail pure . J.eitherDecodeStrict'
+    groupPrefs_ :: ByteString -> Maybe GroupPreferences
+    groupPrefs_ = J.decodeStrict'
+    object :: ByteString -> J.Object
+    object s = case J.decodeStrict' s of
+      Just (J.Object o) -> o
+      _ -> error $ "not an object: " <> B.unpack s
 
 batchLimitTests :: Spec
 batchLimitTests = describe "Chat message batch limits" $ do
@@ -133,10 +169,10 @@ s #==# msg = do
   s ==# msg
 
 testChatPreferences :: Maybe Preferences
-testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing}
+testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing, _json = PrefsJSON Nothing}
 
 testGroupPreferences :: Maybe GroupPreferences
-testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing}
+testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing, _json = PrefsJSON Nothing}
 
 testProfile :: Profile
 testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, description = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing}

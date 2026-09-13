@@ -553,7 +553,8 @@ CREATE TABLE test_chat_schema.contact_profiles (
     contact_domain text,
     contact_domain_proof text,
     contact_domain_verified smallint,
-    description text
+    description text,
+    preferences_json text
 );
 
 
@@ -915,7 +916,8 @@ CREATE TABLE test_chat_schema.group_profiles (
     group_domain text,
     domain_web_page bigint,
     allow_embedding bigint,
-    group_domain_proof text
+    group_domain_proof text,
+    preferences_json text
 );
 
 
