@@ -2917,4 +2917,13 @@
     <string name="file_expired">Már nem érhető el a fájl</string>
     <string name="info_row_file_expired">Eddig volt elérhető a fájl</string>
     <string name="file_error_expired">Eddig volt elérhető a fájl: %1$s.</string>
+    <string name="badge_expired">Partnere kitűzője lejárt.</string>
+    <string name="badge_verification_failed">Nem sikerült ellenőrizni a partnere kitűzőjét.</string>
+    <string name="large_file_incognito">A(z) %1$s méretnél nagyobb fájlokat nem lehet elküldeni az inkognitó csevegésekben.</string>
+    <string name="max_file_size_with_badge">A megengedett legnagyobb fájlméret: %1$s, ezzel: %2$s.</string>
+    <string name="badge_no_key">Nincs kulcs a partnere kitűzőjének ellenőrzéséhez.</string>
+    <string name="supporter_badge">támogatói kitűző</string>
+    <string name="large_file_requires_badge">A(z) %2$s méretnél nagyobb fájlok küldéséhez %1$s szükséges.</string>
+    <string name="your_badge_expired">Az Ön kitűzője lejárt.</string>
+    <string name="legend_badge">legendás kitűző</string>
 </resources>
