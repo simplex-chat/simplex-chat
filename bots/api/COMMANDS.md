@@ -1817,21 +1817,21 @@ Get chat previews. Supports time-based pagination — use this instead of APILis
 **Parameters**:
 - userId: int64
 - pendingConnections: bool
-- pagination: [PaginationByTime](./TYPES.md#paginationbytime)
+- pagination: [PaginationByTime](./TYPES.md#paginationbytime)?
 - query: [ChatListQuery](./TYPES.md#chatlistquery)
 
 **Syntax**:
 
 ```
-/_get chats <userId>[ pcc=on] <str(pagination)> <json(query)>
+/_get chats <userId>[ pcc=on][ <str(pagination)>] <json(query)>
 ```
 
 ```javascript
-'/_get chats ' + userId + (pendingConnections ? ' pcc=on' : '') + ' ' + PaginationByTime.cmdString(pagination) + ' ' + JSON.stringify(query) // JavaScript
+'/_get chats ' + userId + (pendingConnections ? ' pcc=on' : '') + (pagination ? ' ' + PaginationByTime.cmdString(pagination) : '') + ' ' + JSON.stringify(query) // JavaScript
 ```
 
 ```python
-'/_get chats ' + str(userId) + (' pcc=on' if pendingConnections else '') + ' ' + PaginationByTime_cmd_string(pagination) + ' ' + json.dumps(query) # Python
+'/_get chats ' + str(userId) + (' pcc=on' if pendingConnections else '') + ((' ' + PaginationByTime_cmd_string(pagination)) if pagination is not None else '') + ' ' + json.dumps(query) # Python
 ```
 
 **Responses**:
