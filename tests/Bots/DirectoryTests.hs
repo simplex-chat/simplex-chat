@@ -23,7 +23,7 @@ import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable,
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..))
 import qualified Simplex.Chat.Markdown as MD
-import Simplex.Chat.Options (CoreChatOpts (..))
+import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (memberSupportVoiceVersion)
 import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
@@ -116,7 +116,7 @@ mkDirectoryOpts :: TestParams -> [KnownContact] -> Maybe KnownGroup -> Maybe Fil
 mkDirectoryOpts ps superUsers ownersGroup webFolder =
   DirectoryOpts
     { coreOptions =
-        testCoreOpts
+        coreOpts
           { dbOptions =
               (dbOptions testCoreOpts)
 #if defined(dbPostgres)
@@ -149,6 +149,8 @@ mkDirectoryOpts ps superUsers ownersGroup webFolder =
       knocking = False,
       testing = True
     }
+  where
+    (_, ChatOpts {coreOptions = coreOpts}) = testPortsCfg ps testCfg testOpts
 
 serviceDbPrefix :: FilePath
 serviceDbPrefix = "directory_service"
@@ -1650,7 +1652,7 @@ withDirectoryServiceOpts ps modOpts test = do
         ds ##> "/ad"
         getContactLink ds True
   let opts = modOpts $ mkDirectoryOpts ps [KnownContact 2 "alice"] Nothing Nothing
-  runDirectory testCfg opts $
+  runDirectory ps testCfg opts $
     withTestChatCfg ps testCfg "super_user" $ \superUser -> do
       superUser <## "subscribed 1 connections on server localhost"
       test superUser dsLink
@@ -1808,16 +1810,16 @@ withDirectory ps cfg dsLink = withDirectoryOwnersGroup ps cfg dsLink False Nothi
 withDirectoryOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> String -> Bool -> Maybe FilePath -> (TestCC -> String -> IO ()) -> IO ()
 withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
   let opts = mkDirectoryOpts ps [KnownContact 2 "alice"] (if createOwnersGroup then Just $ KnownGroup 1 "owners" else Nothing) webFolder
-  runDirectory cfg opts $
+  runDirectory ps cfg opts $
     withTestChatCfg ps cfg "super_user" $ \superUser -> do
       if createOwnersGroup
         then superUser <## "subscribed 2 connections on server localhost"
         else superUser <## "subscribed 1 connections on server localhost"
       test superUser dsLink
 
-runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()
-runDirectory cfg opts action = do
-  t <- forkIO $ directoryService opts cfg
+runDirectory :: TestParams -> ChatConfig -> DirectoryOpts -> IO () -> IO ()
+runDirectory ps cfg opts action = do
+  t <- forkIO $ directoryService opts $ fst $ testPortsCfg ps cfg testOpts
   threadDelay 500000
   action `finally` killThread t
 
@@ -2393,7 +2395,7 @@ testLinkCheckUpdatesCount ps = do
         ds ##> "/ad"
         getContactLink ds True
   let opts = (mkDirectoryOpts ps [KnownContact 2 "alice"] Nothing Nothing) {linkCheckInterval = 1}
-  runDirectory testCfg opts $
+  runDirectory ps testCfg opts $
     withTestChatCfg ps testCfg "super_user" $ \superUser -> do
       superUser <## "subscribed 1 connections on server localhost"
       withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
