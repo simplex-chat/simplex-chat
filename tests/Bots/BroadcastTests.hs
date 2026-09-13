@@ -43,7 +43,7 @@ mkBotOpts ps publishers =
           { dbOptions =
               (dbOptions testCoreOpts)
 #if defined(dbPostgres)
-                {dbSchemaPrefix = "client_" <> botDbPrefix}
+                {dbSchemaPrefix = testSchemaPrefix ps botDbPrefix}
 #else
                 {dbFilePrefix = tmpPath ps </> botDbPrefix}
 #endif

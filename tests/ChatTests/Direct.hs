@@ -267,8 +267,8 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
       bob <## "disconnected 1 connections on server localhost"
       alice <## "disconnected 1 connections on server localhost"
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           msgQueueQuota = 2,
           serverStoreCfg = persistentServerStoreCfg tmp
         }
@@ -301,7 +301,7 @@ testRetryConnectingClientTimeout ps = do
         bob <## "invitation link: ok to connect"
         _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> inv)
-        bob <## "smp agent error: BROKER {brokerAddress = \"smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7003\", brokerErr = TIMEOUT}"
+        bob <## ("smp agent error: BROKER {brokerAddress = \"smp://" <> testServerKeyHash <> "@localhost:" <> smpTestPort2 ps <> "\", brokerErr = TIMEOUT}")
 
       pure inv
 
@@ -330,8 +330,8 @@ testRetryConnectingClientTimeout ps = do
   where
     tmp = tmpPath ps
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           msgQueueQuota = 2,
           serverStoreCfg = persistentServerStoreCfg tmp
         }
@@ -1129,9 +1129,9 @@ testGetSetSMPServers =
       alice ##> "/_servers 1"
       alice <## "Your servers"
       alice <## "  SMP servers"
-      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
+      alice <## ("    " <> smpServerStr alice)
       alice <## "  XFTP servers"
-      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
+      alice <## ("    " <> xftpServerStr alice)
       alice #$> ("/smp smp://1234-w==@smp1.example.im", id, "ok")
       alice ##> "/smp"
       alice <## "Your servers"
@@ -1154,27 +1154,27 @@ testTestSMPServerConnection :: HasCallStack => TestParams -> IO ()
 testTestSMPServerConnection =
   testChat aliceProfile $
     \alice -> do
-      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"
+      alice ##> ("/smp test smp://" <> testServerKeyHash <> "@localhost:" <> smpTestPort alice)
       alice <## "SMP server test passed"
       -- to test with password:
       -- alice <## "SMP server test failed at CreateQueue, error: SMP AUTH"
       -- alice <## "Server requires authorization to create queues, check password"
-      alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
+      alice ##> ("/smp test " <> smpServerStr alice)
       alice <## "SMP server test passed"
-      alice ##> "/smp test smp://LcJU@localhost:7001"
-      alice <## "SMP server test failed at Connect, error: BROKER {brokerAddress = \"smp://LcJU@localhost:7001\", brokerErr = NETWORK {networkError = NEUnknownCAError}}"
+      alice ##> ("/smp test smp://LcJU@localhost:" <> smpTestPort alice)
+      alice <## ("SMP server test failed at Connect, error: BROKER {brokerAddress = \"smp://LcJU@localhost:" <> smpTestPort alice <> "\", brokerErr = NETWORK {networkError = NEUnknownCAError}}")
       alice <## "Certificate fingerprint in SMP server address does not match server certificate"
 
 testGetSetXFTPServers :: HasCallStack => TestParams -> IO ()
 testGetSetXFTPServers =
   testChat aliceProfile $
-    \alice -> withXFTPServer $ do
+    \alice -> withXFTPServer alice $ do
       alice ##> "/_servers 1"
       alice <## "Your servers"
       alice <## "  SMP servers"
-      alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
+      alice <## ("    " <> smpServerStr alice)
       alice <## "  XFTP servers"
-      alice <## "    xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
+      alice <## ("    " <> xftpServerStr alice)
       alice #$> ("/xftp xftp://1234-w==@xftp1.example.im", id, "ok")
       alice ##> "/xftp"
       alice <## "Your servers"
@@ -1195,16 +1195,16 @@ testGetSetXFTPServers =
 testTestXFTPServer :: HasCallStack => TestParams -> IO ()
 testTestXFTPServer =
   testChat aliceProfile $
-    \alice -> withXFTPServer $ do
-      alice ##> "/xftp test xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7002"
+    \alice -> withXFTPServer alice $ do
+      alice ##> ("/xftp test xftp://" <> testServerKeyHash <> "@localhost:" <> xftpTestPort alice)
       alice <## "XFTP server test passed"
       -- to test with password:
       -- alice <## "XFTP server test failed at CreateFile, error: XFTP AUTH"
       -- alice <## "Server requires authorization to upload files, check password"
-      alice ##> "/xftp test xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
+      alice ##> ("/xftp test " <> xftpServerStr alice)
       alice <## "XFTP server test passed"
-      alice ##> "/xftp test xftp://LcJU@localhost:7002"
-      alice <## "XFTP server test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:7002\", brokerErr = NETWORK {networkError = NEUnknownCAError}}"
+      alice ##> ("/xftp test xftp://LcJU@localhost:" <> xftpTestPort alice)
+      alice <## ("XFTP server test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:" <> xftpTestPort alice <> "\", brokerErr = NETWORK {networkError = NEUnknownCAError}}")
       alice <## "Certificate fingerprint in XFTP server address does not match server certificate"
 
 testOperators  :: HasCallStack => TestParams -> IO ()
@@ -1369,7 +1369,7 @@ testMaintenanceMode ps = do
       connectUsers alice bob
       alice #> "@bob hi"
       bob <# "alice> hi"
-      alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice ##> ("/_db export {\"archivePath\": \"" <> archive <> "\"}")
       alice <## "error: chat not stopped"
       alice ##> "/_stop"
       alice <## "chat stopped"
@@ -1384,16 +1384,18 @@ testMaintenanceMode ps = do
       -- export / delete / import
       alice ##> "/_stop"
       alice <## "chat stopped"
-      alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice ##> ("/_db export {\"archivePath\": \"" <> archive <> "\"}")
       alice <## "ok"
-      doesFileExist "./tests/tmp/alice-chat.zip" `shouldReturn` True
-      alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      doesFileExist archive `shouldReturn` True
+      alice ##> ("/_db import {\"archivePath\": \"" <> archive <> "\"}")
       alice <## "ok"
       -- cannot start chat after import
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
     -- works after full restart
     withTestChat ps "alice" $ \alice -> testChatWorking alice bob
+  where
+    archive = tmpFile ps "alice-chat.zip"
 
 testChatWorking :: HasCallStack => TestCC -> TestCC -> IO ()
 testChatWorking alice bob = do
@@ -1404,12 +1406,12 @@ testChatWorking alice bob = do
   alice <# "bob> hello too"
 
 testMaintenanceModeWithFiles :: HasCallStack => TestParams -> IO ()
-testMaintenanceModeWithFiles ps = withXFTPServer $ do
+testMaintenanceModeWithFiles ps = withXFTPServer ps $ do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     withNewTestChatOpts ps testOpts {coreOptions = testCoreOpts {maintenance = True}} "alice" aliceProfile $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
-      alice ##> "/_files_folder ./tests/tmp/alice_files"
+      alice ##> ("/_files_folder " <> aliceFiles)
       alice <## "ok"
       connectUsers alice bob
 
@@ -1427,26 +1429,29 @@ testMaintenanceModeWithFiles ps = withXFTPServer $ do
       alice <## "completed receiving file 1 (test.jpg) from bob"
 
       src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/alice_files/test.jpg"
+      dest <- B.readFile (aliceFiles </> "test.jpg")
       dest `shouldBe` src
 
       threadDelay 500000
 
       alice ##> "/_stop"
       alice <## "chat stopped"
-      alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice ##> ("/_db export {\"archivePath\": \"" <> archive <> "\"}")
       alice <## "ok"
       alice ##> "/_db delete"
       alice <## "ok"
       -- cannot start chat after delete
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
-      doesDirectoryExist "./tests/tmp/alice_files" `shouldReturn` False
-      alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      doesDirectoryExist aliceFiles `shouldReturn` False
+      alice ##> ("/_db import {\"archivePath\": \"" <> archive <> "\"}")
       alice <## "ok"
-      B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
+      B.readFile (aliceFiles </> "test.jpg") `shouldReturn` src
     -- works after full restart
     withTestChat ps "alice" $ \alice -> testChatWorking alice bob
+  where
+    aliceFiles = tmpFile ps "alice_files"
+    archive = tmpFile ps "alice-chat.zip"
 
 #if !defined(dbPostgres)
 testDatabaseEncryption :: HasCallStack => TestParams -> IO ()
@@ -2755,15 +2760,15 @@ testUserPrivacy =
 testSetChatItemTTL :: HasCallStack => TestParams -> IO ()
 testSetChatItemTTL =
   testChat2 aliceProfile bobProfile $
-    \alice bob -> withXFTPServer $ do
+    \alice bob -> withXFTPServer alice $ do
       connectUsers alice bob
       alice #> "@bob 1"
       bob <# "alice> 1"
       bob #> "@alice 2"
       alice <# "bob> 2"
       -- chat item with file
-      alice #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
-      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/app_files/test.jpg"
+      alice #$> ("/_files_folder " <> tmpFile alice "app_files", id, "ok")
+      copyFile "./tests/fixtures/test.jpg" $ tmpFile alice "app_files/test.jpg"
       alice ##> "/_send @2 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
       alice <# "/f @bob test.jpg"
       alice <## "use /fc 1 to cancel sending"
@@ -2777,7 +2782,7 @@ testSetChatItemTTL =
       bob #> "@alice 4"
       alice <# "bob> 4"
       alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, ""), Just "test.jpg"), ((1, "3"), Nothing), ((0, "4"), Nothing)])
-      checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $
+      checkActionDeletesFile (tmpFile alice "app_files/test.jpg") $
         alice #$> ("/_ttl 1 2", id, "ok")
       alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4")]) -- when expiration is turned on, first cycle is synchronous
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, ""), (0, "3"), (1, "4")])

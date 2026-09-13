@@ -2002,7 +2002,7 @@ testGroupDelayedModerationFullDelete ps = do
 testDeleteMemberWithMessages :: HasCallStack => TestParams -> IO ()
 testDeleteMemberWithMessages =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
+    \alice bob cath -> withXFTPServer alice $ do
       createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
       threadDelay 750000
       alice ##> "/set delete #team on"
@@ -2021,10 +2021,13 @@ testDeleteMemberWithMessages =
         ]
       threadDelay 750000
 
-      alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
-      bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
-      cath #$> ("/_files_folder ./tests/tmp/cath_app_files", id, "ok")
-      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/bob_app_files/test.jpg"
+      let aliceFiles = tmpFile alice "alice_app_files"
+          bobFiles = tmpFile bob "bob_app_files"
+          cathFiles = tmpFile cath "cath_app_files"
+      alice #$> ("/_files_folder " <> aliceFiles, id, "ok")
+      bob #$> ("/_files_folder " <> bobFiles, id, "ok")
+      cath #$> ("/_files_folder " <> cathFiles, id, "ok")
+      copyFile "./tests/fixtures/test.jpg" (bobFiles </> "test.jpg")
 
       bob ##> "/_send #1 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"file from bob\"}}]"
       bob <# "#team file from bob"
@@ -2056,9 +2059,9 @@ testDeleteMemberWithMessages =
       cath <## "completed receiving file 1 (test.jpg) from bob"
 
       src <- B.readFile "./tests/fixtures/test.jpg"
-      B.readFile "./tests/tmp/alice_app_files/test.jpg" `shouldReturn` src
-      B.readFile "./tests/tmp/bob_app_files/test.jpg" `shouldReturn` src
-      B.readFile "./tests/tmp/cath_app_files/test.jpg" `shouldReturn` src
+      B.readFile (aliceFiles </> "test.jpg") `shouldReturn` src
+      B.readFile (bobFiles </> "test.jpg") `shouldReturn` src
+      B.readFile (cathFiles </> "test.jpg") `shouldReturn` src
 
       threadDelay 1000000
       alice ##> "/rm #team bob messages=on"
@@ -2067,9 +2070,9 @@ testDeleteMemberWithMessages =
       bob <## "use /d #team to delete the group"
       cath <## "#team: alice removed bob from the group with all messages (signed)"
 
-      doesFileExist "./tests/tmp/alice_app_files/test.jpg" `shouldReturn` False
-      doesFileExist "./tests/tmp/bob_app_files/test.jpg" `shouldReturn` False
-      doesFileExist "./tests/tmp/cath_app_files/test.jpg" `shouldReturn` False
+      doesFileExist (aliceFiles </> "test.jpg") `shouldReturn` False
+      doesFileExist (bobFiles </> "test.jpg") `shouldReturn` False
+      doesFileExist (cathFiles </> "test.jpg") `shouldReturn` False
 
       -- Under fullDelete, bob's items are physically deleted on all sides; only the system event remains.
       alice #$> ("/_get chat #1 count=1", chat, [(1, "removed bob (signed)")])
@@ -2265,8 +2268,8 @@ testSharedMessageBody ps' =
     ps = ps' {printOutput = True} :: TestParams
     tmp = tmpPath ps
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
     opts' =
@@ -2319,8 +2322,8 @@ testSharedBatchBody ps =
   where
     tmp = tmpPath ps
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
     opts' =
@@ -2524,8 +2527,8 @@ testSharedBatchBodyMixed ps =
     oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
     tmp = tmpPath ps
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
     opts' =
@@ -5614,7 +5617,7 @@ testGroupMsgForwardDeletion =
 testGroupMsgForwardFile :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardFile =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
+    \alice bob cath -> withXFTPServer alice $ do
       createGroup3 "team" alice bob cath
       setupGroupForwarding alice bob cath
 
@@ -5629,12 +5632,12 @@ testGroupMsgForwardFile =
             cath <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
             cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
         ]
-      cath ##> "/fr 1 ./tests/tmp"
-      cath <## "saving file 1 from bob to ./tests/tmp/test.jpg"
+      cath ##> ("/fr 1 " <> tmpDir cath)
+      cath <## ("saving file 1 from bob to " <> tmpFile cath "test.jpg")
       cath <## "started receiving file 1 (test.jpg) from bob"
       cath <## "completed receiving file 1 (test.jpg) from bob"
       src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest <- B.readFile (tmpFile cath "test.jpg")
       dest `shouldBe` src
 
 testGroupMsgForwardChangeRole :: HasCallStack => TestParams -> IO ()
@@ -5986,7 +5989,7 @@ testGroupHistoryPreferenceOff =
 testGroupHistoryHostFile :: HasCallStack => TestParams -> IO ()
 testGroupHistoryHostFile =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
+    \alice bob cath -> withXFTPServer alice $ do
       createGroup2 "team" alice bob
 
       alice #> "/f #team ./tests/fixtures/test.jpg"
@@ -6012,20 +6015,20 @@ testGroupHistoryHostFile =
             bob <## "#team: new member cath is connected"
         ]
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> ("/fr 1 " <> tmpDir cath)
       cath
-        <### [ "saving file 1 from alice to ./tests/tmp/test.jpg",
+        <### [ ConsoleString $ "saving file 1 from alice to " <> tmpFile cath "test.jpg",
                "started receiving file 1 (test.jpg) from alice"
              ]
       cath <## "completed receiving file 1 (test.jpg) from alice"
       src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest <- B.readFile (tmpFile cath "test.jpg")
       dest `shouldBe` src
 
 testGroupHistoryMemberFile :: HasCallStack => TestParams -> IO ()
 testGroupHistoryMemberFile =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
+    \alice bob cath -> withXFTPServer alice $ do
       createGroup2 "team" alice bob
 
       bob #> "/f #team ./tests/fixtures/test.jpg"
@@ -6051,27 +6054,28 @@ testGroupHistoryMemberFile =
             bob <## "#team: new member cath is connected"
         ]
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> ("/fr 1 " <> tmpDir cath)
       cath
-        <### [ "saving file 1 from bob to ./tests/tmp/test.jpg",
+        <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile cath "test.jpg",
                "started receiving file 1 (test.jpg) from bob"
              ]
       cath <## "completed receiving file 1 (test.jpg) from bob"
       src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest <- B.readFile (tmpFile cath "test.jpg")
       dest `shouldBe` src
 
 testGroupHistoryLargeFile :: HasCallStack => TestParams -> IO ()
 testGroupHistoryLargeFile =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
-      xftpCLI ["rand", "./tests/tmp/testfile", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile"]
+    \alice bob cath -> withXFTPServer alice $ do
+      let testfile = tmpFile bob "testfile"
+      xftpCLI ["rand", testfile, "17mb"] `shouldReturn` ["File created: " <> testfile]
 
       createGroup2 "team" alice bob
 
-      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}]"
+      bob ##> ("/_send #1 json [{\"filePath\": \"" <> testfile <> "\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}]")
       bob <# "#team hello"
-      bob <# "/f #team ./tests/tmp/testfile"
+      bob <# ("/f #team " <> testfile)
       bob <## "use /fc 1 to cancel sending"
       bob <## "completed uploading file 1 (testfile) for #team"
 
@@ -6080,14 +6084,14 @@ testGroupHistoryLargeFile =
       alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
 
       -- admin receiving file does not prevent the new member from receiving it later
-      alice ##> "/fr 1 ./tests/tmp"
+      alice ##> ("/fr 1 " <> tmpDir alice)
       alice
-        <### [ "saving file 1 from bob to ./tests/tmp/testfile_1",
+        <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile alice "testfile_1",
                "started receiving file 1 (testfile) from bob"
              ]
       alice <## "completed receiving file 1 (testfile) from bob"
-      src <- B.readFile "./tests/tmp/testfile"
-      destAlice <- B.readFile "./tests/tmp/testfile_1"
+      src <- B.readFile testfile
+      destAlice <- B.readFile (tmpFile alice "testfile_1")
       destAlice `shouldBe` src
 
       connectUsers alice cath
@@ -6107,14 +6111,14 @@ testGroupHistoryLargeFile =
             bob <## "#team: new member cath is connected"
         ]
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> ("/fr 1 " <> tmpDir cath)
       cath
-        <### [ "saving file 1 from bob to ./tests/tmp/testfile_2",
+        <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile cath "testfile_2",
                "started receiving file 1 (testfile) from bob"
              ]
       cath <## "completed receiving file 1 (testfile) from bob"
 
-      destCath <- B.readFile "./tests/tmp/testfile_2"
+      destCath <- B.readFile (tmpFile cath "testfile_2")
       destCath `shouldBe` src
   where
     cfg = testCfg {xftpDescrPartSize = 200}
@@ -6122,17 +6126,19 @@ testGroupHistoryLargeFile =
 testGroupHistoryMultipleFiles :: HasCallStack => TestParams -> IO ()
 testGroupHistoryMultipleFiles =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
-      xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
-      xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
+    \alice bob cath -> withXFTPServer alice $ do
+      let testfileBob = tmpFile bob "testfile_bob"
+          testfileAlice = tmpFile alice "testfile_alice"
+      xftpCLI ["rand", testfileBob, "2mb"] `shouldReturn` ["File created: " <> testfileBob]
+      xftpCLI ["rand", testfileAlice, "1mb"] `shouldReturn` ["File created: " <> testfileAlice]
 
       createGroup2 "team" alice bob
 
       threadDelay 1000000
 
-      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]"
+      bob ##> ("/_send #1 json [{\"filePath\": \"" <> testfileBob <> "\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]")
       bob <# "#team hi alice"
-      bob <# "/f #team ./tests/tmp/testfile_bob"
+      bob <# ("/f #team " <> testfileBob)
       bob <## "use /fc 1 to cancel sending"
       bob <## "completed uploading file 1 (testfile_bob) for #team"
 
@@ -6142,9 +6148,9 @@ testGroupHistoryMultipleFiles =
 
       threadDelay 1000000
 
-      alice ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]"
+      alice ##> ("/_send #1 json [{\"filePath\": \"" <> testfileAlice <> "\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]")
       alice <# "#team hey bob"
-      alice <# "/f #team ./tests/tmp/testfile_alice"
+      alice <# ("/f #team " <> testfileAlice)
       alice <## "use /fc 2 to cancel sending"
       alice <## "completed uploading file 2 (testfile_alice) for #team"
 
@@ -6172,45 +6178,47 @@ testGroupHistoryMultipleFiles =
             bob <## "#team: new member cath is connected"
         ]
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> ("/fr 1 " <> tmpDir cath)
       cath
-        <### [ "saving file 1 from bob to ./tests/tmp/testfile_bob_1",
+        <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile cath "testfile_bob_1",
                "started receiving file 1 (testfile_bob) from bob"
              ]
       cath <## "completed receiving file 1 (testfile_bob) from bob"
-      srcBob <- B.readFile "./tests/tmp/testfile_bob"
-      destBob <- B.readFile "./tests/tmp/testfile_bob_1"
+      srcBob <- B.readFile testfileBob
+      destBob <- B.readFile (tmpFile cath "testfile_bob_1")
       destBob `shouldBe` srcBob
 
-      cath ##> "/fr 2 ./tests/tmp"
+      cath ##> ("/fr 2 " <> tmpDir cath)
       cath
-        <### [ "saving file 2 from alice to ./tests/tmp/testfile_alice_1",
+        <### [ ConsoleString $ "saving file 2 from alice to " <> tmpFile cath "testfile_alice_1",
                "started receiving file 2 (testfile_alice) from alice"
              ]
       cath <## "completed receiving file 2 (testfile_alice) from alice"
-      srcAlice <- B.readFile "./tests/tmp/testfile_alice"
-      destAlice <- B.readFile "./tests/tmp/testfile_alice_1"
+      srcAlice <- B.readFile testfileAlice
+      destAlice <- B.readFile (tmpFile cath "testfile_alice_1")
       destAlice `shouldBe` srcAlice
 
       cath ##> "/_get chat #1 count=100"
       r <- chatF <$> getTermLine cath
       r
-        `shouldContain` [ ((0, "hi alice"), Just "./tests/tmp/testfile_bob_1"),
-                          ((0, "hey bob"), Just "./tests/tmp/testfile_alice_1")
+        `shouldContain` [ ((0, "hi alice"), Just $ tmpFile cath "testfile_bob_1"),
+                          ((0, "hey bob"), Just $ tmpFile cath "testfile_alice_1")
                         ]
 
 testGroupHistoryFileCancel :: HasCallStack => TestParams -> IO ()
 testGroupHistoryFileCancel =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
-      xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
-      xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
+    \alice bob cath -> withXFTPServer alice $ do
+      let testfileBob = tmpFile bob "testfile_bob"
+          testfileAlice = tmpFile alice "testfile_alice"
+      xftpCLI ["rand", testfileBob, "2mb"] `shouldReturn` ["File created: " <> testfileBob]
+      xftpCLI ["rand", testfileAlice, "1mb"] `shouldReturn` ["File created: " <> testfileAlice]
 
       createGroup2 "team" alice bob
 
-      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]"
+      bob ##> ("/_send #1 json [{\"filePath\": \"" <> testfileBob <> "\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]")
       bob <# "#team hi alice"
-      bob <# "/f #team ./tests/tmp/testfile_bob"
+      bob <# ("/f #team " <> testfileBob)
       bob <## "use /fc 1 to cancel sending"
       bob <## "completed uploading file 1 (testfile_bob) for #team"
 
@@ -6224,9 +6232,9 @@ testGroupHistoryFileCancel =
 
       threadDelay 1000000
 
-      alice ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]"
+      alice ##> ("/_send #1 json [{\"filePath\": \"" <> testfileAlice <> "\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]")
       alice <# "#team hey bob"
-      alice <# "/f #team ./tests/tmp/testfile_alice"
+      alice <# ("/f #team " <> testfileAlice)
       alice <## "use /fc 2 to cancel sending"
       alice <## "completed uploading file 2 (testfile_alice) for #team"
 
@@ -6257,9 +6265,11 @@ testGroupHistoryFileCancel =
 testGroupHistoryFileCancelNoText :: HasCallStack => TestParams -> IO ()
 testGroupHistoryFileCancelNoText =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
-      xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
-      xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
+    \alice bob cath -> withXFTPServer alice $ do
+      let testfileBob = tmpFile bob "testfile_bob"
+          testfileAlice = tmpFile alice "testfile_alice"
+      xftpCLI ["rand", testfileBob, "2mb"] `shouldReturn` ["File created: " <> testfileBob]
+      xftpCLI ["rand", testfileAlice, "1mb"] `shouldReturn` ["File created: " <> testfileAlice]
 
       createGroup2 "team" alice bob
 
@@ -6268,7 +6278,7 @@ testGroupHistoryFileCancelNoText =
 
       -- bob file
 
-      bob #> "/f #team ./tests/tmp/testfile_bob"
+      bob #> ("/f #team " <> testfileBob)
       bob <## "use /fc 1 to cancel sending"
       bob <## "completed uploading file 1 (testfile_bob) for #team"
 
@@ -6281,7 +6291,7 @@ testGroupHistoryFileCancelNoText =
 
       -- alice file
 
-      alice #> "/f #team ./tests/tmp/testfile_alice"
+      alice #> ("/f #team " <> testfileAlice)
       alice <## "use /fc 2 to cancel sending"
       alice <## "completed uploading file 2 (testfile_alice) for #team"
 
@@ -7641,8 +7651,8 @@ testGroupMemberInactive ps = do
         alice <# "#team bob> hey"
   where
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           msgQueueQuota = 2
         }
     fastRetryInterval = defaultReconnectInterval {initialInterval = 50_000} -- same as in agent tests
@@ -8295,7 +8305,7 @@ testScopedSupportDontForwardBetweenScopes =
 
 testScopedSupportForwardFile :: HasCallStack => TestParams -> IO ()
 testScopedSupportForwardFile =
-  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> withXFTPServer $ do
+  testChat4 aliceProfile bobProfile cathProfile danProfile $ \alice bob cath dan -> withXFTPServer alice $ do
     createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRModerator)
     setupGroupForwarding alice bob dan
 
@@ -8318,9 +8328,9 @@ testScopedSupportForwardFile =
 
     bob <## "completed uploading file 1 (test.jpg) for #team"
 
-    dan ##> "/fr 1 ./tests/tmp"
+    dan ##> ("/fr 1 " <> tmpDir dan)
     dan
-      <### [ "saving file 1 from bob to ./tests/tmp/test.jpg",
+      <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile dan "test.jpg",
               "started receiving file 1 (test.jpg) from bob"
             ]
     dan <## "completed receiving file 1 (test.jpg) from bob"
@@ -11949,7 +11959,7 @@ testChannelMessageFile ps =
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan ->
-          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
             -- the roster arrives as a file before this one; Postgres assigns it a new id and does not
             -- reuse it on delete (SQLite does), so the received message file is id 2 here, 1 on SQLite.
@@ -11986,7 +11996,7 @@ testChannelMessageFile ps =
               ]
   where
     receiveFile cc name fileId src = do
-      let path = "./tests/tmp/test_" <> name <> ".jpg"
+      let path = tmpFile cc $ "test_" <> name <> ".jpg"
       cc ##> ("/fr " <> show fileId <> " " <> path)
       cc
         <### [ ConsoleString ("saving file " <> show fileId <> " from #team to " <> path),
@@ -12001,7 +12011,7 @@ testChannelMessageFileCancel ps =
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan ->
-          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
 #if defined(dbPostgres)
             let rcvFileId = 2 :: Int
@@ -12181,7 +12191,7 @@ testChannelOwnerFileTransferAsMember ps =
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan ->
-          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
 #if defined(dbPostgres)
             let rcvFileId = 2 :: Int
@@ -12217,7 +12227,7 @@ testChannelOwnerFileTransferAsMember ps =
               ]
   where
     receiveFile cc name fileId src = do
-      let path = "./tests/tmp/test_" <> name <> ".jpg"
+      let path = tmpFile cc $ "test_" <> name <> ".jpg"
       cc ##> ("/fr " <> show fileId <> " " <> path)
       cc
         <### [ ConsoleString ("saving file " <> show fileId <> " from alice to " <> path),
@@ -12232,7 +12242,7 @@ testGroupHistoryFileBadgeProof ps = do
   let cfg = testCfg {badgePublicKeys = testBadgeKeys pk, fileSizeLimits = FileSizeLimits {noBadge = 100000, supporter = 300000, legend = 400000}}
   testChatCfg3 cfg aliceProfile bobProfile cathProfile (test sk) ps
   where
-    test sk alice bob cath = withXFTPServer $ do
+    test sk alice bob cath = withXFTPServer ps $ do
       createGroup2 "team" alice bob
       addTestBadge alice =<< issueTestBadge sk futureDate
 
@@ -12261,14 +12271,14 @@ testGroupHistoryFileBadgeProof ps = do
             bob <## "#team: new member cath is connected"
         ]
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> ("/fr 1 " <> tmpDir ps)
       cath
-        <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
+        <### [ ConsoleString $ "saving file 1 from alice to " <> tmpFile ps "test.pdf",
                "started receiving file 1 (test.pdf) from alice"
              ]
       cath <## "completed receiving file 1 (test.pdf) from alice"
       src <- B.readFile "./tests/fixtures/test.pdf"
-      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest <- B.readFile (tmpFile ps "test.pdf")
       dest `shouldBe` src
 
 testGroupHistoryRcvFileBadgeProof :: HasCallStack => TestParams -> IO ()
@@ -12277,7 +12287,7 @@ testGroupHistoryRcvFileBadgeProof ps = do
   let cfg = testCfg {badgePublicKeys = testBadgeKeys pk, fileSizeLimits = FileSizeLimits {noBadge = 100000, supporter = 300000, legend = 400000}}
   testChatCfg3 cfg aliceProfile bobProfile cathProfile (test sk) ps
   where
-    test sk alice bob cath = withXFTPServer $ do
+    test sk alice bob cath = withXFTPServer ps $ do
       createGroup2 "team" alice bob
       addTestBadge bob =<< issueTestBadge sk futureDate
 
@@ -12285,11 +12295,11 @@ testGroupHistoryRcvFileBadgeProof ps = do
       bob <## "use /fc 1 to cancel sending"
       alice <# "#team bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
       alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      alice ##> "/fr 1 ./tests/tmp"
+      alice ##> ("/fr 1 " <> tmpDir ps)
       concurrentlyN_
         [ bob <## "completed uploading file 1 (test.pdf) for #team",
           alice
-            <### [ "saving file 1 from bob to ./tests/tmp/test.pdf",
+            <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile ps "test.pdf",
                    "started receiving file 1 (test.pdf) from bob"
                  ]
         ]
@@ -12314,14 +12324,14 @@ testGroupHistoryRcvFileBadgeProof ps = do
             bob <## "#team: new member cath is connected"
         ]
 
-      cath ##> "/fr 1 ./tests/tmp"
+      cath ##> ("/fr 1 " <> tmpDir ps)
       cath
-        <### [ "saving file 1 from bob to ./tests/tmp/test_1.pdf",
+        <### [ ConsoleString $ "saving file 1 from bob to " <> tmpFile ps "test_1.pdf",
                "started receiving file 1 (test.pdf) from bob"
              ]
       cath <## "completed receiving file 1 (test.pdf) from bob"
       src <- B.readFile "./tests/fixtures/test.pdf"
-      dest <- B.readFile "./tests/tmp/test_1.pdf"
+      dest <- B.readFile (tmpFile ps "test_1.pdf")
       dest `shouldBe` src
 
 testChannelFileBadgeProof :: HasCallStack => TestParams -> IO ()
@@ -12332,7 +12342,7 @@ testChannelFileBadgeProof ps = do
     withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChatCfg ps cfg "cath" cathProfile $ \cath ->
         withNewTestChatCfg ps cfg "dan" danProfile $ \dan ->
-          withNewTestChatCfg ps cfg "eve" eveProfile $ \eve -> withXFTPServer $ do
+          withNewTestChatCfg ps cfg "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
             addTestBadge alice =<< issueTestBadge sk futureDate
 #if defined(dbPostgres)
@@ -12359,7 +12369,7 @@ testChannelFileBadgeProof ps = do
               ]
 
             src <- B.readFile "./tests/fixtures/test.jpg"
-            let path = "./tests/tmp/test_cath.jpg"
+            let path = tmpFile ps "test_cath.jpg"
             cath ##> ("/fr " <> show rcvFileId <> " " <> path)
             cath
               <### [ ConsoleString ("saving file " <> show rcvFileId <> " from alice to " <> path),
@@ -12385,7 +12395,7 @@ testChannelFileBadgeProof ps = do
                   eve <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
                   eve <## ("use /fr " <> show (rcvFileId + 1) <> " [<dir>/ | <path>] to receive it [>>]")
               ]
-            let path2 = "./tests/tmp/test_cath_2.jpg"
+            let path2 = tmpFile ps "test_cath_2.jpg"
             cath ##> ("/fr " <> show (rcvFileId + 1) <> " " <> path2)
             cath
               <### [ ConsoleString ("saving file " <> show (rcvFileId + 1) <> " from #team to " <> path2),
@@ -12400,7 +12410,7 @@ testChannelOwnerFileCancelAsMember ps =
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan ->
-          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
             createChannel1Relay "team" alice bob cath dan eve
 #if defined(dbPostgres)
             let rcvFileId = 2 :: Int
@@ -12744,8 +12754,9 @@ testChannelSignedFile ps =
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath ->
         withNewTestChat ps "dan" danProfile $ \dan ->
-          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
-            xftpCLI ["rand", "./tests/tmp/testfile", "1mb"] `shouldReturn` ["File created: ./tests/tmp/testfile"]
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer ps $ do
+            let testfile = tmpFile ps "testfile"
+            xftpCLI ["rand", testfile, "1mb"] `shouldReturn` ["File created: " <> testfile]
             createChannel1Relay "team" alice bob cath dan eve
             promoteChannelMember "team" alice bob cath [dan, eve]
             -- roster serves arrive as files that Postgres deletes without reusing the id (SQLite reuses
@@ -12775,9 +12786,9 @@ testChannelSignedFile ps =
               ]
 
             -- cath sends a signed file
-            cath ##> "/_send #1 sign=on json [{\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"signed file\",\"type\":\"file\"}}]"
+            cath ##> ("/_send #1 sign=on json [{\"filePath\": \"" <> testfile <> "\", \"msgContent\": {\"text\":\"signed file\",\"type\":\"file\"}}]")
             cath <# "#team signed file (signed)"
-            cath <# "/f #team ./tests/tmp/testfile"
+            cath <# ("/f #team " <> testfile)
             cath <## ("use /fc " <> show fileId <> " to cancel sending")
             cath <## ("completed uploading file " <> show fileId <> " (testfile) for #team")
 
@@ -12798,14 +12809,14 @@ testChannelSignedFile ps =
               ]
 
             -- dan downloads: the signed digest is verified and the file completes
-            dan ##> ("/fr " <> show fileId <> " ./tests/tmp")
+            dan ##> ("/fr " <> show fileId <> " " <> tmpDir ps)
             dan
-              <### [ ConsoleString ("saving file " <> show fileId <> " from cath to ./tests/tmp/testfile_1"),
+              <### [ ConsoleString ("saving file " <> show fileId <> " from cath to " <> tmpFile ps "testfile_1"),
                      ConsoleString ("started receiving file " <> show fileId <> " (testfile) from cath")
                    ]
             dan <## ("completed receiving file " <> show fileId <> " (testfile) from cath")
-            src <- B.readFile "./tests/tmp/testfile"
-            destDan <- B.readFile "./tests/tmp/testfile_1"
+            src <- B.readFile testfile
+            destDan <- B.readFile (tmpFile ps "testfile_1")
             destDan `shouldBe` src
             -- the signed digest was carried to dan and stored, so verification ran (not skipped) and passed
             digestCount <- withCCTransaction dan $ \db ->

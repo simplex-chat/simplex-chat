@@ -58,7 +58,7 @@ import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConf
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
-import Simplex.Messaging.Protocol (ProtocolType (..))
+import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..))
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
 import NameResolver (NameRegistry, resolverNamesConfig, withNameResolver)
@@ -75,8 +75,11 @@ import System.Timeout (timeout)
 import Test.Hspec (Expectation, HasCallStack, shouldReturn)
 #if defined(dbPostgres)
 import qualified Data.ByteString.Char8 as B
+import Data.String (fromString)
 import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
+import qualified Database.PostgreSQL.Simple as PSQL
 import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
+import System.FilePath (takeFileName)
 #else
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.Map.Strict as M
@@ -105,8 +108,68 @@ testDBConnectInfo =
   }
 #endif
 
-serverPort :: ServiceName
-serverPort = "7001"
+class HasTestParams a where
+  testParams :: a -> TestParams
+
+instance HasTestParams TestParams where
+  testParams = id
+
+instance HasTestParams TestCC where
+  testParams TestCC {ccParams} = ccParams
+
+tmpDir :: HasTestParams a => a -> FilePath
+tmpDir = tmpPath . testParams
+
+tmpFile :: HasTestParams a => a -> FilePath -> FilePath
+tmpFile p f = tmpDir p </> f
+
+testPort :: HasTestParams a => Int -> a -> ServiceName
+testPort offset p = show $ portBase (testParams p) + offset
+
+smpTestPort :: HasTestParams a => a -> ServiceName
+smpTestPort = testPort 1
+
+xftpTestPort :: HasTestParams a => a -> ServiceName
+xftpTestPort = testPort 2
+
+smpTestPort2 :: HasTestParams a => a -> ServiceName
+smpTestPort2 = testPort 3
+
+remoteTestPort :: HasTestParams a => a -> ServiceName
+remoteTestPort = testPort 4
+
+testServerKeyHash :: String
+testServerKeyHash = "LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI="
+
+smpServerStr :: HasTestParams a => a -> String
+smpServerStr p = "smp://" <> testServerKeyHash <> ":server_password@localhost:" <> smpTestPort p
+
+smpServer2Str :: HasTestParams a => a -> String
+smpServer2Str p = "smp://" <> testServerKeyHash <> ":server_password@localhost:" <> smpTestPort2 p
+
+xftpServerStr :: HasTestParams a => a -> String
+xftpServerStr p = "xftp://" <> testServerKeyHash <> ":server_password@localhost:" <> xftpTestPort p
+
+mapTestPort :: TestParams -> ServiceName -> ServiceName
+mapTestPort ps = \case
+  "7001" -> smpTestPort ps
+  "7002" -> xftpTestPort ps
+  "7003" -> smpTestPort2 ps
+  port -> port
+
+mapServerPort :: (ServiceName -> ServiceName) -> ProtocolServer p -> ProtocolServer p
+mapServerPort f srv@ProtocolServer {port} = srv {port = f port}
+
+mapServerAuthPort :: (ServiceName -> ServiceName) -> ProtoServerWithAuth p -> ProtoServerWithAuth p
+mapServerAuthPort f (ProtoServerWithAuth srv auth) = ProtoServerWithAuth (mapServerPort f srv) auth
+
+testPortsCfg :: TestParams -> ChatConfig -> ChatOpts -> (ChatConfig, ChatOpts)
+testPortsCfg ps cfg@ChatConfig {shortLinkPresetServers} opts@ChatOpts {coreOptions = co@CoreChatOpts {smpServers, xftpServers}} =
+  ( cfg {shortLinkPresetServers = L.map (mapServerPort f) shortLinkPresetServers},
+    opts {coreOptions = co {smpServers = map (mapServerAuthPort f) smpServers, xftpServers = map (mapServerAuthPort f) xftpServers}}
+  )
+  where
+    f = mapTestPort ps
 
 testOpts :: ChatOpts
 testOpts =
@@ -201,7 +264,8 @@ data TestCC = TestCC
     chatAsync :: Async (),
     termAsync :: Async (),
     termQ :: TQueue String,
-    printOutput :: Bool
+    printOutput :: Bool,
+    ccParams :: TestParams
   }
 
 aCfg :: AgentConfig
@@ -291,8 +355,17 @@ startTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix = do
 
 createDatabase :: TestParams -> CoreChatOpts -> String -> IO (Either MigrationError ChatDatabase)
 #if defined(dbPostgres)
-createDatabase _params CoreChatOpts {dbOptions} dbPrefix = do
-  createChatDatabase dbOptions {dbSchemaPrefix = "client_" <> dbPrefix} (MigrationConfig MCError Nothing)
+createDatabase ps CoreChatOpts {dbOptions} dbPrefix = do
+  createChatDatabase dbOptions {dbSchemaPrefix = testSchemaPrefix ps dbPrefix} (MigrationConfig MCError Nothing)
+
+testSchemaPrefix :: HasTestParams a => a -> String -> String
+testSchemaPrefix p dbPrefix = "client_" <> takeFileName (tmpDir p) <> "_" <> dbPrefix
+
+dropTestSchemas :: HasTestParams a => a -> IO ()
+dropTestSchemas p =
+  bracket (PSQL.connect testDBConnectInfo) PSQL.close $ \db -> do
+    schemas <- PSQL.query db "SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE ?" (PSQL.Only $ testSchemaPrefix p "%")
+    forM_ schemas $ \(PSQL.Only schema) -> PSQL.execute_ db $ fromString $ "DROP SCHEMA " <> (schema :: String) <> " CASCADE"
 
 insertUser :: DBStore -> IO ()
 insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users DEFAULT VALUES")
@@ -305,7 +378,8 @@ insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users (user_id) V
 #endif
 
 startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> String -> User -> IO TestCC
-startTestChat_ TestParams {tmpPath, printOutput} db cfg opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}} dbPrefix user = do
+startTestChat_ ps@TestParams {tmpPath, printOutput} db cfg_ opts_ dbPrefix user = do
+  let (cfg, opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}}) = testPortsCfg ps cfg_ opts_
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
   Right cc <- newChatController db (Just user) cfg opts False
@@ -314,7 +388,7 @@ startTestChat_ TestParams {tmpPath, printOutput} db cfg opts@ChatOpts {coreOptio
   unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
-  pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ, printOutput}
+  pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ, printOutput, ccParams = ps}
 
 stopTestChat :: TestParams -> TestCC -> IO ()
 stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}, chatAsync, termAsync} = do
@@ -437,6 +511,16 @@ withTmpFiles =
     (createDirectoryIfMissing False "tests/tmp")
     (removeDirectoryRecursive "tests/tmp")
 
+newPortBases :: IO (TVar [Int])
+newPortBases = newTVarIO [7000, 7010 .. 8990]
+
+withPortBase :: TVar [Int] -> (Int -> IO a) -> IO a
+withPortBase bases = bracket takeBase (\b -> atomically $ modifyTVar' bases (b :))
+  where
+    takeBase = atomically $ readTVar bases >>= \case
+      b : bs -> writeTVar bases bs $> b
+      [] -> retry
+
 testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> TestParams -> IO ()
 testChatN cfg opts ps test params =
   bracket (getTestCCs $ zip ps [1 ..]) endTests test
@@ -474,7 +558,7 @@ getTermLine' expected cc@TestCC {printOutput} =
       error $ name <> ": no output for 5 seconds" <> expectedMsg
 
 userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _ _) =
+userName TestCC {chatController = ChatController {currentUser}} =
   maybe "no current user" (\User {localDisplayName} -> T.unpack localDisplayName) <$> readTVarIO currentUser
 
 testChat :: HasCallStack => Profile -> (HasCallStack => TestCC -> IO ()) -> TestParams -> IO ()
@@ -548,10 +632,10 @@ testChatCfg5 cfg p1 p2 p3 p4 p5 test = testChatN cfg testOpts [p1, p2, p3, p4, p
 concurrentlyN_ :: [IO a] -> IO ()
 concurrentlyN_ = mapConcurrently_ id
 
-smpServerCfg :: ServerConfig STMMsgStore
-smpServerCfg =
+smpServerCfg :: HasTestParams a => a -> ServerConfig STMMsgStore
+smpServerCfg p =
   ServerConfig
-    { transports = [(serverPort, transport @TLS, False)],
+    { transports = [(smpTestPort p, transport @TLS, False)],
       tbqSize = 4,
       msgQueueQuota = 16,
       maxJournalMsgCount = 24,
@@ -603,33 +687,30 @@ smpServerCfg =
 persistentServerStoreCfg :: FilePath -> ServerStoreCfg STMMsgStore
 persistentServerStoreCfg tmp = SSCMemory $ Just StorePaths {storeLogFile = tmp <> "/smp-server-store.log", storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"}
 
-withSmpServer :: IO () -> IO ()
-withSmpServer = withSmpServer' smpServerCfg
+withSmpServer :: HasTestParams a => a -> IO b -> IO b
+withSmpServer p = withSmpServer' (smpServerCfg p)
 
 withSmpServer' :: ServerConfig STMMsgStore -> IO a -> IO a
 withSmpServer' cfg = serverBracket (\started -> runSMPServerBlocking started cfg Nothing)
 
 -- | SMP server with a local names resolver attached; the action gets the resolver
 -- registry to map names to the addresses it creates.
-withSmpServerAndNames :: (NameRegistry -> IO a) -> IO a
-withSmpServerAndNames action =
+withSmpServerAndNames :: HasTestParams a => a -> (NameRegistry -> IO b) -> IO b
+withSmpServerAndNames p action =
   withNameResolver $ \port reg ->
-    withSmpServer' smpServerCfg {namesConfig = Just (resolverNamesConfig port)} (action reg)
+    withSmpServer' (smpServerCfg p) {namesConfig = Just (resolverNamesConfig port)} (action reg)
 
-xftpTestPort :: ServiceName
-xftpTestPort = "7002"
+xftpServerFiles :: HasTestParams a => a -> FilePath
+xftpServerFiles p = tmpFile p "xftp-server-files"
 
-xftpServerFiles :: FilePath
-xftpServerFiles = "tests/tmp/xftp-server-files"
-
-xftpServerConfig :: XFTPServerConfig STMFileStore
-xftpServerConfig =
+xftpServerConfig :: HasTestParams a => a -> XFTPServerConfig STMFileStore
+xftpServerConfig p =
   XFTPServerConfig
-    { xftpPort = xftpTestPort,
+    { xftpPort = xftpTestPort p,
       fileIdSize = 16,
-      serverStoreCfg = XSCMemory $ Just "tests/tmp/xftp-server-store.log",
-      storeLogFile = Just "tests/tmp/xftp-server-store.log",
-      filesPath = xftpServerFiles,
+      serverStoreCfg = XSCMemory $ Just storeLog,
+      storeLogFile = Just storeLog,
+      filesPath = xftpServerFiles p,
       fileSizeQuota = Nothing,
       allowedChunkSizes = [kb 64, kb 128, kb 256, mb 1, mb 4],
       allowNewFiles = True,
@@ -653,23 +734,25 @@ xftpServerConfig =
       information = Nothing,
       logStatsInterval = Nothing,
       logStatsStartTime = 0,
-      serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
+      serverStatsLogFile = tmpFile p "xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       prometheusInterval = Nothing,
-      prometheusMetricsFile = "tests/xftp-server-metrics.txt",
+      prometheusMetricsFile = tmpFile p "xftp-server-metrics.txt",
       controlPort = Nothing,
       transportConfig = mkTransportServerConfig True (Just alpnSupportedXFTPhandshakes) False,
       responseDelay = 0
     }
+  where
+    storeLog = tmpFile p "xftp-server-store.log"
 
-withXFTPServer :: IO () -> IO ()
-withXFTPServer = withXFTPServer' xftpServerConfig
+withXFTPServer :: HasTestParams a => a -> IO b -> IO b
+withXFTPServer p = withXFTPServer' (xftpServerConfig p)
 
-withXFTPServer' :: XFTPServerConfig STMFileStore -> IO () -> IO ()
-withXFTPServer' cfg =
+withXFTPServer' :: XFTPServerConfig STMFileStore -> IO a -> IO a
+withXFTPServer' cfg@XFTPServerConfig {filesPath} =
   serverBracket
     ( \started -> do
-        createDirectoryIfMissing False xftpServerFiles
+        createDirectoryIfMissing False filesPath
         runXFTPServerBlocking started cfg
     )
 
