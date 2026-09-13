@@ -135,10 +135,33 @@ processAgentMessage corrId connId msg = do
   lockEntity <- critical connId (withStore (`getChatLockEntity` AgentConnId connId))
   withEntityLock "processAgentMessage" lockEntity $ do
     cxt <- chatStoreCxt
-    -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
-    critical connId (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
-      Just user -> processAgentMessageConn cxt user corrId connId msg `catchAllErrors` eToView
+    -- Missing connection/entity errors here will be sent to the view but not shown as CRITICAL alert,
+    -- as in this case no need to ACK message - we can't process messages for this connection anyway.
+    critical connId (withStore $ getUserEntity cxt) >>= \case
+      Just (user, entity) -> processAgentMessageConn cxt user entity corrId connId msg `catchAllErrors` eToView
       _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
+  where
+    getUserEntity :: StoreCxt -> DB.Connection -> ExceptT StoreError IO (Maybe (User, ConnectionEntity))
+    getUserEntity cxt db =
+      liftIO (getUserByAConnId db $ AgentConnId connId)
+        >>= mapM (\user -> (user,) <$> (getConnectionEntity db cxt user (AgentConnId connId) >>= liftIO . updateConnStatus db))
+
+    updateConnStatus :: DB.Connection -> ConnectionEntity -> IO ConnectionEntity
+    updateConnStatus db acEntity = case agentMsgConnStatus (entityConnection acEntity) msg of
+      Just connStatus -> do
+        let conn = (entityConnection acEntity) {connStatus}
+        updateConnectionStatus db conn connStatus
+        pure $ updateEntityConnStatus acEntity connStatus
+      Nothing -> pure acEntity
+
+    agentMsgConnStatus :: Connection -> AEvent e -> Maybe ConnStatus
+    agentMsgConnStatus Connection {connStatus = cs} = \case
+      JOINED True -> Just ConnSndReady
+      CONF {} -> Just ConnRequested
+      INFO {} -> Just ConnSndReady
+      CON _ -> Just ConnReady
+      ERR err | cs /= ConnReady && not (temporaryOrHostError err) -> Just $ ConnFailed (tshow err)
+      _ -> Nothing
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
 -- SEDBBusyError will only be thrown on IO exceptions or SQLError during DB queries,
@@ -408,11 +431,8 @@ processAgentMsgRcvFile _corrId aFileId msg = do
 
 type ShouldDeleteGroupConns = Bool
 
-processAgentMessageConn :: StoreCxt -> User -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
-processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage = do
-  -- Missing connection/entity errors here will be sent to the view but not shown as CRITICAL alert,
-  -- as in this case no need to ACK message - we can't process messages for this connection anyway.
-  entity <- critical agentConnId $ withStore (\db -> getConnectionEntity db cxt user $ AgentConnId agentConnId) >>= updateConnStatus
+processAgentMessageConn :: StoreCxt -> User -> ConnectionEntity -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
+processAgentMessageConn cxt user@User {userId} entity corrId agentConnId agentMessage =
   case agentMessage of
     END -> case entity of
       RcvDirectMsgConnection _ (Just ct) -> toView $ CEvtContactAnotherClient user ct
@@ -426,23 +446,6 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       UserContactConnection conn uc ->
         processContactConnMessage agentMessage entity conn uc
   where
-    updateConnStatus :: ConnectionEntity -> CM ConnectionEntity
-    updateConnStatus acEntity = case agentMsgConnStatus (entityConnection acEntity) agentMessage of
-      Just connStatus -> do
-        let conn = (entityConnection acEntity) {connStatus}
-        withStore' $ \db -> updateConnectionStatus db conn connStatus
-        pure $ updateEntityConnStatus acEntity connStatus
-      Nothing -> pure acEntity
-
-    agentMsgConnStatus :: Connection -> AEvent e -> Maybe ConnStatus
-    agentMsgConnStatus Connection {connStatus = cs} = \case
-      JOINED True -> Just ConnSndReady
-      CONF {} -> Just ConnRequested
-      INFO {} -> Just ConnSndReady
-      CON _ -> Just ConnReady
-      ERR err | cs /= ConnReady && not (temporaryOrHostError err) -> Just $ ConnFailed (tshow err)
-      _ -> Nothing
-
     processCONFpqSupport :: Connection -> PQSupport -> CM Connection
     processCONFpqSupport conn@Connection {connId, pqSupport = pq} pq'
       | pq == PQSupportOn && pq' == PQSupportOff = do
@@ -507,7 +510,7 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           withAckMessage' "new contact msg" agentConnId meta $ pure ()
         SENT msgId _proxy -> do
           void $ continueSending connEntity conn
-          sentMsgDeliveryEvent conn msgId
+          withStore' $ \db -> sentMsgDeliveryEvent db conn msgId
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -668,11 +671,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
             withStore' $ \db -> resetContactConnInitiated db user conn'
         SENT msgId proxy -> do
           void $ continueSending connEntity conn
-          sentMsgDeliveryEvent conn msgId
-          checkSndInlineFTComplete conn msgId
-          cis <- withStore $ \db -> do
+          (fileEvent_, cis) <- withStore $ \db -> do
+            liftIO $ sentMsgDeliveryEvent db conn msgId
+            fileEvent_ <- checkSndInlineFTComplete db conn msgId
             cis <- updateDirectItemsStatus' db ct conn msgId (CISSndSent SSPComplete)
-            liftIO $ forM cis $ \ci -> setDirectSndChatItemViaProxy db user ct ci (isJust proxy)
+            (fileEvent_,) <$> liftIO (forM cis $ \ci -> setDirectSndChatItemViaProxy db user ct ci (isJust proxy))
+          mapM_ toView fileEvent_
           let acis = map ctItem cis
           unless (null acis) $ toView $ CEvtChatItemsStatusesUpdated user acis
           where
@@ -1159,9 +1163,12 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           groupMsgReceived gInfo m conn msgMeta msgRcpt
       SENT msgId proxy -> do
         continued <- continueSending connEntity conn
-        sentMsgDeliveryEvent conn msgId
-        checkSndInlineFTComplete conn msgId
-        updateGroupItemsStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
+        (fileEvent_, acis) <- withStore $ \db -> do
+          liftIO $ sentMsgDeliveryEvent db conn msgId
+          fileEvent_ <- checkSndInlineFTComplete db conn msgId
+          (fileEvent_,) <$> updateGroupItemsStatus db gInfo m conn msgId GSSSent (Just $ isJust proxy)
+        mapM_ toView fileEvent_
+        unless (null acis) $ toView $ CEvtChatItemsStatusesUpdated user acis
         when continued $ do
           when (isUserGrpFwdRelay gInfo) $ serveRoster user gInfo m -- roster ahead of the resumed backlog
           sendPendingGroupMessages user gInfo m conn
@@ -1794,9 +1801,9 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         ackMsg :: MsgMeta -> Maybe MsgReceiptInfo -> CM ()
         ackMsg MsgMeta {recipient = (msgId, _)} rcpt = withAgent $ \a -> ackMessageAsync a "" cId msgId rcpt
 
-    sentMsgDeliveryEvent :: Connection -> AgentMsgId -> CM ()
-    sentMsgDeliveryEvent Connection {connId} msgId =
-      withStore' $ \db -> updateSndMsgDeliveryStatus db connId msgId MDSSndSent
+    sentMsgDeliveryEvent :: DB.Connection -> Connection -> AgentMsgId -> IO ()
+    sentMsgDeliveryEvent db Connection {connId} msgId =
+      updateSndMsgDeliveryStatus db connId msgId MDSSndSent
 
     agentSndError :: AgentErrorType -> SndError
     agentSndError = \case
@@ -2558,18 +2565,17 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
         imageOrVoice _ = False
     assertSMPAcceptNotProhibited _ = pure ()
 
-    checkSndInlineFTComplete :: Connection -> AgentMsgId -> CM ()
-    checkSndInlineFTComplete conn agentMsgId = do
-      sft_ <- withStore' $ \db -> getSndFTViaMsgDelivery db user conn agentMsgId
-      forM_ sft_ $ \sft@SndFileTransfer {fileId} -> do
-        ci@(AChatItem _ _ _ ChatItem {file}) <- withStore $ \db -> do
-          liftIO $ updateSndFileStatus db sft FSComplete
-          updateDirectCIFileStatus db cxt user fileId CIFSSndComplete
+    checkSndInlineFTComplete :: DB.Connection -> Connection -> AgentMsgId -> ExceptT StoreError IO (Maybe ChatEvent)
+    checkSndInlineFTComplete db conn agentMsgId = do
+      sft_ <- liftIO $ getSndFTViaMsgDelivery db user conn agentMsgId
+      forM sft_ $ \sft@SndFileTransfer {fileId} -> do
+        liftIO $ updateSndFileStatus db sft FSComplete
+        ci@(AChatItem _ _ _ ChatItem {file}) <- updateDirectCIFileStatus db cxt user fileId CIFSSndComplete
         case file of
           Just CIFile {fileProtocol = FPXFTP} -> do
-            ft <- withStore $ \db -> getFileTransferMeta db user fileId
-            toView $ CEvtSndFileCompleteXFTP user ci ft
-          _ -> toView $ CEvtSndFileComplete user ci sft
+            ft <- getFileTransferMeta db user fileId
+            pure $ CEvtSndFileCompleteXFTP user ci ft
+          _ -> pure $ CEvtSndFileComplete user ci sft
 
     allowSendInline :: Integer -> Maybe InlineFileMode -> CM Bool
     allowSendInline fileSize = \case
@@ -4004,8 +4010,10 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
       (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
       checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
-        withStore' $ \db -> updateSndMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
-        updateGroupItemsStatus gInfo' m' conn agentMsgId (GSSRcvd msgRcptStatus) Nothing
+        acis <- withStore $ \db -> do
+          liftIO $ updateSndMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
+          updateGroupItemsStatus db gInfo' m' conn agentMsgId (GSSRcvd msgRcptStatus) Nothing
+        unless (null acis) $ toView $ CEvtChatItemsStatusesUpdated user acis
 
     -- Searches chat items for many agent message IDs and updates their status
     updateDirectItemsStatusMsgs :: Contact -> Connection -> [AgentMsgId] -> CIStatus 'MDSnd -> CM ()
@@ -4046,22 +4054,20 @@ processAgentMessageConn cxt user@User {userId} corrId agentConnId agentMessage =
           | otherwise -> updateGroupSndStatus db itemId groupMemberId newStatus $> True
         _ -> pure False
 
-    updateGroupItemsStatus :: GroupInfo -> GroupMember -> Connection -> AgentMsgId -> GroupSndStatus -> Maybe Bool -> CM ()
-    updateGroupItemsStatus gInfo@GroupInfo {groupId} GroupMember {groupMemberId} Connection {connId} msgId newMemStatus viaProxy_ = do
-      acis <- withStore $ \db -> do
-        items <- liftIO $ getGroupChatItemsByAgentMsgId db user groupId connId msgId
-        cis <- catMaybes <$> mapM (updateItem db) items
-        -- SENT and RCVD events are received for messages that may be batched in single scope,
-        -- so we can look up scope of first item
-        scopeInfo <- case cis of
-          (ci : _) -> getGroupChatScopeInfoForItem db cxt user gInfo (chatItemId' ci)
-          _ -> pure Nothing
-        pure $ map (gItem scopeInfo) cis
-      unless (null acis) $ toView $ CEvtChatItemsStatusesUpdated user acis
+    updateGroupItemsStatus :: DB.Connection -> GroupInfo -> GroupMember -> Connection -> AgentMsgId -> GroupSndStatus -> Maybe Bool -> ExceptT StoreError IO [AChatItem]
+    updateGroupItemsStatus db gInfo@GroupInfo {groupId} GroupMember {groupMemberId} Connection {connId} msgId newMemStatus viaProxy_ = do
+      items <- liftIO $ getGroupChatItemsByAgentMsgId db user groupId connId msgId
+      cis <- catMaybes <$> mapM updateItem items
+      -- SENT and RCVD events are received for messages that may be batched in single scope,
+      -- so we can look up scope of first item
+      scopeInfo <- case cis of
+        (ci : _) -> getGroupChatScopeInfoForItem db cxt user gInfo (chatItemId' ci)
+        _ -> pure Nothing
+      pure $ map (gItem scopeInfo) cis
       where
         gItem scopeInfo ci = AChatItem SCTGroup SMDSnd (GroupChat gInfo scopeInfo) ci
-        updateItem :: DB.Connection -> CChatItem 'CTGroup -> ExceptT StoreError IO (Maybe (ChatItem 'CTGroup 'MDSnd))
-        updateItem db = \case
+        updateItem :: CChatItem 'CTGroup -> ExceptT StoreError IO (Maybe (ChatItem 'CTGroup 'MDSnd))
+        updateItem = \case
           (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ SSPComplete}}) -> pure Nothing
           (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}}) -> do
             forM_ viaProxy_ $ \viaProxy -> liftIO $ setGroupSndViaProxy db itemId groupMemberId viaProxy
