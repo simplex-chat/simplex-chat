@@ -1257,6 +1257,10 @@ testAlwaysCaptcha ps =
         cath <## "#privacy: member bob (Bob) is connected"
         bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
         bob <## "#privacy: new member cath is connected"
+        bob ##> "/ms #privacy"
+        bob <## "bob (Bob): owner, you, created group"
+        bob <## "'SimpleX Directory': admin, invited, connected"
+        bob <## "cath (Catherine): observer, connected"
 
 testKnocking :: HasCallStack => TestParams -> IO ()
 testKnocking ps =
