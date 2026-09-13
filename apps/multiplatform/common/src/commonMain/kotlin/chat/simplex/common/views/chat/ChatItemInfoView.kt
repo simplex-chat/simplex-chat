@@ -273,6 +273,11 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       if (deleteAt != null) {
         InfoRow(stringResource(MR.strings.info_row_disappears_at), localTimestamp(deleteAt))
       }
+      val file = ci.file
+      if (file?.fileExpires != null) {
+        val expiresRes = if (file.expired) MR.strings.info_row_file_expired else MR.strings.info_row_file_expires
+        InfoRow(stringResource(expiresRes), localTimestamp(file.fileExpires))
+      }
       if (ci.meta.msgVerified?.verified == true) {
         val signedRes = if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified
         InfoRow(stringResource(signedRes), "", icon = painterResource(MR.images.ic_verified))

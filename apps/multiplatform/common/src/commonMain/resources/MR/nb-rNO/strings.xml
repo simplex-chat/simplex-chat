@@ -61,6 +61,7 @@
     <string name="button_add_welcome_message">Legg til velkomstmelding</string>
     <string name="add_your_team_members_to_conversations">Legg til dine teammedlemmer i samtalene.</string>
     <string name="group_member_role_admin">administrator</string>
+    <string name="connect_plan_you_are_admin">Du er administrator</string>
     <string name="feature_roles_admins">administratorer</string>
     <string name="v5_6_safer_groups_descr">Administratorer kan blokkere ett medlem for alle.</string>
     <string name="v4_2_group_links_desc">Administratorer kan lage lenker for å bli med i grupper.</string>

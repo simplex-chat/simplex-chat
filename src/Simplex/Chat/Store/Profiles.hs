@@ -42,6 +42,7 @@ module Simplex.Chat.Store.Profiles
     updateUserContactReceipts,
     updateUserGroupReceipts,
     updateUserAutoAcceptMemberContacts,
+    updateUserAutoAcceptGroupInvitations,
     updateUserProfile,
     setUserBadge,
     setUserProfileContactLink,
@@ -135,19 +136,22 @@ import Database.SQLite.Simple.QQ (sql)
 createUserRecordAt :: DB.Connection -> AgentUserId -> Bool -> Bool -> Profile -> Bool -> UTCTime -> ExceptT StoreError IO User
 createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {displayName, fullName, shortDescr, description, image, peerType, preferences = userPreferences} activeUser currentTs =
   checkConstraint SEDuplicateName . liftIO $ do
-    when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     let showNtfs = True
         sendRcptsContacts = True
         sendRcptsSmallGroups = True
         autoAcceptMemberContacts = False
+        autoAcceptGroupInvitations = False
     order <- getNextActiveOrder db
     DB.execute
       db
-      "INSERT INTO users (agent_user_id, local_display_name, active_user, is_user_chat_relay, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, client_service, created_at, updated_at) VALUES (?,?,?,?,?,0,?,?,?,?,?,?,?)"
+      "INSERT INTO users (agent_user_id, local_display_name, active_user, is_user_chat_relay, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, auto_accept_group_invitations, client_service, created_at, updated_at) VALUES (?,?,?,?,?,0,?,?,?,?,?,?,?,?)"
       ( (auId, displayName, BI activeUser, BI userChatRelay, order)
-          :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI clientService, currentTs, currentTs)
+          :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, BI clientService, currentTs, currentTs)
       )
     userId <- insertedRowId db
+    -- After the insert: the name is unique in users, so a duplicate fails
+    -- above, and deactivating first would commit a database with no active user.
+    when activeUser $ DB.execute db "UPDATE users SET active_user = 0 WHERE user_id != ?" (Only userId)
     DB.execute
       db
       "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
@@ -163,7 +167,7 @@ createUserRecordAt db (AgentUserId auId) userChatRelay clientService Profile {di
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
+    pure $ toUser currentTs $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, description, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, BI autoAcceptGroupInvitations, Nothing, Nothing, Nothing, BI userChatRelay, BI clientService, Nothing) :. localBadgeToRow Nothing :. (Nothing, Nothing, Nothing)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -328,6 +332,10 @@ updateUserAutoAcceptMemberContacts :: DB.Connection -> User -> Bool -> IO ()
 updateUserAutoAcceptMemberContacts db User {userId} autoAccept =
   DB.execute db "UPDATE users SET auto_accept_member_contacts = ? WHERE user_id = ?" (BI autoAccept, userId)
 
+updateUserAutoAcceptGroupInvitations :: DB.Connection -> User -> Bool -> IO ()
+updateUserAutoAcceptGroupInvitations db User {userId} autoAccept =
+  DB.execute db "UPDATE users SET auto_accept_group_invitations = ? WHERE user_id = ?" (BI autoAccept, userId)
+
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
 updateUserProfile db user p'
   | displayName == newName = liftIO $ do
@@ -338,12 +346,14 @@ updateUserProfile db user p'
   | otherwise =
       checkConstraint SEDuplicateName . liftIO $ do
         currentTs <- getCurrentTime
-        DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
-        userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
+        -- Insert first: checkConstraint returns the violation as a value, so the
+        -- transaction commits, keeping whatever ran before the failing insert.
         DB.execute
           db
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
           (newName, newName, userId, currentTs, currentTs)
+        DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
+        userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
         updateUserProfileFields_' db userId profileId p' currentTs
         updateContactLDN_ db user userContactId localDisplayName newName currentTs
         pure user {localDisplayName = newName, profile = (toLocalProfile profileId p' localAlias currentTs (Just False) Nothing) {localBadge}, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}

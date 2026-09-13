@@ -46,6 +46,7 @@ data ChatOpts = ChatOpts
     optFilesFolder :: Maybe FilePath,
     optTempDirectory :: Maybe FilePath,
     showReactions :: Bool,
+    showFullLinks :: Bool,
     allowInstantFiles :: Bool,
     autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
@@ -66,6 +67,7 @@ data CoreChatOpts = CoreChatOpts
     logAgent :: Maybe LogLevel,
     logFile :: Maybe FilePath,
     tbqSize :: Natural,
+    maxChats :: Int,
     deviceName :: Maybe Text,
     chatRelay :: Bool,
     webPreviewConfig :: Maybe WebPreviewConfig,
@@ -233,6 +235,15 @@ coreChatOptsP appDir defaultDbName = do
           <> value 1024
           <> showDefault
       )
+  maxChats <-
+    option
+      auto
+      ( long "max-chats"
+          <> metavar "COUNT"
+          <> help "Max number of chats loaded by chat list API"
+          <> value 5000
+          <> showDefault
+      )
   deviceName <-
     optional $
       strOption
@@ -339,6 +350,7 @@ coreChatOptsP appDir defaultDbName = do
         logAgent = if logAgent || logLevel == CLLDebug then Just $ agentLogLevel logLevel else Nothing,
         logFile,
         tbqSize,
+        maxChats,
         deviceName,
         chatRelay,
         webPreviewConfig,
@@ -418,6 +430,11 @@ chatOptsP appDir defaultDbName = do
       ( long "reactions"
           <> help "Show message reactions"
       )
+  showFullLinks <-
+    switch
+      ( long "show-full-links"
+          <> help "Show full connection links and addresses"
+      )
   allowInstantFiles <-
     switch
       ( long "allow-instant-files"
@@ -485,6 +502,7 @@ chatOptsP appDir defaultDbName = do
         optFilesFolder,
         optTempDirectory,
         showReactions,
+        showFullLinks,
         allowInstantFiles,
         autoAcceptFileSize,
         muteNotifications,

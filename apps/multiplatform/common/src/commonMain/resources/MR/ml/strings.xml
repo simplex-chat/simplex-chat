@@ -295,6 +295,9 @@
     <string name="welcome">സ്വാഗതം!</string>
     <string name="this_text_is_available_in_settings">ഈ വാചകം ക്രമീകരണങ്ങളിൽ ലഭ്യമാണ്</string>
     <string name="you_are_observer">നിങ്ങൾ നിരീക്ഷകനാണ്</string>
+    <string name="connect_plan_you_are_observer">നിങ്ങൾ നിരീക്ഷകനാണ്</string>
+    <string name="connect_plan_you_are_member">നിങ്ങൾ അംഗമാണ്</string>
+    <string name="connect_plan_you_are_owner">നിങ്ങൾ ഉടമയാണ്</string>
     <string name="icon_descr_server_status_pending">തീർപ്പാക്കാത്തത്</string>
     <string name="icon_descr_send_message">സന്ദേശം അയയ്ക്കുക</string>
     <string name="send_live_message">തത്സമയ സന്ദേശം അയയ്ക്കുക</string>

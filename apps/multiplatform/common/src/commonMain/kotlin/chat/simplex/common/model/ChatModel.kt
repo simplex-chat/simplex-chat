@@ -1293,6 +1293,7 @@ data class User(
   val sendRcptsContacts: Boolean,
   val sendRcptsSmallGroups: Boolean,
   val autoAcceptMemberContacts: Boolean,
+  val autoAcceptGroupInvitations: Boolean,
   val viewPwdHash: UserPwdHash?,
   val uiThemes: ThemeModeOverrides? = null,
   val userChatRelay: Boolean,
@@ -1325,6 +1326,7 @@ data class User(
       sendRcptsContacts = true,
       sendRcptsSmallGroups = false,
       autoAcceptMemberContacts = false,
+      autoAcceptGroupInvitations = false,
       viewPwdHash = null,
       uiThemes = null,
       userChatRelay = false,
@@ -2107,10 +2109,32 @@ data class LocalProfile(
   }
 }
 
-@Serializable
-enum class ChatPeerType {
-  @SerialName("human") Human,
-  @SerialName("bot") Bot
+@Serializable(with = ChatPeerTypeSerializer::class)
+sealed class ChatPeerType {
+  @Serializable @SerialName("human") object Human: ChatPeerType()
+  @Serializable @SerialName("bot") object Bot: ChatPeerType()
+  @Serializable @SerialName("business") object Business: ChatPeerType()
+  @Serializable @SerialName("unknown") data class Unknown(val type: String): ChatPeerType()
+
+  val text: String
+    get() = when (this) {
+      is Human -> "human"
+      is Bot -> "bot"
+      is Business -> "business"
+      is Unknown -> type
+    }
+}
+
+object ChatPeerTypeSerializer : KSerializer<ChatPeerType> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ChatPeerType", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): ChatPeerType =
+    when (val v = decoder.decodeString()) {
+      "human" -> ChatPeerType.Human
+      "bot" -> ChatPeerType.Bot
+      "business" -> ChatPeerType.Business
+      else -> ChatPeerType.Unknown(v)
+    }
+  override fun serialize(encoder: Encoder, value: ChatPeerType) = encoder.encodeString(value.text)
 }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
@@ -2158,7 +2182,7 @@ enum class BadgeStatus {
 @Serializable
 data class BadgeInfo(
   val badgeType: BadgeType,
-  val badgeExpiry: Instant? = null,
+  val badgeExpiry: Instant,
   val badgeExtra: String = ""
 )
 
@@ -3901,13 +3925,15 @@ enum class MsgDirection {
 sealed class CIForwardedFrom {
   @Serializable @SerialName("unknown") object Unknown: CIForwardedFrom()
   @Serializable @SerialName("contact") class Contact(override val chatName: String, val msgDir: MsgDirection, val contactId: Long? = null, val chatItemId: Long? = null): CIForwardedFrom()
-  @Serializable @SerialName("group") class Group(override val chatName: String, val msgDir: MsgDirection, val groupId: Long? = null, val chatItemId: Long? = null): CIForwardedFrom()
+  @Serializable @SerialName("group") class Group(override val chatName: String, val msgDir: MsgDirection, val groupId: Long? = null, val chatItemId: Long? = null, val memberId: String? = null, val sharedMsgId_: String? = null, val groupType: GroupType? = null): CIForwardedFrom()
+  @Serializable @SerialName("groupLink") class GroupLink(override val chatName: String, val msgDir: MsgDirection, val groupLink: String, val publicGroupId: String, val memberId: String? = null, val sharedMsgId: String, val groupType: GroupType? = null): CIForwardedFrom()
 
   open val chatName: String
     get() = when (this) {
         Unknown -> ""
         is Contact -> chatName
         is Group -> chatName
+        is GroupLink -> chatName
       }
 
   val chatTypeApiIdMsgId: Triple<ChatType, Long, Long?>?
@@ -3915,18 +3941,15 @@ sealed class CIForwardedFrom {
       Unknown -> null
       is Contact -> if (contactId != null) Triple(ChatType.Direct, contactId, chatItemId) else null
       is Group -> if (groupId != null) Triple(ChatType.Group, groupId, chatItemId) else null
+      is GroupLink -> null
     }
 
+  val sourceGroupLink: String?
+    get() = if (this is GroupLink) groupLink else null
+
   fun text(chatType: ChatType): String =
-    if (chatType == ChatType.Local) {
-      if (chatName.isEmpty()) {
-        generalGetString(MR.strings.saved_description)
-      } else {
-        generalGetString(MR.strings.saved_from_description).format(chatName)
-      }
-    } else {
-      generalGetString(MR.strings.forwarded_description)
-    }
+    if (chatType == ChatType.Local) generalGetString(MR.strings.saved_description)
+    else generalGetString(MR.strings.forwarded_description)
 }
 
 @Serializable
@@ -4222,6 +4245,13 @@ enum class MREmojiChar(val value: String) {
   @SerialName("✅") Check("✅");
 }
 
+// set by the core when the file is above the size the sender's badge allows; badgeStatus is null when no proof was sent
+@Serializable
+data class FileProhibited(
+  val maxSize: Long,
+  val badgeStatus: BadgeStatus? = null
+)
+
 @Serializable
 data class CIFile(
   val fileId: Long,
@@ -4229,8 +4259,12 @@ data class CIFile(
   val fileSize: Long,
   val fileSource: CryptoFile? = null,
   val fileStatus: CIFileStatus,
-  val fileProtocol: FileProtocol
+  val fileProtocol: FileProtocol,
+  val fileExpires: Instant? = null,
+  val fileProhibited: FileProhibited? = null
 ) {
+  val expired: Boolean = fileExpires != null && fileExpires < Clock.System.now()
+
   val loaded: Boolean = when (fileStatus) {
     is CIFileStatus.SndStored -> true
     is CIFileStatus.SndTransfer -> true
@@ -4280,7 +4314,7 @@ data class CIFile(
     is CIFileStatus.SndCancelled -> true
     is CIFileStatus.SndError -> true
     is CIFileStatus.SndWarning -> true
-    is CIFileStatus.RcvInvitation -> false
+    is CIFileStatus.RcvInvitation -> expired
     is CIFileStatus.RcvAccepted -> true
     is CIFileStatus.RcvTransfer -> true
     is CIFileStatus.RcvAborted -> true

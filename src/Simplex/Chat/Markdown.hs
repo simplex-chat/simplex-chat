@@ -211,7 +211,7 @@ markdownP = mconcat <$> A.many' fragmentP
         Just c -> case c of
           ' ' -> unmarked <$> A.takeWhile (== ' ')
           '+' -> phoneP <|> wordP
-          '*' -> formattedP '*' Bold
+          '*' -> boldP <|> formattedP '*' Bold
           '_' -> formattedP '_' Italic
           '~' -> formattedP '~' StrikeThrough
           '`' -> formattedP '`' Snippet
@@ -233,6 +233,12 @@ markdownP = mconcat <$> A.many' fragmentP
       | T.null s || T.head s == ' ' || T.last s == ' ' =
           unmarked $ c `T.cons` s `T.snoc` c
       | otherwise = markdown f s
+    boldP :: Parser Markdown
+    boldP = do
+      s <- A.string "**" *> A.takeTill (== '*') <* A.string "**"
+      if T.null s || T.head s == ' ' || T.last s == ' '
+        then fail "not bold"
+        else pure $ markdown Bold s
     secretP :: Parser Markdown
     secretP = secret <$?> ((,,) <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile1 (== '#'))
     secret :: (Text, Text, Text) -> Either String Markdown
@@ -349,7 +355,7 @@ markdownP = mconcat <$> A.many' fragmentP
     simplexUriFormat :: Maybe Text -> AConnectionLink -> Format
     simplexUriFormat showText = \case
       ACL m (CLFull cReq) -> case cReq of
-        CRContactUri crData -> SimplexLink showText (linkType' crData) cLink $ uriHosts crData
+        CRContactUri crData _ -> SimplexLink showText (linkType' crData) cLink $ uriHosts crData
         CRInvitationUri crData _ -> SimplexLink showText XLInvitation cLink $ uriHosts crData
         where
           cLink = ACL m $ CLFull $ simplexConnReqUri cReq

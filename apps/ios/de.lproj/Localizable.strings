@@ -1611,7 +1611,7 @@ server test step */
 "Connection is blocked by server operator:\n%@" = "Die Verbindung wurde vom Serverbetreiber blockiert:\n%@";
 
 /* conn error description */
-"Connection link removed" = "Verbindungsfehler";
+"Connection link removed" = "Verbindungslink entfernt";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Verbindung noch nicht bereit.";
@@ -1692,7 +1692,7 @@ server test step */
 "Contact preferences" = "Kontakt-Präferenzen";
 
 /* No comment provided by engineer. */
-"Contact requests from groups" = "KONTAKTANFRAGEN VON GRUPPEN";
+"Contact requests in groups" = "Kontaktanfragen in Gruppen";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "Kontakt sollte annehmen…";
@@ -1813,6 +1813,12 @@ server test step */
 
 /* No comment provided by engineer. */
 "creator" = "Ersteller";
+
+/* No comment provided by engineer. */
+"Crowdfunding on Wefunder" = "Crowdfunding auf Wefunder";
+
+/* No comment provided by engineer. */
+"Crowdfunding on Wefunder." = "Crowdfunding auf Wefunder.";
 
 /* No comment provided by engineer. */
 "Current conditions text couldn't be loaded, you can review conditions via this link:" = "Der Text der aktuellen Nutzungsbedingungen konnte nicht geladen werden. Sie können die Nutzungsbedingungen unter diesem Link einsehen:";
@@ -3106,7 +3112,7 @@ servers warning */
 "Get notified when mentioned." = "Bei Erwähnung benachrichtigt werden.";
 
 /* No comment provided by engineer. */
-"Get SimpleX name (BETA)" = "SimpleX-Name erhalten (BETA)";
+"Get SimpleX name (BETA)" = "Einen SimpleX-Namen erhalten (BETA)";
 
 /* No comment provided by engineer. */
 "Get started" = "Jetzt starten";
@@ -3152,6 +3158,9 @@ servers warning */
 
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Die Gruppeneinladung ist nicht mehr gültig, da sie vom Absender entfernt wurde.";
+
+/* No comment provided by engineer. */
+"Group invitations" = "Gruppeneinladungen";
 
 /* No comment provided by engineer. */
 "group is deleted" = "Gruppe wurde gelöscht";
@@ -4264,7 +4273,7 @@ servers warning */
 "No valid link" = "Kein gültiger Link";
 
 /* No comment provided by engineer. */
-"Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Niemand verfolgte Ihre Gespräche. Niemand erstellte eine Karte, wo Sie sich aufgehalten haben. Privatsphäre war nie ein Feature - sie war selbstverständlich.";
+"Nobody tracked your conversations. No one drew a map of where you'd been. Privacy was never a feature - it was the way of life." = "Niemand verfolgte Ihre Gespräche. Niemand hat eine Karte erstellt, wo Sie überall waren. Privatsphäre war nie ein Feature – sie war eine Selbstverständlichkeit.";
 
 /* No comment provided by engineer. */
 "Non-profit governance" = "Non‑Profit‑Governance";
@@ -4465,13 +4474,7 @@ alert button */
 "Open migration to another device" = "Migration auf ein anderes Gerät öffnen";
 
 /* new chat action */
-"Open new channel" = "Neuen Kanal öffnen";
-
-/* new chat action */
 "Open new chat" = "Neuen Chat öffnen";
-
-/* new chat action */
-"Open new group" = "Neue Gruppe öffnen";
 
 /* No comment provided by engineer. */
 "Open Settings" = "Geräte-Einstellungen öffnen";
@@ -5233,16 +5236,16 @@ swipe action */
 "Role" = "Rolle";
 
 /* No comment provided by engineer. */
-"Role will be changed to \"%@\". All chat members will be notified." = "Die Rolle des Mitglieds wird auf \"%@\" geändert. Alle Chat-Mitglieder werden darüber informiert.";
+"Role will be changed to \"%@\". All chat members will be notified." = "Die Rolle wird auf \"%@\" geändert. Alle Chat-Mitglieder werden darüber informiert.";
 
 /* No comment provided by engineer. */
-"Role will be changed to \"%@\". All group members will be notified." = "Die Mitgliederrolle wird auf \"%@\" geändert. Alle Gruppenmitglieder werden benachrichtigt.";
+"Role will be changed to \"%@\". All group members will be notified." = "Die Rolle wird auf \"%@\" geändert. Alle Gruppenmitglieder werden benachrichtigt.";
 
 /* No comment provided by engineer. */
 "Role will be changed to \"%@\". All subscribers will be notified." = "Die Rolle wird auf \"%@\" geändert. Alle Abonnenten werden benachrichtigt.";
 
 /* No comment provided by engineer. */
-"Role will be changed to \"%@\". The member will receive a new invitation." = "Die Mitgliederrolle wird auf \"%@\" geändert. Das Mitglied wird eine neue Einladung erhalten.";
+"Role will be changed to \"%@\". The member will receive a new invitation." = "Die Rolle wird auf \"%@\" geändert. Das Mitglied wird eine neue Einladung erhalten.";
 
 /* No comment provided by engineer. */
 "Run chat" = "Chat starten";
@@ -5343,10 +5346,10 @@ chat item action */
 "Saved" = "Abgespeichert";
 
 /* No comment provided by engineer. */
-"Saved from" = "Abgespeichert von";
+"saved from" = "abgespeichert von";
 
 /* No comment provided by engineer. */
-"saved from %@" = "abgespeichert von %@";
+"Saved from" = "Abgespeichert von";
 
 /* message info title */
 "Saved message" = "Gespeicherte Nachricht";
@@ -6280,7 +6283,7 @@ server test failure */
 "The second tick we missed! ✅" = "Wir haben das zweite Häkchen vermisst! ✅";
 
 /* No comment provided by engineer. */
-"The sender deleted the connection request." = "Der Absender hat möglicherweise die Verbindungsanfrage gelöscht.";
+"The sender deleted the connection request." = "Der Absender hat die Verbindungsanfrage gelöscht.";
 
 /* alert message */
 "The sender will NOT be notified" = "Der Absender wird NICHT benachrichtigt";
@@ -6301,7 +6304,7 @@ server test failure */
 "The SimpleX name %@ is registered, but it has no valid link." = "Der SimpleX-Name %@ wurde registriert, hat aber keinen gültigen Link.";
 
 /* No comment provided by engineer. */
-"The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." = "Der SimpleX‑Name %@ wurde registriert, jedoch nicht in Ihrem Profil hinterlegt. Bitte zu Ihrer Adresse oder zum Kanalprofil hinzufügen, sofern Sie der Besitzer sind.";
+"The SimpleX name %@ is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner." = "Der SimpleX‑Name %@ wurde registriert, jedoch nicht in Ihrem Profil hinterlegt. Bitte fügen Sie ihn zu Ihrer Adresse oder zum Kanalprofil hinzu, sofern Sie der Besitzer sind.";
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Der von Ihnen eingefügte Text ist kein SimpleX-Link.";
@@ -6387,9 +6390,6 @@ alert subtitle */
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil **%@**.";
-
-/* No comment provided by engineer. */
-"This setting is for your current profile **%@**." = "Diese Einstellung gilt für Ihr aktuelles Profil **%@**.";
 
 /* No comment provided by engineer. */
 "This SimpleX name is not registered. Please check the name." = "Dieser SimpleX-Name wurde nicht registriert. Bitte überprüfen Sie den Namen.";
@@ -7016,6 +7016,18 @@ alert title */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Sie haben schon ein Chat-Profil mit dem gleichen Anzeigenamen. Bitte wählen Sie einen anderen Namen aus.";
 
+/* new chat alert */
+"You are a contributor" = "Sie sind Mitwirkender";
+
+/* new chat alert */
+"You are a member" = "Sie sind Mitglied";
+
+/* new chat alert */
+"You are a moderator" = "Sie sind Moderator";
+
+/* new chat alert */
+"You are a subscriber" = "Sie sind Abonnent";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Sie sind bereits mit %@ verbunden.";
 
@@ -7039,6 +7051,15 @@ alert title */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Sie sind bereits Mitglied dieser Gruppe!\nVerbindungsanfrage wiederholen?";
+
+/* new chat alert */
+"You are an admin" = "Sie sind Admin";
+
+/* new chat alert */
+"You are an observer" = "Sie sind Beobachter";
+
+/* new chat alert */
+"You are an owner" = "Sie sind Eigentümer";
 
 /* subscription status explanation */
 "You are connected to the server used to receive messages from this connection." = "Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten dieser Verbindung genutzt wird.";
@@ -7090,6 +7111,12 @@ alert title */
 
 /* notification body */
 "You can now chat with %@" = "Sie können nun Nachrichten an %@ versenden";
+
+/* No comment provided by engineer. */
+"You can now invest in SimpleX Chat" = "Sie können nun in SimpleX-Chat investieren";
+
+/* No comment provided by engineer. */
+"You can now invest in SimpleX Chat! 🚀" = "Sie können nun in SimpleX-Chat investieren! 🚀";
 
 /* No comment provided by engineer. */
 "You can send messages to %@ from Archived contacts." = "Sie können aus den archivierten Kontakten heraus Nachrichten an %@ versenden.";
@@ -7191,7 +7218,7 @@ alert title */
 "You rejected group invitation" = "Sie haben die Gruppeneinladung abgelehnt";
 
 /* snd group event chat item */
-"you removed %@" = "entfernt %@ aus der Gruppe";
+"you removed %@" = "Sie haben %@ aus der Gruppe entfernt";
 
 /* No comment provided by engineer. */
 "You sent group invitation" = "Sie haben eine Gruppeneinladung gesendet";
@@ -7281,7 +7308,7 @@ alert title */
 "Your contact" = "Ihr Kontakt";
 
 /* No comment provided by engineer. */
-"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Entweder hat Ihr Kontakt die Verbindung gelöscht, oder dieser Link wurde bereits verwendet, es könnte sich um einen Fehler handeln - Bitte melden Sie es uns.\nBitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um sich neu verbinden zu können und stellen Sie sicher, dass Sie eine stabile Netzwerk-Verbindung haben.";
+"Your contact removed this link, or it was a one-time link that was already used.\nTo connect, ask your contact to create a new link." = "Ihr Kontakt hat diesen Link entfernt oder es war ein Einmal‑Link, welcher bereits verwendet wurde.\nUm sich zu verbinden, bitten Sie Ihren Kontakt, einen neuen Link zu erstellen.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ihr Kontakt hat eine Datei gesendet, die größer ist als die derzeit unterstützte maximale Größe (%@).";

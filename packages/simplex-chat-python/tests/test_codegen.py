@@ -2,7 +2,7 @@
 
 import typing
 
-from simplex_chat.types import CC, CEvt, CR, T
+from simplex_chat.types import CC, CR, CEvt, T
 
 
 def test_types_module_imports():

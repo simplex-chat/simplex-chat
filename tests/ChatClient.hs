@@ -37,7 +37,6 @@ import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
 import Simplex.Chat.Options.DB
-import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion)
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
@@ -51,7 +50,7 @@ import Simplex.FileTransfer.Server.Store
 import Simplex.FileTransfer.Transport (alpnSupportedXFTPhandshakes, supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
+import Simplex.Messaging.Agent.Protocol (supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.Entity (SDBStored (..))
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
@@ -59,8 +58,6 @@ import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConf
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
-import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
-import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Protocol (ProtocolType (..))
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
@@ -122,6 +119,7 @@ testOpts =
       optFilesFolder = Nothing,
       optTempDirectory = Nothing,
       showReactions = True,
+      showFullLinks = True,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
@@ -159,6 +157,7 @@ testCoreOpts =
       logAgent = Nothing,
       logFile = Nothing,
       tbqSize = 16,
+      maxChats = 5000,
       deviceName = Nothing,
       chatRelay = False,
       webPreviewConfig = Nothing,
@@ -173,6 +172,12 @@ testCoreOpts =
 relayTestOpts :: ChatOpts
 relayTestOpts = testOpts {coreOptions = testCoreOpts {chatRelay = True}}
 
+testOptsNoFullLinks :: ChatOpts
+testOptsNoFullLinks = testOpts {showFullLinks = False}
+
+relayTestOptsNoFullLinks :: ChatOpts
+relayTestOptsNoFullLinks = relayTestOpts {showFullLinks = False}
+
 relayWebTestOpts :: Text -> FilePath -> Maybe FilePath -> ChatOpts
 relayWebTestOpts webDomain webDir webCorsFile = testOpts {coreOptions = testCoreOpts {chatRelay = True, webPreviewConfig = Just WebPreviewConfig {webDomain, webJsonDir = webDir, webCorsFile, webUpdateInterval = 300, webPreviewItemCount = 50}}}
 
@@ -185,7 +190,7 @@ termSettings :: VirtualTerminalSettings
 termSettings =
   VirtualTerminalSettings
     { virtualType = "xterm",
-      virtualWindowSize = pure C.Size {height = 24, width = 6000},
+      virtualWindowSize = pure C.Size {height = 24, width = 7500},
       virtualEvent = retry,
       virtualInterrupt = retry
     }
@@ -228,25 +233,16 @@ testAgentCfgVPrev =
   testAgentCfg
     { smpClientVRange = prevRange $ smpClientVRange testAgentCfg,
       smpAgentVRange = prevRange supportedSMPAgentVRange,
-      e2eEncryptVRange = prevRange supportedE2EEncryptVRange,
+      -- e2eEncryptVRange = prevRange supportedE2EEncryptVRange,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = prevRange $ serverVRange $ smpCfg testAgentCfg}
-    }
-
-testAgentCfgVNext :: AgentConfig
-testAgentCfgVNext =
-  testAgentCfg
-    { smpClientVRange = nextRange $ smpClientVRange testAgentCfg,
-      smpAgentVRange = mkVersionRange duplexHandshakeSMPAgentVersion $ max pqdrSMPAgentVersion currentSMPAgentVersion,
-      e2eEncryptVRange = mkVersionRange CR.kdfX3DHE2EEncryptVersion $ max CR.pqRatchetE2EEncryptVersion CR.currentE2EEncryptVersion,
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = nextRange $ serverVRange $ smpCfg testAgentCfg}
     }
 
 testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = v1Range,
-      smpAgentVRange = versionToRange duplexHandshakeSMPAgentVersion,
-      e2eEncryptVRange = versionToRange CR.kdfX3DHE2EEncryptVersion,
+      smpAgentVRange = versionToRange (Version 6),
+      e2eEncryptVRange = versionToRange(Version 3),
       smpCfg = (smpCfg testAgentCfg) {serverVRange = versionToRange minClientSMPRelayVersion}
     }
 
@@ -257,17 +253,10 @@ testCfgVPrev =
       agentConfig = testAgentCfgVPrev
     }
 
-testCfgVNext :: ChatConfig
-testCfgVNext =
-  testCfg
-    { chatVRange = mkVersionRange initialChatVersion $ max pqEncryptionCompressionVersion currentChatVersion,
-      agentConfig = testAgentCfgVNext
-    }
-
 testCfgV1 :: ChatConfig
 testCfgV1 =
   testCfg
-    { chatVRange = v1Range,
+    { chatVRange = chatInitialVRange,
       agentConfig = testAgentCfgV1
     }
 
@@ -647,7 +636,9 @@ xftpServerConfig =
       newFileBasicAuth = Nothing,
       controlPortUserAuth = Nothing,
       controlPortAdminAuth = Nothing,
-      fileExpiration = Just defaultFileExpiration,
+      fileExpiration = defaultFileExpiration,
+      fileStorageEntitlements = mempty,
+      entitlementKeys = mempty,
       fileTimeout = 10000000,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
       xftpCredentials =
@@ -659,6 +650,7 @@ xftpServerConfig =
       httpCredentials = Nothing,
       webStaticPath = Nothing,
       xftpServerVRange = supportedFileServerVRange,
+      information = Nothing,
       logStatsInterval = Nothing,
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",

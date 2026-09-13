@@ -42,6 +42,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var sendRcptsContacts: Bool
     public var sendRcptsSmallGroups: Bool
     public var autoAcceptMemberContacts: Bool
+    public var autoAcceptGroupInvitations: Bool
     public var viewPwdHash: UserPwdHash?
     public var uiThemes: ThemeModeOverrides?
     public var userChatRelay: Bool
@@ -71,6 +72,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
         sendRcptsContacts: true,
         sendRcptsSmallGroups: false,
         autoAcceptMemberContacts: false,
+        autoAcceptGroupInvitations: false,
         userChatRelay: false
     )
 }
@@ -221,9 +223,36 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     )
 }
 
-public enum ChatPeerType: String, Codable {
+public enum ChatPeerType: Hashable {
     case human
     case bot
+    case business
+    case unknown(String)
+
+    public var text: String {
+        switch self {
+        case .human: "human"
+        case .bot: "bot"
+        case .business: "business"
+        case let .unknown(s): s
+        }
+    }
+}
+
+extension ChatPeerType: Codable {
+    public init(from decoder: Decoder) throws {
+        switch try decoder.singleValueContainer().decode(String.self) {
+        case "human": self = .human
+        case "bot": self = .bot
+        case "business": self = .business
+        case let s: self = .unknown(s)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(text)
+    }
 }
 
 // Supporter badge. The credential/proof bytes stay core-side; the UI only sees the disclosed type + status.
@@ -273,7 +302,7 @@ public enum BadgeStatus: String, Codable {
 
 public struct BadgeInfo: Codable, Hashable {
     public var badgeType: BadgeType
-    public var badgeExpiry: Date?
+    public var badgeExpiry: Date
     public var badgeExtra: String
 }
 
@@ -4299,13 +4328,15 @@ public enum MsgDirection: String, Decodable, Hashable {
 public enum CIForwardedFrom: Decodable, Hashable {
     case unknown
     case contact(chatName: String, msgDir: MsgDirection, contactId: Int64?, chatItemId: Int64?)
-    case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?)
+    case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?, memberId: String?, sharedMsgId_: String?, groupType: GroupType?)
+    case groupLink(chatName: String, msgDir: MsgDirection, groupLink: String, publicGroupId: String, memberId: String?, sharedMsgId: String, groupType: GroupType?)
 
-    var chatName: String {
+    public var chatName: String {
         switch self {
         case .unknown: ""
         case let .contact(chatName, _, _, _): chatName
-        case let .group(chatName, _, _, _): chatName
+        case let .group(chatName, _, _, _, _, _, _): chatName
+        case let .groupLink(chatName, _, _, _, _, _, _): chatName
         }
     }
 
@@ -4316,17 +4347,23 @@ public enum CIForwardedFrom: Decodable, Hashable {
             if let contactId {
                 (ChatType.direct, contactId, msgId)
             } else { nil }
-        case let .group(_, _, groupId, msgId):
+        case let .group(_, _, groupId, msgId, _, _, _):
             if let groupId {
                 (ChatType.group, groupId, msgId)
             } else { nil }
+        case .groupLink: nil
+        }
+    }
+
+    public var sourceGroupLink: String? {
+        switch self {
+        case let .groupLink(_, _, groupLink, _, _, _, _): groupLink
+        default: nil
         }
     }
 
     public func text(_ chatType: ChatType) -> LocalizedStringKey {
-        chatType == .local
-        ? (chatName == "" ? "saved" : "saved from \(chatName)")
-        : "forwarded"
+        chatType == .local ? "saved" : "forwarded"
     }
 }
 
@@ -4641,6 +4678,17 @@ extension MsgReaction: Encodable {
     }
 }
 
+// set by the core when the file is above the size the sender's badge allows; badgeStatus is nil when no proof was sent
+public struct FileProhibited: Decodable, Hashable {
+    public var maxSize: Int64
+    public var badgeStatus: BadgeStatus?
+
+    public init(maxSize: Int64, badgeStatus: BadgeStatus?) {
+        self.maxSize = maxSize
+        self.badgeStatus = badgeStatus
+    }
+}
+
 public struct CIFile: Decodable, Hashable {
     public var fileId: Int64
     public var fileName: String
@@ -4648,6 +4696,8 @@ public struct CIFile: Decodable, Hashable {
     public var fileSource: CryptoFile?
     public var fileStatus: CIFileStatus
     public var fileProtocol: FileProtocol
+    public var fileExpires: Date? = nil
+    public var fileProhibited: FileProhibited? = nil
 
     public static func getSample(fileId: Int64 = 1, fileName: String = "test.txt", fileSize: Int64 = 100, filePath: String? = "test.txt", fileStatus: CIFileStatus = .rcvComplete) -> CIFile {
         let f: CryptoFile?
@@ -4679,6 +4729,10 @@ public struct CIFile: Decodable, Hashable {
             case .invalid: return false
             }
         }
+    }
+
+    public var expired: Bool {
+        if let fileExpires { fileExpires < Date.now } else { false }
     }
 
     public var cancelAction: CancelAction? {
@@ -4717,7 +4771,7 @@ public struct CIFile: Decodable, Hashable {
             case .sndCancelled: true
             case .sndError: true
             case .sndWarning: true
-            case .rcvInvitation: false
+            case .rcvInvitation: expired
             case .rcvAccepted: true
             case .rcvTransfer: true
             case .rcvAborted: true

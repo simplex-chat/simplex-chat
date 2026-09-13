@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from simplex_chat._native import _cache_root, _resolve_libs_dir, _download
+from simplex_chat._native import _cache_root, _download, _resolve_libs_dir
 from simplex_chat._version import LIBS_VERSION
 
 

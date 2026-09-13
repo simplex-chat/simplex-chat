@@ -941,6 +941,12 @@ object ChatController {
     throw Exception("failed to set auto-accept ${r.responseType} ${r.details}")
   }
 
+  suspend fun apiSetUserAutoAcceptGroupInvitations(u: User, enable: Boolean) {
+    val r = sendCmd(u.remoteHostId, CC.ApiSetUserAutoAcceptGroupInvitations(u.userId, enable))
+    if (r.result is CR.CmdOk) return
+    throw Exception("failed to set auto-accept group invitations ${r.responseType} ${r.details}")
+  }
+
   suspend fun apiHideUser(u: User, viewPwd: String): User =
     setUserPrivacy(u.remoteHostId, CC.ApiHideUser(u.userId, viewPwd))
 
@@ -1155,9 +1161,9 @@ object ChatController {
     return null
   }
 
-  suspend fun apiGetChatItemInfo(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, itemId: Long): ChatItemInfo? {
+  suspend fun apiGetChatItemInfo(rh: Long?, type: ChatType, id: Long, scope: GroupChatScope?, itemId: Long): Pair<ChatItem, ChatItemInfo>? {
     val r = sendCmd(rh, CC.ApiGetChatItemInfo(type, id, scope, itemId))
-    if (r is API.Result && r.res is CR.ApiChatItemInfo) return r.res.chatItemInfo
+    if (r is API.Result && r.res is CR.ApiChatItemInfo) return r.res.chatItem.chatItem to r.res.chatItemInfo
     apiErrorAlert("apiGetChatItemInfo", generalGetString(MR.strings.error_loading_details), r)
     return null
   }
@@ -3775,6 +3781,7 @@ sealed class CC {
   class ApiSetUserContactReceipts(val userId: Long, val userMsgReceiptSettings: UserMsgReceiptSettings): CC()
   class ApiSetUserGroupReceipts(val userId: Long, val userMsgReceiptSettings: UserMsgReceiptSettings): CC()
   class ApiSetUserAutoAcceptMemberContacts(val userId: Long, val enable: Boolean): CC()
+  class ApiSetUserAutoAcceptGroupInvitations(val userId: Long, val enable: Boolean): CC()
   class ApiHideUser(val userId: Long, val viewPwd: String): CC()
   class ApiUnhideUser(val userId: Long, val viewPwd: String): CC()
   class ApiMuteUser(val userId: Long): CC()
@@ -3965,6 +3972,7 @@ sealed class CC {
       "/_set receipts groups $userId ${onOff(mrs.enable)} clear_overrides=${onOff(mrs.clearOverrides)}"
     }
     is ApiSetUserAutoAcceptMemberContacts -> "/_set accept member contacts $userId ${onOff(enable)}"
+    is ApiSetUserAutoAcceptGroupInvitations -> "/_set accept group invitations $userId ${onOff(enable)}"
     is ApiHideUser -> "/_hide user $userId ${json.encodeToString(viewPwd)}"
     is ApiUnhideUser -> "/_unhide user $userId ${json.encodeToString(viewPwd)}"
     is ApiMuteUser -> "/_mute user $userId"
@@ -4176,6 +4184,7 @@ sealed class CC {
     is ApiSetUserContactReceipts -> "apiSetUserContactReceipts"
     is ApiSetUserGroupReceipts -> "apiSetUserGroupReceipts"
     is ApiSetUserAutoAcceptMemberContacts -> "apiSetUserAutoAcceptMemberContacts"
+    is ApiSetUserAutoAcceptGroupInvitations -> "apiSetUserAutoAcceptGroupInvitations"
     is ApiHideUser -> "apiHideUser"
     is ApiUnhideUser -> "apiUnhideUser"
     is ApiMuteUser -> "apiMuteUser"
@@ -8072,13 +8081,15 @@ sealed class SMPAgentError {
     is A_MESSAGE -> "A_MESSAGE"
     is A_PROHIBITED -> "A_PROHIBITED"
     is A_VERSION -> "A_VERSION"
+    is A_LINK -> "A_LINK"
     is A_CRYPTO -> "A_CRYPTO"
     is A_DUPLICATE -> "A_DUPLICATE"
     is A_QUEUE -> "A_QUEUE"
   }
   @Serializable @SerialName("A_MESSAGE") object A_MESSAGE: SMPAgentError()
-  @Serializable @SerialName("A_PROHIBITED") object A_PROHIBITED: SMPAgentError()
+  @Serializable @SerialName("A_PROHIBITED") class A_PROHIBITED(val prohibitedErr: String): SMPAgentError()
   @Serializable @SerialName("A_VERSION") object A_VERSION: SMPAgentError()
+  @Serializable @SerialName("A_LINK") class A_LINK(val linkErr: String): SMPAgentError()
   @Serializable @SerialName("A_CRYPTO") object A_CRYPTO: SMPAgentError()
   @Serializable @SerialName("A_DUPLICATE") object A_DUPLICATE: SMPAgentError()
   @Serializable @SerialName("A_QUEUE") class A_QUEUE(val queueErr: String): SMPAgentError()

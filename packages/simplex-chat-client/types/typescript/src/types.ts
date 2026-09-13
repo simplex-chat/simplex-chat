@@ -188,13 +188,55 @@ export namespace AgentErrorType {
   }
 }
 
+export type AgentServiceError = 
+  | AgentServiceError.Rejected
+  | AgentServiceError.Timeout
+  | AgentServiceError.NoPendingRequest
+  | AgentServiceError.NotDRAddress
+  | AgentServiceError.BadSignature
+
+export namespace AgentServiceError {
+  export type Tag = "rejected" | "timeout" | "noPendingRequest" | "notDRAddress" | "badSignature"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Rejected extends Interface {
+    type: "rejected"
+    rejectReason: string
+  }
+
+  export interface Timeout extends Interface {
+    type: "timeout"
+  }
+
+  export interface NoPendingRequest extends Interface {
+    type: "noPendingRequest"
+  }
+
+  export interface NotDRAddress extends Interface {
+    type: "notDRAddress"
+  }
+
+  export interface BadSignature extends Interface {
+    type: "badSignature"
+  }
+}
+// Remote controller app version range (min and max as version strings).
+
+export interface AppVersionRange {
+  minVersion: string
+  maxVersion: string
+}
+
 export interface AutoAccept {
   acceptIncognito: boolean
 }
 
 export interface BadgeInfo {
   badgeType: BadgeType
-  badgeExpiry?: string // ISO-8601 timestamp
+  badgeExpiry: string // ISO-8601 timestamp
   badgeExtra: string
 }
 
@@ -656,6 +698,8 @@ export interface CIFile {
   fileSource?: CryptoFile
   fileStatus: CIFileStatus
   fileProtocol: FileProtocol
+  fileExpires?: string // ISO-8601 timestamp
+  fileProhibited?: FileProhibited
 }
 
 export type CIFileStatus = 
@@ -767,10 +811,14 @@ export namespace CIFileStatus {
   }
 }
 
-export type CIForwardedFrom = CIForwardedFrom.Unknown | CIForwardedFrom.Contact | CIForwardedFrom.Group
+export type CIForwardedFrom = 
+  | CIForwardedFrom.Unknown
+  | CIForwardedFrom.Contact
+  | CIForwardedFrom.Group
+  | CIForwardedFrom.GroupLink
 
 export namespace CIForwardedFrom {
-  export type Tag = "unknown" | "contact" | "group"
+  export type Tag = "unknown" | "contact" | "group" | "groupLink"
 
   interface Interface {
     type: Tag
@@ -794,6 +842,20 @@ export namespace CIForwardedFrom {
     msgDir: MsgDirection
     groupId?: number // int64
     chatItemId?: number // int64
+    memberId?: string
+    sharedMsgId_?: string
+    groupType?: GroupType
+  }
+
+  export interface GroupLink extends Interface {
+    type: "groupLink"
+    chatName: string
+    msgDir: MsgDirection
+    groupLink: string
+    publicGroupId: string
+    memberId?: string
+    sharedMsgId: string
+    groupType?: GroupType
   }
 }
 
@@ -1644,6 +1706,7 @@ export namespace ChatListQuery {
 export enum ChatPeerType {
   Human = "human",
   Bot = "bot",
+  Business = "business",
 }
 // Used in API commands. Chat scope can only be passed with groups.
 
@@ -2021,6 +2084,7 @@ export interface Contact {
   chatTs?: string // ISO-8601 timestamp
   preparedContact?: PreparedContact
   contactRequestId?: number // int64
+  contactRequest?: UserContactRequestRef
   contactGroupMemberId?: number // int64
   contactGrpInvSent: boolean
   groupDirectInv?: GroupDirectInvitation
@@ -2093,6 +2157,7 @@ export enum ContactStatus {
   Active = "active",
   Deleted = "deleted",
   DeletedByUser = "deletedByUser",
+  Rejected = "rejected",
 }
 
 export type ContactUserPref = ContactUserPref.Contact | ContactUserPref.User
@@ -2151,6 +2216,13 @@ export interface CryptoFile {
 export interface CryptoFileArgs {
   fileKey: string
   fileNonce: string
+}
+// Remote controller application info.
+
+export interface CtrlAppInfo {
+  appVersionRange: AppVersionRange
+  deviceName: string
+  compression: boolean
 }
 
 export interface DroppedMsg {
@@ -2369,6 +2441,12 @@ export interface FileInvitation {
   fileConnReq?: string
   fileInline?: InlineFileMode
   fileDescr?: FileDescr
+  fileBadge?: BadgeProof
+}
+
+export interface FileProhibited {
+  maxSize: number // int64
+  badgeStatus?: BadgeStatus
 }
 
 export enum FileProtocol {
@@ -2642,8 +2720,7 @@ export interface GroupInfo {
 }
 
 export interface GroupKeys {
-  publicGroupId: string
-  groupRootKey: GroupRootKey
+  publicGroupKeys?: PublicGroupKeys
   memberPrivKey: string
 }
 
@@ -3490,6 +3567,11 @@ export interface PublicGroupData {
   publicMemberCount: number // int64
 }
 
+export interface PublicGroupKeys {
+  publicGroupId: string
+  groupRootKey: GroupRootKey
+}
+
 export interface PublicGroupProfile {
   groupType: GroupType
   groupLink: string
@@ -3726,6 +3808,7 @@ export interface RcvFileTransfer {
   fileId: number // int64
   xftpRcvFile?: XFTPRcvFile
   fileInvitation: FileInvitation
+  fileProhibited?: FileProhibited
   fileStatus: RcvFileStatus
   fileType: FileType
   rcvFileInline?: InlineFileMode
@@ -3888,6 +3971,11 @@ export interface RelayCapabilities {
   webDomain?: string
 }
 
+export interface RelayConnectionResult {
+  relayMember: GroupMember
+  relayError?: ChatError
+}
+
 export interface RelayProfile {
   displayName: string
   fullName: string
@@ -3903,6 +3991,87 @@ export enum RelayStatus {
   Active = "active",
   Inactive = "inactive",
   Rejected = "rejected",
+}
+
+export interface RemoteCtrlInfo {
+  remoteCtrlId: number // int64
+  ctrlDeviceName: string
+  sessionState?: RemoteCtrlSessionState
+}
+
+export type RemoteCtrlSessionState = 
+  | RemoteCtrlSessionState.Starting
+  | RemoteCtrlSessionState.Searching
+  | RemoteCtrlSessionState.Connecting
+  | RemoteCtrlSessionState.PendingConfirmation
+  | RemoteCtrlSessionState.Connected
+
+export namespace RemoteCtrlSessionState {
+  export type Tag = 
+    | "starting"
+    | "searching"
+    | "connecting"
+    | "pendingConfirmation"
+    | "connected"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Starting extends Interface {
+    type: "starting"
+  }
+
+  export interface Searching extends Interface {
+    type: "searching"
+  }
+
+  export interface Connecting extends Interface {
+    type: "connecting"
+  }
+
+  export interface PendingConfirmation extends Interface {
+    type: "pendingConfirmation"
+    sessionCode: string
+  }
+
+  export interface Connected extends Interface {
+    type: "connected"
+    sessionCode: string
+  }
+}
+
+export type RemoteCtrlStopReason = 
+  | RemoteCtrlStopReason.DiscoveryFailed
+  | RemoteCtrlStopReason.ConnectionFailed
+  | RemoteCtrlStopReason.SetupFailed
+  | RemoteCtrlStopReason.Disconnected
+
+export namespace RemoteCtrlStopReason {
+  export type Tag = "discoveryFailed" | "connectionFailed" | "setupFailed" | "disconnected"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface DiscoveryFailed extends Interface {
+    type: "discoveryFailed"
+    chatError: ChatError
+  }
+
+  export interface ConnectionFailed extends Interface {
+    type: "connectionFailed"
+    chatError: ChatError
+  }
+
+  export interface SetupFailed extends Interface {
+    type: "setupFailed"
+    chatError: ChatError
+  }
+
+  export interface Disconnected extends Interface {
+    type: "disconnected"
+  }
 }
 
 export enum ReportReason {
@@ -3926,6 +4095,7 @@ export type SMPAgentError =
   | SMPAgentError.A_CRYPTO
   | SMPAgentError.A_DUPLICATE
   | SMPAgentError.A_QUEUE
+  | SMPAgentError.A_SERVICE
 
 export namespace SMPAgentError {
   export type Tag = 
@@ -3936,6 +4106,7 @@ export namespace SMPAgentError {
     | "A_CRYPTO"
     | "A_DUPLICATE"
     | "A_QUEUE"
+    | "A_SERVICE"
 
   interface Interface {
     type: Tag
@@ -3943,6 +4114,7 @@ export namespace SMPAgentError {
 
   export interface A_MESSAGE extends Interface {
     type: "A_MESSAGE"
+    messageErr: string
   }
 
   export interface A_PROHIBITED extends Interface {
@@ -3972,6 +4144,11 @@ export namespace SMPAgentError {
   export interface A_QUEUE extends Interface {
     type: "A_QUEUE"
     queueErr: string
+  }
+
+  export interface A_SERVICE extends Interface {
+    type: "A_SERVICE"
+    serviceError: AgentServiceError
   }
 }
 
@@ -4996,6 +5173,7 @@ export interface User {
   sendRcptsContacts: boolean
   sendRcptsSmallGroups: boolean
   autoAcceptMemberContacts: boolean
+  autoAcceptGroupInvitations: boolean
   userMemberProfileUpdatedAt?: string // ISO-8601 timestamp
   userChatRelay: boolean
   clientService: boolean
@@ -5043,6 +5221,12 @@ export interface UserContactRequest {
   pqSupport: boolean
   welcomeSharedMsgId?: string
   requestSharedMsgId?: string
+  rejectionSupported: boolean
+}
+
+export interface UserContactRequestRef {
+  contactRequestId: number // int64
+  rejectionSupported: boolean
 }
 
 export interface UserInfo {

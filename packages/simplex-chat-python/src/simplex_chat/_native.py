@@ -99,7 +99,7 @@ def _stream_to_file(url: str, dest: Path, *, timeout: float = 60.0) -> None:
     `timeout` is per-request; we don't touch `socket.setdefaulttimeout`
     so other socket users in the same process aren't affected.
     """
-    with urllib.request.urlopen(url, timeout=timeout) as resp:  # noqa: S310 - https://github.com/...
+    with urllib.request.urlopen(url, timeout=timeout) as resp:
         total = int(resp.headers.get("Content-Length") or 0)
         received = 0
         with dest.open("wb") as out:
@@ -112,7 +112,7 @@ def _stream_to_file(url: str, dest: Path, *, timeout: float = 60.0) -> None:
                 else:
                     msg = f"\r  download: {received >> 20} MiB"
                 print(msg, end="", file=sys.stderr, flush=True)
-        print("", file=sys.stderr, flush=True)  # newline after final progress line
+        print(file=sys.stderr, flush=True)  # newline after final progress line
 
 
 def _download(target: Path, backend: Backend) -> None:

@@ -167,7 +167,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
     getRemoteUser rhId =
-      runReaderT (execChatCommand (Just rhId) "/user" 0) cc >>= \case
+      runReaderT (execChatCommand (CSRemoteHost rhId) "/user" 0) cc >>= \case
         Right CRActiveUser {user} -> updateRemoteUser ct user rhId
         cr -> logError $ "Unexpected reply while getting remote user: " <> tshow cr
     removeRemoteUser rhId = atomically $ TM.delete rhId (currentRemoteUsers ct)

@@ -53,7 +53,8 @@ CREATE TABLE users(
   active_order INTEGER NOT NULL DEFAULT 0,
   auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0,
   is_user_chat_relay INTEGER NOT NULL DEFAULT 0,
-  client_service INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  client_service INTEGER NOT NULL DEFAULT 0,
+  auto_accept_group_invitations INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -300,7 +301,10 @@ CREATE TABLE files(
   shared_msg_id BLOB,
   file_type TEXT NOT NULL DEFAULT 'normal',
   roster_transfer_id INTEGER,
-  file_digest BLOB
+  file_digest BLOB,
+  file_expires_at TEXT,
+  file_max_size INTEGER,
+  file_badge_status TEXT
 ) STRICT;
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -428,6 +432,7 @@ CREATE TABLE contact_requests(
   business_group_id INTEGER REFERENCES groups(group_id) ON DELETE CASCADE,
   welcome_shared_msg_id BLOB,
   request_shared_msg_id BLOB,
+  rejection_supported INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE
@@ -512,7 +517,12 @@ CREATE TABLE chat_items(
   item_msg_body BLOB,
   item_chat_binding TEXT,
   item_signatures BLOB,
-  item_signed_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
+  item_signed_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  fwd_from_group_type TEXT,
+  fwd_from_group_link BLOB,
+  fwd_from_public_group_id BLOB,
+  fwd_from_member_id BLOB,
+  fwd_from_shared_msg_id BLOB
 ) STRICT;
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
@@ -843,6 +853,19 @@ CREATE TABLE rcv_roster_transfers(
   roster_msg_signatures BLOB,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+) STRICT;
+CREATE TABLE file_badge_proofs(
+  badge_proof_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
+  proof_kind TEXT NOT NULL,
+  badge_proof BLOB NOT NULL,
+  badge_pres_header BLOB NOT NULL,
+  badge_key_idx INTEGER NOT NULL,
+  badge_type TEXT NOT NULL,
+  badge_expiry TEXT NOT NULL,
+  badge_extra TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1377,6 +1400,10 @@ CREATE INDEX idx_files_group_id_shared_msg_id ON files(
 CREATE INDEX idx_files_roster_transfer_id ON files(roster_transfer_id);
 CREATE INDEX idx_chat_items_item_signed_by_group_member_id ON chat_items(
   item_signed_by_group_member_id
+);
+CREATE UNIQUE INDEX idx_file_badge_proofs_file_id_kind ON file_badge_proofs(
+  file_id,
+  proof_kind
 );
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members

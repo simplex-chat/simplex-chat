@@ -1,0 +1,30 @@
+# Copy to ./bot-config/config.toml. Paths here are container paths; use the
+# top-level config.toml.example when running the bot directly on the host.
+
+[bot]
+display_name = "Support"
+# Optional. .png, .jpg or .jpeg, resolved against the directory holding this
+# file. The encoded data URI must not exceed 12500 characters, roughly a
+# 128x128 avatar.
+# image = "./avatar.png"
+# Must be under /data (bind-mounted from ./state). Creates <prefix>_chat.db and
+# <prefix>_agent.db, which hold the bot's identity.
+db_prefix = "/data/support_bot_light"
+welcome = "Hi! Someone from the team will join this chat in a moment."
+
+[roster]
+# Renaming the group later has no effect: it is found by a marker in its custom
+# data, not by name.
+group_name = "Invite roster"
+# One of: observer, author, member, moderator, admin, owner. "relay" is also
+# accepted by the core but is an infrastructure role.
+member_role = "owner"
+
+# Monitoring endpoint: GET /health answers 200 while the chat controller
+# responds to a command, 503 when it does not. It must bind 0.0.0.0 to be
+# reachable through the published port; docker-compose.yml publishes it on the
+# host loopback, because the endpoint has no authentication.
+[health]
+# enabled = false
+host = "0.0.0.0"
+port = 8080

@@ -1,0 +1,25 @@
+[bot]
+display_name = "Support"
+# Optional. .png, .jpg or .jpeg, resolved against the directory holding this
+# file rather than the working directory. The encoded data URI must not exceed
+# 12500 characters, roughly a 128x128 avatar.
+# image = "./avatar.png"
+# Creates <prefix>_chat.db and <prefix>_agent.db.
+db_prefix = "./support_bot_light"
+welcome = "Hi! Someone from the team will join this chat in a moment."
+
+[roster]
+# Renaming the group later has no effect: it is found by a marker in its custom
+# data, not by name.
+group_name = "Invite roster"
+# One of: observer, author, member, moderator, admin, owner. "relay" is also
+# accepted by the core but is an infrastructure role.
+member_role = "owner"
+
+# Monitoring endpoint: GET /health answers 200 while the chat controller
+# responds to a command, 503 when it does not. On by default, at the values
+# below. It has no authentication, so keep it off a public interface.
+[health]
+# enabled = false
+host = "127.0.0.1"
+port = 8080

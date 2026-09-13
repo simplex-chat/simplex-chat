@@ -590,7 +590,7 @@
     <string name="incognito_info_protects">Anonimni režim štiti Vašu privatnost koristeći novi nasumični profil za svaki kontakt.</string>
     <string name="custom_time_unit_weeks">nedelje</string>
     <string name="agent_internal_error_title">Interna greška</string>
-    <string name="saved_from_description">Sačuvano od %s</string>
+    <string name="saved_from">Sačuvano od</string>
     <string name="saved_description">sačuvano</string>
     <string name="group_member_status_invited">pozvan</string>
     <string name="saved_message_title">Sačuvana poruka</string>
@@ -1435,6 +1435,11 @@
     <string name="unable_to_open_browser_desc">Za pozive je potreban podrazumevani veb pretraživač. Molimo vas da konfigurišete podrazumevani pretraživač u sistemu i podelite više informacija sa programerima.</string>
     <string name="snd_group_event_member_unblocked">odblokirali ste %s</string>
     <string name="you_are_observer">Vi ste posmatrač.</string>
+    <string name="connect_plan_you_are_observer">Vi ste posmatrač</string>
+    <string name="connect_plan_you_are_member">Vi ste član</string>
+    <string name="connect_plan_you_are_moderator">Vi ste moderator</string>
+    <string name="connect_plan_you_are_admin">Vi ste administrator</string>
+    <string name="connect_plan_you_are_owner">Vi ste vlasnik</string>
     <string name="v4_3_improved_privacy_and_security">Unapređena privatnost i bezbednost</string>
     <string name="v5_6_app_data_migration_descr">Migriraj na drugi uređaj pomoću QR koda.</string>
     <string name="group_preview_rejected">odbijeno</string>

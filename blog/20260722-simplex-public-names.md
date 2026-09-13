@@ -57,10 +57,9 @@ To ensure the long term success of SimpleX Network we established [SimpleX Netwo
 
 The commercial model for the network that we are building aims to make both our and other businesses on the network profitable. We recently [presented the technology design](https://www.youtube.com/watch?v=UhW8AuoRgxg) for this commercial model at Web3 Summit.
 
-The planned crowdfunding will fund this development. You can [register your interest](https://simplexchat.typeform.com/crowdfunding), and join the [SimpleX Crowdfunding News channel](https://smp10.simplex.im/c#q09nMBmWFGz1m2TvgfZFaEOG5D2a7Ma9mSkl6pHXEsg) for updates.
+Aug 20, 2026: We now launched [equity crowdfunding on Wefunder](https://wefunder.com/simplex.chat?utm_source=blog). Please read [the next blog post](./20260819-simplex-chat-crowdfunding.md) about it.
 
-_Disclaimer: SimpleX Chat, Inc. is testing the waters for a possible Reg CF offering. We’re not asking for or accepting any money right now, and we won’t accept any if sent. We can’t accept any offers to buy securities or take any payments until the official filing is done and it’s live through a regulated platform. Our testing the waters and your possible indications of interest doesn’t create any obligation or commitment of any kind._
-
+Join the channel for updates [simplex.chat/crowdfunding-news](https://simplex.chat/crowdfunding-news/).
 
 [^testing]: Test names are free to register; you only need to pay the blockchain fee. The `.testing` namespace is temporary &mdash; test names will stop working in the app one month after `.simplex` name sales launch.
 

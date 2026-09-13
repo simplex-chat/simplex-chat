@@ -15,18 +15,21 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_)
-import Control.Monad (forM_, void)
+import Control.Concurrent.Async (concurrently_, poll)
+import Control.Monad (forM_, void, (>=>))
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.List (intercalate)
+import Data.List (intercalate, stripPrefix)
+import qualified Data.Map.Strict as M
+import Data.Maybe (isJust, isNothing)
 import qualified Data.Text as T
+import GHC.Conc (ThreadStatus (..), threadStatus)
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServers (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -35,12 +38,15 @@ import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkTimeout (..))
+import Control.Concurrent.STM (atomically, readTVarIO)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
+import System.Mem.Weak (deRefWeak)
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
@@ -99,8 +105,9 @@ chatDirectTests = do
     it "connect, fully asynchronous (when clients are never simultaneously online)" $ testFullAsyncFast
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
-#if !defined(dbPostgres)
   describe "maintenance mode" $ do
+    it "stop chat stops all threads, start chat restarts them" testStopStartChat
+#if !defined(dbPostgres)
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
     it "encrypt/decrypt database" testDatabaseEncryption
@@ -119,6 +126,10 @@ chatDirectTests = do
     it "create second user" testCreateSecondUser
     it "multiple users subscribe and receive messages after restart" testUsersSubscribeAfterRestart
     it "both users have contact link" testMultipleUserAddresses
+    it "service request and response over a DR address" testServiceRequestResponse
+    it "signed service request delivers the verified key" testSignedServiceRequest
+    it "service request dropped when service processing is off" testServiceRequestDroppedWhenOff
+    it "service request to a non-DR address fails fast" testServiceRequestNonDRAddress
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
     it "delete user with chat tags" testDeleteUserChatTags
@@ -1352,6 +1363,52 @@ testNegotiateCall =
     alice <## "call with bob ended"
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: ended (00:00)")])
 
+testStopStartChat :: HasCallStack => TestParams -> IO ()
+testStopStartChat ps =
+  withNewTestChat ps "bob" bobProfile $ \bob ->
+    withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
+      connectUsers alice bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      alice #$> ("/_ttl 1 4", id, "ok")
+      alice ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 2}}"
+      alice <## "you updated preferences for bob:"
+      alice <## "Disappearing messages: enabled (you allow: yes (2 sec), contact allows: yes)"
+      bob <## "alice updated preferences for you:"
+      bob <## "Disappearing messages: enabled (you allow: yes (2 sec), contact allows: yes (2 sec))"
+      alice #> "@bob hi timed"
+      bob <# "alice> hi timed"
+      let ChatController {agentAsync, cleanupManagerAsync, expireCIThreads, timedItemThreads} = chatController alice
+      Just (a1, Just a2) <- readTVarIO agentAsync
+      Just cleanupA <- readTVarIO cleanupManagerAsync
+      [Just expireA] <- M.elems <$> readTVarIO expireCIThreads
+      [Just timedTId] <- mapM (readTVarIO >=> maybe (pure Nothing) deRefWeak) . M.elems =<< readTVarIO timedItemThreads
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      forM_ [a1, a2, cleanupA, expireA] $ \a -> isJust <$> poll a `shouldReturn` True
+      threadDelay 100000
+      threadStatus timedTId `shouldReturn` ThreadFinished
+      isNothing <$> readTVarIO agentAsync `shouldReturn` True
+      isNothing <$> readTVarIO cleanupManagerAsync `shouldReturn` True
+      M.null <$> readTVarIO expireCIThreads `shouldReturn` True
+      M.null <$> readTVarIO timedItemThreads `shouldReturn` True
+      alice ##> "/_start"
+      alice <## "chat started"
+      alice <## "subscribed 1 connections on server localhost"
+      bob #> "@alice hello"
+      alice <# "bob> hello"
+      alice <### ["timed message deleted: hi timed", "timed message deleted: hello"]
+      bob <### ["timed message deleted: hi timed", "timed message deleted: hello"]
+      threadDelay 3000000
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner")])
+      Just (a1', _) <- readTVarIO agentAsync
+      (a1' == a1) `shouldBe` False
+      Just cleanupA' <- readTVarIO cleanupManagerAsync
+      (cleanupA' == cleanupA) `shouldBe` False
+      M.keys <$> readTVarIO expireCIThreads `shouldReturn` [1]
+  where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
+
 testMaintenanceMode :: HasCallStack => TestParams -> IO ()
 testMaintenanceMode ps = do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -1893,6 +1950,77 @@ testUsersSubscribeAfterRestart ps = do
       -- first user receives message
       bob #> "@alice hey alice"
       (alice, "alice") $<# "bob> hey alice"
+
+testServiceRequestResponse :: HasCallStack => TestParams -> IO ()
+testServiceRequestResponse =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (sLink, _) <- getContactLinks alice True
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_start main=on snd_files=on service_requests=on"
+    alice <## "chat started"
+    concurrently_
+      ( do
+          bob ##> ("/_service_request 1 " <> sLink <> " {\"ping\":1}")
+          bob <## "service response: {\"pong\":2}"
+      )
+      ( do
+          reqId <- serviceRequestId alice
+          alice <## "request: {\"ping\":1}"
+          alice ##> ("/_service_response 1 " <> reqId <> " {\"pong\":2}")
+          replyConnId <- serviceReplyConnId alice
+          alice <## ("service reply sent, connection id: " <> replyConnId)
+      )
+  where
+    serviceRequestId cc = getTermLine cc >>= maybe (serviceRequestId cc) pure . stripPrefix "service request "
+    serviceReplyConnId cc = getTermLine cc >>= maybe (serviceReplyConnId cc) pure . stripPrefix "service reply accepted, connection id: "
+
+testSignedServiceRequest :: HasCallStack => TestParams -> IO ()
+testSignedServiceRequest =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (sLink, _) <- getContactLinks alice True
+    alice ##> "/_stop"
+    alice <## "chat stopped"
+    alice ##> "/_start main=on snd_files=on service_requests=on"
+    alice <## "chat started"
+    g <- C.newRandom
+    (pub, priv :: C.PrivateKeyEd25519) <- atomically $ C.generateKeyPair g
+    let signKey = B.unpack $ strEncode $ C.StoredPrivateKey priv
+        pubStr = B.unpack $ strEncode pub
+    concurrently_
+      ( do
+          bob ##> ("/_service_request 1 " <> sLink <> " sign_key=" <> signKey <> " {\"ping\":1}")
+          bob <## "service response: {\"pong\":2}"
+      )
+      ( do
+          reqId <- serviceRequestId alice
+          alice <## ("signed by " <> pubStr)
+          alice <## "request: {\"ping\":1}"
+          alice ##> ("/_service_response 1 " <> reqId <> " {\"pong\":2}")
+          replyConnId <- serviceReplyConnId alice
+          alice <## ("service reply sent, connection id: " <> replyConnId)
+      )
+  where
+    serviceRequestId cc = getTermLine cc >>= maybe (serviceRequestId cc) pure . stripPrefix "service request "
+    serviceReplyConnId cc = getTermLine cc >>= maybe (serviceReplyConnId cc) pure . stripPrefix "service reply accepted, connection id: "
+
+testServiceRequestDroppedWhenOff :: HasCallStack => TestParams -> IO ()
+testServiceRequestDroppedWhenOff =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad pq_ratchet=on"
+    (sLink, _) <- getContactLinks alice True
+    bob ##> ("/_service_request 1 " <> sLink <> " timeout=2 {\"ping\":1}")
+    bob <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASETimeout}}"
+
+testServiceRequestNonDRAddress :: HasCallStack => TestParams -> IO ()
+testServiceRequestNonDRAddress =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/ad"
+    (sLink, _) <- getContactLinks alice True
+    bob ##> ("/_service_request 1 " <> sLink <> " {\"ping\":1}")
+    bob <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASENotDRAddress}}"
 
 testMultipleUserAddresses :: HasCallStack => TestParams -> IO ()
 testMultipleUserAddresses =
@@ -2821,7 +2949,7 @@ testSwitchContact =
 
 testAbortSwitchContact :: HasCallStack => TestParams -> IO ()
 testAbortSwitchContact ps = do
-  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  withNewTestChatCfg ps testCfgVPrev "alice" aliceProfile $ \alice -> do
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       connectUsers alice bob
     alice #$> ("/switch bob", id, "switch started")
@@ -2868,7 +2996,7 @@ testSwitchGroupMember =
 
 testAbortSwitchGroupMember :: HasCallStack => TestParams -> IO ()
 testAbortSwitchGroupMember ps = do
-  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  withNewTestChatCfg ps testCfgVPrev "alice" aliceProfile $ \alice -> do
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       createGroup2 "team" alice bob
     alice #$> ("/switch #team bob", id, "switch started")
@@ -3323,17 +3451,17 @@ testUpdatePeerChatVRange ps =
     cfg11 = testCfg {chatVRange = vr11} :: ChatConfig
 
 vr11 :: VersionRangeChat
-vr11 = mkVersionRange (VersionChat 1) (VersionChat 1)
+vr11 = mkVersionRange (VersionChat 9) (VersionChat 9)
 
 contactInfoChatVRange :: TestCC -> VersionRangeChat -> IO ()
-contactInfoChatVRange cc (VersionRange minVer maxVer) = do
+contactInfoChatVRange cc vr = do
   cc <## "contact ID: 2"
   cc <## "receiving messages via: localhost"
   cc <## "sending messages via: localhost"
   cc <## "you've shared main profile with this contact"
   cc <## "connection not verified, use /code command to see security code"
   cc <## "quantum resistant end-to-end encryption"
-  cc <## ("peer chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")
+  cc <## ("peer chat protocol version range: " <> vRangeStr vr)
 
 testLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testLinkContentFilter =

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="{{ page.url | getlang }}"
+    {% for language in languages.languages %}
+        {% if language.label == page.url | getlang %}
+            dir="{{ "rtl" if language.rtl else "ltr" }}"
+        {% endif %}
+    {% endfor %}>
+
+  <head>
+    <meta charset="UTF-8" />
+    {% include "dark-mode.html" %}
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }}</title>
+    <meta name="description" content="{{ description }}"/>
+    <meta name="Content-Type" content="text/html;charset=utf-8" />
+    <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}{{ permalink }}" />
+    <meta property="og:url" content="{% cfg 'siteLocation' %}{{ permalink }}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{{ title }}" />
+    <meta property="og:description" content="{{ description }}"/>
+    <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.jpg" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+    <meta name="theme-color" content="#F3FAFF">
+    <link href="/css/tailwind.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/blog.css" />
+    <link href="/css/style.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/design3-nav.css">
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+  </head>
+
+  <body class="bg-[#F3FAFF] dark:bg-[#000832]">
+    {% include "navbar.html" %}
+
+    <section id="article" class="container mb-[75px] bg-white dark:bg-[#071C46] px-5 mt-[66px]">
+      <div class="py-6 md:p-[60px]">{{ content | safe }}</div>
+    </section>
+
+    {% include "footer.html" %}
+  </body>
+
+</html>

@@ -614,3 +614,238 @@ def test_events_raises_if_already_serving():
                 pass
 
     asyncio.run(go())
+
+
+class _StubApi:
+    """The controller calls `__aenter__` makes, with nothing behind them."""
+
+    def __init__(self) -> None:
+        self.profiles: list[dict] = []
+        self.user: dict = {"userId": 1, "profile": {"displayName": "x", "fullName": ""}}
+        self.address: dict | None = None
+
+    @classmethod
+    async def init(cls, *_a, **_kw):
+        return cls()
+
+    @property
+    def started(self):
+        return False
+
+    async def start_chat(self):
+        pass
+
+    async def stop_chat(self):
+        pass
+
+    async def close(self):
+        pass
+
+    async def api_get_active_user(self):
+        return self.user
+
+    async def api_update_profile(self, _user_id, profile):
+        self.profiles.append(profile)
+
+    async def api_get_user_address(self, _user_id):
+        return self.address
+
+    async def api_set_address_settings(self, _user_id, _settings):
+        pass
+
+    async def send_chat_cmd(self, _cmd):
+        return {"type": "cmdOk"}
+
+
+def _client_with_stub_api(monkeypatch, **kw) -> tuple[Client, _StubApi]:
+    import simplex_chat.client as client_mod
+
+    api = _StubApi()
+    monkeypatch.setattr(client_mod, "ChatApi", _init_returning(api))
+    client = Client(profile=Profile(display_name="x"), db=SqliteDb(file_prefix="/tmp/test"), **kw)
+    return client, api
+
+
+def _init_returning(api: _StubApi):
+    """A stand-in for the ChatApi class whose `init` hands back `api`."""
+    return type("_Init", (), {"init": staticmethod(lambda *_a, **_kw: _done(api))})
+
+
+async def _done(value):
+    return value
+
+
+def test_stop_before_start_is_not_lost(monkeypatch):
+    """A signal handler installed before startup — the only way to survive a
+    Ctrl+C during database migrations — sets the stop event before __aenter__
+    runs. Clearing it there would begin serving a client the operator has
+    already stopped."""
+    c, api = _client_with_stub_api(monkeypatch)
+
+    async def go():
+        c.stop()
+        assert c.stop_requested
+        async with c:
+            assert c.stop_requested, "stop intent was cleared by __aenter__"
+            await c.serve_forever()  # must return immediately, never polling
+
+    api.recv_chat_event = _never_called  # type: ignore[attr-defined]
+    asyncio.run(go())
+
+
+async def _never_called(*_a, **_kw):
+    raise AssertionError("receive loop should have exited immediately")
+
+
+def test_stop_requested_is_false_until_stopped(monkeypatch):
+    c, _ = _client_with_stub_api(monkeypatch)
+    assert not c.stop_requested
+    c.stop()
+    assert c.stop_requested
+
+
+def test_install_signal_handlers_routes_both_signals(monkeypatch):
+    import signal as signal_mod
+
+    c, _ = _client_with_stub_api(monkeypatch)
+    registered: dict[int, object] = {}
+
+    async def go():
+        loop = asyncio.get_running_loop()
+        monkeypatch.setattr(
+            loop, "add_signal_handler", lambda sig, cb, *a: registered.__setitem__(sig, cb)
+        )
+        c.install_signal_handlers()
+
+    asyncio.run(go())
+    assert set(registered) == {signal_mod.SIGINT, signal_mod.SIGTERM}
+    registered[signal_mod.SIGINT]()  # type: ignore[operator]
+    assert c.stop_requested
+
+
+def test_install_signal_handlers_is_idempotent(monkeypatch):
+    c, _ = _client_with_stub_api(monkeypatch)
+    calls: list[int] = []
+
+    async def go():
+        loop = asyncio.get_running_loop()
+        monkeypatch.setattr(loop, "add_signal_handler", lambda sig, cb, *a: calls.append(sig))
+        c.install_signal_handlers()
+        c.install_signal_handlers()
+
+    asyncio.run(go())
+    assert len(calls) == 2, "second call re-registered the handlers"
+
+
+def test_second_interrupt_force_exits(monkeypatch):
+    """A stop that hangs in stop_chat/close must not trap the operator."""
+    import signal as signal_mod
+
+    import simplex_chat.client as client_mod
+
+    c, _ = _client_with_stub_api(monkeypatch)
+    registered: dict[int, object] = {}
+    exits: list[int] = []
+    monkeypatch.setattr(client_mod.os, "_exit", lambda code: exits.append(code))
+
+    async def go():
+        loop = asyncio.get_running_loop()
+        monkeypatch.setattr(
+            loop, "add_signal_handler", lambda sig, cb, *a: registered.__setitem__(sig, cb)
+        )
+        c.install_signal_handlers()
+
+    asyncio.run(go())
+    on_interrupt = registered[signal_mod.SIGINT]
+    on_interrupt()  # type: ignore[operator]
+    assert exits == []
+    on_interrupt()  # type: ignore[operator]
+    assert exits == [130]
+
+
+def test_sync_profile_applies_a_change_made_after_start(monkeypatch):
+    """The name a bot can use may only be knowable once the database is
+    readable, which is after start. Without this the profile could only be
+    set before the client was started."""
+    c, api = _client_with_stub_api(monkeypatch, update_profile=False)
+
+    async def go():
+        async with c:
+            assert api.profiles == [], "update_profile=False still synced on start"
+            c.profile.display_name = "Helpdesk"
+            assert await c.sync_profile() is True
+
+    asyncio.run(go())
+    assert api.profiles == [{"displayName": "Helpdesk", "fullName": ""}]
+
+
+def test_sync_profile_is_a_no_op_when_nothing_differs(monkeypatch):
+    """api_update_profile broadcasts to every contact; an unchanged profile
+    must not become traffic for all of them."""
+    c, api = _client_with_stub_api(monkeypatch, update_profile=False)
+
+    async def go():
+        async with c:
+            assert await c.sync_profile() is False
+
+    asyncio.run(go())
+    assert api.profiles == []
+
+
+def test_sync_profile_without_an_active_user(monkeypatch):
+    c, api = _client_with_stub_api(monkeypatch, update_profile=False)
+
+    async def go():
+        async with c:
+            api.user = None  # type: ignore[assignment]
+            with pytest.raises(RuntimeError, match="no active user"):
+                await c.sync_profile()
+
+    asyncio.run(go())
+
+
+def test_sync_profile_keeps_the_bot_address_in_the_profile(monkeypatch):
+    """The address is embedded by the startup sync; a later sync must not
+    drop it, or the profile would stop advertising where to connect."""
+    import simplex_chat.client as client_mod
+
+    api = _StubApi()
+    api.address = {
+        "connLinkContact": {"connFullLink": "https://l"},
+        "addressSettings": {"businessAddress": False, "autoAccept": {"acceptIncognito": False}},
+    }
+    api.user = {
+        "userId": 1,
+        "profile": {"displayName": "x", "fullName": "", "contactLink": "https://l"},
+    }
+    monkeypatch.setattr(client_mod, "ChatApi", _init_returning(api))
+    bot = Bot(
+        profile=BotProfile(display_name="x"),
+        db=SqliteDb(file_prefix="/tmp/test"),
+        update_profile=False,
+    )
+
+    async def go():
+        async with bot:
+            bot.profile.display_name = "Helpdesk"
+            await bot.sync_profile()
+
+    asyncio.run(go())
+    assert api.profiles[0]["contactLink"] == "https://l"
+
+
+def test_profile_can_be_replaced(monkeypatch):
+    c, _ = _client_with_stub_api(monkeypatch)
+    c.profile = Profile(display_name="other", full_name="Other")
+    assert c._profile_to_wire() == {"displayName": "other", "fullName": "Other"}
+
+
+def test_the_profile_image_is_checked_before_it_is_sent(monkeypatch):
+    """An image the apps cannot decode is stored and broadcast by the core,
+    and then shows as an empty avatar to every contact."""
+    c, _ = _client_with_stub_api(monkeypatch)
+    c.profile = Profile(display_name="x", image="data:image/jpeg;base64,AAA")
+    with pytest.raises(ValueError, match="must start with"):
+        c._profile_to_wire()
+    c.profile = Profile(display_name="x", image="data:image/png;base64,AAA")
+    assert c._profile_to_wire()["image"] == "data:image/png;base64,AAA"

@@ -1,6 +1,8 @@
 from unittest.mock import patch
+
 import pytest
-from simplex_chat._native import _platform_tag, _libs_url, _libname
+
+from simplex_chat._native import _libname, _libs_url, _platform_tag
 from simplex_chat._version import LIBS_VERSION
 
 

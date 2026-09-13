@@ -502,14 +502,17 @@ fun ChatView(
               groupMembersJob = scope.launch(Dispatchers.Default) {
                 val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
                 val stats = r?.second
-                val (_, code) = if (member.memberActive) {
+                val (updatedMember, code) = if (member.memberActive) {
                   val memCode = chatModel.controller.apiGetGroupMemberCode(chatRh, groupInfo.apiId, member.groupMemberId)
-                  member to memCode?.second
+                  (memCode?.first ?: r?.first ?: member) to memCode?.second
                 } else {
-                  member to null
+                  (r?.first ?: member) to null
                 }
-                setGroupMembers(chatRh, groupInfo, chatModel)
-                if (!isActive) return@launch
+                if (!isActive || chatModel.chatId.value != groupInfo.id) return@launch
+                // members are not loaded in large groups, so only the opened member is added to the model
+                withContext(Dispatchers.Main) {
+                  chatModel.chatsContext.upsertGroupMember(chatRh, groupInfo, updatedMember)
+                }
 
                 if (chatsCtx.secondaryContextFilter == null) {
                   ModalManager.end.closeModals()
@@ -696,7 +699,7 @@ fun ChatView(
               }
             },
             showItemDetails = { cInfo, cItem ->
-              suspend fun loadChatItemInfo(): ChatItemInfo? = coroutineScope {
+              suspend fun loadChatItemInfo(): Pair<ChatItem, ChatItemInfo>? = coroutineScope {
                 val ciInfo = chatModel.controller.apiGetChatItemInfo(chatRh, cInfo.chatType, cInfo.apiId, cInfo.groupChatScope(), cItem.id)
                 if (ciInfo != null) {
                   if (chatInfo is ChatInfo.Group) {
@@ -714,11 +717,12 @@ fun ChatView(
                 }
                 ModalManager.end.showModalCloseable(endButtons = {
                   ShareButton {
-                    clipboard.shareText(itemInfoShareText(chatModel, cItem, initialCiInfo, chatModel.controller.appPrefs.developerTools.get()))
+                    clipboard.shareText(itemInfoShareText(chatModel, initialCiInfo.first, initialCiInfo.second, chatModel.controller.appPrefs.developerTools.get()))
                   }
                 }) { close ->
                   var ciInfo by remember(cItem.id) { mutableStateOf(initialCiInfo) }
-                  ChatItemInfoView(chatRh, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get(), chatInfo)
+                  val (item, info) = ciInfo
+                  ChatItemInfoView(chatRh, item, info, devTools = chatModel.controller.appPrefs.developerTools.get(), chatInfo)
                   LaunchedEffect(cItem.id) {
                     withContext(Dispatchers.Default) {
                       for (msg in controller.messagesChannel) {

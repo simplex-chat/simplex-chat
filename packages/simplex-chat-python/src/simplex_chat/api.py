@@ -8,7 +8,7 @@ from typing import Any, Literal
 
 from . import _native, core, util
 from .core import MigrationConfirmation
-from .types import CC, CEvt, CR, T
+from .types import CC, CR, CEvt, T
 
 # Mirrors Node `ConnReqType` enum (api.ts:15-18) — the two possible outcomes
 # of `api_connect` / `api_connect_active_user` depending on the link kind.
@@ -39,7 +39,7 @@ def _db_to_migrate_args(db: Db) -> tuple[str, str, _native.Backend]:
     raise TypeError(f"Unknown db: {db!r}")
 
 
-class ChatCommandError(Exception):
+class ChatCommandError(core.ChatError):
     """A chat command returned an unexpected response type.
 
     `response` is the raw wire response; `response_type` exposes its `type`
@@ -71,7 +71,7 @@ class ChatApi:
         cls,
         db: Db,
         confirm: MigrationConfirmation = MigrationConfirmation.YES_UP,
-    ) -> "ChatApi":
+    ) -> ChatApi:
         path_or_prefix, key_or_conn, backend = _db_to_migrate_args(db)
         # Trigger lazy lib load with the right backend BEFORE chat_migrate_init.
         _native.lib_for(backend)
@@ -96,8 +96,12 @@ class ChatApi:
         return self._started
 
     async def start_chat(self) -> None:
+        # serviceRequests is off: a bot answers its own address, it does not
+        # serve requests routed to it as a service.
         r = await self.send_chat_cmd(
-            CC.StartChat_cmd_string({"mainApp": True, "enableSndFiles": True})
+            CC.StartChat_cmd_string(
+                {"mainApp": True, "enableSndFiles": True, "serviceRequests": False}
+            )
         )
         if r.get("type") not in ("chatStarted", "chatRunning"):
             raise ChatCommandError("error starting chat", r)
@@ -142,12 +146,7 @@ class ChatApi:
                 return r["contactLink"]
             raise ChatCommandError("error loading user address", r)
         except core.ChatAPIError as e:
-            ce = e.chat_error
-            if (
-                ce is not None
-                and ce.get("type") == "errorStore"
-                and ce.get("storeError", {}).get("type") == "userContactLinkNotFound"
-            ):
+            if e.store_error_type == "userContactLinkNotFound":
                 return None
             raise
 
@@ -510,8 +509,10 @@ class ChatApi:
         raise ChatCommandError("error accepting contact request", r)
 
     async def api_reject_contact_request(self, contact_req_id: int) -> None:
+        # notify is not rendered into the command string, so the core reads its
+        # own default of off; this only keeps the argument type satisfied.
         r = await self.send_chat_cmd(
-            CC.APIRejectContact_cmd_string({"contactReqId": contact_req_id})
+            CC.APIRejectContact_cmd_string({"contactReqId": contact_req_id, "notify": False})
         )
         if r["type"] != "contactRequestRejected":
             raise ChatCommandError("error rejecting contact request", r)
@@ -607,6 +608,28 @@ class ChatApi:
         if r["type"] != "cmdOk":
             raise ChatCommandError("error setting contact custom data", r)
 
+    async def api_merge_contact_custom_data(
+        self, contact: T.Contact, key: str, value: object | None
+    ) -> None:
+        """Set or drop one key of a contact's custom data, keeping the rest.
+
+        The set command replaces the whole column. `value=None` removes `key`.
+        """
+        await self.api_set_contact_custom_data(
+            contact["contactId"], util.merged_custom_data(contact.get("customData"), key, value)
+        )
+
+    async def api_merge_group_custom_data(
+        self, group: T.GroupInfo, key: str, value: object | None
+    ) -> None:
+        """Set or drop one key of a group's custom data, keeping the rest.
+
+        See `api_merge_contact_custom_data`.
+        """
+        await self.api_set_group_custom_data(
+            group["groupId"], util.merged_custom_data(group.get("customData"), key, value)
+        )
+
     async def api_set_auto_accept_member_contacts(self, user_id: int, on_off: bool) -> None:
         r = await self.send_chat_cmd(
             CC.APISetUserAutoAcceptMemberContacts_cmd_string({"userId": user_id, "onOff": on_off})
@@ -632,12 +655,7 @@ class ChatApi:
                 return r["user"]
             raise ChatCommandError("unexpected response", r)
         except core.ChatAPIError as e:
-            ce = e.chat_error
-            if (
-                ce is not None
-                and ce.get("type") == "error"
-                and ce.get("errorType", {}).get("type") == "noActiveUser"
-            ):
+            if e.error_type == "noActiveUser":
                 return None
             raise
 
@@ -719,3 +737,13 @@ class ChatApi:
         if r["type"] == "newMemberContactSentInv":
             return r["contact"]
         raise ChatCommandError("error sending member contact invitation", r)
+
+    async def api_accept_member_contact(self, contact_id: int) -> T.Contact:
+        """Accept a direct connection a group member opened with us.
+
+        The core rejects a second accept with "connection already started".
+        """
+        r = await self.send_chat_cmd(f"/_accept member contact @{contact_id}")
+        if r["type"] == "memberContactAccepted":
+            return r["contact"]
+        raise ChatCommandError("error accepting member contact", r)

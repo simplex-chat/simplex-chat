@@ -21,6 +21,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiSetUserContactReceipts(userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings)
     case apiSetUserGroupReceipts(userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings)
     case apiSetUserAutoAcceptMemberContacts(userId: Int64, enable: Bool)
+    case apiSetUserAutoAcceptGroupInvitations(userId: Int64, enable: Bool)
     case apiHideUser(userId: Int64, viewPwd: String)
     case apiUnhideUser(userId: Int64, viewPwd: String)
     case apiMuteUser(userId: Int64)
@@ -215,6 +216,8 @@ enum ChatCommand: ChatCmdProtocol {
                 return "/_set receipts groups \(userId) \(onOff(umrs.enable)) clear_overrides=\(onOff(umrs.clearOverrides))"
             case let .apiSetUserAutoAcceptMemberContacts(userId, enable):
                 return "/_set accept member contacts \(userId) \(onOff(enable))"
+            case let .apiSetUserAutoAcceptGroupInvitations(userId, enable):
+                return "/_set accept group invitations \(userId) \(onOff(enable))"
             case let .apiHideUser(userId, viewPwd): return "/_hide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
@@ -430,6 +433,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiSetUserContactReceipts: return "apiSetUserContactReceipts"
             case .apiSetUserGroupReceipts: return "apiSetUserGroupReceipts"
             case .apiSetUserAutoAcceptMemberContacts: return "apiSetUserAutoAcceptMemberContacts"
+            case .apiSetUserAutoAcceptGroupInvitations: return "apiSetUserAutoAcceptGroupInvitations"
             case .apiHideUser: return "apiHideUser"
             case .apiUnhideUser: return "apiUnhideUser"
             case .apiMuteUser: return "apiMuteUser"

@@ -49,6 +49,8 @@ import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
 import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NetworkError (..), ProxyError (..))
 import Simplex.Messaging.Protocol.Types (ClientNotice (..))
 import Simplex.Messaging.Transport
+import Simplex.Chat.Remote.AppVersion (AppVersion, AppVersionRange)
+import Simplex.Chat.Remote.Types (CtrlAppInfo (..))
 import Simplex.RemoteControl.Types
 import System.Console.ANSI.Types (Color (..))
 
@@ -198,6 +200,7 @@ chatTypesDocsData =
     -- (STI "JSONObject" [], STRecord, "", [], "Arbitrary JSON object."),
     -- (STI "UTCTime" [], STRecord, "", [], "Timestampe in ISO8601 format as string."),
     (STI "VersionRange" [RecordTypeInfo "VersionRange" [FieldInfo "minVersion" (ti TInt), FieldInfo "maxVersion" (ti TInt)]], STRecord, "", [], "", ""),
+    (STI "UserContactRequestRef" [RecordTypeInfo "UserContactRequestRef" [FieldInfo "contactRequestId" (ti TInt64), FieldInfo "rejectionSupported" (ti TBool)]], STRecord, "", [], "", ""),
     (sti @(ChatItem 'CTDirect 'MDSnd), STRecord, "", [], "", ""),
     (sti @(CIFile 'MDSnd), STRecord, "", [], "", ""),
     (sti @(CIMeta 'CTDirect 'MDSnd), STRecord, "", [], "", ""),
@@ -209,6 +212,8 @@ chatTypesDocsData =
     (sti @AddressSettings, STRecord, "", [], "", ""),
     (sti @AgentCryptoError, STUnion, "", ["RATCHET_EARLIER", "RATCHET_SKIPPED"], "", ""), -- TODO add fields to types
     (sti @AgentErrorType, STUnion, "", [], "", ""),
+    (sti @AgentServiceError, STUnion, "ASE", [], "", ""),
+    (STI "AppVersionRange" [RecordTypeInfo "AppVersionRange" [FieldInfo "minVersion" (TIType (ST TString [])), FieldInfo "maxVersion" (TIType (ST TString []))]], STRecord, "", [], "", "Remote controller app version range (min and max as version strings)."),
     (sti @AutoAccept, STRecord, "", [], "", ""),
     (sti @BadgeProof, STRecord, "", [], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),
@@ -224,7 +229,7 @@ chatTypesDocsData =
     (sti @BadgeType, STEnum, "BT", ["BTUnknown"], "", ""),
     (sti @ChatFeature, STEnum, "CF", [], "", ""),
     (sti @ChatItemDeletion, STRecord, "", [], "", "Message deletion result."),
-    (sti @ChatPeerType, STEnum, "CPT", [], "", ""),
+    (sti @ChatPeerType, STEnum, "CPT", ["CPTUnknown"], "", ""),
     (sti @ChatRef, STRecord, "", [], Param "chatType" <> Param "chatId" <> Optional "" (Param "$0") "chatScope", "Used in API commands. Chat scope can only be passed with groups."),
     (sti @ChatSettings, STRecord, "", [], "", ""),
     (sti @ChatStats, STRecord, "", [], "", ""),
@@ -241,6 +246,7 @@ chatTypesDocsData =
     (sti @CIReactionCount, STRecord, "", [], "", ""),
     (sti @CITimed, STRecord, "", [], "", ""),
     (sti @ClientNotice, STRecord, "", [], "", ""),
+    (sti @CtrlAppInfo, STRecord, "", [], "", "Remote controller application info."),
     (sti @Color, STEnum, "", [], "", ""),
     (sti @CommandError, STUnion, "", [], "", ""),
     (sti @CommandErrorType, STUnion, "", [], "", ""),
@@ -268,6 +274,7 @@ chatTypesDocsData =
     (sti @FileError, STUnion, "FileErr", [], "", ""),
     (sti @FileErrorType, STUnion, "", [], "", ""),
     (sti @FileInvitation, STRecord, "", [], "", ""),
+    (sti @FileProhibited, STRecord, "", [], "", ""),
     (sti @FileProtocol, STEnum' (consLower "FP"), "", [], "", ""),
     (sti @FileStatus, STEnum, "FS", [], "", ""),
     (sti @FileTransferMeta, STRecord, "", [], "", ""),
@@ -340,6 +347,7 @@ chatTypesDocsData =
     (sti @ProxyError, STUnion, "", [], "", ""),
     (sti @PublicGroupAccess, STRecord, "", [], "", ""),
     (sti @PublicGroupData, STRecord, "", [], "", ""),
+    (sti @PublicGroupKeys, STRecord, "", [], "", ""),
     (sti @PublicGroupProfile, STRecord, "", [], "", ""),
     (sti @RatchetSyncState, STEnum, "RS", [], "", ""),
     (sti @RCErrorType, STUnion, "RCE", [], "", ""),
@@ -351,8 +359,12 @@ chatTypesDocsData =
     (sti @RcvGroupEvent, STUnion, "RGE", [], "", ""),
     (sti @RcvMsgError, STUnion, "RME", [], "", ""),
     (sti @RelayCapabilities, STRecord, "", [], "", ""),
+    (sti @RelayConnectionResult, STRecord, "", [], "", ""),
     (sti @RelayProfile, STRecord, "", [], "", ""),
     (sti @RelayStatus, STEnum, "RS", [], "", ""),
+    (sti @RemoteCtrlInfo, STRecord, "", [], "", ""),
+    (sti @RemoteCtrlSessionState, STUnion, "RCS", [], "", ""),
+    (sti @RemoteCtrlStopReason, STUnion, "RCSR", [], "", ""),
     (sti @ReportReason, STEnum' (dropPfxSfx "RR" ""), "", ["RRUnknown"], "", ""),
     (sti @RoleGroupPreference, STRecord, "", [], "", ""),
     (sti @SecurityCode, STRecord, "", [], "", ""),
@@ -435,6 +447,7 @@ deriving instance Generic AddRelayResult
 deriving instance Generic AddressSettings
 deriving instance Generic AgentCryptoError
 deriving instance Generic AgentErrorType
+deriving instance Generic AgentServiceError
 deriving instance Generic AutoAccept
 deriving instance Generic BadgeProof
 deriving instance Generic BlockingInfo
@@ -467,6 +480,7 @@ deriving instance Generic CIMentionMember
 deriving instance Generic CIReactionCount
 deriving instance Generic CITimed
 deriving instance Generic ClientNotice
+deriving instance Generic CtrlAppInfo
 deriving instance Generic Color
 deriving instance Generic CommandError
 deriving instance Generic CommandErrorType
@@ -494,6 +508,7 @@ deriving instance Generic FileDescr
 deriving instance Generic FileError
 deriving instance Generic FileErrorType
 deriving instance Generic FileInvitation
+deriving instance Generic FileProhibited
 deriving instance Generic FileProtocol
 deriving instance Generic FileStatus
 deriving instance Generic FileTransferMeta
@@ -573,6 +588,7 @@ deriving instance Generic ProxyClientError
 deriving instance Generic ProxyError
 deriving instance Generic PublicGroupAccess
 deriving instance Generic PublicGroupData
+deriving instance Generic PublicGroupKeys
 deriving instance Generic PublicGroupProfile
 deriving instance Generic RatchetSyncState
 deriving instance Generic RCErrorType
@@ -584,8 +600,12 @@ deriving instance Generic RcvFileTransfer
 deriving instance Generic RcvGroupEvent
 deriving instance Generic RcvMsgError
 deriving instance Generic RelayCapabilities
+deriving instance Generic RelayConnectionResult
 deriving instance Generic RelayProfile
 deriving instance Generic RelayStatus
+deriving instance Generic RemoteCtrlInfo
+deriving instance Generic RemoteCtrlSessionState
+deriving instance Generic RemoteCtrlStopReason
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
 deriving instance Generic SimplexDomain

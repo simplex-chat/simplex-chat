@@ -139,12 +139,44 @@ AgentErrorType = (
 
 AgentErrorType_Tag = Literal["CMD", "CONN", "NO_USER", "SMP", "NTF", "XFTP", "FILE", "NO_NAME_SERVERS", "PROXY", "RCP", "BROKER", "AGENT", "NOTICE", "INTERNAL", "CRITICAL", "INACTIVE"]
 
+class AgentServiceError_rejected(TypedDict):
+    type: Literal["rejected"]
+    rejectReason: str
+
+class AgentServiceError_timeout(TypedDict):
+    type: Literal["timeout"]
+
+class AgentServiceError_noPendingRequest(TypedDict):
+    type: Literal["noPendingRequest"]
+
+class AgentServiceError_notDRAddress(TypedDict):
+    type: Literal["notDRAddress"]
+
+class AgentServiceError_badSignature(TypedDict):
+    type: Literal["badSignature"]
+
+AgentServiceError = (
+    AgentServiceError_rejected
+    | AgentServiceError_timeout
+    | AgentServiceError_noPendingRequest
+    | AgentServiceError_notDRAddress
+    | AgentServiceError_badSignature
+)
+
+AgentServiceError_Tag = Literal["rejected", "timeout", "noPendingRequest", "notDRAddress", "badSignature"]
+
+# Remote controller app version range (min and max as version strings).
+
+class AppVersionRange(TypedDict):
+    minVersion: str
+    maxVersion: str
+
 class AutoAccept(TypedDict):
     acceptIncognito: bool
 
 class BadgeInfo(TypedDict):
     badgeType: "BadgeType"
-    badgeExpiry: NotRequired[str]  # ISO-8601 timestamp
+    badgeExpiry: str  # ISO-8601 timestamp
     badgeExtra: str
 
 class BadgeProof(TypedDict):
@@ -455,6 +487,8 @@ class CIFile(TypedDict):
     fileSource: NotRequired["CryptoFile"]
     fileStatus: "CIFileStatus"
     fileProtocol: "FileProtocol"
+    fileExpires: NotRequired[str]  # ISO-8601 timestamp
+    fileProhibited: NotRequired["FileProhibited"]
 
 class CIFileStatus_sndStored(TypedDict):
     type: Literal["sndStored"]
@@ -546,10 +580,28 @@ class CIForwardedFrom_group(TypedDict):
     msgDir: "MsgDirection"
     groupId: NotRequired[int]  # int64
     chatItemId: NotRequired[int]  # int64
+    memberId: NotRequired[str]
+    sharedMsgId_: NotRequired[str]
+    groupType: NotRequired["GroupType"]
 
-CIForwardedFrom = CIForwardedFrom_unknown | CIForwardedFrom_contact | CIForwardedFrom_group
+class CIForwardedFrom_groupLink(TypedDict):
+    type: Literal["groupLink"]
+    chatName: str
+    msgDir: "MsgDirection"
+    groupLink: str
+    publicGroupId: str
+    memberId: NotRequired[str]
+    sharedMsgId: str
+    groupType: NotRequired["GroupType"]
 
-CIForwardedFrom_Tag = Literal["unknown", "contact", "group"]
+CIForwardedFrom = (
+    CIForwardedFrom_unknown
+    | CIForwardedFrom_contact
+    | CIForwardedFrom_group
+    | CIForwardedFrom_groupLink
+)
+
+CIForwardedFrom_Tag = Literal["unknown", "contact", "group", "groupLink"]
 
 class CIGroupInvitation(TypedDict):
     groupId: int  # int64
@@ -1149,7 +1201,7 @@ ChatListQuery = ChatListQuery_filters | ChatListQuery_search
 
 ChatListQuery_Tag = Literal["filters", "search"]
 
-ChatPeerType = Literal["human", "bot"]
+ChatPeerType = Literal["human", "bot", "business"]
 
 # Used in API commands. Chat scope can only be passed with groups.
 
@@ -1420,6 +1472,7 @@ class Contact(TypedDict):
     chatTs: NotRequired[str]  # ISO-8601 timestamp
     preparedContact: NotRequired["PreparedContact"]
     contactRequestId: NotRequired[int]  # int64
+    contactRequest: NotRequired["UserContactRequestRef"]
     contactGroupMemberId: NotRequired[int]  # int64
     contactGrpInvSent: bool
     groupDirectInv: NotRequired["GroupDirectInvitation"]
@@ -1469,7 +1522,7 @@ class ContactShortLinkData(TypedDict):
     business: bool
     localBadge: NotRequired["LocalBadge"]
 
-ContactStatus = Literal["active", "deleted", "deletedByUser"]
+ContactStatus = Literal["active", "deleted", "deletedByUser", "rejected"]
 
 class ContactUserPref_contact(TypedDict):
     type: Literal["contact"]
@@ -1513,6 +1566,13 @@ class CryptoFile(TypedDict):
 class CryptoFileArgs(TypedDict):
     fileKey: str
     fileNonce: str
+
+# Remote controller application info.
+
+class CtrlAppInfo(TypedDict):
+    appVersionRange: "AppVersionRange"
+    deviceName: str
+    compression: bool
 
 class DroppedMsg(TypedDict):
     brokerTs: str  # ISO-8601 timestamp
@@ -1666,6 +1726,11 @@ class FileInvitation(TypedDict):
     fileConnReq: NotRequired[str]
     fileInline: NotRequired["InlineFileMode"]
     fileDescr: NotRequired["FileDescr"]
+    fileBadge: NotRequired["BadgeProof"]
+
+class FileProhibited(TypedDict):
+    maxSize: int  # int64
+    badgeStatus: NotRequired["BadgeStatus"]
 
 FileProtocol = Literal["SMP", "XFTP", "LOCAL"]
 
@@ -1852,8 +1917,7 @@ class GroupInfo(TypedDict):
     groupDomainVerified: NotRequired[bool]
 
 class GroupKeys(TypedDict):
-    publicGroupId: str
-    groupRootKey: "GroupRootKey"
+    publicGroupKeys: NotRequired["PublicGroupKeys"]
     memberPrivKey: str
 
 class GroupLink(TypedDict):
@@ -2444,6 +2508,10 @@ class PublicGroupAccess(TypedDict):
 class PublicGroupData(TypedDict):
     publicMemberCount: int  # int64
 
+class PublicGroupKeys(TypedDict):
+    publicGroupId: str
+    groupRootKey: "GroupRootKey"
+
 class PublicGroupProfile(TypedDict):
     groupType: "GroupType"
     groupLink: str
@@ -2608,6 +2676,7 @@ class RcvFileTransfer(TypedDict):
     fileId: int  # int64
     xftpRcvFile: NotRequired["XFTPRcvFile"]
     fileInvitation: "FileInvitation"
+    fileProhibited: NotRequired["FileProhibited"]
     fileStatus: "RcvFileStatus"
     fileType: "FileType"
     rcvFileInline: NotRequired["InlineFileMode"]
@@ -2721,6 +2790,10 @@ RcvMsgError_Tag = Literal["dropped", "parseError"]
 class RelayCapabilities(TypedDict):
     webDomain: NotRequired[str]
 
+class RelayConnectionResult(TypedDict):
+    relayMember: "GroupMember"
+    relayError: NotRequired["ChatError"]
+
 class RelayProfile(TypedDict):
     displayName: str
     fullName: str
@@ -2728,6 +2801,62 @@ class RelayProfile(TypedDict):
     image: NotRequired[str]
 
 RelayStatus = Literal["new", "invited", "accepted", "acknowledgedRoster", "active", "inactive", "rejected"]
+
+class RemoteCtrlInfo(TypedDict):
+    remoteCtrlId: int  # int64
+    ctrlDeviceName: str
+    sessionState: NotRequired["RemoteCtrlSessionState"]
+
+class RemoteCtrlSessionState_starting(TypedDict):
+    type: Literal["starting"]
+
+class RemoteCtrlSessionState_searching(TypedDict):
+    type: Literal["searching"]
+
+class RemoteCtrlSessionState_connecting(TypedDict):
+    type: Literal["connecting"]
+
+class RemoteCtrlSessionState_pendingConfirmation(TypedDict):
+    type: Literal["pendingConfirmation"]
+    sessionCode: str
+
+class RemoteCtrlSessionState_connected(TypedDict):
+    type: Literal["connected"]
+    sessionCode: str
+
+RemoteCtrlSessionState = (
+    RemoteCtrlSessionState_starting
+    | RemoteCtrlSessionState_searching
+    | RemoteCtrlSessionState_connecting
+    | RemoteCtrlSessionState_pendingConfirmation
+    | RemoteCtrlSessionState_connected
+)
+
+RemoteCtrlSessionState_Tag = Literal["starting", "searching", "connecting", "pendingConfirmation", "connected"]
+
+class RemoteCtrlStopReason_discoveryFailed(TypedDict):
+    type: Literal["discoveryFailed"]
+    chatError: "ChatError"
+
+class RemoteCtrlStopReason_connectionFailed(TypedDict):
+    type: Literal["connectionFailed"]
+    chatError: "ChatError"
+
+class RemoteCtrlStopReason_setupFailed(TypedDict):
+    type: Literal["setupFailed"]
+    chatError: "ChatError"
+
+class RemoteCtrlStopReason_disconnected(TypedDict):
+    type: Literal["disconnected"]
+
+RemoteCtrlStopReason = (
+    RemoteCtrlStopReason_discoveryFailed
+    | RemoteCtrlStopReason_connectionFailed
+    | RemoteCtrlStopReason_setupFailed
+    | RemoteCtrlStopReason_disconnected
+)
+
+RemoteCtrlStopReason_Tag = Literal["discoveryFailed", "connectionFailed", "setupFailed", "disconnected"]
 
 ReportReason = Literal["spam", "content", "community", "profile", "other"]
 
@@ -2737,6 +2866,7 @@ class RoleGroupPreference(TypedDict):
 
 class SMPAgentError_A_MESSAGE(TypedDict):
     type: Literal["A_MESSAGE"]
+    messageErr: str
 
 class SMPAgentError_A_PROHIBITED(TypedDict):
     type: Literal["A_PROHIBITED"]
@@ -2761,6 +2891,10 @@ class SMPAgentError_A_QUEUE(TypedDict):
     type: Literal["A_QUEUE"]
     queueErr: str
 
+class SMPAgentError_A_SERVICE(TypedDict):
+    type: Literal["A_SERVICE"]
+    serviceError: "AgentServiceError"
+
 SMPAgentError = (
     SMPAgentError_A_MESSAGE
     | SMPAgentError_A_PROHIBITED
@@ -2769,9 +2903,10 @@ SMPAgentError = (
     | SMPAgentError_A_CRYPTO
     | SMPAgentError_A_DUPLICATE
     | SMPAgentError_A_QUEUE
+    | SMPAgentError_A_SERVICE
 )
 
-SMPAgentError_Tag = Literal["A_MESSAGE", "A_PROHIBITED", "A_VERSION", "A_LINK", "A_CRYPTO", "A_DUPLICATE", "A_QUEUE"]
+SMPAgentError_Tag = Literal["A_MESSAGE", "A_PROHIBITED", "A_VERSION", "A_LINK", "A_CRYPTO", "A_DUPLICATE", "A_QUEUE", "A_SERVICE"]
 
 class SecurityCode(TypedDict):
     securityCode: str
@@ -3494,6 +3629,7 @@ class User(TypedDict):
     sendRcptsContacts: bool
     sendRcptsSmallGroups: bool
     autoAcceptMemberContacts: bool
+    autoAcceptGroupInvitations: bool
     userMemberProfileUpdatedAt: NotRequired[str]  # ISO-8601 timestamp
     userChatRelay: bool
     clientService: bool
@@ -3537,6 +3673,11 @@ class UserContactRequest(TypedDict):
     pqSupport: bool
     welcomeSharedMsgId: NotRequired[str]
     requestSharedMsgId: NotRequired[str]
+    rejectionSupported: bool
+
+class UserContactRequestRef(TypedDict):
+    contactRequestId: int  # int64
+    rejectionSupported: bool
 
 class UserInfo(TypedDict):
     user: "User"

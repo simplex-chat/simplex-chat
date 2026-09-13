@@ -1,6 +1,7 @@
 ---
 title: Hosting your own Chat Relay
 revision: 28.07.2026
+templateEngineOverride: md
 ---
 
 # Hosting your own Chat Relay

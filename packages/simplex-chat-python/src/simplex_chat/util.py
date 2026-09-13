@@ -120,6 +120,46 @@ def ci_bot_command(chat_item: T.ChatItem) -> tuple[str, str] | None:
     return m.group(1), m.group(2).strip()
 
 
+def merged_custom_data(
+    custom_data: dict[str, object] | None, key: str, value: object | None
+) -> dict[str, object] | None:
+    """`custom_data` with `key` set to `value`, or removed when `value` is None.
+
+    Returns None, which the set commands read as "clear the column", if empty.
+    """
+    data = dict(custom_data or {})
+    if value is None:
+        data.pop(key, None)
+    else:
+        data[key] = value
+    return data or None
+
+
+# The apps decode these two and nothing else (base64ToBitmap in mobile and
+# desktop), while the core stores any string starting with "data:".
+PROFILE_IMAGE_PREFIXES = ("data:image/png;base64,", "data:image/jpg;base64,")
+
+
+def check_profile_image(image: str) -> str:
+    """`image` unchanged, or ValueError if no client could render it.
+
+    An image the apps cannot decode is still stored and broadcast, and shows
+    as an empty avatar to everyone.
+    """
+    if image.startswith(PROFILE_IMAGE_PREFIXES):
+        return image
+    raise ValueError(f"profile image must start with {' or '.join(PROFILE_IMAGE_PREFIXES)}")
+
+
+def conn_status(contact: T.Contact) -> str | None:
+    """Tag of a contact's active connection status, or None if it has none.
+
+    A contact exists before its connection does, so the two are not the same.
+    """
+    status = (contact.get("activeConn") or {}).get("connStatus") or {}
+    return status.get("type")
+
+
 def reaction_text(reaction: T.ACIReaction) -> str:
     """Format an `ACIReaction` as the emoji character or tag string."""
     r = reaction["chatReaction"]["reaction"]  # type: ignore[index]

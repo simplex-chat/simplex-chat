@@ -121,8 +121,8 @@ class Bot(Client):
 
     async def _post_start(self, user: T.User) -> None:
         """Bots sync address first, then embed the link in the profile."""
-        link = await self._sync_address(user)
-        await self._maybe_sync_profile(user, contact_link=link)
+        self._contact_link = await self._sync_address(user)
+        await self._maybe_sync_profile(user)
 
     async def _sync_address(self, user: T.User) -> str | None:
         """Address sync. Returns the public link if any, for embedding in the profile."""

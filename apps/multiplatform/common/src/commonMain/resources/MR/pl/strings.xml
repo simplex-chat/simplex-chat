@@ -179,6 +179,11 @@
     <string name="icon_descr_waiting_for_video">Oczekiwanie na film</string>
     <string name="waiting_for_video">Oczekiwanie na film</string>
     <string name="you_are_observer">jesteś obserwatorem</string>
+    <string name="connect_plan_you_are_observer">Jesteś obserwatorem</string>
+    <string name="connect_plan_you_are_member">Jesteś członkiem</string>
+    <string name="connect_plan_you_are_moderator">Jesteś moderatorem</string>
+    <string name="connect_plan_you_are_admin">Jesteś administratorem</string>
+    <string name="connect_plan_you_are_owner">Jesteś właścicielem</string>
     <string name="observer_cant_send_message_title">Jesteś obserwatorem</string>
     <string name="icon_descr_server_status_connected">Połączony</string>
     <string name="maximum_supported_file_size">Obecnie maksymalny obsługiwany rozmiar pliku to %1$s.</string>
@@ -1287,7 +1292,7 @@
     <string name="sync_connection_force_question">Renegocjować szyfrowanie\?</string>
     <string name="receipts_contacts_override_enabled">Wysyłanie potwierdzeń jest włączone dla %d kontaktów</string>
     <string name="sync_connection_force_desc">Szyfrowanie działa, a nowe uzgodnienie szyfrowania nie jest wymagane. Może to spowodować błędy w połączeniu!</string>
-    <string name="receipts_section_description">Te ustawienia dotyczą Twojego bieżącego profilu</string>
+    <string name="these_settings_are_for_your_current_profile">Te ustawienia dotyczą Twojego bieżącego profilu</string>
     <string name="receipts_section_description_1">Można je nadpisać w ustawieniach kontaktu i grupy.</string>
     <string name="conn_event_ratchet_sync_ok">szyfrowanie ok</string>
     <string name="conn_event_ratchet_sync_allowed">renegocjacja szyfrowania dozwolona</string>
@@ -1731,7 +1736,7 @@
     <string name="forward_message">Przekaż wiadomość…</string>
     <string name="saved_chat_item_info_tab">Zapisane</string>
     <string name="saved_description">zapisane</string>
-    <string name="saved_from_description">zapisane od %s</string>
+    <string name="saved_from">zapisane od</string>
     <string name="audio_device_bluetooth">Bluetooth</string>
     <string name="v5_7_forward">Przesyłaj dalej i zapisuj wiadomości</string>
     <string name="audio_device_earpiece">Słuchawki douszne</string>

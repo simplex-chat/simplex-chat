@@ -15,6 +15,8 @@ This file is generated automatically.
 - [APIDeleteChatItem](#apideletechatitem)
 - [APIDeleteMemberChatItem](#apideletememberchatitem)
 - [APIChatItemReaction](#apichatitemreaction)
+- [APIShareMyAddress](#apisharemyaddress)
+- [APIShareChatMsgContent](#apisharechatmsgcontent)
 
 [File commands](#file-commands)
 - [ReceiveFile](#receivefile)
@@ -35,6 +37,7 @@ This file is generated automatically.
 - [APIAddGroupRelays](#apiaddgrouprelays)
 - [APIAllowRelayGroup](#apiallowrelaygroup)
 - [APIUpdateGroupProfile](#apiupdategroupprofile)
+- [APIVerifyGroupDomain](#apiverifygroupdomain)
 
 [Group link commands](#group-link-commands)
 - [APICreateGroupLink](#apicreategrouplink)
@@ -58,6 +61,7 @@ This file is generated automatically.
 - [APISetGroupCustomData](#apisetgroupcustomdata)
 - [APISetContactCustomData](#apisetcontactcustomdata)
 - [APISetUserAutoAcceptMemberContacts](#apisetuserautoacceptmembercontacts)
+- [APISetUserAutoAcceptGroupInvitations](#apisetuserautoacceptgroupinvitations)
 
 [User profile commands](#user-profile-commands)
 - [ShowActiveUser](#showactiveuser)
@@ -68,9 +72,16 @@ This file is generated automatically.
 - [APIUpdateProfile](#apiupdateprofile)
 - [APISetContactPrefs](#apisetcontactprefs)
 
+[Service commands](#service-commands)
+- [APISendServiceResponse](#apisendserviceresponse)
+
 [Chat management](#chat-management)
 - [StartChat](#startchat)
 - [APIStopChat](#apistopchat)
+
+[Remote control commands](#remote-control-commands)
+- [ConnectRemoteCtrl](#connectremotectrl)
+- [VerifyRemoteCtrlSession](#verifyremotectrlsession)
 
 ---
 
@@ -88,19 +99,20 @@ Create bot address.
 
 **Parameters**:
 - userId: int64
+- pqRatchet: bool?
 
 **Syntax**:
 
 ```
-/_address <userId>
+/_address <userId>[ pq_ratchet=on|off]
 ```
 
 ```javascript
-'/_address ' + userId // JavaScript
+'/_address ' + userId + (typeof pqRatchet == 'boolean' ? ' pq_ratchet=' + (pqRatchet ? 'on' : 'off') : '') // JavaScript
 ```
 
 ```python
-'/_address ' + str(userId) # Python
+'/_address ' + str(userId) + ((' pq_ratchet=' + ('on' if pqRatchet else 'off')) if pqRatchet is not None else '') # Python
 ```
 
 **Responses**:
@@ -223,6 +235,10 @@ UserProfileUpdated: User profile updated.
 - toProfile: [Profile](./TYPES.md#profile)
 - updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
 
+UserProfileNoChange: User profile was not changed.
+- type: "userProfileNoChange"
+- user: [User](./TYPES.md#user)
+
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
@@ -238,20 +254,21 @@ Set bot address settings.
 
 **Parameters**:
 - userId: int64
+- pqRatchet: bool?
 - settings: [AddressSettings](./TYPES.md#addresssettings)
 
 **Syntax**:
 
 ```
-/_address_settings <userId> <json(settings)>
+/_address_settings <userId>[ pq_ratchet=on|off] <json(settings)>
 ```
 
 ```javascript
-'/_address_settings ' + userId + ' ' + JSON.stringify(settings) // JavaScript
+'/_address_settings ' + userId + (typeof pqRatchet == 'boolean' ? ' pq_ratchet=' + (pqRatchet ? 'on' : 'off') : '') + ' ' + JSON.stringify(settings) // JavaScript
 ```
 
 ```python
-'/_address_settings ' + str(userId) + ' ' + json.dumps(settings) # Python
+'/_address_settings ' + str(userId) + ((' pq_ratchet=' + ('on' if pqRatchet else 'off')) if pqRatchet is not None else '') + ' ' + json.dumps(settings) # Python
 ```
 
 **Responses**:
@@ -480,6 +497,73 @@ ChatItemReaction: Message reaction.
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIShareMyAddress
+
+Share user address card
+
+*Network usage*: no.
+
+**Parameters**:
+- toSendRef: [ChatRef](./TYPES.md#chatref)
+
+**Syntax**:
+
+```
+/_share address <str(toSendRef)>
+```
+
+```javascript
+'/_share address ' + ChatRef.cmdString(toSendRef) // JavaScript
+```
+
+```python
+'/_share address ' + ChatRef_cmd_string(toSendRef) # Python
+```
+
+**Response**:
+
+ChatMsgContent: Chat card content that can be sent.
+- type: "chatMsgContent"
+- user: [User](./TYPES.md#user)
+- msgContent: [MsgContent](./TYPES.md#msgcontent)
+
+---
+
+
+### APIShareChatMsgContent
+
+Share channel address
+
+*Network usage*: no.
+
+**Parameters**:
+- shareChatRef: [ChatRef](./TYPES.md#chatref)
+- toSendRef: [ChatRef](./TYPES.md#chatref)
+
+**Syntax**:
+
+```
+/_share chat content <str(shareChatRef)> <str(toSendRef)>
+```
+
+```javascript
+'/_share chat content ' + ChatRef.cmdString(shareChatRef) + ' ' + ChatRef.cmdString(toSendRef) // JavaScript
+```
+
+```python
+'/_share chat content ' + ChatRef_cmd_string(shareChatRef) + ' ' + ChatRef_cmd_string(toSendRef) # Python
+```
+
+**Response**:
+
+ChatMsgContent: Chat card content that can be sent.
+- type: "chatMsgContent"
+- user: [User](./TYPES.md#user)
+- msgContent: [MsgContent](./TYPES.md#msgcontent)
 
 ---
 
@@ -1160,6 +1244,40 @@ ChatCmdError: Command error (only used in WebSockets API).
 ---
 
 
+### APIVerifyGroupDomain
+
+Verify group domain
+
+*Network usage*: interactive.
+
+**Parameters**:
+- groupId: int64
+
+**Syntax**:
+
+```
+/_verify domain #<groupId>
+```
+
+```javascript
+'/_verify domain #' + groupId // JavaScript
+```
+
+```python
+'/_verify domain #' + str(groupId) # Python
+```
+
+**Response**:
+
+GroupDomainVerified: Group domain verified.
+- type: "groupDomainVerified"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- verificationFailure: string?
+
+---
+
+
 ## Group link commands
 
 These commands can be used by bots that manage multiple public groups
@@ -1499,6 +1617,33 @@ SentInvitation: Invitation sent to contact address.
 - connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
 - customUserProfile: [Profile](./TYPES.md#profile)?
 
+ConnectionPlan: Connection link information.
+- type: "connectionPlan"
+- user: [User](./TYPES.md#user)
+- connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
+- planSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
+- otherSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
+- connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
+
+SentInvitationToContact: Invitation sent to contact (when connecting via SimpleX name to a known contact address)..
+- type: "sentInvitationToContact"
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+- customUserProfile: [Profile](./TYPES.md#profile)?
+
+StartedConnectionToContact: Connection to contact started (when connecting via prepared contact)..
+- type: "startedConnectionToContact"
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+- customUserProfile: [Profile](./TYPES.md#profile)?
+
+StartedConnectionToGroup: Connection to channel started (when connecting via channel link)..
+- type: "startedConnectionToGroup"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- customUserProfile: [Profile](./TYPES.md#profile)?
+- relayResults: [[RelayConnectionResult](./TYPES.md#relayconnectionresult)]
+
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
@@ -1551,6 +1696,7 @@ Reject contact request. The user who sent the request is **not notified**.
 
 **Parameters**:
 - contactReqId: int64
+- notify: bool
 
 **Syntax**:
 
@@ -1671,21 +1817,21 @@ Get chat previews. Supports time-based pagination — use this instead of APILis
 **Parameters**:
 - userId: int64
 - pendingConnections: bool
-- pagination: [PaginationByTime](./TYPES.md#paginationbytime)
+- pagination: [PaginationByTime](./TYPES.md#paginationbytime)?
 - query: [ChatListQuery](./TYPES.md#chatlistquery)
 
 **Syntax**:
 
 ```
-/_get chats <userId>[ pcc=on] <str(pagination)> <json(query)>
+/_get chats <userId>[ pcc=on][ <str(pagination)>] <json(query)>
 ```
 
 ```javascript
-'/_get chats ' + userId + (pendingConnections ? ' pcc=on' : '') + ' ' + PaginationByTime.cmdString(pagination) + ' ' + JSON.stringify(query) // JavaScript
+'/_get chats ' + userId + (pendingConnections ? ' pcc=on' : '') + (pagination ? ' ' + PaginationByTime.cmdString(pagination) : '') + ' ' + JSON.stringify(query) // JavaScript
 ```
 
 ```python
-'/_get chats ' + str(userId) + (' pcc=on' if pendingConnections else '') + ' ' + PaginationByTime_cmd_string(pagination) + ' ' + json.dumps(query) # Python
+'/_get chats ' + str(userId) + (' pcc=on' if pendingConnections else '') + ((' ' + PaginationByTime_cmd_string(pagination)) if pagination is not None else '') + ' ' + json.dumps(query) # Python
 ```
 
 **Responses**:
@@ -1743,6 +1889,7 @@ GroupDeletedUser: User deleted group.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - msgSigned: bool
+- localDeletion: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -1847,6 +1994,43 @@ Set auto-accept member contacts.
 
 ```python
 '/_set accept member contacts ' + str(userId) + ' ' + ('on' if onOff else 'off') # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetUserAutoAcceptGroupInvitations
+
+Set auto-accept group invitations.
+
+*Network usage*: no.
+
+**Parameters**:
+- userId: int64
+- onOff: bool
+
+**Syntax**:
+
+```
+/_set accept group invitations <userId> on|off
+```
+
+```javascript
+'/_set accept group invitations ' + userId + ' ' + (onOff ? 'on' : 'off') // JavaScript
+```
+
+```python
+'/_set accept group invitations ' + str(userId) + ' ' + ('on' if onOff else 'off') # Python
 ```
 
 **Responses**:
@@ -2118,6 +2302,50 @@ ChatCmdError: Command error (only used in WebSockets API).
 ---
 
 
+## Service commands
+
+Bots with a double ratchet address can answer service requests.
+
+
+### APISendServiceResponse
+
+Send a reply to a received service request. Returns the connection ID that correlates the reply delivery event.
+
+*Network usage*: background.
+
+**Parameters**:
+- userId: int64
+- requestId: string
+- responseData: JSONObject
+
+**Syntax**:
+
+```
+/_service_response <userId> <requestId> <json(responseData)>
+```
+
+```javascript
+'/_service_response ' + userId + ' ' + requestId + ' ' + JSON.stringify(responseData) // JavaScript
+```
+
+```python
+'/_service_response ' + str(userId) + ' ' + requestId + ' ' + json.dumps(responseData) # Python
+```
+
+**Responses**:
+
+ServiceReplyAccepted: Service reply accepted for delivery. `connectionId` correlates the reply delivery event..
+- type: "serviceReplyAccepted"
+- user: [User](./TYPES.md#user)
+- connectionId: string
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
 ## Chat management
 
 These commands should not be used with CLI-based bots
@@ -2132,11 +2360,20 @@ Start chat controller.
 **Parameters**:
 - mainApp: bool
 - enableSndFiles: bool
+- serviceRequests: bool
 
 **Syntax**:
 
 ```
-/_start
+/_start main=on|off[ snd_files=off][ service_requests=on]
+```
+
+```javascript
+'/_start main=' + (mainApp ? 'on' : 'off') + (!enableSndFiles ? ' snd_files=off' : '') + (serviceRequests ? ' service_requests=on' : '') // JavaScript
+```
+
+```python
+'/_start' + ' main=' + ('on' if mainApp else 'off') + (' snd_files=off' if not enableSndFiles else '') + (' service_requests=on' if serviceRequests else '') # Python
 ```
 
 **Responses**:
@@ -2166,5 +2403,85 @@ Stop chat controller.
 
 ChatStopped: Chat stopped.
 - type: "chatStopped"
+
+---
+
+
+## Remote control commands
+
+Allows a bot to accept an incoming remote control session from a SimpleX Desktop client, giving the desktop live access to the bot's SimpleX instance.
+
+
+### ConnectRemoteCtrl
+
+Connect to a remote controller using an OOB invitation link.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- remoteInvitation: string
+
+**Syntax**:
+
+```
+/crc <remoteInvitation>
+```
+
+```javascript
+'/crc ' + remoteInvitation // JavaScript
+```
+
+```python
+'/crc ' + remoteInvitation # Python
+```
+
+**Responses**:
+
+RemoteCtrlConnecting: Remote controller is connecting..
+- type: "remoteCtrlConnecting"
+- remoteCtrl_: [RemoteCtrlInfo](./TYPES.md#remotectrlinfo)?
+- ctrlAppInfo: [CtrlAppInfo](./TYPES.md#ctrlappinfo)
+- appVersion: string
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### VerifyRemoteCtrlSession
+
+Verify the remote controller session code to complete the connection.
+
+*Network usage*: no.
+
+**Parameters**:
+- sessionCode: string
+
+**Syntax**:
+
+```
+/verify remote ctrl <sessionCode>
+```
+
+```javascript
+'/verify remote ctrl ' + sessionCode // JavaScript
+```
+
+```python
+'/verify remote ctrl ' + sessionCode # Python
+```
+
+**Responses**:
+
+RemoteCtrlConnected: Remote controller session connected..
+- type: "remoteCtrlConnected"
+- remoteCtrl: [RemoteCtrlInfo](./TYPES.md#remotectrlinfo)
+- compression: bool
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---

@@ -8,7 +8,7 @@ module ChatTests.ChatRelays where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel, prepareChannel', prepareChannel1Relay, setupRelay)
-import ChatTests.Profiles (addTestBadge, issueTestBadge, testBadgeKeys)
+import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import qualified Data.Aeson as J
@@ -67,8 +67,8 @@ testChannelMemberBadges ps = do
   withNewTestChatCfgOpts ps cfg testOpts "alice" aliceProfile $ \alice ->
     withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChatCfgOpts ps cfg testOpts "cath" cathProfile $ \cath -> do
-        addTestBadge alice =<< issueTestBadge sk Nothing
-        addTestBadge cath =<< issueTestBadge sk Nothing
+        addTestBadge alice =<< issueTestBadge sk futureDate
+        addTestBadge cath =<< issueTestBadge sk futureDate
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
         memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
         -- a channel message lets the relay-forwarded member profiles settle on both sides
@@ -81,13 +81,13 @@ testChannelMemberBadges ps = do
         alice <## "group ID: 1"
         alice <##. "member ID: "
         alice <## "supporter badge - active"
-        alice <## "no expiry"
+        alice <## "expires 2100-01-01"
         alice <## "member not connected"
         cath ##> "/i #team alice"
         cath <## "group ID: 1"
         cath <##. "member ID: "
         cath <## "supporter badge - active"
-        cath <## "no expiry"
+        cath <## "expires 2100-01-01"
         cath <## "member not connected"
 
 testGetSetChatRelays :: HasCallStack => TestParams -> IO ()

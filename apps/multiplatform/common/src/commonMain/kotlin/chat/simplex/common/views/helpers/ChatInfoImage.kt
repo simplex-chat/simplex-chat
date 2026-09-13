@@ -231,10 +231,9 @@ fun showBadgeInfoAlert(name: String, badge: LocalBadge, uriHandler: UriHandler) 
       )
     else -> {
       // Supporter, Legend and unknown types use the supporter wording
-      val expiry = badge.badge.badgeExpiry
       val supports =
-        if (badge.status == BadgeStatus.Expired && expiry != null)
-          String.format(generalGetString(MR.strings.badge_supported_simplex), name, localDate(expiry))
+        if (badge.status == BadgeStatus.Expired)
+          String.format(generalGetString(MR.strings.badge_supported_simplex), name, localDate(badge.badge.badgeExpiry))
         else
           String.format(generalGetString(MR.strings.badge_supports_simplex), name)
       AlertManager.shared.showAlertMsg(

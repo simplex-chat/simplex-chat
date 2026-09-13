@@ -289,6 +289,7 @@ desktop/src/jvmMain/kotlin/chat/simplex/desktop/ -- Desktop app (1 file)
 | common/.../common/StoreWindowState.kt (desktopMain) | spec/architecture.md | product/views/settings.md |
 | common/.../common/model/NtfManager.desktop.kt (desktopMain) | spec/services/notifications.md | product/flows/messaging.md |
 | common/.../common/views/helpers/AppUpdater.kt (desktopMain) | spec/architecture.md | product/views/settings.md |
+| common/.../common/platform/AnimatedImage.desktop.kt (desktopMain) | spec/client/chat-view.md | product/views/chat.md |
 
 ### Haskell Core Sources (at `../../src/Simplex/Chat/` relative to `apps/multiplatform/`)
 

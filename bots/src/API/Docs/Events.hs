@@ -133,7 +133,6 @@ chatEventsDocsData =
         ("CEvtContactConnecting", "Contact confirmed connection.\n\nSent when contact started connecting via bot's 1-time invitation link or when bot connects to another SimpleX address."), -- CONF
         ("CEvtBusinessLinkConnecting", "Contact confirmed connection.\n\nSent when bot connects to another business address."), -- CONF
         ("CEvtJoinedGroupMemberConnecting", "Group member is announced to the group and will be connecting to bot."), -- MSG
-        ("CEvtSentGroupInvitation", "Sent when another user joins group via bot's link."), -- INV
         ("CEvtGroupLinkConnecting", "Sent when bot joins group via another user link.") -- CONF
       ],
       []
@@ -143,6 +142,20 @@ chatEventsDocsData =
       [ ("CEvtHostConnected", "Messaging or file server connected"),
         ("CEvtHostDisconnected", "Messaging or file server disconnected"),
         ("CEvtSubscriptionStatus", "Messaging subscription status changed")
+      ],
+      []
+    ),
+    ( "Service events",
+      "Bots with a double ratchet address, started with service request processing enabled, can answer service requests - a single request with a single response (RPC).",
+      [ ("CEvtServiceRequest", "Service request received.\n\nThe request needs to be answered using [APISendServiceResponse](./COMMANDS.md#apisendserviceresponse) command."),
+        ("CEvtServiceReplySent", "Service reply was sent (delivered to the server).\n\nCorrelate `connectionId` with the connection ID from the response to [APISendServiceResponse](./COMMANDS.md#apisendserviceresponse) to learn when the reply is delivered.")
+      ],
+      []
+    ),
+    ( "Remote control events",
+      "Bots that act as remote control hosts receive these events during the remote control session lifecycle.",
+      [ ("CEvtRemoteCtrlSessionCode", "Remote controller session code ready for verification.\n\nUse [VerifyRemoteCtrlSession](./COMMANDS.md#verifyremotectrlsession) to complete the connection."),
+        ("CEvtRemoteCtrlStopped", "Remote controller session stopped.")
       ],
       []
     ),
@@ -184,6 +197,7 @@ undocumentedEvents =
     "CEvtContactPQEnabled",
     "CEvtContactRatchetSync",
     "CEvtContactRequestAlreadyAccepted",
+    "CEvtContactRequestRejected",
     "CEvtContactSwitch",
     "CEvtCustomChatEvent",
     "CEvtGroupMemberRatchetSync",
@@ -196,8 +210,6 @@ undocumentedEvents =
     "CEvtRcvFileProgressXFTP",
     "CEvtRcvStandaloneFileComplete",
     "CEvtRemoteCtrlFound",
-    "CEvtRemoteCtrlSessionCode",
-    "CEvtRemoteCtrlStopped",
     "CEvtRemoteHostConnected",
     "CEvtRemoteHostSessionCode",
     "CEvtRemoteHostStopped",

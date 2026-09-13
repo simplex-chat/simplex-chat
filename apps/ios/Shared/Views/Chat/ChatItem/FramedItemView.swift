@@ -75,7 +75,35 @@ struct FramedItemView: View {
                             }
                         })
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
-                    framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
+                    let twoRowHeader: Bool = if chat.chatInfo.chatType == .local {
+                        itemForwarded.chatTypeApiIdMsgId != nil || itemForwarded.sourceGroupLink != nil
+                    } else {
+                        switch itemForwarded {
+                        case let .group(_, _, _, _, _, _, groupType): groupType != nil
+                        case .groupLink: true
+                        default: false
+                        }
+                    }
+                    if twoRowHeader {
+                        let caption: LocalizedStringKey = chat.chatInfo.chatType == .local ? "saved from" : "forwarded from"
+                        headerFrame(pad: true) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                headerRow(icon: "arrowshape.turn.up.forward", caption: Text(caption).italic())
+                                Text(itemForwarded.chatName)
+                                    .font(.subheadline)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .simultaneousGesture(TapGesture().onEnded {
+                            if let (chatType, apiId, msgId) = itemForwarded.chatTypeApiIdMsgId {
+                                im.loadOpenChatNoWait("\(chatType.rawValue)\(apiId)", msgId)
+                            } else if let link = itemForwarded.sourceGroupLink {
+                                planAndConnect(link, theme: theme, dismiss: false)
+                            }
+                        })
+                    } else {
+                        framedItemHeader(icon: "arrowshape.turn.up.forward", caption: Text(itemForwarded.text(chat.chatInfo.chatType)).italic(), pad: true)
+                    }
                 }
 
                 ChatItemContentView(chat: chat, im: im, chatItem: chatItem, msgContentView: framedMsgContentView)
@@ -127,7 +155,7 @@ struct FramedItemView: View {
         } else {
             switch (chatItem.content.msgContent) {
             case let .image(text, _):
-                CIImageView(chatItem: chatItem, senderProfile: ciSenderProfile(chatItem, chat.chatInfo), scrollToItem: scrollToItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth, showFullScreenImage: $showFullscreenGallery)
+                CIImageView(chatItem: chatItem, scrollToItem: scrollToItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth, showFullScreenImage: $showFullscreenGallery)
                     .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -142,7 +170,7 @@ struct FramedItemView: View {
                     ciMsgContentView(chatItem)
                 }
             case let .video(text, _, duration):
-                CIVideoView(chatItem: chatItem, senderProfile: ciSenderProfile(chatItem, chat.chatInfo), preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth, showFullscreenPlayer: $showFullscreenGallery)
+                CIVideoView(chatItem: chatItem, preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth, showFullscreenPlayer: $showFullscreenGallery)
                 .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -191,8 +219,14 @@ struct FramedItemView: View {
         }
     }
 
-    @ViewBuilder func framedItemHeader(icon: String? = nil, iconColor: Color? = nil, caption: Text, pad: Bool = false) -> some View {
-        let v = HStack(spacing: 6) {
+    func framedItemHeader(icon: String? = nil, iconColor: Color? = nil, caption: Text, pad: Bool = false) -> some View {
+        headerFrame(pad: pad) {
+            headerRow(icon: icon, iconColor: iconColor, caption: caption)
+        }
+    }
+
+    private func headerRow(icon: String?, iconColor: Color? = nil, caption: Text) -> some View {
+        HStack(spacing: 6) {
             if let icon = icon {
                 Image(systemName: icon)
                     .resizable()
@@ -204,13 +238,17 @@ struct FramedItemView: View {
                 .font(.caption)
                 .lineLimit(1)
         }
-        .foregroundColor(theme.colors.secondary)
-        .padding(.horizontal, 12)
-        .padding(.top, 6)
-        .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
-        .overlay(DetermineWidth())
-        .frame(minWidth: msgWidth, alignment: .leading)
-        .background(chatItemFrameContextColor(chatItem, theme))
+    }
+
+    @ViewBuilder private func headerFrame(pad: Bool = false, @ViewBuilder _ content: () -> some View) -> some View {
+        let v = content()
+            .foregroundColor(theme.colors.secondary)
+            .padding(.horizontal, 12)
+            .padding(.top, 6)
+            .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
+            .overlay(DetermineWidth())
+            .frame(minWidth: msgWidth, alignment: .leading)
+            .background(chatItemFrameContextColor(chatItem, theme))
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
@@ -349,7 +387,7 @@ struct FramedItemView: View {
     }
 
     @ViewBuilder private func ciFileView(_ ci: ChatItem, _ text: String) -> some View {
-        CIFileView(chat: chat, file: chatItem.file, meta: chatItem.meta, senderProfile: ciSenderProfile(chatItem, chat.chatInfo))
+        CIFileView(chat: chat, file: chatItem.file, meta: chatItem.meta)
             .overlay(DetermineWidth())
         if text != "" || ci.meta.isLive {
             ciMsgContentView (chatItem)

@@ -10,6 +10,7 @@ export type ChatResponse =
   | CR.ChatItemReaction
   | CR.ChatItemUpdated
   | CR.ChatItemsDeleted
+  | CR.ChatMsgContent
   | CR.ChatRunning
   | CR.ChatStarted
   | CR.ChatStopped
@@ -36,6 +37,7 @@ export type ChatResponse =
   | CR.GroupMembers
   | CR.GroupUpdated
   | CR.GroupsList
+  | CR.GroupDomainVerified
   | CR.Invitation
   | CR.LeftMemberUser
   | CR.MemberAccepted
@@ -45,10 +47,16 @@ export type ChatResponse =
   | CR.RcvFileAccepted
   | CR.RcvFileAcceptedSndCancelled
   | CR.RcvFileCancelled
+  | CR.RemoteCtrlConnected
+  | CR.RemoteCtrlConnecting
   | CR.SentConfirmation
   | CR.SentGroupInvitation
   | CR.SentInvitation
+  | CR.SentInvitationToContact
+  | CR.ServiceReplyAccepted
   | CR.SndFileCancelled
+  | CR.StartedConnectionToContact
+  | CR.StartedConnectionToGroup
   | CR.UserAcceptedGroupSent
   | CR.UserContactLink
   | CR.UserContactLinkCreated
@@ -68,6 +76,7 @@ export namespace CR {
     | "chatItemReaction"
     | "chatItemUpdated"
     | "chatItemsDeleted"
+    | "chatMsgContent"
     | "chatRunning"
     | "chatStarted"
     | "chatStopped"
@@ -94,6 +103,7 @@ export namespace CR {
     | "groupMembers"
     | "groupUpdated"
     | "groupsList"
+    | "groupDomainVerified"
     | "invitation"
     | "leftMemberUser"
     | "memberAccepted"
@@ -103,10 +113,16 @@ export namespace CR {
     | "rcvFileAccepted"
     | "rcvFileAcceptedSndCancelled"
     | "rcvFileCancelled"
+    | "remoteCtrlConnected"
+    | "remoteCtrlConnecting"
     | "sentConfirmation"
     | "sentGroupInvitation"
     | "sentInvitation"
+    | "sentInvitationToContact"
+    | "serviceReplyAccepted"
     | "sndFileCancelled"
+    | "startedConnectionToContact"
+    | "startedConnectionToGroup"
     | "userAcceptedGroupSent"
     | "userContactLink"
     | "userContactLinkCreated"
@@ -158,6 +174,12 @@ export namespace CR {
     chatItemDeletions: T.ChatItemDeletion[]
     byUser: boolean
     timed: boolean
+  }
+
+  export interface ChatMsgContent extends Interface {
+    type: "chatMsgContent"
+    user: T.User
+    msgContent: T.MsgContent
   }
 
   export interface ChatRunning extends Interface {
@@ -234,6 +256,7 @@ export namespace CR {
     user: T.User
     groupInfo: T.GroupInfo
     msgSigned: boolean
+    localDeletion: boolean
   }
 
   export interface GroupLink extends Interface {
@@ -324,6 +347,13 @@ export namespace CR {
     groups: T.GroupInfo[]
   }
 
+  export interface GroupDomainVerified extends Interface {
+    type: "groupDomainVerified"
+    user: T.User
+    groupInfo: T.GroupInfo
+    verificationFailure?: string
+  }
+
   export interface Invitation extends Interface {
     type: "invitation"
     user: T.User
@@ -387,6 +417,19 @@ export namespace CR {
     rcvFileTransfer: T.RcvFileTransfer
   }
 
+  export interface RemoteCtrlConnected extends Interface {
+    type: "remoteCtrlConnected"
+    remoteCtrl: T.RemoteCtrlInfo
+    compression: boolean
+  }
+
+  export interface RemoteCtrlConnecting extends Interface {
+    type: "remoteCtrlConnecting"
+    remoteCtrl_?: T.RemoteCtrlInfo
+    ctrlAppInfo: T.CtrlAppInfo
+    appVersion: string
+  }
+
   export interface SentConfirmation extends Interface {
     type: "sentConfirmation"
     user: T.User
@@ -409,12 +452,40 @@ export namespace CR {
     customUserProfile?: T.Profile
   }
 
+  export interface SentInvitationToContact extends Interface {
+    type: "sentInvitationToContact"
+    user: T.User
+    contact: T.Contact
+    customUserProfile?: T.Profile
+  }
+
+  export interface ServiceReplyAccepted extends Interface {
+    type: "serviceReplyAccepted"
+    user: T.User
+    connectionId: string
+  }
+
   export interface SndFileCancelled extends Interface {
     type: "sndFileCancelled"
     user: T.User
     chatItem_?: T.AChatItem
     fileTransferMeta: T.FileTransferMeta
     sndFileTransfers: T.SndFileTransfer[]
+  }
+
+  export interface StartedConnectionToContact extends Interface {
+    type: "startedConnectionToContact"
+    user: T.User
+    contact: T.Contact
+    customUserProfile?: T.Profile
+  }
+
+  export interface StartedConnectionToGroup extends Interface {
+    type: "startedConnectionToGroup"
+    user: T.User
+    groupInfo: T.GroupInfo
+    customUserProfile?: T.Profile
+    relayResults: T.RelayConnectionResult[]
   }
 
   export interface UserAcceptedGroupSent extends Interface {

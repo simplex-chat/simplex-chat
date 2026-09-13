@@ -12,16 +12,14 @@ import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
-import Control.Monad (forM_, void, when)
+import Control.Monad (forM_, when, void)
 import qualified Data.Aeson as J
 import qualified Data.Text as T
 import Directory.Captcha
 import Directory.Listing
 import Directory.Options
 import Directory.Service
-import Directory.Store
 import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
-import System.IO (hClose)
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..))
 import qualified Simplex.Chat.Markdown as MD
@@ -54,6 +52,7 @@ directoryServiceTests = do
     it "should de-list if owner is removed from the group" testDelistedOwnerRemoved
     it "should NOT de-list if another member leaves the group" testNotDelistedMemberLeaves
     it "should NOT de-list if another member is removed from the group" testNotDelistedMemberRemoved
+    it "should NOT de-list if the owner rejoins via the group link and leaves the second membership" testNotDelistedOwnerRejoinsViaLink
     it "should de-list if service is removed from the group" testDelistedServiceRemoved
     it "should de-list if group is deleted" testDelistedGroupDeleted
     it "should de-list/re-list when service/owner roles change" testDelistedRoleChanges
@@ -79,6 +78,7 @@ directoryServiceTests = do
   describe "member admission" $ do
     it "should require captcha by default for new groups" testCaptchaByDefault
     it "should require captcha in all groups with --always-captcha" testAlwaysCaptcha
+    it "should make joining members observers in all groups with --always-observer" testAlwaysObserver
     it "should require admin review in all groups with --knocking" testKnocking
     it "should ask member to pass captcha screen" testCapthaScreening
     it "should send voice captcha on /audio command" testVoiceCaptchaScreening
@@ -137,8 +137,6 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
       profileNameLimit = maxBound,
       captchaGenerator = Nothing,
       voiceCaptchaGenerator = Nothing,
-      directoryLog = Just $ ps </> "directory_service.log",
-      migrateDirectoryLog = Nothing,
       serviceName = "SimpleX Directory",
       clientService = True,
       runCLI = False,
@@ -147,6 +145,7 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
       linkCheckInterval = 0,
       prohibitedToObserver = False,
       alwaysCaptcha = False,
+      alwaysObserver = False,
       knocking = False,
       testing = True
     }
@@ -346,7 +345,7 @@ testDeleteGroupAdmin ps =
         submitGroup bob "security" "Security"
         bob <# "'SimpleX Directory'> The group security (Security) is already listed in the directory, please choose another name."
         bob ##> "/d #security"
-        bob <## "#security: you deleted the group"
+        bob <## "#security: you deleted the group (signed)"
         -- admin can delete the group
         superUser #> "@'SimpleX Directory' /delete 2:security"
         superUser <# "'SimpleX Directory'> > /delete 2:security"
@@ -625,7 +624,7 @@ testInviteOwnerAfterLeavingOwnersGroup ps =
       superUser <## "#owners: new member bob is connected"
       -- owner leaves owners' group; GroupMember row keeps status GSMemLeft
       leaveGroup "owners" bob
-      superUser <## "#owners: bob left the group"
+      superUser <## "#owners: bob left the group (signed)"
       -- owners' group has no GroupReg, so directory service notifies admins on contact left
       superUser <# "'SimpleX Directory'> Error: contact left, group: 1 owners, group registration not found"
       -- super-user re-invites via /invite — must send a fresh invitation, not "already a member"
@@ -644,7 +643,7 @@ testDelistedOwnerLeaves ps =
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
         leaveGroup "privacy" bob
-        cath <## "#privacy: bob left the group"
+        cath <## "#privacy: bob left the group (signed)"
         bob <# "'SimpleX Directory'> You left the group ID 1 (privacy)."
         bob <## ""
         bob <## "The group is no longer listed in the directory."
@@ -681,7 +680,7 @@ testNotDelistedMemberLeaves ps =
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
         leaveGroup "privacy" cath
-        bob <## "#privacy: cath left the group"
+        bob <## "#privacy: cath left the group (signed)"
         (superUser </)
         cath `connectVia` dsLink
         cath #> "@'SimpleX Directory_1' privacy"
@@ -701,6 +700,56 @@ testNotDelistedMemberRemoved ps =
         cath #> "@'SimpleX Directory_1' privacy"
         groupFoundN_ "_1" Nothing 2 cath "privacy"
 
+-- Reproduces the de-listing bug where a non-owner member associated with the
+-- registration owner's contact (via the probe-and-merge mechanism) de-lists the
+-- group when it leaves. The owner joins the directory-managed link a second time
+-- (a single client owning both connection ends completes the merge with no
+-- modified client), then leaves that second membership while remaining the owner.
+testNotDelistedOwnerRejoinsViaLink :: HasCallStack => TestParams -> IO ()
+testNotDelistedOwnerRejoinsViaLink ps =
+  withDirectoryService ps $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      submitGroup bob "privacy" "Privacy"
+      groupAccepted bob "privacy" 1
+      welcomeWithLink <- completeRegistration superUser bob "privacy" "Privacy" 1
+      let groupLink = dropStrPrefix "Link to join the group privacy: " welcomeWithLink
+      -- turn off the captcha filter so the owner's re-join is not screened
+      bob #> "@'SimpleX Directory' /filter 1 off"
+      bob <# "'SimpleX Directory'> > /filter 1 off"
+      bob <## "      Spam filter settings for group privacy set to:"
+      bob <## "- reject long/inappropriate names: disabled"
+      bob <## "- pass captcha to join: disabled"
+      bob <## ""
+      bob <## "/'filter 1 name' - enable name filter"
+      bob <## "/'filter 1 captcha' - enable captcha challenge"
+      bob <## "/'filter 1 name captcha' - enable both"
+      -- the registration owner connects to the directory-managed link again,
+      -- creating a second membership that the probe-and-merge mechanism
+      -- associates with the owner's own contact on the directory service
+      bob ##> ("/c " <> groupLink)
+      bob <## "connection request sent!"
+      bob <## "#privacy_1: joining the group..."
+      bob <## "#privacy_1: you joined the group"
+      bob
+        <### [ "#privacy: 'SimpleX Directory' added bob_1 (Bob) to the group (connecting...)",
+               "contact and member are merged: 'SimpleX Directory', #privacy_1 'SimpleX Directory_1'",
+               "use @'SimpleX Directory' <message> to send messages",
+               "#privacy_1: member bob_2 (Bob) is connected",
+               "#privacy: new member bob_1 is connected"
+             ]
+      -- allow the directory service to complete the contact/member merge that
+      -- associates the second membership (bob_1) with bob's contact
+      threadDelay 3000000
+      -- owner leaves the second membership, which is not the owner member
+      bob ##> "/l privacy_1"
+      bob <## "#privacy_1: you left the group"
+      bob <## "use /d #privacy_1 to delete the group"
+      bob <## "#privacy: bob_1 left the group (signed)"
+      -- the group must remain listed: the leaving member is not the owner member
+      (superUser </)
+      groupFound bob "privacy"
+
 testDelistedServiceRemoved :: HasCallStack => TestParams -> IO ()
 testDelistedServiceRemoved ps =
   withDirectoryService ps $ \superUser dsLink ->
@@ -710,8 +759,8 @@ testDelistedServiceRemoved ps =
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
         bob ##> "/rm #privacy 'SimpleX Directory'"
-        bob <## "#privacy: you removed 'SimpleX Directory' from the group"
-        cath <## "#privacy: bob removed 'SimpleX Directory' from the group"
+        bob <## "#privacy: you removed 'SimpleX Directory' from the group (signed)"
+        cath <## "#privacy: bob removed 'SimpleX Directory' from the group (signed)"
         bob <# "'SimpleX Directory'> SimpleX Directory is removed from the group ID 1 (privacy)."
         bob <## ""
         bob <## "The group is no longer listed in the directory."
@@ -734,11 +783,11 @@ testDelistedGroupDeleted ps =
         cath <## "contact and member are merged: 'SimpleX Directory', #privacy 'SimpleX Directory_1'"
         cath <## "use @'SimpleX Directory' <message> to send messages"
         bob ##> "/d #privacy"
-        bob <## "#privacy: you deleted the group"
+        bob <## "#privacy: you deleted the group (signed)"
         bob <# "'SimpleX Directory'> The group ID 1 (privacy) is deleted."
         bob <## ""
         bob <## "The group is no longer listed in the directory."
-        cath <## "#privacy: bob deleted the group"
+        cath <## "#privacy: bob deleted the group (signed)"
         cath <## "use /d #privacy to delete the local copy of the group"
         superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is de-listed (group is deleted)."
         groupNotFound cath "privacy"
@@ -757,8 +806,8 @@ testDelistedRoleChanges ps =
         groupFoundN 3 cath "privacy"
         -- de-listed if service role changed
         bob ##> "/mr privacy 'SimpleX Directory' member"
-        bob <## "#privacy: you changed the role of 'SimpleX Directory' to member"
-        cath <## "#privacy: bob changed the role of 'SimpleX Directory' from admin to member"
+        bob <## "#privacy: you changed the role of 'SimpleX Directory' to member (signed)"
+        cath <## "#privacy: bob changed the role of 'SimpleX Directory' from admin to member (signed)"
         bob <# "'SimpleX Directory'> SimpleX Directory role in the group ID 1 (privacy) is changed to member."
         bob <## ""
         bob <## "The group is no longer listed in the directory."
@@ -766,8 +815,8 @@ testDelistedRoleChanges ps =
         groupNotFound cath "privacy"
         -- re-listed if service role changed back without profile changes
         cath ##> "/mr privacy 'SimpleX Directory' admin"
-        cath <## "#privacy: you changed the role of 'SimpleX Directory' to admin"
-        bob <## "#privacy: cath changed the role of 'SimpleX Directory' from member to admin"
+        cath <## "#privacy: you changed the role of 'SimpleX Directory' to admin (signed)"
+        bob <## "#privacy: cath changed the role of 'SimpleX Directory' from member to admin (signed)"
         bob <# "'SimpleX Directory'> SimpleX Directory role in the group ID 1 (privacy) is changed to admin."
         bob <## ""
         bob <## "The group is listed in the directory again."
@@ -775,8 +824,8 @@ testDelistedRoleChanges ps =
         groupFoundN 3 cath "privacy"
         -- de-listed if owner role changed
         cath ##> "/mr privacy bob admin"
-        cath <## "#privacy: you changed the role of bob to admin"
-        bob <## "#privacy: cath changed your role from owner to admin"
+        cath <## "#privacy: you changed the role of bob to admin (signed)"
+        bob <## "#privacy: cath changed your role from owner to admin (signed)"
         bob <# "'SimpleX Directory'> Your role in the group ID 1 (privacy) is changed to admin."
         bob <## ""
         bob <## "The group is no longer listed in the directory."
@@ -784,8 +833,8 @@ testDelistedRoleChanges ps =
         groupNotFound cath "privacy"
         -- re-listed if owner role changed back without profile changes
         cath ##> "/mr privacy bob owner"
-        cath <## "#privacy: you changed the role of bob to owner"
-        bob <## "#privacy: cath changed your role from admin to owner"
+        cath <## "#privacy: you changed the role of bob to owner (signed)"
+        bob <## "#privacy: cath changed your role from admin to owner (signed)"
         bob <# "'SimpleX Directory'> Your role in the group ID 1 (privacy) is changed to owner."
         bob <## ""
         bob <## "The group is listed in the directory again."
@@ -805,8 +854,8 @@ testNotDelistedMemberRoleChanged ps =
         cath <## "use @'SimpleX Directory' <message> to send messages"
         groupFoundN 3 cath "privacy"
         bob ##> "/mr privacy cath member"
-        bob <## "#privacy: you changed the role of cath to member"
-        cath <## "#privacy: bob changed your role from owner to member"
+        bob <## "#privacy: you changed the role of cath to member (signed)"
+        cath <## "#privacy: bob changed your role from owner to member (signed)"
         groupFoundN 3 cath "privacy"
 
 testNotSentApprovalBadRoles :: HasCallStack => TestParams -> IO ()
@@ -820,13 +869,13 @@ testNotSentApprovalBadRoles ps =
         groupAccepted bob "privacy" 1
         notifySuperUser superUser bob "privacy" "Privacy" 1
         bob ##> "/mr privacy 'SimpleX Directory' member"
-        bob <## "#privacy: you changed the role of 'SimpleX Directory' to member"
+        bob <## "#privacy: you changed the role of 'SimpleX Directory' to member (signed)"
         bob ##> "/gp privacy privacy Privacy!"
         bob <## "description changed to: Privacy!"
         groupUpdatedHidden superUser bob "privacy" ""
         bob <# "'SimpleX Directory'> You must grant directory service admin role to register the group"
         bob ##> "/mr privacy 'SimpleX Directory' admin"
-        bob <## "#privacy: you changed the role of 'SimpleX Directory' to admin"
+        bob <## "#privacy: you changed the role of 'SimpleX Directory' to admin (signed)"
         bob <# "'SimpleX Directory'> SimpleX Directory role in the group ID 1 (privacy) is changed to admin."
         bob <## ""
         bob <## "The group is submitted for approval."
@@ -846,14 +895,14 @@ testNotApprovedBadRoles ps =
         groupAccepted bob "privacy" 1
         notifySuperUser superUser bob "privacy" "Privacy" 1
         bob ##> "/mr privacy 'SimpleX Directory' member"
-        bob <## "#privacy: you changed the role of 'SimpleX Directory' to member"
+        bob <## "#privacy: you changed the role of 'SimpleX Directory' to member (signed)"
         let approve = "/approve 1:privacy 1"
         superUser #> ("@'SimpleX Directory' " <> approve)
         superUser <# ("'SimpleX Directory'> > " <> approve)
         superUser <## "      Group is not approved: SimpleX Directory is not an admin."
         groupNotFound cath "privacy"
         bob ##> "/mr privacy 'SimpleX Directory' admin"
-        bob <## "#privacy: you changed the role of 'SimpleX Directory' to admin"
+        bob <## "#privacy: you changed the role of 'SimpleX Directory' to admin (signed)"
         bob <# "'SimpleX Directory'> SimpleX Directory role in the group ID 1 (privacy) is changed to admin."
         bob <## ""
         bob <## "The group is submitted for approval."
@@ -873,7 +922,7 @@ testRegOwnerChangedProfile ps =
         bob <## "description changed to: Privacy and Security"
         bob <# "'SimpleX Directory'> The group ID 1 (privacy) is updated!"
         bob <## "It is hidden from the directory until approved."
-        cath <## "bob updated group #privacy:"
+        cath <## "bob updated group #privacy: (signed)"
         cath <## "description changed to: Privacy and Security"
         cath `connectVia` dsLink
         cath <## "contact and member are merged: 'SimpleX Directory_1', #privacy 'SimpleX Directory'"
@@ -896,7 +945,7 @@ testAnotherOwnerChangedProfile ps =
         cath <## "use @'SimpleX Directory' <message> to send messages"
         cath ##> "/gp privacy privacy Privacy and Security"
         cath <## "description changed to: Privacy and Security"
-        bob <## "cath updated group #privacy:"
+        bob <## "cath updated group #privacy: (signed)"
         bob <## "description changed to: Privacy and Security"
         bob <# "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath!"
         bob <## "It is hidden from the directory until approved."
@@ -917,7 +966,7 @@ testNotConnectedOwnerChangedProfile ps =
           addCathAsOwner bob cath
           cath ##> "/gp privacy privacy Privacy and Security"
           cath <## "description changed to: Privacy and Security"
-          bob <## "cath updated group #privacy:"
+          bob <## "cath updated group #privacy: (signed)"
           bob <## "description changed to: Privacy and Security"
           bob <# "'SimpleX Directory'> The group ID 1 (privacy) is updated by cath!"
           bob <## "It is hidden from the directory until approved."
@@ -1129,7 +1178,7 @@ testListUserGroups promote ps =
         -- with de-listed group
         groupFound cath "anonymity"
         cath ##> "/mr anonymity 'SimpleX Directory' member"
-        cath <## "#anonymity: you changed the role of 'SimpleX Directory' to member"
+        cath <## "#anonymity: you changed the role of 'SimpleX Directory' to member (signed)"
         cath <# "'SimpleX Directory'> SimpleX Directory role in the group ID 1 (anonymity) is changed to member."
         cath <## ""
         cath <## "The group is no longer listed in the directory."
@@ -1144,7 +1193,7 @@ testListUserGroups promote ps =
           checkListings ["privacy", "security"] ["privacy"]
           bob ##> "/gp privacy privacy"
           bob <## "description removed"
-          cath <## "bob updated group #privacy:"
+          cath <## "bob updated group #privacy: (signed)"
           cath <## "description removed"
           groupUpdatedHidden superUser bob "privacy" ""
           superUser <# "'SimpleX Directory'> bob submitted the group ID 1:"
@@ -1210,6 +1259,34 @@ testAlwaysCaptcha ps =
         cath <## "#privacy: member bob (Bob) is connected"
         bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
         bob <## "#privacy: new member cath is connected"
+
+testAlwaysObserver :: HasCallStack => TestParams -> IO ()
+testAlwaysObserver ps =
+  withDirectoryServiceOpts ps (\o -> o {alwaysObserver = True}) $ \superUser dsLink ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        submitGroup bob "privacy" "Privacy"
+        groupAccepted bob "privacy" 1
+        welcomeWithLink <- completeRegistration superUser bob "privacy" "Privacy" 1
+        let groupLink = dropStrPrefix "Link to join the group privacy: " welcomeWithLink
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        captcha <- dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
+        cath #> ("#privacy (support) " <> captcha)
+        cath <# ("#privacy (support) 'SimpleX Directory'!> > cath " <> captcha)
+        cath <## "      Correct, you joined the group privacy"
+        cath <## "#privacy: you joined the group"
+        cath <## "#privacy: member bob (Bob) is connected"
+        bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
+        bob <## "#privacy: new member cath is connected"
+        cath ##> "#privacy hello"
+        cath <## "#privacy: you don't have permission to send messages"
 
 testKnocking :: HasCallStack => TestParams -> IO ()
 testKnocking ps =
@@ -1295,9 +1372,9 @@ testCapthaScreening ps =
         cath ##> "/l privacy"
         cath <## "#privacy: you left the group"
         cath <## "use /d #privacy to delete the group"
-        bob <## "#privacy: cath left the group"
+        bob <## "#privacy: cath left the group (signed)"
         cath ##> "/d #privacy"
-        cath <## "#privacy: you deleted the group"
+        cath <## "#privacy: you deleted your local copy of the group"
         -- change default role to observer
         bob #> "@'SimpleX Directory' /role 1 observer"
         bob <# "'SimpleX Directory'> > /role 1 observer"
@@ -1737,11 +1814,10 @@ withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
       test superUser dsLink
 
 runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()
-runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
-  st <- openDirectoryLog directoryLog
-  t <- forkIO $ directoryService st opts cfg
+runDirectory cfg opts action = do
+  t <- forkIO $ directoryService opts cfg
   threadDelay 500000
-  action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)
+  action `finally` killThread t
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1
@@ -1842,7 +1918,7 @@ setWelcomeMessage u others welcome = do
   u <## "welcome message changed to:"
   u <## welcome
   forM_ others $ \m -> do
-    m <## (uName <> " updated group #privacy:")
+    m <## (uName <> " updated group #privacy: (signed)")
     m <## "welcome message changed to:"
     m <## welcome
 
@@ -1880,8 +1956,8 @@ removeMember gName admin removed = do
   adminName <- userName admin
   removedName <- userName removed
   admin ##> ("/rm " <> gName <> " " <> removedName)
-  admin <## (gn <> ": you removed " <> removedName <> " from the group")
-  removed <## (gn <> ": " <> adminName <> " removed you from the group")
+  admin <## (gn <> ": you removed " <> removedName <> " from the group (signed)")
+  removed <## (gn <> ": " <> adminName <> " removed you from the group (signed)")
   removed <## ("use /d " <> gn <> " to delete the group")
 
 groupFound :: TestCC -> String -> IO ()

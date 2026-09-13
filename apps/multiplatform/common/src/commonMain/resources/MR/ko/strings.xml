@@ -468,6 +468,10 @@
     <string name="group_member_status_left">나감</string>
     <string name="group_member_role_member">멤버</string>
     <string name="group_member_role_owner">소유자</string>
+    <string name="connect_plan_you_are_observer">당신은 관찰자입니다</string>
+    <string name="connect_plan_you_are_member">당신은 멤버입니다</string>
+    <string name="connect_plan_you_are_admin">당신은 관리자입니다</string>
+    <string name="connect_plan_you_are_owner">당신은 소유자입니다</string>
     <string name="group_member_status_group_deleted">그룹 삭제됨</string>
     <string name="group_member_status_invited">초대됨</string>
     <string name="group_member_status_removed">강퇴됨</string>

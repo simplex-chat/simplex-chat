@@ -72,7 +72,6 @@ kotlin {
         api("org.jetbrains.compose.ui:ui-text:${rootProject.extra["compose.version"] as String}")
         implementation("org.jetbrains.compose.material:material-icons-core:1.7.3")
         implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
-        implementation("org.jetbrains.compose.components:components-animatedimage:${rootProject.extra["compose.version"] as String}")
         //Barcode
         api("org.boofcv:boofcv-core:1.1.3")
         implementation("com.godaddy.android.colorpicker:compose-color-picker-jvm:0.7.0")

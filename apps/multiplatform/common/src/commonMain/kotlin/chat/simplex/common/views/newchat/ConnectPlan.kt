@@ -656,11 +656,24 @@ private fun showOpenKnownGroupAlert(chatModel: ChatModel, rhId: Long?, close: ((
     },
     nameCaption = planSimplexName?.shortStr,
     subtitle = subscriberCount,
+    information = if (groupInfo.nextConnectPrepared || groupInfo.businessChat != null) {
+      null
+    } else {
+      val isChannel = groupInfo.useRelays
+      generalGetString(when (groupInfo.membership.memberRole) {
+        GroupMemberRole.Observer -> if (isChannel) MR.strings.connect_plan_you_are_subscriber else MR.strings.connect_plan_you_are_observer
+        GroupMemberRole.Moderator -> MR.strings.connect_plan_you_are_moderator
+        GroupMemberRole.Admin -> MR.strings.connect_plan_you_are_admin
+        GroupMemberRole.Owner -> MR.strings.connect_plan_you_are_owner
+        else -> if (isChannel) MR.strings.connect_plan_you_are_contributor else MR.strings.connect_plan_you_are_member
+      })
+    },
+    secondaryInformation = true,
     confirmText = generalGetString(
       if (groupInfo.useRelays) {
-        if (groupInfo.nextConnectPrepared) MR.strings.connect_plan_open_new_channel else MR.strings.connect_plan_open_channel
+        MR.strings.connect_plan_open_channel
       } else if (groupInfo.businessChat == null) {
-        if (groupInfo.nextConnectPrepared) MR.strings.connect_plan_open_new_group else MR.strings.connect_plan_open_group
+        MR.strings.connect_plan_open_group
       } else {
         if (groupInfo.nextConnectPrepared) MR.strings.connect_plan_open_new_chat else MR.strings.connect_plan_open_chat
       }
@@ -761,7 +774,7 @@ fun showPrepareGroupAlert(
     nameCaption = planSimplexName?.shortStr,
     subtitle = subscriberCount,
     information = ownerVerificationMessage(ownerVerification),
-    confirmText = generalGetString(if (isChannel) MR.strings.connect_plan_open_new_channel else MR.strings.connect_plan_open_new_group),
+    confirmText = generalGetString(if (isChannel) MR.strings.connect_plan_open_channel else MR.strings.connect_plan_open_group),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
