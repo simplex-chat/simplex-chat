@@ -174,7 +174,7 @@ directoryOpts appDir defaultDbName = do
   alwaysObserver <-
     switch
       ( long "always-observer"
-          <> help "Make joining members observers in all groups, regardless of per-group filter settings and initial member role"
+          <> help "Make joining members observers in all groups, regardless of per-group setting in directory"
       )
   knocking <-
     switch
