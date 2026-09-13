@@ -469,10 +469,10 @@ sndBadgeProof_ User {profile = LocalProfile {localBadge}} ph = case localBadge o
           Left e -> Nothing <$ logError ("sndBadgeProof: proof generation failed: " <> T.pack e)
   _ -> pure Nothing
 
-sndGroupChatBinding :: GroupInfo -> GroupKeys -> ShowGroupAsSender -> Maybe ByteString
-sndGroupChatBinding gInfo@GroupInfo {membership = GroupMember {memberId}} gks asGroup
-  | asGroup = (\publicGroupId -> encodeChatBinding CBChannel $ smpEncode publicGroupId) <$> groupPublicId gks
-  | otherwise = Just $ encodeChatBinding CBGroup $ groupBindingData gInfo memberId (C.publicKey $ memberPrivKey gks)
+sndGroupChatBinding :: GroupInfo -> ShowGroupAsSender -> Maybe ByteString
+sndGroupChatBinding gInfo@GroupInfo {groupProfile = GroupProfile {publicGroup}, membership = GroupMember {memberId, memberPubKey}} asGroup
+  | asGroup = (\PublicGroupProfile {publicGroupId} -> encodeChatBinding CBChannel $ smpEncode publicGroupId) <$> publicGroup
+  | otherwise = (\k -> encodeChatBinding CBGroup $ groupBindingData gInfo memberId k) <$> memberPubKey
 
 cryptoFileDigest :: CryptoFile -> CM FD.FileDigest
 cryptoFileDigest (CryptoFile filePath cfArgs) = do
@@ -1560,28 +1560,28 @@ splitFileDescr partSize lastSize rfdText = splitParts 1 rfdText
             then fileDescr :| []
             else fileDescr <| splitParts (partNo + 1) rest
 
-setGroupLinkData' :: NetworkRequestMode -> User -> GroupInfo -> CM (Maybe GroupLink)
-setGroupLinkData' nm user gInfo =
+setGroupLinkData' :: NetworkRequestMode -> User -> GroupInfo -> GroupKeys -> CM (Maybe GroupLink)
+setGroupLinkData' nm user gInfo gks =
   withFastStore' (\db -> runExceptT $ getGroupLink db user gInfo) >>= \case
     Right gLink@GroupLink {shortLinkDataSet}
-      | shortLinkDataSet -> Just <$> setGroupLinkData nm user gInfo gLink
+      | shortLinkDataSet -> Just <$> setGroupLinkData nm user gInfo gks gLink
     _ -> pure Nothing
 
-setGroupLinkData :: NetworkRequestMode -> User -> GroupInfo -> GroupLink -> CM GroupLink
-setGroupLinkData nm user gInfo gLink = do
+setGroupLinkData :: NetworkRequestMode -> User -> GroupInfo -> GroupKeys -> GroupLink -> CM GroupLink
+setGroupLinkData nm user gInfo gks gLink = do
   cxt <- chatStoreCxt
-  (conn, groupRelays, gks) <- withFastStore $ \db ->
-    (,,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (getPublishableGroupRelays db cxt user gInfo) <*> getGroupKeys db cxt user (groupId' gInfo)
+  (conn, groupRelays) <- withFastStore $ \db ->
+    (,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (getPublishableGroupRelays db cxt user gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gks gLink groupRelays
       linkType = if useRelays' gInfo then CCTChannel else CCTGroup
   sLnk <- shortenShortLink' . setShortLinkType_ linkType =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData) False Nothing)
   withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
 
-setGroupLinkDataAsync :: User -> GroupInfo -> GroupLink -> CM ()
-setGroupLinkDataAsync user gInfo gLink = do
+setGroupLinkDataAsync :: User -> GroupInfo -> GroupKeys -> GroupLink -> CM ()
+setGroupLinkDataAsync user gInfo gks gLink = do
   cxt <- chatStoreCxt
-  (conn, groupRelays, gks) <- withStore $ \db ->
-    (,,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (getPublishableGroupRelays db cxt user gInfo) <*> getGroupKeys db cxt user (groupId' gInfo)
+  (conn, groupRelays) <- withStore $ \db ->
+    (,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (getPublishableGroupRelays db cxt user gInfo)
   let (userLinkData, crClientData) = groupLinkData gInfo gks gLink groupRelays
   setAgentConnShortLinkAsync user conn userLinkData (Just crClientData)
 
@@ -1597,15 +1597,16 @@ connectToRelayAsync user gInfo relayLink = do
       newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
       withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
 
-updatePublicGroupData :: User -> GroupInfo -> CM GroupInfo
-updatePublicGroupData user gInfo
+updatePublicGroupData :: User -> GroupInfo -> CM GroupKeys -> CM GroupInfo
+updatePublicGroupData user gInfo getGks
   | useRelays' gInfo && memberRole' (membership gInfo) == GROwner = do
       cxt <- chatStoreCxt
       (gInfo', gLink) <- withStore $ \db -> do
         gInfo' <- updatePublicMemberCount db cxt user gInfo
         gLink <- getGroupLink db user gInfo'
         pure (gInfo', gLink)
-      setGroupLinkDataAsync user gInfo' gLink
+      gks <- getGks
+      setGroupLinkDataAsync user gInfo' gks gLink
       pure gInfo'
   | useRelays' gInfo && isRelay (membership gInfo) = do
       cxt <- chatStoreCxt
@@ -2391,7 +2392,7 @@ rcvFileProhibited binding_ FileInvitation {fileSize, fileBadge} = do
             else Just FileProhibited {maxSize, badgeStatus = Just st}
 
 groupMemberKey :: GroupKeys -> MemberKey
-groupMemberKey = MemberKey . C.publicKey . memberPrivKey
+groupMemberKey gks = MemberKey $ C.publicKey $ memberPrivKey gks
 
 sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfo -> GroupKeys -> Connection -> NonEmpty (ChatMsgEvent e) -> CM ()
 sendGroupMemberMessages user gInfo@GroupInfo {groupId} gks conn events = do
@@ -2566,7 +2567,7 @@ applyRosterDelta delta current = case delta of
 -- that follows. The blob send is best-effort - a failed send heals on the next change or on resume.
 broadcastRoster :: User -> GroupInfo -> GroupKeys -> RosterDelta -> CM VersionRoster
 broadcastRoster user gInfo gks delta = do
-  let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) (keysRosterVersion gks)
+  let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) (rosterVersion gInfo)
   withStore' $ \db -> setGroupRosterVersion db gInfo rosterVer
   sendRosterBlob rosterVer `catchAllErrors` eToView
   pure rosterVer
@@ -2581,7 +2582,7 @@ broadcastRoster user gInfo gks delta = do
 -- Send the current roster (no version bump) to a newly added relay so it can serve joiners.
 sendGroupRosterToRelay :: User -> GroupInfo -> GroupKeys -> GroupMember -> CM ()
 sendGroupRosterToRelay user gInfo gks relayMember =
-  forM_ (keysRosterVersion gks) $ \rosterVer -> do
+  forM_ (rosterVersion gInfo) $ \rosterVer -> do
     cxt <- chatStoreCxt
     rosterMems <- withStore' $ \db -> getGroupRosterMembers db cxt user gInfo
     sendRoster user gInfo gks [relayMember] rosterVer (buildGroupRoster rosterMems)

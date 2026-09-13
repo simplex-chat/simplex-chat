@@ -1,14 +1,16 @@
 # Group keys as a sum type
 
-Branch: to be created from `master` after `ep/file-badge-proofs` is merged.
+Branch: `master`, on top of `core: refactor groups`.
 
 ## Summary
 
 `GroupInfo.groupKeys` is removed, and the user's private keys leave every API response and event.
 
-Group keys become a sum type with one constructor per kind of group, each holding the user's member key. The kind is read from `groups.use_relays`. A function that consumes keys takes `GroupKeys` and matches on it; `useRelays'` stays for the sites that branch on the kind alone.
+Group keys become a sum type with one constructor per kind of group, each holding the user's member key.
 
-The member key is written at every group insert and generated at the read for rows created before this change. `createUserMemberKey` is removed.
+A group and its keys come from one query. Every read of keys is a read of the group.
+
+The member key is written at every group insert, and generated at the first read of a row created before this change. `createUserMemberKey` is removed.
 
 ## Terms
 
@@ -17,6 +19,7 @@ The member key is written at every group insert and generated at the read for ro
 - **member key** — `groups.member_priv_key`, the user's own key in the group.
 - **root key** — the group's identity key. The owner holds it as `GRKPrivate`; everyone else holds `GRKPublic`.
 - **relay request** — a group row a relay creates on `XGrpRelayInv`, before it fetches the group link.
+- **prepared channel** — a public group prepared from a link, before `APIConnectPreparedGroup` stores the root key.
 
 ## 1. The type
 
@@ -30,18 +33,28 @@ data GroupKeys
   | GKPublicGroup
       { publicGroupId :: B64UrlByteString,
         groupRootKey :: GroupRootKey,
-        memberPrivKey :: C.PrivateKeyEd25519,
-        rosterVersion :: VersionRoster
+        memberPrivKey :: C.PrivateKeyEd25519
       }
+  | GKRelayRequest
+      { memberPrivKey :: C.PrivateKeyEd25519
+      }
+  | GKPreparedPublicGroup
+      { publicGroupId :: B64UrlByteString,
+        memberPrivKey :: C.PrivateKeyEd25519
+      }
+  deriving (Eq, Show)
+
+groupPublicId :: GroupKeys -> Maybe B64UrlByteString
+publicGroupKeys :: GroupKeys -> Bool
 ```
 
-`PublicGroupKeys` is removed. `GroupRootKey` is unchanged.
+`PublicGroupKeys` is removed. `GroupRootKey` is unchanged, and its JSON instance is removed with those of `GroupKeys` and `PublicGroupKeys`.
 
-`GroupInfo` loses `groupKeys` and `rosterVersion`, and keeps `useRelays`, `relayOwnStatus` and `groupSummary`. Its `deriveJSON` then emits no key material.
+`GroupInfo` loses `groupKeys` and keeps every other field, `rosterVersion` included. Its `deriveJSON` then emits public fields only.
 
-`relayOwnStatus` stays on `GroupInfo`: the view reads it (`View.hs:237`, `:1503-1508`), both apps decode it, and it is set on the rows that have no identity, where `updateRelayOwnStatusFromTo` reads it (`Groups.hs:1975-1978`).
+`RequestEntity` becomes `REBusinessChat GroupInfo GroupKeys GroupMember`.
 
-`groupMemberKey`, `groupBindingData`, `groupMsgSigning`, `sndGroupChatBinding`, `rcvGroupChatBinding` and `encodeXMemberConnInfo` take `GroupKeys` instead of reading it from `GroupInfo`.
+`PreparedChatEntity` becomes `PCEGroup {groupInfo, groupKeys, hostMember}`.
 
 ## 2. Reading
 
@@ -53,80 +66,70 @@ data GroupKeys
 data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey, drg :: TVar ChaChaDRG}
 ```
 
-`mkStoreCxt` takes the generator alongside the config, and its callers pass it: `chatStoreCxt'`, `Web.hs` ×2, `Directory/Util.hs`, and three sites in `tests/ChatTests/Profiles.hs`.
+`mkStoreCxt` takes the generator alongside the config; its callers pass it.
 
-`toGroupInfo` returns `(GroupInfo, GroupKeysData)`, where `GroupKeysData` is the roster version and the three key columns; `toGroupInfo_` returns the group alone. `GroupInfoRow` keeps the columns it already selects, so keys come from the same query as the group.
+`toGroupInfo` returns `(GroupInfo, GroupKeysData)`; `toGroupInfo_` returns the group alone.
 
 ```haskell
-mkGroupKeys :: DB.Connection -> StoreCxt -> GroupInfo -> GroupKeysRow -> ExceptT StoreError IO GroupKeys
+type GroupKeysData = GroupKeysRow
 ```
 
-Rules, in order:
+```haskell
+mkGroupKeys :: DB.Connection -> StoreCxt -> GroupInfo -> GroupKeysData -> ExceptT StoreError IO GroupKeys
+```
 
-| `use_relays` | `public_group_id` | root key | member key | result |
-| --- | --- | --- | --- | --- |
-| 0 | — | — | present | `GKGroup` |
-| 0 | — | — | absent | generated, stored, `GKGroup` |
-| 1 | present | present | present | `GKPublicGroup` |
-| 1 | present | present | absent | generated, stored, `GKPublicGroup` |
-| 1 | absent or root key absent | | | `SEGroupNotFound {groupId, notReady = True}` |
+The member key is taken from the row, or generated and stored. The constructor follows:
 
-Generation uses the store's `random` and writes with the statement in section 3.
-
-`GKPublicGroup` takes `roster_version`, and a NULL column is written as 0 and returned as 0. `broadcastRoster` requires the version to be recorded before the events that carry it (`Internal.hs:2569-2572`); this write is the one `Subscriber.hs:908-912` performs by hand today, so that branch collapses to `sendGroupRosterToRelay`. The first version `broadcastRoster` reserves for a channel that held NULL becomes 1.
-
-`applyAtRosterVersion` keeps reading the version from the store (`Subscriber.hs:3345`), deliberately rather than from a batch-constant value.
+| `use_relays` | `public_group_id` | root key | result |
+| --- | --- | --- | --- |
+| 0 | — | — | `GKGroup` |
+| 1 | present | present | `GKPublicGroup` |
+| 1 | present | absent | `GKPreparedPublicGroup` |
+| 1 | absent | — | `GKRelayRequest` |
 
 ### Reads
 
 | function | returns |
 | --- | --- |
+| `getGroupInfoRow` | `(GroupInfo, GroupKeysData)` |
 | `getGroupInfoKeys` | `(GroupInfo, GroupKeys)` |
-| `getGroupInfo` | `GroupInfo`, as `fst <$> getGroupInfoKeys`, so it rejects a group with no identity |
-| `getGroupKeys` | `GroupKeys` |
-| `getUserMemberKey` | the member key of a group that may have no identity yet |
+| `getGroupInfo` | `GroupInfo`, as `fst <$> getGroupInfoRow` |
+| `getGroupKeys_` | `(Group, GroupKeys)` |
+| `getGroup` | `Group`, as `fst <$> getGroupKeys_` |
 
-Keeping `getGroupInfo` at `GroupInfo` leaves its call sites unchanged while preserving the readiness check; a site that needs keys switches to `getGroupInfoKeys` or reads `getGroupKeys` in a transaction it already opens.
+All five issue one `groupInfoQuery`. `getGroupKeys_` and `getGroup` add the member query.
 
-`getConnectionEntity` is unchanged: the receive path needs no keys, per section 7.
+`getGroupInfoKeys` returns the group with `membership.memberPubKey` set from the member key it materialized, so the pair agrees on a row created before this change.
 
-### Reads that build the group with `toGroupInfo_`
+A site that needs keys switches its existing read to `getGroupInfoKeys` or `getGroupKeys_`.
 
-| function | consumer |
+### Reads that return keys with their entity
+
+| function | returns |
 | --- | --- |
-| `getBaseGroupDetails` | chat list |
-| `getRelayServedGroups` | `checkRelayServedGroups` — profile, group link, relay status |
-| `getRelayInactiveGroups` | `checkRelayInactiveGroups` — connection deletion |
-| `getAcceptedBusinessChat` | the request entity `REBusinessChat` |
-| `toGroupAndMember` (`Connections.hs`) | the connection entity |
-| `toGroupInfoRegLink` (directory service) | registration records |
+| `getConnectionEntityKeys` | `(ConnectionEntity, Maybe GroupKeysData)` |
+| `getConnectionEntity` | `ConnectionEntity`, as `fst <$> getConnectionEntityKeys` |
+| `getGroupInvitation` | `(ReceivedGroupInvitation, GroupKeys)` |
+| `createGroupInvitation` | `(GroupInfo, GroupKeys, GroupMemberId)` |
+| `createBusinessRequestGroup` | `(GroupInfo, GroupKeys, GroupMember)` |
+| `updatePreparedRelayedGroup` | `(GroupInfo, GroupKeys)` |
+| `getRelayServedGroups` | `[(GroupInfo, GroupKeys)]` |
+| `getAcceptedBusinessChat` | `Maybe (GroupInfo, GroupKeysData)` |
+| `getGroupAndRegLink` (directory service) | `(GroupInfo, GroupKeysData, GroupReg, Maybe GroupLink)` |
 
-### Keys alone
+### Reads that discard the keys
 
-```haskell
-getGroupKeys :: DB.Connection -> StoreCxt -> User -> GroupId -> ExceptT StoreError IO GroupKeys
-```
+`toGroupInfo_` builds the group for `getBaseGroupDetails`, `getRelayInactiveGroups` and `toGroupInfoRegLink`.
 
-For the sites that hold a group taken from an API type. Selects the same columns and applies the same rules.
+## 3. Message handling
 
-### The tolerant read
+`processAgentMessageConn` reads the entity with `getConnectionEntityKeys` and passes `CM GroupKeys` to `processGroupMessage` as `getGks`. A handler that signs forces it; the rest pay nothing. `getGks` builds the keys from the row read with the entity. Forcing it opens one store transaction, which writes on the first read of a row created before this change.
 
-```haskell
-getGroupInfoNotReady :: DB.Connection -> StoreCxt -> User -> GroupId -> ExceptT StoreError IO GroupInfo
-```
+A handler with an unsigned path takes `CM GroupKeys` and forces it on the signing path: `xGrpInfo`, `xGrpRosterAck`, `xGrpRosterRequest`, `xGrpLinkAcpt`, `xGrpMemNew`, `xGrpMemRole`, `xGrpMemDel`, `xGrpLeave`, `xGrpMsgForward`, `applyAtRosterVersion`, `bFileChunkGroup`, `receiveRosterChunk`, `rosterCompletion`, and `updatePublicGroupData` in `Internal.hs`. A handler that always signs takes `GroupKeys`.
 
-Returns the group with the identity absent. Used where the identity is yet to arrive:
+An entity of a group connection without keys raises `CEInternalError`.
 
-| site | operation |
-| --- | --- |
-| `createRelayRequestGroup` (`Groups.hs:1937`) | reads back the row it has just created |
-| `allowRelayGroup` (`Groups.hs:2011`) | moves a rejected relay request to `RSInactive` |
-| `APIConnectPreparedGroup` (`Commands.hs:2286`) | fetches the link and writes the root key |
-| `processRelayRequest` (`Subscriber.hs:4474`) | fetches the link and writes the identity |
-
-`rejectRelayInvitationAsync` (`Internal.hs:1182`) reaches the row through `createRelayRequestGroup`.
-
-## 3. Writing the member key
+## 4. Writing the member key
 
 One statement writes `groups.member_priv_key` after this change, in `setUserMemberKey`:
 
@@ -145,147 +148,101 @@ setUserMemberKey :: DB.Connection -> GroupId -> GroupMemberId -> C.PrivateKeyEd2
 
 ### Inserts
 
-| insert | change |
-| --- | --- |
-| `createNewGroup` (`Groups.hs:419`) | unchanged, key passed by `APINewGroup` and `APINewPublicGroup` |
-| `createGroupInvitation` (`Groups.hs:497`) | unchanged |
-| `createGroup_` from `createPreparedGroup` (`Groups.hs:654`) | unchanged |
-| `createGroup_` from `createGroupInvitedViaLink` (`Groups.hs:881`) | unchanged |
-| `createBusinessRequestGroup` (`Groups.hs:2195`) | unchanged |
-| `createGroup_` from `createRelayRequestGroup` | generates and passes a member key |
+Every insert writes a member key. `createRelayRequestGroup` generates one and passes its public half to `createContactMemberInv_`, closing the TODO it held.
 
-`createRelayRequestGroup` also passes that key's public half to `createContactMemberInv_`, closing the TODO it held.
+`createNewGroup` takes a non-optional `GroupKeys` and derives `use_relays` from `publicGroupKeys`.
 
 ### Updates that stop writing the member key
 
-`updateGroupMemberKeys` is replaced by `setGroupRootKey`, which writes `root_pub_key` alone. `updateRelayGroupKeys` keeps `group_type`, `group_link`, `public_group_id` and calls it.
+`updateGroupMemberKeys` is replaced by `setGroupRootKey`, which writes `root_pub_key` alone. `updateRelayGroupKeys` keeps `group_type`, `group_link` and `public_group_id`, and calls it.
 
 ### Callers that stop generating keys
 
 | caller | change |
 | --- | --- |
-| `connectPreparedGroup` | the root key is written at prepare, so it generates nothing |
-| `createRelayLink` | signs the relay link with the stored member key, read by `getUserMemberKey`, instead of a fresh `sigKeys` |
+| `APIConnectPreparedGroup` | writes the root key alone |
+| `createRelayLink` | signs the relay link with the stored member key |
 
-A relay's member key and its relay-link root key stay the same key. Members read it from the link as `FixedLinkData.rootKey` — `updateRelayMemberData` (`Subscriber.hs:1219`) on the joining side and `setRelayLinkAccepted` (`Subscriber.hs:1250`) on the owner side.
+A relay's member key and its relay-link root key are the same key. Members read it from the link as `FixedLinkData.rootKey`.
 
-The owner keeps the split: the root key authorises owner keys through `OwnerAuth` (`Internal.hs:1657-1661`), and the member key signs messages and shares.
+The owner keeps the split: the root key authorises owner keys through `OwnerAuth`, and the member key signs messages and shares.
 
 ### `createUserMemberKey`
 
-Removed, with its six calls: `Internal.hs:2633` (`sendGroupMessages`), `Internal.hs:2640` (`sendGroupSignedMessages`), `Commands.hs:3962` (`joinContact`), `Commands.hs:4809` (`sendGroupContentMessages`), `Subscriber.hs:812` (`XGrpLinkInv` from the host), `Subscriber.hs:955` (`sendXGrpLinkMem`).
-
-Each of those callers takes `GroupKeys` from its own read instead.
-
-## 4. The root key at prepare
-
-`createPreparedGroup` writes `root_pub_key` for a public group.
-
-- `GroupShortLinkInfo` gains `rootKey :: Maybe C.PublicKeyEd25519`, set from `FixedLinkData` where the connection plan is built.
-- `APIPrepareGroup` gains an optional ` key=` parameter before the link data.
-- Both apps pass `groupShortLinkInfo.rootKey` through `apiPrepareGroup`; the directory service passes it from the plan.
-- `createPreparedGroup` takes it and calls `setGroupRootKey`.
-
-Channels prepared before this change read through `getGroupInfoNotReady` in `APIConnectPreparedGroup` and gain the root key at `updatePreparedRelayedGroup`, as they do today.
+Removed, with its six calls. Each caller takes `GroupKeys` from its own read.
 
 ## 5. The error
 
-`Simplex/Chat/Store/Shared.hs:98`.
-
 ```haskell
-| SEGroupNotFound {groupId :: GroupId, notReady :: Bool}
+| SEGroupNotFound {groupId :: GroupId}
 ```
 
-`notReady = True` marks a public group whose identity has yet to arrive. The ten existing construction and match sites are updated.
+A relay request and a prepared channel read as their own constructors, so every read returns them.
 
-## 6. Call sites of `useRelays'`
+## 6. Consumers of the keys
 
-87 sites read `useRelays'`, and none of them reads a key. `useRelays'` (`Types.hs:523`) and the `useRelays` field remain, so 81 of those sites are unchanged — recipients, roles, roster rules, batching, forwarding, admission, rendering.
+`groupBindingData` reads `publicGroupId` from `groupProfile.publicGroup`, so it takes `GroupInfo`. Everything that verifies — `verifyGroupSig`, `withVerifiedMsg`, `xInfoMember`, `storeMemberKey`, `verifyKey`, `rcvGroupChatBinding` — takes `GroupInfo` alone. The receive path is unchanged.
 
-Six sites take `GroupKeys` and match on it, because they or the functions they call consume keys:
+`sndGroupChatBinding` asserts the user's own member key, which `membership.memberPubKey` holds as the public half.
 
-| site | key consumer reached |
-| --- | --- |
-| `setGroupLinkData` (`Internal.hs:1574`) | `groupLinkData` |
-| `updatePublicGroupData` (`Internal.hs:1600`, `:1608`) | `setGroupLinkDataAsync` then `groupLinkData` |
-| `groupLinkData` (`Internal.hs:1652`) | root key, member key |
-| `allowAgentConnectionAsync` (`Internal.hs:3052`) | `groupMsgSigning` |
-| `joinContact` (`Commands.hs:3958`) | `encodeXMemberConnInfo` |
-
-## 7. Consumers of the keys
-
-`groupBindingData` reads `publicGroupId` from `groupProfile.publicGroup`, which holds the same column, so it takes `GroupInfo` and no keys. Everything that only verifies — `verifyGroupSig`, `withVerifiedMsg`, `xInfoMember`, `storeMemberKey`, `verifyKey`, `rcvGroupChatBinding` — therefore needs no keys, and the receive path is unchanged.
+```haskell
+groupMemberKey :: GroupKeys -> MemberKey
+```
 
 | site | uses |
 | --- | --- |
-| `sndGroupChatBinding` | member key, `publicGroupId` |
 | `groupLinkData` | root key as `GRKPrivate`, member key |
 | `groupMsgSigning` | member key |
 | `groupMemberKey` | member key |
 | `encodeXMemberConnInfo` | member key |
 | `APIShareChatMsgContent` | root key as the owner test, member key to sign |
-| `broadcastRoster` | `rosterVersion` |
-| `sendGroupRosterToRelay` | `rosterVersion` |
-
-`xGrpRosterAck` and the roster blob gate read the version from the store rather than from a batch-constant value, as `applyAtRosterVersion` already did.
-
-`groupBindingData` moves to `Protocol.hs` beside `encodeChatBinding`, as the file-badge plan records.
 
 ### Functions that gain a `GroupKeys` parameter
 
-`Internal.hs`: `acceptGroupJoinRequestAsync`, `acceptBusinessJoinRequestAsync`, `groupLinkData`, `introduceToModerators`, `introduceToAll`, `introduceToRemaining`, `introduceMember`, `introduceInChannel`, `serveRoster`, `sendInlineBlobChunks`, `sendRelayCapIfNeeded`, `sendGroupMemberMessages`, `sendGroupMessage`, `sendGroupMessage'`, `sendRoster`, `broadcastRoster`, `sendGroupRosterToRelay`, `sendGroupMessages`, `sendGroupSignedMessages`, `sendGroupProfileUpdate`, `sendGroupMessages_`, `groupMsgSigning`, `sndGroupChatBinding`, `encodeXMemberConnInfo`, `allowAgentConnectionAsync` (as `Maybe (GroupInfo, GroupKeys)`).
+`Internal.hs`: `acceptGroupJoinRequestAsync`, `acceptBusinessJoinRequestAsync`, `groupLinkData`, `setGroupLinkData`, `setGroupLinkData'`, `setGroupLinkDataAsync`, `introduceToModerators`, `introduceToAll`, `introduceToRemaining`, `introduceMember`, `introduceInChannel`, `serveRoster`, `sendInlineBlobChunks`, `sendRelayCapIfNeeded`, `sendGroupMemberMessages`, `sendGroupMessage`, `sendGroupMessage'`, `sendRoster`, `broadcastRoster`, `sendGroupRosterToRelay`, `sendGroupMessages`, `sendGroupSignedMessages`, `sendGroupProfileUpdate`, `sendGroupMessages_`, `groupMsgSigning`, `encodeXMemberConnInfo`, `allowAgentConnectionAsync` (as `Maybe (GroupInfo, GroupKeys)`).
 
-`Commands.hs`: `delEventSigned`, `changeRoleCurrentMems`, `deleteMemsSend`, `deletePendingMember`, `sendGroupContentMessages_`, `newGroup` (which also loses its `Bool`, deriving the kind from the keys).
+`Commands.hs`: `delEventSigned`, `changeRoleInvitedMems`, `changeRoleCurrentMems`, `deleteMemsSend`, `deletePendingMember`, `blockMembers`, `sendGroupContentMessages`, `sendGroupContentMessages_`, `getCommandGroupChatItems`, `delGroupChatItemsForMembers`, `sendGrpInvitation`, `connectToRelay`, `leaveChannelRelay`, `leaveGroupSendMsg`, `runUpdateGroupProfile`, `newGroup` (which also loses its `Bool`).
 
-`Subscriber.hs`: `sendXGrpLinkMem`, `acceptJoin`, `sendGroupAutoReply`, `leaveChannelRelay`, `leaveGroupSendMsg`.
+`joinContact` takes `Maybe (Maybe (GroupInfo, GroupKeys))` and `Maybe MemberId`.
 
-`saveConnInfo` returns `Maybe (GroupInfo, GroupKeys)`, and `createGroupInvitation` returns the keys it creates, so those handlers use them rather than re-reading.
+`Subscriber.hs`: every handler under `processGroupMessage` that sends, as `CM GroupKeys`; `sendXGrpLinkMem`, `acceptJoin`, `sendGroupAutoReply`.
 
-Sites that hold a group from an API type — the `SFDONE` handler destructuring `GroupChat g` out of an `AChatItem`, and the CONF/INFO handlers holding the connection entity — read keys by group id in a transaction they already open.
+`saveConnInfo` returns `Maybe (GroupInfo, GroupKeys)`.
+
+## 7. Queries
+
+The query count is unchanged. Every site that needs keys takes them from a read it already performs:
+
+| site | before | after |
+| --- | --- | --- |
+| commands holding a group | `getGroupInfo` | `getGroupInfoKeys` |
+| commands holding a group and members | `getGroup` | `getGroupKeys_` |
+| `processAgentMessageConn` | `getConnectionEntity` | `getConnectionEntityKeys` |
+| `APIJoinGroup` | `getGroupInvitation` | same, returning keys |
+| `APIConnectPreparedGroup` | `getGroupInfo` | `getGroupInfoRow` |
+| business request | `getGroupInfo` | `getGroupInfoRow` |
+| directory service link update | `getGroupLink` | `getGroupAndRegLink` |
 
 ## 8. Schema
 
-No migration. The columns keep their meaning:
+The schema is unchanged. The columns keep their meaning:
 
 - `groups.member_priv_key` — written at insert, or at the first read of a row created before this change.
 - `groups.root_priv_key` — the owner's root key.
 - `groups.root_pub_key` — every other member's copy of the root key.
-- `groups.roster_version` — written as 0 at the first read of a public group that held NULL.
 - `group_profiles.public_group_id` — the public group identity.
 
 ## 9. Tests
 
-- A p2p group created before the change: the first read stores a member key, and a second read returns the same key.
-- Concurrent reads of such a row return one key.
-- A relay request reads through `getGroupInfoNotReady`, and through `getGroupInfo` fails with `notReady = True`.
-- A channel prepared before the change connects and then reads as `GKPublicGroup`.
-- A relay's member key equals the key its relay link is signed with, and a member that fetched the link verifies the relay's signed message.
-- A channel with NULL `roster_version` reads as version 0, the row holds 0 afterwards, and the next `broadcastRoster` reserves 1.
-- `GroupInfo` JSON holds no key material.
+`testGroupMemberKeyGenerated` (`tests/ChatTests/Groups.hs`): a p2p group whose member key columns are NULL on both sides. The first send stores a key, the profile update carries and is signed by that key, the peer stores it from the update and verifies the next signed event with it, `member_pub_key` of the membership is the public half of `member_priv_key`, and a second send leaves the key unchanged.
 
-## Simplifications the implementation exposed
+Covered by the existing suites: relay request and prepared channel flows (`chat relay tests`), relay link signing (`chat relay tests`), `GroupInfo` JSON (`Bot API docs`, once the generated files are writable).
 
-Recorded after the change was built, for a decision before it is merged.
+## Open
 
-**1. `publicGroupId` in `GKPublicGroup` restates `GroupInfo`.** `groupProfile.publicGroup` holds the same column, which is why `groupBindingData` needed no keys. Its only reader in the keys is `sndGroupChatBinding`'s channel branch, which can read the profile as `rcvGroupChatBinding` does. Dropping it leaves the constructor holding what is secret or absent from `GroupInfo`.
+`publicGroupId` in `GKPublicGroup` and `GKPreparedPublicGroup` restates `groupProfile.publicGroup`, and `groupPublicId` is unused. Dropping both leaves each constructor holding what is secret or absent from `GroupInfo`.
 
-**2. `rosterVersion` is not a key.** Three of its five readers deliberately read it from the store, because a batch-constant copy is stale on reorder; only `broadcastRoster` and `sendGroupRosterToRelay` use the value in hand, and `broadcastRoster` writes the next version immediately. Moving it out leaves `GroupKeys` holding only keys.
-
-With 1 and 2:
-
-```haskell
-data GroupKeys
-  = GKGroup {memberPrivKey :: C.PrivateKeyEd25519}
-  | GKPublicGroup {groupRootKey :: GroupRootKey, memberPrivKey :: C.PrivateKeyEd25519}
-```
-
-`groupPublicId` and `keysRosterVersion` then disappear, and `createNewGroup` takes the kind from `groupProfile.publicGroup` rather than from the keys.
-
-**3. Threading versus reading.** 38 sites read the keys in a transaction they already open, and about 25 functions gained a `GroupKeys` parameter to carry them further. Since nearly every group send already opens a store transaction, the send helpers could read the keys themselves and the parameter could be dropped from their signatures, leaving `GroupKeys` in the six consumers that use it.
-
-**4. `notReady` has no reader.** It is set in one place and inspected nowhere. Either the apps distinguish it from "not found", or the field waits until something reads it.
-
-**5. `toGroupInfo` returning a pair** forced `toGroupInfo_` at six call sites. A separate projection from `GroupInfoRow` to `GroupKeysData` would leave `toGroupInfo` alone.
+`bots/api/TYPES.md`, `packages/simplex-chat-client/types/typescript/src/types.ts` and `packages/simplex-chat-python/src/simplex_chat/types/_types.py` still declare `GroupKeys`. The `Bot API docs` test regenerates them once they are writable; they are owned by root.
 
 ## Out of scope
 

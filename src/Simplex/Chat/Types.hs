@@ -439,7 +439,7 @@ instance ToJSON ConnReqUriHash where
 
 data RequestEntity
   = REContact Contact
-  | REBusinessChat GroupInfo GroupMember
+  | REBusinessChat GroupInfo GroupKeys GroupMember
 
 type RepeatRequest = Bool
 
@@ -488,20 +488,27 @@ data GroupKeys
   | GKPublicGroup
       { publicGroupId :: B64UrlByteString,
         groupRootKey :: GroupRootKey,
-        memberPrivKey :: C.PrivateKeyEd25519,
-        rosterVersion :: VersionRoster
+        memberPrivKey :: C.PrivateKeyEd25519
+      }
+  | GKRelayRequest
+      { memberPrivKey :: C.PrivateKeyEd25519
+      }
+  | GKPreparedPublicGroup
+      { publicGroupId :: B64UrlByteString,
+        memberPrivKey :: C.PrivateKeyEd25519
       }
   deriving (Eq, Show)
 
 groupPublicId :: GroupKeys -> Maybe B64UrlByteString
 groupPublicId = \case
-  GKGroup {} -> Nothing
   GKPublicGroup {publicGroupId} -> Just publicGroupId
+  GKPreparedPublicGroup {publicGroupId} -> Just publicGroupId
+  _ -> Nothing
 
-keysRosterVersion :: GroupKeys -> Maybe VersionRoster
-keysRosterVersion = \case
-  GKGroup {} -> Nothing
-  GKPublicGroup {rosterVersion} -> Just rosterVersion
+publicGroupKeys :: GroupKeys -> Bool
+publicGroupKeys = \case
+  GKGroup {} -> False
+  _ -> True
 
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
@@ -524,6 +531,7 @@ data GroupInfo = GroupInfo
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
+    rosterVersion :: Maybe VersionRoster,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
     groupDomainVerified :: Maybe Bool
@@ -605,7 +613,7 @@ data GroupLink = GroupLink
 
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
 
-data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
+data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfo, groupKeys :: GroupKeys, hostMember :: GroupMember}
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
 contactAndGroupIds = \case

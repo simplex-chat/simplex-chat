@@ -188,7 +188,7 @@ createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xConta
   connId <- insertedRowId db
   case preparedEntity_ of
     -- For relay groups, setPreparedGroupLinkInfo_ is called via updatePreparedRelayedGroup before the relay loop
-    Just (PCEGroup gInfo _) | not (useRelays' gInfo) ->
+    Just (PCEGroup gInfo _ _) | not (useRelays' gInfo) ->
       setPreparedGroupLinkInfo_ db gInfo cReq cReqHash customUserProfileId Nothing currentTs
     _ -> pure ()
   pure
@@ -225,7 +225,7 @@ createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xConta
   where
     (connType, contactId_, groupMemberId_, entityId) = case preparedEntity_ of
       Just (PCEContact Contact {contactId}) -> (ConnContact, Just contactId, Nothing, Just contactId)
-      Just (PCEGroup _ GroupMember {groupMemberId}) -> (ConnMember, Nothing, Just groupMemberId, Just groupMemberId)
+      Just (PCEGroup _ _ GroupMember {groupMemberId}) -> (ConnMember, Nothing, Just groupMemberId, Just groupMemberId)
       Nothing -> (ConnContact, Nothing, Nothing, Nothing)
 
 createRelayMemberConnectionAsync :: DB.Connection -> User -> GroupInfo -> GroupMember -> ShortLinkContact -> (CommandId, ConnId) -> SubscriptionMode -> IO ()

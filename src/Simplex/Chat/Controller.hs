@@ -541,7 +541,7 @@ data ChatCommand
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan {userId :: UserId, connectTarget :: Maybe AConnectTarget, resolveMode :: PlanResolveMode, linkOwnerSig :: Maybe LinkOwnerSig} -- Maybe AConnectTarget is used to report parsing failure as special error
   | APIPrepareContact UserId ACreatedConnLink (Maybe SimplexDomain) ContactShortLinkData
-  | APIPrepareGroup UserId CreatedLinkContact DirectLink (Maybe SimplexDomain) (Maybe C.PublicKeyEd25519) GroupShortLinkData
+  | APIPrepareGroup UserId CreatedLinkContact DirectLink (Maybe SimplexDomain) GroupShortLinkData
   | APIChangePreparedContactUser ContactId UserId
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
@@ -1174,8 +1174,7 @@ type DirectLink = Bool
 data GroupShortLinkInfo = GroupShortLinkInfo
   { direct :: Bool,
     groupRelays :: [ShortLinkContact],
-    publicGroupId :: Maybe B64UrlByteString,
-    rootKey :: Maybe C.PublicKeyEd25519
+    publicGroupId :: Maybe B64UrlByteString
   }
   deriving (Show)
 

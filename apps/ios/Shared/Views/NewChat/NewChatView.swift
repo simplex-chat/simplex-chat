@@ -1202,7 +1202,7 @@ private func showPrepareGroupAlert(
         onConfirm: {
             Task {
                 do {
-                    let chat = try await apiPrepareGroup(connLink: connectionLink, directLink: groupShortLinkInfo?.direct ?? true, groupShortLinkData: groupShortLinkData, verifiedDomain: verifiedDomain, rootKey: groupShortLinkInfo?.rootKey)
+                    let chat = try await apiPrepareGroup(connLink: connectionLink, directLink: groupShortLinkInfo?.direct ?? true, groupShortLinkData: groupShortLinkData, verifiedDomain: verifiedDomain)
                     await MainActor.run {
                         if let relays = groupShortLinkInfo?.groupRelays, !relays.isEmpty,
                            case let .group(gInfo, _) = chat.chatInfo {

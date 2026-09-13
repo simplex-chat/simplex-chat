@@ -95,7 +95,7 @@ data StoreError
   | SEContactRequestNotFoundByName {contactName :: ContactName}
   | SEInvalidContactRequestEntity {contactRequestId :: Int64}
   | SEInvalidBusinessChatContactRequest
-  | SEGroupNotFound {groupId :: GroupId, notReady :: Bool}
+  | SEGroupNotFound {groupId :: GroupId}
   | SEGroupNotFoundByName {groupName :: GroupName}
   | SEGroupMemberNameNotFound {groupId :: GroupId, groupMemberName :: ContactName}
   | SEGroupMemberNotFound {groupMemberId :: GroupMemberId}
@@ -685,7 +685,7 @@ type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe Member
 
 type GroupKeysRow = (Maybe C.PrivateKeyEd25519, Maybe C.PublicKeyEd25519, Maybe C.PrivateKeyEd25519)
 
-type GroupKeysData = (Maybe VersionRoster, GroupKeysRow)
+type GroupKeysData = GroupKeysRow
 
 type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe VersionRoster, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact, Maybe BoolInt) :. GroupKeysRow :. GroupMemberRow
 
@@ -705,8 +705,8 @@ toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayN
       businessChat = toBusinessChatInfo (toPublicGroupAccess accessRow >>= groupDomainClaim) businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
-      gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified = unBI <$> groupDomainVerified}
-   in (gInfo, (rosterVersion, groupKeysRow))
+      gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified = unBI <$> groupDomainVerified}
+   in (gInfo, groupKeysRow)
 
 toGroupInfo_ :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
 toGroupInfo_ now cxt userContactId chatTags row = fst $ toGroupInfo now cxt userContactId chatTags row
@@ -737,52 +737,26 @@ toPublicGroupAccess (groupWebPage, groupDomain_, domainWebPage_, allowEmbedding_
     domainWebPage = maybe False unBI domainWebPage_
     allowEmbedding = maybe False unBI allowEmbedding_
 
--- a public group without its identity is not ready to act in: the member key is stored, the roster version
--- is materialized as 0, and both are read back so a stale value cannot replace a key already in use
 mkGroupKeys :: DB.Connection -> StoreCxt -> GroupInfo -> GroupKeysData -> ExceptT StoreError IO GroupKeys
-mkGroupKeys db cxt g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup}, membership} (rosterVer_, (rootPrivKey, rootPubKey, memberPrivKey_))
-  | useRelays' g = case (publicGroupId_, GRKPrivate <$> rootPrivKey <|> GRKPublic <$> rootPubKey) of
-      (Just publicGroupId, Just groupRootKey) -> do
-        memberPrivKey <- memberKey
-        rosterVersion <- case rosterVer_ of
-          Just v -> pure v
-          Nothing -> liftIO $ do
-            setGroupRosterVersion db g rosterVersion0
-            pure rosterVersion0
-        pure GKPublicGroup {publicGroupId, groupRootKey, memberPrivKey, rosterVersion}
-      _ -> throwError SEGroupNotFound {groupId, notReady = True}
-  | otherwise = GKGroup <$> memberKey
+mkGroupKeys db cxt g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup}, membership} (rootPrivKey, rootPubKey, memberPrivKey_) = do
+  memberPrivKey <- case memberPrivKey_ of
+    Just k -> pure k
+    Nothing -> do
+      (_, k) <- atomically $ C.generateKeyPair (drg cxt)
+      setUserMemberKey db groupId (groupMemberId' membership) k
+  pure $ case (useRelays' g, publicGroupId_, GRKPrivate <$> rootPrivKey <|> GRKPublic <$> rootPubKey) of
+    (False, _, _) -> GKGroup {memberPrivKey}
+    (True, Just publicGroupId, Just groupRootKey) -> GKPublicGroup {publicGroupId, groupRootKey, memberPrivKey}
+    (True, Just publicGroupId, Nothing) -> GKPreparedPublicGroup {publicGroupId, memberPrivKey}
+    (True, Nothing, _) -> GKRelayRequest {memberPrivKey}
   where
     publicGroupId_ = (\PublicGroupProfile {publicGroupId} -> publicGroupId) <$> publicGroup
-    memberKey = userMemberKey db cxt groupId (groupMemberId' membership) memberPrivKey_
 
-userMemberKey :: DB.Connection -> StoreCxt -> GroupId -> GroupMemberId -> Maybe C.PrivateKeyEd25519 -> ExceptT StoreError IO C.PrivateKeyEd25519
-userMemberKey db cxt groupId membershipId = \case
-  Just k -> pure k
-  Nothing -> do
-    (_, k) <- atomically $ C.generateKeyPair (drg cxt)
-    setUserMemberKey db groupId membershipId k
-
--- the user's own member key of a group that may have no identity yet
-getUserMemberKey :: DB.Connection -> StoreCxt -> User -> GroupId -> ExceptT StoreError IO C.PrivateKeyEd25519
-getUserMemberKey db cxt user groupId = do
-  (GroupInfo {membership}, (_, (_, _, memberPrivKey_))) <- getGroupInfoRow db cxt user groupId
-  userMemberKey db cxt groupId (groupMemberId' membership) memberPrivKey_
-
-rosterVersion0 :: VersionRoster
-rosterVersion0 = VersionRoster 0
-
-setGroupRosterVersion :: DB.Connection -> GroupInfo -> VersionRoster -> IO ()
-setGroupRosterVersion db GroupInfo {groupId} v = do
-  currentTs <- getCurrentTime
-  DB.execute db "UPDATE groups SET roster_version = ?, updated_at = ? WHERE group_id = ?" (v, currentTs, groupId)
-
--- the stored key wins over the passed one, so a stale GroupInfo cannot replace a key already in use
 setUserMemberKey :: DB.Connection -> GroupId -> GroupMemberId -> C.PrivateKeyEd25519 -> ExceptT StoreError IO C.PrivateKeyEd25519
 setUserMemberKey db groupId membershipId newKey = do
   currentTs <- liftIO getCurrentTime
   memberPrivKey <-
-    ExceptT . firstRow fromOnly (SEGroupNotFound groupId False) $
+    ExceptT . firstRow fromOnly (SEGroupNotFound groupId) $
       DB.query
         db
         [sql|
@@ -957,25 +931,19 @@ addGroupChatTags db g@GroupInfo {groupId} = do
 
 getGroupInfoKeys :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO (GroupInfo, GroupKeys)
 getGroupInfoKeys db cxt user groupId = do
-  (g, keysData) <- getGroupInfoRow db cxt user groupId
+  (g@GroupInfo {membership}, keysData) <- getGroupInfoRow db cxt user groupId
   gks <- mkGroupKeys db cxt g keysData
-  pure (g, gks)
+  let membership' = membership {memberPubKey = Just $ C.publicKey $ memberPrivKey gks} :: GroupMember
+  pure ((g :: GroupInfo) {membership = membership'}, gks)
 
 getGroupInfo :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO GroupInfo
-getGroupInfo db cxt user groupId = fst <$> getGroupInfoKeys db cxt user groupId
-
-getGroupKeys :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO GroupKeys
-getGroupKeys db cxt user groupId = snd <$> getGroupInfoKeys db cxt user groupId
-
--- for the operations that obtain the group identity: the relay request worker and connecting a prepared group
-getGroupInfoNotReady :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO GroupInfo
-getGroupInfoNotReady db cxt user groupId = fst <$> getGroupInfoRow db cxt user groupId
+getGroupInfo db cxt user groupId = fst <$> getGroupInfoRow db cxt user groupId
 
 getGroupInfoRow :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO (GroupInfo, GroupKeysData)
 getGroupInfoRow db cxt User {userId, userContactId} groupId = ExceptT $ do
   currentTs <- getCurrentTime
   chatTags <- getGroupChatTags db groupId
-  firstRow (toGroupInfo currentTs cxt userContactId chatTags) (SEGroupNotFound groupId False) $
+  firstRow (toGroupInfo currentTs cxt userContactId chatTags) (SEGroupNotFound groupId) $
     DB.query
       db
       (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
