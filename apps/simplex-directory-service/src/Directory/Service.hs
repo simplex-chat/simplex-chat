@@ -268,7 +268,7 @@ directoryService opts cfg = do
 
 acceptMemberHook :: DirectoryOpts -> ServiceState -> GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))
 acceptMemberHook
-  DirectoryOpts {profileNameLimit, alwaysCaptcha, knocking}
+  DirectoryOpts {profileNameLimit, alwaysCaptcha, alwaysObserver, knocking}
   ServiceState {blockedWordsCfg}
   g
   GroupLinkInfo {memberRole}
@@ -277,10 +277,10 @@ acceptMemberHook
     when (useMemberFilter img $ rejectNames a) checkName
     pure $
       if
-        | knocking -> (GAPendingReview, GRObserver) -- memberRole)
-        | alwaysCaptcha || useMemberFilter img (passCaptcha a) -> (GAPendingApproval, GRObserver) -- GRMember)
-        | useMemberFilter img (makeObserver a) -> (GAAccepted, GRObserver)
-        | otherwise -> (GAAccepted, GRObserver) -- memberRole)
+        | knocking -> (GAPendingReview, memberRole)
+        | alwaysCaptcha || useMemberFilter img (passCaptcha a) -> (GAPendingApproval, GRMember)
+        | alwaysObserver || useMemberFilter img (makeObserver a) -> (GAAccepted, GRObserver)
+        | otherwise -> (GAAccepted, memberRole)
     where
       checkName :: ExceptT GroupRejectionReason IO ()
       checkName
@@ -314,7 +314,7 @@ readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, na
   pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
 directoryServiceEvent :: DirectoryOpts -> ServiceState -> User -> ChatController -> DirectoryEvent -> IO ()
-directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults, prohibitedToObserver, alwaysCaptcha} env@ServiceState {searchRequests} user@User {userId} cc = \case
+directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults, prohibitedToObserver, alwaysCaptcha, alwaysObserver} env@ServiceState {searchRequests} user@User {userId} cc = \case
     DEContactConnected ct -> deContactConnected ct
     DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
     DEServiceJoinedGroup ctId g owner -> deServiceJoinedGroup ctId g owner
@@ -678,7 +678,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
     approvePendingMember :: DirectoryMemberAcceptance -> GroupInfo -> GroupMember -> IO ()
     approvePendingMember a g@GroupInfo {groupId} m@GroupMember {memberProfile = LocalProfile {displayName, image}} = do
       gli_ <- join . eitherToMaybe <$> withDB' "getGroupLinkInfo" cc (\db -> getGroupLinkInfo db userId groupId)
-      let role = if True || useMemberFilter image (makeObserver a) then GRObserver else maybe GRMember (\GroupLinkInfo {memberRole} -> memberRole) gli_
+      let role = if alwaysObserver || useMemberFilter image (makeObserver a) then GRObserver else maybe GRMember (\GroupLinkInfo {memberRole} -> memberRole) gli_
           gmId = groupMemberId' m
       sendChatCmd cc (APIAcceptMember groupId gmId role) >>= \case
         Right CRMemberAccepted {member} -> do
