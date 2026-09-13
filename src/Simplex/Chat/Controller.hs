@@ -148,6 +148,7 @@ data ChatConfig = ChatConfig
     shortLinkPresetServers :: NonEmpty SMPServer,
     presetDomains :: [HostName],
     tbqSize :: Natural,
+    maxChats :: Int,
     fileChunkSize :: Integer,
     xftpDescrPartSize :: Int,
     inlineFiles :: InlineFilesConfig,
@@ -381,7 +382,7 @@ data ChatCommand
   | APISaveAppSettings AppSettings
   | APIGetAppSettings (Maybe AppSettings)
   | APIGetChatTags UserId
-  | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
+  | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: Maybe PaginationByTime, query :: ChatListQuery}
   | APIGetChat {chatRef :: ChatRef, contentTag :: Maybe MsgContentTag, chatPagination :: ChatPagination, search :: Maybe Text}
   | APIGetChatContentTypes ChatRef
   | APIGetChatItems {chatPagination :: ChatPagination, search :: Maybe Text}

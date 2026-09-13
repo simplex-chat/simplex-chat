@@ -652,7 +652,9 @@ processChatCommand cxt nm = \case
     tags <- withFastStore' (`getUserChatTags` user)
     pure $ CRChatTags user tags
   APIGetChats {userId, pendingConnections, pagination, query} -> withUserId' userId $ \user -> do
-    (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db cxt user pendingConnections pagination query)
+    ChatConfig {maxChats} <- asks config
+    let pagination' = fromMaybe (PTLast maxChats) pagination
+    (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db cxt user pendingConnections pagination' query)
     unless (null errs) $ toView $ CEvtChatErrors (map ChatErrorStore errs)
     pure $ CRApiChats user previews
   APIGetChat (ChatRef cType cId scope_) contentFilter pagination search -> withUser $ \user -> case cType of
@@ -3431,7 +3433,8 @@ processChatCommand cxt nm = \case
     folderId <- withFastStore (`getUserNoteFolderId` user)
     processChatCommand cxt nm $ APIClearChat (ChatRef CTLocal folderId Nothing)
   LastChats count_ -> withUser' $ \user -> do
-    let count = fromMaybe 5000 count_
+    ChatConfig {maxChats} <- asks config
+    let count = fromMaybe maxChats count_
     (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db cxt user False (PTLast count) clqNoFilters)
     unless (null errs) $ toView $ CEvtChatErrors (map ChatErrorStore errs)
     pure $ CRChats previews
@@ -5517,7 +5520,7 @@ chatCommandP =
         *> ( APIGetChats
               <$> A.decimal
               <*> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)
-              <*> (A.space *> paginationByTimeP <|> pure (PTLast 5000))
+              <*> optional (A.space *> paginationByTimeP)
               <*> (A.space *> jsonP <|> pure clqNoFilters)
            ),
       "/_get chat " *> (APIGetChat <$> chatRefP <*> optional (" content=" *> strP) <* A.space <*> chatPaginationP <*> optional (" search=" *> textP)),
