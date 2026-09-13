@@ -569,7 +569,6 @@ const processCommand = (function () {
       }
     }
 
-
     function sendConnectionState(state?: string) {
       sendMessageToNative({
         resp: {
@@ -646,7 +645,6 @@ const processCommand = (function () {
       }
     }
   }
-
 
   function serialize<T>(x: T): string {
     return LZString.compressToBase64(JSON.stringify(x))
