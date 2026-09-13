@@ -664,7 +664,7 @@ export namespace APIListGroups {
 export interface APIGetChats {
   userId: number // int64
   pendingConnections: boolean
-  pagination: T.PaginationByTime
+  pagination?: T.PaginationByTime
   query: T.ChatListQuery
 }
 
@@ -672,7 +672,7 @@ export namespace APIGetChats {
   export type Response = CR.ApiChats | CR.ChatCmdError
 
   export function cmdString(self: APIGetChats): string {
-    return '/_get chats ' + self.userId + (self.pendingConnections ? ' pcc=on' : '') + ' ' + T.PaginationByTime.cmdString(self.pagination) + ' ' + JSON.stringify(self.query)
+    return '/_get chats ' + self.userId + (self.pendingConnections ? ' pcc=on' : '') + (self.pagination ? ' ' + T.PaginationByTime.cmdString(self.pagination) : '') + ' ' + JSON.stringify(self.query)
   }
 }
 

@@ -584,12 +584,12 @@ APIListGroups_Response = CR.GroupsList | CR.ChatCmdError
 class APIGetChats(TypedDict):
     userId: int  # int64
     pendingConnections: bool
-    pagination: "T.PaginationByTime"
+    pagination: NotRequired["T.PaginationByTime"]
     query: "T.ChatListQuery"
 
 
 def APIGetChats_cmd_string(self: APIGetChats) -> str:
-    return '/_get chats ' + str(self['userId']) + (' pcc=on' if self['pendingConnections'] else '') + ' ' + T.PaginationByTime_cmd_string(self['pagination']) + ' ' + json.dumps(self['query'])
+    return '/_get chats ' + str(self['userId']) + (' pcc=on' if self['pendingConnections'] else '') + ((' ' + T.PaginationByTime_cmd_string(self.get('pagination'))) if self.get('pagination') is not None else '') + ' ' + json.dumps(self['query'])
 
 APIGetChats_Response = CR.ApiChats | CR.ChatCmdError
 
