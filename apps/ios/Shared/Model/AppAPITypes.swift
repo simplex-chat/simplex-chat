@@ -135,7 +135,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiChangeConnectionUser(connId: Int64, userId: Int64)
     case apiConnectPlan(userId: Int64, connLink: String, resolveMode: PlanResolveMode, linkOwnerSig: LinkOwnerSig?)
     case apiPrepareContact(userId: Int64, connLink: CreatedConnLink, contactShortLinkData: ContactShortLinkData, verifiedDomain: SimplexDomain?)
-    case apiPrepareGroup(userId: Int64, connLink: CreatedConnLink, directLink: Bool, groupShortLinkData: GroupShortLinkData, verifiedDomain: SimplexDomain?)
+    case apiPrepareGroup(userId: Int64, connLink: CreatedConnLink, directLink: Bool, groupShortLinkData: GroupShortLinkData, verifiedDomain: SimplexDomain?, rootKey: String?)
     case apiChangePreparedContactUser(contactId: Int64, newUserId: Int64)
     case apiChangePreparedGroupUser(groupId: Int64, newUserId: Int64)
     case apiConnectPreparedContact(contactId: Int64, incognito: Bool, msg: MsgContent?)
@@ -359,7 +359,7 @@ enum ChatCommand: ChatCmdProtocol {
                 let sigStr = if let linkOwnerSig { " sig=\(encodeJSON(linkOwnerSig))" } else { "" }
                 return "/_connect plan \(userId) \(connLink)\(resolveStr)\(sigStr)"
             case let .apiPrepareContact(userId, connLink, contactShortLinkData, verifiedDomain): return "/_prepare contact \(userId) \(connLink.cmdString)\(verifiedDomain.map{ " \($0.cmdString)" } ?? "") \(encodeJSON(contactShortLinkData))"
-            case let .apiPrepareGroup(userId, connLink, directLink, groupShortLinkData, verifiedDomain): return "/_prepare group \(userId) \(connLink.cmdString) direct=\(onOff(directLink))\(verifiedDomain.map{ " \($0.cmdString)" } ?? "") \(encodeJSON(groupShortLinkData))"
+            case let .apiPrepareGroup(userId, connLink, directLink, groupShortLinkData, verifiedDomain, rootKey): return "/_prepare group \(userId) \(connLink.cmdString) direct=\(onOff(directLink))\(verifiedDomain.map{ " \($0.cmdString)" } ?? "")\(rootKey.map{ " key=\($0)" } ?? "") \(encodeJSON(groupShortLinkData))"
             case let .apiChangePreparedContactUser(contactId, newUserId): return "/_set contact user @\(contactId) \(newUserId)"
             case let .apiChangePreparedGroupUser(groupId, newUserId): return "/_set group user #\(groupId) \(newUserId)"
             case let .apiConnectPreparedContact(contactId, incognito, mc): return "/_connect contact @\(contactId) incognito=\(onOff(incognito))\(maybeContent(mc))"
@@ -1437,6 +1437,7 @@ public struct GroupShortLinkInfo: Decodable, Hashable {
     public var direct: Bool
     public var groupRelays: [String]
     public var publicGroupId: String?
+    public var rootKey: String?
 }
 
 enum GroupLinkPlan: Decodable, Hashable {

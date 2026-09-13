@@ -74,7 +74,7 @@ import Simplex.Chat.Names (claimDomain)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Groups
-import Simplex.Chat.Store.Shared (groupInfoQueryFields, groupInfoQueryFrom)
+import Simplex.Chat.Store.Shared (groupInfoQueryFields, groupInfoQueryFrom, toGroupInfo_)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), SimplexDomain)
@@ -278,7 +278,7 @@ setGroupPromotedStore cc gId grPromoted' =
 
 groupDBError :: StoreError -> String
 groupDBError = \case
-  SEGroupNotFound _ -> "group not found"
+  SEGroupNotFound {} -> "group not found"
   e -> show e
 
 setGroupRegOwner :: ChatController -> GroupId -> GroupMember -> IO (Either String ())
@@ -438,7 +438,7 @@ toGroupInfoReg currentTs cxt user row = let (g, gr, _) = toGroupInfoRegLink curr
 
 toGroupInfoRegLink :: UTCTime -> StoreCxt -> User -> (GroupInfoRow :. GroupRegRow :. GroupLinkRow) -> (GroupInfo, GroupReg, Maybe GroupLink)
 toGroupInfoRegLink currentTs cxt User {userContactId} (groupRow :. grRow :. linkRow) =
-  (toGroupInfo currentTs cxt userContactId [] groupRow, rowToGroupReg grRow, toMaybeGroupLink linkRow)
+  (toGroupInfo_ currentTs cxt userContactId [] groupRow, rowToGroupReg grRow, toMaybeGroupLink linkRow)
 
 type GroupRegRow = (GroupId, UserGroupRegId, ContactId, Maybe GroupMemberId, GroupRegStatus, BoolInt, UTCTime)
 

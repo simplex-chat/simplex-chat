@@ -72,7 +72,7 @@ getNextPendingRelayRequest db =
           (Only RSInvited)
     getRelayRequestData :: GroupId -> IO (Either StoreError (GroupId, RelayRequestData))
     getRelayRequestData groupId =
-      firstRow' toRelayRequestData (SEGroupNotFound groupId) $
+      firstRow' toRelayRequestData (SEGroupNotFound groupId False) $
         DB.query
           db
           [sql|

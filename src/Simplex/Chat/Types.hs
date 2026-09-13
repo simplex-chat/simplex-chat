@@ -30,7 +30,9 @@
 module Simplex.Chat.Types where
 
 import Control.Applicative ((<|>))
+import Control.Concurrent.STM (TVar)
 import Crypto.Number.Serialize (os2ip)
+import Crypto.Random (ChaChaDRG)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -479,17 +481,27 @@ groupRootPubKey :: GroupRootKey -> C.PublicKeyEd25519
 groupRootPubKey (GRKPrivate pk) = C.publicKey pk
 groupRootPubKey (GRKPublic pk) = pk
 
-data GroupKeys = GroupKeys
-  { publicGroupKeys :: Maybe PublicGroupKeys,
-    memberPrivKey :: C.PrivateKeyEd25519
-  }
+data GroupKeys
+  = GKGroup
+      { memberPrivKey :: C.PrivateKeyEd25519
+      }
+  | GKPublicGroup
+      { publicGroupId :: B64UrlByteString,
+        groupRootKey :: GroupRootKey,
+        memberPrivKey :: C.PrivateKeyEd25519,
+        rosterVersion :: VersionRoster
+      }
   deriving (Eq, Show)
 
-data PublicGroupKeys = PublicGroupKeys
-  { publicGroupId :: B64UrlByteString,
-    groupRootKey :: GroupRootKey
-  }
-  deriving (Eq, Show)
+groupPublicId :: GroupKeys -> Maybe B64UrlByteString
+groupPublicId = \case
+  GKGroup {} -> Nothing
+  GKPublicGroup {publicGroupId} -> Just publicGroupId
+
+keysRosterVersion :: GroupKeys -> Maybe VersionRoster
+keysRosterVersion = \case
+  GKGroup {} -> Nothing
+  GKPublicGroup {rosterVersion} -> Just rosterVersion
 
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
@@ -512,10 +524,8 @@ data GroupInfo = GroupInfo
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
-    rosterVersion :: Maybe VersionRoster,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
-    groupKeys :: Maybe GroupKeys,
     groupDomainVerified :: Maybe Bool
   }
   deriving (Eq, Show)
@@ -2241,7 +2251,7 @@ type VersionRangeChat = VersionRange ChatVersion
 
 -- | Store-wide context passed to store functions in place of the bare `vr`
 -- parameter. Built from config by mkStoreCxt; more fields are added here over time.
-data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey}
+data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey, drg :: TVar ChaChaDRG}
 
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v
@@ -2346,12 +2356,6 @@ $(JQ.deriveToJSON defaultJSON ''GroupSummary)
 instance FromJSON GroupSummary where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''GroupSummary)
   omittedField = Just GroupSummary {currentMembers = 0, publicMemberCount = Nothing}
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GRK") ''GroupRootKey)
-
-$(JQ.deriveJSON defaultJSON ''PublicGroupKeys)
-
-$(JQ.deriveJSON defaultJSON ''GroupKeys)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 

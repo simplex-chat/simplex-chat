@@ -69,6 +69,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.View (groupSimplexDomain, serializeChatError, serializeChatResponse, simplexChatContact, viewContactName, viewGroupName)
 import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ACreatedConnLink (..), AgentErrorType (..), ConnectionLink (..), CreatedConnLink (..), SConnectionMode (..), SimplexDomain)
 import Simplex.Messaging.Client (NetworkRequestMode (..))
+import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (ErrorType (..))
@@ -941,8 +942,8 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
     handleGroupLinkPlan :: Contact -> CreatedLinkContact -> MemberId -> LinkOwnerSig -> Text -> ConnectionPlan -> IO ()
     handleGroupLinkPlan ct ccLink mId ownerSig gt = \case
       CPGroupLink glp -> case glp of
-        GLPOk {groupSLinkData_, ownerVerification} -> case (groupSLinkData_, ownerVerification) of
-          (Just groupSLinkData, Just OVVerified) -> joinAndRegisterPublicGroup ct ccLink mId gt groupSLinkData
+        GLPOk {groupSLinkInfo_, groupSLinkData_, ownerVerification} -> case (groupSLinkData_, ownerVerification) of
+          (Just groupSLinkData, Just OVVerified) -> joinAndRegisterPublicGroup ct ccLink mId gt (groupSLinkInfo_ >>= \GroupShortLinkInfo {rootKey} -> rootKey) groupSLinkData
           (_, Just (OVFailed reason)) -> sendMessage cc ct $ "Link signature verification failed: " <> reason <> ".\nYou must be the " <> gt <> " owner to register it."
           (Nothing, _) -> sendMessage cc ct $ "Error: no " <> gt <> " information available via the link."
           _ -> sendMessage cc ct $ "Error: could not verify " <> gt <> " ownership. Please report it to directory admins."
@@ -957,12 +958,12 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         GLPOwnLink _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
       _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
 
-    joinAndRegisterPublicGroup :: Contact -> CreatedLinkContact -> MemberId -> Text -> GroupShortLinkData -> IO ()
-    joinAndRegisterPublicGroup ct ccLink mId gt groupSLinkData = do
+    joinAndRegisterPublicGroup :: Contact -> CreatedLinkContact -> MemberId -> Text -> Maybe C.PublicKeyEd25519 -> GroupShortLinkData -> IO ()
+    joinAndRegisterPublicGroup ct ccLink mId gt rootKey groupSLinkData = do
       let GroupShortLinkData {groupProfile = GroupProfile {displayName}} = groupSLinkData
           ownerContact = GroupOwnerContact {contactId = contactId' ct, memberId = mId}
       sendMessage cc ct $ "Joining the " <> gt <> " " <> displayName <> "…"
-      sendChatCmd cc (APIPrepareGroup userId ccLink False Nothing groupSLinkData) >>= \case
+      sendChatCmd cc (APIPrepareGroup userId ccLink False Nothing rootKey groupSLinkData) >>= \case
         Right (CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _))) -> do
           let gId = groupId' gInfo
           addGroupReg notifyAdminUsers cc user ct gInfo GRSProposed $ \_ -> pure ()

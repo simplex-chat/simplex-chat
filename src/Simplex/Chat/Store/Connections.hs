@@ -181,7 +181,7 @@ getConnectionEntity db cxt user@User {userId, userContactId} agentConnId = do
       liftIO $ bitraverse (addGroupChatTags db) pure gm
     toGroupAndMember :: UTCTime -> Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
     toGroupAndMember currentTs c (groupInfoRow :. memberRow) =
-      let groupInfo = toGroupInfo currentTs cxt userContactId [] groupInfoRow
+      let groupInfo = toGroupInfo_ currentTs cxt userContactId [] groupInfoRow
           member = toGroupMember currentTs userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = Just c})
     getUserContact_ :: Int64 -> ExceptT StoreError IO UserContact

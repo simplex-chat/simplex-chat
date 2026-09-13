@@ -1205,9 +1205,9 @@ func apiPrepareContact(connLink: CreatedConnLink, contactShortLinkData: ContactS
     throw r.unexpected
 }
 
-func apiPrepareGroup(connLink: CreatedConnLink, directLink: Bool, groupShortLinkData: GroupShortLinkData, verifiedDomain: SimplexDomain? = nil) async throws -> ChatData {
+func apiPrepareGroup(connLink: CreatedConnLink, directLink: Bool, groupShortLinkData: GroupShortLinkData, verifiedDomain: SimplexDomain? = nil, rootKey: String? = nil) async throws -> ChatData {
     let userId = try currentUserId("apiPrepareGroup")
-    let r: ChatResponse1 = try await chatSendCmd(.apiPrepareGroup(userId: userId, connLink: connLink, directLink: directLink, groupShortLinkData: groupShortLinkData, verifiedDomain: verifiedDomain))
+    let r: ChatResponse1 = try await chatSendCmd(.apiPrepareGroup(userId: userId, connLink: connLink, directLink: directLink, groupShortLinkData: groupShortLinkData, verifiedDomain: verifiedDomain, rootKey: rootKey))
     if case let .newPreparedChat(_, chat) = r { return chat }
     throw r.unexpected
 }

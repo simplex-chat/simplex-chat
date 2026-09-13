@@ -779,7 +779,7 @@ fun showPrepareGroupAlert(
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
         val directLink = groupShortLinkInfo?.direct ?: true
-        val chat = chatModel.controller.apiPrepareGroup(rhId, connectionLink, directLink = directLink, groupShortLinkData, planSimplexName?.nameDomain)
+        val chat = chatModel.controller.apiPrepareGroup(rhId, connectionLink, directLink = directLink, groupShortLinkData, planSimplexName?.nameDomain, groupShortLinkInfo?.rootKey)
         if (chat != null) {
           withContext(Dispatchers.Main) {
             val relays = groupShortLinkInfo?.groupRelays

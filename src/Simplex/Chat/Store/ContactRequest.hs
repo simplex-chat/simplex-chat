@@ -135,7 +135,7 @@ createOrUpdateContactRequest
       getAcceptedBusinessChat xContactId = do
         currentTs <- getCurrentTime
         g_ <-
-          maybeFirstRow (toGroupInfo currentTs cxt userContactId []) $
+          maybeFirstRow (toGroupInfo_ currentTs cxt userContactId []) $
             DB.query
               db
               (groupInfoQuery <> " WHERE g.business_xcontact_id = ? AND g.user_id = ? AND mu.contact_id = ?")

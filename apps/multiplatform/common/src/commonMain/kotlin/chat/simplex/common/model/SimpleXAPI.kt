@@ -1695,9 +1695,9 @@ object ChatController {
     return null
   }
 
-  suspend fun apiPrepareGroup(rh: Long?, connLink: CreatedConnLink, directLink: Boolean, groupShortLinkData: GroupShortLinkData, verifiedDomain: SimplexDomain? = null): Chat? {
+  suspend fun apiPrepareGroup(rh: Long?, connLink: CreatedConnLink, directLink: Boolean, groupShortLinkData: GroupShortLinkData, verifiedDomain: SimplexDomain? = null, rootKey: String? = null): Chat? {
     val userId = try { currentUserId("apiPrepareGroup") } catch (e: Exception) { return null }
-    val r = sendCmd(rh, CC.APIPrepareGroup(userId, connLink, directLink, groupShortLinkData, verifiedDomain))
+    val r = sendCmd(rh, CC.APIPrepareGroup(userId, connLink, directLink, groupShortLinkData, verifiedDomain, rootKey))
     if (r is API.Result && r.res is CR.NewPreparedChat) return if (rh == null) r.res.chat else r.res.chat.copy(remoteHostId = rh)
     Log.e(TAG, "apiPrepareGroup bad response: ${r.responseType} ${r.details}")
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_preparing_group), "${r.responseType}: ${r.details}")
@@ -3887,7 +3887,7 @@ sealed class CC {
   class ApiChangeConnectionUser(val connId: Long, val userId: Long): CC()
   class APIConnectPlan(val userId: Long, val connLink: String, val resolveMode: PlanResolveMode = PlanResolveMode.PRMUnknown, val linkOwnerSig: LinkOwnerSig? = null): CC()
   class APIPrepareContact(val userId: Long, val connLink: CreatedConnLink, val contactShortLinkData: ContactShortLinkData, val verifiedDomain: SimplexDomain? = null): CC()
-  class APIPrepareGroup(val userId: Long, val connLink: CreatedConnLink, val directLink: Boolean, val groupShortLinkData: GroupShortLinkData, val verifiedDomain: SimplexDomain? = null): CC()
+  class APIPrepareGroup(val userId: Long, val connLink: CreatedConnLink, val directLink: Boolean, val groupShortLinkData: GroupShortLinkData, val verifiedDomain: SimplexDomain? = null, val rootKey: String? = null): CC()
   class APIChangePreparedContactUser(val contactId: Long, val newUserId: Long): CC()
   class APIChangePreparedGroupUser(val groupId: Long, val newUserId: Long): CC()
   class APIConnectPreparedContact(val contactId: Long, val incognito: Boolean, val msg: MsgContent?): CC()
@@ -4101,7 +4101,7 @@ sealed class CC {
       "/_connect plan $userId $connLink$resolveStr$sigStr"
     }
     is APIPrepareContact -> "/_prepare contact $userId ${connLink.cmdString}${verifiedDomain?.let { " ${it.cmdString}" } ?: ""} ${json.encodeToString(contactShortLinkData)}"
-    is APIPrepareGroup -> "/_prepare group $userId ${connLink.cmdString} direct=${onOff(directLink)}${verifiedDomain?.let { " ${it.cmdString}" } ?: ""} ${json.encodeToString(groupShortLinkData)}"
+    is APIPrepareGroup -> "/_prepare group $userId ${connLink.cmdString} direct=${onOff(directLink)}${verifiedDomain?.let { " ${it.cmdString}" } ?: ""}${rootKey?.let { " key=$it" } ?: ""} ${json.encodeToString(groupShortLinkData)}"
     is APIChangePreparedContactUser -> "/_set contact user @$contactId $newUserId"
     is APIChangePreparedGroupUser -> "/_set group user #$groupId $newUserId"
     is APIConnectPreparedContact -> "/_connect contact @$contactId incognito=${onOff(incognito)}${maybeContent(msg)}"
@@ -4811,7 +4811,8 @@ data class AddRelayResult(
 data class GroupShortLinkInfo(
   val direct: Boolean,
   val groupRelays: List<String>,
-  val publicGroupId: String? = null
+  val publicGroupId: String? = null,
+  val rootKey: String? = null
 )
 
 @Serializable
