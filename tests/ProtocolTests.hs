@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -11,8 +12,8 @@ import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.List (isInfixOf)
-import Data.Maybe (fromMaybe)
 import qualified Data.List.NonEmpty as L
+import Data.Maybe (fromMaybe)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
 import Simplex.Chat.Protocol
@@ -66,7 +67,7 @@ preferencesJSONTests = describe "preferences JSON" $ do
     groupPrefs = either fail pure . J.eitherDecodeStrict'
     groupPrefs_ :: ByteString -> Maybe GroupPreferences
     groupPrefs_ = J.decodeStrict'
-    storedJSON ps = J.decodeStrictText =<< snd (prefsToRow $ Just ps)
+    storedJSON ps = J.decodeStrictText =<< snd (prefsToRow $ Just ps) :: Maybe J.Value
     object :: ByteString -> J.Value
     object s = fromMaybe (error $ "not JSON: " <> B.unpack s) $ J.decodeStrict' s
 
