@@ -123,23 +123,24 @@ import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Exit (ExitCode, exitSuccess)
 import System.FilePath (takeExtension, takeFileName, (</>))
 import System.IO (Handle, IOMode (..))
+import System.Mem.Weak (deRefWeak)
 import System.Random (randomRIO)
 import System.Timeout (timeout)
 import UnliftIO.Async
-import UnliftIO.Concurrent (forkIO, threadDelay)
+import UnliftIO.Concurrent (forkIO, killThread, threadDelay)
 import UnliftIO.Directory
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose)
 import UnliftIO.STM
 #if defined(dbPostgres)
 import Data.Bifunctor (bimap, first, second)
-import Simplex.Messaging.Agent.Client (SubInfo (..), getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
+import Simplex.Messaging.Agent.Client (SubInfo (..), cancelWorker, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
 #else
 import Data.Bifunctor (bimap, first, second)
 import qualified Data.ByteArray as BA
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
-import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
+import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, cancelWorker, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 #endif
@@ -346,11 +347,19 @@ restoreCalls = do
   atomically $ writeTVar calls callsMap
 
 stopChatController :: ChatController -> IO ()
-stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
+stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession, cleanupManagerAsync, relayGroupLinkChecksAsync, webPreviewState, expireCIThreads, timedItemThreads, deliveryTaskWorkers, deliveryJobWorkers, relayRequestWorkers} = do
   readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
   atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
   disconnectAgentClient smpAgent
-  readTVarIO s >>= mapM_ (\(a1, a2) -> forkIO $ uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
+  readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
+  cancelAsync cleanupManagerAsync
+  cancelAsync relayGroupLinkChecksAsync
+  forM_ webPreviewState $ \WebPreviewState {webPreviewWorkerAsync} -> cancelAsync webPreviewWorkerAsync
+  clearMap expireCIThreads >>= mapM_ (mapM_ uninterruptibleCancel)
+  clearMap timedItemThreads >>= mapM_ (readTVarIO >=> mapM_ (deRefWeak >=> mapM_ killThread))
+  clearMap deliveryTaskWorkers >>= mapM_ cancelWorker
+  clearMap deliveryJobWorkers >>= mapM_ cancelWorker
+  clearMap relayRequestWorkers >>= mapM_ cancelWorker
   closeFiles sndFiles
   closeFiles rcvFiles
   atomically $ do
@@ -358,6 +367,10 @@ stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles,
     forM_ keys $ \k -> TM.insert k False expireCIFlags
     writeTVar s Nothing
   where
+    cancelAsync :: TVar (Maybe (Async ())) -> IO ()
+    cancelAsync a = atomically (swapTVar a Nothing) >>= mapM_ uninterruptibleCancel
+    clearMap :: TM.TMap k a -> IO (Map k a)
+    clearMap m = atomically $ swapTVar m M.empty
     closeFiles :: TVar (Map Int64 Handle) -> IO ()
     closeFiles files = do
       fs <- readTVarIO files
