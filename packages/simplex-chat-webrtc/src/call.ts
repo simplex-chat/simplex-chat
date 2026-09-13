@@ -306,6 +306,7 @@ let inactiveCallMediaSources: CallMediaSources = {
 let activeCall: Call | undefined
 let notConnectedCall: NotConnectedCall | undefined
 let answerTimeout = 30_000
+let reconnectTimeout = 30_000
 var useWorker = false
 var isDesktop = false
 var localizedState = ""
@@ -490,6 +491,8 @@ const processCommand = (function () {
     localOrPeerMediaSourcesChanged(call)
     await setupMediaStreams(call)
     let connectionTimeout: number | undefined = setTimeout(connectionHandler, answerTimeout)
+    let reconnectingTimeout: number | undefined
+    let wasConnected = false
     if (pc.connectionState) {
       pc.addEventListener("connectionstatechange", connectionStateChange)
     } else {
@@ -500,33 +503,44 @@ const processCommand = (function () {
     async function connectionStateChange() {
       // "failed" means the second party did not answer in time (15 sec timeout in Chrome WebView)
       // See https://source.chromium.org/chromium/chromium/src/+/main:third_party/webrtc/p2p/base/p2p_constants.cc;l=70)
-      if (pc.connectionState !== "failed") connectionHandler()
+      if (pc.connectionState !== "failed" || wasConnected) connectionHandler()
     }
 
-    async function connectionHandler() {
+    async function connectionHandler(reconnectTimedOut = false) {
+      let state: string =
+        pc.connectionState ??
+        (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
+          ? pc.iceConnectionState
+          : pc.iceConnectionState == "completed"
+          ? "connected"
+          : "connecting") /* webView 69-70 doesn't have connectionState yet */
+      if (wasConnected) {
+        if (reconnectTimedOut) {
+          reconnectingTimeout = undefined
+          if (activeCall !== call || state == "connected") return
+          state = "disconnected"
+        } else if (state == "disconnected" || state == "failed") {
+          if (reconnectingTimeout !== undefined) return
+          reconnectingTimeout = setTimeout(() => connectionHandler(true), reconnectTimeout)
+          state = "reconnecting"
+        } else if (state == "connecting" || state == "new") {
+          return
+        }
+      }
       sendMessageToNative({
         resp: {
           type: "connection",
           state: {
-            connectionState:
-              pc.connectionState ??
-              (pc.iceConnectionState != "completed" && pc.iceConnectionState != "checking"
-                ? pc.iceConnectionState
-                : pc.iceConnectionState == "completed"
-                ? "connected"
-                : "connecting") /* webView 69-70 doesn't have connectionState yet */,
+            connectionState: state,
             iceConnectionState: pc.iceConnectionState,
             iceGatheringState: pc.iceGatheringState,
             signalingState: pc.signalingState,
           },
         },
       })
-      if (
-        pc.connectionState == "disconnected" ||
-        pc.connectionState == "failed" ||
-        (!pc.connectionState && (pc.iceConnectionState == "disconnected" || pc.iceConnectionState == "failed"))
-      ) {
+      if (state == "disconnected" || state == "failed") {
         clearConnectionTimeout()
+        clearTimeout(reconnectingTimeout)
         if (pc.connectionState) {
           pc.removeEventListener("connectionstatechange", connectionStateChange)
         } else {
@@ -536,8 +550,12 @@ const processCommand = (function () {
           setTimeout(() => sendMessageToNative({resp: {type: "ended"}}), 0)
         }
         endCall()
-      } else if (pc.connectionState == "connected" || (!pc.connectionState && pc.iceConnectionState == "connected")) {
+      } else if (state == "connected") {
         clearConnectionTimeout()
+        clearTimeout(reconnectingTimeout)
+        reconnectingTimeout = undefined
+        if (wasConnected) return
+        wasConnected = true
         const stats = (await pc.getStats()) as Map<string, any>
         for (const stat of stats.values()) {
           const {type, state} = stat
