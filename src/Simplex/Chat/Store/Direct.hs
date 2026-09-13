@@ -737,12 +737,13 @@ updateContactProfile_' db userId profileId Profile {displayName, fullName, short
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, contact_link = ?, preferences = ?, preferences_json = ?, chat_peer_type = ?, updated_at = ?,
+      SET preferences = ?, preferences_json = ?,
+          display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, contact_link = ?, chat_peer_type = ?, updated_at = ?,
           badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
           contact_domain = ?, contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    ((displayName, fullName, shortDescr, description, image, contactLink) :. prefsToRow preferences :. (peerType, updatedAt) :. badgeToRow badge badgeVerified :. contactDomainToRow contactDomain :. (userId, profileId))
+    (prefsToRow preferences :. (displayName, fullName, shortDescr, description, image, contactLink, peerType, updatedAt) :. badgeToRow badge badgeVerified :. contactDomainToRow contactDomain :. (userId, profileId))
 
 -- update only member profile fields (when member doesn't have associated contact - we can reset contactLink and prefs)
 updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> Maybe Bool -> IO ()

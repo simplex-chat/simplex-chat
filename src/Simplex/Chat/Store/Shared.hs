@@ -420,8 +420,8 @@ createContact_ db cxt User {userId} Profile {displayName, fullName, shortDescr, 
     badgeVerified <- verifyBadge_ (badgeKeys cxt) badge
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, chat_peer_type, user_id, local_alias, preferences, preferences_json, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, contact_domain, contact_domain_proof) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-      ((displayName, fullName, shortDescr, description, image, contactLink, peerType) :. (userId, localAlias) :. prefsToRow preferences :. (currentTs, currentTs) :. badgeToRow badge badgeVerified :. contactDomainToRow contactDomain)
+      "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, chat_peer_type, user_id, local_alias, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, contact_domain, contact_domain_proof, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+      ((displayName, fullName, shortDescr, description, image, contactLink, peerType) :. (userId, localAlias, currentTs, currentTs) :. badgeToRow badge badgeVerified :. contactDomainToRow contactDomain :. prefsToRow preferences)
     profileId <- insertedRowId db
     DB.execute
       db
@@ -495,8 +495,8 @@ type ContactRow = Only ContactId :. ContactRow'
 type ContactDomainRow = (Maybe SimplexDomain, Maybe SimplexDomainProof, Maybe BoolInt)
 
 toContact :: UTCTime -> StoreCxt -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
-toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, prefs, prefsJSON, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, rejectionSupported_, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow :. domainRow) :. connRow) =
-  let preferences = rowToPrefs (prefs, prefsJSON)
+toContact now cxt user chatTags ((Only contactId :. (profileId, localDisplayName, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, rejectionSupported_, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL) :. badgeRow :. domainRow) :. connRow) =
+  let preferences = chatPrefsFromRow encodedPrefs receivedPrefs
       profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, contactDomain = rowToContactDomain domainRow, contactDomainVerified = rowToDomainVerified domainRow, peerType, localBadge = rowToBadge now badgeRow, preferences, localAlias}
       activeConn = toMaybeConnection cxt connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
@@ -546,11 +546,11 @@ getProfileById db userId profileId = do
       |]
       (userId, profileId)
 
-type ContactRequestRow = (Int64, ContactName, AgentInvId, Maybe ContactId, Maybe GroupId, Maybe Int64, BoolInt) :. (Int64, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias) :. (Maybe XContactId, PQSupport, Maybe SharedMsgId, Maybe SharedMsgId) :. PreferencesRow :. (UTCTime, UTCTime, VersionChat, VersionChat) :. BadgeRow :. ContactDomainRow
+type ContactRequestRow = (Int64, ContactName, AgentInvId, Maybe ContactId, Maybe GroupId, Maybe Int64, BoolInt) :. (Int64, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias) :. (Maybe XContactId, PQSupport, Maybe SharedMsgId, Maybe SharedMsgId, Maybe Text, Maybe Text, UTCTime, UTCTime, VersionChat, VersionChat) :. BadgeRow :. ContactDomainRow
 
 toContactRequest :: UTCTime -> ContactRequestRow -> UserContactRequest
-toContactRequest now ((contactRequestId, localDisplayName, agentInvitationId, contactId_, businessGroupId_, userContactLinkId_, BI rejectionSupported) :. (profileId, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias) :. (xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId) :. prefsRow :. (createdAt, updatedAt, minVer, maxVer) :. badgeRow :. domainRow) = do
-  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, contactDomain = rowToContactDomain domainRow, contactDomainVerified = rowToDomainVerified domainRow, peerType, preferences = rowToPrefs prefsRow, localBadge = rowToBadge now badgeRow, localAlias}
+toContactRequest now ((contactRequestId, localDisplayName, agentInvitationId, contactId_, businessGroupId_, userContactLinkId_, BI rejectionSupported) :. (profileId, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias) :. (xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, encodedPrefs, receivedPrefs, createdAt, updatedAt, minVer, maxVer) :. badgeRow :. domainRow) = do
+  let profile = LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, contactDomain = rowToContactDomain domainRow, contactDomainVerified = rowToDomainVerified domainRow, peerType, preferences = chatPrefsFromRow encodedPrefs receivedPrefs, localBadge = rowToBadge now badgeRow, localAlias}
       cReqChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
    in UserContactRequest {contactRequestId, agentInvitationId, contactId_, businessGroupId_, userContactLinkId_, cReqChatVRange, localDisplayName, profileId, profile, xContactId, pqSupport, welcomeSharedMsgId, requestSharedMsgId, createdAt, updatedAt, rejectionSupported}
 
@@ -692,25 +692,13 @@ type PublicGroupAccessRow = (Maybe Text, Maybe SimplexDomain, Maybe BoolInt, May
 
 type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId) :. ProfileRow :. (UTCTime, UTCTime) :. (Maybe UTCTime, Int64, Int64, Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519, Maybe ShortLinkContact, Maybe Text, Maybe UTCTime)
 
-type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias) :. PreferencesRow :. BadgeRow :. ContactDomainRow
-
--- preferences column and the preferences as received, stored when this version encodes them differently
-type PreferencesRow = (Maybe Text, Maybe Text)
-
-rowToPrefs :: PreferencesRow -> Maybe Preferences
-rowToPrefs (prefs, prefsJSON) = storedPrefs prefs prefsJSON
-
-rowToGroupPrefs :: PreferencesRow -> Maybe GroupPreferences
-rowToGroupPrefs (prefs, prefsJSON) = storedGroupPrefs prefs prefsJSON
-
-prefsToRow :: HasPrefsJSON p => Maybe p -> (Maybe p, Maybe Text)
-prefsToRow ps = (ps, storedPrefsJSON ps)
+type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Text, Maybe Text) :. BadgeRow :. ContactDomainRow
 
 toGroupInfo :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
-toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, prefs, prefsJSON, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri, groupDomainVerified) :. groupKeysRow :. userMemberRow) =
+toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri, groupDomainVerified) :. groupKeysRow :. userMemberRow) =
   let membership = (toGroupMember now userContactId userMemberRow) {memberChatVRange = vr cxt}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
-      groupPreferences = rowToGroupPrefs (prefs, prefsJSON)
+      groupPreferences = groupPrefsFromRow encodedPrefs receivedPrefs
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ (toPublicGroupAccess accessRow)
       groupKeys = toGroupKeys publicGroupId_ groupKeysRow
@@ -799,8 +787,8 @@ toContactMember now cxt User {userContactId} (memberRow :. connRow) =
   (toGroupMember now userContactId memberRow) {activeConn = toMaybeConnection cxt connRow}
 
 rowToLocalProfile :: UTCTime -> ProfileRow -> LocalProfile
-rowToLocalProfile now ((profileId, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias) :. prefsRow :. badgeRow :. domainRow) =
-  LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, contactDomain = rowToContactDomain domainRow, contactDomainVerified = rowToDomainVerified domainRow, peerType, localBadge = rowToBadge now badgeRow, localAlias, preferences = rowToPrefs prefsRow}
+rowToLocalProfile now ((profileId, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, encodedPrefs, receivedPrefs) :. badgeRow :. domainRow) =
+  LocalProfile {profileId, displayName, fullName, shortDescr, description, image, contactLink, contactDomain = rowToContactDomain domainRow, contactDomainVerified = rowToDomainVerified domainRow, peerType, localBadge = rowToBadge now badgeRow, localAlias, preferences = chatPrefsFromRow encodedPrefs receivedPrefs}
 
 toBusinessChatInfo :: Maybe SimplexDomainClaim -> BusinessChatInfoRow -> Maybe BusinessChatInfo
 toBusinessChatInfo businessDomain (Just chatType, Just businessId, Just customerId) = Just BusinessChatInfo {chatType, businessId, customerId, businessDomain}

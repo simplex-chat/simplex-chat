@@ -171,8 +171,8 @@ createOrUpdateContactRequest
           liftIO $
             DB.execute
               db
-              "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, local_alias, preferences, preferences_json, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-              ((displayName, fullName, shortDescr, description, image, contactLink, userId) :. Only ("" :: LocalAlias) :. prefsToRow preferences :. (currentTs, currentTs) :. badgeToRow badge badgeVerified)
+              "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, local_alias, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+              ((displayName, fullName, shortDescr, description, image, contactLink, userId) :. ("" :: LocalAlias, currentTs, currentTs) :. badgeToRow badge badgeVerified :. prefsToRow preferences)
           profileId <- liftIO $ insertedRowId db
           liftIO $
             DB.execute

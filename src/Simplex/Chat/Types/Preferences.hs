@@ -24,7 +24,7 @@
 module Simplex.Chat.Types.Preferences where
 
 import Control.Applicative ((<|>))
-import Data.Aeson (FromJSON (..), Object, ToJSON (..), Value (..))
+import Data.Aeson (FromJSON (..), Object, ToJSON (..), Value (..), decodeStrictText)
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as J
 import qualified Data.Aeson.Types as JT
@@ -39,7 +39,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON, taggedObjectJSON)
-import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Util (encodeJSON, safeDecodeUtf8, (<$?>))
 
 data ChatFeature
   = CFTimedMessages
@@ -151,35 +151,33 @@ setPreference_ f pref_ prefs =
     SCFCalls -> prefs {calls = pref_}
     SCFSessions -> prefs {sessions = pref_}
 
--- preferences as received, kept when this version encodes them differently,
--- so that a preference it does not define is not lost and is used once it is added
-newtype PrefsJSON = PrefsJSON (Maybe Object)
+newtype PrefsJSON = PrefsJSON {unPrefsJSON :: Maybe Object}
   deriving (Eq, Show)
 
 instance ToJSON PrefsJSON where
-  toJSON (PrefsJSON j) = maybe Null Object j
-  toEncoding (PrefsJSON j) = maybe JE.null_ (JE.value . Object) j
+  toJSON _ = Null
+  toEncoding _ = JE.null_
   omitField _ = True
 
 instance FromJSON PrefsJSON where
-  parseJSON v = PrefsJSON . Just <$> parseJSON v
+  parseJSON _ = pure $ PrefsJSON Nothing
   omittedField = Just $ PrefsJSON Nothing
 
-receivedPrefs :: ToJSON p => Value -> p -> PrefsJSON
-receivedPrefs v ps = PrefsJSON $ case v of
+keepPrefsJSON :: (ToJSON p, HasField "_json" p PrefsJSON) => Value -> p -> p
+keepPrefsJSON v ps = setField @"_json" ps . PrefsJSON $ case v of
   Object o | v /= toJSON ps -> Just o
   _ -> Nothing
 
-prefsJSONText :: PrefsJSON -> Maybe Text
-prefsJSONText (PrefsJSON j) = encodeJSON . Object <$> j
-
 decodePrefs :: (Value -> JT.Parser p) -> Text -> Maybe p
-decodePrefs prefsP t = JT.parseMaybe prefsP =<< decodeJSON t
+decodePrefs prefsP t = JT.parseMaybe prefsP =<< decodeStrictText t
 
-storedPrefs_ :: (Value -> JT.Parser p) -> Maybe Text -> Maybe Text -> Maybe p
-storedPrefs_ prefsP prefs prefsJSON = (decode =<< prefsJSON) <|> (decode =<< prefs)
+prefsFromRow_ :: (Value -> JT.Parser p) -> Maybe Text -> Maybe Text -> Maybe p
+prefsFromRow_ prefsP encodedPrefs receivedPrefs = (decode =<< receivedPrefs) <|> (decode =<< encodedPrefs)
   where
     decode = decodePrefs prefsP
+
+prefsToRow :: HasField "_json" p PrefsJSON => Maybe p -> (Maybe p, Maybe Text)
+prefsToRow ps = (ps, encodeJSON . Object <$> (unPrefsJSON . getField @"_json" =<< ps))
 
 -- collection of optional chat preferences for the user and the contact
 data Preferences = Preferences
@@ -199,12 +197,8 @@ class HasCommands p where commands_ :: p -> Maybe [ChatBotCommand]
 
 instance HasCommands Preferences where commands_ Preferences {commands} = commands
 
-class HasPrefsJSON p where prefsJSON_ :: p -> PrefsJSON
-
-instance HasPrefsJSON Preferences where prefsJSON_ Preferences {_json} = _json
-
-storedPrefsJSON :: HasPrefsJSON p => Maybe p -> Maybe Text
-storedPrefsJSON ps = prefsJSONText . prefsJSON_ =<< ps
+instance HasField "_json" Preferences PrefsJSON where
+  hasField p@Preferences {_json} = (\j -> p {_json = j}, _json)
 
 data GroupFeature
   = GFTimedMessages
@@ -418,7 +412,8 @@ data GroupPreferences = GroupPreferences
 
 instance HasCommands GroupPreferences where commands_ GroupPreferences {commands} = commands
 
-instance HasPrefsJSON GroupPreferences where prefsJSON_ GroupPreferences {_json} = _json
+instance HasField "_json" GroupPreferences PrefsJSON where
+  hasField p@GroupPreferences {_json} = (\j -> p {_json = j}, _json)
 
 data ChatBotCommand
   = CBCCommand
@@ -1244,10 +1239,10 @@ chatPrefsP :: Value -> JT.Parser Preferences
 chatPrefsP = $(J.mkParseJSON defaultJSON ''Preferences)
 
 instance FromJSON Preferences where
-  parseJSON v = (\ps -> ps {_json = receivedPrefs v ps}) <$> chatPrefsP v
+  parseJSON v = keepPrefsJSON v <$> chatPrefsP v
 
-storedPrefs :: Maybe Text -> Maybe Text -> Maybe Preferences
-storedPrefs = storedPrefs_ chatPrefsP
+chatPrefsFromRow :: Maybe Text -> Maybe Text -> Maybe Preferences
+chatPrefsFromRow = prefsFromRow_ chatPrefsP
 
 instance ToField Preferences where
   toField = toField . encodeJSON
@@ -1301,10 +1296,10 @@ groupPrefsP :: Value -> JT.Parser GroupPreferences
 groupPrefsP = $(J.mkParseJSON defaultJSON ''GroupPreferences)
 
 instance FromJSON GroupPreferences where
-  parseJSON v = (\ps -> ps {_json = receivedPrefs v ps}) <$> groupPrefsP v
+  parseJSON v = keepPrefsJSON v <$> groupPrefsP v
 
-storedGroupPrefs :: Maybe Text -> Maybe Text -> Maybe GroupPreferences
-storedGroupPrefs = storedPrefs_ groupPrefsP
+groupPrefsFromRow :: Maybe Text -> Maybe Text -> Maybe GroupPreferences
+groupPrefsFromRow = prefsFromRow_ groupPrefsP
 
 instance ToField GroupPreferences where
   toField = toField . encodeJSON

@@ -11,6 +11,7 @@ import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.List (isInfixOf)
+import Data.Maybe (fromMaybe)
 import qualified Data.List.NonEmpty as L
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
@@ -37,26 +38,26 @@ protocolTests = do
 
 preferencesJSONTests :: Spec
 preferencesJSONTests = describe "preferences JSON" $ do
-  it "keeps no JSON when preferences encode to what was received" $ do
+  it "stores no JSON when preferences encode to what was received" $ do
     ps <- prefs "{\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"no\"}}"
-    prefsJSON_ ps `shouldBe` PrefsJSON Nothing
-  it "keeps no JSON when group preferences encode to what was received" $ do
+    storedJSON ps `shouldBe` Nothing
+  it "stores no JSON when group preferences encode to what was received" $ do
     ps <- groupPrefs "{\"voice\":{\"enable\":\"on\"},\"reactions\":{\"enable\":\"off\"}}"
-    prefsJSON_ ps `shouldBe` PrefsJSON Nothing
-  it "keeps JSON with a preference that is not defined" $ do
+    storedJSON ps `shouldBe` Nothing
+  it "stores JSON with a preference that is not defined" $ do
     let s = "{\"voice\":{\"enable\":\"on\"},\"polls\":{\"enable\":\"on\"}}"
     ps <- groupPrefs s
-    prefsJSON_ ps `shouldBe` PrefsJSON (Just $ object s)
+    storedJSON ps `shouldBe` Just (object s)
     J.toJSON ps `shouldBe` object "{\"voice\":{\"enable\":\"on\"}}"
-  it "keeps JSON with a field that is not defined in a preference" $ do
+  it "stores JSON with a field that is not defined in a preference" $ do
     let s = "{\"voice\":{\"enable\":\"on\",\"exceptRole\":\"observer\"}}"
     ps <- groupPrefs s
-    prefsJSON_ ps `shouldBe` PrefsJSON (Just $ object s)
+    storedJSON ps `shouldBe` Just (object s)
   it "reads the received preferences from the stored JSON" $
-    storedGroupPrefs (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"off\"}}")
+    groupPrefsFromRow (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"off\"}}")
       `shouldBe` groupPrefs_ "{\"voice\":{\"enable\":\"off\"}}"
   it "reads the stored preferences when the received JSON does not parse" $
-    storedGroupPrefs (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"sometimes\"}}")
+    groupPrefsFromRow (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"sometimes\"}}")
       `shouldBe` groupPrefs_ "{\"voice\":{\"enable\":\"on\"}}"
   where
     prefs :: ByteString -> IO Preferences
@@ -65,10 +66,9 @@ preferencesJSONTests = describe "preferences JSON" $ do
     groupPrefs = either fail pure . J.eitherDecodeStrict'
     groupPrefs_ :: ByteString -> Maybe GroupPreferences
     groupPrefs_ = J.decodeStrict'
-    object :: ByteString -> J.Object
-    object s = case J.decodeStrict' s of
-      Just (J.Object o) -> o
-      _ -> error $ "not an object: " <> B.unpack s
+    storedJSON ps = J.decodeStrictText =<< snd (prefsToRow $ Just ps)
+    object :: ByteString -> J.Value
+    object s = fromMaybe (error $ "not JSON: " <> B.unpack s) $ J.decodeStrict' s
 
 batchLimitTests :: Spec
 batchLimitTests = describe "Chat message batch limits" $ do
