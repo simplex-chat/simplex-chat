@@ -899,6 +899,33 @@ ALTER TABLE test_chat_schema.extra_xftp_file_descriptions ALTER COLUMN extra_fil
 
 
 
+CREATE TABLE test_chat_schema.file_badge_proofs (
+    badge_proof_id bigint NOT NULL,
+    file_id bigint NOT NULL,
+    proof_kind text NOT NULL,
+    badge_proof bytea NOT NULL,
+    badge_pres_header bytea NOT NULL,
+    badge_key_idx bigint NOT NULL,
+    badge_type text NOT NULL,
+    badge_expiry timestamp with time zone NOT NULL,
+    badge_extra text NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.file_badge_proofs ALTER COLUMN badge_proof_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.file_badge_proofs_badge_proof_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
 CREATE TABLE test_chat_schema.files (
     file_id bigint NOT NULL,
     contact_id bigint,
@@ -926,7 +953,9 @@ CREATE TABLE test_chat_schema.files (
     file_type text DEFAULT 'normal'::text NOT NULL,
     roster_transfer_id bigint,
     file_digest bytea,
-    file_expires_at timestamp with time zone
+    file_expires_at timestamp with time zone,
+    file_max_size bigint,
+    file_badge_status text
 );
 
 
@@ -1955,6 +1984,11 @@ ALTER TABLE ONLY test_chat_schema.extra_xftp_file_descriptions
 
 
 
+ALTER TABLE ONLY test_chat_schema.file_badge_proofs
+    ADD CONSTRAINT file_badge_proofs_pkey PRIMARY KEY (badge_proof_id);
+
+
+
 ALTER TABLE ONLY test_chat_schema.files
     ADD CONSTRAINT files_pkey PRIMARY KEY (file_id);
 
@@ -2685,6 +2719,10 @@ CREATE INDEX idx_extra_xftp_file_descriptions_file_id ON test_chat_schema.extra_
 
 
 CREATE INDEX idx_extra_xftp_file_descriptions_user_id ON test_chat_schema.extra_xftp_file_descriptions USING btree (user_id);
+
+
+
+CREATE UNIQUE INDEX idx_file_badge_proofs_file_id_kind ON test_chat_schema.file_badge_proofs USING btree (file_id, proof_kind);
 
 
 
@@ -3426,6 +3464,11 @@ ALTER TABLE ONLY test_chat_schema.extra_xftp_file_descriptions
 
 ALTER TABLE ONLY test_chat_schema.extra_xftp_file_descriptions
     ADD CONSTRAINT extra_xftp_file_descriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.file_badge_proofs
+    ADD CONSTRAINT file_badge_proofs_file_id_fkey FOREIGN KEY (file_id) REFERENCES test_chat_schema.files(file_id) ON DELETE CASCADE;
 
 
 

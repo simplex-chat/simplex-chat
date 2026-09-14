@@ -480,9 +480,14 @@ groupRootPubKey (GRKPrivate pk) = C.publicKey pk
 groupRootPubKey (GRKPublic pk) = pk
 
 data GroupKeys = GroupKeys
-  { publicGroupId :: B64UrlByteString,
-    groupRootKey :: GroupRootKey,
+  { publicGroupKeys :: Maybe PublicGroupKeys,
     memberPrivKey :: C.PrivateKeyEd25519
+  }
+  deriving (Eq, Show)
+
+data PublicGroupKeys = PublicGroupKeys
+  { publicGroupId :: B64UrlByteString,
+    groupRootKey :: GroupRootKey
   }
   deriving (Eq, Show)
 
@@ -943,6 +948,7 @@ instance ToJSON GroupLinkId where
 
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,
+    fromMemberKey :: Maybe MemberKey,
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile,
@@ -955,6 +961,7 @@ data GroupInvitation = GroupInvitation
 data GroupLinkInvitation = GroupLinkInvitation
   { fromMember :: MemberIdRole,
     fromMemberName :: ContactName,
+    fromMemberKey :: Maybe MemberKey,
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
     accepted :: Maybe GroupAcceptance,
@@ -1551,7 +1558,8 @@ data FileInvitation = FileInvitation
     fileDigest :: Maybe FileDigest,
     fileConnReq :: Maybe ConnReqInvitation,
     fileInline :: Maybe InlineFileMode,
-    fileDescr :: Maybe FileDescr
+    fileDescr :: Maybe FileDescr,
+    fileBadge :: Maybe BadgeProof
   }
   deriving (Eq, Show)
 
@@ -1566,7 +1574,8 @@ xftpFileInvitation fileName fileSize fileDescr =
       fileDigest = Nothing,
       fileConnReq = Nothing,
       fileInline = Nothing,
-      fileDescr = Just fileDescr
+      fileDescr = Just fileDescr,
+      fileBadge = Nothing
     }
 
 data InlineFileMode
@@ -1620,10 +1629,14 @@ instance ToJSON FileType where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
 
+data FileProhibited = FileProhibited {maxSize :: Integer, badgeStatus :: Maybe BadgeStatus}
+  deriving (Eq, Show)
+
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,
     xftpRcvFile :: Maybe XFTPRcvFile,
     fileInvitation :: FileInvitation,
+    fileProhibited :: Maybe FileProhibited,
     fileStatus :: RcvFileStatus,
     fileType :: FileType,
     rcvFileInline :: Maybe InlineFileMode,
@@ -2336,6 +2349,8 @@ instance FromJSON GroupSummary where
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GRK") ''GroupRootKey)
 
+$(JQ.deriveJSON defaultJSON ''PublicGroupKeys)
+
 $(JQ.deriveJSON defaultJSON ''GroupKeys)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
@@ -2369,6 +2384,8 @@ $(JQ.deriveJSON defaultJSON ''MemberRestrictions)
 $(JQ.deriveJSON defaultJSON ''GroupMemberRef)
 
 $(JQ.deriveJSON defaultJSON ''FileDescr)
+
+$(JQ.deriveJSON defaultJSON ''FileProhibited)
 
 $(JQ.deriveJSON defaultJSON ''FileInvitation)
 
