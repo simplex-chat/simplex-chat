@@ -170,6 +170,16 @@ Enabling sending link previews may reduce privacy – your app will be loading l
 - Tap on "Privacy & security".
 - Toggle on "Send link previews".
 
+#### Remove link tracking
+
+Removes tracking parameters from links you send or receive. Links sent by you have easier rules to not remove too much, but links you receive have eager rules to save you from more edge cases.
+
+Example: `https://youtu.be/a123?si=456` will turn into `https://youtu.be/a123`, removing tracking parameter `si=`.
+
+- [Open the app settings](#opening-the-app-settings).
+- Tap on "Privacy & security".
+- Toggle on "Remove link tracking".
+
 #### SimpleX Links
 
 This option affects how the links to connect to other SimpleX users or to join groups are shown in the conversations. You can choose between:
