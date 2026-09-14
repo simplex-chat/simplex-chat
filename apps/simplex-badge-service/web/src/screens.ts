@@ -799,12 +799,16 @@ const MONTHS: readonly string[] = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-function calendarDate(when: string | undefined, withYear = false): string | null {
+function calendarDate(when: string | undefined, withYear = false, withTime = false): string | null {
   if (when === undefined) return null;
   const at = new Date(when);
   if (Number.isNaN(at.getTime())) return null;
-  const day = `${at.getUTCDate()} ${MONTHS[at.getUTCMonth()]}`;
-  return withYear ? `${day} ${at.getUTCFullYear()}` : day;
+  // the buyer's own timezone: the instant is stored in UTC, but a receipt reads in local time
+  const day = `${at.getDate()} ${MONTHS[at.getMonth()]}`;
+  const dated = withYear ? `${day} ${at.getFullYear()}` : day;
+  if (!withTime) return dated;
+  const time = `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
+  return `${dated}, ${time}`;
 }
 
 function orderTitle(badgeType: string, months: number): string {
@@ -863,7 +867,7 @@ function entryMeta(o: UnpaidOrder): HTMLElement {
   if (o.amount !== undefined && o.currency !== undefined) {
     meta.append(el("span", {}, money(o.amount, o.currency)));
   }
-  const bought = calendarDate(o.createdAt, true);
+  const bought = calendarDate(o.createdAt, true, true);
   if (bought !== null) meta.append(el("span", {}, bought));
   return meta;
 }

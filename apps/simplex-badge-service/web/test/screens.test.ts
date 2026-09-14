@@ -795,7 +795,7 @@ domTest("screens: the wipe control at the foot of the codes list calls back", ()
   assert.equal(wiped, 1);
 });
 
-domTest("screens: a history list row is a receipt — badge, level, price, method and day", () => {
+domTest("screens: a history list row is a receipt — badge, level, price, method and time", () => {
   const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true,
     rows: historyRows([record({
       orderId: "a", status: "paid", code: HELD_CODE,
@@ -814,12 +814,12 @@ domTest("screens: a history list row is a receipt — badge, level, price, metho
   const mark = row.all("svg.mark");
   assert.equal(mark.length, 1);
   assert.equal(mark[0]!.all("path")[0]!.getAttribute("fill"), "#FF6600", "Monero's orange");
-  for (const line of ["Legend, 12 months", "Monero", "$420.00", "28 August 2026", "paid"]) {
+  for (const line of ["Legend, 12 months", "Monero", "$420.00", "28 August 2026, 11:46", "paid"]) {
     assert.ok(row.textContent.includes(line), `the row is missing: ${line}`);
   }
   // The year, which the paid-no-code screen's "paid 24 August" does not print: this list is the one
   // screen that can hold purchases from more than one of them.
-  assert.equal(row.all("div.meta")[0]!.texts.join("|"), "Monero|$420.00|28 August 2026");
+  assert.equal(row.all("div.meta")[0]!.texts.join("|"), "Monero|$420.00|28 August 2026, 11:46");
 });
 
 domTest("screens: the four the history list states are told apart by their own ground", () => {
