@@ -114,6 +114,7 @@ import Simplex.Messaging.Parsers (base64P)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ErrorType (NAME), MsgFlags (..), NameRecord (..), NameRegistration (..), NameResponse (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
+import Simplex.Messaging.SystemTime (SystemSeconds)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxyWithAuth)
 import Simplex.Messaging.Util
@@ -4432,7 +4433,7 @@ processChatCommand cxt nm = \case
               Just r -> pure r
               Nothing -> do
                 when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
-                l' <- resolveSLink
+                (l', blockTs) <- resolveSLink
                 (FixedLinkData {rootKey}, cData, cReq) <- getShortLinkConnReq nm user l'
                 contactSLinkData_ <- mapM linkDataBadge =<< liftIO (decodeLinkUserData cData)
                 let linkProfile_ = (\ContactShortLinkData {profile} -> profile) <$> contactSLinkData_
@@ -4442,7 +4443,7 @@ processChatCommand cxt nm = \case
                       (Just _, Just p) -> updateContactFromLinkData user ct' p
                       _ -> pure ct'
                 forM_ planDomain $ \nameDomain ->
-                  unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain (SDEUnknownDomain linkDomain_) Nothing
+                  unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain (SDEUnknownDomain linkDomain_) blockTs
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
                   Just ct' | not (contactDeleted ct') -> do
                     ct'' <- refreshContact ct'
@@ -4479,9 +4480,10 @@ processChatCommand cxt nm = \case
             CTLink (CSLContact _ t _ _) -> t
             CTName SimplexNameInfo {nameType = NTContact} -> CCTContact
             CTName SimplexNameInfo {nameType = NTPublicGroup} -> CCTChannel
+          -- the link, and the block the name was read at when it came from a name
           resolveSLink = case nl' of
-            CTLink l' -> pure l'
-            CTName n -> serverShortLink <$> resolveNameLink n
+            CTLink l' -> pure (l', Nothing)
+            CTName n -> first serverShortLink <$> resolveNameLink n
           con l' cReq = ACCL SCMContact $ CCLink cReq (Just l')
           gPlan (ccl, g) = if memberRemoved (membership g) then Nothing else Just (ACCL SCMContact ccl, CPGroupLink (GLPKnown g False Nothing (ListDef [])))
           groupShortLinkPlan :: CM (ACreatedConnLink, ConnectionPlan)
@@ -4492,7 +4494,7 @@ processChatCommand cxt nm = \case
               Just r -> pure r
               Nothing -> do
                 when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
-                l' <- resolveSLink
+                (l', blockTs) <- resolveSLink
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays}), cReq) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
                 if
@@ -4525,7 +4527,7 @@ processChatCommand cxt nm = \case
                               CPGroupLink (GLPOwnLink GroupInfo {groupProfile}) -> Just groupProfile
                               CPGroupLink (GLPConnectingProhibit (Just GroupInfo {groupProfile})) -> Just groupProfile
                               _ -> (\GroupShortLinkData {groupProfile} -> groupProfile) <$> groupSLinkData_
-                         in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain (SDEUnknownDomain domain_) Nothing
+                         in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain (SDEUnknownDomain domain_) blockTs
                       pure (con l' cReq, plan)
             where
               unsupportedGroupType = \case
@@ -4537,7 +4539,7 @@ processChatCommand cxt nm = \case
                   Just (ccl, g) -> pure $ Just (ACCL SCMContact ccl, CPGroupLink (GLPOwnLink g))
                   Nothing -> (gPlan =<<) <$> getGroupToConnect db cxt user nl'
               resolveKnownGroup g = do
-                l' <- resolveSLink
+                (l', _) <- resolveSLink
                 (FixedLinkData {rootKey = rk}, cData@(ContactLinkData _ UserContactData {owners}), cReq) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
                 let ov = verifyLinkOwner rk owners l' sig_
@@ -4546,8 +4548,8 @@ processChatCommand cxt nm = \case
                   Just sLinkData -> updateGroupFromLinkData user g sLinkData Nothing
                   _ -> pure (g, False)
                 pure (con l' cReq, CPGroupLink (GLPKnown g' updated ov (ListDef glOwners)))
-          -- resolve a name to its first contact/channel short link
-          resolveNameLink :: SimplexNameInfo -> CM (ConnShortLink 'CMContact)
+          -- resolve a name to its first contact/channel short link, and the block it was read at
+          resolveNameLink :: SimplexNameInfo -> CM (ConnShortLink 'CMContact, Maybe SystemSeconds)
           resolveNameLink SimplexNameInfo {nameType, nameDomain} = do
             res@NameResponse {lastBlockTs} <-
               maybe (withAgent (\a -> resolveSimplexName a nm (aUserId user) nameDomain)) (ExceptT . pure) nameRes
@@ -4555,7 +4557,7 @@ processChatCommand cxt nm = \case
             let (candidates, ctType') = case nameType of
                   NTContact -> (nrSimplexContact, CCTContact)
                   NTPublicGroup -> (nrSimplexChannel, CCTChannel)
-            maybe (throwChatError $ CESimplexDomainNotReady nameDomain SDENoValidLink lastBlockTs) pure $ firstNameLink ctType' candidates
+            maybe (throwChatError $ CESimplexDomainNotReady nameDomain SDENoValidLink lastBlockTs) (pure . (,lastBlockTs)) $ firstNameLink ctType' candidates
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> Maybe SimplexNameInfo -> Maybe SimplexNameInfo -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink planSimplexName otherSimplexName plan
       | connectionPlanProceed plan = do

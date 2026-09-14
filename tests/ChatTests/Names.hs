@@ -77,7 +77,7 @@ testConnectByNameNotClaimed ps = withSmpServerAndNames $ \reg ->
       (shortLink, _) <- getContactLinks alice True
       registerName reg aliceName (contactNameRecord "alice" (T.pack shortLink))
       bob ##> "/c @alice.simplex"
-      bob <## "SimpleX name alice.simplex resolves to an address that claims no name"
+      bob <## "SimpleX name alice.simplex resolves to an address that claims no name (as of 1m ago)"
 
 testConnectByNameKnownContactNotClaimed :: HasCallStack => TestParams -> IO ()
 testConnectByNameKnownContactNotClaimed ps = withSmpServerAndNames $ \reg ->
@@ -100,7 +100,7 @@ testConnectByNameKnownContactNotClaimed ps = withSmpServerAndNames $ \reg ->
         (alice <## "bob (Bob): contact is connected")
       registerName reg aliceName (contactNameRecord "alice" (T.pack shortLink))
       bob ##> "/c @alice.simplex"
-      bob <## "SimpleX name alice.simplex resolves to an address that claims no name"
+      bob <## "SimpleX name alice.simplex resolves to an address that claims no name (as of 1m ago)"
 
 testConnectByNameNotFound :: HasCallStack => TestParams -> IO ()
 testConnectByNameNotFound ps = withSmpServerAndNames $ \_reg ->
