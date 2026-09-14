@@ -3249,6 +3249,7 @@
   <string name="badges_error_network">Connection error. Please check your network connection.</string>
   <string name="badges_error_badge_ended">The code was accepted, but the badge it grants has already ended.</string>
   <string name="badges_error_unknown">The code could not be redeemed.</string>
+  <string name="badges_code_you_scanned_is_not_badge_code">The code you scanned is not a badge code.</string>
   <string name="badges_your_badge">Your badge</string>
   <string name="badges_support_ended">Support ended</string>
   <string name="badges_shown_on_your_profile">shown on your profile</string>

@@ -30,6 +30,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.QRCodeScanner
 import chat.simplex.common.views.onboarding.OnboardingActionButton
 import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
 import chat.simplex.res.MR
@@ -148,6 +149,27 @@ fun BadgesRedeemCodeView() {
     CodeField(code, submitting.value, ::applyCodeInput)
 
     PasteButton(submitting.value, ::applyCodeInput)
+
+    if (appPlatform.isAndroid) {
+      QRCodeScanner(padding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp)) { text ->
+        val formatted = formatBadgeCodeInput(text)
+        when {
+          submitting.value -> false
+          parseBadgeCode(formatted) == null -> {
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.invalid_qr_code),
+              text = generalGetString(MR.strings.badges_code_you_scanned_is_not_badge_code)
+            )
+            false
+          }
+          else -> {
+            applyCodeInput(formatted)
+            redeem()
+            true
+          }
+        }
+      }
+    }
 
     Spacer(Modifier.weight(1f))
 

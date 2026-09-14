@@ -60,7 +60,7 @@ fun BadgeSummary(badgeState: BadgeState) {
 
     Text(
       stringResource(MR.strings.badges_shown_on_your_profile),
-      style = MaterialTheme.typography.caption,
+      style = MaterialTheme.typography.body2,
       color = MaterialTheme.colors.secondary
     )
   }
