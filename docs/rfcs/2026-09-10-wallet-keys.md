@@ -133,9 +133,40 @@ signed record edit, not a rebinding of keys.
 ## Hidden profiles
 
 Nothing about profiles is encoded in the derivation, so the wallet holds nothing
-that would disclose a hidden profile. The seed is the device's: whoever unlocks
-any profile can export the phrase and derive every name key, hidden profiles
-included. A key per profile rather than per device is what would change that.
+that would disclose a hidden profile, unless one of the registered names gives
+away the existence of the hidden profile claiming it. Two channels would, and
+each needs its own answer.
+
+A reader holding the seed can run the recovery scan: derive the enumerable paths
+and ask the registry which names each address owns. That returns every name the
+device holds whether or not anything was recorded locally, so keeping no record
+does not help. A name that must not surface this way has to sit at a path the
+scan cannot enumerate, derived from a secret the device does not store.
+
+A reader holding a list of names comes from the other side: resolve each one and
+check whether what it resolves to is a contact address on this device. The path
+never enters that check. Only a name resolving to something not identifiable as
+one of the device's profiles closes it.
+
+Such a subtree needs no local state. Given the secret the client scans it exactly
+as a reader would scan the public one, so the names, their indexes and the path
+are recoverable from the secret and stored nowhere, which matters because a
+stored index counter would betray that the subtree is in use. The secret must not
+be the profile's own passphrase: changing that means unhiding and re-hiding,
+which would move the subtree and orphan the names. The cost is that such a name
+is not recoverable from the phrase alone, with no checksum and no scan behind it.
+
+The commands would take the secret where they take an index today:
+
+```
+/_wallet secret=<passphrase>                  the next addresses in that subtree
+/_wallet export name <k> secret=<passphrase>  one name key's secret in it
+```
+
+Neither is implemented here, and a named parameter can be added without breaking
+the existing form, so what has to be settled before the first such name is bought
+is the derivation rather than the signature: how a secret maps to path
+components, and whether the subtree hangs under purpose `44'` or its own.
 
 ## Scope
 
