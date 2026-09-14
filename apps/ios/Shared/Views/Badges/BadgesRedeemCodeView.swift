@@ -37,7 +37,7 @@ struct BadgesRedeemCodeView: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
     @AppStorage(DEFAULT_SUPPORTER_BANNER_SHOWN) private var supporterBannerShown = false
-    @Environment(\.dismiss) var dismiss: DismissAction
+    @Binding var active: Bool
     @State private var code = ""
     @State private var canonicalCode: String? = nil
     @State private var submitting = false
@@ -184,7 +184,7 @@ struct BadgesRedeemCodeView: View {
                         showAlert(NSLocalizedString("Cannot redeem code", comment: "alert title"), message: failureMessage(newBadge ? .badgeEnded : .codeUsed))
                     } else {
                         supporterBannerShown = true
-                        dismiss()
+                        active = false
                     }
                 }
             } catch let error {
@@ -222,7 +222,7 @@ struct BadgesRedeemCodeView: View {
 struct BadgesRedeemCodeView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesRedeemCodeView()
+            BadgesRedeemCodeView(active: .constant(true))
         }
     }
 }

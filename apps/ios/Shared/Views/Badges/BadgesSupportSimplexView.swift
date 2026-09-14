@@ -14,10 +14,11 @@ struct BadgesSupportSimplexView: View {
     // set true when presented as a sheet root (from the chat-list banner) — that path doesn't
     // reserve nav-bar space like a NavigationLink push does, so the title lands too close to the top
     var showsAsSheet: Bool = false
+    // owned by BadgesView: the link must outlive this view, which is swapped out once the badge is shown
+    @Binding var redeemCodeActive: Bool
     @State private var whyBuiltActive = false
     @State private var howItWorksActive = false
     @State private var chooseLevelActive = false
-    @State private var redeemCodeActive = false
 
     var body: some View {
         GeometryReader { g in
@@ -126,23 +127,12 @@ struct BadgesSupportSimplexView: View {
     }
 
     private func redeemCodeButton() -> some View {
-        ZStack {
-            Button {
-                redeemCodeActive = true
-            } label: {
-                Text("Redeem badge code")
-            }
-            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
-
-            NavigationLink(isActive: $redeemCodeActive) {
-                BadgesRedeemCodeView()
-                    .modifier(ThemedBackground())
-            } label: {
-                EmptyView()
-            }
-            .frame(width: 1, height: 1)
-            .hidden()
+        Button {
+            redeemCodeActive = true
+        } label: {
+            Text("Redeem badge code")
         }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 
     private func getCodeButton() -> some View {
@@ -190,7 +180,7 @@ struct PhoneSupporterHero: View {
 struct BadgesSupportSimplexView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesSupportSimplexView()
+            BadgesSupportSimplexView(redeemCodeActive: .constant(false))
         }
     }
 }
