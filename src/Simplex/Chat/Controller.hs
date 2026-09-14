@@ -43,7 +43,9 @@ import Data.Set (Set)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.String
+import Data.List (foldl')
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time (NominalDiffTime, UTCTime)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
@@ -747,12 +749,17 @@ allowRemoteCommand = \case
   DeleteRemoteCtrl _ -> False
   ExecChatStoreSQL _ -> False
   ExecAgentStoreSQL _ -> False
-  APIWallet -> False
-  APIWalletCreate {} -> False
-  APIWalletExportSeedMnemonic -> False
-  APIWalletExportNameSecret {} -> False
-  APIWalletDelete -> False
   _ -> True
+
+-- | Command text for a log, with any secret blanked. A secret is the last
+-- argument and takes the rest of the line, so blanking from its name is enough.
+redactedCommand :: Text -> Text
+redactedCommand s = foldl' blank s ["mnemonic=", "secret="]
+  where
+    blank t p = case T.breakOn p t of
+      (before, after)
+        | T.null after -> t
+        | otherwise -> before <> p <> "<redacted>"
 
 data RelayConnectionResult = RelayConnectionResult
   { relayMember :: GroupMember,

@@ -552,7 +552,7 @@ liftRC = liftError (ChatErrorRemoteCtrl . RCEProtocolError)
 
 handleSend :: (ByteString -> Int -> CM' (Either ChatError ChatResponse)) -> Text -> Int -> CM' RemoteResponse
 handleSend execCC command retryNum = do
-  logDebug $ "Send: " <> tshow command
+  logDebug $ "Send: " <> tshow (redactedCommand command)
   -- execCC is execChatCommand CSRemoteCtrl, which checks allowRemoteCommand
   -- convert errors thrown in execCC into error responses to prevent aborting the protocol wrapper
   RRChatResponse . eitherToResult <$> execCC (encodeUtf8 command) retryNum

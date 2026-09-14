@@ -11,8 +11,10 @@ import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft)
 import Data.List (nub)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
+import Simplex.Chat.Controller (redactedCommand)
 import Simplex.Chat.Wallet (NameIndex, WalletSeed (..), deriveNameKey, importRecoveryKey, nameKeySecret, recoveryKeyPhrase, renderNameKeyPath, seedMaster)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
 
@@ -44,6 +46,12 @@ walletDerivationTests = do
     recoveryKeyPhrase testSeed `shouldBe` Right testPhrase
   Hspec.it "refuses a phrase with a bad checksum" $
     importRecoveryKey (B.unwords $ replicate 12 "abandon") `shouldSatisfy` isLeft
+  Hspec.it "keeps a secret out of the log a remote host writes" $ do
+    redactedCommand ("/_wallet create mnemonic=" <> safeDecodeUtf8 testPhrase)
+      `shouldBe` "/_wallet create mnemonic=<redacted>"
+    redactedCommand "/_wallet export name 1 secret=shibboleth"
+      `shouldBe` "/_wallet export name 1 secret=<redacted>"
+    redactedCommand "/_wallet export name 1" `shouldBe` "/_wallet export name 1"
 
 walletTests :: SpecWith TestParams
 walletTests = do
