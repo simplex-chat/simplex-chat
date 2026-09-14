@@ -413,6 +413,8 @@ final class ChatModel: ObservableObject {
     @Published var notificationPreview: NotificationPreviewMode = ntfPreviewModeGroupDefault.get()
     // pending notification actions
     @Published var ntfContactRequest: NTFContactRequest?
+    // contact request whose accept/reject dialog should be surfaced after opening from a notification tap
+    @Published var showingContactRequest: NTFContactRequest?
     @Published var ntfCallInvitationAction: (ChatId, NtfCallAction)?
     // current WebRTC call
     @Published var callInvitations: Dictionary<ChatId, RcvCallInvitation> = [:]
