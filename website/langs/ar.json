@@ -129,7 +129,7 @@
     "simplex-unique-overlay-card-3-p-1": "يخزن SimpleX Chat جميع بيانات المستخدم على أجهزة العميل فقط باستخدام <strong> تنسيق قاعدة بيانات محمولة مُعمَّاة </strong> يمكّن تصديرها ونقلها إلى أي جهاز مدعوم.",
     "simplex-unique-overlay-card-3-p-3": "على عكس خوادم الشبكات الاتحادية (البريد الإلكتروني أو XMPP أو Matrix)، لا تقوم خوادم SimpleX بتخزين حسابات المستخدمين، فهي تقوم فقط بترحيل الرسائل، مما يحمي خصوصية كلا الطرفين.",
     "simplex-unique-overlay-card-4-p-1": "يمكنك <strong> استخدام SimpleX مع خوادمك </strong> والاستمرار في التواصل مع الأشخاص الذين يستخدمون الخوادم المُهيأة مسبقًا في التطبيقات.",
-    "simplex-unique-overlay-card-4-p-3": "إذا كنت تفكر في التطوير شبكة SimpleX، على سبيل المثال، بوت الدردشة لمستخدمي تطبيق SimpleX، أو دمج مكتبة SimpleX Chat في تطبيقات الأجهزة المحمولة، من فضلك <a href=\"https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D\" target=\"_blank\">تواصل معي</a> لأي نصيحة والدعم.",
+    "simplex-unique-overlay-card-4-p-3": "إذا كنت تفكر في التطوير شبكة SimpleX، على سبيل المثال، بوت الدردشة لمستخدمي تطبيق SimpleX، أو دمج مكتبة SimpleX Chat في تطبيقات الأجهزة المحمولة، من فضلك <a href=\"https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw\" target=\"_blank\">تواصل معي</a> لأي نصيحة والدعم.",
     "donate-here-to-help-us": "تبرّع هنا لمساعدتنا",
     "sign-up-to-receive-our-updates": "اشترك للحصول على آخر مستجداتنا",
     "enter-your-email-address": "أدخل عنوان بريدك الإلكتروني",

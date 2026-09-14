@@ -136,7 +136,7 @@
     "simplex-unique-overlay-card-4-p-1": "您可以<strong>将 SimpleX 与您自己的服务器一起使用</strong>，并且仍然可以与使用应用中预配置服务器的人们进行通信。",
     "simplex-unique-card-3-p-2": "端到端加密的消息在被收到前会暂时保存在 SimpleX 中继服务器上，传送完成后它们会被永久删除。",
     "simplex-unique-card-1-p-1": "SimpleX 保护您的个人资料、联系人和元数据的隐私，不让 SimpleX 网络服务器和任何观察者看到它们。",
-    "simplex-unique-overlay-card-4-p-3": "如果您正在考虑为在SimpleX 网络上开发，例如，为 SimpleX 应用程序用户开发聊天机器人，或将 SimpleX 聊天库集成到您的移动应用，请 <a href=\"https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D\" target=\"_blank\">联系我们</a>获取建议和支持。",
+    "simplex-unique-overlay-card-4-p-3": "如果您正在考虑为在SimpleX 网络上开发，例如，为 SimpleX 应用程序用户开发聊天机器人，或将 SimpleX 聊天库集成到您的移动应用，请 <a href=\"https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw\" target=\"_blank\">联系我们</a>获取建议和支持。",
     "simplex-unique-card-4-p-2": "您可以<strong>搭配自己的服务器来使用 SimpleX </strong> 或使用我们提供的服务器 &mdash; 并仍然连接到任何用户。",
     "simplex-unique-card-2-p-1": "因为您在 SimpleX 网络上没有标识符或固定地址，所以除非您以二维码或链接的形式分享一次性或临时用户地址，没有人可以联系您。",
     "simplex-unique-card-3-p-1": "SimpleX 以<strong>便携式加密数据库格式</strong>将所有用户数据存储在客户端设备上—— 它可以转移到另一个设备。",
