@@ -132,10 +132,12 @@ signed record edit, not a rebinding of keys.
 
 ## Hidden profiles
 
-Nothing about profiles is encoded in the derivation, so the wallet holds nothing
-that would disclose a hidden profile. The seed is the device's: whoever unlocks
-any profile can export the phrase and derive every name key, hidden profiles
-included. A key per profile rather than per device is what would change that.
+A hidden profile should not register a name yet. The seed is the device's, so
+whoever unlocks any profile can derive every name key. Beyond that, a name is
+written into the profile's own row and listed device-wide, and hidden profiles
+are a view filter rather than encryption, so the binding is readable beside it.
+Nothing in the wallet prevents it, and closing it is work in the profiles and in
+the name record rather than here.
 
 ## Scope
 
