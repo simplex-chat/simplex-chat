@@ -20,7 +20,7 @@ module BadgeService.Config
 where
 
 import qualified Control.Exception as E
-import Control.Logger.Simple (logWarn)
+import BadgeService.Log (logWarn)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)

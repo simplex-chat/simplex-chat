@@ -27,7 +27,7 @@ import BadgeService.Store.Invoices (CreateError (..), InvoicePayment (..), Invoi
 import BadgeService.Waiters (Seen, Waiters, awaitStatus, publish)
 import Control.Concurrent.STM
 import qualified Control.Exception as E
-import Control.Logger.Simple (logError, logInfo, logWarn)
+import BadgeService.Log (logError, logInfo, logWarn)
 import Control.Monad (forM_, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J

@@ -30,7 +30,7 @@ import BadgeService.Providers
     WebhookError (..),
   )
 import Control.Exception (try)
-import Control.Logger.Simple (logError, logInfo, logWarn)
+import BadgeService.Log (logError, logInfo, logWarn)
 import Control.Monad (unless)
 import Crypto.Hash (Digest, SHA256)
 import Crypto.MAC.HMAC (HMAC, hmac, hmacGetDigest)

@@ -16,7 +16,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts (..), CreateBotOpts (..), coreChatOptsP)
+import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
 import Simplex.Messaging.Encoding.String (strDecode)
 
@@ -121,9 +121,7 @@ getBadgeServiceOpts appDir defaultDbName =
 mkChatOpts :: BadgeServiceOpts -> ChatOpts
 mkChatOpts BadgeServiceOpts {coreOptions, serviceName, clientService} =
   ChatOpts
-    { -- off unconditionally: the agent's per-connection logs are noise the service never wants, and
-      -- at our info log level they would otherwise print
-      coreOptions = coreOptions {logConnections = False, logServerHosts = False},
+    { coreOptions,
       chatCmd = "",
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,

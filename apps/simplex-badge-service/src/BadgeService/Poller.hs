@@ -32,7 +32,7 @@ import BadgeService.Store.Invoices (InvoiceRow (..), expireOverdue, getInvoiceBy
 import BadgeService.Waiters (Waiters, publish, waitingCount, waitingCountSTM)
 import Control.Concurrent.STM
 import Control.Exception (SomeAsyncException, SomeException, fromException, throwIO, try)
-import Control.Logger.Simple (logError, logInfo, logWarn)
+import BadgeService.Log (logError, logInfo, logWarn)
 import Control.Monad (forever, unless, void, when)
 import Data.List (find, sortOn)
 import Data.Map.Strict (Map)

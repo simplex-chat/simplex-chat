@@ -426,6 +426,7 @@ executable simplex-badge-service
   other-modules:
       BadgeService.Catalog
       BadgeService.Config
+      BadgeService.Log
       BadgeService.Options
       BadgeService.Orders
       BadgeService.Poller
@@ -713,6 +714,7 @@ test-suite simplex-chat-test
       API.TypeInfo
       BadgeService.Catalog
       BadgeService.Config
+      BadgeService.Log
       BadgeService.Options
       BadgeService.Orders
       BadgeService.Poller

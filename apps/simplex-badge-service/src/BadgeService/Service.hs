@@ -33,7 +33,7 @@ import BadgeService.Waiters (Waiters, newWaiters)
 import BadgeService.Web.Server (exportWebapp, newWebEnv, runWebListener)
 import Control.Applicative (optional)
 import Control.Concurrent.STM
-import Control.Logger.Simple
+import BadgeService.Log (logError, logInfo, logWarn)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as J
