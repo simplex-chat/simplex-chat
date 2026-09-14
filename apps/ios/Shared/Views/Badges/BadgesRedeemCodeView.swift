@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SimpleXChat
+import CodeScanner
 
 private let badgeCodePrefix = "SB"
 private let badgeCodeBodyLength = 20
@@ -40,6 +41,7 @@ struct BadgesRedeemCodeView: View {
     @State private var code = ""
     @State private var canonicalCode: String? = nil
     @State private var submitting = false
+    @State private var showQRCodeScanner = true
 
     var body: some View {
         GeometryReader { g in
@@ -74,6 +76,16 @@ struct BadgesRedeemCodeView: View {
         codeField()
 
         pasteButton()
+
+        ScannerInView(
+            showQRCodeScanner: $showQRCodeScanner,
+            scannerPaused: $submitting,
+            processQRCode: processQRCode,
+            scanMode: .oncePerCode,
+            placeholderBackground: Color(.tertiarySystemFill)
+        )
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.top, 12)
 
         Spacer(minLength: 0)
 
@@ -115,6 +127,28 @@ struct BadgesRedeemCodeView: View {
         let formatted = formatBadgeCodeInput(s)
         if formatted != code { code = formatted }
         canonicalCode = parseBadgeCode(formatted)
+    }
+
+    private func processQRCode(_ resp: Result<ScanResult, ScanError>) {
+        switch resp {
+        case let .success(r):
+            let formatted = formatBadgeCodeInput(r.string)
+            if parseBadgeCode(formatted) == nil {
+                showAlert(
+                    NSLocalizedString("Invalid QR code", comment: "alert title"),
+                    message: NSLocalizedString("The code you scanned is not a badge code.", comment: "alert message")
+                )
+            } else {
+                applyCodeInput(formatted)
+                redeem()
+            }
+        case let .failure(e):
+            logger.error("processQRCode QR code error: \(e.localizedDescription)")
+            showAlert(
+                NSLocalizedString("Invalid QR code", comment: "alert title"),
+                message: String.localizedStringWithFormat(NSLocalizedString("Error scanning code: %@", comment: "alert message"), e.localizedDescription)
+            )
+        }
     }
 
     private func submitButton() -> some View {
