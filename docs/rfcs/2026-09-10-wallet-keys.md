@@ -36,6 +36,24 @@ The mnemonic imports there as a recovery phrase, a single secret as a private
 key. `m/44'/60'/0'/0/0` is left unused so that neither names nor profiles claim
 the point where both dimensions start.
 
+A secret subtree is not in that tree and is not BIP-44. It has a master of its
+own, derived in one step from the seed and a slow hash of the secret (later):
+
+```
+I              = HMAC-SHA512("simplex wallet subtree", kdf(secret, salt = seed))
+subtree master = private key I[0..31], chain code I[32..63]
+key k          = child k of that master, k >= 1, counted in the subtree
+```
+
+`kdf` is a deliberately slow hash of the secret, 32 bytes out, so that guessing
+the secret costs something. It is salted with the seed, which needs nothing
+stored and stops one dictionary serving every device, and which is also what
+binds the subtree to this seed rather than to the secret alone. The step is
+SHA-512 because a master is a key and a chain code, 64 bytes, which is the same
+split BIP-32 makes from `HMAC-SHA512("Bitcoin seed", seed)`. It is a step rather
+than a path level because a level carries 31 bits, which is small enough to
+enumerate. Only the per-key secret export stays interoperable for such a key.
+
 **Why a key per name.** A name's owner is public, so an address that owns
 several names links them: whoever knows one of them can read its owner and find
 the rest. A key per name leaves no such link. It also keeps an export narrow, as
@@ -63,7 +81,8 @@ at the profile level, while what a profile buys sits at the address level.
 
 ## Commands
 
-Internal API. The names commands will call these; users will not.
+Internal API. The commands that use the wallet will call these; users will
+not. Names are the first of those.
 
 ```
 /_wallet                           the next name addresses
@@ -132,19 +151,26 @@ signed record edit, not a rebinding of keys.
 
 ## Hidden profiles
 
-A hidden profile can own a name, and registering it must not give away that the
-profile exists. Scanning a seed for the names it owns must not surface such a
-name, so it is not derived at the enumerable path but from a secret the user
-supplies and the device does not store. The same secret reaches the name again
-to manage it.
+The UI lists the names and other assets a device holds across its profiles. That
+listing must not include what a hidden profile owns, as the profile list does
+not include hidden profiles.
+
+Enumeration is by derivation, so such a key is not derived in the enumerable
+space. It sits in a secret subtree, and the same secret reaches it again to use
+it.
 
 ```
 /_wallet secret=<secret>                  the next addresses in that subtree
 /_wallet export name <k> secret=<secret>  one name key's secret in it
 ```
 
+This is a view filter, which is the protection hidden profiles already have, and
+not more than that. Whoever reads the database sees the binding regardless: the
+name is written into the profile's own row, and the link the name publishes is
+the one the device holds.
+
 Not implemented here. The parameter can be added at any time; the derivation has
-to be settled before the first such name is bought.
+to be settled before the first such key is used.
 
 ## Scope
 
