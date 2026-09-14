@@ -245,7 +245,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
             "use " <> highlight ("/d #" <> viewGroupName g) <> " to delete the group (also clears the rejection)"
           ]
     | otherwise -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
-  CRGroupDeletedUser u g signed -> ttyUser u [ttyGroup' g <> ": you deleted the group" <> signedStr signed]
+  CRGroupDeletedUser u g signed local -> ttyUser u [ttyGroup' g <> (if local then ": you deleted your local copy of the group" else ": you deleted the group" <> signedStr signed)]
   CRForwardPlan u count itemIds fc -> ttyUser u $ viewForwardPlan count itemIds fc
   CRChatMsgContent u mc -> ttyUser u $ ttyMsgContent mc <> viewMsgTestInfo testView mc
   CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
@@ -2480,11 +2480,25 @@ viewReceivedFileInvitation :: StyledString -> CIFile d -> CurrentTime -> TimeZon
 viewReceivedFileInvitation from file ts tz meta = receivedWithTime_ ts tz from [] meta (receivedFileInvitation_ file) False
 
 receivedFileInvitation_ :: CIFile d -> [StyledString]
-receivedFileInvitation_ CIFile {fileId, fileName, fileSize, fileStatus} =
+receivedFileInvitation_ CIFile {fileId, fileName, fileSize, fileStatus, fileProhibited} =
   ["sends file " <> ttyFilePath fileName <> " (" <> humanReadableSize fileSize <> " / " <> sShow fileSize <> " bytes)"]
-    <> case fileStatus of
-      CIFSRcvAccepted -> []
-      _ -> ["use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"]
+    <> case fileProhibited of
+      Just fp -> [prohibitedFileReason fp]
+      Nothing -> case fileStatus of
+        CIFSRcvAccepted -> []
+        _ -> ["use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"]
+
+prohibitedFileReason :: FileProhibited -> StyledString
+prohibitedFileReason FileProhibited {maxSize, badgeStatus} =
+  "file is above the limit of " <> sShow maxSize <> " bytes: " <> reason
+  where
+    reason = case badgeStatus of
+      Nothing -> "sender has no badge"
+      Just BSActive -> "above the limit of the sender badge"
+      Just BSExpired -> "sender badge expired"
+      Just BSExpiredOld -> "sender badge expired"
+      Just BSFailed -> "sender badge did not verify"
+      Just BSUnknownKey -> "sender badge key is not known"
 
 humanReadableSize :: Integer -> StyledString
 humanReadableSize size

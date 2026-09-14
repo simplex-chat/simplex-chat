@@ -303,7 +303,9 @@ CREATE TABLE files(
   file_type TEXT NOT NULL DEFAULT 'normal',
   roster_transfer_id INTEGER,
   file_digest BLOB,
-  file_expires_at TEXT
+  file_expires_at TEXT,
+  file_max_size INTEGER,
+  file_badge_status TEXT
 ) STRICT;
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -852,6 +854,19 @@ CREATE TABLE rcv_roster_transfers(
   roster_msg_signatures BLOB,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+) STRICT;
+CREATE TABLE file_badge_proofs(
+  badge_proof_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
+  proof_kind TEXT NOT NULL,
+  badge_proof BLOB NOT NULL,
+  badge_pres_header BLOB NOT NULL,
+  badge_key_idx INTEGER NOT NULL,
+  badge_type TEXT NOT NULL,
+  badge_expiry TEXT NOT NULL,
+  badge_extra TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
 ) STRICT;
 CREATE TABLE invoices(
   invoice_id TEXT NOT NULL PRIMARY KEY,
@@ -1534,6 +1549,10 @@ CREATE INDEX idx_files_group_id_shared_msg_id ON files(
 CREATE INDEX idx_files_roster_transfer_id ON files(roster_transfer_id);
 CREATE INDEX idx_chat_items_item_signed_by_group_member_id ON chat_items(
   item_signed_by_group_member_id
+);
+CREATE UNIQUE INDEX idx_file_badge_proofs_file_id_kind ON file_badge_proofs(
+  file_id,
+  proof_kind
 );
 CREATE INDEX idx_payments_provider_ref ON payments(provider, provider_ref);
 CREATE INDEX idx_payments_invoice ON payments(invoice_id);

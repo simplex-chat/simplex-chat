@@ -115,7 +115,8 @@ data class ComposeState(
   val useLinkPreviews: Boolean,
   val mentions: MentionedMembers = emptyMap(),
   // the max file size the user may attach, raised by their active badge unless the chat is incognito; kept in sync on chat switch
-  val maxFileSize: Long = getMaxFileSize(FileProtocol.XFTP)
+  val maxFileSize: Long = getMaxFileSize(FileProtocol.XFTP),
+  val sendIncognito: Boolean = false
 ) {
   constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
     ComposeMessage(
@@ -331,7 +332,7 @@ fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
     } else if (fileSize != null) {
       AlertManager.shared.showAlertMsg(
         generalGetString(MR.strings.large_file),
-        String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
+        largeFileMessage(fileSize, value.sendIncognito, expiredBadgeReason(fileSize, chatModel.currentUser.value?.profile))
       )
     } else {
       showWrongUriAlert()
@@ -360,7 +361,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
             bitmap = null
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.large_file),
-              String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
+              largeFileMessage(fileSize ?: 0, value.sendIncognito, expiredBadgeReason(fileSize ?: 0, chatModel.currentUser.value?.profile))
             )
             null
           }
@@ -1420,7 +1421,10 @@ fun ComposeView(
   // keep the attach size limit in sync with the chat: the user's active badge raises it, but not in incognito chats where no badge is presented
   LaunchedEffect(chat.chatInfo) {
     val incognito = if (chat.chatInfo.profileChangeProhibited) chat.chatInfo.incognito else chatModel.controller.appPrefs.incognito.get()
-    composeState.value = composeState.value.copy(maxFileSize = getMaxFileSize(FileProtocol.XFTP, if (incognito) null else chatModel.currentUser.value?.profile))
+    composeState.value = composeState.value.copy(
+      maxFileSize = getMaxFileSize(FileProtocol.XFTP, if (incognito) null else chatModel.currentUser.value?.profile),
+      sendIncognito = incognito
+    )
   }
   if (appPlatform.isDesktop) {
     // the same ComposeView is reused when switching chats, so `chat` captured by onDispose would be the chat opened first, not the current one

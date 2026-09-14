@@ -4689,6 +4689,17 @@ extension MsgReaction: Encodable {
     }
 }
 
+// set by the core when the file is above the size the sender's badge allows; badgeStatus is nil when no proof was sent
+public struct FileProhibited: Decodable, Hashable {
+    public var maxSize: Int64
+    public var badgeStatus: BadgeStatus?
+
+    public init(maxSize: Int64, badgeStatus: BadgeStatus?) {
+        self.maxSize = maxSize
+        self.badgeStatus = badgeStatus
+    }
+}
+
 public struct CIFile: Decodable, Hashable {
     public var fileId: Int64
     public var fileName: String
@@ -4697,6 +4708,7 @@ public struct CIFile: Decodable, Hashable {
     public var fileStatus: CIFileStatus
     public var fileProtocol: FileProtocol
     public var fileExpires: Date? = nil
+    public var fileProhibited: FileProhibited? = nil
 
     public static func getSample(fileId: Int64 = 1, fileName: String = "test.txt", fileSize: Int64 = 100, filePath: String? = "test.txt", fileStatus: CIFileStatus = .rcvComplete) -> CIFile {
         let f: CryptoFile?
