@@ -94,8 +94,14 @@ offlineTest("main: losing the network again puts the note back", async () => {
 
 // ------------------------------------- what a repaint may not bring back
 
-offlineTest("main: [ New invoice ] leaves the payment screen behind, and no repaint returns it", async () => {
-  screenOf(app).all("button.secondary").find((b) => b.textContent === "New invoice")!.click();
+offlineTest("main: leaving the payment screen stops its loop, and no repaint returns it", async () => {
+  // "Buy a code" from the menu is the way off a payment screen now, and it stops the invoice's loop.
+  page.chrome.all("button.menu-button")[0]!.click();
+  page.chrome.all("button.menu-item").find((b) => b.textContent === "Buy a code")!.click();
+  await settle();
+  // land on the landing so the tests that follow start clean; the loop is already stopped
+  page.history.pushState(null, "", "/");
+  page.fire("popstate");
   await settle();
   assert.equal(heading(), "Support SimpleX", "the landing screen — and the watch loop stopped that invoice's loop on the way");
   // A connectivity change repaints the screen that is waiting. There is no

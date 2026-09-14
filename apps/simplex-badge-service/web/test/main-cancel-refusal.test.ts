@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
 import { type StubElement } from "./stub-dom.js";
 import { ADDRESS, NOW, openReply, ORDER_ID, seededStorage, storedOrder } from "./open-order.js";
-import { CANCEL_INVOICE, CANCEL_HAS_FUNDS, NEW_INVOICE } from "../src/screens.js";
+import { CANCEL_INVOICE, CANCEL_HAS_FUNDS } from "../src/screens.js";
 
 const refusalTest = timedTest(3000);
 
@@ -34,9 +34,8 @@ refusalTest("main: a funded refusal keeps the order's own screen, not a stripped
   page.respondWith(openReply);
   await until(() => screenOf(app).textContent.includes(CANCEL_HAS_FUNDS), "money is riding on it");
 
-  assert.ok(screenOf(app).all("button").some((b) => b.textContent === NEW_INVOICE),
-    "the repaint keeps [ New invoice ], which only the resumed options draw");
-  assert.ok(screenOf(app).textContent.includes("Started"), "and the line saying how long this order has been open");
+  assert.ok(screenOf(app).textContent.includes("Started"),
+    "the repaint draws the order's own screen — the line saying how long it has been open — not a stripped-down one");
 });
 
 refusalTest("main: the reason does not follow the buyer to an order they did not cancel", async () => {

@@ -680,7 +680,7 @@ const xmrInvoice: View = {
 function awaitingPayment(invoice: View = xmrInvoice, method: "btc" | "xmr" = "xmr"): StubElement {
   const built = screens.awaitingPayment({
     order: record({ code: BADGE_CODE }), invoice, method, nowMs: NOW,
-    resumed: false, onNewInvoice: noop, onCancel: noopAsync,
+    resumed: false, onCancel: noopAsync,
   });
   // The rate countdown ticks. Nothing here reads it, and a live interval
   // would hold the test process open, so it is stopped as soon as it is built.
@@ -729,9 +729,9 @@ qrTest("only the code screen draws a QR of the code, and every other screen draw
     ["awaitingPayment", awaitingPayment()],
     ["awaitingConfirmation", screens.awaitingConfirmation({ invoice: undefined, method: undefined, order: unpaid, gaveUp: false, onCheckAgain: noop }) as unknown as StubElement],
     ["the confirming screen gave up", screens.awaitingConfirmation({ invoice: undefined, method: undefined, order: unpaid, gaveUp: true, onCheckAgain: noop }) as unknown as StubElement],
-    ["windowClosed", screens.windowClosed({ order: unpaid, invoice: xmrInvoice, onNewInvoice: noop }) as unknown as StubElement],
+    ["windowClosed", screens.windowClosed({ onNewInvoice: noop, order: unpaid, invoice: xmrInvoice }) as unknown as StubElement],
     ["paidNoCode", screens.paidNoCode({ order: unpaid, settledAt: undefined }) as unknown as StubElement],
-    ["the card form", screens.cardForm({ order: unpaid, invoice: xmrInvoice, resumed: false, onNewInvoice: noop }) as unknown as StubElement],
+    ["the card form", screens.cardForm({ order: unpaid, invoice: xmrInvoice, resumed: false }) as unknown as StubElement],
   ];
   const rows = order.historyRows([record({ status: "open", code: BADGE_CODE }), record({ orderId: "inv_2", status: "expired", code: BADGE_CODE })]);
   panels.push(["the history list", screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows, onOpen: noop, onStart: noop }) as unknown as StubElement]);

@@ -46,7 +46,7 @@ export const THEME_LABEL = "Theme";
 export const NEW_PURCHASE = "Buy a code";
 export const PURCHASE_HISTORY = "Your codes";
 export const FORGET_EVERYTHING = "Forget everything on this device";
-export const NEW_INVOICE = "New invoice";
+export const BUY_NEW_CODE = "Buy a new code";
 export const PART_PAID_TITLE = "Part of the amount has arrived";
 export const KEEPS_WAITING = "This page keeps checking. The invoice will not expire while it waits, however long the network takes.";
 /** A refusal with wording of its own. Any other failure keeps the generic message: an internal
@@ -547,7 +547,6 @@ export interface AwaitingPaymentOptions {
   now?: () => number;
   resumed: boolean;
   offline?: boolean;
-  onNewInvoice: () => void;
   onCancel: () => Promise<void>;
   /** Why the last cancel was refused, which outlives the screen it was asked on. */
   notice?: string;
@@ -621,7 +620,6 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
   p.append(
     el("p", { class: "muted" }, "Bookmark this page — the address and the countdown both live on this URL."),
   );
-  if (o.resumed) p.append(button(NEW_INVOICE, o.onNewInvoice, "secondary"));
   p.append(...cancelControl(o.onCancel, o.notice));
 
   const timer = setInterval(() => {
@@ -646,7 +644,7 @@ export interface AwaitingConfirmationOptions {
   onCheckAgain: () => void;
 }
 
-// No confirming screen offers [ New invoice ]: a card confirm has succeeded, checkout has no idempotency
+// No confirming screen offers [ Buy a new code ]: a card confirm has succeeded, checkout has no idempotency
 // key, and the buyer would end up holding two live invoices. Both methods share it, the money being
 // committed with something else to confirm it, so only the wait's words differ.
 const CONFIRMING: Readonly<Record<Method, { status: string; wait: string }>> = {
@@ -707,6 +705,7 @@ export interface WindowClosedOptions {
   order: UnpaidOrder;
   invoice: InvoiceView | undefined;
   offline?: boolean;
+  canceled?: boolean;
   onNewInvoice: () => void;
 }
 
@@ -717,6 +716,16 @@ export interface DetailsUnavailableOptions {
 }
 
 export function windowClosed(o: WindowClosedOptions): HTMLElement {
+  // a closed invoice cannot be reopened; the way on is a fresh purchase, so the button starts one
+  const buyNewCode = button(BUY_NEW_CODE, o.onNewInvoice, "primary outline");
+  if (o.canceled === true) {
+    return panel(
+      el("h1", { class: "tight" }, "Invoice canceled"),
+      el("p", { class: "lede" }, "You canceled this invoice. Nothing was charged."),
+      reference(o.order.orderId),
+      buyNewCode,
+    );
+  }
   const paid = o.invoice?.amountPaid;
   // What the service counts as money on the invoice: the provider's verdict, reached through its own
   // payment tolerance, or any crypto figure at all. The sweep spares such an invoice down to less than
@@ -744,7 +753,7 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
     p.append(el("p", { class: "lede" }, "Nothing was received, and nothing was charged."));
   }
   if (o.offline === true) p.append(offlineNote());
-  p.append(button(NEW_INVOICE, o.onNewInvoice, "primary outline"));
+  p.append(buyNewCode);
   return p;
 }
 
@@ -875,7 +884,8 @@ function entryLine(row: HistoryRow, onOpen: (orderId: string) => void): HTMLElem
   const metaRow = el("div", { class: "entry-row" });
   const meta = entryMeta(o);
   if (meta.children.length > 0) metaRow.append(meta);
-  if (row.kind !== "paid") metaRow.append(orderLink(o.orderId, "Open", "secondary", onOpen));
+  // a canceled order is a dead end the buyer chose, with no invoice to reopen or pay
+  if (row.kind !== "paid" && row.kind !== "canceled") metaRow.append(orderLink(o.orderId, "Open", "secondary", onOpen));
   if (metaRow.children.length > 0) main.append(metaRow);
   head.append(main);
 
@@ -935,7 +945,7 @@ export function detailsUnavailable(o: DetailsUnavailableOptions): HTMLElement {
     el("p", { class: "lede" }, "Quote the reference below and we will sort it out."),
     reference(o.order.orderId),
     button("Check again", o.onCheckAgain),
-    button(NEW_INVOICE, o.onNewInvoice, "secondary"),
+    button(BUY_NEW_CODE, o.onNewInvoice, "secondary"),
   );
 }
 
@@ -944,7 +954,6 @@ export interface CardFormOptions {
   invoice: InvoiceView;
   resumed: boolean;
   body?: HTMLElement;
-  onNewInvoice: () => void;
   onCancel?: () => Promise<void>;
   notice?: string;
 }
@@ -966,7 +975,6 @@ export function cardForm(o: CardFormOptions): HTMLElement {
     o.body ?? cardMount(),
     reference(o.order.orderId),
   );
-  if (o.resumed) p.append(button(NEW_INVOICE, o.onNewInvoice, "secondary"));
   if (o.onCancel !== undefined) p.append(...cancelControl(o.onCancel, o.notice));
   return p;
 }
@@ -1018,7 +1026,7 @@ export function cardUnavailable(o: CardUnavailableOptions): HTMLElement {
     el("p", { class: "lede" }, "Nothing was charged. This order is still waiting to be paid."),
     reference(o.order.orderId),
     button("Try again", o.onRetry),
-    button(NEW_INVOICE, o.onNewInvoice, "secondary"),
+    button(BUY_NEW_CODE, o.onNewInvoice, "secondary"),
   );
 }
 

@@ -69,12 +69,12 @@ resumeTest("main: a FRESH LOAD at / resumes the newest open order", async () => 
   assert.ok(!fetches[0]!.url.includes("wait="), "plainly, so the address appears at once");
 });
 
-resumeTest("main: a resumed payment screen says how long ago it started, and offers a way out", () => {
-  // Both of these turn on the `resumed` flag reaching the screen. A reload
-  // used to produce `resumed: false` and lose both.
+resumeTest("main: a resumed payment screen says how long ago it started, with no Buy a new code", () => {
+  // The `resumed` flag reaching the screen is what draws the "how long ago" line; a reload used to
+  // produce `resumed: false` and lose it. A fresh purchase is the menu's Buy a code, not a button here.
   assert.ok(screenOf(app).textContent.includes("Started 14 minutes ago."), screenOf(app).textContent);
-  const out = screenOf(app).all("button.secondary").find((b) => b.textContent === "New invoice");
-  assert.ok(out, "the give-up rule gives a resumed payment screen [ New invoice ]");
+  assert.equal(screenOf(app).all("button").filter((b) => b.textContent === "Buy a new code").length, 0,
+    "the payment screen offers no Buy a new code");
 });
 
 resumeTest("main: the resumed screen still never shows the code it holds", () => {
@@ -102,7 +102,7 @@ resumeTest("main: [ Check again ] on detailsUnavailable RE-RENDERS, and never bl
     "the loop is still live, so the screen stands rather than becoming a placeholder");
   assert.ok(screenOf(app).textContent.includes("inv_bare"), "and the reference is still on it");
 
-  const out = screenOf(app).all("button.secondary").find((b) => b.textContent === "New invoice");
+  const out = screenOf(app).all("button.secondary").find((b) => b.textContent === "Buy a new code");
   assert.ok(out, "this screen's order is open with nothing paid, so it may offer one");
 });
 
@@ -128,8 +128,8 @@ resumeTest("main: the confirming screen gives up after fifteen minutes and [ Che
     // The reversal: no control here may start a second charge. confirm()
     // returned success, the create endpoint has no idempotency key, and [ New invoice ]
     // cancels nothing: it abandons an invoice that may yet settle.
-    assert.equal(screenOf(app).all("button").filter((b) => b.textContent === "New invoice").length, 0,
-      "the give-up screen must not offer [ New invoice ]");
+    assert.equal(screenOf(app).all("button").filter((b) => b.textContent === "Buy a new code").length, 0,
+      "the give-up screen must not offer [ Buy a new code ]");
 
     // And [ Check again ] restarts the loop it had stopped, as the confirming screen.
     const before = fetches.length;

@@ -30,7 +30,6 @@ const APPEARANCE = { theme: "stripe" } as const;
 const RETURN_URL = "https://badges.example/";
 
 function render(node: unknown): StubElement { return node as unknown as StubElement; }
-function noop(): void { /* a control this test does not press */ }
 
 /** An order that still carries its code, handed to a screen whose type says it cannot. */
 const order: UnpaidOrder = {
@@ -305,7 +304,7 @@ cardTest("screens: the card form renders the body it is given, and no second mou
   const marker = new StubElement("p");
   marker.textContent = "custom body marker";
   const withBody = render(screens.cardForm({
-    order, invoice: cardInvoice, resumed: false, onNewInvoice: noop,
+    order, invoice: cardInvoice, resumed: false,
     body: marker as unknown as HTMLElement,
   }));
   assert.ok(withBody.textContent.includes("custom body marker"), "the body handed in is rendered");
@@ -317,7 +316,7 @@ cardTest("screens: the card form renders the body it is given, and no second mou
   assertNoCode(withBody, "cardForm/body");
   assert.equal(withBody.all("svg.qr").length, 0, "the store rules: no QR on an unpaid screen");
 
-  const bare = render(screens.cardForm({ order, invoice: cardInvoice, resumed: false, onNewInvoice: noop }));
+  const bare = render(screens.cardForm({ order, invoice: cardInvoice, resumed: false }));
   assert.equal(bare.all("div.card-mount").length, 1, "the default body is the mount point");
 });
 
@@ -646,7 +645,7 @@ cardTest("main: a real confirm ALSO lands on the confirming screen, and the conf
     `the return URL leaks no order id: ${lastReturnUrl}`);
   assert.ok(elements.every((e) => e.destroyed), "and the form it left behind took its Element with it");
   // the give-up rule as amended: no confirming screen offers a control that could start a second charge.
-  assert.equal(screen().all("button").filter((b) => b.textContent === "New invoice").length, 0);
+  assert.equal(screen().all("button").filter((b) => b.textContent === "Buy a new code").length, 0);
   assert.ok(!screen().textContent.includes("Here is your code"));
   const stored = (JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, string>>)
     .find((o) => o.orderId === "inv_card_2")!;

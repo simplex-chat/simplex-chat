@@ -316,7 +316,7 @@ domTest("screens: a discounted duration strikes the price it is a discount from"
 domTest("screens: the payment screen carries the address, the held rate and the reference — and never a code", () => {
   const p = renderAwaitingPayment({
     order: smuggled(), invoice: openXmr, method: "xmr",
-    nowMs: NOW, resumed: false, onNewInvoice: noop, onCancel: noopAsync,
+    nowMs: NOW, resumed: false, onCancel: noopAsync,
   });
   for (const line of ["Send 1.482 XMR", "$420.00 — this rate is held for 58:12", "Monero address",
     "48HqK2XmVexampleAddress9fRtWc", "Waiting for the payment to confirm", "Reference", "inv_9f3a",
@@ -324,7 +324,7 @@ domTest("screens: the payment screen carries the address, the held rate and the 
     assert.ok(p.textContent.includes(line), `the payment screen is missing: ${line}`);
   }
   assertNoCode(p, "awaitingPayment");
-  assert.ok(!p.textContent.includes("New invoice"), "[ New invoice ] belongs to a resumed screen only");
+  assert.ok(!p.textContent.includes("Buy a new code"), "a live payment screen offers no Buy a new code — that is on the closed screen");
 });
 
 domTest("screens: the payment screen's held-rate countdown TICKS, rather than freezing until a reload", () => {
@@ -337,7 +337,7 @@ domTest("screens: the payment screen's held-rate countdown TICKS, rather than fr
     let clock = NOW;
     const built = screens.awaitingPayment({
       order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: clock,
-      now: () => clock, resumed: false, onNewInvoice: noop, onCancel: noopAsync,
+      now: () => clock, resumed: false, onCancel: noopAsync,
     });
     const p = render(built.node);
     const rate = (): string => p.all("p.rate")[0]!.textContent;
@@ -370,7 +370,7 @@ domTest("screens: the payment screen states what it is doing outside the fields,
   // shape as the two facts either side of it and read as a third fact about the
   // payment. It is what the page is doing, so it sits under both columns.
   const p = renderAwaitingPayment({
-    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: false, onNewInvoice: noop, onCancel: noopAsync,
+    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: false, onCancel: noopAsync,
   });
   const details = p.all("div.details")[0]!;
   assert.equal(details.all("p.awaiting").length, 0, "the status is not stacked with the fields");
@@ -385,7 +385,7 @@ domTest("screens: the payment screen states what it is doing outside the fields,
 domTest("screens: the offline line sits beside the status, not among the fields", () => {
   const p = renderAwaitingPayment({
     order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW,
-    resumed: false, offline: true, onNewInvoice: noop, onCancel: noopAsync,
+    resumed: false, offline: true, onCancel: noopAsync,
   });
   assert.equal(p.all("div.details")[0]!.all("p.offline").length, 0);
   assert.ok(p.textContent.includes(screens.OFFLINE_NOTE), "and it is still said");
@@ -394,30 +394,27 @@ domTest("screens: the offline line sits beside the status, not among the fields"
 domTest("screens: the payment screen replaces the countdown at zero rather than expiring on its own clock", () => {
   const after = Date.parse("2026-08-28T13:30:00Z");
   const p = renderAwaitingPayment({
-    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: after, resumed: false, onNewInvoice: noop, onCancel: noopAsync,
+    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: after, resumed: false, onCancel: noopAsync,
   });
   assert.ok(p.textContent.includes("Checking with the payment network"));
   assert.ok(!p.textContent.includes("this rate is held for"));
   assert.ok(!p.textContent.includes("expired"), "expiry comes from the server, never from here");
 });
 
-domTest("screens: a resumed payment screen says how long ago it started and offers [ New invoice ]", () => {
-  let fresh = false;
+domTest("screens: a resumed payment screen says how long ago it started, and offers no Buy a new code", () => {
   const p = renderAwaitingPayment({
-    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: true,
-    onNewInvoice: () => { fresh = true; }, onCancel: noopAsync,
+    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: true, onCancel: noopAsync,
   });
   assert.ok(p.textContent.includes("Started 14 minutes ago."));
-  const button = p.all("button.secondary").find((b) => b.textContent === "New invoice")!;
-  button.click();
-  assert.equal(fresh, true);
+  assert.equal(p.all("button").filter((b) => b.textContent === "Buy a new code").length, 0,
+    "buying a fresh code is the menu's job, not this screen's");
 });
 
 domTest("screens: the payment screen's Copy button puts the address on the clipboard, never the code", () => {
   copied.length = 0;
   const p = renderAwaitingPayment({
     order: smuggled(), invoice: openXmr, method: "xmr",
-    nowMs: NOW, resumed: false, onNewInvoice: noop, onCancel: noopAsync,
+    nowMs: NOW, resumed: false, onCancel: noopAsync,
   });
   for (const b of p.all("button.secondary")) b.click();
   assert.deepEqual(copied, ["1.482", "48HqK2XmVexampleAddress9fRtWc"]);
@@ -430,18 +427,16 @@ function cancelButton(p: StubElement) {
 
 domTest("screens: the payment screen's cancel is a quiet danger link, not a second block button", () => {
   const p = renderAwaitingPayment({
-    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: true,
-    onNewInvoice: noop, onCancel: noopAsync,
+    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: true, onCancel: noopAsync,
   });
   const cancel = cancelButton(p);
   const classes = cancel.getAttribute("class")!.split(" ");
   assert.ok(classes.includes("link"), cancel.getAttribute("class") ?? "");
   assert.ok(classes.includes("danger"), cancel.getAttribute("class") ?? "");
-  // the resumed screen already ends in a full-width [ New invoice ]; a second block
-  // control beside it is what this screen must not become
+  // the cancel is the screen's only control here, and it is a link, not a block button
   const blocks = p.all("button.secondary")
     .filter((b) => !b.getAttribute("class")!.split(" ").includes("inline"));
-  assert.deepEqual(blocks.map((b) => b.textContent), [screens.NEW_INVOICE]);
+  assert.deepEqual(blocks.map((b) => b.textContent), []);
   // the confirmation names what cancelling costs, since a payment sent afterwards is gone
   assert.ok(screens.CANCEL_CONFIRM.includes("stops accepting payment"), screens.CANCEL_CONFIRM);
 });
@@ -451,7 +446,6 @@ domTest("screens: a cancel in flight cannot be sent twice, and says so when it f
   let reject: (e: Error) => void = () => {};
   const p = renderAwaitingPayment({
     order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: false,
-    onNewInvoice: noop,
     onCancel: () => {
       calls += 1;
       return new Promise<void>((_, rj) => { reject = rj; });
@@ -475,8 +469,7 @@ domTest("screens: a cancel in flight cannot be sent twice, and says so when it f
 
 domTest("screens: the payment screen renders no development note, whatever the origin", () => {
   const p = renderAwaitingPayment({
-    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: false,
-    onNewInvoice: noop, onCancel: noopAsync,
+    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: false, onCancel: noopAsync,
   });
   assert.equal(p.all("div.warn").length, 0);
   assert.equal(p.all("div.command").length, 0);
@@ -488,8 +481,7 @@ domTest("screens: the payment screen renders no development note, whatever the o
 domTest("screens: the payment screen offers the amount and a wallet link, both carrying the amount", () => {
   copied.length = 0;
   const p = renderAwaitingPayment({
-    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: false,
-    onNewInvoice: noop, onCancel: noopAsync,
+    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: false, onCancel: noopAsync,
   });
   const uri = "monero:48HqK2XmVexampleAddress9fRtWc?tx_amount=1.482";
   const link = p.all("a.wallet-link")[0];
@@ -525,8 +517,7 @@ domTest("screens: the confirming screen waits, and promises not to expire while 
 domTest("screens: an underpaid payment screen keeps the address and says what is still owed", () => {
   const part = { ...openXmr, amountPaid: 21000, cryptoAmountPaid: "0.741" };
   const p = renderAwaitingPayment({
-    order: unpaidRecord(), invoice: part, method: "xmr", nowMs: NOW, resumed: false,
-    onNewInvoice: noop, onCancel: noopAsync,
+    order: unpaidRecord(), invoice: part, method: "xmr", nowMs: NOW, resumed: false, onCancel: noopAsync,
   });
   assert.ok(p.textContent.includes(screens.PART_PAID_TITLE), p.textContent);
   assert.ok(p.textContent.includes("We have seen 0.741 XMR of 1.482 XMR."), p.textContent);
@@ -584,7 +575,7 @@ domTest("screens: the confirming screen's give-up screen offers [ Check again ] 
   // the give-up rule spells out this branch's controls. `actions.confirm()` returned
   // success here, so a new invoice risks a second charge that the create endpoint cannot
   // deduplicate and a later change defers any remedy for.
-  assert.equal(p.all("button").filter((b) => b.textContent === "New invoice").length, 0,
+  assert.equal(p.all("button").filter((b) => b.textContent === "Buy a new code").length, 0,
     "the give-up screen must not offer a control that starts a second charge");
   for (const line of ["This is taking longer than expected",
     "The payment has not been confirmed. This page keeps working: come back to it later, or quote the reference below.",
@@ -597,14 +588,13 @@ domTest("screens: the confirming screen's give-up screen offers [ Check again ] 
 });
 
 domTest("screens: the closed-window screen's part-paid variant reads cryptoAmountPaid, and shows no code or order URL", () => {
-  const p = render(screens.windowClosed({
+  const p = render(screens.windowClosed({ onNewInvoice: noop,
     order: smuggled({ status: "expired" }),
     invoice: { ...openXmr, status: "expired", amountPaid: 21000, cryptoAmountPaid: "0.734" },
-    onNewInvoice: noop,
   }));
   for (const line of ["This invoice expired", "0.734 XMR arrived, which is not the full amount",
     "The rate window has closed, so the shortfall is no longer meaningful.",
-    "Quote the reference below and we will sort it out.", "inv_9f3a", screens.NEW_INVOICE]) {
+    "Quote the reference below and we will sort it out.", "inv_9f3a"]) {
     assert.ok(p.textContent.includes(line), `the closed-window screen is missing: ${line}`);
   }
   assertNoCode(p, "windowClosed");
@@ -616,10 +606,9 @@ domTest("screens: a payment that arrived late and in full is not called short", 
   // BTCPay reports a late payment as expired, never as paid in full, so the figures are the
   // only thing that can say whether it was short. Telling a buyer who paid in full that they
   // underpaid is the one wrong thing this screen can say.
-  const p = render(screens.windowClosed({
+  const p = render(screens.windowClosed({ onNewInvoice: noop,
     order: smuggled({ status: "expired" }),
     invoice: { ...openXmr, status: "expired", amountPaid: 42000, cryptoAmountPaid: "1.482" },
-    onNewInvoice: noop,
   }));
   assert.ok(!p.textContent.includes("not the full amount"), p.textContent);
   assert.ok(p.textContent.includes("1.482 XMR arrived after the window closed"), p.textContent);
@@ -630,20 +619,18 @@ domTest("screens: the provider's verdict decides the expired screen, not the fig
   // The tolerance case: 41900 of 42000 arrived and BTCPay called it paid in full. The service
   // then refuses to cancel the invoice as funded, so telling the buyer they underpaid is both
   // wrong and contradicted by what happens if they try anything.
-  const tolerated = render(screens.windowClosed({
+  const tolerated = render(screens.windowClosed({ onNewInvoice: noop,
     order: smuggled({ status: "expired" }),
     invoice: { ...openXmr, status: "expired", amountPaid: 41900, cryptoAmountPaid: "1.4785", paidInFull: true },
-    onNewInvoice: noop,
   }));
   assert.ok(!tolerated.textContent.includes("not the full amount"), tolerated.textContent);
   assert.ok(tolerated.textContent.includes("1.4785 XMR arrived after the window closed"), tolerated.textContent);
 
   // And the Monero shape: the verdict arrives with the figures still zero, which the service
   // records as a payment. "Nothing was received" would be the one wrong thing to say.
-  const verdictOnly = render(screens.windowClosed({
+  const verdictOnly = render(screens.windowClosed({ onNewInvoice: noop,
     order: smuggled({ status: "expired" }),
     invoice: { ...openXmr, status: "expired", paidInFull: true },
-    onNewInvoice: noop,
   }));
   assert.ok(!verdictOnly.textContent.includes("Nothing was received"), verdictOnly.textContent);
   assert.ok(verdictOnly.textContent.includes("inv_9f3a"), "and the reference support works from");
@@ -653,10 +640,9 @@ domTest("screens: a payment worth less than a minor unit is still a payment", ()
   // BTCPay reports the crypto figure whatever it is worth, and `paymentHolds` counts it: the
   // service will not cancel or sweep this invoice. "Nothing was received" would contradict it,
   // and the else branch does not even give the buyer the reference to quote.
-  const dust = render(screens.windowClosed({
+  const dust = render(screens.windowClosed({ onNewInvoice: noop,
     order: smuggled({ status: "expired" }),
     invoice: { ...openXmr, status: "expired", amountPaid: 0, cryptoAmountPaid: "0.00000001", paidInFull: false },
-    onNewInvoice: noop,
   }));
   assert.ok(!dust.textContent.includes("Nothing was received"), dust.textContent);
   assert.ok(dust.textContent.includes("0.00000001 XMR arrived, which is not the full amount"), dust.textContent);
@@ -667,10 +653,9 @@ domTest("screens: the closed-window screen prints no fiat figure it cannot stand
   // The fiat fallback this replaces printed `$300.00 of $0.00 arrived` and `$` over a EUR invoice: the read
   // endpoint sends `amount` and `currency` only when the browser may lack them, and `applyView` clears the
   // stored pair on expiry. A part-payment with no crypto figure says so in words, above the reference support uses.
-  const p = render(screens.windowClosed({
+  const p = render(screens.windowClosed({ onNewInvoice: noop,
     order: unpaidRecord({ status: "expired" }),
     invoice: { status: "expired", amountPaid: 30000 },
-    onNewInvoice: noop,
   }));
   assert.ok(p.textContent.includes("A payment arrived, which is not the full amount"), p.textContent);
   assert.ok(p.textContent.includes("inv_9f3a"), "with the reference, which is the actionable part");
@@ -678,19 +663,17 @@ domTest("screens: the closed-window screen prints no fiat figure it cannot stand
   assert.ok(!p.textContent.includes("$"), "nor a currency symbol nothing named");
 
   // The same body with a EUR pair present: still no invented dollar figure.
-  const eur = render(screens.windowClosed({
+  const eur = render(screens.windowClosed({ onNewInvoice: noop,
     order: unpaidRecord({ status: "expired" }),
     invoice: { status: "expired", amount: 42000, amountPaid: 30000, currency: "eur" },
-    onNewInvoice: noop,
   }));
   assert.ok(!eur.textContent.includes("$"), eur.textContent);
 });
 
 domTest("screens: the closed-window screen's nothing-received variant is the plain one", () => {
-  const p = render(screens.windowClosed({
+  const p = render(screens.windowClosed({ onNewInvoice: noop,
     order: unpaidRecord({ status: "expired" }),
     invoice: { status: "expired", amount: 42000, currency: "usd" },
-    onNewInvoice: noop,
   }));
   assert.ok(p.textContent.includes("Nothing was received, and nothing was charged."));
   assert.ok(!p.textContent.includes("arrived, which is not the full amount"));
@@ -941,8 +924,8 @@ domTest("screens: an order with no payment details gives the reference AND a way
   assert.equal(checked, true);
   // the watch loop: this screen's only control used to take the reference away and leave
   // the buyer with no exit; it must offer one.
-  const out = p.all("button.secondary").find((b) => b.textContent === "New invoice");
-  assert.ok(out, "detailsUnavailable must offer [ New invoice ]");
+  const out = p.all("button.secondary").find((b) => b.textContent === "Buy a new code");
+  assert.ok(out, "detailsUnavailable must offer [ Buy a new code ]");
   out.click();
   assert.equal(fresh, true);
 });
@@ -951,7 +934,7 @@ domTest("screens: the mounted card form shows the summary and the reference, and
   const p = render(screens.cardForm({
     order: smuggled(),
     invoice: { status: "open", amount: 42000, currency: "usd", clientSecret: "cs_test_abc" },
-    resumed: false, onNewInvoice: noop,
+    resumed: false,
   }));
   assert.ok(p.textContent.includes("Legend"));
   assert.ok(p.textContent.includes("$420.00"));
@@ -965,9 +948,9 @@ domTest("screens: the card form offers Cancel when a canceler is given, the same
   const inv: View = { status: "open", amount: 42000, currency: "usd", clientSecret: "cs_test_abc" };
   const hasCancel = (o: Parameters<typeof screens.cardForm>[0]): boolean =>
     render(screens.cardForm(o)).all("button").some((b) => b.textContent === screens.CANCEL_INVOICE);
-  assert.ok(hasCancel({ order: smuggled(), invoice: inv, resumed: false, onNewInvoice: noop, onCancel: noopAsync }),
+  assert.ok(hasCancel({ order: smuggled(), invoice: inv, resumed: false, onCancel: noopAsync }),
     "with a canceler the shared cancel control is on the card form");
-  assert.ok(!hasCancel({ order: smuggled(), invoice: inv, resumed: false, onNewInvoice: noop }),
+  assert.ok(!hasCancel({ order: smuggled(), invoice: inv, resumed: false }),
     "and without one there is no cancel button");
 });
 
@@ -979,6 +962,24 @@ domTest("screens: a canceled order reads as canceled in Your codes, over the exp
   const statuses = p.all("span.status").map((s) => s.textContent);
   assert.ok(statuses.includes("canceled"), `the canceled row says canceled: ${JSON.stringify(statuses)}`);
   assert.ok(statuses.includes("this invoice expired"), "a plain expired invoice still reads as expired");
+  // canceled is a dead end: no Open to reopen it. A plain expired invoice still offers Open.
+  const rows = p.all("li.entry");
+  const openOf = (li: StubElement): boolean => li.all("a").some((a) => a.textContent === "Open");
+  assert.equal(openOf(rows[0]!), false, "the canceled row has no Open button");
+  assert.equal(openOf(rows[1]!), true, "the plain expired row still has Open");
+});
+
+domTest("screens: a closed invoice offers Buy a new code, whether canceled or expired", () => {
+  const buyNewCode = (o: StubElement): boolean => o.all("button").some((b) => b.textContent === "Buy a new code");
+  let started = 0;
+  const canceled = render(screens.windowClosed({ onNewInvoice: () => { started += 1; }, order: smuggled({ status: "expired" }), invoice: undefined, canceled: true }));
+  assert.ok(canceled.textContent.includes("Invoice canceled"), canceled.textContent);
+  assert.ok(buyNewCode(canceled), "a canceled invoice offers Buy a new code");
+  const expired = render(screens.windowClosed({ onNewInvoice: () => { started += 1; }, order: smuggled({ status: "expired" }), invoice: undefined }));
+  assert.ok(expired.textContent.includes("This invoice expired"), expired.textContent);
+  assert.ok(buyNewCode(expired), "an expired invoice offers Buy a new code");
+  expired.all("button").find((b) => b.textContent === "Buy a new code")!.click();
+  assert.equal(started, 1, "and pressing it starts a fresh purchase");
 });
 
 // ------------------------------------------------------- the invariant, again
@@ -987,12 +988,12 @@ domTest("screens: ACROSS EVERY UNPAID SCREEN, the code is absent from the WHOLE 
   const held = smuggled();
   const expired = smuggled({ status: "expired" });
   const unpaid: Array<[string, StubElement]> = [
-    ["awaitingPayment", renderAwaitingPayment({ order: held, invoice: openXmr, method: "xmr", nowMs: NOW, resumed: true, onNewInvoice: noop, onCancel: noopAsync })],
+    ["awaitingPayment", renderAwaitingPayment({ order: held, invoice: openXmr, method: "xmr", nowMs: NOW, resumed: true, onCancel: noopAsync })],
     ["awaitingConfirmation", render(screens.awaitingConfirmation({ invoice: undefined, method: undefined, order: held, gaveUp: false, onCheckAgain: noop }))],
     ["the confirming screen/gaveUp", render(screens.awaitingConfirmation({ invoice: undefined, method: undefined, order: held, gaveUp: true, onCheckAgain: noop }))],
-    ["the closed-window screen/part", render(screens.windowClosed({ order: expired, invoice: { ...openXmr, status: "expired", amountPaid: 21000, cryptoAmountPaid: "0.734" }, onNewInvoice: noop }))],
-    ["the closed-window screen/none", render(screens.windowClosed({ order: expired, invoice: { status: "expired" }, onNewInvoice: noop }))],
-    ["cardForm", render(screens.cardForm({ order: held, invoice: { status: "open", clientSecret: "cs" }, resumed: true, onNewInvoice: noop }))],
+    ["the closed-window screen/part", render(screens.windowClosed({ onNewInvoice: noop, order: expired, invoice: { ...openXmr, status: "expired", amountPaid: 21000, cryptoAmountPaid: "0.734" } }))],
+    ["the closed-window screen/none", render(screens.windowClosed({ onNewInvoice: noop, order: expired, invoice: { status: "expired" } }))],
+    ["cardForm", render(screens.cardForm({ order: held, invoice: { status: "open", clientSecret: "cs" }, resumed: true }))],
     ["detailsUnavailable", render(screens.detailsUnavailable({ order: held, onCheckAgain: noop, onNewInvoice: noop }))],
     ["the history list", render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows: historyRows([record({ code: HELD_CODE }), record({ status: "expired", code: HELD_CODE })]), onOpen: noop, onStart: noop }))],
   ];
@@ -1063,7 +1064,7 @@ domTest("screens: a successful copy confirms IN PLACE and adds no line, on the c
     "nothing was added to the tree — the label was swapped");
 
   const five = renderAwaitingPayment({
-    order: smuggled(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: false, onNewInvoice: noop, onCancel: noopAsync,
+    order: smuggled(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: false, onCancel: noopAsync,
   });
   const addressButton = five.all("button.secondary")[1]!;
   addressButton.click();
@@ -1073,7 +1074,7 @@ domTest("screens: a successful copy confirms IN PLACE and adds no line, on the c
 });
 
 
-domTest("screens: no confirming screen offers [ New invoice ] — waiting or given up", () => {
+domTest("screens: no confirming screen offers [ Buy a new code ] — waiting or given up", () => {
   // The design grouped the confirming screen with the payment screen and the closed-window screen, which is an over-generalisation:
   // those two say in their own copy that nothing was charged, and the confirming screen is the
   // one screen where `actions.confirm()` returned success. The create endpoint has no
@@ -1083,7 +1084,7 @@ domTest("screens: no confirming screen offers [ New invoice ] — waiting or giv
   // and the footer; when the invoice expires the closed-window screen offers a new one.
   for (const gaveUp of [false, true]) {
     const p = render(screens.awaitingConfirmation({ invoice: undefined, method: undefined, order: smuggled(), gaveUp, onCheckAgain: noop }));
-    assert.equal(p.all("button").filter((b) => b.textContent === "New invoice").length, 0,
+    assert.equal(p.all("button").filter((b) => b.textContent === "Buy a new code").length, 0,
       `the confirming screen (gaveUp: ${gaveUp}) must offer nothing that starts a second charge`);
   }
   // Waiting, the screen updates itself and needs no control; when it stops
@@ -1166,7 +1167,7 @@ domTest("screens: a disabled control does nothing when clicked", () => {
 domTest("screens: the offline note goes beside the status on every screen still waiting", () => {
   const awaitingPayment = renderAwaitingPayment({
     order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: false,
-    offline: true, onNewInvoice: noop, onCancel: noopAsync,
+    offline: true, onCancel: noopAsync,
   });
   assert.ok(awaitingPayment.textContent.includes("Waiting for the payment to confirm"), "the status stays");
   assert.ok(awaitingPayment.textContent.includes(screens.OFFLINE_NOTE), "and the note is added to it");
@@ -1178,15 +1179,15 @@ domTest("screens: the offline note goes beside the status on every screen still 
 
   // the watch loop: `expired` keeps waiting, so a buyer who paid at the last second sees
   // the closed-window screen become the code screen, so the closed-window screen is a screen that is still checking.
-  const windowClosed = render(screens.windowClosed({
-    order: unpaidRecord({ status: "expired" }), invoice: { status: "expired" }, offline: true, onNewInvoice: noop,
+  const windowClosed = render(screens.windowClosed({ onNewInvoice: noop,
+    order: unpaidRecord({ status: "expired" }), invoice: { status: "expired" }, offline: true,
   }));
   assert.ok(windowClosed.textContent.includes(screens.OFFLINE_NOTE));
 });
 
 domTest("screens: nothing says it will keep checking when it is not", () => {
   const online = renderAwaitingPayment({
-    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: false, onNewInvoice: noop, onCancel: noopAsync,
+    order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW, resumed: false, onCancel: noopAsync,
   });
   assert.ok(!online.textContent.includes(screens.OFFLINE_NOTE), "absent is online");
 
@@ -1207,14 +1208,14 @@ domTest("screens: nothing says it will keep checking when it is not", () => {
 domTest("screens: a part-paid invoice asks for the remainder, everywhere it names a figure", () => {
   const full = renderAwaitingPayment({
     order: unpaidRecord(), invoice: openXmr, method: "xmr", nowMs: NOW,
-    resumed: false, onNewInvoice: noop, onCancel: noopAsync,
+    resumed: false, onCancel: noopAsync,
   });
   assert.equal(full.all("svg.qr").length, 1, "an untouched invoice still scans");
 
   const part = renderAwaitingPayment({
     order: unpaidRecord(),
     invoice: { ...openXmr, cryptoAmountPaid: "0.741", cryptoAmountDue: "0.745", paidInFull: false },
-    method: "xmr", nowMs: NOW, resumed: false, onNewInvoice: noop, onCancel: noopAsync,
+    method: "xmr", nowMs: NOW, resumed: false, onCancel: noopAsync,
   });
   // 1.482 invoiced, 0.741 seen, and the provider says 0.745 is still due - more than the
   // difference, because a network fee lands with the first partial payment. Every figure the
@@ -1236,7 +1237,7 @@ domTest("screens: the provider figure decides, and zero is never a figure to sen
   const draw = (paid: string, due: string | undefined) => renderAwaitingPayment({
     order: unpaidRecord(),
     invoice: { ...openXmr, cryptoAmountPaid: paid, paidInFull: false, ...(due === undefined ? {} : { cryptoAmountDue: due }) },
-    method: "xmr", nowMs: NOW, resumed: false, onNewInvoice: noop, onCancel: noopAsync,
+    method: "xmr", nowMs: NOW, resumed: false, onCancel: noopAsync,
   });
 
   // BTCPay reports a covered invoice as "0.00000000"; asking for zero is worse than asking

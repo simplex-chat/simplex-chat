@@ -623,7 +623,7 @@ async function cancelInvoice(orderId: string): Promise<void> {
   if (!window.confirm(screens.CANCEL_CONFIRM)) return;
   cancelNotice = undefined;
   // `stopAll` empties the map, so `watch` has no previous loop to take these from: without them a
-  // restart redraws the order as a fresh one, losing the resumed line and the New invoice button.
+  // restart redraws the order as a fresh one, losing the resumed line and the Buy a new code button.
   // The record is deliberately not among them: this call is about to rewrite it, and a loop
   // holding the copy from before would draw the dead address back the first time a read failed.
   const { record: _record, ...resume } = flow.liveWatches().find((w) => w.orderId === orderId)?.restartOptions() ?? {};
@@ -778,7 +778,7 @@ function paint(view: PaymentView): void {
       const awaitingPayment = screens.awaitingPayment({
         order: view.order, invoice: view.invoice, method: view.method,
         nowMs: Date.now(), resumed: view.resumed, offline: isOffline(),
-        onNewInvoice: newInvoice, onCancel: () => cancelInvoiceOnce(view.order.orderId),
+        onCancel: () => cancelInvoiceOnce(view.order.orderId),
         ...(cancelNotice?.orderId === view.order.orderId && cancelNotice.epoch === flow.epoch
           ? { notice: cancelNotice.message } : {}),
       });
@@ -795,7 +795,9 @@ function paint(view: PaymentView): void {
       return;
     case "windowClosed":
       root.replaceChildren(screens.windowClosed({
-        order: view.order, invoice: view.invoice, offline: isOffline(), onNewInvoice: newInvoice,
+        order: view.order, invoice: view.invoice, offline: isOffline(),
+        canceled: store.order(view.order.orderId)?.canceled === true,
+        onNewInvoice: newInvoice,
       }));
       return;
     case "cardForm":
@@ -833,7 +835,7 @@ function renderCardForm(view: CardView): void {
     return;
   }
   const shell = (body: HTMLElement): HTMLElement => screens.cardForm({
-    order: view.order, invoice: view.invoice, resumed: view.resumed, body, onNewInvoice: newInvoice,
+    order: view.order, invoice: view.invoice, resumed: view.resumed, body,
     // a PaymentIntent is only cancelable before it confirms, so the button is inert once a confirm is
     // in flight (the form is not repainted then, so it cannot be taken off the screen instead)
     onCancel: () => (cardConfirmPending ? Promise.resolve() : cancelInvoiceOnce(view.order.orderId)),

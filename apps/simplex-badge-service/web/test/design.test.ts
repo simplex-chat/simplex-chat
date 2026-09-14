@@ -794,7 +794,7 @@ designTest("design: no screen repeats the mark — the header carries it, and th
     ["the landing screen", screens.landing({ onStart: () => {} })],
     ["the catalog-changed screen", screens.catalogChanged(() => {})],
     ["awaitingConfirmation", screens.awaitingConfirmation({ order, invoice: undefined, method: undefined, gaveUp: false, onCheckAgain: () => {} })],
-    ["windowClosed", screens.windowClosed({ order, invoice: { status: "expired" }, onNewInvoice: () => {} })],
+    ["windowClosed", screens.windowClosed({ onNewInvoice: () => {}, order, invoice: { status: "expired" } })],
     ["paidNoCode", screens.paidNoCode({ order, settledAt: undefined })],
     ["unknownOrder", screens.unknownOrder(() => {})],
     ["invoiceFailure", screens.invoiceFailure(() => {})],
