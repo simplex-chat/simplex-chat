@@ -59,7 +59,7 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Crypto.Random (ChaChaDRG)
 import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeState (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
@@ -71,7 +71,7 @@ import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), Deliv
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (encodeBatchElement)
+import Simplex.Chat.Messages.Batch (BatchMode, encodeBatchElement)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -132,23 +132,24 @@ import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Exit (ExitCode, exitSuccess)
 import System.FilePath (takeExtension, takeFileName, (</>))
 import System.IO (Handle, IOMode (..))
+import System.Mem.Weak (deRefWeak)
 import System.Random (randomRIO)
 import System.Timeout (timeout)
 import UnliftIO.Async
-import UnliftIO.Concurrent (forkIO, threadDelay)
+import UnliftIO.Concurrent (forkIO, killThread, threadDelay)
 import UnliftIO.Directory
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose)
 import UnliftIO.STM
 #if defined(dbPostgres)
 import Data.Bifunctor (bimap, first, second)
-import Simplex.Messaging.Agent.Client (SubInfo (..), getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
+import Simplex.Messaging.Agent.Client (SubInfo (..), cancelWorker, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
 #else
 import Data.Bifunctor (bimap, first, second)
 import qualified Data.ByteArray as BA
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
-import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
+import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, cancelWorker, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 #endif
@@ -173,7 +174,7 @@ checkProfileImageSize = mapM_ $ \(ImageData t) ->
    in when (size > maxProfileImageSize) $ throwCmdError $ "Profile image is too large " <> show size
 
 checkProfileSize :: Profile -> CM ()
-checkProfileSize p = checkInfoSize "Profile" (XInfo p)
+checkProfileSize p = checkInfoSize "Profile" (XInfo p Nothing)
 
 checkGroupProfileSize :: GroupProfile -> CM ()
 checkGroupProfileSize p = checkInfoSize "Group profile" (XGrpInfo p)
@@ -356,12 +357,20 @@ restoreCalls = do
   atomically $ writeTVar calls callsMap
 
 stopChatController :: ChatController -> IO ()
-stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession, badgeWorkers} = do
-  stopBadgeWorkers badgeWorkers
+stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession, cleanupManagerAsync, relayGroupLinkChecksAsync, webPreviewState, expireCIThreads, timedItemThreads, deliveryTaskWorkers, deliveryJobWorkers, relayRequestWorkers, badgeWorkers} = do
   readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
   atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
   disconnectAgentClient smpAgent
-  readTVarIO s >>= mapM_ (\(a1, a2) -> forkIO $ uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
+  readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
+  cancelAsync cleanupManagerAsync
+  cancelAsync relayGroupLinkChecksAsync
+  forM_ webPreviewState $ \WebPreviewState {webPreviewWorkerAsync} -> cancelAsync webPreviewWorkerAsync
+  clearMap expireCIThreads >>= mapM_ (mapM_ uninterruptibleCancel)
+  clearMap timedItemThreads >>= mapM_ (readTVarIO >=> mapM_ (deRefWeak >=> mapM_ killThread))
+  clearMap deliveryTaskWorkers >>= mapM_ cancelWorker
+  clearMap deliveryJobWorkers >>= mapM_ cancelWorker
+  clearMap relayRequestWorkers >>= mapM_ cancelWorker
+  stopBadgeWorkers badgeWorkers
   closeFiles sndFiles
   closeFiles rcvFiles
   atomically $ do
@@ -369,6 +378,10 @@ stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles,
     forM_ keys $ \k -> TM.insert k False expireCIFlags
     writeTVar s Nothing
   where
+    cancelAsync :: TVar (Maybe (Async ())) -> IO ()
+    cancelAsync a = atomically (swapTVar a Nothing) >>= mapM_ uninterruptibleCancel
+    clearMap :: TM.TMap k a -> IO (Map k a)
+    clearMap m = atomically $ swapTVar m M.empty
     closeFiles :: TVar (Map Int64 Handle) -> IO ()
     closeFiles files = do
       fs <- readTVarIO files
@@ -664,7 +677,9 @@ processChatCommand cxt nm = \case
     tags <- withFastStore' (`getUserChatTags` user)
     pure $ CRChatTags user tags
   APIGetChats {userId, pendingConnections, pagination, query} -> withUserId' userId $ \user -> do
-    (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db cxt user pendingConnections pagination query)
+    ChatConfig {maxChats} <- asks config
+    let pagination' = fromMaybe (PTLast maxChats) pagination
+    (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db cxt user pendingConnections pagination' query)
     unless (null errs) $ toView $ CEvtChatErrors (map ChatErrorStore errs)
     pure $ CRApiChats user previews
   APIGetChat (ChatRef cType cId scope_) contentFilter pagination search -> withUser $ \user -> case cType of
@@ -1217,7 +1232,7 @@ processChatCommand cxt nm = \case
       Nothing -> throwCmdError "not a public group"
       Just PublicGroupProfile {groupLink} -> do
         let signingKeys = case (memberRole, groupKeys) of
-              (GROwner, Just gk@GroupKeys {groupRootKey = GRKPrivate _}) -> Just gk
+              (GROwner, Just gk@GroupKeys {publicGroupKeys = Just PublicGroupKeys {groupRootKey = GRKPrivate _}}) -> Just gk
               _ -> Nothing
         ownerSig <-
           pure signingKeys $>>= \GroupKeys {memberPrivKey} ->
@@ -1385,7 +1400,7 @@ processChatCommand cxt nm = \case
         withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
         withFastStore' $ \db -> deleteGroupMembers db user gInfo
         withFastStore' $ \db -> deleteGroup db user gInfo
-        pure $ CRGroupDeletedUser user gInfo msgSigned
+        pure $ CRGroupDeletedUser user gInfo msgSigned (not doSendDel)
         where
           getRecipients gInfo
             | useRelays' gInfo = do
@@ -2298,8 +2313,7 @@ processChatCommand cxt nm = \case
         -- set group link info and incognito profile, generate and store membership keys
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         let cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex} e2e
-        gVar <- asks random
-        (_, memberPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
+        (_, memberPrivKey) <- atomically . C.generateKeyPair =<< asks random
         gInfo' <- withFastStore $ \db -> do
           gInfo' <- updatePreparedRelayedGroup db cxt user gInfo mainCReq cReqHash incognitoProfile rootKey memberPrivKey publicMemberCount_
           -- Pre-emptively create owner members with trusted keys from link data
@@ -2441,8 +2455,7 @@ processChatCommand cxt nm = \case
       Left e -> throwError $ ChatErrorStore e
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
-    gVar <- asks random
-    rootKey@(rootPubKey, rootPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
+    rootKey@(rootPubKey, rootPrivKey) <- atomically . C.generateKeyPair =<< asks random
     let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
     -- TODO [address DR] remove this option and switch to IKUsePQ True
     let (pqInitKeys, useDR) = case pqRatchet_ of
@@ -2685,7 +2698,8 @@ processChatCommand cxt nm = \case
   APINewGroup userId incognito gProfile -> withUserId userId $ \user -> do
     g <- asks random
     memberId <- liftIO $ MemberId <$> encodedRandomBytes g 12
-    gInfo <- newGroup user incognito gProfile False memberId Nothing Nothing
+    (_, memberPrivKey) <- atomically $ C.generateKeyPair g
+    gInfo <- newGroup user incognito gProfile False memberId (Just GroupKeys {publicGroupKeys = Nothing, memberPrivKey}) Nothing
     createNewGroupItems user gInfo
     pure $ CRGroupCreated user gInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
@@ -2721,7 +2735,7 @@ processChatCommand cxt nm = \case
         groupLinkId <- GroupLinkId <$> drgRandomBytes 16
         subMode <- chatReadVar subscriptionMode
         -- generate root key pair; entity ID = sha256(rootPubKey) — see docs/rfcs/2026-03-28-group-identity-binding.md
-        rootKey@(rootPubKey, rootPrivKey) <- liftIO $ atomically $ C.generateKeyPair gVar
+        rootKey@(rootPubKey, rootPrivKey) <- atomically $ C.generateKeyPair gVar
         let entityId = C.sha256Hash $ C.pubKeyBytes rootPubKey
             crClientData = encodeJSON $ CRDataGroup groupLinkId
         -- prepare link with entityId as linkEntityId (no server request)
@@ -2739,7 +2753,8 @@ processChatCommand cxt nm = \case
             userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData, ratchetKeys = Nothing}
         -- create connection with prepared link (single network call)
         connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData subMode
-        let groupKeys = GroupKeys {publicGroupId = B64UrlByteString entityId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
+        let groupKeys = GroupKeys {publicGroupKeys, memberPrivKey}
+            publicGroupKeys = Just PublicGroupKeys {publicGroupId = B64UrlByteString entityId, groupRootKey = GRKPrivate rootPrivKey}
             setupLink gInfo = do
               -- TODO [relays] starting role should be communicated in protocol from owner to relays
               subRole <- asks $ channelSubscriberRole . config
@@ -2828,7 +2843,7 @@ processChatCommand cxt nm = \case
       case activeConn of
         Just Connection {peerChatVRange} -> do
           subMode <- chatReadVar subscriptionMode
-          dm <- encodeConnInfo $ XGrpAcpt membershipMemId
+          dm <- encodeConnInfo $ XGrpAcpt membershipMemId (groupMemberKey g)
           agentConnId <- case memberConn fromMember of
             Nothing -> do
               agentConnId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
@@ -3393,7 +3408,7 @@ processChatCommand cxt nm = \case
           joinPreparedConn subMode conn = do
             -- [incognito] send membership incognito profile
             p <- presentUserBadge user (incognitoMembershipProfile gInfo) $ userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile gInfo) Nothing True
-            dm <- encodeConnInfo $ XInfo p
+            dm <- encodeConnInfo $ XInfo p Nothing
             sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
             let newStatus = if sqSecured then ConnSndReady else ConnJoined
             void $ withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
@@ -3425,7 +3440,8 @@ processChatCommand cxt nm = \case
     folderId <- withFastStore (`getUserNoteFolderId` user)
     processChatCommand cxt nm $ APIClearChat (ChatRef CTLocal folderId Nothing)
   LastChats count_ -> withUser' $ \user -> do
-    let count = fromMaybe 5000 count_
+    ChatConfig {maxChats} <- asks config
+    let count = fromMaybe maxChats count_
     (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db cxt user False (PTLast count) clqNoFilters)
     unless (null errs) $ toView $ CEvtChatErrors (map ChatErrorStore errs)
     pure $ CRChats previews
@@ -3632,7 +3648,7 @@ processChatCommand cxt nm = \case
     fsFilePath <- lift $ toFSFilePath filePath
     fileSize <- liftIO $ CF.getFileContentsSize file {filePath = fsFilePath}
     when (fileSize > toInteger maxFileSizeHard) $ throwChatError $ CEFileSize filePath
-    (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing
+    (_, _, fileTransferMeta) <- xftpSndFileTransfer_ user file fileSize 1 Nothing Nothing
     pure CRSndStandaloneFileCreated {user, fileTransferMeta}
   APIStandaloneFileInfo FileDescriptionURI {clientData} -> pure . CRStandaloneFileInfo $ clientData >>= J.decodeStrict . encodeUtf8
   APIDownloadStandaloneFile userId uri file -> withUserId userId $ \user -> do
@@ -3808,7 +3824,7 @@ processChatCommand cxt nm = \case
                 joinPreparedConn conn incognitoProfile
               joinPreparedConn conn incognitoProfile = do
                 profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user incognitoProfile Nothing True
-                dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend
+                dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend Nothing
                 sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
                 let newStatus = if sqSecured then ConnSndReady else ConnJoined
                 conn' <- withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
@@ -3961,10 +3977,15 @@ processChatCommand cxt nm = \case
           Just gInfo_' -> userProfileInGroup' user gInfo_' incognitoProfile
           Nothing -> userProfileDirect user incognitoProfile Nothing True
       dm <- case gInfo_ of
-        Just (Just gInfo) | useRelays' gInfo -> case relayMemberId_ of
-          Just relayMemberId -> encodeXMemberConnInfo gInfo relayMemberId profileToSend
-          Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
-        _ -> encodeConnInfoPQ pqSup $ XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
+        Just (Just gInfo)
+          | useRelays' gInfo -> case relayMemberId_ of
+              Just relayMemberId -> encodeXMemberConnInfo gInfo relayMemberId profileToSend
+              Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
+          | otherwise -> do
+              gInfo' <- createUserMemberKey gInfo
+              encodeConnInfoPQ pqSup $ XContact profileToSend (groupMemberKey gInfo') (Just xContactId) welcomeSharedMsgId msg_
+        _ ->
+          encodeConnInfoPQ pqSup $ XContact profileToSend Nothing (Just xContactId) welcomeSharedMsgId msg_
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode
       withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared ConnJoined
@@ -3977,7 +3998,9 @@ processChatCommand cxt nm = \case
       fsFilePath <- lift $ toFSFilePath f
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
       fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cfArgs
-      when (fromInteger fileSize > maxXFTPFileSize sndBadge) $ throwChatError $ CEFileSize f
+      lims <- asks $ fileSizeLimits . config
+      now <- liftIO getCurrentTime
+      when (fileSize > maxSndXFTPFileSize lims now sndBadge) $ throwChatError $ CEFileSize f
       pure fileSize
     updateProfile :: User -> Profile -> CM ChatResponse
     updateProfile user p' = updateProfile_ user p' True $ withFastStore $ \db -> updateUserProfile db user p'
@@ -4039,7 +4062,7 @@ processChatCommand cxt nm = \case
             ctSndEvent :: ChangedProfileContact -> CM (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)
             ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = do
               p'' <- presentUserBadge user' Nothing mergedProfile'
-              pure (ConnectionId connId, Nothing, XInfo p'')
+              pure (ConnectionId connId, Nothing, XInfo p'' Nothing)
             ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
             ctMsgReq ChangedProfileContact {conn} =
               fmap $ \SndMessage {msgId, msgBody} ->
@@ -4072,7 +4095,7 @@ processChatCommand cxt nm = \case
           when (mergedProfile' /= mergedProfile) $
             withContactLock "updateContactPrefs" (contactId' ct) $ do
               p <- presentUserBadge user incognitoProfile mergedProfile'
-              void (sendDirectContactMessage user ct' $ XInfo p) `catchAllErrors` eToView
+              void (sendDirectContactMessage user ct' $ XInfo p Nothing) `catchAllErrors` eToView
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> GroupInfo -> GroupProfile -> Bool -> CM ChatResponse
@@ -4248,12 +4271,13 @@ processChatCommand cxt nm = \case
       createInternalChatItem user cd (CISndGroupE2EEInfo $ e2eInfoGroup gInfo) Nothing
       createGroupFeatureItems user cd CISndGroupFeature gInfo
     sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> CM ()
-    sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
+    sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} m@GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
       let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
           GroupMember {memberRole = userRole, memberId = userMemberId} = membership
           groupInv =
             GroupInvitation
               { fromMember = MemberIdRole userMemberId userRole,
+                fromMemberKey = groupMemberKey gInfo,
                 invitedMember = MemberIdRole memberId memRole,
                 connRequest = cReq,
                 groupProfile,
@@ -4772,7 +4796,8 @@ processChatCommand cxt nm = \case
                 Just file -> do
                   let User {profile = LocalProfile {localBadge}} = user
                   fileSize <- checkSndFile (if contactConnIncognito ct then Nothing else localBadge) file
-                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize 1 $ CGContact ct
+                  binding_ <- ifM ((not (contactConnIncognito ct) &&) <$> fileNeedsBadge fileSize) (directChatBinding ct) (pure Nothing)
+                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize 1 (CGContact ct) binding_
                   pure (Just fInv, Just ciFile)
                 Nothing -> pure (Nothing, Nothing)
             prepareMsgs :: NonEmpty (ComposedMessageReq, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTDirect)))
@@ -4803,8 +4828,10 @@ processChatCommand cxt nm = \case
     sendGroupContentMessages user gInfo scope showGroupAsSender live itemTTL sign cmrs = do
       assertMultiSendable live cmrs
       chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
-      recipients <- getGroupRecipients cxt user gInfo chatScopeInfo modsCompatVersion
-      sendGroupContentMessages_ user gInfo scope showGroupAsSender chatScopeInfo recipients live itemTTL sign cmrs
+      -- the member key is created before the send, so that signatures and file badge proofs assert the same key
+      gInfo' <- createUserMemberKey gInfo
+      recipients <- getGroupRecipients cxt user gInfo' chatScopeInfo modsCompatVersion
+      sendGroupContentMessages_ user gInfo' scope showGroupAsSender chatScopeInfo recipients live itemTTL sign cmrs
         where
           hasReport = any (\(ComposedMessage {msgContent}, _, _, _) -> isReport msgContent) cmrs
           modsCompatVersion = if hasReport then contentReportsVersion else groupKnockingVersion
@@ -4857,7 +4884,9 @@ processChatCommand cxt nm = \case
                 Just file -> do
                   let User {profile = LocalProfile {localBadge}} = user
                   fileSize <- checkSndFile (if incognitoMembership gInfo then Nothing else localBadge) file
-                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup gInfo recipients
+                  needsBadge <- fileNeedsBadge fileSize
+                  let binding_ = if needsBadge && not (incognitoMembership gInfo) then sndGroupChatBinding gInfo showGroupAsSender else Nothing
+                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n (CGGroup gInfo recipients) binding_
                   fInv' <-
                     if signMsgs && useRelays' gInfo
                       then (\d -> (fInv :: FileInvitation) {fileDigest = Just d}) <$> cryptoFileDigest file
@@ -4915,9 +4944,9 @@ processChatCommand cxt nm = \case
           -- batching retrieval of quoted messages (prepareMsgs).
           when (live || length (L.filter (\(ComposedMessage {quotedItemId}, _, _, _) -> isJust quotedItemId) cmrs) > 1) $
             throwCmdError "invalid multi send: live and more than one quote not supported"
-    xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> CM (FileInvitation, CIFile 'MDSnd)
-    xftpSndFileTransfer user file fileSize n contactOrGroup = do
-      (fInv, ciFile, ft) <- xftpSndFileTransfer_ user file fileSize n $ Just contactOrGroup
+    xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> Maybe ByteString -> CM (FileInvitation, CIFile 'MDSnd)
+    xftpSndFileTransfer user file fileSize n contactOrGroup binding_ = do
+      (fInv, ciFile, ft) <- xftpSndFileTransfer_ user file fileSize n (Just contactOrGroup) binding_
       case contactOrGroup of
         CGContact Contact {activeConn} -> forM_ activeConn $ \conn ->
           withFastStore' $ \db -> createSndFTDescrXFTP db user Nothing conn ft dummyFileDescr
@@ -5007,7 +5036,7 @@ processChatCommand cxt nm = \case
               chunkSize <- asks $ fileChunkSize . config
               withFastStore' $ \db -> do
                 fileId <- createLocalFile CIFSSndStored db user nf createdAt cf fileSize chunkSize
-                pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal, fileExpires = Nothing}
+                pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal, fileExpires = Nothing, fileProhibited = Nothing}
         prepareLocalItemsData ::
           NonEmpty ComposedMessageReq ->
           NonEmpty (Maybe (CIFile 'MDSnd)) ->
@@ -5175,7 +5204,7 @@ presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadg
         | not (connIncognito conn) -> do
             let ct' = updateMergedPreferences user' ct
             p <- presentUserBadge user' Nothing $ userProfileDirect user' Nothing (Just ct') False
-            void (sendDirectContactMessage user' ct' (XInfo p)) `catchAllErrors` eToView
+            void (sendDirectContactMessage user' ct' (XInfo p Nothing)) `catchAllErrors` eToView
       _ -> pure ()
 
 -- | The check character is verified before anything leaves the device, and the signing keys are
@@ -5956,7 +5985,7 @@ chatCommandP =
         *> ( APIGetChats
               <$> A.decimal
               <*> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)
-              <*> (A.space *> paginationByTimeP <|> pure (PTLast 5000))
+              <*> optional (A.space *> paginationByTimeP)
               <*> (A.space *> jsonP <|> pure clqNoFilters)
            ),
       "/_get chat " *> (APIGetChat <$> chatRefP <*> optional (" content=" *> strP) <* A.space <*> chatPaginationP <*> optional (" search=" *> textP)),

@@ -2322,7 +2322,7 @@ struct ChatView: View {
                     } else {
                         saveButton(file: fileSource)
                     }
-                } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file, ciSenderProfile(ci, chat.chatInfo)) {
+                } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file) {
                     downloadButton(file: file)
                 }
                 if ci.meta.editable && !mc.isVoice && !live {

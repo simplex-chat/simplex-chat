@@ -269,6 +269,7 @@ mobileChatOpts dbOptions =
             logAgent = Nothing,
             logFile = Nothing,
             tbqSize = 4096,
+            maxChats = 5000,
             deviceName = Nothing,
             chatRelay = False,
             webPreviewConfig = Nothing,
