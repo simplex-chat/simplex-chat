@@ -136,12 +136,12 @@ testNameStatus ps = withSmpServerAndNames $ \reg ->
     test reg alice _bob = do
       enableNamesRole alice
       alice ##> "/name nobody.simplex"
-      alice <## "nobody.simplex available, $1.00 a year"
+      alice <## "nobody.simplex available, $1.00 a year (as of 1m ago)"
       alice ##> "/name ab.simplex"
-      alice <## "ab.simplex too short: names need at least 3 characters"
+      alice <## "ab.simplex too short: names need at least 3 characters (as of 1m ago)"
       registerName reg aliceName (contactNameRecord "alice" "https://simplex.chat/contact#/?v=2")
       alice ##> "/name alice.simplex"
-      alice <## "alice.simplex registered, expires 2027-06-24, free to register from 2027-09-22 unless renewed by owner"
+      alice <## "alice.simplex registered, expires 2027-06-24, free to register from 2027-09-22 unless renewed by owner (as of 1m ago)"
 
 -- claiming a channel name: the three ways it can fail, worded for someone
 -- attaching a name they mean to own

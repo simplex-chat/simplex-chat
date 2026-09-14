@@ -4092,6 +4092,7 @@ export namespace SimplexDomainError {
   export interface Unavailable extends Interface {
     type: "unavailable"
     availability: SimplexNameAvailability
+    lastBlockTs?: string // ISO-8601 timestamp
   }
 
   export interface ResolvesElsewhere extends Interface {

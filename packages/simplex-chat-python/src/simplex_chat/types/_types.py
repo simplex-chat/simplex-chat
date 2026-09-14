@@ -2851,6 +2851,7 @@ class SimplexDomainError_unknownDomain(TypedDict):
 class SimplexDomainError_unavailable(TypedDict):
     type: Literal["unavailable"]
     availability: "SimplexNameAvailability"
+    lastBlockTs: NotRequired[str]  # ISO-8601 timestamp
 
 class SimplexDomainError_resolvesElsewhere(TypedDict):
     type: Literal["resolvesElsewhere"]

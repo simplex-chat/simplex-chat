@@ -3686,6 +3686,7 @@ UnknownDomain:
 Unavailable:
 - type: "unavailable"
 - availability: [SimplexNameAvailability](#simplexnameavailability)
+- lastBlockTs: UTCTime?
 
 ResolvesElsewhere:
 - type: "resolvesElsewhere"

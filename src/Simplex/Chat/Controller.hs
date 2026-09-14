@@ -813,7 +813,7 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
-  | CRNameStatus {user :: User, statusDomain :: SimplexDomain, availability :: SimplexNameAvailability}
+  | CRNameStatus {user :: User, statusDomain :: SimplexDomain, availability :: SimplexNameAvailability, lastBlockTs :: Maybe UTCTime}
   | CRContactDomainVerified {user :: User, contact :: Contact, verificationFailure :: Maybe Text}
   | CRGroupDomainVerified {user :: User, groupInfo :: GroupInfo, verificationFailure :: Maybe Text}
   | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
@@ -1449,7 +1449,7 @@ data ChatError
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain {claimedDomain :: Maybe SimplexDomain} -- the name the resolved address claims, if any
-  | SDEUnavailable {availability :: SimplexNameAvailability} -- what the registry says instead
+  | SDEUnavailable {availability :: SimplexNameAvailability, lastBlockTs :: Maybe UTCTime} -- what the registry says instead, and how fresh that is
   | SDEResolvesElsewhere {claimNameType :: SimplexNameType, resolvedLinks :: [Text]} -- resolves, but elsewhere
   | SDENotRegistered -- connecting only needs to know the name reaches no one
   deriving (Eq, Show)

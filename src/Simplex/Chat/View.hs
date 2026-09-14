@@ -33,7 +33,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
 import Data.Time.Calendar (addDays)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, diffUTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Version as V
 import qualified Network.HTTP.Types as Q
@@ -152,7 +152,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
-  CRNameStatus u domain availability -> ttyUser u [plain $ strEncode domain <> " " <> nameStatus domain availability]
+  CRNameStatus u domain availability lastBlockTs -> ttyUser u [plain $ strEncode domain <> " " <> nameStatus domain availability <> asOf ts lastBlockTs]
   CRContactDomainVerified u (Contact {profile = LocalProfile {contactDomain}}) result -> ttyUser u $ viewDomainVerified NTContact (claimDomain <$> contactDomain) result
   CRGroupDomainVerified u g result -> ttyUser u $ viewDomainVerified NTPublicGroup (groupSimplexDomain g) result
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
@@ -853,6 +853,19 @@ nameStatus d@SimplexDomain {subDomain} = \case
   where
     day = B.pack . formatTime defaultTimeLocale "%Y-%m-%d"
     twoLD = encodeUtf8 $ fullDomainName d {subDomain = []}
+
+-- | The registry is read through a node that can lag, so a status is only as
+-- current as the block it was read at. A v20/v21 router sends no block, and
+-- then there is nothing to say.
+asOf :: CurrentTime -> Maybe UTCTime -> B.ByteString
+asOf now = maybe "" $ \t -> " (as of " <> ago (now `diffUTCTime` t) <> " ago)"
+  where
+    ago d
+      | secs < 60 = B.pack (show secs) <> "s"
+      | secs < 3600 = B.pack (show $ secs `div` 60) <> "m"
+      | otherwise = B.pack (show $ secs `div` 3600) <> "h"
+      where
+        secs = max 0 (truncate d) :: Int
 
 -- | The registry prices in US cents; dollars and cents is what a person reads.
 usd :: Int64 -> B.ByteString
@@ -2778,7 +2791,7 @@ viewChatError isCmd logLevel testView = \case
             SDEUnknownDomain claimed_ ->
               [plain $ name <> "resolves to an address that claims " <> maybe "no name" strEncode claimed_]
             SDENotRegistered -> [plain $ name <> "is not registered"]
-            SDEUnavailable a -> [plain $ name <> "is " <> nameStatus domain a]
+            SDEUnavailable a _ -> [plain $ name <> "is " <> nameStatus domain a]
             SDEResolvesElsewhere nameType links ->
               let here = case nameType of NTContact -> "address"; NTPublicGroup -> "channel"
                in plain (name <> "does not resolve to this " <> here <> ", it resolves to:")

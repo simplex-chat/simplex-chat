@@ -111,7 +111,7 @@ import Simplex.Messaging.Crypto.Ratchet (E2ERatchetParamsUri (..), InitialKeys (
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ErrorType (NAME), MsgFlags (..), NamePricing (..), NameRecord (..), NameRegistration (..), USDCents (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), ErrorType (NAME), MsgFlags (..), NamePricing (..), NameRecord (..), NameRegistration (..), NameResponse (..), USDCents (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import Simplex.Messaging.SystemTime (roundedToUTCTime)
@@ -2398,8 +2398,8 @@ processChatCommand cxt nm = \case
     connectWithPlan user incognito ccLink planSimplexName otherSimplexName plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   APIGetNameStatus userId domain -> withUserId userId $ \user -> do
-    reg <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
-    pure $ CRNameStatus user domain (nameAvailability domain reg)
+    NameResponse {lastBlockTs, registration} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+    pure $ CRNameStatus user domain (nameAvailability domain registration) (roundedToUTCTime <$> lastBlockTs)
   ShowNameStatus domain -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APIGetNameStatus userId domain
   APIVerifyContactDomain contactId -> withUser $ \user -> do
@@ -2416,7 +2416,7 @@ processChatCommand cxt nm = \case
     -- checks the profile link, not the link we joined through (which may have rotated)
     (verified, reason) <-
       tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) (claimDomain claim)) >>= \case
-        Right (NRRegistered {nameRecord = NameRecord {nrSimplexChannel}})
+        Right NameResponse {registration = NRRegistered {nameRecord = NameRecord {nrSimplexChannel}}}
           | nameResolvesTo groupLink nrSimplexChannel -> pure (True, Nothing)
           | otherwise -> pure (False, Just "the name does not resolve to the link in the group profile")
         Right _ -> pure (False, Just "the name is not registered")
@@ -4391,7 +4391,7 @@ processChatCommand cxt nm = \case
         | resolveMode == PRMNever -> connectPlanNoName $ ChatError CENotResolvedLocally
         | otherwise ->
             tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) d) >>= \case
-              Right (NRRegistered {nameRecord = nr})
+              Right NameResponse {registration = NRRegistered {nameRecord = nr}}
                 | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) ->
                     (addOther nr <$> connectPlanName NTPublicGroup (Right nr)) `catchAllErrors` \e ->
                       (addOther nr <$> connectPlanName NTContact (Right nr) `catchAllErrors` \_ -> throwError e)
@@ -5060,16 +5060,17 @@ checkNameClaim nm user domain nameType sLnk nameLinks = do
         notReady = throwChatError . CESimplexDomainNotReady domain
 
 -- | The record a name resolves to; when it does not, the failure says why.
-resolvedRecord :: SimplexDomain -> NameRegistration -> CM NameRecord
+resolvedRecord :: SimplexDomain -> NameResponse -> CM NameRecord
 resolvedRecord domain reg =
   maybe (throwChatError $ CESimplexDomainNotReady domain SDENotRegistered) pure (resolvedRecord_ reg)
 
 -- | Claiming a name: what the registry says, since the point is to get it.
-unavailable :: SimplexDomain -> NameRegistration -> CM a
-unavailable domain reg = throwChatError $ CESimplexDomainNotReady domain (SDEUnavailable (nameAvailability domain reg))
+unavailable :: SimplexDomain -> NameResponse -> CM a
+unavailable domain NameResponse {lastBlockTs, registration} =
+  throwChatError $ CESimplexDomainNotReady domain (SDEUnavailable (nameAvailability domain registration) (roundedToUTCTime <$> lastBlockTs))
 
-resolvedRecord_ :: NameRegistration -> Maybe NameRecord
-resolvedRecord_ = \case
+resolvedRecord_ :: NameResponse -> Maybe NameRecord
+resolvedRecord_ NameResponse {registration} = case registration of
   NRRegistered {nameRecord} -> Just nameRecord
   _ -> Nothing
 

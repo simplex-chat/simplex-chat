@@ -20,6 +20,21 @@ viewTests = do
   testRecent
   testPremiumUsd
   testNameAvailability
+  testAsOf
+
+-- what the registry says is only as current as the block it was read at
+testAsOf :: Spec
+testAsOf = describe "name status freshness" $ do
+  let now = posixSecondsToUTCTime 1780000000
+      block t = Just (posixSecondsToUTCTime t)
+  it "a v20/v21 router sent no block, so there is nothing to say" $
+    asOf now Nothing `shouldBe` ""
+  it "counts in the coarsest unit that still says it" $ do
+    asOf now (block 1779999988) `shouldBe` " (as of 12s ago)"
+    asOf now (block 1779999880) `shouldBe` " (as of 2m ago)"
+    asOf now (block 1779992800) `shouldBe` " (as of 2h ago)"
+  it "a block ahead of this clock is not negative age" $
+    asOf now (block 1780000005) `shouldBe` " (as of 0s ago)"
 
 -- SimplexNameAvailability restates NameRegistration so the chat API stays
 -- independent of the wire format. The two have drifted twice; this pins the map.

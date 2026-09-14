@@ -26,10 +26,10 @@ import Network.HTTP.Types (hContentType, notFound404, ok200)
 import Network.Wai (Application, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Names.Record (NameRecord (..), NameRegistration (..), NamePricing (..), USDCents (..))
+import Simplex.Messaging.Names.Record (NameRecord (..), NameRegistration (..), NamePricing (..), NameResponse (..), USDCents (..))
 import Simplex.Messaging.Server.Names (NamesConfig (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), fullDomainName, labelHash)
-import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), getSystemSeconds)
 
 type NameRegistry = TVar (Map Text NameRecord)
 
@@ -44,7 +44,13 @@ withNameResolver action = do
     app reg req send = do
       (st, body) <- case pathInfo req of
         ["health"] -> pure (ok200, "{}")
-        ["v2", "resolve", d] -> (\r -> (ok200, J.encode (maybe available registered r))) . M.lookup d <$> readTVarIO reg
+        ["v2", "resolve", d] -> do
+          r <- M.lookup d <$> readTVarIO reg
+          RoundedSystemTime now <- getSystemSeconds
+          -- the chain the resolver reads lags; a lag of whole minutes renders
+          -- the same however long the test takes to get from here to the view
+          let res = NameResponse {lastBlockTs = Just (RoundedSystemTime $ now - 90), registration = maybe available registered r}
+          pure (ok200, J.encode res)
         _ -> pure (notFound404, "{}")
       send $ responseLBS st [(hContentType, "application/json")] body
     -- the resolver answers with the protocol's own type, so the stub does too
