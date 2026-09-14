@@ -5,11 +5,16 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import kotlin.math.roundToInt
+
+@Composable
+fun Modifier.mirrorIfRtl(): Modifier =
+  if (LocalLayoutDirection.current == LayoutDirection.Rtl) this.scale(scaleX = -1f, scaleY = 1f) else this
 
 fun Modifier.badgeLayout() =
   layout { measurable, constraints ->
