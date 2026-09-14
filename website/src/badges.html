@@ -1,0 +1,246 @@
+---
+permalink: /badges/
+title: "Support SimpleX"
+eleventyExcludeFromCollections: true
+templateEngineOverride: njk
+---
+<!doctype html>
+<html lang="{{ page.url | getlang }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}</title>
+    <!-- Open in the site's theme so a dark-mode buyer is not flashed a light page. -->
+    {% include "dark-mode.html" %}
+    <link href="/css/tailwind.css" rel="stylesheet" />
+    <link href="/css/style.css" rel="stylesheet" />
+    <style>
+        :root { --nav-color: #001796; }
+        html.dark { --nav-color: #ffffff; }
+        html, body { margin: 0; }
+        /* A fixed bar at the site's height and spacing; the frame fills the rest of the screen and
+           the site footer sits below it. This is the only navbar — the app hides its own when embedded. */
+        .b-nav {
+            position: fixed; top: 0; left: 0; width: 100%; height: 54px; z-index: 50;
+            /* Centre the links on the page; the logo and toggle are taken out of flow below, so
+               neither their width nor the logo image loading can nudge the centred links. This is
+               how the site's own navbar keeps its menu centred. */
+            box-sizing: border-box; display: flex; align-items: center; justify-content: center;
+            /* The site's own frosted bar: translucent over the content that scrolls under it. */
+            background: rgba(243, 250, 255, 0.72);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        html.dark .b-nav { background: rgba(0, 8, 50, 0.72); }
+        .b-logo { position: absolute; left: 0; padding-left: 30px; display: flex; align-items: center; height: 100%; }
+        .b-logo img { height: 40px; width: auto; }
+        .b-logo .dark { display: none; }
+        html.dark .b-logo .light { display: none; }
+        html.dark .b-logo .dark { display: block; }
+        .b-links { display: flex; align-items: center; gap: 60px; }
+        .b-links a {
+            font-family: "Manrope", sans-serif;
+            color: var(--nav-color); text-decoration: none; font-size: 18px; font-weight: 500;
+            position: relative;
+        }
+        .b-links a::before {
+            content: ""; position: absolute; width: 0; height: 1px; bottom: -2px; right: 0;
+            background-color: var(--nav-color); transition: width .25s ease-out;
+        }
+        .b-links a:hover::before { width: 100%; left: 0; right: auto; }
+        .b-theme { display: flex; align-items: center; justify-content: center; padding: 0; border: 0; background: none; cursor: pointer; }
+        .b-theme-top { position: absolute; right: 0; margin-right: 20px; }
+        .b-theme-inline { display: none; }
+        .b-theme svg { width: 20px; height: 20px; }
+        .b-theme svg path { fill: var(--nav-color); }
+        .b-theme .sun { display: none; }
+        html.dark .b-theme .sun { display: block; }
+        html.dark .b-theme .moon { display: none; }
+        /* The hamburger shows only on phones; there the links collapse into a dropdown it toggles. */
+        .b-burger { display: none; position: absolute; right: 0; margin-right: 16px; padding: 0; border: 0; background: none; cursor: pointer; }
+        .b-burger svg { width: 24px; height: 24px; }
+        .b-burger svg path { fill: var(--nav-color); }
+        .b-theme-label { font-family: "Manrope", sans-serif; color: var(--nav-color); font-size: 16px; font-weight: 500; }
+        /* The frame sits under the fixed navbar (the app pads its own top to clear it) and is sized
+           to its content by the app's height messages, so the page — not the frame — scrolls, and
+           the footer follows naturally. 100vh is only the size before the first message arrives. */
+        /* Firefox composites the frame's own surface and leaves a one-pixel white line at its bottom
+           edge where it meets the footer; the line is the frame's cleared surface, sits above the
+           footer's fill (the surface composites last), and survives until a reload. Clip that row:
+           the wrapper is one pixel shorter than the frame (the frame's negative bottom margin), so
+           overflow hides the frame's bottom edge and the footer meets a clean box edge, not a
+           composited one. */
+        #badges-frame-wrap { overflow: hidden; }
+        #badges-frame {
+            display: block; width: 100%; height: 100vh; border: 0; margin-bottom: -1px;
+            /* An empty frame paints transparent-dark before its document loads, and the app's own
+               ground flashes before the site hands in its colour. Give the frame the page's own
+               background so any gap reads as the site, and fade the app in once it is sized and
+               themed, so neither flash is seen. */
+            background: #F3FAFF;
+            opacity: 0; transition: opacity .25s ease;
+        }
+        html.dark #badges-frame { background: #000832; }
+        @media (max-width: 640px) {
+            .b-burger { display: flex; align-items: center; }
+            .b-theme-top { display: none; }
+            /* The links become a frosted dropdown pinned under the hamburger, shown only when open. */
+            .b-links {
+                position: absolute; top: 54px; right: 8px;
+                flex-direction: column; align-items: stretch; gap: 2px;
+                min-width: 190px; padding: 8px;
+                /* Solid, and a shade off the page — the surfaces the site's own mobile menu uses — so
+                   the panel reads as a distinct card, not see-through against the matching ground. */
+                background: #fff; border: 1px solid rgba(0, 23, 150, .12);
+                border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 8, 50, .18);
+                display: none;
+            }
+            html.dark .b-links { background: #0a0f2b; border-color: rgba(255, 255, 255, .12); }
+            .b-nav.open .b-links { display: flex; }
+            .b-links a { padding: 10px 12px; border-radius: 8px; font-size: 16px; }
+            .b-links a::before { display: none; }
+            .b-links a:hover { background: rgba(0, 23, 150, .06); }
+            html.dark .b-links a:hover { background: rgba(255, 255, 255, .06); }
+            .b-theme-inline { display: flex; justify-content: flex-start; gap: 8px; padding: 10px 12px; }
+        }
+    </style>
+</head>
+<body class="bg-[#F3FAFF] dark:bg-[#000832]">
+    <header class="b-nav">
+        <a class="b-logo" href="/" aria-label="SimpleX">
+            <img class="light" src="/img/new/logo-light.png" alt="SimpleX">
+            <img class="dark" src="/img/new/logo-dark.png" alt="SimpleX">
+        </a>
+        <nav class="b-links" id="b-links" aria-label="Badges">
+            <!-- Home leaves for the site; Your codes is a hash link (the hash carries the route into
+                 the frame). Buy a code starts a fresh purchase, which is not a route — the frame tells
+                 us the step it lands on, and we mirror that hash so a reload resumes there. -->
+            <a href="/">Home</a>
+            <a href="#/tier" id="b-buy">Buy a code</a>
+            <a href="#/codes">Your codes</a>
+            <!-- The theme toggle rides inside the dropdown on phones; a second copy (below) sits at
+                 the bar's right on wider screens. One `js-theme` class wires both to the handler. -->
+            <button class="b-theme b-theme-inline js-theme" type="button" aria-label="Toggle light or dark theme">
+                <svg class="moon" viewBox="5 5 20 23" xmlns="http://www.w3.org/2000/svg"><path d="M10.895 7.574c0 7.55 5.179 13.67 11.567 13.67 1.588 0 3.101-0.38 4.479-1.063-1.695 4.46-5.996 7.636-11.051 7.636-6.533 0-11.83-5.297-11.83-11.83 0-4.82 2.888-8.959 7.023-10.803-0.116 0.778-0.188 1.573-0.188 2.39z"/></svg>
+                <svg class="sun" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 17a5 5 0 110-10 5 5 0 010 10zm0-15a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm0 17a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM3 11h1a1 1 0 110 2H3a1 1 0 110-2zm17 0h1a1 1 0 110 2h-1a1 1 0 110-2zM5.6 5.6a1 1 0 011.4 0l.7.7A1 1 0 116.3 7.7l-.7-.7a1 1 0 010-1.4zm11 11a1 1 0 011.4 0l.7.7a1 1 0 01-1.4 1.4l-.7-.7a1 1 0 010-1.4zM18.4 5.6a1 1 0 010 1.4l-.7.7A1 1 0 1116.3 6.3l.7-.7a1 1 0 011.4 0zM7 16.6a1 1 0 010 1.4l-.7.7a1 1 0 01-1.4-1.4l.7-.7a1 1 0 011.4 0z"/></svg>
+                <span class="b-theme-label">Theme</span>
+            </button>
+        </nav>
+        <button class="b-burger" id="b-burger" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="b-links">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18v2H3zM3 11h18v2H3zM3 16h18v2H3z"/></svg>
+        </button>
+        <button class="b-theme b-theme-top js-theme" id="b-theme" type="button" aria-label="Toggle light or dark theme">
+            <svg class="moon" viewBox="5 5 20 23" xmlns="http://www.w3.org/2000/svg"><path d="M10.895 7.574c0 7.55 5.179 13.67 11.567 13.67 1.588 0 3.101-0.38 4.479-1.063-1.695 4.46-5.996 7.636-11.051 7.636-6.533 0-11.83-5.297-11.83-11.83 0-4.82 2.888-8.959 7.023-10.803-0.116 0.778-0.188 1.573-0.188 2.39z"/></svg>
+            <svg class="sun" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 17a5 5 0 110-10 5 5 0 010 10zm0-15a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm0 17a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM3 11h1a1 1 0 110 2H3a1 1 0 110-2zm17 0h1a1 1 0 110 2h-1a1 1 0 110-2zM5.6 5.6a1 1 0 011.4 0l.7.7A1 1 0 116.3 7.7l-.7-.7a1 1 0 010-1.4zm11 11a1 1 0 011.4 0l.7.7a1 1 0 01-1.4 1.4l-.7-.7a1 1 0 010-1.4zM18.4 5.6a1 1 0 010 1.4l-.7.7A1 1 0 1116.3 6.3l.7-.7a1 1 0 011.4 0zM7 16.6a1 1 0 010 1.4l-.7.7a1 1 0 01-1.4-1.4l.7-.7a1 1 0 011.4 0z"/></svg>
+        </button>
+    </header>
+
+    <!-- No src here: the script sets it to the frame's own origin plus the route we persisted, so the
+         frame loads straight at the step the buyer had reached — exactly as it does standalone, without
+         first showing the landing and then sliding to the step. -->
+    <div id="badges-frame-wrap"><iframe id="badges-frame" title="Support SimpleX"></iframe></div>
+
+    {% include "footer.html" %}
+
+    <script>
+        (function () {
+            // Must match the iframe's origin exactly: messages are only sent to it and only trusted
+            // from it, so neither channel can be driven by another frame.
+            var APP = "https://badges.simplex.chat";
+            var frame = document.getElementById("badges-frame");
+            // Load the frame at the route we persisted (a wizard step's hash; empty for the landing or
+            // an order the frame resumes from its own store). This is what a standalone reload does, so
+            // the step appears in place instead of scrolling in from the landing.
+            frame.src = APP + location.hash;
+
+            function siteTheme() {
+                try { return localStorage.getItem("theme") || "system"; } catch (e) { return "system"; }
+            }
+            function isDark() {
+                return document.documentElement.classList.contains("dark");
+            }
+            function siteBg() { return isDark() ? "#000832" : "#F3FAFF"; }
+            function applySiteTheme(theme) {
+                var dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+                document.documentElement.classList.toggle("dark", dark);
+                try { if (theme === "system") localStorage.removeItem("theme"); else localStorage.setItem("theme", theme); } catch (e) {}
+            }
+            function post(msg) { try { frame.contentWindow.postMessage(msg, APP); } catch (e) { /* not ready */ } }
+            function postRoute() { post({ type: "simplex-route", hash: location.hash }); }
+            function postColors() { post({ type: "simplex-colors", bg: siteBg() }); }
+            function reveal() { frame.style.opacity = "1"; }
+            // Fallback: reveal even if the app never posts a height (an older deploy), so the frame
+            // can never stay invisible. The first height message reveals it sooner, once themed.
+            frame.addEventListener("load", function () { setTimeout(reveal, 400); });
+
+            // Your codes is a hash link; changing the hash — from a click or the address bar — carries
+            // the route into the frame. Buy a code is not a route: it posts a fresh-purchase intent,
+            // and the frame reports back the step it lands on (below), which we mirror into the URL.
+            window.addEventListener("hashchange", postRoute);
+            var buy = document.getElementById("b-buy");
+            if (buy) buy.addEventListener("click", function (e) {
+                e.preventDefault();
+                post({ type: "simplex-new-purchase" });
+            });
+
+            window.addEventListener("message", function (e) {
+                if (e.origin !== APP || !e.data) return;
+                // The frame announces itself on load; hand it the site's theme and background. The
+                // route is not restored here — the frame already loaded at it, from its own src (set
+                // above) — so an order/payment screen the frame resumes from its store is never driven
+                // off to the landing.
+                if (e.data.type === "simplex-embed-ready") {
+                    post({ type: "simplex-theme", theme: siteTheme() });
+                    postColors();
+                    // A card confirm redirects the top window to this URL; the frame hands it to Stripe
+                    // so the redirect returns to the site, not to the frame's own standalone page.
+                    post({ type: "simplex-return-url", url: location.origin + location.pathname });
+                }
+                // The buyer used the theme switch inside the frame; keep the site in step.
+                if (e.data.type === "simplex-theme") { applySiteTheme(e.data.theme); postColors(); }
+                // The frame reached a step; mirror its hash into our URL (replace, so no history is
+                // stacked and no hashchange re-posts it) so a reload re-posts the step and resumes it.
+                if (e.data.type === "simplex-nav" && typeof e.data.hash === "string") {
+                    try { history.replaceState(null, "", location.pathname + location.search + e.data.hash); } catch (ex) {}
+                }
+                // The frame reports its content height; size it so the site's page scrolls, not the
+                // frame. Its `min` is the welcome-page height — floor the iframe there so a shorter
+                // screen (an empty codes list, a compact step) never collapses it below that.
+                if (e.data.type === "simplex-height" && typeof e.data.height === "number") {
+                    if (typeof e.data.min === "number" && e.data.min > 0) frame.style.minHeight = e.data.min + "px";
+                    frame.style.height = Math.max(0, e.data.height) + "px";
+                    reveal();
+                }
+            });
+
+            // Both theme toggles (the bar's on wide screens, the dropdown's on phones) share the class.
+            document.querySelectorAll(".js-theme").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    var next = isDark() ? "light" : "dark";
+                    applySiteTheme(next);
+                    post({ type: "simplex-theme", theme: next });
+                    postColors();
+                });
+            });
+
+            // The phone dropdown: the hamburger toggles it; a link tap or an outside tap closes it.
+            var nav = document.querySelector(".b-nav");
+            var burger = document.getElementById("b-burger");
+            function setMenu(open) {
+                nav.classList.toggle("open", open);
+                burger.setAttribute("aria-expanded", open ? "true" : "false");
+            }
+            burger.addEventListener("click", function (e) {
+                e.stopPropagation();
+                setMenu(!nav.classList.contains("open"));
+            });
+            nav.querySelectorAll(".b-links a").forEach(function (a) {
+                a.addEventListener("click", function () { setMenu(false); });
+            });
+            document.addEventListener("click", function (e) {
+                if (!nav.contains(e.target)) setMenu(false);
+            });
+        })();
+    </script>
+</body>
+</html>
