@@ -11,9 +11,8 @@ import Simplex.Chat.Terminal (terminalChatConfig)
 -- library's sinks start empty, and the chat core only installs them under --log-agent.
 main :: IO ()
 main = withGlobalLogging LogConfig {lc_file = Nothing, lc_stderr = True} $ do
-  -- info by default, so the service's own operational lines are visible: webhook deliveries, invoice
-  -- settlement, the boot summary. The agent's per-connection noise is not among them; its sinks stay
-  -- empty until --log-agent installs them, so info here does not turn that on.
+  -- info so the service's own webhook, settlement and boot lines print; the SMP agent's
+  -- per-connection lines are kept off at the source (logConnections/logServerHosts, see mkChatOpts).
   setLogLevel LogInfo
   opts@BadgeServiceOpts {runCLI} <- welcomeGetOpts
   if runCLI
