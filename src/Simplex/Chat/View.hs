@@ -70,8 +70,9 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NameReservedReason (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NamePricing (..), NameRegistration (NRAvailable, NRRegistered, NRReserved, expires, graceUntil, reservedReason_), NameReservedReason (..), NameResponse (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), USDCents (..), UserProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
+import Simplex.Messaging.SystemTime (SystemSeconds, roundedToUTCTime)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version hiding (version)
@@ -152,7 +153,10 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
-  CRNameStatus u domain availability lastBlockTs -> ttyUser u [plain $ strEncode domain <> " " <> nameStatus domain availability <> asOf ts lastBlockTs]
+  CRNameStatus u domain NameResponse {lastBlockTs, registration} namePlan_ ->
+    ttyUser u $
+      plain (strEncode domain <> " " <> nameStatus domain registration <> asOf ts lastBlockTs)
+        : maybe [] (\NamePlan {otherSimplexName, connectionPlan} -> viewConnectionPlan cfg ts connectionPlan <> otherSimplexNameNote otherSimplexName) namePlan_
   CRContactDomainVerified u (Contact {profile = LocalProfile {contactDomain}}) result -> ttyUser u $ viewDomainVerified NTContact (claimDomain <$> contactDomain) result
   CRGroupDomainVerified u g result -> ttyUser u $ viewDomainVerified NTPublicGroup (groupSimplexDomain g) result
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
@@ -211,7 +215,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation showFullLinks ccLink
   CRConnectionIncognitoUpdated u c customUserProfile -> ttyUser u $ viewConnectionIncognitoUpdated c customUserProfile testView
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged showFullLinks u c nu c'
-  CRConnectionPlan u connLink _ otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg ts connLink connectionPlan <> otherSimplexNameNote otherSimplexName
+  CRConnectionPlan u _ _ otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg ts connectionPlan <> otherSimplexNameNote otherSimplexName
   CRNewPreparedChat u (AChat _ (Chat cInfo _ _)) -> ttyUser u $ case cInfo of
     DirectChat ct -> [ttyContact' ct <> ": contact is prepared"]
     GroupChat g _ -> [ttyGroup' g <> ": group is prepared"]
@@ -829,36 +833,40 @@ viewChatItemInfo (AChatItem _ msgDir _ ChatItem {meta = CIMeta {itemTs, itemTime
           _ -> []
 
 -- | What the registry says about a name, for someone deciding whether to register it.
-nameStatus :: SimplexDomain -> SimplexNameAvailability -> B.ByteString
-nameStatus d@SimplexDomain {subDomain} = \case
-  SNARegistered {expires, graceUntil, reserved} ->
+-- The price is worked out here: the router cannot see the label behind a hash,
+-- so it knows neither its tier nor whether it is long enough.
+nameStatus :: SimplexDomain -> NameRegistration -> B.ByteString
+nameStatus d@SimplexDomain {domain, subDomain} = \case
+  NRRegistered {expires, graceUntil, reservedReason_} ->
     "registered"
       <> maybe "" ((", expires " <>) . day) expires
-      <> case reserved of
+      <> case reservedReason_ of
         -- a reserved name never frees up, so it is given no date
         Just r -> ", and reserved" <> reservedReason r
         Nothing -> maybe "" (\t -> ", free to register from " <> day t <> " unless renewed by owner") graceUntil
   -- reservedNames is keyed on the 2LD, so a reserved subname means its 2LD is
-  SNAReserved r | not (null subDomain) ->
+  NRReserved r | not (null subDomain) ->
     "not registered; " <> twoLD <> " is reserved" <> reservedReason r
-  SNAReserved r -> "reserved" <> reservedReason r
+  NRReserved r -> "reserved" <> reservedReason r
   -- only a second-level name is registrable, so name who can create this one
-  SNAAvailable {} | not (null subDomain) ->
+  NRAvailable {} | not (null subDomain) ->
     "not registered; subnames are created by the owner of " <> twoLD
-  SNAAvailable {yearPriceUSD = Nothing, minLabelLength} ->
-    "too short: names need at least " <> B.pack (show minLabelLength) <> " characters"
-  -- .testing charges nothing, so a zero price is an answer, not a missing one
-  SNAAvailable {yearPriceUSD = Just 0} -> "available, free"
-  SNAAvailable {yearPriceUSD = Just cents} -> "available, " <> usd cents <> " a year"
+  NRAvailable NamePricing {registrationPrices, basePrice, minLabelLength}
+    | T.length domain < minLabelLength ->
+        "too short: names need at least " <> B.pack (show minLabelLength) <> " characters"
+    | otherwise -> case M.findWithDefault basePrice (T.length domain) registrationPrices of
+        -- .testing charges nothing, so a zero price is an answer, not a missing one
+        USDCents 0 -> "available, free"
+        USDCents cents -> "available, " <> usd cents <> " a year"
   where
-    day = B.pack . formatTime defaultTimeLocale "%Y-%m-%d"
+    day = B.pack . formatTime defaultTimeLocale "%Y-%m-%d" . roundedToUTCTime
     twoLD = encodeUtf8 $ fullDomainName d {subDomain = []}
 
 -- | The registry is read through a node that can lag, so a status is only as
 -- current as the block it was read at. A v20/v21 router sends no block, and
 -- then there is nothing to say.
-asOf :: CurrentTime -> Maybe UTCTime -> B.ByteString
-asOf now = maybe "" $ \t -> " (as of " <> ago (now `diffUTCTime` t) <> " ago)"
+asOf :: CurrentTime -> Maybe SystemSeconds -> B.ByteString
+asOf now = maybe "" $ \t -> " (as of " <> ago (now `diffUTCTime` roundedToUTCTime t) <> " ago)"
   where
     ago d
       | secs < 60 = B.pack (show secs) <> "s"
@@ -2238,8 +2246,8 @@ otherSimplexNameNote = \case
   Just ni@(SimplexNameInfo NTContact _) -> [plain $ "You can also connect to " <> shortNameInfoStr ni <> " in direct chat"]
   Nothing -> []
 
-viewConnectionPlan :: ChatConfig -> CurrentTime -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
-viewConnectionPlan ChatConfig {logLevel, testView} ts _connLink = \case
+viewConnectionPlan :: ChatConfig -> CurrentTime -> ConnectionPlan -> [StyledString]
+viewConnectionPlan ChatConfig {logLevel, testView} ts = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk contactSLinkData ov -> [invOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     ILPOwnLink -> [invLink "own link"]
@@ -2792,7 +2800,7 @@ viewChatError isCmd logLevel testView ts = \case
             SDEUnknownDomain claimed_ ->
               [plain $ name <> "resolves to an address that claims " <> maybe "no name" strEncode claimed_ <> age]
             SDENotRegistered -> [plain $ name <> "is not registered" <> age]
-            SDEUnavailable a -> [plain $ name <> "is " <> nameStatus domain a <> age]
+            SDEUnavailable r -> [plain $ name <> "is " <> nameStatus domain r <> age]
             SDEResolvesElsewhere nameType links ->
               let here = case nameType of NTContact -> "address"; NTPublicGroup -> "channel"
                in plain (name <> "does not resolve to this " <> here <> age <> ", it resolves to:")

@@ -91,7 +91,8 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NameReservedReason, NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NameRegistration, NameResponse, NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.SystemTime (SystemSeconds)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
@@ -813,7 +814,7 @@ data ChatResponse
   | CRContactCode {user :: User, contact :: Contact, connectionCode :: Text}
   | CRGroupMemberCode {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionCode :: Text}
   | CRConnectionVerified {user :: User, verified :: Bool, expectedCode :: Text}
-  | CRNameStatus {user :: User, statusDomain :: SimplexDomain, availability :: SimplexNameAvailability, lastBlockTs :: Maybe UTCTime}
+  | CRNameStatus {user :: User, statusDomain :: SimplexDomain, nameResponse :: NameResponse, namePlan :: Maybe NamePlan}
   | CRContactDomainVerified {user :: User, contact :: Contact, verificationFailure :: Maybe Text}
   | CRGroupDomainVerified {user :: User, groupInfo :: GroupInfo, verificationFailure :: Maybe Text}
   | CRTagsUpdated {user :: User, userTags :: [ChatTag], chatTags :: [ChatTagId]}
@@ -1126,6 +1127,16 @@ data ConnectionPlan
   | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
   | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
   | CPError {chatError :: ChatError}
+  deriving (Show)
+
+-- | What connecting to a registered name would do, as /_connect plan reports it;
+-- no link when planning failed.
+data NamePlan = NamePlan
+  { connLink :: Maybe ACreatedConnLink,
+    planSimplexName :: Maybe SimplexNameInfo,
+    otherSimplexName :: Maybe SimplexNameInfo,
+    connectionPlan :: ConnectionPlan
+  }
   deriving (Show)
 
 data InvitationLinkPlan
@@ -1449,27 +1460,9 @@ data ChatError
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain {claimedDomain :: Maybe SimplexDomain} -- the name the resolved address claims, if any
-  | SDEUnavailable {availability :: SimplexNameAvailability} -- what the registry says instead
+  | SDEUnavailable {registration :: NameRegistration} -- what the registry says instead
   | SDEResolvesElsewhere {claimNameType :: SimplexNameType, resolvedLinks :: [Text]} -- resolves, but elsewhere
   | SDENotRegistered -- connecting only needs to know the name reaches no one
-  deriving (Eq, Show)
-
--- | What the registry says about a name, as this client words it. The price is
--- worked out here rather than by the router, which cannot see the label behind
--- a hash and so knows neither its tier nor whether it is long enough.
-data SimplexNameAvailability
-  = SNARegistered
-      { expires :: Maybe UTCTime,
-        graceUntil :: Maybe UTCTime,
-        -- | held back as well, which is why it will not free up at expiry
-        reserved :: Maybe NameReservedReason
-      }
-  | SNAAvailable
-      { -- | US cents for one year; Nothing when the label is too short
-        yearPriceUSD :: Maybe Int64,
-        minLabelLength :: Int
-      }
-  | SNAReserved {reason :: NameReservedReason}
   deriving (Eq, Show)
 
 data ChatErrorType
@@ -1493,7 +1486,7 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
-  | CESimplexDomainNotReady {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError, lastBlockTs :: Maybe UTCTime} -- the block the registry answer was read at, when there was one
+  | CESimplexDomainNotReady {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError, lastBlockTs :: Maybe SystemSeconds} -- the block the registry answer was read at, when there was one
   | CENotResolvedLocally -- a name or link is not a known chat in the local store and online resolution is off (PRMNever)
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
@@ -1826,8 +1819,6 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SNA") ''SimplexNameAvailability)
-
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
@@ -1843,6 +1834,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
+
+$(JQ.deriveJSON defaultJSON ''NamePlan)
 
 $(JQ.deriveJSON defaultJSON ''AppFilePathsConfig)
 

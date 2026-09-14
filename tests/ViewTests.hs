@@ -7,8 +7,6 @@ import qualified Data.Map.Strict as M
 import Data.Time
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import NameResolver (contactNameRecord)
-import Simplex.Chat.Controller (SimplexNameAvailability (..))
-import Simplex.Chat.Library.Commands (nameAvailability)
 import Simplex.Chat.View
 import Simplex.Messaging.Names.Record (NamePricing (..), NameRegistration (..), NameReservedReason (..), USDCents (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexTLD (..))
@@ -19,14 +17,14 @@ viewTests :: Spec
 viewTests = do
   testRecent
   testPremiumUsd
-  testNameAvailability
+  testNameStatus
   testAsOf
 
 -- what the registry says is only as current as the block it was read at
 testAsOf :: Spec
 testAsOf = describe "name status freshness" $ do
   let now = posixSecondsToUTCTime 1780000000
-      block t = Just (posixSecondsToUTCTime t)
+      block t = Just (RoundedSystemTime t)
   it "a v20/v21 router sent no block, so there is nothing to say" $
     asOf now Nothing `shouldBe` ""
   it "counts in the coarsest unit that still says it" $ do
@@ -36,10 +34,10 @@ testAsOf = describe "name status freshness" $ do
   it "a block ahead of this clock is not negative age" $
     asOf now (block 1780000005) `shouldBe` " (as of 0s ago)"
 
--- SimplexNameAvailability restates NameRegistration so the chat API stays
--- independent of the wire format. The two have drifted twice; this pins the map.
-testNameAvailability :: Spec
-testNameAvailability = describe "name availability" $ do
+-- the status is worded from NameRegistration itself; the price is worked out from
+-- the label, which only this side knows
+testNameStatus :: Spec
+testNameStatus = describe "name status" $ do
   let dom d = SimplexDomain {nameTLD = TLDSimplex, domain = d, subDomain = []}
       -- 3 and 4 priced specially, everything else basePrice, under 3 unregistrable
       prices =
@@ -55,28 +53,21 @@ testNameAvailability = describe "name availability" $ do
             reservedReason_ = r,
             nameRecord = contactNameRecord "abc.simplex" "https://simplex.chat/contact#/?v=2"
           }
-  it "carries the dates over as UTC, and the reservation with them" $
-    nameAvailability (dom "abc") (registered (Just 1780000000) (Just 1787776000) (Just NRRInternal))
-      `shouldBe` SNARegistered
-        { expires = Just (posixSecondsToUTCTime 1780000000),
-          graceUntil = Just (posixSecondsToUTCTime 1787776000),
-          reserved = Just NRRInternal
-        }
+  it "gives the dates, and no free date for a reserved name" $ do
+    nameStatus (dom "abc") (registered (Just 1780000000) (Just 1787776000) Nothing)
+      `shouldBe` "registered, expires 2026-05-28, free to register from 2026-08-26 unless renewed by owner"
+    nameStatus (dom "abc") (registered (Just 1780000000) (Just 1787776000) (Just NRRInternal))
+      `shouldBe` "registered, expires 2026-05-28, and reserved for SimpleX"
   it "a v20/v21 router sent the record alone, so there are no dates" $
-    nameAvailability (dom "abc") (registered Nothing Nothing Nothing)
-      `shouldBe` SNARegistered {expires = Nothing, graceUntil = Nothing, reserved = Nothing}
+    nameStatus (dom "abc") (registered Nothing Nothing Nothing) `shouldBe` "registered"
   it "prices the label's own length, which only this side knows" $
-    nameAvailability (dom "abc") NRAvailable {pricing = prices}
-      `shouldBe` SNAAvailable {yearPriceUSD = Just 30000, minLabelLength = 3}
+    nameStatus (dom "abc") NRAvailable {pricing = prices} `shouldBe` "available, $300.00 a year"
   it "falls back to basePrice for a length the registry does not price specially" $
-    nameAvailability (dom "abcdefgh") NRAvailable {pricing = prices}
-      `shouldBe` SNAAvailable {yearPriceUSD = Just 500, minLabelLength = 3}
+    nameStatus (dom "abcdefgh") NRAvailable {pricing = prices} `shouldBe` "available, $5.00 a year"
   it "quotes nothing for a label the registry would refuse" $
-    nameAvailability (dom "ab") NRAvailable {pricing = prices}
-      `shouldBe` SNAAvailable {yearPriceUSD = Nothing, minLabelLength = 3}
+    nameStatus (dom "ab") NRAvailable {pricing = prices} `shouldBe` "too short: names need at least 3 characters"
   it "a reserved name carries its reason" $
-    nameAvailability (dom "abc") NRReserved {reservedReason = NRRTrademark}
-      `shouldBe` SNAReserved {reason = NRRTrademark}
+    nameStatus (dom "abc") NRReserved {reservedReason = NRRTrademark} `shouldBe` "reserved to protect a trademark"
 
 -- the registry prices in cents, which no one reads at a glance
 testPremiumUsd :: Spec

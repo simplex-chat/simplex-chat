@@ -142,6 +142,9 @@ This file is generated automatically.
 - [MsgSigStatus](#msgsigstatus)
 - [MsgVerified](#msgverified)
 - [NameErrorType](#nameerrortype)
+- [NamePricing](#namepricing)
+- [NameRecord](#namerecord)
+- [NameRegistration](#nameregistration)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
@@ -181,7 +184,6 @@ This file is generated automatically.
 - [SimplexDomainError](#simplexdomainerror)
 - [SimplexDomainProof](#simplexdomainproof)
 - [SimplexLinkType](#simplexlinktype)
-- [SimplexNameAvailability](#simplexnameavailability)
 - [SimplexNameInfo](#simplexnameinfo)
 - [SimplexNameType](#simplexnametype)
 - [SimplexTLD](#simplextld)
@@ -1158,7 +1160,7 @@ SimplexDomainNotReady:
 - type: "simplexDomainNotReady"
 - simplexDomain: [SimplexDomain](#simplexdomain)
 - simplexDomainError: [SimplexDomainError](#simplexdomainerror)
-- lastBlockTs: UTCTime?
+- lastBlockTs: int64?
 
 NotResolvedLocally:
 - type: "notResolvedLocally"
@@ -3035,6 +3037,61 @@ RESOLVER:
 
 ---
 
+## NamePricing
+
+Registry prices, in US cents per year: `registrationPrices` by label length, `basePrice` for any other length; labels shorter than `minLabelLength` cannot be registered.
+
+**Record type**:
+- registrationPrices: {int : int64}
+- basePrice: int64
+- minLabelLength: int
+
+
+---
+
+## NameRecord
+
+**Record type**:
+- name: string
+- nickname: string
+- website: string
+- location: string
+- simplexContact: [string]
+- simplexChannel: [string]
+- eth: string?
+- btc: string?
+- xmr: string?
+- dot: string?
+- owner: string
+- resolver: string
+
+
+---
+
+## NameRegistration
+
+What the registry holds for a name. Times are unix seconds.
+
+**Discriminated union type**:
+
+Registered:
+- type: "registered"
+- expires: int64?
+- graceUntil: int64?
+- reservedReason_: string?
+- nameRecord: [NameRecord](#namerecord)
+
+Available:
+- type: "available"
+- pricing: [NamePricing](#namepricing)
+
+Reserved:
+- type: "reserved"
+- reservedReason: string
+
+
+---
+
 ## NetworkError
 
 **Discriminated union type**:
@@ -3686,7 +3743,7 @@ UnknownDomain:
 
 Unavailable:
 - type: "unavailable"
-- availability: [SimplexNameAvailability](#simplexnameavailability)
+- registration: [NameRegistration](#nameregistration)
 
 ResolvesElsewhere:
 - type: "resolvesElsewhere"
@@ -3717,30 +3774,6 @@ NotRegistered:
 - "group"
 - "channel"
 - "relay"
-
-
----
-
-## SimplexNameAvailability
-
-What the registry says about a name. `yearPriceUSD` is US cents per year, absent when the label is shorter than `minLabelLength`.
-
-**Discriminated union type**:
-
-Registered:
-- type: "registered"
-- expires: UTCTime?
-- graceUntil: UTCTime?
-- reserved: string?
-
-Available:
-- type: "available"
-- yearPriceUSD: int64?
-- minLabelLength: int
-
-Reserved:
-- type: "reserved"
-- reason: string
 
 
 ---

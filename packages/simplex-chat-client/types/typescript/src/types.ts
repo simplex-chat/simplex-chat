@@ -1337,7 +1337,7 @@ export namespace ChatErrorType {
     type: "simplexDomainNotReady"
     simplexDomain: SimplexDomain
     simplexDomainError: SimplexDomainError
-    lastBlockTs?: string // ISO-8601 timestamp
+    lastBlockTs?: number // int64
   }
 
   export interface NotResolvedLocally extends Interface {
@@ -3313,6 +3313,60 @@ export namespace NameErrorType {
     resolverErr: string
   }
 }
+// Registry prices, in US cents per year: `registrationPrices` by label length, `basePrice` for any other length; labels shorter than `minLabelLength` cannot be registered.
+
+export interface NamePricing {
+  registrationPrices: {[key: number]: number} // int : int64
+  basePrice: number // int64
+  minLabelLength: number // int
+}
+
+export interface NameRecord {
+  name: string
+  nickname: string
+  website: string
+  location: string
+  simplexContact: string[]
+  simplexChannel: string[]
+  eth?: string
+  btc?: string
+  xmr?: string
+  dot?: string
+  owner: string
+  resolver: string
+}
+// What the registry holds for a name. Times are unix seconds.
+
+export type NameRegistration = 
+  | NameRegistration.Registered
+  | NameRegistration.Available
+  | NameRegistration.Reserved
+
+export namespace NameRegistration {
+  export type Tag = "registered" | "available" | "reserved"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Registered extends Interface {
+    type: "registered"
+    expires?: number // int64
+    graceUntil?: number // int64
+    reservedReason_?: string
+    nameRecord: NameRecord
+  }
+
+  export interface Available extends Interface {
+    type: "available"
+    pricing: NamePricing
+  }
+
+  export interface Reserved extends Interface {
+    type: "reserved"
+    reservedReason: string
+  }
+}
 
 export type NetworkError = 
   | NetworkError.ConnectError
@@ -4092,7 +4146,7 @@ export namespace SimplexDomainError {
 
   export interface Unavailable extends Interface {
     type: "unavailable"
-    availability: SimplexNameAvailability
+    registration: NameRegistration
   }
 
   export interface ResolvesElsewhere extends Interface {
@@ -4118,38 +4172,6 @@ export enum SimplexLinkType {
   Group = "group",
   Channel = "channel",
   Relay = "relay",
-}
-// What the registry says about a name. `yearPriceUSD` is US cents per year, absent when the label is shorter than `minLabelLength`.
-
-export type SimplexNameAvailability = 
-  | SimplexNameAvailability.Registered
-  | SimplexNameAvailability.Available
-  | SimplexNameAvailability.Reserved
-
-export namespace SimplexNameAvailability {
-  export type Tag = "registered" | "available" | "reserved"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface Registered extends Interface {
-    type: "registered"
-    expires?: string // ISO-8601 timestamp
-    graceUntil?: string // ISO-8601 timestamp
-    reserved?: string
-  }
-
-  export interface Available extends Interface {
-    type: "available"
-    yearPriceUSD?: number // int64
-    minLabelLength: number // int
-  }
-
-  export interface Reserved extends Interface {
-    type: "reserved"
-    reason: string
-  }
 }
 
 export interface SimplexNameInfo {

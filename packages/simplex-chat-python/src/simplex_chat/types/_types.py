@@ -838,7 +838,7 @@ class ChatErrorType_simplexDomainNotReady(TypedDict):
     type: Literal["simplexDomainNotReady"]
     simplexDomain: "SimplexDomain"
     simplexDomainError: "SimplexDomainError"
-    lastBlockTs: NotRequired[str]  # ISO-8601 timestamp
+    lastBlockTs: NotRequired[int]  # int64
 
 class ChatErrorType_notResolvedLocally(TypedDict):
     type: Literal["notResolvedLocally"]
@@ -2320,6 +2320,52 @@ NameErrorType = NameErrorType_NO_RESOLVER | NameErrorType_NOT_FOUND | NameErrorT
 
 NameErrorType_Tag = Literal["NO_RESOLVER", "NOT_FOUND", "RESOLVER"]
 
+# Registry prices, in US cents per year: `registrationPrices` by label length, `basePrice` for any other length; labels shorter than `minLabelLength` cannot be registered.
+
+class NamePricing(TypedDict):
+    registrationPrices: dict[int, int]  # int : int64
+    basePrice: int  # int64
+    minLabelLength: int  # int
+
+class NameRecord(TypedDict):
+    name: str
+    nickname: str
+    website: str
+    location: str
+    simplexContact: list[str]
+    simplexChannel: list[str]
+    eth: NotRequired[str]
+    btc: NotRequired[str]
+    xmr: NotRequired[str]
+    dot: NotRequired[str]
+    owner: str
+    resolver: str
+
+# What the registry holds for a name. Times are unix seconds.
+
+class NameRegistration_registered(TypedDict):
+    type: Literal["registered"]
+    expires: NotRequired[int]  # int64
+    graceUntil: NotRequired[int]  # int64
+    reservedReason_: NotRequired[str]
+    nameRecord: "NameRecord"
+
+class NameRegistration_available(TypedDict):
+    type: Literal["available"]
+    pricing: "NamePricing"
+
+class NameRegistration_reserved(TypedDict):
+    type: Literal["reserved"]
+    reservedReason: str
+
+NameRegistration = (
+    NameRegistration_registered
+    | NameRegistration_available
+    | NameRegistration_reserved
+)
+
+NameRegistration_Tag = Literal["registered", "available", "reserved"]
+
 class NetworkError_connectError(TypedDict):
     type: Literal["connectError"]
     connectError: str
@@ -2851,7 +2897,7 @@ class SimplexDomainError_unknownDomain(TypedDict):
 
 class SimplexDomainError_unavailable(TypedDict):
     type: Literal["unavailable"]
-    availability: "SimplexNameAvailability"
+    registration: "NameRegistration"
 
 class SimplexDomainError_resolvesElsewhere(TypedDict):
     type: Literal["resolvesElsewhere"]
@@ -2877,31 +2923,6 @@ class SimplexDomainProof(TypedDict):
     signature: str
 
 SimplexLinkType = Literal["contact", "invitation", "group", "channel", "relay"]
-
-# What the registry says about a name. `yearPriceUSD` is US cents per year, absent when the label is shorter than `minLabelLength`.
-
-class SimplexNameAvailability_registered(TypedDict):
-    type: Literal["registered"]
-    expires: NotRequired[str]  # ISO-8601 timestamp
-    graceUntil: NotRequired[str]  # ISO-8601 timestamp
-    reserved: NotRequired[str]
-
-class SimplexNameAvailability_available(TypedDict):
-    type: Literal["available"]
-    yearPriceUSD: NotRequired[int]  # int64
-    minLabelLength: int  # int
-
-class SimplexNameAvailability_reserved(TypedDict):
-    type: Literal["reserved"]
-    reason: str
-
-SimplexNameAvailability = (
-    SimplexNameAvailability_registered
-    | SimplexNameAvailability_available
-    | SimplexNameAvailability_reserved
-)
-
-SimplexNameAvailability_Tag = Literal["registered", "available", "reserved"]
 
 class SimplexNameInfo(TypedDict):
     nameType: "SimplexNameType"

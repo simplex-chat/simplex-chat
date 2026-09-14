@@ -170,6 +170,8 @@ toTypeInfo tr =
       "DBEntityId'" -> ST TInt64 []
       "Integer" -> ST TInt64 []
       "Version" -> ST TInt []
+      "RoundedSystemTime" -> ST TInt64 []
+      "USDCents" -> ST TInt64 []
       "VersionRoster" -> ST TInt64 []
       "BoolDef" -> ST TBool []
       "PQEncryption" -> ST TBool []

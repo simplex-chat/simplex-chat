@@ -46,7 +46,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Client
 import Simplex.Messaging.Crypto.File
 import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
-import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NetworkError (..), ProxyError (..))
+import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NamePricing (..), NameRecord (..), NameRegistration (..), NetworkError (..), ProxyError (..))
 import Simplex.Messaging.Protocol.Types (ClientNotice (..))
 import Simplex.Messaging.Transport
 import Simplex.RemoteControl.Types
@@ -142,6 +142,13 @@ toAPIField_ typeName tds (FieldInfo fieldName typeInfo) = second (APIRecordField
                     Just td -> (tds', ATDef td)
                     Nothing -> (tds', ATRef name)
             Nothing -> error $ "Undefined type: " <> name
+
+-- | NameRecord's JSON keys drop the "nr" field prefix.
+nameRecordInfo :: SumTypeInfo
+nameRecordInfo =
+  let STI typeName recordTypes = sti @NameRecord
+      dropNr f@FieldInfo {fieldName} = f {fieldName = dropPrefix "nr" fieldName}
+   in STI typeName $ map (\r@RecordTypeInfo {fieldInfos} -> r {fieldInfos = map dropNr fieldInfos}) recordTypes
 
 data SumTypeJsonEncoding = STRecord | STUnion | STUnion1 | STEnum | STEnum1 | STEnum' (ConsName -> String)
 
@@ -326,6 +333,9 @@ chatTypesDocsData =
     (sti @MsgSigStatus, STEnum, "MSS", [], "", ""),
     (sti @MsgVerified, STUnion, "MV", [], "", ""),
     (sti @NameErrorType, STUnion, "", [], "", ""),
+    (sti @NamePricing, STRecord, "", [], "", "Registry prices, in US cents per year: `registrationPrices` by label length, `basePrice` for any other length; labels shorter than `minLabelLength` cannot be registered."),
+    (nameRecordInfo, STRecord, "", [], "", ""),
+    (sti @NameRegistration, STUnion, "NR", [], "", "What the registry holds for a name. Times are unix seconds."),
     (sti @NetworkError, STUnion, "NE", [], "", ""),
     (sti @NewUser, STRecord, "", [], "", ""),
     (sti @NoteFolder, STRecord, "", [], "", ""),
@@ -364,7 +374,6 @@ chatTypesDocsData =
     (sti @SimplexDomainError, STUnion, "SDE", [], "", ""),
     (sti @SimplexDomainProof, STRecord, "", [], "", ""),
     (sti @SimplexLinkType, STEnum, "XL", [], "", ""),
-    (sti @SimplexNameAvailability, STUnion, "SNA", [], "", "What the registry says about a name. `yearPriceUSD` is US cents per year, absent when the label is shorter than `minLabelLength`."),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
     (sti @SimplexNameType, STEnum, "NT", [], "", ""),
     (sti @SimplexTLD, STEnum, "TLD", [], "", ""),
@@ -561,6 +570,9 @@ deriving instance Generic MsgReceiptStatus
 deriving instance Generic MsgSigStatus
 deriving instance Generic MsgVerified
 deriving instance Generic NameErrorType
+deriving instance Generic NamePricing
+deriving instance Generic NameRecord
+deriving instance Generic NameRegistration
 deriving instance Generic NetworkError
 deriving instance Generic NewUser
 deriving instance Generic NoteFolder
@@ -597,7 +609,6 @@ deriving instance Generic SimplexDomainClaim
 deriving instance Generic SimplexDomainError
 deriving instance Generic SimplexDomainProof
 deriving instance Generic SimplexLinkType
-deriving instance Generic SimplexNameAvailability
 deriving instance Generic SimplexNameInfo
 deriving instance Generic SimplexNameType
 deriving instance Generic SimplexTLD

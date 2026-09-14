@@ -133,15 +133,28 @@ testNameStatus ps = withSmpServerAndNames $ \reg ->
   testChat2 aliceProfile bobProfile (test reg) ps
   where
     aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
-    test reg alice _bob = do
-      enableNamesRole alice
+    bobName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "bob" [])
+    test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
       alice ##> "/name nobody.simplex"
       alice <## "nobody.simplex available, $1.00 a year (as of 1m ago)"
       alice ##> "/name ab.simplex"
       alice <## "ab.simplex too short: names need at least 3 characters (as of 1m ago)"
+      -- a registered name also says what connecting to it would do
+      bob ##> "/ad"
+      (bobLink, _) <- getContactLinks bob True
+      registerName reg bobName (contactNameRecord "bob" (T.pack bobLink))
+      bob ##> "/_set domain 1 bob.simplex"
+      bob <## "new contact address set"
+      alice ##> "/name bob.simplex"
+      alice <## "bob.simplex registered, expires 2027-06-24, free to register from 2027-09-22 unless renewed by owner (as of 1m ago)"
+      alice <## "contact address: ok to connect"
+      _linkData <- getTermLine alice
+      -- and why it would not
       registerName reg aliceName (contactNameRecord "alice" "https://simplex.chat/contact#/?v=2")
       alice ##> "/name alice.simplex"
       alice <## "alice.simplex registered, expires 2027-06-24, free to register from 2027-09-22 unless renewed by owner (as of 1m ago)"
+      alice <## "SimpleX name alice.simplex has no valid connection link (as of 1m ago)"
 
 -- claiming a channel name: the three ways it can fail, worded for someone
 -- attaching a name they mean to own
