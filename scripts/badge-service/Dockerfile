@@ -53,7 +53,11 @@ WORKDIR /src
 COPY cabal.project simplex-chat.cabal README.md PRIVACY.md ./
 COPY scripts/cabal.project.local.linux ./cabal.project.local
 COPY src ./src
-COPY apps/simplex-badge-service ./apps/simplex-badge-service
+# Exclude web/: it is built in its own stage, and the binary does not depend on it. Copying it here
+# would invalidate this layer (and re-run the cabal build below) on every webapp edit. BuildKit keeps
+# excluded files out of the layer's cache key, and this file already requires BuildKit (the cache
+# mounts below), so --exclude adds no new requirement.
+COPY --exclude=web apps/simplex-badge-service ./apps/simplex-badge-service
 
 # Cache mounts, not layers: the Haskell store and the build tree survive a
 # source change, which is the difference between minutes and hours. The binary
