@@ -45,6 +45,7 @@ export interface OrderIdentity {
 export interface OrderLocalState {
   code: string | undefined;
   submitted: boolean | undefined;
+  canceled: boolean | undefined;
   method: Method | undefined;
 }
 

@@ -328,7 +328,7 @@ export class Flow {
           months: created.months,
           createdAt: new Date(this.d.now()).toISOString(),
         },
-        { code: display(code), submitted: undefined, method: sel.method },
+        { code: display(code), submitted: undefined, canceled: undefined, method: sel.method },
         serverState({ ...created, status: "open" }, undefined),
       );
       // The buyer can empty this browser while the invoice is being bought. Writing the order back

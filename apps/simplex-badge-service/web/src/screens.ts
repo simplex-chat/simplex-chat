@@ -842,6 +842,7 @@ const ENTRY_STATES: Readonly<Record<HistoryRow["kind"], { text: string; tone: st
   open: { text: "waiting for payment", tone: "pending" },
   partPaid: { text: "part of the amount received", tone: "pending" },
   processing: { text: "payment received, waiting to confirm", tone: "pending" },
+  canceled: { text: "canceled", tone: "lost" },
   expired: { text: "this invoice expired", tone: "lost" },
 };
 
@@ -944,6 +945,8 @@ export interface CardFormOptions {
   resumed: boolean;
   body?: HTMLElement;
   onNewInvoice: () => void;
+  onCancel?: () => Promise<void>;
+  notice?: string;
 }
 
 export function invoiceTotal(invoice: InvoiceView): string {
@@ -964,6 +967,7 @@ export function cardForm(o: CardFormOptions): HTMLElement {
     reference(o.order.orderId),
   );
   if (o.resumed) p.append(button(NEW_INVOICE, o.onNewInvoice, "secondary"));
+  if (o.onCancel !== undefined) p.append(...cancelControl(o.onCancel, o.notice));
   return p;
 }
 

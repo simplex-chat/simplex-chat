@@ -218,6 +218,21 @@ storeTest("store: markSubmitted is per order, sticky, and survives everything bu
   assert.equal(new Store(mem).order("1")!.submitted, true);
 });
 
+storeTest("store: markCanceled is per order, sticky, and survives a later server answer", () => {
+  const mem = new MemoryStorage();
+  const s = new Store(mem);
+  s.saveOrder(order("1"));
+  s.saveOrder(order("2"));
+  assert.equal(s.markCanceled("1"), true);
+  assert.equal(s.markCanceled("absent"), false, "there is no order to mark");
+  assert.equal(s.order("1")!.canceled, true);
+
+  s.saveOrder(order("1", { status: "expired" }));   // the cancel's own 200, applied to the record
+  assert.equal(s.order("1")!.canceled, true, "a plain upsert must not take it back off");
+  assert.equal(s.order("2")!.canceled, undefined, "and it is not a page-wide flag");
+  assert.equal(new Store(mem).order("1")!.canceled, true, "and it survives a reload");
+});
+
 storeTest("store: the cap evicts the oldest codeless entry even when an older entry holds a code", () => {
   const s = new Store(new MemoryStorage());
   // Interleaved fixture: the oldest entry overall ("0") holds a code and must

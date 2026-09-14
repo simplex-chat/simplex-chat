@@ -51,22 +51,25 @@ export type HistoryRow =
   | { kind: "open"; order: UnpaidOrder }
   | { kind: "partPaid"; order: UnpaidOrder }
   | { kind: "processing"; order: UnpaidOrder }
+  | { kind: "canceled"; order: UnpaidOrder }
   | { kind: "expired"; order: UnpaidOrder };
 
 export function historyRows(entries: readonly OrderRecord[]): HistoryRow[] {
   return entries.map((e) => {
     const order = withoutCode(e);
+    // canceled is the buyer's own doing, so it wins over the expired/open the server left behind; a
+    // paid order keeps its code, since a cancel that lost to settlement is paid, not canceled.
     switch (orderPhase(e)) {
       case "paid":
         return e.code !== undefined ? { kind: "paid" as const, order, code: e.code } : { kind: "paidNoCode" as const, order };
       case "expired":
-        return { kind: "expired" as const, order };
+        return e.canceled === true ? { kind: "canceled" as const, order } : { kind: "expired" as const, order };
       case "processing":
         return { kind: "processing" as const, order };
       case "partPaid":
         return { kind: "partPaid" as const, order };
       case "awaiting":
-        return { kind: "open" as const, order };
+        return e.canceled === true ? { kind: "canceled" as const, order } : { kind: "open" as const, order };
     }
   });
 }
@@ -155,6 +158,7 @@ function localState(base: OrderRecord, memory: OrderRecord | undefined, method: 
   return {
     code: memory?.code ?? base.code,
     submitted: memory?.submitted === true || base.submitted === true ? true : undefined,
+    canceled: memory?.canceled === true || base.canceled === true ? true : undefined,
     method: method ?? base.method,
   };
 }

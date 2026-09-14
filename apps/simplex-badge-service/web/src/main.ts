@@ -694,6 +694,9 @@ async function cancelInvoice(orderId: string): Promise<void> {
     flow.watch(orderId, resume);
     return;
   }
+  // A clean cancel: the invoice closed unpaid on the buyer's own action, so the row is theirs to
+  // read as canceled in Your codes, not as an invoice that merely expired.
+  store.markCanceled(orderId);
   newInvoice();
 }
 
@@ -831,6 +834,11 @@ function renderCardForm(view: CardView): void {
   }
   const shell = (body: HTMLElement): HTMLElement => screens.cardForm({
     order: view.order, invoice: view.invoice, resumed: view.resumed, body, onNewInvoice: newInvoice,
+    // a PaymentIntent is only cancelable before it confirms, so the button is inert once a confirm is
+    // in flight (the form is not repainted then, so it cannot be taken off the screen instead)
+    onCancel: () => (cardConfirmPending ? Promise.resolve() : cancelInvoiceOnce(view.order.orderId)),
+    ...(cancelNotice?.orderId === view.order.orderId && cancelNotice.epoch === flow.epoch
+      ? { notice: cancelNotice.message } : {}),
   });
   const mount = screens.cardMount();
   let confirm: (() => Promise<ConfirmOutcome>) | null = null;

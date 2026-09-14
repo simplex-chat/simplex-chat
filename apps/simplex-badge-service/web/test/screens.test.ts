@@ -961,6 +961,26 @@ domTest("screens: the mounted card form shows the summary and the reference, and
   assert.ok(!p.textContent.includes("cs_test_abc"), "the client secret is never rendered as text");
 });
 
+domTest("screens: the card form offers Cancel when a canceler is given, the same control crypto has", () => {
+  const inv: View = { status: "open", amount: 42000, currency: "usd", clientSecret: "cs_test_abc" };
+  const hasCancel = (o: Parameters<typeof screens.cardForm>[0]): boolean =>
+    render(screens.cardForm(o)).all("button").some((b) => b.textContent === screens.CANCEL_INVOICE);
+  assert.ok(hasCancel({ order: smuggled(), invoice: inv, resumed: false, onNewInvoice: noop, onCancel: noopAsync }),
+    "with a canceler the shared cancel control is on the card form");
+  assert.ok(!hasCancel({ order: smuggled(), invoice: inv, resumed: false, onNewInvoice: noop }),
+    "and without one there is no cancel button");
+});
+
+domTest("screens: a canceled order reads as canceled in Your codes, over the expired the server left", () => {
+  const p = render(screens.purchaseHistory({
+    onForget: noop, keepsNewCodes: true, onOpen: noop, onStart: noop,
+    rows: historyRows([record({ status: "expired", canceled: true }), record({ orderId: "inv_gone", status: "expired" })]),
+  }));
+  const statuses = p.all("span.status").map((s) => s.textContent);
+  assert.ok(statuses.includes("canceled"), `the canceled row says canceled: ${JSON.stringify(statuses)}`);
+  assert.ok(statuses.includes("this invoice expired"), "a plain expired invoice still reads as expired");
+});
+
 // ------------------------------------------------------- the invariant, again
 
 domTest("screens: ACROSS EVERY UNPAID SCREEN, the code is absent from the WHOLE subtree", () => {

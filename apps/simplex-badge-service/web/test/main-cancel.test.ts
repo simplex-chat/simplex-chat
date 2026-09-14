@@ -85,6 +85,7 @@ cancelTest("main: a cancelled order keeps its code and loses everything payable"
   await until(() => storedOrder(storage)!.status === "expired", "the answer is applied to the record");
 
   const after = storedOrder(storage)!;
+  assert.equal(after.canceled, true, "the buyer's own cancel is recorded, so Your codes reads it as canceled");
   assert.equal(after.code, HELD_CODE, "the code is the one thing this browser cannot get back");
   for (const key of ["address", "cryptoAmount", "cryptoCurrency", "expiresAt"] as const) {
     assert.equal(after[key], undefined, `${key} must go: the address stops accepting payment`);

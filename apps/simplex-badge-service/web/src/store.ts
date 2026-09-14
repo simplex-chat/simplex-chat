@@ -43,7 +43,7 @@ function readOrder(value: unknown): OrderRecord | undefined {
       badgeType: text(o.badgeType) ?? "",
       months: positiveInteger(o.months) ?? 0,
     },
-    { code: text(o.code), submitted: flag(o.submitted), method: readMethod(o.method) },
+    { code: text(o.code), submitted: flag(o.submitted), canceled: flag(o.canceled), method: readMethod(o.method) },
     {
       status,
       amount: positiveInteger(o.amount),
@@ -147,6 +147,7 @@ export class Store {
         ...record,
         ...(record.code === undefined && kept.code !== undefined ? { code: kept.code } : {}),
         ...(kept.submitted === true ? { submitted: true } : {}),
+        ...(kept.canceled === true ? { canceled: true } : {}),
       };
     } else {
       if (list.length >= CAP) {
@@ -165,6 +166,12 @@ export class Store {
     const record = this.order(orderId);
     if (record === undefined) return false;
     return this.saveOrder({ ...record, submitted: true });
+  }
+
+  markCanceled(orderId: string): boolean {
+    const record = this.order(orderId);
+    if (record === undefined) return false;
+    return this.saveOrder({ ...record, canceled: true });
   }
 
   order(orderId: string): OrderRecord | undefined {
