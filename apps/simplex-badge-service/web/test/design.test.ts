@@ -372,8 +372,8 @@ designTest("type: a block title and its copy are one rule across all four ground
 designTest("type: block copy carries no leading of its own — the page has one", () => {
   // `.notice p, .warn p` used to declare 1.35, which was neither the body's 1.5
   // nor `.choice .feature`'s 1.4: three leadings for the same 14px, and the
-  // 1.35 set the payment screen's stand-in and the code screen's "only copy" visibly tighter than the same
-  // size reads anywhere else on the page.
+  // 1.35 set a notice's copy visibly tighter than the same size reads anywhere
+  // else on the page.
   assert.equal(decl("body", "line-height"), "1.5", "the page's one leading");
   for (const selector of [".notice p", ".warn p", ".info p", ".choice .feature", ".muted", ".lede"]) {
     const declared = decl(selector, "line-height");
@@ -503,19 +503,17 @@ designTest("type: the uppercase micro-labels are one rule, tracked in em", () =>
 });
 
 designTest("type: the monospace runs are sized against the copy beside them", () => {
-  // Three of them, and each takes the step of the text it sits with: the code screen's code
+  // Each takes the step of the text it sits with: the code screen's code
   // is the thing the page was for and leads at 1.375rem, a field's value is the
-  // body step under its label, and a command or a saved code inside a box is
+  // body step under its label, and a saved code inside a box is
   // one step below that, the step of the prose around it.
   assert.equal(decl(".code", "font-size"), "1.375rem");
   assert.equal(decl(".code", "font-family"), "var(--mono)");
   assert.equal(decl(".mono", "font-size"), "1rem");
   assert.equal(decl(".mono", "font-family"), "var(--mono)");
-  for (const selector of [".command code", ".entry .code-row code"]) {
-    assert.equal(decl(selector, "font-size"), ".875rem", `${selector} is the small step`);
-  }
+  assert.equal(decl(".entry .code-row code", "font-size"), ".875rem", ".entry .code-row code is the small step");
   assert.equal(decl(".warn p", "font-size"), ".875rem",
-    "which is the size of the copy the command sits inside");
+    "which is the size of a notice's own copy");
   // And one declaration per box: `.entry .mono` restated the same .875rem that
   // `.entry .code-row code` already sets on the same element.
   assert.equal(decl(".entry .mono", "font-size"), undefined);

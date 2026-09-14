@@ -4,7 +4,7 @@ import { paymentUri, qrSvg } from "./qr.js";
 import type { HistoryRow, UnpaidOrder } from "./order.js";
 import type { InvoiceView } from "./api.js";
 import { THEMES, type Method, type Theme } from "./domain.js";
-import type { CardFailure, NoKeyConfigured } from "./stripe.js";
+import type { CardFailure } from "./stripe.js";
 
 /** A browser's interval id is a number and this does nothing. Under the test runner it is an
  * object, and unreferencing it is what stops a screen that was built and never stopped from
@@ -516,16 +516,6 @@ function offlineNote(): HTMLElement {
 const CRYPTO_NAMES: Readonly<Record<"btc" | "xmr", string>> = { btc: "Bitcoin", xmr: "Monero" };
 const CRYPTO_TICKERS: Readonly<Record<"btc" | "xmr", string>> = { btc: "BTC", xmr: "XMR" };
 
-function settleCommand(origin: string, orderId: string): Node[] {
-  const command = `curl -X POST ${origin}/control/settle/${orderId}`;
-  const copy = copyControl("Copy command", command, "secondary inline");
-  return [
-    el("p", { class: "muted" }, "Against the mock, settle the order with its control endpoint:"),
-    el("div", { class: "command" }, el("code", { class: "mono" }, command), copy.control),
-    copy.status,
-  ];
-}
-
 // Quiet on purpose: this screen exists to be paid, and a loud control beside the address
 // competes with that. The red is spent on the confirmation and on a failure instead.
 function cancelControl(onCancel: () => Promise<void>, notice: string | undefined): Node[] {
@@ -1004,26 +994,6 @@ export function cardFields(o: CardFieldsOptions): CardFields {
   };
 }
 
-export const DEV_STAND_IN_TITLE = "Development stand-in. This is not a payment form.";
-
-export interface CardStandInOptions {
-  orderId: string;
-  origin: string;
-  onConfirm: () => void;
-}
-
-// `proof` is a token only stripe.ts's no-key branch produces, so a configured page cannot
-// reach this at all.
-export function cardStandIn(_proof: NoKeyConfigured, o: CardStandInOptions): HTMLElement {
-  return el("div", { class: "warn" },
-    el("span", { class: "title" }, DEV_STAND_IN_TITLE),
-    el("p", {}, "No Stripe publishable key is configured, so this page has no card form and can take no card details."),
-    el("p", {}, "The button below records the local hint and waits for the provider, as a successful confirmation does. It contacts nobody and charges nothing."),
-    button("Simulate a confirmed card payment", o.onConfirm, "secondary"),
-    ...settleCommand(o.origin, o.orderId),
-  );
-}
-
 export interface CardUnavailableOptions {
   order: UnpaidOrder;
   reason: CardFailure;
@@ -1032,12 +1002,15 @@ export interface CardUnavailableOptions {
 }
 
 export function cardUnavailable(o: CardUnavailableOptions): HTMLElement {
-  const offline = o.reason === "offline";
+  const lede =
+    o.reason === "offline"
+      ? "You are offline. The card form is the one part of this page that needs a connection."
+      : o.reason === "unconfigured"
+        ? "Card payment is not available on this page."
+        : "The card form is served by Stripe, and it did not arrive.";
   return panel(
     el("h1", { class: "tight" }, "The card form did not load"),
-    el("p", { class: "lede" }, offline
-      ? "You are offline. The card form is the one part of this page that needs a connection."
-      : "The card form is served by Stripe, and it did not arrive."),
+    el("p", { class: "lede" }, lede),
     el("p", { class: "lede" }, "Nothing was charged. This order is still waiting to be paid."),
     reference(o.order.orderId),
     button("Try again", o.onRetry),

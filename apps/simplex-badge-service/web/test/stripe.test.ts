@@ -53,10 +53,11 @@ function assertNoCode(node: StubElement, where: string): void {
 
 // ------------------------------------------------------------------ the gate
 
-cardTest("stripe: with no publishable key there is a stand-in and nothing to load", () => {
+cardTest("stripe: with no publishable key the card lane is unavailable, and nothing loads", () => {
   for (const [what, key] of [["absent", undefined], ["empty", ""], ["whitespace", "   "]] as const) {
     const plan = stripe.cardPlan(key, false);
-    assert.equal(plan.kind, "standIn", `a ${what} key configures no card form`);
+    assert.equal(plan.kind, "unavailable", `a ${what} key configures no card form`);
+    assert.equal(plan.kind === "unavailable" ? plan.reason : "", "unconfigured");
   }
 });
 
@@ -64,10 +65,6 @@ cardTest("stripe: with a key configured the plan is to LOAD, and carries the key
   const plan = stripe.cardPlan(`  ${PUBLISHABLE_KEY}  `, false);
   assert.equal(plan.kind, "load");
   assert.equal(plan.kind === "load" ? plan.publishableKey : "", PUBLISHABLE_KEY, "trimmed, as a config value is");
-  // The mutation this catches: a stand-in reachable on a configured page. The
-  // `load` arm carries no token, so `screens.cardStandIn` cannot be called from
-  // it at all. This asserts the runtime half of that.
-  assert.ok(!("proof" in plan), "a configured page holds no token to build a stand-in with");
 });
 
 cardTest("stripe: offline with a key is a failure screen, not a form that never fills", () => {
@@ -76,8 +73,10 @@ cardTest("stripe: offline with a key is a failure screen, not a form that never 
   assert.equal(plan.kind === "unavailable" ? plan.reason : "", "offline");
 });
 
-cardTest("stripe: offline with NO key is still the stand-in — the local flow keeps working", () => {
-  assert.equal(stripe.cardPlan("", true).kind, "standIn");
+cardTest("stripe: a missing key wins over offline — the page is unconfigured either way", () => {
+  const plan = stripe.cardPlan("", true);
+  assert.equal(plan.kind, "unavailable");
+  assert.equal(plan.kind === "unavailable" ? plan.reason : "", "unconfigured");
 });
 
 cardTest("stripe: the script URL is Stripe's own origin, which may not be self-hosted", () => {
@@ -271,33 +270,6 @@ cardTest("stripe: a confirm that THREW is an error, and never a submission", asy
 
 // ------------------------------------------------------------- the screens
 
-function standInProof(): import("../src/stripe.js").NoKeyConfigured {
-  const plan = stripe.cardPlan("", false);
-  if (plan.kind !== "standIn") throw new Error("a keyless page must plan a stand-in");
-  return plan.proof;
-}
-
-cardTest("screens: the stand-in cannot be mistaken for a card form, and has no fields", () => {
-  let confirmed = false;
-  const p = render(screens.cardStandIn(standInProof(), {
-    origin: "http://127.0.0.1:8099",
-    orderId: "inv_card", onConfirm: () => { confirmed = true; },
-  }));
-  assert.ok(p.textContent.includes(screens.DEV_STAND_IN_TITLE), p.textContent);
-  assert.ok(p.textContent.includes("no card form"));
-  assert.ok(p.textContent.includes("charges nothing"));
-  assert.equal(p.all("input").length, 0, "nothing to type a card number into");
-  assert.equal(p.all("div.card-mount").length, 0, "and nowhere for a Payment Element to appear");
-  // The command is runnable as printed: the real verb, this page's own origin,
-  // and this order's id. A bare "POST /control/settle/:id" is not something a
-  // reader can paste, which is the whole point of printing it.
-  assert.ok(p.textContent.includes("curl -X POST http://127.0.0.1:8099/control/settle/inv_card"), p.textContent);
-  // And it is selectable text, not a button label.
-  assert.equal(p.all("code")[0]?.textContent, "curl -X POST http://127.0.0.1:8099/control/settle/inv_card");
-  p.all("button.secondary")[0]!.click();
-  assert.equal(confirmed, true, "the one control does what a confirm does");
-});
-
 cardTest("screens: the card fields are disabled until the Element is actually mounted", () => {
   let paid = 0;
   const mount = screens.cardMount();
@@ -323,17 +295,20 @@ cardTest("screens: the card fields are disabled until the Element is actually mo
 });
 
 cardTest("screens: the card form renders the body it is given, and no second mount point", () => {
-  const withStandIn = render(screens.cardForm({
+  const marker = new StubElement("p");
+  marker.textContent = "custom body marker";
+  const withBody = render(screens.cardForm({
     order, invoice: cardInvoice, resumed: false, onNewInvoice: noop,
-    body: screens.cardStandIn(standInProof(), { orderId: "inv_card", origin: "http://127.0.0.1:8099", onConfirm: noop }),
+    body: marker as unknown as HTMLElement,
   }));
-  assert.ok(withStandIn.textContent.includes("Legend"));
-  assert.ok(withStandIn.textContent.includes("$420.00"));
-  assert.ok(withStandIn.textContent.includes("inv_card"), "the reference is on every screen that may need support");
-  assert.equal(withStandIn.all("div.card-mount").length, 0, "a keyless page has nowhere to mount");
-  assert.ok(!withStandIn.textContent.includes(CLIENT_SECRET), "the client secret is never rendered");
-  assertNoCode(withStandIn, "cardForm/standIn");
-  assert.equal(withStandIn.all("svg.qr").length, 0, "the store rules: no QR on an unpaid screen");
+  assert.ok(withBody.textContent.includes("custom body marker"), "the body handed in is rendered");
+  assert.ok(withBody.textContent.includes("Legend"));
+  assert.ok(withBody.textContent.includes("$420.00"));
+  assert.ok(withBody.textContent.includes("inv_card"), "the reference is on every screen that may need support");
+  assert.equal(withBody.all("div.card-mount").length, 0, "a supplied body brings no mount point of its own");
+  assert.ok(!withBody.textContent.includes(CLIENT_SECRET), "the client secret is never rendered");
+  assertNoCode(withBody, "cardForm/body");
+  assert.equal(withBody.all("svg.qr").length, 0, "the store rules: no QR on an unpaid screen");
 
   const bare = render(screens.cardForm({ order, invoice: cardInvoice, resumed: false, onNewInvoice: noop }));
   assert.equal(bare.all("div.card-mount").length, 1, "the default body is the mount point");
@@ -419,15 +394,16 @@ function cardCreated(invoiceId: string): void {
   });
 }
 
-cardTest("main: with NO key the card path renders the stand-in, and still loads nothing", async () => {
+cardTest("main: with NO key the card path is unavailable, and still loads nothing", async () => {
   walkToCard();
   cardCreated("inv_card_1");
   screen().all("button.primary")[0]!.click();
   await until(() => location.search === "?order=inv_card_1", "the card invoice");
   await settle();
 
-  assert.equal(heading(), "Pay by card");
-  assert.ok(screen().textContent.includes(screens.DEV_STAND_IN_TITLE), screen().textContent);
+  assert.equal(heading(), "The card form did not load");
+  assert.ok(screen().textContent.includes("Card payment is not available on this page."),
+    "an unconfigured page names the card lane as unavailable, and offers no form");
   assert.equal(screen().all("div.card-mount").length, 0);
   assert.equal(stripeTags().length, 0, "no key, no script — the gate is before the load");
   assert.ok(!screen().textContent.includes(CLIENT_SECRET), "the client secret is never on screen");
@@ -439,34 +415,16 @@ cardTest("main: with NO key the card path renders the stand-in, and still loads 
     "the store rules: clientSecret is never written to rest");
 });
 
-cardTest("main: the stand-in's confirm lands on the confirming screen, WHICH WAITS — never on a code", async () => {
-  const before = fetches.length;
-  screen().all("button.secondary").find((b) => b.textContent === "Simulate a confirmed card payment")!.click();
-  await settle();
-
-  assert.equal(heading(), "Payment received", "the confirming screen, and not the code screen");
-  assert.ok(screen().textContent.includes("Waiting for the card network to confirm."));
-  assert.ok(!screen().textContent.includes("Here is your code"), "a confirm is not a payment");
-  const stored = JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, string>>;
-  assert.ok(!screen().serialize().includes(stored[0]!.code!), "the store rules: no code while the order is unpaid");
-  assert.equal(stored[0]!.status, "open", "and the order is still open");
-  // the watch loop as amended: a successful confirmPayment() writes `submitted` onto
-  // this order, where the next checkout's `clearSession` cannot reach it.
-  assert.equal(stored.find((o) => o.orderId === "inv_card_1")!.submitted, true);
-  assert.equal(storage.getItem("sb.session.v1"), null,
-    "and the session, which the checkout 200 cleared, is not where it lives");
-  // the give-up rule: the loop keeps asking. The provider is what settles this.
-  assert.ok(fetches.length > before, "the waiting loop was started");
-  assert.ok(fetches.slice(before).some((f) => f.url.startsWith("/api/invoice/inv_card_1")));
-  // the give-up rule: [ New invoice ] is withheld here, and only here.
-  assert.equal(screen().all("button").filter((b) => b.textContent === "New invoice").length, 0);
-});
-
 cardTest("main: the order summary withholds Pay while a card payment awaits confirmation", async () => {
-  // the give-up rule takes [ New invoice ] off the confirming screen, and browser Back is the way round it:
+  // A confirm that has been submitted but not yet settled leaves the order `submitted` and still open.
+  // Browser Back is the way round the confirming screen's withheld [ New invoice ]:
   // the confirming screen → the wizard → the order summary → Pay creates a SECOND invoice for a purchase whose
   // confirm already returned success. The create endpoint has no idempotency key, so that is a
   // second real charge with no remedy.
+  const orders = JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, unknown>>;
+  orders.find((o) => o.orderId === "inv_card_1")!.submitted = true;
+  storage.setItem("sb.orders.v1", JSON.stringify(orders));
+
   history.back();
   await settle();
   assert.equal(heading(), "How long?", "Back lands on the wizard");
@@ -530,12 +488,10 @@ cardTest("main: Back from a payment screen to the order summary, and Pay still w
   assert.equal(body.method, "card");
 });
 
-cardTest("main: with a key configured the stand-in is GONE and Stripe.js is fetched", () => {
+cardTest("main: with a key configured the card form loads Stripe.js and awaits its Element", () => {
   // The card form the test above landed on: the same order, now on a page that
   // has a key.
   assert.equal(heading(), "Pay by card");
-  assert.ok(!screen().textContent.includes(screens.DEV_STAND_IN_TITLE),
-    "a configured page has no development stand-in on it");
   assert.equal(screen().all("div.card-mount").length, 1, "the Payment Element mounts here");
   assert.equal(stripeTags().length, 1, "exactly one script tag, and only now");
   assert.equal(stripeTags()[0]!.getAttribute("src"), stripe.STRIPE_JS_URL);
@@ -672,7 +628,11 @@ cardTest("main: a connectivity flap must not remount the form under an in-flight
 
 cardTest("main: a real confirm ALSO lands on the confirming screen, and the confirming screen alone", async () => {
   assert.equal(heading(), "Payment received");
+  assert.ok(screen().textContent.includes("Waiting for the card network to confirm."),
+    "the confirming screen waits: a confirm is a hint, the provider is what settles it");
   assert.equal(confirms.length, 1, "one press, one confirm");
+  // the give-up rule: the loop keeps asking the provider about this exact order.
+  assert.ok(fetches.some((f) => f.url.startsWith("/api/invoice/inv_card_2")), "the waiting loop is polling");
   // the order id is a bearer capability the service never sends Stripe, and return_url is stored on
   // the session; so the URL handed to confirm must not carry it.
   assert.ok(lastReturnUrl.length > 0 && !lastReturnUrl.includes("inv_card_2"),

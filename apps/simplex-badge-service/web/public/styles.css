@@ -849,14 +849,9 @@ p.row-line { margin: 16px 0 0; }
   overflow-wrap: anywhere;
 }
 
-/* A shell command to run, with its copy control on the same row: the command is
-   the payload, so it is selectable text and never a button's label. The surface
-   is the page's, not the warning's, so it reads as something to run rather than
-   as more of the warning around it.
-
-   the history list's saved code takes the same box (`.entry .code-row`): a value to be copied
-   whole, with the control that copies it. */
-.command, .entry .code-row {
+/* The history list's saved code and its copy control on the same row: a value to be
+   copied whole, so the code is selectable text and never a button's label. */
+.entry .code-row {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -869,7 +864,7 @@ p.row-line { margin: 16px 0 0; }
 
 /* A run to be read a character at a time, so it steps one below `.mono`'s body
    size, the size the copy beside it is set at in both boxes. */
-.command code, .entry .code-row code {
+.entry .code-row code {
   flex: 1 1 auto;
   min-width: 0;
   font-size: .875rem;
@@ -877,7 +872,7 @@ p.row-line { margin: 16px 0 0; }
   overflow-wrap: anywhere;
 }
 
-.command .secondary, .entry .code-row .secondary {
+.entry .code-row .secondary {
   flex: 0 0 auto;
   min-height: 32px;
   padding: 0 12px;

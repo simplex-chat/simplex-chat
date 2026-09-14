@@ -98,26 +98,17 @@ export type StripeGlobal = (publishableKey: string) => StripeInstance;
 
 export type LoadStripeJs = (src: string) => Promise<StripeGlobal>;
 
-// Not exported as a value, and its private field defeats structural typing, so a caller
-// cannot fabricate one. That is what makes the stand-in unreachable on a configured page.
-class NoKey {
-  declare private readonly noPublishableKey: true;
-}
-
-export type NoKeyConfigured = NoKey;
-
-const NO_KEY: NoKeyConfigured = new NoKey();
-
-export type CardFailure = "offline" | "script" | "sdk";
+// "unconfigured": the page carries no publishable key, so it has no card form. In a real deployment
+// the key is present whenever the server offers card, so this is a misconfiguration guard.
+export type CardFailure = "offline" | "script" | "sdk" | "unconfigured";
 
 export type CardPlan =
-  | { kind: "standIn"; proof: NoKeyConfigured }
   | { kind: "unavailable"; reason: CardFailure }
   | { kind: "load"; publishableKey: string };
 
 export function cardPlan(publishableKey: string | undefined, offline: boolean): CardPlan {
   const key = publishableKey?.trim() ?? "";
-  if (key === "") return { kind: "standIn", proof: NO_KEY };
+  if (key === "") return { kind: "unavailable", reason: "unconfigured" };
   if (offline) return { kind: "unavailable", reason: "offline" };
   return { kind: "load", publishableKey: key };
 }

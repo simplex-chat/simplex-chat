@@ -832,15 +832,6 @@ function renderCardForm(view: CardView): void {
   const shell = (body: HTMLElement): HTMLElement => screens.cardForm({
     order: view.order, invoice: view.invoice, resumed: view.resumed, body, onNewInvoice: newInvoice,
   });
-  if (plan.kind === "standIn") {
-    const standIn = shell(screens.cardStandIn(plan.proof, {
-      orderId: view.order.orderId,
-      origin: location.origin,
-      onConfirm: () => { cardConfirmed(view, standIn); },
-    }));
-    root.replaceChildren(standIn);
-    return;
-  }
   const mount = screens.cardMount();
   let confirm: (() => Promise<ConfirmOutcome>) | null = null;
   const fields = screens.cardFields({

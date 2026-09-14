@@ -1,7 +1,7 @@
 import { after, mock } from "node:test";
 import assert from "node:assert/strict";
 import { forgetControl, headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
-import { MemStorage } from "./stub-dom.js";
+import { MemStorage, StubElement } from "./stub-dom.js";
 
 const resumeTest = timedTest(3000);
 
@@ -38,6 +38,17 @@ const crypto = {
   currency: "usd", expiresAt: "2026-08-28T12:58:12Z",
   address: "48HqK2XmVexampleAddress9fRtWc", cryptoAmount: "1.482", cryptoCurrency: "xmr",
 };
+
+// A key on the page, so a non-submitted card order (inv_card_other below) renders the real
+// Payment Element form rather than the unconfigured "card unavailable" screen.
+const keyMeta = new StubElement("meta");
+keyMeta.setAttribute("id", "stripe-publishable-key");
+keyMeta.setAttribute("content", "pk_test_resume");
+page.document.byId.set("stripe-publishable-key", keyMeta);
+(globalThis as unknown as { window: Record<string, unknown> }).window.Stripe = () => ({
+  elements: () => ({ create: () => ({ mount: () => {}, destroy: () => {} }) }),
+  confirmPayment: async () => ({ paymentIntent: { status: "succeeded" } }),
+});
 
 // The plain first read of the read endpoint is answered before the module runs, because
 // `main.ts` issues it during import.

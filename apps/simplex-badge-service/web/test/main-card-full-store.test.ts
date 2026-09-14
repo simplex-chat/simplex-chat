@@ -5,10 +5,12 @@
 import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, installPage, inViewOf, primaryOf, screenOf, settle, timedTest, until } from "./boot.js";
-import { MemStorage, type StubElement } from "./stub-dom.js";
+import { MemStorage, StubElement } from "./stub-dom.js";
 
 const capTest = timedTest(5000);
 const NOW = Date.parse("2026-08-28T12:00:00Z");
+const PUBLISHABLE_KEY = "pk_test_full_store";
+const CLIENT_SECRET = "cs_test_abc";
 
 const full = new MemStorage();
 full.m.set("sb.orders.v1", JSON.stringify(
@@ -22,10 +24,34 @@ full.m.set("sb.orders.v1", JSON.stringify(
 mock.timers.enable({ apis: ["setTimeout", "Date"], now: NOW });
 const page = installPage({ storage: full });
 const { app } = page;
+
+// The page is configured with a key, so the card path is the real Payment Element, not a stand-in.
+const keyMeta = new StubElement("meta");
+keyMeta.setAttribute("id", "stripe-publishable-key");
+keyMeta.setAttribute("name", "stripe-publishable-key");
+keyMeta.setAttribute("content", PUBLISHABLE_KEY);
+page.document.byId.set("stripe-publishable-key", keyMeta);
+
+// What a loaded Stripe.js defines: a Payment Element that mounts, and a confirm that succeeds.
+(globalThis as unknown as { window: Record<string, unknown> }).window.Stripe = (key: string) => {
+  assert.equal(key, PUBLISHABLE_KEY, "the page's own configured key");
+  return {
+    elements: (options: { clientSecret: string }) => {
+      assert.equal(options.clientSecret, CLIENT_SECRET);
+      return { create: () => ({ mount: () => {}, destroy: () => {} }) };
+    },
+    confirmPayment: async () => ({ paymentIntent: { status: "succeeded" } }),
+  };
+};
+
 await import("../src/main.js");
 
 const heading = (): string => headingOf(screenOf(app));
 const inView = (): StubElement => inViewOf(app);
+const stripeTag = (): StubElement =>
+  page.document.head.children.find(
+    (c): c is StubElement => c instanceof StubElement && (c.getAttribute("src") ?? "").includes("js.stripe.com"),
+  )!;
 
 capTest("main: a card code survives the confirm when the orders list is full", async () => {
   primaryOf(inView())!.click();                                                  // landing → tiers
@@ -41,7 +67,7 @@ capTest("main: a card code survives the confirm when the orders list is full", a
   page.respondWith({ status: 200, body: {
     invoiceId: "inv_card", badgeType: "supporter", months: 1,
     amount: 700, currency: "usd", expiresAt: "2026-08-28T12:58:12Z",
-    clientSecret: "cs_test_abc",
+    clientSecret: CLIENT_SECRET,
   } });
   inView().all("button.primary").find((b) => b.textContent.startsWith("Pay"))!.click();
   await until(() => heading() === "Pay by card", `the card form, not ${heading()}`);
@@ -49,7 +75,12 @@ capTest("main: a card code survives the confirm when the orders list is full", a
   const codeShape = /SB-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}/;
   assert.ok(!codeShape.test(screenOf(app).serialize()), "no code is on an unpaid screen");
 
-  screenOf(app).all("button").find((b) => b.textContent === "Simulate a confirmed card payment")!.click();
+  // Stripe.js arrives, the Element mounts, and only then is the order payable.
+  stripeTag().dispatch("load");
+  await settle();
+  const pay = screenOf(app).all("button.primary").find((b) => b.textContent.startsWith("Pay"))!;
+  assert.ok(!pay.hasAttribute("disabled"), "the Element mounted, so Pay is live");
+  pay.click();
   await until(() => heading() === "Payment received", `the confirming screen, not ${heading()}`);
 
   // the card network confirms, which is the only thing between the buyer and their code
