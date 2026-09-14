@@ -5,6 +5,7 @@ import { timedTest } from "./boot.js";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { decl, mediaFor, type Rule, ruleFor, sheet } from "./css.js";
+import * as stripe from "../src/stripe.js";
 
 const designTest = timedTest(2000);
 
@@ -82,6 +83,29 @@ designTest("design: every light token holds the value it is measured from", () =
     const found = root.decls.get(token);
     assert.ok(found !== undefined, `${token} is not defined on :root`);
     assert.equal(found.toLowerCase(), value.toLowerCase(), `${token} must be ${value}`);
+  }
+});
+
+designTest("design: the Stripe card form's palette is the site's own tokens, not a second copy", () => {
+  // stripe.ts hard-codes the palette because Stripe.js runs in its own cross-origin iframe and cannot
+  // read our CSS variables. This fails if that copy ever drifts from the tokens in styles.css.
+  const light = ruleFor(sheet.rules, ":root")!;
+  const dark = darkAttribute();
+  // dark inherits any token it does not itself redefine (the accent) from :root.
+  const tok = (rule: Rule, name: string): string => (rule.decls.get(name) ?? light.decls.get(name) ?? "").toLowerCase();
+  const norm = (s: string | undefined): string => (s ?? "").trim().toLowerCase();
+  for (const [label, t, rule] of [["light", "light", light], ["dark", "dark", dark]] as const) {
+    const a = stripe.appearanceFor(t, false);
+    assert.equal(a.theme, "flat", `${label} uses the flat theme`);
+    const v = a.variables!, r = a.rules!;
+    assert.equal(norm(v.colorPrimary), tok(rule, "--accent"), `${label} colorPrimary is --accent`);
+    assert.equal(norm(v.colorBackground), tok(rule, "--surface"), `${label} colorBackground is --surface`);
+    assert.equal(norm(v.colorText), tok(rule, "--ink"), `${label} colorText is --ink`);
+    assert.equal(norm(v.colorTextSecondary), tok(rule, "--muted"), `${label} colorTextSecondary is --muted`);
+    assert.equal(norm(v.colorDanger), tok(rule, "--danger-fg"), `${label} colorDanger is --danger-fg`);
+    assert.equal(norm(r[".Input"]?.backgroundColor), tok(rule, "--bg"), `${label} .Input fill is --bg`);
+    assert.ok(norm(r[".Input"]?.border).includes(tok(rule, "--line")), `${label} .Input border is --line`);
+    assert.ok(norm(r[".Input:focus"]?.border).includes(tok(rule, "--accent")), `${label} .Input:focus is --accent`);
   }
 });
 

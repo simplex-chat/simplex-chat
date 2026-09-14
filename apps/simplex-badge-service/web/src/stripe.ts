@@ -73,9 +73,12 @@ export interface PaymentIntentResult {
   error?: StripeError;
 }
 
-// Stripe.js ships a few built-in appearances; `stripe` is its light default and `night` its dark.
+// Stripe.js ships a few built-in themes (`stripe`, `night`, `flat`); we build on `flat` and supply
+// the palette in `variables`/`rules` so the card form matches the site.
 export interface Appearance {
   theme: "stripe" | "night" | "flat";
+  variables?: Record<string, string>;
+  rules?: Record<string, Record<string, string>>;
 }
 
 export interface StripeInstance {
@@ -87,11 +90,84 @@ export interface StripeInstance {
   }): Promise<PaymentIntentResult>;
 }
 
-// The Payment Element does not read the page's theme, so map the site's setting to a built-in
-// appearance. `system` follows the OS; the caller resolves that, since this stays free of the DOM.
+// Kept in sync with the tokens in public/styles.css by hand: Stripe.js runs in its own iframe and
+// cannot read the page's CSS variables, so the card form's palette is supplied here explicitly.
+const CARD_FONT =
+  'Satoshi, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif';
+
+interface Palette {
+  accent: string;
+  onAccent: string;
+  ink: string;
+  bg: string;
+  surface: string;
+  line: string;
+  muted: string;
+  danger: string;
+}
+
+const LIGHT_PALETTE: Palette = {
+  accent: "#3889FF", onAccent: "#FFFFFF", ink: "#1E2122", bg: "#F7F7F7", surface: "#FFFFFF", line: "#E8E8E8", muted: "rgba(30, 33, 34, .56)", danger: "#b3261e",
+};
+const DARK_PALETTE: Palette = {
+  accent: "#3889FF", onAccent: "#FFFFFF", ink: "#FFFFFF", bg: "#141416", surface: "#1E2122", line: "#424347", muted: "rgba(255, 255, 255, .56)", danger: "#FF9F98",
+};
+
+// The flat theme with the site's palette. flat is light-oriented, so dark needs every colour supplied,
+// down to the icons and the loading spinner (`iconLoadingIndicatorColor`); anything left unset keeps
+// the theme's light default and reads as a light patch on a dark form.
+function flatAppearance(p: Palette): Appearance {
+  return {
+    theme: "flat",
+    variables: {
+      colorPrimary: p.accent,
+      colorBackground: p.surface,
+      colorText: p.ink,
+      colorTextSecondary: p.muted,
+      colorTextPlaceholder: p.muted,
+      colorDanger: p.danger,
+      accessibleColorOnColorPrimary: p.onAccent,
+      iconColor: p.ink,
+      iconHoverColor: p.ink,
+      iconCardCvcColor: p.muted,
+      iconCardCvcErrorColor: p.danger,
+      iconCardErrorColor: p.danger,
+      iconChevronDownColor: p.muted,
+      iconChevronDownHoverColor: p.ink,
+      iconLoadingIndicatorColor: p.accent,
+      tabIconColor: p.muted,
+      tabIconSelectedColor: p.accent,
+      logoColor: p.ink,
+      accordionItemLabelColorText: p.ink,
+      accordionItemLabelSelectedColorText: p.ink,
+      fontFamily: CARD_FONT,
+      fontSizeBase: "16px",
+      borderRadius: "12px",
+      spacingUnit: "4px",
+    },
+    rules: {
+      // the fields take the page ground, a step down from the card's surface, so they read as recessed
+      ".Input": { backgroundColor: p.bg, color: p.ink, border: `1px solid ${p.line}`, boxShadow: "none" },
+      ".Input:focus": { border: `1px solid ${p.accent}`, boxShadow: `0 0 0 1px ${p.accent}` },
+      ".Input--invalid": { border: `1px solid ${p.danger}`, boxShadow: "none" },
+      ".Input::placeholder": { color: p.muted },
+      ".Label": { color: p.ink },
+      // the card and its method tab/accordion stay in the neutral line colour; only a focused field
+      // takes the accent, so the blue marks where the buyer is typing and nothing else
+      ".Tab": { backgroundColor: p.surface, color: p.ink, border: `1px solid ${p.line}`, boxShadow: "none" },
+      ".Tab:hover": { border: `1px solid ${p.line}` },
+      ".Tab--selected": { color: p.ink, border: `1px solid ${p.line}`, boxShadow: "none" },
+      ".AccordionItem": { backgroundColor: p.surface, color: p.ink, border: `1px solid ${p.line}`, boxShadow: "none" },
+      ".AccordionItem--selected": { border: `1px solid ${p.line}`, boxShadow: "none" },
+    },
+  };
+}
+
+// The Payment Element does not read the page's theme, so map the site's setting to the matching
+// palette. `system` follows the OS; the caller resolves that, since this stays free of the DOM.
 export function appearanceFor(theme: Theme, systemDark: boolean): Appearance {
   const dark = theme === "dark" || (theme === "system" && systemDark);
-  return { theme: dark ? "night" : "stripe" };
+  return flatAppearance(dark ? DARK_PALETTE : LIGHT_PALETTE);
 }
 
 export type StripeGlobal = (publishableKey: string) => StripeInstance;

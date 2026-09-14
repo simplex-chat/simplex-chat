@@ -166,10 +166,17 @@ cardTest("stripe: mounting follows Stripe's script rule — init the SDK, create
 });
 
 cardTest("stripe: the appearance follows the site theme, resolving system by the OS", () => {
-  assert.deepEqual(stripe.appearanceFor("light", true), { theme: "stripe" }, "forced light ignores a dark OS");
-  assert.deepEqual(stripe.appearanceFor("dark", false), { theme: "night" }, "forced dark ignores a light OS");
-  assert.deepEqual(stripe.appearanceFor("system", true), { theme: "night" }, "system follows a dark OS");
-  assert.deepEqual(stripe.appearanceFor("system", false), { theme: "stripe" }, "system follows a light OS");
+  // the flat theme carries the site palette in both modes; the split shows in the text colour.
+  for (const [label, t, osDark, ink] of [
+    ["forced light ignores a dark OS", "light", true, "#1E2122"],
+    ["forced dark ignores a light OS", "dark", false, "#FFFFFF"],
+    ["system follows a dark OS", "system", true, "#FFFFFF"],
+    ["system follows a light OS", "system", false, "#1E2122"],
+  ] as const) {
+    const a = stripe.appearanceFor(t, osDark);
+    assert.equal(a.theme, "flat", label);
+    assert.equal(a.variables?.colorText, ink, label);
+  }
 });
 
 cardTest("stripe: the chosen appearance is handed to the SDK, so the Element matches the page", async () => {
