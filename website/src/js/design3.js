@@ -19,6 +19,20 @@ function initializePage() {
     const androidBtn = document.querySelector('.android-btn');
     const desktopAppBtn = document.querySelector('.desktop-app-btn');
 
+    function snapBgPositions() {
+        document.querySelectorAll('section.page').forEach(function(el) {
+            var s = getComputedStyle(el);
+            var bgW = parseFloat(s.getPropertyValue('background-size').split(/\s+/)[0]);
+            var bgH = parseFloat(s.getPropertyValue('background-size').split(/\s+/)[1]);
+            if (isNaN(bgW) || isNaN(bgH)) return;
+            var x = Math.round((el.offsetWidth - bgW) / 2);
+            var y = Math.round((el.offsetHeight - bgH) / 2);
+            el.style.backgroundPosition = x + 'px ' + y + 'px';
+        });
+    }
+    snapBgPositions();
+    addEventListener('resize', snapBgPositions);
+
     if (!googlePlayBtn || !appleStoreBtn || !fDroidBtn || !testflightBtn || !androidBtn || !desktopAppBtn) return;
 
 
