@@ -70,7 +70,7 @@ Internal API. The names commands will call these; users will not.
 /_wallet create new                generate the seed, 24 words
 /_wallet create mnemonic=<phrase>  take the entropy from a mnemonic
 /_wallet export                    the seed mnemonic
-/_wallet export <k>                one name key's secret, 0x and 64 hex digits
+/_wallet export name <k>           one name key's secret, 0x and 64 hex digits
 /_wallet delete                    delete the seed
 ```
 

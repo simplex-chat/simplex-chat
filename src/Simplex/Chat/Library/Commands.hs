@@ -1509,7 +1509,7 @@ processChatCommand cxt nm = \case
     seed <- deviceSeed
     phrase <- either throwCmdError pure $ recoveryKeyPhrase seed
     pure $ CRWalletSeedMnemonic user (safeDecodeUtf8 phrase)
-  APIWalletExportDerivedSecret nameIdx -> withUser $ \user -> do
+  APIWalletExportNameSecret nameIdx -> withUser $ \user -> do
     seed <- deviceSeed
     k <- either throwCmdError pure $ seedMaster seed >>= \m -> deriveNameKey m nameIdx
     pure $ CRWalletDerivedSecret user (renderNameKeyPath nameIdx) (decodeLatin1 . strEncode $ addressFromPrivateKey k) (safeDecodeUtf8 $ nameKeySecret k)
@@ -5585,7 +5585,7 @@ chatCommandP =
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/_wallet create new" $> APIWalletCreate Nothing,
       "/_wallet create mnemonic=" *> (APIWalletCreate . Just <$> textP),
-      "/_wallet export " *> (APIWalletExportDerivedSecret <$> keyIndexP),
+      "/_wallet export name " *> (APIWalletExportNameSecret <$> keyIndexP),
       "/_wallet export" $> APIWalletExportSeedMnemonic,
       "/_wallet delete" $> APIWalletDelete,
       "/_wallet" $> APIWallet,

@@ -453,7 +453,7 @@ undocumentedCommands =
     "APIWallet",
     "APIWalletCreate",
     "APIWalletDelete",
-    "APIWalletExportDerivedSecret",
+    "APIWalletExportNameSecret",
     "APIWalletExportSeedMnemonic",
     "CheckChatRunning",
     "ConfirmRemoteCtrl",

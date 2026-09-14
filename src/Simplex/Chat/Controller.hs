@@ -420,7 +420,7 @@ data ChatCommand
   | APIWallet
   | APIWalletCreate {recoveryPhrase :: Maybe Text}
   | APIWalletExportSeedMnemonic
-  | APIWalletExportDerivedSecret {nameIndex :: NameIndex}
+  | APIWalletExportNameSecret {nameIndex :: NameIndex}
   | APIWalletDelete
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
@@ -750,7 +750,7 @@ allowRemoteCommand = \case
   APIWallet -> False
   APIWalletCreate {} -> False
   APIWalletExportSeedMnemonic -> False
-  APIWalletExportDerivedSecret {} -> False
+  APIWalletExportNameSecret {} -> False
   APIWalletDelete -> False
   _ -> True
 

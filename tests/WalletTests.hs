@@ -124,13 +124,13 @@ testWalletExportDerivedSecret :: HasCallStack => TestParams -> IO ()
 testWalletExportDerivedSecret ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet create mnemonic=" <> B.unpack testPhrase)
   _ <- nameRows alice
-  alice ##> "/_wallet export 1"
+  alice ##> "/_wallet export name 1"
   alice <## "m/44'/60'/0'/0/1  0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0  0x9a983cb3d832fbde5ab49d692b7a8bf5b5d232479c99333d0fc8e1d21f1b55b6"
   -- a secret whose first byte is zero keeps its 64 hex digits
-  alice ##> "/_wallet export 15"
+  alice ##> "/_wallet export name 15"
   alice <## "m/44'/60'/0'/0/15  0xa25d37554EB084969C85362f7E6B1A6108e51d0e  0x009a1ccd9c667416d9db6246a35d022b1799517c0cd8547bb07ce280c119ae3c"
   -- an index BIP-32 cannot reach is rejected, not wrapped into another key
-  alice ##> "/_wallet export 4294967296"
+  alice ##> "/_wallet export name 4294967296"
   alice <## "bad chat command: Failed reading: empty"
 
 testWalletDelete :: HasCallStack => TestParams -> IO ()
