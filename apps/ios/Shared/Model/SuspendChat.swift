@@ -8,6 +8,8 @@
 
 import Foundation
 import UIKit
+import ActivityKit
+import AVFoundation
 import SimpleXChat
 import SwiftUI
 
@@ -183,6 +185,202 @@ func startChatAndActivate(_ completion: @escaping () -> Void) {
         activateChat()
         completion()
         logger.debug("DEBUGGING: startChatAndActivate: after activateChat")
+    }
+}
+
+@MainActor
+func suspendChatForBackground() {
+    if CallController.useCallKit() && ChatModel.shared.activeCall != nil {
+        CallController.shared.shouldSuspendChat = true
+    } else {
+        suspendChat()
+        BGManager.shared.schedule()
+    }
+}
+
+@MainActor
+private final class RemoteCtrlBackgroundAudio {
+    static let shared = RemoteCtrlBackgroundAudio()
+
+    private var player: AVQueuePlayer?
+    private var looper: AVPlayerLooper?
+    private var previousSessionConfiguration: (
+        category: AVAudioSession.Category,
+        mode: AVAudioSession.Mode,
+        options: AVAudioSession.CategoryOptions
+    )?
+
+    private init() {}
+
+    var isRunning: Bool {
+        player != nil
+    }
+
+    func start() {
+        guard player == nil else { return }
+        guard #available(iOS 16.1, *) else { return }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+
+        let audioSession = AVAudioSession.sharedInstance()
+        if audioSession.category != .playAndRecord {
+            previousSessionConfiguration = (audioSession.category, audioSession.mode, audioSession.categoryOptions)
+            do {
+                try audioSession.setCategory(.playback, mode: .default, options: .mixWithOthers)
+            } catch {
+                previousSessionConfiguration = nil
+                logger.error("RemoteCtrlBackgroundAudio audio session error: \(error.localizedDescription)")
+            }
+        }
+
+        guard let url = Bundle.main.url(
+            forResource: "sample",
+            withExtension: "mp3",
+            subdirectory: "sounds"
+        ) else {
+            logger.error("RemoteCtrlBackgroundAudio sample.mp3 not found")
+            restoreAudioSession()
+            return
+        }
+
+        let queuePlayer = AVQueuePlayer()
+        let item = AVPlayerItem(asset: AVURLAsset(url: url))
+        player = queuePlayer
+        looper = AVPlayerLooper(player: queuePlayer, templateItem: item)
+        queuePlayer.play()
+    }
+
+    func stop() {
+        player?.pause()
+        looper = nil
+        player = nil
+        restoreAudioSession()
+    }
+
+    private func restoreAudioSession() {
+        guard let previousSessionConfiguration else { return }
+        let audioSession = AVAudioSession.sharedInstance()
+        if audioSession.category == .playback,
+           audioSession.mode == .default,
+           audioSession.categoryOptions == .mixWithOthers {
+            try? audioSession.setCategory(
+                previousSessionConfiguration.category,
+                mode: previousSessionConfiguration.mode,
+                options: previousSessionConfiguration.options
+            )
+        }
+        self.previousSessionConfiguration = nil
+    }
+}
+
+@available(iOS 16.1, *)
+@MainActor
+private final class RemoteCtrlLiveActivityManager {
+    static let shared = RemoteCtrlLiveActivityManager()
+
+    private var activity: Activity<RemoteCtrlActivityAttributes>?
+    private var lifecycleTask: Task<Void, Never>?
+    private var endingBackgroundTask = UIBackgroundTaskIdentifier.invalid
+    private var generation = 0
+
+    private init() {}
+
+    func start(desktopName: String) {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        guard activity == nil else { return }
+        generation += 1
+        let requestedGeneration = generation
+        let previousTask = lifecycleTask
+        lifecycleTask = Task {
+            await previousTask?.value
+            guard requestedGeneration == generation else { return }
+            for staleActivity in Activity<RemoteCtrlActivityAttributes>.activities {
+                await staleActivity.end(using: nil, dismissalPolicy: .immediate)
+            }
+            guard requestedGeneration == generation else { return }
+            do {
+                let state = RemoteCtrlActivityAttributes.ContentState(connectedAt: .now)
+                activity = try Activity.request(
+                    attributes: RemoteCtrlActivityAttributes(desktopName: desktopName),
+                    contentState: state,
+                    pushType: nil
+                )
+            } catch {
+                logger.error("RemoteCtrlLiveActivity request error: \(error.localizedDescription)")
+                RemoteCtrlBGKeepAlive.shared.stop()
+            }
+        }
+    }
+
+    func stop() {
+        generation += 1
+        activity = nil
+        beginEndingBackgroundTask()
+        let previousTask = lifecycleTask
+        lifecycleTask = Task {
+            await previousTask?.value
+            for activeActivity in Activity<RemoteCtrlActivityAttributes>.activities {
+                await activeActivity.end(using: nil, dismissalPolicy: .immediate)
+            }
+            endEndingBackgroundTask()
+        }
+    }
+
+    private func beginEndingBackgroundTask() {
+        guard UIApplication.shared.applicationState != .active,
+              endingBackgroundTask == .invalid else { return }
+        endingBackgroundTask = UIApplication.shared.beginBackgroundTask {
+            Task { @MainActor in
+                self.endEndingBackgroundTask()
+            }
+        }
+    }
+
+    private func endEndingBackgroundTask() {
+        guard endingBackgroundTask != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(endingBackgroundTask)
+        endingBackgroundTask = .invalid
+    }
+}
+
+@MainActor
+final class RemoteCtrlBGKeepAlive {
+    static let shared = RemoteCtrlBGKeepAlive()
+
+    private init() {}
+
+    var backgroundAudioActive: Bool {
+        RemoteCtrlBackgroundAudio.shared.isRunning
+    }
+
+    func start() {
+        // Threat model: a verified desktop, including a malicious or stalled peer,
+        // can keep audio and network work active until the user disconnects here.
+        // Every local termination path releases the keepalive and restores local UI.
+        guard ChatModel.shared.activeRemoteCtrl else { return }
+        if #available(iOS 16.1, *),
+           let session = ChatModel.shared.remoteCtrlSession,
+           case let .connected(remoteCtrl, _) = session.sessionState {
+            RemoteCtrlLiveActivityManager.shared.start(desktopName: remoteCtrl.deviceViewName)
+        }
+        RemoteCtrlBackgroundAudio.shared.start()
+    }
+
+    func handleAppBackgrounding() {
+        if !backgroundAudioActive {
+            suspendChatForBackground()
+        }
+    }
+
+    func stop() {
+        let suspendForBackground = backgroundAudioActive && UIApplication.shared.applicationState == .background
+        if #available(iOS 16.1, *) {
+            RemoteCtrlLiveActivityManager.shared.stop()
+        }
+        RemoteCtrlBackgroundAudio.shared.stop()
+        UIApplication.shared.isIdleTimerDisabled = false
+        if suspendForBackground {
+            suspendChatForBackground()
+        }
     }
 }
 
