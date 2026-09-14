@@ -90,8 +90,8 @@ data WCallCommand
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "WCCall") ''WCallCommand)
 
-serializeChatError :: Bool -> ChatConfig -> ChatError -> String
-serializeChatError isCmd cfg = unlines . map unStyle . chatErrorToView isCmd cfg
+serializeChatError :: Bool -> ChatConfig -> CurrentTime -> ChatError -> String
+serializeChatError isCmd cfg ts = unlines . map unStyle . chatErrorToView isCmd cfg ts
 
 serializeChatResponse :: ChatResponseEvent r => (Maybe RemoteHostId, Maybe User) -> ChatConfig -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> r -> String
 serializeChatResponse hu cfg ts tz remoteHost_ = unlines . map unStyle . responseToView hu cfg False ts tz remoteHost_
@@ -108,7 +108,7 @@ instance ChatResponseEvent ChatEvent where
   responseToView = chatEventToView
   isCommandResponse = False
 
-chatErrorToView :: Bool -> ChatConfig -> ChatError -> [StyledString]
+chatErrorToView :: Bool -> ChatConfig -> CurrentTime -> ChatError -> [StyledString]
 chatErrorToView isCmd ChatConfig {logLevel, testView} = viewChatError isCmd logLevel testView
 
 chatResponseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
@@ -211,7 +211,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation showFullLinks ccLink
   CRConnectionIncognitoUpdated u c customUserProfile -> ttyUser u $ viewConnectionIncognitoUpdated c customUserProfile testView
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged showFullLinks u c nu c'
-  CRConnectionPlan u connLink _ otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan <> otherSimplexNameNote otherSimplexName
+  CRConnectionPlan u connLink _ otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg ts connLink connectionPlan <> otherSimplexNameNote otherSimplexName
   CRNewPreparedChat u (AChat _ (Chat cInfo _ _)) -> ttyUser u $ case cInfo of
     DirectChat ct -> [ttyContact' ct <> ": contact is prepared"]
     GroupChat g _ -> [ttyGroup' g <> ": group is prepared"]
@@ -568,7 +568,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtAgentConnsDeleted acIds -> ["completed deleting connections: " <> sShow (length acIds) | logLevel <= CLLInfo]
   CEvtAgentUserDeleted auId -> ["completed deleting user" <> if logLevel <= CLLInfo then ", agent user id: " <> sShow auId else ""]
   CEvtMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
-  CEvtChatErrors errs -> concatMap (viewChatError False logLevel testView) errs
+  CEvtChatErrors errs -> concatMap (viewChatError False logLevel testView ts) errs
   CEvtTimedAction _ _ -> []
   CEvtTerminalEvent te -> case te of
     TERejectingGroupJoinRequestMember _ g m reason -> [ttyFullMember m <> ": rejecting request to join group " <> ttyGroup' g <> ", reason: " <> sShow reason]
@@ -2238,8 +2238,8 @@ otherSimplexNameNote = \case
   Just ni@(SimplexNameInfo NTContact _) -> [plain $ "You can also connect to " <> shortNameInfoStr ni <> " in direct chat"]
   Nothing -> []
 
-viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
-viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
+viewConnectionPlan :: ChatConfig -> CurrentTime -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
+viewConnectionPlan ChatConfig {logLevel, testView} ts _connLink = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk contactSLinkData ov -> [invOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     ILPOwnLink -> [invLink "own link"]
@@ -2313,7 +2313,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       grpOrBiz GroupInfo {businessChat} = case businessChat of
         Just _ -> "business"
         Nothing -> "group"
-  CPError e -> viewChatError False logLevel testView e
+  CPError e -> viewChatError False logLevel testView ts e
   where
     nextConnectPrepared Contact {preparedContact, activeConn} = case preparedContact of
       Just _ -> maybe True (\c -> connStatus c == ConnPrepared) activeConn
@@ -2758,8 +2758,8 @@ viewRemoteCtrlStopped = \case
     ["remote controller stopped: this link was used with another controller, please create a new link on the host"]
   _ -> ["remote controller stopped"]
 
-viewChatError :: Bool -> ChatLogLevel -> Bool -> ChatError -> [StyledString]
-viewChatError isCmd logLevel testView = \case
+viewChatError :: Bool -> ChatLogLevel -> Bool -> CurrentTime -> ChatError -> [StyledString]
+viewChatError isCmd logLevel testView ts = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
     CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
@@ -2784,17 +2784,18 @@ viewChatError isCmd logLevel testView = \case
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
-    CESimplexDomainNotReady domain domainErr ->
+    CESimplexDomainNotReady domain domainErr lastBlockTs ->
       let name = "SimpleX name " <> strEncode domain <> " "
+          age = asOf ts lastBlockTs
        in case domainErr of
-            SDENoValidLink -> [plain $ name <> "has no valid connection link"]
+            SDENoValidLink -> [plain $ name <> "has no valid connection link" <> age]
             SDEUnknownDomain claimed_ ->
-              [plain $ name <> "resolves to an address that claims " <> maybe "no name" strEncode claimed_]
-            SDENotRegistered -> [plain $ name <> "is not registered"]
-            SDEUnavailable a _ -> [plain $ name <> "is " <> nameStatus domain a]
+              [plain $ name <> "resolves to an address that claims " <> maybe "no name" strEncode claimed_ <> age]
+            SDENotRegistered -> [plain $ name <> "is not registered" <> age]
+            SDEUnavailable a -> [plain $ name <> "is " <> nameStatus domain a <> age]
             SDEResolvesElsewhere nameType links ->
               let here = case nameType of NTContact -> "address"; NTPublicGroup -> "channel"
-               in plain (name <> "does not resolve to this " <> here <> ", it resolves to:")
+               in plain (name <> "does not resolve to this " <> here <> age <> ", it resolves to:")
                     : map (plain . ("  " <>) . encodeUtf8) links
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]

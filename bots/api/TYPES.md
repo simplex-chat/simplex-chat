@@ -1158,6 +1158,7 @@ SimplexDomainNotReady:
 - type: "simplexDomainNotReady"
 - simplexDomain: [SimplexDomain](#simplexdomain)
 - simplexDomainError: [SimplexDomainError](#simplexdomainerror)
+- lastBlockTs: UTCTime?
 
 NotResolvedLocally:
 - type: "notResolvedLocally"
@@ -3686,7 +3687,6 @@ UnknownDomain:
 Unavailable:
 - type: "unavailable"
 - availability: [SimplexNameAvailability](#simplexnameavailability)
-- lastBlockTs: UTCTime?
 
 ResolvesElsewhere:
 - type: "resolvesElsewhere"

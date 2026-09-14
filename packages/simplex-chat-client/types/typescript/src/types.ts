@@ -1337,6 +1337,7 @@ export namespace ChatErrorType {
     type: "simplexDomainNotReady"
     simplexDomain: SimplexDomain
     simplexDomainError: SimplexDomainError
+    lastBlockTs?: string // ISO-8601 timestamp
   }
 
   export interface NotResolvedLocally extends Interface {
@@ -4092,7 +4093,6 @@ export namespace SimplexDomainError {
   export interface Unavailable extends Interface {
     type: "unavailable"
     availability: SimplexNameAvailability
-    lastBlockTs?: string // ISO-8601 timestamp
   }
 
   export interface ResolvesElsewhere extends Interface {

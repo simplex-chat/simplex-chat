@@ -291,7 +291,9 @@ responseString ct cc liveItems outputRH = \case
     ts <- getCurrentTime
     tz <- getCurrentTimeZone
     pure $ responseToView cu (config cc) liveItems ts tz outputRH r
-  Left e -> pure $ chatErrorToView (isCommandResponse @r) (config cc) e
+  Left e -> do
+    ts <- getCurrentTime
+    pure $ chatErrorToView (isCommandResponse @r) (config cc) ts e
 
 updateRemoteUser :: ChatTerminal -> User -> RemoteHostId -> IO ()
 updateRemoteUser ct user rhId = atomically $ TM.insert rhId user (currentRemoteUsers ct)

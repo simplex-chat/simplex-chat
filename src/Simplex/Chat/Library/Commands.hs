@@ -1480,10 +1480,11 @@ processChatCommand cxt nm = \case
         CTDomain d -> resolveDomain d
         where
           resolveDomain d = do
-            nr <- resolvedRecord d =<< withAgent (\a -> resolveSimplexName a nm (aUserId user) d)
+            res <- withAgent (\a -> resolveSimplexName a nm (aUserId user) d)
+            nr <- resolvedRecord d res
             case firstNameLink CCTContact (nrSimplexContact nr) of
               Just sLnk -> resolveShortLink sLnk
-              Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink
+              Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink (blockTime res)
           resolveShortLink sLnk = (\(_, _, cReq) -> cReq) <$> getShortLinkConnReq nm user sLnk
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
@@ -2398,8 +2399,8 @@ processChatCommand cxt nm = \case
     connectWithPlan user incognito ccLink planSimplexName otherSimplexName plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   APIGetNameStatus userId domain -> withUserId userId $ \user -> do
-    NameResponse {lastBlockTs, registration} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
-    pure $ CRNameStatus user domain (nameAvailability domain registration) (roundedToUTCTime <$> lastBlockTs)
+    res@NameResponse {registration} <- withAgent $ \a -> resolveSimplexName a nm (aUserId user) domain
+    pure $ CRNameStatus user domain (nameAvailability domain registration) (blockTime res)
   ShowNameStatus domain -> withUser $ \User {userId} ->
     processChatCommand cxt nm $ APIGetNameStatus userId domain
   APIVerifyContactDomain contactId -> withUser $ \user -> do
@@ -4391,14 +4392,14 @@ processChatCommand cxt nm = \case
         | resolveMode == PRMNever -> connectPlanNoName $ ChatError CENotResolvedLocally
         | otherwise ->
             tryAllErrors (withAgent $ \a -> resolveSimplexName a nm (aUserId user) d) >>= \case
-              Right NameResponse {registration = NRRegistered {nameRecord = nr}}
+              Right res@NameResponse {registration = NRRegistered {nameRecord = nr}}
                 | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) ->
                     (addOther nr <$> connectPlanName NTPublicGroup (Right nr)) `catchAllErrors` \e ->
                       (addOther nr <$> connectPlanName NTContact (Right nr) `catchAllErrors` \_ -> throwError e)
                 | isJust (firstNameLink CCTContact (nrSimplexContact nr)) ->
                     addOther nr <$> connectPlanName NTContact (Right nr)
-                | otherwise -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENoValidLink
-              Right _ -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENotRegistered
+                | otherwise -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENoValidLink (blockTime res)
+              Right res -> connectPlanNoName $ ChatError $ CESimplexDomainNotReady d SDENotRegistered (blockTime res)
               Left e -> connectPlanNoName e
         where
           connectPlanName nameType nr_ = connectPlan user connTarget resolveMode sig_ (Just nr_)
@@ -4435,7 +4436,7 @@ processChatCommand cxt nm = \case
                       (Just _, Just p) -> updateContactFromLinkData user ct' p
                       _ -> pure ct'
                 forM_ planDomain $ \nameDomain ->
-                  unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain (SDEUnknownDomain linkDomain_)
+                  unless (linkDomain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain (SDEUnknownDomain linkDomain_) Nothing
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db cxt user l') >>= \case
                   Just ct' | not (contactDeleted ct') -> do
                     ct'' <- refreshContact ct'
@@ -4518,7 +4519,7 @@ processChatCommand cxt nm = \case
                               CPGroupLink (GLPOwnLink GroupInfo {groupProfile}) -> Just groupProfile
                               CPGroupLink (GLPConnectingProhibit (Just GroupInfo {groupProfile})) -> Just groupProfile
                               _ -> (\GroupShortLinkData {groupProfile} -> groupProfile) <$> groupSLinkData_
-                         in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain (SDEUnknownDomain domain_)
+                         in unless (domain_ == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain (SDEUnknownDomain domain_) Nothing
                       pure (con l' cReq, plan)
             where
               unsupportedGroupType = \case
@@ -4542,12 +4543,16 @@ processChatCommand cxt nm = \case
           -- resolve a name to its first contact/channel short link
           resolveNameLink :: SimplexNameInfo -> CM (ConnShortLink 'CMContact)
           resolveNameLink SimplexNameInfo {nameType, nameDomain} = do
-            NameRecord {nrSimplexContact, nrSimplexChannel} <-
-              maybe (resolvedRecord nameDomain =<< withAgent (\a -> resolveSimplexName a nm (aUserId user) nameDomain)) (ExceptT . pure) nameRec
+            (blockTs, NameRecord {nrSimplexContact, nrSimplexChannel}) <- case nameRec of
+              -- already resolved by connectPlan, which keeps the record only
+              Just nr_ -> (Nothing,) <$> ExceptT (pure nr_)
+              Nothing -> do
+                res <- withAgent (\a -> resolveSimplexName a nm (aUserId user) nameDomain)
+                (blockTime res,) <$> resolvedRecord nameDomain res
             let (candidates, ctType') = case nameType of
                   NTContact -> (nrSimplexContact, CCTContact)
                   NTPublicGroup -> (nrSimplexChannel, CCTChannel)
-            maybe (throwChatError $ CESimplexDomainNotReady nameDomain SDENoValidLink) pure $ firstNameLink ctType' candidates
+            maybe (throwChatError $ CESimplexDomainNotReady nameDomain SDENoValidLink blockTs) pure $ firstNameLink ctType' candidates
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> Maybe SimplexNameInfo -> Maybe SimplexNameInfo -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink planSimplexName otherSimplexName plan
       | connectionPlanProceed plan = do
@@ -5057,17 +5062,21 @@ checkNameClaim nm user domain nameType sLnk nameLinks = do
       [] -> notReady SDENoValidLink
       links -> unless (nameResolvesTo sLnk links) $ notReady (SDEResolvesElsewhere nameType links)
       where
-        notReady = throwChatError . CESimplexDomainNotReady domain
+        notReady e = throwChatError $ CESimplexDomainNotReady domain e (blockTime reg)
 
 -- | The record a name resolves to; when it does not, the failure says why.
 resolvedRecord :: SimplexDomain -> NameResponse -> CM NameRecord
 resolvedRecord domain reg =
-  maybe (throwChatError $ CESimplexDomainNotReady domain SDENotRegistered) pure (resolvedRecord_ reg)
+  maybe (throwChatError $ CESimplexDomainNotReady domain SDENotRegistered (blockTime reg)) pure (resolvedRecord_ reg)
 
 -- | Claiming a name: what the registry says, since the point is to get it.
 unavailable :: SimplexDomain -> NameResponse -> CM a
-unavailable domain NameResponse {lastBlockTs, registration} =
-  throwChatError $ CESimplexDomainNotReady domain (SDEUnavailable (nameAvailability domain registration) (roundedToUTCTime <$> lastBlockTs))
+unavailable domain res@NameResponse {registration} =
+  throwChatError $ CESimplexDomainNotReady domain (SDEUnavailable (nameAvailability domain registration)) (blockTime res)
+
+-- | The block a registry answer was read at; a v20/v21 router sends none.
+blockTime :: NameResponse -> Maybe UTCTime
+blockTime NameResponse {lastBlockTs} = roundedToUTCTime <$> lastBlockTs
 
 resolvedRecord_ :: NameResponse -> Maybe NameRecord
 resolvedRecord_ NameResponse {registration} = case registration of

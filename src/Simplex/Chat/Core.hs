@@ -194,7 +194,9 @@ printResponseEvent hu cfg = \case
   Left e -> printChatError cfg e
 
 printChatError :: ChatConfig -> ChatError -> IO ()
-printChatError cfg e = putStrLn $ serializeChatError True cfg e
+printChatError cfg e = do
+  ts <- getCurrentTime
+  putStrLn $ serializeChatError True cfg ts e
 
 withPrompt :: String -> IO a -> IO a
 withPrompt s a = putStr s >> hFlush stdout >> a

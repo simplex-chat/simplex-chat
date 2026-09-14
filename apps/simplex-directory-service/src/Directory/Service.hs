@@ -1216,7 +1216,8 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
                 let resp = T.pack $ serializeChatResponse (Nothing, Just user) (config cc) ts tz Nothing r
                 sendReply $ "Unexpected error:\n" <> resp
               Left e -> do
-                let resp = T.pack $ serializeChatError True (config cc) e
+                ts <- getCurrentTime
+                let resp = T.pack $ serializeChatError True (config cc) ts e
                 sendReply $ "Unexpected error:\n" <> resp
       DCUnknownCommand -> sendReply "Unknown command"
       DCCommandError tag -> sendReply $ "Command error: " <> tshow tag
@@ -1451,8 +1452,9 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
                 ts <- getCurrentTime
                 tz <- getCurrentTimeZone
                 sendReply $ T.pack $ serializeChatResponse (Nothing, Just user) (config cc) ts tz Nothing r
-              Left e ->
-                sendReply $ T.pack $ serializeChatError True (config cc) e
+              Left e -> do
+                ts <- getCurrentTime
+                sendReply $ T.pack $ serializeChatError True (config cc) ts e
           DCCommandError tag -> sendReply $ "Command error: " <> tshow tag
       | otherwise = sendReply "You are not allowed to use this command"
       where

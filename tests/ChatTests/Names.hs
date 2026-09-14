@@ -109,7 +109,7 @@ testConnectByNameNotFound ps = withSmpServerAndNames $ \_reg ->
     test _alice bob = do
       enableNamesRole bob
       bob ##> "/c @nobody.simplex"
-      bob <## "SimpleX name nobody.simplex is not registered"
+      bob <## "SimpleX name nobody.simplex is not registered (as of 1m ago)"
 
 testSetNameNotOwnAddress :: HasCallStack => TestParams -> IO ()
 testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
@@ -124,7 +124,7 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
       alice ##> "/ad"
       _ <- getContactLinks alice True
       alice ##> "/_set domain 1 alice.simplex"
-      alice <## "SimpleX name alice.simplex does not resolve to this address, it resolves to:"
+      alice <## "SimpleX name alice.simplex does not resolve to this address (as of 1m ago), it resolves to:"
       alice <## ("  " <> bobShortLink)
 
 -- context 3: what the registry says, for someone deciding whether to register
@@ -155,7 +155,7 @@ testClaimChannelNameElsewhere ps = withSmpServerAndNames $ \reg ->
       -- the name resolves to a different channel's link
       registerName reg teamName (channelNameRecord "team" (T.pack otherLink))
       alice ##> "/public group access #team domain=team.simplex"
-      alice <## "SimpleX name team.simplex does not resolve to this channel, it resolves to:"
+      alice <## "SimpleX name team.simplex does not resolve to this channel (as of 1m ago), it resolves to:"
       alice <## ("  " <> otherLink)
       shortLink `shouldNotBe` otherLink
   where
@@ -168,7 +168,7 @@ testClaimChannelNameUnregistered ps = withSmpServerAndNames $ \_reg ->
       mapM_ enableNamesRole [alice, cath]
       _ <- prepareChannel1Relay "team" alice cath
       alice ##> "/public group access #team domain=nobody.simplex"
-      alice <## "SimpleX name nobody.simplex is available, $1.00 a year"
+      alice <## "SimpleX name nobody.simplex is available, $1.00 a year (as of 1m ago)"
 
 testJoinChannelNameUnregistered :: HasCallStack => TestParams -> IO ()
 testJoinChannelNameUnregistered ps = withSmpServerAndNames $ \_reg ->
@@ -177,7 +177,7 @@ testJoinChannelNameUnregistered ps = withSmpServerAndNames $ \_reg ->
     test _alice bob = do
       enableNamesRole bob
       bob ##> "/c #nobody.simplex"
-      bob <## "SimpleX name nobody.simplex is not registered"
+      bob <## "SimpleX name nobody.simplex is not registered (as of 1m ago)"
 
 -- a self-claimed name is never auto-verified from link data: the claim is not proof of ownership
 testChannelDomainLinkJoinUnverified :: HasCallStack => TestParams -> IO ()

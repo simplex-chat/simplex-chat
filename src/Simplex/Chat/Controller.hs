@@ -1449,7 +1449,7 @@ data ChatError
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain {claimedDomain :: Maybe SimplexDomain} -- the name the resolved address claims, if any
-  | SDEUnavailable {availability :: SimplexNameAvailability, lastBlockTs :: Maybe UTCTime} -- what the registry says instead, and how fresh that is
+  | SDEUnavailable {availability :: SimplexNameAvailability} -- what the registry says instead
   | SDEResolvesElsewhere {claimNameType :: SimplexNameType, resolvedLinks :: [Text]} -- resolves, but elsewhere
   | SDENotRegistered -- connecting only needs to know the name reaches no one
   deriving (Eq, Show)
@@ -1493,7 +1493,7 @@ data ChatErrorType
   | CEChatNotStopped
   | CEChatStoreChanged
   | CEInvalidConnReq
-  | CESimplexDomainNotReady {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError}
+  | CESimplexDomainNotReady {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError, lastBlockTs :: Maybe UTCTime} -- the block the registry answer was read at, when there was one
   | CENotResolvedLocally -- a name or link is not a known chat in the local store and online resolution is off (PRMNever)
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
