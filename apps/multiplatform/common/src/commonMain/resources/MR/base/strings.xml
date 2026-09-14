@@ -3234,6 +3234,7 @@
   <string name="badges_redeem_code_body">Paste the code from your receipt.</string>
   <string name="badges_redeem_code_placeholder" translatable="false">SB-XXXXX-XXXXX-XXXXX-XXXXX</string>
   <string name="badges_redeem">Redeem</string>
+  <string name="badges_error_title">Cannot redeem code</string>
   <string name="badges_error_invalid_code">This code is not valid.</string>
   <string name="badges_error_service_not_configured">This app version cannot redeem badge codes.</string>
   <string name="badges_error_already_active">This profile already has a badge. Redeem the code on another profile, or once this badge ends.</string>

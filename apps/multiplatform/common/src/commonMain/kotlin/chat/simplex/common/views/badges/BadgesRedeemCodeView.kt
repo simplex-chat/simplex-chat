@@ -71,20 +71,17 @@ fun BadgesRedeemCodeView() {
   val code = remember { mutableStateOf(TextFieldValue("")) }
   val canonicalCode = remember { mutableStateOf<String?>(null) }
   val submitting = remember { mutableStateOf(false) }
-  val failure = remember { mutableStateOf<BadgeRedeemError?>(null) }
 
   fun applyCodeInput(s: String) {
     val formatted = formatBadgeCodeInput(s)
     if (formatted != code.value.text) code.value = TextFieldValue(formatted, selection = TextRange(formatted.length))
     canonicalCode.value = parseBadgeCode(formatted)
-    failure.value = null
   }
 
   fun redeem() {
     val sending = canonicalCode.value ?: return
     val user = chatModel.currentUser.value ?: return
     submitting.value = true
-    failure.value = null
     withBGApi {
       when (val result = chatModel.controller.apiRedeemBadgeCode(rhId, user.userId, sending)) {
         is BadgeRedeemResult.Redeemed -> {
@@ -101,7 +98,10 @@ fun BadgesRedeemCodeView() {
             chatModel.updateUser(result.user)
             if (badgeState != null && !badgeState.shown) {
               // a replay adds no purchase; a fresh code's badge can be retired on arrival
-              failure.value = if (result.newBadge) BadgeRedeemError.BadgeEnded else BadgeRedeemError.CodeUsed
+              AlertManager.shared.showAlertMsg(
+                title = generalGetString(MR.strings.badges_error_title),
+                text = generalGetString(failureMessage(if (result.newBadge) BadgeRedeemError.BadgeEnded else BadgeRedeemError.CodeUsed))
+              )
             } else {
               supporterBannerShown.set(true)
               ModalManager.start.closeModal()
@@ -113,7 +113,10 @@ fun BadgesRedeemCodeView() {
           Log.e(TAG, "apiRedeemBadgeCode: ${result.error}")
           withContext(Dispatchers.Main) {
             submitting.value = false
-            failure.value = result.error
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.badges_error_title),
+              text = generalGetString(failureMessage(result.error))
+            )
           }
         }
       }
@@ -145,17 +148,6 @@ fun BadgesRedeemCodeView() {
     CodeField(code, submitting.value, ::applyCodeInput)
 
     PasteButton(submitting.value, ::applyCodeInput)
-
-    val f = failure.value
-    if (f != null) {
-      Text(
-        stringResource(failureMessage(f)),
-        style = MaterialTheme.typography.body2,
-        color = Color.Red,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth()
-      )
-    }
 
     Spacer(Modifier.weight(1f))
 

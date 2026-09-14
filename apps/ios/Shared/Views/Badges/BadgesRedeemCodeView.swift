@@ -40,7 +40,6 @@ struct BadgesRedeemCodeView: View {
     @State private var code = ""
     @State private var canonicalCode: String? = nil
     @State private var submitting = false
-    @State private var failure: BadgeRedeemError? = nil
 
     var body: some View {
         GeometryReader { g in
@@ -75,14 +74,6 @@ struct BadgesRedeemCodeView: View {
         codeField()
 
         pasteButton()
-
-        if let failure {
-            Text(failureMessage(failure))
-                .font(.callout)
-                .foregroundColor(.red)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-        }
 
         Spacer(minLength: 0)
 
@@ -124,7 +115,6 @@ struct BadgesRedeemCodeView: View {
         let formatted = formatBadgeCodeInput(s)
         if formatted != code { code = formatted }
         canonicalCode = parseBadgeCode(formatted)
-        failure = nil
     }
 
     private func submitButton() -> some View {
@@ -141,7 +131,6 @@ struct BadgesRedeemCodeView: View {
     private func redeem() {
         guard let sending = canonicalCode, let user = chatModel.currentUser else { return }
         submitting = true
-        failure = nil
         Task {
             do {
                 let (redeemedUser, newBadge) = try await apiRedeemBadgeCode(user.userId, sending)
@@ -158,7 +147,7 @@ struct BadgesRedeemCodeView: View {
                     chatModel.updateUser(redeemedUser)
                     if let badgeState, !badgeState.shown {
                         // a replay adds no purchase; a fresh code's badge can be retired on arrival
-                        failure = newBadge ? .badgeEnded : .codeUsed
+                        showAlert(NSLocalizedString("Cannot redeem code", comment: "alert title"), message: failureMessage(newBadge ? .badgeEnded : .codeUsed))
                     } else {
                         supporterBannerShown = true
                         dismiss()
@@ -170,28 +159,28 @@ struct BadgesRedeemCodeView: View {
                 logger.error("apiRedeemBadgeCode: \(String(describing: redeemError))")
                 await MainActor.run {
                     submitting = false
-                    failure = redeemError
+                    showAlert(NSLocalizedString("Cannot redeem code", comment: "alert title"), message: failureMessage(redeemError))
                 }
             }
         }
     }
 
-    private func failureMessage(_ failure: BadgeRedeemError) -> LocalizedStringKey {
+    private func failureMessage(_ failure: BadgeRedeemError) -> String {
         switch failure {
-        case .invalidCode: "This code is not valid."
-        case .serviceNotConfigured: "This app version cannot redeem badge codes."
-        case .alreadyActive: "This profile already has a badge. Redeem the code on another profile, or once this badge ends."
-        case .codeInvalid: "This code was not recognised."
-        case .codeUsed: "This code has already been used."
-        case .codeExpired: "This code has expired."
-        case .rateLimited: "Too many attempts. Please try again later."
-        case .serviceFailed: "The badge service is unavailable. Please try again later."
-        case .badServiceResponse: "The badge service sent an unexpected response."
-        case .credentialNotVerified: "This app version cannot verify this badge. Please update the app."
-        case .unsupportedVersion: "This app version is too old for the badge service. Please update the app."
-        case .networkError: "Connection error. Please check your network connection."
-        case .badgeEnded: "The code was accepted, but the badge it grants has already ended."
-        case .unknown: "The code could not be redeemed."
+        case .invalidCode: NSLocalizedString("This code is not valid.", comment: "alert message")
+        case .serviceNotConfigured: NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
+        case .alreadyActive: NSLocalizedString("This profile already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "alert message")
+        case .codeInvalid: NSLocalizedString("This code was not recognised.", comment: "alert message")
+        case .codeUsed: NSLocalizedString("This code has already been used.", comment: "alert message")
+        case .codeExpired: NSLocalizedString("This code has expired.", comment: "alert message")
+        case .rateLimited: NSLocalizedString("Too many attempts. Please try again later.", comment: "alert message")
+        case .serviceFailed: NSLocalizedString("The badge service is unavailable. Please try again later.", comment: "alert message")
+        case .badServiceResponse: NSLocalizedString("The badge service sent an unexpected response.", comment: "alert message")
+        case .credentialNotVerified: NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")
+        case .unsupportedVersion: NSLocalizedString("This app version is too old for the badge service. Please update the app.", comment: "alert message")
+        case .networkError: NSLocalizedString("Connection error. Please check your network connection.", comment: "alert message")
+        case .badgeEnded: NSLocalizedString("The code was accepted, but the badge it grants has already ended.", comment: "alert message")
+        case .unknown: NSLocalizedString("The code could not be redeemed.", comment: "alert message")
         }
     }
 }
