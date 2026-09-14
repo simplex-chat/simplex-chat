@@ -58,8 +58,22 @@ badgeTests = do
     it "credits an exhausted balance from the grant, not from the date it ran out" testGrantAfterExhausted
     it "does not issue months topped up inside an issued period" testGrantInsideIssuedPeriod
     it "clips month ends without losing the issued period start" testMonthEndClipping
+    it "counts the elapsed months of an absurd run in one step" testElapsedFarAnchor
     it "expires at the end of the Monday after the period" testMondayExpiry
     it "stores the wire tag of every entry type, and rebuilds each from its stored JSON" testEntryTypeColumns
+  describe "checking a statement" $ do
+    it "accepts a chain of entries, each against the one before it" testChecksChain
+    it "checks the second entry against the first, not against the tip" testChecksAgainstStatement
+    it "accepts an opening credit with no predecessor, and rejects anything else" testChecksOpening
+    it "rejects an opening credit naming a badge type the purchase is not for" testChecksOpeningBadgeType
+    it "accepts an opening credit restating the balance over a tip it does not follow" testChecksOpeningRestatement
+    it "rejects a lapse writing off months that had not elapsed" testChecksOverLapse
+    it "rejects a debit whose start or anchor moved" testChecksMovedStart
+    it "rejects a grant restarting a run the predecessor still funds" testChecksGrantRestart
+    it "rejects a credit of negative months" testChecksNegativeCredit
+    it "leaves an entry ahead of the clock unjudged, and rejects one behind the entry it follows" testChecksTimestamps
+    it "leaves an entry type it cannot derive unchecked, its months still checked" testChecksUnknownType
+    it "rejects an entry it cannot rebuild whose coverage or months contradict the ledger" testChecksUncheckedInvariants
   describe "worker retry" $ do
     it "repeats a failure that can clear on its own, and no other" testRetryClassification
     it "backs off to the cap" testRetryBackoff
@@ -258,6 +272,10 @@ bMonths StatementEntry {balanceMonths} = balanceMonths
 bStart :: StatementEntry -> UTCTime
 bStart StatementEntry {balanceStartTs} = balanceStartTs
 
+-- the moment the service claims it wrote the row, which is what the check reads it against
+stampedAt :: UTCTime -> StatementEntry -> StatementEntry
+stampedAt t e = e {createdAt = t}
+
 -- one service pass: lapse what elapsed, then issue if a month is due, as the service chains them.
 -- The period an issue covers is the previous entry's balance start to its own, so a run of starts
 -- is what the period assertions read.
@@ -387,6 +405,21 @@ testMonthEndClipping = do
       fmap bStart (issue (at 2027 2 28) feb) `shouldBe` Just (at 2027 3 31)
     Nothing -> expectationFailure "January was not issued"
 
+-- The anchor and the month count are the service's, and a run claiming to have started a thousand
+-- years ago with maxBound months is answered the same way as any other.
+testElapsedFarAnchor :: IO ()
+testElapsedFarAnchor = do
+  let far = at 1000 1 10
+      now = at 2026 1 10
+      elapsed = (2026 - 1000) * 12
+      huge = (newBalance far) {balanceMonths = maxBound}
+      three = (newBalance far) {balanceMonths = 3}
+  fmap bMonths (lapse now huge) `shouldBe` Just (maxBound - elapsed)
+  fmap bStart (lapse now huge) `shouldBe` Just now
+  -- and never writes off more months than the balance holds, however long ago it started
+  fmap bMonths (lapse now three) `shouldBe` Just 0
+  fmap bStart (lapse now three) `shouldBe` Just (at 1000 4 10)
+
 testMondayExpiry :: IO ()
 testMondayExpiry = do
   -- the end of Monday 13 Apr is Tuesday 14 Apr 00:00
@@ -399,6 +432,156 @@ testMondayExpiry = do
   -- every expiry is a Tuesday midnight more than a day after its period, and at most eight
   expiries `shouldSatisfy` all (\(UTCTime d t) -> t == 0 && (\(_, _, wd) -> wd == 2) (toWeekDate d))
   zipWith diffUTCTime expiries periodEnds `shouldSatisfy` all (\d -> d > nominalDay && d <= 8 * nominalDay)
+
+verdicts :: UTCTime -> Maybe StatementEntry -> [StatementEntry] -> [Maybe Bool]
+verdicts now tip = map snd . balanceChecked now BTSupporter tip
+
+testChecksChain :: IO ()
+testChecksChain = do
+  let opened = newBalance (at 2026 1 10)
+      oneMonth = grant (at 2026 1 10) 1 opened
+  Just spent <- pure $ issue (at 2026 1 10) oneMonth
+  let granted = grant (at 2026 3 10) 3 spent
+      rows1 = pass (at 2026 3 10) granted
+      afterFirst = finalBalance granted rows1
+      rows2 = pass (at 2026 5 20) afterFirst
+      statement = granted : rows1 <> rows2
+  -- grant, issue, lapse, issue - the first checked against the stored tip
+  verdicts (at 2026 5 20) (Just spent) statement `shouldBe` replicate 4 (Just True)
+
+-- The client stores what it received, and the next row is what the service computed from the row it
+-- sent - never from the tip, which that row has already superseded.
+testChecksAgainstStatement :: IO ()
+testChecksAgainstStatement = do
+  let start = at 2026 3 10
+      granted = grant start 3 (newBalance start)
+  Just firstRow <- pure $ issue start granted
+  Just secondRow <- pure $ issue (at 2026 4 10) firstRow
+  verdicts (at 2026 4 10) (Just granted) [firstRow, secondRow] `shouldBe` [Just True, Just True]
+  -- against the tip it followed, the second entry does not add up
+  verdicts (at 2026 4 10) (Just granted) [secondRow] `shouldBe` [Just False]
+
+-- The seed is what redeemCode grants onto, so the row it authors is the one that verifies here.
+testChecksOpening :: IO ()
+testChecksOpening = do
+  let t = at 2026 3 10
+      opening = grant t 12 (newBalance t)
+  verdicts t Nothing [opening] `shouldBe` [Just True]
+  Just issued <- pure $ issue t opening
+  verdicts t Nothing [issued] `shouldBe` [Just False]
+
+-- The seed takes the purchase's badge type, not the statement's, so an opening row cannot assert a
+-- badge the purchase was never for - the one field on that path with something to check it against.
+testChecksOpeningBadgeType :: IO ()
+testChecksOpeningBadgeType = do
+  let t = at 2026 3 10
+      opening = grant t 12 (newBalance t)
+  verdicts t Nothing [opening] `shouldBe` [Just True]
+  verdicts t Nothing [opening {balanceBadgeType = BTLegend}] `shouldBe` [Just False]
+
+-- An opening credit resets the ledger to the amount it states, so it is the one entry whose
+-- balance owes nothing to the row before it - a new device, or history discarded into a balance
+-- brought forward. It still cannot state a balance other than the months it credits.
+testChecksOpeningRestatement :: IO ()
+testChecksOpeningRestatement = do
+  let start = at 2026 3 10
+      granted = grant start 3 (newBalance start)
+      restated = granted {entryType = SECredit SCOpening, changeMonths = 3, balanceMonths = 3}
+  -- the tip funds two months from April; the opening restates three from March and still holds
+  Just spent <- pure $ issue start granted
+  verdicts start (Just spent) [restated] `shouldBe` [Just True]
+  verdicts start (Just spent) [restated {balanceMonths = 9}] `shouldBe` [Just False]
+  verdicts start (Just spent) [restated {balanceBadgeType = BTLegend}] `shouldBe` [Just False]
+
+-- Over-lapsing empties the balance while paidThrough stays where it was: the badge stops renewing
+-- and the ledger still reads as paid up. The row is self-consistent with the one before it, so only
+-- re-running the lapse against its own timestamp catches it.
+testChecksOverLapse :: IO ()
+testChecksOverLapse = do
+  let start = at 2026 3 10
+      granted = grant start 3 (newBalance start)
+  Just issued <- pure $ issue start granted
+  Just lapsed <- pure $ lapse (at 2026 5 20) issued
+  Just overLapsed <- pure $ lapse (at 2026 8 20) issued
+  verdicts (at 2026 5 20) (Just issued) [lapsed] `shouldBe` [Just True]
+  verdicts (at 2026 5 20) (Just issued) [stampedAt (at 2026 5 20) overLapsed] `shouldBe` [Just False]
+  bMonths overLapsed `shouldBe` bMonths lapsed - 1
+  paidThrough overLapsed `shouldBe` paidThrough lapsed
+  -- and a lapse claiming a month before any had elapsed: lapseEntry declines it altogether
+  verdicts start (Just issued) [stampedAt start lapsed] `shouldBe` [Just False]
+
+testChecksMovedStart :: IO ()
+testChecksMovedStart = do
+  let start = at 2026 3 10
+      granted = grant start 3 (newBalance start)
+  Just issued <- pure $ issue start granted
+  verdicts start (Just granted) [issued] `shouldBe` [Just True]
+  verdicts start (Just granted) [issued {balanceStartTs = addMonths 1 (bStart issued)}] `shouldBe` [Just False]
+  verdicts start (Just granted) [issued {balanceAnchorTs = addMonths 1 start}] `shouldBe` [Just False]
+
+testChecksGrantRestart :: IO ()
+testChecksGrantRestart = do
+  let t = at 2026 2 10
+      opened = newBalance t
+      oneMonth = grant t 1 opened
+      funded = grant t 2 opened
+  Just spent <- pure $ issue t oneMonth
+  let restarted = grant (at 2026 6 1) 2 spent
+  verdicts (at 2026 6 1) (Just spent) [restarted] `shouldBe` [Just True]
+  -- the same entry after a predecessor with months left is a run moved to a later start
+  verdicts (at 2026 6 1) (Just funded) [restarted] `shouldBe` [Just False]
+
+testChecksNegativeCredit :: IO ()
+testChecksNegativeCredit = do
+  let t = at 2026 2 10
+      funded = grant t 2 (newBalance t)
+      negativeCredit = grant (at 2026 6 1) (-2) funded
+  verdicts (at 2026 6 1) (Just funded) [negativeCredit] `shouldBe` [Just False]
+  -- the sign is what rejects it: the row itself adds up, and the recompute would confirm it
+  bMonths negativeCredit `shouldBe` bMonths funded - 2
+
+testChecksTimestamps :: IO ()
+testChecksTimestamps = do
+  let start = at 2026 3 10
+      granted = grant start 3 (newBalance start)
+  Just issued <- pure $ issue start granted
+  -- the two clocks are not the same clock, so a row from just ahead of this one is not evidence
+  verdicts start (Just granted) [stampedAt (addUTCTime (30 * 60) start) issued] `shouldBe` [Just True]
+  -- further ahead than that, we cannot tell their clock from ours, so the row is left unjudged
+  verdicts start (Just granted) [stampedAt (addUTCTime (2 * 3600) start) issued] `shouldBe` [Nothing]
+  -- behind the row it follows is the service against itself, with no clock of ours in it
+  verdicts start (Just granted) [stampedAt (at 2026 3 1) issued] `shouldBe` [Just False]
+
+-- Marking a row this version has no operation for as broken would report a newer service as
+-- tampering, which is the opposite of the forward compatibility the rest of this code keeps.
+testChecksUnknownType :: IO ()
+testChecksUnknownType = do
+  let start = at 2026 3 10
+      granted = grant start 3 (newBalance start)
+  Just issued <- pure $ issue start granted
+  let unknown = issued {entryType = SEDebit SDUnknown {tag = "future", json = KM.empty}}
+  verdicts start (Just granted) [unknown] `shouldBe` [Nothing]
+  verdicts start (Just granted) [issued {entryType = SEDebit SDRefund}] `shouldBe` [Nothing]
+  verdicts start (Just granted) [unknown {balanceMonths = 5}] `shouldBe` [Just False]
+  verdicts start (Just granted) [stampedAt (at 2026 3 1) unknown] `shouldBe` [Just False]
+  -- an unknown credit takes the same path: fall through to grantEntry and its negative count,
+  -- which issued carries, would be rejected instead
+  let unknownCredit = issued {entryType = SECredit SCUnknown {tag = "future", json = KM.empty}}
+  verdicts start (Just granted) [unknownCredit] `shouldBe` [Nothing]
+
+-- A tag with no operation behind it escapes the recompute, leaving only the months identity - which
+-- holds while coverage moves back, or while the balance goes into debt.
+testChecksUncheckedInvariants :: IO ()
+testChecksUncheckedInvariants = do
+  let start = at 2026 3 10
+      granted = grant start 3 (newBalance start)
+  Just issued <- pure $ issue start granted
+  let shortened = issued {entryType = SEDebit SDRefund, changeMonths = 0, balanceStartTs = addMonths (-1) (bStart issued)}
+      owing = issued {entryType = SEDebit SDRefund, changeMonths = -3, balanceMonths = -1}
+  verdicts start (Just issued) [shortened] `shouldBe` [Just False]
+  paidThrough shortened `shouldBe` addMonths (-1) (paidThrough issued)
+  verdicts start (Just issued) [owing] `shouldBe` [Just False]
+  bMonths owing `shouldBe` bMonths issued - 3
 
 -- A failed renewal is otherwise left until the next chat start or activate, which on a desktop
 -- left running can be days - long enough for a funded badge to lapse.

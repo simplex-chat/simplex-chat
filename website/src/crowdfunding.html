@@ -1,0 +1,1323 @@
+---
+title: "Invest in SimpleX Chat"
+description: "Get a stake in SimpleX Chat - the first and only messaging network without any user identifiers. Equity crowdfunding on Wefunder."
+permalink: "/crowdfunding/index.html"
+templateEngineOverride: njk
+---
+
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{{ title }}</title>
+    <meta name="description" content="{{ description }}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{{ title }}" />
+    <meta property="og:description" content="{{ description }}" />
+    <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.jpg" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+    <meta name="theme-color" content="#050920">
+
+    <link rel="preload" href="/img/design_3/cover.webp" as="image" type="image/webp">
+    <link rel="preload" href="/img/new/logo-dark.png" as="image">
+    <link rel="preload" href="/fonts/GT-Walsheim/GT-Walsheim-LC-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/GT-Walsheim/GT-Walsheim-LC-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/Manrope/Manrope-Light.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/fonts/Manrope/Manrope-Medium.ttf" as="font" type="font/ttf" crossorigin>
+
+    <link rel="stylesheet" href="/css/design3.css">
+    <link rel="stylesheet" href="/css/design3-nav.css">
+    <script>
+        (function detectMobileBrowser() {
+            const ua = navigator.userAgent;
+            if (/CriOS/.test(ua)) {
+                document.documentElement.classList.add('chrome-ios');
+            } else if (/Safari/.test(ua) && /iPhone|iPad|iPod/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua)) {
+                document.documentElement.classList.add('safari-ios');
+            } else if (/Chrome/.test(ua) && /Android/.test(ua)) {
+                document.documentElement.classList.add('chrome-android');
+            }
+        })();
+    </script>
+    <script>{% include "utm.js" %}</script>
+
+    <style>
+        /* ============================================================
+           Crowdfunding landing page
+           Fixed, art-directed (no light/dark toggle).
+           Reuses design3.css (sections, --sec-vwu scaling, fonts) and
+           design3-nav.css (logo + button size / position / chip).
+           ============================================================ */
+
+        .cf-nw { white-space: nowrap; }
+
+        :root {
+            --cf-grad-light: linear-gradient(10deg, #e8f3ff 0%, #c0e2ff 40%, #e9ffff 80%, #ffefd6 90%);
+            --cf-grad-dark: linear-gradient(9.2deg, #000000 0%, #131d49 52%, #3f5598 65%, #c3faff 85%, #fff6e0 90%);
+            --cf-ink: #023789;
+            /* .area is sized from vh, the section from svh: this is how far the
+               area's top sits above the section's visible top, negative below.
+               Anything anchored to the viewport inside .area subtracts it. */
+            --cf-area-off: calc((var(--sec-h) - 100svh) / 2);
+        }
+
+        @media screen and (max-width: 959px) {
+            :root {
+                --cf-grad-light: linear-gradient(30deg, #e8f3ff 0%, #c0e2ff 40%, #e9ffff 80%, #ffefd6 90%);
+                --cf-grad-dark: linear-gradient(30deg, #000000 0%, #131d49 52%, #3f5598 65%, #c3faff 85%, #fff6e0 90%);
+            }
+        }
+
+        body {
+            background: #02071D;
+            font-family: "GT-Walsheim", Gilroy, Helvetica, sans-serif;
+        }
+
+        /* ---- per-section background: transparent illustration over gradient ---- */
+        section.page.cf {
+            --cf-band: 64px;
+            /* backgrounds positioned by a length from the box top must add the
+               band back, or the extension drags them up with the box */
+            --cf-band-shift: 0px;
+            background-position: center, center;
+            background-repeat: no-repeat, no-repeat;
+            background-size: var(--cover-bg-w) var(--cover-bg-h), 102% 102%;
+        }
+
+        /* only the section in view is extended, and only upward, so nothing
+           protrudes at the bottom of the one above. The negative margin cancels
+           the padding, so the flow is unchanged and nothing moves as the class
+           travels; scroll-margin-top keeps the snap on the content. */
+        html.safari-ios section.page.cf.cf-current,
+        html.chrome-ios section.page.cf.cf-current {
+            --cf-band-shift: var(--cf-band);
+            margin-top: calc(-1 * var(--cf-band));
+            padding-top: var(--cf-band);
+            scroll-margin-top: calc(-1 * var(--cf-band));
+        }
+
+        /* the footer stays fit-content: it must not fill the screen */
+        html.safari-ios section.page.cf.cf-current:not(.cf-footer),
+        html.chrome-ios section.page.cf.cf-current:not(.cf-footer) {
+            height: calc(110lvh + var(--cf-band));
+            min-height: calc(110lvh + var(--cf-band));
+        }
+
+        /* the band fills the top safe area, so a screen without one must not
+           grow its sections. Every iPhone with a safe area is at least 812pt
+           tall; the tallest without one is 736pt. */
+        @media screen and (max-height: 750px) {
+            section.page.cf { --cf-band: 0px; }
+        }
+
+        section.page.cf.cf-light { background-image: var(--cf-art), var(--cf-grad-light); }
+        section.page.cf.cf-dark  { background-image: var(--cf-art), var(--cf-grad-dark); }
+
+        /* the two sections whose art is a full-bleed background (desktop only:
+           on mobile both draw the gradient and place the art as an <img>) */
+        .cf-network { --cf-art: url("/img/design_3/section-3-desktop-light.webp"); }
+        .cf-revenue { --cf-art: url("/img/design_3/section-4-desktop-light.webp"); }
+
+        /* hero + close: full-bleed globe (home page hero cover) */
+        section.page.cf.cf-hero,
+        section.page.cf.cf-close {
+            background-color: #02071D;
+            background-image: url("/img/design_3/cover.webp");
+            background-size: var(--cover-bg-w) var(--cover-bg-h);
+            background-position: calc(50% + var(--sec-vwu) * 40.3) calc(50% + var(--sec-vhu) * 2.2);
+        }
+
+        /* problem + growth: standalone graphics sit inside the fixed 16:9 box
+           (.area), the same coordinate system as the text, so both margins are
+           7.5vwu from the box edge and the text-to-art gap scales with the box */
+        section.page.cf.cf-problem { background-image: var(--cf-grad-dark); background-size: 102% 102%; background-position: center; }
+        section.page.cf.cf-growth  { background-image: var(--cf-grad-light); background-size: 102% 102%; background-position: center; }
+        section.page.cf.cf-moat    { background-image: var(--cf-grad-light); background-size: 102% 102%; background-position: center; }
+        section.page.cf.cf-build   { background-image: var(--cf-grad-light); background-size: 102% 102%; background-position: center; }
+        .cf-build .area {
+            background: url("/img/crowdfunding/github-stars.png") no-repeat right calc(var(--sec-vwu) * 7.5) center;
+            background-size: calc(var(--sec-vwu) * 42) auto;
+        }
+        .cf-moat .area {
+            background: url("/img/crowdfunding/comparison.png") no-repeat right calc(var(--sec-vwu) * 7.5) center;
+            background-size: calc(var(--sec-vwu) * 46) auto;
+        }
+        .cf-problem .area {
+            background: url("/img/crowdfunding/problem.png") no-repeat left calc(var(--sec-vwu) * 7.5) center;
+            background-size: calc(var(--sec-vwu) * 40) auto;
+        }
+        .cf-growth .area {
+            background: url("/img/crowdfunding/simplex-growth-2.png") no-repeat right calc(var(--sec-vwu) * 7.5) center;
+            background-size: calc(var(--sec-vwu) * 44) auto;
+        }
+
+        /* ---- text colours per theme (design3.css defaults are the light theme) ---- */
+        .cf-dark .text-container h2,
+        .cf-dark .text-container p { color: #ffffff; }
+        .cf-light .text-container h2 { color: var(--cf-ink); }
+        .cf-light .text-container p { color: #06214a; }
+
+        /* text placement: alternate side by side with the art */
+        .cf-right .text-container { margin-left: auto; }
+        .cf-left  .text-container { margin-right: auto; }
+
+        /* ---- hero: text left, phone right, bleeding off the bottom ---- */
+        section.page.cf.cf-hero { overflow: hidden; }
+        .cf-hero .area { position: relative; display: flex; align-items: center; }
+
+        .cf-hero-text {
+            margin-left: calc(var(--sec-vwu) * 7.5);
+            width: calc(var(--sec-vwu) * 45);
+            position: relative;
+            z-index: 4;
+        }
+
+        .cf-hero h1 {
+            font-family: "GT-Walsheim", sans-serif;
+            font-weight: 400;
+            font-size: calc(var(--sec-vwu) * 4.94);
+            line-height: 1.05;
+            letter-spacing: -0.025em;
+            color: #ffffff;
+        }
+
+        .cf-hero .lead {
+            font-family: "Manrope", sans-serif;
+            font-weight: 300;
+            font-size: calc(var(--sec-vwu) * 1.55);
+            line-height: 1.55;
+            color: #dfeaff;
+            margin-top: calc(var(--sec-vhu) * 3);
+            max-width: calc(var(--sec-vwu) * 40);
+        }
+
+        .cf-stats {
+            display: flex;
+            gap: calc(var(--sec-vwu) * 5);
+            margin-top: calc(var(--sec-vhu) * 6);
+            position: relative;
+            top: calc(var(--sec-vhu) * 2);
+        }
+        .cf-stat { display: flex; align-items: center; gap: calc(var(--sec-vwu) * 1.1); }
+        .cf-stat img { width: calc(var(--sec-vwu) * 4); height: auto; display: block; }
+        .cf-stat b {
+            display: block;
+            font-family: "Manrope", sans-serif;
+            font-weight: 700;
+            font-size: calc(var(--sec-vwu) * 3);
+            line-height: 1.1;
+            color: #ffffff;
+        }
+        .cf-stat span {
+            font-family: "Manrope", sans-serif;
+            font-weight: 400;
+            font-size: calc(var(--sec-vwu) * 1.6);
+            color: #dfeaff;
+        }
+
+        .cf-hero .cf-live-link { display: inline-block; margin-top: calc(var(--sec-vhu) * 5); font-size: calc(var(--sec-vwu) * 2.2); position: relative; top: calc(var(--sec-vhu) * 1.5); }
+
+        /* ---- close: same left-aligned layout as the hero ---- */
+        .cf-close .area { position: relative; display: flex; align-items: flex-end; padding: 0 calc(var(--sec-vwu) * 7.5) calc(var(--sec-vhu) * 22) 0; }
+        .cf-close .cf-hero-text { width: calc(var(--sec-vwu) * 51); flex: none; position: relative; top: 0; }
+        .cf-close .cf-close-call { white-space: nowrap; }
+
+        .cf-close-offer {
+            width: calc(var(--sec-vwu) * 30);
+            flex: none;
+            margin-left: auto;
+            padding: calc(var(--sec-vhu) * 4.5) calc(var(--sec-vwu) * 2.6);
+            border: 1px solid rgba(255, 255, 255, .22);
+            border-radius: calc(var(--sec-vwu) * 1.2);
+            background: rgba(255, 255, 255, .05);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+        .cf-close-offer p {
+            font-family: "Manrope", sans-serif;
+            font-weight: 300;
+            font-size: calc(var(--sec-vwu) * 1.55);
+            line-height: 1.6;
+            color: #ffffff;
+        }
+        .cf-close h1 {
+            font-family: "GT-Walsheim", sans-serif;
+            font-weight: 400;
+            font-size: calc(var(--sec-vwu) * 4.94);
+            line-height: 1.05;
+            letter-spacing: -0.025em;
+            color: #ffffff;
+        }
+        .cf-close .cf-close-call {
+            font-family: "Manrope", sans-serif;
+            font-weight: 500;
+            font-size: calc(var(--sec-vwu) * 2.4);
+            line-height: 1.6;
+            margin-top: calc(var(--sec-vhu) * 4.5);
+            color: #ffffff;
+            width: fit-content;
+        }
+        .cf-close .cf-hero-cta { margin-top: calc(var(--sec-vhu) * 7); }
+        .cf-close .cf-live-link { display: inline-block; margin-top: calc(var(--sec-vhu) * 4.5); font-size: calc(var(--sec-vwu) * 2.2); position: relative; top: 0; }
+
+        .cf-phone {
+            position: absolute;
+            right: calc(var(--sec-vwu) * -4.6);
+            bottom: calc(var(--sec-vhu) * -71.5);
+            height: calc(var(--sec-vhu) * 144.4);
+            width: auto;
+            z-index: 1;
+        }
+
+        .cf-mask {
+            position: absolute;
+            left: calc(var(--sec-vwu) * 61.2);
+            top: calc(var(--sec-vhu) * 27.3);
+            height: calc(var(--sec-vhu) * 41.4);
+            width: auto;
+            opacity: .38;
+            z-index: 2;
+        }
+
+        .cf-hero-fade {
+            position: absolute;
+            right: calc(var(--sec-vwu) * -4.6);
+            width: calc(var(--sec-vhu) * 144.4 * 0.4914);
+            bottom: var(--cf-area-off);
+            height: calc(var(--sec-vhu) * 38);
+            background: linear-gradient(to top, #02071D 22%, rgba(2, 7, 29, .8) 52%, rgba(2, 7, 29, 0) 100%);
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .cf-ctas {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 100svh;
+            height: 100dvh;
+            z-index: 50000;
+            pointer-events: none;
+        }
+
+        /* hero: the same pills, inline and scaling with the section box */
+        .cf-hero-cta {
+            display: flex;
+            align-items: center;
+            gap: calc(var(--sec-vhu) * 4.34);
+            margin-top: calc(var(--sec-vhu) * 4.5);
+        }
+        .cf-hero-cta .cf-primary {
+            background: linear-gradient(180deg, #00F0FF 0%, #00C7FF 38%, #008FFF 100%);
+            color: #ffffff;
+        }
+        .cf-hero-invest-link {
+            display: flex;
+            align-items: center;
+            gap: calc(var(--sec-vwu) * 0.7);
+            font-family: "Manrope", sans-serif;
+            font-weight: 400;
+            font-size: calc(var(--sec-vwu) * 1.5);
+            text-decoration: none;
+            white-space: nowrap;
+            background: linear-gradient(90deg, #019bfe 0%, #64fdff 58%, #c8feff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            --wf-capital-nav-logo-fill: #64fdff;
+        }
+        .cf-hero-invest-link svg { height: calc(var(--sec-vwu) * 2.1); width: auto; display: block; transform: translateY(calc(var(--sec-vwu) * -0.25)); }
+        .cf-hero-invest-link:focus-visible { outline: 2px solid #ffffff; outline-offset: 4px; border-radius: 4px; }
+        /* the same link twice: beside the button (desktop), in the hero's top
+           right corner (mobile). Only one of the two is ever displayed. */
+        .cf-hero-corner { display: none; }
+        .cf-hero-cta .cf-pill {
+            position: relative;
+            right: auto;
+            top: auto;
+            bottom: auto;
+            width: calc(var(--sec-vwu) * 24.5);
+            height: calc(var(--sec-vhu) * 7);
+            padding: 0;
+            font-size: calc(var(--sec-vwu) * 1.5);
+            gap: calc(var(--sec-vwu) * 0.7);
+            justify-content: center;
+        }
+        .cf-hero-cta .cf-pill svg { height: calc(var(--sec-vwu) * 2.1); transform: translateY(calc(var(--sec-vwu) * -0.25)); }
+
+        .cf-pill {
+            position: absolute;
+            pointer-events: auto;
+            right: 30px;
+            height: 48px;
+            padding: 0 28px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-family: "Manrope", sans-serif;
+            font-size: 17px;
+            font-weight: 600;
+            border-radius: 999px;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .cf-pill:focus-visible { outline: 2px solid #006cd7; outline-offset: 2px; }
+        .cf-pill:active { transform: translateY(1px); }
+
+        .cf-top { top: 30px; }
+        .cf-bottom { bottom: 30px; }
+
+        .cf-primary {
+            background: linear-gradient(90deg, #019bfe 0%, #2e3fa0 100%);
+            color: #ffffff;
+            --wf-capital-nav-logo-fill: #ffffff;
+        }
+        .cf-primary:hover { filter: brightness(1.07); }
+        .cf-primary:focus-visible { outline-color: #ffffff; }
+
+        .cf-secondary {
+            background: #ffffff;
+            color: #006cd7;
+            border: 1px solid rgba(2, 55, 137, .15);
+            --wf-capital-nav-logo-fill: #006cd7;
+        }
+        .cf-secondary:hover { box-shadow: 0 0 0 1px #80b6eb; }
+
+        .cf-pill svg { height: 30px; width: auto; display: block; transform: translateY(-3.5px); }
+
+        @media screen and (min-width: 960px) {
+            .cf-pill { width: 252px; justify-content: center; }
+        }
+
+        .cf-live-link {
+            font-family: "Manrope", sans-serif;
+            font-weight: 300;
+            font-size: calc(var(--sec-vwu) * 1.9);
+            background: linear-gradient(90deg, #019bfe 0%, #64fdff 58%, #c8feff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            text-decoration: none;
+        }
+        .cf-live-link:focus-visible { outline: 2px solid #019bfe; outline-offset: 2px; }
+
+        .cf-pill,
+        .cf-live-link,
+        .cf-hero-invest-link,
+        .cf .text-container a.gradient-text { transition: none; }
+        .cf-live-link:hover,
+        .cf-hero-invest-link:hover,
+        .cf .text-container a.gradient-text:hover { filter: brightness(1.12); }
+
+        @media screen and (min-width: 960px) {
+            .cf-network .text-container h2 { max-width: calc(var(--sec-vwu) * 23.5) !important; }
+            .cf-network .text-container p { max-width: calc(var(--sec-vwu) * 31) !important; }
+            .cf-network .text-container a { max-width: calc(var(--sec-vwu) * 31) !important; }
+            section.page.cf.cf-revenue {
+                background-size: calc(var(--cover-bg-w) * 0.89) calc(var(--cover-bg-h) * 0.89), 102% 102%;
+                background-position: calc(50% - var(--sec-vwu) * 6.9) center, center;
+            }
+            .cf-revenue .text-container h2 { max-width: calc(var(--sec-vwu) * 38) !important; }
+            .cf-revenue .text-container p { max-width: calc(var(--sec-vwu) * 38) !important; }
+            .cf-problem .text-container h2 { max-width: calc(var(--sec-vwu) * 42) !important; }
+            .cf-problem .text-container p { max-width: calc(var(--sec-vwu) * 42) !important; }
+            .cf-problem .text-container a { max-width: calc(var(--sec-vwu) * 42) !important; }
+            .cf-growth .text-container h2 { max-width: calc(var(--sec-vwu) * 36) !important; }
+            .cf-growth .text-container p { max-width: calc(var(--sec-vwu) * 35) !important; }
+            .cf-moat .text-container h2 { max-width: calc(var(--sec-vwu) * 38) !important; }
+            .cf-moat .text-container p { max-width: calc(var(--sec-vwu) * 33) !important; }
+            .cf-build .text-container h2 { max-width: calc(var(--sec-vwu) * 33) !important; }
+            .cf-build .text-container p { max-width: calc(var(--sec-vwu) * 35) !important; }
+            .cf-build .text-container a { max-width: calc(var(--sec-vwu) * 35) !important; }
+        }
+
+        /* ============================================================
+           Navbar — same layout as the site (design3-nav.css), menu and
+           theme toggle omitted. Logo + button invert per section via a
+           class on #navbar (not the root .dark), so light sections keep
+           their colours. Fixed size, does not scale.
+           ============================================================ */
+
+        /* the bar spans the full width at z-index 50000, above every section:
+           only the logo itself may take a tap, or it covers what sits beside it */
+        header#navbar { pointer-events: none; }
+        header#navbar > a.logo { pointer-events: auto; }
+
+        /* logo swap by section theme */
+        #navbar.on-dark > a.logo.logo-light { display: none; }
+        #navbar.on-dark > a.logo.logo-dark { display: flex; }
+        #navbar.on-light > a.logo.logo-light { display: flex; }
+        #navbar.on-light > a.logo.logo-dark { display: none; }
+
+        @media screen and (min-width: 960px) {
+            header#navbar { height: 74px; }
+            header#navbar > a.logo {
+                top: 0;
+                padding: 18.7px 30px;
+                height: auto;
+                background: transparent;
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+            }
+            header#navbar > a.logo img { width: 174.7px; height: auto; }
+        }
+
+        /* keep the navbar visible on mobile (no slide-in menu here) */
+        @media screen and (max-width: 959px) {
+            header#navbar {
+                visibility: visible !important;
+                opacity: 1 !important;
+                transform: none !important;
+                background: transparent !important;
+                height: 54px !important;
+            }
+            header#navbar > a.logo { top: 0 !important; height: 100% !important; align-items: center; transform: translateY(var(--cf-nav-shift)); }
+            [dir="ltr"] header#navbar > a.logo { padding-left: var(--cf-text-pad); }
+            header#navbar > a.logo img { height: 31.5px; }
+        }
+
+        /* ---- mobile: portrait art on top, text at the bottom (home page system) ---- */
+        @media screen and (max-width: 959px) {
+            .cf .text-container h2 { font-size: calc(var(--sec-vwu) * 9.4); }
+            .cf .text-container {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                max-width: none !important;
+                width: auto;
+            }
+            .cf .text-container h2,
+            .cf .text-container p { max-width: none !important; }
+            /* arc placed off the phone, in the desktop ratios: 4.176 phone widths
+               wide, its top-left 1.4462 widths left and 0.4034 heights above the
+               phone's top-left corner */
+            section.page.cf.cf-hero {
+                background-size: calc(var(--cf-phone-w) * 4.176) auto;
+                background-position:
+                    calc((100vw - var(--cf-phone-w)) / 2 - var(--cf-phone-w) * 1.4462)
+                    calc(100svh - var(--cf-phone-show) - var(--cf-phone-h) * 0.4034 + var(--cf-band-shift));
+            }
+            .cf-problem .area,
+            .cf-growth .area,
+            .cf-moat .area,
+            .cf-build .area,
+            .cf-network .area,
+            .cf-revenue .area {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                gap: var(--cf-gap);
+                padding: var(--cf-top) var(--cf-gutter) var(--cf-cta);
+                background: none;
+            }
+            .cf-problem .area::before,
+            .cf-growth .area::before,
+            .cf-moat .area::before,
+            .cf-build .area::before,
+            .cf-network .area::before,
+            .cf-revenue .area::before {
+                content: "";
+                flex: 1 1 auto;
+                min-height: 0;
+                max-height: var(--cf-art-max);
+                margin: 0;
+                background-image: var(--cf-art-m);
+                background-repeat: no-repeat;
+                background-position: center;
+                background-size: contain;
+            }
+            .cf-problem .area { --cf-art-m: url("/img/crowdfunding/problem.png"); }
+            .cf-growth  .area { --cf-art-m: url("/img/crowdfunding/simplex-growth-2.png"); }
+            .cf-moat    .area { --cf-art-m: url("/img/crowdfunding/comparison.png"); }
+            .cf-build   .area { --cf-art-m: url("/img/crowdfunding/github-stars.png"); }
+            .cf-revenue .area::before { content: none; }
+            .cf-revenue .cf-art {
+                display: block;
+                position: relative;
+                flex: 1 1 auto;
+                min-height: 0;
+                max-height: var(--cf-art-max);
+                width: calc(100% + var(--cf-gutter) * 2);
+                margin: 0 calc(var(--cf-gutter) * -1);
+            }
+            .cf-revenue .cf-art img {
+                position: absolute;
+                left: 0;
+                top: -15.45vw;
+                width: 119.4vw;
+                max-width: none;
+                pointer-events: none;
+            }
+            section.page.cf.cf-revenue { overflow: hidden; }
+
+            .cf-network .area::before { content: none; }
+            .cf-network .cf-tags {
+                position: relative;
+                left: auto;
+                top: auto;
+                overflow: visible;
+                flex: 1 1 auto;
+                min-height: 0;
+                max-height: var(--cf-art-max);
+                width: auto;
+                height: auto;
+                aspect-ratio: 0.886;
+                align-self: center;
+                transform: none;
+                container-type: size;
+            }
+            .cf-tags-art {
+                display: block;
+                position: absolute;
+                width: 198%;
+                height: 246%;
+                left: -48.5%;
+                top: -40.3%;
+                max-width: none;
+            }
+            .cf-tags .cf-tag:nth-child(2) { left: 58.6% !important; top: 90.2% !important; }
+            .cf-tags .cf-tag:nth-child(3) { left: 78.6% !important; top: 44.5% !important; }
+            .cf-tags .cf-tag:nth-child(4) { left: 74.9% !important; top: 10.3% !important; }
+            .cf-tags .cf-tag:nth-child(5) { left: 22.0% !important; top: 8.1% !important; }
+            .cf-tags .cf-tag:nth-child(6) { left: -0.2% !important; top: 84.5% !important; }
+
+            section.page.cf.cf-network,
+            section.page.cf.cf-revenue { background-image: var(--cf-grad-light); background-size: 102% 102%; background-position: center; }
+
+            .cf .text-container {
+                height: auto !important;
+                flex: none;
+                padding-bottom: 0 !important;
+                padding-left: var(--cf-text-inset);
+                padding-right: var(--cf-text-inset);
+            }
+            .cf-hero h1,
+            .cf-hero .lead,
+            .cf-hero .cf-stats,
+            .cf-hero .cf-live-link,
+            .cf-close h1,
+            .cf-close .cf-close-call,
+            .cf-close .cf-live-link {
+                padding-left: var(--cf-text-inset);
+                padding-right: var(--cf-text-inset);
+            }
+
+            :root {
+                --cf-gutter: 16px;
+                --cf-text-pad: 21.6px;
+                --cf-text-inset: calc(var(--cf-text-pad) - var(--cf-gutter));
+                --cf-nav-shift: 2.5px;
+                /* the area's overhang above the section, clamped to zero: text
+                   inside it is pushed down by that much to stay on screen */
+                --cf-top-base: 66px;
+                --cf-over: max(0px, var(--cf-area-off));
+                --cf-top: calc(var(--cf-top-base) + var(--cf-over));
+                --cf-safe-b: env(safe-area-inset-bottom, 0px);
+                --cf-cta-gap: 12px;
+                --cf-cta-bottom: max(var(--cf-cta-gap), var(--cf-safe-b));
+                --cf-cta: calc(62px + var(--cf-cta-bottom) + var(--cf-over));
+                --cf-gap: 24px;
+                --cf-art-max: 54%;
+                --cf-phone-w: 82vw;
+                --cf-phone-h: calc(var(--cf-phone-w) / 0.4914);
+                --cf-phone-part: 0.55;
+                /* bottom of the hero text block, measured from the section top */
+                --cf-hero-text-b: calc(var(--cf-top-base) + max(0px, calc(-1 * var(--cf-area-off))) + 78.5vw);
+                /* the arc crest starts 0.2678 down the cover image, which is
+                   2.349 phone widths tall and sits 0.4034 phone heights above
+                   the phone top: the phone may rise no higher than this */
+                --cf-phone-ceiling: calc(var(--cf-hero-text-b) + var(--cf-phone-w) * 0.1917);
+                --cf-phone-show: max(calc(var(--cf-phone-h) * 0.15), min(calc(var(--cf-phone-h) * var(--cf-phone-part)), calc(100svh - var(--cf-phone-ceiling))));
+                --cf-phone-top: calc(100svh - var(--cf-phone-show) + var(--cf-area-off));
+                --cf-fade-ext: max(0px, calc(110lvh - 100svh));
+                /* dvh so the fade rides with the button as the chrome moves */
+                --cf-fade-dyn: max(0px, calc(110lvh - 100dvh));
+                /* opaque up to the top of the button, then lighter going up */
+                --cf-fade-base: calc(var(--cf-fade-dyn) + var(--cf-cta-bottom) + 48px);
+                /* clears above the button */
+                --cf-fade-ramp: 80px;
+            }
+
+            .cf-hero .area,
+            .cf-close .area { flex-direction: column; justify-content: flex-start; align-items: stretch; }
+            section.page.cf .area { width: 100%; }
+            .cf-hero .area { padding: var(--cf-top) var(--cf-gutter) 0; }
+            /* both blocks lay out as one column: text from the top, CTA pinned
+               to the bottom, so the h1 and the pills are direct flex items */
+            .cf-hero .cf-hero-text,
+            .cf-close .cf-hero-text { display: contents; }
+            .cf-hero h1,
+            .cf-hero .lead,
+            .cf-hero .cf-stats,
+            .cf-hero .cf-live-link { position: relative; z-index: 4; }
+            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 9.7); }
+            .cf-hero .lead { font-size: calc(var(--sec-vwu) * 3.55); max-width: none; margin-top: calc(var(--sec-vhu) * 2); }
+            .cf-close .area { padding: calc(var(--cf-top) + var(--sec-vhu) * 14) var(--cf-gutter) 0; }
+            /* crest a fixed 78px from the section top */
+            section.page.cf.cf-close {
+                background-position: 50% calc(78px - var(--cover-bg-h) * 0.2678 + var(--cf-band-shift));
+            }
+            /* centred like the home page, the two heading lines set apart */
+            .cf-close h1,
+            .cf-close .cf-close-call,
+            .cf-close .cf-live-link { text-align: center; }
+            /* the heading rides up with the arc; nothing below it moves */
+            .cf-close h1 { font-size: calc(var(--sec-vwu) * 8.7); font-weight: 700; position: relative; top: -32px; }
+            .cf-close-l1 { font-size: calc(var(--sec-vwu) * 11.745); }
+            .cf-close-l2 { font-size: calc(var(--sec-vwu) * 10.44); }
+            .cf-close .cf-close-call {
+                font-size: calc(var(--sec-vwu) * 4.095);
+                margin-top: calc(var(--sec-vhu) * 2.5);
+                white-space: normal;
+                width: auto;
+                text-shadow: 0 0 2px rgba(2, 7, 29, .95), 0 0 4px rgba(2, 7, 29, .9), 0 2px 10px rgba(2, 7, 29, .7);
+            }
+            .cf-close-offer {
+                width: auto;
+                align-self: stretch;
+                margin: calc(var(--sec-vhu) * 3) 0 0;
+                padding: calc(var(--sec-vhu) * 2.5) calc(var(--sec-vwu) * 5);
+            }
+            .cf-close-offer p { font-size: calc(var(--sec-vwu) * 3.6); }
+            .cf-close .cf-live-link { display: block; font-size: calc(var(--sec-vwu) * 5); margin-top: calc(var(--sec-vhu) * 2.5); top: 0; }
+            .cf-stats { top: 0; gap: calc(var(--sec-vwu) * 8); margin-top: calc(var(--sec-vhu) * 3); }
+            .cf-stat img { width: calc(var(--sec-vwu) * 8); }
+            .cf-stat b { font-size: calc(var(--sec-vwu) * 6.5); }
+            .cf-stat span { font-size: calc(var(--sec-vwu) * 3.4); }
+            .cf-hero .cf-live-link { margin-top: calc(var(--sec-vhu) * 2); top: 0; font-size: calc(var(--sec-vwu) * 5); }
+            /* the pill sits on the bottom edge and rides with the chrome:
+               dvh tracks the visible bottom, svh the box the area is sized from */
+            .cf-hero .cf-hero-cta,
+            .cf-close .cf-hero-cta {
+                order: 5;
+                flex-direction: column-reverse;
+                align-items: stretch;
+                gap: calc(var(--sec-vhu) * 1.6);
+                margin: auto 0 calc((var(--sec-h) + 100svh) / 2 - 100dvh + var(--cf-cta-bottom));
+            }
+            /* over the phone and the gradient covering it */
+            .cf-hero .cf-hero-cta { z-index: 5; }
+            .cf-hero-cta .cf-pill { width: 100%; height: 48px; font-size: 16px; }
+            /* one link, two placements: the top right corner of the hero, and
+               its own button-sized target above the pill on the closing section */
+            .cf-hero-invest-link {
+                height: 48px;
+                font-size: calc(var(--sec-vwu) * 4.6);
+                gap: calc(var(--sec-vwu) * 1.9);
+            }
+            .cf-hero-invest-link svg { height: calc(var(--sec-vwu) * 6.5); transform: translateY(calc(var(--sec-vwu) * -0.7)); }
+            .cf-close .cf-hero-invest-link { justify-content: center; }
+            .cf-hero .cf-hero-cta .cf-hero-invest-link { display: none; }
+            /* a child of the section, so its reference is the section's top
+               edge, which the band raises by --cf-band-shift, as with the arc.
+               z-index clears .area, which is 11 and covers this corner. */
+            .cf-hero-corner {
+                display: flex;
+                position: absolute;
+                top: calc(5px + var(--cf-nav-shift) + var(--cf-band-shift));
+                right: 16px;
+                z-index: 12;
+            }
+            .cf-phone {
+                position: absolute;
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                top: var(--cf-phone-top);
+                bottom: auto;
+                width: var(--cf-phone-w);
+                height: auto;
+            }
+            .cf-mask {
+                left: calc(50% - var(--cf-phone-w) * 0.58735);
+                top: calc(var(--cf-phone-top) + var(--cf-phone-h) * 0.00137);
+                width: calc(var(--cf-phone-h) * 0.21776);
+                height: calc(var(--cf-phone-h) * 0.28667);
+            }
+            .cf-hero-fade {
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                width: var(--cf-phone-w);
+                bottom: calc(var(--cf-area-off) - var(--cf-fade-ext));
+                height: calc(var(--cf-fade-base) + var(--cf-fade-ramp));
+                background: linear-gradient(to top,
+                    rgba(2, 7, 29, .9) var(--cf-fade-base),
+                    rgba(2, 7, 29, 0) 100%);
+            }
+
+            .cf-pill { font-size: 16px; }
+            .cf-bottom { top: calc(5px + var(--cf-nav-shift)); right: 16px; bottom: auto; padding: 0 18px; }
+            .cf-top { top: auto; left: 16px; right: 16px; bottom: var(--cf-cta-bottom); height: 48px; justify-content: center; }
+            .cf-live-link { font-size: calc(var(--sec-vwu) * 4.2); }
+            .cf .text-container a.gradient-text { font-weight: 400; }
+        }
+
+        section.page.cf.cf-network { overflow: hidden; }
+
+        .cf-tags {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: var(--cover-bg-w);
+            height: var(--cover-bg-h);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 3;
+        }
+        .cf-tag {
+            position: absolute;
+            font-family: "Manrope", sans-serif;
+            text-align: left;
+            color: #06214a;
+            text-shadow: 0 1px 8px rgba(255, 255, 255, .95), 0 0 3px rgba(255, 255, 255, .95);
+            white-space: nowrap;
+        }
+        .cf-tag .n { font-weight: 700; font-size: calc(var(--sec-vwu) * 1.5); line-height: 1.35; }
+        .cf-tag .v { font-weight: 500; font-size: calc(var(--sec-vwu) * 1.2); line-height: 1.45; }
+        .cf-tag .v b { font-weight: 700; }
+        @media screen and (min-width: 960px) {
+            .cf-tags-art,
+            .cf-art { display: none; }
+        }
+        @media screen and (max-width: 959px) {
+            .cf-tag .n { font-size: 3.54cqh; line-height: 1.3; }
+        }
+
+        /* 320pt phones: keep the headline at three lines */
+        @media screen and (max-width: 330px) {
+            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 9.3); }
+        }
+
+        /* narrow phones: keep the corner link and the pill clear of the logo */
+        @media screen and (max-width: 389px) {
+            header#navbar > a.logo img { height: 24px; }
+            .cf-bottom { font-size: 12px; padding: 0 12px; height: 40px; }
+            .cf-bottom svg { height: 22px; transform: translateY(-2.5px); }
+            .cf-hero-corner { height: 40px; }
+            .cf-tag .v { font-size: 2.96cqh; line-height: 1.4; }
+        }
+
+        /* ---- footer: small print ---- */
+        section.page.cf.cf-footer {
+            height: fit-content;
+            min-height: fit-content;
+            background: #02071D;
+            display: block;
+        }
+        .cf-footer-inner {
+            width: var(--sec-w);
+            margin: 0 auto;
+            padding: calc(var(--sec-vhu) * 9) calc(var(--sec-vwu) * 7.5) calc(var(--sec-vhu) * 7);
+        }
+        .cf-fine {
+            max-width: calc(var(--sec-vwu) * 72);
+            font-family: "Manrope", sans-serif;
+            font-weight: 300;
+            font-size: calc(var(--sec-vwu) * 1.05);
+            line-height: 1.7;
+            color: #7f8ba8;
+        }
+        .cf-fine-links { margin-top: calc(var(--sec-vhu) * 3); display: flex; gap: calc(var(--sec-vwu) * 3); }
+        .cf-fine-links a { color: #9fb2d8; text-decoration: none; }
+        .cf-fine-links a:hover { color: #ffffff; }
+
+        @media screen and (max-width: 959px) {
+            /* padding-bottom comes from .safari-ios section.page, which a
+               fit-content footer does not need */
+            section.page.cf.cf-footer { height: fit-content; min-height: fit-content; padding-bottom: 0; }
+            .cf-footer-inner { padding: calc(var(--sec-vhu) * 2) var(--cf-text-pad) calc(var(--sec-vhu) * 5); }
+            .cf-fine { font-size: calc(var(--sec-vwu) * 3); max-width: none; }
+            .cf-fine-links { gap: calc(var(--sec-vwu) * 6); }
+        }
+
+        /* CSS-only :target popups (as on simplex.domains) */
+        .cf-dark .text-container a.gradient-text {
+            background: linear-gradient(90deg, #019bfe 0%, #64fdff 58%, #c8feff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+        }
+        .cf .text-container a.gradient-text { font-weight: 300; }
+
+        .cf-modal { position: fixed; inset: 0; z-index: 60000; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; visibility: hidden; transition: opacity .18s ease, visibility .18s; }
+        .cf-modal:target { opacity: 1; visibility: visible; }
+        .cf-modal-backdrop { position: absolute; inset: 0; background: rgba(3, 12, 40, .6); }
+        .cf-modal-panel { position: relative; z-index: 1; display: flex; align-items: center; gap: clamp(24px, 3vw, 44px); width: clamp(min(680px, 100%), 80vw, 980px); max-height: calc(100dvh - 48px); overflow: auto; background: linear-gradient(160deg, #050920 0%, #0b1440 46%, #16255f 78%, #22346f 100%); color: #dfeaff; border-radius: 24px; box-shadow: 0 30px 80px rgba(4, 9, 24, .5); padding: clamp(28px, 4vw, 52px); font-family: "Manrope", sans-serif; }
+        .cf-modal-text { flex: 1; min-width: 0; }
+        .cf-modal-img { flex: none; width: clamp(240px, 44%, 460px); height: auto; border-radius: 12px; }
+        .cf-modal-close { position: absolute; top: 22px; right: 22px; width: 20px; height: 20px; color: #9fb2d8; z-index: 2; }
+        .cf-modal-close svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+        .cf-modal-close:hover { color: #ffffff; }
+
+        .cf-modal-text-only .cf-modal-panel { width: min(640px, 100%); }
+        @media screen and (min-width: 760px) {
+            #request .cf-modal-panel h2 { white-space: nowrap; }
+        }
+
+        .cf-form { display: flex; flex-direction: column; gap: 14px; margin-top: 26px; }
+        .cf-form input[type="text"],
+        .cf-form input[type="email"] {
+            height: 52px;
+            padding: 0 22px;
+            border: 1px solid #00C7FF;
+            border-radius: 9999px;
+            background: transparent;
+            font-family: "Manrope", sans-serif;
+            font-size: 16px;
+            color: #ffffff;
+        }
+        .cf-form input::placeholder { color: #9fb2d8; }
+        .cf-form input:focus { outline: none; border-color: #64FDFF; }
+        .cf-bot-field { position: absolute; left: -5000px; }
+        .cf-form-submit {
+            align-self: center;
+            height: 52px;
+            margin-top: 10px;
+            padding: 0 30px;
+            border: none;
+            border-radius: 9999px;
+            background: linear-gradient(180deg, #00F0FF 0%, #00C7FF 38%, #008FFF 100%);
+            font-family: "Manrope", sans-serif;
+            font-weight: 600;
+            font-size: 17px;
+            color: #ffffff;
+            cursor: pointer;
+        }
+        .cf-form-submit:hover { filter: brightness(1.07); }
+        .cf-form-submit:active { transform: translateY(1px); }
+        .cf-deck-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+        #download .cf-modal-text { text-align: center; }
+        #download .cf-status-area { min-height: 62px; }
+        #download .cf-modal-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 14px;
+            margin-top: 22px;
+        }
+        #download .cf-modal-actions .cf-form-submit { margin-top: 0; }
+        #download.cf-modal-failed .cf-modal-panel { width: min(880px, 100%); }
+        #download.cf-modal-failed .mc-frame {
+            position: static;
+            display: block;
+            width: 100%;
+            height: min(420px, calc(100dvh - 420px));
+            margin-top: 24px;
+            border-radius: 12px;
+            background: #ffffff;
+        }
+        .mc-frame { position: absolute; width: 0; height: 0; border: 0; left: -5000px; }
+
+        .cf-modal-light .cf-modal-panel {
+            background: linear-gradient(160deg, #ffffff 0%, #eaf4ff 70%, #e9ffff 100%);
+            color: #06214a;
+        }
+        .cf-modal-light .cf-modal-panel h2 { color: #023789; }
+        .cf-modal-light .cf-modal-panel p strong { color: #023789; }
+        .cf-modal-light .cf-modal-close { color: rgba(2, 55, 137, .55); }
+        .cf-modal-light .cf-modal-close:hover { color: #023789; }
+        .cf-modal-light .cf-modal-img { border: 1px solid rgba(2, 55, 137, .12); }
+        .cf-modal-panel h2 { font-family: "GT-Walsheim", sans-serif; font-weight: 700; font-size: 1.6rem; letter-spacing: -.015em; line-height: 1.15; color: #ffffff; padding-right: 30px; }
+        .cf-modal-panel p { font-weight: 400; font-size: 1.06rem; line-height: 1.7; margin-top: 14px; }
+        .cf-modal-panel p strong { font-weight: 500; color: #ffffff; }
+        .cf-star { font-size: 1.25em; line-height: 0; }
+        .cf-modal-panel p.cf-modal-footnote { margin-top: 20px; font-size: .78rem; line-height: 1.5; color: #9fb2d8; }
+        .cf-modal-footnote a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+        .cf-modal-footnote a:hover { color: #dfeaff; }
+        @media screen and (max-width: 700px) {
+            .cf-modal-panel { flex-direction: column; align-items: flex-start; }
+            .cf-modal-img { width: 80%; align-self: center; }
+            .cf-modal-panel h2 { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+
+<body>
+
+    {% macro wfLogo() %}<svg width="120" height="33" viewBox="0 0 165 45" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M44.0386 38.5332H56.7241V35.3848H47.5317V31.6849H55.5291V28.5365H47.5317V24.9515H56.6092V21.8031H44.0386V38.5332ZM60.242 38.5332H63.7581V31.9836H71.8474V28.7663H63.7581V25.0204H72.9045V21.8031H60.242V38.5332ZM83.049 38.786C87.5302 38.786 90.3569 36.3041 90.3569 31.2482V21.8031H86.8408V31.4091C86.8408 34.1438 85.416 35.5457 83.0949 35.5457C80.7738 35.5457 79.372 34.0749 79.372 31.2712V21.8031H75.8329V31.3861C75.8329 36.2811 78.5906 38.786 83.049 38.786ZM94.3543 38.5332H97.8245V27.6402L106.144 38.5332H109.154V21.8031H105.661V32.3513L97.5946 21.8031H94.3543V38.5332ZM113.43 38.5332H119.888C125.151 38.5332 128.782 34.8792 128.782 30.1681V30.1222C128.782 25.4111 125.151 21.8031 119.888 21.8031H113.43V38.5332ZM119.888 24.9974C122.99 24.9974 125.082 27.1346 125.082 30.1681V30.2141C125.082 33.2476 122.99 35.3388 119.888 35.3388H116.946V24.9974H119.888ZM132.304 38.5332H144.99V35.3848H135.797V31.6849H143.795V28.5365H135.797V24.9515H144.875V21.8031H132.304V38.5332ZM152.024 29.9613V24.9974H155.816C157.677 24.9974 158.826 25.8477 158.826 27.4564V27.5023C158.826 28.9731 157.723 29.9613 155.885 29.9613H152.024ZM148.508 38.5332H152.024V33.0867H155.08L158.78 38.5332H162.917L158.734 32.4892C160.894 31.7308 162.388 30.0302 162.388 27.3185V27.2725C162.388 25.7328 161.906 24.4229 160.986 23.5037C159.883 22.4006 158.229 21.8031 156.114 21.8031H148.508V38.5332Z" fill="var(--wf-capital-nav-logo-fill)"></path>
+                <path d="M3 29.4853L6.36524 22.194C6.60628 21.6717 7.35366 21.6867 7.57359 22.2182L14.3487 38.5913C14.5779 39.1453 15.3677 39.1308 15.5764 38.5687L23.1127 18.279C23.315 17.7341 24.0721 17.6984 24.3249 18.2217L32.5064 35.1596C32.7713 35.7081 33.5744 35.6351 33.7362 35.048L43.1168 1" stroke="var(--wf-capital-nav-logo-fill)" stroke-width="4.86264"></path>
+            </svg>{% endmacro %}
+
+    <header id="navbar" class="on-dark">
+        <a href="/" class="logo logo-light"><img src="/img/new/logo-light.png" alt="SimpleX"></a>
+        <a href="/" class="logo logo-dark"><img src="/img/new/logo-dark.png" alt="SimpleX"></a>
+    </header>
+
+    <div class="screen">
+
+        <!-- HERO -->
+        <section class="page cf cf-dark cf-hero">
+            <div class="area">
+                <div class="cf-hero-text">
+                    <h1>The first and the only messaging network without any user IDs</h1>
+                    <p class="lead">SimpleX Chat is building a messaging network unlike every major platform &mdash; without phone numbers, usernames, emails, or any user identifiers.</p>
+                    <div class="cf-hero-cta">
+                        <a class="cf-pill cf-primary" id="cf-hero-request" href="#request">Request our Pitch deck</a>
+                        <a class="cf-hero-invest-link" id="cf-hero-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
+                            Invest on {{ wfLogo() }}
+                        </a>
+                    </div>
+                    <div class="cf-stats">
+                        <div class="cf-stat">
+                            <img src="/img/crowdfunding/cloud-download.png" alt="">
+                            <div><b>3M</b><span>Downloads</span></div>
+                        </div>
+                        <div class="cf-stat">
+                            <img src="/img/crowdfunding/p2p.png" alt="">
+                            <div><b>480K</b><span>Monthly users</span></div>
+                        </div>
+                    </div>
+                    <a class="cf-live-link" href="/livestream/">Join the livestream and Q&amp;A on Sep 15</a>
+                </div>
+                <img class="cf-phone" src="/img/crowdfunding/phone.png" alt="">
+                <img class="cf-mask" src="/img/crowdfunding/phone-mask.png" alt="">
+                <div class="cf-hero-fade"></div>
+            </div>
+            <a class="cf-hero-invest-link cf-hero-corner" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
+                Invest on {{ wfLogo() }}
+            </a>
+        </section>
+
+        <!-- 1 · TRACTION -->
+        <section class="page cf cf-light cf-left cf-growth">
+            <div class="area">
+                <div class="text-container">
+                    <h2>480,000+ users with zero marketing spend</h2>
+                    <p>Hundreds of user posts, podcasts and videos and <span>$650,000 in user donations</span>, before any paid features.</p>
+                    <p>Only <span>$1.7M investment over 4 years</span> &mdash; more capital efficient than most startups.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2 · MARKET -->
+        <section class="page cf cf-dark cf-right cf-problem" id="identifiers">
+            <div class="area">
+                <div class="text-container">
+                    <h2>Every other network can identify you</h2>
+                    <p>Surveillance, censorship and online crime all depend on user identifiers. AI made all three affect everyone.</p>
+                    <p>Removing them by design, as SimpleX did, is the only solution &mdash; so you control who can reach you.</p>
+                    <a class="gradient-text" href="#ai-privacy">Why AI increases demand for privacy</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3 · NETWORK, NOT AN APP -->
+        <section class="page cf cf-light cf-right cf-network" id="network">
+            <div class="area">
+            <div class="cf-tags" aria-hidden="true">
+                <img class="cf-tags-art" src="/img/design_3/section-3-mobile-light.webp" alt="">
+                <div class="cf-tag" style="left: 40.8%; top: 70.1%;">
+                    <div class="n">Users</div>
+                    <div class="v"><b>480,000</b> active monthly,</div>
+                    <div class="v">organic growth</div>
+                </div>
+                <div class="cf-tag" style="left: 45.8%; top: 47.6%;">
+                    <div class="n">Creators</div>
+                    <div class="v"><b>1,000s</b> of public</div>
+                    <div class="v">groups and channels</div>
+                </div>
+                <div class="cf-tag" style="left: 45.2%; top: 30%;">
+                    <div class="n">Businesses</div>
+                    <div class="v"><b>20+</b> offer customer</div>
+                    <div class="v">support</div>
+                </div>
+                <div class="cf-tag" style="left: 31.9%; top: 29.4%;">
+                    <div class="n">Developers</div>
+                    <div class="v"><b>19K+</b> GitHub stars</div>
+                    <div class="v"><b>1,000+</b> forks, bots,</div>
+                    <div class="v">bridges, plugins</div>
+                </div>
+                <div class="cf-tag" style="left: 25.8%; top: 67.5%;">
+                    <div class="n">Operators</div>
+                    <div class="v"><b>~1,000</b></div>
+                    <div class="v">independent</div>
+                    <div class="v">servers</div>
+                </div>
+            </div>
+                <div class="text-container">
+                    <h2>SimpleX is a network, not an app</h2>
+                    <p>All five kinds of users arrived on their own &mdash; the cold start problem solved.</p>
+                    <p>Each group makes the network more valuable to others, accelerating growth.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4 · REVENUE -->
+        <section class="page cf cf-light cf-right cf-revenue">
+            <div class="area">
+                <div class="cf-art" aria-hidden="true"><img src="/img/design_3/section-4-mobile-light.webp" alt=""></div>
+                <div class="text-container">
+                    <h2><span class="cf-nw">Pre-revenue</span> stage ends this year</h2>
+                    <p>Additional file capacity and SimpleX public names launch this year, followed by business messaging and paid servers for big channels.</p>
+                    <p>Demand is proven &mdash; <span>users donated $650,000</span> while everything was free.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5 · CAN'T BE COPIED -->
+        <section class="page cf cf-light cf-left cf-moat">
+            <div class="area">
+                <div class="text-container">
+                    <h2>Design advantage that can't be copied</h2>
+                    <p>Only SimpleX has every property in this comparison &mdash; together they need a network without user identifiers.</p>
+                    <p>A network with user IDs can't remove them &mdash; rivals would have to rebuild, and the ad giants would lose revenue that depends on user IDs.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6 · BUILD ON -->
+        <section class="page cf cf-light cf-left cf-build" id="build">
+            <div class="area">
+                <div class="text-container">
+                    <h2>A network others build on</h2>
+                    <p>Developers already built many different services on SimpleX. In 2027, we plan to add support for user-created features inside chats.</p>
+                    <p>Features and services users build would bring new users and increase revenue.</p>
+                    <a class="gradient-text" href="#one-protocol">How custom UX helps unify messaging</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7 · CLOSE -->
+        <section class="page cf cf-dark cf-close" id="invest">
+            <div class="area">
+                <div class="cf-hero-text">
+                    <h1><span class="cf-close-l1">Get a stake</span><br><span class="cf-close-l2">in SimpleX Chat</span></h1>
+                    <p class="cf-close-call">We are building a network that people own.<br>We invite you to invest and become part of it.</p>
+                    <div class="cf-hero-cta">
+                        <a class="cf-pill cf-primary" href="#request">Request our Pitch deck</a>
+                        <a class="cf-hero-invest-link" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
+                            Invest on {{ wfLogo() }}
+                        </a>
+                    </div>
+                    <a class="cf-live-link" href="/livestream/">Join the livestream and Q&amp;A on Sep 15</a>
+                </div>
+                <div class="cf-close-offer">
+                    <p>Invest $500+ by September 22 and get a SimpleX public name for your channel or business for 7 years, ahead of public launch.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8 · FOOTER -->
+        <section class="page cf cf-footer">
+            <div class="cf-footer-inner">
+                <p class="cf-fine">This Regulation Crowdfunding offering is made available through Wefunder Portal LLC. This investment involves a high degree of risk, including the possible loss of your investment.</p>
+                <p class="cf-fine cf-fine-links">
+                    <a href="/">SimpleX Chat</a>
+                    <a href="/privacy">Privacy policy</a>
+                    <a href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener">Wefunder</a>
+                </p>
+            </div>
+        </section>
+
+    </div>
+
+    <div class="cf-ctas">
+    <a class="cf-pill cf-top cf-primary" id="cf-cta-request" href="#request">Request our Pitch deck</a>
+    <a class="cf-pill cf-bottom cf-secondary" id="cf-cta-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
+        Invest on {{ wfLogo() }}
+    </a>
+    </div>
+    <script>{% include "mc-submit.js" %}</script>
+
+    <script>
+        (function cfSubscribe() {
+            document.addEventListener('mc:result', function (e) {
+                var modal = document.getElementById('download');
+                modal.querySelectorAll('.cf-status').forEach(function (line) {
+                    line.hidden = line.dataset.status !== e.detail.status;
+                });
+                modal.classList.toggle('cf-modal-failed', e.detail.status === 'failed');
+                location.hash = 'download';
+            });
+        })();
+
+        (function cfDock() {
+            var ctas = document.querySelector('.cf-ctas');
+            var footer = document.querySelector('.cf-footer');
+            var first = document.querySelector('.cf-growth');
+            var close = document.querySelector('.cf-close');
+            var nav = document.getElementById('navbar');
+            if (!ctas || !footer || !first || !close) return;
+            function update() {
+                var y = window.scrollY;
+                var entry = first.getBoundingClientRect().top + y;
+                var exit = close.getBoundingClientRect().top + y - window.innerHeight;
+                if (y < entry || y > exit) {
+                    ctas.style.position = 'absolute';
+                    ctas.style.top = (y < entry ? entry : exit) + 'px';
+                    ctas.style.height = window.innerHeight + 'px';
+                } else {
+                    ctas.style.position = '';
+                    ctas.style.top = '';
+                    ctas.style.height = '';
+                }
+                if (nav) {
+                    var navExit = footer.getBoundingClientRect().top + y - window.innerHeight;
+                    if (y > navExit) { nav.style.position = 'absolute'; nav.style.top = navExit + 'px'; }
+                    else { nav.style.position = ''; nav.style.top = ''; }
+                }
+            }
+            window.addEventListener('scroll', update, { passive: true });
+            window.addEventListener('resize', update);
+            update();
+        })();
+
+        (function cfFlip() {
+            if (new URLSearchParams(location.search).get('action') !== 'invest') return;
+            var req = document.getElementById('cf-cta-request');
+            var inv = document.getElementById('cf-cta-invest');
+            req.classList.remove('cf-top', 'cf-primary');
+            req.classList.add('cf-bottom', 'cf-secondary');
+            inv.classList.remove('cf-bottom', 'cf-secondary');
+            inv.classList.add('cf-top', 'cf-primary');
+        })();
+    </script>
+
+    <div class="cf-modal" id="ai-privacy">
+        <a class="cf-modal-backdrop" href="#identifiers" aria-label="Close"></a>
+        <div class="cf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="ai-privacy-title">
+            <a class="cf-modal-close" href="#identifiers" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
+            <div class="cf-modal-text">
+                <h2 id="ai-privacy-title">AI increases demand for privacy</h2>
+                <p>Surveillance, deplatforming, and online fraud used to require human effort, so they were relatively rare &mdash; and most people thought they needed no protection.<span class="cf-star">*</span></p>
+                <p>AI removed the effort: it scans messages at scale, deplatforms automatically, and can fake any face, voice, or number. Anyone with a user identifier will now be targeted &mdash; so everyone will want protection.</p>
+                <p>AI agents handling credentials and money increase demand further: an agent whose identity is controlled by a platform can be shut down or turned against its owner.</p>
+                <p><strong>Everyone will want communication without user identifiers &mdash; and only SimpleX network can provide it.</strong></p>
+                <p class="cf-modal-footnote"><span class="cf-star">*</span> In 2021, 9% of 16+ year old US residents were victims of identity theft &mdash; <a href="https://bjs.ojp.gov/library/publications/victims-identity-theft-2021" target="_blank" rel="noopener">Bureau of Justice Statistics</a>.</p>
+            </div>
+            <img class="cf-modal-img" src="/img/crowdfunding/ai.png" alt="">
+        </div>
+    </div>
+
+    <div class="cf-modal" id="ai-threat">
+        <a class="cf-modal-backdrop" href="#identifiers" aria-label="Close"></a>
+        <div class="cf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="ai-threat-title">
+            <a class="cf-modal-close" href="#identifiers" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
+            <div class="cf-modal-text">
+                <h2 id="ai-threat-title">AI made everyone a target</h2>
+                <p>For 150 years, every network required a user identifier to reach you &mdash; a phone number, a username, or a key.</p>
+                <p>This identifier is your fixed address that can be used to surveil, deplatform, or attack you. AI made it automatic and cheap, so everyone is affected now. SimpleX has no user identifiers at all, so users are protected from such attacks &mdash; it is the only network built this way.</p>
+                <p>The AI agents now acting for people need the same &mdash; an identity no company can control, on a network without any user identifiers.</p>
+            </div>
+            <img class="cf-modal-img" src="/img/crowdfunding/ai.png" alt="">
+        </div>
+    </div>
+
+    <div class="cf-modal cf-modal-text-only" id="request">
+        <a class="cf-modal-backdrop" href="#!" aria-label="Close"></a>
+        <div class="cf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="request-title">
+            <a class="cf-modal-close" href="#!" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
+            <div class="cf-modal-text">
+                <h2 id="request-title">Learn more about investing in SimpleX Chat</h2>
+                <form class="cf-form" action="https://chat.us2.list-manage.com/subscribe/post?u=ddd892b258ae36e5438e6d4e1&amp;id=de405d59d2&amp;f_id=001ef8e3f0&amp;legacy_form=1" method="post" target="_blank">
+                    <input type="text" name="FNAME" placeholder="Name or pseudonym" aria-label="Name or pseudonym">
+                    <input type="email" name="EMAIL" placeholder="Email*" aria-label="Email address" required>
+                    <input type="hidden" name="PAGE" value="crowdfunding">
+                    <input type="hidden" name="SOURCE" value="crowdfunding_page">
+                    <input type="hidden" name="CAMPAIGN" value="">
+                    <span aria-hidden="true" class="cf-bot-field">
+                        <input type="text" name="b_ddd892b258ae36e5438e6d4e1_de405d59d2" tabindex="-1" value="">
+                    </span>
+                    <button type="submit" name="subscribe" value="Subscribe" class="cf-form-submit">Submit and download our Pitch deck</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="cf-modal cf-modal-text-only" id="download">
+        <a class="cf-modal-backdrop" href="#!" aria-label="Close"></a>
+        <div class="cf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="download-title">
+            <a class="cf-modal-close" href="#!" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
+            <div class="cf-modal-text">
+                <h2 id="download-title">Thank you for your interest in&nbsp;SimpleX&nbsp;Chat crowdfunding</h2>
+                <div class="cf-status-area">
+                    <p class="cf-status" data-status="subscribed" hidden>Please confirm your subscription by clicking the link in the email.</p>
+                    <p class="cf-status" data-status="confirmed" hidden>This address is in the list &mdash; you will receive the updates.</p>
+                    <p class="cf-status" data-status="failed" hidden>We could not confirm your subscription &mdash; Mailchimp&rsquo;s response is below.</p>
+                </div>
+                <div class="cf-modal-actions">
+                    <a class="cf-form-submit cf-deck-link" href="/img/crowdfunding/simplex-chat-pitch-deck.pdf" target="_blank" rel="noopener">Download pitch deck</a>
+                </div>
+                <div class="mc-frame-host"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cf-modal cf-modal-light cf-modal-text-only" id="one-protocol">
+        <a class="cf-modal-backdrop" href="#build" aria-label="Close"></a>
+        <div class="cf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="one-protocol-title">
+            <a class="cf-modal-close" href="#build" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
+            <div class="cf-modal-text">
+                <h2 id="one-protocol-title">How custom UX helps unify messaging</h2>
+                <p>Every network before messaging converged to one protocol &mdash; telephony, email, the web.</p>
+                <p>Messaging is the exception, because each app's experience can't be reduced to a shared protocol.</p>
+                <p><strong>Once we add custom user experiences in the chat, SimpleX might become the network messaging converges on.</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Invert the navbar (logo + button) depending on whether the
+        // section under it is dark or light. Same idea as the home page.
+        (function cfNav() {
+            var nav = document.getElementById('navbar');
+            var sections = Array.prototype.slice.call(document.querySelectorAll('section.page.cf'));
+            if (!nav || !sections.length) return;
+
+            function apply() {
+                var stripY = Math.max(18, window.innerHeight * 0.02);
+                var current = null;
+                for (var k = 0; k < sections.length; k++) {
+                    var r = sections[k].getBoundingClientRect();
+                    if (r.top <= stripY && r.bottom > stripY) { current = sections[k]; break; }
+                }
+                if (!current) return;
+                var dark = current.classList.contains('cf-dark');
+                nav.classList.toggle('on-dark', dark);
+                nav.classList.toggle('on-light', !dark);
+
+                // the extension flips half a screen early, so Safari has
+                // recomputed by the time the section reaches the top
+                var midY = window.innerHeight * 0.5;
+                var soon = null;
+                for (var j = 0; j < sections.length; j++) {
+                    var rr = sections[j].getBoundingClientRect();
+                    if (rr.top <= midY && rr.bottom > midY) { soon = sections[j]; break; }
+                }
+                if (soon && soon !== extended) {
+                    if (extended) extended.classList.remove('cf-current');
+                    soon.classList.add('cf-current');
+                    extended = soon;
+                }
+            }
+
+            var extended = null;
+
+            window.addEventListener('scroll', apply, { passive: true });
+            window.addEventListener('resize', apply);
+            // opening on a hash fragment scrolls without firing scroll first,
+            // so re-run once the browser has jumped there
+            window.addEventListener('hashchange', apply);
+            window.addEventListener('load', apply);
+            requestAnimationFrame(apply);
+            setTimeout(apply, 120);
+            setTimeout(apply, 400);
+            apply();
+        })();
+    </script>
+</body>
+
+</html>

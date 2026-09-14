@@ -94,9 +94,11 @@ templateEngineOverride: njk
             <h2 id="register-title">Register for event updates and Q&amp;A</h2>
             <p>We will send you the updates about the event, and you will be able to ask any questions.</p>
 
-            <form action="https://chat.us2.list-manage.com/subscribe/post?u=ddd892b258ae36e5438e6d4e1&amp;id=6f73f92ffa&amp;f_id=006bf8e3f0" method="post" target="_blank">
+            <form action="https://chat.us2.list-manage.com/subscribe/post?u=ddd892b258ae36e5438e6d4e1&amp;id=6f73f92ffa&amp;f_id=001df8e3f0&amp;legacy_form=1" method="post" target="_blank">
                 <input type="email" name="EMAIL" placeholder="Enter your email address" aria-label="Email address" required>
+                <input type="hidden" name="PAGE" value="livestream">
                 <input type="hidden" name="SOURCE" value="livestream_page">
+                <input type="hidden" name="CAMPAIGN" value="">
                 <span aria-hidden="true" class="bot-field">
                     <input type="text" name="b_ddd892b258ae36e5438e6d4e1_6f73f92ffa" tabindex="-1" value="">
                 </span>
@@ -104,6 +106,8 @@ templateEngineOverride: njk
             </form>
 
             <a class="channel-link" href="https://simplex.chat/crowdfunding-news/" target="_blank" rel="noopener">Or join our SimpleX Crowdfunding News channel<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path><polygon points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg></a>
+
+            <p class="register-note">We use Mailchimp to deliver updates via email</p>
 
             <button type="button" class="close-register" aria-label="Close">
                 <svg viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
@@ -113,7 +117,80 @@ templateEngineOverride: njk
         </div>
     </div>
 
+    <div id="subscribed" class="register-overlay">
+        <div class="register-card" role="dialog" aria-labelledby="subscribed-title">
+            <h2 id="subscribed-title">Thank you for subscribing</h2>
+            <p>Please confirm your subscription by clicking the link in the email.</p>
+            <button type="button" class="close-register" aria-label="Close">
+                <svg viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.839522 -0.070157 0.427909 -0.059127 0.18094 0.207531C-0.0660305 0.474191 -0.0552645 0.895911 0.205003 1.14894L5.70862 6.49833L0.20247 11.851C-0.0577975 12.104 -0.0685635 12.5257 0.178407 12.7924C0.306324 12.9306 0.477936 13 0.650181 13C0.811033 13 0.971873 12.9397 1.09726 12.817L6.65343 7.41639L11.9025 12.5186C12.0285 12.6406 12.1893 12.7015 12.3495 12.7015C12.5218 12.7015 12.6934 12.6321 12.8213 12.4939C13.0689 12.2273 13.0582 11.8062 12.7973 11.5525Z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div id="already-subscribed" class="register-overlay">
+        <div class="register-card" role="dialog" aria-labelledby="already-subscribed-title">
+            <h2 id="already-subscribed-title">You are already subscribed</h2>
+            <p>This address is on our list — you will receive the updates about the event.</p>
+            <button type="button" class="close-register" aria-label="Close">
+                <svg viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.839522 -0.070157 0.427909 -0.059127 0.18094 0.207531C-0.0660305 0.474191 -0.0552645 0.895911 0.205003 1.14894L5.70862 6.49833L0.20247 11.851C-0.0577975 12.104 -0.0685635 12.5257 0.178407 12.7924C0.306324 12.9306 0.477936 13 0.650181 13C0.811033 13 0.971873 12.9397 1.09726 12.817L6.65343 7.41639L11.9025 12.5186C12.0285 12.6406 12.1893 12.7015 12.3495 12.7015C12.5218 12.7015 12.6934 12.6321 12.8213 12.4939C13.0689 12.2273 13.0582 11.8062 12.7973 11.5525Z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div id="subscribe-failed" class="register-overlay">
+        <div class="register-card mc-frame-card mc-frame-host" role="dialog" aria-label="Subscription result">
+            <button type="button" class="close-register" aria-label="Close">
+                <svg viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.839522 -0.070157 0.427909 -0.059127 0.18094 0.207531C-0.0660305 0.474191 -0.0552645 0.895911 0.205003 1.14894L5.70862 6.49833L0.20247 11.851C-0.0577975 12.104 -0.0685635 12.5257 0.178407 12.7924C0.306324 12.9306 0.477936 13 0.650181 13C0.811033 13 0.971873 12.9397 1.09726 12.817L6.65343 7.41639L11.9025 12.5186C12.0285 12.6406 12.1893 12.7015 12.3495 12.7015C12.5218 12.7015 12.6934 12.6321 12.8213 12.4939C13.0689 12.2273 13.0582 11.8062 12.7973 11.5525Z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
     <script src="/js/livestream.js"></script>
+    <script>{% include "mc-submit.js" %}</script>
+
+    <script>
+        (function livestreamSubscribe() {
+            var register = document.getElementById('register');
+            var byStatus = {
+                subscribed: document.getElementById('subscribed'),
+                confirmed: document.getElementById('already-subscribed'),
+                failed: document.getElementById('subscribe-failed')
+            };
+            var results = Object.keys(byStatus).map(function (k) { return byStatus[k]; });
+
+            function close(overlay) {
+                overlay.classList.remove('open');
+                document.documentElement.classList.remove('lock-scroll');
+            }
+
+            document.addEventListener('mc:result', function (e) {
+                var submit = register.querySelector('[type="submit"]');
+                if (submit) {
+                    submit.disabled = false;
+                    submit.value = 'Register';
+                }
+                register.classList.remove('open');
+                (byStatus[e.detail.status] || byStatus.failed).classList.add('open');
+                document.documentElement.classList.add('lock-scroll');
+            });
+
+            results.forEach(function (overlay) {
+                overlay.addEventListener('click', function (e) {
+                    if (e.target === overlay || e.target.closest('.close-register')) close(overlay);
+                });
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') results.forEach(close);
+            });
+        })();
+    </script>
 </body>
 
 </html>
