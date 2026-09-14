@@ -9,9 +9,9 @@ import ChatTests.Utils
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft)
-import Data.List (nub)
+import Data.List (intersect, nub)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
-import Simplex.Chat.Wallet (NameIndex, WalletSeed (..), deriveNameKey, importRecoveryKey, nameKeySecret, recoveryKeyPhrase, renderNameKeyPath, seedMaster)
+import Simplex.Chat.Wallet (NameIndex, WalletSeed (..), deriveNameKey, importRecoveryKey, nameKeySecret, nameTree, recoveryKeyPhrase, renderNameKeyPath)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
@@ -24,7 +24,7 @@ testSeed :: WalletSeed
 testSeed = WalletSeed {wsId = 1, wsEntropy = either error id $ importRecoveryKey testPhrase}
 
 nameKey :: NameIndex -> Either String S.PrivateKey
-nameKey nm = seedMaster testSeed >>= \m -> deriveNameKey m nm
+nameKey nm = nameTree testSeed Nothing >>= \t -> deriveNameKey t nm
 
 walletDerivationTests :: Spec
 walletDerivationTests = do
@@ -38,8 +38,9 @@ walletDerivationTests = do
     either error nameKeySecret (nameKey 1)
       `shouldBe` "0x9a983cb3d832fbde5ab49d692b7a8bf5b5d232479c99333d0fc8e1d21f1b55b6"
   Hspec.it "renders the path a name key sits at" $ do
-    renderNameKeyPath 1 `shouldBe` "m/44'/60'/0'/0/1"
-    renderNameKeyPath 7 `shouldBe` "m/44'/60'/0'/0/7"
+    let t = either error id $ nameTree testSeed Nothing
+    renderNameKeyPath t 1 `shouldBe` "m/44'/60'/0'/0/1"
+    renderNameKeyPath t 7 `shouldBe` "m/44'/60'/0'/0/7"
   Hspec.it "round-trips the phrase it was imported from" $
     recoveryKeyPhrase testSeed `shouldBe` Right testPhrase
   Hspec.it "refuses a phrase with a bad checksum" $
@@ -54,6 +55,7 @@ walletTests = do
   it "exports the secret of any name key" testWalletExportDerivedSecret
   it "deletes the seed, and a seed can be imported again" testWalletDelete
   it "discards a seed imported before the database is restored" testWalletImportThenRestore
+  it "reaches a secret subtree, which a scan of the seed does not" testWalletSecretSubtree
 
 -- | The state a chat database backed up before the seed restores to.
 forgetSeed :: HasCallStack => TestCC -> IO ()
@@ -154,3 +156,19 @@ testWalletImportThenRestore ps = withNewTestChat ps "alice" aliceProfile $ \alic
   alice ##> ("/_wallet create mnemonic=" <> B.unpack testPhrase)
   rows <- nameRows alice
   map fst rows `shouldBe` ["m/44'/60'/0'/0/1", "m/44'/60'/0'/0/2"]
+
+testWalletSecretSubtree :: HasCallStack => TestParams -> IO ()
+testWalletSecretSubtree ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  alice ##> ("/_wallet create mnemonic=" <> B.unpack testPhrase)
+  rows <- nameRows alice
+  alice ##> "/_wallet secret=\"blablablablabla\""
+  rows' <- nameRows alice
+  map fst rows' `shouldBe` ["secret/1", "secret/2"]
+  -- the subtree is somewhere the enumerable paths do not reach
+  null (map snd rows `intersect` map snd rows') `shouldBe` True
+  alice ##> "/_wallet export name 1 secret=\"blablablablabla\""
+  alice <## "secret/1  0x29F36E18fa94E016657a476C718d271EC5B95619  0xd16df2c2657eb95bba47cefc2425ed27713a86faa79eb85d3f1ae5758c588bd6"
+  -- a different secret is a different subtree
+  alice ##> "/_wallet export name 1 secret=other words here"
+  l <- getTermLine alice
+  (words l !! 1) `shouldNotBe` "0x29F36E18fa94E016657a476C718d271EC5B95619"

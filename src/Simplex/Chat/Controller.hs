@@ -417,10 +417,10 @@ data ChatCommand
   | APIRejectContact {contactReqId :: Int64, notify :: Bool}
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
-  | APIWallet
+  | APIWallet {walletSecret :: Maybe Text}
   | APIWalletCreate {recoveryPhrase :: Maybe Text}
   | APIWalletExportSeedMnemonic
-  | APIWalletExportNameSecret {nameIndex :: NameIndex}
+  | APIWalletExportNameSecret {nameIndex :: NameIndex, walletSecret :: Maybe Text}
   | APIWalletDelete
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
@@ -747,7 +747,7 @@ allowRemoteCommand = \case
   DeleteRemoteCtrl _ -> False
   ExecChatStoreSQL _ -> False
   ExecAgentStoreSQL _ -> False
-  APIWallet -> False
+  APIWallet {} -> False
   APIWalletCreate {} -> False
   APIWalletExportSeedMnemonic -> False
   APIWalletExportNameSecret {} -> False

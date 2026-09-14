@@ -37,7 +37,7 @@ key. `m/44'/60'/0'/0/0` is left unused so that neither names nor profiles claim
 the point where both dimensions start.
 
 A secret subtree is not in that tree and is not BIP-44. It has a master of its
-own, derived in one step from the seed and a slow hash of the secret (later):
+own, derived in one step from the seed and a slow hash of the secret:
 
 ```
 I              = HMAC-SHA512("simplex wallet subtree", kdf(secret, salt = seed))
@@ -45,10 +45,12 @@ subtree master = private key I[0..31], chain code I[32..63]
 key k          = child k of that master, k >= 1, counted in the subtree
 ```
 
-`kdf` is a deliberately slow hash of the secret, 32 bytes out, so that guessing
-the secret costs something. It is salted with the seed, which needs nothing
-stored and stops one dictionary serving every device, and which is also what
-binds the subtree to this seed rather than to the secret alone. The step is
+`kdf` is Argon2id, 3 passes over 64 MiB with one lane, 32 bytes out, so that
+guessing the secret costs something. Its parameters are pinned rather than taken
+from the library's defaults, which would move every key if they changed. It is
+salted with the seed, which needs nothing stored and stops one dictionary serving
+every device, and which is also what binds the subtree to this seed rather than
+to the secret alone. The step is
 SHA-512 because a master is a key and a chain code, 64 bytes, which is the same
 split BIP-32 makes from `HMAC-SHA512("Bitcoin seed", seed)`. It is a step rather
 than a path level because a level carries 31 bits, which is small enough to
@@ -169,8 +171,7 @@ not more than that. Whoever reads the database sees the binding regardless: the
 name is written into the profile's own row, and the link the name publishes is
 the one the device holds.
 
-Not implemented here. The parameter can be added at any time; the derivation has
-to be settled before the first such key is used.
+The listing side is not implemented, as there is nothing to list yet.
 
 ## Scope
 

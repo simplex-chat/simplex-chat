@@ -59,7 +59,7 @@ import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Store.Wallets (createSeed, deleteSeed, getDeviceSeed, getNextNameIndex)
-import Simplex.Chat.Wallet (NameIndex, WalletSeed (..), deriveNameKey, importRecoveryKey, nameKeySecret, newSeed, recoveryKeyPhrase, renderNameKeyPath, seedMaster)
+import Simplex.Chat.Wallet (NameIndex, NameTree, WalletSeed (..), deriveNameKey, importRecoveryKey, nameKeySecret, nameTree, newSeed, recoveryKeyPhrase, renderNameKeyPath)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -1492,27 +1492,31 @@ processChatCommand cxt nm = \case
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
-  APIWallet -> withUser $ \user -> do
+  APIWallet secret_ -> withUser $ \user -> do
     withFastStore' getDeviceSeed >>= \case
       Nothing -> pure $ CRWallet user False []
       Just seed -> do
-        next <- withFastStore' $ \db -> getNextNameIndex db (wsId seed)
-        CRWallet user True <$> nameKeyRows seed next
+        -- a subtree keeps no counter, as keeping one would show that it is in use
+        next <- maybe (withFastStore' $ \db -> getNextNameIndex db (wsId seed)) (const $ pure 1) secret_
+        tree <- either throwCmdError pure $ nameTree seed secret_
+        CRWallet user True <$> nameKeyRows tree next
   APIWalletCreate phrase_ -> withUser $ \_ -> do
     entropy <- case phrase_ of
       Nothing -> asks random >>= atomically . newSeed MS256
       Just phrase -> either (const $ throwCmdError "bad recovery phrase") pure $ importRecoveryKey (encodeUtf8 phrase)
     created <- withFastStore' $ \db -> createSeed db entropy
     unless created $ throwCmdError "this device already has a wallet key"
-    processChatCommand cxt nm APIWallet
+    processChatCommand cxt nm $ APIWallet Nothing
   APIWalletExportSeedMnemonic -> withUser $ \user -> do
     seed <- deviceSeed
     phrase <- either throwCmdError pure $ recoveryKeyPhrase seed
     pure $ CRWalletSeedMnemonic user (safeDecodeUtf8 phrase)
-  APIWalletExportNameSecret nameIdx -> withUser $ \user -> do
+  APIWalletExportNameSecret nameIdx secret_ -> withUser $ \user -> do
     seed <- deviceSeed
-    k <- either throwCmdError pure $ seedMaster seed >>= \m -> deriveNameKey m nameIdx
-    pure $ CRWalletDerivedSecret user (renderNameKeyPath nameIdx) (decodeLatin1 . strEncode $ addressFromPrivateKey k) (safeDecodeUtf8 $ nameKeySecret k)
+    (tree, k) <- either throwCmdError pure $ do
+      tree <- nameTree seed secret_
+      (tree,) <$> deriveNameKey tree nameIdx
+    pure $ CRWalletDerivedSecret user (renderNameKeyPath tree nameIdx) (decodeLatin1 . strEncode $ addressFromPrivateKey k) (safeDecodeUtf8 $ nameKeySecret k)
   APIWalletDelete -> withUser $ \_ -> do
     seed <- deviceSeed
     withFastStore' $ \db -> deleteSeed db (wsId seed)
@@ -5459,11 +5463,10 @@ walletNamesShown = 2
 deviceSeed :: CM WalletSeed
 deviceSeed = withFastStore' getDeviceSeed >>= maybe (throwCmdError "no wallet key on this device") pure
 
-nameKeyRows :: WalletSeed -> NameIndex -> CM [(Text, Text)]
-nameKeyRows seed next = either throwCmdError pure $ do
-  master <- seedMaster seed
+nameKeyRows :: NameTree -> NameIndex -> CM [(Text, Text)]
+nameKeyRows tree next = either throwCmdError pure $
   forM (take walletNamesShown [next ..]) $ \nm ->
-    (renderNameKeyPath nm,) . decodeLatin1 . strEncode . addressFromPrivateKey <$> deriveNameKey master nm
+    (renderNameKeyPath tree nm,) . decodeLatin1 . strEncode . addressFromPrivateKey <$> deriveNameKey tree nm
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
@@ -5585,10 +5588,10 @@ chatCommandP =
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/_wallet create new" $> APIWalletCreate Nothing,
       "/_wallet create mnemonic=" *> (APIWalletCreate . Just <$> textP),
-      "/_wallet export name " *> (APIWalletExportNameSecret <$> keyIndexP),
+      "/_wallet export name " *> (APIWalletExportNameSecret <$> keyIndexP <*> optional (" secret=" *> secretP)),
       "/_wallet export" $> APIWalletExportSeedMnemonic,
       "/_wallet delete" $> APIWalletDelete,
-      "/_wallet" $> APIWallet,
+      "/_wallet" *> (APIWallet <$> optional (" secret=" *> secretP)),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),
@@ -6129,6 +6132,7 @@ chatCommandP =
     quotedP = safeDecodeUtf8 <$> (A.char '"' *> A.takeTill (== '"') <* A.char '"')
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
+    secretP = quotedP <|> safeDecodeUtf8 <$> A.takeByteString
     -- BIP-32 hardens at 2^31, and Word32 would wrap. Digits are counted before
     -- they are read, as reading a very long number is not free.
     keyIndexP = do
