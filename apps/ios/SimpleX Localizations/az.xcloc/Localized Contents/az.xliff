@@ -4161,36 +4161,44 @@ chat item action</note>
         <target state="translated">Kanalı paylaşmaqda xəta</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error starting chat" xml:space="preserve">
+      <trans-unit id="Error starting chat" xml:space="preserve" approved="no">
         <source>Error starting chat</source>
+        <target state="translated">Çata başlama xətası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error stopping chat" xml:space="preserve">
+      <trans-unit id="Error stopping chat" xml:space="preserve" approved="no">
         <source>Error stopping chat</source>
+        <target state="translated">Çat dayandırılarkən xəta baş verdi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error switching profile" xml:space="preserve">
+      <trans-unit id="Error switching profile" xml:space="preserve" approved="no">
         <source>Error switching profile</source>
+        <target state="translated">Profil dəyişdirilərkən xəta baş verdi</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error switching profile!" xml:space="preserve">
+      <trans-unit id="Error switching profile!" xml:space="preserve" approved="no">
         <source>Error switching profile!</source>
+        <target state="translated">Profil dəyişdirilərkən xəta baş verdi!</target>
         <note>alertTitle</note>
       </trans-unit>
-      <trans-unit id="Error synchronizing connection" xml:space="preserve">
+      <trans-unit id="Error synchronizing connection" xml:space="preserve" approved="no">
         <source>Error synchronizing connection</source>
+        <target state="translated">Bağlantının sinxronizasiyası zamanı xəta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error testing server connection" xml:space="preserve">
+      <trans-unit id="Error testing server connection" xml:space="preserve" approved="no">
         <source>Error testing server connection</source>
+        <target state="translated">Server bağlantısının yoxlanılması zamanı xəta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error updating group link" xml:space="preserve">
+      <trans-unit id="Error updating group link" xml:space="preserve" approved="no">
         <source>Error updating group link</source>
+        <target state="translated">Qrup keçidinin yenilənməsi zamanı xəta baş verdi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error updating message" xml:space="preserve">
+      <trans-unit id="Error updating message" xml:space="preserve" approved="no">
         <source>Error updating message</source>
+        <target state="translated">Mesaj yenilənərkən xəta baş verdi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating server" xml:space="preserve">
