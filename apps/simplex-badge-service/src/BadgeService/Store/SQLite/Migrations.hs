@@ -109,3 +109,11 @@ DROP INDEX @idx_badge_purchases_code;
       [sql|
 DROP TABLE @badge_codes;
 |]
+
+{- TODO [badges] deferred with the draft in M20260915_user_badges, service only.
+
+ALTER TABLE @payments ADD COLUMN receipt_hash BLOB;
+
+-- down
+ALTER TABLE @payments DROP COLUMN receipt_hash;
+-}
