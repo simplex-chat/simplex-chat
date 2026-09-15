@@ -899,20 +899,6 @@ CREATE TABLE payments(
   cancelled INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
-  ,
-  evidence BLOB,
-  receipt_code TEXT
-) STRICT;
-CREATE TABLE subscription_charges(
-  charge_id TEXT NOT NULL PRIMARY KEY,
-  payment_id TEXT NOT NULL REFERENCES payments ON DELETE CASCADE,
-  provider_charge_ref TEXT NOT NULL,
-  period_start TEXT NOT NULL,
-  period_end TEXT NOT NULL,
-  amount INTEGER NOT NULL,
-  currency TEXT NOT NULL,
-  charged_at TEXT NOT NULL,
-  UNIQUE(payment_id, provider_charge_ref)
 ) STRICT;
 CREATE TABLE badge_prices(
   price_id TEXT NOT NULL PRIMARY KEY,
@@ -937,7 +923,6 @@ CREATE TABLE badge_purchases(
   master_key BLOB NOT NULL,
   initial_badge_type TEXT NOT NULL,
   current_badge_type TEXT NOT NULL,
-  payment_id TEXT REFERENCES payments,
   status TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
@@ -947,29 +932,7 @@ CREATE TABLE badge_purchases(
   alert_acked_episode TEXT,
   alert_snooze_until TEXT,
   badge_code_redemption_id INTEGER REFERENCES badge_code_redemptions,
-  UNIQUE(purchase_key),
-  UNIQUE(payment_id)
-) STRICT;
-CREATE TABLE badge_invoices(
-  invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES invoices ON DELETE CASCADE,
-  badge_purchase_id INTEGER NOT NULL REFERENCES badge_purchases ON DELETE CASCADE,
-  price_id TEXT NOT NULL REFERENCES badge_prices,
-  offer_id TEXT REFERENCES badge_offers,
-  months INTEGER NOT NULL,
-  created_at TEXT NOT NULL
-) STRICT;
-CREATE TABLE badge_subscription_changes(
-  change_id TEXT NOT NULL PRIMARY KEY,
-  badge_purchase_id INTEGER NOT NULL REFERENCES badge_purchases ON DELETE CASCADE,
-  from_badge_type TEXT NOT NULL,
-  to_badge_type TEXT NOT NULL,
-  from_provider_ref TEXT,
-  to_provider_ref TEXT,
-  effective TEXT NOT NULL,
-  status TEXT NOT NULL,
-  effective_at TEXT,
-  created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  UNIQUE(purchase_key)
 ) STRICT;
 CREATE TABLE badge_ledger(
   entry_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -985,11 +948,7 @@ CREATE TABLE badge_ledger(
   created_at TEXT NOT NULL,
   entry_type TEXT NOT NULL,
   entry_credit_type TEXT,
-  entry_debit_type TEXT,
-  payment_id TEXT REFERENCES payments,
-  charge_id TEXT REFERENCES subscription_charges,
-  from_purchase_id INTEGER REFERENCES badge_purchases,
-  to_purchase_id INTEGER REFERENCES badge_purchases
+  entry_debit_type TEXT
   ,
   entry_type_unknown INTEGER NOT NULL DEFAULT 0,
   entry_type_value TEXT,
@@ -1557,21 +1516,11 @@ CREATE UNIQUE INDEX idx_file_badge_proofs_file_id_kind ON file_badge_proofs(
 CREATE INDEX idx_payments_provider_ref ON payments(provider, provider_ref);
 CREATE INDEX idx_payments_invoice ON payments(invoice_id);
 CREATE INDEX idx_badge_offers_price ON badge_offers(price_id);
-CREATE INDEX idx_badge_invoices_purchase ON badge_invoices(badge_purchase_id);
-CREATE INDEX idx_badge_invoices_offer ON badge_invoices(offer_id);
-CREATE INDEX idx_badge_invoices_price ON badge_invoices(price_id);
-CREATE INDEX idx_badge_subscription_changes_purchase ON badge_subscription_changes(
-  badge_purchase_id
-);
 CREATE UNIQUE INDEX idx_badge_ledger_uuid ON badge_ledger(entry_uuid);
 CREATE INDEX idx_badge_ledger_purchase ON badge_ledger(
   badge_purchase_id,
   entry_id
 );
-CREATE INDEX idx_badge_ledger_payment ON badge_ledger(payment_id);
-CREATE INDEX idx_badge_ledger_charge ON badge_ledger(charge_id);
-CREATE INDEX idx_badge_ledger_from_purchase ON badge_ledger(from_purchase_id);
-CREATE INDEX idx_badge_ledger_to_purchase ON badge_ledger(to_purchase_id);
 CREATE INDEX idx_badge_issuances_purchase ON badge_issuances(
   badge_purchase_id,
   issuance_id

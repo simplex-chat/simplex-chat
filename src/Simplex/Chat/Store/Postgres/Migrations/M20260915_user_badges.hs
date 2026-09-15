@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.Postgres.Migrations.M20261001_user_badges where
+module Simplex.Chat.Store.Postgres.Migrations.M20260915_user_badges where
 
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -58,18 +58,6 @@ CREATE INDEX @idx_payments_provider_ref ON @payments(provider, provider_ref);
 
 CREATE INDEX @idx_payments_invoice ON @payments(invoice_id);
 
-CREATE TABLE @subscription_charges(
-  charge_id TEXT NOT NULL PRIMARY KEY,
-  payment_id TEXT NOT NULL REFERENCES @payments ON DELETE CASCADE,
-  provider_charge_ref TEXT NOT NULL,
-  period_start TIMESTAMPTZ NOT NULL,
-  period_end TIMESTAMPTZ NOT NULL,
-  amount BIGINT NOT NULL,
-  currency TEXT NOT NULL,
-  charged_at TIMESTAMPTZ NOT NULL,
-  UNIQUE(payment_id, provider_charge_ref)
-);
-
 CREATE TABLE @badge_prices(
   price_id TEXT NOT NULL PRIMARY KEY,
   badge_type TEXT NOT NULL,
@@ -97,13 +85,89 @@ CREATE TABLE @badge_purchases(
   master_key BYTEA NOT NULL,
   initial_badge_type TEXT NOT NULL,
   current_badge_type TEXT NOT NULL,
-  payment_id TEXT REFERENCES @payments,
   status TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
-  UNIQUE(purchase_key),
-  UNIQUE(payment_id)
+  UNIQUE(purchase_key)
 );
+
+CREATE TABLE @badge_ledger(
+  entry_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  entry_uuid TEXT NOT NULL,
+  badge_purchase_id BIGINT NOT NULL REFERENCES @badge_purchases ON DELETE CASCADE,
+  change_months SMALLINT NOT NULL,
+  balance_months SMALLINT NOT NULL,
+  balance_start_ts TIMESTAMPTZ NOT NULL,
+  balance_anchor_ts TIMESTAMPTZ NOT NULL,
+  balance_badge_type TEXT NOT NULL,
+  was_paused_since TIMESTAMPTZ,
+  service_created_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  entry_type TEXT NOT NULL,
+  entry_credit_type TEXT,
+  entry_debit_type TEXT
+);
+
+CREATE UNIQUE INDEX @idx_badge_ledger_uuid ON @badge_ledger(entry_uuid);
+
+CREATE INDEX @idx_badge_ledger_purchase ON @badge_ledger(badge_purchase_id, entry_id);
+
+CREATE TABLE @badge_issuances(
+  issuance_id TEXT NOT NULL PRIMARY KEY,
+  badge_purchase_id BIGINT NOT NULL REFERENCES @badge_purchases ON DELETE CASCADE,
+  entry_id BIGINT REFERENCES @badge_ledger,
+  badge_type TEXT NOT NULL,
+  period_start TIMESTAMPTZ NOT NULL,
+  period_end TIMESTAMPTZ NOT NULL,
+  expiry TIMESTAMPTZ NOT NULL,
+  credential BYTEA NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX @idx_badge_issuances_purchase ON @badge_issuances(badge_purchase_id, issuance_id);
+
+CREATE INDEX @idx_badge_issuances_entry ON @badge_issuances(entry_id);
+
+CREATE UNIQUE INDEX @idx_badge_issuances_purchase_entry ON @badge_issuances(badge_purchase_id, entry_id);
+|]
+
+badgeSchemaTablesDown :: Text
+badgeSchemaTablesDown =
+  [r|
+DROP INDEX @idx_badge_issuances_purchase;
+DROP INDEX @idx_badge_issuances_entry;
+DROP INDEX @idx_badge_issuances_purchase_entry;
+DROP TABLE @badge_issuances;
+DROP INDEX @idx_badge_ledger_uuid;
+DROP INDEX @idx_badge_ledger_purchase;
+DROP TABLE @badge_ledger;
+DROP TABLE @badge_purchases;
+DROP INDEX @idx_payments_provider_ref;
+DROP INDEX @idx_payments_invoice;
+DROP TABLE @payments;
+DROP TABLE @invoices;
+DROP INDEX @idx_badge_offers_price;
+DROP TABLE @badge_offers;
+DROP TABLE @badge_prices;
+|]
+
+{- TODO [badges] deferred draft schema for paid purchases, subscriptions, upgrades and transfers.
+
+CREATE TABLE @subscription_charges(
+  charge_id TEXT NOT NULL PRIMARY KEY,
+  payment_id TEXT NOT NULL REFERENCES @payments ON DELETE CASCADE,
+  provider_charge_ref TEXT NOT NULL,
+  period_start TIMESTAMPTZ NOT NULL,
+  period_end TIMESTAMPTZ NOT NULL,
+  amount BIGINT NOT NULL,
+  currency TEXT NOT NULL,
+  charged_at TIMESTAMPTZ NOT NULL,
+  UNIQUE(payment_id, provider_charge_ref)
+);
+
+ALTER TABLE @badge_purchases ADD COLUMN payment_id TEXT REFERENCES @payments;
+
+CREATE UNIQUE INDEX @idx_badge_purchases_payment ON @badge_purchases(payment_id);
 
 CREATE TABLE @badge_invoices(
   invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
@@ -136,30 +200,13 @@ CREATE TABLE @badge_subscription_changes(
 
 CREATE INDEX @idx_badge_subscription_changes_purchase ON @badge_subscription_changes(badge_purchase_id);
 
-CREATE TABLE @badge_ledger(
-  entry_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  entry_uuid TEXT NOT NULL,
-  badge_purchase_id BIGINT NOT NULL REFERENCES @badge_purchases ON DELETE CASCADE,
-  change_months SMALLINT NOT NULL,
-  balance_months SMALLINT NOT NULL,
-  balance_start_ts TIMESTAMPTZ NOT NULL,
-  balance_anchor_ts TIMESTAMPTZ NOT NULL,
-  balance_badge_type TEXT NOT NULL,
-  was_paused_since TIMESTAMPTZ,
-  service_created_at TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL,
-  entry_type TEXT NOT NULL,
-  entry_credit_type TEXT,
-  entry_debit_type TEXT,
-  payment_id TEXT REFERENCES @payments,
-  charge_id TEXT REFERENCES @subscription_charges,
-  from_purchase_id BIGINT REFERENCES @badge_purchases,
-  to_purchase_id BIGINT REFERENCES @badge_purchases
-);
+ALTER TABLE @badge_ledger ADD COLUMN payment_id TEXT REFERENCES @payments;
 
-CREATE UNIQUE INDEX @idx_badge_ledger_uuid ON @badge_ledger(entry_uuid);
+ALTER TABLE @badge_ledger ADD COLUMN charge_id TEXT REFERENCES @subscription_charges;
 
-CREATE INDEX @idx_badge_ledger_purchase ON @badge_ledger(badge_purchase_id, entry_id);
+ALTER TABLE @badge_ledger ADD COLUMN from_purchase_id BIGINT REFERENCES @badge_purchases;
+
+ALTER TABLE @badge_ledger ADD COLUMN to_purchase_id BIGINT REFERENCES @badge_purchases;
 
 CREATE INDEX @idx_badge_ledger_payment ON @badge_ledger(payment_id);
 
@@ -169,58 +216,28 @@ CREATE INDEX @idx_badge_ledger_from_purchase ON @badge_ledger(from_purchase_id);
 
 CREATE INDEX @idx_badge_ledger_to_purchase ON @badge_ledger(to_purchase_id);
 
-CREATE TABLE @badge_issuances(
-  issuance_id TEXT NOT NULL PRIMARY KEY,
-  badge_purchase_id BIGINT NOT NULL REFERENCES @badge_purchases ON DELETE CASCADE,
-  entry_id BIGINT REFERENCES @badge_ledger,
-  badge_type TEXT NOT NULL,
-  period_start TIMESTAMPTZ NOT NULL,
-  period_end TIMESTAMPTZ NOT NULL,
-  expiry TIMESTAMPTZ NOT NULL,
-  credential BYTEA NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL
-);
-
-CREATE INDEX @idx_badge_issuances_purchase ON @badge_issuances(badge_purchase_id, issuance_id);
-
-CREATE INDEX @idx_badge_issuances_entry ON @badge_issuances(entry_id);
-
-CREATE UNIQUE INDEX @idx_badge_issuances_purchase_entry ON @badge_issuances(badge_purchase_id, entry_id);
-|]
-
-badgeSchemaTablesDown :: Text
-badgeSchemaTablesDown =
-  [r|
-DROP INDEX @idx_badge_issuances_purchase;
-DROP INDEX @idx_badge_issuances_entry;
-DROP INDEX @idx_badge_issuances_purchase_entry;
-DROP TABLE @badge_issuances;
-DROP INDEX @idx_badge_ledger_uuid;
-DROP INDEX @idx_badge_ledger_purchase;
+-- down
 DROP INDEX @idx_badge_ledger_payment;
 DROP INDEX @idx_badge_ledger_charge;
 DROP INDEX @idx_badge_ledger_from_purchase;
 DROP INDEX @idx_badge_ledger_to_purchase;
-DROP TABLE @badge_ledger;
+ALTER TABLE @badge_ledger DROP COLUMN payment_id;
+ALTER TABLE @badge_ledger DROP COLUMN charge_id;
+ALTER TABLE @badge_ledger DROP COLUMN from_purchase_id;
+ALTER TABLE @badge_ledger DROP COLUMN to_purchase_id;
 DROP INDEX @idx_badge_subscription_changes_purchase;
 DROP TABLE @badge_subscription_changes;
 DROP INDEX @idx_badge_invoices_purchase;
 DROP INDEX @idx_badge_invoices_offer;
 DROP INDEX @idx_badge_invoices_price;
 DROP TABLE @badge_invoices;
-DROP TABLE @badge_purchases;
+DROP INDEX @idx_badge_purchases_payment;
+ALTER TABLE @badge_purchases DROP COLUMN payment_id;
 DROP TABLE @subscription_charges;
-DROP INDEX @idx_payments_provider_ref;
-DROP INDEX @idx_payments_invoice;
-DROP TABLE @payments;
-DROP TABLE @invoices;
-DROP INDEX @idx_badge_offers_price;
-DROP TABLE @badge_offers;
-DROP TABLE @badge_prices;
-|]
+-}
 
-m20261001_user_badges :: Text
-m20261001_user_badges =
+m20260915_user_badges :: Text
+m20260915_user_badges =
   badgeSchema ""
     <> [r|
 ALTER TABLE badge_purchases ADD COLUMN user_id BIGINT REFERENCES users ON DELETE CASCADE;
@@ -232,10 +249,6 @@ ALTER TABLE badge_purchases ADD COLUMN alert_acked_kind TEXT;
 ALTER TABLE badge_purchases ADD COLUMN alert_acked_episode TEXT;
 
 ALTER TABLE badge_purchases ADD COLUMN alert_snooze_until TIMESTAMPTZ;
-
-ALTER TABLE payments ADD COLUMN evidence BYTEA;
-
-ALTER TABLE payments ADD COLUMN receipt_code TEXT;
 
 ALTER TABLE badge_ledger ADD COLUMN entry_type_unknown SMALLINT NOT NULL DEFAULT 0;
 
@@ -267,8 +280,8 @@ ALTER TABLE badge_purchases ADD COLUMN badge_code_redemption_id BIGINT REFERENCE
 CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON badge_purchases(badge_code_redemption_id);
 |]
 
-down_m20261001_user_badges :: Text
-down_m20261001_user_badges =
+down_m20260915_user_badges :: Text
+down_m20260915_user_badges =
   [r|
 DROP INDEX idx_badge_purchases_code_redemption;
 DROP INDEX idx_badge_purchases_user;
@@ -280,3 +293,14 @@ ALTER TABLE users DROP COLUMN shown_badge_id;
 DROP INDEX idx_badge_code_redemptions_user;
 DROP TABLE badge_code_redemptions;
 |]
+
+{- TODO [badges] deferred with the draft above, client only.
+
+ALTER TABLE payments ADD COLUMN evidence BYTEA;
+
+ALTER TABLE payments ADD COLUMN receipt_code TEXT;
+
+-- down
+ALTER TABLE payments DROP COLUMN evidence;
+ALTER TABLE payments DROP COLUMN receipt_code;
+-}

@@ -8,7 +8,7 @@ import Data.List (sortOn)
 import Data.Text (Text)
 import Database.SQLite.Simple (Query (..))
 import Database.SQLite.Simple.QQ (sql)
-import Simplex.Chat.Store.SQLite.Migrations.M20261001_user_badges (badgeSchema, badgeSchemaDown, withPrefix)
+import Simplex.Chat.Store.SQLite.Migrations.M20260915_user_badges (badgeSchema, badgeSchemaDown, withPrefix)
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 badgeServiceSchemaMigrations :: [Migration]
@@ -18,15 +18,15 @@ badgeServiceSchemaMigrations = sortOn name $ map migration schemaMigrations
 
 schemaMigrations :: [(String, Query, Maybe Query)]
 schemaMigrations =
-  [ ("20260806_badge_service_schema", m20260806_badge_service_schema, Just down_m20260806_badge_service_schema)
+  [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
 servicePrefix :: Text
 servicePrefix = "sx_badge_service_"
 
-m20260806_badge_service_schema :: Query
-m20260806_badge_service_schema =
+m20260915_badge_service_schema :: Query
+m20260915_badge_service_schema =
   badgeSchema servicePrefix
     <> withPrefix
       servicePrefix
@@ -89,8 +89,8 @@ CREATE INDEX @idx_invoices_open ON @invoices(status, expires_at);
 CREATE INDEX @idx_invoices_created ON @invoices(created_at);
 |]
 
-down_m20260806_badge_service_schema :: Query
-down_m20260806_badge_service_schema =
+down_m20260915_badge_service_schema :: Query
+down_m20260915_badge_service_schema =
   withPrefix
     servicePrefix
     [sql|
