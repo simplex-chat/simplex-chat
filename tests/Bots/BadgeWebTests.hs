@@ -316,8 +316,8 @@ insertBadgeCodeInvoice st invoiceId priceId providerRef = withConnection st $ \d
     (codeHash, "supporter" :: Text, 1 :: Int, "unpaid" :: Text, "2026-08-31T00:00:00Z" :: Text)
   DB.execute
     db
-    "INSERT INTO sx_badge_service_badge_code_invoices (invoice_id, badge_code_id, price_id, months, created_at, provider_ref) SELECT ?, badge_code_id, ?, ?, ?, ? FROM sx_badge_service_badge_codes WHERE code_hash = ?"
-    (invoiceId, priceId, 1 :: Int, "2026-08-31T00:00:00Z" :: Text, providerRef, codeHash)
+    "INSERT INTO sx_badge_service_badge_code_invoices (invoice_id, badge_code_id, price_id, created_at, provider_ref) SELECT ?, badge_code_id, ?, ?, ? FROM sx_badge_service_badge_codes WHERE code_hash = ?"
+    (invoiceId, priceId, "2026-08-31T00:00:00Z" :: Text, providerRef, codeHash)
 
 someExpiry :: UTCTime
 someExpiry = UTCTime (fromGregorian 2030 1 1) 0

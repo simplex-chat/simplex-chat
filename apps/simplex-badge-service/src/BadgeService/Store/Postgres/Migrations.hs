@@ -34,8 +34,6 @@ m20260915_badge_service_schema =
       -- tolerance and adds a network fee after a partial payment, so what is owed and whether
       -- an invoice is settled are its verdicts, not amounts recomputable from what we store.
       [r|
-ALTER TABLE @payments ADD COLUMN receipt_hash BYTEA;
-
 ALTER TABLE @payments ADD COLUMN crypto_paid TEXT;
 
 ALTER TABLE @payments ADD COLUMN crypto_due TEXT;
@@ -64,7 +62,6 @@ CREATE TABLE @badge_code_invoices(
   badge_code_id BIGINT NOT NULL REFERENCES @badge_codes,
   price_id TEXT NOT NULL REFERENCES @badge_prices,
   offer_id TEXT REFERENCES @badge_offers,
-  months SMALLINT NOT NULL,
   provider_ref TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL
 );
@@ -73,6 +70,8 @@ CREATE INDEX @idx_badge_code_invoices_offer ON @badge_code_invoices(offer_id);
 
 CREATE INDEX @idx_badge_code_invoices_price ON @badge_code_invoices(price_id);
 
+-- provider_ref is the provider's own id for the invoice; unique so a webhook or poller read
+-- resolves a payment to exactly one invoice.
 CREATE UNIQUE INDEX @idx_badge_code_invoices_provider_ref ON @badge_code_invoices(provider_ref);
 |]
     -- Two filters run on every poller pass and neither may read the whole table, or the pass
@@ -83,7 +82,7 @@ CREATE UNIQUE INDEX @idx_badge_code_invoices_provider_ref ON @badge_code_invoice
     <> withPrefix
       servicePrefix
       [r|
-CREATE INDEX @idx_invoices_open ON @invoices(status, expires_at);
+CREATE INDEX @idx_invoices_status_expires_at ON @invoices(status, expires_at);
 
 CREATE INDEX @idx_invoices_created ON @invoices(created_at);
 |]
@@ -94,7 +93,7 @@ down_m20260915_badge_service_schema =
     servicePrefix
     [r|
 DROP INDEX @idx_invoices_created;
-DROP INDEX @idx_invoices_open;
+DROP INDEX @idx_invoices_status_expires_at;
 
 DROP INDEX @idx_badge_code_invoices_provider_ref;
 DROP INDEX @idx_badge_code_invoices_offer;

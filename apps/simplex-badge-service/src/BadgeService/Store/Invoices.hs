@@ -44,7 +44,6 @@ import Crypto.Random (getRandomBytes)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as BC8
-import Data.Int (Int64)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -158,8 +157,8 @@ qInsertBadgeCodeInvoice :: Query
 qInsertBadgeCodeInvoice =
   mkQuery $
     "INSERT INTO @badge_code_invoices "
-      <> "(invoice_id, badge_code_id, price_id, offer_id, months, provider_ref, created_at) "
-      <> "VALUES (?,?,?,?,?,?,?)"
+      <> "(invoice_id, badge_code_id, price_id, offer_id, provider_ref, created_at) "
+      <> "VALUES (?,?,?,?,?,?)"
 
 qInsertBadgeCode :: Query
 qInsertBadgeCode =
@@ -488,7 +487,7 @@ insertInvoiceRows db NewInvoice {..} = do
   DB.execute
     db
     qInsertBadgeCodeInvoice
-    (invId, badgeCodeId, priceId, offerId, months, niProviderRef, createdAt)
+    (invId, badgeCodeId, priceId, offerId, niProviderRef, createdAt)
 
 #if defined(dbPostgres)
 classifyCreateError :: DB.SQLError -> CreateError
