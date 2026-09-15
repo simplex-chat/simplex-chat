@@ -2914,4 +2914,7 @@
     <string name="supporter_badge">支持者徽章</string>
     <string name="large_file_requires_badge">你需要一枚 %1$s 来发送超过 %2$s 的文件。</string>
     <string name="your_badge_expired">你的徽章过期了。</string>
+    <string name="badges_how_it_works_p1">徽章不是账户。它是存储在设备上的已签名凭证。它不识别你的身份，没人保留谁持有哪个徽章的记录。</string>
+    <string name="badges_prepaid_footer">预付费月份没有付款日期。系统从您已经支付的余额中每个月重新发布徽章，当余额用尽时不再发布。</string>
+    <string name="badges_how_it_works_p3">付款和徽章是分开的。付款是一步；发放徽章是另一步，一枚徽章对应唯一的一个密钥。任何处理付款的人都无法得知徽章最终的去向。</string>
 </resources>
