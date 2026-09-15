@@ -836,7 +836,6 @@
     <string name="only_stored_on_members_devices">(tenê ji endamên komê tê qeydkirin)</string>
     <string name="callstate_received_answer">cewab stand…</string>
     <string name="callstate_received_confirmation">tesdîqkirin stand…</string>
-    <string name="settings_section_title_about">Li ser</string>
     <string name="rcv_group_event_member_deleted">%1$s hat jêbirin</string>
     <string name="rcv_group_event_user_deleted">te derxist</string>
     <string name="rcv_group_event_1_member_connected">%s hat girêdan</string>
@@ -874,7 +873,6 @@
     <string name="voice_message">Mesaja deng</string>
     <string name="voice_message_with_duration">Mesaja deng (%1$s)</string>
     <string name="voice_message_send_text">Mesaja deng…</string>
-    <string name="info_view_open_button">veke</string>
     <string name="info_view_message_button">mesaj</string>
     <string name="info_view_video_button">vîdyo</string>
     <string name="view_security_code">Li koda emniyetê binêre</string>
@@ -1045,7 +1043,6 @@
     <string name="advanced_options">Eyarên pêşketî</string>
     <string name="copy_code">Kodê kopî bike</string>
     <string name="all_group_members_will_remain_connected">Ḧemû endamên komê wê girêdayî bimînin.</string>
-    <string name="button_channel_members">Endamên qenalê</string>
     <string name="button_channel_relays">Relayên siḧbetê</string>
     <string name="button_delete_member_messages_question">Mesajên endam jê bibe?</string>
     <string name="button_delete_member_messages">Mesajên endam jê bibe</string>
@@ -1116,5 +1113,4 @@
     <string name="v5_3_new_desktop_app_descr">Profîleke nû di aplîkasyona desktopê de çêke. 💻</string>
     <string name="v5_5_new_interface_languages">UIya macarî û tirkî</string>
     <string name="use_for_new_channels">Ji bo qenalên nû bişuxilîne</string>
-    <string name="connect_plan_open_new_channel">Qenala nû veke</string>
 </resources>
