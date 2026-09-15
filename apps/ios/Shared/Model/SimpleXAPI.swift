@@ -2188,11 +2188,11 @@ func resetAgentServersStats() async throws {
 
 // log: false because the code is a bearer secret until it is redeemed - it is in the command.
 // nil when the user cancels the retry alert.
-func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: User, newBadge: Bool)? {
+func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: User, newBadge: Bool, badgeState: BadgeState?)? {
     let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiRedeemBadgeCode(userId: userId, code: code), log: false)
     guard let r else { return nil }
-    // redeemedBadge is dropped: it is the credential, and the user's profile carries what is shown
-    if case let .result(.badgeRedeemed(user, _, newBadge)) = r { return (user, newBadge) }
+    // redeemedBadge is dropped: the user's profile carries what is shown
+    if case let .result(.badgeRedeemed(user, _, newBadge, badgeState)) = r { return (user, newBadge, badgeState) }
     throw r.unexpected
 }
 
@@ -3017,10 +3017,10 @@ func processReceivedMsg(_ res: ChatEvent) async {
             }
         }
     case let .badgeChanged(user, badgeState):
-        if active(user) {
-            await MainActor.run {
-                // read by core after retiring or presenting, so it carries the profile badge as changed
-                m.updateUser(user)
+        await MainActor.run {
+            // read by core after retiring or presenting, so it carries the profile badge as changed
+            m.updateUser(user)
+            if active(user) {
                 BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
             }
         }

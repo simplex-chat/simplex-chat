@@ -567,8 +567,8 @@ object ChatController {
   suspend fun apiRedeemBadgeCode(rh: Long?, userId: Long, code: String): BadgeRedeemResult? {
     val r = sendCmdWithRetry(rh, CC.ApiRedeemBadgeCode(userId, code), log = false) ?: return null
     return when {
-      // redeemedBadge is dropped: it is the credential, and the user's profile carries what is shown
-      r is API.Result && r.res is CR.BadgeRedeemed -> BadgeRedeemResult.Redeemed(r.res.user, r.res.newBadge)
+      // redeemedBadge is dropped: the user's profile carries what is shown
+      r is API.Result && r.res is CR.BadgeRedeemed -> BadgeRedeemResult.Redeemed(r.res.user.updateRemoteHostId(rh), r.res.newBadge, r.res.badgeState)
       r is API.Error -> BadgeRedeemResult.Failed(r.err)
       else -> {
         // the response type alone - it names a case or a JSON key, never the service's message
@@ -3536,11 +3536,13 @@ object ChatController {
           }
         }
       is CR.BadgeChanged ->
-        if (active(r.user)) {
+        if (rhId == chatModel.remoteHostId()) {
           withContext(Dispatchers.Main) {
             // read by core after retiring or presenting, so it carries the profile badge as changed
-            chatModel.updateUser(r.user)
-            BadgeModel.set(rhId, r.user.userId, r.badgeState)
+            chatModel.updateUser(r.user.updateRemoteHostId(rhId))
+            if (active(r.user)) {
+              BadgeModel.set(rhId, r.user.userId, r.badgeState)
+            }
           }
         }
       is CR.BadgeAlertR ->
@@ -3847,7 +3849,7 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
 }
 
 sealed class BadgeRedeemResult {
-  class Redeemed(val user: User, val newBadge: Boolean): BadgeRedeemResult()
+  class Redeemed(val user: User, val newBadge: Boolean, val badgeState: BadgeState?): BadgeRedeemResult()
   // err is null for a response of an unexpected type, which is logged where it is received
   class Failed(val err: ChatError?): BadgeRedeemResult()
 }
@@ -6819,7 +6821,7 @@ sealed class CR {
   @Serializable @SerialName("agentServersSummary") class AgentServersSummary(val user: UserRef, val serversSummary: PresentedServersSummary): CR()
   // badges
   // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
-  @Serializable @SerialName("badgeRedeemed") class BadgeRedeemed(val user: User, val redeemedBadge: LocalBadge, val newBadge: Boolean): CR()
+  @Serializable @SerialName("badgeRedeemed") class BadgeRedeemed(val user: User, val redeemedBadge: LocalBadge, val newBadge: Boolean, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeState") class BadgeStateR(val user: UserRef, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeChanged") class BadgeChanged(val user: User, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeAlert") class BadgeAlertR(val user: UserRef, val badgeAlert: BadgeAlert): CR()
@@ -7216,7 +7218,7 @@ sealed class CR {
     is ArchiveExported -> "${archiveErrors.map { it.string } }"
     is ArchiveImported -> "${archiveErrors.map { it.string } }"
     is AppSettingsR -> json.encodeToString(appSettings)
-    is BadgeRedeemed -> withUser(user, "redeemedBadge: ${json.encodeToString(redeemedBadge)}\nnewBadge: $newBadge")
+    is BadgeRedeemed -> withUser(user, "redeemedBadge: ${json.encodeToString(redeemedBadge)}\nnewBadge: $newBadge\nbadgeState: ${json.encodeToString(badgeState)}")
     is BadgeStateR -> withUser(user, json.encodeToString(badgeState))
     is BadgeChanged -> withUser(user, json.encodeToString(badgeState))
     is BadgeAlertR -> withUser(user, json.encodeToString(badgeAlert))

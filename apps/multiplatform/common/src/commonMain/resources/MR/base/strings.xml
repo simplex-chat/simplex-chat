@@ -3267,7 +3267,7 @@
   <string name="badges_type_investor">Investor</string>
   <string name="badges_support_ended_on">Your support ended on %1$s.</string>
   <string name="badges_remind_me_later">Remind me later</string>
-  <string name="badges_dont_show_again">Don\'t show again</string>
+  <string name="badges_dismiss">Dismiss</string>
   <string name="supporter_perks">Supporter perks</string>
   <string name="v7_1_supporter_badge_title">Supporter badge ❤️</string>
   <string name="v7_1_supporter_badge_body">Help keep the network running — send files up to 2 GB.</string>

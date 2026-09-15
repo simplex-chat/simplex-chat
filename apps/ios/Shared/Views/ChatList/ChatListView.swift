@@ -382,6 +382,10 @@ struct ChatListView: View {
         badgeModel.alert?.kind == .supportEnded && badgeModel.userId == chatModel.currentUser?.userId
     }
 
+    private var hasShownBadge: Bool {
+        badgeModel.badgeState?.shown == true && badgeModel.userId == chatModel.currentUser?.userId
+    }
+
     private func showSupportEndedDismissAlert() {
         showAlert(NSLocalizedString("Support ended", comment: "alert title")) {
             [
@@ -470,7 +474,7 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                             .zIndex(1)
-                    } else if !supporterBannerShown && chatModel.chats.count > 3 {
+                    } else if !supporterBannerShown && !hasShownBadge && chatModel.chats.count > 3 {
                         SupportSimpleXBanner(
                             onTap: { showBadgesSheet = true },
                             onDismiss: showSupportSimpleXDismissAlert

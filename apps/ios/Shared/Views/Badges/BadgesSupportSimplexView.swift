@@ -65,6 +65,25 @@ struct BadgesSupportSimplexView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    private func whyBuiltButton() -> some View {
+        ZStack {
+            Button { whyBuiltActive = true } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "info.circle")
+                    Text("Why SimpleX is built.").fontWeight(.medium)
+                }
+                .font(.body)
+            }
+            NavigationLink(isActive: $whyBuiltActive) {
+                WhySimpleX(onboarding: false, titleColor: theme.colors.primary, createProfileNavLinkActive: .constant(false))
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
+        }
+    }
+
     // the in-app purchase path, kept compiling and uncalled until payments return after the MVP
     private func chooseLevelButton() -> some View {
         ZStack {
@@ -78,25 +97,6 @@ struct BadgesSupportSimplexView: View {
             NavigationLink(isActive: $chooseLevelActive) {
                 BadgesYourLevelView()
                     .modifier(ThemedBackground())
-            } label: {
-                EmptyView()
-            }
-            .frame(width: 1, height: 1)
-            .hidden()
-        }
-    }
-
-    private func whyBuiltButton() -> some View {
-        ZStack {
-            Button { whyBuiltActive = true } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "info.circle")
-                    Text("Why SimpleX is built.").fontWeight(.medium)
-                }
-                .font(.body)
-            }
-            NavigationLink(isActive: $whyBuiltActive) {
-                WhySimpleX(onboarding: false, titleColor: theme.colors.primary, createProfileNavLinkActive: .constant(false))
             } label: {
                 EmptyView()
             }

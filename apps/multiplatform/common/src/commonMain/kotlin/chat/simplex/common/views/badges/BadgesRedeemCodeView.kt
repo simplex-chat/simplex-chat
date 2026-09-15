@@ -39,13 +39,6 @@ private const val badgeCodePrefix = "SB"
 private const val badgeCodeBodyLength = 20
 private const val badgeCodeGroupLength = 5
 
-// The code as core will accept it - prefix and 20 characters, no separators - or null if it does not
-// parse. Validity is decided only here: a second check-character implementation would drift.
-fun parseBadgeCode(s: String): String? {
-  val canonical = chatParseBadgeCode(s)
-  return if (canonical.isEmpty()) null else canonical
-}
-
 // Regroups what was typed; validity and the folding of ambiguous characters are core's alone.
 private fun formatBadgeCodeInput(s: String): String {
   val normalized = StringBuilder()
@@ -73,9 +66,11 @@ fun BadgesRedeemCodeView() {
   val canonicalCode = remember { mutableStateOf<String?>(null) }
   val submitting = remember { mutableStateOf(false) }
 
-  fun applyCodeInput(s: String) {
-    val formatted = formatBadgeCodeInput(s)
-    if (formatted != code.value.text) code.value = TextFieldValue(formatted, selection = TextRange(formatted.length))
+  // the value the field gave is stored back when the text is unchanged: a selection move or a
+  // composition update is not a change to the code, and a controlled field must see it reflected
+  fun applyCodeInput(v: TextFieldValue) {
+    val formatted = formatBadgeCodeInput(v.text)
+    code.value = if (formatted != v.text) TextFieldValue(formatted, selection = TextRange(formatted.length)) else v
     canonicalCode.value = parseBadgeCode(formatted)
   }
 
@@ -87,14 +82,12 @@ fun BadgesRedeemCodeView() {
       when (val result = chatModel.controller.apiRedeemBadgeCode(rhId, user.userId, sending)) {
         null -> withContext(Dispatchers.Main) { submitting.value = false }
         is BadgeRedeemResult.Redeemed -> {
-          val badgeState = try { chatModel.controller.apiGetBadgeState(rhId, user.userId) } catch (e: Exception) { null }
+          val badgeState = result.badgeState
           withContext(Dispatchers.Main) {
             submitting.value = false
             // written before the pop: BadgesView swaps its content under this pushed view, so
             // the pop reveals Your Badge already in place rather than animating it afterwards
-            if (badgeState != null) {
-              BadgeModel.set(rhId, user.userId, badgeState)
-            }
+            BadgeModel.set(rhId, user.userId, badgeState)
             // the response is the only carrier: redeeming raises no event that refreshes the
             // profile, so without this the badge beside the name is the one from before
             chatModel.updateUser(result.user)
@@ -163,7 +156,7 @@ fun BadgesRedeemCodeView() {
             false
           }
           else -> {
-            applyCodeInput(formatted)
+            applyCodeInput(TextFieldValue(formatted, selection = TextRange(formatted.length)))
             redeem()
             true
           }
@@ -181,7 +174,7 @@ fun BadgesRedeemCodeView() {
 }
 
 @Composable
-private fun CodeField(code: MutableState<TextFieldValue>, submitting: Boolean, applyCodeInput: (String) -> Unit) {
+private fun CodeField(code: MutableState<TextFieldValue>, submitting: Boolean, applyCodeInput: (TextFieldValue) -> Unit) {
   val colors = TextFieldDefaults.textFieldColors(
     backgroundColor = MaterialTheme.appColors.sentMessage,
     textColor = MaterialTheme.colors.onBackground,
@@ -190,7 +183,7 @@ private fun CodeField(code: MutableState<TextFieldValue>, submitting: Boolean, a
   )
   BasicTextField(
     value = code.value,
-    onValueChange = { applyCodeInput(it.text) },
+    onValueChange = applyCodeInput,
     enabled = !submitting,
     singleLine = true,
     textStyle = TextStyle.Default.copy(
@@ -218,10 +211,10 @@ private fun CodeField(code: MutableState<TextFieldValue>, submitting: Boolean, a
 }
 
 @Composable
-private fun PasteButton(submitting: Boolean, applyCodeInput: (String) -> Unit) {
+private fun PasteButton(submitting: Boolean, applyCodeInput: (TextFieldValue) -> Unit) {
   val clipboard = LocalClipboardManager.current
   TextButton(
-    onClick = { clipboard.getText()?.text?.let { applyCodeInput(it) } },
+    onClick = { clipboard.getText()?.text?.let { applyCodeInput(TextFieldValue(it, selection = TextRange(it.length))) } },
     enabled = !submitting
   ) {
     Text(stringResource(MR.strings.paste_button), color = MaterialTheme.colors.primary, fontWeight = FontWeight.Medium)

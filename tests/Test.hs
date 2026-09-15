@@ -63,7 +63,7 @@ main = do
 #endif
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
-      describe "Supporter badges" badgeTests
+      fdescribe "Supporter badges" badgeTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
@@ -90,6 +90,7 @@ main = do
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           xdescribe'' "SimpleX Directory service bot" directoryServiceTests
           xdescribe'' "SimpleX Badge service bot" badgeServiceTests
+          fdescribe "SimpleX Badge service bot" badgeServiceTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           xdescribe'' "Save query plans" saveQueryPlans

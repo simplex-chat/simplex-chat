@@ -1035,7 +1035,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case appSettings(appSettings: AppSettings)
     // badges
     // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
-    case badgeRedeemed(user: User, redeemedBadge: LocalBadge, newBadge: Bool)
+    case badgeRedeemed(user: User, redeemedBadge: LocalBadge, newBadge: Bool, badgeState: BadgeState?)
     case badgeState(user: UserRef, badgeState: BadgeState?)
 
     var responseType: String {
@@ -1143,7 +1143,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .archiveExported(archiveErrors): return String(describing: archiveErrors)
         case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
         case let .appSettings(appSettings): return String(describing: appSettings)
-        case let .badgeRedeemed(u, redeemedBadge, newBadge): return withUser(u, "redeemedBadge: \(String(describing: redeemedBadge))\nnewBadge: \(newBadge)")
+        case let .badgeRedeemed(u, redeemedBadge, newBadge, badgeState): return withUser(u, "redeemedBadge: \(String(describing: redeemedBadge))\nnewBadge: \(newBadge)\nbadgeState: \(String(describing: badgeState))")
         case let .badgeState(u, badgeState): return withUser(u, String(describing: badgeState))
         }
     }

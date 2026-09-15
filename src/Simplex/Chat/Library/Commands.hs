@@ -3570,7 +3570,7 @@ processChatCommand cxt nm = \case
   APIAckBadgeAlert userId badgePurchaseId alertKind snooze episode -> withUserId userId $ \user -> do
     now <- badgeNow
     let snoozeUntil = if snooze then Just (addUTCTime nominalDay now) else Nothing
-    withStore' $ \db -> setBadgeAlertAcked db badgePurchaseId alertKind episode snoozeUntil
+    withStore' $ \db -> setBadgeAlertAcked db user badgePurchaseId alertKind episode snoozeUntil
     -- after the write, so the pass it signals arms a wake for the snooze rather than raising again
     lift $ startBadgeWork user
     CRBadgeState user <$> getUserBadgeState user
@@ -5597,7 +5597,8 @@ storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey}
       unless applied $ eToView $ ChatError $ CEInternalError "redeemed badge credential has no ledger row to store it against"
       -- nothing is due yet, but a pass is what arms the next wake, and this is the first purchase
       lift $ startBadgeWork user'
-      pure (if newBadge then Just user' else Nothing, CRBadgeRedeemed user' badge newBadge)
+      badgeState <- getUserBadgeState user'
+      pure (if newBadge then Just user' else Nothing, CRBadgeRedeemed user' badge newBadge badgeState)
 
 -- | Store the statement's rows, then the credential against the badge debit row among them.
 -- 'False' when that row cannot be found, which the caller reports rather than drop in silence.

@@ -69,7 +69,7 @@ struct BadgeSummary: View {
                 .frame(width: 68, height: 68)
                 .padding(.bottom, 8)
 
-            badgeTypeName(badgeState.badgeType)
+            Text(badgeTypeName(badgeState.badgeType))
                 .font(.title3)
                 .fontWeight(.semibold)
 
@@ -79,15 +79,5 @@ struct BadgeSummary: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
-    }
-}
-
-// verbatim for an unknown type: it is the service's string, and must not be looked up as a localised key
-private func badgeTypeName(_ t: BadgeType) -> Text {
-    switch t {
-    case .supporter: Text("Supporter")
-    case .legend: Text("Legend")
-    case .investor: Text("Investor")
-    case let .unknown(s): Text(verbatim: s)
     }
 }

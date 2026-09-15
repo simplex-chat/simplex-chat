@@ -123,24 +123,30 @@ struct BadgesRedeemCodeView: View {
         .disabled(submitting)
     }
 
+    // a changed field re-enters through onChange with the formatted text, which is when it is parsed
     private func applyCodeInput(_ s: String) {
         let formatted = formatBadgeCodeInput(s)
-        if formatted != code { code = formatted }
-        canonicalCode = parseBadgeCode(formatted)
+        if formatted != code {
+            code = formatted
+        } else {
+            canonicalCode = parseBadgeCode(formatted)
+        }
     }
 
     private func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
             let formatted = formatBadgeCodeInput(r.string)
-            if parseBadgeCode(formatted) == nil {
+            if let canonical = parseBadgeCode(formatted) {
+                // set here rather than through onChange, which runs after redeem() reads it
+                code = formatted
+                canonicalCode = canonical
+                redeem()
+            } else {
                 showAlert(
                     NSLocalizedString("Invalid QR code", comment: "alert title"),
                     message: NSLocalizedString("The code you scanned is not a badge code.", comment: "alert message")
                 )
-            } else {
-                applyCodeInput(formatted)
-                redeem()
             }
         case let .failure(e):
             logger.error("processQRCode QR code error: \(e.localizedDescription)")
@@ -171,18 +177,15 @@ struct BadgesRedeemCodeView: View {
                     await MainActor.run { submitting = false }
                     return
                 }
-                let badgeState = try? await apiGetBadgeState(user.userId)
                 await MainActor.run {
                     submitting = false
                     // written before the pop: BadgesView swaps its content under this pushed view, so
                     // the pop reveals Your Badge already in place rather than animating it afterwards
-                    if let badgeState {
-                        BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
-                    }
+                    BadgeModel.shared.set(userId: user.userId, badgeState: redeemed.badgeState)
                     // the response is the only carrier: redeeming raises no event that refreshes the
                     // profile, so without this the badge beside the name is the one from before
                     chatModel.updateUser(redeemed.user)
-                    if let badgeState, !badgeState.shown {
+                    if let badgeState = redeemed.badgeState, !badgeState.shown {
                         // a replay adds no purchase; a fresh code's badge can be retired on arrival
                         let message = redeemed.newBadge
                             ? NSLocalizedString("The code was accepted, but the badge it grants has already ended.", comment: "alert message")
