@@ -79,7 +79,7 @@ private fun showSupportEndedDismissAlert() {
           AlertManager.shared.hideAlert()
           withBGApi { chatModel.controller.ackBadgeAlert(snooze = false) }
         }) {
-          Text(stringResource(MR.strings.badges_dont_show_again), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          Text(stringResource(MR.strings.badges_dismiss), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
@@ -1051,7 +1051,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           )
         }
       }
-    } else if (!supporterBannerShown.value && chatModel.chats.value.size > 3) {
+    } else if (!supporterBannerShown.value && !hasShownBadge() && chatModel.chats.value.size > 3) {
       item {
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           SupportSimpleXBanner(

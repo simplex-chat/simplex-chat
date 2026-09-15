@@ -15,7 +15,7 @@ fun BadgesView() {
     if (badgeState != null && badgeState.shown) badgeState else null
   }
 
-  AnimatedContent(targetState = shownBadge, transitionSpec = { fadeIn() with fadeOut() }) { badgeState ->
+  AnimatedContent(targetState = shownBadge, transitionSpec = { fadeIn() with fadeOut() }, contentKey = { it != null }) { badgeState ->
     if (badgeState != null) {
       BadgesYourBadgeView(badgeState)
     } else {
