@@ -42,12 +42,17 @@ import kotlin.math.sin
 private const val CARD_HEIGHT_RATIO = 0.75f
 private const val GRADIENT_ANGLE_RAD = 80.0 * Math.PI / 180.0
 
+// the onboarding cards replace the whole chat list, and the support-ended banner lives in the
+// list - a lapsed supporter is not a newcomer, and must be told even with no conversations yet
 @Composable
 fun shouldShowOnboarding(): Boolean {
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
   val chats = chatModel.chats.value
-  return !addressCreationCardShown.value && chats.isNotEmpty() && !hasConversations(chats)
+  return !addressCreationCardShown.value && chats.isNotEmpty() && !hasConversations(chats) && !supportEnded()
 }
+
+fun supportEnded(): Boolean =
+  BadgeModel.alert.value?.kind == BadgeAlertKind.SupportEnded && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
 
 fun hasConversations(chats: List<Chat>): Boolean =
   chats.any { chat ->

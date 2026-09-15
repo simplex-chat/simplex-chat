@@ -969,7 +969,8 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       ),
     )
   ),
-  // TODO [badges] finalise copy + Read more link before v7.1 ships.
+  // TODO [badges] restore when badges ship, with final copy and the Read more link.
+  /*
   VersionDescription(
     version = "v7.1",
     post = null,
@@ -981,6 +982,7 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       )
     )
   ),
+  */
 )
 
 @Composable

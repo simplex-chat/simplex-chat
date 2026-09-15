@@ -38,6 +38,7 @@ interface PlatformInterface {
   // Play Billing, only implemented in the google flavor
   // TODO [badges] desktop and foss pay via Stripe/crypto - these defaults leave them without any
   // product until that path is implemented
+  val androidHasPlatformStore: Boolean get() = false
   suspend fun androidLoadBadgeProducts(oneTimeIds: List<BadgeStoreProductId>, subscriptionIds: List<BadgeStoreProductId>): List<BadgeProduct> {
     Log.w(TAG, "androidLoadBadgeProducts: no store on this platform")
     return emptyList()

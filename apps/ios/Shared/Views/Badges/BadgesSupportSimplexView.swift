@@ -15,11 +15,11 @@ struct BadgesSupportSimplexView: View {
     // reserve nav-bar space like a NavigationLink push does, so the title lands too close to the top
     var showsAsSheet: Bool = false
     @State private var whyBuiltActive = false
+    @State private var howItWorksActive = false
     @State private var chooseLevelActive = false
     @State private var redeemCodeActive = false
 
     var body: some View {
-        // TODO [badges] gate on user badge status (no badge → this view, active → "Manage your badge")
         GeometryReader { g in
             VStack(alignment: .center, spacing: 16) {
                 Text("Support SimpleX")
@@ -34,7 +34,9 @@ struct BadgesSupportSimplexView: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
 
-                whyBuiltButton()
+                // TODO [badges] restore whyBuiltButton() when in-app purchase lands: the level screen
+                // returns to the flow and howItWorksButton() moves there, leaving this one alone here.
+                howItWorksButton()
 
                 Spacer(minLength: 0)
 
@@ -44,11 +46,10 @@ struct BadgesSupportSimplexView: View {
 
                 Spacer(minLength: 0)
 
-                // Onboarding pattern: nested VStack(spacing: 10) + action button vertical padding 10.
                 VStack(spacing: 10) {
-                    chooseLevelButton()
-                        .padding(.vertical, 10)
                     redeemCodeButton()
+                        .padding(.vertical, 10)
+                    getCodeButton()
                         .frame(height: 22)
                 }
                 .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
@@ -62,8 +63,27 @@ struct BadgesSupportSimplexView: View {
         }
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-        // preloaded here so the level screen shows store prices without a placeholder pass
-        .task { await BadgeStore.shared.load() }
+    }
+
+    // the in-app purchase path, kept compiling and uncalled until payments return after the MVP
+    private func chooseLevelButton() -> some View {
+        ZStack {
+            Button {
+                chooseLevelActive = true
+            } label: {
+                Text("Choose your level")
+            }
+            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+
+            NavigationLink(isActive: $chooseLevelActive) {
+                BadgesYourLevelView()
+                    .modifier(ThemedBackground())
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
+        }
     }
 
     private func whyBuiltButton() -> some View {
@@ -85,17 +105,17 @@ struct BadgesSupportSimplexView: View {
         }
     }
 
-    private func chooseLevelButton() -> some View {
+    private func howItWorksButton() -> some View {
         ZStack {
-            Button {
-                chooseLevelActive = true
-            } label: {
-                Text("Choose your level")
+            Button { howItWorksActive = true } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "info.circle")
+                    Text("How private badges work").fontWeight(.medium)
+                }
+                .font(.body)
             }
-            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
-
-            NavigationLink(isActive: $chooseLevelActive) {
-                BadgesYourLevelView()
+            NavigationLink(isActive: $howItWorksActive) {
+                BadgesHowItWorksView()
                     .modifier(ThemedBackground())
             } label: {
                 EmptyView()
@@ -111,10 +131,8 @@ struct BadgesSupportSimplexView: View {
                 redeemCodeActive = true
             } label: {
                 Text("Redeem badge code")
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .foregroundColor(theme.colors.primary)
             }
+            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
 
             NavigationLink(isActive: $redeemCodeActive) {
                 BadgesRedeemCodeView()
@@ -124,6 +142,17 @@ struct BadgesSupportSimplexView: View {
             }
             .frame(width: 1, height: 1)
             .hidden()
+        }
+    }
+
+    private func getCodeButton() -> some View {
+        Button {
+            openExternalLink(URL(string: "https://simplex.chat/badges/")!)
+        } label: {
+            Text("Get your code")
+                .font(.body)
+                .fontWeight(.medium)
+                .foregroundColor(theme.colors.primary)
         }
     }
 }

@@ -12,7 +12,8 @@ import SimpleXChat
 struct SupportSimpleXBanner: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme
-    @State private var showDismissAlert = false
+    var title: LocalizedStringKey = "Support SimpleX"
+    var subtitle: LocalizedStringKey = "Get badge + files up to 5GB"
     let onTap: () -> Void
     let onDismiss: () -> Void
 
@@ -38,11 +39,11 @@ struct SupportSimpleXBanner: View {
             Button(action: onTap) {
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Support SimpleX")
+                        Text(title)
                             .font(.headline)
                             .foregroundColor(theme.colors.primary)
                             .lineLimit(2)
-                        Text("Get badge + files up to 5GB")
+                        Text(subtitle)
                             .font(.subheadline)
                             .foregroundColor(theme.colors.onBackground)
                             .lineLimit(2)
@@ -71,14 +72,7 @@ struct SupportSimpleXBanner: View {
                 .padding(.trailing, 16)
                 .padding(.leading, 4)
                 .contentShape(Rectangle())
-                .onTapGesture { showDismissAlert = true }
-        }
-        .alert(isPresented: $showDismissAlert) {
-            Alert(
-                title: Text("Support SimpleX"),
-                message: Text("You can support SimpleX later in Settings."),
-                dismissButton: .default(Text("Ok"), action: onDismiss)
-            )
+                .onTapGesture(perform: onDismiss)
         }
     }
 

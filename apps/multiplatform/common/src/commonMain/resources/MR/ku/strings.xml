@@ -108,7 +108,6 @@
     <string name="unmute_chat">Bêdengkirinê betal bike</string>
     <string name="favorite_chat">Bike favorît</string>
     <string name="unfavorite_chat">Ji favorîtan derxe</string>
-    <string name="unread_mentions">Behsên nexwendî</string>
     <string name="create_list">Lîste çêke</string>
     <string name="add_to_list">Li lîstê zêde bike</string>
     <string name="change_list">Lîstê biguhere</string>
@@ -345,7 +344,6 @@
     <string name="language_system">Sîstem</string>
     <string name="system_mode_toast">Moda sîstemê</string>
     <string name="settings_message_shape_tail">Terî/Dûvik</string>
-    <string name="address_creation_instruction">Pêl Adresa SimpleXê çêke di meniwê de ji bo ko tu dûvre çêkî.</string>
     <string name="chat_banner_join_group">Pêl Bikeve komê bike</string>
     <string name="join_group_button">Bikeviyê</string>
     <string name="compose_view_join_group">Bikeve komê</string>
@@ -603,7 +601,6 @@
     <string name="network_type_ethernet">Etherneta bi qeblo</string>
     <string name="network_type_network_wifi">WiFi</string>
     <string name="whats_new">Çi yî nû heye</string>
-    <string name="operator_website">Websîte</string>
     <string name="webrtc_ice_servers">Serverên WebRTC ICEyê</string>
     <string name="database_downgrade_warning">Hişyarî: hinek dataya te kare winda bibe!</string>
     <string name="contact_wants_to_connect_with_you">dixwaze bi te re bikeve danûstandinê!</string>

@@ -305,7 +305,7 @@ public struct BadgeInfo: Codable, Hashable {
     public var badgeExpiry: Date
     public var badgeExtra: String
 
-    public init(badgeType: BadgeType, badgeExpiry: Date? = nil, badgeExtra: String = "") {
+    public init(badgeType: BadgeType, badgeExpiry: Date, badgeExtra: String = "") {
         self.badgeType = badgeType
         self.badgeExpiry = badgeExpiry
         self.badgeExtra = badgeExtra
@@ -319,6 +319,92 @@ public struct LocalBadge: Codable, Hashable {
     public init(badge: BadgeInfo, status: BadgeStatus) {
         self.badge = badge
         self.status = status
+    }
+}
+
+// paidThrough is the only date to show the user: BadgeInfo.badgeExpiry is the credential's expiry,
+// which outlives entitlement so the credential's window can cover a renewal.
+public struct BadgeState: Codable, Hashable {
+    public var badgePurchaseId: Int64
+    public var badgeType: BadgeType
+    public var shown: Bool
+    public var monthsLeft: Int
+    public var paidThrough: Date
+    public var renewsAt: Date?
+    public var willRenew: Bool
+    public var alert: BadgeAlert?
+
+    public var paidThroughText: String { badgeDateText(paidThrough) }
+}
+
+public struct BadgeAlert: Codable, Hashable {
+    public var kind: BadgeAlertKind
+    public var episode: String
+    public var date: Date
+    public var price: BadgeAlertPrice?
+
+    public var dateText: String { badgeDateText(date) }
+}
+
+private func badgeDateText(_ date: Date) -> String {
+    DateFormatter.localizedString(from: date, dateStyle: .long, timeStyle: .none)
+}
+
+public struct BadgeAlertPrice: Hashable {
+    public var amount: Int64
+    public var currency: String
+}
+
+extension BadgeAlertPrice: Codable {
+    // encoded as the Haskell tuple it comes from: [amount, currency]
+    public init(from decoder: Decoder) throws {
+        var c = try decoder.unkeyedContainer()
+        amount = try c.decode(Int64.self)
+        currency = try c.decode(String.self)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.unkeyedContainer()
+        try c.encode(amount)
+        try c.encode(currency)
+    }
+}
+
+public enum BadgeAlertKind: Hashable {
+    case renewalApproaching
+    case paymentIssue
+    case subscriptionEnded
+    case prepaidEnding
+    case supportEnded
+    case unknown(String)
+
+    public var text: String {
+        switch self {
+        case .renewalApproaching: "renewal_approaching"
+        case .paymentIssue: "payment_issue"
+        case .subscriptionEnded: "subscription_ended"
+        case .prepaidEnding: "prepaid_ending"
+        case .supportEnded: "support_ended"
+        case let .unknown(s): s
+        }
+    }
+}
+
+extension BadgeAlertKind: Codable {
+    public init(from decoder: Decoder) throws {
+        switch try decoder.singleValueContainer().decode(String.self) {
+        case "renewal_approaching": self = .renewalApproaching
+        case "payment_issue": self = .paymentIssue
+        case "subscription_ended": self = .subscriptionEnded
+        case "prepaid_ending": self = .prepaidEnding
+        case "support_ended": self = .supportEnded
+        case let s: self = .unknown(s)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(text)
     }
 }
 

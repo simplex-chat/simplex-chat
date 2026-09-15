@@ -16,13 +16,15 @@ import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.helpers.NameWithBadge
 import chat.simplex.common.views.helpers.ProfileImage
 import chat.simplex.res.MR
+import kotlinx.datetime.Instant
 
 @Composable
 fun BadgeUserPreview(level: BadgeLevel, modifier: Modifier = Modifier, trailing: @Composable () -> Unit = {}) {
   val user = chatModel.currentUser.value
   val displayName = user?.displayName ?: stringResource(MR.strings.badges_preview_my_nickname)
   val previewBadge = LocalBadge(
-    badge = BadgeInfo(badgeType = level.badgeType),
+    // fabricated for the preview: the status is given here, and NameBadge renders from it alone
+    badge = BadgeInfo(badgeType = level.badgeType, badgeExpiry = Instant.DISTANT_FUTURE),
     status = BadgeStatus.Active
   )
   Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
