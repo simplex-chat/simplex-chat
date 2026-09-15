@@ -812,7 +812,6 @@ public enum ChatErrorType: Decodable, Hashable {
     case agentVersion
     case agentNoSubResult(agentConnId: String)
     case commandError(message: String)
-    case badgeRedeemError(badgeRedeemError: BadgeRedeemError)
     case serverProtocol
     case agentCommandError(message: String)
     case invalidFileDescription(message: String)
@@ -822,17 +821,6 @@ public enum ChatErrorType: Decodable, Hashable {
     case relayTestError(message: String)
     case internalError(message: String)
     case exception(message: String)
-}
-
-// serviceError is the service's tag, e.g. code_used: the view maps known tags to messages and never displays the tag itself
-public enum BadgeRedeemError: Decodable, Hashable {
-    case invalidCode
-    case serviceNotConfigured
-    case badgeActive
-    case serviceError(serviceError: String)
-    case invalidResponse(message: String)
-    case unknownKeyIndex
-    case credentialNotVerified
 }
 
 public enum StoreError: Decodable, Hashable {
@@ -1089,15 +1077,6 @@ public enum SMPAgentError: Decodable, Hashable {
     case A_CRYPTO
     case A_DUPLICATE
     case A_QUEUE(queueErr: String)
-    case A_SERVICE(serviceError: AgentServiceError)
-}
-
-public enum AgentServiceError: Decodable, Hashable {
-    case rejected
-    case timeout
-    case noPendingRequest
-    case notDRAddress
-    case badSignature
 }
 
 public enum ArchiveError: Decodable, Hashable {

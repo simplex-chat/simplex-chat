@@ -562,18 +562,51 @@ object ChatController {
 
   suspend fun resetAgentServersStats(rh: Long?): Boolean = sendCommandOkResp(rh, CC.ResetAgentServersStats())
 
-  // log = false because the code is a bearer secret until it is redeemed - it is in the command.
-  // null when the user cancels the retry alert.
-  suspend fun apiRedeemBadgeCode(rh: Long?, userId: Long, code: String): BadgeRedeemResult? {
-    val r = sendCmdWithRetry(rh, CC.ApiRedeemBadgeCode(userId, code), log = false) ?: return null
+  fun badgeRedeemError(error: ChatError): BadgeRedeemError {
+    // the app's own classifier decides what counts as a network failure; only the classification is
+    // used here, not its retry policy - a client that retries makes code guessing cheaper
+    if (retryableNetworkErrorAlert(error) != null) return BadgeRedeemError.NetworkError
+    if (error !is ChatError.ChatErrorChat || error.errorType !is ChatErrorType.CommandError) return BadgeRedeemError.Unknown
+    val message = error.errorType.message
+    when (message) {
+      BadgeErrorText.invalidCode -> return BadgeRedeemError.InvalidCode
+      BadgeErrorText.serviceNotConfigured -> return BadgeRedeemError.ServiceNotConfigured
+      BadgeErrorText.alreadyActive -> return BadgeRedeemError.AlreadyActive
+      BadgeErrorText.unknownKeyIndex, BadgeErrorText.credentialNotVerified -> return BadgeRedeemError.CredentialNotVerified
+      BadgeErrorText.undecodableResponse -> return BadgeRedeemError.BadServiceResponse
+    }
+    if (message.startsWith(BadgeErrorText.invalidResponse) || message.startsWith(BadgeErrorText.unexpectedResponse)) {
+      return BadgeRedeemError.BadServiceResponse
+    }
+    if (message.startsWith(BadgeErrorText.serviceError)) {
+      return badgeServiceError(message.removePrefix(BadgeErrorText.serviceError))
+    }
+    return BadgeRedeemError.Unknown
+  }
+
+  // the service's own tag, which core bounds to [a-z0-9_] and 32 characters and which is never shown
+  private fun badgeServiceError(tag: String): BadgeRedeemError = when (tag) {
+    "code_invalid" -> BadgeRedeemError.CodeInvalid
+    "code_used" -> BadgeRedeemError.CodeUsed
+    "code_expired" -> BadgeRedeemError.CodeExpired
+    "rate_limited" -> BadgeRedeemError.RateLimited
+    // retrying never succeeds: the client is too old for the service
+    "unsupported_version" -> BadgeRedeemError.UnsupportedVersion
+    else -> BadgeRedeemError.ServiceFailed
+  }
+
+  // log = false because the code is a bearer secret until it is redeemed - it is in the command, and a
+  // service response echoed into an error message would carry it into the terminal with the response.
+  suspend fun apiRedeemBadgeCode(rh: Long?, userId: Long, code: String): BadgeRedeemResult {
+    val r = sendCmd(rh, CC.ApiRedeemBadgeCode(userId, code), log = false)
     return when {
       // redeemedBadge is dropped: it is the credential, and the user's profile carries what is shown
       r is API.Result && r.res is CR.BadgeRedeemed -> BadgeRedeemResult.Redeemed(r.res.user, r.res.newBadge)
-      r is API.Error -> BadgeRedeemResult.Failed(r.err)
+      r is API.Error -> BadgeRedeemResult.Failed(badgeRedeemError(r.err))
       else -> {
         // the response type alone - it names a case or a JSON key, never the service's message
         Log.e(TAG, "apiRedeemBadgeCode: unexpected ${r.responseType}")
-        BadgeRedeemResult.Failed(null)
+        BadgeRedeemResult.Failed(BadgeRedeemError.Unknown)
       }
     }
   }
@@ -802,8 +835,8 @@ object ChatController {
     }
   }
 
-  private suspend fun sendCmdWithRetry(rhId: Long?, cmd: CC, inProgress: MutableState<Boolean>? = null, retryNum: Int = 0, log: Boolean = true): API? {
-    val r = sendCmd(rhId, cmd, retryNum = retryNum, log = log)
+  private suspend fun sendCmdWithRetry(rhId: Long?, cmd: CC, inProgress: MutableState<Boolean>? = null, retryNum: Int = 0): API? {
+    val r = sendCmd(rhId, cmd, retryNum = retryNum)
     val alert = if (r is API.Error) retryableNetworkErrorAlert(r.err) else null
     if ((inProgress == null || inProgress.value) && alert != null) {
       return suspendCancellableCoroutine { cont ->
@@ -823,7 +856,7 @@ object ChatController {
               safeResume(
                 runCatching {
                   coroutineScope {
-                    sendCmdWithRetry(rhId, cmd, inProgress = inProgress, retryNum = retryNum + 1, log = log)
+                    sendCmdWithRetry(rhId, cmd, inProgress = inProgress, retryNum = retryNum + 1)
                   }
                 }
               )
@@ -885,10 +918,6 @@ object ChatController {
             is ProxyError.NO_SESSION -> MR.strings.private_routing_no_session to message()
             else -> null
           }
-        }
-      is AgentErrorType.AGENT ->
-        if (e.agentErr is SMPAgentError.A_SERVICE && e.agentErr.serviceError is AgentServiceError.Timeout) {
-          return MR.strings.connection_timeout to generalGetString(MR.strings.service_request_timeout_desc)
         }
       else -> return null
     }
@@ -3846,10 +3875,41 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
   }
 }
 
+// The failures redeemBadgeCode raises, as core flattens them to command error text.
+// tests/Bots/BadgeServiceTests.hs asserts that text, so a change in core breaks a test there.
+enum class BadgeRedeemError {
+  InvalidCode,
+  ServiceNotConfigured,
+  AlreadyActive,
+  CodeInvalid,
+  CodeUsed,
+  CodeExpired,
+  RateLimited,
+  ServiceFailed,
+  BadServiceResponse,
+  CredentialNotVerified,
+  UnsupportedVersion,
+  NetworkError,
+  BadgeEnded,
+  Unknown
+}
+
+private object BadgeErrorText {
+  const val invalidCode = "invalid badge code"
+  const val serviceNotConfigured = "badge service not configured"
+  const val alreadyActive = "badge already active"
+  const val unknownKeyIndex = "unknown badge key index"
+  const val credentialNotVerified = "badge credential does not verify against configured key"
+  const val invalidResponse = "invalid badge service response, "
+  const val unexpectedResponse = "unexpected badge service response: "
+  const val serviceError = "badge service error: "
+  // raised by sendServiceRequestTo, not by redeemBadgeCode itself, when the reply is not JSON
+  const val undecodableResponse = "invalid service response"
+}
+
 sealed class BadgeRedeemResult {
   class Redeemed(val user: User, val newBadge: Boolean): BadgeRedeemResult()
-  // err is null for a response of an unexpected type, which is logged where it is received
-  class Failed(val err: ChatError?): BadgeRedeemResult()
+  class Failed(val error: BadgeRedeemError): BadgeRedeemResult()
 }
 
 // ChatCommand
@@ -7271,27 +7331,6 @@ sealed class SimplexDomainError {
   @Serializable @SerialName("unknownDomain") object UnknownDomain : SimplexDomainError()
 }
 
-// serviceError is the service's tag, e.g. code_used: the view maps known tags to messages and never displays the tag itself
-@Serializable
-sealed class BadgeRedeemError {
-  val string: String get() = when (this) {
-    is InvalidCode -> "invalidCode"
-    is ServiceNotConfigured -> "serviceNotConfigured"
-    is BadgeActive -> "badgeActive"
-    is ServiceError -> "serviceError $serviceError"
-    is InvalidResponse -> "invalidResponse $message"
-    is UnknownKeyIndex -> "unknownKeyIndex"
-    is CredentialNotVerified -> "credentialNotVerified"
-  }
-  @Serializable @SerialName("invalidCode") object InvalidCode : BadgeRedeemError()
-  @Serializable @SerialName("serviceNotConfigured") object ServiceNotConfigured : BadgeRedeemError()
-  @Serializable @SerialName("badgeActive") object BadgeActive : BadgeRedeemError()
-  @Serializable @SerialName("serviceError") class ServiceError(val serviceError: String) : BadgeRedeemError()
-  @Serializable @SerialName("invalidResponse") class InvalidResponse(val message: String) : BadgeRedeemError()
-  @Serializable @SerialName("unknownKeyIndex") object UnknownKeyIndex : BadgeRedeemError()
-  @Serializable @SerialName("credentialNotVerified") object CredentialNotVerified : BadgeRedeemError()
-}
-
 data class ConnectionPlanResult(
   val connLink: CreatedConnLink,
   val planSimplexName: SimplexNameInfo?,
@@ -7697,7 +7736,6 @@ sealed class ChatErrorType {
       is AgentVersion -> "agentVersion"
       is AgentNoSubResult -> "agentNoSubResult"
       is CommandError -> "commandError $message"
-      is CEBadgeRedeemError -> "badgeRedeemError ${badgeRedeemError.string}"
       is ServerProtocol -> "serverProtocol"
       is AgentCommandError -> "agentCommandError"
       is InvalidFileDescription -> "invalidFileDescription"
@@ -7782,7 +7820,6 @@ sealed class ChatErrorType {
   @Serializable @SerialName("agentVersion") object AgentVersion: ChatErrorType()
   @Serializable @SerialName("agentNoSubResult") class AgentNoSubResult(val agentConnId: String): ChatErrorType()
   @Serializable @SerialName("commandError") class CommandError(val message: String): ChatErrorType()
-  @Serializable @SerialName("badgeRedeemError") class CEBadgeRedeemError(val badgeRedeemError: BadgeRedeemError): ChatErrorType()
   @Serializable @SerialName("serverProtocol") object ServerProtocol: ChatErrorType()
   @Serializable @SerialName("agentCommandError") class AgentCommandError(val message: String): ChatErrorType()
   @Serializable @SerialName("invalidFileDescription") class InvalidFileDescription(val message: String): ChatErrorType()
@@ -8217,7 +8254,6 @@ sealed class SMPAgentError {
     is A_CRYPTO -> "A_CRYPTO"
     is A_DUPLICATE -> "A_DUPLICATE"
     is A_QUEUE -> "A_QUEUE"
-    is A_SERVICE -> "A_SERVICE ${serviceError.string}"
   }
   @Serializable @SerialName("A_MESSAGE") object A_MESSAGE: SMPAgentError()
   @Serializable @SerialName("A_PROHIBITED") class A_PROHIBITED(val prohibitedErr: String): SMPAgentError()
@@ -8226,23 +8262,6 @@ sealed class SMPAgentError {
   @Serializable @SerialName("A_CRYPTO") object A_CRYPTO: SMPAgentError()
   @Serializable @SerialName("A_DUPLICATE") object A_DUPLICATE: SMPAgentError()
   @Serializable @SerialName("A_QUEUE") class A_QUEUE(val queueErr: String): SMPAgentError()
-  @Serializable @SerialName("A_SERVICE") class A_SERVICE(val serviceError: AgentServiceError): SMPAgentError()
-}
-
-@Serializable
-sealed class AgentServiceError {
-  val string: String get() = when (this) {
-    is Rejected -> "rejected"
-    is Timeout -> "timeout"
-    is NoPendingRequest -> "noPendingRequest"
-    is NotDRAddress -> "notDRAddress"
-    is BadSignature -> "badSignature"
-  }
-  @Serializable @SerialName("rejected") object Rejected: AgentServiceError()
-  @Serializable @SerialName("timeout") object Timeout: AgentServiceError()
-  @Serializable @SerialName("noPendingRequest") object NoPendingRequest: AgentServiceError()
-  @Serializable @SerialName("notDRAddress") object NotDRAddress: AgentServiceError()
-  @Serializable @SerialName("badSignature") object BadSignature: AgentServiceError()
 }
 
 @Serializable

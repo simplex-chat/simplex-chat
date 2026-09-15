@@ -85,7 +85,6 @@ fun BadgesRedeemCodeView() {
     submitting.value = true
     withBGApi {
       when (val result = chatModel.controller.apiRedeemBadgeCode(rhId, user.userId, sending)) {
-        null -> withContext(Dispatchers.Main) { submitting.value = false }
         is BadgeRedeemResult.Redeemed -> {
           val badgeState = try { chatModel.controller.apiGetBadgeState(rhId, user.userId) } catch (e: Exception) { null }
           withContext(Dispatchers.Main) {
@@ -102,7 +101,7 @@ fun BadgesRedeemCodeView() {
               // a replay adds no purchase; a fresh code's badge can be retired on arrival
               AlertManager.shared.showAlertMsg(
                 title = generalGetString(MR.strings.badges_error_title),
-                text = generalGetString(if (result.newBadge) MR.strings.badges_error_badge_ended else MR.strings.badges_error_code_used)
+                text = generalGetString(failureMessage(if (result.newBadge) BadgeRedeemError.BadgeEnded else BadgeRedeemError.CodeUsed))
               )
             } else {
               supporterBannerShown.set(true)
@@ -111,12 +110,13 @@ fun BadgesRedeemCodeView() {
           }
         }
         is BadgeRedeemResult.Failed -> {
-          Log.e(TAG, "apiRedeemBadgeCode: ${result.err?.string}")
+          // the mapped case only - core embeds the service's response in some of these messages
+          Log.e(TAG, "apiRedeemBadgeCode: ${result.error}")
           withContext(Dispatchers.Main) {
             submitting.value = false
             AlertManager.shared.showAlertMsg(
               title = generalGetString(MR.strings.badges_error_title),
-              text = generalGetString(failureMessage(result.err))
+              text = generalGetString(failureMessage(result.error))
             )
           }
         }
@@ -239,26 +239,19 @@ private fun SubmitButton(enabled: Boolean, onClick: () -> Unit) {
   )
 }
 
-private fun failureMessage(err: ChatError?): StringResource = when {
-  err is ChatError.ChatErrorChat && err.errorType is ChatErrorType.CEBadgeRedeemError -> redeemErrorMessage(err.errorType.badgeRedeemError)
-  err is ChatError.ChatErrorAgent && err.agentError is AgentErrorType.AGENT && err.agentError.agentErr is SMPAgentError.A_SERVICE -> MR.strings.badges_error_service_failed
-  else -> MR.strings.badges_error_unknown
-}
-
-private fun redeemErrorMessage(e: BadgeRedeemError): StringResource = when (e) {
-  is BadgeRedeemError.InvalidCode -> MR.strings.badges_error_invalid_code
-  is BadgeRedeemError.ServiceNotConfigured -> MR.strings.badges_error_service_not_configured
-  is BadgeRedeemError.BadgeActive -> MR.strings.badges_error_already_active
-  is BadgeRedeemError.ServiceError -> serviceErrorMessage(e.serviceError)
-  is BadgeRedeemError.InvalidResponse -> MR.strings.badges_error_bad_service_response
-  is BadgeRedeemError.UnknownKeyIndex, is BadgeRedeemError.CredentialNotVerified -> MR.strings.badges_error_credential_not_verified
-}
-
-private fun serviceErrorMessage(tag: String): StringResource = when (tag) {
-  "code_invalid" -> MR.strings.badges_error_code_invalid
-  "code_used" -> MR.strings.badges_error_code_used
-  "code_expired" -> MR.strings.badges_error_code_expired
-  "rate_limited" -> MR.strings.badges_error_rate_limited
-  "unsupported_version" -> MR.strings.badges_error_unsupported_version
-  else -> MR.strings.badges_error_service_failed
+private fun failureMessage(failure: BadgeRedeemError): StringResource = when (failure) {
+  BadgeRedeemError.InvalidCode -> MR.strings.badges_error_invalid_code
+  BadgeRedeemError.ServiceNotConfigured -> MR.strings.badges_error_service_not_configured
+  BadgeRedeemError.AlreadyActive -> MR.strings.badges_error_already_active
+  BadgeRedeemError.CodeInvalid -> MR.strings.badges_error_code_invalid
+  BadgeRedeemError.CodeUsed -> MR.strings.badges_error_code_used
+  BadgeRedeemError.CodeExpired -> MR.strings.badges_error_code_expired
+  BadgeRedeemError.RateLimited -> MR.strings.badges_error_rate_limited
+  BadgeRedeemError.ServiceFailed -> MR.strings.badges_error_service_failed
+  BadgeRedeemError.BadServiceResponse -> MR.strings.badges_error_bad_service_response
+  BadgeRedeemError.CredentialNotVerified -> MR.strings.badges_error_credential_not_verified
+  BadgeRedeemError.UnsupportedVersion -> MR.strings.badges_error_unsupported_version
+  BadgeRedeemError.NetworkError -> MR.strings.badges_error_network
+  BadgeRedeemError.BadgeEnded -> MR.strings.badges_error_badge_ended
+  BadgeRedeemError.Unknown -> MR.strings.badges_error_unknown
 }

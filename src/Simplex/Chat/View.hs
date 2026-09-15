@@ -41,7 +41,7 @@ import Numeric (showFFloat)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
-import Simplex.Chat.Library.Commands (badgeServiceErrorText, maxImageSize)
+import Simplex.Chat.Library.Commands (maxImageSize)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeState (..))
@@ -2841,16 +2841,6 @@ viewChatError isCmd logLevel testView = \case
     CEAgentNoSubResult connId -> ["no subscription result for connection: " <> sShow connId]
     CEServerProtocol p -> [plain $ "Servers for protocol " <> strEncode p <> " cannot be configured by the users"]
     CECommandError e -> ["bad chat command: " <> plain e]
-    CEBadgeRedeemError e ->
-      let reason = case e of
-            BREInvalidCode -> "invalid code"
-            BREServiceNotConfigured -> "badge service not configured"
-            BREBadgeActive -> "badge already active"
-            BREServiceError code -> "badge service error: " <> T.unpack (badgeServiceErrorText code)
-            BREInvalidResponse m -> "invalid service response: " <> m
-            BREUnknownKeyIndex -> "credential names an unknown badge key index"
-            BRECredentialNotVerified -> "credential does not verify against configured key"
-       in ["cannot redeem badge code: " <> plain reason]
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]
