@@ -10592,9 +10592,9 @@ alert title</note>
         <target>Ha egy inkognitóprofilt oszt meg valamelyik partnerével, a rendszer ezt az inkognitóprofilt fogja használni azokban a csoportokban, ahová az adott partnere meghívja Önt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Why SimpleX is built." xml:space="preserve">
+      <trans-unit id="Why SimpleX is built." xml:space="preserve" approved="no">
         <source>Why SimpleX is built.</source>
-        <target>Miért jött létre a SimpleX?</target>
+        <target state="translated">Miért jött létre a SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="WiFi" xml:space="preserve">
