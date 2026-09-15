@@ -44,6 +44,7 @@ import Crypto.Random (getRandomBytes)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as BC8
+import Data.Int (Int64)
 import Data.String (fromString)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -53,6 +54,7 @@ import Data.Word (Word8, Word32)
 import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Service (BadgePrice (..), BadgeOffer (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..), BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
+import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.PaymentService.Types (CardProvider (..), CryptoCurrency (..), CurrencyAmount (..), InvoiceId (..), InvoiceStatus (..), PaymentProvider (..), PaymentStatus (..), ServicePaymentDestination (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withConnection, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -90,12 +92,12 @@ data InvoiceRow = InvoiceRow
 -- | Whether anything the buyer sent is riding on this invoice. A crypto amount that rounds
 -- to nothing still counts, and so does the provider saying it is paid before its figures move.
 paymentHolds :: InvoicePayment -> Bool
-paymentHolds InvoicePayment {ipAmount, ipCryptoAmount, ipPaidInFull} =
-  maybe False (\(CurrencyAmount a) -> a > 0) ipAmount || ipCryptoAmount /= Nothing || ipPaidInFull
+paymentHolds InvoicePayment {ipAmount, ipCryptoPaid, ipPaidInFull} =
+  maybe False (\(CurrencyAmount a) -> a > 0) ipAmount || ipCryptoPaid /= Nothing || ipPaidInFull
 
 data InvoicePayment = InvoicePayment
   { ipAmount :: Maybe CurrencyAmount,
-    ipCryptoAmount :: Maybe Text,
+    ipCryptoPaid :: Maybe Text,
     ipCryptoDue :: Maybe Text,
     ipPaidInFull :: Bool,
     ipStatus :: Text,
@@ -156,7 +158,7 @@ qInsertBadgeCodeInvoice :: Query
 qInsertBadgeCodeInvoice =
   mkQuery $
     "INSERT INTO @badge_code_invoices "
-      <> "(invoice_id, price_id, offer_id, months, created_at, code_hash, provider_ref) "
+      <> "(invoice_id, badge_code_id, price_id, offer_id, months, provider_ref, created_at) "
       <> "VALUES (?,?,?,?,?,?,?)"
 
 qInsertBadgeCode :: Query
@@ -170,10 +172,10 @@ invoiceRowSelect =
   "SELECT i.invoice_id, i.provider, ci.provider_ref, bc.badge_type, bc.months, "
     <> "i.price, i.amount, i.currency, i.payment_url, i.payment_address, i.payment_crypto_currency, "
     <> "i.payment_crypto_amount, i.expires_at, i.status, i.created_at, "
-    <> "p.amount, p.crypto_amount, p.crypto_due, p.paid_in_full, p.status, p.updated_at "
+    <> "p.amount, p.crypto_paid, p.crypto_due, p.paid_in_full, p.status, p.updated_at "
     <> "FROM @invoices i "
     <> "JOIN @badge_code_invoices ci ON ci.invoice_id = i.invoice_id "
-    <> "JOIN @badge_codes bc ON bc.code_hash = ci.code_hash "
+    <> "JOIN @badge_codes bc ON bc.badge_code_id = ci.badge_code_id "
     <> "LEFT JOIN @payments p ON p.invoice_id = i.invoice_id "
 
 qGetInvoice :: Query
@@ -204,7 +206,7 @@ unfundedOnly :: Text
 unfundedOnly =
   "AND NOT EXISTS (SELECT 1 FROM @payments p "
     <> "WHERE p.invoice_id = @invoices.invoice_id AND ("
-    <> "COALESCE(p.amount, 0) > 0 OR p.crypto_amount IS NOT NULL OR p.paid_in_full = 1)) "
+    <> "COALESCE(p.amount, 0) > 0 OR p.crypto_paid IS NOT NULL OR p.paid_in_full = 1)) "
 
 qOverdueInvoiceIds :: Query
 qOverdueInvoiceIds =
@@ -223,7 +225,11 @@ qExpireOverdue =
       <> "AND EXISTS (SELECT 1 FROM @badge_code_invoices ci WHERE ci.invoice_id = @invoices.invoice_id)"
 
 qCodeHashForInvoice :: Query
-qCodeHashForInvoice = mkQuery "SELECT code_hash FROM @badge_code_invoices WHERE invoice_id = ?"
+qCodeHashForInvoice =
+  mkQuery $
+    "SELECT bc.code_hash FROM @badge_code_invoices ci "
+      <> "JOIN @badge_codes bc ON bc.badge_code_id = ci.badge_code_id "
+      <> "WHERE ci.invoice_id = ?"
 
 -- | SQLite's two-argument MAX is GREATEST in Postgres, where MAX is an aggregate.
 largerOf :: Text
@@ -240,14 +246,14 @@ qUpsertPayment :: Query
 qUpsertPayment =
   mkQuery $
     "INSERT INTO @payments "
-      <> "(payment_id, invoice_id, provider, provider_ref, amount, currency, crypto_amount, crypto_due, paid_in_full, status, created_at, updated_at) "
+      <> "(payment_id, invoice_id, provider, provider_ref, amount, currency, crypto_paid, crypto_due, paid_in_full, status, created_at, updated_at) "
       <> "VALUES (?,?,?,?,?,?,?,?,?,?,?,?) "
       <> "ON CONFLICT (payment_id) DO UPDATE SET "
       <> "amount = "
       <> largerOf
       <> "(COALESCE(@payments.amount, 0), excluded.amount), "
-      <> "crypto_amount = CASE WHEN excluded.amount > COALESCE(@payments.amount, 0) OR @payments.crypto_amount IS NULL "
-      <> "THEN excluded.crypto_amount ELSE @payments.crypto_amount END, "
+      <> "crypto_paid = CASE WHEN excluded.amount > COALESCE(@payments.amount, 0) OR @payments.crypto_paid IS NULL "
+      <> "THEN excluded.crypto_paid ELSE @payments.crypto_paid END, "
       -- the provider recomputes what is owed on every read, so the newest answer always wins
       <> "crypto_due = COALESCE(excluded.crypto_due, @payments.crypto_due), "
       <> "paid_in_full = "
@@ -476,12 +482,13 @@ insertInvoiceRows db NewInvoice {..} = do
     )
   DB.execute
     db
-    qInsertBadgeCodeInvoice
-    (invId, priceId, offerId, months, createdAt, DB.Binary niCodeHash, niProviderRef)
-  DB.execute
-    db
     qInsertBadgeCode
     (DB.Binary niCodeHash, niBadgeType, months, textEncode CPSUnpaid, createdAt)
+  badgeCodeId <- insertedRowId db
+  DB.execute
+    db
+    qInsertBadgeCodeInvoice
+    (invId, badgeCodeId, priceId, offerId, months, niProviderRef, createdAt)
 
 #if defined(dbPostgres)
 classifyCreateError :: DB.SQLError -> CreateError

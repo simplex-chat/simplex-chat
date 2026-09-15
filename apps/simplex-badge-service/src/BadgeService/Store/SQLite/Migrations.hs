@@ -30,14 +30,14 @@ m20260915_badge_service_schema =
   badgeSchema servicePrefix
     <> withPrefix
       servicePrefix
-      -- The payment columns are added to @payments, which badgeSchema owns. crypto_amount,
+      -- The payment columns are added to @payments, which badgeSchema owns. crypto_paid,
       -- crypto_due and paid_in_full record the provider's own figures: it applies a payment
       -- tolerance and adds a network fee after a partial payment, so what is owed and whether
       -- an invoice is settled are its verdicts, not amounts recomputable from what we store.
       [sql|
 ALTER TABLE @payments ADD COLUMN receipt_hash BLOB;
 
-ALTER TABLE @payments ADD COLUMN crypto_amount TEXT;
+ALTER TABLE @payments ADD COLUMN crypto_paid TEXT;
 
 ALTER TABLE @payments ADD COLUMN crypto_due TEXT;
 
@@ -62,11 +62,11 @@ CREATE UNIQUE INDEX @idx_badge_purchases_code ON @badge_purchases(badge_code_id)
 
 CREATE TABLE @badge_code_invoices(
   invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
+  badge_code_id INTEGER NOT NULL REFERENCES @badge_codes,
   price_id TEXT NOT NULL REFERENCES @badge_prices,
   offer_id TEXT REFERENCES @badge_offers,
   months INTEGER NOT NULL,
-  code_hash BLOB,
-  provider_ref TEXT,
+  provider_ref TEXT NOT NULL,
   created_at TEXT NOT NULL
 ) STRICT;
 

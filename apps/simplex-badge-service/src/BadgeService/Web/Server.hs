@@ -457,7 +457,7 @@ readInvoiceHandler env@WebEnv {weStore} invId req respond =
 -- as much as the figure: Monero reports a payment as confirming while its figures are zero.
 paymentMark :: InvoiceRow -> (Text, Bool)
 paymentMark InvoiceRow {irPayment} =
-  (maybe "" (fromMaybe "" . ipCryptoAmount) irPayment, maybe False ipPaidInFull irPayment)
+  (maybe "" (fromMaybe "" . ipCryptoPaid) irPayment, maybe False ipPaidInFull irPayment)
 
 -- | The provider is told first: if that fails the invoice stays open at both ends, which is
 -- recoverable, where cancelling here first would leave an address the buyer can still pay into
@@ -525,31 +525,28 @@ invoiceView confirmations InvoiceRow {irBadgeType, irMonths, irAmount, irCurrenc
       "currency" .= irCurrency,
       "expiresAt" .= irExpiresAt
     ]
-      <> destinationPairs irDestination
+      <> destinationPairs confirmations irDestination
       <> paidPairs
-      <> confirmationPairs
   where
-    confirmationPairs = case irDestination of
-      SPDCrypto {} -> maybe [] (\n -> ["requiredConfirmations" .= n]) confirmations
-      SPDCard {} -> []
     paidPairs = maybe [] paymentPairs irPayment
     paymentPairs p =
       concat
         [ maybe [] (\a -> ["amountPaid" .= amountJSON a]) (ipAmount p),
-          maybe [] (\a -> ["cryptoAmountPaid" .= a]) (ipCryptoAmount p),
+          maybe [] (\a -> ["cryptoAmountPaid" .= a]) (ipCryptoPaid p),
           maybe [] (\a -> ["cryptoAmountDue" .= a]) (ipCryptoDue p),
           ["paidInFull" .= ipPaidInFull p],
           ["settledAt" .= ipUpdatedAt p | irStatus == ISPaid]
         ]
 
-destinationPairs :: ServicePaymentDestination -> [Pair]
-destinationPairs = \case
+destinationPairs :: Maybe Int -> ServicePaymentDestination -> [Pair]
+destinationPairs confirmations = \case
   SPDCard _ url -> ["clientSecret" .= url]
   SPDCrypto currency address cryptoAmount ->
     [ "address" .= address,
       "cryptoAmount" .= cryptoAmount,
       "cryptoCurrency" .= cryptoCurrencyText currency
     ]
+      <> maybe [] (\n -> ["requiredConfirmations" .= n]) confirmations
 
 amountJSON :: CurrencyAmount -> J.Value
 amountJSON (CurrencyAmount a) = J.toJSON a
@@ -632,7 +629,7 @@ createdInvoice (InvoiceId invId) PricedOffer {poBadgeType, poMonths, poAmount, p
       "currency" .= poCurrency,
       "expiresAt" .= expiresAt
     ]
-      <> destinationPairs destination
+      <> destinationPairs Nothing destination
 
 secondsPerMinute :: Int
 secondsPerMinute = 60

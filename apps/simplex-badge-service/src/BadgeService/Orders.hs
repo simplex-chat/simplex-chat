@@ -112,11 +112,11 @@ settleOrder st waiters invId signal now' = do
           Nothing -> True
           -- the write is monotonic, so "different" is not "would move": a lower figure or a
           -- withdrawn verdict leaves the row alone, and calling that new republishes it forever
-          Just InvoicePayment {ipAmount, ipCryptoAmount, ipPaidInFull, ipStatus}
+          Just InvoicePayment {ipAmount, ipCryptoPaid, ipPaidInFull, ipStatus}
             | ipStatus == paymentStatusText PSSettled -> False
             | otherwise ->
                 maybe True (\(CurrencyAmount held) -> held < minor) ipAmount
-                  || (ipCryptoAmount == Nothing && rcvCrypto /= Nothing)
+                  || (ipCryptoPaid == Nothing && rcvCrypto /= Nothing)
                   || (paidInFull signal && not ipPaidInFull)
                   || ipStatus /= paymentStatusText wPayment
       where

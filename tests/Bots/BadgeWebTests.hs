@@ -279,8 +279,8 @@ badgeWebTests = do
 testServiceColumns :: IO ()
 testServiceColumns = withServiceStore $ \st -> do
   columnsOf st "sx_badge_service_badge_code_invoices"
-    >>= (`shouldSatisfy` \cs -> all (`elem` cs) ["code_hash", "provider_ref"])
-  columnsOf st "sx_badge_service_payments" >>= (`shouldSatisfy` elem "crypto_amount")
+    >>= (`shouldSatisfy` \cs -> all (`elem` cs) ["badge_code_id", "provider_ref"])
+  columnsOf st "sx_badge_service_payments" >>= (`shouldSatisfy` elem "crypto_paid")
   columnsOf st "sx_badge_service_badge_codes"
     >>= (`shouldSatisfy` \cs -> all (`elem` cs) ["expires_at", "revoked_at"])
 
@@ -308,11 +308,16 @@ seedBadgePrice st priceId = withConnection st $ \db ->
     (priceId, "supporter" :: Text, 500 :: Int, "usd" :: Text, "active" :: Text, "2026-08-31T00:00:00Z" :: Text)
 
 insertBadgeCodeInvoice :: DBStore -> Text -> Text -> Text -> IO ()
-insertBadgeCodeInvoice st invoiceId priceId providerRef = withConnection st $ \db ->
+insertBadgeCodeInvoice st invoiceId priceId providerRef = withConnection st $ \db -> do
+  let codeHash = DB.Binary (digestFixture (fromIntegral (sum (map fromEnum (T.unpack invoiceId)))))
   DB.execute
     db
-    "INSERT INTO sx_badge_service_badge_code_invoices (invoice_id, price_id, months, created_at, provider_ref) VALUES (?,?,?,?,?)"
-    (invoiceId, priceId, 1 :: Int, "2026-08-31T00:00:00Z" :: Text, providerRef)
+    "INSERT INTO sx_badge_service_badge_codes (code_hash, badge_type, months, code_payment_status, created_at) VALUES (?,?,?,?,?)"
+    (codeHash, "supporter" :: Text, 1 :: Int, "unpaid" :: Text, "2026-08-31T00:00:00Z" :: Text)
+  DB.execute
+    db
+    "INSERT INTO sx_badge_service_badge_code_invoices (invoice_id, badge_code_id, price_id, months, created_at, provider_ref) SELECT ?, badge_code_id, ?, ?, ?, ? FROM sx_badge_service_badge_codes WHERE code_hash = ?"
+    (invoiceId, priceId, 1 :: Int, "2026-08-31T00:00:00Z" :: Text, providerRef, codeHash)
 
 someExpiry :: UTCTime
 someExpiry = UTCTime (fromGregorian 2030 1 1) 0
@@ -1751,7 +1756,7 @@ settledCode st (InvoiceId iid) = withConnection st $ \db -> do
   rows <-
     DB.query
       db
-      "SELECT c.code_payment_status, c.expires_at, c.revoked_at FROM sx_badge_service_badge_codes c JOIN sx_badge_service_badge_code_invoices ci ON ci.code_hash = c.code_hash WHERE ci.invoice_id = ?"
+      "SELECT c.code_payment_status, c.expires_at, c.revoked_at FROM sx_badge_service_badge_codes c JOIN sx_badge_service_badge_code_invoices ci ON ci.badge_code_id = c.badge_code_id WHERE ci.invoice_id = ?"
       (Only iid)
   case rows of
     (status, expiresAt, revokedAt) : _ -> pure CodeRow {bcPaymentStatus = fromMaybe CPSUnpaid (textDecode status), bcExpiresAt = expiresAt, bcRevokedAt = revokedAt}
@@ -1813,7 +1818,7 @@ testSettlesAnOpenInvoice = bounded "settles an open invoice" $ withServiceStore 
   invoiceStatus st iid `shouldReturn` ISPaid
   p <- paymentRow st iid
   ipAmount p `shouldBe` Just (CurrencyAmount 500)
-  ipCryptoAmount p `shouldBe` Just "0.00050000"
+  ipCryptoPaid p `shouldBe` Just "0.00050000"
   ipStatus p `shouldBe` "settled"
   ipUpdatedAt p `shouldBe` settleAt
   ipUpdatedAt p `shouldNotBe` detectedAt
@@ -1878,7 +1883,7 @@ testClosedReplayIsIdempotent = bounded "closed replay" $ withServiceStore $ \st 
   invoiceStatus st iid `shouldReturn` ISExpired
   p <- paymentRow st iid
   ipAmount p `shouldBe` Just (CurrencyAmount 200)
-  ipCryptoAmount p `shouldBe` Just "0.00020000"
+  ipCryptoPaid p `shouldBe` Just "0.00020000"
   ipStatus p `shouldBe` "pending"
   length <$> paymentIdentity st iid `shouldReturn` 1
 
@@ -1907,14 +1912,14 @@ testAmountIsMonotonic = bounded "monotonic amount" $ withServiceStore $ \st -> d
   settle st iid (SigFunded (rcv 10000 (Just "0.180")) PaidInPart) replayAt `shouldReturn` Right ISOpen
   p <- paymentRow st iid
   ipAmount p `shouldBe` Just (CurrencyAmount 40000)
-  ipCryptoAmount p `shouldBe` Just "0.734"
+  ipCryptoPaid p `shouldBe` Just "0.734"
   settle st iid (SigFunded (rcv 40000 (Just "0.734")) PaidInPart) replayAt `shouldReturn` Right ISOpen
   settle st iid (SigFunded (rcv 40000 (Just "0.734")) PaidInPart) replayAt `shouldReturn` Right ISOpen
   ipAmount <$> paymentRow st iid `shouldReturn` Just (CurrencyAmount 40000)
   settle st iid (SigFunded (rcv 50000 (Just "0.900")) PaidInPart) replayAt `shouldReturn` Right ISOpen
   p' <- paymentRow st iid
   ipAmount p' `shouldBe` Just (CurrencyAmount 50000)
-  ipCryptoAmount p' `shouldBe` Just "0.900"
+  ipCryptoPaid p' `shouldBe` Just "0.900"
 
 testDeadlineIsFromTheFirstSettlement :: IO ()
 testDeadlineIsFromTheFirstSettlement = bounded "deadline from the first settlement" $ withServiceStore $ \st -> do
@@ -2049,7 +2054,7 @@ testSettledPaymentIsNotDowngraded = bounded "settled is not downgraded" $ withSe
   ipStatus p `shouldBe` "settled"
   ipUpdatedAt p `shouldBe` settleAt
   ipAmount p `shouldBe` Just (CurrencyAmount 500)
-  ipCryptoAmount p `shouldBe` Just "0.00050000"
+  ipCryptoPaid p `shouldBe` Just "0.00050000"
   let second' = sampleInvoice {niInvoiceId = InvoiceId "inv-pending", niProviderRef = "p-pending", niCodeHash = digestFixture 16}
   createInvoiceRows st second' `shouldReturn` Right ()
   row' <- getInvoice st (niInvoiceId second') >>= maybe (failWith "no invoice row") pure
@@ -2063,9 +2068,9 @@ testCryptoAmountFillsInFromNull :: IO ()
 testCryptoAmountFillsInFromNull = bounded "crypto fills in" $ withServiceStore $ \st -> do
   iid <- seedOpen st
   settle st iid (SigFunded (rcv 500 Nothing) PaidInPart) settleAt `shouldReturn` Right ISOpen
-  ipCryptoAmount <$> paymentRow st iid `shouldReturn` Nothing
+  ipCryptoPaid <$> paymentRow st iid `shouldReturn` Nothing
   settle st iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) detectedAt `shouldReturn` Right ISPaid
-  ipCryptoAmount <$> paymentRow st iid `shouldReturn` Just "0.00050000"
+  ipCryptoPaid <$> paymentRow st iid `shouldReturn` Just "0.00050000"
   ipAmount <$> paymentRow st iid `shouldReturn` Just (CurrencyAmount 500)
 
 pollerFor :: WebEnv -> IO PollerEnv
@@ -2177,7 +2182,7 @@ testSettlesWithNoWebhookAtAll = bounded "no webhook at all" $ withFakePoller $ \
   p <- paymentRow (weStore env) iid
   ipStatus p `shouldBe` "settled"
   ipAmount p `shouldBe` Just (CurrencyAmount 5400)
-  ipCryptoAmount p `shouldBe` Just "0.32095000"
+  ipCryptoPaid p `shouldBe` Just "0.32095000"
 
 testPassReadsWhatItAwaits :: IO ()
 testPassReadsWhatItAwaits = bounded "reads what it awaits" $ withStubPoller raceHold $ \ref poller env _ -> do
@@ -2288,7 +2293,7 @@ testEverySignalSettles = bounded "every signal settles" $ withStubPoller raceHol
   invoiceStatus (weStore env) funded `shouldReturn` ISOpen
   ipAmount <$> paymentRow (weStore env) funded `shouldReturn` Just (CurrencyAmount 200)
   invoiceStatus (weStore env) closed `shouldReturn` ISExpired
-  ipCryptoAmount <$> paymentRow (weStore env) closed `shouldReturn` Just "0.00010000"
+  ipCryptoPaid <$> paymentRow (weStore env) closed `shouldReturn` Just "0.00010000"
   bcPaymentStatus <$> settledCode (weStore env) paid `shouldReturn` CPSPaid
   bcPaymentStatus <$> settledCode (weStore env) funded `shouldReturn` CPSUnpaid
   bcPaymentStatus <$> settledCode (weStore env) closed `shouldReturn` CPSUnpaid
@@ -2440,7 +2445,7 @@ testSweepWritesStatusAlone = bounded "sweep writes status alone" $ withStubPolle
   invoiceStatus (weStore env) iid `shouldReturn` ISExpired
   p <- paymentRow (weStore env) iid
   ipAmount p `shouldBe` Just (CurrencyAmount 200)
-  ipCryptoAmount p `shouldBe` Just "0.00020000"
+  ipCryptoPaid p `shouldBe` Just "0.00020000"
 
 testSweepWakesAHeldRequest :: IO ()
 testSweepWakesAHeldRequest = bounded "sweep wakes a hold" $ withStubPoller raceHold $ \_ poller env client -> do
@@ -3093,7 +3098,7 @@ testCancelExpiresAFundedInvoice = withServiceStore $ \st -> do
   Just row <- getInvoice st iid
   irStatus row `shouldBe` ISExpired
   -- the money is not expired with the invoice: settlement still has the payment row to work from
-  (ipCryptoAmount <$> irPayment row) `shouldBe` Just (Just "0.00050000")
+  (ipCryptoPaid <$> irPayment row) `shouldBe` Just (Just "0.00050000")
 
 testCancelIsRefusedOnceItIsFunded :: IO ()
 testCancelIsRefusedOnceItIsFunded = bounded "cancel funded" $ withCancel $ \ref env client -> do
