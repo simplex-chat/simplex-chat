@@ -261,6 +261,12 @@ fun checkForUpdate() {
     }
   } catch (e: Exception) {
     Log.e(TAG, "Failed to get the latest release: ${e.stackTraceToString()}")
+    withApi {
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.app_check_for_updates_check_failed_title),
+        text = generalGetString(MR.strings.app_check_for_updates_check_failed_desc),
+      )
+    }
   }
 }
 
@@ -380,6 +386,12 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
     }
   } catch (e: Exception) {
     Log.e(TAG, "Failed to download the asset from release: ${e.stackTraceToString()}")
+    withContext(Dispatchers.Main) {
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.app_check_for_updates_download_failed_title),
+        text = generalGetString(MR.strings.app_check_for_updates_download_failed_desc),
+      )
+    }
   }
 }
 
