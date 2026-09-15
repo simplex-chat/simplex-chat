@@ -1848,11 +1848,9 @@
     <string name="network_smp_proxy_mode_unprotected">Ungeschützt</string>
     <string name="network_smp_proxy_mode_unknown_description">Bei unbekannten Servern privates Routing nutzen.</string>
     <string name="network_smp_proxy_mode_never_description">KEIN privates Routing nutzen.</string>
-    <string name="update_network_smp_proxy_mode_question">Modus für das Nachrichten-Routing</string>
     <string name="network_smp_proxy_fallback_allow">Ja</string>
     <string name="network_smp_proxy_fallback_prohibit">Nein</string>
     <string name="network_smp_proxy_fallback_allow_protected">Wenn die IP-Adresse versteckt ist</string>
-    <string name="update_network_smp_proxy_fallback_question">Fallback für das Nachrichten-Routing</string>
     <string name="private_routing_show_message_status">Nachrichtenstatus anzeigen</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Herabstufung erlauben</string>
     <string name="network_smp_proxy_mode_always_description">Immer privates Routing nutzen.</string>
@@ -1893,7 +1891,6 @@
     <string name="settings_section_title_chat_colors">Chat-Farben</string>
     <string name="settings_section_title_chat_theme">Chat-Design</string>
     <string name="wallpaper_scale_fit">Passend</string>
-    <string name="chat_list_always_visible">Chat-Liste in einem neuen Fenster anzeigen</string>
     <string name="wallpaper_preview_hello_alice">Guten Nachmittag!</string>
     <string name="wallpaper_preview_hello_bob">Guten Morgen!</string>
     <string name="dark_mode_colors">Farben für die dunkle Variante</string>
@@ -2058,9 +2055,7 @@
     <string name="privacy_media_blur_radius_strong">Stark</string>
     <string name="privacy_media_blur_radius_medium">Mittel</string>
     <string name="privacy_media_blur_radius_off">Aus</string>
-    <string name="info_view_connect_button">Verbinden</string>
     <string name="info_view_message_button">Nachricht</string>
-    <string name="info_view_open_button">Öffnen</string>
     <string name="conversation_deleted">Chat-Inhalte gelöscht!</string>
     <string name="only_delete_conversation">Nur die Chat-Inhalte löschen</string>
     <string name="info_view_search_button">Suchen</string>
@@ -2209,14 +2204,9 @@
     <string name="onboarding_choose_server_operators">Server-Betreiber</string>
     <string name="onboarding_network_operators">Netzwerk-Betreiber</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Die App verwendet für jede Unterhaltung Server von unterschiedlichen Betreibern, um Ihre Privatsphäre zu schützen.</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Die Nutzungsbedingungen der aktivierten Betreiber werden nach 30 Tagen akzeptiert.</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Wenn Ihr Kontakt beispielsweise Nachrichten über einen SimpleX-Chat-Server empfängt, wird Ihre App diese über einen Flux-Server versenden.</string>
-    <string name="onboarding_network_operators_review_later">Später einsehen</string>
-    <string name="onboarding_select_network_operators_to_use">Wählen sie die zu nutzenden Netzwerk-Betreiber aus.</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Sie können die Betreiber in den Netzwerk- und Servereinstellungen konfigurieren.</string>
     <string name="onboarding_network_operators_configure_via_settings">Sie können die Server über die Einstellungen konfigurieren.</string>
     <string name="onboarding_network_operators_continue">Weiter</string>
-    <string name="onboarding_network_operators_update">Aktualisieren</string>
     <string name="network_preset_servers_title">Voreingestellte Server</string>
     <string name="operator_review_conditions">Nutzungsbedingungen einsehen</string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">Die Nutzungsbedingungen der aktivierten Betreiber werden am %s automatisch akzeptiert.</string>
@@ -2225,7 +2215,6 @@
     <string name="operator_servers_title">%s Server</string>
     <string name="operator_info_title">Netzwerk-Betreiber</string>
     <string name="operator_use_operator_toggle_description">Verwende Server</string>
-    <string name="operator_website">Webseite</string>
     <string name="use_servers_of_operator_x">Verwende %s</string>
     <string name="operator_same_conditions_will_be_applied"><![CDATA[Dieselben Nutzungsbedingungen gelten auch für den Betreiber <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Dieselben Nutzungsbedingungen gelten auch für den/die Betreiber: <b>%s</b>.]]></string>
@@ -2267,12 +2256,10 @@
     <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Um die Server von <b>%s</b> zu nutzen, müssen Sie dessen Nutzungsbedingungen akzeptieren.]]></string>
     <string name="error_accepting_operator_conditions">Fehler beim Akzeptieren der Nutzungsbedingungen</string>
     <string name="error_updating_server_title">Fehler beim Aktualisieren des Servers</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">für einen besseren Metadatenschutz.</string>
     <string name="smp_servers_new_server">Neuer Server</string>
     <string name="message_deleted_or_not_received_error_title">Keine Nachricht</string>
     <string name="no_message_servers_configured_for_private_routing">Keine Server für privates Nachrichten-Routing.</string>
     <string name="share_address_publicly">Die Adresse öffentlich teilen</string>
-    <string name="address_creation_instruction">Tippen Sie im Menü auf SimpleX-Adresse erstellen, um sie später zu erstellen.</string>
     <string name="connection_error_quota_desc">Diese Verbindung hat das Limit der nicht ausgelieferten Nachrichten erreicht. Ihr Kontakt ist möglicherweise offline.</string>
     <string name="message_deleted_or_not_received_error_desc">Diese Nachricht wurde gelöscht oder bisher noch nicht empfangen.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Zum Schutz vor dem Austausch Ihres Links können Sie die Sicherheitscodes Ihrer Kontakte vergleichen.</string>
@@ -2280,7 +2267,6 @@
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Die Nutzungsbedingungen der/des Betreiber(s) werden akzeptiert: <b>%s</b>.]]></string>
     <string name="operator_conditions_accepted_on">Die Nutzungsbedingungen wurden am %s akzeptiert.</string>
     <string name="operator_conditions_failed_to_load">Der Text der aktuellen Nutzungsbedingungen konnte nicht geladen werden. Sie können die Nutzungsbedingungen unter diesem Link einsehen:</string>
-    <string name="remote_hosts_section">Ferngesteuerte Mobiltelefone</string>
     <string name="chat_archive">Oder importieren Sie eine Archiv-Datei</string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Hinweis für Geräte von Xiaomi</b>: Bitte aktivieren Sie in den System-Einstellungen die Option "Autostart", damit Benachrichtigungen funktionieren.]]></string>
     <string name="all_message_and_files_e2e_encrypted"><![CDATA[Alle Nachrichten und Dateien werden <b>Ende-zu-Ende-verschlüsselt</b> versendet. In Direktnachrichten sogar mit Post-Quantum-Security.]]></string>
@@ -2372,7 +2358,6 @@
     <string name="report_reason_spam">Spam</string>
     <string name="archive_verb">Archiv</string>
     <string name="report_reason_alert_title">Grund der Meldung?</string>
-    <string name="report_archive_alert_desc">Die Meldung wird für Sie archiviert.</string>
     <string name="report_compose_reason_header_profile">Mitgliederprofil melden: Nur Gruppenmoderatoren werden es sehen.</string>
     <string name="report_compose_reason_header_other">Anderes melden: Nur Gruppenmoderatoren werden es sehen.</string>
     <string name="report_compose_reason_header_community">Verstoß melden: Nur Gruppenmoderatoren werden es sehen.</string>
@@ -2409,7 +2394,6 @@
     <string name="network_smp_web_port_section_title">TCP-Port für Nachrichtenübermittlung</string>
     <string name="max_group_mentions_per_message_reached">Sie können bis zu %1$s Mitglieder pro Nachricht erwähnen!</string>
     <string name="mute_all_chat">Alle stummschalten</string>
-    <string name="unread_mentions">Ungelesene Erwähnungen</string>
     <string name="member_reports_are_prohibited">Melden von Nachrichten ist in dieser Gruppe nicht erlaubt.</string>
     <string name="report_archive_alert_title_all">Alle Meldungen archivieren?</string>
     <string name="report_archive_alert_title_nth">Archiviere %d Meldungen?</string>
@@ -2534,7 +2518,6 @@
     <string name="compose_view_send_contact_request_alert_question">Kontakt-Anfrage senden?</string>
     <string name="compose_view_send_request">Anfrage senden</string>
     <string name="compose_view_send_request_without_message">Anfrage ohne Nachricht senden</string>
-    <string name="sent_to_your_contact_after_connection">Wird nach der Verbindung an Ihren Kontakt gesendet.</string>
     <string name="share_group_profile_via_link">Gruppen-Link aktualisieren?</string>
     <string name="share_profile_via_link_alert_confirm">Aktualisieren</string>
     <string name="share_profile_via_link">Adresse aktualisieren?</string>
@@ -2590,7 +2573,6 @@
     <string name="settings_section_title_contact_requests_from_groups">Kontaktanfragen in Gruppen</string>
     <string name="member_is_deleted_cant_accept_request">Mitglied ist gelöscht - Anfrage kann nicht angenommen werden</string>
     <string name="rcv_direct_event_group_inv_link_received">Angefragte Verbindung von Gruppe %1$s</string>
-    <string name="this_setting_is_for_your_current_profile">Diese Einstellung gilt für Ihr aktuelles Profil</string>
     <string name="allow_files_and_media_only_if">Erlauben Sie Dateien und Medien nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
     <string name="allow_your_contacts_to_send_files_and_media">Erlauben Sie Ihren Kontakten Dateien und Medien zu senden.</string>
     <string name="chat_banner_bot">Bot</string>
@@ -2620,7 +2602,6 @@
     <string name="remove_member_delete_messages_confirmation">Mitglied entfernen und Nachrichten löschen</string>
     <string name="content_filter_all_messages">Alle Nachrichten</string>
     <string name="content_filter_files">Dateien</string>
-    <string name="content_filter_menu_item">Filter</string>
     <string name="content_filter_images">Bilder</string>
     <string name="content_filter_links">Links</string>
     <string name="placeholder_search_files">Dateien suchen</string>
@@ -2650,7 +2631,6 @@
     <string name="chat_banner_channel">Kanal</string>
     <string name="info_row_channel">Kanal</string>
     <string name="channel_link">Kanallink</string>
-    <string name="button_channel_members">Kanal-Mitglieder</string>
     <string name="channel_display_name_field">Kanalname</string>
     <string name="delete_channel_for_all_subscribers_cannot_undo_warning">Der Kanal wird für alle Abonnenten gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="delete_channel_for_self_cannot_undo_warning">Der Kanal wird für Sie gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
@@ -2680,7 +2660,6 @@
     <string name="enter_relay_name">Relais-Name eingeben…</string>
     <string name="error_adding_relay">Fehler beim Hinzufügen des Relais</string>
     <string name="error_creating_channel">Fehler beim Erstellen des Kanals</string>
-    <string name="error_opening_channel">Fehler beim Öffnen des Kanals</string>
     <string name="relay_conn_status_failed">Fehlgeschlagen</string>
     <string name="relay_status_failed">Fehlgeschlagen</string>
     <string name="relay_test_step_get_link">Link erhalten</string>
@@ -2697,7 +2676,6 @@
     <string name="no_chat_relays_enabled">Es sind keine Chat-Relais aktiviert.</string>
     <string name="not_all_relays_connected">Es sind nicht alle Relais verbunden</string>
     <string name="connect_plan_open_channel">Kanal öffnen</string>
-    <string name="connect_plan_open_new_channel">Neuen Kanal öffnen</string>
     <string name="member_info_section_title_owner">Eigentümer</string>
     <string name="channel_members_section_owners">Eigentümer und Mitwirkende</string>
     <string name="preset_relay_address">Voreingestellte Relais-Adresse</string>
@@ -2876,7 +2854,6 @@
     <string name="link_previews_alert_desc_socks">Die Linkvorschau wird über einen SOCKS-Proxy angefordert. DNS-Abfragen können dennoch lokal über Ihren DNS-Resolver erfolgen.</string>
     <string name="one_hand_ui_top_bar">Obere Leiste</string>
     <string name="cancel_channel_alert_msg">Ihr neuer Kanal %1$s ist mit %2$d von %3$d Relais verbunden.\nBei Abbruch, wird der Kanal gelöscht. Sie können ihn später neu erstellen.</string>
-    <string name="add_button">Hinzufügen</string>
     <string name="add_relay_button">Relais hinzufügen</string>
     <string name="add_relays_title">Relais hinzufügen</string>
     <string name="button_cancel_and_delete_channel">Kanal abbrechen und löschen</string>
@@ -2913,7 +2890,6 @@
     <string name="channel_owner_count_plural">%1$d Eigentümer</string>
     <string name="channel_owners_contributors_count">%1$d Eigentümer und Mitwirkende</string>
     <string name="badge_supported_simplex">%1$s hat SimpleX Chat unterstützt. Das Abzeichen ist am %2$s abgelaufen.</string>
-    <string name="settings_section_title_about">Über</string>
     <string name="relay_status_acknowledged_roster">Bestätigter Relaisbestand</string>
     <string name="webpage_code_footer">Fügen Sie diesen Code in Ihre Webseite ein. Er zeigt die Vorschau Ihres Kanals / Ihrer Gruppe an.</string>
     <string name="advanced_options">Erweiterte Optionen</string>
@@ -2924,8 +2900,6 @@
     <string name="badge_unknown_key_title">Abzeichen ist nicht verifizierbar</string>
     <string name="channel_webpage">Kanal-Webseite</string>
     <string name="chat_data">Chat-Daten</string>
-    <string name="channel_name_requires_newer_app_version">Die Verbindung über den Kanalnamen erfordert eine neuere App‑Version.</string>
-    <string name="contact_name_requires_newer_app_version">Die Verbindung über den Kontaktnamen erfordert eine neuere App‑Version.</string>
     <string name="settings_section_title_contact">Kontakt</string>
     <string name="group_member_role_member_channel">Mitwirkender</string>
     <string name="copy_code">Code kopieren</string>
@@ -2937,7 +2911,6 @@
     <string name="webpage_url_footer">Dies wird Abonnenten angezeigt und zum Laden der Vorschau genutzt.</string>
     <string name="more_privacy">Weitere Privatsphäre</string>
     <string name="embed_only_your_page">Nur Ihre oben genannte Seite kann die Vorschau anzeigen.</string>
-    <string name="please_upgrade_the_app">Bitte die App aktualisieren.</string>
     <string name="badge_invested">%s hat sich am SimpleX Chat-Crowdfunding beteiligt.</string>
     <string name="badge_supports_simplex">%s unterstützt SimpleX Chat.</string>
     <string name="group_member_role_observer_channel">Abonnent</string>
@@ -2946,8 +2919,6 @@
     <string name="member_role_will_be_changed_with_notification_channel">Die Rolle wird auf %s geändert. Alle Abonnenten werden benachrichtigt.</string>
     <string name="badge_unverified_desc">Dieses Abzeichen konnte nicht verifiziert werden und ist möglicherweise nicht echt.</string>
     <string name="group_link_requires_newer_version">Diese Gruppe erfordert eine neuere App‑Version. Bitte aktualisieren Sie die App, um beizutreten.</string>
-    <string name="unsupported_channel_name">Kanalname wird nicht unterstützt</string>
-    <string name="unsupported_contact_name">Kontaktname wird nicht unterstützt</string>
     <string name="badge_unverified_title">Abzeichen nicht verifiziert</string>
     <string name="relays_no_web_support">Die verwendeten Chat‑Relais unterstützen keine Webseiten.</string>
     <string name="webpage_code">Webseiten-Code</string>
@@ -2962,7 +2933,6 @@
     <string name="simplex_name_resolver_error_desc">Namensauflösungs-Fehler: %1$s</string>
     <string name="simplex_name_server_no_resolver_desc">Der Server %1$s unterstützt keine Namensauflösung. Konfigurieren Sie Server oder verwenden Sie einen Verbindungslink.</string>
     <string name="set_simplex_name">SimpleX-Name einrichten</string>
-    <string name="simplex_name">SimpleX-Name</string>
     <string name="simplex_name_error">Fehler beim SimpleX-Namen</string>
     <string name="simplex_name_not_verified">SimpleX-Name ist nicht verifiziert</string>
     <string name="simplex_name_no_valid_link_desc">Der SimpleX-Name %1$s wurde registriert, aber er hat keinen gültigen Link.</string>

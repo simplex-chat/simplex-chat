@@ -1772,7 +1772,6 @@
     <string name="network_smp_proxy_mode_always_description">Gebruik altijd privéroutering.</string>
     <string name="network_smp_proxy_mode_unknown_description">Gebruik privéroutering met onbekende servers.</string>
     <string name="network_smp_proxy_mode_never_description">Gebruik GEEN privéroutering.</string>
-    <string name="update_network_smp_proxy_mode_question">Berichtrouteringsmodus</string>
     <string name="network_smp_proxy_mode_unprotected_description">Gebruik privéroutering met onbekende servers wanneer het IP-adres niet beveiligd is.</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Downgraden toestaan</string>
     <string name="network_smp_proxy_fallback_allow_protected">Wanneer IP verborgen is</string>
@@ -1782,7 +1781,6 @@
     <string name="private_routing_show_message_status">Toon berichtstatus</string>
     <string name="private_routing_explanation">Om uw IP-adres te beschermen, gebruikt privéroutering uw SMP-servers om berichten te bezorgen.</string>
     <string name="network_smp_proxy_fallback_prohibit_description">Stuur GEEN berichten rechtstreeks, zelfs als uw of de bestemmingsserver geen privéroutering ondersteunt.</string>
-    <string name="update_network_smp_proxy_fallback_question">Terugval op berichtroutering</string>
     <string name="settings_section_title_private_message_routing">Privébericht routing</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Stuur berichten rechtstreeks als het IP-adres beschermd is en uw of bestemmingsserver geen privéroutering ondersteunt.</string>
     <string name="file_not_approved_title">Onbekende servers!</string>
@@ -1835,7 +1833,6 @@
     <string name="color_mode_system">Systeem</string>
     <string name="color_wallpaper_background">Wallpaper achtergrond</string>
     <string name="chat_theme_set_default_theme">Stel het standaard thema in</string>
-    <string name="chat_list_always_visible">Toon chat-lijst in nieuw venster</string>
     <string name="message_queue_info_none">geen</string>
     <string name="info_row_debug_delivery">Foutopsporing bezorging</string>
     <string name="message_queue_info">Informatie over berichtenwachtrij</string>
@@ -1999,13 +1996,11 @@
     <string name="compose_message_placeholder">Bericht</string>
     <string name="delete_messages_mark_deleted_warning">Berichten worden gemarkeerd voor verwijdering. De ontvanger(s) kunnen deze berichten onthullen.</string>
     <string name="selected_chat_items_nothing_selected">Niets geselecteerd</string>
-    <string name="info_view_connect_button">verbinden</string>
     <string name="contact_deleted">Contact verwijderd!</string>
     <string name="delete_contact_cannot_undo_warning">Het contact wordt verwijderd. Dit kan niet ongedaan worden gemaakt!</string>
     <string name="keep_conversation">Behoud het gesprek</string>
     <string name="info_view_message_button">bericht</string>
     <string name="only_delete_conversation">Alleen conversatie verwijderen</string>
-    <string name="info_view_open_button">open</string>
     <string name="paste_link">Plak de link</string>
     <string name="action_button_add_members">Uitnodiging</string>
     <string name="one_hand_ui">Bereikbare app-toolbars</string>
@@ -2129,7 +2124,6 @@
     <string name="connection_error_quota">Niet afgeleverde berichten</string>
     <string name="connection_error_quota_desc">De verbinding heeft de limiet van niet-afgeleverde berichten bereikt. Uw contactpersoon is mogelijk offline.</string>
     <string name="message_deleted_or_not_received_error_desc">Dit bericht is verwijderd of nog niet ontvangen.</string>
-    <string name="address_creation_instruction">Tik op SimpleX-adres maken in het menu om het later te maken.</string>
     <string name="share_address_publicly">Adres openbaar delen</string>
     <string name="share_1_time_link_with_a_friend">Deel eenmalig een link met een vriend</string>
     <string name="share_simplex_address_on_social_media">Deel het SimpleX-adres op sociale media.</string>
@@ -2143,13 +2137,8 @@
     <string name="address_settings">Adres instellingen</string>
     <string name="create_1_time_link">Eenmalige link maken</string>
     <string name="onboarding_choose_server_operators">Serverbeheerders</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Voor ingeschakelde operators worden de voorwaarden na 30 dagen geaccepteerd.</string>
     <string name="onboarding_network_operators">Netwerkbeheerders</string>
-    <string name="onboarding_network_operators_review_later">Later beoordelen</string>
-    <string name="onboarding_select_network_operators_to_use">Selecteer welke netwerkoperators u wilt gebruiken.</string>
-    <string name="onboarding_network_operators_update">Update</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">De app beschermt uw privacy door in elk gesprek verschillende operators te gebruiken.</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">U kunt operators configureren in Netwerk- en serverinstellingen.</string>
     <string name="onboarding_network_operators_continue">Doorgaan</string>
     <string name="operator_review_conditions">Voorwaarden bekijken</string>
     <string name="your_servers">Uw servers</string>
@@ -2164,7 +2153,6 @@
     <string name="operator_servers_title">%s servers</string>
     <string name="use_servers_of_operator_x">Gebruik %s</string>
     <string name="operator_use_operator_toggle_description">Gebruik servers</string>
-    <string name="operator_website">Website</string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Voorwaarden worden geaccepteerd voor operator(s): <b>%s</b>.]]></string>
     <string name="operators_conditions_will_also_apply"><![CDATA[Deze voorwaarden zijn ook van toepassing op: <b>%s</b>.]]></string>
     <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Om de servers van <b>%s</b> te gebruiken, moet u de gebruiksvoorwaarden accepteren.]]></string>
@@ -2180,7 +2168,6 @@
     <string name="operator_server_alert_title">Operatorserver</string>
     <string name="server_added_to_operator__name">Server toegevoegd aan operator %s.</string>
     <string name="appearance_in_app_bars_alpha">Transparantie</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">voor betere privacy van metagegevens.</string>
     <string name="v6_2_improved_chat_navigation">Verbeterde chatnavigatie</string>
     <string name="v6_2_network_decentralization">Netwerk decentralisatie</string>
     <string name="v6_2_network_decentralization_descr">De tweede vooraf ingestelde operator in de app!</string>
@@ -2208,7 +2195,6 @@
     <string name="onboarding_network_operators_configure_via_settings">U kunt servers configureren via instellingen.</string>
     <string name="chat_archive">Of importeer archiefbestand</string>
     <string name="direct_messages_are_prohibited_in_chat">Directe berichten tussen leden zijn in deze chat niet toegestaan.</string>
-    <string name="remote_hosts_section">Externe mobiele telefoons</string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi-apparaten</b>: schakel Automatisch starten in de systeeminstellingen in om meldingen te laten werken.]]></string>
     <string name="maximum_message_size_title">Bericht is te groot!</string>
     <string name="maximum_message_size_reached_text">Verklein het bericht en verstuur het opnieuw.</string>
@@ -2299,7 +2285,6 @@
     <string name="report_archive_alert_title">Rapport archiveren?</string>
     <string name="report_verb">rapporteren</string>
     <string name="report_reason_alert_title">Reden melding?</string>
-    <string name="report_archive_alert_desc">Het rapport wordt voor u gearchiveerd.</string>
     <string name="report_compose_reason_header_other">Anders melden: alleen groepsmoderators kunnen het zien.</string>
     <string name="report_compose_reason_header_spam">Spam melden: alleen groepsmoderators kunnen het zien.</string>
     <string name="report_compose_reason_header_community">Rapporteer overtreding: alleen groepsmoderators kunnen dit zien.</string>
@@ -2334,7 +2319,6 @@
     <string name="network_smp_web_port_toggle">Gebruik een webpoort</string>
     <string name="network_smp_web_port_footer">Gebruik TCP-poort %1$s wanneer er geen poort is opgegeven.</string>
     <string name="mute_all_chat">Alles dempen</string>
-    <string name="unread_mentions">Ongelezen vermeldingen</string>
     <string name="max_group_mentions_per_message_reached">Je kunt maximaal %1$s leden per bericht vermelden!</string>
     <string name="enable_sending_member_reports">Hiermee kunt u berichten rapporteren aan moderators.</string>
     <string name="report_archive_alert_desc_all">Alle rapporten worden voor u gearchiveerd.</string>

@@ -545,7 +545,6 @@
     <string name="videos_limit_title">Terlalu banyak video!</string>
     <string name="voice_message">Pesan suara</string>
     <string name="info_view_message_button">pesan</string>
-    <string name="info_view_open_button">buka</string>
     <string name="la_mode_system">Sistem</string>
     <string name="profile_update_event_set_new_address">setel alamat kontak baru</string>
     <string name="dark_theme">Tema gelap</string>
@@ -969,8 +968,6 @@
     <string name="core_version">Versi inti: v%s</string>
     <string name="network_smp_proxy_fallback_allow_protected">Ketika IP disembunyikan</string>
     <string name="theme_colors_section_title">Warna antarmuka</string>
-    <string name="update_network_smp_proxy_fallback_question">Fallback perutean pesan</string>
-    <string name="update_network_smp_proxy_mode_question">Mode routing pesan</string>
     <string name="network_smp_proxy_mode_private_routing">Routing pribadi</string>
     <string name="network_smp_proxy_mode_never_description">JANGAN gunakan routing pribadi.</string>
     <string name="network_smp_proxy_mode_unprotected_description">Gunakan routing pribadi dengan server yang tak dikenal ketika alamat IP tidak dilindungi.</string>
@@ -1330,7 +1327,6 @@
     <string name="create_group_button">Buat grup</string>
     <string name="group_full_name_field">Nama lengkap grup:</string>
     <string name="save_group_profile">Simpan profil grup</string>
-    <string name="operator_website">Peramban</string>
     <string name="your_servers">Server Anda</string>
     <string name="error_saving_group_profile">Gagal simpan profil grup</string>
     <string name="operator_servers_title">%s server</string>
@@ -1389,7 +1385,6 @@
     <string name="onboarding_choose_server_operators">Operator server</string>
     <string name="onboarding_network_operators">Operator jaringan</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Aplikasi ini melindungi privasi Anda dengan gunakan operator yang berbeda setiap percakapan.</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Ketentuan akan diterima untuk operator yang diaktifkan setelah 30 hari.</string>
     <string name="settings_developer_tools">Alat pengembang</string>
     <string name="settings_section_title_chat_colors">Warna obrolan</string>
     <string name="rcv_group_event_member_created_contact">permintaan koneksi</string>
@@ -1416,7 +1411,6 @@
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Ini adalah tautan untuk grup <b>%1$s</b>!]]></string>
     <string name="migrate_from_device_cancel_migration">Batal pindah</string>
     <string name="chunks_uploaded">Potongan diunggah</string>
-    <string name="info_view_connect_button">hubungkan</string>
     <string name="conversation_deleted">Percakapan dihapus!</string>
     <string name="disappearing_message">Pesan sementara</string>
     <string name="clear_note_folder_question">Hapus catatan pribadi?</string>
@@ -1487,7 +1481,6 @@
     <string name="connection_request_sent">Permintaan koneksi terkirim!</string>
     <string name="connection_security">Keamanan koneksi</string>
     <string name="correct_name_to">Nama telah benar untuk %s?</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Anda dapat konfigurasi operator di pengaturan Jaringan dan server.</string>
     <string name="database_error">Kesalahan basis data</string>
     <string name="passphrase_is_different">Frasa sandi basis data berbeda dengan yang disimpan di Keystore.</string>
     <string name="change_member_role_question">Ubah peran grup?</string>
@@ -1589,14 +1582,11 @@
     <string name="onboarding_notifications_mode_off_desc_short">Tiada layanan latar belakang</string>
     <string name="onboarding_notifications_mode_service_desc_short">Aplikasi selalu berjalan di latar belakang</string>
     <string name="onboarding_notifications_mode_periodic_desc_short">Periksa pesan setiap 10 menit</string>
-    <string name="onboarding_select_network_operators_to_use">Pilih operator jaringan yang akan digunakan.</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Misalnya, jika kontak Anda menerima pesan melalui server SimpleX Chat, aplikasi Anda akan mengirimkannya melalui server Flux.</string>
     <string name="how_it_helps_privacy">Bagaimana ini membantu privasi</string>
     <string name="onboarding_network_operators_continue">Lanjutkan</string>
     <string name="onboarding_network_operators_configure_via_settings">Anda dapat konfigurasi server di pengaturan.</string>
     <string name="read_more_in_github_with_link"><![CDATA[Lebih lengkap di <font color="#0088ff">repositori GitHub</font> kami.]]></string>
-    <string name="onboarding_network_operators_review_later">Nilai nanti</string>
-    <string name="onboarding_network_operators_update">Perbarui</string>
     <string name="migrate_to_device_downloading_details">Rincian tautan unduhan</string>
     <string name="network_session_mode_user_description"><![CDATA[Koneksi TCP terpisah (dan kredensial SOCKS) akan digunakan <b>untuk setiap profil obrolan yang Anda miliki di aplikasi</b>.]]></string>
     <string name="network_session_mode_entity_description"><![CDATA[Koneksi TCP terpisah (dan kredensial SOCKS) akan digunakan <b>untuk setiap kontak dan anggota grup</b>.\n<b>Harap diperhatikan</b>: jika Anda memiliki banyak koneksi, konsumsi baterai dan lalu lintas dapat jauh lebih tinggi dan beberapa koneksi mungkin gagal.]]></string>
@@ -1696,7 +1686,6 @@
     <string name="conn_event_ratchet_sync_required">negosiasi ulang enkripsi diperlukan</string>
     <string name="snd_conn_event_ratchet_sync_allowed">negosiasi ulang enkripsi diizinkan untuk %s</string>
     <string name="v6_2_network_decentralization_enable_flux">Aktifkan Flux di pengaturan Jaringan dan server untuk privasi metadata yang lebih baik.</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">untuk privasi metadata lebih baik.</string>
     <string name="v6_2_improved_chat_navigation">Navigasi obrolan ditingkatkan</string>
     <string name="error">Galat</string>
     <string name="migrate_to_device_finalize_migration">Selesaikan migrasi pada perangkat lain.</string>
@@ -1907,7 +1896,6 @@
     <string name="you_can_share_your_address">Anda dapat bagikan alamat sebagai tautan atau kode QR - siapa pun dapat terhubung dengan Anda.</string>
     <string name="network_options_save">Simpan</string>
     <string name="make_profile_private">Jadikan profil pribadi!</string>
-    <string name="remote_hosts_section">Ponsel jarak jauh</string>
     <string name="run_chat_section">Jalankan obrolan</string>
     <string name="store_passphrase_securely_without_recover">Harap simpan frasa sandi dengan aman, Anda TIDAK akan dapat mengakses obrolan jika hilang.</string>
     <string name="rcv_group_event_member_deleted">dihapus %1$s</string>
@@ -2197,14 +2185,12 @@
     <string name="image_decoding_exception_desc">Gambar tidak dapat didekodekan. Silakan coba gambar lain atau hubungi pengembang.</string>
     <string name="snd_error_auth">Kunci salah atau koneksi tidak dikenal - kemungkinan besar koneksi ini dihapus.</string>
     <string name="add_contact_or_create_group">Mulai obrolan baru</string>
-    <string name="address_creation_instruction">Ketuk Buat alamat SimpleX di menu untuk membuatnya nanti.</string>
     <string name="scan_qr_to_connect_to_contact">Untuk terhubung, kontak Anda dapat pindai kode QR atau gunakan tautan di aplikasi.</string>
     <string name="connect__your_profile_will_be_shared">Profil Anda %1$s akan dibagikan.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Untuk melindungi tautan Anda dari penggantian, Anda dapat membandingkan kode keamanan kontak.</string>
     <string name="app_check_for_updates_canceled">Pembaruan unduhan dibatalkan</string>
     <string name="your_current_profile">Profil Anda saat ini</string>
     <string name="alert_title_cant_invite_contacts_descr">Anda menggunakan profil samaran untuk grup ini - untuk mencegah berbagi profil utama Anda, undang kontak tidak diizinkan</string>
-    <string name="chat_list_always_visible">Lihat daftar obrolan di jendela baru</string>
     <string name="you_sent_group_invitation">Anda mengirim undangan grup</string>
     <string name="this_link_is_not_a_valid_connection_link">Tautan ini bukan tautan koneksi yang valid!</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Anda akan berhenti menerima pesan dari grup ini. Riwayat obrolan akan disimpan.</string>
@@ -2277,7 +2263,6 @@
     <string name="report_compose_reason_header_profile">Laporkan profil anggota: hanya moderator grup yang akan melihat.</string>
     <string name="report_archive_alert_title">Arsip laporan?</string>
     <string name="file_error_blocked">Berkas diblokir oleh operator server:\n\n%1$s.</string>
-    <string name="report_archive_alert_desc">Laporan akan diarsipkan untuk Anda.</string>
     <string name="group_member_role_moderator">moderator</string>
     <string name="report_compose_reason_header_illegal">Laporkan konten: hanya moderator grup yang akan melihat.</string>
     <string name="change_list">Ubah daftar</string>
@@ -2305,7 +2290,6 @@
     <string name="chat_item_ttl_year">1 tahun</string>
     <string name="chat_item_ttl_default">bawaan (%s)</string>
     <string name="mute_all_chat">Bisukan semua</string>
-    <string name="unread_mentions">Sebutan belum terbaca</string>
     <string name="network_smp_web_port_section_title">Port TCP untuk pesan</string>
     <string name="network_smp_web_port_footer">Gunakan port TCP %1$s jika tidak ada port yang ditentukan.</string>
     <string name="network_smp_web_port_toggle">Gunakan port peramban</string>
@@ -2474,7 +2458,6 @@
     <string name="compose_view_send_request">Kirim permintaan</string>
     <string name="compose_view_send_request_without_message">Kirim permintaan tanpa pesan</string>
     <string name="v6_4_support_chat_descr">Kirimkan masukan pribadi Anda ke grup.</string>
-    <string name="sent_to_your_contact_after_connection">Dikirim ke kontak Anda setelah terhubung.</string>
     <string name="v6_4_1_welcome_contacts_descr">Pasang bio profil dan pesan sambutan.</string>
     <string name="share_old_address_alert_button">Bagikan alamat lama</string>
     <string name="share_old_link_alert_button">Bagikan tautan lama</string>
@@ -2496,7 +2479,6 @@
     <string name="share_profile_via_link_alert_text">Alamat akan singkat, dan profil Anda akan dibagikan melalui alamat tersebut.</string>
     <string name="share_group_profile_via_link_alert_text">Tautan akan singkat, dan profil grup akan dibagikan melalui tautan tersebut.</string>
     <string name="the_sender_will_not_be_notified">Pengirim TIDAK akan diberi tahu.</string>
-    <string name="this_setting_is_for_your_current_profile">Pengaturan ini untuk profil Anda saat ini</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">Waktu menghilang hanya diatur untuk kontak baru.</string>
     <string name="cant_send_commands_alert_text">Untuk mengirim perintah, Anda harus terhubung.</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Untuk menggunakan profil lain setelah mencoba hubungkan, hapus chat dan gunakan tautan lagi.</string>
@@ -2535,11 +2517,9 @@
     <string name="channel_subscriber_count_singular">%1$d pelanggan</string>
     <string name="channel_subscriber_count_plural">%1$d pelanggan</string>
     <string name="badge_supported_simplex">%1$s mendukung SimpleX Chat. Lencana berakhir pada %2$s.</string>
-    <string name="settings_section_title_about">Tentang</string>
     <string name="relay_status_accepted">diterima</string>
     <string name="relay_status_acknowledged_roster">daftar yang di akui</string>
     <string name="relay_status_active">aktif</string>
-    <string name="add_button">Tambahkan</string>
     <string name="add_relay_button">Tambah relay</string>
     <string name="add_relays_title">Tambah relay</string>
     <string name="relay_bar_owner_no_delivery">Tambahkan relay untuk memulihkan pengiriman pesan.</string>
@@ -2572,7 +2552,6 @@
     <string name="cant_broadcast_message">Gagal menyiarkan</string>
     <string name="channel_role_label">Saluran</string>
     <string name="chat_link_channel">Tautan saluran</string>
-    <string name="button_channel_members">Anggota saluran</string>
     <string name="channel_display_name_field">Nama saluran</string>
     <string name="channel_preferences">Preferensi saluran</string>
     <string name="channel_profile_is_stored_on_subscribers_devices">Profil saluran disimpan di perangkat pelanggan dan di relai obrolan.</string>
@@ -2602,8 +2581,6 @@
     <string name="relay_test_step_connect">Hubungkan</string>
     <string name="relay_conn_status_connected">terhubung</string>
     <string name="relay_conn_status_connecting">menghubungkan</string>
-    <string name="channel_name_requires_newer_app_version">Menghubungkan melalui nama saluran memerlukan versi aplikasi yang lebih baru.</string>
-    <string name="contact_name_requires_newer_app_version">Menghubungkan melalui nama kontak memerlukan versi aplikasi yang lebih baru.</string>
     <string name="info_row_connection_failed">Koneksi gagal</string>
     <string name="connect_via_link_or_qr_code">Hubungkan melalui tautan atau kode QR</string>
     <string name="settings_section_title_contact">Kontak</string>
@@ -2648,7 +2625,6 @@
     <string name="error_adding_relays">Galat saat menambahkan relai</string>
     <string name="error_creating_channel">Galat saat membuat saluran</string>
     <string name="error_deleting_message">Gagal menghapus pesan</string>
-    <string name="error_opening_channel">Galat saat membuka saluran</string>
     <string name="rcv_msg_error_parse">galat: %s</string>
     <string name="error_saving_channel_profile">Galat saat menyimpan profil saluran</string>
     <string name="error_sharing_channel">Galat saat membagikan saluran</string>
@@ -2656,7 +2632,6 @@
     <string name="relay_conn_status_failed">gagal</string>
     <string name="relay_status_failed">gagal</string>
     <string name="content_filter_files">Berkas</string>
-    <string name="content_filter_menu_item">Filter</string>
     <string name="for_anyone_to_reach_you">Agar siapa pun dapat menghubungi Anda</string>
     <string name="from_history">Dari riwayat</string>
     <string name="chat_link_from_owner">(dari pemilik)</string>
@@ -2705,9 +2680,6 @@
     <string name="relay_bar_no_relays">Tidak ada relai</string>
     <string name="no_relays_selected">Tidak ada relay yang dipilih</string>
     <string name="voice_recording_not_supported">Perekaman suara tidak didukung di platform Anda.</string>
-    <string name="unsupported_channel_name">Nama saluran tidak didukung</string>
-    <string name="unsupported_contact_name">Nama kontak tidak didukung</string>
-    <string name="please_upgrade_the_app">Silakan perbarui aplikasinya.</string>
     <string name="group_link_requires_newer_version">Grup ini membutuhkan versi aplikasi yang lebih baru. Silakan perbarui aplikasi untuk bergabung.</string>
     <string name="placeholder_search_images">Cari gambar</string>
     <string name="placeholder_search_videos">Cari video</string>
