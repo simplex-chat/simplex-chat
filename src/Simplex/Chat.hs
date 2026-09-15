@@ -69,7 +69,7 @@ defaultChatConfig =
           },
       chatVRange = supportedChatVRange,
       badgePublicKeys = M.mapKeys fromIntegral entitlementIssuerKeys,
-      badgeServiceAddress = Just $ either error id $ strDecode "https://smp4.simplex.im/a#NCS8fJHU1_g2EIaRJdc6vWmga6xKsDM4PLRnzr5nJL8",
+      badgeServiceAddress = Just $ either error id $ strDecode "https://smp5.simplex.im/a#ooSNWlEZTO2RPE0Ff5ZoybAs5zEhWLMlQrXesnhaZHM",
       badgeCurrentTime = getCurrentTime,
       badgeRetryInterval = RetryInterval {initialInterval = 30_000000, increaseAfter = 0, maxInterval = 3600_000000},
       confirmMigrations = MCConsole,
