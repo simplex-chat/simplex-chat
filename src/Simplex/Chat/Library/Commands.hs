@@ -5212,8 +5212,8 @@ presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadg
 -- A terminal answer drops the stash; a timeout keeps it.
 redeemBadgeCode :: NetworkRequestMode -> User -> Text -> CM ChatResponse
 redeemBadgeCode nm user@User {userId} codeText = do
-  code <- maybe (throwCmdError "invalid badge code") pure $ parseBadgeCode codeText
-  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
+  code <- maybe (throwRedeemError BREInvalidCode) pure $ parseBadgeCode codeText
+  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
   g <- asks random
   now <- liftIO getCurrentTime
   let codeSent = badgeCodeText code
@@ -5224,30 +5224,32 @@ redeemBadgeCode nm user@User {userId} codeText = do
     -- a code already redeemed here is allowed through: re-sending it returns the badge it bought
     -- and adds nothing. Refused before its keys are stashed and before the request, so it stays unspent
     replaying <- maybe (pure False) (\r -> withStore' $ \db -> isJust <$> getCodeBadgePurchase db r) redemption_
-    unless replaying $ whenM (withStore' (`userHasBadge` user)) $ throwCmdError "badge already active"
+    unless replaying $ whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
     redemption@BadgeCodeRedemption {purchaseKey, purchasePrivKey, masterKey} <-
       maybe (withStore' $ \db -> createBadgeCodeRedemption db g user codeSent now) pure redemption_
     let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request = BSCRedeemBadgeCode {masterKey, code = codeSent}}
-    respData <- sendServiceRequestTo nm user sendTarget Nothing (Just purchasePrivKey) req
+    respBytes <- sendServiceRequestBytes nm user sendTarget Nothing (Just purchasePrivKey) req
+    respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ J.eitherDecodeStrict' respBytes
     case J.fromJSON (J.Object respData) of
-      J.Error e -> throwCmdError $ "invalid badge service response, " <> show e <> ": " <> respJSON respData
+      J.Error _ -> throwRedeemError $ BREInvalidResponse "not a badge service response"
       J.Success BSPError {code = errCode} -> do
         when (terminalCodeError errCode) $ withStore' $ \db -> deleteBadgeCodeRedemption db (redemptionId redemption)
-        throwCmdError $ "badge service error: " <> T.unpack (badgeServiceErrorText errCode)
+        throwRedeemError $ BREServiceError errCode
       J.Success BSPBadgeCredential {credential = Just cred, statement} -> storeRedeemedBadge user redemption cred statement
-      J.Success _ -> throwCmdError $ "unexpected badge service response: " <> respJSON respData
+      J.Success _ -> throwRedeemError $ BREInvalidResponse "unexpected response type"
   -- outside the badge lock: the chat lock must not be taken under it
   mapM_ presentUserBadgeToContacts present_
   pure redeemed
   where
-    -- re-encoded, not shown as received: JSON escapes the control characters a terminal acts on
-    respJSON = LB.unpack . J.encode
     -- the code will never work, so the keys stashed for it are dead; a timeout keeps them
     terminalCodeError = \case
       BSECodeInvalid -> True
       BSECodeUsed -> True
       BSECodeExpired -> True
       _ -> False
+
+throwRedeemError :: BadgeRedeemError -> CM a
+throwRedeemError = throwChatError . CEBadgeRedeemError
 
 -- | An unknown code is reported, since the service is deployed ahead of clients, but its text is
 -- the service's - so it is bounded and stripped before reaching a terminal that acts on controls.
@@ -5576,11 +5578,11 @@ stopBadgeWorkers workers =
 storeRedeemedBadge :: User -> BadgeCodeRedemption -> BadgeCredential -> BadgeStatement -> CM (Maybe User, ChatResponse)
 storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCredential _ credMasterKey _ info@BadgeInfo {badgeType}) statement =
   verifyOwnBadge cred >>= \case
-    Nothing -> throwCmdError "redeemed badge credential names an unknown badge key index"
-    Just False -> throwCmdError "redeemed badge credential does not verify against configured key"
+    Nothing -> throwRedeemError BREUnknownKeyIndex
+    Just False -> throwRedeemError BRECredentialNotVerified
     -- verifyCredential checks the signature against the key inside the credential, not the one we
     -- sent - so a credential over any other master key also verifies
-    Just True | credMasterKey /= masterKey -> throwCmdError "redeemed badge credential is for a different master key"
+    Just True | credMasterKey /= masterKey -> throwRedeemError $ BREInvalidResponse "credential is for a different master key"
     Just True -> do
       g <- asks random
       now <- badgeNow
@@ -5619,10 +5621,14 @@ applyBadgeStatement db g purchaseId badgeType BadgeStatement {entries} cred_ now
       ids -> Just (last ids)
 
 sendServiceRequestTo :: J.ToJSON a => NetworkRequestMode -> User -> ConnectTarget 'CMContact -> Maybe NominalDiffTime -> Maybe C.PrivateKeyEd25519 -> a -> CM J.Object
-sendServiceRequestTo nm user sendTarget requestTimeout signKey request = do
+sendServiceRequestTo nm user sendTarget requestTimeout signKey request =
+  sendServiceRequestBytes nm user sendTarget requestTimeout signKey request
+    >>= either (const $ throwCmdError "invalid service response") pure . J.eitherDecodeStrict'
+
+sendServiceRequestBytes :: J.ToJSON a => NetworkRequestMode -> User -> ConnectTarget 'CMContact -> Maybe NominalDiffTime -> Maybe C.PrivateKeyEd25519 -> a -> CM ByteString
+sendServiceRequestBytes nm user sendTarget requestTimeout signKey request = do
   cReq <- resolveServiceTarget sendTarget
-  respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout signKey (LB.toStrict $ J.encode request)
-  either (const $ throwCmdError "invalid service response") pure $ J.eitherDecodeStrict' respData
+  withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout signKey (LB.toStrict $ J.encode request)
   where
     resolveServiceTarget = \case
       CTFullContact cReq -> pure cReq

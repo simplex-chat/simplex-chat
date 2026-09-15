@@ -84,6 +84,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits, LocalBadge)
+import Simplex.Chat.Badges.Service (BadgeServiceErrorCode)
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeState (..))
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
@@ -1476,6 +1477,18 @@ data SimplexDomainError
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
   deriving (Eq, Show)
 
+-- why a badge code could not be redeemed: the client's own checks, or the service's answer.
+-- No field carries text the service controls: the apps decode and log these.
+data BadgeRedeemError
+  = BREInvalidCode -- format or check character
+  | BREServiceNotConfigured
+  | BREBadgeActive
+  | BREServiceError {serviceError :: BadgeServiceErrorCode}
+  | BREInvalidResponse {message :: String}
+  | BREUnknownKeyIndex
+  | BRECredentialNotVerified
+  deriving (Eq, Show)
+
 data ChatErrorType
   = CENoActiveUser
   | CENoConnectionUser {agentConnId :: AgentConnId}
@@ -1548,6 +1561,7 @@ data ChatErrorType
   | CEAgentVersion
   | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
+  | CEBadgeRedeemError {badgeRedeemError :: BadgeRedeemError}
   | CEServerProtocol {serverProtocol :: AProtocolType}
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
@@ -1831,6 +1845,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BRE") ''BadgeRedeemError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
 
