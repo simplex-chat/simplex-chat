@@ -30,8 +30,6 @@ m20260806_badge_service_schema =
     <> withPrefix
       servicePrefix
       [r|
-ALTER TABLE @payments ADD COLUMN receipt_hash BYTEA;
-
 CREATE TABLE @badge_codes(
   badge_code_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   code_hash BYTEA NOT NULL,
@@ -77,3 +75,11 @@ DROP INDEX @idx_badge_purchases_code;
       [r|
 DROP TABLE @badge_codes;
 |]
+
+{- TODO [badges] deferred with the draft in M20260915_user_badges, service only.
+
+ALTER TABLE @payments ADD COLUMN receipt_hash BYTEA;
+
+-- down
+ALTER TABLE @payments DROP COLUMN receipt_hash;
+-}

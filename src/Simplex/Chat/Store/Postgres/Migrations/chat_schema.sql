@@ -191,17 +191,6 @@ ALTER TABLE test_chat_schema.badge_code_redemptions ALTER COLUMN badge_code_rede
 
 
 
-CREATE TABLE test_chat_schema.badge_invoices (
-    invoice_id text NOT NULL,
-    badge_purchase_id bigint NOT NULL,
-    price_id text NOT NULL,
-    offer_id text,
-    months smallint NOT NULL,
-    created_at timestamp with time zone NOT NULL
-);
-
-
-
 CREATE TABLE test_chat_schema.badge_issuances (
     issuance_id text NOT NULL,
     badge_purchase_id bigint NOT NULL,
@@ -231,10 +220,6 @@ CREATE TABLE test_chat_schema.badge_ledger (
     entry_type text NOT NULL,
     entry_credit_type text,
     entry_debit_type text,
-    payment_id text,
-    charge_id text,
-    from_purchase_id bigint,
-    to_purchase_id bigint,
     entry_type_unknown smallint DEFAULT 0 NOT NULL,
     entry_type_value text,
     balance_checked smallint
@@ -282,7 +267,6 @@ CREATE TABLE test_chat_schema.badge_purchases (
     master_key bytea NOT NULL,
     initial_badge_type text NOT NULL,
     current_badge_type text NOT NULL,
-    payment_id text,
     status text NOT NULL,
     created_at timestamp with time zone NOT NULL,
     updated_at timestamp with time zone NOT NULL,
@@ -303,22 +287,6 @@ ALTER TABLE test_chat_schema.badge_purchases ALTER COLUMN badge_purchase_id ADD 
     NO MINVALUE
     NO MAXVALUE
     CACHE 1
-);
-
-
-
-CREATE TABLE test_chat_schema.badge_subscription_changes (
-    change_id text NOT NULL,
-    badge_purchase_id bigint NOT NULL,
-    from_badge_type text NOT NULL,
-    to_badge_type text NOT NULL,
-    from_provider_ref text,
-    to_provider_ref text,
-    effective text NOT NULL,
-    status text NOT NULL,
-    effective_at timestamp with time zone,
-    created_at timestamp with time zone NOT NULL,
-    updated_at timestamp with time zone NOT NULL
 );
 
 
@@ -1378,9 +1346,7 @@ CREATE TABLE test_chat_schema.payments (
     grace_until timestamp with time zone,
     cancelled smallint DEFAULT 0 NOT NULL,
     created_at timestamp with time zone NOT NULL,
-    updated_at timestamp with time zone NOT NULL,
-    evidence bytea,
-    receipt_code text
+    updated_at timestamp with time zone NOT NULL
 );
 
 
@@ -1679,19 +1645,6 @@ CREATE TABLE test_chat_schema.snd_files (
 
 
 
-CREATE TABLE test_chat_schema.subscription_charges (
-    charge_id text NOT NULL,
-    payment_id text NOT NULL,
-    provider_charge_ref text NOT NULL,
-    period_start timestamp with time zone NOT NULL,
-    period_end timestamp with time zone NOT NULL,
-    amount bigint NOT NULL,
-    currency text NOT NULL,
-    charged_at timestamp with time zone NOT NULL
-);
-
-
-
 CREATE TABLE test_chat_schema.usage_conditions (
     usage_conditions_id bigint NOT NULL,
     conditions_commit text NOT NULL,
@@ -1804,11 +1757,6 @@ ALTER TABLE ONLY test_chat_schema.badge_code_redemptions
 
 
 
-ALTER TABLE ONLY test_chat_schema.badge_invoices
-    ADD CONSTRAINT badge_invoices_pkey PRIMARY KEY (invoice_id);
-
-
-
 ALTER TABLE ONLY test_chat_schema.badge_issuances
     ADD CONSTRAINT badge_issuances_pkey PRIMARY KEY (issuance_id);
 
@@ -1830,22 +1778,12 @@ ALTER TABLE ONLY test_chat_schema.badge_prices
 
 
 ALTER TABLE ONLY test_chat_schema.badge_purchases
-    ADD CONSTRAINT badge_purchases_payment_id_key UNIQUE (payment_id);
-
-
-
-ALTER TABLE ONLY test_chat_schema.badge_purchases
     ADD CONSTRAINT badge_purchases_pkey PRIMARY KEY (badge_purchase_id);
 
 
 
 ALTER TABLE ONLY test_chat_schema.badge_purchases
     ADD CONSTRAINT badge_purchases_purchase_key_key UNIQUE (purchase_key);
-
-
-
-ALTER TABLE ONLY test_chat_schema.badge_subscription_changes
-    ADD CONSTRAINT badge_subscription_changes_pkey PRIMARY KEY (change_id);
 
 
 
@@ -2164,16 +2102,6 @@ ALTER TABLE ONLY test_chat_schema.snd_files
 
 
 
-ALTER TABLE ONLY test_chat_schema.subscription_charges
-    ADD CONSTRAINT subscription_charges_payment_id_provider_charge_ref_key UNIQUE (payment_id, provider_charge_ref);
-
-
-
-ALTER TABLE ONLY test_chat_schema.subscription_charges
-    ADD CONSTRAINT subscription_charges_pkey PRIMARY KEY (charge_id);
-
-
-
 ALTER TABLE ONLY test_chat_schema.usage_conditions
     ADD CONSTRAINT usage_conditions_conditions_commit_key UNIQUE (conditions_commit);
 
@@ -2230,18 +2158,6 @@ CREATE INDEX idx_badge_code_redemptions_user ON test_chat_schema.badge_code_rede
 
 
 
-CREATE INDEX idx_badge_invoices_offer ON test_chat_schema.badge_invoices USING btree (offer_id);
-
-
-
-CREATE INDEX idx_badge_invoices_price ON test_chat_schema.badge_invoices USING btree (price_id);
-
-
-
-CREATE INDEX idx_badge_invoices_purchase ON test_chat_schema.badge_invoices USING btree (badge_purchase_id);
-
-
-
 CREATE INDEX idx_badge_issuances_entry ON test_chat_schema.badge_issuances USING btree (entry_id);
 
 
@@ -2254,23 +2170,7 @@ CREATE UNIQUE INDEX idx_badge_issuances_purchase_entry ON test_chat_schema.badge
 
 
 
-CREATE INDEX idx_badge_ledger_charge ON test_chat_schema.badge_ledger USING btree (charge_id);
-
-
-
-CREATE INDEX idx_badge_ledger_from_purchase ON test_chat_schema.badge_ledger USING btree (from_purchase_id);
-
-
-
-CREATE INDEX idx_badge_ledger_payment ON test_chat_schema.badge_ledger USING btree (payment_id);
-
-
-
 CREATE INDEX idx_badge_ledger_purchase ON test_chat_schema.badge_ledger USING btree (badge_purchase_id, entry_id);
-
-
-
-CREATE INDEX idx_badge_ledger_to_purchase ON test_chat_schema.badge_ledger USING btree (to_purchase_id);
 
 
 
@@ -2287,10 +2187,6 @@ CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON test_chat_schema.badg
 
 
 CREATE INDEX idx_badge_purchases_user ON test_chat_schema.badge_purchases USING btree (user_id);
-
-
-
-CREATE INDEX idx_badge_subscription_changes_purchase ON test_chat_schema.badge_subscription_changes USING btree (badge_purchase_id);
 
 
 
@@ -3067,26 +2963,6 @@ ALTER TABLE ONLY test_chat_schema.badge_code_redemptions
 
 
 
-ALTER TABLE ONLY test_chat_schema.badge_invoices
-    ADD CONSTRAINT badge_invoices_badge_purchase_id_fkey FOREIGN KEY (badge_purchase_id) REFERENCES test_chat_schema.badge_purchases(badge_purchase_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.badge_invoices
-    ADD CONSTRAINT badge_invoices_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES test_chat_schema.invoices(invoice_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.badge_invoices
-    ADD CONSTRAINT badge_invoices_offer_id_fkey FOREIGN KEY (offer_id) REFERENCES test_chat_schema.badge_offers(offer_id);
-
-
-
-ALTER TABLE ONLY test_chat_schema.badge_invoices
-    ADD CONSTRAINT badge_invoices_price_id_fkey FOREIGN KEY (price_id) REFERENCES test_chat_schema.badge_prices(price_id);
-
-
-
 ALTER TABLE ONLY test_chat_schema.badge_issuances
     ADD CONSTRAINT badge_issuances_badge_purchase_id_fkey FOREIGN KEY (badge_purchase_id) REFERENCES test_chat_schema.badge_purchases(badge_purchase_id) ON DELETE CASCADE;
 
@@ -3102,26 +2978,6 @@ ALTER TABLE ONLY test_chat_schema.badge_ledger
 
 
 
-ALTER TABLE ONLY test_chat_schema.badge_ledger
-    ADD CONSTRAINT badge_ledger_charge_id_fkey FOREIGN KEY (charge_id) REFERENCES test_chat_schema.subscription_charges(charge_id);
-
-
-
-ALTER TABLE ONLY test_chat_schema.badge_ledger
-    ADD CONSTRAINT badge_ledger_from_purchase_id_fkey FOREIGN KEY (from_purchase_id) REFERENCES test_chat_schema.badge_purchases(badge_purchase_id);
-
-
-
-ALTER TABLE ONLY test_chat_schema.badge_ledger
-    ADD CONSTRAINT badge_ledger_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES test_chat_schema.payments(payment_id);
-
-
-
-ALTER TABLE ONLY test_chat_schema.badge_ledger
-    ADD CONSTRAINT badge_ledger_to_purchase_id_fkey FOREIGN KEY (to_purchase_id) REFERENCES test_chat_schema.badge_purchases(badge_purchase_id);
-
-
-
 ALTER TABLE ONLY test_chat_schema.badge_offers
     ADD CONSTRAINT badge_offers_price_id_fkey FOREIGN KEY (price_id) REFERENCES test_chat_schema.badge_prices(price_id);
 
@@ -3133,17 +2989,7 @@ ALTER TABLE ONLY test_chat_schema.badge_purchases
 
 
 ALTER TABLE ONLY test_chat_schema.badge_purchases
-    ADD CONSTRAINT badge_purchases_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES test_chat_schema.payments(payment_id);
-
-
-
-ALTER TABLE ONLY test_chat_schema.badge_purchases
     ADD CONSTRAINT badge_purchases_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.badge_subscription_changes
-    ADD CONSTRAINT badge_subscription_changes_badge_purchase_id_fkey FOREIGN KEY (badge_purchase_id) REFERENCES test_chat_schema.badge_purchases(badge_purchase_id) ON DELETE CASCADE;
 
 
 
@@ -3799,11 +3645,6 @@ ALTER TABLE ONLY test_chat_schema.snd_files
 
 ALTER TABLE ONLY test_chat_schema.snd_files
     ADD CONSTRAINT snd_files_group_member_id_fkey FOREIGN KEY (group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.subscription_charges
-    ADD CONSTRAINT subscription_charges_payment_id_fkey FOREIGN KEY (payment_id) REFERENCES test_chat_schema.payments(payment_id) ON DELETE CASCADE;
 
 
 
