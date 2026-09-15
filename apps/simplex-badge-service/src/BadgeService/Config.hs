@@ -201,7 +201,9 @@ parseConfig :: Ini -> Either String ServiceConfig
 parseConfig ini = do
   lStaticDir <- T.unpack <$> required "listener" "static_dir"
   lHost <- optional "listener" "host" "127.0.0.1"
-  lPort <- num "listener" "port" 8080
+  lPort <- do
+    p <- num "listener" "port" 8080
+    if 1 <= p && p <= 65535 then Right p else Left "listener.port must be between 1 and 65535"
   lServeWebapp <- bool "listener" "serve_webapp" True
   let lWebappExportDir = case fmap T.strip (look "listener" "webapp_export_dir") of
         Just v | not (T.null v) -> Just (T.unpack v)

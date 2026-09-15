@@ -155,9 +155,9 @@ badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
             (_, Right CEvtNewChatItems {chatItems = AChatItem _ SMDRcv (DirectChat ct) ChatItem {content = mc@CIRcvMsgContent {}} : _})
               | devRedeem -> atomically $ writeTQueue (chatRedeemQ env) (ct, ciContentToText mc)
             _ -> pure (),
-        processQueuedRequests key env,
-        processChatRedeems key env
+        processQueuedRequests key env
       ]
+        <> [processChatRedeems key env | devRedeem]
         <> lanes
   where
     serviceLanes :: Waiters -> ChatController -> ServiceConfig -> IO [IO ()]

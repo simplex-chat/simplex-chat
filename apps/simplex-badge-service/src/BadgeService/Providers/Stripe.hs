@@ -198,9 +198,9 @@ instance J.FromJSON IntentList where
     IntentList <$> o J..: "data" <*> o J..:? "has_more" J..!= False
 
 -- | Constant-time over the raw bytes. Stripe signs @"{t}.{body}"@, so the signed payload is the
--- timestamp, a literal dot, then the body exactly as it arrived. The interface is pure and holds
--- no clock, so the 300 s replay window Stripe documents is not enforced here; that check is
--- deferred to a layer that has the current time, exactly as the BTCPay adapter leaves it.
+-- timestamp, a literal dot, then the body exactly as it arrived. The timestamp's replay window is
+-- not checked: a verified webhook only re-queues an authenticated read of the invoice, which is
+-- idempotent, so a replayed delivery settles nothing a fresh one would not.
 verifyStripeSig :: Text -> [Header] -> ByteString -> Either WebhookError (Maybe Text)
 verifyStripeSig secret hdrs body = do
   raw <- note "missing Stripe-Signature header" (lookup sigHeaderName hdrs)

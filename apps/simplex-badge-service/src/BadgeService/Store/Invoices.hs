@@ -390,7 +390,7 @@ mkInvoiceRow
   ( (invId, providerTxt, providerRef, badgeType, months)
       :. (price, amount, currency, url, addr, cryptoCur)
       :. (cryptoAmt, expiresAt, statusTxt, createdAt)
-      :. (pAmount, pCryptoAmount, pCryptoDue, pPaidInFull, pStatus, pUpdatedAt)
+      :. (pAmount, pCryptoPaid, pCryptoDue, pPaidInFull, pStatus, pUpdatedAt)
     ) = do
     provider <- note "invoices.provider" (textToProvider providerTxt)
     status <- note "invoices.status" (textToInvoiceStatus statusTxt)
@@ -409,12 +409,12 @@ mkInvoiceRow
           irExpiresAt = expiresAt,
           irStatus = status,
           irCreatedAt = createdAt,
-          irPayment = mkPayment pAmount pCryptoAmount pCryptoDue pPaidInFull pStatus pUpdatedAt
+          irPayment = mkPayment pAmount pCryptoPaid pCryptoDue pPaidInFull pStatus pUpdatedAt
         }
 
 mkPayment :: Maybe Word32 -> Maybe Text -> Maybe Text -> Maybe Int -> Maybe Text -> Maybe UTCTime -> Maybe InvoicePayment
-mkPayment amt cryptoAmt cryptoDue paidInFull status updatedAt =
-  InvoicePayment (CurrencyAmount <$> amt) cryptoAmt cryptoDue (paidInFull == Just 1) <$> status <*> updatedAt
+mkPayment amt cryptoPaid cryptoDue paidInFull status updatedAt =
+  InvoicePayment (CurrencyAmount <$> amt) cryptoPaid cryptoDue (paidInFull == Just 1) <$> status <*> updatedAt
 
 selectInvoiceRow :: DB.Connection -> Query -> Text -> IO (Maybe InvoiceRow)
 selectInvoiceRow db q param = do

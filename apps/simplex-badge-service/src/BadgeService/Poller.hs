@@ -126,7 +126,7 @@ runOnePass env@PollerEnv {peStore, peProviders} = do
   pruneSkipLog env now
   -- gated on whichever lane accounted for our rows; a stray list that failed has no bearing on
   -- them, and it has already logged on its own cadence
-  when accounted $ sweepExpired env now
+  when (accounted && not (null peProviders)) $ sweepExpired env now
 
 -- | How often the stray list runs. A payment after the close and an invoice we never recorded
 -- are both rare and neither is urgent, so this is minutes rather than the pass cadence.
