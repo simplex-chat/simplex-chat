@@ -58,8 +58,6 @@ catalogTest("catalog: guards reject negative discount", () => {
 });
 
 catalogTest("catalog: a full price over the cap is unsellable, as the service also refuses it", () => {
-  // Catalog.hs guards the gross as well as the charge, because a price that large does not
-  // fit the column. Guarding only the charge here made the page offer a total checkout refused.
   const offer = { offerId: "o", priceId: "p", months: 3, discount: { type: "freeMonths", freeMonths: 2 } } as const;
   assert.equal(typeof offerTotal(50_000_000, offer), "string", "gross 150000000 is over the cap");
   const ok = offerTotal(3500, { offerId: "o", priceId: "p", months: 12, discount: { type: "freeMonths", freeMonths: 2 } });

@@ -38,7 +38,7 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
--- http-client is imported qualified: its Request has requestHeaders, requestBody and
+-- http-client is imported qualified because its Request has requestHeaders, requestBody and
 -- queryString just as WAI's does.
 import Network.HTTP.Client (Manager)
 import qualified Network.HTTP.Client as HTTP
@@ -65,12 +65,10 @@ import Simplex.Messaging.Util (tshow)
 import System.FilePath ((</>))
 import Text.Read (readMaybe)
 
--- | Responses are read from committed fixtures, so they can be replaced with captures
--- from a real instance without changing any Haskell.
 fixtureDir :: FilePath
 fixtureDir = "apps" </> "simplex-badge-service" </> "test-fixtures" </> "stripe"
 
--- | A restricted key (`rk_`) shaped like Stripe's, the kind the service is configured with, never a live one.
+-- | A restricted `rk_` key shaped like Stripe's, the kind the service is configured with and never a live one.
 fakeSecretKey :: Text
 fakeSecretKey = "rk_test_51QfakeKEY0000000000000000"
 
@@ -120,14 +118,13 @@ initialState =
     }
 
 data FakeStripe = FakeStripe
-  { -- | Points the adapter at this listener, with the credentials it accepts.
-    fsConfig :: StripeConfig,
+  { fsConfig :: StripeConfig,
     fsBaseUrl :: String,
     fsManager :: Manager,
     fsState :: TVar FakeState
   }
 
--- | A port Warp chooses. A fixed one would collide with a server left over from an
+-- | Warp chooses the port, because a fixed one could collide with a server left over from an
 -- earlier run and the test would pass against that instead.
 withFakeStripe :: (FakeStripe -> IO a) -> IO a
 withFakeStripe action = do
@@ -159,8 +156,8 @@ stripeHexSig secret t body = convertToBase Base16 digest
     digest :: Digest SHA256
     digest = hmacGetDigest (hmac (TE.encodeUtf8 secret) signed :: HMAC SHA256)
 
--- | A minimal event: @{type, data:{object:{id}}}@. The verify signs these exact bytes, so a valid
--- signature cannot mean two different things.
+-- | A minimal event of the shape @{type, data:{object:{id}}}@. The verify signs these exact bytes,
+-- so a valid signature cannot mean two different things.
 stripeEvent :: Text -> Text -> LB.ByteString
 stripeEvent eventType pid =
   J.encode (J.object ["type" J..= eventType, "data" J..= J.object ["object" J..= J.object ["id" J..= pid]]])
@@ -177,9 +174,8 @@ fixtureResponse name = do
   where
     path = fixtureDir </> T.unpack name <> ".json"
 
--- | The served body is chosen by status, then patched to the intent's own state. An unknown status
--- falls back to the open body and is patched to whatever was set, so a status this build has never
--- seen still reaches the adapter verbatim.
+-- | An unknown status falls back to the open body but is patched to the status that was set, so a
+-- status this build has never seen still reaches the adapter verbatim.
 intentFixture :: IntentState -> Text
 intentFixture IntentState {isStatus} = case isStatus of
   "succeeded" -> "intent-succeeded"
@@ -301,8 +297,6 @@ fakeApp stv req respond = do
         pure (pid, s)
       serve (intentFixture s) (patchIntent pid s)
 
-    -- Serves intent-list.json. With a page size set the `data` array is paginated by
-    -- `starting_after` and `has_more`, so a test can drive the adapter across pages.
     listIntents = do
       st <- readTVarIO stv
       full <- fixtureResponse (fsList st)
@@ -388,11 +382,9 @@ setIntentState fake pid fields = controlPost fake ("/_state/" <> T.unpack pid) (
 failNextCalls :: FakeStripe -> Int -> Int -> IO ()
 failNextCalls fake calls code = controlPost fake "/_fail" (J.object ["calls" J..= calls, "status" J..= code])
 
--- | Paginate the served list at this many intents per page, so a test can walk starting_after.
 useListPageSize :: FakeStripe -> Int -> IO ()
 useListPageSize fake size = controlPost fake "/_paging" (J.object ["size" J..= size])
 
--- | Serve a different list fixture for the next list calls.
 useListFixture :: FakeStripe -> Text -> IO ()
 useListFixture fake name = controlPost fake "/_fixtures" (J.object ["list" J..= name])
 

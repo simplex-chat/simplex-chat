@@ -1,9 +1,5 @@
-// A card confirm redirects the whole page to the return URL, so the buyer comes back on a fresh load,
-// not on the screen the confirm was on. The order being paid is remembered in local state before the
-// redirect (sb.cardReturn), and the frame resumes it on the next load — no marker in the URL, so it
-// works embedded (return URL is the host page) and standalone alike. Here the buyer has TWO unpaid
-// orders and paid the OLDER one (a card order reopened from history), so "newest" would resume the
-// wrong one; the card also settled during the redirect, so the order is paid, which newestOpen misses.
+// A card confirm redirects the whole page, so sb.cardReturn remembers the order before the redirect and the frame resumes it on the next load with no URL marker.
+// The buyer paid the older of two unpaid orders, so resuming the newest would pick the wrong one.
 import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, installPage, screenOf, timedTest, until } from "./boot.js";
@@ -30,7 +26,6 @@ storage.setItem("sb.orders.v1", JSON.stringify([
 storage.setItem("sb.cardReturn.v1", JSON.stringify({ orderId: "inv_card", at: NOW - 5_000 }));
 
 mock.timers.enable({ apis: ["setTimeout", "Date"], now: NOW });
-// The return URL Stripe redirected to, with the params it appends and no marker of our own.
 const page = installPage({ storage, url: "/?payment_intent=pi_1&redirect_status=succeeded" });
 const { app } = page;
 await import("../src/main.js");

@@ -72,11 +72,9 @@ fiftyFourDollars = OrderDraft {odAmount = CurrencyAmount 5400, odCurrency = "usd
 fiftyFourDollarsReceived :: Received
 fiftyFourDollarsReceived = Received {rcvAmount = CurrencyAmount 5400, rcvCrypto = Nothing, rcvDue = Nothing}
 
--- | A canceled intent captured nothing, so it carries no received amount.
 nothingReceived :: Received
 nothingReceived = Received {rcvAmount = CurrencyAmount 0, rcvCrypto = Nothing, rcvDue = Nothing}
 
--- | The `created` on the succeeded fixture's latest charge.
 fixtureChargeAt :: UTCTime
 fixtureChargeAt = posixSecondsToUTCTime 1700000000
 
@@ -119,7 +117,7 @@ testFakeCreateBody = withProvider $ \fake p -> do
       let form = parseSimpleQuery (LB.toStrict (frBody created))
       lookup "amount" form `shouldBe` Just "5400"
       lookup "currency" form `shouldBe` Just "usd"
-      -- card only, so the client confirm never redirects the top window out of the embedded frame
+      -- Card only keeps the client confirm from redirecting the top window out of the embedded frame.
       lookup "allowed_payment_method_types[]" form `shouldBe` Just "card"
       lookup hAuthorization (frHeaders created) `shouldSatisfy` maybe False ("Basic " `B8.isPrefixOf`)
     _ -> expectationFailure ("expected one create, got " <> show (length posts))
@@ -158,7 +156,7 @@ testFakeCanceled :: IO ()
 testFakeCanceled = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
   setIntentState fake pid ["status" .= ("canceled" :: Text)]
-  -- a nonzero received here would write a phantom payment for money the buyer never sent
+  -- A nonzero received amount here would write a phantom payment for money the buyer never sent.
   pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived))
 
 testFakeCreate500 :: IO ()
@@ -181,8 +179,8 @@ testRefusesCrypto :: IO ()
 testRefusesCrypto = withProvider $ \_ p ->
   pCreateInvoice p (SPMCrypto CCBtc) fiftyFourDollars >>= (`shouldSatisfy` isLeft)
 
--- | A status this build has never seen is an error, not 'Right Nothing': the latter would claim
--- the intent had not changed, and the poller would leave the order to expire.
+-- | An unknown status must be an error rather than Right Nothing, which would tell the poller the
+-- intent had not changed and leave the order to expire.
 testFakeReadUnknownStatus :: IO ()
 testFakeReadUnknownStatus = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
@@ -197,9 +195,9 @@ testSettledNoChargeReadTime = do
   let ir = IntentRead {irId = "pi_test_x", irStatus = "succeeded", irAmountReceived = 5400, irChargeCreated = Nothing}
   signalOf now ir `shouldBe` Right (Just (SigSettled fiftyFourDollarsReceived now))
 
--- | The poll must list by creation time, not status=open: a status=open query returns only open
--- intents, which carry no signal, so a settlement the webhook missed would never be caught. The
--- window reaches back the settle window plus an intent's own lifetime.
+-- | A status=open query returns only open intents, which carry no signal, so the poll lists by
+-- creation time instead to catch a settlement the webhook missed. The window reaches back the
+-- settle window plus an intent's own lifetime.
 testFakeListWindow :: IO ()
 testFakeListWindow = withProvider $ \fake p -> do
   askedAt <- getCurrentTime
@@ -217,8 +215,6 @@ testFakeListWindow = withProvider $ \fake p -> do
           sent `shouldSatisfy` \s -> s >= seconds askedAt - window && s <= seconds answeredAt - window
     [] -> expectationFailure "expected at least one list request"
 
--- | A list carries no expanded charge, so a settled row dates its settlement at read time, not an
--- epoch. The open row yields no signal and stays out of lpMoved.
 testFakeListsOpen :: IO ()
 testFakeListsOpen = withProvider $ \_ p -> do
   askedAt <- getCurrentTime
@@ -285,7 +281,7 @@ testWebhookUnhandled = withProvider $ \fake p -> do
   pVerifyWebhook p (stripeSigHeader secret 1700000000 body) (LB.toStrict body) `shouldBe` Right Nothing
 
 -- | Stripe sends one v1 per active secret while a signing secret is being rotated, so a valid
--- signature can be any of them, not only the first. Only the second here is correct.
+-- signature can be any of them, not only the first.
 testWebhookRotatedSignature :: IO ()
 testWebhookRotatedSignature = withProvider $ \fake p -> do
   let secret = sWebhookSecret (fsConfig fake)

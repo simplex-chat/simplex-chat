@@ -7,8 +7,6 @@ const cardTest = timedTest(3000);
 const page = installPage();
 const { app, history, location, storage, fetches } = page;
 
-// The shell's meta element, empty as it is committed. Every render reads
-// it, so a test can change the configuration between two orders.
 const keyMeta = new StubElement("meta");
 keyMeta.setAttribute("id", "stripe-publishable-key");
 keyMeta.setAttribute("name", "stripe-publishable-key");
@@ -31,7 +29,6 @@ const RETURN_URL = "https://badges.example/";
 
 function render(node: unknown): StubElement { return node as unknown as StubElement; }
 
-/** An order that still carries its code, handed to a screen whose type says it cannot. */
 const order: UnpaidOrder = {
   orderId: "inv_card", badgeType: "legend", months: 12,
   createdAt: "2026-08-28T11:02:19Z", status: "open",
@@ -42,15 +39,12 @@ const cardInvoice: InvoiceView = {
   status: "open", amount: 42000, currency: "usd", clientSecret: CLIENT_SECRET,
 };
 
-/** the guard over the whole serialized subtree, attributes included. */
 function assertNoCode(node: StubElement, where: string): void {
   const dump = node.serialize();
   for (const form of [HELD_CODE, HELD_CODE.replace(/-/g, ""), "SB-"]) {
     assert.ok(!dump.includes(form), `${where} leaked a code (${form})`);
   }
 }
-
-// ------------------------------------------------------------------ the gate
 
 cardTest("stripe: with no publishable key the card lane is unavailable, and nothing loads", () => {
   for (const [what, key] of [["absent", undefined], ["empty", ""], ["whitespace", "   "]] as const) {
@@ -82,17 +76,11 @@ cardTest("stripe: the script URL is Stripe's own origin, which may not be self-h
   assert.ok(stripe.STRIPE_JS_URL.startsWith("https://js.stripe.com/"), stripe.STRIPE_JS_URL);
 });
 
-// ----------------------------------------------------------------- the mount
-
 interface Trace {
   calls: string[]; target: unknown; secret: string; key: string;
-  /** The element kind passed to elements.create(), or "" if it was not reached. */
   createArg: string;
-  /** The appearance theme handed to elements(), or "" if none was passed. */
   appearance: string;
-  /** The return_url handed to confirmPayment(), or "" if confirm was not reached. */
   returnUrl: string;
-  /** How many times the Element was actually torn down. */
   destroys: number;
 }
 
@@ -165,7 +153,6 @@ cardTest("stripe: mounting follows Stripe's script rule — init the SDK, create
 });
 
 cardTest("stripe: the appearance follows the site theme, resolving system by the OS", () => {
-  // the flat theme carries the site palette in both modes; the split shows in the text colour.
   for (const [label, t, osDark, ink] of [
     ["forced light ignores a dark OS", "light", true, "#1E2122"],
     ["forced dark ignores a light OS", "dark", false, "#FFFFFF"],
@@ -197,8 +184,6 @@ cardTest("stripe: a mounted form can be torn down, once, and a throwing teardown
   const thrower = fakeStripe({ destroyThrows: true });
   const second = await stripe.mountCard({ plan: loadPlan(), clientSecret: CLIENT_SECRET, target: {}, appearance: APPEARANCE, returnUrl: RETURN_URL, loadStripe: thrower.load });
   if (second.kind !== "mounted") throw new Error("expected a mounted form");
-  // The node is being replaced either way; a teardown that throws must not
-  // take the screen with it.
   assert.doesNotThrow(() => { second.destroy(); });
   assert.equal(thrower.trace.destroys, 1);
 });
@@ -228,8 +213,6 @@ cardTest("stripe: a mount that throws leaves no half-usable form", async () => {
   assert.equal(result.kind === "failed" ? result.reason : "", "sdk");
 });
 
-// --------------------------------------------------------------- confirming
-
 async function confirmWith(over: Parameters<typeof fakeStripe>[0]): Promise<{
   outcome: import("../src/stripe.js").ConfirmOutcome; trace: Trace;
 }> {
@@ -244,8 +227,6 @@ cardTest("stripe: confirming is confirmPayment(), and a succeeded intent is `sub
   assert.deepEqual(outcome, { kind: "submitted" });
   assert.equal(trace.calls.at(-1), "confirmPayment");
   assert.equal(trace.returnUrl, RETURN_URL, "confirm is handed the return URL Stripe requires");
-  // the watch loop and the give-up rule: success is not proof of payment. Nothing here says paid,
-  // carries a settlement time, or could be read as one.
   assert.ok(!("paid" in outcome) && !("settledAt" in outcome));
 });
 
@@ -273,8 +254,6 @@ cardTest("stripe: a confirm that THREW is an error, and never a submission", asy
   const { outcome } = await confirmWith({ confirmRejects: true });
   assert.equal(outcome.kind, "error", "a rejected confirm must not move the page to the confirming screen");
 });
-
-// ------------------------------------------------------------- the screens
 
 cardTest("screens: the card fields are disabled until the Element is actually mounted", () => {
   let paid = 0;
@@ -329,7 +308,6 @@ cardTest("screens: a card form that could not load is a screen, not a blank pane
     }));
     assert.equal(p.all("h1")[0]!.textContent, "The card form did not load");
     assert.ok(p.textContent.includes(expected), `${reason}: ${p.textContent}`);
-    // The copy has to be true: this order WAS created, and nothing was charged.
     assert.ok(p.textContent.includes("Nothing was charged"));
     assert.ok(p.textContent.includes("still waiting to be paid"));
     assert.ok(p.textContent.includes("inv_card"));
@@ -343,16 +321,9 @@ cardTest("screens: a card form that could not load is a screen, not a blank pane
   assert.equal(fresh, 1, "and the buyer is never stranded");
 });
 
-// ------------------------------------------------------- main.ts, end to end
-
-/**
- * The panel a buyer is looking at: the one that is not `inert` on the wizard's
- * track, and the only one there is on a payment screen.
- */
 const screen = (): StubElement => inViewOf(app);
 const heading = (): string => headingOf(screen());
 
-/** An invoice running out on its own: the give-up rule leaves a confirmed order waiting for exactly that. */
 function expireStoredOrder(orderId: string): void {
   const orders = JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, unknown>>;
   orders.find((o) => o.orderId === orderId)!.status = "expired";
@@ -373,7 +344,6 @@ cardTest("main: nothing of Stripe's is fetched at page load", () => {
   assert.ok(!fetches.some((f) => f.url.includes("stripe")), "and nothing requested it another way");
 });
 
-/** the landing screen → the order summary with Card selected, which is the only route to the card form. */
 function walkToCard(): void {
   const primary = (): StubElement => primaryOf(screen())!;
   if (heading() === "Support SimpleX") primary().click();
@@ -413,7 +383,6 @@ cardTest("main: with NO key the card path is unavailable, and still loads nothin
   assert.equal(screen().all("div.card-mount").length, 0);
   assert.equal(stripeTags().length, 0, "no key, no script — the gate is before the load");
   assert.ok(!screen().textContent.includes(CLIENT_SECRET), "the client secret is never on screen");
-  // the store rules: the code is in localStorage from before the invoice existed.
   const stored = JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, string>>;
   assert.ok(stored[0]!.code!.startsWith("SB-"));
   assert.ok(!screen().serialize().includes(stored[0]!.code!), "and never on an unpaid screen");
@@ -422,11 +391,6 @@ cardTest("main: with NO key the card path is unavailable, and still loads nothin
 });
 
 cardTest("main: the order summary withholds Pay while a card payment awaits confirmation", async () => {
-  // A confirm that has been submitted but not yet settled leaves the order `submitted` and still open.
-  // Browser Back is the way round the confirming screen's withheld [ New invoice ]:
-  // the confirming screen → the wizard → the order summary → Pay creates a SECOND invoice for a purchase whose
-  // confirm already returned success. The create endpoint has no idempotency key, so that is a
-  // second real charge with no remedy.
   const orders = JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, unknown>>;
   orders.find((o) => o.orderId === "inv_card_1")!.submitted = true;
   storage.setItem("sb.orders.v1", JSON.stringify(orders));
@@ -445,27 +409,17 @@ cardTest("main: the order summary withholds Pay while a card payment awaits conf
   assert.ok(screen().textContent.includes("When its invoice expires, a new one can be started there."),
     "and the way out is named: the closed-window screen offers a new invoice once this one expires");
 
-  // The guard is not the button alone: `pay()` refuses the same case, which is
-  // what the invoice-failure screen's [ Try again ] would otherwise walk into.
   const before = fetches.length;
   await settle();
   assert.equal(fetches.slice(before).filter((f) => f.url === "/api/invoice").length, 0);
 });
 
 cardTest("main: Back from a payment screen to the order summary, and Pay still works", async () => {
-  // The invoice awaiting confirmation above has expired with nothing charged,
-  // its own way out, so the order summary may offer to create one again.
   expireStoredOrder("inv_card_1");
-  // The 200 cleared `sb.session.v1` and the panels are seeded from the
-  // newest order instead, so the order summary draws a complete summary with an empty session
-  // behind it. `pay()` used to read the raw session and return at its first
-  // guard: a fully-rendered checkout whose Pay button did nothing at all.
   history.back();
   await settle();
   assert.equal(heading(), "How long?", "Back lands on the wizard, not on the replaced #/checkout");
 
-  // And the answer given now must be the answer charged: the seed goes UNDER
-  // the session, so a fresh duration is not overwritten by the old order's.
   screen().all("button.choice").find((c) => c.textContent.startsWith("3 months"))!.click();
   primaryOf(screen())!.click();
   assert.equal(heading(), "Check your order");
@@ -495,8 +449,6 @@ cardTest("main: Back from a payment screen to the order summary, and Pay still w
 });
 
 cardTest("main: with a key configured the card form loads Stripe.js and awaits its Element", () => {
-  // The card form the test above landed on: the same order, now on a page that
-  // has a key.
   assert.equal(heading(), "Pay by card");
   assert.equal(screen().all("div.card-mount").length, 1, "the Payment Element mounts here");
   assert.equal(stripeTags().length, 1, "exactly one script tag, and only now");
@@ -515,15 +467,9 @@ cardTest("main: a Stripe.js that fails to load lands on the failure screen, not 
   assert.equal(screen().all("div.card-mount").length, 0, "and no empty box where the fields were");
 });
 
-/** Every Element the page has mounted, and whether each has been torn down. */
 const elements: Array<{ node: unknown; destroyed: boolean }> = [];
 const confirms: number[] = [];
-/** The returnUrl the real main.ts path handed to confirm(); asserted to leak no order id. */
 let lastReturnUrl = "";
-/**
- * When set, `actions.confirm()` holds until it is released: the window in
- * which a repaint must not rebuild the form.
- */
 let heldConfirm: { promise: Promise<void>; release: () => void } | null = null;
 function holdNextConfirm(): void {
   let release = (): void => {};
@@ -531,7 +477,6 @@ function holdNextConfirm(): void {
   heldConfirm = { promise, release };
 }
 
-/** What a loaded Stripe.js defines. Installed once; every mount goes through it. */
 (globalThis as unknown as { window: Record<string, unknown> }).window.Stripe = (key: string) => {
   assert.equal(key, PUBLISHABLE_KEY, "the page's own configured key, and no other");
   return {
@@ -562,8 +507,6 @@ cardTest("main: [ Try again ] asks for the script again, and a load mounts the E
   screen().all("button.primary")[0]!.click();   // [ Try again ]
   await settle();
   assert.equal(heading(), "Pay by card");
-  // the tag that failed takes itself out of the head, so a page that retries all afternoon
-  // carries one script element, not one per attempt
   assert.equal(stripeTags().length, 1, "the failed load is retried with a fresh tag, and only that");
 
   stripeTags()[0]!.dispatch("load");
@@ -576,9 +519,6 @@ cardTest("main: [ Try again ] asks for the script again, and a load mounts the E
 });
 
 cardTest("main: a remount DESTROYS the Element it replaces, and loads no second script", async () => {
-  // the offline promise: losing the network takes the card form off the screen, and the node
-  // the Element was mounted into goes with it. Without the teardown, Stripe's
-  // iframes and listeners survive it, one set per mount.
   page.setOffline(true);
   await settle();
   try {
@@ -587,9 +527,7 @@ cardTest("main: a remount DESTROYS the Element it replaces, and loads no second 
     assert.equal(elements.length, 1, "and nothing new was mounted");
     assert.equal(elements[0]!.destroyed, true, "the Element that was on screen is gone");
   } finally {
-    // Restored even when an assertion above fails: the waiting loop backs off
-    // on real timers while offline, and leaving the page offline would
-    // hang this process rather than just fail this test.
+    // Restored even if an assertion above fails, or the offline backoff on real timers would hang this process.
     page.setOffline(false);
     await settle();
   }
@@ -602,9 +540,6 @@ cardTest("main: a remount DESTROYS the Element it replaces, and loads no second 
 });
 
 cardTest("main: a connectivity flap must not remount the form under an in-flight confirm", async () => {
-  // `online`/`offline` repaint the screen and `renderCardForm` built a fresh `cardFields` closure each time,
-  // starting disabled and enabling itself when the new mount resolved, while the first `confirm()` was still
-  // pending, writing into the closure just thrown away. A second Pay on one Checkout Session is a real charge.
   holdNextConfirm();
   const mounted = elements.length;
   const node = screen().all("div.card-mount")[0];
@@ -637,22 +572,16 @@ cardTest("main: a real confirm ALSO lands on the confirming screen, and the conf
   assert.ok(screen().textContent.includes("Waiting for the card network to confirm."),
     "the confirming screen waits: a confirm is a hint, the provider is what settles it");
   assert.equal(confirms.length, 1, "one press, one confirm");
-  // the give-up rule: the loop keeps asking the provider about this exact order.
   assert.ok(fetches.some((f) => f.url.startsWith("/api/invoice/inv_card_2")), "the waiting loop is polling");
-  // the order id is a bearer capability the service never sends Stripe, and return_url is stored on
-  // the session; so the URL handed to confirm must not carry it.
   assert.ok(lastReturnUrl.length > 0 && !lastReturnUrl.includes("inv_card_2"),
     `the return URL leaks no order id: ${lastReturnUrl}`);
   assert.ok(elements.every((e) => e.destroyed), "and the form it left behind took its Element with it");
-  // the give-up rule as amended: no confirming screen offers a control that could start a second charge.
   assert.equal(screen().all("button").filter((b) => b.textContent === "Buy a new code").length, 0);
   assert.ok(!screen().textContent.includes("Here is your code"));
   const stored = (JSON.parse(storage.getItem("sb.orders.v1")!) as Array<Record<string, string>>)
     .find((o) => o.orderId === "inv_card_2")!;
   assert.equal(stored.status, "open", "nothing about the order changed: the provider decides");
   assert.ok(!screen().serialize().includes(stored.code!));
-  // the watch loop as amended: the flag is on the order, so it survives the next
-  // checkout's `clearSession`, and [ New invoice ] cannot erase it.
   assert.equal(stored.submitted, true);
   assert.equal(storage.getItem("sb.session.v1"), null, "and not in the session");
 });
@@ -664,8 +593,6 @@ cardTest("main: the code appears only when the SERVER says paid", async () => {
     status: 200,
     body: { status: "paid", badgeType: "legend", months: 3, settledAt: "2026-08-28T11:20:00Z" },
   });
-  // Reopening the same `?order=` URL, as a buyer coming back does. The mock's
-  // POST /control/settle/<id> is what makes it answer `paid`.
   page.fire("popstate");
   await until(() => heading().startsWith("Paid"), "codeIssued");
   assert.ok(screen().serialize().includes(stored.code!), "the code screen is the one screen that shows it");

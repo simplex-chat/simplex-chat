@@ -1,21 +1,3 @@
-// Wiring: DOM events in, `flow.ts` calls out, `screens.ts` renders. The module that owns the
-// page's state and the panel track.
-//
-// The track is one panel per index: 0 is the landing screen and panel i renders STEPS[i - 1],
-// so CHECKOUT_INDEX is the last of them and the one every checkout screen replaces.
-//
-// An answer that arrives after the page has moved on must not act on what was true when it was
-// asked for. Which guard applies depends on what the answer wants to do:
-//
-//   `flow.epoch`       a repaint, the address bar, or starting a watch
-//   `store.wipeCount`  inserting a row the buyer may have erased since
-//   the row existing   updating one, which is nothing to do once it is gone
-//   node identity      a repaint that took the root
-//   the hash           the history list
-//
-// Store writes are deliberately not behind the epoch: navigating bumps it, and an answer the
-// buyer navigated away from still has to be recorded.
-
 import { CATALOG, SINGLE_MONTH, offerTotal, savingPercent, type Offer, type Price, type Total } from "./catalog.js";
 import { generate, hash } from "./codes.js";
 import { Flow, type CheckoutOutcome, type Selection } from "./flow.js";
@@ -39,9 +21,6 @@ const pageFetch: typeof fetch = (input, init) => window.fetch(input, init);
 const chromeSlot = document.getElementById("chrome");
 if (chromeSlot === null) throw new Error("main: #chrome is missing from the shell");
 
-// A read cannot tell a store that keeps things from one that will lose them: the fallback below
-// accepts every write and forgets them all on the next load. The probe is a write round trip, and
-// its answer travels with the store, because the code screen's promise rests on it.
 function pageStore(): Store {
   const probe = "sb.probe";
   let real: StorageLike | undefined;
@@ -54,20 +33,11 @@ function pageStore(): Store {
       s.removeItem(probe);
       return new Store(s, true);
     }
-  } catch {
-    // falls through to the memory store below
-  }
-  // the probe is this page's own key, so a read that throws does not get to leave it behind:
-  // Forget does not know about it. A store that also refuses the removal keeps it, and there is
-  // nothing further to be done about that.
-  try { real?.removeItem(probe); } catch { /* nothing more can be done about it */ }
+  } catch {}
+  try { real?.removeItem(probe); } catch {}
   return new Store(memoryOver(real), false);
 }
 
-// Writes go to memory so the page still works, but reads fall through to the real store where
-// there is one: a browser that refuses writes because its quota is full is still holding the codes
-// bought before it filled, and dropping the reader would hide them. Removals go to both, since
-// [ Forget everything ] has to clear what is really there.
 function memoryOver(real: StorageLike | undefined): StorageLike {
   const m = new Map<string, string>();
   return {
@@ -79,7 +49,7 @@ function memoryOver(real: StorageLike | undefined): StorageLike {
     setItem: (k, v) => { m.set(k, v); },
     removeItem: (k) => {
       m.delete(k);
-      try { real?.removeItem(k); } catch { /* the store that refused the write may refuse this too */ }
+      try { real?.removeItem(k); } catch {}
     },
   };
 }
@@ -96,16 +66,12 @@ const flow = new Flow({
   render: (view) => { paint(view); },
 });
 
-// Whether this page runs inside the site's iframe: read once, since it cannot change for the life
-// of the document. It steers the wordmark's link and turns on the host theme channel below.
 const embedded = window.self !== window.top;
 
 const chromeUi = screens.chrome({
   onNewPurchase: startPurchase,
   onHistory: showCodes,
   theme: store.theme(),
-  // A user's own toggle: save it, apply it, and tell the host page so a site-level switch stays in
-  // step with the one inside the frame.
   onTheme: (theme) => { setTheme(theme, true); },
   onToggle: (open) => {
     for (const node of [root, document.getElementById("contact")]) {
@@ -115,9 +81,6 @@ const chromeUi = screens.chrome({
   },
   onHome: () => goToIndex(0),
 });
-// Standalone, the app carries its own navbar (logo + burger). Embedded, the site's navbar is the
-// only one, so ours is not rendered; the buyer navigates from there, and `.embedded` pads the top
-// so the content clears the site's fixed bar and drops the page's own background wash.
 if (embedded) document.documentElement.classList.add("embedded");
 else chromeSlot.replaceChildren(chromeUi.node);
 
@@ -127,44 +90,25 @@ function applyTheme(theme: Theme): void {
   const html = document.documentElement;
   if (theme === "system") html?.removeAttribute(THEME_ATTRIBUTE);
   else html?.setAttribute(THEME_ATTRIBUTE, theme);
-  // The navbar copied from the site keys its dark palette on a `.dark` class, the Tailwind
-  // convention, so mirror the resolved theme onto it while `styles.css` keeps reading `data-theme`.
+  // The site's navbar keys its dark palette on a `.dark` class, so mirror the resolved theme onto it while styles.css reads data-theme.
   html?.classList.toggle("dark", theme === "dark" || (theme === "system" && prefersDark()));
   chromeUi.showTheme(theme);
 }
 
-// ------------------------------------------------------- embedding in the site
-//
-// The page can run standalone or inside an iframe on the site, which frames it full-bleed with its
-// own navbar hidden. When embedded, the host owns the theme: it posts the buyer's site-wide choice
-// in, and this frame echoes its own toggle back out, so one switch drives both. The message is
-// small and non-sensitive (a theme name), but the origin is still checked: only the site may drive
-// it, and this frame only posts back to the host it actually has.
 let hostOrigin: string | undefined;
 
-// The host page URL, posted by the host on ready; the card confirm's return URL (see cardReturnUrl).
 let hostReturnUrl: string | undefined;
 
-// `echo` is false for a theme that arrived from the host: applying it must not post it straight back.
+// echo is false for a theme that arrived from the host, so applying it does not post it straight back to the host.
 function setTheme(theme: Theme, echo: boolean): void {
   store.saveTheme(theme);
   applyTheme(theme);
-  // A theme change while the card form is up re-mounts the Element so its appearance follows;
-  // `paint` leaves an in-flight confirm untouched, so this cannot rebuild a form mid-payment.
   if (lastView?.screen === "cardForm") paint(lastView);
   if (echo && embedded && hostOrigin !== undefined) {
     window.parent.postMessage({ type: THEME_MESSAGE, theme }, hostOrigin);
   }
 }
 
-// The host sizes the iframe to our content, so the site's page (not the frame) is what scrolls and
-// the footer follows naturally. Post on every layout change; the value is a dimension, not a secret.
-// The welcome page's height, carried on every height message as the floor the host should never let
-// the iframe shrink below (a shorter screen — an empty codes list, a compact step — must not collapse
-// it under where the buyer arrived). The welcome page is panel 0 of the track, laid out even while
-// another panel is in view, so it is measured wherever we are, plus the top the site's fixed navbar
-// is cleared by, which the document height includes. Measured only while the track is mounted (a codes
-// or order screen detaches it, measuring zero) and cached, so the floor still holds on those screens.
 let welcomeHeight = 0;
 function measureWelcome(): void {
   const landing = panels[0];
@@ -174,26 +118,16 @@ function measureWelcome(): void {
   if (measured > 0) welcomeHeight = measured;
 }
 
-// The host sizes the iframe to our content, so the site's page (not the frame) is what scrolls and
-// the footer follows naturally. Post on every layout change; the value is a dimension, not a secret.
 let lastHeight = 0;
 function postHeight(): void {
   measureWelcome();
-  // Round up from the fractional box: `scrollHeight` floors, which leaves the iframe a sub-pixel
-  // short and the site's footer riding over the last row — visible as a jitter at fractional zoom,
-  // where the rounding shifts. Skip unchanged values so a zoom's layout churn is one post, not many.
+  // Rounding the fractional box height down leaves the iframe a sub-pixel short and the footer rides over the last row.
   const height = Math.ceil(document.documentElement.getBoundingClientRect().height);
   if (height === lastHeight) return;
   lastHeight = height;
   window.parent.postMessage({ type: HEIGHT_MESSAGE, height, min: welcomeHeight }, hostOrigin ?? "*");
 }
 
-// Announce our current SHAREABLE route to the host (see NAV_MESSAGE): the hash for a wizard step or
-// the codes list, and the empty string for the landing and every order/payment screen, whose state
-// lives in our own store and not in a URL the host holds. `location.hash` is exactly that — an order
-// screen sits at `?order=…` with no hash — so the host persists a step to restore, and restores
-// nothing over an order, which the frame resumes itself. Call after every navigation; embedded only,
-// and once the host is known (its origin arrives with the theme/colours it posts on our ready).
 function announceLocation(): void {
   if (!embedded || hostOrigin === undefined) return;
   window.parent.postMessage({ type: NAV_MESSAGE, hash: location.hash }, hostOrigin);
@@ -202,30 +136,19 @@ function announceLocation(): void {
 if (embedded) {
   window.addEventListener("message", (event) => {
     if (!trustedHost(event.origin)) return;
-    // First word from the host: now we know where to post, so flush the height (with its welcome-page
-    // floor) the ResizeObserver already computed but had nowhere to send.
     if (hostOrigin === undefined) { hostOrigin = event.origin; postHeight(); }
     const theme = themeFromMessage(event.data);
     if (theme !== undefined) { hostOrigin = event.origin; setTheme(theme, false); return; }
-    // The site's "Buy a code" starts a fresh purchase — distinct from a route, so a reload that
-    // re-posts a step is not mistaken for it — and lands on the level picker with the landing beneath.
     if (isNewPurchaseMessage(event.data)) { hostOrigin = event.origin; startPurchase(); return; }
-    // The site's navbar drives Your codes, and its URL hash deep-links a screen (a reload resumes the
-    // reached step this way); both arrive as a route the frame applies through its own router.
     const hash = routeFromMessage(event.data);
     if (hash !== undefined) { hostOrigin = event.origin; applyRoute(hash); return; }
-    // The host page's URL, for a card confirm's Stripe return URL (see cardReturnUrl).
     const returnUrl = returnUrlFromMessage(event.data);
     if (returnUrl !== undefined) { hostOrigin = event.origin; hostReturnUrl = returnUrl; return; }
-    // The site hands in its page background so the frame matches it rather than showing its own.
     const bg = bgFromMessage(event.data);
     if (bg !== undefined) { hostOrigin = event.origin; document.documentElement.style.setProperty("--bg", bg); }
   });
   new ResizeObserver(() => { postHeight(); }).observe(document.body);
-  // Tell the host the frame is ready and hand it the current theme, so it can align its own control
-  // and, if it drives theme, post the site-wide choice back. Broadcast, since the host origin is not
-  // yet known; the reply's origin is what gets trusted.
-  try { window.parent.postMessage({ type: EMBED_READY, theme: store.theme() }, "*"); } catch { /* no host to tell */ }
+  try { window.parent.postMessage({ type: EMBED_READY, theme: store.theme() }, "*"); } catch {}
 }
 
 applyTheme(store.theme());
@@ -240,14 +163,11 @@ function cardAppearance(): ReturnType<typeof appearanceFor> {
 
 // A remembered return older than this is a stale attempt, not the buyer coming back from the redirect.
 const CARD_RETURN_WINDOW_MS = 15 * 60 * 1000;
-// Stripe redirects the top window here on confirm. Embedded, it must be the host page, not this frame's
-// own URL, or the redirect pulls the whole tab out of the site onto the standalone webapp.
+// Embedded, the redirect target must be the host page, or the confirm pulls the whole tab out of the site onto the standalone app.
 function cardReturnUrl(): string {
   return embedded && hostReturnUrl !== undefined ? hostReturnUrl : location.origin + location.pathname;
 }
 
-// In `system` mode the OS can flip under us: re-resolve the navbar's `.dark` class, and re-mount
-// the card Element (if it is up) so its appearance follows.
 window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
   if (store.theme() !== "system") return;
   applyTheme("system");
@@ -268,7 +188,7 @@ window.addEventListener("keydown", (event) => {
   const at = items.findIndex((item) => item === document.activeElement);
   const back = event.shiftKey;
   const next = at < 0 ? (back ? items.length - 1 : 0) : at + (back ? -1 : 1);
-  if (at >= 0 && next >= 0 && next < items.length) return;   // the browser can do it
+  if (at >= 0 && next >= 0 && next < items.length) return;
   event.preventDefault?.();
   items[next < 0 ? items.length - 1 : next % items.length]?.focus?.();
 });
@@ -322,7 +242,6 @@ function landingIndex(): number {
 }
 
 const FIRST_INDEX_NEEDING_A_LEVEL = 2;
-// the wizard's steps, then the panel the order summary and every checkout screen share
 const CHECKOUT_INDEX = STEPS.length;
 const PANEL_COUNT = STEPS.length + 1;
 
@@ -359,9 +278,7 @@ function rebuild(at: number): void {
   if (at === index) moveTrack(false);
 }
 
-// The order seeds the session from underneath, never over it: a buyer who walks back and
-// picks a different duration would otherwise have that answer overwritten by the old
-// order's, first on screen and then in what is charged.
+// The order seeds the session from underneath, never over it, so a duration the buyer just picked is not overwritten by the old order.
 function effectiveSession(): SessionRecord {
   const session = store.session();
   if (session.priceId !== undefined) return session;
@@ -526,15 +443,8 @@ async function pay(): Promise<void> {
   if (payButton === null || payButton === undefined || payButton.hasAttribute("disabled")) return;
   payButton.setAttribute("disabled", "");
 
-  // The disabled attribute does not survive a repaint of the panel, and a second checkout
-  // buys a second invoice the buyer never asked for.
+  // The disabled attribute does not survive a repaint, so this flag stops a second checkout buying a second invoice.
   checkoutInFlight = true;
-  // The buyer can navigate while the invoice is being bought, and no outcome below is safe on a
-  // page that has moved on: `created` rewrites the address bar and starts a watch for an order the
-  // buyer has left, `failed` and `catalogChanged` take the root, and the other two arm a countdown
-  // or overwrite the stored method for a screen nobody is on. Nothing is charged either way: the
-  // buyer never sees an address or a card form, and a store that took the write keeps the order
-  // in the codes list.
   const since = flow.epoch;
   let outcome: CheckoutOutcome;
   try {
@@ -545,12 +455,9 @@ async function pay(): Promise<void> {
   if (flow.epoch !== since) return;
   switch (outcome.kind) {
     case "created": {
-      // The draft is spent here rather than in `checkout`, which answers across a round trip the
-      // buyer can navigate away from: cleared there, a choice they made in the meantime goes with
-      // it, and `effectiveSession` reseeds from this order to charge a tier they had deselected.
       store.clearSession();
       history.replaceState(null, "", `?order=${encodeURIComponent(outcome.order.orderId)}`);
-      announceLocation();   // an order screen: no hash, so the host clears its step and won't clobber this on reload
+      announceLocation();
       unavailableMethod = undefined;
       root.replaceChildren(screens.loading());
       flow.watch(outcome.order.orderId, {
@@ -603,15 +510,9 @@ function firstAvailable(down: Method): Method {
   return screens.METHOD_ORDER.find((m) => m !== down) ?? "btc";
 }
 
-// A refusal written into the asking screen dies on the next repaint from the restarted watch, so it
-// is held against its order and its epoch: every repaint of that order draws it, and leaving bumps
-// the epoch, which drops it. Only a refusal that leaves the invoice open is held, since the closed
-// screens have nowhere to draw one.
 let cancelNotice: { orderId: string; epoch: number; message: string } | undefined;
 
-/** Every refusal ends the same way: the watch was stopped before the request, so it has to be
- * started again or the page sits on a screen nothing updates, and the reason is thrown for
- * `cancelControl` to draw. */
+// The watch was stopped before the request, so restart it or the page sits on a screen nothing updates.
 function refuseCancel(orderId: string, resume: Parameters<typeof flow.watch>[1], message: string): never {
   flow.watch(orderId, resume);
   throw new screens.CancelRefused(message);
@@ -622,34 +523,17 @@ let cancelInFlight = false;
 async function cancelInvoice(orderId: string): Promise<void> {
   if (!window.confirm(screens.CANCEL_CONFIRM)) return;
   cancelNotice = undefined;
-  // `stopAll` empties the map, so `watch` has no previous loop to take these from: without them a
-  // restart redraws the order as a fresh one, losing the resumed line and the Buy a new code button.
-  // The record is deliberately not among them: this call is about to rewrite it, and a loop
-  // holding the copy from before would draw the dead address back the first time a read failed.
   const { record: _record, ...resume } = flow.liveWatches().find((w) => w.orderId === orderId)?.restartOptions() ?? {};
   flow.stopAll();
-  // the same rule the history refresh follows: an answer that lands after the store was wiped, or
-  // after this page moved on, is not ours to write, and not ours to start a watch for either
   const since = flow.epoch;
   let cancelled: api.InvoiceView | undefined;
   try {
-    // The answer is the now-expired invoice. Dropping it left the record `open` with its
-    // destination, so an offline reload drew the dead address and a QR for it.
     cancelled = await api.cancelInvoice(orderId, pageFetch);
-    // The record is what a reload draws from whenever the first read fails, so it is written
-    // whenever it still exists. A record that is gone stays gone: with none stored, `applyView`
-    // would compose a new one from the view and put a forgotten order back.
     if (store.order(orderId) !== undefined) applyView(store, orderId, cancelled, Date.now());
     if (flow.epoch !== since) {
-      // The page moved on. If it moved to this same order, it is drawing the record as it stood
-      // before this answer: the dead address, its QR, and a countdown to it. That loop will not
-      // read again until the hold it is in answers, so this answer goes straight to a fresh loop
-      // rather than leave an address on screen that nothing can reach.
       const live = flow.liveWatches().find((w) => w.orderId === orderId);
       if (live !== undefined) {
-        // Awaited, not just stopped: `flow.watch` hands back the existing loop while it is
-        // unfinished, so without this the restart would return the one just stopped. The unwind is
-        // microtasks throughout, so nothing of the buyer's can land inside it.
+        // flow.watch hands back the existing unfinished loop, so the stopped loop must be awaited before restarting.
         live.stop();
         await live.done;
         flow.watch(orderId, { initial: cancelled });
@@ -658,18 +542,12 @@ async function cancelInvoice(orderId: string): Promise<void> {
     }
   } catch (e) {
     const code = e instanceof api.ApiError ? e.code : undefined;
-    // `not_open` is the one refusal that proves the invoice is closed, having settled or expired
-    // while the buyer decided, so its destination leaves the record on the same rule as the answer
-    // above: a reload draws the record whenever the first read fails, and this page may be gone.
     if (code === "not_open") {
       const held = store.order(orderId);
       if (held !== undefined) store.saveOrder(withoutDestination(held));
     }
     if (flow.epoch !== since) return;
-    // the closed screens have no slot for a notice, so this refusal is said once, where it was asked
     if (code === "not_open") refuseCancel(orderId, resume, screens.CANCEL_NOT_OPEN);
-    // The invoice is still open on every other path, so the notice has a screen to draw on: money
-    // is riding on it, or it failed for a reason this page cannot name.
     cancelNotice = {
       orderId,
       epoch: flow.epoch,
@@ -679,30 +557,19 @@ async function cancelInvoice(orderId: string): Promise<void> {
     flow.watch(orderId, resume);
     throw e;
   }
-  // The row is expired whether or not a payment landed, so an answer that is still open means the
-  // service disagrees with its own contract. The address is dead either way, and this notice draws
-  // because the order is still open: the payment screen is the only one with a slot for it.
   if (cancelled.status === "open") {
     cancelNotice = { orderId, epoch: flow.epoch, message: screens.CANCEL_STILL_OPEN };
     refuseCancel(orderId, resume, screens.CANCEL_STILL_OPEN);
   }
-  // The provider is told before the row is written, so a payment can land during that round trip,
-  // and a cancel can lose to settlement outright. Either way the order still has something to show,
-  // so stay on it and let its own screen say what: the closed-window screen names what arrived and
-  // the reference, and the code screen hands over the code.
   if (cancelled.paidInFull === true || cancelled.cryptoAmountPaid !== undefined) {
     flow.watch(orderId, resume);
     return;
   }
-  // A clean cancel: the invoice closed unpaid on the buyer's own action, so the row is theirs to
-  // read as canceled in Your codes, not as an invoice that merely expired.
   store.markCanceled(orderId);
   newInvoice();
 }
 
-/** One cancel at a time. The button's own disabled attribute does not survive a repaint, and
- * `repaintConnectivity` redraws this screen on any online or offline event, handing back an armed
- * Cancel while the first request is still on the wire. */
+// The Cancel button's disabled attribute does not survive a repaint, so this flag allows one cancel at a time.
 async function cancelInvoiceOnce(orderId: string): Promise<void> {
   if (cancelInFlight) return;
   cancelInFlight = true;
@@ -713,7 +580,6 @@ async function cancelInvoiceOnce(orderId: string): Promise<void> {
   }
 }
 
-/** Back to the landing screen with nothing of the last order still running or on screen. */
 function resetToLanding(nav: "push" | "replace"): void {
   stopCountdowns();
   flow.stopAll();
@@ -725,20 +591,12 @@ function resetToLanding(nav: "push" | "replace"): void {
   announceLocation();
 }
 
-// A new invoice from a payment screen: the abandoned invoice's screen is left behind for the intro,
-// where the buyer can start again. The order summary and the wizard behind it are still there to walk.
 function newInvoice(): void {
   store.clearSession();
   resetToLanding("replace");
 }
 
-// "Buy a code": a fresh purchase opens at the level picker, not the intro, so the menu and the site's
-// navbar land on the same screen. The landing is seeded beneath it (replaced onto the entry, then the
-// step pushed) so [ ← Back ] returns there just as walking in from the landing does; the session is
-// cleared, so nothing is preselected.
 function startPurchase(): void {
-  // The buyer's tier and duration are kept, so the level picker opens with the same choice preselected
-  // as reaching it from the landing does — "Buy a code" is a shortcut to the picker, not a reset.
   stopCountdowns();
   flow.stopAll();
   store.clearCardReturn();
@@ -824,9 +682,7 @@ function releaseCardElement(): void {
 
 type CardView = Extract<PaymentView, { screen: "cardForm" }>;
 
-// While a confirm is pending the form is left exactly as it is. A repaint would build a
-// fresh Element and re-enable Pay while the previous confirm was still in flight, and
-// checkout has no idempotency key.
+// A repaint would build a fresh Element and re-enable Pay while the previous confirm is in flight, and checkout has no idempotency key.
 function renderCardForm(view: CardView): void {
   releaseCardElement();
   const plan = cardPlan(publishableKey(), isOffline());
@@ -836,8 +692,7 @@ function renderCardForm(view: CardView): void {
   }
   const shell = (body: HTMLElement): HTMLElement => screens.cardForm({
     order: view.order, invoice: view.invoice, resumed: view.resumed, body,
-    // a PaymentIntent is only cancelable before it confirms, so the button is inert once a confirm is
-    // in flight (the form is not repainted then, so it cannot be taken off the screen instead)
+    // A PaymentIntent is only cancelable before it confirms, so the button is inert once a confirm is in flight.
     onCancel: () => (cardConfirmPending ? Promise.resolve() : cancelInvoiceOnce(view.order.orderId)),
     ...(cancelNotice?.orderId === view.order.orderId && cancelNotice.epoch === flow.epoch
       ? { notice: cancelNotice.message } : {}),
@@ -851,15 +706,12 @@ function renderCardForm(view: CardView): void {
       if (confirm === null) return;
       fields.busy(true);
       cardConfirmPending = true;
-      // Remembered before the confirm, which redirects the page; the return resumes this exact order.
+      // The confirm redirects the page, so remember the return before calling it.
       store.rememberCardReturn(view.order.orderId, Date.now());
       void confirm().then((outcome) => {
         cardConfirmPending = false;
         if (outcome.kind === "submitted") { cardConfirmed(view, node); return; }
-        // A declined card did not redirect, so there is no return: forget it, or a reload resumes it.
         store.clearCardReturn();
-        // a repaint was suppressed while this was in flight; if the buyer has navigated since,
-        // the form this error belongs to is not on screen and the current one is owed the paint
         if (root.firstChild !== node) {
           if (lastView !== null) paint(lastView);
           return;
@@ -895,18 +747,9 @@ function cardFailureScreen(view: CardView, reason: CardFailure): HTMLElement {
   });
 }
 
-// A successful confirm is a hint, not proof, so this draws the confirming screen and never a code. The flag
-// goes on the order rather than the session, which the next checkout clears.
 function cardConfirmed(view: CardView, owner: Node): void {
   store.markSubmitted(view.order.orderId);
-  // the confirm is recorded whatever the page shows now, but a buyer who navigated while it was
-  // in flight is on another screen: taking the root would put this order under that URL. Where the
-  // write lands, the flag is on the record and opening this order again comes back here.
   if (root.firstChild !== owner) return;
-  // `view.order` has had the code stripped out of it, and `stopAll` below drops the loop that is
-  // holding the one record that still carries it. The store refuses this order's write when the
-  // list is full of orders that all hold codes, and when `setItem` starts failing after the boot
-  // probe passed. The loop is the only copy left in both, so it is read before it goes.
   const live = flow.liveWatches().find((w) => w.orderId === view.order.orderId)?.restartOptions().record;
   const confirmed: OrderRecord = { ...(store.order(view.order.orderId) ?? live ?? view.order), submitted: true };
   flow.stopAll();
@@ -930,9 +773,7 @@ function checkAgain(orderId: string): void {
 
 function openOrder(orderId: string): void {
   flow.stopAll();
-  // the previous order's view must not outlive its screen: a connectivity event repaints
-  // `lastView`, and while this read is still in flight that would draw the order we just left
-  // (its address, its amount) under this order's URL
+  // A connectivity event repaints lastView, which would draw the order just left under this order's URL.
   lastView = null;
   releaseCardElement();
   root.replaceChildren(screens.loading());
@@ -940,12 +781,9 @@ function openOrder(orderId: string): void {
 }
 
 function showCodes(): void {
-  // as every other navigation does: a loop left running behind the list paints its order over
-  // the list the moment the invoice moves, leaving the URL saying `#/codes`
   flow.stopAll();
   stopCountdowns();
-  // the path, not a bare hash: a hash alone resolves against the current URL and would keep
-  // the `?order=` of the screen this was opened from, which `syncFromLocation` reads first
+  // A bare hash resolves against the current URL and keeps the ?order= this was opened from, so push the full path.
   if (location.hash !== CODES_HASH) history.pushState(null, "", location.pathname + CODES_HASH);
   renderCodes(store.orders());
   void flow.refreshHistory().then(renderCodes);
@@ -953,9 +791,9 @@ function showCodes(): void {
 }
 
 function renderCodes(entries: readonly OrderRecord[]): void {
-  if (location.hash !== CODES_HASH) return; // the buyer navigated away mid-refresh
-  lastView = null; // the history list is taking the root; see `lastView`.
-  releaseCardElement(); // it is mounted in a node this replaceChildren is about to drop
+  if (location.hash !== CODES_HASH) return;
+  lastView = null;
+  releaseCardElement();
   syncChrome();
   root.replaceChildren(screens.purchaseHistory({
     rows: historyRows(entries),
@@ -982,9 +820,6 @@ function syncFromLocation(fresh: boolean): void {
     announceLocation();
     return;
   }
-  // Resume the order a card confirm redirected for, remembered before the redirect: it shows the code
-  // (or the screen that polls to it), not the welcome page. Needs no marker, so any embedder that
-  // reloads works, standalone too.
   if (orderId === null && fresh) {
     const resumeId = store.takeCardReturn(CARD_RETURN_WINDOW_MS, Date.now());
     if (resumeId !== undefined) {
@@ -997,16 +832,12 @@ function syncFromLocation(fresh: boolean): void {
   const load = resolveLoad({ search: location.search }, fresh ? store.newestOpen() : undefined);
   if (load.kind === "order") {
     openOrder(load.orderId);
-    announceLocation();   // no hash: the host holds no route for an order, and resumes it from our store
+    announceLocation();
     return;
   }
   const at = reachableIndex(landingIndex());
   if (fresh && at > 0) {
-    // Loaded straight at a deep step — a reload, a deep link, or the host framing us at one via the
-    // iframe's src. The steps beneath it are not in this document's history, so [ ← Back ], which is
-    // history.back(), would leave the wizard: to the landing, or, embedded, off the badges page and
-    // out to the site (this document's history is the tab's). Rebuild the stack the buyer would have
-    // walked in, landing first, so Back steps back through it and stops at the landing.
+    // The steps beneath a deep-linked one are not in history, so rebuild the stack or Back leaves the wizard.
     history.replaceState(null, "", "/");
     for (let i = 1; i <= at; i++) history.pushState(null, "", hashForIndex(i));
   } else {
@@ -1019,9 +850,6 @@ function syncFromLocation(fresh: boolean): void {
   announceLocation();
 }
 
-// A route handed in by the host (its navbar or its URL hash): put it on our own location and let
-// the router draw it, exactly as a same-tab navigation would. reachableIndex still clamps a step
-// the buyer has not earned, so a deep link to #/checkout lands where it can.
 function applyRoute(hash: string): void {
   const path = location.pathname;
   history.pushState(null, "", hash === "" || hash === "/" ? path : path + hash);
@@ -1048,21 +876,15 @@ function repaintConnectivity(): void {
 window.addEventListener("online", repaintConnectivity);
 window.addEventListener("offline", repaintConnectivity);
 
-// Anubis serves its challenge as HTML at the same path as the page, so a worker
-// registered before the real shell is on screen could cache the challenge as the shell.
-// This call is the last statement in the module, and the tests check that ordering.
+// Anubis serves its challenge as HTML at the page's path, so a worker registered before the shell is on screen could cache the challenge as the shell.
 function registerServiceWorker(): void {
   if (!("serviceWorker" in navigator)) return;
-  void navigator.serviceWorker.register("/sw.js").catch(() => { /* no offline support this visit */ });
+  void navigator.serviceWorker.register("/sw.js").catch(() => {});
 }
 
-// The shell prerenders the welcome page, so the document right now — before the first render replaces
-// it — is exactly the welcome page. Capture its height as the floor, for a load that resolves to a
-// codes or order screen and so never mounts the wizard for `measureWelcome` to read panel 0.
+// The shell prerenders the welcome page, so the document is that page until the first render, and a load resolving to a codes or order screen never mounts the wizard for measureWelcome to read.
 if (embedded && welcomeHeight <= 0) welcomeHeight = Math.ceil(document.documentElement.getBoundingClientRect().height);
 
 syncFromLocation(true);
-// The real screen is painted; clear the pre-paint mark so a non-landing reload's held shell fades in
-// (see `.sb-booting` in styles.css). A no-op on the landing, which was never marked.
 document.documentElement.classList.remove("sb-booting");
 registerServiceWorker();

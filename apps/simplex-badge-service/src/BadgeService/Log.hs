@@ -1,11 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | The SMP agent logs its per-connection traffic ("Agent connected", "A (1) --> ... SUB",
--- "subscribed N queues") as unconditional logInfo on the process-global Control.Logger.Simple
--- level, which has no per-source filter. Silencing it means raising that global level to Warn,
--- which would also drop the service's own info lines. So the service logs on this separate
--- channel, in Control.Logger.Simple's exact line format, so a service line and an agent warning
--- read the same in one stream.
+-- | The SMP agent logs unconditionally at info on the global logger, so the service keeps its own info lines on this separate channel when that logger is raised to Warn.
 module BadgeService.Log
   ( logInfo,
     logWarn,

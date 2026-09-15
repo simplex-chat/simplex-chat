@@ -36,9 +36,7 @@ export const CATALOG: Catalog = {
   ],
 };
 
-// A key in the browser only: it names no row in CATALOG.offers, and the request must be
-// sent without an offerId. An empty string cannot do the job, because that is how a
-// session says "nothing chosen yet".
+// This key names no row in CATALOG.offers, and the request must omit the offerId when it is chosen.
 export const SINGLE_MONTH = "1m";
 
 export interface Total { months: number; price: number; amount: number }
@@ -61,8 +59,7 @@ export function offerTotal(monthPrice: number, offer: Offer | undefined): Total 
   return charge(offer.months, Math.floor((gross * (100 - offer.discount.discount)) / 100), gross);
 }
 
-// Both figures, not just the charge: the service refuses a full price over the cap, so a
-// total accepted here without that check is sellable on the page and refused at checkout.
+// The full price is checked against the cap as well as the charge, because a total the page shows as sellable would otherwise be refused at checkout.
 function charge(months: number, amount: number, price = amount): Total | string {
   if (amount <= 0 || amount > MAX_AMOUNT || price > MAX_AMOUNT) return "amount unsellable";
   return { months, price, amount };

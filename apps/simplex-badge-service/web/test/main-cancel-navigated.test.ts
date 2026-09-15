@@ -1,6 +1,4 @@
-// A cancel the buyer walks away from still has to be written down. The record is what an offline
-// reload draws from, so an order left `open` with its destination draws a dead address and a QR
-// for it, which is the thing `cancelInvoice` says it exists to prevent.
+// An offline reload draws from the record, so an order left open with its destination draws a dead address and a QR for it.
 import assert from "node:assert/strict";
 import { headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
 import { ADDRESS, HELD_CODE, NOW, openReply, ORDER_ID, seededStorage, storedOrder } from "./open-order.js";
@@ -21,7 +19,7 @@ cancelTest("main: a cancel answered after the buyer left is still written to the
   await until(() => headingOf(screenOf(app)).startsWith("Send"), "the payment screen");
   page.confirmAnswer(true);
 
-  // nothing armed, so the cancel holds on the wire
+  // Nothing is armed, so the cancel holds on the wire.
   screenOf(app).all("button").find((b) => b.textContent === CANCEL_INVOICE)!.click();
   await settle();
 

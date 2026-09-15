@@ -2,14 +2,9 @@ import { timedTest } from "./boot.js";
 import assert from "node:assert/strict";
 import { ALPHABET, PAYLOAD, canonical, checkChar, display, normalise, generate, hash } from "../src/codes.js";
 
-// The two exhaustive sweeps below take a few hundred milliseconds each; every
-// other test here is instant. The timeout is what makes a regression that turns
-// something bounded into something unbounded FAIL rather than hang.
 const codeTest = timedTest(5000);
 
-// From src/Simplex/Chat/Badges/Code.hs: parseBadgeCode reads this code, its canonical form is the string below,
-// and badgeCodeHash gives that digest. Disagreeing with any of the three sells codes the service cannot redeem,
-// as shipped before with a 31-character alphabet, a mod-31 check character and a hash missing the prefix.
+// The golden vector's canonical form and hash come from parseBadgeCode; a divergence would sell codes the service cannot redeem.
 const VECTOR_BODY = "4RT6E8YBMW74Q8DK9DKR";
 const VECTOR = "SB-4RT6E-8YBMW-74Q8D-K9DKR";
 const VECTOR_CANONICAL = "SB4RT6E8YBMW74Q8DK9DKR";
@@ -25,8 +20,6 @@ codeTest("codes: the vector agrees with parseBadgeCode's canonical form and hash
 codeTest("codes: alphabet is Crockford base32", () => {
   assert.equal(ALPHABET, "0123456789ABCDEFGHJKMNPQRSTVWXYZ");
   assert.equal(ALPHABET.length, 32);
-  // the four Crockford omits, U included, which the old 31-character alphabet allowed and
-  // the service has never been able to read
   for (const bad of "ILOU") assert.ok(!ALPHABET.includes(bad), `${bad} must not be in the alphabet`);
 });
 
@@ -52,9 +45,7 @@ codeTest("codes: every single-character substitution is detected", () => {
   assert.equal(undetected, 0);
 });
 
-// Luhn mod N detects ADJACENT transpositions, not arbitrary ones - that is weaker than the
-// mod-31 weighted sum the checkout used to carry, and it is the price of agreeing with
-// Code.hs. Its documented blind spot is swapping the values 0 and N-1, so "0" beside "Z".
+// Luhn mod N detects adjacent transpositions but not a swap of 0 and Z, which this test allows for.
 codeTest("codes: every adjacent transposition is detected but Luhn's 0/Z blind spot", () => {
   let undetected = 0;
   let blindSpot = 0;
@@ -79,15 +70,11 @@ codeTest("codes: every adjacent transposition is detected but Luhn's 0/Z blind s
 codeTest("codes: normalise folds I, L and O, and requires the prefix", () => {
   assert.equal(normalise("sb-4rt6e-8ybmw-74q8d-k9dkr"), VECTOR_BODY);
   assert.equal(normalise(" SB 4RT6E 8YBMW 74Q8D K9DKR "), VECTOR_BODY);
-  // I and L read as 1, O as 0, so a code copied by hand still verifies
   const folded = normalise(display("1".repeat(19) + checkChar("1".repeat(19))).replace(/1/g, "I"));
   assert.equal(folded, "1".repeat(19) + checkChar("1".repeat(19)));
-  // U is not in the alphabet and folds onto nothing
   assert.equal(normalise("SB-UUUUU-UUUUU-UUUUU-UUUUU"), null);
   assert.equal(normalise("SB-TOOSHORT"), null);
-  // parseBadgeCode strips the prefix and fails without it, so this must too
   assert.equal(normalise("4RT6E8YBMW74Q8DK9DKR"), null);
-  // a wrong check character is not a code
   assert.equal(normalise(display(VECTOR_BODY.slice(0, 19) + (VECTOR_BODY[19] === "0" ? "1" : "0"))), null);
 });
 
@@ -105,7 +92,6 @@ codeTest("codes: hash is base64url sha-256 over the canonical form, prefix inclu
   const h = await hash(VECTOR_BODY);
   assert.match(h, /^[A-Za-z0-9_-]{43}$/);
   assert.equal(h, await hash(normalise(VECTOR)!));
-  // the prefix is part of what is hashed: dropping it was the third divergence
   const bytes = new TextEncoder().encode(VECTOR_BODY);
   const bare = await crypto.subtle.digest("SHA-256", bytes);
   const bareB64 = btoa(String.fromCharCode(...new Uint8Array(bare)))
@@ -114,14 +100,8 @@ codeTest("codes: hash is base64url sha-256 over the canonical form, prefix inclu
 });
 
 codeTest("codes: every code drawn is a different one, and the draw covers the alphabet", () => {
-  // Nothing else pins the randomness. With a constant generator the first sale succeeds and
-  // every later checkout retries code_conflict five times and fails, with the suite green.
   const drawn = new Set<string>();
   const symbols = new Set<string>();
-  // per position, because the check character alone ranges over all 32 values: measuring the code
-  // as a whole would be satisfied by a payload drawn from a fraction of the alphabet. This bounds
-  // the alphabet each position draws from, and nothing more. The keyspace rests on the source of
-  // the bytes, which the test below pins.
   const perPosition = Array.from({ length: PAYLOAD }, () => new Set<string>());
   for (let i = 0; i < 5000; i++) {
     const code = generate();
@@ -138,16 +118,12 @@ codeTest("codes: every code drawn is a different one, and the draw covers the al
 });
 
 codeTest("codes: stripping is Unicode, the way parseBadgeCode's isAlphaNum is", () => {
-  // An ASCII-only strip would drop an Arabic-Indic digit and read the rest as a valid code that
-  // the service, filtering with `isAlphaNum`, would refuse.
+  // An ASCII-only strip would drop an Arabic-Indic digit and read the rest as a valid code the service refuses.
   assert.equal(normalise("SB\u0663-4RT6E-8YBMW-74Q8D-K9DKR"), null);
   assert.equal(normalise("SB-4RT6E-8YBMW-74Q8D-K9DKR"), VECTOR_BODY, "and the separators still go");
 });
 
 codeTest("codes: the payload comes from the CSPRNG, one byte per character", () => {
-  // Per-position coverage cannot see this: `Math.random()` is uniform per position too, and its
-  // 128-bit state is recoverable from a handful of outputs, so one buyer's code would predict the
-  // next. What the keyspace rests on is where the bytes come from and how many are drawn.
   const real = globalThis.crypto.getRandomValues.bind(globalThis.crypto);
   const asked: number[] = [];
   globalThis.crypto.getRandomValues = ((buf: ArrayBufferView) => {

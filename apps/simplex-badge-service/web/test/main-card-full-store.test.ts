@@ -1,7 +1,4 @@
-// A card purchase in a browser whose orders list is full: every stored row holds a code, so
-// `saveOrder` can evict nothing and the new order is never written. The order summary says so
-// before the money ("copy the code as soon as it appears"), and the code screen is where it
-// appears. This walks the whole purchase and asks whether it does.
+// Every stored row holds a code, so saveOrder can evict nothing and the new order is never written.
 import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, installPage, inViewOf, primaryOf, screenOf, settle, timedTest, until } from "./boot.js";
@@ -25,14 +22,13 @@ mock.timers.enable({ apis: ["setTimeout", "Date"], now: NOW });
 const page = installPage({ storage: full });
 const { app } = page;
 
-// The page is configured with a key, so the card path is the real Payment Element, not a stand-in.
+// The publishable key makes the card path use the real Payment Element, not a stand-in.
 const keyMeta = new StubElement("meta");
 keyMeta.setAttribute("id", "stripe-publishable-key");
 keyMeta.setAttribute("name", "stripe-publishable-key");
 keyMeta.setAttribute("content", PUBLISHABLE_KEY);
 page.document.byId.set("stripe-publishable-key", keyMeta);
 
-// What a loaded Stripe.js defines: a Payment Element that mounts, and a confirm that succeeds.
 (globalThis as unknown as { window: Record<string, unknown> }).window.Stripe = (key: string) => {
   assert.equal(key, PUBLISHABLE_KEY, "the page's own configured key");
   return {
@@ -54,11 +50,11 @@ const stripeTag = (): StubElement =>
   )!;
 
 capTest("main: a card code survives the confirm when the orders list is full", async () => {
-  primaryOf(inView())!.click();                                                  // landing → tiers
+  primaryOf(inView())!.click();
   inView().all("button.choice").find((c) => c.textContent.startsWith("Supporter"))!.click();
-  primaryOf(inView())!.click();                                                  // tiers → durations
+  primaryOf(inView())!.click();
   inView().all("button.choice").find((c) => c.textContent.startsWith("1 month"))!.click();
-  primaryOf(inView())!.click();                                                  // durations → summary
+  primaryOf(inView())!.click();
   assert.equal(headingOf(inView()), "Check your order");
   assert.ok(inView().textContent.includes("This browser cannot save anything new right now."),
     "the store is full, and the summary says so before the money");
@@ -75,7 +71,6 @@ capTest("main: a card code survives the confirm when the orders list is full", a
   const codeShape = /SB-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}-[0-9A-Z]{5}/;
   assert.ok(!codeShape.test(screenOf(app).serialize()), "no code is on an unpaid screen");
 
-  // Stripe.js arrives, the Element mounts, and only then is the order payable.
   stripeTag().dispatch("load");
   await settle();
   const pay = screenOf(app).all("button.primary").find((b) => b.textContent.startsWith("Pay"))!;
@@ -83,7 +78,6 @@ capTest("main: a card code survives the confirm when the orders list is full", a
   pay.click();
   await until(() => heading() === "Payment received", `the confirming screen, not ${heading()}`);
 
-  // the card network confirms, which is the only thing between the buyer and their code
   page.answerHeld({ status: 200, body: {
     status: "paid", badgeType: "supporter", months: 1,
     amount: 700, currency: "usd", paidInFull: true, settledAt: "2026-08-28T12:05:00Z",

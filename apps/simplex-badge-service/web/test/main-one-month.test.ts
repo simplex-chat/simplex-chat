@@ -1,6 +1,3 @@
-// The cheapest purchase, end to end: the duration list's "1 month" card, and what pressing Pay
-// on it sends.
-
 import assert from "node:assert/strict";
 import { headingOf, installPage, inViewOf, timedTest, until } from "./boot.js";
 import type { StubElement } from "./stub-dom.js";
@@ -29,7 +26,6 @@ function session(): Record<string, unknown> {
   return JSON.parse(storage.getItem(SESSION_KEY) ?? "{}") as Record<string, unknown>;
 }
 
-/** the landing screen → the tier list → the level named, → the duration list. */
 function walkToDurations(level: string): StubElement {
   while (heading(inView()) !== "Support SimpleX") inView().all("button.back")[0]!.click();
   continueButton(inView()).click();
@@ -68,10 +64,7 @@ monthTest("main: choosing 1 month marks that card and ENABLES Continue", () => {
 // ----------------------------------------------------------------- clearing
 
 monthTest("main: changing the level clears the duration and disables Continue again", () => {
-  // The duration was priced under the old level, so it cannot survive it. The
-  // clear is an explicit `offerId: undefined` through `saveSession`, which
-  // merges and drops the field on stringify, not an empty string, which is
-  // what made "chosen" and "unchosen" the same value in the first place.
+  // The clear is an explicit offerId: undefined that saveSession drops on stringify, not an empty string, which once made "chosen" and "unchosen" the same value.
   const durations = walkToDurations("Legend");
   choice(durations, "12 months").click();
   assert.equal(continueButton(inView()).hasAttribute("disabled"), false);
@@ -93,33 +86,26 @@ monthTest("main: changing the level clears the duration and disables Continue ag
 // ------------------------------------------------------------------ upgrades
 
 monthTest("main: a session stored by an older build as offerId \"\" loads as nothing chosen", () => {
-  // That build wrote the empty string for both readings, so it cannot be told
-  // which one it meant. Reading it as "chosen" is the reading that strands the
-  // buyer on a Continue that never enables; reading it as "not answered" only
-  // asks the question again.
+  // A legacy empty-string offerId is ambiguous, so it is read as "not answered" rather than stranding the buyer on a Continue that never enables.
   storage.setItem(SESSION_KEY, JSON.stringify({ step: "months", priceId: "price_legend", offerId: "" }));
   while (heading(inView()) !== "Support SimpleX") inView().all("button.back")[0]!.click();
-  continueButton(inView()).click();                 // the tier list, rebuilt from the seeded session
-  continueButton(inView()).click();                 // the duration list, likewise
+  continueButton(inView()).click();
+  continueButton(inView()).click();
   const durations = inView();
   assert.equal(heading(durations), "How long?");
   assert.deepEqual(durations.all("button.choice").map((c) => c.getAttribute("aria-pressed")),
     ["false", "false", "false"], "the legacy value marks no card");
   assert.ok(continueButton(durations).hasAttribute("disabled"));
 
-  // And the question can be answered: nobody is stuck after the upgrade.
   choice(durations, "1 month").click();
   assert.equal(continueButton(inView()).hasAttribute("disabled"), false);
 });
 
 // ---------------------------------------------------------------- the charge
 
-// Last, because paying takes the wizard off the root and there is no walking
-// back to it from a payment screen.
+// This test runs last because paying takes the wizard off the root with no way back to it.
 monthTest("main: paying for one month sends NO offerId, and one month's price", async () => {
-  // The sentinel is a key in this browser and names no row in `CATALOG.offers`:
-  // the create endpoint makes `offerId` optional exactly so the unoffered month goes without
-  // one, and sending the sentinel would come back `catalog_changed`.
+  // The one-month offer names no row in CATALOG.offers, so offerId is omitted; sending the sentinel would come back catalog_changed.
   const durations = walkToDurations("Supporter");
   choice(durations, "1 month").click();
   continueButton(inView()).click();

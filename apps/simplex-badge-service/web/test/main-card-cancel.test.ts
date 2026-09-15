@@ -1,6 +1,4 @@
-// The card lane gets the same Cancel the crypto lane has, and canceling marks the order canceled so
-// Your codes reads it as canceled rather than merely expired. The cancel is inert while a confirm is
-// in flight: a PaymentIntent is only cancelable before it confirms, and the form is not repainted then.
+// A PaymentIntent is only cancelable before it confirms, so the card Cancel is inert while a confirm is in flight.
 import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, installPage, inViewOf, primaryOf, screenOf, settle, timedTest, until } from "./boot.js";
@@ -23,8 +21,7 @@ keyMeta.setAttribute("name", "stripe-publishable-key");
 keyMeta.setAttribute("content", PUBLISHABLE_KEY);
 page.document.byId.set("stripe-publishable-key", keyMeta);
 
-// A Payment Element that mounts, and a confirm this test releases by hand, so the in-flight window is
-// held open long enough to press Cancel inside it.
+// The confirm is released by hand so the in-flight window stays open long enough to press Cancel inside it.
 let releaseConfirm: (() => void) | null = null;
 (globalThis as unknown as { window: Record<string, unknown> }).window.Stripe = () => ({
   elements: () => ({ create: () => ({ mount: () => {}, destroy: () => {} }) }),
@@ -45,11 +42,11 @@ const storedOrder = (id: string): Record<string, unknown> | undefined =>
   (JSON.parse(storage.m.get("sb.orders.v1") ?? "[]") as Array<Record<string, unknown>>).find((o) => o.orderId === id);
 
 async function walkToMountedCardForm(invoiceId: string): Promise<void> {
-  primaryOf(inView())!.click();                                                  // landing → tiers
+  primaryOf(inView())!.click();
   inView().all("button.choice").find((c) => c.textContent.startsWith("Supporter"))!.click();
-  primaryOf(inView())!.click();                                                  // tiers → durations
+  primaryOf(inView())!.click();
   inView().all("button.choice").find((c) => c.textContent.startsWith("1 month"))!.click();
-  primaryOf(inView())!.click();                                                  // durations → summary
+  primaryOf(inView())!.click();
   inView().all("button.choice.method").find((b) => b.textContent.startsWith("Card"))!.click();
   page.respondWith({ status: 200, body: {
     invoiceId, badgeType: "supporter", months: 1,
@@ -77,7 +74,7 @@ cardCancelTest("main: the card form offers Cancel, and a clean cancel marks the 
 cardCancelTest("main: the card Cancel is inert once a confirm is in flight", async () => {
   await walkToMountedCardForm("inv_card_c2");
   assert.ok(!payBtn().hasAttribute("disabled"), "the Element mounted, so Pay is live");
-  payBtn().click();                                                              // confirm is now held
+  payBtn().click();
   await settle();
   assert.equal(heading(), "Pay by card", "the form stays put while the confirm is in flight");
 

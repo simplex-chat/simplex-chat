@@ -96,9 +96,7 @@ welcomeGetOpts = do
     putStrLn $ "Service name: " ++ T.unpack serviceName
   pure opts
 
--- | The key this service signs with: the command line wins over [issuer].
--- Every key in [issuer] is checked, not only the one that signs, so a key clients could not
--- verify fails before anyone rotates onto it.
+-- Every key in [issuer] is verified, not only the signing one, so a key clients cannot verify fails at boot.
 checkIssuerKey :: BadgeServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO (Either String BadgeIssuerKey)
 checkIssuerKey BadgeServiceOpts {issuerKey} serviceCfg cfg = case issuerKey of
   Left e -> pure (Left e)
@@ -144,7 +142,7 @@ badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
             preCmdHook = Just badgeCmdHook
           }
   when devRedeem $ logWarn "[dev] chat_redeem is on: /redeem over chat hands out credentials this service can link"
-  -- the reader must not block: outputQ carries every chat event
+  -- The reader must not block, since outputQ carries every chat event.
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> do
     lanes <- maybe (pure []) (serviceLanes waiters cc) serviceCfg
     raceAny_ $
@@ -162,7 +160,7 @@ badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
   where
     serviceLanes :: Waiters -> ChatController -> ServiceConfig -> IO [IO ()]
     serviceLanes ws ChatController {chatStore} sc = do
-      -- before the listener accepts anything, since every checkout is priced from these
+      -- Seed before the listener accepts anything, since every checkout is priced from these.
       seedServiceCatalog chatStore
       btc <- maybe (pure []) (fmap (: []) . btcpayProvider) (btcpay sc)
       str <- maybe (pure []) (fmap (: []) . stripeProvider) (stripe sc)
@@ -173,8 +171,6 @@ badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
       pollerEnv <- newPollerEnv chatStore ws hints providers (poll sc)
       pure [runWebListener webEnv, runPoller pollerEnv]
 
--- | Insert-only, so it is safe on every start. Nothing else writes these tables, and
--- until they are written the service can sell nothing.
 seedServiceCatalog :: DBStore -> IO ()
 seedServiceCatalog st = do
   now <- truncateToSecond <$> getCurrentTime
@@ -186,8 +182,6 @@ seedServiceCatalog st = do
 
 badgeServiceCLI :: BadgeServiceOpts -> IO ()
 badgeServiceCLI opts@BadgeServiceOpts {serviceConfigFile} = do
-  -- the same file the listener reads: issuing a code is a CLI command, and the key it signs
-  -- with is as likely to be in [issuer] as on the command line
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
   key <- requireIssuerKey opts serviceCfg terminalChatConfig
   env <- newServiceState
@@ -209,7 +203,6 @@ badgeServiceCLI opts@BadgeServiceOpts {serviceConfigFile} = do
       processQueuedRequests key env
     ]
 
--- | issuing codes lives here rather than in core: every user's app would otherwise ship it
 badgeCmdHook :: ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
 badgeCmdHook cc = \case
   CustomChatCommand cmd -> Left <$> runBadgeCmd cc cmd
@@ -233,8 +226,6 @@ revokeCmdP =
   "revoke " *> (A.takeWhile1 (not . isSpace) >>= maybe (fail "not a badge code") pure . parseBadgeCode . safeDecodeUtf8)
     <* (A.skipSpace *> A.endOfInput)
 
--- | A refunded or leaked code. Redemption refuses a revoked code as if it had never existed,
--- so the holder learns nothing from trying.
 revokeBadgeCode :: ChatController -> BadgeCode -> IO (Either String Bool)
 revokeBadgeCode cc code = do
   now <- truncateToSecond <$> getCurrentTime
@@ -245,15 +236,14 @@ issueCmdP =
   "issue " *> do
     badgeType <- badgeTypeP
     months_ <- optional (A.space *> (A.decimal :: A.Parser Integer))
-    -- outside `optional`, which would otherwise backtrack past a bad count
+    -- Kept outside optional, which would otherwise backtrack past a bad count.
     months <- maybe (pure 1) checkMonths months_
     paymentStatus <- fromMaybe CPSFree <$> optional (A.space *> textTokenP)
     A.skipSpace
     A.endOfInput
     pure IssueCodeOpts {badgeType, months, paymentStatus}
   where
-    -- Integer, because attoparsec's decimal wraps silently at Int and the guard would then be
-    -- checking a truncated count
+    -- Integer, because attoparsec's decimal wraps silently at Int, so the guard would check a truncated count.
     checkMonths n
       | n >= 1 && n <= 255 = pure (fromInteger n)
       | otherwise = fail "months must be between 1 and 255"
@@ -295,8 +285,7 @@ processChatRedeems key env = do
     (ct, msg) <- atomically $ readTQueue $ chatRedeemQ env
     chatRedeem key cc ct msg
 
--- | The RPC path signs over a master key only the client holds. Here the service generates it,
--- so it can link the badge it hands back - which is why [dev] chat_redeem gates this.
+-- | Here the service generates the master key and can link the badge, so [dev] chat_redeem gates this.
 chatRedeem :: BadgeIssuerKey -> ChatController -> Contact -> T.Text -> IO ()
 chatRedeem key cc ct msg = case T.stripPrefix "/redeem" (T.strip msg) of
   Just rest | not (T.null (T.strip rest)) -> do
@@ -313,11 +302,9 @@ badgePreStartHook :: BadgeServiceOpts -> ChatController -> IO ()
 badgePreStartHook opts ChatController {config, chatStore} =
   runBadgeServiceMigrations opts config chatStore
 
--- | Contact requests are accepted only for [dev] chat_redeem: the address is otherwise for
--- service RPC, which needs no contact.
 badgePostStartHook :: BadgeServiceOpts -> Bool -> ServiceState -> ChatController -> IO ()
 badgePostStartHook BadgeServiceOpts {noAddress, testing} devRedeem env cc = do
-  -- core starts this False and gates service request delivery on it, so the hook has to set it
+  -- Core starts this False and gates service request delivery on it, so the hook must set it.
   atomically $ writeTVar (processServiceRequests cc) True
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
@@ -342,8 +329,6 @@ responseObject r = case J.toJSON r of
 errorResponse :: BadgeServiceErrorCode -> BadgeServiceResponse
 errorResponse code = BSPError {code, message = Nothing, retryAfter = badgeErrorRetryAfter code}
 
--- | Seconds, for the three codes badges-rpc.md marks transient. Every other code is terminal for
--- the command attempted - internal included, which would otherwise press a failing service.
 badgeErrorRetryAfter :: BadgeServiceErrorCode -> Maybe Word32
 badgeErrorRetryAfter = \case
   BSEPaymentPending -> Just 300
@@ -352,8 +337,7 @@ badgeErrorRetryAfter = \case
   _ -> Nothing
 
 
--- | The agent verified the signature, so sigKey is a key the sender holds - a purchaseKey that
--- differs would let a client claim a purchase it cannot sign for.
+-- | The agent verified the signature, so sigKey is a key the sender holds; a differing purchaseKey would let a client claim a purchase it cannot sign for.
 badgeServiceResponse :: BadgeIssuerKey -> ChatController -> Maybe C.PublicKeyEd25519 -> J.Object -> IO BadgeServiceResponse
 badgeServiceResponse key cc sigKey reqData = case J.fromJSON (J.Object reqData) of
   J.Error _ -> pure $ errorResponse BSEBadRequest
@@ -367,8 +351,7 @@ badgeServiceResponse key cc sigKey reqData = case J.fromJSON (J.Object reqData) 
         BSCIssueBadge {balance} -> case purchaseKey of
           Just k -> issueBadgeCmd key cc k balance
           Nothing -> pure $ errorResponse BSEBadRequest
-        -- every command but redeemBadgeCode needs a key the service already knows: that one
-        -- creates the purchase, so its key is unknown on a first redemption
+        -- Every command but redeemBadgeCode needs a key the service already knows; that one creates the purchase, so its key is unknown on a first redemption.
         _ -> case purchaseKey of
           Nothing -> pure $ errorResponse BSEUnsupportedVersion
           Just k ->
@@ -377,21 +360,18 @@ badgeServiceResponse key cc sigKey reqData = case J.fromJSON (J.Object reqData) 
               Right False -> pure $ errorResponse BSEUnknownPurchaseKey
               Left _ -> pure $ errorResponse BSEInternal
 
--- | The only clock the service reads, so a test can move both sides of a request together.
 badgeNow :: ChatController -> IO UTCTime
 badgeNow ChatController {config = ChatConfig {badgeCurrentTime}} = badgeCurrentTime
 
 randomId :: ChatController -> IO T.Text
 randomId cc = safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes 16 (random cc))
 
--- | Neither value comes from the caller: the badge type is the entry's, the expiry is derived
--- from the period end it carries.
+-- | Neither the badge type nor the expiry comes from the caller; both derive from the entry.
 credentialForEntry :: BadgeIssuerKey -> BadgeMasterKey -> StatementEntry -> IO (Either String (StatementEntry, BadgeCredential))
 credentialForEntry BadgeIssuerKey {keyIdx, secretKey} masterKey e@StatementEntry {balanceStartTs = periodEnd, balanceBadgeType} = do
   let badgeInfo = BadgeInfo {badgeType = balanceBadgeType, badgeExpiry = endOfMondayAfter periodEnd, badgeExtra = ""}
   fmap (e,) <$> issueBadge keyIdx secretKey (VerifiedBadgeRequest BadgeRequest {masterKey, badgeInfo})
 
--- | Pairs the issued entry with the one before it, which the writer needs for the period start.
 issuanceAfter :: StatementEntry -> (StatementEntry, BadgeCredential) -> (StatementEntry, StatementEntry, BadgeCredential)
 issuanceAfter previous (issued, credential) = (previous, issued, credential)
 
@@ -399,8 +379,7 @@ credentialResponse :: Maybe BadgeCredential -> Maybe T.Text -> [StatementEntry] 
 credentialResponse credential previousEntryId entries =
   BSPBadgeCredential {credential, receipt = Nothing, statement = BadgeStatement {entries, previousEntryId}}
 
--- | Nothing is written until the credential is signed, so a signing failure leaves the code
--- unspent rather than spent with nothing behind it.
+-- | Nothing is written until the credential is signed, so a signing failure leaves the code unspent.
 redeemCode :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeMasterKey -> T.Text -> IO BadgeServiceResponse
 redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText of
   Nothing -> pure $ errorResponse BSECodeInvalid
@@ -411,17 +390,16 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
       Right (Left resp) -> pure resp
       Right (Right IssuedCode {badgeCodeId, badgeType, months}) -> do
         (grantUuid, issueUuid) <- (,) <$> randomId cc <*> randomId cc
-        -- the purchase is created here, so there is no ledger to lapse
         -- TODO [badges] a top-up grants onto an existing ledger, and must lapse before it or the
         -- months it adds are counted from a start already in the past
         let granted = grantEntry now grantUuid months SCCode $ emptyEntry now badgeType
-        -- a grant of at least one month starting now always has a month to issue
+        -- A grant of at least one month starting now always has a month to issue.
         case issueEntry now issueUuid granted of
           Nothing -> pure $ errorResponse BSEInternal
           Just issued -> credentialForEntry key masterKey issued >>= \case
             Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
             Right signed -> do
-              -- re-read: a redemption or a revoke may have landed while this one was signing
+              -- Re-read, since a redemption or revoke may have landed while this one was signing.
               r <- withDB "writeCodeRedemption" cc $ \db ->
                 readCode now code db >>= \case
                   Left resp -> pure resp
@@ -432,24 +410,18 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
                     pure $ maybe (errorResponse BSEInternal) (credentialResponse (Just $ snd signed) Nothing) entries_
               pure $ fromRight (errorResponse BSEInternal) r
   where
-    -- used before signing and again inside the write transaction; every Left is a finished
-    -- response - an unknown, revoked, unpaid, spent or expired code included. The guards the
-    -- ledger read cannot see (revoke, unpaid, expiry) are re-run each time, since a revoke may
-    -- land between the two reads.
+    -- Re-run before signing and again inside the write transaction, since a revoke may land between the two reads.
     readCode now code db = liftIO $
       getBadgeCode db (badgeCodeHash code) >>= \case
         Nothing -> pure $ Left $ errorResponse BSECodeInvalid
         Just c@IssuedCode {revokedAt, paymentStatus, expiresAt, redemption}
-          -- revoked first, so it answers as if it had never existed whatever else is true of it
+          -- Revoked is checked first, so it answers as if the code never existed.
           | Just _ <- revokedAt -> pure $ Left $ errorResponse BSECodeInvalid
-          -- a code the web checkout wrote exists from the moment the invoice is created, and
-          -- settlement is what marks it paid: redeeming before that would issue a free badge
+          -- Redeeming an unpaid code would issue a free badge, so unpaid is refused.
           | CPSUnpaid <- paymentStatus -> pure $ Left $ errorResponse BSEPaymentPending
           | otherwise ->
               checkUnspent db redemption >>= \case
-                -- already spent keeps answering with the credential it was redeemed for
                 Left resp -> pure $ Left resp
-                -- unspent: the deadline is on redeeming, not on holding
                 Right ()
                   | maybe False (now >=) expiresAt -> pure $ Left $ errorResponse BSECodeExpired
                   | otherwise -> pure $ Right c
@@ -458,7 +430,6 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
       CodeRedeemedUnreadable -> pure $ Left $ errorResponse BSEInternal
       CodeRedeemed RedeemedCode {purchaseKey = k, badgePurchaseId, credential}
         | k /= purchaseKey -> pure $ Left $ errorResponse BSECodeUsed
-        -- the whole ledger, so a client that lost the first response still ends holding it
         | otherwise ->
             maybe (Left $ errorResponse BSEInternal) (Left . credentialResponse (Just credential) Nothing)
               <$> getLedgerEntries db badgePurchaseId 0
@@ -486,21 +457,19 @@ issueBadgeCmd key cc purchaseKey BadgeBalance {lastEntry} = do
             Right signed ->
               writeIssued badgePurchaseId tip (maybeToList lapsed) now $ Just $ issuanceAfter current signed
   where
-    -- the rows were computed from a tip that another request may have moved, and an issuance was
-    -- signed against it - so write only if it is still the tip
+    -- Write only if the tip has not moved, since another request may have advanced it.
     writeIssued purchaseId tip rows t issuance_ = do
       r <- withDB "issueBadge" cc $ \db -> liftIO $ do
         tip' <- getLedgerTip db purchaseId
         when (fmap entryId tip' == fmap entryId tip) $ appendLedgerPlan db purchaseId rows issuance_
         issueResponse db purchaseId t
       pure $ fromRight (errorResponse BSEInternal) r
-    -- entries after the one asserted, or the whole ledger when this purchase does not hold it.
     -- Only the asserted entry's identity is read, never the months it claims.
     issueResponse db purchaseId t = do
       let StatementEntry {entryId = assertedUuid} = lastEntry
       assertedId <- getLedgerEntryId db purchaseId assertedUuid
       -- TODO [badges] when the assertion does not resolve, heal the ledger and restate it as a
-      -- single opening credit (badges-rpc.md), rather than resending the whole history
+      -- single opening credit, rather than resending the whole history
       entries_ <- getLedgerEntries db purchaseId (fromMaybe 0 assertedId)
       credential_ <- getCurrentIssuance db purchaseId t
       pure $ maybe (errorResponse BSEInternal) (credentialResponse credential_ (assertedUuid <$ assertedId)) entries_

@@ -53,17 +53,13 @@ import Database.SQLite.Simple.QQ (sql)
 data IssuedCode = IssuedCode
   { badgeCodeId :: Int64,
     badgeType :: BadgeType,
-    -- what was sold: the checkout writes 1, 3 or 12, and redemption grants that many
     months :: Int,
-    -- a code the web checkout wrote is unpaid until settlement, and must not redeem
     paymentStatus :: BadgeCodePaymentStatus,
     revokedAt :: Maybe UTCTime,
     expiresAt :: Maybe UTCTime,
     redemption :: CodeRedemption
   }
 
--- A code that has a purchase is spent, even if its credential cannot be read. Treating that as
--- an unredeemed code would issue a second credential for it.
 data CodeRedemption
   = CodeUnredeemed
   | CodeRedeemed RedeemedCode
@@ -75,8 +71,6 @@ data RedeemedCode = RedeemedCode
     credential :: BadgeCredential
   }
 
--- Its rows and issuance are appended by 'appendLedgerPlan' in the same transaction: a code marked
--- redeemed while another write failed would be spent with no credential, and nothing reissues it.
 data NewCodePurchase = NewCodePurchase
   { badgeCodeId :: Int64,
     purchaseKey :: C.PublicKeyEd25519,
@@ -121,7 +115,6 @@ purchaseKeyExists db key =
   maybeFirstRow' False (\(Only (_ :: Int64)) -> True) $
     DB.query db "SELECT badge_purchase_id FROM sx_badge_service_badge_purchases WHERE purchase_key = ?" (Only key)
 
--- | The only route from a command to a purchase, so a client cannot name one it cannot sign for.
 getPurchaseByKey :: DB.Connection -> C.PublicKeyEd25519 -> IO (Maybe ServicePurchase)
 getPurchaseByKey db key =
   maybeFirstRow toPurchase $
@@ -152,8 +145,6 @@ getLedgerTip db purchaseId =
       |]
       (Only purchaseId)
 
--- | The uuid is the client's claim about its last held entry, so the lookup is scoped to its own
--- purchase - an entry_id taken from another ledger would silently skip rows of this one.
 getLedgerEntryId :: DB.Connection -> Int64 -> Text -> IO (Maybe Int64)
 getLedgerEntryId db purchaseId entryUuid =
   maybeFirstRow fromOnly $
@@ -162,8 +153,7 @@ getLedgerEntryId db purchaseId entryUuid =
       "SELECT entry_id FROM sx_badge_service_badge_ledger WHERE badge_purchase_id = ? AND entry_uuid = ?"
       (purchaseId, entryUuid)
 
--- | 0 for the whole ledger, as entry_id starts at 1. 'Nothing' when a stored row has a type this
--- version cannot represent, rather than sending it changed into another.
+-- | 0 returns the whole ledger, as entry_id starts at 1.
 getLedgerEntries :: DB.Connection -> Int64 -> Int64 -> IO (Maybe [StatementEntry])
 getLedgerEntries db purchaseId afterEntryId =
   mapM toEntry
@@ -183,7 +173,6 @@ toEntry (entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, 
   (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince = Nothing, createdAt, entryType})
     <$> entryTypeFromColumns entryType_ credit_ debit_
 
--- | Answers a repeat inside an issued month, rather than signing the same content twice.
 getCurrentIssuance :: DB.Connection -> Int64 -> UTCTime -> IO (Maybe BadgeCredential)
 getCurrentIssuance db purchaseId now = do
   rs <-
@@ -200,10 +189,7 @@ getCurrentIssuance db purchaseId now = do
     [Only (Binary bs)] -> J.decodeStrict' bs
     _ -> Nothing
 
--- | The issuance is the entry that spends the month and the one before it, which give the period.
--- TODO [badges] also write the reference columns - payment_id, charge_id, from_purchase_id,
--- to_purchase_id - for the entry types that carry one. Only the tag is written today, so a
--- payment, charge, transferIn, upgrade or transferOut row would be stored without its reference.
+-- TODO write the reference columns (payment_id, charge_id, from_purchase_id, to_purchase_id) for entry types that carry one; only the tag is written today.
 appendLedgerPlan :: DB.Connection -> Int64 -> [StatementEntry] -> Maybe (StatementEntry, StatementEntry, BadgeCredential) -> IO ()
 appendLedgerPlan db purchaseId rows issuance_ = do
   mapM_ appendRow rows
@@ -218,8 +204,6 @@ appendLedgerPlan db purchaseId rows issuance_ = do
             (issuance_id, badge_purchase_id, entry_id, badge_type, period_start, period_end, expiry, credential, created_at)
           VALUES (?,?,?,?,?,?,?,?,?)
         |]
-        -- the issued entry's uuid is the issuance id: one issuance per such entry, and entry uuids
-        -- are already unique across the ledger, so nothing has to be drawn for it
         ( (entryId, purchaseId, rowId, balanceBadgeType)
             :. (balanceStartTs previous, periodEnd, endOfMondayAfter periodEnd, Binary (LB.toStrict $ J.encode credential), createdAt)
         )
@@ -237,8 +221,7 @@ appendLedgerPlan db purchaseId rows issuance_ = do
         ((entryId, purchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, createdAt, createdAt, entryTypeT, creditType, debitType))
       insertedRowId db
 
--- redeemed_at is stamped here, so this must share a transaction with the credential's rows:
--- a code marked spent without one can never be reissued
+-- redeemed_at is stamped here, so this must run in the same transaction as the credential rows.
 createCodePurchase :: DB.Connection -> NewCodePurchase -> UTCTime -> IO Int64
 createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do
   DB.execute
@@ -253,7 +236,6 @@ createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey = Bad
   DB.execute db "UPDATE sx_badge_service_badge_codes SET redeemed_at = ? WHERE badge_code_id = ?" (now, badgeCodeId)
   pure purchaseId
 
--- | False when there is no such code, or it was revoked already.
 revokeCode :: DB.Connection -> ByteString -> UTCTime -> IO Bool
 revokeCode db codeHash now =
   (> 0)

@@ -9,25 +9,17 @@ const NOW = Date.parse("2026-08-28T12:00:00Z");
 const CREATED = new Date(NOW - 14 * 60_000).toISOString();
 const HELD_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
 
-// the watch loop: "someone who sent a Monero payment and closed the tab reopens
-// badges.simplex.chat and sees their pending invoice, not a landing page."
 const storage = new MemStorage();
 storage.setItem("sb.orders.v1", JSON.stringify([{
   orderId: "inv_open", badgeType: "legend", months: 12,
   createdAt: CREATED, status: "open", code: HELD_CODE,
 }, {
-  // A card order whose `actions.confirm()` returned success, in a browser that
-  // has since started another order. the flag lives on the ORDER, so
-  // it is still here. This is the record the confirming screen test below opens. It is older
-  // than `inv_open`, which keeps "resume the newest open order" meaningful.
+  // This order carries submitted from a confirmed card checkout and is older than inv_open, which keeps "resume the newest open order" meaningful.
   orderId: "inv_card", badgeType: "supporter", months: 1,
   createdAt: new Date(NOW - 40 * 60_000).toISOString(), status: "open", submitted: true,
 }]));
 
-// The clock is fixed so "Started 14 minutes ago" is a fact and not a race, and
-// `setTimeout` with it so the fifteen minutes can be spent in a millisecond.
-// Nothing schedules a timer until the confirming screen arms its deadline. `setImmediate` is
-// deliberately not mocked: it is what `settle` drains.
+// setImmediate is deliberately not mocked because settle drains it.
 mock.timers.enable({ apis: ["setTimeout", "Date"], now: NOW });
 
 const page = installPage({ storage });
@@ -39,8 +31,7 @@ const crypto = {
   address: "48HqK2XmVexampleAddress9fRtWc", cryptoAmount: "1.482", cryptoCurrency: "xmr",
 };
 
-// A key on the page, so a non-submitted card order (inv_card_other below) renders the real
-// Payment Element form rather than the unconfigured "card unavailable" screen.
+// The publishable key makes a non-submitted card order render the real Payment Element form, not the "card unavailable" screen.
 const keyMeta = new StubElement("meta");
 keyMeta.setAttribute("id", "stripe-publishable-key");
 keyMeta.setAttribute("content", "pk_test_resume");
@@ -50,8 +41,7 @@ page.document.byId.set("stripe-publishable-key", keyMeta);
   confirmPayment: async () => ({ paymentIntent: { status: "succeeded" } }),
 });
 
-// The plain first read of the read endpoint is answered before the module runs, because
-// `main.ts` issues it during import.
+// main.ts issues the first read during import, so its answer is queued before the module runs.
 page.respondWith({ status: 200, body: crypto });
 await import("../src/main.js");
 
@@ -61,7 +51,6 @@ const heading = (): string => headingOf(screenOf(app));
 
 resumeTest("main: a FRESH LOAD at / resumes the newest open order", async () => {
   await until(() => heading().startsWith("Send"), "awaitingPayment");
-  // Not the landing page: the pending invoice, with everything needed to pay.
   assert.equal(heading(), "Send 1.482 XMR");
   assert.ok(screenOf(app).textContent.includes("48HqK2XmVexampleAddress9fRtWc"));
   assert.ok(screenOf(app).textContent.includes("inv_open"));
@@ -70,8 +59,6 @@ resumeTest("main: a FRESH LOAD at / resumes the newest open order", async () => 
 });
 
 resumeTest("main: a resumed payment screen says how long ago it started, with no Buy a new code", () => {
-  // The `resumed` flag reaching the screen is what draws the "how long ago" line; a reload used to
-  // produce `resumed: false` and lose it. A fresh purchase is the menu's Buy a code, not a button here.
   assert.ok(screenOf(app).textContent.includes("Started 14 minutes ago."), screenOf(app).textContent);
   assert.equal(screenOf(app).all("button").filter((b) => b.textContent === "Buy a new code").length, 0,
     "the payment screen offers no Buy a new code");
@@ -86,9 +73,6 @@ resumeTest("main: the resumed screen still never shows the code it holds", () =>
 // ------------------------------------------- detailsUnavailable, end to end
 
 resumeTest("main: [ Check again ] on detailsUnavailable RE-RENDERS, and never blanks", async () => {
-  // An open order whose response names no method: the table has no row, so
-  // the buyer is given the reference. Its only control used to replace the
-  // screen with a placeholder that nothing would ever clear.
   page.respondWith({ status: 200, body: { status: "open" } });
   history.pushState(null, "", "?order=inv_bare");
   page.fire("popstate");
@@ -109,9 +93,7 @@ resumeTest("main: [ Check again ] on detailsUnavailable RE-RENDERS, and never bl
 // ----------------------------- the confirming screen and its give-up, end to end
 
 resumeTest("main: the confirming screen gives up after fifteen minutes and [ Check again ] restarts it", async () => {
-  // `submitted` is the browser's own note that this order's confirm() succeeded, and it is on the order
-  // record seeded above, not the session, which every checkout 200 and every [ New invoice ] wipes. The
-  // session is cleared here first because the rule that withholds a second charge must not go with it.
+  // The session is removed first because submitted lives on the order record, so the no-second-charge rule must hold without the session.
   page.storage.removeItem("sb.session.v1");
   {
     page.respondWith({ status: 200, body: { status: "open", badgeType: "supporter", months: 1, clientSecret: "cs_test_abc" } });
@@ -125,24 +107,18 @@ resumeTest("main: the confirming screen gives up after fifteen minutes and [ Che
     assert.equal(heading(), "This is taking longer than expected", "the give-up");
     assert.ok(screenOf(app).textContent.includes("inv_card"), "quoting the reference");
 
-    // The reversal: no control here may start a second charge. confirm()
-    // returned success, the create endpoint has no idempotency key, and [ New invoice ]
-    // cancels nothing: it abandons an invoice that may yet settle.
+    // The create endpoint has no idempotency key and confirm() already succeeded, so no control here may start a second charge.
     assert.equal(screenOf(app).all("button").filter((b) => b.textContent === "Buy a new code").length, 0,
       "the give-up screen must not offer [ Buy a new code ]");
 
-    // And [ Check again ] restarts the loop it had stopped, as the confirming screen.
     const before = fetches.length;
     page.respondWith({ status: 200, body: { status: "open", badgeType: "supporter", months: 1, clientSecret: "cs_test_abc" } });
     screenOf(app).all("button.primary").find((b) => b.textContent === "Check again")!.click();
     await until(() => heading() === "Payment received", "the confirming screen again");
-    // Checking again means asking the server: a plain read, and then the
-    // hold that the answer starts. Not a second loop: one of each.
     assert.equal(fetches[before]!.url, "/api/invoice/inv_card", "a plain read, not a hold");
     assert.deepEqual(fetches.slice(before).map((f) => f.url),
       ["/api/invoice/inv_card", "/api/invoice/inv_card?wait=open&seenPaid=&seenFull=0"]);
 
-    // Re-armed: fifteen more minutes, then it gives up again.
     mock.timers.tick(15 * 60_000);
     await settle();
     assert.equal(heading(), "This is taking longer than expected", "the clock re-armed");
@@ -150,9 +126,7 @@ resumeTest("main: the confirming screen gives up after fifteen minutes and [ Che
 });
 
 resumeTest("main: the history list is not painted over by the loop of the order left behind", async () => {
-  // The buyer sits on a screen that waits, its whole purpose, and opens the
-  // menu. If the loop behind it is still running, the next thing the invoice does replaces the
-  // list with an order screen, while the URL still says `#/codes` and Back goes somewhere else.
+  // If the loop behind the list is still running, its next answer repaints an order screen over the list while the URL still says #/codes.
   page.respondWith({ status: 200, body: { status: "open", badgeType: "supporter", months: 1, clientSecret: "cs_test_abc" } });
   history.pushState(null, "", "?order=inv_card");
   page.fire("popstate");
@@ -167,23 +141,19 @@ resumeTest("main: the history list is not painted over by the loop of the order 
   assert.equal(heading(), "Your codes",
     "the give-up of the order behind it must not take the screen the buyer asked for");
   assert.equal(location.hash, "#/codes", "and what is on screen is what the URL says");
-  // the whole URL, not just its hash: a bare `#/codes` keeps the `?order=` it was opened from,
-  // and `syncFromLocation` reads the query first, so Forward or a reload would leave the list
+  // syncFromLocation reads the query before the hash, so the ?order= must be off the URL or Forward or a reload would leave the list.
   assert.equal(location.search, "", "the order this was opened from is off the URL");
   history.back();
   await settle();
 });
 
 resumeTest("main: opening another order never repaints the one it replaced", async () => {
-  // `lastView` is what a connectivity event repaints. Left on the order behind it, a network
-  // blip while the new order is still loading draws the old address and the old amount under
-  // the new order's URL, and on-chain there is no taking that payment back.
+  // A connectivity event repaints lastView, so if it still points at the order left behind a network blip draws the old address under the new order's URL.
   page.respondWith({ status: 200, body: crypto });
   history.pushState(null, "", "?order=inv_open");
   page.fire("popstate");
   await until(() => heading() === "Send 1.482 XMR", "the first order's payment screen");
 
-  // the second order's read is left in flight, and the loading screen exists for that
   history.pushState(null, "", "?order=inv_card");
   page.fire("popstate");
   await settle();
@@ -199,10 +169,6 @@ resumeTest("main: opening another order never repaints the one it replaced", asy
 });
 
 resumeTest("main: another card order does not inherit the confirmed one's confirming screen", async () => {
-  // The mirror of the test above, and the defect it used to hide: with the flag
-  // on the page-global session, any card order opened after a confirm rendered
-  // "Waiting for the card network to confirm", for an order nobody had
-  // confirmed, and the buyer had no way to pay it.
   page.respondWith({ status: 200, body: { status: "open", badgeType: "supporter", months: 1, clientSecret: "cs_test_other" } });
   history.pushState(null, "", "?order=inv_card_other");
   page.fire("popstate");
@@ -229,15 +195,11 @@ resumeTest("main: nothing is left running once the page has moved on", async () 
 });
 
 resumeTest("main: [ Forget everything ] leaves nothing that restores the order", async () => {
-  // The wipe is only as good as the loops it stops: a live watch saves the record it is watching on every
-  // 200, so one left running would put the order straight back into the store just emptied. The test above
-  // has already abandoned this page's holds, so what is pinned here is the outcome, not the abort it owns.
+  // A live watch saves its record on every 200, so a loop left running would write the forgotten order straight back into the emptied store.
   assert.ok(storage.getItem("sb.orders.v1") !== null, "there is an order to forget");
   page.confirmAnswer(true);
 
-  // Reaching the wipe control is itself a navigation to the codes list, which stops this page's
-  // holds and issues its own refresh; the loop this test guards against is what a wipe must not
-  // leave running, so the count is pinned from here, after the list is up.
+  // Reaching the wipe control navigates to the codes list, which issues its own refresh, so the fetch count is pinned after the list is up.
   const forget = forgetControl(page);
   assert.ok(forget, "the codes list carries the wipe control");
   await settle(10);
@@ -253,9 +215,7 @@ resumeTest("main: [ Forget everything ] leaves nothing that restores the order",
 });
 
 resumeTest("main: an answer already on the wire is dropped once the store is forgotten", async () => {
-  // The history list refreshes every stale order it holds, and those answers are writes. One
-  // still in flight when the buyer wipes the store would put a forgotten order straight back,
-  // which is exactly what the confirm promises will not happen.
+  // The history list refreshes stale orders, and one answer still in flight when the store is wiped would write a forgotten order back.
   storage.setItem("sb.orders.v1", JSON.stringify([{
     orderId: "inv_late", badgeType: "supporter", months: 1,
     createdAt: new Date(NOW - 60_000).toISOString(), status: "open",
@@ -263,7 +223,7 @@ resumeTest("main: an answer already on the wire is dropped once the store is for
   page.respondWith({ status: 200, body: { status: "expired", badgeType: "supporter", months: 1 } });
   page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
 
-  // no settle: the read is on the wire, and this is the wipe landing while it is
+  // There is no settle here, because the read is on the wire while the wipe lands.
   page.confirmAnswer(true);
   forgetControl(page)!.click();
   assert.equal(storage.getItem("sb.orders.v1"), null, "the wipe itself is immediate");

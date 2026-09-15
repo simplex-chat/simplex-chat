@@ -1,7 +1,3 @@
-// A stylesheet is not a string to grep. Substring assertions passed a palette whose accent had
-// been changed to #FF00FF with "#0053D0" left in a comment, a reduced-motion block that matched no
-// element, and a genuine second layout under 560px, so the declarations are parsed out here and the
-// tests assert their values.
 import { readFileSync } from "node:fs";
 
 export interface Rule { selector: string; decls: Map<string, string> }
@@ -17,7 +13,7 @@ function declarations(body: string): Map<string, string> {
   return out;
 }
 
-/** Brace-matching, comments stripped first, one level of @media. */
+// Brace-matching with comments stripped; handles one level of @media.
 function parseCss(source: string): Sheet {
   const text = source.replace(/\/\*[\s\S]*?\*\//g, "");
   const sheet: Sheet = { rules: [], media: [] };
@@ -51,8 +47,7 @@ export const ruleFor = (rules: Rule[], selector: string): Rule | undefined => ru
 export const mediaFor = (query: string): { query: string; rules: Rule[] } | undefined =>
   sheet.media.find((m) => m.query.replace(/\s+/g, "") === query.replace(/\s+/g, ""));
 
-/** What that selector ends up declaring, the last value in the sheet and not the first: `.notice, .warn` sets
- * a shared ground that `.notice` overrides, so the first rule asserts a value the browser never uses. */
+// The value the browser uses is the last declaration for the selector in the sheet, not the first.
 export function decl(selector: string, property: string): string | undefined {
   let value: string | undefined;
   for (const rule of sheet.rules) {

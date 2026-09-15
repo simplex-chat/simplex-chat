@@ -13,7 +13,7 @@ mock.timers.enable({ apis: ["setTimeout", "Date"], now: NOW });
 
 const page = installPage({ storage, url: `/?order=${ORDER_ID}` });
 const { app, fetches } = page;
-// the first read the watch makes; the `?wait=` after it holds, as a real one does
+// This answers the watch's first read; the ?wait= after it holds, as a real one does.
 page.respondWith(openReply);
 await import("../src/main.js");
 
@@ -30,8 +30,7 @@ cancelTest("main: a cancel the service refuses says so and keeps watching the or
   cancelControl()?.click();
   await settle();
   await until(() => screenOf(app).textContent.includes(CANCEL_FAILED), "the failure is on screen");
-  // a count alone is satisfied by the cancel POST itself, so this asks for the read the
-  // restarted watch makes: without it the page sits on a screen nothing updates any more
+  // A count alone is satisfied by the cancel POST, so this checks for the read the restarted watch makes.
   const after = fetches.slice(before).map((f) => f.url);
   assert.ok(after.some((u) => u.startsWith(`/api/invoice/${ORDER_ID}`) && !u.endsWith("/cancel")),
     `the watch must be reading again, not left dead: ${JSON.stringify(after)}`);
@@ -45,9 +44,7 @@ cancelTest("main: each cancel refusal says which of the two it is", async () => 
   await until(() => screenOf(app).textContent.includes(CANCEL_HAS_FUNDS), "money is riding on it");
   assert.ok(!screenOf(app).textContent.includes(CANCEL_FAILED), "never the generic wording");
 
-  // the other refusal is a different fact, and saying this one for it would be false
-  // the reason has to outlive the screen it was asked on: the watch this restarts repaints that
-  // screen within a round trip, and a reason the buyer reads for 200ms is one they never read
+  // The reason must outlive the repaint the restarted watch makes, or the buyer never reads it.
   page.setOffline(true);
   await settle();
   page.setOffline(false);
@@ -66,9 +63,7 @@ cancelTest("main: each cancel refusal says which of the two it is", async () => 
 
 cancelTest("main: a cancel answered 200 but still open is not a done deal", async () => {
   page.confirmAnswer(true);
-  // The service expires the row once the provider has accepted the cancel, and a payment landing
-  // in between is the branch above, so an open answer with nothing on it should not happen at all.
-  // If it ever does, the address is dead and 200 alone must not read as cancelled.
+  // An open answer with nothing on it should not happen, but if it does the address is dead and 200 alone must not read as cancelled.
   page.respondWith(openReply);
 
   cancelControl()?.click();
@@ -92,8 +87,6 @@ cancelTest("main: a cancelled order keeps its code and loses everything payable"
   }
   assert.ok(!JSON.stringify(after).includes(ADDRESS), "and nothing anywhere still names it");
 
-  // the arm this drives is the whole point of a clean cancel: nothing arrived, so the buyer is
-  // put back at the start rather than left watching an invoice that can never move again
   await until(() => headingOf(screenOf(app)) === "Support SimpleX",
     "the landing screen, ready for a new purchase");
 });

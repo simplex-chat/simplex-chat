@@ -9,14 +9,9 @@ import { createInvoice, waitForChange, inferMethod, parseInvoiceView, ApiError, 
 import { generate, display, normalise, checkChar, hash } from "../src/codes.js";
 import { Store } from "../src/store.js";
 
-// Every test here resolves in well under a millisecond or is waiting on an abort, so a bounded loop turned
-// unbounded fails fast rather than hanging the suite: a 404-retry mutation once ran to the outer job's 88s
-// limit instead of failing.
 const apiTest = timedTest(2000);
 
-// The backoff, spent at once, but through a macrotask: an `async () => {}` sleep resolves as a
-// microtask, and a loop of those starves the timer above, so a regression that stopped
-// `waitForChange` returning would hang this file rather than fail one test in it.
+// The sleep uses a macrotask, not a microtask, because a loop of microtask sleeps would starve the test timeout.
 const instantSleep = (): Promise<void> => new Promise((resolve) => { setImmediate(resolve); });
 
 type MockResponse = { status: number; body?: unknown; headers?: Record<string, string> | undefined; badJson?: true } | Error;
@@ -48,9 +43,6 @@ function fetchReturning(...responses: MockResponse[]) {
   return { fn: fn as unknown as typeof fetch, calls, consumed };
 }
 
-// Full, valid POST /api/invoice 200 bodies: every required field present with a distinct, checkable value,
-// so a stubbed or half-built return cannot match one by accident, and shaped consistently with the method
-// that would request it, so the method/shape cross-check below does not reject them for the wrong reason.
 const fullCreated = {
   invoiceId: "inv_9f3a", badgeType: "legend", months: 12,
   amount: 4200, currency: "usd", expiresAt: "2026-08-28T12:00:00Z",
@@ -69,9 +61,6 @@ apiTest("api: createInvoice sends exactly the four fields, as a POST", async () 
   assert.equal(calls[0]!.init!.method, "POST");
   const parsed = JSON.parse(String(calls[0]!.init!.body));
   assert.deepEqual(parsed, { priceId: "p", offerId: "o", method: "xmr", codeHash: "h" });
-  // deepEqual alone can pass for the wrong reason if a stray field happened to
-  // match by coincidence; assert the key set directly so an extra field, not
-  // just a wrong value, is caught.
   assert.deepEqual(Object.keys(parsed).sort(), ["codeHash", "method", "offerId", "priceId"]);
 });
 
@@ -85,8 +74,6 @@ apiTest("api: createInvoice omits offerId entirely when absent, rather than send
 apiTest("api: createInvoice returns the 200 body parsed field by field, not a stub", async () => {
   const { fn } = fetchReturning({ status: 200, body: fullCreated });
   const got = await createInvoice({ priceId: "p", method: "xmr", codeHash: "h" }, fn);
-  // Field by field, against distinct values, so a hardcoded stand-in like
-  // { invoiceId: "", status: "open" } cannot pass by coincidence.
   assert.deepEqual(got, fullCreated);
 });
 
@@ -151,17 +138,12 @@ apiTest("api: createInvoice rejects a 200 with an unrecognised cryptoCurrency", 
 });
 
 apiTest("api: a read refuses a field of the wrong type rather than passing it on", () => {
-  // These were cast, not checked, so a currency of 42 reached the screen and threw on
-  // `toLowerCase`, a blank page from one bad field.
   const wrong = [
     { currency: 42 }, { amount: "42000" }, { amountPaid: "not-a-number" }, { months: "12" },
     { months: 0 }, { amount: Number.NaN }, { expiresAt: {} },
     { paidInFull: "true" }, { cryptoAmountPaid: 1.482 }, { settledAt: 0 },
     { requiredConfirmations: "6" }, { cryptoCurrency: "eth" }, { badgeType: false },
-    // minor units and a confirmation count: a fraction or a negative is a wrong answer, and
-    // rendering it gives "$-12.50" or "2.5 confirmations on the Monero blockchain"
     { amount: -1250 }, { amount: 42000.5 }, { amountPaid: -1 }, { requiredConfirmations: 2.5 },
-    // the create path has always refused a zero amount; the read path reads the same wire field
     { amount: 0 },
   ];
   for (const bad of wrong) {
@@ -193,20 +175,17 @@ apiTest("api: createInvoice rejects a 200 whose body is not valid JSON", async (
 });
 
 apiTest("api: createInvoice rejects a 200 whose payment-method shape contradicts the requested method", async () => {
-  // Requested card, but the body is crypto-shaped (no clientSecret).
   const cryptoForCard = fetchReturning({ status: 200, body: fullCreated });
   await assert.rejects(
     () => createInvoice({ priceId: "p", method: "card", codeHash: "h" }, cryptoForCard.fn),
     (e: unknown) => e instanceof ApiError && e.code === "invalid_response",
   );
-  // Requested btc, but the body is card-shaped (has clientSecret).
   const cardForCrypto = fetchReturning({ status: 200, body: cardCreated });
   await assert.rejects(
     () => createInvoice({ priceId: "p", method: "btc", codeHash: "h" }, cardForCrypto.fn),
     (e: unknown) => e instanceof ApiError && e.code === "invalid_response",
   );
-  // Requested btc, body is crypto-shaped but for the wrong crypto.
-  const wrongCrypto = fetchReturning({ status: 200, body: fullCreated }); // fullCreated is xmr
+  const wrongCrypto = fetchReturning({ status: 200, body: fullCreated });
   await assert.rejects(
     () => createInvoice({ priceId: "p", method: "btc", codeHash: "h" }, wrongCrypto.fn),
     (e: unknown) => e instanceof ApiError && e.code === "invalid_response",
@@ -214,10 +193,7 @@ apiTest("api: createInvoice rejects a 200 whose payment-method shape contradicts
 });
 
 apiTest("api: createInvoice treats a null optional field the same as an absent one (Aeson's default Maybe encoding)", async () => {
-  // the create endpoint specifies these fields only as `?`, without saying how absence is
-  // encoded; Aeson's default for a `Maybe` field is `null`, not omission.
-  // A card-shaped body with the crypto fields explicitly `null` (rather than
-  // omitted) must be accepted identically to `cardCreated` itself.
+  // Aeson encodes an absent Maybe field as null, not omission, so null must be accepted like an absent field.
   const { fn } = fetchReturning({ status: 200, body: { ...cardCreated, address: null, cryptoAmount: null, cryptoCurrency: null } });
   const got = await createInvoice({ priceId: "p", method: "card", codeHash: "h" }, fn);
   assert.deepEqual(got, cardCreated);
@@ -238,9 +214,6 @@ apiTest("api: waitForChange passes the current status and resolves on a change",
 });
 
 apiTest("api: waitForChange sends whatever status is on screen, not a hardcoded 'open' — resuming after expired", async () => {
-  // Every other test in this file happens to wait on "open", so a version
-  // hardcoding `?wait=open` would still pass all of them; this is the one
-  // fixture that catches it.
   const { fn, calls } = fetchReturning({ status: 200, body: { status: "paid" } });
   const got = await waitForChange("i1", "expired", fn, instantSleep);
   assert.ok(calls[0]!.url.includes("wait=expired"), calls[0]!.url);
@@ -248,9 +221,7 @@ apiTest("api: waitForChange sends whatever status is on screen, not a hardcoded 
 });
 
 apiTest("api: waitForChange returns a payment that left the status alone", async () => {
-  // BTCPay reports Processing before it confirms, and that leaves the invoice open. Held
-  // for a status change alone, this body was parsed and thrown away every pass, so the
-  // page sat on "waiting for the payment" until it was reloaded by hand.
+  // BTCPay reports Processing while the invoice stays open, so a body with a payment but no status change must still return.
   const body = { status: "open", cryptoAmountPaid: "1.482", amountPaid: 42000 };
   const { fn, calls } = fetchReturning({ status: 200, body });
   const got = await waitForChange("i1", "open", fn, instantSleep, undefined, Date.now, undefined);
@@ -259,8 +230,6 @@ apiTest("api: waitForChange returns a payment that left the status alone", async
 });
 
 apiTest("api: waitForChange keeps waiting while the same payment is reported", async () => {
-  // and once the page HAS that payment on screen, the same body is not a change: without
-  // this it would spin, re-rendering the same screen on every pass
   const body = { status: "open", cryptoAmountPaid: "1.482", amountPaid: 42000 };
   let served = 0;
   const fn = (async (_url: string) => {
@@ -274,9 +243,7 @@ apiTest("api: waitForChange keeps waiting while the same payment is reported", a
 });
 
 apiTest("api: the provider's verdict is a change on its own, with no figure to go with it", async () => {
-  // Monero reports an invoice as confirming while its figures are still zero. The verdict is
-  // the whole difference between the payment screen and the confirming one, so a body that
-  // carries only that must come back rather than being polled over forever.
+  // Monero reports confirming with figures still zero, so a body carrying only the verdict must return.
   const fn = (async () => ({
     ok: true, status: 200, headers: { get: () => null },
     json: async () => ({ status: "open", paidInFull: true }),
@@ -296,18 +263,12 @@ apiTest("api: a network error backs off and retries, and the delays double", asy
   const delays: number[] = [];
   const { fn } = fetchReturning(new Error("offline"), new Error("offline"), { status: 200, body: { status: "paid" } });
   const got = await waitForChange("i", "open", fn, async (ms) => { delays.push(ms); });
-  // Asserting the exact sequence, not just its length: [1000, 1000] (no
-  // doubling) or [2000, 4000] (wrong start) would both satisfy a length-2
-  // check but neither is the schedule the watch loop specifies.
   assert.deepEqual(delays, [1000, 2000]);
   assert.equal(got.status, "paid");
 });
 
 apiTest("api: backoff reaches the 30s cap and holds there across further failures", async () => {
   const delays: number[] = [];
-  // 8 consecutive failures: 1000, 2000, 4000, 8000, 16000, then capped at
-  // 30000 for the remaining three, proving the cap is both reached and
-  // held, not just that some single delay happens to be <= 30000.
   const { fn } = fetchReturning(
     ...Array.from({ length: 8 }, () => new Error("offline")),
     { status: 200, body: { status: "paid" } },
@@ -367,14 +328,11 @@ apiTest("api: a GET 200 with an unrecognised cryptoCurrency backs off and retrie
 
 apiTest("api: a same-status 200 (the hold timing out) reissues immediately, with no sleep at all", async () => {
   const { fn, calls } = fetchReturning(
-    { status: 200, body: { status: "open" } },  // the hold timed out, nothing changed
+    { status: 200, body: { status: "open" } },
     { status: 200, body: { status: "paid" } },
   );
   let sleepCalls = 0;
   const got = await waitForChange("i", "open", fn, async () => { sleepCalls++; });
-  // Not "resolved eventually": the reissue must be immediate. A version that
-  // slept between passes would still resolve, so the sleep call count is the
-  // only thing that distinguishes the two.
   assert.equal(sleepCalls, 0);
   assert.equal(calls.length, 2);
   assert.equal(got.status, "paid");
@@ -387,10 +345,6 @@ apiTest("api: waitForChange resolves, rather than throws, when the status become
 });
 
 apiTest("api: EVERY 404 stops the loop, whatever body a proxy or a CDN put on it", async () => {
-  // the unknown-order screen defines the unknown-order screen by the status, and the guarantee
-  // that the body carries `{"error":"not_found"}` binds this service, not whatever sits in front
-  // of it. Keying on the body left the payment screen up with a live address, a Copy button and a
-  // dead loop.
   const shapes: Array<[string, MockResponse]> = [
     ["the service's own body", { status: 404, body: { error: "not_found" } }],
     ["a proxy's HTML page", { status: 404, badJson: true }],
@@ -409,8 +363,6 @@ apiTest("api: EVERY 404 stops the loop, whatever body a proxy or a CDN put on it
 });
 
 apiTest("api: this client's own error words are never adopted FROM the wire", async () => {
-  // `invalid_response` and `unknown` describe the browser refusing a body. A
-  // service naming one would be claiming the code a refused body already gets.
   for (const named of ["invalid_response", "unknown", "teapot"]) {
     const { fn } = fetchReturning({ status: 400, body: { error: named } });
     await assert.rejects(
@@ -418,7 +370,6 @@ apiTest("api: this client's own error words are never adopted FROM the wire", as
       (e: unknown) => e instanceof ApiError && e.code === "unknown" && e.status === 400, named,
     );
   }
-  // And a code the create endpoint does define still comes through.
   const { fn } = fetchReturning({ status: 400, body: { error: "bad_request" } });
   await assert.rejects(
     () => createInvoice({ priceId: "p", method: "xmr", codeHash: "h" }, fn),
@@ -442,9 +393,6 @@ apiTest("api: a 429 waits out the exact interval named by Retry-After, not the 1
     { status: 200, body: { status: "paid" } },
   );
   const got = await waitForChange("i", "open", fn, async (ms) => { delays.push(ms); });
-  // Exactly [5000]: a version that fell back to the network-error backoff
-  // ladder would produce [1000] here, which is a plausible-looking delay
-  // but not the interval the (fake) server actually asked for.
   assert.deepEqual(delays, [5000]);
   assert.equal(got.status, "paid");
 });
@@ -457,9 +405,6 @@ apiTest("api: a 429's wait does not consume or advance the backoff ladder", asyn
     { status: 200, body: { status: "paid" } },
   );
   const got = await waitForChange("i", "open", fn, async (ms) => { delays.push(ms); });
-  // The network error after the 429 must back off from the ladder's start
-  // (1000), not from 2000 (ladder advanced by the 429) or 5000 (ladder
-  // seeded from the Retry-After value).
   assert.deepEqual(delays, [5000, 1000]);
   assert.equal(got.status, "paid");
 });
@@ -519,7 +464,7 @@ apiTest("api: three consecutive fast (<5s) same-status answers trip the anti-spi
     { status: 200, body: { status: "open" } },
     { status: 200, body: { status: "paid" } },
   );
-  const now = () => 0; // every response looks instantaneous
+  const now = () => 0;
   const got = await waitForChange("i", "open", fn, async (ms) => { delays.push(ms); }, undefined, now);
   assert.deepEqual(delays, [1000]);
   assert.equal(calls.length, 4);
@@ -527,9 +472,6 @@ apiTest("api: three consecutive fast (<5s) same-status answers trip the anti-spi
 });
 
 apiTest("api: a 1.1s hold-ignoring proxy still trips the anti-spin floor (the threshold is 5s, not 1s)", async () => {
-  // Below the old 1s threshold this would never have been counted as
-  // "fast", yet answering in 1.1s forever is still ~54 requests/minute,
-  // just under the 60/min limit, spinning unthrottled.
   const delays: number[] = [];
   const { fn, calls } = fetchReturning(
     { status: 200, body: { status: "open" } },
@@ -556,11 +498,8 @@ apiTest("api: a genuine ~30s same-status hold never trips the anti-spin floor", 
     { status: 200, body: { status: "paid" } },
   );
   let t = 0;
-  const now = () => { t += 30_000; return t; }; // each hold genuinely takes ~30s
+  const now = () => { t += 30_000; return t; };
   const got = await waitForChange("i", "open", fn, async (ms) => { delays.push(ms); }, undefined, now);
-  // Five consecutive same-status answers, none of them fast: never once
-  // backed off. A version that ignored elapsed time and counted every
-  // same-status answer as "fast" would trip after the third.
   assert.deepEqual(delays, []);
   assert.equal(calls.length, 6);
   assert.equal(got.status, "paid");
@@ -606,17 +545,12 @@ apiTest("api: an abort mid-sleep clears its pending timer — setTimeout/clearTi
   try {
     const controller = new AbortController();
     const { fn, calls } = fetchReturning(new Error("offline"));
-    // No injected sleep: exercise the real default, since a test double is
-    // the one thing that never owns a real `setTimeout` handle to leak.
+    // No injected sleep, so the real setTimeout handle is exercised rather than a leak-free double.
     const promise = waitForChange("i", "open", fn, undefined, controller.signal);
-    await new Promise((r) => setImmediate(r)); // let the rejected fetch reach the pending sleep
+    await new Promise((r) => setImmediate(r));
     controller.abort();
     await assert.rejects(() => promise, (e: unknown) => e instanceof AbortedError);
     assert.equal(calls.length, 1);
-    // Not just "it rejected": a version that raced the abort without ever
-    // clearing the real timer would still reject here, leaving a handle
-    // alive in the background. The counts must balance: one timer started,
-    // the same one cleared.
     assert.equal(setCount, 1);
     assert.equal(clearCount, 1);
   } finally {
@@ -625,22 +559,15 @@ apiTest("api: an abort mid-sleep clears its pending timer — setTimeout/clearTi
   }
 });
 
-// ===========================================================================
-
 const SERVER = fileURLToPath(new URL("../../mock/server.py", import.meta.url));
 
-/** A spawn, a readiness poll and three round trips; a spin regression must still fail rather than hang. */
 const E2E_TIMEOUT_MS = 30_000;
-/** The server-side hold: long enough that the wait below is unambiguously parked on it when settlement
- * arrives, short enough that a failed test releases the socket well inside `E2E_TIMEOUT_MS`. */
+// The server-side hold, long enough that the wait is parked on it, short enough to release the socket inside E2E_TIMEOUT_MS.
 const HOLD_SECONDS = "5";
 const READY_TIMEOUT_MS = 10_000;
 const READY_POLL_MS = 25;
-/** How long the wait is left parked before settlement, to show it really is pending. */
 const PRE_SETTLE_MS = 150;
-/** From `POST /control/settle` to `waitForChange` resolving. A hold that is not real cannot come in under
- * this: three sub-5s same-status answers trip the anti-spin floor in `waitForChange`, which then sleeps a
- * full `BACKOFF_START` (1000 ms) before it would see the change. */
+// From settle to waitForChange resolving; a fake hold cannot come in under this because the anti-spin floor sleeps first.
 const WAKE_LIMIT_MS = 500;
 
 function e2eTest(name: string, fn: () => Promise<void>): void {
@@ -649,7 +576,6 @@ function e2eTest(name: string, fn: () => Promise<void>): void {
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** localStorage, in memory. Local to this file, as in `store.test.ts` and `routing.test.ts`. */
 class MemoryStorage {
   map = new Map<string, string>();
   getItem(k: string) { return this.map.get(k) ?? null; }
@@ -657,9 +583,7 @@ class MemoryStorage {
   removeItem(k: string) { this.map.delete(k); }
 }
 
-/** A port the kernel has just told us is free, rather than a constant: a fixed one collides with a stray
- * server left by an earlier run and with any concurrent one, and the failure mode is a test that passes
- * green against the wrong server. */
+// A kernel-chosen free port, since a fixed one can collide with a stray or concurrent server and pass green against the wrong one.
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const probe = createServer();
@@ -677,9 +601,7 @@ function freePort(): Promise<number> {
   });
 }
 
-/** Polls rather than sleeping a guessed interval. The probe is `GET /api/invoice/<unknown>`, and only this
- * mock's own 404 body counts as ready, so a connection accepted by something else on the port keeps the
- * loop going until the deadline instead of being mistaken for ours. */
+// Polls until the mock's own 404 body answers, so a connection accepted by something else on the port is not mistaken for ours.
 async function ready(base: string, proc: ChildProcess): Promise<void> {
   const deadline = Date.now() + READY_TIMEOUT_MS;
   let last = "no attempt completed";
@@ -700,23 +622,16 @@ async function ready(base: string, proc: ChildProcess): Promise<void> {
   }
 }
 
-/**
- * `createInvoice` and `waitForChange` both call `fetch` with a root-relative
- * path, exactly as the browser would; this only supplies the origin.
- */
 function viaNetwork(base: string): typeof fetch {
   return ((input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
     const url = typeof input === "string" && input.startsWith("/") ? `${base}${input}` : input;
-    // no keep-alive: the mock is SIGKILLed at the end of each server, and a pooled socket to a
-    // process that is gone keeps this file's event loop open long after its last assertion
+    // Keep-alive is off, or a pooled socket to the SIGKILLed mock would hold the event loop open past the last assertion.
     const headers = { ...(init?.headers as Record<string, string> | undefined), connection: "close" };
     return fetch(url, { ...init, headers });
   }) as typeof fetch;
 }
 
-/** Keeps the raw bytes of every response, before any parsing. `parseCreatedInvoice` copies out named fields
- * and drops the rest, so stringifying its return proves nothing about what the wire carried: a `code` field
- * in the response would vanish into the parser and the assertion would pass. */
+// Keeps the raw response bytes, since the parser drops fields and stringifying its return would prove nothing about the wire.
 function recording(f: typeof fetch): { f: typeof fetch; bodies: string[] } {
   const bodies: string[] = [];
   const wrapped = (async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
@@ -727,7 +642,6 @@ function recording(f: typeof fetch): { f: typeof fetch; bodies: string[] } {
   return { f: wrapped, bodies };
 }
 
-/** The control surface: what a payment provider's webhook would have told the service. */
 async function control(f: typeof fetch, action: string, invoiceId: string): Promise<{ status: number; body: unknown }> {
   const res = await f(`/control/${action}/${encodeURIComponent(invoiceId)}`, { method: "POST" });
   return { status: res.status, body: await res.json() };
@@ -745,17 +659,12 @@ async function withServer(fn: (f: typeof fetch, bodies: string[]) => Promise<voi
     const { f, bodies } = recording(viaNetwork(base));
     await fn(f, bodies);
   } finally {
-    // SIGKILL, not SIGTERM: a thread parked in `event.wait(HOLD_SECONDS)` would
-    // otherwise keep the process alive past the test, and the port with it.
+    // The mock is SIGKILLed rather than SIGTERMed, or a thread parked in event.wait would keep the process and its port alive.
     proc.kill("SIGKILL");
     if (proc.exitCode === null && proc.signalCode === null) await once(proc, "exit");
   }
 }
 
-/**
- * A buyer who reloads, navigates away or closes the tab during a `?wait=` hold
- * drops the socket while the server thread is parked. Settlement then wakes it
- */
 e2eTest("e2e: a client that hangs up mid-hold is not an error", async () => {
   const port = await freePort();
   const base = `http://127.0.0.1:${port}`;
@@ -771,7 +680,6 @@ e2eTest("e2e: a client that hangs up mid-hold is not an error", async () => {
     const created = await createInvoice(
       { priceId: "price_supporter", method: "btc", codeHash: await hash(generate()) }, f);
 
-    // Park a hold on a raw socket, then vanish without reading the answer.
     const sock = connect(created.invoiceId ? port : port, "127.0.0.1");
     await once(sock, "connect");
     sock.write(`GET /api/invoice/${created.invoiceId}?wait=open HTTP/1.1\r\nHost: x\r\n\r\n`);
@@ -779,11 +687,9 @@ e2eTest("e2e: a client that hangs up mid-hold is not an error", async () => {
     sock.destroy();
     await delay(100);
 
-    // Settlement wakes the parked thread, which now writes to nothing.
     assert.equal((await control(f, "settle", created.invoiceId)).status, 200);
     await delay(400);
 
-    // The server is still serving, and said nothing about it.
     const after = await fetch(`${base}/api/invoice/${created.invoiceId}`);
     assert.equal(after.status, 200);
     assert.equal(((await after.json()) as { status: string }).status, "paid");
@@ -801,11 +707,9 @@ e2eTest("e2e: a purchase runs end to end, and settlement wakes the wait", async 
     const code = generate();
     const codeHash = await hash(code);
 
-    // The record needs the invoice id, so the code is saved once the answer is in.
     const created = await createInvoice(
       { priceId: "price_legend", offerId: "offer_12m", method: "xmr", codeHash }, f);
 
-    // 7000/month, twelve months, half off: the amount is derived server-side.
     assert.equal(created.amount, 42_000);
     assert.equal(created.months, 12);
     assert.equal(created.badgeType, "legend");
@@ -820,7 +724,6 @@ e2eTest("e2e: a purchase runs end to end, and settlement wakes the wait", async 
       months: created.months, createdAt: new Date().toISOString(), status: "open", code: display(code),
     });
 
-    // Park on the hold, prove it really is parked, then settle and time the wake.
     const waiting = waitForChange(created.invoiceId, "open", f);
     let woken = false;
     waiting.then(() => { woken = true; }, () => { woken = true; });
@@ -848,14 +751,11 @@ e2eTest("e2e: a purchase runs end to end, and settlement wakes the wait", async 
     assert.equal(only.status, "paid");
     assert.equal(only.code, display(code), "settlement must not clear the stored code");
 
-    // The code that comes back out is the one that went in, character for
-    // character, and still carries a good check character.
     const recovered = normalise(only.code!);
     assert.equal(recovered, code, "the stored code round-trips byte-identical");
     assert.equal(checkChar(recovered!.slice(0, -1)), recovered!.slice(-1), "and still validates");
 
-    // Every byte of every response, not the parsed shapes: the service never
-    // has the code, and must never echo the hash it was keyed by.
+    // Every response byte, since the service never has the code and must not echo the hash it was keyed by.
     assert.ok(bodies.length >= 3, `expected the whole exchange to be recorded, saw ${bodies.length} responses`);
     for (const body of bodies) {
       assert.ok(!body.includes(code), `a response carried the code: ${body}`);
@@ -874,9 +774,6 @@ e2eTest("e2e: a repeated code hash is refused with code_conflict, not merely ref
     await assert.rejects(
       () => createInvoice(req, f),
       (e: unknown) => {
-        // Asserted rather than returned as a boolean: "some error was thrown"
-        // is not the claim. The code and the status are, and a mismatch has to
-        // say which one it was.
         assert.ok(e instanceof ApiError, `expected an ApiError, got ${String(e)}`);
         assert.equal(e.code, "code_conflict");
         assert.equal(e.status, 409);
@@ -893,7 +790,6 @@ e2eTest("e2e: an expired invoice reports what arrived before it closed", async (
     assert.equal((await control(f, "partial", inv.invoiceId)).status, 200);
     assert.equal((await control(f, "expire", inv.invoiceId)).status, 200);
 
-    // The status already differs from `open`, so this returns without holding.
     const view = await waitForChange(inv.invoiceId, "open", f);
     assert.equal(view.status, "expired");
     assert.equal(view.amountPaid, 350, "half of 700 arrived");

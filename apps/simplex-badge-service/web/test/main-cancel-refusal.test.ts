@@ -1,6 +1,3 @@
-// What a refused cancel leaves behind. The refusal itself is one round trip of screen text; what
-// matters afterwards is the record it wrote, the controls the restarted watch draws, and whether
-// the reason follows the buyer to a screen where no cancel was ever attempted.
 import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
@@ -29,8 +26,7 @@ refusalTest("main: a funded refusal keeps the order's own screen, not a stripped
   page.confirmAnswer(true);
   page.respondWith({ status: 409, body: { error: "funded" } });
   cancelControl()!.click();
-  // the restarted watch reads, and that repaint is where a restart without the previous loop's
-  // options would draw this order as a fresh one
+  // The restarted watch reads here, and without the previous loop's options it would draw this order as a fresh one.
   page.respondWith(openReply);
   await until(() => screenOf(app).textContent.includes(CANCEL_HAS_FUNDS), "money is riding on it");
 
@@ -44,8 +40,7 @@ refusalTest("main: the reason does not follow the buyer to an order they did not
   history.pushState(null, "", "/");
   page.fire("popstate");
   await settle();
-  // queued before the navigation: the read goes out as the order screen mounts, and a reply
-  // arriving after the assertion would leave it looking at the landing screen instead
+  // The reply is queued before the navigation so it is ready when the order screen mounts and reads.
   page.respondWith(openReply);
   history.pushState(null, "", `?order=${ORDER_ID}`);
   page.fire("popstate");
@@ -59,10 +54,9 @@ refusalTest("main: a repaint mid-cancel does not arm a second one", async () => 
   const before = fetches.filter((f) => f.url.endsWith("/cancel")).length;
   page.confirmAnswer(true);
   page.respondWith({ status: 409, body: { error: "funded" } });
-  // no await after this click: the POST is on the wire for the whole of what follows, which is the
-  // window a second click has to be refused in
+  // No await after this click, so the POST stays on the wire, which is the window a second click must be refused in.
   screenOf(app).all("button").find((b) => b.textContent === CANCEL_INVOICE)!.click();
-  // the event that redraws the panel, and with it a Cancel button whose disabled attribute is gone
+  // The online event redraws the panel, giving a Cancel button whose disabled attribute is gone.
   page.fire("online");
   screenOf(app).all("button").find((b) => b.textContent === CANCEL_INVOICE)?.click();
 

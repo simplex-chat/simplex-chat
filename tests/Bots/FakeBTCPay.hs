@@ -48,7 +48,7 @@ import Data.Scientific (Scientific)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
--- http-client is imported qualified: its Request has requestHeaders, requestBody and
+-- http-client is imported qualified because its Request has requestHeaders, requestBody and
 -- queryString just as WAI's does.
 import Network.HTTP.Client (Manager)
 import qualified Network.HTTP.Client as HTTP
@@ -74,8 +74,6 @@ import Simplex.Messaging.Util (tshow)
 import System.FilePath ((</>))
 import Text.Read (readMaybe)
 
--- | Responses are read from committed fixtures, so they can be replaced with captures
--- from a real instance without changing any Haskell.
 fixtureDir :: FilePath
 fixtureDir = "apps" </> "simplex-badge-service" </> "test-fixtures" </> "btcpay"
 
@@ -137,14 +135,13 @@ initialState =
     }
 
 data FakeBTCPay = FakeBTCPay
-  { -- | Points the adapter at this listener, with the credentials it accepts.
-    fbConfig :: BTCPayConfig,
+  { fbConfig :: BTCPayConfig,
     fbBaseUrl :: String,
     fbManager :: Manager,
     fbState :: TVar FakeState
   }
 
--- | A port Warp chooses. A fixed one would collide with a server left over from an
+-- | Warp chooses the port, because a fixed one could collide with a server left over from an
 -- earlier run and the test would pass against that instead.
 withFakeBTCPay :: (FakeBTCPay -> IO a) -> IO a
 withFakeBTCPay action = do
@@ -166,8 +163,8 @@ fakeConfig host =
       bPaymentTolerance = 0.5
     }
 
--- | A BTCPay webhook delivery, as its documentation shows one. Both suites sign this exact
--- envelope, so what a valid signature is over cannot mean two different things.
+-- | A BTCPay webhook delivery shaped as its documentation shows. Both suites sign this exact
+-- envelope, so what a valid signature covers cannot mean two different things.
 webhookEvent :: Text -> Text -> LB.ByteString
 webhookEvent eventType invoiceRef =
   LB.fromStrict . TE.encodeUtf8 . T.unlines $
@@ -183,11 +180,10 @@ webhookEvent eventType invoiceRef =
       "}"
     ]
 
--- | The header BTCPay sends with it: HMAC-SHA256 over the bytes as written above.
+-- | The header BTCPay sends is an HMAC-SHA256 over the bytes exactly as written above.
 webhookSigHeader :: Text -> LB.ByteString -> [Header]
 webhookSigHeader secret body = [("BTCPay-Sig", "sha256=" <> webhookHexSig secret body)]
 
--- | The hex digest alone, for the tests that malform the header around it.
 webhookHexSig :: Text -> LB.ByteString -> ByteString
 webhookHexSig secret body = convertToBase Base16 digest
   where
@@ -219,8 +215,8 @@ methodsFixture methodId
   | methodId == xmrMethod = "payment-methods-xmr"
   | otherwise = "payment-methods-btc"
 
--- the adapter's own ids, restated rather than imported: a fake that shared the constant
--- would agree with a wrong change to it
+-- The adapter's own ids are restated rather than imported, so a fake sharing the constant cannot
+-- agree with a wrong change to it.
 btcMethod, xmrMethod :: Text
 btcMethod = "BTC-CHAIN"
 xmrMethod = "XMR-CHAIN"
@@ -239,9 +235,9 @@ patchMethods InvoiceState {isPaid, isDue} = \case
     one = \case
       J.Object o ->
         let paid = fromMaybe (fixturePaid o) isPaid
-            -- with nothing received the whole amount is owed. The fixtures were written for a
+            -- With nothing received the whole amount is owed. The fixtures were written for a
             -- settled invoice, so without this a freshly created one would serve their `due` of
-            -- zero and the double would bless "nothing left to send" on an unpaid invoice.
+            -- zero and the fake would report nothing left to send on an unpaid invoice.
             due = if isZero paid then isDue <|> textField "amount" o else isDue
             withPaid = KM.insert "paymentMethodPaid" (J.String paid) o
             withDue = maybe withPaid (\d -> KM.insert "due" (J.String d) withPaid) due
@@ -506,7 +502,6 @@ failAfterCalls :: Int -> FakeBTCPay -> Int -> Int -> IO ()
 failAfterCalls skip fake calls code =
   controlPost fake "/_fail" (J.object ["calls" J..= calls, "status" J..= code, "skip" J..= skip])
 
--- | The next reads answer with a body far past what the adapter will hold.
 answerOversize :: FakeBTCPay -> Bool -> IO ()
 answerOversize fake on = controlPost fake "/_oversize" (J.object ["on" J..= on])
 

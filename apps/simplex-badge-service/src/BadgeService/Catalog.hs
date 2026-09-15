@@ -26,7 +26,6 @@ import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 data OfferInvalid = OIZeroMonths | OIFreeMonthsExceedTerm | OIDiscountTooLarge | OIAmountUnsellable
   deriving (Eq, Show)
 
--- | The full price is formed before the division, so nothing is rounded part way.
 offerTotal :: CurrencyAmount -> Maybe BadgeOffer -> Either OfferInvalid (Word8, CurrencyAmount, CurrencyAmount)
 offerTotal (CurrencyAmount p) = \case
   Nothing -> charge 1 (gross 1)
@@ -46,8 +45,7 @@ offerTotal (CurrencyAmount p) = \case
     maxAmount = 100000000
     charge :: Word8 -> Word64 -> Either OfferInvalid (Word8, CurrencyAmount, CurrencyAmount)
     charge m c
-      -- both figures, not just the charge: 100000000 a month over 43 months with 42 free
-      -- charges 100000000, but the full price wraps a Word32 and the discount underflows
+      -- Bound gross too, not just the charge, or a large price wraps the Word32 amount field.
       | c == 0 || c > maxAmount || gross m > maxAmount = Left OIAmountUnsellable
       | otherwise = Right (m, CurrencyAmount (fromIntegral (gross m)), CurrencyAmount (fromIntegral c))
 
@@ -101,8 +99,7 @@ priceOffer prices offers wantedPriceId wantedOfferId = do
 catalogCurrency :: Text
 catalogCurrency = "usd"
 
--- | Copied from web/src/catalog.ts, and a test checks they still agree. Seeded
--- insert-only, so repricing means a new price id here plus deprecating the old row.
+-- | Mirrors web/src/catalog.ts; seeded insert-only, so repricing needs a new price id.
 defaultCatalog :: UTCTime -> ([BadgePrice], [BadgeOffer])
 defaultCatalog seededAt = (prices, offers)
   where

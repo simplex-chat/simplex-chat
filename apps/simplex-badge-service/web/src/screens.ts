@@ -6,9 +6,8 @@ import type { InvoiceView } from "./api.js";
 import { THEMES, type Method, type Theme } from "./domain.js";
 import type { CardFailure } from "./stripe.js";
 
-/** A browser's interval id is a number and this does nothing. Under the test runner it is an
- * object, and unreferencing it is what stops a screen that was built and never stopped from
- * holding the process open until the suite is killed. */
+/** Under the test runner the timer is an object whose unref must be called, or a screen that was
+ * built and never stopped holds the process open until the suite is killed. */
 function releaseFromEventLoop(timer: unknown): void {
   if (typeof timer === "object" && timer !== null && "unref" in timer && typeof timer.unref === "function") {
     timer.unref();
@@ -49,8 +48,6 @@ export const FORGET_EVERYTHING = "Forget everything on this device";
 export const BUY_NEW_CODE = "Buy a new code";
 export const PART_PAID_TITLE = "Part of the amount has arrived";
 export const KEEPS_WAITING = "This page keeps checking. The invoice will not expire while it waits, however long the network takes.";
-/** A refusal with wording of its own. Any other failure keeps the generic message: an internal
- * error's text is not something to put in front of a buyer. */
 export class CancelRefused extends Error {}
 
 export const PAID_IN_FULL_TITLE = "The full amount has arrived";
@@ -72,8 +69,6 @@ export interface ChromeOptions {
   theme: Theme;
   onTheme: (theme: Theme) => void;
   onToggle: (open: boolean) => void;
-  /** The wordmark: back to the landing, client-side, rather than the reload a bare `href` to the
-   * root would be from a hash route. The `href` stays for middle-click and for the shell before JS. */
   onHome: () => void;
 }
 
@@ -87,10 +82,6 @@ export interface Chrome {
   focusables(): HTMLElement[];
 }
 
-// Every screen is built node by node and markup is never assigned from a string, so
-// nothing a buyer or a server sends can become markup. `design.test.ts` checks the sinks.
-//
-// Nothing in the menu may carry an order: every item is a fixed label with a callback.
 export function chrome(o: ChromeOptions): Chrome {
   const brand = el("a", { class: "brand", href: "/", "aria-label": "SimpleX" });
   brand.addEventListener("click", (e) => { e.preventDefault(); o.onHome(); });
@@ -180,9 +171,6 @@ function field(label: string, value: Node | string, ...extra: Array<Node | strin
   );
 }
 
-// On the code screen the code exists nowhere else, so every write reports what happened. Success is
-// confirmed on the button's own label, where the buyer is already looking; a failure needs
-// an instruction and stays in the status line.
 function copyableField(label: string, value: string, control: HTMLElement, status: HTMLElement): HTMLElement {
   const node = field(label, value, status);
   node.setAttribute("class", "rows field copyable");
@@ -190,8 +178,6 @@ function copyableField(label: string, value: string, control: HTMLElement, statu
   return node;
 }
 
-/** The order id doubles as the buyer's reference: it is what support asks for, and it is already
- * in the address bar of the page they are looking at. */
 function reference(orderId: string): HTMLElement {
   return field("Reference", orderId);
 }
@@ -354,8 +340,6 @@ export interface OrderSummaryOptions {
   months: number;
   total: string;
   discount?: Discount;
-  /** False where a code bought now could not be kept: this browser refuses to store anything, or
-   * the orders list is full and every entry holds someone else's code. Either way, copy it. */
   canKeepTheCode: boolean;
   selected: Method;
   unavailable?: Method;
@@ -375,8 +359,8 @@ function isPlainClick(e: MouseEvent): boolean {
   return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
 }
 
-// Handled without leaving the document: when localStorage refuses, the store falls back to
-// an in-memory Map and a full navigation would destroy every record in it.
+// When localStorage refuses, the store falls back to an in-memory Map, and a full navigation would
+// destroy every record in it.
 function orderLink(orderId: string, label: string, cls: string, onOpen: (orderId: string) => void): HTMLElement {
   const a = el("a", { class: cls, href: `?order=${encodeURIComponent(orderId)}` }, label);
   a.addEventListener("click", (e) => {
@@ -387,8 +371,6 @@ function orderLink(orderId: string, label: string, cls: string, onOpen: (orderId
   return a;
 }
 
-/** The gross price and the reduction off it, both preformatted; `percent` names the saving where
- * the offer is a percentage. Present only where the charged total is below the gross. */
 export interface Discount {
   price: string;
   off: string;
@@ -405,7 +387,7 @@ function summaryRows(badgeType: string, months: number, total: string, discount?
     rows.push(el("div", { class: "row" }, el("span", {}, "Price"), el("span", {}, discount.price)));
     rows.push(el("div", { class: "row discount" },
       el("span", {}, discount.percent !== undefined ? `Discount (${discount.percent}% off)` : "Discount"),
-      // U+2212 minus, not a hyphen: it lines up with the tabular figures and reads as a subtraction.
+      // This is a U+2212 minus rather than a hyphen, so it lines up with the tabular figures.
       el("span", {}, `−${discount.off}`)));
   }
   rows.push(el("div", { class: "row total" }, el("span", {}, "Total"), el("span", {}, total)));
@@ -435,12 +417,7 @@ export function orderSummary(o: OrderSummaryOptions): HTMLElement {
     p.append(warning(`${METHOD_NAMES[o.unavailable]} is temporarily unavailable`,
       "Try another method, or come back later."));
   }
-  // said here rather than only on the code screen: the code is the whole purchase, this browser
-  // holds the only copy, and the service keeps nothing but its hash. After paying is too late to
-  // learn that copying it by hand is the one thing standing between the buyer and losing it.
   if (!o.canKeepTheCode) {
-    // no cause named: this is reached both where site data is off and where the store is full,
-    // and the buyer's next move is the same either way
     p.append(warning(NOT_KEPT_TITLE,
       "This browser cannot save anything new right now.",
       "You can still pay, but copy the code as soon as it appears."));
@@ -516,8 +493,6 @@ function offlineNote(): HTMLElement {
 const CRYPTO_NAMES: Readonly<Record<"btc" | "xmr", string>> = { btc: "Bitcoin", xmr: "Monero" };
 const CRYPTO_TICKERS: Readonly<Record<"btc" | "xmr", string>> = { btc: "BTC", xmr: "XMR" };
 
-// Quiet on purpose: this screen exists to be paid, and a loud control beside the address
-// competes with that. The red is spent on the confirmation and on a failure instead.
 function cancelControl(onCancel: () => Promise<void>, notice: string | undefined): Node[] {
   const status = el("p", { class: "muted cancel-status", role: "status" }, notice ?? "");
   const control = button(CANCEL_INVOICE, () => {
@@ -529,8 +504,6 @@ function cancelControl(onCancel: () => Promise<void>, notice: string | undefined
       control.removeAttribute("disabled");
       control.textContent = CANCEL_INVOICE;
     };
-    // the refusal a caller names is more use than the generic one: "it has money in it" is a
-    // different thing for a buyer to read than "it is still safe to pay"
     onCancel().then(done, (e: unknown) => {
       done();
       status.textContent = e instanceof CancelRefused ? e.message : CANCEL_FAILED;
@@ -548,7 +521,6 @@ export interface AwaitingPaymentOptions {
   resumed: boolean;
   offline?: boolean;
   onCancel: () => Promise<void>;
-  /** Why the last cancel was refused, which outlives the screen it was asked on. */
   notice?: string;
 }
 
@@ -568,9 +540,8 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
     if (started !== null) p.append(el("p", { class: "muted" }, started));
   }
   const paidSoFar = o.invoice.cryptoAmountPaid;
-  // The provider's own figure for what is still owed: it applies the payment tolerance and adds
-  // a network fee once a partial payment lands, so the invoice's amount minus what arrived is
-  // the wrong number to ask for. Absent until something has been paid, when the amount stands.
+  // The provider applies a payment tolerance and adds a network fee once a partial payment lands,
+  // so the invoice amount minus what arrived is the wrong figure to ask for.
   const left: Outstanding = paidSoFar === undefined
     ? { kind: "owed", amount }
     : outstanding(o.invoice.cryptoAmountDue);
@@ -594,8 +565,8 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
   const qr = uri === null ? null : qrFigure(uri, `${CRYPTO_NAMES[o.method]} payment code`);
   if (qr !== null && uri !== null) {
     const open = el("a", { class: "secondary inline wallet-link", href: uri }, "Open in wallet");
-    // not .copy-line: that one is absolutely positioned inside a .field.copyable, and in
-    // here it anchored to the page and landed under the header's menu button
+    // This uses .wallet-line rather than .copy-line, which is absolutely positioned inside
+    // .field.copyable and here would anchor to the page under the header's menu button.
     qr.append(el("p", { class: "wallet-line" }, open));
   }
   const amountCopy = copyControl("Copy", owed ?? "", "secondary inline");
@@ -609,8 +580,6 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
   if (qr !== null) split.append(qr);
   split.append(details);
 
-  // what arrived is confirming, and the rest has not been sent: saying only the first, under a
-  // notice asking for the remainder, reads as though the invoice were settled
   const partly = paidSoFar !== undefined && left.kind !== "covered";
   const waiting = el("p", { class: "awaiting", role: "status" },
     el("span", { class: "pulse", "aria-hidden": "true" }),
@@ -623,8 +592,8 @@ export function awaitingPayment(o: AwaitingPaymentOptions): { node: HTMLElement;
   p.append(...cancelControl(o.onCancel, o.notice));
 
   const timer = setInterval(() => {
-    // the clear comes first: once the hold has lapsed the phrase stops changing, so a clear
-    // after the equality check is a clear that never runs
+    // The clear must come before the equality check below, since once the hold lapses the phrase
+    // stops changing and a clear placed after it would never run.
     if (countdown(o.invoice.expiresAt, clock()) === null) clearInterval(timer);
     const next = phrase(clock());
     if (next === rate.textContent) return;
@@ -644,9 +613,6 @@ export interface AwaitingConfirmationOptions {
   onCheckAgain: () => void;
 }
 
-// No confirming screen offers [ Buy a new code ]: a card confirm has succeeded, checkout has no idempotency
-// key, and the buyer would end up holding two live invoices. Both methods share it, the money being
-// committed with something else to confirm it, so only the wait's words differ.
 const CONFIRMING: Readonly<Record<Method, { status: string; wait: string }>> = {
   card: {
     status: "Waiting for the card network to confirm.",
@@ -679,21 +645,16 @@ export function awaitingConfirmation(o: AwaitingConfirmationOptions): HTMLElemen
       CONFIRMING[method].status),
     notice("Still processing", CONFIRMING[method].wait),
   );
-  // Greenfield reports no running count, so this states what settlement needs, not
-  // progress. It goes with the prose above rather than between the two cards below.
   const needed = o.invoice?.requiredConfirmations;
   if (needed !== undefined && needed > 0 && method !== "card") {
     p.append(el("p", { class: "muted" },
       `This is settled once the payment has ${needed === 1 ? "1 confirmation" : `${needed} confirmations`} on the ${CRYPTO_NAMES[method]} blockchain.`));
   }
-  // what we saw, so the buyer is not left guessing whether the amount was right
   const received = o.invoice?.cryptoAmountPaid;
   if (received !== undefined && method !== "card") {
     p.append(field("Received", `${received} ${CRYPTO_TICKERS[method]}`));
   }
   p.append(
-    // the address and the rate countdown are deliberately gone: sending again would be a
-    // second payment, and the rate hold stopped mattering when this one landed
     reference(o.order.orderId),
     el("p", { class: "muted" }, KEEPS_WAITING),
   );
@@ -716,7 +677,6 @@ export interface DetailsUnavailableOptions {
 }
 
 export function windowClosed(o: WindowClosedOptions): HTMLElement {
-  // a closed invoice cannot be reopened; the way on is a fresh purchase, so the button starts one
   const buyNewCode = button(BUY_NEW_CODE, o.onNewInvoice, "primary outline");
   if (o.canceled === true) {
     return panel(
@@ -727,9 +687,8 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
     );
   }
   const paid = o.invoice?.amountPaid;
-  // What the service counts as money on the invoice: the provider's verdict, reached through its own
-  // payment tolerance, or any crypto figure at all. The sweep spares such an invoice down to less than
-  // a minor unit, so this screen must not tell the buyer nothing arrived.
+  // A payment can land after the window closes, so this screen must count any crypto figure as money
+  // and not tell the buyer nothing arrived.
   const funded = o.invoice?.paidInFull === true || o.invoice?.cryptoAmountPaid !== undefined;
   const p = panel(el("h1", { class: "tight" }, "This invoice expired"));
   if (funded || (paid !== undefined && paid > 0)) {
@@ -738,8 +697,6 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
     const arrived = crypto !== undefined && ticker !== undefined
       ? `${crypto} ${CRYPTO_TICKERS[ticker]}`
       : "A payment";
-    // a payment that lands after the window is reported as closed, not as paid in full, so
-    // where there is no verdict the figures are what is left to compare
     const total = o.invoice?.amount;
     const short = o.invoice?.paidInFull !== true && (paid === undefined || total === undefined || paid < total);
     p.append(warning(
@@ -803,7 +760,6 @@ function calendarDate(when: string | undefined, withYear = false, withTime = fal
   if (when === undefined) return null;
   const at = new Date(when);
   if (Number.isNaN(at.getTime())) return null;
-  // the buyer's own timezone: the instant is stored in UTC, but a receipt reads in local time
   const day = `${at.getDate()} ${MONTHS[at.getMonth()]}`;
   const dated = withYear ? `${day} ${at.getFullYear()}` : day;
   if (!withTime) return dated;
@@ -841,8 +797,6 @@ export function paidNoCode(o: PaidNoCodeOptions): HTMLElement {
 
 export interface PurchaseHistoryOptions {
   rows: readonly HistoryRow[];
-  /** False where this browser accepts writes and loses them. Rows already stored are still read
-   * back, so this is about what the list may promise from here on, not about what it shows. */
   keepsNewCodes: boolean;
   onOpen: (orderId: string) => void;
   onStart: () => void;
@@ -888,7 +842,6 @@ function entryLine(row: HistoryRow, onOpen: (orderId: string) => void): HTMLElem
   const metaRow = el("div", { class: "entry-row" });
   const meta = entryMeta(o);
   if (meta.children.length > 0) metaRow.append(meta);
-  // a canceled order is a dead end the buyer chose, with no invoice to reopen or pay
   if (row.kind !== "paid" && row.kind !== "canceled") metaRow.append(orderLink(o.orderId, "Open", "secondary", onOpen));
   if (metaRow.children.length > 0) main.append(metaRow);
   head.append(main);
@@ -911,8 +864,6 @@ export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
   }
   const list = el("ul", { class: "entries" });
   for (const row of o.rows) list.append(entryLine(row, o.onOpen));
-  // The one irreversible action, at the foot of the list it clears: below the last code, where a
-  // buyer who has decided to wipe the device looks, and not in the menu on every screen.
   const forget = el("p", { class: "forget-line" },
     button(FORGET_EVERYTHING, o.onForget, "link danger"));
   return panel(

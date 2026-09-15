@@ -1,6 +1,3 @@
-// Turning a number or a timestamp into the words a screen prints. No state, no clock of its
-// own: the caller passes the moment, so a rendered screen is a function of what it was given.
-
 const SYMBOLS: Readonly<Record<string, string>> = { usd: "$", eur: "€", gbp: "£" };
 
 export function money(minor: number, currency: string): string {
@@ -29,9 +26,7 @@ export function countdown(expiresAt: string | undefined, nowMs: number): string 
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
-/** What the provider says is still owed. Three answers because the screen says something
- * different for each: a covered invoice comes back as "0.00000000", and asking a buyer to send
- * zero is worse than asking for nothing at all. */
+/** A covered invoice comes back from the provider as "0.00000000", so a due amount with no non-zero digit means covered rather than owed. */
 export type Outstanding =
   | { kind: "owed"; amount: string }
   | { kind: "covered" }

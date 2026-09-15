@@ -25,8 +25,6 @@ export function hamburger(): SVGElement {
   return svg(box, bar("7"), bar("12"), bar("17"));
 }
 
-// The site navbar's own sun and moon, path for path, so the theme switch reads as the same control
-// it is there. `fill` is left to CSS (`.theme-switch-btn svg path`), as it is on the site.
 const SUN_PATHS = [
   "M225.768 1.44594C220.301 3.84594 214.701 10.6459 213.768 15.9793C213.234 18.3793 213.101 31.7126 213.368 45.7126L213.768 71.1793L217.634 76.1126C226.701 88.1126 242.968 87.5793 252.301 75.0459C254.968 71.5793 255.101 69.5793 255.101 42.2459C255.101 14.9126 254.968 12.9126 252.301 9.44594C250.834 7.44594 248.034 4.51261 246.168 3.17928C241.768 -0.154057 231.101 -1.08739 225.768 1.44594Z",
   "M72.9687 65.3128C63.7687 71.5794 60.1687 81.4461 63.7687 91.1794C65.502 95.4461 98.702 129.446 104.035 132.379C106.035 133.446 110.569 134.246 114.035 134.246C126.035 134.246 134.435 125.846 134.435 113.846C134.435 110.379 133.635 105.846 132.569 103.846C129.635 98.5128 95.6353 65.3128 91.3687 63.5794C85.102 61.3128 77.902 61.9794 72.9687 65.3128Z",
@@ -69,10 +67,7 @@ const BADGE_VIEWBOX = "8.25 8.25 300 399";
 
 let gradientSeq = 0;
 
-// createElementNS everywhere: an <svg> made with createElement in an HTML document is an HTMLUnknownElement
-// and draws nothing. No builder takes an argument that could carry order data, so no code, address or
-// reference reaches a `d`, a `fill` or an `aria-label`.
-// Path data is copied verbatim from the app's own SVGs; the brand mark ships as a file the stylesheet draws.
+// SVG nodes must be created with createElementNS, because an <svg> made with createElement in an HTML document is an HTMLUnknownElement that draws nothing.
 export function badgeIcon(tier: BadgeTier): SVGElement {
   const id = `sb-badge-${tier}-${(gradientSeq += 1)}`;
   const gradient = shape("linearGradient", { id, x1: "0", y1: "0", x2: "0", y2: "1" });

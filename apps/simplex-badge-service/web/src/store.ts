@@ -10,9 +10,7 @@ export interface StorageLike {
   removeItem(key: string): void;
 }
 
-// Date.parse returns NaN for a value it cannot read, and NaN in a comparator makes every
-// comparison false, so the list ends up in whatever order the sort happened to produce.
-// An unreadable timestamp sorts oldest instead.
+// Date.parse returns NaN for an unreadable value, and NaN breaks the sort comparator, so an unreadable timestamp sorts oldest.
 function createdMs(o: OrderRecord): number {
   const t = Date.parse(o.createdAt);
   return Number.isNaN(t) ? Number.MIN_SAFE_INTEGER : t;
@@ -20,15 +18,10 @@ function createdMs(o: OrderRecord): number {
 
 const SESSION_KEY = "sb.session.v1";
 const ORDERS_KEY = "sb.orders.v1";
-// A key of its own, because the theme belongs to the device: it survives a checkout,
-// which clears the session, and [ Forget everything on this device ], which is about codes.
 const THEME_KEY = "sb.theme.v1";
 const CARD_RETURN_KEY = "sb.cardReturn.v1";
 const CAP = 50;
 
-/** A field that does not read is left out and the record kept, unlike a response, because the service
- * can be asked again and storage holds the one copy of a code. Only the identity and the status are
- * required, since a row with no order to point at has nothing to show. */
 function readOrder(value: unknown): OrderRecord | undefined {
   const o = asObject(value);
   if (o === undefined) return undefined;
@@ -77,28 +70,19 @@ function readSession(value: unknown): SessionRecord | undefined {
 export class Store {
   private wipes = 0;
 
-  /** `durable` is false for a store that accepts writes and loses them on the next load, which is
-   * what this page falls back to where the browser refuses `localStorage`. Every screen that
-   * promises the buyer their codes are kept has to read it. */
+  /** `durable` is false for the in-memory fallback used when the browser refuses `localStorage`. */
   constructor(private readonly storage: StorageLike, readonly durable = true) {}
 
-  /** Whether a code bought now could be kept at all: the store has to survive a reload, and the
-   * orders list has to have room that is not already holding someone's code. Read before the
-   * money, since afterwards the answer is only bad news. */
   canHoldACode(): boolean {
     if (!this.durable) return false;
     const list = this.orders();
     return list.length < CAP || list.some((o) => o.code === undefined);
   }
 
-  /** Whether this browser is really holding that code. A round trip through the store proves
-   * nothing on its own: the in-memory fallback answers with whatever it was just handed. */
   holdsCode(orderId: string, code: string | undefined): boolean {
     return this.durable && code !== undefined && this.order(orderId)?.code === code;
   }
 
-  // Missing, unreadable and not JSON all answer undefined: nothing is stored under this key
-  // that this build can use, and every caller has a value it falls back on.
   private read(key: string): unknown {
     try {
       const raw = this.storage.getItem(key);
@@ -135,9 +119,7 @@ export class Store {
     return list.flatMap((o) => readOrder(o) ?? []);
   }
 
-  // Replaces the stored entry rather than merging, which made an omitted key mean "keep what was there", so
-  // a caller that stopped writing a field kept reporting a payment the service no longer sends. Exceptions
-  // are what only this browser holds: a code, lost for good if dropped, and the card confirmation, never unset.
+  // The record replaces the stored entry, but the browser-only fields (code, submitted, canceled) are preserved because the service never sends them back.
   saveOrder(record: OrderRecord): boolean {
     const list = this.orders();
     const at = list.findIndex((o) => o.orderId === record.orderId);
@@ -194,7 +176,6 @@ export class Store {
     return this.write(CARD_RETURN_KEY, { orderId, at: atMs });
   }
 
-  /** The remembered order, cleared, if it was remembered within `withinMs` of `nowMs`; else undefined. */
   takeCardReturn(withinMs: number, nowMs: number): string | undefined {
     const held = this.read(CARD_RETURN_KEY);
     this.forget(CARD_RETURN_KEY);
@@ -208,15 +189,12 @@ export class Store {
     this.forget(CARD_RETURN_KEY);
   }
 
-  /** One `try` for both would let a throw on the first key leave the second one written. */
   forgetEverything(): void {
     this.wipes += 1;
     this.forget(ORDERS_KEY);
     this.forget(SESSION_KEY);
   }
 
-  /** Bumped by `forgetEverything`. A write awaited across it belongs to a store the buyer emptied,
-   * and "this cannot be undone" has to mean it. */
   get wipeCount(): number {
     return this.wipes;
   }

@@ -1,7 +1,4 @@
-// A buyer who cancels, goes to the list, and reopens the same order gets a watch built from the
-// record as it stood before the cancel. When that watch's first read fails it draws the address,
-// its QR and a countdown, and the cancel's answer corrects the record but repaints nothing. The
-// address is dead, so the answer has to reach the screen as well as the store.
+// A reopened order builds its watch from the record before the cancel, so the cancel's answer must reach the screen and not only the store.
 import assert from "node:assert/strict";
 import { headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
 import { ADDRESS, NOW, openReply, ORDER_ID, seededStorage, storedOrder } from "./open-order.js";
@@ -22,11 +19,10 @@ cancelTest("main: an accepted cancel takes the payable screen down, not just the
   await until(() => headingOf(screenOf(app)).startsWith("Send"), "the payment screen");
   page.confirmAnswer(true);
 
-  // the cancel holds on the wire while the buyer goes looking
+  // The cancel holds on the wire while the buyer goes looking.
   screenOf(app).all("button").find((b) => b.textContent === CANCEL_INVOICE)!.click();
   await settle();
 
-  // the menu, the list, and then the same order opened from it
   chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
   await settle();
   page.respondWith({ status: 500, body: { error: "internal" } });

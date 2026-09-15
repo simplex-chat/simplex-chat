@@ -68,8 +68,7 @@ import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 maxErrorBytes :: Int64
 maxErrorBytes = 4000
 
--- | A PaymentIntent is a couple of kilobytes; ten megabytes is far above anything Stripe
--- sends and far below what would cost the poller its thread.
+-- Far above any Stripe response, far below what would exhaust the poller thread.
 maxProviderBytes :: Int64
 maxProviderBytes = 10 * 1024 * 1024
 
@@ -79,8 +78,7 @@ secondsPerMinute = 60
 listPageSize :: Int
 listPageSize = 100
 
--- | A server that kept returning full pages, which it would if it ignored @limit@, would keep
--- this pass running and the poller would never reach its expiry sweep.
+-- Caps a server that ignores @limit@, so the poller still reaches its expiry sweep.
 maxListPages :: Int
 maxListPages = 50
 
@@ -92,14 +90,10 @@ pageCapReason =
     <> tshow (maxListPages * listPageSize)
     <> " was not read — and will not be read by a later pass either"
 
--- | Stripe pages by the last row's id. A page whose last row carries no id leaves no cursor, so
--- the rest cannot be walked; recorded rather than reported as a clean, fully accounted pass.
 untraversableReason :: Text
 untraversableReason =
   "stripe: the list reports more pages but the last row carries no id to page from, so any intent past this page was not read"
 
--- | The events worth queueing a read for. Anything else Stripe sends says nothing this service
--- acts on, and a hint it cannot use costs a queue slot.
 actedOnStripeEvents :: [Text]
 actedOnStripeEvents = ["payment_intent.succeeded", "payment_intent.payment_failed", "payment_intent.canceled"]
 
@@ -109,8 +103,7 @@ sigHeaderName = "Stripe-Signature"
 listWhat :: Text
 listWhat = "list intents"
 
--- | Pins every call off the account's default version, so the PaymentIntent response shapes this
--- adapter parses do not shift under it.
+-- Pin the API version so response shapes this adapter parses do not shift under it.
 stripeApiVersion :: ByteString
 stripeApiVersion = "2026-03-25.dahlia"
 
@@ -130,14 +123,6 @@ stripeProvider cfg = do
         pVerifyWebhook = verifyStripeSig (sWebhookSecret cfg)
       }
 
--- | Lists PaymentIntents created within the settle window and pages with @starting_after@ while
--- Stripe reports more. The list carries every status and 'signalOf' classifies each row, so a
--- settlement the webhook missed is still caught. The window mirrors the BTCPay list: the settle
--- window plus an invoice's own lifetime, since an intent created that long ago can still be paid.
--- List rows carry no expanded charge, so a settled row settles at read time via 'signalOf'. A
--- non-2xx from the shared helper, a 429 among them, aborts the whole pass: a payment may have
--- landed where a partial list cannot see it, and the poller must not expire an order over money
--- missed.
 listOpen :: StripeEnv -> IO (Either ProviderError ListPass)
 listOpen env@StripeEnv {seCfg} = do
   now <- getCurrentTime
@@ -165,9 +150,6 @@ listOpen env@StripeEnv {seCfg} = do
                     else pure (Right acc')
     merge a b = ListPass {lpMoved = lpMoved a <> lpMoved b, lpSkipped = lpSkipped a <> lpSkipped b}
 
--- | One intent at a time, so a single row this build cannot read is skipped rather than failing
--- the whole page: a row with no @id@ is a skip the pass cannot name, one whose status this build
--- does not know is a skip that names it. No row fails the pass, so this is total.
 intentsPass :: UTCTime -> [J.Value] -> ListPass
 intentsPass now = foldr add (ListPass [] [])
   where
@@ -178,7 +160,6 @@ intentsPass now = foldr add (ListPass [] [])
         Right Nothing -> pass
         Right (Just sig) -> pass {lpMoved = (irId ir, sig) : lpMoved pass}
 
--- | The id of an intent we could not otherwise read, so the skip can name it.
 intentIdOf :: J.Value -> Maybe Text
 intentIdOf v = case J.fromJSON v :: J.Result (KM.KeyMap J.Value) of
   J.Success o -> case KM.lookup "id" o of
@@ -197,10 +178,7 @@ instance J.FromJSON IntentList where
   parseJSON = J.withObject "intent list" $ \o ->
     IntentList <$> o J..: "data" <*> o J..:? "has_more" J..!= False
 
--- | Constant-time over the raw bytes. Stripe signs @"{t}.{body}"@, so the signed payload is the
--- timestamp, a literal dot, then the body exactly as it arrived. The timestamp's replay window is
--- not checked: a verified webhook only re-queues an authenticated read of the invoice, which is
--- idempotent, so a replayed delivery settles nothing a fresh one would not.
+-- Constant-time over the raw bytes. Stripe signs "{t}.{body}", so hash the timestamp, a dot, then the body as it arrived.
 verifyStripeSig :: Text -> [Header] -> ByteString -> Either WebhookError (Maybe Text)
 verifyStripeSig secret hdrs body = do
   raw <- note "missing Stripe-Signature header" (lookup sigHeaderName hdrs)
@@ -221,9 +199,6 @@ verifyStripeSig secret hdrs body = do
       SEvent {seType, seRef} <- J.decodeStrict' body
       if seType `elem` actedOnStripeEvents then Just seRef else Nothing
 
--- | Reads @t@ and every @v1@ from Stripe's comma-separated @k=v@ header. A rotation sends one
--- @v1@ per active secret, so all are kept. Extra schemes (@v0@, and the rest) are ignored; a
--- missing @t@ or no @v1@ at all is a malformed header.
 parseStripeSig :: ByteString -> Maybe (ByteString, [ByteString])
 parseStripeSig raw = do
   let pairs = [(k, B8.drop 1 rest) | part <- B8.split ',' raw, let (k, rest) = B8.break (== '=') part, not (B8.null rest)]
@@ -232,8 +207,6 @@ parseStripeSig raw = do
     [] -> Nothing
     v1s -> Just (t, v1s)
 
--- | The PaymentIntent id (@data.object.id@, a @pi_…@) an acted-on event carries, which the poller
--- reads back. The provider ref is that id, so no metadata round-trip is needed.
 data SEvent = SEvent {seType :: Text, seRef :: Text}
 
 instance J.FromJSON SEvent where
@@ -256,8 +229,7 @@ createInvoice env (SPMCard CPStripe) OrderDraft {odAmount = CurrencyAmount minor
   let form =
         [ ("amount", B8.pack (show minor)),
           ("currency", TE.encodeUtf8 (T.toLower odCurrency)),
-          -- card only: no redirect-based method is offered, so the client confirm never navigates the
-          -- top window; the buyer stays in the embedded frame
+          -- Only card is offered, because a redirect-based method would navigate the top window out of the embedded frame.
           ("allowed_payment_method_types[]", "card")
         ]
   created <- stripeApi env what methodPost ["v1", "payment_intents"] [] (Just form)
@@ -278,10 +250,6 @@ readInvoice env pid = do
   where
     what = "read intent " <> pid
 
--- | Settlement keys on the PaymentIntent status read from the provider, never on status alone in the
--- record. There is no card partial, so this never produces 'SigFunded'. Shared with the list pass, so
--- it is top-level and takes the read time (a list row carries no expanded charge). @amount_received@
--- is what the buyer actually paid; a canceled intent captured nothing, so its received amount is zero.
 signalOf :: UTCTime -> IntentRead -> Either ProviderError (Maybe PaymentSignal)
 signalOf now IntentRead {irStatus, irAmountReceived, irChargeCreated} =
   case irStatus of
@@ -294,8 +262,7 @@ signalOf now IntentRead {irStatus, irAmountReceived, irChargeCreated} =
     received amt = Received {rcvAmount = amountFrom amt, rcvCrypto = Nothing, rcvDue = Nothing}
     settledAt = maybe now posixSecondsToUTCTime irChargeCreated
 
--- | Stripe sends the total in minor units as an integer. The clamp stops a wildly wrong figure
--- wrapping a Word32 and coming out small.
+-- Clamp stops a wildly wrong figure wrapping Word32 and coming out small.
 amountFrom :: Int64 -> CurrencyAmount
 amountFrom n = CurrencyAmount (fromInteger (max 0 (min largestAmount (toInteger n))))
   where
@@ -339,8 +306,7 @@ stripeApi ::
 stripeApi StripeEnv {seCfg, seManager} what verb segments query form = do
   r <- try $ do
     req0 <- parseRequest (T.unpack url)
-    -- applyBasicAuth appends the Authorization header, so it must wrap the record update rather
-    -- than precede it: updating requestHeaders after it would drop the header it added.
+    -- applyBasicAuth must wrap the record update, because updating requestHeaders after it would drop the header it adds.
     let req =
           applyBasicAuth (TE.encodeUtf8 (sSecretKey seCfg)) "" $
             req0

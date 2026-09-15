@@ -74,7 +74,6 @@ import Simplex.Chat.PaymentService.Types
   )
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 
--- | Not configurable, so we log them at startup beside the ids the store reports.
 btcMethodId, xmrMethodId :: Text
 btcMethodId = "BTC-CHAIN"
 xmrMethodId = "XMR-CHAIN"
@@ -82,24 +81,20 @@ xmrMethodId = "XMR-CHAIN"
 knownMethodIds :: [Text]
 knownMethodIds = [btcMethodId, xmrMethodId]
 
--- | The deliveries worth queueing a read for. Anything else BTCPay sends says nothing this
--- service acts on, and a hint it cannot use costs a queue slot.
 actedOnEventTypes :: [Text]
 actedOnEventTypes = ["InvoiceProcessing", "InvoiceSettled", "InvoiceExpired", "InvoiceInvalid"]
 
 maxErrorBytes :: Int64
 maxErrorBytes = 4000
 
--- | A page of a hundred invoices with their payment methods is tens of kilobytes. Ten megabytes
--- is far above anything BTCPay sends and far below what would cost the poller its thread.
+-- Far above any BTCPay response, far below what would exhaust the poller thread.
 maxProviderBytes :: Int64
 maxProviderBytes = 10 * 1024 * 1024
 
 listPageSize :: Int
 listPageSize = 100
 
--- | A server that kept returning full pages, which it would if it ignored @take@, would
--- keep this pass running and the poller would never reach its expiry sweep.
+-- Caps a server that ignores @take@, so the poller still reaches its expiry sweep.
 maxListPages :: Int
 maxListPages = 50
 
@@ -111,7 +106,6 @@ pageCapReason =
     <> tshow (maxListPages * listPageSize)
     <> " was not read — and will not be read by a later pass either"
 
--- | Integer arithmetic only. A rounding mistake here charges the wrong amount.
 minorToDecimal :: CurrencyAmount -> Text
 minorToDecimal (CurrencyAmount a) =
   T.pack (show (a `div` 100)) <> "." <> T.justifyRight 2 '0' (T.pack (show (a `mod` 100)))
@@ -122,8 +116,7 @@ cryptoTarget = \case
   SPMCrypto CCXmr -> Right (xmrMethodId, CCXmr)
   SPMCard _ -> Left (ProviderError "btcpay offers no card payment method")
 
--- | BTCPay sends numbers as JSON strings. We keep the text exactly as it arrived, since
--- that is what we store and show, plus an exact decimal to calculate with.
+-- BTCPay sends numbers as JSON strings; keep the exact text as sent, plus a decimal to compute with.
 data WireNum = WireNum {wnText :: Text, wnValue :: Scientific}
   deriving (Eq, Show)
 
@@ -138,15 +131,11 @@ instance J.FromJSON WireNum where
       | otherwise -> outOfRange v
     v -> JT.typeMismatch "numeric string" v
     where
-      -- the exponent decides before anything rounds or formats: `1e1000000000` parses fine and
-      -- then asks for a billion digits, which exhausts the heap on the poller thread. The
-      -- refusal names the exponent alone for the same reason.
+      -- Check the exponent before formatting: 1e1000000000 parses but then demands a billion digits.
       inRange v = base10Exponent v >= minExponent && base10Exponent v <= maxExponent
       outOfRange v = fail ("decimal exponent out of range: " <> show (base10Exponent v))
 
--- | Not a check on the figure, which `toMinorUnits` clamps and the catalog bounds: only on the
--- magnitude, so nothing asks for a number with more digits than a machine can hold. A rate
--- carrying a repeating division at full decimal scale is well inside this.
+-- Bounds the magnitude only, so no number demands more digits than a machine can hold.
 minExponent, maxExponent :: Int
 minExponent = -64
 maxExponent = 64
@@ -170,9 +159,8 @@ instance J.FromJSON GInvoice where
       <*> o J..:? "additionalStatus"
       <*> o J..:? "paymentMethods"
 
--- | @totalPaid@ is deliberately not decoded: it is everything paid on the invoice
--- converted into this method's currency, so it is non-zero even when this method got
--- nothing.
+-- totalPaid is not decoded because it counts every method's payment in this currency, so it is non-zero
+-- even when this method got nothing.
 data GPaymentMethod = GPaymentMethod
   { gpmId :: Text,
     gpmDestination :: Maybe Text,
@@ -240,8 +228,7 @@ btcpayProvider cfg = do
         pVerifyWebhook = verifyBTCPaySig (bWebhookSecret cfg)
       }
 
--- | `enabledOnly`, because the unfiltered list includes methods that are configured and
--- switched off, and a checkout on one of those is refused with "no matching payment method".
+-- enabledOnly returns only enabled methods, so the boot log shows what the store can actually use.
 logStoreMethods :: BTCPayEnv -> IO ()
 logStoreMethods env@BTCPayEnv {beCfg} = do
   r <- greenfield env what methodGet ["payment-methods"] [("enabledOnly", Just "true")] Nothing
@@ -268,8 +255,6 @@ createInvoice env@BTCPayEnv {beCfg} spm OrderDraft {odAmount, odCurrency} =
     Right (methodId, cc) -> do
       created <- greenfield env what methodPost ["invoices"] [] (Just (body methodId))
       case created >>= decodeGreenfield what of
-        -- the request too, not only the answer: a refusal we cannot reproduce is a refusal we
-        -- cannot fix, and this body carries no secret
         Left e@(ProviderError m) -> do
           logWarn ("btcpay: the refused request was " <> safeDecodeUtf8 (LB.toStrict (J.encode (body methodId))) <> " -- " <> m)
           pure (Left e)
@@ -361,13 +346,8 @@ listWhat = "list invoices"
 listSignals :: UTCTime -> LB.ByteString -> Either ProviderError ListPass
 listSignals now body = decodeGreenfield listWhat body >>= invoicesPass now
 
--- | An invoice we do not understand is skipped rather than failing the pass, since a
--- status we do not know will not start working later and every pass would fail alike. That
--- covers one we cannot even parse: the elements are read one at a time, or a single malformed
--- @payments@ entry would fail the decode of the whole page and no invoice would ever settle.
--- @paymentMethods@ absent or null does fail: it means @includePaymentMethods@ was ignored, and
--- skipping would leave us reporting healthy empty passes. One of a shape this build cannot read
--- is a skip like any other, which still holds the sweep back.
+-- When paymentMethods is absent or null the pass fails, because that means includePaymentMethods was ignored, and a
+-- skip would report a healthy empty pass. Every other unreadable invoice is skipped, not failed.
 invoicesPass :: UTCTime -> [J.Value] -> Either ProviderError ListPass
 invoicesPass now invs = foldr add (Right ListPass {lpMoved = [], lpSkipped = []}) invs
   where
@@ -384,8 +364,6 @@ invoicesPass now invs = foldr add (Right ListPass {lpMoved = [], lpSkipped = []}
         Right Nothing -> Right pass
         Right (Just sig) -> Right pass {lpMoved = (giId, sig) : lpMoved pass}
 
--- | The id of an invoice we could not otherwise read, so the skip can name it. Without one the
--- pass counts as unaccounted for, which is what holds the sweep back.
 invoiceIdOf :: J.Value -> Maybe Text
 invoiceIdOf v = case J.fromJSON v :: J.Result (KM.KeyMap J.Value) of
   J.Success o -> case KM.lookup "id" o of
@@ -402,8 +380,7 @@ paymentMethodsSignal :: UTCTime -> Text -> Text -> LB.ByteString -> Either Provi
 paymentMethodsSignal now ref status body =
   decodeGreenfield "read invoice" body >>= invoiceSignal now ref status
 
--- | There is no @Complete@ case: that is the old API's name and would never match. An
--- unknown status is an error, since 'Nothing' would claim the invoice had not changed.
+-- Complete is the old API's status name and never matches, so it has no case here.
 invoiceSignal :: UTCTime -> Text -> Text -> [GPaymentMethod] -> Either ProviderError (Maybe PaymentSignal)
 invoiceSignal now ref status ms = do
   m@GPaymentMethod {gpmRate, gpmPaid, gpmDue} <- chooseMethod ref ms
@@ -457,8 +434,7 @@ receivedOf rate paid due =
       rcvDue = wnText <$> due
     }
 
--- | Rounds half to even, so half a cent does not become a cent nobody sent. The clamp
--- stops a wildly wrong figure wrapping a Word32 and coming out small.
+-- Clamp stops a wildly wrong figure wrapping Word32 and coming out small.
 toMinorUnits :: Scientific -> CurrencyAmount
 toMinorUnits s = CurrencyAmount (fromInteger (max 0 (min largestAmount (round (s * 100)))))
   where
@@ -479,8 +455,7 @@ sigHeaderName = "BTCPay-Sig"
 sigPrefix :: B.ByteString
 sigPrefix = "sha256="
 
--- | Constant-time. The body must be the bytes as they arrived: BTCPay sends its payload
--- indented, so parsing and re-encoding would never match.
+-- Constant-time, over the bytes as they arrived: BTCPay indents its payload, so re-encoding would not match.
 verifyBTCPaySig :: Text -> [Header] -> B.ByteString -> Either WebhookError (Maybe Text)
 verifyBTCPaySig secret hdrs body = do
   provided <- note "missing BTCPay-Sig header" (lookup sigHeaderName hdrs)
@@ -513,9 +488,7 @@ greenfield BTCPayEnv {beCfg, beManager} what verb segments query body = do
                 ],
               requestBody = RequestBodyLBS (maybe LB.empty J.encode body)
             }
-    -- read to a bound rather than whole: a page of invoices is tens of kilobytes, and a
-    -- provider answering with something enormous would otherwise be held in memory entire
-    -- on the poller thread, which is the one thread that settles orders
+    -- Read to a bound, not the whole body, so an enormous response cannot exhaust the poller thread.
     withResponse asked beManager $ \resp -> do
       taken <- brReadSome (responseBody resp) (fromIntegral maxProviderBytes + 1)
       pure (statusCode (responseStatus resp), taken)
@@ -537,8 +510,7 @@ greenfield BTCPayEnv {beCfg, beManager} what verb segments query body = do
         <> T.intercalate "/" (map escape (bStoreId beCfg : segments))
         <> TE.decodeUtf8 (renderQuery True query)
     escape = TE.decodeUtf8 . urlEncode False . TE.encodeUtf8
-    -- BTCPay answers a refusal with its own creation log inline, and the reason is at the end
-    -- of it. Truncating to a couple of hundred bytes hid why a sale could not be made.
+    -- BTCPay puts the refusal reason at the end of an inline log, so keep enough bytes to reach it.
     snippet = TE.decodeUtf8With (\_ _ -> Just '?') . LB.toStrict . LB.take maxErrorBytes
 
 decodeGreenfield :: J.FromJSON a => Text -> LB.ByteString -> Either ProviderError a

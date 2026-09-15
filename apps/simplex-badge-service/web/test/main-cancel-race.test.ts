@@ -1,6 +1,4 @@
-// A payment landing during the cancel's round trip to the provider. The invoice is cancelled
-// anyway, so the answer is `expired` with a figure on it, and reading the status alone would send
-// the buyer off to a new purchase with money on an address nothing can reach.
+// A payment can land during the cancel's round trip, so the answer is expired with a figure on it, and reading the status alone would send the buyer to a new purchase with money stuck.
 import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { headingOf, installPage, screenOf, timedTest, until } from "./boot.js";
@@ -34,10 +32,7 @@ raceTest("main: a cancel that raced a payment leaves the buyer on the order", as
   page.confirmAnswer(true);
   page.respondWith(cancelledWithPayment);
   screenOf(app).all("button").find((b) => b.textContent === CANCEL_INVOICE)!.click();
-  // The click's POST took the reply above, synchronously. The restart's FIRST read is the one that
-  // decides what the buyer sees, and failing it is the case that matters: the loop then falls back
-  // on the record it holds, and the copy from before the cancel still names the address and asks
-  // for the full amount at it.
+  // The restart's first read decides what the buyer sees, and failing it makes the loop fall back on the record, which still names the address.
   page.respondWith({ status: 500, body: { error: "internal" } });
   await until(() => headingOf(screenOf(app)) === "This invoice expired",
     "the closed-window screen, not the payment screen it replaced");
@@ -47,6 +42,5 @@ raceTest("main: a cancel that raced a payment leaves the buyer on the order", as
   assert.ok(!screenOf(app).textContent.includes("Choose your level"),
     "and not the landing screen either");
 
-  // the record is what this screen is drawn from, and it is the one the cancel wrote
   assert.ok(screenOf(app).textContent.includes(ORDER_ID), "the reference support reconciles against");
 });

@@ -325,9 +325,8 @@ someExpiry = UTCTime (fromGregorian 2030 1 1) 0
 someCreated :: UTCTime
 someCreated = UTCTime (fromGregorian 2026 8 31) 0
 
--- | 32 bytes, all above 0x7f, so the value is not valid UTF-8. An ASCII hash would prove
--- nothing: postgresql-simple writes a plain ByteString as escaped text, so at one point
--- every store test passed on both backends while every checkout 500'd on Postgres.
+-- | These 32 bytes are all above 0x7f, so the value is not valid UTF-8 and catches the
+-- postgresql-simple bug where a plain ByteString is written as escaped text.
 digestFixture :: Word8 -> ByteString
 digestFixture n = BS.pack [0x80 + ((n * 7 + i) `mod` 0x80) | i <- [0 .. 31]]
 
@@ -551,7 +550,7 @@ withSeededCheckout action =
 testTimestampRoundTrip :: IO ()
 testTimestampRoundTrip = withServiceStore $ \st -> do
   seedBadgePrice st "price1"
-  let subSecond = UTCTime (fromGregorian 2026 8 31) (picosecondsToDiffTime 12500000000000) -- 12.5s
+  let subSecond = UTCTime (fromGregorian 2026 8 31) (picosecondsToDiffTime 12500000000000)
       truncated = UTCTime (fromGregorian 2026 8 31) (picosecondsToDiffTime 12000000000000)
       ni = sampleInvoice {niExpiresAt = subSecond, niCreatedAt = subSecond}
   createInvoiceRows st ni `shouldReturn` Right ()
@@ -623,10 +622,9 @@ stubProvider ref =
       pVerifyWebhook = verifyRecording ref
     }
 
--- | 'unsafePerformIO' because 'pVerifyWebhook' is pure by design and a pure function
--- cannot record what it was given. Safe here: the effect cannot be duplicated, inlined
--- or floated out, and every assertion is an exact list of calls, so a lost or repeated
--- effect fails the test rather than passing it.
+-- | 'pVerifyWebhook' is pure by design, so recording its arguments needs 'unsafePerformIO',
+-- and the NOINLINE effect is safe because every assertion checks an exact list of calls, so a
+-- lost or repeated recording fails the test rather than passing it.
 verifyRecording :: IORef StubState -> [Header] -> ByteString -> Either WebhookError (Maybe Text)
 verifyRecording ref hdrs body = unsafePerformIO $ do
   atomicModifyIORef' ref $ \s -> (s {ssWebhooks = ssWebhooks s ++ [(hdrs, body)]}, ())
@@ -685,9 +683,8 @@ testStubProviderNotCalledWhenSkipped = do
   ref <- newIORef (newStubState (Right sampleProviderInvoice))
   stubCalls ref `shouldReturn` []
 
--- | Every test below is bounded. This suite has hung rather than failed before, and a
--- hang reports a truncated count instead of an error. Shorter than the 30s hold, so a
--- test that waits when it should not fails here instead of passing slowly.
+-- | This ceiling is shorter than the 30s hold, so a test that waits when it should not fails
+-- here instead of hanging.
 exampleCeiling :: Int
 exampleCeiling = 20 * 1000000
 
@@ -754,7 +751,6 @@ testServeWebappOff =
         (statusOf <$> webGet client "/") >>= (`shouldBe` 404)
         (statusOf <$> webGet client "/sw.js") >>= (`shouldBe` 404)
         (statusOf <$> webGet client ("/assets/" <> buildHash <> "/main.js")) >>= (`shouldBe` 404)
-        -- the API is unaffected: an empty create is a 400, never a 404 or a 405
         created <- webRequest client "POST" "/api/invoice" []
         statusOf created `shouldSatisfy` (\s -> s /= 404 && s /= 405)
 
@@ -853,8 +849,6 @@ seedOpenInvoice WebEnv {weStore} = do
   createInvoiceRows weStore sampleInvoice `shouldReturn` Right ()
   pure (niInvoiceId sampleInvoice)
 
--- | A read that must park, then be released by the trigger and not by the timer. Parking first
--- is the point: an answer that arrives without the trigger proves nothing about the wake-up.
 wokenBy :: HasCallStack => WebClient -> InvoiceId -> IO () -> Text -> IO J.Object
 wokenBy client iid trigger expected = do
   started <- getCurrentTime
@@ -871,8 +865,8 @@ wokenBy client iid trigger expected = do
   elapsed `shouldSatisfy` (< 1)
   pure o
 
--- | Long enough for the request to reach the hold, short enough to leave the whole check
--- well inside the one second a woken answer is allowed.
+-- | This delay is long enough for the request to reach the hold and short enough to keep the
+-- whole check within the one second a woken answer is allowed.
 holdParkDelay :: Int
 holdParkDelay = 100000
 
@@ -895,9 +889,6 @@ breakStore st = withConnection st $ \db ->
 readsPerMinute :: Int
 readsPerMinute = lmPerMinute readLimit
 
--- | `/assets/<hash>/%2e%2e/%2e%2e/index.html` resolves to the shell. Reading the cache rule off
--- the request would hand a shared cache the page for a year, which is the exact skew `sw.js`
--- exists to prevent: a pinned shell goes on asking for a build that is no longer served.
 testCachingFollowsTheResolvedPath :: IO ()
 testCachingFollowsTheResolvedPath = bounded "cache by resolved path" $ withWebApp $ \_ client -> do
   asset <- webGet client ("/assets/" <> buildHash <> "/main.js")
@@ -949,9 +940,6 @@ testServesTheBuild = bounded "serves the build" $ withWebApp $ \_ client -> do
   missing <- webGet client ("/assets/" <> buildHash <> "/absent.js")
   statusOf missing `shouldBe` 404
 
--- | `npm run build` writes this, and it is what `static_dir` points at in a deployment. It is
--- a build artefact and not in the repository, so a checkout that has not been built has nothing
--- to serve and this test says so rather than failing over a file it never expected to find.
 builtSiteDir :: FilePath
 builtSiteDir = "apps" </> "simplex-badge-service" </> "web" </> "dist"
 
@@ -1108,8 +1096,6 @@ testWaitAnswersAtOnce = bounded "wait answers at once" $ withWebApp $ \env clien
   fieldOf terminalObject "status" `shouldBe` Just (J.String "paid")
   terminalElapsed `shouldSatisfy` (< 1)
 
--- | The counter a hold watches starts at zero, so a payment recorded before the request arrived
--- can never wake it. The browser says what it has rendered; anything else answers at once.
 testHoldAnswersAPaymentThePageHasNotSeen :: IO ()
 testHoldAnswersAPaymentThePageHasNotSeen = bounded "hold sees the payment" $ withWebApp $ \env client -> do
   iid <- seedOpenInvoice env
@@ -1119,16 +1105,12 @@ testHoldAnswersAPaymentThePageHasNotSeen = bounded "hold sees the payment" $ wit
   staleElapsed `shouldSatisfy` (< 1)
   staleObject <- jsonObject stale
   fieldOf staleObject "cryptoAmountPaid" `shouldBe` Just (J.String "0.00020000")
-  -- and a page that has already rendered that figure still waits for the next change
   held <- async $ webGet client (invoicePath iid <> "?wait=open&seenPaid=0.00020000")
   threadDelay 100000
   Async.poll held >>= (`shouldSatisfy` isNothing)
   markPaidAndPublish env iid
   statusOf <$> wait held `shouldReturn` 200
 
--- | Monero reports an invoice as confirming while its figures are still zero, so the verdict
--- arrives with no figure to go with it. It is the whole difference between the payment screen
--- and the confirming one, and a hold that ignored it would sit on the wrong screen.
 testHoldAnswersAVerdictWithNoFigure :: IO ()
 testHoldAnswersAVerdictWithNoFigure = bounded "hold sees the verdict" $ withWebApp $ \env client -> do
   iid <- seedOpenInvoice env
@@ -1139,7 +1121,6 @@ testHoldAnswersAVerdictWithNoFigure = bounded "hold sees the verdict" $ withWebA
   o <- jsonObject r
   fieldOf o "paidInFull" `shouldBe` Just (J.Bool True)
   fieldOf o "cryptoAmountPaid" `shouldBe` Nothing
-  -- and a page that has already rendered the verdict waits for whatever comes next
   held <- async $ webGet client (invoicePath iid <> "?wait=open&seenPaid=&seenFull=1")
   threadDelay 100000
   Async.poll held >>= (`shouldSatisfy` isNothing)
@@ -1167,8 +1148,6 @@ testReadRateLimit = bounded "read rate limit" $ withWebApp $ \_ client -> do
 testForwardedForOnlyWhenTrusted :: IO ()
 testForwardedForOnlyWhenTrusted = bounded "forwarded-for" $ do
   let target = "/api/invoice/no-such-invoice"
-      -- what a caller can write, then what the proxy appends: nginx's
-      -- proxy_add_x_forwarded_for puts the peer it saw last
       forgedBy i = ("X-Forwarded-For", BC.pack ("203.0.113." <> show (i :: Int)) <> ", 10.0.0.1")
       proxiedFor i = ("X-Forwarded-For", BC.pack ("10.0.0." <> show (i :: Int)))
   withWebApp $ \_ client -> do
@@ -1176,13 +1155,11 @@ testForwardedForOnlyWhenTrusted = bounded "forwarded-for" $ do
     forged `shouldSatisfy` all (== 404)
     refused <- webRequest client "GET" target [forgedBy (readsPerMinute + 1)]
     statusOf refused `shouldBe` 429
-  -- trusted, and the caller varies every entry but the last: one bucket, so the limit holds
   withWebAppForwarded True $ \_ client -> do
     forged <- mapM (\i -> statusOf <$> webRequest client "GET" target [forgedBy i]) [1 .. readsPerMinute]
     forged `shouldSatisfy` all (== 404)
     refused <- webRequest client "GET" target [forgedBy (readsPerMinute + 1)]
     statusOf refused `shouldBe` 429
-  -- and two clients the proxy really saw apart are counted apart
   withWebAppForwarded True $ \_ client -> do
     first' <- mapM (\_ -> statusOf <$> webRequest client "GET" target [proxiedFor 1]) [1 .. readsPerMinute]
     first' `shouldSatisfy` all (== 404)
@@ -1219,11 +1196,6 @@ testBucketsStayBounded = bounded "bucket cap" $ withWebApp $ \env _ -> do
   answers <- mapM (\_ -> takeToken env readLimit "203.0.113.9") [1 .. readsPerMinute + 1]
   length (filter isJust answers) `shouldBe` 1
 
-  -- A refusal has to write the reclaimed map back too, or every refused request redoes the
-  -- filtering over a map that never shrinks: under a flood the limiter becomes the amplifier.
-  -- The refusal has to land while the map is over the cap, which is why the flood comes second.
-  -- `reclaim` runs before the insert, so an allowed call never leaves the map above the cap.
-  -- Filling to exactly the cap makes the refusal below the call that has to do the reclaiming.
   let fill i = do
         n <- Map.size <$> readTVarIO (weBuckets env)
         when (n < maxBuckets) $ do
@@ -1234,8 +1206,6 @@ testBucketsStayBounded = bounded "bucket cap" $ withWebApp $ \env _ -> do
   atTheCap `shouldBe` maxBuckets
   refusedAgain <- takeToken env readLimit "203.0.113.9"
   refusedAgain `shouldSatisfy` isJust
-  -- the half, not merely one fewer: dropping a single bucket per refusal would still sort the
-  -- whole map on every refused request, which is the cost this write-back exists to stop paying
   afterARefusal <- Map.size <$> readTVarIO (weBuckets env)
   afterARefusal `shouldSatisfy` (<= atTheCap `div` 2 + 1)
 
@@ -1629,13 +1599,11 @@ testCardCreatesSession = bounded "card creates a session" $ withFakeStripePoller
   irStatus row `shouldBe` ISOpen
   bcPaymentStatus <$> settledCode (weStore env) invId `shouldReturn` CPSUnpaid
 
--- | Distinct from the default 60 and from the btcpay window (45), so a card expiry drawn from the
--- wrong key would read as one of those instead.
+-- | This value differs from the default 60 and the btcpay window 45, so a card expiry read from
+-- the wrong key would show up as one of those instead.
 cardSessionMinutes :: Int
 cardSessionMinutes = 90
 
--- | The deadline shown and stored for a card order comes from stripe.session_minutes, the service's
--- own invoice window, not the btcpay window. A PaymentIntent carries no Stripe-side expiry.
 testCardExpiryFollowsSessionMinutes :: IO ()
 testCardExpiryFollowsSessionMinutes = bounded "card expiry from session_minutes" $
   withFakeStripe $ \fake ->
@@ -1686,8 +1654,8 @@ testProviderFailureWritesNothing = bounded "provider failure" $ withCheckout $ \
   invoiceCount (weStore env) `shouldReturn` 0
   codeHashExists (weStore env) (codeDigest sampleCode) `shouldReturn` False
 
--- | provider_ref is unique, so a test creating several invoices has to vary it the way a
--- real provider would.
+-- | provider_ref is unique, so a test that creates several invoices must vary it as a real
+-- provider would.
 distinctProviderRefs :: IORef StubState -> Provider
 distinctProviderRefs ref =
   let stub = stubProvider ref
@@ -1719,9 +1687,8 @@ settleAt = UTCTime (fromGregorian 2026 9 2) (secondsToDiffTime (12 * 3600 + 34 *
 replayAt :: UTCTime
 replayAt = addUTCTime 3600 settleAt
 
--- | We always find out later than the payment happened, so the tests pass this as now and
--- settleAt inside the signal. One value for both would let a build that wrote the wrong
--- one still pass.
+-- | The service always learns of settlement later than it happened, so this differs from
+-- settleAt, and using one value for both would let a build that wrote the wrong one still pass.
 detectedAt :: UTCTime
 detectedAt = addUTCTime 300 settleAt
 
@@ -1746,8 +1713,6 @@ paymentRow st iid =
     Just InvoiceRow {irPayment = Just p} -> pure p
     _ -> failWith "no payment row"
 
--- | The badge_codes row an invoice points at, read directly: the service reaches it only
--- through the code hash at redemption, so there is no production query to borrow.
 data CodeRow = CodeRow {bcPaymentStatus :: BadgeCodePaymentStatus, bcExpiresAt :: Maybe UTCTime, bcRevokedAt :: Maybe UTCTime}
   deriving (Eq, Show)
 
@@ -1770,9 +1735,9 @@ touchInvoice :: DBStore -> InvoiceId -> UTCTime -> IO ()
 touchInvoice st (InvoiceId iid) at = withConnection st $ \db ->
   DB.execute db "UPDATE sx_badge_service_invoices SET updated_at = ? WHERE invoice_id = ?" (at, iid)
 
--- | Not through the DBStore: on SQLite it serialises access behind one connection, so a
--- read taken during a transaction would wait for it rather than see what it has not
--- committed, which is exactly what testPublishIsAfterCommit needs to see.
+-- | On SQLite the DBStore serialises access behind one connection, so a read taken through it
+-- during a transaction would block rather than see uncommitted state; testPublishIsAfterCommit
+-- needs this read to open its own connection instead.
 independentStatus :: DBStore -> InvoiceId -> IO (Maybe Text)
 #if defined(dbPostgres)
 independentStatus st (InvoiceId iid) = withConnection st $ \db -> do
@@ -1792,9 +1757,9 @@ independentStatus DBStore {dbFilePath} (InvoiceId iid) = E.bracket (SQL.open dbF
     locked _ = pure Nothing
 #endif
 
--- | Expires the invoice from inside the settling transaction, which is the moment the
--- status guard is about. A trigger rather than a thread, because the SQLite store puts
--- every access behind one connection and so cannot have a concurrent writer.
+-- | This trigger expires the invoice from inside the settling transaction, and it is a trigger
+-- rather than a concurrent thread because the SQLite store puts every access behind one
+-- connection and so cannot have a concurrent writer.
 expireOnNextPayment :: DBStore -> IO ()
 #if defined(dbPostgres)
 expireOnNextPayment st = withConnection st $ \db -> do
@@ -1976,9 +1941,6 @@ testSettlementWakesAHeldRequest = bounded "settlement wakes a hold" $ withWebApp
   o <- wokenBy client iid settled "paid"
   fieldOf o "amountPaid" `shouldBe` Just (J.Number 500)
 
--- | The upper half of the clamp. A provider sending `receivedDate` in milliseconds gives an
--- instant tens of thousands of years out, which the lower bound cannot catch: it would put the
--- code's deadline past any clock that will read it, so the code never expires.
 testFutureSettledInstantIsRefused :: IO ()
 testFutureSettledInstantIsRefused = bounded "future settled instant" $ withWebApp $ \env client -> do
   iid <- seedOpenInvoice env
@@ -1987,14 +1949,10 @@ testFutureSettledInstantIsRefused = bounded "future settled instant" $ withWebAp
     `shouldReturn` Right ISPaid
   code <- settledCode (weStore env) iid
   bcPaymentStatus code `shouldBe` CPSPaid
-  -- a year from when we learned of it, not from a clock we cannot believe
   bcExpiresAt code `shouldBe` Just (addUTCTime codeLifetime detectedAt)
   o <- jsonObject =<< webGet client (invoicePath iid)
   fieldOf o "settledAt" `shouldBe` Just (J.toJSON detectedAt)
 
--- | The lower half. `toMinorUnits` clamps what the provider says about money, and this clamps
--- what it says about time: the instant lands in two rows and in the code's redemption deadline,
--- so a zero would hand the buyer a code that expired decades ago.
 testAbsurdSettledInstantIsRefused :: IO ()
 testAbsurdSettledInstantIsRefused = bounded "absurd settled instant" $ withWebApp $ \env client -> do
   iid <- seedOpenInvoice env
@@ -2003,9 +1961,7 @@ testAbsurdSettledInstantIsRefused = bounded "absurd settled instant" $ withWebAp
     `shouldReturn` Right ISPaid
   code <- settledCode (weStore env) iid
   bcPaymentStatus code `shouldBe` CPSPaid
-  -- the deadline is a year from when we learned of it, not from an instant the provider invented
   bcExpiresAt code `shouldSatisfy` maybe False (> detectedAt)
-  -- and the row is still readable, which a timestamp outside the format's range would not be
   o <- jsonObject =<< webGet client (invoicePath iid)
   fieldOf o "status" `shouldBe` Just (J.String "paid")
   fieldOf o "settledAt" `shouldBe` Just (J.toJSON detectedAt)
@@ -2030,7 +1986,6 @@ testLosingTheStatusGuardStillWakesTheHold = bounded "losing the guard" $ withWeb
   _ <- wokenBy client iid (settledIntoAnExpiredRow env iid) "expired"
   pure ()
 
--- | The settlement the hold is waiting for, landing on a row the guard has already expired.
 settledIntoAnExpiredRow :: HasCallStack => WebEnv -> InvoiceId -> IO ()
 settledIntoAnExpiredRow env iid = do
   settleOrder (weStore env) (weWaiters env) iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) settleAt
@@ -2121,14 +2076,13 @@ setSkipped ref reasons = atomicModifyIORef' ref $ \s -> (s {ssSkipped = reasons}
 failList :: IORef StubState -> Maybe ProviderError -> IO ()
 failList ref e = atomicModifyIORef' ref $ \s -> (s {ssListError = e}, ())
 
--- | Reads are the pass's own lane now, so a provider that is down fails these too.
 failRead :: IORef StubState -> Maybe ProviderError -> IO ()
 failRead ref e = atomicModifyIORef' ref $ \s -> (s {ssReadError = e}, ())
 
 seedOpenRef :: HasCallStack => DBStore -> Int -> Text -> UTCTime -> IO InvoiceId
 seedOpenRef st i providerRef expiresAt = do
-  -- created just now, as an invoice a buyer is paying is: the poller reads the ones inside its
-  -- settle window and leaves anything older to be swept
+  -- The row is created at the current time because the poller reads only invoices inside its
+  -- recent settle window and sweeps anything older.
   createdAt <- truncateToSecond <$> getCurrentTime
   let n = T.pack (show i)
       iid = InvoiceId ("inv-poll-" <> n)
@@ -2145,8 +2099,6 @@ seedOpenRef st i providerRef expiresAt = do
 
 seedOtherProvider :: HasCallStack => DBStore -> Int -> Text -> IO InvoiceId
 seedOtherProvider st i providerRef = do
-  -- created now, like `seedOpenRef`: the fixture's own date is fixed and has aged past the
-  -- settle window, which would put these rows outside the lane that reads our own rows
   createdAt <- truncateToSecond <$> getCurrentTime
   let n = T.pack (show i)
       iid = InvoiceId ("inv-poll-" <> n)
@@ -2192,13 +2144,9 @@ testPassReadsWhatItAwaits = bounded "reads what it awaits" $ withStubPoller race
   c <- seedOpenRef (weStore env) 3 "p-3" someExpiry
   setSignals ref [("p-1", settledSignal), ("p-2", settledSignal), ("p-3", settledSignal)]
   runOnePass poller
-  -- three reads, one per invoice we are waiting on, and the stray list, which is due on a first
-  -- pass and then only once a minute
   stubCalls ref `shouldReturn` [StubRead "p-1", StubRead "p-2", StubRead "p-3", StubListOpen]
   mapM (invoiceStatus (weStore env)) [a, b, c] `shouldReturn` [ISPaid, ISPaid, ISPaid]
 
--- The whole point of reading our own rows: a service with nothing outstanding costs the provider
--- nothing at all, where listing a window asked it for every invoice in three days, every pass.
 testIdlePassAsksNothing :: IO ()
 testIdlePassAsksNothing = bounded "idle pass" $ withStubPoller raceHold $ \ref poller env _ -> do
   seedBadgePrice (weStore env) "price1"
@@ -2206,24 +2154,17 @@ testIdlePassAsksNothing = bounded "idle pass" $ withStubPoller raceHold $ \ref p
   setSignals ref [("p-1", settledSignal)]
   runOnePass poller
   invoiceStatus (weStore env) iid `shouldReturn` ISPaid
-  -- the stray list ran on that first pass; from here the row is paid and nothing is awaited
   clearCalls ref
   runOnePass poller
   stubCalls ref `shouldReturn` []
 
--- Reading one by one is cheaper only while few are open. Past the threshold one list is fewer
--- requests and fewer bytes, so the pass switches back to it.
 testManyOpenInvoicesList :: IO ()
 testManyOpenInvoicesList = bounded "many open" $ withStubPoller raceHold $ \ref poller env _ -> do
   seedBadgePrice (weStore env) "price1"
   mapM_ (\i -> seedOpenRef (weStore env) i ("p-many-" <> tshow i) someExpiry) [1 .. readsPerPass + 1]
   runOnePass poller
-  -- exactly one: the list is the pass's own accounting here, so the stray lane must not send a
-  -- second identical request beside it
   stubCalls ref `shouldReturn` [StubListOpen]
 
--- With no provider configured nothing can be read or listed, so nothing is accounted for. The
--- count of rows decides which lane runs, and it must not decide whether the sweep is safe.
 testNoProviderAccountsForNothing :: HasCallStack => IO ()
 testNoProviderAccountsForNothing = bounded "no provider" $ withStubPoller raceHold $ \_ poller env _ -> do
   now <- getCurrentTime
@@ -2237,14 +2178,10 @@ testNoProviderAccountsForNothing = bounded "no provider" $ withStubPoller raceHo
   runOnePass blind
   mapM (invoiceStatus (weStore env)) (few <> many) `shouldReturn` replicate (length few + length many) ISOpen
 
--- A pass past the threshold lists because that is how it reads, and the stray lane must not send
--- a second one beside it. Whether the forced list also restarts the stray cadence is not pinned:
--- both answers list on a first pass, and telling them apart needs a clock this poller does not take.
 testBulkListIsTheOnlyList :: HasCallStack => IO ()
 testBulkListIsTheOnlyList = bounded "bulk lists once" $ withStubPoller raceHold $ \ref poller env _ -> do
   seedBadgePrice (weStore env) "price1"
   mapM_ (\i -> seedOpenRef (weStore env) i ("p-cadence-" <> tshow i) someExpiry) [1 .. readsPerPass + 1]
-  -- all but one settle on that first pass, so the next is under the threshold and reads
   setSignals ref [("p-cadence-" <> tshow i, settledSignal) | i <- [1 .. readsPerPass]]
   runOnePass poller
   stubCalls ref `shouldReturn` [StubListOpen]
@@ -2253,9 +2190,6 @@ testBulkListIsTheOnlyList = bounded "bulk lists once" $ withStubPoller raceHold 
   calls <- stubCalls ref
   filter (== StubListOpen) calls `shouldBe` []
 
--- The list only answers for the providers it was asked about, so it cannot say that a row naming
--- another one went unread. With enough rows to put the pass on the list, that row is the whole
--- reason the sweep must wait.
 testMixedProvidersHoldTheSweep :: HasCallStack => IO ()
 testMixedProvidersHoldTheSweep = bounded "mixed providers" $ withStubPoller raceHold $ \_ poller env _ -> do
   now <- getCurrentTime
@@ -2314,7 +2248,6 @@ testProviderFailureLosesNothing = bounded "provider outage" $ withStubPoller rac
   seedBadgePrice (weStore env) "price1"
   iid <- seedOpenRef (weStore env) 1 "p-1" someExpiry
   setSignals ref [("p-1", settledSignal)]
-  -- a provider that is down answers neither lane
   failList ref (Just (ProviderError "connection refused"))
   failRead ref (Just (ProviderError "connection refused"))
   runOnePass poller
@@ -2351,17 +2284,12 @@ testHintsDoNotPostponeThePass = bounded "hints do not postpone the pass" $ withS
   seedBadgePrice (weStore env) "price1"
   mapM_ (\i -> seedOpenRef (weStore env) i (burstRef i) someExpiry) burstRefs
   built <- newPollerEnv (weStore env) (weWaiters env) (weHints env) (weProviders env) PollConfig {pWaitingSeconds = 1, pIdleSeconds = 1}
-  -- the list is this test's marker for a pass having run, so it runs on every one
   let poller = built {peStrayEvery = 0}
-  -- Settle them first, so the pass itself is waiting on nothing: every read after this belongs
-  -- to a hint, which is what makes the count below say something.
   setSignals ref [(burstRef i, settledSignal) | i <- burstRefs]
   runOnePass poller
   clearCalls ref
   setReadDelay ref slowHintRead
   mapM_ (\i -> queueReadHint (weHints env) (burstRef i) `shouldReturn` True) burstRefs
-  -- Two passes while ten slow hint reads are outstanding: a pass postponed until the backlog
-  -- drained would have served all ten before the second list appeared.
   Async.withAsync (runPoller poller) $ \_ -> do
     calls <- awaitCalls ref (\cs -> length (filter (== StubListOpen) cs) >= 2)
     length (filter isRead calls) `shouldSatisfy` (< length burstRefs)
@@ -2427,8 +2355,6 @@ testSweepExpiresPastTheGrace = bounded "expiry sweep" $ withStubPoller raceHold 
   invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
   invoiceStatus (weStore env) inGrace `shouldReturn` ISOpen
   invoiceStatus (weStore env) ahead `shouldReturn` ISOpen
-  -- the sweep asks the provider nothing: every call here is the read pass accounting for the
-  -- three rows first, and the stray list, which is due on a first pass
   stubCalls ref `shouldReturn` [StubRead "p-overdue", StubRead "p-ingrace", StubRead "p-ahead", StubListOpen]
 
 testSweepWritesStatusAlone :: IO ()
@@ -2477,7 +2403,6 @@ testSkipNamingOurInvoiceIsRaised = bounded "skip ownership" $ withStubPoller rac
   _ <- seedOpenRef (weStore env) 1 "p-ours" someExpiry
   skipOwner poller PPCrypto (Just "p-ours") `shouldReturn` SkipOurs
   skipOwner poller PPCrypto (Just "SOMEONEELSESINVOICE") `shouldReturn` SkipStranger
-  -- a skip that names nobody could be any of ours, which is not the same as somebody else's
   skipOwner poller PPCrypto Nothing `shouldReturn` SkipUnaccounted
   _ <- seedOtherProvider (weStore env) 3 "p-stripe-skip"
   skipOwner poller PPCrypto (Just "p-stripe-skip") `shouldReturn` SkipStranger
@@ -2491,8 +2416,6 @@ testSkipNamingOurInvoiceIsRaised = bounded "skip ownership" $ withStubPoller rac
   runOnePass poller
   invoiceStatus (weStore env) iid `shouldReturn` ISPaid
 
--- | A provider whose store sells through a method this build does not know skips one invoice
--- per pass, each with its own reason, and every one of them is a map key.
 testSkipReasonsStayBounded :: IO ()
 testSkipReasonsStayBounded = bounded "skip reasons bounded" $ withStubPoller raceHold $ \ref poller _ _ -> do
   let reasons n = [(Just ("p-" <> tshow i), "btcpay invoice p-" <> tshow i <> ": unknown method") | i <- [1 .. n :: Int]]
@@ -2501,8 +2424,9 @@ testSkipReasonsStayBounded = bounded "skip reasons bounded" $ withStubPoller rac
   held <- Map.size <$> readTVarIO (peSkipped poller)
   held `shouldSatisfy` (<= maxSkipReasons)
 
--- | The failure text carries the whole request, whose window moves with the clock, so keying
--- the limiter on it would print a request dump every three seconds for as long as it lasted.
+-- | The failure text carries the whole request, whose window moves with the clock, so the two
+-- messages differ only in startDate to prove the limiter key ignores it rather than warning
+-- every pass.
 testOutageWarnsOnceNotEveryPass :: IO ()
 testOutageWarnsOnceNotEveryPass = bounded "outage warnings" $ withStubPoller raceHold $ \ref poller _ _ -> do
   let warnKeys PollerEnv {peSkipped} = Map.size <$> readTVarIO peSkipped
@@ -2513,9 +2437,6 @@ testOutageWarnsOnceNotEveryPass = bounded "outage warnings" $ withStubPoller rac
   runOnePass poller
   warnKeys poller `shouldReturn` 1
 
--- | Both loops of a pass read rows, and a row that throws once throws every pass. Neither may
--- take the rest of the pass with it, and neither may let the sweep run over an invoice this pass
--- could not account for.
 testOneBadInvoiceDoesNotStopThePass :: IO ()
 testOneBadInvoiceDoesNotStopThePass = bounded "one bad invoice" $ withStubPoller raceHold $ \ref poller env _ -> do
   now <- getCurrentTime
@@ -2523,27 +2444,21 @@ testOneBadInvoiceDoesNotStopThePass = bounded "one bad invoice" $ withStubPoller
   InvoiceId badId <- seedOpenRef (weStore env) 1 "p-bad" (addUTCTime 3600 now)
   good <- seedOpenRef (weStore env) 2 "p-good" (addUTCTime 3600 now)
   overdue <- seedOpenRef (weStore env) 3 "p-overdue" (addUTCTime (negate (expiryGrace + 60)) now)
-  -- a provider this build does not know: reading the row throws rather than answering
+  -- Setting the provider to a value this build does not know makes reading the row throw rather
+  -- than answer.
   withConnection (weStore env) $ \db ->
     DB.execute db "UPDATE sx_badge_service_invoices SET provider = ? WHERE invoice_id = ?" ("nonsense" :: Text, badId)
 
-  -- the bad row named in the settle loop
   setSignals ref [("p-bad", settledSignal), ("p-good", settledSignal)]
   runOnePass poller
-  -- the good one settles even though the loop met the bad one first; reading the bad row back
-  -- would throw here for the same reason the pass could not settle it
   invoiceStatus (weStore env) good `shouldReturn` ISPaid
-  -- and the pass could not account for the bad one, so the sweep did not run
   invoiceStatus (weStore env) overdue `shouldReturn` ISOpen
 
-  -- the same row named in the skip loop, which reads rows too
   setSignals ref []
   setSkipped ref [(Just "p-bad", "some reason the provider gave")]
   runOnePass poller
   invoiceStatus (weStore env) overdue `shouldReturn` ISOpen
 
--- | The guard the sweep rests on, one condition at a time: each returns False from a different
--- place, and any one of them left out expires an invoice whose payment this pass could not see.
 testSweepWaitsForAPassThatSawEverything :: IO ()
 testSweepWaitsForAPassThatSawEverything = bounded "sweep guards" $ withStubPoller raceHold $ \ref poller env _ -> do
   now <- getCurrentTime
@@ -2556,14 +2471,11 @@ testSweepWaitsForAPassThatSawEverything = bounded "sweep guards" $ withStubPolle
   failRead ref (Just (ProviderError "connection refused"))
   stillOpen "the reads never answered"
   failRead ref Nothing
-  -- past the threshold the pass lists instead of reading, and the list's own accounting is what
-  -- holds the sweep: an invoice it left unread, or a page it never reached
   mapM_ (\i -> seedOpenRef (weStore env) i ("p-bulk-" <> tshow i) someExpiry) [2 .. readsPerPass + 2]
   setSkipped ref [(Just "p-overdue", "btcpay invoice p-overdue: unknown status Frobnicated")]
   stillOpen "it answered and left one of ours unread"
   setSkipped ref [(Nothing, "btcpay: the list stopped at 50 pages")]
   stillOpen "it stopped early without saying whose invoices it missed"
-  -- and with nothing in the way, the very same invoice goes
   setSkipped ref []
   runOnePass poller
   invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
@@ -2811,8 +2723,6 @@ atProvider :: FakeBTCPay -> Text -> Text -> Text -> Text -> IO ()
 atProvider fake ref status additional paid =
   atProviderDue fake ref status additional paid (if paid == paidInFull then "0.00000000" else dueAfterPart)
 
--- | The provider recomputes what is owed on every read, so a fake that moves the paid figure
--- without the due figure cannot exercise the field the payment screen prints.
 atProviderDue :: FakeBTCPay -> Text -> Text -> Text -> Text -> Text -> IO ()
 atProviderDue fake ref status additional paid due =
   setInvoiceState fake ref ["status" .= status, "additionalStatus" .= additional, "paymentMethodPaid" .= paid, "due" .= due]
@@ -2874,8 +2784,8 @@ scenarioPartPaymentIsReported = bounded "scenario: part paid" $ withFakePoller $
   fieldOf o "status" `shouldBe` Just (J.String "open")
   fieldOf o "amountPaid" `shouldBe` Just partlyPaid
   fieldOf o "cryptoAmountPaid" `shouldBe` Just (J.String paidInPart)
-  -- the provider's own figure, not the difference: it carries the network fee a partial
-  -- payment adds, so 0.00030500 rather than the 0.00030000 a subtraction would give
+  -- The due figure is the provider's own, which includes the network fee a partial payment adds,
+  -- so it is 0.00030500 rather than the 0.00030000 a subtraction would give.
   fieldOf o "cryptoAmountDue" `shouldBe` Just (J.String dueAfterPart)
   fieldOf o "settledAt" `shouldBe` Nothing
   invoiceStatus (weStore env) iid `shouldReturn` ISOpen
@@ -2935,7 +2845,6 @@ scenarioReplayChangesNothing = bounded "scenario: replay" $ withFakePoller $ \fa
   firstCode <- settledCode (weStore env) iid
   length <$> paymentIdentity (weStore env) iid `shouldReturn` 1
   runOnePass poller
-  -- one list, on the first pass; the second read the invoice by its own id
   length <$> apiRequests fake "GET" ["invoices"] `shouldReturn` 1
   length <$> paymentIdentity (weStore env) iid `shouldReturn` 1
   paymentRow (weStore env) iid `shouldReturn` firstPayment
@@ -2990,7 +2899,6 @@ scenarioNoWebhookAnywhere = bounded "scenario: no webhook" $ withFakePoller $ \f
   paid <- viewInvoice client iid
   fieldOf paid "status" `shouldBe` Just (J.String "paid")
   bcPaymentStatus <$> settledCode (weStore env) iid `shouldReturn` CPSPaid
-  -- no webhook was delivered: the pass found it by reading the invoice it holds a row for
   byId <- apiRequests fake "GET" ["invoices", ref]
   byId `shouldSatisfy` (not . null)
 
@@ -3012,16 +2920,11 @@ testCancelClosesTheInvoiceAtBothEnds = bounded "cancel" $ withCancel $ \ref _ cl
   statusOf r `shouldBe` 200
   o <- jsonObject r
   fieldOf o "status" `shouldBe` Just (J.String "expired")
-  -- the provider is told, or its invoice would keep taking payment at an address the
-  -- buyer still has
   stubCalls ref `shouldReturn` [StubCancel (niProviderRef sampleInvoice)]
   reread <- webGet client (invoicePath iid)
   ao <- jsonObject reread
   fieldOf ao "status" `shouldBe` Just (J.String "expired")
 
--- | Every other way an invoice closes wakes the browsers waiting on it; a cancel is one more.
--- The buyer's other tab, or their phone, is holding `?wait=open` and would otherwise sit there
--- until the hold times out, showing an address the provider has already invalidated.
 testCancelWakesAHeldRequest :: IO ()
 testCancelWakesAHeldRequest = bounded "cancel wakes a hold" $ withCancel $ \_ _ client -> do
   let iid = niInvoiceId sampleInvoice
@@ -3035,7 +2938,6 @@ testCancelIsRefusedOnceItIsNotOpen = bounded "cancel not open" $ withCancel $ \r
   r <- webPost client (cancelPath iid)
   statusOf r `shouldBe` 409
   responseBody r `shouldBe` errorBody "not_open"
-  -- a paid invoice must not be cancelled at the provider either: the money is already in
   stubCalls ref `shouldReturn` []
   reread <- webGet client (invoicePath iid)
   ao <- jsonObject reread
@@ -3047,7 +2949,6 @@ testCancelLeavesTheInvoiceOpenWhenTheProviderFails = bounded "cancel provider do
   atomicModifyIORef' ref $ \s -> (s {ssCancelError = Just (ProviderError "boom")}, ())
   r <- webPost client (cancelPath iid)
   statusOf r `shouldBe` 503
-  -- open at both ends is recoverable; closed here and open there is not
   reread <- webGet client (invoicePath iid)
   ao <- jsonObject reread
   fieldOf ao "status" `shouldBe` Just (J.String "open")
@@ -3074,19 +2975,13 @@ testExpireOverdueSparesAFundedInvoice = withServiceStore $ \st -> do
       empty' = sampleInvoice {niInvoiceId = InvoiceId "inv-empty", niProviderRef = "p-empty", niCodeHash = digestFixture 15, niExpiresAt = pastExpiry}
   createInvoiceRows st funded `shouldReturn` Right ()
   createInvoiceRows st empty' `shouldReturn` Right ()
-  -- seen in the mempool, not yet confirmed: the window bounds the rate hold, and that
-  -- stopped mattering the moment the money arrived
   settle st (niInvoiceId funded) (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) now `shouldReturn` Right ISOpen
   moved <- expireOverdue st now
   moved `shouldBe` [niInvoiceId empty']
   Just fundedRow <- getInvoice st (niInvoiceId funded)
   irStatus fundedRow `shouldBe` ISOpen
-  -- and a confirmation an hour later still pays it
   settle st (niInvoiceId funded) (SigSettled (rcv 500 (Just "0.00050000")) now) now `shouldReturn` Right ISPaid
 
--- | The sweep spares a funded invoice, and cancel cannot: BTCPay has already been told to
--- invalidate it by the time the row is written, so leaving it open would keep drawing an address
--- nothing can be sent to.
 testCancelExpiresAFundedInvoice :: IO ()
 testCancelExpiresAFundedInvoice = withServiceStore $ \st -> do
   seedBadgePrice st "price1"
@@ -3097,7 +2992,6 @@ testCancelExpiresAFundedInvoice = withServiceStore $ \st -> do
   cancelOpenInvoice st iid now `shouldReturn` True
   Just row <- getInvoice st iid
   irStatus row `shouldBe` ISExpired
-  -- the money is not expired with the invoice: settlement still has the payment row to work from
   (ipCryptoPaid <$> irPayment row) `shouldBe` Just (Just "0.00050000")
 
 testCancelIsRefusedOnceItIsFunded :: IO ()
@@ -3106,9 +3000,7 @@ testCancelIsRefusedOnceItIsFunded = bounded "cancel funded" $ withCancel $ \ref 
   settle (weStore env) iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated `shouldReturn` Right ISOpen
   r <- webPost client (cancelPath iid)
   statusOf r `shouldBe` 409
-  -- the two refusals read differently to the buyer, so which one this is has to be pinned
   responseBody r `shouldBe` errorBody "funded"
-  -- invalidating it at BTCPay would strand what the buyer already sent
   stubCalls ref `shouldReturn` []
   reread <- webGet client (invoicePath iid)
   ao <- jsonObject reread
@@ -3119,8 +3011,7 @@ testViewNamesTheConfirmationsSettlementNeeds = bounded "required confirmations" 
   r <- webGet client (invoicePath (niInvoiceId sampleInvoice))
   statusOf r `shouldBe` 200
   o <- jsonObject r
-  -- MediumSpeed is BTCPay's one-confirmation policy; Greenfield reports no running count,
-  -- so this is what settlement needs, not how far along it is
+  -- MediumSpeed is BTCPay's one-confirmation policy, so settlement needs one confirmation.
   fieldOf o "requiredConfirmations" `shouldBe` Just (J.Number 1)
 
 testViewOmitsConfirmationsWithoutBTCPay :: IO ()
@@ -3133,10 +3024,7 @@ testViewOmitsConfirmationsWithoutBTCPay = bounded "no confirmations" $ withWebAp
 testHeldWaitWakesOnAPaymentThatDoesNotSettle :: IO ()
 testHeldWaitWakesOnAPaymentThatDoesNotSettle = bounded "funded wakes a hold" $ withCheckout $ \_ env client -> do
   iid <- seedOpenInvoice env
-  -- the browser is holding on ?wait=open, and the payment BTCPay reports as Processing
-  -- leaves the invoice open: without a wake this answers only when the hold times out
   held <- async $ webGet client (invoicePath iid <> "?wait=open")
-  -- the hold has to be registered before the settle, or this proves nothing
   threadDelay 100000
   waitingCount (weWaiters env) `shouldReturn` 1
   settleOrder (weStore env) (weWaiters env) iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
@@ -3147,10 +3035,6 @@ testHeldWaitWakesOnAPaymentThatDoesNotSettle = bounded "funded wakes a hold" $ w
   fieldOf o "status" `shouldBe` Just (J.String "open")
   fieldOf o "cryptoAmountPaid" `shouldBe` Just (J.String "0.00050000")
 
--- | The provider re-sends what it already sent on every pass. Rewriting the row would publish a
--- payment to every browser holding `?wait=`, and each would re-request at once: the long poll
--- becomes a poll loop with a write per pass. The guard is in `newPayment`, and only an open
--- invoice reaches it, since a settled one is decided before that.
 testARepeatedSignalDoesNotWakeAHold :: IO ()
 testARepeatedSignalDoesNotWakeAHold = bounded "repeat signal" $ withWebApp $ \env client -> do
   iid <- seedOpenInvoice env
@@ -3160,13 +3044,11 @@ testARepeatedSignalDoesNotWakeAHold = bounded "repeat signal" $ withWebApp $ \en
   threadDelay holdParkDelay
   Async.poll held >>= (`shouldSatisfy` isNothing)
 
-  -- the same figures again, which is what the next pass brings
   settleOrder (weStore env) (weWaiters env) iid funded settleAt `shouldReturn` Right ISOpen
   threadDelay holdParkDelay
   stillParked <- Async.poll held
   stillParked `shouldSatisfy` isNothing
 
-  -- and something that did move still releases it, so this is not a hold that never wakes
   settleOrder (weStore env) (weWaiters env) iid (SigSettled (rcv 500 (Just "0.00050000")) settleAt) settleAt
     `shouldReturn` Right ISPaid
   r <- wait held
@@ -3177,8 +3059,6 @@ testARepeatedSignalDoesNotWakeAHold = bounded "repeat signal" $ withWebApp $ \en
 testHeldWaitIsNotWokenByAPassThatWroteNothing :: IO ()
 testHeldWaitIsNotWokenByAPassThatWroteNothing = bounded "no churn" $ withCheckout $ \_ env _ -> do
   iid <- seedOpenInvoice env
-  -- a settled invoice ignores every later signal, so this writes nothing and must not
-  -- release a hold: every poller pass would otherwise churn the browsers waiting
   markPaid (weStore env) iid
   waitingBefore <- waitingCount (weWaiters env)
   settleOrder (weStore env) (weWaiters env) iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
@@ -3189,8 +3069,6 @@ testHeldWaitIsNotWokenByAPassThatWroteNothing = bounded "no churn" $ withCheckou
 testViewCarriesTheProvidersPaidVerdict :: IO ()
 testViewCarriesTheProvidersPaidVerdict = bounded "paid in full" $ withCheckout $ \_ env client -> do
   iid <- seedOpenInvoice env
-  -- BTCPay applies its own payment tolerance, so a tolerated underpayment is Processing:
-  -- the browser cannot tell that from the amounts and must be told
   settleOrder (weStore env) (weWaiters env) iid (SigFunded (rcv 400 (Just "0.00040000")) PaidInFull) someCreated
     `shouldReturn` Right ISOpen
   o <- jsonObject =<< webGet client (invoicePath iid)
@@ -3203,15 +3081,11 @@ testPaidVerdictIsNotWithdrawnByALaterRead = bounded "verdict sticks" $ withCheck
   iid <- seedOpenInvoice env
   settleOrder (weStore env) (weWaiters env) iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInFull) someCreated
     `shouldReturn` Right ISOpen
-  -- a later pass that reports the same payment as not-yet-accepted must not send the
-  -- buyer back to "send the rest": the address is gone from that screen
   settleOrder (weStore env) (weWaiters env) iid (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) someCreated
     `shouldReturn` Right ISOpen
   o <- jsonObject =<< webGet client (invoicePath iid)
   fieldOf o "paidInFull" `shouldBe` Just (J.Bool True)
 
--- | The Monero case: BTCPay reports an invoice as paid in full while its figures are still
--- zero. Reading the fiat amount alone made both the sweep and the cancel call it unfunded.
 testExpireOverdueSparesAZeroAmount :: IO ()
 testExpireOverdueSparesAZeroAmount = withServiceStore $ \st -> do
   seedBadgePrice st "price1"
@@ -3221,7 +3095,6 @@ testExpireOverdueSparesAZeroAmount = withServiceStore $ \st -> do
       verdict = sampleInvoice {niInvoiceId = InvoiceId "inv-verdict", niProviderRef = "p-verdict", niCodeHash = digestFixture 16, niExpiresAt = pastExpiry}
   createInvoiceRows st dust `shouldReturn` Right ()
   createInvoiceRows st verdict `shouldReturn` Right ()
-  -- a crypto amount too small to round up to a cent, and a verdict with no figures at all
   settle st (niInvoiceId dust) (SigFunded (rcv 0 (Just "0.00000001")) PaidInPart) now `shouldReturn` Right ISOpen
   settle st (niInvoiceId verdict) (SigFunded (rcv 0 Nothing) PaidInFull) now `shouldReturn` Right ISOpen
   expireOverdue st now `shouldReturn` []

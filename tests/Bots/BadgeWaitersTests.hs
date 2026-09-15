@@ -30,7 +30,7 @@ iid, iid2 :: InvoiceId
 iid = InvoiceId "inv-1"
 iid2 = InvoiceId "inv-2"
 
--- | An invoice nobody has paid into: no figure, and no verdict from the provider.
+-- | An invoice nobody has paid into carries no figure and no verdict from the provider.
 unpaid :: (Text, Bool)
 unpaid = ("", False)
 

@@ -1,6 +1,4 @@
-// One round trip, two decisions: the buyer cancels an invoice and, before the service answers,
-// wipes the browser. The answer is a write, and writing it would put back a record the buyer
-// asked to forget, without its code, which the wipe took.
+// The cancel's answer is a write, so it would put back a record the buyer asked to forget, without its code.
 import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { forgetControl, headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
@@ -26,7 +24,7 @@ raceTest("main: a cancel answered after the wipe is not written back", async () 
   page.respondWith({ status: 200, body: { status: "expired", amount: 42000, currency: "usd" } });
   screenOf(app).all("button").find((b) => b.textContent === CANCEL_INVOICE)!.click();
 
-  // no settle: the cancel is on the wire, and this is the wipe landing while it is
+  // There is no settle here, because the cancel is on the wire while the wipe lands.
   forgetControl(page)!.click();
   assert.equal(storage.getItem("sb.orders.v1"), null, "the wipe itself is immediate");
 

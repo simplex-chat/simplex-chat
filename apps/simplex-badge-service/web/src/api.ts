@@ -1,8 +1,6 @@
 import { readChain, readStatus, type Chain, type Method, type OrderStatus } from "./domain.js";
 import { asObject, fieldsInto, filledText, flag, oneOf, positiveInteger, text, nonNegativeInteger } from "./parse.js";
 
-// What the service puts on the wire, and what this page adds for what it saw itself. A code
-// outside the first list did not come from the service, whatever the body claims.
 const WIRE_ERROR_CODES = [
   "catalog_changed", "bad_request", "code_conflict",
   "rate_limited", "internal", "provider_unavailable", "not_found",
@@ -28,9 +26,7 @@ export class AbortedError extends Error {
 
 const RETRY_AFTER_MAX_SECONDS = 300;
 
-// Missing, empty, non-integer, zero or negative all return undefined, so the caller falls
-// back to its own backoff rather than waiting forever on a value it cannot trust. Capped
-// at five minutes so a hostile value cannot park us for hours.
+// The five-minute cap keeps a hostile Retry-After from parking the page for hours.
 function retryAfterSeconds(res: Response): number | undefined {
   const raw = res.headers.get("retry-after")?.trim();
   if (!raw || !/^\d+$/.test(raw)) return undefined;
@@ -58,9 +54,9 @@ export interface CreatedInvoice {
   amount: number;
   currency: string;
   expiresAt: string;
-  clientSecret?: string;       // card
-  address?: string;            // btc, xmr
-  cryptoAmount?: string;       // btc, xmr
+  clientSecret?: string;
+  address?: string;
+  cryptoAmount?: string;
   cryptoCurrency?: Chain;
 }
 
@@ -83,17 +79,13 @@ export interface InvoiceView {
   requiredConfirmations?: number;
 }
 
-// Neither response carries the method, and an ?order= link opened on a second device has
-// no local record, so we work it out from which fields the response carried.
 export function inferMethod(view: Pick<InvoiceView, "clientSecret" | "cryptoCurrency">): Method | undefined {
   if (view.clientSecret !== undefined) return "card";
   if (view.cryptoCurrency !== undefined) return view.cryptoCurrency;
   return undefined;
 }
 
-// A 404 means not found because of its status, whatever the body says: the promise about
-// the body binds this service, not the proxy or CDN in front of it, and those answer 404
-// with HTML of their own.
+// A proxy or CDN in front of the service can return its own 404 body, so the status alone decides not_found.
 async function decodeError(res: Response): Promise<never> {
   let code: ErrorCode = "unknown";
   try {
@@ -178,9 +170,6 @@ export async function createInvoice(req: CreateRequest, f: typeof fetch = fetch)
   return parseCreatedInvoice(raw, res.status, req.method);
 }
 
-/** Answers a whole `InvoiceView` or raises: a body that is not JSON, or JSON this build cannot
- * read, is `invalid_response` and never a half-filled view. The long poll reads the same way,
- * except that it retries an unreadable body rather than raising. */
 async function readView(res: Response): Promise<InvoiceView> {
   if (!res.ok) return decodeError(res);
   let raw: unknown;
@@ -198,16 +187,12 @@ export async function cancelInvoice(orderId: string, f: typeof fetch = fetch): P
   return readView(await f(`/api/invoice/${encodeURIComponent(orderId)}/cancel`, { method: "POST" }));
 }
 
-// Validated through the same readers as the holding read: a cast here once let a
-// cryptoCurrency we do not define reach the QR and the store.
 export async function readInvoice(invoiceId: string, f: typeof fetch = fetch, signal?: AbortSignal): Promise<InvoiceView> {
   return readView(await f(`/api/invoice/${encodeURIComponent(invoiceId)}`, signal ? { signal } : undefined));
 }
 
 export type Sleep = (ms: number, signal?: AbortSignal) => Promise<void>;
 
-// A real timer that is cancelled on abort rather than raced against, or the setTimeout
-// keeps running in the background after every suspend and resume.
 export const realSleep: Sleep = (ms, signal) => {
   if (signal?.aborted) return Promise.reject(new AbortedError());
   return new Promise<void>((resolve, reject) => {
@@ -228,8 +213,6 @@ export const BACKOFF_MAX = 30_000;
 const FAST_THRESHOLD_MS = 5000;
 const FAST_LIMIT = 3;
 
-/** What the page has already rendered of a payment. Both terms decide which screen it is on:
- * `orderPhase` reads the provider's verdict before it reads any figure. */
 export interface PaymentMark {
   paid: string | undefined;
   paidInFull: boolean | undefined;
@@ -245,9 +228,6 @@ function changed(now: PaymentMark, seen: PaymentMark): boolean {
   return (now.paid ?? "") !== (seen.paid ?? "") || (now.paidInFull === true) !== (seen.paidInFull === true);
 }
 
-// Returns once the status or payment differs from what was seen; the caller carries on, since expired keeps
-// waiting and paid stops. One backoff ladder covers network errors, unparseable bodies, a 429 with no usable
-// Retry-After, and three same-status answers each under five seconds, which a genuine 30s hold cannot do.
 export async function waitForChange(
   invoiceId: string,
   seen: OrderStatus,
@@ -262,7 +242,6 @@ export async function waitForChange(
   }
   let backoff = BACKOFF_START;
   let fastRepeats = 0;
-  // one ladder, one place to climb it: five copies of the pair could drift apart in review
   const backOff = async (): Promise<void> => {
     await sleep(backoff, signal);
     backoff = Math.min(backoff * 2, BACKOFF_MAX);
@@ -272,8 +251,6 @@ export async function waitForChange(
     const startedAt = now();
     let res: Response;
     try {
-      // what we have already rendered goes with it: the service answers at once when it holds
-      // a payment this page has not seen, instead of parking on a status that has not moved
       const query = `wait=${encodeURIComponent(seen)}`
         + `&seenPaid=${encodeURIComponent(seenPayment.paid ?? "")}`
         + `&seenFull=${seenPayment.paidInFull === true ? "1" : "0"}`;
@@ -288,7 +265,7 @@ export async function waitForChange(
       await drain(res);
       if (retryAfter !== undefined) {
         await sleep(retryAfter * 1000, signal);
-        continue; // the server named its own interval; the ladder is untouched
+        continue;
       }
       await backOff();
       continue;
@@ -308,9 +285,6 @@ export async function waitForChange(
       await backOff();
       continue;
     }
-    // A payment the provider has seen but not confirmed leaves the invoice `open`, so returning only
-    // on a status change discarded that body and the page sat on "waiting to confirm" until a manual
-    // reload. Monero reports `confirming` with its figures still zero, so the verdict counts as much as the figure.
     if (view.status !== seen || changed(paymentMark(view), seenPayment)) return view;
 
     fastRepeats = (now() - startedAt) < FAST_THRESHOLD_MS ? fastRepeats + 1 : 0;

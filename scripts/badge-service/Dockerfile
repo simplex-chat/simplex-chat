@@ -1,22 +1,14 @@
 # syntax=docker/dockerfile:1
-#
-# Built from the repository root, not this directory:
-#
-#   docker compose -f scripts/badge-service/compose.yml build
-#   docker build -f scripts/badge-service/Dockerfile -t simplex-badge-service .
-#
-# The Haskell stage compiles simplexmq and simplex-chat from source: hours on a
-# cold cache, and it needs ~15 GB.
+# Built from the repository root, not this directory, because the COPY paths are repo-relative.
+# The Haskell stage compiles simplexmq and simplex-chat from source, which takes hours on a cold
+# cache and needs about 15 GB.
 
 ARG UBUNTU=24.04
 ARG GHC=9.6.3
 ARG CABAL=3.10.2.0
 ARG NODE=24
 
-# --------------------------------------------------------------------------- #
-# web — the checkout page served from static_dir. Not committed: dist/ is
-# gitignored, so the image has to build it.
-# --------------------------------------------------------------------------- #
+# The checkout page's dist/ is gitignored, so this stage builds it.
 FROM node:${NODE}-bookworm-slim AS web
 
 WORKDIR /web
@@ -25,9 +17,6 @@ RUN npm ci
 COPY apps/simplex-badge-service/web ./
 RUN npm run build
 
-# --------------------------------------------------------------------------- #
-# build — the service executable
-# --------------------------------------------------------------------------- #
 FROM ubuntu:${UBUNTU} AS build
 
 ARG GHC
@@ -46,23 +35,19 @@ ENV BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
     BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=true
 RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
 ENV PATH="/root/.ghcup/bin:/root/.cabal/bin:$PATH"
-# Explicit, so the cache mount below is where cabal actually keeps its store.
+# Set explicitly so the cache mount below matches where cabal keeps its store.
 ENV CABAL_DIR=/root/.cabal
 
 WORKDIR /src
 COPY cabal.project simplex-chat.cabal README.md PRIVACY.md ./
 COPY scripts/cabal.project.local.linux ./cabal.project.local
 COPY src ./src
-# Exclude web/: it is built in its own stage, and the binary does not depend on it. Copying it here
-# would invalidate this layer (and re-run the cabal build below) on every webapp edit. BuildKit keeps
-# excluded files out of the layer's cache key, and this file already requires BuildKit (the cache
-# mounts below), so --exclude adds no new requirement.
+# Excluding web/ keeps a webapp edit from invalidating this layer and re-running the cabal build,
+# and the binary does not depend on it.
 COPY --exclude=web apps/simplex-badge-service ./apps/simplex-badge-service
 
-# Cache mounts, not layers: the Haskell store and the build tree survive a
-# source change, which is the difference between minutes and hours. The binary
-# is copied out inside the same RUN because dist-newstyle is a cache mount and
-# does not exist in the resulting layer.
+# The store and build tree are cache mounts rather than layers, so the binary is copied out inside
+# the same RUN because dist-newstyle does not exist in the resulting layer.
 RUN --mount=type=cache,target=/root/.cabal \
     --mount=type=cache,target=/src/dist-newstyle \
     set -eu; \
@@ -72,22 +57,16 @@ RUN --mount=type=cache,target=/root/.cabal \
     cp "$(cabal list-bin --flags="+client_postgres" exe:simplex-badge-service)" /out/simplex-badge-service; \
     strip /out/simplex-badge-service
 
-# --------------------------------------------------------------------------- #
-# runtime
-# --------------------------------------------------------------------------- #
 FROM ubuntu:${UBUNTU} AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# The set `ldd` reports for the built binary: libpq, libm, libz, libcrypto,
-# libgmp, libc. Built with +client_postgres, so it talks to Postgres and needs
-# libpq; there is no SQLite backend and no libsqlite3.
+# Built with +client_postgres, so the binary needs libpq and there is no SQLite backend.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates dumb-init libgmp10 libpq5 libssl3 zlib1g && \
     rm -rf /var/lib/apt/lists/*
 
-# The ids that must own the state volume. Build with your own to read it
-# without root:  USER_UID=$(id -u) USER_GID=$(id -g) docker compose build
+# Set these to your own uid and gid so the state volume is readable without root.
 ARG USER_UID=1000
 ARG USER_GID=1000
 
@@ -109,12 +88,12 @@ WORKDIR /home/badge
 
 EXPOSE 8080
 
-# No HEALTHCHECK: the listener answers before the chat side has an address, so a
-# check on it would report healthy too early and restart nothing useful.
+# There is no HEALTHCHECK because the listener answers before the chat side has an address, so it
+# would report healthy too early.
 
-# Exec form, and the flags in CMD so `docker compose run` can replace them
-# without losing dumb-init's signal forwarding.
+# The flags live in CMD so `docker compose run` can replace them while dumb-init still forwards
+# signals.
 ENTRYPOINT ["dumb-init", "--", "simplex-badge-service"]
-# --yes-migrate: a container has no console to answer the migration prompt on, so without
-# it the service blocks on stdin at every schema change.
+# Without --yes-migrate the service blocks on stdin at every schema change, and a container has no
+# console to answer.
 CMD ["-d", "postgresql://simplex@127.0.0.1:5432/badge_service", "--create-schema", "--yes-migrate", "--service-config", "/etc/simplex-badge-service/badge_service.ini"]

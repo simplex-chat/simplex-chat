@@ -11,9 +11,6 @@ const CREATED = new Date(NOW - 9 * 60_000).toISOString();
 const HELD_CODE = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
 const ADDRESS = "48HqK2XmVexampleAddress9fRtWc";
 
-// An open order keeps everything the payment screen draws: where to
-// send, how much, until when, and the fiat figure beside it. Nothing else
-// about the payment. No `clientSecret`, and nothing on a settled order.
 const storage = new MemStorage();
 storage.setItem("sb.orders.v1", JSON.stringify([{
   orderId: "inv_open", badgeType: "legend", months: 12,
@@ -22,14 +19,11 @@ storage.setItem("sb.orders.v1", JSON.stringify([{
   expiresAt: "2026-08-28T12:58:12Z", amount: 42000, currency: "usd",
 }]));
 
-// The loop backs off on a network error, which is a real timer. Mocked,
-// so the backoff is spent in a millisecond and the process still exits.
 mock.timers.enable({ apis: ["setTimeout", "Date"], now: NOW });
 
 const page = installPage({ storage });
 const { app, fetches } = page;
-// The network is gone before the module runs: this is the buyer who opened the
-// tab on a train, not one who lost the network while watching.
+// The network is set offline before the module runs, so the load itself happens with no network.
 page.setOffline(true);
 await import("../src/main.js");
 
@@ -59,16 +53,11 @@ offlineTest("main: the payment screen says it is offline, beside the status and 
 });
 
 offlineTest("main: the rate window is on screen offline, not silently dropped", () => {
-  // Without a stored `expiresAt` this screen would show a payable address and
-  // no window at all, while its own last line promises the countdown lives on
-  // this URL: a buyer sending hours later lands money on a dead invoice.
+  // Without a stored expiresAt this screen would show a payable address and no window, while its last line promises the countdown lives on this URL.
   assert.ok(screenOf(app).textContent.includes("$420.00 — this rate is held for 58:12"),
     `the stored window and fiat figure are rendered: ${screenOf(app).textContent}`);
   assert.ok(screenOf(app).textContent.includes("Bookmark this page — the address and the countdown both live on this URL."),
     "which is what that line promises");
-  // Past the window, with no answer from the service, the rule stands: the
-  // browser never renders expiry on its own clock, so the countdown is replaced
-  // rather than turned into a verdict (screens.test.ts pins the same rule).
 });
 
 offlineTest("main: the code it holds is still not on the unpaid screen", () => {
@@ -95,18 +84,15 @@ offlineTest("main: losing the network again puts the note back", async () => {
 // ------------------------------------- what a repaint may not bring back
 
 offlineTest("main: leaving the payment screen stops its loop, and no repaint returns it", async () => {
-  // "Buy a code" from the menu is the way off a payment screen now, and it stops the invoice's loop.
   page.chrome.all("button.menu-button")[0]!.click();
   page.chrome.all("button.menu-item").find((b) => b.textContent === "Buy a code")!.click();
   await settle();
-  // land on the landing so the tests that follow start clean; the loop is already stopped
+  // Land on the landing screen so the tests that follow start clean.
   page.history.pushState(null, "", "/");
   page.fire("popstate");
   await settle();
   assert.equal(heading(), "Support SimpleX", "the landing screen — and the watch loop stopped that invoice's loop on the way");
-  // A connectivity change repaints the screen that is waiting. There is no
-  // longer one: painting the abandoned the payment screen over the wizard would put a screen
-  // on top with no loop behind it, which nothing would ever update again.
+  // A connectivity change repaints the waiting screen, so with none left a repaint must not put the abandoned payment screen over the wizard with no loop behind it.
   for (const off of [false, true]) {
     page.setOffline(off);
     await settle();
@@ -115,17 +101,16 @@ offlineTest("main: leaving the payment screen stops its loop, and no repaint ret
   }
 });
 
-// --------------------------------------------------- the unknown-order screen, which is truthful
+// --------------------------------------------------- the unknown-order screen
 
 offlineTest("main: pressing Pay offline lands on the unknown-order screen, whose copy is exactly true", async () => {
-  // The whole wizard with no network at any point: the first four panels are meant to work
-  // offline, because the catalog is compiled in.
+  // The first four panels work offline because the catalog is compiled in.
   const inView = (): StubElement => inViewOf(app);
-  primary(inView())!.click();                                                   // the landing screen → the tier list
+  primary(inView())!.click();
   inView().all("button.choice").find((c) => c.textContent.startsWith("Legend"))!.click();
-  primary(inView())!.click();                                                   // the tier list → the duration list
+  primary(inView())!.click();
   inView().all("button.choice").find((c) => c.textContent.startsWith("12 months"))!.click();
-  primary(inView())!.click();                                                   // the duration list → the order summary
+  primary(inView())!.click();
   assert.equal(headingOf(inView()), "Check your order");
   assert.ok(inView().textContent.includes("$420.00"), "the prices are compiled in");
 
@@ -145,8 +130,7 @@ offlineTest("main: the worker was registered on this load too, after it had rend
 });
 
 offlineTest("main: the history list is not replaced by the payment screen behind it either", async () => {
-  // the [ Try again ] with the network back: the create endpoint has no idempotency key, so
-  // this is a second invoice, and it lands on its own the payment screen.
+  // The create endpoint has no idempotency key, so Try again creates a second invoice with its own payment screen.
   page.setOffline(false);
   page.respondWith({ status: 200, body: {
     invoiceId: "inv_second", badgeType: "legend", months: 12,
@@ -156,8 +140,6 @@ offlineTest("main: the history list is not replaced by the payment screen behind
   screenOf(app).all("button.primary")[0]!.click();
   await until(() => heading().startsWith("Send"), "the payment screen for the second invoice");
 
-  // The hash carrier, reached by a navigation. The history list takes the root while a
-  // payment screen is what was last painted.
   page.history.pushState(null, "", "/#/codes");
   page.fire("popstate");
   await settle();

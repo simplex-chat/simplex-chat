@@ -1,8 +1,3 @@
-// A QR encoder for byte mode at error correction level M, written here rather than taken from a
-// dependency: the symbol is computed from the payload the page already holds, never fetched and
-// never a raster. Its tables come from the published QR spec, and `test/qr.test.ts` holds its own
-// copies of them and decodes what this builds.
-
 const MODE_BYTE = 0b0100;
 const ECC_LEVEL_M_BITS = 0b00;
 const MIN_VERSION = 1;
@@ -103,8 +98,7 @@ function versionFor(byteLength: number): number | null {
   return null;
 }
 
-// Computed rather than tabulated. Version 32 is the exception below, because the general
-// rule gets its spacing wrong.
+// Version 32 uses a step of 26 because the general spacing rule computes the wrong value for it.
 export function alignmentPositions(version: number): number[] {
   if (version === 1) return [];
   const numAlign = Math.floor(version / 7) + 2;
@@ -377,14 +371,11 @@ export function encodeQr(payload: string): QrSymbol | null {
   return { version, size: matrix.size, mask: best, modules: matrix.modules };
 }
 
-// A payment URI rather than a bare address, because a bare address does not prefill an
-// amount.
 export function paymentUri(method: "btc" | "xmr", address: string, amount: string): string | null {
   if (address === "" || amount === "") return null;
   const scheme = method === "btc" ? "bitcoin" : "monero";
   const parameter = method === "btc" ? "amount" : "tx_amount";
-  // the address is encoded too: one carrying `?`, `&` or `#` would otherwise add its own
-  // parameters to this URI, and most wallets read the first `amount` they are given
+  // The address is percent-encoded so that a `?`, `&`, or `#` in it cannot add its own parameters to the URI.
   return `${scheme}:${encodeURIComponent(address)}?${parameter}=${encodeURIComponent(amount)}`;
 }
 
@@ -410,9 +401,7 @@ function pathOf(symbol: QrSymbol): string {
   return d;
 }
 
-// SVG elements use createElementNS: createElement("svg") in an HTML document produces an
-// HTMLUnknownElement that draws nothing. `label` is the accessible name and never the
-// payload, since on the code screen the payload is a badge code.
+// SVG elements must be created with createElementNS, because createElement("svg") in an HTML document produces an HTMLUnknownElement that draws nothing.
 export function qrSvg(payload: string, label: string): SVGElement | null {
   const symbol = encodeQr(payload);
   if (symbol === null) return null;

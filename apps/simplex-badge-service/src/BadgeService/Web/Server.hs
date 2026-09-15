@@ -71,8 +71,7 @@ data WebEnv = WebEnv
     weHoldMicros :: Int,
     weHints :: ReadHints,
     weBuckets :: TVar (Map Text Bucket),
-    -- | The shell HTML with the publishable key filled in, held in memory. @Nothing@ when no Stripe
-    -- key is configured, and the pristine @static_dir@ shell is served instead.
+    -- | @Nothing@ when no Stripe key is configured, and the pristine @static_dir@ shell is served instead.
     weShell :: Maybe LB.ByteString
   }
 
@@ -100,7 +99,6 @@ createLimit = Limit {lmName = "create", lmPerMinute = 5}
 maxBodyBytes :: Int
 maxBodyBytes = 8192
 
--- | The only limit on that route, which carries no rate limit of its own.
 maxWebhookBytes :: Int
 maxWebhookBytes = 64 * 1024
 
@@ -121,9 +119,6 @@ limitWindow = 60
 maxBuckets :: Int
 maxBuckets = 8192
 
--- | A flood of distinct clients inside one minute leaves every bucket fresh, so sweeping expired
--- ones frees nothing, and dropping the map would clear every count, leaving a flooder unmetered.
--- The least-used half goes instead, keeping the clients nearest their limit.
 reclaim :: UTCTime -> Map Text Bucket -> Map Text Bucket
 reclaim now buckets
   | Map.size buckets < maxBuckets = buckets
@@ -142,8 +137,7 @@ takeToken WebEnv {weBuckets} Limit {lmName, lmPerMinute} client = do
     buckets <- reclaim now <$> readTVar weBuckets
     let key = lmName <> "\t" <> client
         count bucket = writeTVar weBuckets (Map.insert key bucket buckets) >> pure Nothing
-        -- write the reclaimed map back here too, or a refused request redoes the
-        -- filtering every time and the map stays at the limit
+        -- write the reclaimed map back here too, or a refused request redoes the filtering every time and the map stays at the limit
         refuse seconds = writeTVar weBuckets buckets >> pure (Just seconds)
     case Map.lookup key buckets of
       Just bucket@Bucket {bkCount, bkStarted}
@@ -162,10 +156,7 @@ limited env limit req respond action =
     Nothing -> action
     Just seconds -> respond (rateLimited seconds)
 
--- | @X-Forwarded-For@ is trusted only where the operator says a proxy sets it. The header is
--- a list the caller can prepend to, and a proxy appends the peer it saw, so the last entry is
--- the one our proxy wrote. Every line is joined first: a proxy that adds a second header line
--- rather than editing the first would otherwise leave the caller's line the one we read.
+-- | Every line is joined first, so a second header line a caller adds cannot leave its own line the one we read.
 clientKey :: WebEnv -> Request -> Text
 clientKey env req = fromMaybe (peerText (remoteHost req)) forwarded
   where
@@ -284,7 +275,6 @@ webhookResponse st = responseLBS st [(hCacheControl, "no-store")] ""
 
 webApp :: WebEnv -> Application
 webApp env req respond = case pathInfo req of
-  -- With serve_webapp off the static guards fail and these paths fall through to notFound.
   [] | serving -> only "GET" $ case weShell env of
     Just shell -> respond (responseLBS status200 shellHeaders shell)
     Nothing -> serveStatic env ["index.html"] respond
@@ -293,9 +283,6 @@ webApp env req respond = case pathInfo req of
   ["api", "invoice"] -> only "POST" $ limited env createLimit req respond $ createInvoiceHandler env req respond
   ["api", "invoice", iid] -> only "GET" $ limited env readLimit req respond $ readInvoiceHandler env (InvoiceId iid) req respond
   ["api", "invoice", iid, "cancel"] -> only "POST" $ limited env createLimit req respond $ cancelInvoiceHandler env (InvoiceId iid) respond
-  -- the webhook routes have no rate limit: refusing a delivery is worse than serving it, since a
-  -- provider retries what it cannot deliver. The work per request is bounded instead, by
-  -- `maxWebhookBytes` before anything parses and by a signature check that reaches no database.
   ["webhooks", "btcpay"] -> only "POST" $ webhookHandler env PPCrypto "POST /webhooks/btcpay" req respond
   ["webhooks", "stripe"] -> only "POST" $ webhookHandler env PPStripe "POST /webhooks/stripe" req respond
   _ -> respond notFound
@@ -305,9 +292,7 @@ webApp env req respond = case pathInfo req of
       | requestMethod req == method = action
       | otherwise = respond (methodNotAllowed method)
 
--- | Canonicalises and refuses anything outside @static_dir@. Looking for @".."@ would
--- miss separators WAI has already decoded, an absolute path, and a symlink out of the
--- tree.
+-- | A @".."@ check would miss separators WAI has already decoded, an absolute path, and a symlink out of the tree.
 serveStatic :: WebEnv -> [Text] -> Respond -> IO ResponseReceived
 serveStatic env segments respond =
   resolveInside (lStaticDir (listenerConfig env)) segments >>= \case
@@ -320,15 +305,12 @@ shellHeaders = [(hContentType, "text/html; charset=utf-8"), (hCacheControl, "no-
 publishableKeyMeta :: Text
 publishableKeyMeta = "id=\"stripe-publishable-key\" name=\"stripe-publishable-key\" content=\""
 
--- | Fill the shell's publishable-key meta from the ini once at boot and hold the filled HTML in
--- memory, so @static_dir@ is only ever read and can stay read-only. @Nothing@ (serve the pristine
--- file) when no key is set, no shell is present, or it cannot be read.
+-- | @Nothing@ (serve the pristine file) when no key is set, no shell is present, or it cannot be read.
 prepareShell :: ListenerConfig -> Maybe StripeConfig -> IO (Maybe LB.ByteString)
 prepareShell _ Nothing = pure Nothing
 prepareShell ListenerConfig {lStaticDir} (Just StripeConfig {sPublishableKey}) =
   E.try attempt >>= \case
     Right out -> pure out
-    -- an unreadable shell would otherwise serve nothing with no clue why the card form is dead
     Left (e :: E.IOException) -> do
       logWarn ("could not read the shell in " <> T.pack lStaticDir <> ", serving the pristine one: " <> tshow e)
       pure Nothing
@@ -340,8 +322,7 @@ prepareShell ListenerConfig {lStaticDir} (Just StripeConfig {sPublishableKey}) =
       if not present
         then pure Nothing
         else do
-          -- Decode as UTF-8 explicitly: the shell holds UTF-8 (em dashes and the like), and
-          -- TIO.readFile would decode it in the locale's encoding, which fails outright under a C locale.
+          -- TIO.readFile would decode in the locale's encoding, which fails outright under a C locale.
           bytes <- BS.readFile shell
           case decodeUtf8' bytes of
             Left e -> do
@@ -349,15 +330,11 @@ prepareShell ListenerConfig {lStaticDir} (Just StripeConfig {sPublishableKey}) =
               pure Nothing
             Right html -> pure (Just (LB.fromStrict (encodeUtf8 (injectPublishableKey sPublishableKey html))))
 
--- | Copy @static_dir@ to @webapp_export_dir@ with the publishable key injected into index.html, for
--- a reverse proxy to serve. A no-op when no export dir is set.
 exportWebapp :: ListenerConfig -> Maybe StripeConfig -> IO ()
 exportWebapp lc@ListenerConfig {lStaticDir, lWebappExportDir} stripeCfg =
   forM_ lWebappExportDir $ \out -> do
-    -- emptied first so a redeploy with new asset hashes leaves none of the old build behind
     emptyDir out
     copyTree lStaticDir out
-    -- Nothing when no key is set: the copied pristine index.html stands
     prepareShell lc stripeCfg >>= mapM_ (LB.writeFile (out </> "index.html"))
     logInfo ("badge service: exported the webapp to " <> T.pack out)
 
@@ -377,17 +354,13 @@ copyTree src dst = do
       listDirectory src >>= mapM_ (\e -> copyTree (src </> e) (dst </> e))
     else copyFile src dst
 
--- | A shell whose meta is not the exact placeholder is left untouched; the served-shell test guards it.
 injectPublishableKey :: Text -> Text -> Text
 injectPublishableKey key = T.replace (publishableKeyMeta <> "\"") (publishableKeyMeta <> key <> "\"")
 
--- | The canonical root alongside the file, since what may be cached forever is decided from
--- where the file really is, not from how the request spelled its way there.
 resolveInside :: FilePath -> [Text] -> IO (Maybe (FilePath, FilePath))
 resolveInside dir segments = either ioFailed id <$> E.try attempt
   where
-    -- a NUL byte in the path makes the calls below throw, which is a refusal like any
-    -- other
+    -- a NUL byte in the path makes the calls below throw
     ioFailed :: E.IOException -> Maybe (FilePath, FilePath)
     ioFailed _ = Nothing
     attempt :: IO (Maybe (FilePath, FilePath))
@@ -399,16 +372,14 @@ resolveInside dir segments = either ioFailed id <$> E.try attempt
     inside :: FilePath -> FilePath -> Bool
     inside root file = (root <> [pathSeparator]) `isPrefixOf` file
 
--- | Assets live under the build hash and can be cached forever. The page at @\/@ cannot:
--- a browser caching it would go on asking for assets from a build we no longer have.
+-- | The page at @\/@ must not be cached, or a browser would keep asking for assets from a build we no longer have.
 staticHeaders :: FilePath -> FilePath -> [Header]
 staticHeaders root file =
   [ (hContentType, contentTypeFor file),
     (hCacheControl, if hashedAsset then "public, max-age=31536000, immutable" else "no-cache")
   ]
   where
-    -- read off the resolved path, not the request: `/assets/<hash>/%2e%2e/%2e%2e/index.html`
-    -- resolves to the shell, and a year in a shared cache is the skew `sw.js` exists to prevent
+    -- read off the resolved path, not the request: `/assets/<hash>/%2e%2e/%2e%2e/index.html` resolves to the shell
     hashedAsset = (root </> "assets" <> [pathSeparator]) `isPrefixOf` file
 
 contentTypeFor :: FilePath -> ByteString
@@ -432,8 +403,7 @@ readInvoiceHandler env@WebEnv {weStore} invId req respond =
     Just row -> case holdFor row of
       Nothing -> respond (jsonResponse status200 (invoiceView (confirmationsFor env) row))
       Just seen -> do
-        -- awaitStatus decides when to answer, not what. Settlement publishes after it
-        -- commits, so the row read below is at least as new as whatever woke us.
+        -- Settlement publishes after it commits, so the row read below is at least as new as whatever woke us.
         _ <- awaitStatus (weWaiters env) invId readSeen seen (weHoldMicros env)
         getInvoice weStore invId >>= \case
           Nothing -> respond notFound
@@ -444,31 +414,24 @@ readInvoiceHandler env@WebEnv {weStore} invId req respond =
       Just seen | seen == irStatus, seen /= ISPaid, samePayment -> Just (irStatus, paymentMark row)
       _ -> Nothing
       where
-        -- a payment recorded before this request arrived cannot wake it: the counter a hold
-        -- watches starts at zero. Holding then leaves the page saying "waiting for the payment"
-        -- for the whole timeout with the money already in.
+        -- The counter a hold watches starts at zero, so a payment recorded before this request arrived cannot wake it.
         samePayment = case paidParam req of
-          Nothing -> True -- a client that does not say what it saw keeps the old behaviour
+          Nothing -> True
           Just seen -> seen == paymentMark row
     readSeen :: IO Seen
     readSeen = maybe (ISOpen, ("", False)) (\row -> (irStatus row, paymentMark row)) <$> getInvoice weStore invId
 
--- | The figure a browser drew and the provider's verdict it drew it under. The verdict counts
--- as much as the figure: Monero reports a payment as confirming while its figures are zero.
+-- | Monero reports a payment as confirming while its figures are zero, so the verdict counts as much as the figure.
 paymentMark :: InvoiceRow -> (Text, Bool)
 paymentMark InvoiceRow {irPayment} =
   (maybe "" (fromMaybe "" . ipCryptoPaid) irPayment, maybe False ipPaidInFull irPayment)
 
--- | The provider is told first: if that fails the invoice stays open at both ends, which is
--- recoverable, where cancelling here first would leave an address the buyer can still pay into
--- and nothing watching it.
+-- | The provider is cancelled first, because cancelling our record first would leave an address the buyer can still pay into with nothing watching it.
 cancelInvoiceHandler :: WebEnv -> InvoiceId -> Respond -> IO ResponseReceived
 cancelInvoiceHandler env@WebEnv {weStore} invId respond =
   getInvoice weStore invId >>= \case
     Nothing -> respond notFound
     Just InvoiceRow {irStatus} | irStatus /= ISOpen -> respond (jsonError status409 "not_open")
-    -- an invoice with money in it is awaiting confirmation, not waiting to be paid:
-    -- invalidating it at the provider would strand what the buyer already sent
     Just row | funded row -> respond (jsonError status409 "funded")
     Just InvoiceRow {irProvider, irProviderRef} -> case providerNamed env irProvider of
       Nothing -> respond providerUnavailable
@@ -488,8 +451,6 @@ cancelInvoiceHandler env@WebEnv {weStore} invId respond =
         Nothing -> respond notFound
         Just row -> respond (jsonResponse status200 (invoiceView (confirmationsFor env) row))
 
--- | What the browser last rendered of the payment: the figure it showed and the provider's
--- verdict it showed it under. Absent from an older build's request, which then holds as before.
 paidParam :: Request -> Maybe (Text, Bool)
 paidParam req = case lookup "seenPaid" (queryString req) of
   Just raw -> (\seen -> (seen, fullParam)) <$> either (const Nothing) Just (decodeUtf8' (fromMaybe "" raw))
@@ -502,8 +463,7 @@ waitParam req = case lookup "wait" (queryString req) of
   Just (Just raw) -> either (const Nothing) textToInvoiceStatus (decodeUtf8' raw)
   _ -> Nothing
 
--- | Greenfield reports no confirmation count, so the page can only state what settlement
--- needs, which is the store's speed policy and ours to know.
+-- | Greenfield reports no confirmation count, so this comes from the store's speed policy.
 confirmationsFor :: WebEnv -> Maybe Int
 confirmationsFor WebEnv {weConfig} = speedPolicyConfirmations . bSpeedPolicy <$> btcpay weConfig
 
@@ -578,10 +538,7 @@ createInvoiceHandler env@WebEnv {weStore} req respond =
     refuse :: Text -> Response -> IO ResponseReceived
     refuse why response = logInfo ("POST /api/invoice refused: " <> why) >> respond response
 
--- | Once the provider call succeeds an invoice exists at BTCPay, and any path below that
--- does not write our rows leaves it stranded. There is no idempotency key, so these log
--- lines are all an operator has: they carry the provider's own id, never ours, which is a
--- bearer token.
+-- | Once the provider call succeeds an invoice exists at BTCPay, and any path below that does not write our rows leaves it stranded.
 createAtProvider :: WebEnv -> Provider -> CreateRequest -> PricedOffer -> Respond -> IO ResponseReceived
 createAtProvider WebEnv {weStore, weConfig} provider CreateRequest {crPriceId, crOfferId, crMethod, crCodeHash} priced respond =
   do
@@ -634,8 +591,7 @@ createdInvoice (InvoiceId invId) PricedOffer {poBadgeType, poMonths, poAmount, p
 secondsPerMinute :: Int
 secondsPerMinute = 60
 
--- | The expiry shown and stored must come from the same key the provider sets the invoice's real
--- expiry from: stripe.session_minutes for a card order, btcpay.expiry_minutes for a crypto one.
+-- | The expiry shown and stored must come from the same key the provider sets the invoice's real expiry from.
 invoiceWindow :: ServiceConfig -> ServicePaymentMethod -> NominalDiffTime
 invoiceWindow cfg = \case
   SPMCard CPStripe -> minutes (maybe defaultSessionMinutes sSessionMinutes (stripe cfg))
@@ -654,8 +610,7 @@ providerOf = \case
   SPMCard CPStripe -> PPStripe
   SPMCrypto _ -> PPCrypto
 
--- | Stops reading at @cap@ rather than reading it all and measuring, and returns the
--- bytes exactly as they arrived, since the webhook signature is over those bytes.
+-- | Returns the bytes exactly as they arrived, since the webhook signature is over those bytes.
 readBoundedBody :: Int -> Request -> IO (Maybe LB.ByteString)
 readBoundedBody cap req = go 0 []
   where
@@ -694,10 +649,8 @@ methodFromText = \case
   "xmr" -> Just (SPMCrypto CCXmr)
   _ -> Nothing
 
--- | The re-encode is belt and braces: the last character of a 43-character base64 string
--- has two bits no digest byte uses, so a lax decoder would accept four spellings of
--- the same digest. base64-bytestring 1.2 rejects them, but our bound allows ones that do
--- not.
+-- | The last character of a 43-character base64 string has two bits no digest byte uses, so a lax
+-- decoder would accept four spellings of the same digest, which the re-encode check rejects.
 parseCodeHash :: Text -> Maybe ByteString
 parseCodeHash t
   | T.length t /= codeHashChars = Nothing
@@ -707,9 +660,7 @@ parseCodeHash t
   where
     canonical = T.filter (/= '=') . safeDecodeUtf8 . B64U.encode
 
--- | Verifies, resolves the reference, queues a read, answers. It never calls the provider,
--- settles, opens a transaction or waits. A provider retries a delivery it sees fail, so anything
--- thrown below is caught and answered 200 anyway.
+-- | A provider retries a delivery it sees fail, so anything thrown below is caught and answered 200 anyway.
 webhookHandler :: WebEnv -> PaymentProvider -> Text -> Request -> Respond -> IO ResponseReceived
 webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
   E.try deliver >>= \case
@@ -729,8 +680,7 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
         readBoundedBody maxWebhookBytes req >>= \case
           Nothing -> logInfo (route <> ": body over the " <> tshow maxWebhookBytes <> "-byte cap") >> respond webhookTooLarge
           Just body ->
-            -- a provider signs the exact bytes it sent (BTCPay's indented JSON, Stripe's body
-            -- verbatim), so parsing and re-encoding here would fail the signature on every event
+            -- a provider signs the exact bytes it sent, so parsing and re-encoding here would fail the signature on every event
             case pVerifyWebhook p (requestHeaders req) (LB.toStrict body) of
               Left (WebhookError e) -> refuse e
               Right Nothing -> ignore body "nothing this service acts on"
@@ -750,8 +700,7 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
       getInvoiceByProviderRef weStore ref >>= \case
         Nothing -> ignore body ("no invoice holds provider_ref " <> ref)
         Just InvoiceRow {irProvider}
-          -- provider_ref is unique table-wide, not per provider, so without this a
-          -- collision could credit the wrong order
+          -- provider_ref is unique table-wide, not per provider, so without this a collision could credit the wrong order
           | irProvider /= provider -> ignore body ("provider_ref " <> ref <> " belongs to " <> tshow irProvider)
           | otherwise -> queue body ref
     queue :: LB.ByteString -> Text -> IO ResponseReceived
@@ -759,13 +708,11 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
       queued <- queueReadHint weHints ref
       if queued
         then logEvent body ("queued a read of " <> ref)
-        else -- not an error: the next pass finds this invoice anyway, and waiting for room
+        else -- not an error, because the next pass finds this invoice anyway
           logWarn (route <> ": " <> fromMaybe noEventType (eventTypeOf body) <> ", the read queue is full, so the read of " <> ref <> " waits for the next pass")
       respond webhookOk
 
--- | For the log only. The adapter returns @Right Nothing@ both for an event we do not act on and
--- for one it could not read, and being pure it cannot log the difference, so a rename of @type@ or
--- the reference field a provider signs its events with would make every delivery look successful.
+-- | For the log only. A rename of the @type@ field would make every delivery look successful.
 eventTypeOf :: LB.ByteString -> Maybe Text
 eventTypeOf body = case J.decode body of
   Just (J.Object o) | Just (J.String t) <- KM.lookup "type" o -> Just t
@@ -783,9 +730,6 @@ runWebListener env = do
   warnIfHeaderTrustIsExposed (listenerConfig env)
   Warp.runSettings (webSettings (listenerConfig env)) (webApp env)
 
--- | Trusting the header hands the rate limiter's key to whoever wrote it, which is only safe
--- where a proxy is the one writing it. Nothing here can prove a proxy is in front, so a bind
--- that is not loopback says so at startup rather than silently counting nobody.
 warnIfHeaderTrustIsExposed :: ListenerConfig -> IO ()
 warnIfHeaderTrustIsExposed ListenerConfig {lHost, lTrustForwardedFor} =
   when (lTrustForwardedFor && not (isLoopbackHost lHost)) $

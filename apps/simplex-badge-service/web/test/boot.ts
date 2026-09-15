@@ -1,7 +1,5 @@
 import { test } from "node:test";
-// Installs the globals `src/main.ts` reaches for; it runs on import, so this is called first and once per
-// process, and a second boot scenario needs a second test file. `stub-dom.ts`'s caveats apply in full: no
-// layout, CSS, accessibility tree, focus, painting or navigation. No assertions: `check-tests.js` skips it.
+// Installs the globals main.ts needs; it runs once per process on import, so a second boot scenario needs its own file.
 
 import {
   MemStorage, StubHistory, installDocument, locationOf,
@@ -16,43 +14,29 @@ export interface Reply {
 
 export interface Page {
   app: StubElement;
-  /** The header the shell gives `main.ts`: the wordmark, and the menu. */
   chrome: StubElement;
-  /** `<html>`, which carries `data-theme` when the buyer overrides the system. */
   documentElement: StubElement;
   document: StubDocument;
   history: StubHistory;
-  /** Kept in step with `history` the way a browser keeps `location`. */
   location: { pathname: string; search: string; hash: string };
   storage: MemStorage;
   clipboard: Clipboard;
   fetches: Array<{ url: string; init?: RequestInit }>;
-  /** Every message `window.confirm` was asked, in order. */
   confirms: string[];
-  /** What `navigator.serviceWorker.register` was asked, and when. */
   workers: ServiceWorkers;
   connectivity: Connectivity;
-  /** Answers the NEXT request; without one the request holds, as the `?wait=` does. */
   respondWith(reply: Reply): void;
-  /** Answers a request that is already holding, which `respondWith` cannot: it is read when the
-   * request is made. This is how an answer lands after the buyer has navigated away from the page
-   * that asked for it. Returns false when nothing is holding for `match`. */
+  // Answers a request already holding, which respondWith cannot; returns false when nothing matches.
   answerHeld(reply: Reply, match?: string): boolean;
   confirmAnswer(answer: boolean): void;
-  /** `navigator.onLine` flips, `fetch` rejects the way a browser's does with no network, and the
-   * window event fires, so the offline state is shown from this rather than simulated. */
   setOffline(on: boolean): void;
   reducedMotion(on: boolean): void;
-  /** Dispatches a window event: `popstate`, `resize`. */
   fire(type: string): void;
-  /** A key press on the window, which is where the menu's Escape and Tab live. */
   press(key: string, init?: { shiftKey?: boolean }): void;
 }
 
 export interface BootOptions {
-  /** Seeded before the module runs, so a boot can resume a stored order. */
   storage?: MemStorage;
-  /** The URL the page is opened at. Defaults to `/`. */
   url?: string;
 }
 
@@ -76,7 +60,7 @@ export function installPage(opts: BootOptions = {}): Page {
     for (const fn of [...(windowListeners.get(type) ?? [])]) fn();
   };
   const press = (key: string, init: { shiftKey?: boolean } = {}): void => {
-    const event = { key, shiftKey: false, ...init, preventDefault: () => { /* recorded by the handler */ } };
+    const event = { key, shiftKey: false, ...init, preventDefault: () => {} };
     for (const fn of [...(windowListeners.get("keydown") ?? [])]) (fn as (e: unknown) => void)(event);
   };
   const history = new StubHistory(() => { fire("popstate"); }, () => { syncLocation(); });
@@ -103,29 +87,22 @@ export function installPage(opts: BootOptions = {}): Page {
       },
       fetch: async (input: unknown, init?: RequestInit): Promise<Response> => {
         fetches.push(init ? { url: String(input), init } : { url: String(input) });
-        // What a browser throws with no network, and what the backoff and
-        // the "the order was not created, and nothing was charged" both see.
+        // A browser with no network throws this TypeError.
         if (offline) throw new TypeError("Failed to fetch");
         const reply = nextResponse;
         nextResponse = null;
         if (reply === null) {
-          // Holds, and aborts the way a real request does, the behaviour
-          // suspending on `visibilitychange` depends on. A pending promise
-          // keeps no timer, so the process still exits.
+          // A pending promise with no timer lets the process still exit while the request holds.
           return new Promise<Response>((resolve, reject) => {
             const signal = init?.signal;
-            // `abort` never fires for a signal that is already aborted, so without this the stub
-            // would hold where a real `fetch` rejects, and the test would fail on its timeout
-            // rather than say what went wrong.
+            // abort never fires for an already-aborted signal, so reject explicitly or the stub holds where fetch would reject.
             if (signal?.aborted) { queueMicrotask(() => { reject(new Error("aborted")); }); return; }
             const entry = { url: String(input), resolve };
             held.push(entry);
             signal?.addEventListener("abort", () => {
               const at = held.indexOf(entry);
               if (at >= 0) held.splice(at, 1);
-              // A real `fetch` rejects an aborted request from the microtask drain of the same
-              // turn, measured: microtask, then the rejection, then anything queued as a task.
-              // Rejecting straight from the listener would land a turn earlier than that.
+              // A real fetch rejects an aborted request on the microtask drain of the same turn.
               queueMicrotask(() => { reject(new Error("aborted")); });
             }, { once: true });
           });
@@ -173,7 +150,6 @@ export function installPage(opts: BootOptions = {}): Page {
   };
 }
 
-/** One turn of the microtask and immediate queues, which is the unit `settle` counts in. */
 export const flush = (): Promise<void> => new Promise((r) => setImmediate(r));
 
 export async function settle(times = 6): Promise<void> {
@@ -181,8 +157,7 @@ export async function settle(times = 6): Promise<void> {
 }
 
 
-/** Waits for an outcome, not a fixed number of turns: `checkout` awaits `crypto.subtle.digest`, which
- * resolves off the main thread, so a tick count is a race. Bounded, so a regression fails rather than hangs. */
+// Waits for an outcome rather than a fixed number of turns, since crypto.subtle.digest resolves off the main thread and a tick count would race.
 export async function until(condition: () => boolean, what: string, turns = 500): Promise<void> {
   for (let i = 0; i < turns; i++) {
     if (condition()) return;
@@ -191,16 +166,12 @@ export async function until(condition: () => boolean, what: string, turns = 500)
   throw new Error(`timed out waiting for ${what}`);
 }
 
-/** A test with a timeout, so a regression that turns something bounded into something
- * unbounded fails loudly rather than hanging the file: a hung file is dropped whole. */
 export function timedTest(ms: number) {
   return (name: string, fn: () => void | Promise<void>): void => {
     test(name, { timeout: ms }, fn);
   };
 }
 
-/** The screen that has taken the root, the wizard panel in view, its heading, and the button a
- * buyer would press to move on. Every boot scenario needs these, and each held its own copy. */
 export function screenOf(app: StubElement): StubElement { return app.all("section.panel")[0]!; }
 
 export function inViewOf(app: StubElement): StubElement {
@@ -217,9 +188,6 @@ export function primaryOf(p: StubElement): StubElement | undefined {
 
 const FORGET_LABEL = "Forget everything on this device";
 
-/** The control that empties the device now lives at the foot of the codes list, not in the menu.
- * Open the menu, go to the list, and return its wipe control (undefined if the list carries none,
- * e.g. nothing was bought). The caller presses it, having set `confirmAnswer` first. */
 export function forgetControl(page: Page): StubElement | undefined {
   page.chrome.all("button.menu-button")[0]!.click();
   page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();

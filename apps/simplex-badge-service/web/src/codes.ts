@@ -1,13 +1,9 @@
-// The scheme is defined by src/Simplex/Chat/Badges/Code.hs, which the service and the app
-// both use. Every rule below mirrors it: diverge on any of them and a code sold here can
-// never be redeemed.
-// Nothing in the page parses a code the buyer types; `normalise` and `checkChar` are the reader
-// half of the format, kept so the tests can check this file against Code.hs in both directions.
+// Every rule here mirrors src/Simplex/Chat/Badges/Code.hs; any divergence makes a code sold here unredeemable.
 
 // Crockford base32: the digits and the upper-case letters except I, L, O and U.
 export const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-const BASE = ALPHABET.length; // 32
-const CODE_LENGTH = 20;       // 19 payload characters and a check character
+const BASE = ALPHABET.length;
+const CODE_LENGTH = 20;
 export const PAYLOAD = CODE_LENGTH - 1;
 const GROUP = 5;
 const GROUPS = new RegExp(`.{1,${GROUP}}`, "g");
@@ -22,8 +18,7 @@ function charValue(c: string): number | undefined {
   return at < 0 ? undefined : at;
 }
 
-// Luhn mod N with N = 32, over the payload values, folded from the right because the check
-// character sits to the right of the payload.
+// Luhn mod N with N = 32, folded from the right because the check character sits to the right of the payload.
 function checkValue(payload: readonly number[]): number {
   let sum = 0;
   let factor = 2;
@@ -44,7 +39,6 @@ export function checkChar(body: string): string {
   return ALPHABET[checkValue(values)]!;
 }
 
-/** The canonical form the service hashes: the prefix and 20 characters, no separators. */
 export function canonical(code: string): string {
   return PREFIX + code;
 }
@@ -53,10 +47,8 @@ export function display(code: string): string {
   return [PREFIX, ...(code.match(GROUPS) ?? [])].join("-");
 }
 
-/** Any case, separators optional, ambiguous characters folded. The prefix is required. */
 export function normalise(input: string): string | null {
-  // `parseBadgeCode` filters with `isAlphaNum`, which is Unicode: stripping only ASCII here would
-  // read a code this browser accepts and the service does not
+  // The service filters with Unicode `isAlphaNum`, so stripping only ASCII here would accept codes the service rejects.
   const cleaned = input.replace(/[^\p{L}\p{N}]/gu, "").toUpperCase();
   if (!cleaned.startsWith(PREFIX)) return null;
   const body = cleaned.slice(PREFIX.length);
@@ -68,7 +60,6 @@ export function normalise(input: string): string | null {
     values.push(v);
   }
   if (values[PAYLOAD] !== checkValue(values.slice(0, PAYLOAD))) return null;
-  // rebuilt from the values, not from the input: that is what folds I/L/O
   return values.map((v) => ALPHABET[v]!).join("");
 }
 

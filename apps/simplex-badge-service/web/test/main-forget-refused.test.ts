@@ -1,6 +1,4 @@
-// The other half of the wipe race: the cancel the service refuses. The failure path has to start
-// the watch again or the page sits on a screen nothing updates, and a watch started over a store
-// the buyer just wiped writes the forgotten order back on its first read.
+// A refused cancel restarts the watch, and a watch started over a just-wiped store would write the forgotten order back on its first read.
 import { mock } from "node:test";
 import assert from "node:assert/strict";
 import { forgetControl, headingOf, installPage, screenOf, settle, timedTest, until } from "./boot.js";
@@ -26,11 +24,10 @@ refusedTest("main: a refused cancel answered after the wipe is not written back"
   page.respondWith({ status: 409, body: { error: "funded" } });
   screenOf(app).all("button").find((b) => b.textContent === CANCEL_INVOICE)!.click();
 
-  // no settle: the cancel is on the wire, and this is the wipe landing while it is
+  // There is no settle here, because the cancel is on the wire while the wipe lands.
   forgetControl(page)!.click();
   assert.equal(storage.getItem("sb.orders.v1"), null, "the wipe itself is immediate");
 
-  // the refusal lands, and the watch it would restart is the thing that puts the record back
   page.respondWith(openReply);
   await settle(10);
   assert.equal(storage.getItem("sb.orders.v1"), null,

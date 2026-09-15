@@ -27,13 +27,10 @@ data BadgeServiceOpts = BadgeServiceOpts
     noAddress :: Bool,
     runCLI :: Bool,
     serviceConfigFile :: Maybe FilePath,
-    -- | `Left` when exactly one of the two flags was given, which is a mistake and not a
-    -- request to fall back to the ini's [issuer] section.
     issuerKey :: Either String (Maybe BadgeIssuerKey),
     testing :: Bool
   }
 
--- | The issuer secret that signs credentials, and the index the apps find its public half under.
 data BadgeIssuerKey = BadgeIssuerKey
   { keyIdx :: Int,
     secretKey :: BBSSecretKey

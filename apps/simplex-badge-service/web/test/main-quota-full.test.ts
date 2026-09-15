@@ -1,6 +1,4 @@
-// A quota that filled after an earlier purchase: the writes throw, and the codes already stored
-// are still readable. Swapping in a memory store on the failed write would hide them, and this
-// page's one promise is holding the code.
+// The writes throw but codes already stored stay readable, so swapping in a memory store would hide them.
 import assert from "node:assert/strict";
 import { forgetControl, headingOf, inViewOf, installPage, timedTest } from "./boot.js";
 import { MemStorage } from "./stub-dom.js";
@@ -29,8 +27,7 @@ quotaTest("main: codes already stored stay readable when the writes stop", () =>
 });
 
 quotaTest("main: Forget clears the store that is really holding the codes", () => {
-  // writes go to memory, but the removal has to reach the real store: everything this page is
-  // promising to erase is over there, and the confirm says it cannot be undone
+  // The removal must reach the real store, since that is where the codes being erased actually live.
   assert.ok(full.m.has("sb.orders.v1"), "the real store is the one holding them");
   page.confirmAnswer(true);
   forgetControl(page)!.click();

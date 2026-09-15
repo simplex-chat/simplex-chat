@@ -1,6 +1,4 @@
-// The case the write-round-trip probe exists for, and the only one a `try/catch` cannot see: a
-// store that accepts every write, reports success, and keeps nothing. Some browsers do this in
-// place of refusing outright, and a read-only probe would call it durable.
+// Some browsers accept every write, report success, and keep nothing, which a try/catch cannot see, so the probe writes and reads back.
 import assert from "node:assert/strict";
 import { headingOf, inViewOf, installPage, timedTest } from "./boot.js";
 import { MemStorage } from "./stub-dom.js";

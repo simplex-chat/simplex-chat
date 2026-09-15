@@ -1,6 +1,3 @@
-// Driving a purchase: draw a code, ask for an invoice, then keep one watch per order alive
-// until it settles. What each answer means is `order.ts`'s to say.
-
 import {
   ApiError, AbortedError, BACKOFF_MAX, BACKOFF_START, NOTHING_RECEIVED, createInvoice, inferMethod,
   paymentMark, readInvoice, waitForChange,
@@ -55,7 +52,6 @@ export interface Watch {
   suspend(): void;
   resume(): void;
   stop(): void;
-  /** What a fresh loop on this order needs to draw the same screen. */
   restartOptions(): WatchOptions;
   readonly done: Promise<void>;
 }
@@ -109,7 +105,6 @@ class WatchLoop implements Watch {
   suspend(): void {
     if (this.suspended || this.finished) return;
     this.suspended = true;
-    // What is left of the budget, so hidden time neither spends it nor refills it
     if (this.giveUpAt !== undefined) this.budgetLeft = Math.max(0, this.giveUpAt - this.d.now());
     this.ctl.abort();
   }
@@ -140,12 +135,11 @@ class WatchLoop implements Watch {
     return new Promise<void>((resolve) => { this.wake = resolve; });
   }
 
-  // A loop that has been stopped has no screen any more: the page has moved to another order,
-  // and painting now would draw this order's address under that order's URL.
+  // A stopped loop has no screen, so painting now would draw this order's address under another
+  // order's URL.
   private emit(view: PaymentView): void {
     if (this.stopped) return;
     if (view.screen === "awaitingConfirmation" && this.giveUpAt === undefined) this.giveUpAt = this.d.now() + GIVE_UP_MS;
-    // both together: a budget outliving its deadline re-arms one on the wrong screen
     if (view.screen !== "awaitingConfirmation") {
       this.giveUpAt = undefined;
       this.budgetLeft = undefined;
@@ -192,8 +186,6 @@ class WatchLoop implements Watch {
     throw r.e;
   }
 
-  /** The one answer that ends a watch outright. Pure: each site decides what to do with it,
-   * so the control flow stays where a reader can see it. */
   private isNotFound(e: unknown): boolean {
     return e instanceof ApiError && e.code === "not_found";
   }
@@ -212,7 +204,6 @@ class WatchLoop implements Watch {
       let seen: "open" | "expired" = "open";
       let seenPayment: PaymentMark = NOTHING_RECEIVED;
       let painted = false;
-      // what the next request compares against, and whether anything is on screen yet
       const take = (view: InvoiceView): boolean => {
         this.receive(view);
         if (view.status === "paid") return true;
@@ -227,7 +218,7 @@ class WatchLoop implements Watch {
           first = await readInvoice(this.orderId, this.d.fetch, this.ctl.signal);
         } catch (e) {
           if (this.isNotFound(e)) { this.showUnknownOrder(); return; }
-          first = undefined; // transient: read again below rather than hold on nothing
+          first = undefined;
         }
       }
       if (first !== undefined) {
@@ -240,16 +231,13 @@ class WatchLoop implements Watch {
           this.show(this.record, offline);
           painted = true;
         } else if (this.record.status !== "open") {
-          // a closed order says all it needs to from the record: only settlement can move it,
-          // and the screen for it draws what arrived rather than anywhere to send more
           this.show(this.record, closedInvoice(this.record));
           painted = true;
         }
       }
 
-      // A hold answers only on a change, so entering one with nothing on screen leaves the
-      // buyer on the spinner for as long as the invoice does not move, which is the whole
-      // point of an open invoice. Read plainly until one answers.
+      // A long poll answers only on a change, so the loop reads plainly until something is on
+      // screen before entering one.
       let backoff = BACKOFF_START;
       while (!painted && !this.stopped) {
         if (this.suspended) { await this.park(); continue; }
@@ -258,7 +246,7 @@ class WatchLoop implements Watch {
           if (take(await readInvoice(this.orderId, this.d.fetch, this.ctl.signal))) return;
         } catch (e) {
           if (this.isNotFound(e)) { this.showUnknownOrder(); return; }
-          if (e instanceof AbortedError) continue; // suspended or stopped; the top decides which
+          if (e instanceof AbortedError) continue;
           backoff = Math.min(backoff * 2, BACKOFF_MAX);
         }
       }
@@ -271,7 +259,7 @@ class WatchLoop implements Watch {
         try {
           view = await this.pass(seen, seenPayment);
         } catch (e) {
-          if (e instanceof AbortedError) continue; // suspended or stopped; the top decides which
+          if (e instanceof AbortedError) continue;
           if (e instanceof GaveUp) {
             this.emit({
               screen: "awaitingConfirmation", gaveUp: true, invoice: undefined,
@@ -312,7 +300,7 @@ export class Flow {
       } catch (e) {
         if (e instanceof ApiError) {
           switch (e.code) {
-            case "code_conflict": continue; // draw again, invisibly to the buyer
+            case "code_conflict": continue;
             case "catalog_changed": return { kind: "catalogChanged" };
             case "rate_limited": return { kind: "rateLimited", retryAfter: e.retryAfter ?? DEFAULT_RETRY_AFTER_SECONDS };
             case "provider_unavailable": return { kind: "providerUnavailable", method: sel.method };
@@ -331,10 +319,8 @@ export class Flow {
         { code: display(code), submitted: undefined, canceled: undefined, method: sel.method },
         serverState({ ...created, status: "open" }, undefined),
       );
-      // The buyer can empty this browser while the invoice is being bought. Writing the order back
-      // afterwards would put a code into a store they were told could not be undone, so the sale
-      // stands at the service and this browser keeps nothing. Clearing the session is `pay`'s to
-      // do, once it knows the answer is still the one the page is waiting for.
+      // The buyer can empty this browser while the invoice is bought, so the order is saved only
+      // when the wipe count is unchanged.
       if (this.d.store.wipeCount === wipes) this.d.store.saveOrder(order);
       const savedLocally = this.d.store.holdsCode(order.orderId, order.code);
       return { kind: "created", order, invoice: created, method: sel.method, savedLocally };
@@ -373,9 +359,6 @@ export class Flow {
     this.epochCount += 1;
   }
 
-  /** Bumped by `stopAll`: an answer awaited across it belongs to a page that has moved on, so it
-   * is not owed a repaint, a rewritten address bar, or a watch. It says nothing about the store,
-   * which the buyer can empty without navigating: `Store.wipeCount` is what covers that. */
   get epoch(): number {
     return this.epochCount;
   }

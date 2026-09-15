@@ -5,8 +5,7 @@ const qrTest = timedTest(20000);
 
 import { StubElement, SVG_NS, installDocument } from "./stub-dom.js";
 
-// The stub has to be installed before `qr.ts` is evaluated, because `qrSvg`
-// reaches for `document` the moment it is called.
+// The stub must be installed before qr.ts is imported, since qrSvg reaches for document at call time.
 installDocument();
 
 const qr = await import("../src/qr.js");
@@ -19,9 +18,7 @@ type QrSymbol = import("../src/qr.js").QrSymbol;
 const screens = await import("../src/screens.js");
 const order = await import("../src/order.js");
 
-// ------------------------------------------------- the tables, from the standard
-
-/** Table 7, byte mode, error correction level M: the payload bytes each version holds. */
+// Table 7 gives the payload bytes each version holds at level M in byte mode.
 const PUBLISHED_BYTE_CAPACITY_M: readonly number[] = [
   14, 26, 42, 62, 84, 106, 122, 152, 180, 213,
   251, 287, 331, 362, 412, 450, 504, 560, 624, 666,
@@ -29,15 +26,13 @@ const PUBLISHED_BYTE_CAPACITY_M: readonly number[] = [
   1452, 1538, 1628, 1722, 1809, 1911, 1989, 2099, 2213, 2331,
 ];
 
-/** Table 9, level M: the number of error correction blocks a version splits into. Transcribed rather than
- * derived, since the block count and the EC codewords per block cannot be separated from their product; the
- * capacity test below is what proves `src/qr.ts` holds the same numbers. */
+// Table 9 gives the error-correction block count per version at level M.
 const PUBLISHED_BLOCKS_M: readonly number[] = [
   1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16,
   17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49,
 ];
 
-/** Table E.1: the row and column centres of the alignment patterns. */
+// Table E.1 gives the row and column centres of the alignment patterns.
 const PUBLISHED_ALIGNMENT: ReadonlyArray<readonly number[]> = [
   [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50],
   [6, 30, 54], [6, 32, 58], [6, 34, 62], [6, 26, 46, 66], [6, 26, 48, 70], [6, 26, 50, 74],
@@ -50,9 +45,7 @@ const PUBLISHED_ALIGNMENT: ReadonlyArray<readonly number[]> = [
   [6, 26, 54, 82, 110, 138, 166], [6, 30, 58, 86, 114, 142, 170],
 ];
 
-/** Table C.1, all thirty-two of them, indexed by the two-bit level indicator and then by mask. A decoder that
- * cannot find what it read in this table has read the wrong modules, which is how a misplaced format block
- * shows up. */
+// Table C.1 lists the thirty-two format strings, indexed by the two-bit level indicator then by mask.
 const PUBLISHED_FORMAT: Readonly<Record<number, readonly string[]>> = {
   0b01: [ // L
     "111011111000100", "111001011110011", "111110110101010", "111100010011101",
@@ -74,7 +67,7 @@ const PUBLISHED_FORMAT: Readonly<Record<number, readonly string[]>> = {
 
 const ECL_M_BITS = 0b00;
 
-/** Table D.1, the first four rows. */
+// The first four rows of Table D.1.
 const PUBLISHED_VERSION_BITS: Readonly<Record<number, string>> = {
   7: "000111110010010100",
   8: "001000010110111100",
@@ -82,7 +75,7 @@ const PUBLISHED_VERSION_BITS: Readonly<Record<number, string>> = {
   10: "001010010011010011",
 };
 
-/** Annex A, as α exponents, highest power first. */
+// Annex A generators, as alpha exponents with the highest power first.
 const PUBLISHED_GENERATORS: Readonly<Record<number, readonly number[]>> = {
   7: [0, 87, 229, 146, 149, 238, 102, 21],
   10: [0, 251, 67, 46, 61, 118, 70, 64, 94, 32, 45],
@@ -95,7 +88,6 @@ const PUBLISHED_GENERATORS: Readonly<Record<number, readonly number[]>> = {
   30: [0, 41, 173, 145, 152, 216, 31, 179, 182, 50, 48, 110, 86, 239, 96, 222, 125, 42, 173, 226, 193, 224, 130, 156, 37, 251, 216, 238, 40, 192, 180],
 };
 
-/** The bits left over once a version's codewords are placed. */
 function publishedRemainderBits(version: number): number {
   if (version === 1) return 0;
   if (version <= 6) return 7;
@@ -106,14 +98,11 @@ function publishedRemainderBits(version: number): number {
   return 0;
 }
 
-/** Annex I's worked example, 1-M: its sixteen data codewords and their ten EC codewords. */
+// Annex I's worked 1-M example gives these sixteen data codewords and ten EC codewords.
 const ANNEX_I_DATA = [0x10, 0x20, 0x0c, 0x56, 0x61, 0x80, 0xec, 0x11, 0xec, 0x11, 0xec, 0x11, 0xec, 0x11, 0xec, 0x11];
 const ANNEX_I_ECC = [0xa5, 0x24, 0xd4, 0xc1, 0xed, 0x36, 0xc7, 0x87, 0x2c, 0x55];
 
-// ------------------------------------------------------ a reader of the standard
-
-// GF(2^8) again, from the field polynomial the standard names. Written here so
-// that nothing below borrows the encoder's arithmetic.
+// GF(2^8) from the standard's field polynomial, written here so nothing below borrows the encoder's arithmetic.
 const EXP = new Uint8Array(512);
 const LOG = new Uint8Array(256);
 {
@@ -141,20 +130,16 @@ const MASK_RULES: ReadonlyArray<(x: number, y: number) => boolean> = [
   (x, y) => (((x + y) % 2) + ((x * y) % 3)) % 2 === 0,
 ];
 
-/** Which modules are function modules, as rectangles rather than as drawings: the three finder squares with
- * their separators, the two format blocks, the timing lines, the version blocks and the alignment squares,
- * whose centres come from the published table above, not from `src/qr.ts`. */
+// The function modules as rectangles, with alignment centres from the published table rather than src/qr.ts.
 function functionMap(version: number): boolean[][] {
   const size = version * 4 + 17;
   const map = Array.from({ length: size }, () => new Array<boolean>(size).fill(false));
   const block = (x0: number, y0: number, w: number, h: number): void => {
     for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) map[y]![x] = true;
   };
-  // Finders and their separators, then the format module beyond each.
   block(0, 0, 9, 9);
   block(size - 8, 0, 8, 9);
   block(0, size - 8, 9, 8);
-  // Timing.
   block(0, 6, size, 1);
   block(6, 0, 1, size);
   if (version >= 7) {
@@ -171,7 +156,6 @@ function functionMap(version: number): boolean[][] {
   return map;
 }
 
-/** Copy 1 of the format information, module by module, as bit index 14 down to 0. */
 function formatCopyOne(): Array<readonly [number, number]> {
   const at: Array<readonly [number, number]> = [];
   for (let i = 14; i >= 9; i--) at.push([14 - i, 8]);
@@ -180,7 +164,6 @@ function formatCopyOne(): Array<readonly [number, number]> {
   return at;
 }
 
-/** Copy 2, in the same order: the row beside the bottom-left finder, then the column above the top-right one. */
 function formatCopyTwo(size: number): Array<readonly [number, number]> {
   const at: Array<readonly [number, number]> = [];
   for (let i = 14; i >= 8; i--) at.push([8, size - 15 + i]);
@@ -197,13 +180,10 @@ interface Decoded {
   mask: number;
   eclBits: number;
   payload: string;
-  /** Where the traversal put each data bit, so a test can pin the first few. */
   order: Array<readonly [number, number]>;
 }
 
-/** Reads a symbol back, refusing rather than guessing: an unknown format string, two copies that disagree, a
- * mode that is not byte, or a block with non-zero syndromes all throw, so a symbol that decodes here is one a
- * conforming reader would accept. */
+// Reads a symbol back, throwing rather than guessing, so a symbol that decodes here is one a conforming reader would accept.
 function decodeQr(modules: boolean[][]): Decoded {
   const size = modules.length;
   assert.equal(size % 4, 1, "a symbol is 4v+17 modules on a side");
@@ -243,7 +223,6 @@ function decodeQr(modules: boolean[][]): Decoded {
   for (let right = size - 1; right >= 1; right -= 2) {
     if (right === 6) right = 5;
     const columns = [right, right - 1];
-    // Upward for every other pair of columns, counting from the right edge.
     const upward = ((right + 1) & 2) === 0;
     for (let step = 0; step < size; step++) {
       const y = upward ? size - 1 - step : step;
@@ -254,10 +233,6 @@ function decodeQr(modules: boolean[][]): Decoded {
       }
     }
   }
-  // A cross-check rather than an independent one: this file's function map and
-  // `src/qr.ts`'s pattern drawing are two derivations of the same paragraph, and
-  // they must leave the same modules free. The count itself is anchored to the
-  // published remainder-bit table by a test below.
   assert.equal(bits.length, rawDataModules(version),
     "every module that is not a function module carries a bit");
 
@@ -272,9 +247,7 @@ function decodeQr(modules: boolean[][]): Decoded {
     assert.equal(bits[i], 0, "remainder bits are light");
   }
 
-  // De-interleaving needs the data codeword count and the block count, and both
-  // come from the published tables rather than from `src/qr.ts`: the data count
-  // is the published byte capacity plus its header, rounded up to a codeword.
+  // The data codeword count and block count come from the published tables, not src/qr.ts.
   const dataLen = PUBLISHED_BYTE_CAPACITY_M[version - 1]! + (version < 10 ? 2 : 3);
   const numBlocks = PUBLISHED_BLOCKS_M[version - 1]!;
   const eccLen = (totalCodewords - dataLen) / numBlocks;
@@ -292,9 +265,7 @@ function decodeQr(modules: boolean[][]): Decoded {
   for (let i = 0; i < eccLen; i++) for (const b of blocks) b.ecc[i] = stream[at++]!;
   assert.equal(at, totalCodewords, "de-interleaving consumes the whole stream");
 
-  // The syndromes: every block, evaluated at α^0 … α^(eccLen−1), must be zero.
-  // Those are the roots the generator polynomial is built from, so this checks
-  // the error correction without reusing a single one of its coefficients.
+  // Every block's syndromes at alpha^0..alpha^(eccLen-1) must be zero, checking the EC without reusing the generator's coefficients.
   for (const [index, b] of blocks.entries()) {
     const codeword = [...b.data, ...b.ecc];
     for (let i = 0; i < eccLen; i++) {
@@ -322,8 +293,6 @@ function decodeQr(modules: boolean[][]): Decoded {
 }
 
 
-// ------------------------------------------------------------- the tables
-
 qrTest("qr: every version's byte capacity at level M is the published one (Table 7)", () => {
   for (let version = 1; version <= 40; version++) {
     assert.equal(byteCapacity(version), PUBLISHED_BYTE_CAPACITY_M[version - 1],
@@ -336,8 +305,7 @@ qrTest("qr: the alignment centres are the published ones, version 32 included (T
     assert.deepEqual(alignmentPositions(version), PUBLISHED_ALIGNMENT[version - 1],
       `version ${version}'s alignment centres`);
   }
-  // The one version the general spacing rule gets wrong, called out because a
-  // symbol with a misplaced alignment pattern still looks like a QR.
+  // Version 32 is the one the general spacing rule gets wrong, and a misplaced alignment pattern still looks like a QR.
   assert.deepEqual(alignmentPositions(32), [6, 34, 60, 86, 112, 138]);
 });
 
@@ -355,8 +323,7 @@ qrTest("qr: the version information strings are published, and eight bits apart 
     assert.equal(versionBits(Number(version)).toString(2).padStart(18, "0"), expected,
       `version information for version ${version}`);
   }
-  // The published minimum distance of the code is 8. A wrong BCH generator
-  // would still produce eighteen bits, and would not keep them this far apart.
+  // The code's minimum distance is 8; a wrong BCH generator would still make eighteen bits but not keep them this far apart.
   const all = [];
   for (let v = 7; v <= 40; v++) all.push(versionBits(v));
   for (let i = 0; i < all.length; i++) {
@@ -377,8 +344,6 @@ qrTest("qr: the generator polynomials are Annex A's, and their roots are α^0…
     const poly = generatorPoly(Number(degree));
     assert.deepEqual(poly.map((c) => LOG[c]!), [...exponents], `the generator of degree ${degree}`);
   }
-  // And the property the coefficients exist to have, for every degree used at
-  // level M: a wrong table cannot survive both.
   for (const degree of [10, 16, 18, 22, 24, 26, 28, 30]) {
     const poly = generatorPoly(degree);
     for (let i = 0; i < degree; i++) {
@@ -393,7 +358,6 @@ qrTest("qr: Annex I's worked 1-M example produces its published EC codewords", (
   const ecc = eccOf(ANNEX_I_DATA, 10);
   assert.deepEqual(ecc, ANNEX_I_ECC,
     `A5 24 D4 C1 ED 36 C7 87 2C 55 is the standard's answer, not ${ecc.map((b) => b.toString(16)).join(" ")}`);
-  // And the vector is only a vector if a single wrong byte changes it.
   const off = eccOf([...ANNEX_I_DATA.slice(0, 15), 0x12], 10);
   assert.notDeepEqual(off, ANNEX_I_ECC);
 });
@@ -406,13 +370,11 @@ qrTest("qr: the remainder bits per version are the published counts", () => {
   }
 });
 
-// ------------------------------------------------------------ the bit stream
-
 qrTest("qr: the bit stream is mode, count, payload, terminator and the alternating pad", () => {
   const bytes = new TextEncoder().encode("SB");
   const codewords = dataCodewords(bytes, 1);
   assert.equal(codewords.length, numDataCodewords(1), "a version is filled, not partly written");
-  // 0100 then 00000010 then 'S' 'B', packed across the nibble boundary.
+  // 0100, then the length 00000010, then 'S' and 'B' packed across the nibble boundary.
   assert.equal(codewords[0], 0b01000000);
   assert.equal(codewords[1], 0b00100101, "the length nibble carries into the first payload byte");
   assert.equal(codewords[2], 0b00110100, "the low nibble of 'S' and the high nibble of 'B'");
@@ -426,9 +388,7 @@ qrTest("qr: the version is chosen by payload length, at every boundary that move
   const symbolFor = (n: number): QrSymbol | null => encodeQr("a".repeat(n));
   assert.equal(symbolFor(14)!.version, 1, "fourteen bytes is all version 1 holds");
   assert.equal(symbolFor(15)!.version, 2, "and the fifteenth crosses into version 2");
-  // The boundary that also changes the header: the character count is 8 bits up
-  // to version 9 and 16 from version 10, so this pair is the one a hardcoded
-  // header width gets wrong.
+  // The character count is 8 bits up to version 9 and 16 from version 10, so this boundary catches a hardcoded header width.
   assert.equal(symbolFor(180)!.version, 9);
   assert.equal(symbolFor(181)!.version, 10);
   assert.equal(symbolFor(122)!.version, 7);
@@ -436,8 +396,6 @@ qrTest("qr: the version is chosen by payload length, at every boundary that move
   assert.equal(symbolFor(2331)!.version, 40, "the largest payload there is");
   assert.equal(symbolFor(2332), null, "and one byte more has no symbol at all");
 });
-
-// --------------------------------------------------------------- the structure
 
 function symbolOf(payload: string): QrSymbol {
   const symbol = encodeQr(payload);
@@ -468,9 +426,6 @@ qrTest("qr: the function patterns are where a scanner looks for them", () => {
 });
 
 qrTest("qr: the first codeword starts at the bottom-right corner and runs upward", () => {
-  // The one statement about the traversal that comes from outside this
-  // repository: a reader that started anywhere else would read a different
-  // symbol. Checked against the encoder's own output, not against the decoder.
   const payload = "SB-YDC8A-YGQTM-PUYZ9-2TUXP";
   const symbol = symbolOf(payload);
   const codewords = interleave(dataCodewords(new TextEncoder().encode(payload), symbol.version), symbol.version);
@@ -494,8 +449,6 @@ qrTest("qr: the mask is one of the eight, and is the one the format block declar
     assert.equal(decoded.eclBits, ECL_M_BITS, "and level M");
   }
 });
-
-// ------------------------------------------------------------- the round trips
 
 const MONERO_ADDRESS = "48HqK2XmVexampleAddress9fRtWcExampleAddress2nQyVXaLbEEXampleAddr9SDFGHJK9fRtWcQ8Uv7VJj3mExample";
 const MONERO_INTEGRATED = "4LEXampleIntegratedAddress9fRtWcExampleAddress2nQyVXaLbEEXampleAddr9SDFGHJK9fRtWcQ8Uv7VJj3mExampleAddr9fRt";
@@ -523,8 +476,7 @@ qrTest("qr: a Monero integrated address, 106 characters, round-trips — and nee
   const uri = paymentUri("xmr", MONERO_INTEGRATED, "1.482")!;
   assert.equal(uri.length, 129);
   const decoded = roundTrip(uri, "the integrated-address URI");
-  // The number this task exists for: 124 bytes does not fit version 7's 122, so
-  // an encoder that hardcoded a version would emit a truncated symbol here.
+  // 124 bytes does not fit version 7's 122, so a hardcoded version would truncate here.
   assert.equal(decoded.version, 8);
 });
 
@@ -549,8 +501,6 @@ qrTest("qr: payloads on both sides of a version boundary round-trip", () => {
 });
 
 qrTest("qr: a representative version from every table breakpoint round-trips", () => {
-  // One per change of block count, of alignment row, and of remainder bits,
-  // version 32 among them, whose alignment spacing is the exception.
   for (const version of [1, 2, 6, 7, 9, 10, 13, 14, 26, 32, 40]) {
     const payload = "Z".repeat(PUBLISHED_BYTE_CAPACITY_M[version - 1]!);
     const symbol = symbolOf(payload);
@@ -573,12 +523,9 @@ qrTest("qr: paymentUri refuses half a destination", () => {
   assert.equal(paymentUri("btc", BITCOIN_ADDRESS, "0.5"), `bitcoin:${BITCOIN_ADDRESS}?amount=0.5`);
 });
 
-// ------------------------------------------------------------------- the SVG
-
-/** A fresh regex each time: `matchAll` and `replace` on one shared object is a trap. */
+// A fresh regex each time, since matchAll and replace share lastIndex on one object.
 const runPattern = (): RegExp => /M(\d+) (\d+)h(\d+)v1h-(\d+)z/g;
 
-/** The symbol the SVG actually draws, read back out of the one path's geometry. */
 function modulesOfSvg(svg: StubElement): boolean[][] {
   assert.equal(svg.tagName, "svg");
   const viewBox = svg.getAttribute("viewBox");
@@ -601,8 +548,6 @@ function modulesOfSvg(svg: StubElement): boolean[][] {
     runs++;
   }
   assert.ok(runs > 0, "a symbol with no dark modules is not a symbol");
-  // The whole `d` is consumed: a stray command would mean modules drawn that
-  // this reading never saw.
   assert.equal(d.replace(runPattern(), "").length, 0, `unread path commands in ${d.slice(0, 120)}`);
   return modules;
 }
@@ -626,9 +571,7 @@ qrTest("svg: the drawn modules ARE the symbol, quiet zone included", () => {
   assert.deepEqual(drawn, symbol.modules, "the path's geometry must be the encoder's modules, not a transposition");
   assert.equal(decodeQr(drawn).payload, payload, "and reading the drawing back gives the payload");
 
-  // The four-module quiet zone the standard requires, painted light rather than
-  // inherited: this page has a dark theme, and a QR without a light border does
-  // not scan.
+  // The standard's four-module quiet zone, painted light because a dark theme with no light border would not scan.
   const span = symbol.size + 8;
   assert.equal(svg.getAttribute("viewBox"), `0 0 ${span} ${span}`);
   const background = svg.querySelector("rect")!;
@@ -652,8 +595,6 @@ qrTest("svg: a payload too long for any version draws nothing", () => {
   assert.ok(qrSvg("a".repeat(2331), "the largest there is") !== null);
 });
 
-// -------------------------------------------------------------- on the screens
-
 type View = import("../src/api.js").InvoiceView;
 type Rec = import("../src/domain.js").OrderRecord;
 
@@ -674,16 +615,12 @@ const xmrInvoice: View = {
   address: MONERO_ADDRESS, cryptoAmount: "1.482", cryptoCurrency: "xmr",
 };
 
-/** The payment screen handed an order that still carries its code, as a caller that forgot to strip would
- * pass, `OrderRecord` being assignable to `UnpaidOrder`. A screen must not surface a code even when handed
- * one, and a QR is the form of surfacing that no text search would notice. */
 function awaitingPayment(invoice: View = xmrInvoice, method: "btc" | "xmr" = "xmr"): StubElement {
   const built = screens.awaitingPayment({
     order: record({ code: BADGE_CODE }), invoice, method, nowMs: NOW,
     resumed: false, onCancel: noopAsync,
   });
-  // The rate countdown ticks. Nothing here reads it, and a live interval
-  // would hold the test process open, so it is stopped as soon as it is built.
+  // The countdown runs on an interval that would hold the process open, so stop it once built.
   built.stop();
   return built.node as unknown as StubElement;
 }
@@ -695,8 +632,6 @@ qrTest("the payment screen: the QR is the payment URI, and it decodes to the add
   const decoded = decodeQr(modulesOfSvg(svg));
   assert.equal(decoded.payload, `monero:${MONERO_ADDRESS}?tx_amount=1.482`,
     "a wrong payload here sends the money somewhere else");
-  // A bare address would not prefill the amount, which is the reason the payment-URI rule gives
-  // for encoding a URI at all.
   assert.notEqual(decoded.payload, MONERO_ADDRESS);
 });
 
@@ -737,19 +672,12 @@ qrTest("only the code screen draws a QR of the code, and every other screen draw
   panels.push(["the history list", screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows, onOpen: noop, onStart: noop }) as unknown as StubElement]);
 
   for (const [where, panel] of panels) {
-    // the payment screen draws one, and it is the payment URI: the ban is on the CODE, and
-    // the only way to know which a symbol carries is to decode it. Every other
-    // screen here draws nothing at all.
     for (const svg of panel.all("svg.qr")) {
       assert.equal(where, "awaitingPayment", `${where} drew a QR while its order is unpaid`);
       const payload = decodeQr(modulesOfSvg(svg)).payload;
       assert.ok(payload.startsWith("monero:"), `the payment screen's QR must be the payment URI, not ${payload.slice(0, 40)}`);
       assert.ok(!payload.includes("SB"), "and never the code");
     }
-    // Every OTHER symbol on the screen is artwork, be it the logo, a badge or a
-    // payment mark, and artwork is decorative by construction: it is built
-    // from a fixed enum, so it can hold no order data, and it must not be
-    // announced, or a screen reader would read the page's furniture aloud.
     for (const art of panel.all("svg").filter((s) => (s.getAttribute("class") ?? "") !== "qr")) {
       assert.equal(art.getAttribute("aria-hidden"), "true",
         `${where} draws a symbol that is neither the QR nor hidden: ${art.serialize().slice(0, 120)}`);
@@ -761,20 +689,17 @@ qrTest("only the code screen draws a QR of the code, and every other screen draw
     }
   }
 
-  // And the one screen that may: its symbol decodes to the code itself.
   const codeIssued = screens.codeIssued({ code: BADGE_CODE, savedLocally: true }) as unknown as StubElement;
   assert.equal(codeIssued.all("svg.qr").length, 1, "the code screen draws exactly one");
   assert.equal(decodeQr(modulesOfSvg(codeIssued.all("svg.qr")[0]!)).payload, BADGE_CODE);
 });
 
 qrTest("qr: an address carrying URI syntax cannot add parameters of its own", () => {
-  // `?` and `&` in an address would otherwise put a second `amount` in front of ours, and most
-  // wallets read the first they are given; `#` swallows everything after it.
+  // A ? or & in an address could inject a second amount that wallets read first, and # swallows everything after it.
   const withQuery = paymentUri("btc", "bc1q?amount=99&x=1", "0.5")!;
   assert.ok(!withQuery.includes("amount=99"), `the address must not carry parameters: ${withQuery}`);
   assert.ok(withQuery.endsWith("?amount=0.5"), `ours is the only one: ${withQuery}`);
   const withFragment = paymentUri("xmr", "4A#frag", "0.5")!;
   assert.ok(!withFragment.includes("#"), `a fragment would swallow the amount: ${withFragment}`);
-  // a real address is alphanumeric, so the encoding leaves it exactly as it was
   assert.equal(paymentUri("xmr", MONERO_ADDRESS, "1.482"), `monero:${MONERO_ADDRESS}?tx_amount=1.482`);
 });

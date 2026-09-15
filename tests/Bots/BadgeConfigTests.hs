@@ -201,7 +201,7 @@ testPollCadence = do
       "idle_seconds = 0\n",
       "waiting_seconds = -3\n",
       "idle_seconds = -1\n",
-      -- 2^64 + 4, which a machine-width read would wrap to a legal 4 seconds
+      -- 2^64 + 4 would wrap to a legal 4 seconds on a machine-width read.
       "idle_seconds = 18446744073709551620\n"
     ]
   where
@@ -222,29 +222,23 @@ testExpiryMinutes = do
   where
     withExpiry key act = withIni (fullIni <> key) $ \p -> readServiceConfig p >>= act
 
--- | A misspelled setting takes its default in silence, and two of them decide when money
--- counts as received. Naming them is what the operator gets instead.
 testUnknownKeysAreNamed :: IO ()
 testUnknownKeysAreNamed =
   withIni (fullIni <> "speed_polcy = LowSpeed\ntrust_forwaded_for = on\n[poll]\nwaiting_secnds = 5\n[dev]\nchat_redem = on\n") $ \p -> do
     Right ini <- readIniFile p
-    -- the typo is in [btcpay], which `fullIni` leaves open, and one in each other section
     unknownKeys ini `shouldMatchList` ["btcpay.speed_polcy", "btcpay.trust_forwaded_for", "poll.waiting_secnds", "dev.chat_redem"]
-    -- and a section header nobody reads, which disables the provider just as quietly
     withIni (T.replace "[btcpay]" "[btcpai]" fullIni) $ \wrongSection -> do
       Right sectionIni <- readIniFile wrongSection
       unknownKeys sectionIni `shouldContain` ["[btcpai]"]
-    -- and a setting written above the first header, which the parser keeps and nothing reads
     withIni ("chat_redeem = on\n" <> fullIni) $ \stray -> do
       Right strayIni <- readIniFile stray
       unknownKeys strayIni `shouldContain` ["chat_redeem, written above the first section header"]
-    -- and a file with nothing misspelled names nothing
     withIni fullIni $ \clean -> do
       Right cleanIni <- readIniFile clean
       unknownKeys cleanIni `shouldBe` []
 
--- | The ini parser stops at the first line it cannot read and keeps what it has, so without
--- this a missing `=` in [listener] takes every section below it, and the provider with it.
+-- | The ini parser stops at the first line it cannot read and keeps what it has, so without this a
+-- missing `=` in [listener] would silently drop every section below it, and the provider with it.
 testMalformedLineRefused :: IO ()
 testMalformedLineRefused =
   withIni (T.replace "static_dir = /srv/badges" "static_dir = /srv/badges\ntrust_forwarded_for on" fullIni) $ \p ->
@@ -252,9 +246,8 @@ testMalformedLineRefused =
       Left e -> e `shouldContain` "malformed"
       Right cfg -> expectationFailure ("a truncated file must not boot, and this one kept " <> show (btcpay cfg))
 
--- | Comments and blank lines after the last setting are not content. `iniParser` stops before
--- a trailing comment, so the strictness that refuses a truncated file must not refuse this:
--- commenting out the last section is enough to produce one.
+-- | The strictness that refuses a truncated file must not refuse a trailing comment or blank line,
+-- since `iniParser` stops before one and commenting out the last section is enough to produce it.
 testTrailingCommentIsAccepted :: IO ()
 testTrailingCommentIsAccepted = do
   accepts (fullIni <> "; rotated the api key on 2026-09-01\n")
@@ -268,8 +261,8 @@ testTrailingCommentIsAccepted = do
           Right _ -> pure ()
           Left e -> expectationFailure ("a legal file was refused: " <> e)
 
--- | The reason only: the caller prints it under the path it was asked for, and naming the file
--- here as well put it in the line twice.
+-- | The caller prints the reason under the path it was asked for, so naming the file here as well
+-- would put it in the line twice.
 testMissingFileIsReported :: IO ()
 testMissingFileIsReported =
   readServiceConfig "tests/tmp/no-such-badge_service.ini" >>= \r -> case r of
@@ -300,7 +293,7 @@ testHostMustBeHttps =
       Left e -> e `shouldContain` "https"
       Right _ -> expectationFailure "an http host carries the api key in the clear"
 
--- a real 32-byte secret, base64url, as `simplex-chat badge keygen` prints it
+-- These are real 32-byte base64url secrets, as `simplex-chat badge keygen` prints them.
 issuerSecret1, issuerSecret2 :: T.Text
 issuerSecret1 = "Ea5wG-J2mQjPBu9YfSJRKPnGnzoIdEE-8VaMh_wY2Bg="
 issuerSecret2 = "Zm9vYmFyYmF6cXV1eDEyMzQ1Njc4OTBhYmNkZWZnaGk="
@@ -331,8 +324,8 @@ testIssuerDefaultMissing =
       Left e -> e `shouldContain` "key_2"
       Right _ -> expectationFailure "a default naming no listed key must fail at boot"
 
--- `key_01` reads as 1, so it would land on `key_1` in the map and one of the two secrets would
--- be dropped without ever being checked. One spelling per index, refused at boot.
+-- `key_01` reads as 1, so it would land on `key_1` in the map and one of the two secrets would be
+-- dropped without ever being checked.
 testIssuerKeyPadded :: IO ()
 testIssuerKeyPadded =
   withIssuer ["default = key_1", "key_1 = " <> issuerSecret1, "key_01 = " <> issuerSecret2] $ \p -> do

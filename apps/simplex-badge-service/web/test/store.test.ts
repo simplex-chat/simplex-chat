@@ -94,8 +94,6 @@ storeTest("store: shape-corrupted but parseable entries are dropped, not thrown"
 
 storeTest("store: orders sort chronologically across second- and millisecond-precision timestamps", () => {
   const s = new Store(new MemoryStorage());
-  // Same UTC second: a server-formatted record (to-the-second) and a
-  // browser-formatted one (to-the-millisecond) that is actually later.
   const secOrder: OrderRecord = {
     orderId: "sec", badgeType: "legend", months: 12,
     createdAt: "2026-08-24T11:02:19Z", status: "open",
@@ -114,9 +112,7 @@ storeTest("store: orders sort chronologically across second- and millisecond-pre
 });
 
 storeTest("store: an unparseable createdAt sorts oldest instead of poisoning the comparator", () => {
-  // `orders()` admits any string as `createdAt`, from another tab's partial write or a hand edit, and
-  // `Date.parse` answers NaN for one it cannot read. NaN makes every comparison false, so rather than sorting
-  // the bad entry late it leaves the whole list to the sort algorithm, and with it which order `newestOpen` resumes.
+  // Date.parse answers NaN for an unreadable createdAt, and NaN makes every comparison false, leaving the sort order undefined.
   const mem = new MemoryStorage();
   mem.map.set("sb.orders.v1", JSON.stringify([
     { orderId: "undated", badgeType: "legend", months: 12, createdAt: "whenever", status: "open" },
@@ -129,8 +125,6 @@ storeTest("store: an unparseable createdAt sorts oldest instead of poisoning the
 });
 
 storeTest("store: a stored record keeps the fields that read and drops the ones that do not", () => {
-  // The opposite policy from a response, and for the reason that separates them: the service
-  // can be asked again, and this is the one copy of the code.
   const mem = new MemoryStorage();
   mem.map.set("sb.orders.v1", JSON.stringify([{
     orderId: "corrupt", createdAt: "2026-08-24T11:00:00Z", status: "open",
@@ -177,8 +171,6 @@ storeTest("store: a session or theme outside the known set falls back to the def
 });
 
 storeTest("store: saveOrder replaces the stored entry rather than merging into it", () => {
-  // Merging made an omitted key mean "keep what was there", so a record could go on
-  // reporting a payment its writer no longer had any evidence for.
   const s = new Store(new MemoryStorage());
   s.saveOrder(order("1", { address: "48HqK2Xm", cryptoAmountPaid: "1.482", paidInFull: true, amount: 42000 }));
   s.saveOrder(order("1", { status: "expired" }));
@@ -190,8 +182,6 @@ storeTest("store: saveOrder replaces the stored entry rather than merging into i
 });
 
 storeTest("store: the two facts only this browser holds survive a write that omits them", () => {
-  // A code exists nowhere else, and a card confirmation never comes back off. Everything
-  // else on a record can be asked for again.
   const s = new Store(new MemoryStorage());
   s.saveOrder(order("1", { code: "SB-CODE" }));
   assert.equal(s.markSubmitted("1"), true);
@@ -235,10 +225,6 @@ storeTest("store: markCanceled is per order, sticky, and survives a later server
 
 storeTest("store: the cap evicts the oldest codeless entry even when an older entry holds a code", () => {
   const s = new Store(new MemoryStorage());
-  // Interleaved fixture: the oldest entry overall ("0") holds a code and must
-  // survive; the oldest entry with no code ("1") is the correct victim. A
-  // fixture where the codeless entries are also the oldest block (as in the
-  // test above) cannot distinguish "evict oldest" from "evict oldest codeless".
   for (let i = 0; i < 50; i++) s.saveOrder(order(String(i), i % 2 === 0 ? { code: "C" + i } : {}));
   s.saveOrder(order("999", { code: "NEW" }));
   const ids = s.orders().map((o) => o.orderId);
@@ -249,9 +235,6 @@ storeTest("store: the cap evicts the oldest codeless entry even when an older en
 });
 
 storeTest("store: a store that loses its writes never claims to hold the code", () => {
-  // The page falls back to an in-memory store where the browser refuses `localStorage`. That
-  // store accepts every write and forgets them all on the next load, so a round trip through it
-  // proves nothing: the code screen's "Saved in this browser" rests on this answer.
   const durable = new Store(new MemoryStorage());
   durable.saveOrder(order("1", { code: "SB-CODE" }));
   assert.equal(durable.holdsCode("1", "SB-CODE"), true);
@@ -266,8 +249,6 @@ storeTest("store: a store that loses its writes never claims to hold the code", 
 });
 
 storeTest("store: a full list cannot hold another code, and says so before the money", () => {
-  // the durable half is not the only way a code goes unkept: with the cap reached and every
-  // entry holding someone's code there is nothing to evict, and `saveOrder` refuses
   const s = new Store(new MemoryStorage());
   assert.equal(s.canHoldACode(), true, "an empty store has room");
   for (let i = 0; i < 50; i++) s.saveOrder(order(String(i), { code: "C" + i }));
@@ -282,8 +263,6 @@ storeTest("store: a full list cannot hold another code, and says so before the m
 });
 
 storeTest("store: forgetting one key does not depend on the other succeeding", () => {
-  // both removals are what [ Forget everything ] promises; a store that refuses the first must
-  // not take the second with it
   class RefusesOrders extends MemoryStorage {
     override removeItem(k: string): void {
       if (k === "sb.orders.v1") throw new Error("SecurityError");

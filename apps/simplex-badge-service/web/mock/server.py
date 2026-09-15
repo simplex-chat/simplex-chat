@@ -1,4 +1,3 @@
-# mock/server.py
 """Stands in for the Haskell service AND for Stripe and BTCPay, so the whole
 browser flow can be driven without any of them. A test fixture: no signatures,
 no persistence, no money, and not a specification of the real service.
@@ -25,8 +24,6 @@ from urllib.parse import urlparse, parse_qs
 ROOT = Path(__file__).resolve().parent.parent
 HOLD_SECONDS = float(os.environ.get("MOCK_HOLD_SECONDS", "30"))
 STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "").strip()
-# The one meta element the shell carries for it, matched by id so the rest of
-# the tag (and the rest of the file) is left exactly as committed.
 KEY_META = re.compile(r'(<meta id="stripe-publishable-key"[^>]*content=")[^"]*(")')
 
 CATALOG = {
@@ -41,17 +38,14 @@ OFFERS = {
 }
 MIME = {".html": "text/html", ".css": "text/css", ".js": "text/javascript",
         ".svg": "image/svg+xml", ".json": "application/json", ".webmanifest": "application/manifest+json"}
-# BTCPay's speed policy decides this; the service reads it from its config and puts it in
-# the view. One is what the default policy asks for.
+# BTCPay's default speed policy asks for one confirmation.
 REQUIRED_CONFIRMATIONS = 1
-# Shaped like the real thing, so the QR and the wallet link a chain's wallet would read are
-# the ones this chain's wallet expects.
 ADDRESSES = {"btc": "bc1qexampleaddress0k3jq2wvcgmqz", "xmr": "48HqK2XmVexampleAddress9fRtWc"}
 
 LOCK = threading.Lock()
-INVOICES = {}          # invoiceId -> dict
-HASHES = {}            # codeHash -> invoiceId, mirroring the real primary key
-EVENTS = {}            # invoiceId -> threading.Event, replacing the STM waiters
+INVOICES = {}
+HASHES = {}
+EVENTS = {}
 
 
 def now_iso():
@@ -102,8 +96,6 @@ def public_view(inv):
     for k in ("amountPaid", "cryptoAmountPaid", "cryptoAmountDue", "settledAt"):
         if inv.get(k) is not None:
             view[k] = inv[k]
-    # the service emits this for every payment it holds, true or false: it is the provider's
-    # own verdict, and the page reads it before any figure
     if inv.get("paidInFull") is not None:
         view["paidInFull"] = inv["paidInFull"]
     if inv["method"] == "card":
@@ -133,7 +125,7 @@ class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     def log_message(self, *args):
-        pass  # quiet under tests
+        pass
 
     def _send(self, status, payload, ctype="application/json"):
         body = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
@@ -145,12 +137,8 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
         except (BrokenPipeError, ConnectionResetError):
-            # The browser went away while this was in flight. Routine for a
-            # long poll: `?wait=` parks the thread for up to HOLD_SECONDS, and
-            # a reload, a navigation or a closed tab inside that window drops
-            # the socket before the answer is written. The invoice is
-            # untouched and the page reissues on its next load, so there is
-            # nothing to report and nothing to retry.
+            # A client that drops during a long poll leaves the invoice untouched and the page
+            # reissues on its next load, so there is nothing to retry.
             self.close_connection = True
 
     def _read_json(self):
@@ -163,8 +151,6 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         path = urlparse(self.path).path
 
-        # --- control surface: what Stripe or BTCPay would tell us, and what the
-        # poller would then read. This is how a test moves money.
         if path.startswith("/control/"):
             parts = path.strip("/").split("/")
             if len(parts) != 3:
@@ -185,33 +171,28 @@ class Handler(BaseHTTPRequestHandler):
                 elif action == "expire":
                     inv["status"] = "expired"
                 elif action == "confirming":
-                    # what the provider sees between the payment arriving and it confirming:
-                    # covered, and the invoice still open
                     inv["amountPaid"] = inv["amount"]
                     inv["paidInFull"] = True
                     if inv["method"] != "card":
                         inv["cryptoAmountPaid"] = inv["cryptoAmount"]
                         inv["cryptoAmountDue"] = "0.000"
                 elif action == "verdict":
-                    # Monero: the provider calls it confirming while its figures are still zero
+                    # Monero reports the payment as paid in full while its figures are still zero.
                     inv["paidInFull"] = True
                 elif action == "partial":
                     inv["amountPaid"] = inv["amount"] // 2
                     inv["paidInFull"] = False
                     if inv["method"] != "card":
                         inv["cryptoAmountPaid"] = "0.734"
-                        # the provider's own figure, which carries the fee a partial payment adds
                         inv["cryptoAmountDue"] = "0.752"
                 else:
                     return self._send(400, {"error": "bad_request"})
                 status = inv["status"]
                 old_event = swap_event(invoice_id)
             if old_event is not None:
-                old_event.set()   # wake every request already holding this invoice's old event
+                old_event.set()
             return self._send(200, {"ok": True, "status": status})
 
-        # --- the one write the browser itself makes. The service refuses the same two ways,
-        # and the wording each refusal gets on screen is not the same.
         if path.startswith("/api/invoice/") and path.endswith("/cancel"):
             invoice_id = path[len("/api/invoice/"):-len("/cancel")]
             with LOCK:
@@ -221,7 +202,7 @@ class Handler(BaseHTTPRequestHandler):
                 if inv["status"] != "open":
                     return self._send(409, {"error": "not_open"})
                 if payment_mark(inv) != ("", False) or inv.get("amountPaid"):
-                    # invalidating it at the provider would strand what the buyer already sent
+                    # Cancelling a funded invoice would strand what the buyer already sent.
                     return self._send(409, {"error": "funded"})
                 inv["status"] = "expired"
                 payload = {"invoiceId": invoice_id, **public_view(inv)}
@@ -238,7 +219,6 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(400, {"error": "bad_request"})
             with LOCK:
                 if body["codeHash"] in HASHES:
-                    # The real code_hash primary key: a duplicate is refused, never reused.
                     return self._send(409, {"error": "code_conflict"})
                 t = total(body.get("priceId"), body.get("offerId"))
                 if t is None:
@@ -265,8 +245,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
-        # blank values kept: `seenPaid=` is the page saying it has rendered no figure, which
-        # is a different statement from not saying anything
+        # An empty `seenPaid=` means the page rendered no figure, which differs from the parameter
+        # being absent, so blank values are kept.
         path, query = parsed.path, parse_qs(parsed.query, keep_blank_values=True)
 
         if path.startswith("/api/invoice/"):
@@ -279,24 +259,20 @@ class Handler(BaseHTTPRequestHandler):
                 held = payment_mark(inv)
                 event = EVENTS.get(invoice_id)
             wait = (query.get("wait") or [None])[0]
-            # what the page says it has rendered. A payment recorded before this request
-            # arrived cannot set the event it would wait on, so holding then would leave the
-            # buyer on the payment screen with the money already in.
+            # A payment recorded before this request arrived cannot fire the event this request
+            # would wait on, so holding then would strand the buyer on the payment screen.
             seen = ((query.get("seenPaid") or [""])[0], (query.get("seenFull") or ["0"])[0] == "1")
             unseen = "seenPaid" in query and seen != held
             if wait is not None and wait == current and not unseen and event is not None:
-                # Hold until settlement sets this invoice's event, or the hold
-                # expires. Nothing here polls the record on a timer. The event
-                # is never cleared: settle/expire/partial replace it with a
-                # fresh one under the lock, so a set event always means "a
-                # change happened after I grabbed this reference."
+                # The event is never cleared; settle, expire and partial replace it with a fresh
+                # one under the lock, so a set event always means a change happened after this
+                # reference was taken.
                 event.wait(timeout=HOLD_SECONDS)
             with LOCK:
                 inv = INVOICES[invoice_id]
                 payload = {"invoiceId": invoice_id, **public_view(inv)}
             return self._send(200, payload)
 
-        # static: public/ first, then dist/ for the compiled modules
         rel = "index.html" if path == "/" else path.lstrip("/")
         for base in ("public", "dist"):
             base_resolved = (ROOT / base).resolve()
@@ -304,7 +280,8 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 candidate.relative_to(base_resolved)
             except ValueError:
-                continue  # escapes this base directory, try the next one
+                # The path escaped this base directory, so move to the next one.
+                continue
             if candidate.is_file():
                 ctype = MIME.get(candidate.suffix, "application/octet-stream")
                 body = candidate.read_bytes()
@@ -318,9 +295,8 @@ class Server(ThreadingHTTPServer):
     daemon_threads = True
 
     def handle_error(self, request, client_address):
-        # A dropped client is not a server fault. socketserver's default prints
-        # a traceback, which under a long poll is both routine and alarming to
-        # read; anything else still surfaces.
+        # socketserver's default prints a traceback for a dropped client, which is routine under
+        # a long poll, so suppress it while letting anything else surface.
         if isinstance(sys.exc_info()[1], (BrokenPipeError, ConnectionResetError)):
             return
         super().handle_error(request, client_address)
@@ -331,8 +307,8 @@ def main():
     if "--port" in sys.argv:
         port = int(sys.argv[sys.argv.index("--port") + 1])
     if STRIPE_PUBLISHABLE_KEY and not STRIPE_PUBLISHABLE_KEY.startswith("pk_"):
-        # A publishable key is public; a secret or restricted one (`sk_`, `rk_`)
-        # is not, and this would put it in the page for anyone to read.
+        # A secret or restricted key (sk_, rk_) would be written into the page for anyone to read,
+        # so only a publishable key (pk_) is allowed.
         sys.exit("mock: STRIPE_PUBLISHABLE_KEY must be a publishable key (pk_...)")
     server = Server(("127.0.0.1", port), Handler)
     print(f"mock badge service on http://localhost:{port}", flush=True)

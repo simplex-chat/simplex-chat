@@ -129,8 +129,7 @@ mkBadgeServiceOpts TestParams {tmpPath = ps} secretKey =
       testing = True
     }
 
--- | A clock the service and the client both read: real time plus an offset the test moves. It
--- tracks real time rather than freezing it, so a sleeper still sleeps the right real duration.
+-- | The clock tracks real time plus a test-controlled offset rather than freezing it, so a sleeping worker still waits the correct real duration.
 newtype TestClock = TestClock (IORef NominalDiffTime)
 
 newTestClock :: IO TestClock
@@ -141,12 +140,9 @@ testClockTime (TestClock r) = do
   offset <- readIORef r
   addUTCTime offset <$> getCurrentTime
 
--- | Move the clock so that "now" becomes exactly the given time - months are calendar months, so
--- a test crosses a boundary by naming the date rather than adding a duration.
 setClockAt :: TestClock -> UTCTime -> IO ()
 setClockAt (TestClock r) t = getCurrentTime >>= \real -> writeIORef r (diffUTCTime t real)
 
--- | Everything a badge test may need from a running service.
 data BadgeServiceEnv = BadgeServiceEnv
   { bsIssuerKey :: BadgeIssuerKey,
     bsClock :: TestClock,
@@ -155,8 +151,6 @@ data BadgeServiceEnv = BadgeServiceEnv
     bsController :: ChatController
   }
 
--- | Start the badge service on a fresh issuer key, and hand the test body what depends on it:
--- the client config trusting that key and addressing the service, the address, and the controller.
 withBadgeService :: HasCallStack => TestParams -> (ChatConfig -> String -> ChatController -> IO ()) -> IO ()
 withBadgeService ps test =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsAddress, bsController} -> test bsClientCfg bsAddress bsController
@@ -166,12 +160,9 @@ withBadgeServiceEnv ps test = do
   Right (pk, sk) <- bbsKeyGen
   clock <- newTestClock
   let opts = mkBadgeServiceOpts ps sk
-      -- the service refuses to start unless its secret is the key trusted at its index
       svcCfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk, badgeCurrentTime = testClockTime clock}
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
-  -- First start: badge service takes the CreateMyAddress branch.
   runBadgeService svcCfg opts $ \_ -> pure ()
-  -- Reopen the DB to read the link the service created.
   bsLink <- withTestChat ps serviceDbPrefix $ \bs -> do
     bs <## "subscribed 1 connections on server localhost"
     bs ##> "/sa"
@@ -180,12 +171,10 @@ withBadgeServiceEnv ps test = do
     pure sLink
   let clientCfg =
         svcCfg {badgeServiceAddress = Just $ either (error . ("bad badge service address: " <>)) id $ strDecode (B.pack bsLink)}
-  -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
   runBadgeService svcCfg opts $ \env -> do
     cc <- atomically $ readTMVar $ serviceCC env
     test BadgeServiceEnv {bsIssuerKey = BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk}, bsClock = clock, bsClientCfg = clientCfg, bsAddress = bsLink, bsController = cc}
 
--- through the operator command the service actually exposes, not the function behind it
 issueCode :: HasCallStack => ChatController -> BadgeType -> Int -> IO BadgeCode
 issueCode cc badgeType months = issueCodeAs cc badgeType months "free"
 
@@ -204,9 +193,7 @@ issueCodeAs cc badgeType months status =
       _ -> error $ "unexpected issue response: " <> T.unpack response
     r -> error $ "issue failed: " <> show (() <$ r)
 
--- | The post-start hook fills serviceCC once the address exists, so waiting on it is the service
--- being ready. A fixed delay here raced with startup and left the address output of one start
--- arriving during the next test.
+-- | The post-start hook fills serviceCC once the address exists, so the test waits on it rather than on a fixed delay that would race with startup and let one start's address output arrive during the next test.
 runBadgeService :: ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
 runBadgeService cfg opts action = do
   env <- newServiceState
@@ -233,7 +220,6 @@ testRedeemBadgeCode ps =
       withNewTestChatCfg ps clientCfg "bob" bobProfile $ \bob -> do
         connectUsers alice bob
         code <- issueCode cc BTSupporter 1
-        -- the service has never seen this purchase key: a first redemption must still succeed
         alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
         alice <## "badge redeemed"
         alice <## "supporter badge - active"
@@ -263,16 +249,12 @@ testRedeemBadgeCodeTwice ps =
       alice <## "badge redeemed"
       alice <## "supporter badge - active"
       alice <##. "expires "
-      -- Retyped in another case and without separators, so it normalises to the same code and
-      -- finds the same stashed keys: a retry the service can recognise as the same signer.
       alice ##> ("/_redeem_badge_code 1 " <> map toLower (T.unpack $ badgeCodeText code))
       alice <## "badge already redeemed"
       alice ##> "/p"
       alice <## "user profile: alice (Alice, * supporter)"
       alice <## "use /p <name> [<bio>] to change it"
 
--- The service answers unknown and malformed alike; the client refuses malformed locally, which
--- is why the two reach the user differently.
 testRedeemUnknownCode :: HasCallStack => TestParams -> IO ()
 testRedeemUnknownCode ps =
   withBadgeService ps $ \clientCfg bsLink _ ->
@@ -281,17 +263,14 @@ testRedeemUnknownCode ps =
       unknown <- randomBadgeCode g
       alice ##> ("/_redeem_badge_code 1 " <> codeArg unknown)
       alice <## "bad chat command: badge service error: code_invalid"
-      -- a failed check character is refused before anything leaves the device
       alice ##> "/_redeem_badge_code 1 SB-00000-00000-00000-00001"
       alice <## "bad chat command: invalid badge code"
-      -- sent straight to the service, past the client's own check, the two are one answer
       (_, redeemPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
       redeemDirect alice bsLink redeemPriv (T.unpack $ badgeCodeText unknown)
       alice <## "service response: {\"code\":\"code_invalid\",\"type\":\"error\"}"
       redeemDirect alice bsLink redeemPriv "SB-00000-00000-00000-00001"
       alice <## "service response: {\"code\":\"code_invalid\",\"type\":\"error\"}"
 
--- a signed redeemBadgeCode sent as a raw service request, bypassing the client's own checks
 redeemDirect :: HasCallStack => TestCC -> String -> C.PrivateKeyEd25519 -> String -> IO ()
 redeemDirect cc bsLink signPriv code = do
   let purchaseKey = B.unpack $ strEncode $ C.publicKey signPriv
@@ -302,12 +281,10 @@ redeemDirect cc bsLink signPriv code = do
           <> "\",\"code\":\"" <> code <> "\"}}"
   cc ##> ("/_service_request 1 " <> bsLink <> " sign_key=" <> signKey <> " " <> req)
 
--- any 32 bytes: these requests never reach signing
+-- These requests never reach signing, so the master key can be any 32 bytes.
 testMasterKeyB64 :: String
 testMasterKeyB64 = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
--- BadgeType decodes anything to BTUnknown, so without a check at this boundary an operator
--- typo would issue a code no app can show as a badge.
 testIssueRejectsBadArguments :: HasCallStack => TestParams -> IO ()
 testIssueRejectsBadArguments ps =
   withBadgeService ps $ \_ _ cc -> do
@@ -326,8 +303,6 @@ issueRaw cc args =
     Right CRCustomChatResponse {} -> pure $ Right ()
     _ -> pure $ Left ()
 
--- The guard is the badge on the profile, so it refuses whatever the code is and whichever type it
--- funds; nothing is sent, so the refused code is still redeemable.
 testRedeemSecondCode :: HasCallStack => TestParams -> IO ()
 testRedeemSecondCode ps =
   withBadgeService ps $ \clientCfg _ cc ->
@@ -349,8 +324,6 @@ testRedeemSecondCode ps =
       alice <## "legend badge - active"
       alice <##. "expires "
 
--- Each profile stashes its own keys, so the second reaches the service as a different signer -
--- rather than being handed the first profile's badge, or colliding in badge_code_redemptions.
 testRedeemSameCodeOtherProfile :: HasCallStack => TestParams -> IO ()
 testRedeemSameCodeOtherProfile ps =
   withBadgeService ps $ \clientCfg _ cc ->
@@ -369,10 +342,6 @@ testRedeemSameCodeOtherProfile ps =
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice, * supporter)"
 
--- Ledger behaviour, driven against the real service - real signing, real rows - through the
--- handler rather than the transport, so the typed response can be asserted. The transport and its
--- purchaseKey guard are covered by the tests above.
-
 serviceCmd :: HasCallStack => BadgeServiceEnv -> C.PublicKeyEd25519 -> BadgeServiceCommand -> IO BadgeServiceResponse
 serviceCmd BadgeServiceEnv {bsIssuerKey, bsController} purchaseKey request =
   badgeServiceResponse bsIssuerKey bsController (Just purchaseKey) reqObject
@@ -381,7 +350,6 @@ serviceCmd BadgeServiceEnv {bsIssuerKey, bsController} purchaseKey request =
       J.Object o -> o
       _ -> error "badge service request must encode as an object"
 
--- the fields a ledger assertion reads, without the ambiguity of the shared record names
 entryOf :: StatementEntry -> (Int, Int, UTCTime)
 entryOf StatementEntry {changeMonths, balanceMonths, balanceStartTs} = (changeMonths, balanceMonths, balanceStartTs)
 
@@ -403,7 +371,6 @@ credentialOf = \case
   BSPBadgeCredential {credential} -> credential
   r -> error $ "expected badgeCredential, got " <> show (J.toJSON r)
 
--- the next month falls due when the balance start reaches it, which is the last entry's start
 nextDue :: [StatementEntry] -> UTCTime
 nextDue entries = let (_, _, start) = entryOf (last entries) in start
 
@@ -423,8 +390,6 @@ expiryOf r = (\(BadgeCredential _ _ _ BadgeInfo {badgeExpiry}) -> badgeExpiry) <
 masterKeyOf :: HasCallStack => BadgeServiceResponse -> Maybe BadgeMasterKey
 masterKeyOf r = (\(BadgeCredential _ mk _ _) -> mk) <$> credentialOf r
 
--- A three month code credits three months and issues the first; a month later the second is
--- issued, and only then. Asserted against the service's own rows.
 testCodeMonthsRenew :: HasCallStack => TestParams -> IO ()
 testCodeMonthsRenew ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc} -> do
@@ -437,10 +402,8 @@ testCodeMonthsRenew ps =
     map (\e -> let (c, m, _) = entryOf e in (c, m)) entries `shouldBe` [(3, 3), (-1, 2)]
     credentialOf redeemed `shouldSatisfy` isJust
     let firstDue = nextDue entries
-    -- still inside the first month: nothing new is written
     r2 <- assertBalance env purchaseKey (last entries)
     map entryTag (fst $ statementOf r2) `shouldBe` []
-    -- the second month falls due
     setClockAt bsClock firstDue
     r3 <- assertBalance env purchaseKey (last entries)
     let (entries3, prev3) = statementOf r3
@@ -448,13 +411,10 @@ testCodeMonthsRenew ps =
     map entryTag entries3 `shouldBe` ["badge"]
     map (\e -> let (c, m, _) = entryOf e in (c, m)) entries3 `shouldBe` [(-1, 1)]
     credentialOf r3 `shouldSatisfy` isJust
-    -- a different credential for a different month, not the same signature returned twice
     credentialOf r3 `shouldNotBe` credentialOf redeemed
   where
     entryIdOf StatementEntry {entryId} = entryId
 
--- A repeat inside an issued month returns the credential already stored, and writes no row:
--- re-signing the same period would churn the client's credential for nothing.
 testRepeatInsideIssuedPeriod :: HasCallStack => TestParams -> IO ()
 testRepeatInsideIssuedPeriod ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
@@ -466,7 +426,6 @@ testRepeatInsideIssuedPeriod ps =
     map entryTag (fst $ statementOf repeated) `shouldBe` []
     credentialOf repeated `shouldBe` credentialOf redeemed
 
--- Months that passed unissued are lapsed in one row, and the month now current is issued.
 testLapseWhileAway :: HasCallStack => TestParams -> IO ()
 testLapseWhileAway ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc} -> do
@@ -474,8 +433,7 @@ testLapseWhileAway ps =
     (purchaseKey, masterKey) <- newPurchaseKeys
     redeemed <- serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
     let (entries, _) = statementOf redeemed
-    -- away past the fourth boundary of the run: three months lapse, the fourth is due. Counted
-    -- from the anchor - adding months to an already clipped due date would miss the boundary.
+    -- The clock is moved from the anchor because adding months to an already clipped due date would miss the boundary.
     setClockAt bsClock (addMonths 4 (anchorOf (last entries)))
     away <- assertBalance env purchaseKey (last entries)
     let (entries', _) = statementOf away
@@ -483,9 +441,6 @@ testLapseWhileAway ps =
     map (\e -> let (c, m, _) = entryOf e in (c, m)) entries' `shouldBe` [(-3, 2), (-1, 1)]
     credentialOf away `shouldSatisfy` isJust
 
--- Every badge issued in a week expires at the same moment, so the expiry says nothing about when
--- it was bought. On the last month of a balance paidThrough is the period end exactly, so a
--- client-proposed expiry capped the rounding away and put the expiry back on the anniversary.
 testLastMonthExpiryRounds :: HasCallStack => TestParams -> IO ()
 testLastMonthExpiryRounds ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc} -> do
@@ -497,12 +452,9 @@ testLastMonthExpiryRounds ps =
     renewed <- assertBalance env purchaseKey (last entries)
     let (entries', _) = statementOf renewed
     map entryTag entries' `shouldBe` ["badge"]
-    -- the last month the balance funds: nothing is left to issue after it
     map (\e -> let (c, m, _) = entryOf e in (c, m)) entries' `shouldBe` [(-1, 0)]
     expiryOf renewed `shouldBe` Just (endOfMondayAfter (nextDue entries'))
 
--- A renewal states nothing, so the credential carries the master key stored with the purchase.
--- The service used to sign whatever key the request supplied, checking only the badge type.
 testRenewalSignsWithStoredMasterKey :: HasCallStack => TestParams -> IO ()
 testRenewalSignsWithStoredMasterKey ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc} -> do
@@ -515,8 +467,7 @@ testRenewalSignsWithStoredMasterKey ps =
     renewed <- assertBalance env purchaseKey (last entries)
     masterKeyOf renewed `shouldBe` Just masterKey
 
--- The replicated columns of a ledger, in order. service_created_at and created_at are left out:
--- the client records when it stored a row, which is not when the service wrote it.
+-- This type omits service_created_at and created_at because the client records when it stored a row, not when the service wrote it, so those columns never match.
 type ReplicatedRow = (Text, Int, Int, UTCTime, Text, Maybe Text)
 
 ledgerRows :: ChatController -> String -> IO [ReplicatedRow]
@@ -528,16 +479,12 @@ ledgerRows ChatController {chatStore} table =
         <> table
         <> " ORDER BY entry_id"
 
--- | The client's verdict on each row, in ledger order. The service has no such column: it computes
--- the rows rather than checking what someone else computed.
 balanceChecks :: ChatController -> IO [Maybe Bool]
 balanceChecks ChatController {chatStore} =
   withTransaction chatStore $ \db ->
     map (fmap unBI . fromOnly)
       <$> DB.query_ db "SELECT balance_checked FROM badge_ledger ORDER BY entry_id"
 
--- The client copies the statement verbatim and authors nothing, so after a redemption both sides
--- hold the same rows under the same entry ids.
 testClientReplicatesLedger :: HasCallStack => TestParams -> IO ()
 testClientReplicatesLedger ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
@@ -549,40 +496,30 @@ testClientReplicatesLedger ps =
       alice <##. "expires "
       serviceLedger <- ledgerRows cc "sx_badge_service_badge_ledger"
       clientLedger <- ledgerRows (chatController alice) "badge_ledger"
-      -- the code credit and the first month, on both sides
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) serviceLedger `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge")]
       clientLedger `shouldBe` serviceLedger
-      -- and re-ran both operations against them: the credit from the seed, the issue from the credit
       checks <- balanceChecks (chatController alice)
       checks `shouldBe` [Just True, Just True]
-      -- redeeming again replays the statement, and must not duplicate a single row
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
       alice <## "badge already redeemed"
       clientLedger' <- ledgerRows (chatController alice) "badge_ledger"
       clientLedger' `shouldBe` serviceLedger
-      -- nor a second issuance for the one month issued: the replay names a month already stored
       expiries <- issuedExpiries (chatController alice)
       length expiries `shouldBe` 1
 
--- the balance start of the last row, which is when the next month falls due
 dueAtOf :: [ReplicatedRow] -> UTCTime
 dueAtOf rows = let (_, _, _, start, _, _) = last rows in start
 
--- | The two clock positions a renewal needs: the request, a day before the shown credential
--- lapses, and the presentation, as it lapses.
 renewalMoments :: [ReplicatedRow] -> (UTCTime, UTCTime)
 renewalMoments rows =
   let expiry = endOfMondayAfter $ dueAtOf rows
    in (addUTCTime (-nominalDay) expiry, expiry)
 
--- | Real seconds between arming a wake and it firing. Long enough for the arming pass to finish
--- first, since one that overruns does the work itself and the test passes without a wake at all.
+-- | The margin must be long enough for the arming pass to finish first, because a pass that overruns does the work itself and the test then passes without arming any wake.
 badgeWakeMargin :: NominalDiffTime
 badgeWakeMargin = 3
 
--- | Stand the clock just short of t and signal once. A sleeping worker cannot see the clock move,
--- so the signal is what makes it re-derive - and, standing short, it arms the wake at t rather
--- than doing the work. Whatever follows is produced by that wake.
+-- | Standing the clock just short of t before signalling makes the worker arm the wake at t rather than do the work in this pass, so whatever follows is produced by that wake.
 armWakeAt :: HasCallStack => TestCC -> TestClock -> UTCTime -> IO ()
 armWakeAt cc clock t = do
   setClockAt clock $ addUTCTime (negate badgeWakeMargin) t
@@ -610,8 +547,6 @@ setBadgeExpiry ChatController {chatStore} whichBadge t =
   withTransaction chatStore $ \db ->
     DB.execute db (fromString $ "UPDATE contact_profiles SET badge_expiry = ? WHERE " <> whichBadge <> " IS NOT NULL") (Only t)
 
--- | Copy the newest ledger row as an entry of a type this version does not know: the service is
--- deployed ahead of app releases, so a new type first arrives at clients that predate it.
 insertUnknownLedgerEntry :: ChatController -> IO ()
 insertUnknownLedgerEntry ChatController {chatStore} =
   withTransaction chatStore $ \db ->
@@ -624,8 +559,6 @@ insertUnknownLedgerEntry ChatController {chatStore} =
         <> "  balance_badge_type, service_created_at, created_at, 'credit', 'grant', 1, '{\"type\":\"grant\"}'"
         <> " FROM badge_ledger ORDER BY entry_id DESC LIMIT 1"
 
--- | The month the profile is showing, and the month last issued. They must agree: a profile left
--- on an earlier month shows contacts a badge the ledger has already replaced.
 shownAndIssuedExpiry :: ChatController -> IO (Maybe UTCTime, Maybe UTCTime)
 shownAndIssuedExpiry ChatController {chatStore} = withTransaction chatStore $ \db -> do
   shown :: [(Maybe UTCTime, Int64)] <-
@@ -641,7 +574,7 @@ shownAndIssuedExpiry ChatController {chatStore} = withTransaction chatStore $ \d
 waitShownIssued :: HasCallStack => ChatController -> IO ()
 waitShownIssued cc = loop (100 :: Int)
   where
-    -- both absent would compare equal, so the presence of a badge is asserted separately
+    -- Both values being absent would compare equal, so the presence of a badge is asserted separately.
     loop 0 = shownAndIssuedExpiry cc >>= \(shown, issued) -> do
       shown `shouldSatisfy` isJust
       shown `shouldBe` issued
@@ -649,7 +582,6 @@ waitShownIssued cc = loop (100 :: Int)
       shownAndIssuedExpiry cc >>= \(shown, issued) ->
         if isJust shown && shown == issued then pure () else threadDelay 50000 >> loop (i - 1)
 
--- The worker acts on its own schedule, so the test waits for the rows rather than for a response.
 waitLedgerRows :: HasCallStack => ChatController -> Int -> IO [ReplicatedRow]
 waitLedgerRows cc n = loop (100 :: Int)
   where
@@ -658,19 +590,17 @@ waitLedgerRows cc n = loop (100 :: Int)
       rows <- ledgerRows cc "badge_ledger"
       if length rows >= n then pure rows else threadDelay 50000 >> loop (i - 1)
 
--- the badge the profile shows, which the worker clears when the balance has run out
 shownBadgeId :: HasCallStack => ChatController -> IO (Maybe Int64)
 shownBadgeId ChatController {chatStore} = do
-  -- two columns rather than one, so the row type needs no backend-specific Only
+  -- Selecting two columns rather than one lets the row type avoid a backend-specific Only wrapper.
   rows :: [(Maybe Int64, Int64)] <-
     withTransaction chatStore $ \db ->
       DB.query_ db "SELECT shown_badge_id, user_id FROM users WHERE user_id = 1"
-  -- not Nothing on an unexpected shape: waiting for Nothing would then pass without reading it
+  -- An unexpected row shape raises an error rather than returning Nothing, which would let a wait for Nothing pass without reading the row.
   pure $ case rows of
     [(i, _)] -> i
     _ -> error $ "expected one users row, got " <> show rows
 
--- the occurrence the user answered, which silences that alert and no other
 ackedEpisode :: HasCallStack => ChatController -> IO (Maybe Text, Maybe Text)
 ackedEpisode ChatController {chatStore} = do
   rows :: [(Maybe Text, Maybe Text)] <-
@@ -695,9 +625,6 @@ redeemFirstBadge alice code = do
   alice <## "supporter badge - active"
   alice <##. "expires "
 
--- A credential nears its expiry and the badge renews from the worker's own pass, with no command
--- sent by the app: chat activate only signals it, and the work is derived from stored state.
--- The request and the presentation are a day apart, so each renewal takes two passes.
 testWorkerRenews :: HasCallStack => TestParams -> IO ()
 testWorkerRenews ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
@@ -706,24 +633,19 @@ testWorkerRenews ps =
       redeemFirstBadge alice code
       redeemed <- ledgerRows (chatController alice) "badge_ledger"
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) redeemed `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge")]
-      -- the credential the profile shows is a day from lapsing, while the app is running
       let (requestAt, presentAt) = renewalMoments redeemed
       setClockAt bsClock requestAt
       alice ##> "/_app activate"
       alice <## "ok"
       renewed <- waitLedgerRows (chatController alice) 3
-      -- the renewal reports itself, no command having asked for it
       alice <##. "1: supporter"
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-1, 1, Just "badge")]
-      -- the month is issued but not yet worn: the profile still carries the one it had
       (shownEarly, issuedEarly) <- shownAndIssuedExpiry (chatController alice)
       shownEarly `shouldNotBe` issuedEarly
-      -- a day later the held credential lapses and the new month is presented
       setClockAt bsClock presentAt
       alice ##> "/_app activate"
       alice <## "ok"
       waitShownIssued (chatController alice)
-      -- the third month too: the state a renewal leaves must support the next one
       let (requestAt2, presentAt2) = renewalMoments renewed
       setClockAt bsClock requestAt2
       alice ##> "/_app activate"
@@ -732,16 +654,13 @@ testWorkerRenews ps =
       renewed2 <- waitLedgerRows (chatController alice) 4
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed2
         `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-1, 1, Just "badge"), (-1, 0, Just "badge")]
-      -- the client authored none of them: the service holds exactly the same rows
       serviceLedger <- ledgerRows cc "sx_badge_service_badge_ledger"
       renewed2 `shouldBe` serviceLedger
-      -- and the profile shows the month last issued, not an earlier one
       setClockAt bsClock presentAt2
       alice ##> "/_app activate"
       alice <## "ok"
       waitShownIssued (chatController alice)
 
--- The request is made by the wake the worker set for itself a day before the credential lapses.
 testRequestWakeFires :: HasCallStack => TestParams -> IO ()
 testRequestWakeFires ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
@@ -750,15 +669,12 @@ testRequestWakeFires ps =
       redeemFirstBadge alice code
       redeemed <- ledgerRows (chatController alice) "badge_ledger"
       armWakeAt alice bsClock $ fst $ renewalMoments redeemed
-      -- the arming pass asked for nothing, so what follows cannot be its doing
       ledgerRows (chatController alice) "badge_ledger" >>= (`shouldBe` redeemed)
       renewed <- waitLedgerRows (chatController alice) 3
       alice <##. "1: supporter"
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed
         `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-1, 1, Just "badge")]
 
--- The presentation is made by the wake at the expiry itself, a day after the request that issued
--- the month it presents.
 testPresentWakeFires :: HasCallStack => TestParams -> IO ()
 testPresentWakeFires ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
@@ -773,12 +689,9 @@ testPresentWakeFires ps =
       void $ waitLedgerRows (chatController alice) 3
       alice <##. "1: supporter"
       armWakeAt alice bsClock presentAt
-      -- the arming pass presented nothing: the profile still carries the credential it had
       shownAndIssuedExpiry (chatController alice) >>= \(shown, issued) -> shown `shouldNotBe` issued
       waitShownIssued (chatController alice)
 
--- The newest row being of an unknown type must not stop the renewal: it is stored verbatim and
--- read back to be asserted, rather than leaving the client with no entry to assert at all.
 testRenewsAfterUnknownEntry :: HasCallStack => TestParams -> IO ()
 testRenewsAfterUnknownEntry ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
@@ -792,17 +705,11 @@ testRenewsAfterUnknownEntry ps =
       alice <## "ok"
       renewed <- waitLedgerRows (chatController alice) 4
       alice <##. "1: supporter"
-      -- the unknown row is asserted, so the service answers with what it does not hold: the whole
-      -- ledger, which re-stores the two rows already held and adds the month it issued
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed
         `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (0, 2, Just "grant"), (-1, 1, Just "badge")]
-      -- the issued row follows the badge row in the statement but the unknown one in the ledger,
-      -- and verifies all the same - the client cannot see that the service dropped a row
       checks <- balanceChecks (chatController alice)
       checks `shouldBe` [Just True, Just True, Nothing, Just True]
 
--- The worker driven by chat start rather than by activate, and the only test where the client is
--- given a lapse row to store: the months that passed while the app was stopped.
 testRenewsAfterRestart :: HasCallStack => TestParams -> IO ()
 testRenewsAfterRestart ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} -> do
@@ -810,26 +717,19 @@ testRenewsAfterRestart ps =
       code <- issueCode cc BTSupporter 6
       redeemFirstBadge alice code
       ledgerRows (chatController alice) "badge_ledger"
-    -- the credit row's start is the anchor: a grant on a run that has never lapsed moves neither
     let (_, _, _, anchor, _, _) = head rows
-    -- stopped until past the fourth boundary of the run: three months lapse, the fourth is issued
     setClockAt bsClock $ addMonths 4 anchor
     withTestChatCfg ps bsClientCfg "alice" $ \alice -> do
       renewed <- waitLedgerRows (chatController alice) 4
       alice <##. "1: supporter"
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed
         `shouldBe` [(6, 6, Just "code"), (-1, 5, Just "badge"), (-3, 2, Just "lapse"), (-1, 1, Just "badge")]
-      -- the lapse row was replicated rather than authored here
       serviceLedger <- ledgerRows cc "sx_badge_service_badge_ledger"
       renewed `shouldBe` serviceLedger
-      -- and re-run: the renewal's two rows against the tip the client held, not against a seed
       checks <- balanceChecks (chatController alice)
       checks `shouldBe` replicate 4 (Just True)
-      -- a week missed costs only the day between the two steps: one pass does both
       waitShownIssued (chatController alice)
 
--- When the balance is spent and the last period ends, the badge stops being shown and the profile
--- update reaches contacts - the visible half of "the badge expired".
 testWorkerRetiresExpired :: HasCallStack => TestParams -> IO ()
 testWorkerRetiresExpired ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
@@ -840,7 +740,6 @@ testWorkerRetiresExpired ps =
         redeemFirstBadge alice code
         alice #> "@bob hi"
         bob <# "alice *> hi"
-        -- bob sees it before it expires
         bob ##> "/i alice"
         bob <## "contact ID: 2"
         bob <## "supporter badge - active"
@@ -852,25 +751,19 @@ testWorkerRetiresExpired ps =
         bob <## "quantum resistant end-to-end encryption"
         bob <## currentChatVRangeInfo
         rows <- ledgerRows (chatController alice) "badge_ledger"
-        -- the one month it bought has ended and nothing is left to issue
         setClockAt bsClock $ dueAtOf rows
         alice ##> "/_app activate"
         alice <## "ok"
-        -- support ended, and the state it changed by retiring the badge carries the same alert
         alice <##. "badge alert: support_ended "
         alice <##. "1: supporter"
         alice <##. "badge alert: support_ended "
-        -- the profile stops showing it locally
         waitShownBadge (chatController alice) Nothing
         alice ##> "/p"
         alice <## "user profile: alice (Alice)"
         alice <## "use /p <name> [<bio>] to change it"
-        -- The removal travels as a profile update, which prints nothing when only the badge
-        -- changed (viewContactUpdated compares names and links). The next message shows it
-        -- arrived: bob's prefix loses the badge marker it carried above.
+        -- A profile update prints nothing when only the badge changed, because viewContactUpdated compares names and links, so the next message is what confirms the removal reached bob.
         alice #> "@bob after"
         bob <# "alice> after"
-        -- and the badge is gone from the contact's stored profile, not merely from the prefix
         bob ##> "/i alice"
         bob <## "contact ID: 2"
         bob <## "receiving messages via: localhost"
@@ -880,9 +773,6 @@ testWorkerRetiresExpired ps =
         bob <## "quantum resistant end-to-end encryption"
         bob <## currentChatVRangeInfo
 
--- The credential outlives the balance by up to eight days, because its expiry covers renewal and
--- not entitlement. A worker scheduled only on that expiry would leave the badge worn, and the user
--- unasked to buy again, for the whole of that week - so paidThrough is a wake of its own.
 testRetiresWhenEntitlementEnds :: HasCallStack => TestParams -> IO ()
 testRetiresWhenEntitlementEnds ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
@@ -891,19 +781,14 @@ testRetiresWhenEntitlementEnds ps =
       redeemFirstBadge alice code
       rows <- ledgerRows (chatController alice) "badge_ledger"
       armWakeAt alice bsClock $ dueAtOf rows
-      -- that pass retired nothing and printed nothing: the badge is still worn and /p says so
       alice ##> "/p"
       alice <## "user profile: alice (Alice, * supporter)"
       alice <## "use /p <name> [<bio>] to change it"
-      -- nothing signals the worker from here, and the credential has days left, so the wake that
-      -- produces these is the one the worker set for itself at paidThrough
       alice <##. "badge alert: support_ended "
       alice <##. "1: supporter"
       alice <##. "badge alert: support_ended "
       waitShownBadge (chatController alice) Nothing
 
--- The alert is derived from stored state rather than kept pending, so it is still there after a
--- restart; acknowledging records the occurrence it answered, and the same one is not raised again.
 testEndedAlert :: HasCallStack => TestParams -> IO ()
 testEndedAlert ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} -> do
@@ -915,19 +800,15 @@ testEndedAlert ps =
       setClockAt bsClock endsAt
       alice ##> "/_app activate"
       alice <## "ok"
-      -- the pass raises the alert, and reports the state it changed by retiring the badge - which
-      -- carries the same alert, the alert being part of the state
       alice <##. "badge alert: support_ended "
       alice <##. "1: supporter"
       alice <##. "badge alert: support_ended "
       pure endsAt
-    -- nothing was stored as pending, and the alert is derived again on the next start
     withTestChatCfg ps bsClientCfg "alice" $ \alice -> do
       alice <##. "badge alert: support_ended "
       alice ##> ("/_badge ack 1 1 support_ended off " <> T.unpack (safeDecodeUtf8 $ strEncode endsAt))
       alice <##. "1: supporter"
       ackedEpisode (chatController alice) `shouldReturn` (Just "support_ended", Just (safeDecodeUtf8 $ strEncode endsAt))
-      -- acknowledged: the state no longer carries the alert, and no event raises it again
       alice ##> "/_badge state 1"
       alice <##. "1: supporter"
       alice ##> "/_app activate"
@@ -936,8 +817,6 @@ testEndedAlert ps =
       alice <## "user profile: alice (Alice)"
       alice <## "use /p <name> [<bio>] to change it"
 
--- A worker runs for every profile, not only the one in use, so presenting a renewed badge must not
--- make its profile active - the next message would then be sent from the wrong identity.
 testRenewalKeepsActiveProfile :: HasCallStack => TestParams -> IO ()
 testRenewalKeepsActiveProfile ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
@@ -947,7 +826,6 @@ testRenewalKeepsActiveProfile ps =
       rows <- ledgerRows (chatController alice) "badge_ledger"
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
-      -- alice's credential is a day from lapsing while alisa is the profile in use
       let (requestAt, presentAt) = renewalMoments rows
       setClockAt bsClock requestAt
       alice ##> "/_app activate"
@@ -955,9 +833,7 @@ testRenewalKeepsActiveProfile ps =
       renewed <- waitLedgerRows (chatController alice) 3
       map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed
         `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-1, 1, Just "badge")]
-      -- the renewal is reported for alice, and the prefix is there because alice is not active
       alice <##. "[user: alice] 1: supporter"
-      -- presenting is the pass that writes alice's profile, and it is the one that could switch
       setClockAt bsClock presentAt
       alice ##> "/_app activate"
       alice <## "ok"
@@ -965,8 +841,6 @@ testRenewalKeepsActiveProfile ps =
       alice ##> "/p"
       showActiveUser alice "alisa"
 
--- A snooze silences the alert until it lapses, and then it is raised once more, without a restart.
--- A snooze changes nothing else on the purchase, so the occurrence already raised has to count it.
 testSnoozedAlertReturns :: HasCallStack => TestParams -> IO ()
 testSnoozedAlertReturns ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
@@ -983,18 +857,14 @@ testSnoozedAlertReturns ps =
       alice <##. "badge alert: support_ended "
       alice ##> ("/_badge ack 1 1 support_ended on " <> T.unpack (safeDecodeUtf8 $ strEncode endsAt))
       alice <##. "1: supporter"
-      -- the ack signalled the worker, and the pass it ran was silent: /p prints only its own output
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
       alice <## "use /p <name> [<bio>] to change it"
-      -- the snooze lapses: nothing else about the badge changed, so only the alert is reported
       setClockAt bsClock $ addUTCTime (nominalDay + 60) endsAt
       alice ##> "/_app activate"
       alice <## "ok"
       alice <##. "badge alert: support_ended "
 
--- The worker re-reads the profile each pass. Presenting a renewed badge from a copy captured when
--- the worker started would revert any edit made since and broadcast the profile in its old form.
 testRenewalKeepsProfileEdits :: HasCallStack => TestParams -> IO ()
 testRenewalKeepsProfileEdits ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
@@ -1003,7 +873,6 @@ testRenewalKeepsProfileEdits ps =
         connectUsers alice bob
         code <- issueCode cc BTSupporter 3
         redeemFirstBadge alice code
-        -- the profile is edited after the worker started
         alice ##> "/p alice Alice Jones"
         concurrentlyN_
           [ alice <## "user bio changed to Alice Jones (your 1 contacts are notified)",
@@ -1018,14 +887,11 @@ testRenewalKeepsProfileEdits ps =
         renewed <- waitLedgerRows (chatController alice) 3
         map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed
           `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-1, 1, Just "badge")]
-        -- presenting a day later is the pass that broadcasts the profile
         setClockAt bsClock presentAt
         alice ##> "/_app activate"
         alice <## "ok"
         waitShownIssued (chatController alice)
-        -- The renewal's profile update carries the edited bio. Had it carried the profile the
-        -- worker started with, bob would print a bio change back to "Alice" here, before the
-        -- message - so the message arriving next is the assertion.
+        -- Had the renewal carried the profile the worker started with, bob would print a bio change back to "Alice" before the next message, so that message is what asserts the edited bio survived.
         alice #> "@bob after renewal"
         bob <# "alice *> after renewal"
         bob ##> "/i alice"
@@ -1039,8 +905,6 @@ testRenewalKeepsProfileEdits ps =
         bob <## "quantum resistant end-to-end encryption"
         bob <## currentChatVRangeInfo
 
--- Forces the state a crash between the issuance write and the profile write leaves behind: the
--- month is issued, unpresented, and no later pass finds it due.
 testPresentationCatchesUp :: HasCallStack => TestParams -> IO ()
 testPresentationCatchesUp ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
@@ -1066,9 +930,8 @@ testPresentationCatchesUp ps =
         length expiries `shouldBe` 2
         let firstMonth = head expiries
             latestMonth = last expiries
-        -- without this bob can receive the presentation after the updates below and never lose it
+        -- The test waits here first so that bob does not receive the presentation after the updates below and keep it.
         waitPeerBadgeExpiry (chatController bob) latestMonth
-        -- the renewal's rows are kept; only its presentation is undone, on both sides
         setBadgeExpiry (chatController alice) "badge_signature" firstMonth
         setBadgeExpiry (chatController bob) "badge_proof" firstMonth
         alice ##> "/_app activate"
@@ -1101,8 +964,6 @@ testPurchaseKeyMismatch ps =
       alice ##> ("/_service_request 1 " <> bsLink <> " sign_key=" <> signKey <> " " <> req)
       alice <## "service response: {\"code\":\"bad_request\",\"type\":\"error\"}"
 
--- A secret that is not the key clients trust at its index makes every credential unverifiable,
--- and each code redeemed against it is spent for good - so the service must not start at all.
 testIssuerKeyMustMatchConfig :: HasCallStack => TestParams -> IO ()
 testIssuerKeyMustMatchConfig ps = do
   Right (pk, sk) <- bbsKeyGen
@@ -1111,22 +972,16 @@ testIssuerKeyMustMatchConfig ps = do
       cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
   checkIssuerKey (optsFor sk) Nothing cfg >>= (`shouldSatisfy` isRight)
   checkIssuerKey (optsFor otherSk) Nothing cfg >>= (`shouldSatisfy` isLeft)
-  -- an index no client trusts is equally fatal
   checkIssuerKey (optsFor sk) Nothing testCfg {badgePublicKeys = M.empty} >>= (`shouldSatisfy` isLeft)
-  -- half the pair is a mistake, not a request to fall back to the ini: signing with the key
-  -- someone meant to replace is the failure this refuses
   let halfGiven = (optsFor sk) {issuerKey = Left "--issuer-key-idx and --issuer-secret are given together or not at all"}
   checkIssuerKey halfGiven Nothing cfg >>= (`shouldSatisfy` isLeft)
 
--- Every key in [issuer] is checked, not only the one that signs: a key listed for a future
--- rotation that clients could not verify has to fail now, while someone is reading the error,
--- rather than at the restart that rotates onto it.
 testIssuerIniKeysAreAllChecked :: HasCallStack => TestParams -> IO ()
 testIssuerIniKeysAreAllChecked ps = do
   Right (pk, sk) <- bbsKeyGen
   Right (_, untrusted) <- bbsKeyGen
   let cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
-      -- no key on the command line, so the ini section is what is read
+      -- No key is given on the command line, so the ini section is what is read.
       fromIni = (mkBadgeServiceOpts ps sk) {issuerKey = Right Nothing}
       secretText k = safeDecodeUtf8 (strEncode k)
       iniWith keys = withIssuer (("default = key_" <> tshow testIssuerKeyIdx) : keys) readServiceConfig
@@ -1140,8 +995,6 @@ testIssuerIniKeysAreAllChecked ps = do
       ]
   checkIssuerKey fromIni (Just alsoARotation) cfg >>= (`shouldSatisfy` isLeft)
 
--- The web checkout writes the code row when the invoice is created, and settlement is what
--- marks it paid. Redeeming in between would hand out a badge nobody paid for.
 testRedeemUnpaidCode :: HasCallStack => TestParams -> IO ()
 testRedeemUnpaidCode ps =
   withBadgeService ps $ \clientCfg _ cc ->
@@ -1149,15 +1002,13 @@ testRedeemUnpaidCode ps =
       unpaid <- issueCodeAs cc BTSupporter 1 "unpaid"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg unpaid)
       alice <## "bad chat command: badge service error: payment_pending"
-      -- and it redeems once it is paid for, so this is the payment check and not a broken code
       paid <- issueCodeAs cc BTSupporter 1 "paid"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
       alice <## "badge redeemed"
       alice <## "supporter badge - active"
       alice <##. "expires "
 
--- | The deadline is on redeeming, and a year is not something a test can wait for: the code is
--- issued unpaid, then marked paid with a deadline already behind it.
+-- | A redemption deadline is a year out and cannot be waited for, so the code is issued unpaid and then marked paid with a deadline already in the past.
 testExpiredCode :: HasCallStack => TestParams -> IO ()
 testExpiredCode ps =
   withBadgeService ps $ \clientCfg _ cc ->
@@ -1169,9 +1020,6 @@ testExpiredCode ps =
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
       alice <## "bad chat command: badge service error: code_expired"
 
--- | The deadline is on redeeming, not on holding. A buyer who redeemed in time must not lose the
--- credential when the deadline passes, so the already-redeemed answer has to be reached before
--- the expiry refusal rather than after it.
 testRedeemedBeforeTheDeadline :: HasCallStack => TestParams -> IO ()
 testRedeemedBeforeTheDeadline ps =
   withBadgeService ps $ \clientCfg _ cc ->
@@ -1185,8 +1033,7 @@ testRedeemedBeforeTheDeadline ps =
       alice <## "supporter badge - active"
       alice <##. "expires "
 
-      -- the deadline passes with the code already redeemed. Written directly: `markCodePaid` sets
-      -- the expiry only on the unpaid-to-paid transition, which this code has already made.
+      -- The expiry is set with direct SQL because markCodePaid writes it only on the unpaid-to-paid transition, which this code has already made.
       withDB' "expireCode" cc (\db ->
         DB.execute
           db
@@ -1202,9 +1049,7 @@ testRevokedCode ps =
     withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
       paid <- issueCodeAs cc BTSupporter 1 "paid"
       revokeCodeAs cc paid `shouldReturn` "revoked"
-      -- a revoked code answers as if it never existed, so its holder learns nothing
       alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
       alice <## "bad chat command: badge service error: code_invalid"
-      -- and revoking is not repeatable, so a second operator sees that it was already done
       second <- revokeCodeAs cc paid
       second `shouldSatisfy` T.isInfixOf "revoked already"

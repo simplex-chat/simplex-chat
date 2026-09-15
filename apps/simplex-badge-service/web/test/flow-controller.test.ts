@@ -10,8 +10,6 @@ import { Store, type StorageLike } from "../src/store.js";
 
 const apiTest = timedTest(2000);
 
-// ------------------------------------------------------------------- fixtures
-
 class Mem implements StorageLike {
   readonly m = new Map<string, string>();
   getItem(k: string): string | null { return this.m.get(k) ?? null; }
@@ -19,14 +17,12 @@ class Mem implements StorageLike {
   removeItem(k: string): void { this.m.delete(k); }
 }
 
-/** Private browsing, or quota: every write refuses. */
 class Refusing implements StorageLike {
   getItem(): string | null { return null; }
   setItem(): void { throw new Error("QuotaExceededError"); }
-  removeItem(): void { /* nothing to remove */ }
+  removeItem(): void {}
 }
 
-/** `raw` is a body that is not JSON at all: an HTML error page from a proxy. */
 interface Reply { status: number; body?: unknown; raw?: string; headers?: Record<string, string> }
 
 function toResponse(r: Reply): Response {
@@ -48,8 +44,7 @@ function toResponse(r: Reply): Response {
   } as unknown as Response;
 }
 
-/** Answers from a script or holds the connection the way the `?wait=` does, so concurrency is observable:
- * `maxInFlight` above one means two loops are live on the same order. */
+// Answers from a script or holds the connection like ?wait=, so maxInFlight above one means two loops are live on one order.
 class Net {
   readonly calls: Array<{ url: string; init?: RequestInit }> = [];
   inFlight = 0;
@@ -63,7 +58,6 @@ class Net {
 
   get urls(): string[] { return this.calls.map((c) => c.url); }
 
-  /** Answers every request currently holding, in order. */
   answerHeld(...replies: Reply[]): void {
     const held = this.held;
     this.held = [];
@@ -101,7 +95,6 @@ class Net {
   }
 }
 
-/** A virtual clock. Nothing sleeps for real, and nothing fires unless advanced. */
 class Clock {
   ms = Date.parse("2026-08-28T12:00:00Z");
   private timers: Array<{ at: number; resolve: () => void; onAbort?: () => void; signal?: AbortSignal }> = [];
@@ -162,7 +155,6 @@ function harness(storage: StorageLike = new Mem(), fetchOverride?: typeof fetch)
   return { flow: new Flow(deps), store, net, clock, views, codes };
 }
 
-/** Every read fails: for the screens that have to be drawable from the store alone. */
 function offlineHarness(): Harness {
   const failing = (async () => { throw new TypeError("offline"); }) as unknown as typeof fetch;
   return harness(new Mem(), failing);
@@ -195,8 +187,6 @@ function record(over: Partial<OrderRecord> = {}): OrderRecord {
   };
 }
 
-// ------------------------------------------------------------- the plain read
-
 apiTest("flow: readInvoice issues the plain GET, with no wait parameter", async () => {
   const net = new Net();
   net.script({ status: 200, body: openXmr });
@@ -218,9 +208,6 @@ apiTest("flow: readInvoice refuses a 200 whose status is not one of the three, r
 });
 
 apiTest("flow: readInvoice refuses a 200 the holding read refuses — the same body, the same verdict", async () => {
-  // The plain read is the first screen of every `?order=` link, and casting the body rather than validating it
-  // let a `cryptoCurrency` the design does not define reach `paymentUri`, the QR and the store: a `monero:` URI
-  // over a Bitcoin address under the heading `Send 0.004 undefined`, redrawn from the record by the resume.
   const bodies: unknown[] = [
     { ...openXmr, cryptoCurrency: "doge" },
     { ...openXmr, cryptoCurrency: 7 },
@@ -246,10 +233,6 @@ apiTest("flow: readInvoice returns the fields and nothing else it was sent", asy
 });
 
 apiTest("flow: EVERY 404 is the unknown order, whatever body sits on it", async () => {
-  // the unknown-order screen defines that screen by the status, and the promise about the body
-  // binds this service, not the proxy or the CDN in front of it (Anubis puts
-  // Anubis there). Keying on the body left the page with no local record
-  // "Checking with the payment network" forever.
   const shapes: Array<[string, Reply]> = [
     ["the service's own body", { status: 404, body: { error: "not_found" } }],
     ["a proxy's HTML page", { status: 404, raw: "<html><body>404 Not Found</body></html>" }],
@@ -287,8 +270,6 @@ apiTest("flow: readInvoice carries a 429's Retry-After through, so the history l
     (e: unknown) => e instanceof ApiError && e.code === "rate_limited" && e.retryAfter === 46);
 });
 
-// ----------------------------------------------------------- the local record
-
 apiTest("flow: applyView overwrites the status and keeps the stored code", () => {
   const store = new Store(new Mem());
   store.saveOrder(record({ code: "SB-AAAAA-BBBBB-CCCCC-DDDDD" }));
@@ -301,18 +282,12 @@ apiTest("flow: applyView overwrites the status and keeps the stored code", () =>
 });
 
 apiTest("flow: the `submitted` survives every 200, and a store that refused the write", () => {
-  // It is sticky in the same direction as the code and for a harder reason: a
-  // browser that has confirmed a card payment for this order never
-  // un-confirms it, and the screen the flag selects is the one that withholds
-  // every control that could charge the buyer twice.
   const store = new Store(new Mem());
   store.saveOrder(record({ status: "open", submitted: true }));
   const kept = applyView(store, "inv_9f3a", openCard, Date.parse("2026-08-28T12:00:00Z"));
   assert.equal(kept.record.submitted, true);
   assert.equal(store.order("inv_9f3a")!.submitted, true, "and it is still on the stored entry");
 
-  // The store refusing the write is the private-browsing case: the flag has
-  // to survive in memory, or the next render puts a live Pay button back.
   const refusing = new Store(new Refusing());
   const memory = record({ status: "open", submitted: true });
   const inMemory = applyView(refusing, "inv_9f3a", openCard, Date.parse("2026-08-28T12:00:00Z"), memory);
@@ -321,11 +296,6 @@ apiTest("flow: the `submitted` survives every 200, and a store that refused the 
 });
 
 apiTest("flow: a stored entry with no code does not overwrite the code held in memory", () => {
-  // The line above `submitted` in `localState`, and the one that matters most: the code exists
-  // in no other place, and the service keeps nothing but its hash.
-  // The store answering with an entry that has no code is the case: a second tab wrote this order
-  // before the code existed, and `base` is then the stored one. Only the loop's own memory still
-  // has it, and a 200 that read the code off `base` alone would drop the whole purchase.
   const shared = new Store(new Mem());
   shared.saveOrder(record({ status: "open" }));
   const held = record({ status: "open", code: "SB-YDC8A-YGQTM-PUYZ9-2TUXP" });
@@ -341,8 +311,6 @@ apiTest("flow: a 200 with no entry present creates one from the response, holdin
   assert.deepEqual(made, {
     orderId: "inv_other", badgeType: "legend", months: 12,
     createdAt: "2026-08-28T12:00:00.000Z", status: "paid",
-    // what was paid and how, on a record this browser did not create: the price off the
-    // response, the method off `inferMethod`, and the amounts the history list needs to name the state
     amountPaid: 42000, cryptoAmountPaid: "1.482",
     amount: 42000, currency: "usd", method: "xmr",
   });
@@ -353,8 +321,6 @@ apiTest("flow: a 200 with no entry present creates one from the response, holdin
 apiTest("flow: a method that cannot be inferred leaves the row without one, rather than guessing", () => {
   const store = new Store(new Mem());
   const nowMs = Date.parse("2026-08-28T12:00:00Z");
-  // Every settled response is this shape: no `clientSecret` and no
-  // `cryptoCurrency`, so `inferMethod` answers undefined.
   const { record: made } = applyView(store, "inv_other", { status: "paid", amount: 42000, currency: "usd" }, nowMs);
   assert.equal(made.method, undefined);
   assert.equal("method" in made, false, "an absent method is absent, not a key holding undefined");
@@ -378,18 +344,12 @@ apiTest("flow: recordFromView fills the fields the read endpoint sends and defau
   });
 });
 
-// ------------------------------------------------------------------ the views
-
 apiTest("flow: orderPhase names every state the order screen and the history both read", () => {
   const open = { status: "open" as const };
   assert.equal(orderPhase(open), "awaiting");
-  // the provider reports a payment on a New invoice too, so money alone is not "paid"
   assert.equal(orderPhase({ ...open, cryptoAmountPaid: "0.741", paidInFull: false }), "partPaid");
   assert.equal(orderPhase({ ...open, cryptoAmountPaid: "1.482", paidInFull: true }), "processing");
-  // the verdict is the provider's: it tolerates a small underpayment, so the amounts can
-  // say "short" for an invoice it has already accepted
   assert.equal(orderPhase({ ...open, cryptoAmountPaid: "1.475", paidInFull: true }), "processing");
-  // and an older record, written before the field existed, must not claim to be paid
   assert.equal(orderPhase({ ...open, cryptoAmountPaid: "1.482" }), "partPaid");
   assert.equal(orderPhase({ status: "paid" }), "paid");
   assert.equal(orderPhase({ status: "expired", cryptoAmountPaid: "0.7", paidInFull: false }), "expired");
@@ -412,16 +372,10 @@ apiTest("flow: the history row names the same state the order screen shows", () 
   const kinds = (over: Partial<OrderRecord>) => historyRows([{ ...base, ...over }])[0]!.kind;
   assert.equal(kinds({}), "open");
   assert.equal(kinds({ cryptoAmountPaid: "0.741", paidInFull: false }), "partPaid");
-  // the bug this replaces: a funded order's row read "waiting for payment" while its own
-  // screen read "Payment received"
   assert.equal(kinds({ cryptoAmountPaid: "1.482", paidInFull: true }), "processing");
   assert.equal(kinds({ status: "expired" }), "expired");
 });
 
-// The history reads the phase off the stored record and the order's own screen reads it off
-// the live view, so the two agree only while the record is a faithful copy of the last view.
-// Both stale-page bugs were this invariant breaking, in opposite directions. The store is
-// seeded funded every time, so a field that falls back instead of clearing fails here.
 apiTest("flow: the stored record names the phase of the view it was written from", () => {
   const nowMs = Date.parse("2026-08-28T12:00:00Z");
   const views: InvoiceView[] = [openXmr, partPaidXmr, processingXmr, paidXmr, expiredXmr, { status: "open" }];
@@ -435,9 +389,6 @@ apiTest("flow: the stored record names the phase of the view it was written from
   }
 });
 
-// The offline page reads its view from the record instead of the network, so it needs the same
-// agreement. It did not have it: a fully paid invoice came back as "awaiting" and drew the
-// address and the countdown again, inviting a second payment.
 apiTest("flow: the offline view names the phase of the record it was rebuilt from", () => {
   const held = { ...HELD, method: "xmr" as const };
   for (const paid of [
@@ -456,9 +407,6 @@ apiTest("flow: the offline view names the phase of the record it was rebuilt fro
   }
 });
 
-// The general form of the rule, so a field added later cannot quietly grow a fallback: what
-// the service stops sending is gone. Only the price and the destination are exempt, and only
-// for the reasons `serverState` gives.
 apiTest("flow: a field the service stops sending is cleared, not remembered", () => {
   const nowMs = Date.parse("2026-08-28T12:00:00Z");
   const store = new Store(new Mem());
@@ -475,14 +423,10 @@ apiTest("flow: a field the service stops sending is cleared, not remembered", ()
 apiTest("flow: viewFor leaves the payment screen for the processing screen once a payment is seen", () => {
   const open = viewFor(record(), openXmr, "xmr", { savedLocally: false, resumed: false });
   assert.equal(open.screen, "awaitingPayment");
-  // the invoice is still open: the provider reports the payment before it confirms, and
-  // showing the address after that invites a second one
   const seen = viewFor(record(), processingXmr, "xmr", { savedLocally: false, resumed: false });
   assert.equal(seen.screen, "awaitingConfirmation");
   assert.equal(seen.screen === "awaitingConfirmation" ? seen.method : undefined, "xmr");
   assert.equal(seen.screen === "awaitingConfirmation" ? seen.gaveUp : true, false);
-  // BTCPay reports a payment on a New invoice too, so an underpayment must stay on the payment screen:
-  // hiding the address would leave the buyer unable to send the rest
   const part = viewFor(record(), partPaidXmr, "xmr", { savedLocally: false, resumed: false });
   assert.equal(part.screen, "awaitingPayment");
 });
@@ -546,8 +490,6 @@ apiTest("flow: a paid order still renders the code screen when the method cannot
   assert.equal(viewFor(expired, { status: "expired" }, undefined, { savedLocally: false, resumed: false }).screen, "windowClosed");
 });
 
-// ------------------------------------------------------------------- checkout
-
 apiTest("flow: a 200 saves the order with the display code and leaves the session alone", async () => {
   const h = harness();
   h.store.saveSession({ step: "checkout", priceId: "price_legend" });
@@ -558,14 +500,9 @@ apiTest("flow: a 200 saves the order with the display code and leaves the sessio
   const stored = h.store.order("inv_9f3a")!;
   assert.equal(stored.status, "open");
   assert.equal(stored.code, `SB-${h.codes[0]!.match(/.{1,5}/g)!.join("-")}`);
-  // spending the draft is `pay`'s call, not this one's: only the page knows whether the buyer has
-  // chosen again since, and clearing a choice they made while this was on the wire loses it
   assert.equal(h.store.session().priceId, "price_legend", "the draft is not this call's to spend");
 });
 
-// "Remove every code stored in this browser? This cannot be undone." has to mean it, including
-// for an invoice that was already on the wire when it was answered. The sale stands at the
-// service; this browser keeps nothing, and says so rather than claiming the code is here.
 apiTest("flow: a wipe while the invoice is bought leaves this browser holding nothing", async () => {
   const net = new Net();
   net.script({ status: 200, body: createdXmr });
@@ -653,8 +590,6 @@ apiTest("flow: a store that refuses the write still creates the order, flagged u
   assert.ok(out.kind === "created" && out.order.code !== undefined, "the code is still in hand");
 });
 
-// --------------------------------------------------------------- the watching
-
 apiTest("flow: a paid first read renders the code screen and issues no hold at all", async () => {
   const h = harness();
   h.store.saveOrder(record({ code: "SB-Y" }));
@@ -670,9 +605,9 @@ apiTest("flow: expired KEEPS WAITING, so a last-second payment turns the closed-
   const h = harness();
   h.store.saveOrder(record({ code: "SB-Y" }));
   h.net.script(
-    { status: 200, body: openXmr },      // the plain first read
-    { status: 200, body: expiredXmr },   // ?wait=open answers "expired"
-    { status: 200, body: paidXmr },      // ?wait=expired answers "paid"
+    { status: 200, body: openXmr },
+    { status: 200, body: expiredXmr },
+    { status: 200, body: paidXmr },
   );
   const w = h.flow.watch("inv_9f3a");
   await w.done;
@@ -680,8 +615,6 @@ apiTest("flow: expired KEEPS WAITING, so a last-second payment turns the closed-
   assert.deepEqual(h.net.urls, [
     "/api/invoice/inv_9f3a",
     "/api/invoice/inv_9f3a?wait=open&seenPaid=&seenFull=0",
-    // the expired answer carried a part payment, and the next wait says so: the service
-    // answers at once rather than parking when it holds a payment this page has not seen
     "/api/invoice/inv_9f3a?wait=expired&seenPaid=0.734&seenFull=0",
   ]);
 });
@@ -798,9 +731,6 @@ apiTest("flow: the loop survives suspend/resume and still reports the settlement
 });
 
 apiTest("flow: an expired order paints from the record while the read is retried", async () => {
-  // `offlineInvoice` rebuilds only an open order, so a closed one used to wait on the network
-  // to say what the record already says, and the screen for it draws no address, so there is
-  // nothing to be wrong about.
   const failing = (async () => { throw new TypeError("offline"); }) as unknown as typeof fetch;
   const clock = new Clock();
   const views: PaymentView[] = [];
@@ -819,9 +749,6 @@ apiTest("flow: an expired order paints from the record while the read is retried
 });
 
 apiTest("flow: a first read that fails is read again, not held on", async () => {
-  // The hold answers only on a change, so a watch that entered one having painted nothing left
-  // the buyer on the spinner for as long as the invoice stayed open, as an open invoice
-  // does. This is the second device, the bookmark and the history list's [ Open ].
   let call = 0;
   const flaky = (async (): Promise<Response> => {
     call += 1;
@@ -850,9 +777,6 @@ apiTest("flow: a first read that fails is read again, not held on", async () => 
 });
 
 apiTest("flow: a verdict with no figure moves the buyer off the payment screen", async () => {
-  // Monero reports an invoice as confirming while `paymentMethodPaid` is still zero, so the
-  // service records the verdict with no figure. Keyed on the figure alone, the loop discarded
-  // that body every pass and the buyer sat on a live QR with the money already sent.
   const h = harness();
   const confirming = { ...openXmr, paidInFull: true } as const;
   h.net.script({ status: 200, body: openXmr }, { status: 200, body: confirming });
@@ -929,7 +853,7 @@ apiTest("flow: the method is inferred from the response, and a later response th
   const h = harness();
   h.net.script(
     { status: 200, body: openXmr },
-    { status: 200, body: { status: "expired" } },  // the read endpoint sends the details only when needed
+    { status: 200, body: { status: "expired" } },
     { status: 200, body: { status: "paid" } },
   );
   await h.flow.watch("inv_9f3a").done;
@@ -956,12 +880,8 @@ apiTest("flow: a failed first read renders nothing, and its retry is cancellable
   await settle();
   assert.deepEqual(h.views, [], "nothing is rendered from a read that never arrived");
   w.stop();
-  // The loop is parked in the backoff delay, not on a connection; stopping
-  // must cancel that delay rather than wait it out.
   await Promise.race([w.done, flush().then(() => { throw new Error("stop left the loop in its backoff"); })]);
 });
-
-// ------------------------------------------------------------------------- the history list
 
 apiTest("flow: refreshHistory re-reads only open and expired, newest first, at most ten", async () => {
   const h = harness();
@@ -1018,8 +938,6 @@ apiTest("flow: refreshHistory leaves a 404'd entry exactly as it was", async () 
   assert.equal(after[0]!.code, "SB-Y");
 });
 
-// ------------------------------------------------------------------ formatting
-
 apiTest("flow: money prints the exact figure the order summary and the payment screen carry", () => {
   assert.equal(money(42000, "usd"), "$420.00");
   assert.equal(money(700, "usd"), "$7.00");
@@ -1069,8 +987,6 @@ apiTest("flow: realSleep resolves after its delay and rejects at once on abort",
 });
 
 
-// ------------------------------------------- the code, stripped by value
-
 apiTest("flow: every view but the code screen carries an order with NO code key at all", () => {
   const held = "SB-AAAAA-BBBBB-CCCCC-DDDDD";
   const cases: Array<[string, PaymentView]> = [
@@ -1084,12 +1000,9 @@ apiTest("flow: every view but the code screen carries an order with NO code key 
   for (const [name, v] of cases) {
     const order = (v as { order?: Record<string, unknown> }).order;
     assert.ok(order, `${name} has no order`);
-    // Not `=== undefined`: the KEY must be gone, so it cannot be read back
-    // through a cast, spread into an attribute, or serialised into a dataset.
     assert.equal(Object.hasOwn(order, "code"), false, `${name}'s order still has a code key`);
     assert.ok(!JSON.stringify(v).includes(held), `${name} serialises the code`);
   }
-  // And the code screen, which is the one place it must survive.
   const codeIssued = viewFor(record({ status: "paid", code: held }), paidXmr, "xmr", { savedLocally: true, resumed: false });
   assert.equal(codeIssued.screen, "codeIssued");
   assert.equal(codeIssued.screen === "codeIssued" ? codeIssued.code : "", held);
@@ -1116,8 +1029,6 @@ apiTest("flow: historyRows hands a code to the paid row and to no other", () => 
   }
 });
 
-// ------------------------------------------------- the give-up, armed and not
-
 apiTest("flow: the confirming screen's give-up is DISARMED when the screen changes, so expired still waits", async () => {
   const h = harness();
   h.store.saveOrder(record({ status: "open", code: "SB-Y", submitted: true }));
@@ -1125,14 +1036,11 @@ apiTest("flow: the confirming screen's give-up is DISARMED when the screen chang
   await settle();
   assert.deepEqual(h.views.map((v) => v.screen), ["awaitingConfirmation"], "the deadline is now armed");
 
-  // Ten minutes in, the invoice expires. The watch loop keeps waiting on `expired`, and
-  // the give-up rule gives up on the confirming screen only, so the deadline must be dropped, not carried.
   await h.clock.advance(10 * 60_000);
   h.net.answerHeld({ status: 200, body: { ...expiredXmr, clientSecret: "cs_test_abc" } });
   await settle();
   assert.deepEqual(h.views.map((v) => v.screen), ["awaitingConfirmation", "windowClosed"]);
 
-  // Well past the original fifteen minutes, and past a fresh fifteen too.
   await h.clock.advance(20 * 60_000);
   const outcome = await Promise.race([w.done.then(() => "ended" as const), flush().then(() => "waiting" as const)]);
   assert.equal(outcome, "waiting", "a card order that expired must keep waiting, not give up");
@@ -1157,14 +1065,11 @@ apiTest("flow: a settlement after the expiry still reaches the code screen, dead
   assert.deepEqual(h.views.map((v) => v.screen), ["awaitingConfirmation", "windowClosed", "codeIssued"]);
 });
 
-// -------------------------------------------------------- the code screen with no network
-
 apiTest("flow: a paid record renders the code screen from the store alone, with no request", async () => {
   const h = harness();
   h.store.saveOrder(record({ status: "paid", code: "SB-AAAAA-BBBBB-CCCCC-DDDDD" }));
   const w = h.flow.watch("inv_9f3a");
-  // Asserted before awaiting `done`, so a regression that goes to the network
-  // fails on the assertion rather than by hanging on a request nothing answers.
+  // Asserted before awaiting done, so a regression that hits the network fails on the assertion rather than hanging.
   await settle();
   assert.equal(h.net.calls.length, 0, "nothing is fetched: a reload needs no network");
   assert.deepEqual(h.views.map((v) => v.screen), ["codeIssued"]);
@@ -1192,8 +1097,6 @@ apiTest("flow: an OPEN record holding no destination renders nothing without the
   await Promise.race([w.done, flush().then(() => { throw new Error("stop left the loop in its backoff"); })]);
 });
 
-// ------------------------------------------------------------- [ Check again ]
-
 apiTest("flow: checkAgain returns null while a loop is live, so the screen is not blanked", async () => {
   const h = harness();
   const w = h.flow.watch("inv_9f3a", { initial: { status: "open" } });
@@ -1217,20 +1120,13 @@ apiTest("flow: checkAgain after a give-up restarts the confirming screen and RE-
   await first.done;
   assert.deepEqual(h.views.map((v) => v.screen), ["awaitingConfirmation", "awaitingConfirmation"]);
   assert.equal(h.views[1]!.screen === "awaitingConfirmation" ? h.views[1]!.gaveUp : false, true);
-  // This view is assembled in the watcher rather than by `viewFor`, so the
-  // enumeration test above never walks it: assert its order is stripped too.
   const gaveUpOrder = (h.views[1]! as { order: Record<string, unknown> }).order;
   assert.equal(Object.hasOwn(gaveUpOrder, "code"), false, "the give-up view still carries a code key");
   assert.ok(!JSON.stringify(h.views[1]).includes("SB-"), "the give-up view serialises a code");
 
-  // The restart reads the flag off the order record, which is where a card
-  // confirm writes it. A restart that re-read a page-global flag would
-  // drop the buyer onto the card form the moment any other order cleared it.
   const again = h.flow.checkAgain("inv_9f3a");
   assert.ok(again, "a finished loop must restart");
   await settle();
-  // Checking again means asking the server: a plain read first, then
-  // the screen it answers with.
   assert.equal(h.net.pendingCount, 1);
   assert.equal(h.net.urls[h.net.urls.length - 1], "/api/invoice/inv_9f3a", "plain, not a hold");
   h.net.answerHeld({ status: 200, body: openCard });
@@ -1240,7 +1136,6 @@ apiTest("flow: checkAgain after a give-up restarts the confirming screen and RE-
   assert.equal(restarted.screen === "awaitingConfirmation" ? restarted.gaveUp : true, false,
     "waiting again from the top, not still given up");
 
-  // And the clock re-arms: fifteen more minutes, then it gives up again.
   await h.clock.advance(GIVE_UP_MS - 1000);
   assert.equal(h.views.length, 3, "one second short, still waiting");
   await h.clock.advance(1000);
@@ -1249,8 +1144,6 @@ apiTest("flow: checkAgain after a give-up restarts the confirming screen and RE-
   assert.equal(h.views[3]!.screen === "awaitingConfirmation" ? h.views[3]!.gaveUp : false, true);
 });
 
-
-// ------------------------------------------- the wizard's answers, recovered
 
 const PRICES = [
   { priceId: "price_supporter", badgeType: "supporter" },
@@ -1267,9 +1160,6 @@ apiTest("flow: selectionFromOrder recovers the answers the store rules cleared f
     { priceId: "price_legend", offerId: "offer_12m" });
   assert.deepEqual(selectionFromOrder({ badgeType: "supporter", months: 12 }, PRICES, OFFERS),
     { priceId: "price_supporter", offerId: "offer_12m_s" }, "the offer must belong to the price");
-  // One month is the unoffered term, which the session spells with its own key,
-  // never the empty string, which the session already uses for "nothing
-  // chosen". A recovered one-month order must come back AS one month.
   assert.deepEqual(selectionFromOrder({ badgeType: "legend", months: 1 }, PRICES, OFFERS),
     { priceId: "price_legend", offerId: SINGLE_MONTH });
   assert.notEqual(SINGLE_MONTH, "", "the sentinel must be distinguishable from an unanswered session");
@@ -1286,10 +1176,6 @@ apiTest("flow: selectionFromOrder gives up rather than guessing", () => {
   assert.equal(selectionFromOrder({ badgeType: "supporter", months: 3 }, PRICES, OFFERS), undefined,
     "an offer belonging to another price is not a match");
 });
-
-// ------------------------------------------------------- the offline resume
-//
-// Resuming an open invoice's stored address, amount and QR is meant to work offline, and
 
 apiTest("flow: checkout stores the destination the payment screen redraws from with no network", async () => {
   const h = harness();
@@ -1314,13 +1200,10 @@ apiTest("flow: a card checkout stores no destination and no client secret", asyn
   assert.equal(stored.cryptoAmount, undefined);
   assert.equal(stored.cryptoCurrency, undefined);
   assert.equal(stored.expiresAt, undefined, "with nothing to send to there is no window worth holding");
-  // the store rules as amended: the price and the method are not part of the destination
-  // and are kept whatever the method was: the history list's row prints both.
   assert.equal(stored.amount, 42000);
   assert.equal(stored.currency, "usd");
   assert.equal(stored.method, "card");
-  // The raw value, not the typed read: a secret smuggled in as an excess
-  // property would be invisible to `store.order` and still be written to disk.
+  // The check reads the raw value rather than the typed read, since a secret hidden as an excess property is invisible to store.order but still written to disk.
   const raw = storage.m.get("sb.orders.v1") ?? "";
   assert.ok(!raw.includes("cs_test_abc") && !raw.includes("clientSecret"),
     "the offline promise puts the card form under \"needs the network\": no payment secret is written to rest");
@@ -1334,7 +1217,6 @@ const HELD = {
 apiTest("flow: an open response without the details keeps what is already stored", () => {
   const store = new Store(new Mem());
   store.saveOrder(record(HELD));
-  // the read endpoint sends the payment details only when the browser might not have them.
   const { record: after } = applyView(store, "inv_9f3a", { status: "open" }, Date.now());
   assert.equal(after.address, "48HqK2Xm");
   assert.equal(after.expiresAt, "2026-08-28T13:00:00Z");
@@ -1379,9 +1261,6 @@ apiTest("flow: paid and expired CLEAR the stored destination, in the store and n
 });
 
 apiTest("flow: paid and expired KEEP what was paid and how, which is the history list's row", () => {
-  // The rule the destination follows is "nothing may still be sent there", and a price and a method are not
-  // somewhere to send. The history is their reader: a settled row naming neither would be a purchase with
-  // the purchase left out, so "every field has a reader" cuts the other way here.
   for (const status of ["paid", "expired"] as const) {
     const store = new Store(new Mem());
     store.saveOrder(record({ ...HELD, method: "xmr" }));
@@ -1414,8 +1293,6 @@ apiTest("flow: an open crypto order resumes from the record alone when the read 
   assert.equal(first.screen === "awaitingPayment" ? first.invoice.expiresAt : "gone", "2026-08-28T13:00:00Z",
     "the rate window is drawn too: an address with no window is what support reconciliation has to reconcile");
   assert.equal(first.screen === "awaitingPayment" ? first.invoice.amount : 0, 42000);
-  // the store rules: the code is in the store from before the invoice existed, and the payment screen is
-  // an unpaid screen: the view it is handed must not carry it at all.
   assert.ok(!JSON.stringify(first).includes("SB-Y"), "an unpaid screen never receives a code");
   w.stop();
   await Promise.race([w.done, flush().then(() => { throw new Error("stop left the loop in its backoff"); })]);
@@ -1448,9 +1325,6 @@ apiTest("flow: the offline resume keeps asking — the status is never drawn fro
 });
 
 apiTest("flow: a stopped watch never paints, however late its answer arrives", async () => {
-  // The page moves from one order to another by stopping every watch and starting a new one.
-  // The old loop's request is already in flight, and painting its answer draws the old
-  // order's address and QR under the new order's URL.
   const h = harness();
   const watch = h.flow.watch("inv_old");
   await settle();
@@ -1486,8 +1360,6 @@ apiTest("flow: a suspended tab does not spend its give-up budget while it is hid
   assert.equal(back.screen === "awaitingConfirmation" && back.gaveUp, false,
     "coming back to a hidden tab must not give up before anything has been asked");
 
-  // and the deadline resumes where it left off: clearing it left the give-up unreachable, and
-  // refilling it let a tab toggled every few minutes wait for ever
   await h.clock.advance(GIVE_UP_MS + 1000);
   await settle();
   const later = h.views.at(-1)!;
@@ -1496,8 +1368,6 @@ apiTest("flow: a suspended tab does not spend its give-up budget while it is hid
 });
 
 apiTest("flow: a funded verdict with no figures is still confirming, not waiting for payment", () => {
-  // Monero reports an invoice as confirming while `paymentMethodPaid` is still zero. Reading
-  // the amount before the verdict left a paid invoice saying "waiting for payment".
   assert.equal(orderPhase({ status: "open", paidInFull: true }), "processing");
   assert.equal(orderPhase({ status: "open", paidInFull: true, cryptoAmountPaid: "0.0134" }), "processing");
   assert.equal(orderPhase({ status: "open", cryptoAmountPaid: "0.007", paidInFull: false }), "partPaid");
@@ -1514,7 +1384,6 @@ apiTest("flow: hiding a tab neither spends the give-up budget nor refills it", a
   const w = h.flow.watch("inv_9f3a", { initial: openCard, method: "card" });
   await settle();
 
-  // most of the budget spent asking, then a hide and a return
   await h.clock.advance(GIVE_UP_MS - 60_000);
   w.suspend();
   await settle();
@@ -1524,7 +1393,6 @@ apiTest("flow: hiding a tab neither spends the give-up budget nor refills it", a
   const back = h.views.at(-1)!;
   assert.equal(back.screen === "awaitingConfirmation" && back.gaveUp, false, "hidden time is not spent");
 
-  // only the minute that was left remains, not a fresh quarter of an hour
   await h.clock.advance(61_000);
   await settle();
   const after = h.views.at(-1)!;

@@ -1,7 +1,3 @@
-// A stub DOM small enough to be obviously honest: createElement,
-// createElementNS, text nodes, attributes, listeners, and the handful of
-
-/** Only the fields a handler in this codebase reads. */
 export interface StubEvent {
   button: number;
   metaKey: boolean;
@@ -19,27 +15,22 @@ export class StubText {
 
 export type Child = StubElement | StubText;
 
-/** Who `document.activeElement` answers with. One per process, as a browser has. */
 const focusHolder: { at: StubElement | null } = { at: null };
 
-/** The namespace an inline SVG element must be created in to render at all. */
+// The namespace an inline SVG element must be created in to render.
 export const SVG_NS = "http://www.w3.org/2000/svg";
 
 export class StubElement {
   readonly attrs = new Map<string, string>();
   children: Child[] = [];
   readonly listeners = new Map<string, Array<(event: StubEvent) => void>>();
-  /** The width one panel occupies; the track is the only element that reads it. */
   clientWidth = 560;
   scrollLeft = 0;
   lastScrollBehavior = "";
   disabled = false;
-  /** Set by `append`/`replaceChildren`, so `remove` can find its holder. */
   parent: StubElement | undefined;
 
-  /** Null for `createElement`, the namespace URI for `createElementNS`. A real browser draws nothing for an
-   * `<svg>` made in the HTML namespace, so a test that cares whether a symbol would render has to see which
-   * was used. This is the whole of what the stub knows about namespaces. */
+  // A browser draws nothing for an <svg> made in the HTML namespace, so a test must see which namespace was used.
   constructor(readonly tagName: string, readonly namespaceURI: string | null = null) {}
 
   setAttribute(k: string, v: string): void { this.attrs.set(k, v); }
@@ -47,8 +38,7 @@ export class StubElement {
   hasAttribute(k: string): boolean { return this.attrs.has(k); }
   removeAttribute(k: string): void { this.attrs.delete(k); }
 
-  /** Backed by the `class` attribute, so `all()` and `getAttribute("class")` see every change and
-   * the app's `classList.toggle("dark", …)` behaves as the browser's does. */
+  // Backed by the class attribute, so all() and getAttribute stay in sync, matching the browser.
   get classList() {
     const read = (): string[] => (this.getAttribute("class") ?? "").split(/\s+/).filter(Boolean);
     const write = (list: string[]): void => {
@@ -78,7 +68,6 @@ export class StubElement {
     this.children = [...kids];
   }
 
-  /** As `Element.remove`: takes itself out of whatever holds it, and nothing if nothing does. */
   remove(): void {
     const holder = this.parent;
     if (holder === undefined) return;
@@ -103,7 +92,6 @@ export class StubElement {
     const at = list.indexOf(fn);
     if (at >= 0) list.splice(at, 1);
   }
-  /** How many listeners are attached, so a leak is observable at all. */
   listenerCount(type: string): number { return this.listeners.get(type)?.length ?? 0; }
   dispatch(type: string, init: Partial<StubEvent> = {}): StubEvent {
     const event: StubEvent = {
@@ -115,19 +103,14 @@ export class StubElement {
     for (const fn of [...(this.listeners.get(type) ?? [])]) fn(event);
     return event;
   }
-  /** A real browser suppresses activation on a disabled control, so a test that clicks one must observe
-   * nothing happening rather than the handler running. `init` carries the modifier keys a link handler
-   * has to distinguish. */
+  // A real browser suppresses activation on a disabled control, so clicking one must do nothing.
   click(init: Partial<StubEvent> = {}): StubEvent {
     if (this.hasAttribute("disabled")) {
-      return { button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, defaultPrevented: false, preventDefault() { /* suppressed */ } };
+      return { button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, defaultPrevented: false, preventDefault() {} };
     }
     return this.dispatch("click", init);
   }
 
-  /** Focus is a document-wide fact, so the element records the call and the document below records who holds
-   * it. No focus ring, no tab order, no containment: what is provable is which element was asked for focus,
-   * which is exactly what Escape returning it to the menu button turns on. */
   focused = 0;
   focus(): void {
     this.focused += 1;
@@ -142,7 +125,7 @@ export class StubElement {
   get textContent(): string { return this.children.map((c) => c.textContent).join(""); }
   set textContent(v: string) { this.children = [new StubText(v)]; }
 
-  /** Depth-first, matching only the `tag`, `.class` and `tag.class` forms used in tests. */
+  // Depth-first; matches only the tag, .class and tag.class forms.
   all(selector: string): StubElement[] {
     const [tag, cls] = selector.split(".");
     const hit = (tag === undefined || tag === "" || this.tagName === tag)
@@ -153,7 +136,6 @@ export class StubElement {
   }
   querySelector(selector: string): StubElement | null { return this.all(selector)[0] ?? null; }
 
-  /** Every string of text in the tree, in order. */
   get texts(): string[] {
     const out: string[] = [];
     for (const c of this.children) {
@@ -163,9 +145,7 @@ export class StubElement {
     return out;
   }
 
-  /** The whole subtree as one string: tag names, every attribute name and value, and every text node. A guard
-   * that reads only `textContent` misses a code smuggled into `title`, `data-*`, `aria-label`, `href` or
-   * `value`, where a tooltip or a screen reader would happily surface it. */
+  // The whole subtree as one string, including attributes that textContent would miss.
   serialize(): string {
     const attrs = [...this.attrs].map(([k, v]) => ` ${k}="${v}"`).join("");
     const inner = this.children.map((c) => (c instanceof StubText ? c.data : c.serialize())).join("");
@@ -173,36 +153,22 @@ export class StubElement {
   }
 }
 
-/** The clipboard a real browser gives a page: present only in a secure context, and free to reject even then
- * (no transient activation, permission refused). Both are switchable, since on the code screen a silent
- * failure would leave the buyer believing they had copied the only copy of their code. */
+// The clipboard a browser gives a page is present only in a secure context, and it can reject even then.
 export interface Clipboard {
   readonly writes: string[];
-  /** `writeText` rejects. */
   fail: boolean;
-  /** `navigator.clipboard` is undefined, as on an insecure origin. */
   absent: boolean;
 }
 
-/** What `navigator.serviceWorker.register` was asked and, the point of it, what `#app` held at the moment it
- * was asked. Offline support and Anubis require registration only after a load that produced the real shell,
- * and an empty `#app` at that moment is exactly the load that did not. */
 export interface ServiceWorkers {
-  /** `shell` is the tag and class of what `#app` held then; `div.track` is this build's. */
   readonly registrations: Array<{ url: string; appChildren: number; shell: string }>;
-  /** `register` rejects, as a browser does on a 404 or a syntax error in the worker. */
   fail: boolean;
 }
 
-/** `navigator.onLine`, which the offline note is read from. */
 export interface Connectivity {
   online: boolean;
 }
 
-/**
- * Installs `document` and a clipboard recorder. the ban on showing an unpaid
- * code covers the clipboard too, so what is written to it has to be observable.
- */
 export function installDocument(): {
   app: StubElement; chrome: StubElement; documentElement: StubElement;
   clipboard: Clipboard; document: StubDocument;
@@ -210,18 +176,12 @@ export function installDocument(): {
 } {
   const app = new StubElement("main");
   app.setAttribute("id", "app");
-  // The shell's header slot. `main.ts` builds the wordmark and the menu into
-  // it, and throws without it, exactly as it does for `#app`.
   const chrome = new StubElement("div");
   chrome.setAttribute("id", "chrome");
-  // `<head>`, so a script tag appended to it is observable, and a container and nothing more: appending a
-  // script does not fetch, execute or define a global, and no `load` or `error` event fires on its own, a
-  // test dispatching whichever it is modelling. Loading Stripe.js for real still needs a browser.
+  // Appending a script here does not fetch, execute, or fire load/error; a test dispatches whichever it models.
   const head = new StubElement("head");
-  // `<html>`, which is where the chosen theme is written.
   const documentElement = new StubElement("html");
   focusHolder.at = null;
-  // The shell's footer, which is inerted with the screen while the menu is open.
   const contact = new StubElement("footer");
   contact.setAttribute("id", "contact");
   const byId = new Map<string, StubElement>([
@@ -279,12 +239,9 @@ export function installDocument(): {
 
 export interface StubDocument {
   hidden: boolean;
-  /** Where a script tag lands. See `installDocument`: it is inert. */
   head: StubElement;
-  /** `<html>`, which carries `data-theme` when the buyer overrides the system. */
   documentElement: StubElement;
   readonly activeElement: StubElement | null;
-  /** What `getElementById` answers from. A test seeds the shell's meta elements here. */
   byId: Map<string, StubElement>;
   listeners: Map<string, Array<() => void>>;
   createElement(tag: string): StubElement;
@@ -297,9 +254,7 @@ export interface StubDocument {
 
 // ------------------------------------------------------- location and history
 
-/** A real back/forward stack, so `history.back()` is the browser's Back. `pushState` and `replaceState`
- * update `location` synchronously, as a browser does: syncing only on popstate hid that anything reading
- * `location` right after a push saw the old URL. */
+// pushState and replaceState update location synchronously, as a browser does.
 export class StubHistory {
   readonly stack: string[] = ["/"];
   at = 0;
@@ -334,7 +289,6 @@ export class StubHistory {
     this.onPop();
   }
 
-  /** Set when Back was pressed with nothing behind it: the "leaves the site". */
   left = false;
 
   get url(): string { return this.stack[this.at]!; }

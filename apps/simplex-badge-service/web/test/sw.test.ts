@@ -4,34 +4,29 @@ import { readFileSync, readdirSync } from "node:fs";
 import vm from "node:vm";
 
 const swTest = timedTest(2000);
-// the shell's own deadline is 3s, so the one test that waits it out needs more than that
+// The shell's deadline is 3s, so the test that waits it out needs longer.
 const stalledTest = timedTest(8000);
 
 const ORIGIN = "https://badges.simplex.chat";
 const WORKER_SOURCE = readFileSync(new URL("../../public/sw.js", import.meta.url), "utf8");
 const SHELL_HTML = readFileSync(new URL("../../public/index.html", import.meta.url), "utf8");
 
-/** Anubis serves its challenge as HTML at the page's own path, which is the whole problem. */
+// Anubis serves its challenge as HTML at the page's own path.
 const ANUBIS_CHALLENGE = `<!doctype html><html><head><title>Making sure you are not a bot</title></head>
 <body><script id="anubis_challenge" type="application/json">{"rules":{"difficulty":4}}</script>
 <script async type="module" src="/.within.website/x/cmd/anubis/static/js/main.mjs"></script></body></html>`;
-
-// ------------------------------------------------------------- the fake world
 
 interface FakeResponse {
   url: string;
   ok: boolean;
   status: number;
-  /** The bytes, readable by a test without disturbing the body. */
   body: string;
   bodyUsed: boolean;
   clone(): FakeResponse;
   text(): Promise<string>;
 }
 
-/** A single-use body, the property the worker's `clone()` exists for: `text()` disturbs it, a disturbed body
- * cannot be cloned, and `Cache.put` rejects one (`TypeError: Response body is already used`). A re-readable
- * stand-in would let `shell.text()` then `cache.put(shell)` pass here and fail on every browser. */
+// A single-use body, since text() disturbs it and Cache.put rejects a disturbed body, as a browser does.
 function response(url: string, status: number, body: string): FakeResponse {
   let used = false;
   return {
@@ -50,20 +45,17 @@ function response(url: string, status: number, body: string): FakeResponse {
   };
 }
 
-/** The Cache API's key: an absolute URL, query string included. */
 function keyOf(key: unknown): string {
   const raw = typeof key === "string" ? key : String((key as { url: string }).url);
   return new URL(raw, `${ORIGIN}/`).href;
 }
 
-/** A bare URL is a GET, as `new Request(url)` is. */
 function methodOf(key: unknown): string {
   return typeof key === "string" ? "GET" : String((key as { method?: string }).method ?? "GET");
 }
 
 class FakeCache {
   readonly entries = new Map<string, FakeResponse>();
-  /** Every key this cache was asked for, and every key written into it. */
   readonly matched: string[] = [];
   readonly written: string[] = [];
 
@@ -71,8 +63,7 @@ class FakeCache {
 
   async match(key: unknown): Promise<FakeResponse | undefined> {
     this.matched.push(keyOf(key));
-    // The Cache API matches GET and nothing else: a request with any other
-    // method never has a cached answer, whatever is stored under its URL.
+    // The Cache API matches GET only, whatever is stored under the URL.
     if (methodOf(key) !== "GET") return undefined;
     return this.entries.get(keyOf(key));
   }
@@ -83,7 +74,7 @@ class FakeCache {
     this.entries.set(keyOf(key), res);
   }
 
-  /** Atomic: one non-2xx and nothing at all is added. */
+  // The whole set is added or none of it is.
   async addAll(keys: readonly string[]): Promise<void> {
     const got = await Promise.all(keys.map(async (k) => [k, await this.net.fetch(k)] as const));
     const bad = got.find(([, res]) => !res.ok);
@@ -120,11 +111,9 @@ class FakeCacheStorage {
 
 class FakeNet {
   readonly requests: Array<{ url: string; init?: Record<string, unknown> }> = [];
-  /** Answers, by pathname-with-query. Anything unlisted is a 404. */
   readonly routes = new Map<string, { status: number; body: string }>();
   offline = false;
 
-  /** Paths whose connection is accepted and never answered, as a captive portal does. */
   readonly stalled = new Set<string>();
 
   serve(path: string, status: number, body: string): void {
@@ -164,7 +153,6 @@ interface Rig {
   sw: WorkerExports;
   caches: FakeCacheStorage;
   net: FakeNet;
-  /** Neither may be called: a new build activates on the next full load. */
   calls: { skipWaiting: number; claim: number };
   install(): Promise<void>;
   activate(): Promise<void>;
@@ -172,14 +160,12 @@ interface Rig {
 }
 
 interface Served {
-  /** Whether the worker took the request over at all. */
   responded: boolean;
   body?: string;
   status?: number;
 }
 
-/** Loads `public/sw.js` into a fresh context, so the worker's own top-level state is re-evaluated and one
- * test's caches cannot leak into another's. */
+// Loads sw.js into a fresh context so one test's top-level state cannot leak into another's.
 interface TimerSpy {
   set: (id: number) => void;
   clear: (id: number) => void;
@@ -202,7 +188,6 @@ function rig(options: { shell?: string; shellStatus?: number; missing?: readonly
     clients: { claim: async () => { calls.claim++; } },
   } as Record<string, unknown>;
 
-  // a worker has timers; the shell fetch races one against a network that stalls
   const spy = options.timers;
   const watchedSetTimeout = (fn: () => void, ms: number): NodeJS.Timeout => {
     const handle = setTimeout(fn, ms);
@@ -222,8 +207,6 @@ function rig(options: { shell?: string; shellStatus?: number; missing?: readonly
   vm.runInContext(WORKER_SOURCE, sandbox, { filename: "public/sw.js" });
   const sw = self.sw as WorkerExports;
 
-  // The shell, and the build's assets, as the service would serve them (Anubis's
-  // `static_dir`). `missing` takes one back out, which is a deploy half done.
   net.serve("/", options.shellStatus ?? 200, options.shell ?? SHELL_HTML);
   for (const url of sw.PRECACHE) {
     if (options.missing?.includes(url) === true) continue;
@@ -254,8 +237,6 @@ function rig(options: { shell?: string; shellStatus?: number; missing?: readonly
   };
 }
 
-// ------------------------------------------------------------- the build hash
-
 swTest("sw: the shell and the worker name the same build", () => {
   const r = rig();
   assert.match(r.sw.BUILD, /^[0-9a-f]{16}$/, "the build hash is content-derived by build.js");
@@ -271,9 +252,6 @@ swTest("sw: the precache is explicit URLs, every compiled module, all under one 
   const modules = readdirSync(new URL("../../src", import.meta.url))
     .filter((f) => f.endsWith(".ts"))
     .map((f) => `${r.sw.ASSETS}${f.replace(/\.ts$/, ".js")}`);
-  // the landing screen's hero counts, and so does the header's wordmark and the shell's favicon:
-  // the landing screen is meant to work offline, and an image the worker never stored
-  // is a blank rectangle on the first screen of the page.
   const images = readdirSync(new URL("../../public/img", import.meta.url))
     .filter((f) => f.endsWith(".png") || f.endsWith(".svg")).map((f) => `${r.sw.ASSETS}${f}`);
   assert.ok(images.length > 0, "the hero has to be somewhere for the worker to precache");
@@ -283,8 +261,6 @@ swTest("sw: the precache is explicit URLs, every compiled module, all under one 
   assert.ok(!r.sw.PRECACHE.includes("/"),
     "`/` is fetched and checked at install, never added blind with the rest");
 });
-
-// --------------------------------------------------------------- the routing
 
 swTest("sw: /api/* is network-only, on every form the two endpoints take", () => {
   const { strategyFor } = rig().sw;
@@ -328,8 +304,6 @@ swTest("sw: anything else same-origin is left to the browser", () => {
     assert.equal(strategyFor(new URL(path, ORIGIN)), "bypass", path);
   }
 });
-
-// --------------------------------------------------------------- installation
 
 swTest("sw: install precaches the shell and this build's assets, and nothing else", async () => {
   const r = rig();
@@ -385,10 +359,6 @@ swTest("sw: the shell is cloned before it is read, or no install could ever stor
     "what was put in the cache is the undisturbed response: reading it to check the marker must use a clone");
 });
 
-// the atomicity has two directions, and only one of them was covered. `sw.js`
-// cannot be part of its own hash, so editing the worker alone re-runs `install`
-// against the cache the ACTIVE build is being served from.
-
 swTest("sw: a failed RE-INSTALL leaves the shipped build's cache untouched", async () => {
   const r = rig();
   await r.install();
@@ -435,8 +405,6 @@ swTest("sw: an install that fails does not skipWaiting over a half-filled cache"
     "taking over with no cache would serve a shell whose modules are not there");
 });
 
-// ---------------------------------------------------------------- activation
-
 swTest("sw: activation deletes every cache whose hash is not this build", async () => {
   const r = rig();
   await r.caches.open("sb-0000000000000000");
@@ -462,8 +430,6 @@ swTest("sw: activation does not claim the open pages either", async () => {
   await r.activate();
   assert.equal(r.calls.claim, 0, "a page keeps the build it loaded with until it is loaded again");
 });
-
-// --------------------------------------------------------------------- fetch
 
 swTest("sw: an API request is not answered here, and never touches the Cache API", async () => {
   const r = rig();
@@ -497,10 +463,6 @@ swTest("sw: a page load is answered from the cache when the network is gone", as
   }
 });
 
-// The failure this exists to prevent: a redeploy that a returning buyer never sees. The
-// new worker waits for every tab holding the old one to close, and a reload does not
-// release it, so a cache-first shell kept naming the old build's modules indefinitely,
-// which shipped a checkout generating codes the service could not redeem.
 swTest("sw: a redeployed shell reaches the page on a reload, with the old worker still active", async () => {
   const r = rig();
   await r.install();
@@ -511,14 +473,11 @@ swTest("sw: a redeployed shell reaches the page on a reload, with the old worker
     assert.equal(served.responded, true, url);
     assert.equal(served.body, REDEPLOYED, `${url} kept serving the cached shell after a redeploy`);
   }
-  // and the fresh document is passed through, never stored: the challenge page must not
-  // be able to enter the cache this way either
   const cache = r.caches.stores.get(r.sw.CACHE)!;
   assert.deepEqual(cache.written.filter((w) => w === "/"), []);
 });
 
 swTest("sw: the shell's deadline is cleared on every path, so no request leaves a timer armed", async () => {
-  // the offline path throws past anything after the await, which is where the clear used to be
   const armed: number[] = [];
   const r = rig({ timers: { set: (id) => armed.push(id), clear: (id) => { armed.splice(armed.indexOf(id), 1); } } });
   await r.install();
@@ -531,8 +490,7 @@ swTest("sw: the shell's deadline is cleared on every path, so no request leaves 
 });
 
 stalledTest("sw: a network that accepts and never answers falls back rather than hanging the page", async () => {
-  // The tunnel case the precache exists for: `fetch` does not reject on a stalled connection,
-  // and `navigator.onLine` still says online, so only a deadline gets the buyer their page.
+  // fetch does not reject on a stalled connection and navigator.onLine still says online, so only a deadline serves the page.
   const r = rig();
   await r.install();
   r.net.stall("/");
@@ -597,8 +555,6 @@ swTest("sw: a request that is not a GET is never answered from a cache", async (
   await r.install();
   const cache = r.caches.stores.get(r.sw.CACHE)!;
   cache.written.length = 0;
-  // Both of these have a precached entry under their exact URL, so what stops
-  // them is the method and nothing else.
   for (const url of ["/", `${r.sw.ASSETS}main.js`]) {
     for (const method of ["POST", "HEAD"]) {
       const served = await r.request(`${ORIGIN}${url}`, method);

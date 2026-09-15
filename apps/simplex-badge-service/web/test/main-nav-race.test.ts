@@ -1,6 +1,4 @@
-// A history refresh answering after the buyer has navigated away. `renderCodes` takes the root
-// outright, so without its hash guard the list paints over whatever screen they moved to, under
-// that screen's URL.
+// renderCodes takes the root, so without its hash guard a late refresh paints the list over whatever screen the buyer moved to.
 import assert from "node:assert/strict";
 import { headingOf, inViewOf, installPage, settle, timedTest, until } from "./boot.js";
 import { openReply, ORDER_ID, seededStorage } from "./open-order.js";
@@ -17,12 +15,10 @@ const inView = (): ReturnType<typeof inViewOf> => inViewOf(app);
 navTest("main: a history refresh landing after the buyer moved on does not take the screen", async () => {
   await until(() => headingOf(inView()).startsWith("Send"), "the payment screen");
 
-  // the refresh this fires reads the open order; its answer is queued, so it resolves promptly
   page.respondWith(openReply);
   page.chrome.all("button.menu-item").find((b) => b.textContent === "Your codes")!.click();
   assert.equal(headingOf(inView()), "Your codes", "the list is drawn from the store at once");
 
-  // and the buyer goes back to the order before that answer lands
   page.respondWith(openReply);
   history.pushState(null, "", `/?order=${ORDER_ID}`);
   page.fire("popstate");

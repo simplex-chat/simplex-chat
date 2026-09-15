@@ -88,8 +88,6 @@ data InvoiceRow = InvoiceRow
   }
   deriving (Eq, Show)
 
--- | Whether anything the buyer sent is riding on this invoice. A crypto amount that rounds
--- to nothing still counts, and so does the provider saying it is paid before its figures move.
 paymentHolds :: InvoicePayment -> Bool
 paymentHolds InvoicePayment {ipAmount, ipCryptoPaid, ipPaidInFull} =
   maybe False (\(CurrencyAmount a) -> a > 0) ipAmount || ipCryptoPaid /= Nothing || ipPaidInFull
@@ -129,9 +127,7 @@ newtype StoreDecodeError = StoreDecodeError Text
 
 instance Exception StoreDecodeError
 
--- | SQLite keeps timestamps as text, so `expires_at < ?` sorts as strings and is only
--- chronological if every value is the same width. The listener imports this rather than
--- truncating separately, so the expiry it reports is the one we stored.
+-- | SQLite stores timestamps as text, so `expires_at < ?` compares as strings and only sorts chronologically when every value has the same width.
 truncateToSecond :: UTCTime -> UTCTime
 truncateToSecond = posixSecondsToUTCTime . fromInteger . truncate . utcTimeToPOSIXSeconds
 
@@ -183,10 +179,6 @@ qGetInvoice = mkQuery (invoiceRowSelect <> "WHERE i.invoice_id = ?")
 qGetInvoiceByProviderRef :: Query
 qGetInvoiceByProviderRef = mkQuery (invoiceRowSelect <> "WHERE ci.provider_ref = ?")
 
--- | Every invoice we are still waiting on: not yet paid, and created recently enough to be worth
--- asking about. A paid row is finished and one created before the cutoff is past help, and
--- neither is asked about again. The provider comes back with the ref, so a row this build cannot
--- attribute to one is seen rather than skipped.
 qUnpaidRefs :: Query
 qUnpaidRefs =
   mkQuery $
@@ -198,9 +190,6 @@ qUnpaidRefs =
 qCodeHashExists :: Query
 qCodeHashExists = mkQuery "SELECT 1 FROM @badge_codes WHERE code_hash = ? LIMIT 1"
 
--- | An invoice the buyer has already paid into is never swept, however long the chain
--- takes to confirm it: expiring it would take real money for a code that stays unpaid.
--- The rate hold is what the window bounds, and that stops mattering once payment lands.
 unfundedOnly :: Text
 unfundedOnly =
   "AND NOT EXISTS (SELECT 1 FROM @payments p "
@@ -238,9 +227,7 @@ largerOf = "GREATEST"
 largerOf = "MAX"
 #endif
 
--- Amounts are running totals, so keeping the larger makes a repeated event harmless.
--- Once a row is settled it stays settled: without that guard a transaction that read the
--- invoice as open before the settling one committed would write pending back over it.
+-- Once a row is settled it stays settled, so a later pending update cannot overwrite it.
 qUpsertPayment :: Query
 qUpsertPayment =
   mkQuery $
@@ -253,7 +240,6 @@ qUpsertPayment =
       <> "(COALESCE(@payments.amount, 0), excluded.amount), "
       <> "crypto_paid = CASE WHEN excluded.amount > COALESCE(@payments.amount, 0) OR @payments.crypto_paid IS NULL "
       <> "THEN excluded.crypto_paid ELSE @payments.crypto_paid END, "
-      -- the provider recomputes what is owed on every read, so the newest answer always wins
       <> "crypto_due = COALESCE(excluded.crypto_due, @payments.crypto_due), "
       <> "paid_in_full = "
       <> largerOf
@@ -289,7 +275,6 @@ qBadgeOffers =
     "SELECT offer_id, price_id, months, free_months, discount, status, created_at "
       <> "FROM @badge_offers WHERE status <> 'disabled'"
 
--- Insert or do nothing, never update, so a price someone withdrew stays withdrawn.
 qSeedBadgePrice :: Query
 qSeedBadgePrice =
   mkQuery $
@@ -454,8 +439,6 @@ mkBadgeOffer (offerId, priceId, months, freeMonths, discountPct, statusTxt, crea
         createdAt
       }
 
--- | The caller's code-hash check and this write are not one operation, so two requests
--- with the same hash can both arrive. The UNIQUE index is what stops the duplicate.
 createInvoiceRows :: DBStore -> NewInvoice -> IO (Either CreateError ())
 createInvoiceRows st ni =
   (Right <$> withTransaction st (`insertInvoiceRows` ni))
@@ -527,7 +510,6 @@ codeHashExists :: DBStore -> ByteString -> IO Bool
 codeHashExists st codeHash = withConnection st $ \db ->
   not . null <$> (DB.query db qCodeHashExists (Only (DB.Binary codeHash)) :: IO [Only Int])
 
--- | Returns which invoices it expired, so the caller can wake browsers waiting on them.
 expireOverdue :: DBStore -> UTCTime -> IO [InvoiceId]
 expireOverdue st cutoff' = withTransaction st $ \db -> do
   let cutoff = truncateToSecond cutoff'
@@ -535,10 +517,6 @@ expireOverdue st cutoff' = withTransaction st $ \db -> do
   unless (null ids) $ DB.execute db qExpireOverdue (cutoff, cutoff)
   pure (map (\(Only i) -> InvoiceId i) ids)
 
--- | Expires an open invoice ahead of its clock. Unlike the sweep this does not spare a funded
--- one: the provider has already been told to invalidate it by the time this runs, so leaving the
--- row open would advertise an address nothing can be sent to. What did arrive is on the payment
--- row, and the poller settles it or reports it for a refund.
 cancelOpenInvoice :: DBStore -> InvoiceId -> UTCTime -> IO Bool
 cancelOpenInvoice st invId at = withTransaction st $ \db -> updateInvoiceStatus db invId ISOpen ISExpired at
 
@@ -572,7 +550,6 @@ seedCatalog st prices offers = withTransaction st $ \db -> do
               truncateToSecond at
             )
 
--- | 'DB.execute' throws the row count away on both backends, so we ask the driver.
 executeChanging :: ToRow q => DB.Connection -> Query -> q -> IO Int
 #if defined(dbPostgres)
 executeChanging db q params = fromIntegral <$> PSQL.execute db q params
@@ -613,6 +590,5 @@ markCodePaid db codeHash expiresAt =
     qMarkCodePaid
     (textEncode CPSPaid, truncateToSecond expiresAt, DB.Binary codeHash, textEncode CPSUnpaid)
 
--- | Anyone holding this can read the order, so it comes from the CSPRNG.
 newInvoiceId :: IO InvoiceId
 newInvoiceId = InvoiceId . safeDecodeUtf8 . BC8.filter (/= '=') . B64U.encode <$> getRandomBytes 16

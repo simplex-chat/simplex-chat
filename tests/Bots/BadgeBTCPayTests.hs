@@ -140,9 +140,9 @@ btcPaid paid payments =
       "payments" .= payments
     ]
 
--- | What BTCPay is still owed on a 0.00050000 invoice, per payment figure. The dust case is
--- deliberately not the difference: a partial payment adds a network fee, so a body computed by
--- subtraction would also pass an adapter that subtracted instead of reading the field.
+-- | The due each payment figure leaves owed on a 0.00050000 invoice. The dust case does not use
+-- the difference between amount and paid, because a partial payment adds a network fee, so a body
+-- computed by subtraction would also pass an adapter that subtracted instead of reading the field.
 dueAfter :: Text -> Text
 dueAfter = \case
   "0.00050000" -> "0.00000000"
@@ -168,8 +168,6 @@ signalOf status methods = paymentMethodsSignal readTime ref status (methodsBody 
 halfMilliBtc :: Received
 halfMilliBtc = Received {rcvAmount = CurrencyAmount 5400, rcvCrypto = Just "0.00050000", rcvDue = Just "0.00000000"}
 
--- | Nothing arrived, so what is owed is whatever the source says: the inline bodies derive it
--- from the payment, the fixtures carry their own.
 nothingReceived :: Text -> Received
 nothingReceived due = Received {rcvAmount = CurrencyAmount 0, rcvCrypto = Nothing, rcvDue = Just due}
 
@@ -208,9 +206,9 @@ testNewWithDust =
 testNewWithNothing :: IO ()
 testNewWithNothing = signalOf "New" [btcPaid "0.00000000" []] `shouldBe` Right Nothing
 
--- | A figure with an absurd exponent parses as a Scientific and then asks for a number with
--- that many digits. Bounded before anything rounds or formats it, because the thread that would
--- build it is the poller. The timeout is the point: without the guard this does not return.
+-- | A figure with an absurd exponent parses as a Scientific and then asks for a number with that
+-- many digits, which never returns. The test bounds the call with a timeout, since the guard must
+-- refuse it before anything rounds or formats it.
 testAbsurdExponentIsRefused :: IO ()
 testAbsurdExponentIsRefused = do
   answered <- timeout 5000000 (evaluate (signalOf "Settled" [btcPaid "1e1000000000" []]))
@@ -218,8 +216,8 @@ testAbsurdExponentIsRefused = do
     Nothing -> expectationFailure "a decimal with a billion-digit exponent was not refused"
     Just r -> r `shouldSatisfy` namesInError "exponent out of range"
 
--- | The same figure as a bare JSON number, which is how BTCPay sends `receivedDate`. The
--- refusal must not format it on the way out either, or the guard rebuilds what it refuses.
+-- | BTCPay sends `receivedDate` as a bare JSON number, so the same absurd figure must be refused
+-- in that form too, and the refusal must not format it on the way out or the guard rebuilds it.
 testAbsurdExponentAsANumberIsRefused :: IO ()
 testAbsurdExponentAsANumberIsRefused = do
   let huge = J.Number (scientific 1 1000000000)
@@ -239,8 +237,6 @@ testAbsurdExponentAsANumberIsRefused = do
     Nothing -> expectationFailure "a JSON number with a billion-digit exponent was not refused"
     Just r -> r `shouldSatisfy` namesInError "exponent out of range"
 
--- | A rate that carries a repeating division at full decimal scale is a real figure, and the
--- magnitude guard must not be the thing that fails a whole list pass over one of them.
 testLongRateIsAccepted :: IO ()
 testLongRateIsAccepted =
   signalOf "Settled" [longRate] `shouldSatisfy` \case
@@ -320,8 +316,8 @@ testListSkipsUnknownStatus = do
   reason `shouldSatisfy` T.isInfixOf "SOMEONEELSESINVOICE"
   skippedRef `shouldBe` Just "SOMEONEELSESINVOICE"
 
--- | The decode is per invoice, not per page: BTCPay's payments come from a plugin for XMR, and
--- one malformed entry failing the whole page would stop every invoice settling, on every pass.
+-- | Each invoice is decoded on its own, not the whole page at once, because XMR payments come from
+-- a BTCPay plugin and one malformed entry must not stop every other invoice settling on every pass.
 testListSkipsUnparseable :: IO ()
 testListSkipsUnparseable = do
   let noStatus =
@@ -333,7 +329,6 @@ testListSkipsUnparseable = do
             "paymentMethodPaid" .= ("0.00050000" :: Text),
             "due" .= ("0.00000000" :: Text),
             "networkFee" .= ("0.00000500" :: Text),
-            -- a payment with no status: the field GPayment requires to read one at all
             "payments" .= [J.object ["receivedDate" .= (1700000000 :: Int)]]
           ]
       broken = listEntry "MALFORMEDINVOICE" "Settled" (Just [noStatus])
@@ -361,8 +356,6 @@ testListFailsWithoutPaymentMethods :: IO ()
 testListFailsWithoutPaymentMethods = do
   listSignals readTime (J.encode [listEntry ref "Settled" Nothing]) `shouldSatisfy` namesInError "paymentMethods"
 
--- | Skipped with no ref, which the poller counts as unaccounted for: it holds the sweep back
--- exactly as failing the pass did, and the invoices either side of it still settle.
 testListSkipsWithoutId :: IO ()
 testListSkipsWithoutId = do
   let noId = J.object ["status" .= ("Settled" :: Text), "paymentMethods" .= [btcPaid "0.00050000" []]]
@@ -401,10 +394,9 @@ testExactDecimalMultiplication = do
     Right (Just (SigFunded r _)) -> rcvAmount r `shouldBe` CurrencyAmount 54
     other -> expectationFailure ("expected SigFunded, got " <> show other)
 
--- The exponent gate bounds how long a figure may be, not how large: a negative or an
--- eleven-digit one still reaches the conversion. Unclamped both wrap Word32 into a positive
--- figure, which reads as money received: the invoice then holds against every sweep and answers
--- every cancel with `funded`.
+-- The exponent gate bounds how long a figure may be, not how large, so a negative or eleven-digit
+-- value still reaches the conversion. Unclamped, both wrap Word32 into a positive amount that reads
+-- as money received, and the invoice then holds against every sweep and answers every cancel funded.
 testAbsurdAmountIsClamped :: IO ()
 testAbsurdAmountIsClamped = do
   chargeFor "-1" `shouldBe` Just (CurrencyAmount 0)
@@ -623,8 +615,6 @@ testFakeClosed = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = invRef} <- createdInvoice p (SPMCrypto CCBtc)
   setInvoiceState fake invRef ["status" .= ("Expired" :: Text), "paymentMethodPaid" .= ("0.00050000" :: Text)]
   pReadInvoice p invRef `shouldReturn` Right (Just (SigClosed halfMilliBtc))
-  -- nothing arrived, so the whole amount is still owed - the same figure the inline body in
-  -- `testClosed` carries, and the real provider reports that figure for an unpaid invoice
   setInvoiceState fake invRef ["status" .= ("Invalid" :: Text), "paymentMethodPaid" .= ("0.00000000" :: Text)]
   pReadInvoice p invRef `shouldReturn` Right (Just (SigClosed (nothingReceived "0.00050000")))
 
@@ -677,8 +667,6 @@ testFakeCreateNoAmount = withProvider $ \fake p -> do
   r <- pCreateInvoice p (SPMCrypto CCBtc) fiftyFourDollars
   r `shouldSatisfy` namesInError "has no amount"
 
--- | The poller thread is the one that settles orders. A provider answering with something
--- enormous must be refused at the read rather than held in memory entire.
 testFakeOversizeAnswer :: IO ()
 testFakeOversizeAnswer = withProvider $ \fake p -> do
   ProviderInvoice {piProviderRef = invRef} <- createdInvoice p (SPMCrypto CCBtc)
@@ -705,8 +693,8 @@ testFakeWebhookSecretWiring = withProvider $ \fake p -> do
   pVerifyWebhook p (webhookSigHeader configured b) (LB.toStrict b) `shouldBe` Right (Just ref)
   pVerifyWebhook p (webhookSigHeader (configured <> "0") b) (LB.toStrict b) `shouldSatisfy` isRefused
 
--- | Telling totalPaid from paymentMethodPaid only means anything while the two differ in
--- the fixture, so we check that directly.
+-- | An amount assertion only proves the adapter reads paymentMethodPaid rather than totalPaid while
+-- the two differ in the fixture, so this checks that directly.
 totalPaidStaysDistinguishable :: HasCallStack => Text -> IO ()
 totalPaidStaysDistinguishable name = do
   v <- fixtureResponse name
