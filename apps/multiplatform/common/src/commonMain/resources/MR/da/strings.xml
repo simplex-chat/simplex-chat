@@ -438,7 +438,6 @@
     <string name="report_archive_alert_title">Arkivér rapport?</string>
     <string name="report_archive_alert_title_nth">Arkivér %d rapporter?</string>
     <string name="report_archive_alert_title_all">Arkivér alle rapporter?</string>
-    <string name="report_archive_alert_desc">Rapporten vil blive arkiveret for dig.</string>
     <string name="report_archive_for_me">For mig</string>
     <string name="report_archive_for_all_moderators">Til alle moderatorer</string>
     <string name="ci_status_other_error">Fejl: %1$s</string>
@@ -547,7 +546,6 @@
     <string name="contact_should_accept">kontakten skal acceptere…</string>
     <string name="connect_with_contact_name_question">Forbinde med %1$s?</string>
     <string name="search_or_paste_simplex_link">Søg eller indsæt SimpleX-link</string>
-    <string name="address_creation_instruction">Tryk på Opret SimpleX-adresse i menuen for at oprette den senere.</string>
     <string name="no_selected_chat">Ingen chat valgt</string>
     <string name="selected_chat_items_nothing_selected">Intet er valgt</string>
     <string name="selected_chat_items_selected_n">Valgte %d</string>
@@ -679,8 +677,6 @@
     <string name="change_automatic_chat_deletion_message">Denne handling kan ikke fortrydes - beskeder sendt og modtaget i denne chat tidligere end valgt vil blive slettet.</string>
     <string name="disable_automatic_deletion">Deaktiver sletning af beskeder</string>
     <string name="chat_ttl_options_footer">Slet chatbeskeder fra din enhed.</string>
-    <string name="info_view_connect_button">forbinde</string>
-    <string name="info_view_open_button">åbn</string>
     <string name="info_view_message_button">besked</string>
     <string name="info_view_call_button">opkald</string>
     <string name="info_view_search_button">søg</string>
@@ -874,7 +870,6 @@
     <string name="channel_owner_count_singular">%1$d ejer</string>
     <string name="channel_owner_count_plural">%1$d ejere</string>
     <string name="relay_status_active">aktiv</string>
-    <string name="add_button">Tilføj</string>
     <string name="add_relay_button">Tilføj relay</string>
     <string name="add_relays_title">Tilføj relays</string>
     <string name="relay_bar_owner_no_delivery">Tilføj relays for at genoprette beskedleveringen.</string>
@@ -894,7 +889,6 @@
     <string name="channel_subscriber_count_singular">%1$d abonnent</string>
     <string name="channel_subscriber_count_plural">%1$d abonnenter</string>
     <string name="badge_supported_simplex">%1$s støttede SimpleX Chat. Mærket udløb den %2$s.</string>
-    <string name="settings_section_title_about">Om</string>
     <string name="relay_status_accepted">accepteret</string>
     <string name="v7_0_channels_contributors">Tilføj bidragsydere.</string>
     <string name="add_description">Tilføj beskrivelse</string>
@@ -925,11 +919,6 @@
     <string name="network_error_unknown_ca">Fingeraftrykket i serveradressen matcher ikke certifikatet: %1$s.</string>
     <string name="proxy_destination_error_unknown_ca">Fingeraftrykket i destinations-serveradressen matcher ikke certifikatet: %1$s.</string>
     <string name="error_marking_member_support_chat_read">Fejl ved markering som læst</string>
-    <string name="unsupported_channel_name">Ikke-understøttet navn på kanal</string>
-    <string name="unsupported_contact_name">Ikke-understøttet navn på kontakt</string>
-    <string name="channel_name_requires_newer_app_version">Forbindelse gennem kanal-navnet kræver en nyere version af appen.</string>
-    <string name="contact_name_requires_newer_app_version">Forbindelse gennem kontakt-navnet kræver en nyere version af appen.</string>
-    <string name="please_upgrade_the_app">Opgrader appen.</string>
     <string name="simplex_name_error">Fejl i SimpleX-navn</string>
     <string name="simplex_name_no_servers_desc">Ingen af dine servere er sat op til at slå SimpleX-navne op. Konfigurer serverne, eller anvend et forbindelseslink.</string>
     <string name="simplex_name_not_found">Navn ikke fundet</string>

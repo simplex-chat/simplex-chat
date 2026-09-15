@@ -537,7 +537,6 @@
     <string name="member_info_member_disabled">đã bị tắt</string>
     <string name="disappearing_messages_are_prohibited">Tin nhắn tự xóa bị cấm.</string>
     <string name="info_view_call_button">gọi</string>
-    <string name="info_view_connect_button">kết nối</string>
     <string name="delete_contact_cannot_undo_warning">Liên hệ sẽ bị xóa - điều này không thể hoàn tác!</string>
     <string name="conversation_deleted">Cuộc trò chuyện đã bị xóa!</string>
     <string name="privacy_media_blur_radius">Làm mờ đa phương tiện</string>
@@ -1007,7 +1006,6 @@
     <string name="v5_2_disappear_one_message">Làm cho một tin nhắn biến mất</string>
     <string name="live_message">Tin nhắn động!</string>
     <string name="keep_unused_invitation_question">Giữ lại lời mời chưa sử dụng?</string>
-    <string name="update_network_smp_proxy_fallback_question">Dự phòng định tuyến tin nhắn</string>
     <string name="invite_friends">Mời bạn bè</string>
     <string name="mark_code_verified">Đánh dấu đã xác thực</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Điều này có thể xảy ra khi:\n1. Tin nhắn hết hạn sau 2 ngày trên máy gửi hoặc sau 30 ngày trên máy chủ.\n2. Quá trình giải mã tin nhắn thất bại do bạn hoặc liên hệ của bạn sử dụng bản sao lưu cơ sở dữ liệu cũ.\n3. Kết nối bị xâm phạm.</string>
@@ -1052,7 +1050,6 @@
     <string name="settings_section_title_messages">Tin nhắn và tệp</string>
     <string name="message_deletion_prohibited_in_chat">Việc xóa tin nhắn mà không thể phục hồi là bị cấm.</string>
     <string name="v5_5_join_group_conversation">Tham gia vào các cuộc trò chuyện nhóm</string>
-    <string name="update_network_smp_proxy_mode_question">Chế độ định tuyến tin nhắn</string>
     <string name="email_invite_subject">Hãy trò chuyện trên SimpleX Chat</string>
     <string name="italic_text">in nghiêng</string>
     <string name="onboarding_notifications_mode_subtitle">Nó ảnh hưởng đến pin như thế nào</string>
@@ -1235,7 +1232,6 @@
     <string name="opening_database">Đang mở cơ sở dữ liệu…</string>
     <string name="or_show_this_qr_code">Hoặc hiển thị mã này</string>
     <string name="only_your_contact_can_make_calls">Chỉ liên hệ của bạn mới có thể thực hiện cuộc gọi.</string>
-    <string name="info_view_open_button">mở</string>
     <string name="v5_4_more_things_descr">- tùy chọn thông báo khi xóa liên hệ.\n- tên hồ sơ với dấu cách.\n- và hơn thế nữa!</string>
     <string name="permissions_open_settings">Mở cài đặt</string>
     <string name="migrate_from_device_or_share_this_file_link">Hoặc chia sẻ đường dẫn tệp này một cách an toàn.</string>
@@ -1387,7 +1383,6 @@
     <string name="errors_in_servers_configuration">Lỗi trong cấu hình máy chủ.</string>
     <string name="connection_security">Bảo mật kết nối</string>
     <string name="create_1_time_link">Tạo đường dẫn dùng một lần</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Các điều kiện sẽ được chấp nhận với các nhà cung cấp được cho phép sau 30 ngày.</string>
     <string name="onboarding_network_operators_continue">Tiếp tục</string>
     <string name="operator_conditions_failed_to_load">Không thể tải văn bản về các điều kiện hiện tại, bạn có thể xem xét các điều kiện thông qua đường dẫn này:</string>
     <string name="operator_conditions_of_use">Các điều kiện sử dụng</string>
@@ -1421,7 +1416,6 @@
     <string name="invite_to_chat_button">Mời để trò chuyện</string>
     <string name="button_leave_chat">Rời cuộc trò chuyện</string>
     <string name="operator_use_for_messages_private_routing">Cho định tuyến riêng tư</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">để bảo mật siêu dữ liệu tốt hơn.</string>
     <string name="v6_2_improved_chat_navigation">Đã cải thiện điều hướng trò chuyện</string>
     <string name="button_delete_chat">Xóa cuộc trò chuyện</string>
     <string name="for_social_media">Cho mạng xã hội</string>
@@ -1532,7 +1526,6 @@
     <string name="refresh_qr_code">Làm mới</string>
     <string name="v4_5_reduced_battery_usage">Đã giảm mức sử dụng pin</string>
     <string name="reject_contact_button">Từ chối</string>
-    <string name="remote_hosts_section">Các thiết bị di động từ xa</string>
     <string name="remove_passphrase">Xóa</string>
     <string name="remove_member_confirmation">Xóa</string>
     <string name="button_remove_member">Xóa thành viên</string>
@@ -1617,7 +1610,6 @@
     <string name="compose_send_direct_message_to_connect">Gửi tin nhắn trực tiếp để kết nối</string>
     <string name="compose_save_messages_n">Đang lưu %1$s tin nhắn</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(quét hoặc dán từ bảng nháp)</string>
-    <string name="onboarding_select_network_operators_to_use">Chọn các bên vận hành mạng lưới để sử dụng.</string>
     <string name="button_send_direct_message">Gửi tin nhắn trực tiếp</string>
     <string name="save_welcome_message_question">Lưu lời chào?</string>
     <string name="icon_descr_sent_msg_status_send_failed">gửi thất bại</string>
@@ -1628,7 +1620,6 @@
     <string name="save_list">Lưu danh sách</string>
     <string name="retry_verb">Thử lại</string>
     <string name="save_and_notify_contact">Lưu và thông báo tới liên hệ</string>
-    <string name="onboarding_network_operators_review_later">Xem xét lại sau</string>
     <string name="rcv_conn_event_verification_code_reset">mã bảo mật đã thay đổi</string>
     <string name="save_group_profile">Lưu hồ sơ nhóm</string>
     <string name="network_options_save_and_reconnect">Lưu và kết nối lại</string>
@@ -1750,7 +1741,6 @@
     <string name="terminal_always_visible">Hiển thị bảng điều khiển trong cửa sổ mới</string>
     <string name="error_creating_report">Lỗi tạo báo cáo</string>
     <string name="share_message">Chia sẻ tin nhắn…</string>
-    <string name="chat_list_always_visible">Hiển thị danh sách trò chuyện trong cửa sổ mới</string>
     <string name="notification_preview_mode_contact_desc">Chỉ hiển thị liên hệ</string>
     <string name="share_this_1_time_link">Chia sẻ đường dẫn dùng 1 lần này</string>
     <string name="share_with_contacts">Chia sẻ với các liên hệ</string>
@@ -1902,7 +1892,6 @@
     <string name="la_mode_system">Hệ thống</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Xin gửi lời cảm ơn tới các người dùng đã góp công qua Weblate!</string>
     <string name="contact_tap_to_connect">Nhấn để Kết nối</string>
-    <string name="address_creation_instruction">Nhấn Tạo địa chỉ SimpleX ở menu để tạo sau.</string>
     <string name="group_invitation_tap_to_join_incognito">Nhấn để tham gia một cách ẩn danh</string>
     <string name="theme_system">Hệ thống</string>
     <string name="v6_1_better_calls_descr">Chuyển đổi âm thanh và video trong lúc gọi.</string>
@@ -1977,7 +1966,6 @@
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Bản lưu trữ cơ sở dữ liệu đã được tải lên sẽ bị xóa vĩnh viễn khỏi các máy chủ.</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Việc này không thể được hoàn tác - hồ sơ, các liên hệ, tin nhắn và tệp của bạn sẽ biến mất mà không thể khôi phục.</string>
     <string name="smp_servers_per_user">Những máy chủ cho các kết nối mới của hồ sơ trò chuyện hiện tại của bạn</string>
-    <string name="report_archive_alert_desc">Báo cáo sẽ được lưu trữ cho bạn.</string>
     <string name="message_deleted_or_not_received_error_desc">Tin nhắn này đã bị xóa hoặc vẫn chưa được nhận.</string>
     <string name="this_QR_code_is_not_a_link">Mã QR này không phải là một đường dẫn!</string>
     <string name="this_link_is_not_a_valid_connection_link">Đường dẫn này không phải là một đường dẫn kết nối hợp lệ!</string>
@@ -2067,7 +2055,6 @@
     <string name="v6_0_upgrade_app">Nâng cấp ứng dụng một cách tự động</string>
     <string name="servers_info_uploaded">Đã tải lên</string>
     <string name="update_network_settings_confirmation">Cập nhật</string>
-    <string name="onboarding_network_operators_update">Cập nhật</string>
     <string name="auth_unlock">Mở khóa</string>
     <string name="v4_4_verify_connection_security">Xác minh bảo mật kết nối</string>
     <string name="operator_use_for_files">Sử dụng cho các tệp</string>
@@ -2131,7 +2118,6 @@
     <string name="description_via_contact_address_link">qua đường dẫn địa chỉ liên lạc</string>
     <string name="video_descr">Video</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Chúng tôi không lưu bất kỳ liên hệ hay tin nhắn nào của bạn (một khi đã được gửi) trên các máy chủ.</string>
-    <string name="operator_website">Website</string>
     <string name="personal_welcome">Xin chào %1$s!</string>
     <string name="network_use_onion_hosts_prefer">Khi có sẵn</string>
     <string name="voice_messages_prohibited">Các tin nhắn thoại bị cấm!</string>
@@ -2204,7 +2190,6 @@
     <string name="you_are_already_connected_to_vName_via_this_link">Bạn đã kết nối với %1$s rồi.</string>
     <string name="chat_preferences_you_allow">Bạn cho phép</string>
     <string name="servers_info_proxied_servers_section_footer">Bạn không được kết nối với các máy chủ này. Định tuyến riêng tư được sử dụng để gửi tin nhắn tới chúng.</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Bạn có thể định cấu hình các bên vận hành trong cài đặt Mạng &amp; máy chủ.</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Bạn đang kết nối thông qua đường dẫn dùng một lần này!</string>
     <string name="migrate_from_device_try_again">Bạn có thể thử một lần nữa.</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Bạn được mời vào nhóm. Tham gia để kết nối với các thành viên nhóm.</string>
@@ -2310,7 +2295,6 @@
     <string name="network_smp_web_port_toggle">Sử dụng cổng web</string>
     <string name="max_group_mentions_per_message_reached">Bạn có thể nhắc đến tối đa là %1$s thành viên trong một tin nhắn!</string>
     <string name="mute_all_chat">Tắt thông báo tất cả</string>
-    <string name="unread_mentions">Những lời nhắc chưa đọc</string>
     <string name="group_members_can_send_reports">Các thành viên có thể báo cáo tin nhắn tới các kiểm duyệt viên.</string>
     <string name="report_archive_alert_desc_all">Tất cả các báo cáo sẽ được lưu trữ cho bạn.</string>
     <string name="report_archive_alert_title_all">Lưu trữ tất cả báo cáo?</string>
@@ -2442,8 +2426,6 @@
     <string name="relay_conn_status_connected">đã kết nối</string>
     <string name="v6_4_connect_faster">Kết nối nhanh hơn 🚀</string>
     <string name="relay_conn_status_connecting">đang kết nối</string>
-    <string name="channel_name_requires_newer_app_version">Kết nối bằng tên kênh yêu cầu phiên bản ứng dụng mới hơn</string>
-    <string name="contact_name_requires_newer_app_version">Kết nối bằng tên liên hệ yêu cầu phiên bản ứng dụng mới hơn.</string>
     <string name="info_row_connection_failed">Kết nối thất bại</string>
     <string name="connect_via_link_or_qr_code">Kết nối bằng đường dẫn hoặc mã QR</string>
     <string name="settings_section_title_contact">Liên hệ</string>
@@ -2465,7 +2447,6 @@
     <string name="error_creating_channel">Lỗi tạo kênh</string>
     <string name="error_deleting_message">Lỗi khi xoá tin nhắn</string>
     <string name="error_marking_member_support_chat_read">Lỗi khi đánh dấu \"đã xem\"</string>
-    <string name="error_opening_channel">Lỗi mở kênh</string>
     <string name="error_preparing_contact">Lỗi khi mở đoạn chat</string>
     <string name="error_preparing_group">Lỗi khi mở nhóm</string>
     <string name="error_rejecting_contact_request">Lỗi khi từ chối lời mời kết nối</string>
@@ -2481,13 +2462,11 @@
     <string name="let_someone_connect_to_you">Để ai đó kết nối với bạn</string>
     <string name="action_button_channel_link">Đường dẫn</string>
     <string name="loading_profile">Đang tải hồ sơ…</string>
-    <string name="settings_section_title_about">Giới thiệu</string>
     <string name="accept_contact_request">Đồng ý yêu cầu kết nối</string>
     <string name="chat_banner_accept_contact_request">Đồng ý yêu cầu kết nối</string>
     <string name="relay_status_accepted">đã chấp nhận</string>
     <string name="relay_status_acknowledged_roster">danh sách đã xác nhận</string>
     <string name="relay_status_active">đang hoạt động</string>
-    <string name="add_button">Thêm mới</string>
     <string name="compose_view_add_message">Thêm tin nhắn</string>
     <string name="add_relay_button">Thêm thiết bị</string>
     <string name="add_relays_title">Thêm mới thiết bị</string>

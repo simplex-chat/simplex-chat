@@ -1080,7 +1080,6 @@
     <string name="migrate_from_device_confirm_upload">업로드 확인</string>
     <string name="connected_to_mobile">모바일에 연결</string>
     <string name="connected_mobile">연결된 모바일</string>
-    <string name="info_view_connect_button">연결</string>
     <string name="cant_send_message_to_member_alert_title">그룹 멤버에게 메시지를 보낼 수 없음</string>
     <string name="receipts_contacts_title_enable">전송 알림을 활성화하시겠습니까?</string>
     <string name="conn_event_ratchet_sync_ok">암호화 OK</string>
@@ -1379,7 +1378,6 @@
     <string name="app_check_for_updates_installed_successfully_title">성공적으로 설치됨</string>
     <string name="app_check_for_updates_button_install">업데이트 설치</string>
     <string name="theme_colors_section_title">인터페이스 색상</string>
-    <string name="update_network_smp_proxy_fallback_question">메시지 라우팅 대체</string>
     <string name="group_members_can_add_message_reactions">그룹 멤버가 메시지 반응을 추가할 수 있습니다.</string>
     <string name="settings_section_title_message_shape">메시지 모양</string>
     <string name="message_queue_info">메시지 대기열 정보</string>
@@ -1395,7 +1393,6 @@
     <string name="v4_3_improved_server_configuration">향상된 서버 구성</string>
     <string name="compose_message_placeholder">메시지</string>
     <string name="message_servers">메시지 서버</string>
-    <string name="update_network_smp_proxy_mode_question">메시지 라우팅 모드</string>
     <string name="email_invite_body">안녕하세요!\nSimpleX Chat 초대장이 도착했습니다: %s</string>
     <string name="agent_internal_error_title">내부 오류</string>
     <string name="invalid_name">잘못된 이름입니다!</string>
@@ -1471,7 +1468,6 @@
     <string name="v6_2_network_decentralization_enable_flux">Flux 활성화</string>
     <string name="all_message_and_files_e2e_encrypted"><![CDATA[모든 메시지와 파일은 쪽지에서 포스트 퀀텀 보안을 사용하여 <b>종단 간 암호화</b>로 전송됩니다.]]></string>
     <string name="onboarding_notifications_mode_service_desc_short">앱이 항상 백그라운드에서 실행</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">활성화된 운영자에 대한 약관은 30일 후에 수락됩니다.</string>
     <string name="button_add_team_members">팀 멤버 추가하기</string>
     <string name="button_add_friends">친구 추가</string>
     <string name="delete_chat_for_all_members_cannot_undo_warning">모든 멤버에게서 채팅이 삭제됩니다 - 이 결정은 되돌릴 수 없습니다!</string>
