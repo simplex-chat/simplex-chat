@@ -1648,7 +1648,6 @@
     <string name="privacy_media_blur_radius">Desfocar mídia</string>
     <string name="v6_0_privacy_blur">Borrar para melhor privacidade.</string>
     <string name="confirm_delete_contact_question">Confirmar exclusão do contato?</string>
-    <string name="info_view_connect_button">conectar</string>
     <string name="delete_without_notification">Apagar sem notificar</string>
     <string name="color_primary_variant2">Destaque adicional 2</string>
     <string name="migrate_to_device_confirm_network_settings">Confirmar configurações de rede</string>
@@ -1731,7 +1730,6 @@
     <string name="app_check_for_updates_button_skip">Pular essa versão</string>
     <string name="app_check_for_updates_button_download">Baixar %s (%s)</string>
     <string name="app_check_for_updates_canceled">Download da atualização cancelado</string>
-    <string name="chat_list_always_visible">Mostrar lista de chats em nova janela</string>
     <string name="appearance_font_size">Tamanho da fonte</string>
     <string name="color_wallpaper_background">Fundo do papel de parede</string>
     <string name="color_wallpaper_tint">Tonalidade do papel de parede</string>
@@ -1846,7 +1844,6 @@
     <string name="network_smp_proxy_mode_unknown">Servidores desconhecidos</string>
     <string name="network_smp_proxy_mode_unprotected">Desprotegido</string>
     <string name="network_smp_proxy_mode_never">Nunca</string>
-    <string name="update_network_smp_proxy_mode_question">Modo de roteamento de mensagens</string>
     <string name="permissions_required">Conceder permissões</string>
     <string name="audio_device_speaker">Alto falante</string>
     <string name="audio_device_wired_headphones">Headphones</string>
@@ -1912,7 +1909,6 @@
     <string name="v5_8_private_routing_descr">Proteja seu endereço IP dos relays de mensagens escolhidos pelos seus contatos.\nAtive nas configurações de Rede e servidores.</string>
     <string name="migrate_from_device_start_chat">Iniciar o chat</string>
     <string name="toolbar_settings">Configurações</string>
-    <string name="info_view_open_button">abrir</string>
     <string name="keep_conversation">Manter conversa</string>
     <string name="only_delete_conversation">Apenas apagar conversa</string>
     <string name="xftp_servers_other">Outros servidores XFTP</string>
@@ -2019,7 +2015,6 @@
     <string name="contact_list_header_title">Seus contatos</string>
     <string name="network_smp_proxy_fallback_prohibit_description">NÃO envie mensagens diretamente, mesmo que o seu servidor ou o servidor de destino não suporte roteamento privado.</string>
     <string name="network_smp_proxy_fallback_allow_description">Enviar mensagens diretamente quando o seu servidor ou o servidor de destino não for compatível com roteamento privado.</string>
-    <string name="update_network_smp_proxy_fallback_question">Retorno de roteamento de mensagens</string>
     <string name="private_routing_show_message_status">Mostrar status da mensagem</string>
     <string name="migrate_from_another_device">Migrar de outro dispositivo</string>
     <string name="share_text_message_status">Status da mensagem: %s</string>
@@ -2170,7 +2165,6 @@
     <string name="operator_conditions_of_use">Condições de uso</string>
     <string name="error_adding_server">Erro ao adicionar servidor</string>
     <string name="v6_2_business_chats">Chats de empresas</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">para melhoria da privacidade de metadados.</string>
     <string name="v6_3_faster_deletion_of_groups">Exclusão mais rápida de grupos.</string>
     <string name="error_creating_chat_tags">Erro ao criar lista de chat</string>
     <string name="error_loading_chat_tags">Erro ao carregar lista de chats</string>
@@ -2194,7 +2188,6 @@
     <string name="encryption_renegotiation_in_progress">Renegociação de criptografia em andamento.</string>
     <string name="delete_chat_list_menu_action">Apagar</string>
     <string name="call_desktop_permission_denied_chrome">Clique no botão de informação perto do campo de endereço para permitir usar o microfone.</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">As condições serão aceitas para operadores habilitados após 30 dias.</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Por exemplo, se o seu contato receber mensagens por meio de um servidor SimpleX Chat, seu aplicativo as entregará por meio de um servidor Flux.</string>
     <string name="connection_not_ready">A conexão não está pronta.</string>
     <string name="errors_in_servers_configuration">Erros nas configurações de servidores.</string>
@@ -2284,7 +2277,6 @@
     <string name="disable_sending_member_reports">Proibir a denúncia de mensagens aos moderadores.</string>
     <string name="report_compose_reason_header_illegal">Denunciar conteúdo: somente os moderadores do grupo poderão ver.</string>
     <string name="report_compose_reason_header_profile">Denunciar perfil de membro: somente moderadores do grupo poderão ver.</string>
-    <string name="remote_hosts_section">Dispositivos móveis remotos</string>
     <string name="button_remove_members_question">Remover membros?</string>
     <string name="report_compose_reason_header_other">Denunciar outro: somente os moderadores do grupo poderão ver.</string>
     <string name="report_reason_alert_title">Qual é a razão da denúncia?</string>
@@ -2308,7 +2300,6 @@
     <string name="simplex_address_or_1_time_link">Endereço SimpleX ou link único?</string>
     <string name="icon_descr_sound_muted">Som silenciado</string>
     <string name="v6_1_better_calls_descr">Alterne entre áudio e vídeo durante a chamada.</string>
-    <string name="onboarding_select_network_operators_to_use">Selecione os operadores de rede que deseja utilizar.</string>
     <string name="operator_review_conditions">Revisar condições</string>
     <string name="simplex_address_and_1_time_links_are_safe_to_share">Endereços SimpleX e links únicos são seguros para compartilhar por meio de qualquer mensageiro.</string>
     <string name="onboarding_choose_server_operators">Operadores do servidor</string>
@@ -2317,7 +2308,6 @@
     <string name="report_compose_reason_header_spam">Denunciar spam: somente os moderadores do grupo poderão ver.</string>
     <string name="error_server_protocol_changed">Protocolo do servidor alterado.</string>
     <string name="share_simplex_address_on_social_media">Compartilhe o endereço do SimpleX nas redes sociais.</string>
-    <string name="onboarding_network_operators_review_later">Revisar depois</string>
     <string name="network_session_mode_server">Servidor</string>
     <string name="onboarding_network_operators_simplex_flux_agreement">O SimpleX Chat e o Flux fizeram um acordo para incluir servidores operados pelo Flux no aplicativo.</string>
     <string name="display_name_requested_to_connect">conexão solicitada</string>
@@ -2330,13 +2320,10 @@
     <string name="v6_2_network_decentralization_descr">O segundo operador predefinido no aplicativo!</string>
     <string name="message_deleted_or_not_received_error_desc">Esta mensagem foi apagada ou ainda não foi recebida.</string>
     <string name="view_updated_conditions">Ver condições atualizadas</string>
-    <string name="address_creation_instruction">Toque em Criar endereço SimpleX no menu para criá-lo mais tarde.</string>
     <string name="network_smp_web_port_footer">Usar porta TCP %1$s quando nenhuma porta for especificada.</string>
-    <string name="report_archive_alert_desc">A denúncia será arquivada para você.</string>
     <string name="operator_use_for_messages_receiving">Para receber</string>
     <string name="change_automatic_chat_deletion_message">Esta ação não pode ser desfeita - as mensagens enviadas e recebidas nesta conversa antes do período selecionado serão apagadas.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Para se proteger contra a substituição do seu link, você pode comparar os códigos de segurança com os dos seus contatos.</string>
-    <string name="unread_mentions">Menções não lidas</string>
     <string name="network_smp_web_port_section_title">Porta TCP para mensagens</string>
     <string name="network_smp_web_port_toggle">Usar porta web</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">O aplicativo protege sua privacidade usando diferentes operadores em cada conversa.</string>
@@ -2349,12 +2336,9 @@
     <string name="onboarding_network_operators_configure_via_settings">É possível ajustar os servidores através das configurações.</string>
     <string name="use_servers_of_operator_x">Usar %s</string>
     <string name="operator_use_operator_toggle_description">Usar servidores</string>
-    <string name="operator_website">Website</string>
     <string name="max_group_mentions_per_message_reached">Você pode mencionar até %1$s membros por mensagem!</string>
     <string name="settings_message_shape_tail">Final</string>
     <string name="maximum_message_size_reached_forwarding">Você pode copiar e reduzir o tamanho da mensagem para enviá-la.</string>
-    <string name="onboarding_network_operators_update">Atualização</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Você pode configurar operadores em Configurações de rede &amp; servidores.</string>
     <string name="operator_use_for_files">Usar para arquivos</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Você deixará de receber mensagens deste chat. O histórico do chat será preservado.</string>
     <string name="call_desktop_permission_denied_title">Para realizar chamadas, permita o uso do microfone. Encerre a chamada atual e tente novamente.</string>
@@ -2395,13 +2379,11 @@
     <string name="channel_subscriber_count_plural">%1$d inscritos</string>
     <string name="badge_supported_simplex">%1$s apoiou o SimpleX Chat. O selo expirou em %2$s.</string>
     <string name="badge_support_from_v7">Você pode apoiar o SimpleX a partir da versão 7 do aplicativo.</string>
-    <string name="settings_section_title_about">Sobre</string>
     <string name="accept_contact_request">Aceitar solicitação de contato</string>
     <string name="chat_banner_accept_contact_request">Aceitar solicitação de contato</string>
     <string name="relay_status_accepted">aceito</string>
     <string name="relay_status_acknowledged_roster">lista reconhecida</string>
     <string name="relay_status_active">ativo</string>
-    <string name="add_button">Adicionar</string>
     <string name="v7_0_channels_contributors">Adicionar colaboradores.</string>
     <string name="add_description">Adicionar descrição</string>
     <string name="compose_view_add_message">Adicionar mensagem</string>
@@ -2483,7 +2465,6 @@
     <string name="channel_full_name_field">Nome completo do canal:</string>
     <string name="channel_no_active_relays_try_later">O canal não possui relays ativos. Tente entrar novamente mais tarde.</string>
     <string name="chat_link_channel">Link do canal</string>
-    <string name="button_channel_members">Membros do canal</string>
     <string name="channel_display_name_field">Nome do canal</string>
     <string name="channel_preferences">Preferências do canal</string>
     <string name="snd_channel_event_channel_profile_updated">perfil do canal atualizado</string>
@@ -2517,8 +2498,6 @@
     <string name="relay_conn_status_connected">conectado</string>
     <string name="v6_4_connect_faster">Conecte-se mais rápido! 🚀</string>
     <string name="relay_conn_status_connecting">conectando</string>
-    <string name="channel_name_requires_newer_app_version">Para se conectar usando o nome do canal, é necessário estar na versão mais recente do aplicativo.</string>
-    <string name="contact_name_requires_newer_app_version">Para se conectar usando o nome do contato, é necessário estar na versão mais recente do aplicativo.</string>
     <string name="info_row_connection_failed">A conexão falhou</string>
     <string name="connect_plan_connect_to_name">Conectar-se a %s</string>
     <string name="settings_section_title_contact">Contato</string>
@@ -2582,7 +2561,6 @@
     <string name="error_deleting_member_support_chat">Erro ao apagar conversa</string>
     <string name="error_deleting_message">Erro ao apagar mensagem</string>
     <string name="error_marking_member_support_chat_read">Erro ao marcar como lida</string>
-    <string name="error_opening_channel">Erro ao abrir canal</string>
     <string name="error_preparing_contact">Erro ao abrir conversa</string>
     <string name="error_preparing_group">Erro ao abrir grupo</string>
     <string name="error_rejecting_contact_request">Erro ao recusar solicitação de contato</string>
@@ -2598,7 +2576,6 @@
     <string name="files_prohibited_in_this_chat">Arquivos e mídias não são permitidos neste chat.</string>
     <string name="info_row_file_servers">Servidores de arquivos</string>
     <string name="share_text_file_servers">Servidores de arquivos: %s</string>
-    <string name="content_filter_menu_item">Filtro</string>
     <string name="proxy_destination_error_unknown_ca">A impressão digital no endereço do servidor de destino não corresponde ao certificado: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">A impressão digital do endereço do servidor de encaminhamento não corresponde à do certificado: %1$s.</string>
     <string name="network_error_unknown_ca">A impressão digital do endereço do servidor não corresponde à do certificado: %1$s.</string>
@@ -2696,7 +2673,6 @@
     <string name="privacy_chat_list_open_clean_web_link">Abrir link limpo</string>
     <string name="open_external_link_title">Abrir link externo?</string>
     <string name="privacy_chat_list_open_full_web_link">Abrir link completo</string>
-    <string name="connect_plan_open_new_channel">Abrir novo canal</string>
     <string name="connect_plan_open_new_chat">Abrir nova conversa</string>
     <string name="connect_plan_open_new_group">Abrir novo grupo</string>
     <string name="open_to_accept">Abrir para aceitar</string>
@@ -2708,7 +2684,6 @@
     <string name="channel_members_section_owners">Proprietários e colaboradores</string>
     <string name="v6_5_ownership">Autonomia: você pode executar seus próprios relays.</string>
     <string name="group_member_status_pending_review">aguardando revisão</string>
-    <string name="please_upgrade_the_app">Atualize o aplicativo.</string>
     <string name="snd_group_event_user_pending_review">Aguarde os moderadores do grupo analisarem seu pedido para participar.</string>
     <string name="preset_relay_address">Endereço do relay predefinido</string>
     <string name="preset_relay_name">Nome do relay predefinido</string>
@@ -2780,7 +2755,6 @@
     <string name="compose_view_send_request">Enviar solicitação</string>
     <string name="compose_view_send_request_without_message">Enviar solicitação sem mensagem</string>
     <string name="onboarding_send_1_time_link">Envie o link por qualquer aplicativo de mensagens - é seguro. Peça para colar no SimpleX.</string>
-    <string name="sent_to_your_contact_after_connection">Será enviado ao seu contato após a conexão.</string>
     <string name="simplex_name_server_no_resolver_desc">O servidor %1$s não suporta resolução de nomes. Configure os servidores ou use um link de conexão.</string>
     <string name="error_relay_test_server_auth">O servidor requer autorização para se conectar ao relay; verifique a senha.</string>
     <string name="server_warning">Aviso do servidor</string>
@@ -2805,7 +2779,6 @@
     <string name="sign_messages">Assinar mensagens</string>
     <string name="tray_tooltip">SimpleX</string>
     <string name="simplex_link_channel">Link do canal SimpleX</string>
-    <string name="simplex_name">Nome SimpleX</string>
     <string name="simplex_name_error">Erro no nome SimpleX</string>
     <string name="simplex_name_not_verified">Nome SimpleX não verificado</string>
     <string name="v7_0_simplex_names">Nomes públicos SimpleX (BETA)</string>
@@ -2843,8 +2816,6 @@
     <string name="content_filter_videos">Vídeos</string>
     <string name="voice_recording_not_supported">Seu dispositivo não tem suporte para gravação de áudio</string>
     <string name="unsupported_connection_link">Link de conexão não suportado</string>
-    <string name="unsupported_channel_name">Nome de canal não suportado</string>
-    <string name="unsupported_contact_name">Nome de contato não suportado</string>
     <string name="simplex_name_unconfirmed">Nome não confirmado</string>
     <string name="your_public_address">Seu endereço público</string>
     <string name="simplex_name_unconfirmed_desc">O nome SimpleX %1$s está registrado, mas não está associado ao perfil. Se você for o proprietário, adicione-o ao perfil do endereço ou canal.</string>
@@ -2883,7 +2854,6 @@
     <string name="why_built_heading">Você nasceu sem uma conta.</string>
     <string name="onboarding_your_network">Sua rede</string>
     <string name="alert_text_msg_reception_error">O aplicativo removeu esta mensagem após %1$d tentativas de recebê-la.</string>
-    <string name="this_setting_is_for_your_current_profile">Esta configuração se aplica ao seu perfil atual</string>
     <string name="rcv_channel_event_updated_channel_profile">perfil do canal atualizado</string>
     <string name="snd_group_event_member_accepted">você aceitou este membro</string>
     <string name="webpage_code">Código da página da web</string>

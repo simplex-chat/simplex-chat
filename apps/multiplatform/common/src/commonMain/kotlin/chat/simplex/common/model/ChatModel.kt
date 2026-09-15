@@ -102,6 +102,34 @@ object ChannelRelaysModel {
   }
 }
 
+// The badge of whichever profile it was last loaded for, kept current by the badgeChanged event so
+// that a screen already open shows what the renewal worker did with no command behind it.
+object BadgeModel {
+  val rhId = mutableStateOf<Long?>(null)
+  val userId = mutableStateOf<Long?>(null)
+  val badgeState = mutableStateOf<BadgeState?>(null)
+  val alert = mutableStateOf<BadgeAlert?>(null)
+
+  // alert follows the state: getUserBadgeState derives it on every read, so a badgeChanged is
+  // never staler than the alert it carries - the invariant a new alert kind must keep
+  fun set(rhId: Long?, userId: Long, badgeState: BadgeState?) {
+    this.rhId.value = rhId
+    this.userId.value = userId
+    this.badgeState.value = badgeState
+    alert.value = badgeState?.alert
+  }
+
+  fun setAlert(rhId: Long?, userId: Long, alert: BadgeAlert) {
+    if (isCurrent(rhId, userId)) {
+      this.alert.value = alert
+      badgeState.value = badgeState.value?.copy(alert = alert)
+    }
+  }
+
+  fun isCurrent(rhId: Long?, userId: Long?): Boolean =
+    this.rhId.value == rhId && this.userId.value == userId
+}
+
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
@@ -2191,6 +2219,88 @@ data class LocalBadge(
   val badge: BadgeInfo,
   val status: BadgeStatus
 )
+
+// paidThrough is the only date to show the user: BadgeInfo.badgeExpiry is the credential's expiry,
+// which outlives entitlement so the credential's window can cover a renewal.
+@Serializable
+data class BadgeState(
+  val badgePurchaseId: Long,
+  val badgeType: BadgeType,
+  val shown: Boolean,
+  val monthsLeft: Int,
+  val paidThrough: Instant,
+  val renewsAt: Instant? = null,
+  val willRenew: Boolean,
+  val alert: BadgeAlert? = null
+) {
+  val paidThroughText: String get() = badgeDateText(paidThrough)
+}
+
+@Serializable
+data class BadgeAlert(
+  val kind: BadgeAlertKind,
+  val episode: String,
+  val date: Instant,
+  val price: BadgeAlertPrice? = null
+) {
+  val dateText: String get() = badgeDateText(date)
+}
+
+@Serializable(with = BadgeAlertPriceSerializer::class)
+data class BadgeAlertPrice(val amount: Long, val currency: String)
+
+// encoded as the Haskell tuple it comes from: [amount, currency]
+object BadgeAlertPriceSerializer : KSerializer<BadgeAlertPrice> {
+  override val descriptor: SerialDescriptor = buildClassSerialDescriptor("BadgeAlertPrice")
+  override fun deserialize(decoder: Decoder): BadgeAlertPrice {
+    require(decoder is JsonDecoder)
+    val arr = decoder.decodeJsonElement().jsonArray
+    return BadgeAlertPrice(arr[0].jsonPrimitive.long, arr[1].jsonPrimitive.content)
+  }
+  override fun serialize(encoder: Encoder, value: BadgeAlertPrice) {
+    require(encoder is JsonEncoder)
+    encoder.encodeJsonElement(buildJsonArray { add(value.amount); add(value.currency) })
+  }
+}
+
+@Serializable(with = BadgeAlertKindSerializer::class)
+sealed class BadgeAlertKind {
+  @Serializable @SerialName("renewal_approaching") object RenewalApproaching: BadgeAlertKind()
+  @Serializable @SerialName("payment_issue") object PaymentIssue: BadgeAlertKind()
+  @Serializable @SerialName("subscription_ended") object SubscriptionEnded: BadgeAlertKind()
+  @Serializable @SerialName("prepaid_ending") object PrepaidEnding: BadgeAlertKind()
+  @Serializable @SerialName("support_ended") object SupportEnded: BadgeAlertKind()
+  @Serializable @SerialName("unknown") data class Unknown(val kind: String): BadgeAlertKind()
+
+  val text: String
+    get() = when (this) {
+      is RenewalApproaching -> "renewal_approaching"
+      is PaymentIssue -> "payment_issue"
+      is SubscriptionEnded -> "subscription_ended"
+      is PrepaidEnding -> "prepaid_ending"
+      is SupportEnded -> "support_ended"
+      is Unknown -> kind
+    }
+}
+
+object BadgeAlertKindSerializer : KSerializer<BadgeAlertKind> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BadgeAlertKind", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): BadgeAlertKind =
+    when (val v = decoder.decodeString()) {
+      "renewal_approaching" -> BadgeAlertKind.RenewalApproaching
+      "payment_issue" -> BadgeAlertKind.PaymentIssue
+      "subscription_ended" -> BadgeAlertKind.SubscriptionEnded
+      "prepaid_ending" -> BadgeAlertKind.PrepaidEnding
+      "support_ended" -> BadgeAlertKind.SupportEnded
+      else -> BadgeAlertKind.Unknown(v)
+    }
+  override fun serialize(encoder: Encoder, value: BadgeAlertKind) = encoder.encodeString(value.text)
+}
+
+private fun badgeDateText(date: Instant): String {
+  val ts = date.toLocalDateTime(TimeZone.currentSystemDefault())
+  return ts.toJavaLocalDateTime().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG))
+}
 
 // the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)
 @Serializable

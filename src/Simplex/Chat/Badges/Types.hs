@@ -36,6 +36,7 @@ import Data.Time.Clock (UTCTime)
 import Data.Word (Word8)
 import Simplex.Chat.Badges hiding (BadgePurchase (..))
 import Simplex.Chat.PaymentService.Types (InvoiceId, PaymentId, StoredPayment)
+import Simplex.Chat.Types (BoolDef (..))
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
@@ -212,6 +213,7 @@ data BadgeAlert = BadgeAlert
 data BadgeState = BadgeState
   { badgePurchaseId :: Int64,
     badgeType :: BadgeType,
+    shown :: BoolDef,
     monthsLeft :: Int,
     paidThrough :: UTCTime,
     -- payments returns here with the payment types, which this slice neither writes nor encodes
