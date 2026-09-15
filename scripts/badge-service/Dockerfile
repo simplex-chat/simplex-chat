@@ -36,7 +36,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential ca-certificates curl git libgmp3-dev libnuma-dev \
-        libsqlite3-dev libssl-dev llvm pkg-config zlib1g-dev && \
+        libpq-dev libssl-dev llvm pkg-config zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
 
 ENV BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
@@ -67,9 +67,9 @@ RUN --mount=type=cache,target=/root/.cabal \
     --mount=type=cache,target=/src/dist-newstyle \
     set -eu; \
     cabal update; \
-    cabal build exe:simplex-badge-service; \
+    cabal build --flags="+client_postgres" exe:simplex-badge-service; \
     mkdir -p /out; \
-    cp "$(cabal list-bin exe:simplex-badge-service)" /out/simplex-badge-service; \
+    cp "$(cabal list-bin --flags="+client_postgres" exe:simplex-badge-service)" /out/simplex-badge-service; \
     strip /out/simplex-badge-service
 
 # --------------------------------------------------------------------------- #
@@ -79,10 +79,11 @@ FROM ubuntu:${UBUNTU} AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# The set `ldd` reports for the built binary: libm, libz, libcrypto, libgmp,
-# libc. sqlcipher is linked in, so there is no libsqlite3 here.
+# The set `ldd` reports for the built binary: libpq, libm, libz, libcrypto,
+# libgmp, libc. Built with +client_postgres, so it talks to Postgres and needs
+# libpq; there is no SQLite backend and no libsqlite3.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates dumb-init libgmp10 libssl3 zlib1g && \
+        ca-certificates dumb-init libgmp10 libpq5 libssl3 zlib1g && \
     rm -rf /var/lib/apt/lists/*
 
 # The ids that must own the state volume. Build with your own to read it
@@ -100,10 +101,6 @@ RUN if existing_user=$(getent passwd ${USER_UID} | cut -d: -f1) && [ -n "${exist
     groupadd -g ${USER_GID} badge && \
     useradd -u ${USER_UID} -g ${USER_GID} -m -d /home/badge badge
 
-# Holds the chat and agent databases, the service address, and every issued
-# code hash. Deleting it means a new address and codes that can never be redeemed.
-RUN mkdir -p /data && chown badge:badge /data && chmod 0700 /data
-
 COPY --from=build /out/simplex-badge-service /usr/local/bin/simplex-badge-service
 COPY --from=web /web/dist /srv/web
 
@@ -120,4 +117,4 @@ EXPOSE 8080
 ENTRYPOINT ["dumb-init", "--", "simplex-badge-service"]
 # --yes-migrate: a container has no console to answer the migration prompt on, so without
 # it the service blocks on stdin at every schema change.
-CMD ["-d", "/data/badge_service", "--yes-migrate", "--service-config", "/etc/simplex-badge-service/badge_service.ini"]
+CMD ["-d", "postgresql://simplex@127.0.0.1:5432/badge_service", "--create-schema", "--yes-migrate", "--service-config", "/etc/simplex-badge-service/badge_service.ini"]

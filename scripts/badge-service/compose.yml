@@ -10,10 +10,15 @@ services:
     restart: on-failure:5
     user: "${USER_UID:-1000}:${USER_GID:-1000}"
     tty: true
+    network_mode: host
+    command:
+      - "-d"
+      - "${BADGE_DB_CONN:-postgresql://simplex@127.0.0.1:5432/badge_service}"
+      - "--create-schema"
+      - "--yes-migrate"
+      - "--service-config"
+      - "/etc/simplex-badge-service/badge_service.ini"
     volumes:
       - ./badge_service.ini:/etc/simplex-badge-service/badge_service.ini:ro
-      - ./data:/data
       - ./web:/srv/webapp
-    ports:
-      - "127.0.0.1:7800:8080"
     stop_grace_period: 10s
