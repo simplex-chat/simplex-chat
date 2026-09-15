@@ -26,8 +26,10 @@ data BadgeServiceOpts = BadgeServiceOpts
     clientService :: Bool,
     noAddress :: Bool,
     runCLI :: Bool,
-    -- the service refuses to start without this: it cannot sign a credential
-    issuerKey :: Maybe BadgeIssuerKey,
+    serviceConfigFile :: Maybe FilePath,
+    -- | `Left` when exactly one of the two flags was given, which is a mistake and not a
+    -- request to fall back to the ini's [issuer] section.
+    issuerKey :: Either String (Maybe BadgeIssuerKey),
     testing :: Bool
   }
 
@@ -66,6 +68,14 @@ badgeServiceOpts appDir defaultDbName = do
       ( long "run-cli"
           <> help "Run badge service as CLI"
       )
+  serviceConfigFile <-
+    optional
+      ( strOption
+          ( long "service-config"
+              <> metavar "INI_FILE"
+              <> help "Path to badge_service.ini: parsed in full in every mode, but --run-cli starts no web listener"
+          )
+      )
   issuerKeyIdx <-
     optional $
       option
@@ -89,7 +99,11 @@ badgeServiceOpts appDir defaultDbName = do
         clientService,
         noAddress,
         runCLI,
-        issuerKey = BadgeIssuerKey <$> issuerKeyIdx <*> issuerSecret,
+        serviceConfigFile,
+        issuerKey = case (issuerKeyIdx, issuerSecret) of
+          (Just idx, Just secret) -> Right (Just (BadgeIssuerKey idx secret))
+          (Nothing, Nothing) -> Right Nothing
+          _ -> Left "--issuer-key-idx and --issuer-secret are given together or not at all",
         testing = False
       }
 
