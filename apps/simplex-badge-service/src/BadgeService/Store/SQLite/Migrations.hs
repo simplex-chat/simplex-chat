@@ -8,7 +8,7 @@ import Data.List (sortOn)
 import Data.Text (Text)
 import Database.SQLite.Simple (Query (..))
 import Database.SQLite.Simple.QQ (sql)
-import Simplex.Chat.Store.SQLite.Migrations.M20261001_user_badges (badgeSchema, badgeSchemaDown, withPrefix)
+import Simplex.Chat.Store.SQLite.Migrations.M20260915_user_badges (badgeSchema, badgeSchemaDown, withPrefix)
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 badgeServiceSchemaMigrations :: [Migration]
@@ -31,8 +31,6 @@ m20260806_badge_service_schema =
     <> withPrefix
       servicePrefix
       [sql|
-ALTER TABLE @payments ADD COLUMN receipt_hash BLOB;
-
 CREATE TABLE @badge_codes(
   badge_code_id INTEGER PRIMARY KEY AUTOINCREMENT,
   code_hash BLOB NOT NULL,
@@ -78,3 +76,11 @@ DROP INDEX @idx_badge_purchases_code;
       [sql|
 DROP TABLE @badge_codes;
 |]
+
+{- TODO [badges] deferred with the draft in M20260915_user_badges, service only.
+
+ALTER TABLE @payments ADD COLUMN receipt_hash BLOB;
+
+-- down
+ALTER TABLE @payments DROP COLUMN receipt_hash;
+-}
