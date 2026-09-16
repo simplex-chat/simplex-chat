@@ -53,7 +53,7 @@ fun BadgesYourBadgeView(badgeState: BadgeState) {
 @Composable
 fun BadgeSummary(badgeState: BadgeState) {
   Column(
-    Modifier.fillMaxWidth().padding(vertical = 8.dp),
+    Modifier.fillMaxWidth().padding(vertical = 20.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(4.dp)
   ) {
@@ -61,7 +61,7 @@ fun BadgeSummary(badgeState: BadgeState) {
       painterResource(badgeImage(badgeState.badgeType)),
       contentDescription = null,
       contentScale = ContentScale.Fit,
-      modifier = Modifier.size(68.dp).padding(bottom = 8.dp)
+      modifier = Modifier.padding(bottom = 8.dp).size(68.dp)
     )
 
     Text(badgeTypeName(badgeState.badgeType), style = MaterialTheme.typography.h3, fontWeight = FontWeight.SemiBold)

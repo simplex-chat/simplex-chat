@@ -107,7 +107,7 @@ fun SettingsLayout(
     SectionView {
       // Direct showModal (no settings / cardScreen flags) — settings-style card chrome would render
       // a gray top bar / back button that badges views don't want (they have their own inline titles).
-      SectionItemView(click = { ModalManager.start.showModal { BadgesView() } }) {
+      SectionItemView(click = { ModalManager.start.showCustomModal { close -> BadgesView(close) } }) {
         val badgeType = chatModel.currentUser.value?.profile?.localBadge?.badge?.badgeType ?: BadgeType.Supporter
         Image(painterResource(badgeImage(badgeType)), stringResource(MR.strings.supporter_perks), Modifier.size(24.dp))
         TextIconSpaced()
