@@ -27,6 +27,7 @@ import Data.List (find)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word8)
 import Foreign.C.String
 import Foreign.C.Types (CInt (..))
@@ -35,6 +36,7 @@ import Foreign.StablePtr
 import Foreign.Storable (poke)
 import GHC.IO.Encoding (setFileSystemEncoding, setForeignEncoding, setLocaleEncoding)
 import Simplex.Chat
+import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList, parseUri, sanitizeUri)
@@ -136,6 +138,8 @@ foreign export ccall "chat_parse_uri" cChatParseUri :: CString -> CInt -> IO CJS
 foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CString -> IO CString
 
 foreign export ccall "chat_valid_name" cChatValidName :: CString -> IO CString
+
+foreign export ccall "chat_parse_badge_code" cChatParseBadgeCode :: CString -> IO CString
 
 foreign export ccall "chat_json_length" cChatJsonLength :: CString -> IO CInt
 
@@ -239,6 +243,12 @@ cChatPasswordHash cPwd cSalt = do
 -- This function supports utf8 strings
 cChatValidName :: CString -> IO CString
 cChatValidName cName = newCString . mkValidName =<< peekCString cName
+
+-- | canonical form of a code that passes its check character, empty string if it does not parse
+cChatParseBadgeCode :: CString -> IO CString
+cChatParseBadgeCode cCode = do
+  code <- safeDecodeUtf8 <$> B.packCString cCode
+  newCStringFromBS $ maybe "" (encodeUtf8 . badgeCodeText) $ parseBadgeCode code
 
 -- | returns length of JSON encoded string
 cChatJsonLength :: CString -> IO CInt

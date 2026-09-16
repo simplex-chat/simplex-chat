@@ -72,7 +72,6 @@
     <string name="abort_switch_receiving_address_confirm">Prerušiť</string>
     <string name="abort_switch_receiving_address">Prerušiť zmenu adresy</string>
     <string name="abort_switch_receiving_address_question">Prerušiť zmenu adresy?</string>
-    <string name="settings_section_title_about">O aplikácii</string>
     <string name="onboarding_network_about_operators">O operátoroch</string>
     <string name="about_simplex">O SimpleX</string>
     <string name="learn_more_about_address">O adrese SimpleX</string>
@@ -82,7 +81,6 @@
     <string name="network_enable_socks_info">Pristupovať k serverom cez SOCKS proxy na porte %d? Pred povolením tejto možnosti musí byť spustená proxy.</string>
     <string name="relay_status_active">aktívne</string>
     <string name="servers_info_subscriptions_connections_subscribed">aktívne spojenia</string>
-    <string name="add_button">Pridať</string>
     <string name="add_contact_tab">Pridať kontakt</string>
     <string name="v7_0_channels_contributors">Pridať prispievateľov.</string>
     <string name="add_description">Pridať opis</string>
@@ -367,7 +365,6 @@
     <string name="channel_no_active_relays_try_later">Kanál nemá žiadne aktívne relé. Prosím, skúste sa pripojiť neskôr.</string>
     <string name="chat_link_channel">Odkaz kanálu</string>
     <string name="channel_link">Odkaz kanálu</string>
-    <string name="button_channel_members">Členovia kanálu</string>
     <string name="channel_display_name_field">Názov kanálu</string>
     <string name="channel_preferences">Vlastnosti kanálu</string>
     <string name="chat_list_channels">Kanály</string>
@@ -753,7 +750,6 @@
     <string name="icon_descr_close_button">Tlačidlo zavrieť</string>
     <string name="v4_4_verify_connection_security_desc">Porovnajte bezpečnostné kódy s vašimi kontaktmi.</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Podmienky už boli prijaté pre tohto/týchto operátora(ov): <b>%s</b>.]]></string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Podmienky budú prijaté pre povolených operátorov po 30 dňoch.</string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Podmienky budú prijaté pre operátor(y): <b>%s</b>.]]></string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[Podmienky budú prijaté pre operátora(y): <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_accepted_on">Podmienky budú prijaté dňa: %s.</string>
@@ -1124,7 +1120,6 @@
     <string name="files_and_media_section">Súbory a médiá</string>
     <string name="share_text_file_status">Status súboru: %s</string>
     <string name="revoke_file__message">Súbor bude vymazaný zo serverov.</string>
-    <string name="content_filter_menu_item">Filter</string>
     <string name="sync_connection_confirm">Opraviť</string>
     <string name="fix_connection_confirm">Opraviť</string>
     <string name="fix_connection">Opraviť pripojenie</string>
@@ -1303,7 +1298,6 @@
     <string name="error_loading_xftp_servers">Chyba pri načítavaní XFTP serverov</string>
     <string name="error_marking_member_support_chat_read">Chyba pri označovaní ako prečítané</string>
     <string name="unable_to_open_browser_title">Chyba pri otváraní prehliadača</string>
-    <string name="error_opening_channel">Chyba pri otváraní kanálu</string>
     <string name="error_preparing_contact">Chyba pri otváraní chatu</string>
     <string name="error_preparing_group">Chyba pri otváraní skupiny</string>
     <string name="error_rejecting_contact_request">Chyba pri odmietaní žiadosti o kontakt</string>
@@ -1388,7 +1382,6 @@
     <string name="chat_link_one_time">Jednorazový odkaz</string>
     <string name="images_limit_desc">Naraz sa dá poslať iba 10 obrázkov</string>
     <string name="videos_limit_desc">Naraz sa dá poslať iba 10 videí</string>
-    <string name="info_view_open_button">otvoriť</string>
     <string name="open_verb">Otvoriť</string>
     <string name="rcv_group_event_open_chat">Otvoriť</string>
     <string name="turn_off_system_restriction_button">Otvoriť nastavenia aplikácie</string>
@@ -1400,7 +1393,6 @@
     <string name="open_database_folder">Otvoriť priečinok databázy</string>
     <string name="open_external_link_title">Otvoriť externý odkaz?</string>
     <string name="privacy_chat_list_open_full_web_link">Otvoriť celý odkaz</string>
-    <string name="connect_plan_open_new_channel">Otvoriť nový kanál</string>
     <string name="open_server_settings_button">Otvoriť nastavenia serveru</string>
     <string name="permissions_open_settings">Otvoriť nastavenia</string>
     <string name="open_simplex_chat_to_accept_call">Otvorte SimpleX Chat na prijatie hovoru</string>

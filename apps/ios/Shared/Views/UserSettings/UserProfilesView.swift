@@ -346,7 +346,7 @@ struct UserProfilesView: View {
             HStack {
                 ProfileImage(imageStr: user.image, size: 38)
                     .padding(.trailing, 12)
-                Text(user.chatViewName)
+                NameWithBadge(Text(user.chatViewName), user.profile.localBadge)
                 Spacer()
                 if user.activeUser {
                     Image(systemName: "checkmark").foregroundColor(theme.colors.onBackground)
