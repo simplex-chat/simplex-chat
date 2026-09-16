@@ -2203,15 +2203,12 @@ func redeemErrorText(_ error: Error) -> String {
         case .invalidCode: return NSLocalizedString("This code is not valid.", comment: "alert message")
         case .serviceNotConfigured: return NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
         case .badgeActive: return NSLocalizedString("This profile already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "alert message")
-        case let .serviceError(tag):
-            switch tag {
-            case "code_invalid": return NSLocalizedString("This code was not recognised.", comment: "alert message")
-            case "code_used": return NSLocalizedString("This code has already been used.", comment: "alert message")
-            case "code_expired": return NSLocalizedString("This code has expired.", comment: "alert message")
-            case "rate_limited": return NSLocalizedString("Too many attempts. Please try again later.", comment: "alert message")
-            case "unsupported_version": return NSLocalizedString("This app version is too old for the badge service. Please update the app.", comment: "alert message")
-            default: break
-            }
+        case .serviceError(.codeInvalid): return NSLocalizedString("This code was not recognised.", comment: "alert message")
+        case .serviceError(.codeUsed): return NSLocalizedString("This code has already been used.", comment: "alert message")
+        case .serviceError(.codeExpired): return NSLocalizedString("This code has expired.", comment: "alert message")
+        case .serviceError(.rateLimited): return NSLocalizedString("Too many attempts. Please try again later.", comment: "alert message")
+        case .serviceError(.unsupportedVersion): return NSLocalizedString("This app version is too old for the badge service. Please update the app.", comment: "alert message")
+        case .serviceError: break
         case let .invalidResponse(message):
             return String.localizedStringWithFormat(NSLocalizedString("The badge service sent an unexpected response: %@", comment: "alert message"), message)
         case .unknownKeyIndex, .credentialNotVerified: return NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")

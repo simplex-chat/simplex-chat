@@ -65,8 +65,8 @@ fun BadgesRedeemCodeView() {
   val canonicalCode = remember { mutableStateOf<String?>(null) }
   val submitting = remember { mutableStateOf(false) }
 
-  // the value the field gave is stored back when the text is unchanged: a selection move or a
-  // composition update is not a change to the code, and a controlled field must see it reflected
+  // when the text is unchanged, the field's own value is kept: it carries the cursor position and the
+  // keyboard's composition state, which BasicTextField loses unless they are passed back to it
   fun applyCodeInput(v: TextFieldValue) {
     val formatted = formatBadgeCodeInput(v.text)
     code.value = if (formatted != v.text) TextFieldValue(formatted, selection = TextRange(formatted.length)) else v

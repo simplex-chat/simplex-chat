@@ -40,8 +40,8 @@ external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>
 external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String
 external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String
 
-// The code as core will accept it - prefix and 20 characters, no separators - or null if it does not
-// parse. Validity is decided only here: a second check-character implementation would drift.
+// the code in core's canonical form (prefix and 20 characters, no separators), or null when core rejects it.
+// The check character is verified by core via FFI, not re-implemented here, so the two cannot disagree.
 fun parseBadgeCode(s: String): String? {
   val canonical = chatParseBadgeCode(s)
   return if (canonical.isEmpty()) null else canonical

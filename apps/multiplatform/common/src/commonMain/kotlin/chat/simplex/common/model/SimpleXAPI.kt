@@ -586,11 +586,12 @@ object ChatController {
         is BadgeRedeemError.ServiceNotConfigured -> return generalGetString(MR.strings.badges_error_service_not_configured)
         is BadgeRedeemError.BadgeActive -> return generalGetString(MR.strings.badges_error_already_active)
         is BadgeRedeemError.ServiceError -> when (e.serviceError) {
-          "code_invalid" -> return generalGetString(MR.strings.badges_error_code_invalid)
-          "code_used" -> return generalGetString(MR.strings.badges_error_code_used)
-          "code_expired" -> return generalGetString(MR.strings.badges_error_code_expired)
-          "rate_limited" -> return generalGetString(MR.strings.badges_error_rate_limited)
-          "unsupported_version" -> return generalGetString(MR.strings.badges_error_unsupported_version)
+          is BadgeServiceErrorCode.CodeInvalid -> return generalGetString(MR.strings.badges_error_code_invalid)
+          is BadgeServiceErrorCode.CodeUsed -> return generalGetString(MR.strings.badges_error_code_used)
+          is BadgeServiceErrorCode.CodeExpired -> return generalGetString(MR.strings.badges_error_code_expired)
+          is BadgeServiceErrorCode.RateLimited -> return generalGetString(MR.strings.badges_error_rate_limited)
+          is BadgeServiceErrorCode.UnsupportedVersion -> return generalGetString(MR.strings.badges_error_unsupported_version)
+          else -> {}
         }
         is BadgeRedeemError.InvalidResponse -> return String.format(generalGetString(MR.strings.badges_error_bad_service_response), e.message)
         is BadgeRedeemError.UnknownKeyIndex, is BadgeRedeemError.CredentialNotVerified -> return generalGetString(MR.strings.badges_error_credential_not_verified)
@@ -7294,14 +7295,13 @@ sealed class SimplexDomainError {
   @Serializable @SerialName("unknownDomain") object UnknownDomain : SimplexDomainError()
 }
 
-// serviceError is the service's tag, e.g. code_used: the view maps known tags to messages and never displays the tag itself
 @Serializable
 sealed class BadgeRedeemError {
   val string: String get() = when (this) {
     is InvalidCode -> "invalidCode"
     is ServiceNotConfigured -> "serviceNotConfigured"
     is BadgeActive -> "badgeActive"
-    is ServiceError -> "serviceError $serviceError"
+    is ServiceError -> "serviceError ${serviceError.text}"
     is InvalidResponse -> "invalidResponse $message"
     is UnknownKeyIndex -> "unknownKeyIndex"
     is CredentialNotVerified -> "credentialNotVerified"
@@ -7309,10 +7309,81 @@ sealed class BadgeRedeemError {
   @Serializable @SerialName("invalidCode") object InvalidCode : BadgeRedeemError()
   @Serializable @SerialName("serviceNotConfigured") object ServiceNotConfigured : BadgeRedeemError()
   @Serializable @SerialName("badgeActive") object BadgeActive : BadgeRedeemError()
-  @Serializable @SerialName("serviceError") class ServiceError(val serviceError: String) : BadgeRedeemError()
+  @Serializable @SerialName("serviceError") class ServiceError(val serviceError: BadgeServiceErrorCode) : BadgeRedeemError()
   @Serializable @SerialName("invalidResponse") class InvalidResponse(val message: String) : BadgeRedeemError()
   @Serializable @SerialName("unknownKeyIndex") object UnknownKeyIndex : BadgeRedeemError()
   @Serializable @SerialName("credentialNotVerified") object CredentialNotVerified : BadgeRedeemError()
+}
+
+// the service is deployed ahead of clients, so a code this version does not know keeps its tag
+@Serializable(with = BadgeServiceErrorCodeSerializer::class)
+sealed class BadgeServiceErrorCode {
+  object BadRequest: BadgeServiceErrorCode()
+  object UnsupportedVersion: BadgeServiceErrorCode()
+  object UnknownPurchaseKey: BadgeServiceErrorCode()
+  object UnknownOfferId: BadgeServiceErrorCode()
+  object OfferDisabled: BadgeServiceErrorCode()
+  object OfferMismatch: BadgeServiceErrorCode()
+  object ProductUnavailable: BadgeServiceErrorCode()
+  object PaymentNotEntitled: BadgeServiceErrorCode()
+  object PaymentPending: BadgeServiceErrorCode()
+  object ProviderUnavailable: BadgeServiceErrorCode()
+  object RateLimited: BadgeServiceErrorCode()
+  object CodeInvalid: BadgeServiceErrorCode()
+  object CodeUsed: BadgeServiceErrorCode()
+  object CodeExpired: BadgeServiceErrorCode()
+  object ReceiptInvalid: BadgeServiceErrorCode()
+  object ReceiptUsed: BadgeServiceErrorCode()
+  object Internal: BadgeServiceErrorCode()
+  data class Unknown(val code: String): BadgeServiceErrorCode()
+
+  val text: String
+    get() = when (this) {
+      is BadRequest -> "bad_request"
+      is UnsupportedVersion -> "unsupported_version"
+      is UnknownPurchaseKey -> "unknown_purchase_key"
+      is UnknownOfferId -> "unknown_offer_id"
+      is OfferDisabled -> "offer_disabled"
+      is OfferMismatch -> "offer_mismatch"
+      is ProductUnavailable -> "product_unavailable"
+      is PaymentNotEntitled -> "payment_not_entitled"
+      is PaymentPending -> "payment_pending"
+      is ProviderUnavailable -> "provider_unavailable"
+      is RateLimited -> "rate_limited"
+      is CodeInvalid -> "code_invalid"
+      is CodeUsed -> "code_used"
+      is CodeExpired -> "code_expired"
+      is ReceiptInvalid -> "receipt_invalid"
+      is ReceiptUsed -> "receipt_used"
+      is Internal -> "internal"
+      is Unknown -> code
+    }
+}
+
+object BadgeServiceErrorCodeSerializer : KSerializer<BadgeServiceErrorCode> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BadgeServiceErrorCode", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): BadgeServiceErrorCode =
+    when (val v = decoder.decodeString()) {
+      "bad_request" -> BadgeServiceErrorCode.BadRequest
+      "unsupported_version" -> BadgeServiceErrorCode.UnsupportedVersion
+      "unknown_purchase_key" -> BadgeServiceErrorCode.UnknownPurchaseKey
+      "unknown_offer_id" -> BadgeServiceErrorCode.UnknownOfferId
+      "offer_disabled" -> BadgeServiceErrorCode.OfferDisabled
+      "offer_mismatch" -> BadgeServiceErrorCode.OfferMismatch
+      "product_unavailable" -> BadgeServiceErrorCode.ProductUnavailable
+      "payment_not_entitled" -> BadgeServiceErrorCode.PaymentNotEntitled
+      "payment_pending" -> BadgeServiceErrorCode.PaymentPending
+      "provider_unavailable" -> BadgeServiceErrorCode.ProviderUnavailable
+      "rate_limited" -> BadgeServiceErrorCode.RateLimited
+      "code_invalid" -> BadgeServiceErrorCode.CodeInvalid
+      "code_used" -> BadgeServiceErrorCode.CodeUsed
+      "code_expired" -> BadgeServiceErrorCode.CodeExpired
+      "receipt_invalid" -> BadgeServiceErrorCode.ReceiptInvalid
+      "receipt_used" -> BadgeServiceErrorCode.ReceiptUsed
+      "internal" -> BadgeServiceErrorCode.Internal
+      else -> BadgeServiceErrorCode.Unknown(v)
+    }
+  override fun serialize(encoder: Encoder, value: BadgeServiceErrorCode) = encoder.encodeString(value.text)
 }
 
 data class ConnectionPlanResult(
