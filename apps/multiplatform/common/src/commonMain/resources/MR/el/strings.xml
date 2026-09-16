@@ -543,7 +543,6 @@
     <string name="completed">Ολοκληρωμένο</string>
     <string name="operator_conditions_accepted_on">Οι όροι έγιναν αποδεκτοί στις: %s.</string>
     <string name="operator_conditions_of_use">Όροι χρήσης</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Οι όροι θα γίνουν αποδεκτοί για τους ενεργούς χειριστές μετά από 30 ημέρες.</string>
     <string name="operator_conditions_will_be_accepted_on">Οι όροι θα γίνουν αποδεκτοί στις: %s.</string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">Οι όροι θα γίνουν αυτόματα αποδεκτοί για τους ενεργούς χειριστές στις: %s.</string>
     <string name="smp_servers_configured">Διαμορφωμένοι SMP διακομιστές</string>
@@ -560,7 +559,6 @@
     <string name="migrate_from_device_confirm_you_remember_passphrase">Επιβεβαίωσε ότι θυμάσαι τη φράση πρόσβασης της βάσης δεδομένων για να τη μεταφέρεις.</string>
     <string name="migrate_from_device_confirm_upload">Επιβεβαίωση μεταφόρτωσης</string>
     <string name="auth_confirm_credential">Επιβεβαίωση των διαπιστευτηρίων σου</string>
-    <string name="info_view_connect_button">σύνδεση</string>
     <string name="smp_server_test_connect">Σύνδεση</string>
     <string name="connect_button">Σύνδεση</string>
     <string name="compose_view_connect">Σύνδεση</string>
@@ -925,7 +923,6 @@
     <string name="icon_descr_flip_camera">Αντιστροφή κάμερας</string>
     <string name="appearance_font_size">Μέγεθος γραμματοσειράς</string>
     <string name="report_archive_for_all_moderators">Για όλους τους διαχειριστές</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">για καλύτερη ιδιωτικότητα μεταδεδομένων</string>
     <string name="for_chat_profile">Για το προφίλ συνομιλίας %s:</string>
     <string name="section_title_for_console">Για κονσόλα</string>
     <string name="for_everybody">Για όλους</string>
@@ -1216,8 +1213,6 @@
     <string name="message_reactions_are_prohibited">Απαγορεύονται οι αντιδράσεις στα μηνύματα.</string>
     <string name="message_reactions_prohibited_in_this_chat">Απαγορεύονται οι αντιδράσεις στα μηνύματα σε αυτήν τη συνομιλία.</string>
     <string name="servers_info_subscriptions_section_header">Λήψη μηνυμάτων</string>
-    <string name="update_network_smp_proxy_fallback_question">Εναλλακτική δρομολόγηση μηνυμάτων</string>
-    <string name="update_network_smp_proxy_mode_question">Λειτουργία δρομολόγησης μηνυμάτων</string>
     <string name="messages_section_title">Μηνύματα</string>
     <string name="settings_section_title_messages">Μηνύματα και αρχεία</string>
     <string name="message_servers">Διακομιστές μηνυμάτων</string>
@@ -1289,7 +1284,6 @@
     <string name="chat_banner_connect_to_chat">Πάτα Σύνδεση για να συνομιλήσεις</string>
     <string name="chat_banner_send_request_to_connect">Πάτα Σύνδεση για αποστολή αιτήματος</string>
     <string name="chat_banner_connect_to_use_bot">Πάτα Σύνδεση για να χρησιμοποιήσεις το μποτ</string>
-    <string name="address_creation_instruction">Πατήστε Δημιουργία διεύθυνσης SimpleX στο μενού, για να τη δημιουργήσετε αργότερα.</string>
     <string name="chat_banner_join_group">Πάτα Συμμετοχή στην ομάδα</string>
     <string name="tap_to_activate_profile">Πάτα για να ενεργοποιήσεις το προφίλ.</string>
     <string name="contact_tap_to_connect">Πάτα για Σύνδεση</string>
@@ -1341,7 +1335,6 @@
     <string name="settings_is_storing_in_clear_text">Η φράση πρόσβασης αποθηκεύεται στις ρυθμίσεις ως απλό κείμενο.</string>
     <string name="passphrase_will_be_saved_in_settings">Η φράση πρόσβασης θα αποθηκευτεί στις ρυθμίσεις ως απλό κείμενο μετά την αλλαγή της ή την επανεκκίνηση της εφαρμογής.</string>
     <string name="profile_is_only_shared_with_your_contacts">Το προφίλ κοινοποιείται μόνο στις επαφές σου.</string>
-    <string name="report_archive_alert_desc">Η αναφορά θα αρχειοθετηθεί για εσένα.</string>
     <string name="member_role_will_be_changed_with_notification_chat">Ο ρόλος θα αλλάξει σε %s. Όλοι οι συμμετέχοντες στη συνομιλία θα ειδοποιηθούν.</string>
     <string name="member_role_will_be_changed_with_notification">Ο ρόλος θα αλλάξει σε %s. Όλα τα μέλη της ομάδας θα ενημερωθούν.</string>
     <string name="member_role_will_be_changed_with_invitation">Ο ρόλος θα αλλάξει σε %s. Το μέλος θα λάβει νέα πρόσκληση.</string>
@@ -1375,7 +1368,6 @@
     <string name="message_deleted_or_not_received_error_desc">Αυτό το μήνυμα διαγράφηκε ή δεν έχει ληφθεί ακόμα.</string>
     <string name="this_QR_code_is_not_a_link">Αυτός ο κωδικός QR δεν είναι σύνδεσμος!</string>
     <string name="messages_section_description">Αυτή η ρύθμιση ισχύει για τα μηνύματα στο τρέχον προφίλ συνομιλίας σου.</string>
-    <string name="this_setting_is_for_your_current_profile">Αυτή η ρύθμιση αφορά το τρέχον προφίλ σου.</string>
     <string name="this_string_is_not_a_connection_link">Αυτό το κείμενο δεν είναι σύνδεσμος!</string>
     <string name="this_text_is_available_in_settings">Αυτό το κείμενο είναι διαθέσιμο στις ρυθμίσεις</string>
     <string name="remote_ctrl_error_timeout">Εξαντλήθηκε ο χρόνος αναμονής κατά τη σύνδεση με τον υπολογιστή</string>
@@ -1438,11 +1430,9 @@
     <string name="user_unmute">Απενεργοποίηση σίγασης</string>
     <string name="network_smp_proxy_mode_unprotected">Απροστάτευτο</string>
     <string name="icon_descr_received_msg_status_unread">αδιάβαστο</string>
-    <string name="unread_mentions">Μη αναγνωσμένες αναφορές</string>
     <string name="unsupported_connection_link">Μη υποστηριζόμενος σύνδεσμος σύνδεσης</string>
     <string name="update_database">Αναβάθμιση</string>
     <string name="update_network_settings_confirmation">Αναβάθμιση</string>
-    <string name="onboarding_network_operators_update">Αναβάθμιση</string>
     <string name="app_check_for_updates_update_available">Διαθέσιμη αναβάθμιση: %s</string>
     <string name="update_database_passphrase">Ενημέρωση φράσης πρόσβασης της βάσης δεδομένων</string>
     <string name="operator_updated_conditions">Ενημερωμένοι όροι</string>
@@ -1737,7 +1727,6 @@
     <string name="only_your_contact_can_send_disappearing">Μόνο η επαφή σου μπορεί να στείλει μηνύματα που εξαφανίζονται.</string>
     <string name="only_your_contact_can_send_files">Μόνο η επαφή σου μπορεί να στείλει αρχεία και πολυμέσα.</string>
     <string name="only_your_contact_can_send_voice">Μόνο η επαφή σου μπορεί να στείλει φωνητικά μηνύματα.</string>
-    <string name="info_view_open_button">άνοιγμα</string>
     <string name="open_verb">Άνοιξε</string>
     <string name="rcv_group_event_open_chat">Άνοιγμα</string>
     <string name="turn_off_system_restriction_button">Άνοιξε τις ρυθμίσεις της εφαρμογής</string>
@@ -1955,7 +1944,6 @@
     <string name="relay_server_if_necessary">Ο διακομιστής αναμετάδοσης χρησιμοποιείται μόνο αν είναι απαραίτητο. Οι άλλοι μπορούν να δουν τη διεύθυνση IP σου.</string>
     <string name="relay_server_protects_ip">Ο διακομιστής αναμετάδοσης προστατεύει τη διεύθυνση IP σου, αλλά μπορεί να παρακολουθεί τη διάρκεια της κλήσης.</string>
     <string name="app_check_for_updates_button_remind_later">Υπενθύμιση αργότερα</string>
-    <string name="remote_hosts_section">Απομακρυσμένα κινητά τηλέφωνα</string>
     <string name="remove_passphrase">Κατάργηση</string>
     <string name="remove_member_confirmation">Κατάργηση</string>
     <string name="remove_member_delete_messages_confirmation">Κατάργηση και διαγραφή μηνυμάτων</string>
@@ -2025,7 +2013,6 @@
     <string name="operator_review_conditions">Προϋποθέσεις ελέγχου</string>
     <string name="reviewed_by_admins">ελέγχθηκε από τους διαχειριστές</string>
     <string name="v6_4_review_members">Έλεγχος μελών ομάδας</string>
-    <string name="onboarding_network_operators_review_later">Έλεγχος αργότερα</string>
     <string name="admission_stage_review">Έλεγχος μελών</string>
     <string name="admission_stage_review_descr">Έλεγχος μελών πριν την αποδοχή τους (knocking).</string>
     <string name="revoke_file__confirm">Ανάκληση</string>
@@ -2088,7 +2075,6 @@
     <string name="select_contacts">Επέλεξε επαφές</string>
     <string name="cannot_share_message_alert_text">Οι επιλεγμένες προτιμήσεις συνομιλίας απαγορεύουν αυτό το μήνυμα.</string>
     <string name="selected_chat_items_selected_n">Επιλέχθηκαν %d</string>
-    <string name="onboarding_select_network_operators_to_use">Επέλεξε τους χειριστές δικτύου που θέλεις να χρησιμοποιήσεις.</string>
     <string name="self_destruct">Αυτοκαταστροφή</string>
     <string name="self_destruct_passcode">Κωδικός αυτοκαταστροφής</string>
     <string name="v5_1_self_destruct_passcode">Κωδικός αυτοκαταστροφής</string>
@@ -2140,7 +2126,6 @@
     <string name="v4_4_disappearing_messages_desc">Τα αποσταλμένα μηνύματα θα διαγραφούν μετά από καθορισμένο χρονικό διάστημα.</string>
     <string name="color_sent_quote">Απεσταλμένη απάντηση</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Σύνολο απεσταλμένων</string>
-    <string name="sent_to_your_contact_after_connection">Αποστέλλεται στην επαφή σου μετά τη σύνδεση.</string>
     <string name="sent_via_proxy">Αποστολή μέσω διακομιστή μεσολάβησης</string>
     <string name="network_session_mode_server">Διακομιστής</string>
     <string name="server_added_to_operator__name">Ο διακομιστής προστέθηκε στο χειριστή %s.</string>
@@ -2204,7 +2189,6 @@
     <string name="v6_4_1_short_address">Σύντομη διεύθυνση SimpleX</string>
     <string name="show_call_on_lock_screen">Εμφάνιση</string>
     <string name="show_dev_options">Εμφάνιση:</string>
-    <string name="chat_list_always_visible">Εμφάνιση λίστας μηνυμάτων σε νέο παράθυρο</string>
     <string name="terminal_always_visible">Εμφάνιση κονσόλας τερματικού σε νέο παράθυρο</string>
     <string name="notification_preview_mode_message_desc">Εμφάνιση επαφής και μηνύματος</string>
     <string name="show_developer_options">Εμφάνιση επιλογών για προγραμματιστές</string>
@@ -2377,7 +2361,6 @@
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Προειδοποίηση: η έναρξη συνομιλίας σε πολλαπλές συσκευές δεν υποστηρίζεται και θα προκαλέσει σφάλματα στην παράδοση των μηνυμάτων.</string>
     <string name="database_downgrade_warning">Προειδοποίηση: ενδέχεται να χάσεις ορισμένα δεδομένα!</string>
     <string name="webrtc_ice_servers">Διακομιστές WebRTC ICE</string>
-    <string name="operator_website">Ιστοσελίδα</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Δεν αποθηκεύουμε καμία από τις επαφές ή τα μηνύματά σου (αφού παραδοθούν) στους διακομιστές.</string>
     <string name="custom_time_unit_weeks">εβδομάδες</string>
     <string name="welcome">Καλωσόρισες!</string>
@@ -2437,7 +2420,6 @@
     <string name="observer_cant_send_message_title">είσαι παρατηρητής</string>
     <string name="snd_group_event_member_blocked">μπλόκαρες %s</string>
     <string name="one_hand_ui_change_instruction">Μπορείς να το αλλάξεις στις ρυθμίσεις Εμφάνισης.</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Μπορείς να διαμορφώσεις τους χειριστές στις ρυθμίσεις Δικτύου &amp; διακομιστών.</string>
     <string name="onboarding_network_operators_configure_via_settings">Μπορείς να διαμορφώσεις τους διακομιστές μέσω των ρυθμίσεων.</string>
     <string name="maximum_message_size_reached_forwarding">Μπορείς να αντιγράψεις και να μειώσεις το μέγεθος του μηνύματος για να το στείλεις.</string>
     <string name="you_can_create_it_later">Μπορείς να το δημιουργήσεις αργότερα</string>
@@ -2513,7 +2495,6 @@
     <string name="appearance_zoom">Μεγέθυνση</string>
     <string name="content_filter_all_messages">Όλα τα μηνύματα</string>
     <string name="content_filter_files">Αρχεία</string>
-    <string name="content_filter_menu_item">ΦΙλτράρισμα</string>
     <string name="content_filter_images">Εικόνες</string>
     <string name="content_filter_links">Σύνδεσμοι</string>
     <string name="placeholder_search_files">Αναζήτηση αρχείων</string>

@@ -304,11 +304,63 @@ public struct BadgeInfo: Codable, Hashable {
     public var badgeType: BadgeType
     public var badgeExpiry: Date
     public var badgeExtra: String
+
+    public init(badgeType: BadgeType, badgeExpiry: Date, badgeExtra: String = "") {
+        self.badgeType = badgeType
+        self.badgeExpiry = badgeExpiry
+        self.badgeExtra = badgeExtra
+    }
 }
 
 public struct LocalBadge: Codable, Hashable {
     public var badge: BadgeInfo
     public var status: BadgeStatus
+
+    public init(badge: BadgeInfo, status: BadgeStatus) {
+        self.badge = badge
+        self.status = status
+    }
+}
+
+// paidThrough is the only date to show the user: BadgeInfo.badgeExpiry is the credential's expiry,
+// which outlives entitlement so the credential's window can cover a renewal.
+public struct BadgeState: Codable, Hashable {
+    public var badgePurchaseId: Int64
+    public var badgeType: BadgeType
+    public var shown: Bool
+    public var monthsLeft: Int
+    public var paidThrough: Date
+    public var renewsAt: Date?
+    public var willRenew: Bool
+    public var alert: BadgeAlert?
+
+    public var paidThroughText: String { badgeDateText(paidThrough) }
+}
+
+public struct BadgeAlert: Codable, Hashable {
+    public var kind: BadgeAlertKind
+    public var episode: String
+    public var date: Date
+    public var price: BadgeAlertPrice?
+
+    public var dateText: String { badgeDateText(date) }
+}
+
+private func badgeDateText(_ date: Date) -> String {
+    DateFormatter.localizedString(from: date, dateStyle: .long, timeStyle: .none)
+}
+
+public struct BadgeAlertPrice: Codable, Hashable {
+    public var amount: Int64
+    public var currency: String
+}
+
+public enum BadgeAlertKind: String, Codable, Hashable {
+    case renewalApproaching
+    case paymentIssue
+    case subscriptionEnded
+    case prepaidEnding
+    case supportEnded
 }
 
 // the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)

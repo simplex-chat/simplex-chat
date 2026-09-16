@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
+import Bots.BadgeServiceTests
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -97,6 +98,7 @@ runTests = do
           describe "SimpleX chat client" chatTests
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           xdescribe'' "SimpleX Directory service bot" directoryServiceTests
+          xdescribe'' "SimpleX Badge service bot" badgeServiceTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           sequential $ xdescribe'' "Save query plans" saveQueryPlans

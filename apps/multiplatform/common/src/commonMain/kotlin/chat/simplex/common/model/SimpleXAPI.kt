@@ -192,6 +192,7 @@ class AppPreferences {
   val showHiddenProfilesNotice = mkBoolPreference(SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE, true)
   val oneHandUICardShown = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN, false)
   val addressCreationCardShown = mkBoolPreference(SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN, false)
+  val supporterBannerShown = mkBoolPreference(SHARED_PREFS_SUPPORTER_BANNER_SHOWN, false)
   val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
   val showReportsInSupportChatAlert = mkBoolPreference(SHARED_PREFS_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT, true)
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
@@ -273,6 +274,7 @@ class AppPreferences {
     hintPref(laNoticeShown, false),
     hintPref(oneHandUICardShown, false),
     hintPref(addressCreationCardShown, false),
+    hintPref(supporterBannerShown, false),
     hintPref(liveMessageAlertShown, false),
     hintPref(signMessageAlertShown, false),
     hintPref(showHiddenProfilesNotice, true),
@@ -464,6 +466,7 @@ class AppPreferences {
     private const val SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE = "ShowHiddenProfilesNotice"
     private const val SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN = "OneHandUICardShown"
     private const val SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN = "AddressCreationCardShown"
+    private const val SHARED_PREFS_SUPPORTER_BANNER_SHOWN = "SupporterBannerShown"
     private const val SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT = "ShowMuteProfileAlert"
     private const val SHARED_PREFS_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT = "ShowReportsInSupportChatAlert"
     private const val SHARED_PREFS_STORE_DB_PASSPHRASE = "StoreDBPassphrase"
@@ -558,6 +561,83 @@ object ChatController {
   }
 
   suspend fun resetAgentServersStats(rh: Long?): Boolean = sendCommandOkResp(rh, CC.ResetAgentServersStats())
+
+  // log = false because the code is a bearer secret until it is redeemed - it is in the command.
+  // null when the user cancels the retry alert.
+  suspend fun apiRedeemBadgeCode(rh: Long?, userId: Long, code: String): BadgeRedeemResult? {
+    val r = sendCmdWithRetry(rh, CC.ApiRedeemBadgeCode(userId, code), log = false) ?: return null
+    return when {
+      // redeemedBadge is dropped: the user's profile carries what is shown
+      r is API.Result && r.res is CR.BadgeRedeemed -> BadgeRedeemResult.Redeemed(r.res.user.updateRemoteHostId(rh), r.res.newBadge, r.res.badgeState)
+      r is API.Error -> BadgeRedeemResult.Failed(r.err)
+      else -> {
+        // the response type alone - it names a case or a JSON key, never the service's message
+        Log.e(TAG, "apiRedeemBadgeCode: unexpected ${r.responseType}")
+        BadgeRedeemResult.Failed(null)
+      }
+    }
+  }
+
+  // localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
+  fun redeemErrorText(err: ChatError?): String {
+    if (err is ChatError.ChatErrorChat && err.errorType is ChatErrorType.CEBadgeRedeemError) {
+      when (val e = err.errorType.badgeRedeemError) {
+        is BadgeRedeemError.InvalidCode -> return generalGetString(MR.strings.badges_error_invalid_code)
+        is BadgeRedeemError.ServiceNotConfigured -> return generalGetString(MR.strings.badges_error_service_not_configured)
+        is BadgeRedeemError.BadgeActive -> return generalGetString(MR.strings.badges_error_already_active)
+        is BadgeRedeemError.ServiceError -> when (e.serviceError) {
+          is BadgeServiceErrorCode.CodeInvalid -> return generalGetString(MR.strings.badges_error_code_invalid)
+          is BadgeServiceErrorCode.CodeUsed -> return generalGetString(MR.strings.badges_error_code_used)
+          is BadgeServiceErrorCode.CodeExpired -> return generalGetString(MR.strings.badges_error_code_expired)
+          is BadgeServiceErrorCode.RateLimited -> return generalGetString(MR.strings.badges_error_rate_limited)
+          is BadgeServiceErrorCode.UnsupportedVersion -> return generalGetString(MR.strings.badges_error_unsupported_version)
+          else -> {}
+        }
+        is BadgeRedeemError.InvalidResponse -> return String.format(generalGetString(MR.strings.badges_error_bad_service_response), e.message)
+        is BadgeRedeemError.UnknownKeyIndex, is BadgeRedeemError.CredentialNotVerified -> return generalGetString(MR.strings.badges_error_credential_not_verified)
+      }
+    }
+    return "${generalGetString(MR.strings.error_prefix)}: ${err?.string ?: generalGetString(MR.strings.badges_error_unknown)}"
+  }
+
+  suspend fun apiGetBadgeState(rh: Long?, userId: Long): BadgeState? {
+    val r = sendCmd(rh, CC.ApiGetBadgeState(userId))
+    if (r is API.Result && r.res is CR.BadgeStateR) return r.res.badgeState
+    throw Exception("apiGetBadgeState: unexpected ${r.responseType}")
+  }
+
+  suspend fun apiAckBadgeAlert(rh: Long?, userId: Long, badgePurchaseId: Long, alertKind: BadgeAlertKind, snooze: Boolean, episode: String): BadgeState? {
+    val r = sendCmd(rh, CC.ApiAckBadgeAlert(userId, badgePurchaseId, alertKind, snooze, episode))
+    if (r is API.Result && r.res is CR.BadgeStateR) return r.res.badgeState
+    throw Exception("apiAckBadgeAlert: unexpected ${r.responseType}")
+  }
+
+  // An API call and not a stored flag: the ack is kept on the purchase in core, which then stops
+  // raising this occurrence on every pass and across restarts, or until a snooze lapses.
+  suspend fun ackBadgeAlert(snooze: Boolean) {
+    val rhId = BadgeModel.rhId.value
+    val userId = BadgeModel.userId.value ?: return
+    val purchaseId = BadgeModel.badgeState.value?.badgePurchaseId ?: return
+    val alert = BadgeModel.alert.value ?: return
+    try {
+      val badgeState = apiAckBadgeAlert(rhId, userId, purchaseId, alert.kind, snooze = snooze, episode = alert.episode)
+      withContext(Dispatchers.Main) { BadgeModel.set(rhId, userId, badgeState) }
+    } catch (e: Exception) {
+      Log.e(TAG, "ackBadgeAlert: ${e.message}")
+    }
+  }
+
+  // Not thrown: a failed badge read must not stop the app starting, and the model is left alone
+  // rather than set to nil, which would read as "no badge".
+  private suspend fun loadBadgeState(rhId: Long?) {
+    try {
+      val userId = currentUserId("loadBadgeState")
+      val badgeState = apiGetBadgeState(rhId, userId)
+      withContext(Dispatchers.Main) { BadgeModel.set(rhId, userId, badgeState) }
+    } catch (e: Exception) {
+      Log.e(TAG, "loadBadgeState: ${e.message}")
+    }
+  }
 
   private suspend fun currentUserId(funcName: String): Long = changingActiveUserMutex.withLock {
     val userId = chatModel.currentUser.value?.userId
@@ -680,6 +760,7 @@ object ChatController {
     chatModel.userTags.value = if (hasUser) apiGetChatTags(rhId) ?: emptyList() else emptyList()
     chatModel.activeChatTagFilter.value = null
     chatModel.updateChatTags(rhId)
+    if (hasUser) loadBadgeState(rhId)
   }
 
   // Spec: spec/api.md#startReceiver
@@ -743,8 +824,8 @@ object ChatController {
     }
   }
 
-  private suspend fun sendCmdWithRetry(rhId: Long?, cmd: CC, inProgress: MutableState<Boolean>? = null, retryNum: Int = 0): API? {
-    val r = sendCmd(rhId, cmd, retryNum = retryNum)
+  private suspend fun sendCmdWithRetry(rhId: Long?, cmd: CC, inProgress: MutableState<Boolean>? = null, retryNum: Int = 0, log: Boolean = true): API? {
+    val r = sendCmd(rhId, cmd, retryNum = retryNum, log = log)
     val alert = if (r is API.Error) retryableNetworkErrorAlert(r.err) else null
     if ((inProgress == null || inProgress.value) && alert != null) {
       return suspendCancellableCoroutine { cont ->
@@ -764,7 +845,7 @@ object ChatController {
               safeResume(
                 runCatching {
                   coroutineScope {
-                    sendCmdWithRetry(rhId, cmd, inProgress = inProgress, retryNum = retryNum + 1)
+                    sendCmdWithRetry(rhId, cmd, inProgress = inProgress, retryNum = retryNum + 1, log = log)
                   }
                 }
               )
@@ -826,6 +907,10 @@ object ChatController {
             is ProxyError.NO_SESSION -> MR.strings.private_routing_no_session to message()
             else -> null
           }
+        }
+      is AgentErrorType.AGENT ->
+        if (e.agentErr is SMPAgentError.A_SERVICE && e.agentErr.serviceError is AgentServiceError.Timeout) {
+          return MR.strings.connection_timeout to generalGetString(MR.strings.service_request_timeout_desc)
         }
       else -> return null
     }
@@ -3472,6 +3557,22 @@ object ChatController {
             chatModel.chatsContext.updateContact(rhId, r.contact)
           }
         }
+      is CR.BadgeChanged ->
+        if (rhId == chatModel.remoteHostId()) {
+          withContext(Dispatchers.Main) {
+            // read by core after retiring or presenting, so it carries the profile badge as changed
+            chatModel.updateUser(r.user.updateRemoteHostId(rhId))
+            if (active(r.user)) {
+              BadgeModel.set(rhId, r.user.userId, r.badgeState)
+            }
+          }
+        }
+      is CR.BadgeAlertR ->
+        if (active(r.user)) {
+          withContext(Dispatchers.Main) {
+            BadgeModel.setAlert(rhId, r.user.userId, r.badgeAlert)
+          }
+        }
       else ->
         Log.d(TAG , "unsupported event: ${msg.responseType}")
     }
@@ -3769,6 +3870,12 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
   }
 }
 
+sealed class BadgeRedeemResult {
+  class Redeemed(val user: User, val newBadge: Boolean, val badgeState: BadgeState?): BadgeRedeemResult()
+  // err is null for a response of an unexpected type, which is logged where it is received
+  class Failed(val err: ChatError?): BadgeRedeemResult()
+}
+
 // ChatCommand
 // Spec: spec/api.md#CC
 sealed class CC {
@@ -3947,6 +4054,10 @@ sealed class CC {
   class ApiUploadStandaloneFile(val userId: Long, val file: CryptoFile): CC()
   class ApiDownloadStandaloneFile(val userId: Long, val url: String, val file: CryptoFile): CC()
   class ApiStandaloneFileInfo(val url: String): CC()
+  // badges
+  class ApiRedeemBadgeCode(val userId: Long, val code: String): CC()
+  class ApiGetBadgeState(val userId: Long): CC()
+  class ApiAckBadgeAlert(val userId: Long, val badgePurchaseId: Long, val alertKind: BadgeAlertKind, val snooze: Boolean, val episode: String): CC()
   // misc
   class ShowVersion(): CC()
   class ResetAgentServersStats(): CC()
@@ -4168,6 +4279,9 @@ sealed class CC {
     is ApiUploadStandaloneFile -> "/_upload $userId ${file.filePath}"
     is ApiDownloadStandaloneFile -> "/_download $userId $url ${file.filePath}"
     is ApiStandaloneFileInfo -> "/_download info $url"
+    is ApiRedeemBadgeCode -> "/_redeem_badge_code $userId $code"
+    is ApiGetBadgeState -> "/_badge state $userId"
+    is ApiAckBadgeAlert -> "/_badge ack $userId $badgePurchaseId ${badgeAlertKindParam(alertKind)} ${onOff(snooze)} $episode"
     is ShowVersion -> "/version"
     is ResetAgentServersStats -> "/reset servers stats"
     is GetAgentSubsTotal -> "/get subs total $userId"
@@ -4348,6 +4462,9 @@ sealed class CC {
     is ApiUploadStandaloneFile -> "apiUploadStandaloneFile"
     is ApiDownloadStandaloneFile -> "apiDownloadStandaloneFile"
     is ApiStandaloneFileInfo -> "apiStandaloneFileInfo"
+    is ApiRedeemBadgeCode -> "apiRedeemBadgeCode"
+    is ApiGetBadgeState -> "apiGetBadgeState"
+    is ApiAckBadgeAlert -> "apiAckBadgeAlert"
     is ShowVersion -> "showVersion"
     is ResetAgentServersStats -> "resetAgentServersStats"
     is GetAgentSubsTotal -> "getAgentSubsTotal"
@@ -4369,6 +4486,8 @@ sealed class CC {
       is ApiUnhideUser -> ApiUnhideUser(userId, obfuscate(viewPwd))
       is ApiDeleteUser -> ApiDeleteUser(userId, delSMPQueues, obfuscateOrNull(viewPwd))
       is TestStorageEncryption -> TestStorageEncryption(obfuscate(key))
+      // a code is a bearer secret until it is redeemed, and the terminal shows and copies cmdString
+      is ApiRedeemBadgeCode -> ApiRedeemBadgeCode(userId, obfuscate(code))
       else -> this
     }
 
@@ -4403,6 +4522,15 @@ sealed class CC {
 }
 
 fun onOff(b: Boolean): String = if (b) "on" else "off"
+
+// /_badge ack takes the kind in core's text encoding, not the JSON tag
+private fun badgeAlertKindParam(kind: BadgeAlertKind): String = when (kind) {
+  BadgeAlertKind.RenewalApproaching -> "renewal_approaching"
+  BadgeAlertKind.PaymentIssue -> "payment_issue"
+  BadgeAlertKind.SubscriptionEnded -> "subscription_ended"
+  BadgeAlertKind.PrepaidEnding -> "prepaid_ending"
+  BadgeAlertKind.SupportEnded -> "support_ended"
+}
 
 @Serializable
 data class NewUser(
@@ -6722,6 +6850,12 @@ sealed class CR {
   @Serializable @SerialName("appSettings") class AppSettingsR(val appSettings: AppSettings): CR()
   @Serializable @SerialName("agentSubsTotal") class AgentSubsTotal(val user: UserRef, val subsTotal: SMPServerSubs, val hasSession: Boolean): CR()
   @Serializable @SerialName("agentServersSummary") class AgentServersSummary(val user: UserRef, val serversSummary: PresentedServersSummary): CR()
+  // badges
+  // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
+  @Serializable @SerialName("badgeRedeemed") class BadgeRedeemed(val user: User, val redeemedBadge: LocalBadge, val newBadge: Boolean, val badgeState: BadgeState?): CR()
+  @Serializable @SerialName("badgeState") class BadgeStateR(val user: UserRef, val badgeState: BadgeState?): CR()
+  @Serializable @SerialName("badgeChanged") class BadgeChanged(val user: User, val badgeState: BadgeState?): CR()
+  @Serializable @SerialName("badgeAlert") class BadgeAlertR(val user: UserRef, val badgeAlert: BadgeAlert): CR()
   // general
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
@@ -6908,6 +7042,10 @@ sealed class CR {
     is ArchiveExported -> "archiveExported"
     is ArchiveImported -> "archiveImported"
     is AppSettingsR -> "appSettings"
+    is BadgeRedeemed -> "badgeRedeemed"
+    is BadgeStateR -> "badgeState"
+    is BadgeChanged -> "badgeChanged"
+    is BadgeAlertR -> "badgeAlert"
     is Response -> "* $type"
     is Invalid -> "* invalid json"
   }
@@ -7111,6 +7249,10 @@ sealed class CR {
     is ArchiveExported -> "${archiveErrors.map { it.string } }"
     is ArchiveImported -> "${archiveErrors.map { it.string } }"
     is AppSettingsR -> json.encodeToString(appSettings)
+    is BadgeRedeemed -> withUser(user, "redeemedBadge: ${json.encodeToString(redeemedBadge)}\nnewBadge: $newBadge\nbadgeState: ${json.encodeToString(badgeState)}")
+    is BadgeStateR -> withUser(user, json.encodeToString(badgeState))
+    is BadgeChanged -> withUser(user, json.encodeToString(badgeState))
+    is BadgeAlertR -> withUser(user, json.encodeToString(badgeAlert))
     is Response -> json
     is Invalid -> str
   }
@@ -7160,6 +7302,97 @@ sealed class OwnerVerification {
 sealed class SimplexDomainError {
   @Serializable @SerialName("noValidLink") object NoValidLink : SimplexDomainError()
   @Serializable @SerialName("unknownDomain") object UnknownDomain : SimplexDomainError()
+}
+
+@Serializable
+sealed class BadgeRedeemError {
+  val string: String get() = when (this) {
+    is InvalidCode -> "invalidCode"
+    is ServiceNotConfigured -> "serviceNotConfigured"
+    is BadgeActive -> "badgeActive"
+    is ServiceError -> "serviceError ${serviceError.text}"
+    is InvalidResponse -> "invalidResponse $message"
+    is UnknownKeyIndex -> "unknownKeyIndex"
+    is CredentialNotVerified -> "credentialNotVerified"
+  }
+  @Serializable @SerialName("invalidCode") object InvalidCode : BadgeRedeemError()
+  @Serializable @SerialName("serviceNotConfigured") object ServiceNotConfigured : BadgeRedeemError()
+  @Serializable @SerialName("badgeActive") object BadgeActive : BadgeRedeemError()
+  @Serializable @SerialName("serviceError") class ServiceError(val serviceError: BadgeServiceErrorCode) : BadgeRedeemError()
+  @Serializable @SerialName("invalidResponse") class InvalidResponse(val message: String) : BadgeRedeemError()
+  @Serializable @SerialName("unknownKeyIndex") object UnknownKeyIndex : BadgeRedeemError()
+  @Serializable @SerialName("credentialNotVerified") object CredentialNotVerified : BadgeRedeemError()
+}
+
+// the service is deployed ahead of clients, so a code this version does not know keeps its tag
+@Serializable(with = BadgeServiceErrorCodeSerializer::class)
+sealed class BadgeServiceErrorCode {
+  object BadRequest: BadgeServiceErrorCode()
+  object UnsupportedVersion: BadgeServiceErrorCode()
+  object UnknownPurchaseKey: BadgeServiceErrorCode()
+  object UnknownOfferId: BadgeServiceErrorCode()
+  object OfferDisabled: BadgeServiceErrorCode()
+  object OfferMismatch: BadgeServiceErrorCode()
+  object ProductUnavailable: BadgeServiceErrorCode()
+  object PaymentNotEntitled: BadgeServiceErrorCode()
+  object PaymentPending: BadgeServiceErrorCode()
+  object ProviderUnavailable: BadgeServiceErrorCode()
+  object RateLimited: BadgeServiceErrorCode()
+  object CodeInvalid: BadgeServiceErrorCode()
+  object CodeUsed: BadgeServiceErrorCode()
+  object CodeExpired: BadgeServiceErrorCode()
+  object ReceiptInvalid: BadgeServiceErrorCode()
+  object ReceiptUsed: BadgeServiceErrorCode()
+  object Internal: BadgeServiceErrorCode()
+  data class Unknown(val code: String): BadgeServiceErrorCode()
+
+  val text: String
+    get() = when (this) {
+      is BadRequest -> "bad_request"
+      is UnsupportedVersion -> "unsupported_version"
+      is UnknownPurchaseKey -> "unknown_purchase_key"
+      is UnknownOfferId -> "unknown_offer_id"
+      is OfferDisabled -> "offer_disabled"
+      is OfferMismatch -> "offer_mismatch"
+      is ProductUnavailable -> "product_unavailable"
+      is PaymentNotEntitled -> "payment_not_entitled"
+      is PaymentPending -> "payment_pending"
+      is ProviderUnavailable -> "provider_unavailable"
+      is RateLimited -> "rate_limited"
+      is CodeInvalid -> "code_invalid"
+      is CodeUsed -> "code_used"
+      is CodeExpired -> "code_expired"
+      is ReceiptInvalid -> "receipt_invalid"
+      is ReceiptUsed -> "receipt_used"
+      is Internal -> "internal"
+      is Unknown -> code
+    }
+}
+
+object BadgeServiceErrorCodeSerializer : KSerializer<BadgeServiceErrorCode> {
+  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BadgeServiceErrorCode", PrimitiveKind.STRING)
+  override fun deserialize(decoder: Decoder): BadgeServiceErrorCode =
+    when (val v = decoder.decodeString()) {
+      "bad_request" -> BadgeServiceErrorCode.BadRequest
+      "unsupported_version" -> BadgeServiceErrorCode.UnsupportedVersion
+      "unknown_purchase_key" -> BadgeServiceErrorCode.UnknownPurchaseKey
+      "unknown_offer_id" -> BadgeServiceErrorCode.UnknownOfferId
+      "offer_disabled" -> BadgeServiceErrorCode.OfferDisabled
+      "offer_mismatch" -> BadgeServiceErrorCode.OfferMismatch
+      "product_unavailable" -> BadgeServiceErrorCode.ProductUnavailable
+      "payment_not_entitled" -> BadgeServiceErrorCode.PaymentNotEntitled
+      "payment_pending" -> BadgeServiceErrorCode.PaymentPending
+      "provider_unavailable" -> BadgeServiceErrorCode.ProviderUnavailable
+      "rate_limited" -> BadgeServiceErrorCode.RateLimited
+      "code_invalid" -> BadgeServiceErrorCode.CodeInvalid
+      "code_used" -> BadgeServiceErrorCode.CodeUsed
+      "code_expired" -> BadgeServiceErrorCode.CodeExpired
+      "receipt_invalid" -> BadgeServiceErrorCode.ReceiptInvalid
+      "receipt_used" -> BadgeServiceErrorCode.ReceiptUsed
+      "internal" -> BadgeServiceErrorCode.Internal
+      else -> BadgeServiceErrorCode.Unknown(v)
+    }
+  override fun serialize(encoder: Encoder, value: BadgeServiceErrorCode) = encoder.encodeString(value.text)
 }
 
 data class ConnectionPlanResult(
@@ -7567,6 +7800,7 @@ sealed class ChatErrorType {
       is AgentVersion -> "agentVersion"
       is AgentNoSubResult -> "agentNoSubResult"
       is CommandError -> "commandError $message"
+      is CEBadgeRedeemError -> "badgeRedeemError ${badgeRedeemError.string}"
       is ServerProtocol -> "serverProtocol"
       is AgentCommandError -> "agentCommandError"
       is InvalidFileDescription -> "invalidFileDescription"
@@ -7651,6 +7885,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("agentVersion") object AgentVersion: ChatErrorType()
   @Serializable @SerialName("agentNoSubResult") class AgentNoSubResult(val agentConnId: String): ChatErrorType()
   @Serializable @SerialName("commandError") class CommandError(val message: String): ChatErrorType()
+  @Serializable @SerialName("badgeRedeemError") class CEBadgeRedeemError(val badgeRedeemError: BadgeRedeemError): ChatErrorType()
   @Serializable @SerialName("serverProtocol") object ServerProtocol: ChatErrorType()
   @Serializable @SerialName("agentCommandError") class AgentCommandError(val message: String): ChatErrorType()
   @Serializable @SerialName("invalidFileDescription") class InvalidFileDescription(val message: String): ChatErrorType()
@@ -8085,6 +8320,7 @@ sealed class SMPAgentError {
     is A_CRYPTO -> "A_CRYPTO"
     is A_DUPLICATE -> "A_DUPLICATE"
     is A_QUEUE -> "A_QUEUE"
+    is A_SERVICE -> "A_SERVICE ${serviceError.string}"
   }
   @Serializable @SerialName("A_MESSAGE") object A_MESSAGE: SMPAgentError()
   @Serializable @SerialName("A_PROHIBITED") class A_PROHIBITED(val prohibitedErr: String): SMPAgentError()
@@ -8093,6 +8329,23 @@ sealed class SMPAgentError {
   @Serializable @SerialName("A_CRYPTO") object A_CRYPTO: SMPAgentError()
   @Serializable @SerialName("A_DUPLICATE") object A_DUPLICATE: SMPAgentError()
   @Serializable @SerialName("A_QUEUE") class A_QUEUE(val queueErr: String): SMPAgentError()
+  @Serializable @SerialName("A_SERVICE") class A_SERVICE(val serviceError: AgentServiceError): SMPAgentError()
+}
+
+@Serializable
+sealed class AgentServiceError {
+  val string: String get() = when (this) {
+    is Rejected -> "rejected"
+    is Timeout -> "timeout"
+    is NoPendingRequest -> "noPendingRequest"
+    is NotDRAddress -> "notDRAddress"
+    is BadSignature -> "badSignature"
+  }
+  @Serializable @SerialName("rejected") object Rejected: AgentServiceError()
+  @Serializable @SerialName("timeout") object Timeout: AgentServiceError()
+  @Serializable @SerialName("noPendingRequest") object NoPendingRequest: AgentServiceError()
+  @Serializable @SerialName("notDRAddress") object NotDRAddress: AgentServiceError()
+  @Serializable @SerialName("badSignature") object BadSignature: AgentServiceError()
 }
 
 @Serializable
