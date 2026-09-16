@@ -25,10 +25,8 @@ import chat.simplex.res.MR
 
 @Composable
 fun BadgesYourBadgeView(badgeState: BadgeState) {
-  val title = if (badgeState.shown) MR.strings.badges_your_badge else MR.strings.badges_support_ended
-
   ColumnWithScrollBar {
-    AppBarTitle(stringResource(title))
+    AppBarTitle(stringResource(MR.strings.badges_your_badge))
 
     SectionView {
       BadgeSummary(badgeState)

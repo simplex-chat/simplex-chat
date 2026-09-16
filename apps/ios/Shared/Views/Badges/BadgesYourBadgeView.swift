@@ -14,18 +14,12 @@ struct BadgesYourBadgeView: View {
     let badgeState: BadgeState
     var showsAsSheet: Bool = false
 
-    private var title: LocalizedStringKey {
-        badgeState.shown ? "Your badge" : "Support ended"
-    }
-
-    // pushed, the navigation bar carries the title and animates it; as a sheet root there is no bar
-    // to put it in, so the title is drawn in the content, as the Support screen does
-    private var navTitle: LocalizedStringKey { showsAsSheet ? "" : title }
-
     var body: some View {
         VStack(spacing: 0) {
+            // pushed, the navigation bar carries the title and animates it; as a sheet root there is no bar
+            // to put it in, so the title is drawn in the content, as the Support screen does
             if showsAsSheet {
-                Text(title)
+                Text("Your badge")
                     .font(.largeTitle)
                     .bold()
                     .foregroundColor(theme.colors.primary)
@@ -51,7 +45,7 @@ struct BadgesYourBadgeView: View {
             }
         }
         .frame(maxHeight: .infinity)
-        .navigationTitle(navTitle)
+        .navigationTitle(showsAsSheet ? "" : "Your badge")
         .navigationBarTitleDisplayMode(showsAsSheet ? .inline : .large)
         .modifier(ThemedBackground(grouped: true))
     }
