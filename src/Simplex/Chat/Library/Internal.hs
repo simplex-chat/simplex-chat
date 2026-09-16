@@ -3039,8 +3039,8 @@ joinAgentConnectionAsync cmdId updateConn connId enableNtfs cReqUri cInfo subMod
   withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) updateConn connId enableNtfs cReqUri cInfo PQSupportOff subMode
 
 allowAgentConnectionAsync :: MsgEncodingI e => User -> Connection -> ConfirmationId -> Maybe (GroupInfo, GroupKeys) -> ChatMsgEvent e -> CM ()
-allowAgentConnectionAsync user conn@Connection {pqSupport} confId group_ msg = do
-  let signing_ = case group_ of
+allowAgentConnectionAsync user conn@Connection {pqSupport} confId gInfo_ msg = do
+  let signing_ = case gInfo_ of
         Just (gInfo, gks) | useRelays' gInfo || maxVersion (peerChatVRange conn) >= relayWebCapVersion -> groupMsgSigning False gInfo gks msg
         _ -> Nothing
   dm <- case signing_ of

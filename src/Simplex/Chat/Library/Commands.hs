@@ -2838,10 +2838,10 @@ processChatCommand cxt nm = \case
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
   APIJoinGroup groupId enableNtfs -> withUser $ \user@User {userId} -> do
     withGroupLock "joinGroup" groupId $ do
-      (invitation, gks, ct) <- withFastStore $ \db -> do
-        (inv@ReceivedGroupInvitation {fromMember}, gks) <- getGroupInvitation db cxt user groupId
-        (inv,gks,) <$> getContactViaMember db cxt user fromMember
-      let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership, chatSettings}} = invitation
+      (invitation, ct) <- withFastStore $ \db -> do
+        inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db cxt user groupId
+        (inv,) <$> getContactViaMember db cxt user fromMember
+      let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership, chatSettings}, groupKeys = gks} = invitation
           GroupMember {memberId = membershipMemId} = membership
           Contact {activeConn} = ct
       case activeConn of

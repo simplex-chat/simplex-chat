@@ -146,8 +146,7 @@ processAgentMessage corrId connId msg = do
       liftIO (getUserByAConnId db $ AgentConnId connId)
         >>= mapM (\user -> do
               (entity, groupKeysData_) <- getConnectionEntityKeys db cxt user (AgentConnId connId)
-              entity' <- liftIO $ updateConnStatus db entity
-              pure (user, entity', groupKeysData_))
+              (user,,groupKeysData_) <$> liftIO (updateConnStatus db entity))
 
     updateConnStatus :: DB.Connection -> ConnectionEntity -> IO ConnectionEntity
     updateConnStatus db acEntity = case agentMsgConnStatus (entityConnection acEntity) msg of
@@ -499,14 +498,14 @@ processAgentMessageConn cxt user@User {userId} entity groupKeysData_ corrId agen
             Nothing -> do
               conn' <- processCONFpqSupport conn pqSupport
               -- [incognito] send saved profile
-              (conn'', group_) <- saveConnInfo conn' connInfo
+              (conn'', gInfo_) <- saveConnInfo conn' connInfo
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
               profileToSend <-
-                presentUserBadge user incognitoProfile $ case group_ of
+                presentUserBadge user incognitoProfile $ case gInfo_ of
                   Just (gInfo, _) -> userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
                   Nothing -> userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-              allowAgentConnectionAsync user conn'' confId group_ $ XInfo profileToSend (groupMemberKey . snd <$> group_)
+              allowAgentConnectionAsync user conn'' confId gInfo_ $ XInfo profileToSend (groupMemberKey . snd <$> gInfo_)
         INFO pqSupport connInfo -> do
           processINFOpqSupport conn pqSupport
           void $ saveConnInfo conn connInfo
