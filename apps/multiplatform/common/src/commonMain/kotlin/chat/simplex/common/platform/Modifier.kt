@@ -94,8 +94,8 @@ fun Modifier.privacyBlur(
     }
 }
 
-// Media is drawn about this wide, so the resample keeps roughly one pixel per blur radius.
-private const val BLURRED_MEDIA_WIDTH_DP = 360
+// Calibrated so the resample blurs as much as Modifier.blur did at each radius; 360 read 5-75% stronger.
+private const val BLURRED_MEDIA_WIDTH_DP = 400
 // Bounds the first step: nothing bounds a decoded video frame, and reading every pixel of a 4K one would stall.
 private const val RESAMPLE_MEDIA_FROM_SIDE = 512
 
@@ -110,5 +110,8 @@ private fun ImageBitmap.blurredBy(radius: Int): ImageBitmap {
   } else this
   // One bilinear step from a large image undersamples it.
   while (image.width / 2 > w) image = image.scale(image.width / 2, (image.height / 2).coerceAtLeast(1))
-  return image.scale(w, h)
+  image = image.scale(w, h)
+  // Stretching w px straight to the screen shows their grid; each doubling smooths it, so the last stretch is small.
+  while (maxOf(image.width, image.height) < BLURRED_MEDIA_WIDTH_DP / 2) image = image.scale(image.width * 2, image.height * 2)
+  return image
 }
