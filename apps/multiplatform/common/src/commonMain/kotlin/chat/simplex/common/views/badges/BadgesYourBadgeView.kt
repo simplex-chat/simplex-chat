@@ -19,8 +19,10 @@ import chat.simplex.common.model.BadgeState
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.AppBarTitle
+import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.views.helpers.badgeImage
 import chat.simplex.common.views.helpers.badgeTypeName
+import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
 
 @Composable
@@ -36,6 +38,14 @@ fun BadgesYourBadgeView(badgeState: BadgeState) {
       Text(badgeState.paidThroughText, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 12.dp))
     }
     SectionTextFooter(stringResource(MR.strings.badges_prepaid_footer))
+    SectionSpacer()
+    SectionView {
+      SettingsActionItem(
+        painterResource(MR.images.ic_info),
+        stringResource(MR.strings.badges_how_it_works_button),
+        { ModalManager.start.showModal { BadgesHowItWorksView() } },
+      )
+    }
     SectionSpacer()
   }
 }
