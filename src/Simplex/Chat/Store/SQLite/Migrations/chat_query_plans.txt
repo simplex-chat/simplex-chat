@@ -7723,7 +7723,7 @@ Query: SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE badge_purchases SET alert_acked_kind = ?, alert_acked_episode = ?, alert_snooze_until = ? WHERE badge_purchase_id = ?
+Query: UPDATE badge_purchases SET alert_acked_kind = ?, alert_acked_episode = ?, alert_snooze_until = ? WHERE badge_purchase_id = ? AND user_id = ?
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 

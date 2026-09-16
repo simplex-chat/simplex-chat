@@ -247,6 +247,179 @@ export interface BadgeProof {
   badgeInfo: BadgeInfo
 }
 
+export type BadgeRedeemError = 
+  | BadgeRedeemError.InvalidCode
+  | BadgeRedeemError.ServiceNotConfigured
+  | BadgeRedeemError.BadgeActive
+  | BadgeRedeemError.ServiceError
+  | BadgeRedeemError.InvalidResponse
+  | BadgeRedeemError.UnknownKeyIndex
+  | BadgeRedeemError.CredentialNotVerified
+
+export namespace BadgeRedeemError {
+  export type Tag = 
+    | "invalidCode"
+    | "serviceNotConfigured"
+    | "badgeActive"
+    | "serviceError"
+    | "invalidResponse"
+    | "unknownKeyIndex"
+    | "credentialNotVerified"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface InvalidCode extends Interface {
+    type: "invalidCode"
+  }
+
+  export interface ServiceNotConfigured extends Interface {
+    type: "serviceNotConfigured"
+  }
+
+  export interface BadgeActive extends Interface {
+    type: "badgeActive"
+  }
+
+  export interface ServiceError extends Interface {
+    type: "serviceError"
+    serviceError: BadgeServiceErrorCode
+  }
+
+  export interface InvalidResponse extends Interface {
+    type: "invalidResponse"
+    message: string
+  }
+
+  export interface UnknownKeyIndex extends Interface {
+    type: "unknownKeyIndex"
+  }
+
+  export interface CredentialNotVerified extends Interface {
+    type: "credentialNotVerified"
+  }
+}
+
+export type BadgeServiceErrorCode = 
+  | BadgeServiceErrorCode.BadRequest
+  | BadgeServiceErrorCode.UnsupportedVersion
+  | BadgeServiceErrorCode.UnknownPurchaseKey
+  | BadgeServiceErrorCode.UnknownOfferId
+  | BadgeServiceErrorCode.OfferDisabled
+  | BadgeServiceErrorCode.OfferMismatch
+  | BadgeServiceErrorCode.ProductUnavailable
+  | BadgeServiceErrorCode.PaymentNotEntitled
+  | BadgeServiceErrorCode.PaymentPending
+  | BadgeServiceErrorCode.ProviderUnavailable
+  | BadgeServiceErrorCode.RateLimited
+  | BadgeServiceErrorCode.CodeInvalid
+  | BadgeServiceErrorCode.CodeUsed
+  | BadgeServiceErrorCode.CodeExpired
+  | BadgeServiceErrorCode.ReceiptInvalid
+  | BadgeServiceErrorCode.ReceiptUsed
+  | BadgeServiceErrorCode.Internal
+  | BadgeServiceErrorCode.Unknown
+
+export namespace BadgeServiceErrorCode {
+  export type Tag = 
+    | "badRequest"
+    | "unsupportedVersion"
+    | "unknownPurchaseKey"
+    | "unknownOfferId"
+    | "offerDisabled"
+    | "offerMismatch"
+    | "productUnavailable"
+    | "paymentNotEntitled"
+    | "paymentPending"
+    | "providerUnavailable"
+    | "rateLimited"
+    | "codeInvalid"
+    | "codeUsed"
+    | "codeExpired"
+    | "receiptInvalid"
+    | "receiptUsed"
+    | "internal"
+    | "unknown"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface BadRequest extends Interface {
+    type: "badRequest"
+  }
+
+  export interface UnsupportedVersion extends Interface {
+    type: "unsupportedVersion"
+  }
+
+  export interface UnknownPurchaseKey extends Interface {
+    type: "unknownPurchaseKey"
+  }
+
+  export interface UnknownOfferId extends Interface {
+    type: "unknownOfferId"
+  }
+
+  export interface OfferDisabled extends Interface {
+    type: "offerDisabled"
+  }
+
+  export interface OfferMismatch extends Interface {
+    type: "offerMismatch"
+  }
+
+  export interface ProductUnavailable extends Interface {
+    type: "productUnavailable"
+  }
+
+  export interface PaymentNotEntitled extends Interface {
+    type: "paymentNotEntitled"
+  }
+
+  export interface PaymentPending extends Interface {
+    type: "paymentPending"
+  }
+
+  export interface ProviderUnavailable extends Interface {
+    type: "providerUnavailable"
+  }
+
+  export interface RateLimited extends Interface {
+    type: "rateLimited"
+  }
+
+  export interface CodeInvalid extends Interface {
+    type: "codeInvalid"
+  }
+
+  export interface CodeUsed extends Interface {
+    type: "codeUsed"
+  }
+
+  export interface CodeExpired extends Interface {
+    type: "codeExpired"
+  }
+
+  export interface ReceiptInvalid extends Interface {
+    type: "receiptInvalid"
+  }
+
+  export interface ReceiptUsed extends Interface {
+    type: "receiptUsed"
+  }
+
+  export interface Internal extends Interface {
+    type: "internal"
+  }
+
+  export interface Unknown extends Interface {
+    type: "unknown"
+    : string
+  }
+}
+
 export enum BadgeStatus {
   Active = "active",
   Expired = "expired",
@@ -1153,6 +1326,7 @@ export type ChatErrorType =
   | ChatErrorType.AgentVersion
   | ChatErrorType.AgentNoSubResult
   | ChatErrorType.CommandError
+  | ChatErrorType.BadgeRedeemError
   | ChatErrorType.AgentCommandError
   | ChatErrorType.InvalidFileDescription
   | ChatErrorType.ConnectionIncognitoChangeProhibited
@@ -1232,6 +1406,7 @@ export namespace ChatErrorType {
     | "agentVersion"
     | "agentNoSubResult"
     | "commandError"
+    | "badgeRedeemError"
     | "agentCommandError"
     | "invalidFileDescription"
     | "connectionIncognitoChangeProhibited"
@@ -1574,6 +1749,11 @@ export namespace ChatErrorType {
   export interface CommandError extends Interface {
     type: "commandError"
     message: string
+  }
+
+  export interface BadgeRedeemError extends Interface {
+    type: "badgeRedeemError"
+    badgeRedeemError: BadgeRedeemError
   }
 
   export interface AgentCommandError extends Interface {

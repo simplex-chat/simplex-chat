@@ -185,6 +185,119 @@ class BadgeProof(TypedDict):
     proof: str
     badgeInfo: "BadgeInfo"
 
+class BadgeRedeemError_invalidCode(TypedDict):
+    type: Literal["invalidCode"]
+
+class BadgeRedeemError_serviceNotConfigured(TypedDict):
+    type: Literal["serviceNotConfigured"]
+
+class BadgeRedeemError_badgeActive(TypedDict):
+    type: Literal["badgeActive"]
+
+class BadgeRedeemError_serviceError(TypedDict):
+    type: Literal["serviceError"]
+    serviceError: "BadgeServiceErrorCode"
+
+class BadgeRedeemError_invalidResponse(TypedDict):
+    type: Literal["invalidResponse"]
+    message: str
+
+class BadgeRedeemError_unknownKeyIndex(TypedDict):
+    type: Literal["unknownKeyIndex"]
+
+class BadgeRedeemError_credentialNotVerified(TypedDict):
+    type: Literal["credentialNotVerified"]
+
+BadgeRedeemError = (
+    BadgeRedeemError_invalidCode
+    | BadgeRedeemError_serviceNotConfigured
+    | BadgeRedeemError_badgeActive
+    | BadgeRedeemError_serviceError
+    | BadgeRedeemError_invalidResponse
+    | BadgeRedeemError_unknownKeyIndex
+    | BadgeRedeemError_credentialNotVerified
+)
+
+BadgeRedeemError_Tag = Literal["invalidCode", "serviceNotConfigured", "badgeActive", "serviceError", "invalidResponse", "unknownKeyIndex", "credentialNotVerified"]
+
+class BadgeServiceErrorCode_badRequest(TypedDict):
+    type: Literal["badRequest"]
+
+class BadgeServiceErrorCode_unsupportedVersion(TypedDict):
+    type: Literal["unsupportedVersion"]
+
+class BadgeServiceErrorCode_unknownPurchaseKey(TypedDict):
+    type: Literal["unknownPurchaseKey"]
+
+class BadgeServiceErrorCode_unknownOfferId(TypedDict):
+    type: Literal["unknownOfferId"]
+
+class BadgeServiceErrorCode_offerDisabled(TypedDict):
+    type: Literal["offerDisabled"]
+
+class BadgeServiceErrorCode_offerMismatch(TypedDict):
+    type: Literal["offerMismatch"]
+
+class BadgeServiceErrorCode_productUnavailable(TypedDict):
+    type: Literal["productUnavailable"]
+
+class BadgeServiceErrorCode_paymentNotEntitled(TypedDict):
+    type: Literal["paymentNotEntitled"]
+
+class BadgeServiceErrorCode_paymentPending(TypedDict):
+    type: Literal["paymentPending"]
+
+class BadgeServiceErrorCode_providerUnavailable(TypedDict):
+    type: Literal["providerUnavailable"]
+
+class BadgeServiceErrorCode_rateLimited(TypedDict):
+    type: Literal["rateLimited"]
+
+class BadgeServiceErrorCode_codeInvalid(TypedDict):
+    type: Literal["codeInvalid"]
+
+class BadgeServiceErrorCode_codeUsed(TypedDict):
+    type: Literal["codeUsed"]
+
+class BadgeServiceErrorCode_codeExpired(TypedDict):
+    type: Literal["codeExpired"]
+
+class BadgeServiceErrorCode_receiptInvalid(TypedDict):
+    type: Literal["receiptInvalid"]
+
+class BadgeServiceErrorCode_receiptUsed(TypedDict):
+    type: Literal["receiptUsed"]
+
+class BadgeServiceErrorCode_internal(TypedDict):
+    type: Literal["internal"]
+
+class BadgeServiceErrorCode_unknown(TypedDict):
+    type: Literal["unknown"]
+    : str
+
+BadgeServiceErrorCode = (
+    BadgeServiceErrorCode_badRequest
+    | BadgeServiceErrorCode_unsupportedVersion
+    | BadgeServiceErrorCode_unknownPurchaseKey
+    | BadgeServiceErrorCode_unknownOfferId
+    | BadgeServiceErrorCode_offerDisabled
+    | BadgeServiceErrorCode_offerMismatch
+    | BadgeServiceErrorCode_productUnavailable
+    | BadgeServiceErrorCode_paymentNotEntitled
+    | BadgeServiceErrorCode_paymentPending
+    | BadgeServiceErrorCode_providerUnavailable
+    | BadgeServiceErrorCode_rateLimited
+    | BadgeServiceErrorCode_codeInvalid
+    | BadgeServiceErrorCode_codeUsed
+    | BadgeServiceErrorCode_codeExpired
+    | BadgeServiceErrorCode_receiptInvalid
+    | BadgeServiceErrorCode_receiptUsed
+    | BadgeServiceErrorCode_internal
+    | BadgeServiceErrorCode_unknown
+)
+
+BadgeServiceErrorCode_Tag = Literal["badRequest", "unsupportedVersion", "unknownPurchaseKey", "unknownOfferId", "offerDisabled", "offerMismatch", "productUnavailable", "paymentNotEntitled", "paymentPending", "providerUnavailable", "rateLimited", "codeInvalid", "codeUsed", "codeExpired", "receiptInvalid", "receiptUsed", "internal", "unknown"]
+
 BadgeStatus = Literal["active", "expired", "expiredOld", "failed", "unknownKey"]
 
 BadgeType = Literal["supporter", "legend", "investor"]
@@ -1029,6 +1142,10 @@ class ChatErrorType_commandError(TypedDict):
     type: Literal["commandError"]
     message: str
 
+class ChatErrorType_badgeRedeemError(TypedDict):
+    type: Literal["badgeRedeemError"]
+    badgeRedeemError: "BadgeRedeemError"
+
 class ChatErrorType_agentCommandError(TypedDict):
     type: Literal["agentCommandError"]
     message: str
@@ -1127,6 +1244,7 @@ ChatErrorType = (
     | ChatErrorType_agentVersion
     | ChatErrorType_agentNoSubResult
     | ChatErrorType_commandError
+    | ChatErrorType_badgeRedeemError
     | ChatErrorType_agentCommandError
     | ChatErrorType_invalidFileDescription
     | ChatErrorType_connectionIncognitoChangeProhibited
@@ -1137,7 +1255,7 @@ ChatErrorType = (
     | ChatErrorType_exception
 )
 
-ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
+ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "badgeRedeemError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
 
 ChatFeature = Literal["timedMessages", "fullDelete", "reactions", "voice", "files", "calls", "sessions"]
 
