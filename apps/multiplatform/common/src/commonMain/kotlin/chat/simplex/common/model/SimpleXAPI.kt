@@ -4281,7 +4281,7 @@ sealed class CC {
     is ApiStandaloneFileInfo -> "/_download info $url"
     is ApiRedeemBadgeCode -> "/_redeem_badge_code $userId $code"
     is ApiGetBadgeState -> "/_badge state $userId"
-    is ApiAckBadgeAlert -> "/_badge ack $userId $badgePurchaseId ${alertKind.text} ${onOff(snooze)} $episode"
+    is ApiAckBadgeAlert -> "/_badge ack $userId $badgePurchaseId ${badgeAlertKindParam(alertKind)} ${onOff(snooze)} $episode"
     is ShowVersion -> "/version"
     is ResetAgentServersStats -> "/reset servers stats"
     is GetAgentSubsTotal -> "/get subs total $userId"
@@ -4522,6 +4522,15 @@ sealed class CC {
 }
 
 fun onOff(b: Boolean): String = if (b) "on" else "off"
+
+// /_badge ack takes the kind in core's text encoding, not the JSON tag
+private fun badgeAlertKindParam(kind: BadgeAlertKind): String = when (kind) {
+  BadgeAlertKind.RenewalApproaching -> "renewal_approaching"
+  BadgeAlertKind.PaymentIssue -> "payment_issue"
+  BadgeAlertKind.SubscriptionEnded -> "subscription_ended"
+  BadgeAlertKind.PrepaidEnding -> "prepaid_ending"
+  BadgeAlertKind.SupportEnded -> "support_ended"
+}
 
 @Serializable
 data class NewUser(

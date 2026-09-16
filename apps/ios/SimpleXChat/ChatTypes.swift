@@ -350,62 +350,17 @@ private func badgeDateText(_ date: Date) -> String {
     DateFormatter.localizedString(from: date, dateStyle: .long, timeStyle: .none)
 }
 
-public struct BadgeAlertPrice: Hashable {
+public struct BadgeAlertPrice: Codable, Hashable {
     public var amount: Int64
     public var currency: String
 }
 
-extension BadgeAlertPrice: Codable {
-    // encoded as the Haskell tuple it comes from: [amount, currency]
-    public init(from decoder: Decoder) throws {
-        var c = try decoder.unkeyedContainer()
-        amount = try c.decode(Int64.self)
-        currency = try c.decode(String.self)
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var c = encoder.unkeyedContainer()
-        try c.encode(amount)
-        try c.encode(currency)
-    }
-}
-
-public enum BadgeAlertKind: Hashable {
+public enum BadgeAlertKind: String, Codable, Hashable {
     case renewalApproaching
     case paymentIssue
     case subscriptionEnded
     case prepaidEnding
     case supportEnded
-    case unknown(String)
-
-    public var text: String {
-        switch self {
-        case .renewalApproaching: "renewal_approaching"
-        case .paymentIssue: "payment_issue"
-        case .subscriptionEnded: "subscription_ended"
-        case .prepaidEnding: "prepaid_ending"
-        case .supportEnded: "support_ended"
-        case let .unknown(s): s
-        }
-    }
-}
-
-extension BadgeAlertKind: Codable {
-    public init(from decoder: Decoder) throws {
-        switch try decoder.singleValueContainer().decode(String.self) {
-        case "renewal_approaching": self = .renewalApproaching
-        case "payment_issue": self = .paymentIssue
-        case "subscription_ended": self = .subscriptionEnded
-        case "prepaid_ending": self = .prepaidEnding
-        case "support_ended": self = .supportEnded
-        case let s: self = .unknown(s)
-        }
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var c = encoder.singleValueContainer()
-        try c.encode(text)
-    }
 }
 
 // the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)

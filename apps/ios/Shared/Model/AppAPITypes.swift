@@ -420,7 +420,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiRedeemBadgeCode(userId, code): return "/_redeem_badge_code \(userId) \(code)"
             case let .apiGetBadgeState(userId): return "/_badge state \(userId)"
             case let .apiAckBadgeAlert(userId, badgePurchaseId, alertKind, snooze, episode):
-                return "/_badge ack \(userId) \(badgePurchaseId) \(alertKind.text) \(onOff(snooze)) \(episode)"
+                return "/_badge ack \(userId) \(badgePurchaseId) \(badgeAlertKindParam(alertKind)) \(onOff(snooze)) \(episode)"
             case .showVersion: return "/version"
             case let .getAgentSubsTotal(userId): return "/get subs total \(userId)"
             case let .getAgentServersSummary(userId): return "/get servers summary \(userId)"
@@ -691,6 +691,17 @@ enum ChatCommand: ChatCmdProtocol {
 
     private func maybePwd(_ pwd: String?) -> String {
         pwd == "" || pwd == nil ? "" : " " + encodeJSON(pwd)
+    }
+
+    // /_badge ack takes the kind in core's text encoding, not the JSON tag
+    private func badgeAlertKindParam(_ kind: BadgeAlertKind) -> String {
+        switch kind {
+        case .renewalApproaching: "renewal_approaching"
+        case .paymentIssue: "payment_issue"
+        case .subscriptionEnded: "subscription_ended"
+        case .prepaidEnding: "prepaid_ending"
+        case .supportEnded: "support_ended"
+        }
     }
 
     private func maybeContent(_ mc: MsgContent?) -> String {

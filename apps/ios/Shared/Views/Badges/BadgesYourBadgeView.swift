@@ -16,8 +16,6 @@ struct BadgesYourBadgeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // pushed, the navigation bar carries the title and animates it; as a sheet root there is no bar
-            // to put it in, so the title is drawn in the content, as the Support screen does
             if showsAsSheet {
                 Text("Your badge")
                     .font(.largeTitle)

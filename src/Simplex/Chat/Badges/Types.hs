@@ -24,6 +24,7 @@ module Simplex.Chat.Badges.Types
     BadgeCharge (..),
     BadgeIssuance (..),
     BadgeAlert (..),
+    BadgeAlertPrice (..),
     BadgeState (..),
   ) where
 
@@ -204,7 +205,13 @@ data BadgeAlert = BadgeAlert
   { kind :: BadgeAlertKind,
     episode :: Text,
     date :: UTCTime,
-    price :: Maybe (Int64, Text)
+    price :: Maybe BadgeAlertPrice
+  }
+  deriving (Show)
+
+data BadgeAlertPrice = BadgeAlertPrice
+  { amount :: Int64,
+    currency :: Text
   }
   deriving (Show)
 
@@ -259,12 +266,9 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "BIS") ''BadgeItemStatus)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "OD") ''OfferDiscount)
 
-instance ToJSON BadgeAlertKind where
-  toJSON = textToJSON
-  toEncoding = textToEncoding
+$(JQ.deriveJSON (enumJSON $ dropPrefix "BA") ''BadgeAlertKind)
 
-instance FromJSON BadgeAlertKind where
-  parseJSON = textParseJSON "BadgeAlertKind"
+$(JQ.deriveJSON defaultJSON ''BadgeAlertPrice)
 
 $(JQ.deriveJSON defaultJSON ''BadgeAlert)
 
