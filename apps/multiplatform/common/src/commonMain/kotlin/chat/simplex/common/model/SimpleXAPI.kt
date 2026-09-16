@@ -578,6 +578,27 @@ object ChatController {
     }
   }
 
+  // localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
+  fun redeemErrorText(err: ChatError?): String {
+    if (err is ChatError.ChatErrorChat && err.errorType is ChatErrorType.CEBadgeRedeemError) {
+      when (val e = err.errorType.badgeRedeemError) {
+        is BadgeRedeemError.InvalidCode -> return generalGetString(MR.strings.badges_error_invalid_code)
+        is BadgeRedeemError.ServiceNotConfigured -> return generalGetString(MR.strings.badges_error_service_not_configured)
+        is BadgeRedeemError.BadgeActive -> return generalGetString(MR.strings.badges_error_already_active)
+        is BadgeRedeemError.ServiceError -> when (e.serviceError) {
+          "code_invalid" -> return generalGetString(MR.strings.badges_error_code_invalid)
+          "code_used" -> return generalGetString(MR.strings.badges_error_code_used)
+          "code_expired" -> return generalGetString(MR.strings.badges_error_code_expired)
+          "rate_limited" -> return generalGetString(MR.strings.badges_error_rate_limited)
+          "unsupported_version" -> return generalGetString(MR.strings.badges_error_unsupported_version)
+        }
+        is BadgeRedeemError.InvalidResponse -> return String.format(generalGetString(MR.strings.badges_error_bad_service_response), e.message)
+        is BadgeRedeemError.UnknownKeyIndex, is BadgeRedeemError.CredentialNotVerified -> return generalGetString(MR.strings.badges_error_credential_not_verified)
+      }
+    }
+    return "${generalGetString(MR.strings.error_prefix)}: ${err?.string ?: generalGetString(MR.strings.badges_error_unknown)}"
+  }
+
   suspend fun apiGetBadgeState(rh: Long?, userId: Long): BadgeState? {
     val r = sendCmd(rh, CC.ApiGetBadgeState(userId))
     if (r is API.Result && r.res is CR.BadgeStateR) return r.res.badgeState

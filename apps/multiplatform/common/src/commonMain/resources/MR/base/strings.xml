@@ -3252,8 +3252,7 @@
   <string name="badges_error_code_used">This code has already been used.</string>
   <string name="badges_error_code_expired">This code has expired.</string>
   <string name="badges_error_rate_limited">Too many attempts. Please try again later.</string>
-  <string name="badges_error_service_failed">The badge service is unavailable. Please try again later.</string>
-  <string name="badges_error_bad_service_response">The badge service sent an unexpected response.</string>
+  <string name="badges_error_bad_service_response">The badge service sent an unexpected response: %1$s</string>
   <string name="badges_error_credential_not_verified">This app version cannot verify this badge. Please update the app.</string>
   <string name="badges_error_unsupported_version">This app version is too old for the badge service. Please update the app.</string>
   <string name="badges_error_badge_ended">The code was accepted, but the badge it grants has already ended.</string>

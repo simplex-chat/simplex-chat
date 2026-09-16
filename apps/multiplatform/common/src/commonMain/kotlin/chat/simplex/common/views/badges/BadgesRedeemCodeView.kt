@@ -21,7 +21,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -109,7 +108,7 @@ fun BadgesRedeemCodeView() {
             submitting.value = false
             AlertManager.shared.showAlertMsg(
               title = generalGetString(MR.strings.badges_error_title),
-              text = generalGetString(failureMessage(result.err))
+              text = chatModel.controller.redeemErrorText(result.err)
             )
           }
         }
@@ -230,28 +229,4 @@ private fun SubmitButton(enabled: Boolean, onClick: () -> Unit) {
     enabled = enabled,
     onclick = onClick
   )
-}
-
-private fun failureMessage(err: ChatError?): StringResource = when {
-  err is ChatError.ChatErrorChat && err.errorType is ChatErrorType.CEBadgeRedeemError -> redeemErrorMessage(err.errorType.badgeRedeemError)
-  err is ChatError.ChatErrorAgent && err.agentError is AgentErrorType.AGENT && err.agentError.agentErr is SMPAgentError.A_SERVICE -> MR.strings.badges_error_service_failed
-  else -> MR.strings.badges_error_unknown
-}
-
-private fun redeemErrorMessage(e: BadgeRedeemError): StringResource = when (e) {
-  is BadgeRedeemError.InvalidCode -> MR.strings.badges_error_invalid_code
-  is BadgeRedeemError.ServiceNotConfigured -> MR.strings.badges_error_service_not_configured
-  is BadgeRedeemError.BadgeActive -> MR.strings.badges_error_already_active
-  is BadgeRedeemError.ServiceError -> serviceErrorMessage(e.serviceError)
-  is BadgeRedeemError.InvalidResponse -> MR.strings.badges_error_bad_service_response
-  is BadgeRedeemError.UnknownKeyIndex, is BadgeRedeemError.CredentialNotVerified -> MR.strings.badges_error_credential_not_verified
-}
-
-private fun serviceErrorMessage(tag: String): StringResource = when (tag) {
-  "code_invalid" -> MR.strings.badges_error_code_invalid
-  "code_used" -> MR.strings.badges_error_code_used
-  "code_expired" -> MR.strings.badges_error_code_expired
-  "rate_limited" -> MR.strings.badges_error_rate_limited
-  "unsupported_version" -> MR.strings.badges_error_unsupported_version
-  else -> MR.strings.badges_error_service_failed
 }

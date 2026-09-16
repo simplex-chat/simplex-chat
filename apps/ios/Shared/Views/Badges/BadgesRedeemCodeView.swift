@@ -189,7 +189,7 @@ struct BadgesRedeemCodeView: View {
                         // a replay adds no purchase; a fresh code's badge can be retired on arrival
                         let message = redeemed.newBadge
                             ? NSLocalizedString("The code was accepted, but the badge it grants has already ended.", comment: "alert message")
-                            : codeUsedMessage
+                            : NSLocalizedString("This code has already been used.", comment: "alert message")
                         showAlert(NSLocalizedString("Cannot redeem code", comment: "alert title"), message: message)
                     } else {
                         supporterBannerShown = true
@@ -200,48 +200,10 @@ struct BadgesRedeemCodeView: View {
                 logger.error("apiRedeemBadgeCode: \(responseError(error))")
                 await MainActor.run {
                     submitting = false
-                    showAlert(NSLocalizedString("Cannot redeem code", comment: "alert title"), message: failureMessage(error))
+                    showAlert(NSLocalizedString("Cannot redeem code", comment: "alert title"), message: redeemErrorText(error))
                 }
             }
         }
-    }
-
-    private func failureMessage(_ error: Error) -> String {
-        switch error as? ChatError {
-        case let .error(.badgeRedeemError(e)): redeemErrorMessage(e)
-        case .errorAgent(.AGENT(.A_SERVICE)): serviceUnavailableMessage
-        default: NSLocalizedString("The code could not be redeemed.", comment: "alert message")
-        }
-    }
-
-    private func redeemErrorMessage(_ e: BadgeRedeemError) -> String {
-        switch e {
-        case .invalidCode: NSLocalizedString("This code is not valid.", comment: "alert message")
-        case .serviceNotConfigured: NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
-        case .badgeActive: NSLocalizedString("This profile already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "alert message")
-        case let .serviceError(tag): serviceErrorMessage(tag)
-        case .invalidResponse: NSLocalizedString("The badge service sent an unexpected response.", comment: "alert message")
-        case .unknownKeyIndex, .credentialNotVerified: NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")
-        }
-    }
-
-    private func serviceErrorMessage(_ tag: String) -> String {
-        switch tag {
-        case "code_invalid": NSLocalizedString("This code was not recognised.", comment: "alert message")
-        case "code_used": codeUsedMessage
-        case "code_expired": NSLocalizedString("This code has expired.", comment: "alert message")
-        case "rate_limited": NSLocalizedString("Too many attempts. Please try again later.", comment: "alert message")
-        case "unsupported_version": NSLocalizedString("This app version is too old for the badge service. Please update the app.", comment: "alert message")
-        default: serviceUnavailableMessage
-        }
-    }
-
-    private var codeUsedMessage: String {
-        NSLocalizedString("This code has already been used.", comment: "alert message")
-    }
-
-    private var serviceUnavailableMessage: String {
-        NSLocalizedString("The badge service is unavailable. Please try again later.", comment: "alert message")
     }
 }
 

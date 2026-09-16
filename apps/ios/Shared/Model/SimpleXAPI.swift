@@ -2196,6 +2196,30 @@ func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: 
     throw r.unexpected
 }
 
+// localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
+func redeemErrorText(_ error: Error) -> String {
+    if case let .error(.badgeRedeemError(e)) = error as? ChatError {
+        switch e {
+        case .invalidCode: return NSLocalizedString("This code is not valid.", comment: "alert message")
+        case .serviceNotConfigured: return NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
+        case .badgeActive: return NSLocalizedString("This profile already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "alert message")
+        case let .serviceError(tag):
+            switch tag {
+            case "code_invalid": return NSLocalizedString("This code was not recognised.", comment: "alert message")
+            case "code_used": return NSLocalizedString("This code has already been used.", comment: "alert message")
+            case "code_expired": return NSLocalizedString("This code has expired.", comment: "alert message")
+            case "rate_limited": return NSLocalizedString("Too many attempts. Please try again later.", comment: "alert message")
+            case "unsupported_version": return NSLocalizedString("This app version is too old for the badge service. Please update the app.", comment: "alert message")
+            default: break
+            }
+        case let .invalidResponse(message):
+            return String.localizedStringWithFormat(NSLocalizedString("The badge service sent an unexpected response: %@", comment: "alert message"), message)
+        case .unknownKeyIndex, .credentialNotVerified: return NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")
+        }
+    }
+    return String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "alert message"), responseError(error))
+}
+
 func apiGetBadgeState(_ userId: Int64) async throws -> BadgeState? {
     let r: ChatResponse2 = try await chatSendCmd(.apiGetBadgeState(userId: userId))
     if case let .badgeState(_, badgeState) = r { return badgeState }
