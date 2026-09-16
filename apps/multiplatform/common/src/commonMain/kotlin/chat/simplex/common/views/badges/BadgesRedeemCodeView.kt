@@ -84,11 +84,9 @@ fun BadgesRedeemCodeView() {
           val badgeState = result.badgeState
           withContext(Dispatchers.Main) {
             submitting.value = false
-            // written before the pop: BadgesView swaps its content under this pushed view, so
-            // the pop reveals Your Badge already in place rather than animating it afterwards
+            // set before dismissing: BadgesView then switches Support to Your Badge while this screen
+            // still covers it, so the pop lands on Your Badge instead of showing the switch
             BadgeModel.set(rhId, user.userId, badgeState)
-            // the response is the only carrier: redeeming raises no event that refreshes the
-            // profile, so without this the badge beside the name is the one from before
             chatModel.updateUser(result.user)
             if (badgeState != null && !badgeState.shown) {
               // a replay adds no purchase; a fresh code's badge can be retired on arrival
