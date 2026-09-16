@@ -1046,7 +1046,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           SupportSimpleXBanner(
             title = stringResource(MR.strings.badges_support_ended),
             subtitle = String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText),
-            onTap = { ModalManager.start.showModal { BadgesView() } },
+            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(close) } },
             onDismiss = ::showSupportEndedDismissAlert
           )
         }
@@ -1055,7 +1055,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       item {
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           SupportSimpleXBanner(
-            onTap = { ModalManager.start.showModal { BadgesView() } },
+            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(close) } },
             onDismiss = ::showSupportSimpleXDismissAlert
           )
         }

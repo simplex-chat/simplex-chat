@@ -40,6 +40,16 @@ struct BadgesYourBadgeView: View {
                     Text("Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.")
                         .foregroundColor(theme.colors.secondary)
                 }
+                Section {
+                    NavigationLink {
+                        BadgesHowItWorksView()
+                            .modifier(ThemedBackground())
+                    } label: {
+                        settingsRow("info.circle", color: theme.colors.secondary) {
+                            Text("How private badges work")
+                        }
+                    }
+                }
             }
         }
         .frame(maxHeight: .infinity)
