@@ -1477,8 +1477,6 @@ data SimplexDomainError
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
   deriving (Eq, Show)
 
--- why a badge code could not be redeemed: the client's own checks, or the service's answer.
--- No field carries text the service controls: the apps decode and log these.
 data BadgeRedeemError
   = BREInvalidCode -- format or check character
   | BREServiceNotConfigured
