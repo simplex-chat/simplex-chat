@@ -439,7 +439,7 @@ instance ToJSON ConnReqUriHash where
 
 data RequestEntity
   = REContact Contact
-  | REBusinessChat GroupInfo GroupKeys GroupMember
+  | REBusinessChat GroupInfoKeys GroupMember
 
 type RepeatRequest = Bool
 
@@ -505,6 +505,8 @@ isPublicGroup = \case
   GKPublicGroup {} -> True
   GKRelayRequest {} -> True
   GKPreparedPublicGroup {} -> True
+
+data GroupInfoKeys = GIK GroupInfo GroupKeys
 
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
@@ -609,7 +611,7 @@ data GroupLink = GroupLink
 
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
 
-data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfo, groupKeys :: GroupKeys, hostMember :: GroupMember}
+data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfoKeys, hostMember :: GroupMember}
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
 contactAndGroupIds = \case

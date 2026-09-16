@@ -1563,7 +1563,7 @@ updateGroupLinkData cc user gInfo gksData gLink = runReaderT (runExceptT setLink
   where
     setLinkData = do
       gks <- withFastStore $ \db -> mkGroupKeys db (storeCxt cc) gInfo gksData
-      setGroupLinkData NRMBackground user gInfo gks gLink
+      setGroupLinkData NRMBackground user (GIK gInfo gks) gLink
 
 setGroupLinkRole :: ChatController -> GroupInfo -> GroupMemberRole -> IO (Maybe CreatedLinkContact)
 setGroupLinkRole cc GroupInfo {groupId} mRole = resp <$> sendChatCmd cc (APIGroupLinkMemberRole groupId mRole)

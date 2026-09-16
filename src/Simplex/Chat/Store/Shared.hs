@@ -928,12 +928,12 @@ addGroupChatTags db g@GroupInfo {groupId} = do
   chatTags <- getGroupChatTags db groupId
   pure (g :: GroupInfo) {chatTags}
 
-getGroupInfoKeys :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO (GroupInfo, GroupKeys)
+getGroupInfoKeys :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO GroupInfoKeys
 getGroupInfoKeys db cxt user groupId = do
   (g@GroupInfo {membership}, keysData) <- getGroupInfoRow db cxt user groupId
   gks <- mkGroupKeys db cxt g keysData
   let membership' = membership {memberPubKey = Just $ C.publicKey $ memberPrivKey gks} :: GroupMember
-  pure ((g :: GroupInfo) {membership = membership'}, gks)
+  pure $ GIK (g :: GroupInfo) {membership = membership'} gks
 
 getGroupInfo :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO GroupInfo
 getGroupInfo db cxt user groupId = fst <$> getGroupInfoRow db cxt user groupId

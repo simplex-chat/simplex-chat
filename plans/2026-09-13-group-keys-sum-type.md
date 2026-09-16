@@ -45,15 +45,19 @@ data GroupKeys
   deriving (Eq, Show)
 
 isPublicGroup :: GroupKeys -> Bool
+
+data GroupInfoKeys = GIK GroupInfo GroupKeys
 ```
+
+`GroupInfoKeys` is the group read with its keys. A function that signs takes it in place of `GroupInfo`; the name `gInfo` denotes whichever of the two a scope holds.
 
 `PublicGroupKeys` is removed. `GroupRootKey` is unchanged, and its JSON instance is removed with those of `GroupKeys` and `PublicGroupKeys`.
 
 `GroupInfo` loses `groupKeys` and keeps every other field, `rosterVersion` included. Its `deriveJSON` then emits public fields only.
 
-`RequestEntity` becomes `REBusinessChat GroupInfo GroupKeys GroupMember`.
+`RequestEntity` becomes `REBusinessChat GroupInfoKeys GroupMember`.
 
-`PreparedChatEntity` becomes `PCEGroup {groupInfo, groupKeys, hostMember}`.
+`PreparedChatEntity` becomes `PCEGroup {groupInfo :: GroupInfoKeys, hostMember}`.
 
 `ReceivedGroupInvitation` gains `groupKeys :: GroupKeys`.
 
@@ -91,7 +95,7 @@ The member key is taken from the row, or generated and stored. The constructor f
 | function | returns |
 | --- | --- |
 | `getGroupInfoRow` | `(GroupInfo, GroupKeysRow)` |
-| `getGroupInfoKeys` | `(GroupInfo, GroupKeys)` |
+| `getGroupInfoKeys` | `GroupInfoKeys` |
 | `getGroupInfo` | `GroupInfo`, as `fst <$> getGroupInfoRow` |
 | `getGroupKeys_` | `(Group, GroupKeys)` |
 | `getGroup` | `Group`, as `fst <$> getGroupKeys_` |
@@ -109,10 +113,10 @@ A site that needs keys switches its existing read to `getGroupInfoKeys` or `getG
 | `getConnectionEntityKeys` | `(ConnectionEntity, Maybe GroupKeysRow)` |
 | `getConnectionEntity` | `ConnectionEntity`, as `fst <$> getConnectionEntityKeys` |
 | `getGroupInvitation` | `ReceivedGroupInvitation`, with `groupKeys` |
-| `createGroupInvitation` | `(GroupInfo, GroupKeys, GroupMemberId)` |
-| `createBusinessRequestGroup` | `(GroupInfo, GroupKeys, GroupMember)` |
-| `updatePreparedRelayedGroup` | `(GroupInfo, GroupKeys)` |
-| `getRelayServedGroups` | `[(GroupInfo, GroupKeys)]` |
+| `createGroupInvitation` | `(GroupInfoKeys, GroupMemberId)` |
+| `createBusinessRequestGroup` | `(GroupInfoKeys, GroupMember)` |
+| `updatePreparedRelayedGroup` | `GroupInfoKeys` |
+| `getRelayServedGroups` | `[GroupInfoKeys]` |
 | `getAcceptedBusinessChat` | `Maybe (GroupInfo, GroupKeysRow)` |
 | `getGroupAndRegLink` (directory service) | `(GroupInfo, GroupKeysRow, GroupReg, Maybe GroupLink)` |
 
@@ -196,17 +200,17 @@ groupMemberKey :: GroupKeys -> MemberKey
 | `encodeXMemberConnInfo` | member key |
 | `APIShareChatMsgContent` | root key as the owner test, member key to sign |
 
-### Functions that gain a `GroupKeys` parameter
+### Functions that take `GroupInfoKeys` in place of `GroupInfo`
 
-`Internal.hs`: `acceptGroupJoinRequestAsync`, `acceptBusinessJoinRequestAsync`, `groupLinkData`, `setGroupLinkData`, `setGroupLinkData'`, `setGroupLinkDataAsync`, `introduceToModerators`, `introduceToAll`, `introduceToRemaining`, `introduceMember`, `introduceInChannel`, `serveRoster`, `sendInlineBlobChunks`, `sendRelayCapIfNeeded`, `sendGroupMemberMessages`, `sendGroupMessage`, `sendGroupMessage'`, `sendRoster`, `broadcastRoster`, `sendGroupRosterToRelay`, `sendGroupMessages`, `sendGroupSignedMessages`, `sendGroupProfileUpdate`, `sendGroupMessages_`, `groupMsgSigning`, `encodeXMemberConnInfo`, `allowAgentConnectionAsync` (as `Maybe (GroupInfo, GroupKeys)`).
+`Internal.hs`: `acceptGroupJoinRequestAsync`, `acceptBusinessJoinRequestAsync`, `groupLinkData`, `setGroupLinkData`, `setGroupLinkData'`, `setGroupLinkDataAsync`, `introduceToModerators`, `introduceToAll`, `introduceToRemaining`, `introduceMember`, `introduceInChannel`, `serveRoster`, `sendInlineBlobChunks`, `sendRelayCapIfNeeded`, `sendGroupMemberMessages`, `sendGroupMessage`, `sendGroupMessage'`, `sendRoster`, `broadcastRoster`, `sendGroupRosterToRelay`, `sendGroupMessages`, `sendGroupSignedMessages`, `sendGroupProfileUpdate`, `sendGroupMessages_`, `groupMsgSigning`, `encodeXMemberConnInfo`, `allowAgentConnectionAsync` (as `Maybe GroupInfoKeys`).
 
-`Commands.hs`: `delEventSigned`, `changeRoleInvitedMems`, `changeRoleCurrentMems`, `deleteMemsSend`, `deletePendingMember`, `blockMembers`, `sendGroupContentMessages`, `sendGroupContentMessages_`, `getCommandGroupChatItems`, `delGroupChatItemsForMembers`, `sendGrpInvitation`, `connectToRelay`, `leaveChannelRelay`, `leaveGroupSendMsg`, `runUpdateGroupProfile`, `newGroup` (which also loses its `Bool`).
+`Commands.hs`: `delEventSigned`, `changeRoleInvitedMems`, `deleteMemsSend`, `deletePendingMember`, `blockMembers`, `sendGroupContentMessages`, `sendGroupContentMessages_`, `getCommandGroupChatItems`, `delGroupChatItemsForMembers`, `sendGrpInvitation`, `connectToRelay`, `leaveChannelRelay`, `leaveGroupSendMsg`, `runUpdateGroupProfile`. `changeRoleCurrentMems` takes `Group` and `GroupKeys`. `newGroup` takes `GroupKeys` and loses its `Bool`.
 
-`joinContact` takes `Maybe (Maybe (GroupInfo, GroupKeys))` and `Maybe MemberId`.
+`joinContact` takes `Maybe (Maybe GroupInfoKeys)` and `Maybe MemberId`.
 
-`Subscriber.hs`: every handler under `processGroupMessage` that sends, as `CM GroupKeys`; `sendXGrpLinkMem`, `acceptJoin`, `sendGroupAutoReply`.
+`Subscriber.hs`: every handler under `processGroupMessage` that sends, as `CM GroupKeys`; `sendXGrpLinkMem`, `acceptJoin`, `sendGroupAutoReply`, `getLinkDataCreateRelayLink`.
 
-`saveConnInfo` returns `Maybe (GroupInfo, GroupKeys)`.
+`saveConnInfo` returns `Maybe GroupInfoKeys`.
 
 ## 7. Queries
 

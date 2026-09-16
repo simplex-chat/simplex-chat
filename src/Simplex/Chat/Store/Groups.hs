@@ -454,13 +454,13 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile memberId 
         }
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
-createGroupInvitation :: DB.Connection -> StoreCxt -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> C.KeyPairEd25519 -> ExceptT StoreError IO (GroupInfo, GroupKeys, GroupMemberId)
+createGroupInvitation :: DB.Connection -> StoreCxt -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> C.KeyPairEd25519 -> ExceptT StoreError IO (GroupInfoKeys, GroupMemberId)
 createGroupInvitation _ _ _ Contact {localDisplayName, activeConn = Nothing} _ _ _ = throwError $ SEContactNotReady localDisplayName
 createGroupInvitation db cxt user@User {userId} contact@Contact {contactId, activeConn = Just Connection {peerChatVRange}} GroupInvitation {fromMember, fromMemberKey, invitedMember, connRequest, groupProfile, business} incognitoProfileId memberKeys = do
   liftIO getInvitationGroupId_ >>= \case
     Nothing -> createGroupInvitation_
     Just gId -> do
-      (gInfo@GroupInfo {membership, groupProfile = p'}, gks) <- getGroupInfoKeys db cxt user gId
+      GIK gInfo@GroupInfo {membership, groupProfile = p'} gks <- getGroupInfoKeys db cxt user gId
       hostId <- getHostMemberId_ db user gId
       let GroupMember {groupMemberId, memberId, memberRole} = membership
           MemberIdRole {memberId = invMemberId, memberRole = invMemberRole} = invitedMember
@@ -470,13 +470,13 @@ createGroupInvitation db cxt user@User {userId} contact@Contact {contactId, acti
         if p' == groupProfile
           then pure gInfo
           else updateGroupProfile db user gInfo groupProfile
-      pure (gInfo', gks, hostId)
+      pure (GIK gInfo' gks, hostId)
   where
     getInvitationGroupId_ :: IO (Maybe Int64)
     getInvitationGroupId_ =
       maybeFirstRow fromOnly $
         DB.query db "SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1" (connRequest, userId)
-    createGroupInvitation_ :: ExceptT StoreError IO (GroupInfo, GroupKeys, GroupMemberId)
+    createGroupInvitation_ :: ExceptT StoreError IO (GroupInfoKeys, GroupMemberId)
     createGroupInvitation_ = do
       let GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission} = groupProfile
           fullGroupPreferences = mergeGroupPreferences groupPreferences
@@ -529,8 +529,8 @@ createGroupInvitation db cxt user@User {userId} contact@Contact {contactId, acti
                   membersRequireAttention = 0,
                   viaGroupLinkUri = Nothing,
                   groupDomainVerified = Nothing
-                },
-              GKGroup {memberPrivKey = snd memberKeys},
+                }
+                `GIK` GKGroup {memberPrivKey = snd memberKeys},
               groupMemberId
             )
 
@@ -948,7 +948,7 @@ getGroup db cxt user groupId = fst <$> getGroupKeys_ db cxt user groupId
 
 getGroupKeys_ :: DB.Connection -> StoreCxt -> User -> GroupId -> ExceptT StoreError IO (Group, GroupKeys)
 getGroupKeys_ db cxt user groupId = do
-  (gInfo, gks) <- getGroupInfoKeys db cxt user groupId
+  GIK gInfo gks <- getGroupInfoKeys db cxt user groupId
   members <- liftIO $ getGroupMembers db cxt user gInfo
   pure (Group gInfo members, gks)
 
@@ -1362,7 +1362,7 @@ getGroupInvitation :: DB.Connection -> StoreCxt -> User -> GroupId -> ExceptT St
 getGroupInvitation db cxt user groupId =
   getConnRec_ user >>= \case
     Just connRequest -> do
-      (groupInfo@GroupInfo {membership}, groupKeys) <- getGroupInfoKeys db cxt user groupId
+      GIK groupInfo@GroupInfo {membership} groupKeys <- getGroupInfoKeys db cxt user groupId
       when (memberStatus membership /= GSMemInvited) $ throwError SEGroupAlreadyJoined
       hostId <- getHostMemberId_ db user groupId
       fromMember <- getGroupMember db cxt user groupId hostId
@@ -2010,7 +2010,7 @@ isRelayGroupRejected db User {userId} groupLink =
       (userId, groupLink, RSRejected)
   )
 
-getRelayServedGroups :: DB.Connection -> StoreCxt -> User -> ExceptT StoreError IO [(GroupInfo, GroupKeys)]
+getRelayServedGroups :: DB.Connection -> StoreCxt -> User -> ExceptT StoreError IO [GroupInfoKeys]
 getRelayServedGroups db cxt User {userId, userContactId} = do
   currentTs <- liftIO getCurrentTime
   rows <-
@@ -2022,7 +2022,7 @@ getRelayServedGroups db cxt User {userId, userContactId} = do
               <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?, ?)"
           )
           (userId, userContactId, RSAccepted, RSAcknowledgedRoster, RSActive)
-  forM rows $ \(g, keysData) -> (g,) <$> mkGroupKeys db cxt g keysData
+  forM rows $ \(g, keysData) -> GIK g <$> mkGroupKeys db cxt g keysData
 
 getRelayPublishableGroups :: DB.Connection -> User -> IO [(Int64, B64UrlByteString, Maybe PublicGroupAccess)]
 getRelayPublishableGroups db User {userId, userContactId} =
@@ -2147,7 +2147,7 @@ createJoiningMemberConnection
     Connection {connId} <- createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV cReqChatVRange Nothing (Just uclId) Nothing 0 createdAt subMode PQSupportOff
     setCommandConnId db user cmdId connId
 
-createBusinessRequestGroup :: DB.Connection -> StoreCxt -> TVar ChaChaDRG -> User -> VersionRangeChat -> Profile -> Int64 -> Text -> GroupPreferences -> ExceptT StoreError IO (GroupInfo, GroupKeys, GroupMember)
+createBusinessRequestGroup :: DB.Connection -> StoreCxt -> TVar ChaChaDRG -> User -> VersionRangeChat -> Profile -> Int64 -> Text -> GroupPreferences -> ExceptT StoreError IO (GroupInfoKeys, GroupMember)
 createBusinessRequestGroup
   db
   cxt
@@ -2162,9 +2162,9 @@ createBusinessRequestGroup
     (groupId, membership@GroupMember {memberId = userMemberId}) <- insertGroup_ currentTs
     (groupMemberId, memberId) <- insertClientMember_ currentTs groupId membership
     liftIO $ DB.execute db "UPDATE groups SET business_member_id = ?, customer_member_id = ? WHERE group_id = ?" (userMemberId, memberId, groupId)
-    (groupInfo, gks) <- getGroupInfoKeys db cxt user groupId
+    groupInfo <- getGroupInfoKeys db cxt user groupId
     clientMember <- getGroupMemberById db cxt user groupMemberId
-    pure (groupInfo, gks, clientMember)
+    pure (groupInfo, clientMember)
     where
       insertGroup_ currentTs = do
         (memberPubKey, memberPrivKey) <- atomically $ C.generateKeyPair gVar
@@ -2249,7 +2249,7 @@ createMemberConnectionAsync db user@User {userId} groupMemberId (cmdId, agentCon
 updatePreparedRelayedGroup ::
   DB.Connection -> StoreCxt -> User -> GroupInfo -> ConnReqContact -> ConnReqUriHash -> Maybe Profile ->
   C.PublicKeyEd25519 -> Maybe Int64 ->
-  ExceptT StoreError IO (GroupInfo, GroupKeys)
+  ExceptT StoreError IO GroupInfoKeys
 updatePreparedRelayedGroup db cxt user@User {userId} gInfo cReq cReqHash incognitoProfile rootPubKey publicMemberCount_ = do
   currentTs <- liftIO getCurrentTime
   customUserProfileId <- liftIO $ mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile

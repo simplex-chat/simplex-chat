@@ -95,7 +95,7 @@ createOrUpdateContactRequest
                 clientMember <- getGroupMemberByMemberId db cxt user gInfo customerId
                 cr <- liftIO $ getContactRequestByXContactId xContactId
                 gks <- mkGroupKeys db cxt gInfo keysData
-                pure $ RSAcceptedRequest cr (REBusinessChat gInfo gks clientMember)
+                pure $ RSAcceptedRequest cr (REBusinessChat (GIK gInfo gks) clientMember)
               Just (GroupInfo {businessChat = Nothing}, _) -> throwError SEInvalidBusinessChatContactRequest
               -- 2) if no legacy accepted contact or business chat was found, next we try to find an existing request
               Nothing ->
@@ -215,7 +215,7 @@ createOrUpdateContactRequest
                 pure $ RSCurrentRequest Nothing ucr (Just $ REContact ct)
               createBusinessChat = do
                 let groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs $ preferences' user
-                (gInfo@GroupInfo {groupId}, gks, clientMember) <-
+                (gInfo@(GIK GroupInfo {groupId} _), clientMember) <-
                   createBusinessRequestGroup db cxt gVar user cReqChatVRange profile profileId ldn groupPreferences
                 liftIO $
                   DB.execute
@@ -223,7 +223,7 @@ createOrUpdateContactRequest
                     "UPDATE contact_requests SET business_group_id = ? WHERE contact_request_id = ?"
                     (groupId, contactRequestId)
                 ucr <- getContactRequest db user contactRequestId
-                pure $ RSCurrentRequest Nothing ucr (Just $ REBusinessChat gInfo gks clientMember)
+                pure $ RSCurrentRequest Nothing ucr (Just $ REBusinessChat gInfo clientMember)
       updateContactRequest :: UserContactRequest -> ExceptT StoreError IO RequestStage
       updateContactRequest ucr@UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = LocalProfile {displayName = oldDisplayName}} = do
         currentTs <- liftIO getCurrentTime
@@ -308,7 +308,7 @@ createOrUpdateContactRequest
               GroupInfo {businessChat = Just BusinessChatInfo {customerId}} -> do
                 clientMember <- getGroupMemberByMemberId db cxt user gInfo customerId
                 gks <- mkGroupKeys db cxt gInfo keysData
-                pure $ Just (REBusinessChat gInfo gks clientMember)
+                pure $ Just (REBusinessChat (GIK gInfo gks) clientMember)
               _ -> throwError SEInvalidBusinessChatContactRequest
           (Nothing, Nothing) -> pure Nothing
           _ -> throwError $ SEInvalidContactRequestEntity contactRequestId
