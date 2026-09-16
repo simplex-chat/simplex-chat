@@ -168,6 +168,22 @@ fun BadgesRedeemCodeView() {
       TextButtonBelowOnboardingButton("", null)
     }
   }
+
+  if (submitting.value) {
+    Box(
+      Modifier.fillMaxSize(),
+      contentAlignment = Alignment.Center
+    ) {
+      Surface(Modifier.size(50.dp), color = MaterialTheme.colors.background.copy(0.9f), contentColor = LocalContentColor.current, shape = RoundedCornerShape(50)){}
+      CircularProgressIndicator(
+        Modifier
+          .padding(horizontal = 2.dp)
+          .size(30.dp),
+        color = MaterialTheme.colors.secondary,
+        strokeWidth = 3.dp
+      )
+    }
+  }
 }
 
 @Composable
