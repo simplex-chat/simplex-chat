@@ -539,7 +539,6 @@
     <string name="empty_chat_profile_is_created">Tiek izveidots tukšs čata profils</string>
     <string name="if_you_enter_passcode_data_removed">Ja ievadīsiet paroli, dati tiks izdzēsti</string>
     <string name="set_passcode">Uzstādīt paroli</string>
-    <string name="this_setting_is_for_your_current_profile">Šis iestatījums ir paredzēts jūsu pašreizējam profilam</string>
     <string name="rcv_group_event_1_member_connected">Saņemts grupas notikums: 1 dalībnieks pievienojies</string>
     <string name="rcv_group_event_2_members_connected">Saņemts grupas notikums: 2 dalībnieki pievienojušies</string>
     <string name="rcv_group_event_3_members_connected">Saņemts grupas notikums: 3 dalībnieki pievienojušies</string>
@@ -1022,7 +1021,6 @@
     <string name="auth_open_chat_profiles">Atvērt sarunu profilus</string>
     <string name="report_archive_alert_title_nth">Ziņojumu arhīvs %dth</string>
     <string name="report_archive_alert_title_all">Ziņojumu arhīvs visi</string>
-    <string name="report_archive_alert_desc">Ziņojumu arhīvs</string>
     <string name="report_archive_alert_desc_all">Ziņojumu arhīvs apraksts visi</string>
     <string name="report_archive_for_me">Ziņojumu arhīvs man</string>
     <string name="report_archive_for_all_moderators">Ziņojumu arhīvs visiem moderātoriem</string>
@@ -1134,7 +1132,6 @@
     <string name="contact_should_accept">Kontaktam jāpieņem</string>
     <string name="connect_with_contact_name_question">Savienoties ar kontaktu %s?</string>
     <string name="search_or_paste_simplex_link">Meklējiet vai ielīmējiet simplex saiti</string>
-    <string name="address_creation_instruction">Adreses izveides instrukcija</string>
     <string name="no_selected_chat">Nav izvēlēta saruna</string>
     <string name="selected_chat_items_nothing_selected">Izvēlēto sarunu vienības nav izvēlētas</string>
     <string name="selected_chat_items_selected_n">Izvēlēto sarunu vienības izvēlētas %d</string>
@@ -1167,8 +1164,6 @@
     <string name="change_automatic_chat_deletion_message">Mainīt automātisko sarunu dzēšanu</string>
     <string name="disable_automatic_deletion">Atspējot automātisko dzēšanu</string>
     <string name="chat_ttl_options_footer">Sarunu laika ierobežojuma opciju apakšdaļa</string>
-    <string name="info_view_connect_button">Skatīt savienojumu</string>
-    <string name="info_view_open_button">Skatīt atvērt</string>
     <string name="info_view_message_button">Skatīt</string>
     <string name="info_view_call_button">Skatīt zvanu</string>
     <string name="info_view_search_button">Skatīt meklēšanu</string>
@@ -1273,7 +1268,6 @@
     <string name="unmute_chat">Atjaunot sarunu</string>
     <string name="favorite_chat">Atzīmēt kā iecienītu</string>
     <string name="unfavorite_chat">Noņemt no iecienītajiem</string>
-    <string name="unread_mentions">Neizlasītie minējumi</string>
     <string name="create_list">Izveidot sarakstu</string>
     <string name="add_to_list">Pievienot sarakstam</string>
     <string name="change_list">Mainīt sarakstu</string>
@@ -1390,7 +1384,6 @@
     <string name="network_smp_proxy_mode_unknown_description">Tīkla smp proxy režīms nezināms</string>
     <string name="network_smp_proxy_mode_unprotected_description">Tīkla smp proxy režīms neaizsargāts</string>
     <string name="network_smp_proxy_mode_never_description">Tīkla smp proxy režīms nekad</string>
-    <string name="update_network_smp_proxy_mode_question">Atjaunināt tīkla smp proxy režīmu?</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Tīkla smp proxy rezerves atļaut samazināšanu</string>
     <string name="network_smp_proxy_fallback_allow">Tīkla smp proxy rezerves atļaut</string>
     <string name="network_smp_proxy_fallback_allow_protected">Tīkla smp proxy rezerves atļaut aizsargātu</string>
@@ -1398,7 +1391,6 @@
     <string name="network_smp_proxy_fallback_allow_description">Tīkla smp proxy rezerves atļaut</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Tīkla smp proxy rezerves atļaut aizsargātu</string>
     <string name="network_smp_proxy_fallback_prohibit_description">Tīkla smp proxy rezerves aizliegt</string>
-    <string name="update_network_smp_proxy_fallback_question">Atjaunināt tīkla smp proxy rezerves?</string>
     <string name="private_routing_show_message_status">Privātā maršrutēšana rādīt</string>
     <string name="private_routing_explanation">Privātā maršrutēšana skaidrojums</string>
     <string name="network_smp_web_port_section_title">Tīkla smp tīmekļa ports</string>
@@ -1461,7 +1453,6 @@
     <string name="stop_sharing_address">Pārtraukt adreses kopīgošanu</string>
     <string name="stop_sharing">Pārtraukt kopīgošanu</string>
     <string name="auto_accept_contact">Automātiski pieņemt kontaktus</string>
-    <string name="sent_to_your_contact_after_connection">Nosūtīts jūsu kontaktam pēc savienojuma izveides</string>
     <string name="address_welcome_message">Sveiciena ziņa</string>
     <string name="enter_welcome_message_optional">Ievadiet sveiciena ziņu (pēc izvēles)</string>
     <string name="save_settings_question">Saglabāt iestatījumus?</string>
@@ -1598,13 +1589,8 @@
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Ievada tīkla operatori nevar redzēt, kas ar ko runā</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Ievada tīkla operatori lietotne izmantos maršrutēšanai</string>
     <string name="onboarding_network_about_operators">Ievada tīkls par operatoriem</string>
-    <string name="onboarding_select_network_operators_to_use">Ievada izvēlēties tīkla operatorus, ko izmantot</string>
     <string name="how_it_helps_privacy">Kā tas palīdz privātumam</string>
     <string name="onboarding_network_operators_configure_via_settings">Ievada tīkla operatori konfigurēt caur iestatījumiem</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Ievada tīkla operatori nosacījumi tiks pieņemti</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Ievada tīkla operatori nosacījumi, ko jūs varat konfigurēt</string>
-    <string name="onboarding_network_operators_review_later">Ievada tīkla operatori pārskatīt vēlāk</string>
-    <string name="onboarding_network_operators_update">Ievada tīkla operatori atjaunināt</string>
     <string name="onboarding_network_operators_continue">Ievada tīkla operatori turpināt</string>
     <string name="incoming_video_call">Ienākošais video zvans</string>
     <string name="incoming_audio_call">Ienākošais audio zvans</string>
@@ -1675,7 +1661,6 @@
     <string name="settings_section_title_use_from_desktop">Izmantot no darbvirsmas</string>
     <string name="your_chat_database">Jūsu sarunu datubāze</string>
     <string name="run_chat_section">Palaist sarunu</string>
-    <string name="remote_hosts_section">Attālie hosti</string>
     <string name="chat_is_running">Saruna notiek</string>
     <string name="chat_is_stopped">Saruna ir apstājusies</string>
     <string name="chat_database_section">Sarunu datubāze</string>
@@ -1799,7 +1784,6 @@
     <string name="chat_bottom_bar">Sarunu apakšējā josla</string>
     <string name="one_hand_ui_change_instruction">Vienas rokas saskarnes maiņas instrukcija</string>
     <string name="terminal_always_visible">Terminālis vienmēr redzams</string>
-    <string name="chat_list_always_visible">Sarunu saraksts vienmēr redzams</string>
     <string name="invalid_migration_confirmation">Nederīga migrācijas apstiprināšana</string>
     <string name="upgrade_and_open_chat">Jaunināt un atvērt sarunu</string>
     <string name="downgrade_and_open_chat">Samazināt un atvērt sarunu</string>
@@ -1994,7 +1978,6 @@
     <string name="operator">Operators</string>
     <string name="operator_servers_title">Operatora serveri</string>
     <string name="operator_info_title">Operators</string>
-    <string name="operator_website">Operatora mājaslapa</string>
     <string name="operator_conditions_accepted_on">Operatora nosacījumi pieņemti</string>
     <string name="operator_conditions_will_be_accepted_on">Operatora nosacījumi tiks pieņemti</string>
     <string name="operator_use_operator_toggle_description">Operatora izmantošanas slēdzis</string>
@@ -2317,7 +2300,6 @@
     <string name="v6_2_network_decentralization">Tīkla decentralizācija</string>
     <string name="v6_2_network_decentralization_descr">Decentralizējiet tīklu, lai uzlabotu drošību.</string>
     <string name="v6_2_network_decentralization_enable_flux">Tīkla decentralizācija, iespējot plūsmu</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">Tīkla decentralizācija, iespējot plūsmu iemesls</string>
     <string name="v6_2_improved_chat_navigation">Uzlabota sarunu navigācija</string>
     <string name="v6_2_improved_chat_navigation_descr">Vieglāka navigācija sarunās.</string>
     <string name="v6_2_business_chats">Uzņēmumu sarunas</string>

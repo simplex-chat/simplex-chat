@@ -1764,13 +1764,11 @@
     <string name="network_smp_proxy_mode_always">Toujours</string>
     <string name="network_smp_proxy_mode_private_routing">Routage privé</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Autoriser la rétrogradation</string>
-    <string name="update_network_smp_proxy_mode_question">Mode de routage des messages</string>
     <string name="network_smp_proxy_mode_never">Jamais</string>
     <string name="network_smp_proxy_mode_unknown">Serveurs inconnus</string>
     <string name="network_smp_proxy_fallback_prohibit">Non</string>
     <string name="network_smp_proxy_fallback_allow_protected">Lorsque l\'IP est masquée</string>
     <string name="network_smp_proxy_fallback_allow">Oui</string>
-    <string name="update_network_smp_proxy_fallback_question">Rabattement du routage des messages</string>
     <string name="private_routing_show_message_status">Afficher le statut du message</string>
     <string name="protect_ip_address">Protection de l\'adresse IP</string>
     <string name="settings_section_title_files">Fichiers</string>
@@ -1803,7 +1801,6 @@
     <string name="v5_8_private_routing_descr">Protégez votre adresse IP des relais de messagerie choisis par vos contacts.
 \nActivez-le dans les paramètres *Réseau et serveurs*.</string>
     <string name="chat_theme_reset_to_user_theme">Réinitialiser au thème de l\'utilisateur</string>
-    <string name="chat_list_always_visible">Afficher la liste des conversations dans une nouvelle fenêtre</string>
     <string name="color_wallpaper_tint">Teinte du fond d\'écran</string>
     <string name="color_wallpaper_background">Fond d\'écran</string>
     <string name="message_queue_info_server_info">info sur la file du serveur : %1$s
@@ -1979,9 +1976,7 @@
     <string name="privacy_media_blur_radius_off">Off</string>
     <string name="privacy_media_blur_radius_soft">Léger</string>
     <string name="toolbar_settings">Paramètres</string>
-    <string name="info_view_connect_button">se connecter</string>
     <string name="info_view_message_button">message</string>
-    <string name="info_view_open_button">ouvrir</string>
     <string name="confirm_delete_contact_question">Confirmer la suppression du contact ?</string>
     <string name="delete_contact_cannot_undo_warning">Le contact sera supprimé — cette action est irréversible !</string>
     <string name="delete_without_notification">Supprimer sans notification</string>
@@ -2171,7 +2166,6 @@
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Appareils Xiaomi</b> : veuillez activer le démarrage automatique dans les paramètres du système pour que les notifications fonctionnent.]]></string>
     <string name="delete_chat_for_all_members_cannot_undo_warning">La conversation sera supprimée pour tous les membres — cette action est irréversible !</string>
     <string name="delete_chat_for_self_cannot_undo_warning">La conversation sera supprimée pour vous — cette action est irréversible !</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Les conditions seront acceptées pour les opérateurs activés après 30 jours.</string>
     <string name="sync_connection_desc">La connexion nécessite une renégociation du chiffrement.</string>
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Lien utilisable une seule fois <i>avec un seul contact</i> - partagez en personne ou via n\'importe quelle messagerie.]]></string>
     <string name="address_or_1_time_link">Adresse ou lien unique ?</string>
@@ -2188,7 +2182,6 @@
     <string name="no_message_servers_configured_for_receiving">Pas de serveurs pour recevoir des messages.</string>
     <string name="message_deleted_or_not_received_error_title">Pas de message</string>
     <string name="for_social_media">Pour les réseaux sociaux</string>
-    <string name="onboarding_network_operators_review_later">Vérifier plus tard</string>
     <string name="network_preset_servers_title">Serveurs prédéfinis</string>
     <string name="report_compose_reason_header_other">Signaler autre : seuls les modérateurs du groupe le verront.</string>
     <string name="debug_logs">Activer les journaux (logs)</string>
@@ -2216,7 +2209,6 @@
     <string name="error_server_protocol_changed">Le protocole du serveur a été modifié.</string>
     <string name="v6_2_network_decentralization_enable_flux">Activez Flux dans les paramètres Réseau et serveurs pour une meilleure confidentialité des métadonnées.</string>
     <string name="message_deleted_or_not_received_error_desc">Ce message a été supprimé ou n\'a pas encore été reçu.</string>
-    <string name="address_creation_instruction">Appuyez sur Créer une adresse SimpleX dans le menu pour la créer ultérieurement.</string>
     <string name="share_address_publicly">Partager publiquement votre adresse</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Par exemple, si votre contact reçoit des messages via un serveur SimpleX Chat, votre application les transmettra via un serveur Flux.</string>
     <string name="only_chat_owners_can_change_prefs">Seuls les propriétaires peuvent modifier les préférences.</string>
@@ -2245,7 +2237,6 @@
     <string name="no_media_servers_configured_for_sending">Pas de serveurs pour envoyer des fichiers.</string>
     <string name="maximum_message_size_reached_text">Veuillez réduire la taille du message et envoyer le à nouveau.</string>
     <string name="maximum_message_size_reached_non_text">Veuillez réduire la taille du message ou supprimer le média et renvoyer le message.</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">pour une meilleure protection des métadonnées.</string>
     <string name="v6_2_improved_chat_navigation_descr">- Premier message non lu à l\'ouverture.\n- Sauter aux messages cités.</string>
     <string name="v6_2_business_chats_descr">Respect de la vie privée de vos clients.</string>
     <string name="v6_2_network_decentralization_descr">Le deuxième opérateur prédéfini de l\'application !</string>
@@ -2260,7 +2251,6 @@
     <string name="connection_error_quota_desc">La connexion a atteint la limite des messages non délivrés, votre contact est peut-être hors ligne.</string>
     <string name="server_added_to_operator__name">Serveur ajouté à l\'opérateur %s.</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">L\'application protège votre vie privée en utilisant des opérateurs différents pour chaque conversation.</string>
-    <string name="onboarding_select_network_operators_to_use">Sélectionnez les opérateurs de réseau à utiliser.</string>
     <string name="onboarding_network_operators_simplex_flux_agreement">SimpleX Chat et Flux ont conclu un accord pour intégrer à l’application des serveurs opérés par Flux.</string>
     <string name="chat_list_notes">Notes</string>
     <string name="or_to_share_privately">Ou à partager en privé</string>
@@ -2272,17 +2262,14 @@
     <string name="to_protect_against_your_link_replaced_compare_codes">Pour vous protéger contre le remplacement de votre lien, vous pouvez comparer les codes de sécurité des contacts.</string>
     <string name="how_it_helps_privacy">Comment il contribue à la protection de la vie privée</string>
     <string name="report_reason_alert_title">Motif du signalement ?</string>
-    <string name="report_archive_alert_desc">Le rapport sera archivé pour vous.</string>
     <string name="report_reason_illegal">Contenu inapproprié</string>
     <string name="smp_servers_new_server">Nouveau serveur</string>
     <string name="onboarding_network_operators_configure_via_settings">Vous pouvez configurer les serveurs via les paramètres.</string>
     <string name="operator_use_for_sending">Pour envoyer</string>
     <string name="report_reason_profile">Profil inapproprié</string>
-    <string name="operator_website">Site web</string>
     <string name="list_menu">Liste</string>
     <string name="group_reports_member_reports">Signalement des membres</string>
     <string name="change_order_chat_list_menu_action">Modifier l\'ordre</string>
-    <string name="onboarding_network_operators_update">Mise à jour</string>
     <string name="direct_messages_are_prohibited_in_chat">Les messages directs entre membres sont interdits dans cette discussion.</string>
     <string name="privacy_chat_list_open_links_no">Non</string>
     <string name="privacy_chat_list_open_links_yes">Oui</string>
@@ -2310,9 +2297,7 @@
     <string name="v6_2_improved_chat_navigation">Navigation améliorée dans les discussions</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Lorsque plusieurs opérateurs sont activés, aucun d\'entre eux ne dispose de métadonnées permettant de savoir qui communique avec qui.</string>
     <string name="maximum_message_size_title">Le message est trop volumineux !</string>
-    <string name="remote_hosts_section">Mobiles à distance</string>
     <string name="change_list">Modifier la liste</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Vous pouvez définir les opérateurs dans les paramètres Réseau et serveurs.</string>
     <string name="appearance_in_app_bars_alpha">Transparence</string>
     <string name="you_can_set_connection_name_to_remember">Vous pouvez définir un nom de connexion pour vous rappeler avec qui le lien a été partagé.</string>
     <string name="enable_sending_member_reports">Autoriser le signalement des messages aux modérateurs.</string>
@@ -2425,7 +2410,6 @@
     <string name="compose_view_send_request">Envoyer la demande</string>
     <string name="compose_view_send_request_without_message">Envoyer la demande sans message</string>
     <string name="v6_4_support_chat_descr">Envoyez vos commentaires privés aux groupes.</string>
-    <string name="sent_to_your_contact_after_connection">Envoyé à votre contact après la connexion.</string>
     <string name="error_relay_test_server_auth">Le serveur requiert une autorisation pour se connecter au relais, vérifiez le mot de passe.</string>
     <string name="server_warning">Avertissement du serveur</string>
     <string name="share_old_address_alert_button">Partager l\'ancienne adresse</string>
@@ -2441,11 +2425,9 @@
     <string name="share_profile_via_link_alert_text">L\'adresse sera courte et votre profil sera partagé via l\'adresse.</string>
     <string name="share_group_profile_via_link_alert_text">Le lien sera court, et le profil de groupe sera partagé via le lien.</string>
     <string name="the_sender_will_not_be_notified">L\'expéditeur n\'en sera PAS informé.</string>
-    <string name="this_setting_is_for_your_current_profile">Ce réglage est pour votre profil actuel</string>
     <string name="channel_members_section_owners">Propriétaires &amp; contributeurs</string>
     <string name="group_member_role_member_channel">contributeur</string>
     <string name="profile_description__field">Description</string>
-    <string name="add_button">Ajouter</string>
     <string name="add_description">Ajouter une description</string>
     <string name="onboarding_your_network">Votre réseau</string>
     <string name="channel_member_you">vous</string>
@@ -2456,7 +2438,6 @@
     <string name="connect_plan_this_is_your_link_for_channel">Votre canal</string>
     <string name="channel_link">Lien de canal</string>
     <string name="chat_link_channel">Lien de canal</string>
-    <string name="button_channel_members">Membres du canal</string>
     <string name="channel_display_name_field">Nom du canal</string>
     <string name="channel_preferences">Préférences du canal</string>
     <string name="snd_channel_event_channel_profile_updated">profil du canal mis à jour</string>
@@ -2504,7 +2485,6 @@
     <string name="content_filter_videos">Vidéos</string>
     <string name="content_filter_voice_messages">Messages vocaux</string>
     <string name="content_filter_links">Liens</string>
-    <string name="content_filter_menu_item">Filtre</string>
     <string name="from_history">Depuis l\'historique</string>
     <string name="talk_to_someone">Parler à quelqu\'un</string>
     <string name="let_someone_connect_to_you">Permettez à quelqu\'un de se connecter à vous</string>
@@ -2561,11 +2541,6 @@
     <string name="private_routing_timeout">Délai d\'attente dépassé pour le routage privé</string>
     <string name="smp_proxy_error_unknown_ca">L’empreinte de l’adresse du serveur de transfert ne correspond pas au certificat : %1$s.</string>
     <string name="proxy_destination_error_unknown_ca">L’empreinte de l’adresse du serveur de destination ne correspond pas au certificat : %1$s.</string>
-    <string name="unsupported_channel_name">Nom de canal non pris en charge</string>
-    <string name="unsupported_contact_name">Nom de contact non pris en charge</string>
-    <string name="channel_name_requires_newer_app_version">La connexion via un nom de canal nécessite une version plus récente de l\'application.</string>
-    <string name="contact_name_requires_newer_app_version">La connexion via un nom de contact nécessite une version plus récente de l\'application.</string>
-    <string name="please_upgrade_the_app">Veuillez mettre à jour l\'application.</string>
     <string name="simplex_name_error">Erreur de nom SimpleX</string>
     <string name="simplex_name_no_servers_desc">Aucun de vos serveurs n\'est configuré pour résoudre les noms SimpleX. Configurez des serveurs ou utilisez un lien de connexion.</string>
     <string name="simplex_name_server_no_resolver_desc">Le serveur %1$s ne prend pas en charge la résolution de nom. Configurez les serveurs ou utilisez un lien de connexion.</string>
@@ -2605,11 +2580,9 @@
     <string name="signature_missing_alert_desc">Le canal exigeait que ce message soit signé, mais la signature est manquante.</string>
     <string name="accept_contact_request">Accepter la demande de contact</string>
     <string name="member_is_deleted_cant_accept_request">Le membre a été supprimé : impossible d\'accepter la demande.</string>
-    <string name="unread_mentions">Mentions non lues</string>
     <string name="verify_simplex_name_action">Vérifier le nom</string>
     <string name="verify_simplex_names">Vérifier les noms SimpleX</string>
     <string name="simplex_name_not_verified">Nom SimpleX non vérifié</string>
-    <string name="simplex_name">Nom SimpleX</string>
     <string name="your_simplex_name">Votre nom SimpleX</string>
     <string name="set_simplex_name">Définir un nom SimpleX</string>
     <string name="error_saving_simplex_name">Erreur lors de l\'enregistrement du nom</string>
@@ -2676,7 +2649,6 @@
     <string name="alert_text_msg_reception_error">L\'application a supprimé ce message après %1$d tentatives de réception.</string>
     <string name="sanitize_links_toggle">Supprimer le suivi des liens</string>
     <string name="settings_section_title_contact_requests_from_groups">Demandes de contact dans les groupes</string>
-    <string name="settings_section_title_about">À propos</string>
     <string name="settings_section_title_contact">Contact</string>
     <string name="settings_section_title_support_project">Soutenir le projet</string>
     <string name="help_and_support">Aide et support</string>
@@ -2906,9 +2878,7 @@
     <string name="channel_will_start_with_relays">Le canal commencera à fonctionner avec %1$d relais sur %2$d. Continuer ?</string>
     <string name="relay_address_alert_message">Il s’agit d’une adresse de relais de messagerie, elle ne peut pas être utilisée pour se connecter.</string>
     <string name="connect_plan_open_channel">Ouvrir le canal</string>
-    <string name="connect_plan_open_new_channel">Ouvrir un nouveau canal</string>
     <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[Voici votre lien pour le canal <b>%1$s</b> !]]></string>
-    <string name="error_opening_channel">Erreur lors de l\'ouverture du canal</string>
     <string name="unblock_subscriber_for_all_question">Débloquer l\'abonné pour tout le monde ?</string>
     <string name="link_previews_alert_title">Activer les aperçus de liens ?</string>
     <string name="link_previews_alert_desc_socks">L’aperçu du lien sera demandé via le proxy SOCKS. La résolution DNS peut néanmoins toujours être effectuée localement via votre résolveur DNS.</string>

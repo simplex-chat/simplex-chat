@@ -1738,7 +1738,6 @@
     <string name="audio_device_earpiece">אוזניות</string>
     <string name="settings_section_title_user_theme">ערכת נושא לפרופיל</string>
     <string name="settings_section_title_chat_colors">צבעי הצא\'ט</string>
-    <string name="chat_list_always_visible">הצג רשימת שיחות בחלון חדש</string>
     <string name="info_row_file_status">מצב הקובץ</string>
     <string name="info_row_message_status">סטטוס הודעה</string>
     <string name="share_text_file_status">מצב הקובץ:%s</string>
@@ -2000,7 +1999,6 @@
     <string name="v6_3_organize_chat_lists_descr">אל תחמיץ הודעות חשובות.</string>
     <string name="v6_0_upgrade_app_descr">הורד גרסאות חדשות מ GitHub.</string>
     <string name="report_reason_profile">פרופיל לא הולם</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">לפרטיות מטא דאטא טובה יותר.</string>
     <string name="v6_2_network_decentralization_enable_flux">אפשר Flux בהגדרות רשת ושרתים בשביל לשפר את הפרטיות של המטא דאטא</string>
     <string name="compose_forward_messages_n">מעביר %1$s הודעות</string>
     <string name="error_reading_passphrase">שגיאה בקריאת משפט-סיסמה של מסד נתונים</string>
@@ -2123,7 +2121,6 @@
     <string name="onboarding_conditions_private_chats_not_accessible">צ\'אטים פרטיים, קבוצות ואנשי הקשר שלך אינם נגישים למפעילי השרת.</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">לדוגמה, אם איש הקשר שלך מקבל הודעות דרך שרת SimpleX Chat, האפליקציה שלך תעביר אותן דרך שרת Flux.</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">מדיניות פרטיות ותנאי שימוש.</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">ניתן להגדיר מפעילים בהגדרות רשת ושרתים.</string>
     <string name="privacy_chat_list_open_links_no">לא</string>
     <string name="settings_message_shape_tail">זנב לבועה</string>
     <string name="chat_bottom_bar">סרגל כלים נגיש לצ\'אט</string>

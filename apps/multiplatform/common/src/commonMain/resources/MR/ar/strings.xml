@@ -1754,12 +1754,10 @@
     <string name="network_smp_proxy_mode_unprotected">غير محمي</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">السماح بالرجوع إلى إصدار سابق</string>
     <string name="network_smp_proxy_mode_never_description">لا تستخدم التوجيه الخاص.</string>
-    <string name="update_network_smp_proxy_mode_question">وضع توجيه الرسائل</string>
     <string name="network_smp_proxy_fallback_prohibit">لا</string>
     <string name="network_smp_proxy_fallback_allow_protected">عندما يكون IP مخفيًا</string>
     <string name="network_smp_proxy_fallback_prohibit_description">لا ترسل رسائل مباشرةً، حتى لو كان خادمك أو خادم الوجهة لا يدعم التوجيه الخاص.</string>
     <string name="network_smp_proxy_fallback_allow_description">أرسل الرسائل مباشرة عندما لا يدعم الخادم الوجهة الخاص بك أو الخادم الوجهة التوجيه الخاص.</string>
-    <string name="update_network_smp_proxy_fallback_question">احتياطي توجيه الرسالة</string>
     <string name="private_routing_show_message_status">أظهِر حالة الرسالة</string>
     <string name="protect_ip_address">احمِ عنوان IP</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">بدون تور أو VPN، سيكون عنوان IP الخاص بك مرئيًا لخوادم الملفات.</string>
@@ -1775,7 +1773,6 @@
     <string name="file_not_approved_title">خوادم غير معروفة!</string>
     <string name="file_not_approved_descr">بدون تور أو VPN، سيكون عنوان IP الخاص بك مرئيًا لمُرحلات XFTP هذه:
 \n%1$s.</string>
-    <string name="chat_list_always_visible">أظهِر قائمة الدردشة في نافذة جديدة</string>
     <string name="settings_section_title_chat_colors">ألوان الدردشة</string>
     <string name="settings_section_title_chat_theme">سمة الدردشة</string>
     <string name="color_received_quote">تلقيت رد</string>
@@ -1962,9 +1959,7 @@
     <string name="privacy_media_blur_radius_medium">متوسط</string>
     <string name="privacy_media_blur_radius_soft">ناعم</string>
     <string name="info_view_call_button">مكالمة</string>
-    <string name="info_view_connect_button">اتصل</string>
     <string name="info_view_message_button">مراسلة</string>
-    <string name="info_view_open_button">افتح</string>
     <string name="info_view_search_button">بحث</string>
     <string name="toolbar_settings">الإعدادات</string>
     <string name="info_view_video_button">فيديو</string>
@@ -2107,9 +2102,6 @@
     <string name="simplex_address_or_1_time_link">عنوان SimpleX أو رابط لمرة واحدة؟</string>
     <string name="onboarding_network_operators">مُشغلي الشبكة</string>
     <string name="onboarding_network_operators_configure_via_settings">يمكنك تضبيط الخوادم عبر الإعدادات.</string>
-    <string name="onboarding_select_network_operators_to_use">حدد مشغلي الشبكة الذين تريد استخدامهم.</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">يمكنك تضبيط المُشغلين في إعدادات الشبكة والخوادم.</string>
-    <string name="onboarding_network_operators_update">حدّث</string>
     <string name="onboarding_network_operators_continue">تابع</string>
     <string name="operator_conditions_accepted">الشروط المتفق عليها</string>
     <string name="operator_review_conditions">راجع الشروط</string>
@@ -2121,7 +2113,6 @@
     <string name="operator_info_title">مُشغل الشبكة</string>
     <string name="operator">المُشغل</string>
     <string name="operator_servers_title">%s خوادم</string>
-    <string name="operator_website">الموقع الإلكتروني</string>
     <string name="operator_conditions_will_be_accepted_on">سيتم قبول الشروط في: %s.</string>
     <string name="operator_conditions_accepted_on">قُبل الشروط في: %s.</string>
     <string name="use_servers_of_operator_x">استخدم %s</string>
@@ -2151,14 +2142,12 @@
     <string name="v6_2_network_decentralization_enable_flux">فعّل flux في إعدادات الشبكة والخوادم لتحسين خصوصية البيانات الوصفية.</string>
     <string name="v6_2_network_decentralization">اللامركزية الشبكية</string>
     <string name="v6_2_network_decentralization_descr">المُشغل المُعد مسبقًا الثاني في التطبيق!</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">لتحسين خصوصية البيانات الوصفية.</string>
     <string name="v6_2_improved_chat_navigation">تحسين التنقل في الدردشة</string>
     <string name="view_updated_conditions">اعرض الشروط المُحدثة</string>
     <string name="accept_conditions">اقبل الشروط</string>
     <string name="operator_added_message_servers">أُضيفت خوادم الرسائل</string>
     <string name="address_or_1_time_link">عنوان أو رابط لمرة واحدة؟</string>
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[يمكن استخدام الرابط لمرة واحدة <i>مع جهة اتصال واحدة فقط</i> - المشاركة شخصيًا أو عبر أي مُراسل.]]></string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">سيتم قبول الشروط للمُشغلين المفعّلين بعد 30 يومًا.</string>
     <string name="onboarding_choose_server_operators">مُشغلي الخادم</string>
     <string name="operator_conditions_failed_to_load">لا يمكن تحميل نص الشروط الحالية، يمكنك مراجعة الشروط عبر هذا الرابط:</string>
     <string name="error_accepting_operator_conditions">خطأ في قبول الشروط</string>
@@ -2171,12 +2160,10 @@
     <string name="no_message_servers_configured_for_receiving">لا يوجد خوادم لاستلام الرسائل.</string>
     <string name="v6_2_improved_chat_navigation_descr">- فتح الدردشة عند أول رسالة غير مقروءة.\n- الانتقال إلى الرسائل المقتبسة.</string>
     <string name="you_can_set_connection_name_to_remember">يمكنك تعيين اسم الاتصال، لتتذكر الأشخاص الذين شاركتَ الرابط معهم.</string>
-    <string name="onboarding_network_operators_review_later">راجع لاحقًا</string>
     <string name="error_server_protocol_changed">تغيّر بروتوكول الخادم.</string>
     <string name="share_address_publicly">شارك العنوان علناً</string>
     <string name="share_simplex_address_on_social_media">شارك عنوان SimpleX على وسائل التواصل الاجتماعي.</string>
     <string name="simplex_address_and_1_time_links_are_safe_to_share">عنوان SimpleX والروابط لمرة واحدة آمنة للمشاركة عبر أي برنامج مُراسلة.</string>
-    <string name="address_creation_instruction">انقر فوق أنشئ عنوان SimpleX في القائمة لإنشائه لاحقًا.</string>
     <string name="message_deleted_or_not_received_error_desc">حُذفت هذه الرسالة أو لم تُستلم بعد.</string>
     <string name="operator_use_for_messages">استخدم للرسائل</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">يحمي التطبيق خصوصيتك من خلال استخدام مُشغلين مختلفين في كل محادثة.</string>
@@ -2207,7 +2194,6 @@
     <string name="onboarding_notifications_mode_battery">الإشعارات والبطارية</string>
     <string name="only_chat_owners_can_change_prefs">فقط مالكي الدردشة يمكنهم تغيير التفضيلات.</string>
     <string name="v6_2_business_chats_descr">الخصوصية لعملائك.</string>
-    <string name="remote_hosts_section">الجوّالات عن بُعد</string>
     <string name="invite_to_chat_button">ادعُ للدردشة</string>
     <string name="leave_chat_question">مغادرة المجموعة؟</string>
     <string name="member_will_be_removed_from_chat_cannot_be_undone">سيتم إزالة العضو من الدردشة - لا يمكن التراجع عن هذا!</string>
@@ -2287,7 +2273,6 @@
     <string name="report_compose_reason_header_spam">بلّغ عن إزعاج (spam): سيراه مُشرفو المجموعة فقط.</string>
     <string name="report_archive_alert_title">أرشفة البلاغ؟</string>
     <string name="report_reason_alert_title">سبب الإبلاغ؟</string>
-    <string name="report_archive_alert_desc">سيتم أرشفة البلاغ لك.</string>
     <string name="blocking_reason_spam">إزعاج (spam)</string>
     <string name="privacy_chat_list_open_links_yes">نعم</string>
     <string name="privacy_chat_list_open_links_ask">اسأل</string>
@@ -2312,7 +2297,6 @@
     <string name="network_smp_web_port_toggle">استخدم منفذ الويب</string>
     <string name="network_smp_web_port_section_title">منفذ TCP للمُراسلة</string>
     <string name="mute_all_chat">اكتم الكل</string>
-    <string name="unread_mentions">ذّكورات غير مقروءة</string>
     <string name="max_group_mentions_per_message_reached">يمكنك ذكر ما يصل إلى %1$s من الأعضاء في الرسالة الواحدة!</string>
     <string name="enable_sending_member_reports">السماح بالإبلاغ عن الرسائل إلى المُشرفين.</string>
     <string name="disable_sending_member_reports">امنع الإبلاغ عن الرسائل للمُشرفين.</string>
@@ -2438,7 +2422,6 @@
     <string name="compose_view_send_contact_request_alert_question">إرسال طلب جهة اتصال؟</string>
     <string name="compose_view_send_request">أرسل طلب</string>
     <string name="compose_view_send_request_without_message">أرسل طلب دون رسالة</string>
-    <string name="sent_to_your_contact_after_connection">أُرسل إلى جهة اتصالك بعد الاتصال.</string>
     <string name="share_group_profile_via_link">ترقية رابط المجموعة؟</string>
     <string name="share_profile_via_link_alert_confirm">رقِّ</string>
     <string name="share_profile_via_link">ترقية العنوان؟</string>
@@ -2494,7 +2477,6 @@
     <string name="settings_section_title_contact_requests_from_groups">طلبات التواصل في المجموعات</string>
     <string name="member_is_deleted_cant_accept_request">حُذف العضو - لا يمكن قبول الطلب</string>
     <string name="rcv_direct_event_group_inv_link_received">طُلب اتصال من المجموعة %1$s</string>
-    <string name="this_setting_is_for_your_current_profile">هذا الإعداد لملف تعريفك الحالي</string>
     <string name="allow_files_and_media_only_if">اسمح بالملفات والوسائط فقط إذا سمح جهة اتصالك بذلك.</string>
     <string name="allow_your_contacts_to_send_files_and_media">اسمح لجهات اتصالك بإرسال الملفات والوسائط.</string>
     <string name="chat_banner_bot">روبوت</string>
@@ -2526,7 +2508,6 @@
     <string name="info_row_connection_failed">فشل الاتصال</string>
     <string name="member_info_member_failed">فشل</string>
     <string name="content_filter_files">ملفات</string>
-    <string name="content_filter_menu_item">تصفية</string>
     <string name="content_filter_images">صور</string>
     <string name="content_filter_links">روابط</string>
     <string name="placeholder_search_files">ابحث عن ملفات</string>
@@ -2562,7 +2543,6 @@
     <string name="info_row_channel">قناة</string>
     <string name="channel_full_name_field">اسم القناة بالكامل</string>
     <string name="channel_link">رابط القناة</string>
-    <string name="button_channel_members">أعضاء القناة</string>
     <string name="channel_display_name_field">اسم القناة</string>
     <string name="channel_profile_is_stored_on_subscribers_devices">يُخزّن ملف تعريف القناة على أجهزة المشتركين وعلى مُرحلات الدردشة.</string>
     <string name="snd_channel_event_channel_profile_updated">حُدِّث ملف تعريف القناة</string>
@@ -2590,7 +2570,6 @@
     <string name="enter_relay_name">أدخل اسم المُرحل…</string>
     <string name="error_adding_relay">خطأ في إضافة المُرحل</string>
     <string name="error_creating_channel">خطأ في إنشاء القناة</string>
-    <string name="error_opening_channel">خطأ في فتح القناة</string>
     <string name="rcv_msg_error_parse">خطأ: %s</string>
     <string name="error_saving_channel_profile">خطأ في حفظ ملف تعريف القناة</string>
     <string name="relay_conn_status_failed">فشل</string>
@@ -2610,7 +2589,6 @@
     <string name="no_chat_relays_enabled">لا مُرحلات دردشة مفعّلة.</string>
     <string name="not_all_relays_connected">ليس كل المُرحلات متصلة</string>
     <string name="connect_plan_open_channel">افتح قناة</string>
-    <string name="connect_plan_open_new_channel">افتح قناة جديدة</string>
     <string name="member_info_section_title_owner">المالك</string>
     <string name="channel_members_section_owners">المالكين والمساهمين</string>
     <string name="preset_relay_address">عنوان المُرحل مسبق الضبط</string>
@@ -2779,7 +2757,6 @@
     <string name="your_public_address">عنوانك العام</string>
     <string name="why_built_heading">لقد وُلدت دون حساب تعريفي.</string>
     <string name="cancel_channel_alert_msg">قناتك الجديدة %1$s متصلة بـ %2$d من أصل %3$d مُرحلات. إذا ألغيت، ستُحذف القناة - يمكنك إنشاؤها مرة أخرى.</string>
-    <string name="add_button">أضف</string>
     <string name="add_relay_button">أضف مُرحل</string>
     <string name="add_relays_title">أضف مُرحلات</string>
     <string name="button_cancel_and_delete_channel">ألغِ واحذف القناة</string>
@@ -2814,14 +2791,11 @@
     <string name="member_info_status">الحالة</string>
     <string name="channel_owner_count_singular">%1$d مالك</string>
     <string name="channel_owner_count_plural">%1$d مالكون</string>
-    <string name="settings_section_title_about">عن</string>
     <string name="advanced_options">خيارات متقدّمة</string>
     <string name="advanced_settings">إعدادات متقدّمة</string>
     <string name="allow_anyone_to_embed">اسمح لأي شخص بالتضمين</string>
     <string name="embed_any_webpage_can_show">يمكن لأي صفحة ويب عرض المعاينة.</string>
     <string name="chat_data">بيانات الدردشة</string>
-    <string name="channel_name_requires_newer_app_version">يتطلب الاتصال عبر اسم القناة إصدارًا أحدث من التطبيق.</string>
-    <string name="contact_name_requires_newer_app_version">يتطلب الاتصال عبر اسم جهة الاتصال إصدارًا أحدث من التطبيق.</string>
     <string name="settings_section_title_contact">تواصل</string>
     <string name="group_member_role_member_channel">مساهم</string>
     <string name="copy_code">انسخ الرمز</string>
@@ -2833,7 +2807,6 @@
     <string name="webpage_url_footer">سيتم عرضه للمشتركين واستخدامه للسماح بتحميل المعاينة.</string>
     <string name="more_privacy">مزيد من الخصوصية</string>
     <string name="embed_only_your_page">لا يمكن عرض المعاينة إلا على صفحتك المذكورة أعلاه.</string>
-    <string name="please_upgrade_the_app">يُرجى ترقية التطبيق.</string>
     <string name="channel_owners_contributors_count">%1$d مالكين ومساهمين</string>
     <string name="badge_supported_simplex">%1$s دعم تطبيق SimpleX Chat. انتهت صلاحية الشارة في %2$s.</string>
     <string name="relay_status_acknowledged_roster">قائمة المعترف بهم</string>
@@ -2849,8 +2822,6 @@
     <string name="member_role_will_be_changed_with_notification_channel">سيتم تغيير الدور إلى "%s". وسيتم إشعار جميع المشاركين في القناة بذلك.</string>
     <string name="badge_unverified_desc">تعذّر التحقق من صحة هذه الشارة، وقد لا تكون أصلية.</string>
     <string name="group_link_requires_newer_version">تتطلب هذه المجموعة إصدارًا أحدث من التطبيق. يُرجى تحديث التطبيق للانضمام إليها.</string>
-    <string name="unsupported_channel_name">اسم قناة غير مدعوم</string>
-    <string name="unsupported_contact_name">اسم جهة اتصال غير مدعوم</string>
     <string name="badge_unverified_title">شارة غير متحقق منها</string>
     <string name="relays_no_web_support">لا تدعم خوادم ترحيل الدردشة المستعملة صفحات الويب.</string>
     <string name="webpage_code">رمز صفحة الويب</string>
@@ -2865,7 +2836,6 @@
     <string name="simplex_name_resolver_error_desc">خطأ المحلّل: %1$s</string>
     <string name="simplex_name_server_no_resolver_desc">الخادم %1$s لا يدعم تحليل الأسماء. اضبط الخوادم أو استخدم رابط الاتصال.</string>
     <string name="set_simplex_name">عيِّن اسم SimpleX</string>
-    <string name="simplex_name">اسم SimpleX</string>
     <string name="simplex_name_error">خطأ في اسم SimpleX</string>
     <string name="simplex_name_not_verified">لم يتحقق مِن اسم SimpleX</string>
     <string name="simplex_name_no_valid_link_desc">اسم SimpleX %1$s مسجَّل، لكنه لا يحتوي على رابط صالح.</string>
