@@ -137,7 +137,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
     seedRoutinePending wps
     forever $ workerLoop wps `catchOwn` \e -> logError ("web preview worker error: " <> tshow e)
   where
-    cxt = mkStoreCxt (config cc) (random cc)
+    cxt = mkStoreCxt cc
 
     workerLoop wps@WebPreviewState {priorityRender, filesToRemove, corsNeeded, routinePending, wakeSignal} = do
       drainRemovals
@@ -262,7 +262,7 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
       pure $ corsEntry publicGroupId <$> publicGroupAccess
     Nothing -> pure Nothing
   where
-    cxt = mkStoreCxt (config cc) (random cc)
+    cxt = mkStoreCxt cc
 
 channelContentChanged :: ChatController -> Int64 -> STM ()
 channelContentChanged cc gId =

@@ -1611,13 +1611,13 @@ testPlanAddressContactViaAddress =
         Left _ -> error "error parsing contact link"
         Right cReq -> do
           let profile = aliceProfile {contactLink = Just cReq}
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config, random}} = bob in runExceptT $ createContact db (mkStoreCxt config random) user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (mkStoreCxt $ chatController bob) user profile
           bob @@@ [("@alice", "")]
 
           bob ##> "/delete @alice"
           bob <## "alice: contact is deleted"
 
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config, random}} = bob in runExceptT $ createContact db (mkStoreCxt config random) user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (mkStoreCxt $ chatController bob) user profile
           bob @@@ [("@alice", "")]
 
           bob ##> ("/_connect plan 1 " <> cLink)
@@ -1632,7 +1632,7 @@ testPlanAddressContactViaAddress =
           alice ##> "/delete @bob"
           alice <## "bob: contact is deleted"
 
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config, random}} = bob in runExceptT $ createContact db (mkStoreCxt config random) user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (mkStoreCxt $ chatController bob) user profile
           bob @@@ [("@alice", "")]
 
           -- GUI api
@@ -1673,13 +1673,13 @@ testPlanAddressContactViaShortAddress =
         Left _ -> error "error parsing contact link"
         Right shortLink -> do
           let profile = aliceProfile {contactLink = Just shortLink}
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config, random}} = bob in runExceptT $ createContact db (mkStoreCxt config random) user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (mkStoreCxt $ chatController bob) user profile
           bob @@@ [("@alice", "")]
 
           bob ##> "/delete @alice"
           bob <## "alice: contact is deleted"
 
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config, random}} = bob in runExceptT $ createContact db (mkStoreCxt config random) user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (mkStoreCxt $ chatController bob) user profile
           bob @@@ [("@alice", "")]
 
           bob ##> ("/_connect plan 1 " <> sLink)
@@ -1694,7 +1694,7 @@ testPlanAddressContactViaShortAddress =
           alice ##> "/delete @bob"
           alice <## "bob: contact is deleted"
 
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config, random}} = bob in runExceptT $ createContact db (mkStoreCxt config random) user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (mkStoreCxt $ chatController bob) user profile
           bob @@@ [("@alice", "")]
 
           -- GUI api

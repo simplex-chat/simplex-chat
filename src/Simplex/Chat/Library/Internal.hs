@@ -3386,7 +3386,7 @@ chatStoreCxt = lift chatStoreCxt'
 {-# INLINE chatStoreCxt #-}
 
 chatStoreCxt' :: CM' StoreCxt
-chatStoreCxt' = mkStoreCxt <$> asks config <*> asks random
+chatStoreCxt' = asks mkStoreCxt
 {-# INLINE chatStoreCxt' #-}
 
 chatVersionRange :: CM VersionRangeChat

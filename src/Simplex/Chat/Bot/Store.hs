@@ -21,7 +21,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (catchAll)
 
 storeCxt :: ChatController -> StoreCxt
-storeCxt ChatController {config, random} = mkStoreCxt config random
+storeCxt = mkStoreCxt
 {-# INLINE storeCxt #-}
 
 withDB' :: Text -> ChatController -> (DB.Connection -> IO a) -> IO (Either String a)
