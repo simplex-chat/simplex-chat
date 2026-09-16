@@ -3386,7 +3386,7 @@ chatStoreCxt = lift chatStoreCxt'
 {-# INLINE chatStoreCxt #-}
 
 chatStoreCxt' :: CM' StoreCxt
-chatStoreCxt' = asks mkStoreCxt
+chatStoreCxt' = asks storeCxt
 {-# INLINE chatStoreCxt' #-}
 
 chatVersionRange :: CM VersionRangeChat

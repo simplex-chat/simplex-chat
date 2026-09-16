@@ -4256,7 +4256,7 @@ processChatCommand cxt nm = \case
       checkValidName displayName
       checkProfileImageSize image
       checkGroupProfileSize gProfile
-      when (publicGroupKeys groupKeys && isJust (memberAdmission >>= review)) $ throwCmdError "Admission review is not supported in channels"
+      when (isPublicGroup groupKeys && isJust (memberAdmission >>= review)) $ throwCmdError "Admission review is not supported in channels"
       -- [incognito] generate incognito profile for group membership
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
       withFastStore $ \db -> createNewGroup db cxt user gProfile incognitoProfile memberId groupKeys publicMemberCount_

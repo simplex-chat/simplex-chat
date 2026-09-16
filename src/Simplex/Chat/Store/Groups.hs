@@ -384,7 +384,7 @@ createNewGroup db cxt user@User {userId} groupProfile incognitoProfile memberId 
         Just PublicGroupProfile {groupType, groupLink, publicGroupId} -> (Just groupType, Just groupLink, Just publicGroupId)
         Nothing -> (Nothing, Nothing, Nothing)
       fullGroupPreferences = mergeGroupPreferences groupPreferences
-      useRelays = publicGroupKeys groupKeys
+      useRelays = isPublicGroup groupKeys
       rosterVersion0 = if useRelays then Just (VersionRoster 0) else Nothing
   currentTs <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile

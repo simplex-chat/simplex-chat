@@ -499,10 +499,12 @@ data GroupKeys
       }
   deriving (Eq, Show)
 
-publicGroupKeys :: GroupKeys -> Bool
-publicGroupKeys = \case
+isPublicGroup :: GroupKeys -> Bool
+isPublicGroup = \case
   GKGroup {} -> False
-  _ -> True
+  GKPublicGroup {} -> True
+  GKRelayRequest {} -> True
+  GKPreparedPublicGroup {} -> True
 
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
@@ -2253,7 +2255,7 @@ type VersionChat = Version ChatVersion
 type VersionRangeChat = VersionRange ChatVersion
 
 -- | Store-wide context passed to store functions in place of the bare `vr`
--- parameter. Built from config by mkStoreCxt; more fields are added here over time.
+-- parameter. Built from config by storeCxt; more fields are added here over time.
 data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey, drg :: TVar ChaChaDRG}
 
 pattern VersionChat :: Word16 -> VersionChat

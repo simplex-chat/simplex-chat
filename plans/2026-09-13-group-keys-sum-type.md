@@ -44,7 +44,7 @@ data GroupKeys
       }
   deriving (Eq, Show)
 
-publicGroupKeys :: GroupKeys -> Bool
+isPublicGroup :: GroupKeys -> Bool
 ```
 
 `PublicGroupKeys` is removed. `GroupRootKey` is unchanged, and its JSON instance is removed with those of `GroupKeys` and `PublicGroupKeys`.
@@ -68,7 +68,7 @@ data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublic
 ```
 
 ```haskell
-mkStoreCxt :: ChatController -> StoreCxt
+storeCxt :: ChatController -> StoreCxt
 ```
 
 `toGroupInfo` returns `(GroupInfo, GroupKeysRow)`; `toGroupInfo_` returns the group alone.
@@ -149,7 +149,7 @@ setUserMemberKey :: DB.Connection -> GroupId -> GroupMemberId -> C.PrivateKeyEd2
 
 Every insert writes a member key. `createRelayRequestGroup` generates one and passes its public half to `createContactMemberInv_`, closing the TODO it held.
 
-`createNewGroup` takes a non-optional `GroupKeys` and derives `use_relays` from `publicGroupKeys`.
+`createNewGroup` takes a non-optional `GroupKeys` and derives `use_relays` from `isPublicGroup`.
 
 ### Updates that stop writing the member key
 
