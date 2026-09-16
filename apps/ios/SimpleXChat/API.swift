@@ -163,8 +163,8 @@ public func chatJsonLength(_ s: String) -> Int {
     return Int(chat_json_length(&c))
 }
 
-// The code as core will accept it - prefix and 20 characters, no separators - or nil if it does not
-// parse. Validity is decided only here: a second check-character implementation would drift.
+// the code in core's canonical form (prefix and 20 characters, no separators), or nil when core rejects it.
+// The check character is verified by core via FFI, not re-implemented here, so the two cannot disagree.
 public func parseBadgeCode(_ s: String) -> String? {
     var c = s.cString(using: .utf8)!
     let canonical = fromCString(chat_parse_badge_code(&c)!)

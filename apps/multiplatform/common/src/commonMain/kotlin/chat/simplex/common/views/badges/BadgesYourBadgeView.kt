@@ -16,25 +16,23 @@ import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.BadgeState
-import chat.simplex.common.model.BadgeType
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.AppBarTitle
 import chat.simplex.common.views.helpers.badgeImage
+import chat.simplex.common.views.helpers.badgeTypeName
 import chat.simplex.res.MR
 
 @Composable
 fun BadgesYourBadgeView(badgeState: BadgeState) {
-  val title = if (badgeState.shown) MR.strings.badges_your_badge else MR.strings.badges_support_ended
-
   ColumnWithScrollBar {
-    AppBarTitle(stringResource(title))
+    AppBarTitle(stringResource(MR.strings.badges_your_badge))
 
     SectionView {
       BadgeSummary(badgeState)
     }
     SectionSpacer()
-    SectionView(stringResource(MR.strings.badges_ends).uppercase()) {
+    SectionView(stringResource(MR.strings.badges_ends)) {
       Text(badgeState.paidThroughText, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 12.dp))
     }
     SectionTextFooter(stringResource(MR.strings.badges_prepaid_footer))
@@ -64,13 +62,4 @@ fun BadgeSummary(badgeState: BadgeState) {
       color = MaterialTheme.colors.secondary
     )
   }
-}
-
-// verbatim for an unknown type: it is the service's string, and must not be looked up as a localised key
-@Composable
-private fun badgeTypeName(t: BadgeType): String = when (t) {
-  is BadgeType.Supporter -> stringResource(MR.strings.badges_level_supporter)
-  is BadgeType.Legend -> stringResource(MR.strings.badges_level_legend)
-  is BadgeType.Investor -> stringResource(MR.strings.badges_type_investor)
-  is BadgeType.Unknown -> t.type
 }

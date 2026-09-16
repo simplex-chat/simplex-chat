@@ -14,18 +14,10 @@ struct BadgesYourBadgeView: View {
     let badgeState: BadgeState
     var showsAsSheet: Bool = false
 
-    private var title: LocalizedStringKey {
-        badgeState.shown ? "Your badge" : "Support ended"
-    }
-
-    // pushed, the navigation bar carries the title and animates it; as a sheet root there is no bar
-    // to put it in, so the title is drawn in the content, as the Support screen does
-    private var navTitle: LocalizedStringKey { showsAsSheet ? "" : title }
-
     var body: some View {
         VStack(spacing: 0) {
             if showsAsSheet {
-                Text(title)
+                Text("Your badge")
                     .font(.largeTitle)
                     .bold()
                     .foregroundColor(theme.colors.primary)
@@ -51,7 +43,7 @@ struct BadgesYourBadgeView: View {
             }
         }
         .frame(maxHeight: .infinity)
-        .navigationTitle(navTitle)
+        .navigationTitle(showsAsSheet ? "" : "Your badge")
         .navigationBarTitleDisplayMode(showsAsSheet ? .inline : .large)
         .modifier(ThemedBackground(grouped: true))
     }
@@ -69,7 +61,7 @@ struct BadgeSummary: View {
                 .frame(width: 68, height: 68)
                 .padding(.bottom, 8)
 
-            badgeTypeName(badgeState.badgeType)
+            Text(badgeTypeName(badgeState.badgeType))
                 .font(.title3)
                 .fontWeight(.semibold)
 
@@ -79,15 +71,5 @@ struct BadgeSummary: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
-    }
-}
-
-// verbatim for an unknown type: it is the service's string, and must not be looked up as a localised key
-private func badgeTypeName(_ t: BadgeType) -> Text {
-    switch t {
-    case .supporter: Text("Supporter")
-    case .legend: Text("Legend")
-    case .investor: Text("Investor")
-    case let .unknown(s): Text(verbatim: s)
     }
 }

@@ -257,10 +257,10 @@ testRedeemUnknownCode ps =
       g <- C.newRandom
       unknown <- randomBadgeCode g
       alice ##> ("/_redeem_badge_code 1 " <> codeArg unknown)
-      alice <## "bad chat command: badge service error: code_invalid"
+      alice <## "cannot redeem badge code: badge service error: code_invalid"
       -- a failed check character is refused before anything leaves the device
       alice ##> "/_redeem_badge_code 1 SB-00000-00000-00000-00001"
-      alice <## "bad chat command: invalid badge code"
+      alice <## "cannot redeem badge code: invalid code"
       -- sent straight to the service, past the client's own check, the two are one answer
       (_, redeemPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
       redeemDirect alice bsLink redeemPriv (T.unpack $ badgeCodeText unknown)
@@ -315,7 +315,7 @@ testRedeemSecondCode ps =
       alice <## "supporter badge - active"
       alice <##. "expires "
       alice ##> ("/_redeem_badge_code 1 " <> codeArg legend)
-      alice <## "bad chat command: badge already active"
+      alice <## "cannot redeem badge code: badge already active"
       alice ##> "/p"
       showActiveUser alice "alice (Alice, * supporter)"
       alice ##> "/create user alisa"
@@ -339,7 +339,7 @@ testRedeemSameCodeOtherProfile ps =
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       alice ##> ("/_redeem_badge_code 2 " <> codeArg code)
-      alice <## "bad chat command: badge service error: code_used"
+      alice <## "cannot redeem badge code: badge service error: code_used"
       alice ##> "/p"
       showActiveUser alice "alisa"
       alice ##> "/user alice"

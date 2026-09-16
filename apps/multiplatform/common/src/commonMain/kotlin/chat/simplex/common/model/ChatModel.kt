@@ -2246,55 +2246,16 @@ data class BadgeAlert(
   val dateText: String get() = badgeDateText(date)
 }
 
-@Serializable(with = BadgeAlertPriceSerializer::class)
+@Serializable
 data class BadgeAlertPrice(val amount: Long, val currency: String)
 
-// encoded as the Haskell tuple it comes from: [amount, currency]
-object BadgeAlertPriceSerializer : KSerializer<BadgeAlertPrice> {
-  override val descriptor: SerialDescriptor = buildClassSerialDescriptor("BadgeAlertPrice")
-  override fun deserialize(decoder: Decoder): BadgeAlertPrice {
-    require(decoder is JsonDecoder)
-    val arr = decoder.decodeJsonElement().jsonArray
-    return BadgeAlertPrice(arr[0].jsonPrimitive.long, arr[1].jsonPrimitive.content)
-  }
-  override fun serialize(encoder: Encoder, value: BadgeAlertPrice) {
-    require(encoder is JsonEncoder)
-    encoder.encodeJsonElement(buildJsonArray { add(value.amount); add(value.currency) })
-  }
-}
-
-@Serializable(with = BadgeAlertKindSerializer::class)
-sealed class BadgeAlertKind {
-  @Serializable @SerialName("renewal_approaching") object RenewalApproaching: BadgeAlertKind()
-  @Serializable @SerialName("payment_issue") object PaymentIssue: BadgeAlertKind()
-  @Serializable @SerialName("subscription_ended") object SubscriptionEnded: BadgeAlertKind()
-  @Serializable @SerialName("prepaid_ending") object PrepaidEnding: BadgeAlertKind()
-  @Serializable @SerialName("support_ended") object SupportEnded: BadgeAlertKind()
-  @Serializable @SerialName("unknown") data class Unknown(val kind: String): BadgeAlertKind()
-
-  val text: String
-    get() = when (this) {
-      is RenewalApproaching -> "renewal_approaching"
-      is PaymentIssue -> "payment_issue"
-      is SubscriptionEnded -> "subscription_ended"
-      is PrepaidEnding -> "prepaid_ending"
-      is SupportEnded -> "support_ended"
-      is Unknown -> kind
-    }
-}
-
-object BadgeAlertKindSerializer : KSerializer<BadgeAlertKind> {
-  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BadgeAlertKind", PrimitiveKind.STRING)
-  override fun deserialize(decoder: Decoder): BadgeAlertKind =
-    when (val v = decoder.decodeString()) {
-      "renewal_approaching" -> BadgeAlertKind.RenewalApproaching
-      "payment_issue" -> BadgeAlertKind.PaymentIssue
-      "subscription_ended" -> BadgeAlertKind.SubscriptionEnded
-      "prepaid_ending" -> BadgeAlertKind.PrepaidEnding
-      "support_ended" -> BadgeAlertKind.SupportEnded
-      else -> BadgeAlertKind.Unknown(v)
-    }
-  override fun serialize(encoder: Encoder, value: BadgeAlertKind) = encoder.encodeString(value.text)
+@Serializable
+enum class BadgeAlertKind {
+  @SerialName("renewalApproaching") RenewalApproaching,
+  @SerialName("paymentIssue") PaymentIssue,
+  @SerialName("subscriptionEnded") SubscriptionEnded,
+  @SerialName("prepaidEnding") PrepaidEnding,
+  @SerialName("supportEnded") SupportEnded
 }
 
 private fun badgeDateText(date: Instant): String {

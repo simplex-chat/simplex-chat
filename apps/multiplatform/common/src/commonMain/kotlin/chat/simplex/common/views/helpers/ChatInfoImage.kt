@@ -207,9 +207,17 @@ private fun BadgeGlyph(badge: LocalBadge, modifier: Modifier, onBadgeClick: (() 
   }
 }
 
+// verbatim for an unknown type: it is the service's string, and must not be looked up as a localised key
+fun badgeTypeName(t: BadgeType): String = when (t) {
+  is BadgeType.Supporter -> generalGetString(MR.strings.badges_level_supporter)
+  is BadgeType.Legend -> generalGetString(MR.strings.badges_level_legend)
+  is BadgeType.Investor -> generalGetString(MR.strings.badges_type_investor)
+  is BadgeType.Unknown -> t.type
+}
+
 fun showBadgeInfoAlert(name: String, badge: LocalBadge, uriHandler: UriHandler) {
   // a verified badge's type is signed and can't be faked, so the real (possibly unknown) type name is the title
-  val title = badge.badge.badgeType.text.replaceFirstChar { it.uppercase() }
+  val title = badgeTypeName(badge.badge.badgeType)
   when {
     badge.status == BadgeStatus.Failed ->
       AlertManager.shared.showAlertMsg(

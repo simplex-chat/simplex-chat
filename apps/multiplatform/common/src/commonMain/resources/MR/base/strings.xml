@@ -178,6 +178,7 @@
   <string name="proxy_destination_error_failed_to_connect">Forwarding server %1$s failed to connect to destination server %2$s. Please try later.</string>
   <string name="proxy_destination_error_broker_host">Destination server address of %1$s is incompatible with forwarding server %2$s settings.</string>
   <string name="proxy_destination_error_broker_version">Destination server version of %1$s is incompatible with forwarding server %2$s.</string>
+  <string name="service_request_timeout_desc">The service did not respond. Please try again.</string>
   <string name="please_try_later">Please try later.</string>
   <string name="error_sending_message">Error sending message</string>
   <string name="error_forwarding_messages">Error forwarding messages</string>
@@ -3251,11 +3252,9 @@
   <string name="badges_error_code_used">This code has already been used.</string>
   <string name="badges_error_code_expired">This code has expired.</string>
   <string name="badges_error_rate_limited">Too many attempts. Please try again later.</string>
-  <string name="badges_error_service_failed">The badge service is unavailable. Please try again later.</string>
-  <string name="badges_error_bad_service_response">The badge service sent an unexpected response.</string>
+  <string name="badges_error_bad_service_response">The badge service sent an unexpected response: %1$s</string>
   <string name="badges_error_credential_not_verified">This app version cannot verify this badge. Please update the app.</string>
   <string name="badges_error_unsupported_version">This app version is too old for the badge service. Please update the app.</string>
-  <string name="badges_error_network">Connection error. Please check your network connection.</string>
   <string name="badges_error_badge_ended">The code was accepted, but the badge it grants has already ended.</string>
   <string name="badges_error_unknown">The code could not be redeemed.</string>
   <string name="badges_code_you_scanned_is_not_badge_code">The code you scanned is not a badge code.</string>
@@ -3267,7 +3266,7 @@
   <string name="badges_type_investor">Investor</string>
   <string name="badges_support_ended_on">Your support ended on %1$s.</string>
   <string name="badges_remind_me_later">Remind me later</string>
-  <string name="badges_dont_show_again">Don\'t show again</string>
+  <string name="badges_dismiss">Dismiss</string>
   <string name="supporter_perks">Supporter perks</string>
   <string name="v7_1_supporter_badge_title">Supporter badge ❤️</string>
   <string name="v7_1_supporter_badge_body">Help keep the network running — send files up to 2 GB.</string>
