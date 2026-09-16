@@ -52,7 +52,7 @@ import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Bot.Store
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
-import Simplex.Chat.Library.Internal (chatStoreCxt, setGroupLinkData)
+import Simplex.Chat.Library.Internal (setGroupLinkData)
 import Simplex.Chat.Markdown (Format (..), FormattedText (..), SimplexLinkType (..), parseMaybeMarkdownList, viewName)
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
@@ -60,7 +60,7 @@ import Simplex.Chat.Protocol (GroupShortLinkData (..), LinkOwnerSig (..), MsgCha
 import Simplex.Chat.Store.Direct (getContact)
 import Simplex.Chat.Store.Groups (getGroupLink, getGroupMember, getGroupMemberByMemberId, setGroupCustomData) -- TODO remove setGroupCustomData
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
-import Simplex.Chat.Store.Shared (GroupKeysData, StoreError (..), mkGroupKeys)
+import Simplex.Chat.Store.Shared (GroupKeysRow, StoreError (..), mkGroupKeys)
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types
@@ -1462,10 +1462,10 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
     mkSendReply :: Contact -> ChatItemId -> Text -> IO ()
     mkSendReply ct ciId = sendComposedMessage cc ct (Just ciId) . MCText
 
-    withGroupRegLink :: (Text -> IO ()) -> GroupId -> GroupName -> (GroupInfo -> GroupKeysData -> GroupReg -> Maybe GroupLink -> IO ()) -> IO ()
+    withGroupRegLink :: (Text -> IO ()) -> GroupId -> GroupName -> (GroupInfo -> GroupKeysRow -> GroupReg -> Maybe GroupLink -> IO ()) -> IO ()
     withGroupRegLink sendReply gId = withGroupRegLink_ sendReply gId . Just
 
-    withGroupRegLink_ :: (Text -> IO ()) -> GroupId -> Maybe GroupName -> (GroupInfo -> GroupKeysData -> GroupReg -> Maybe GroupLink -> IO ()) -> IO ()
+    withGroupRegLink_ :: (Text -> IO ()) -> GroupId -> Maybe GroupName -> (GroupInfo -> GroupKeysRow -> GroupReg -> Maybe GroupLink -> IO ()) -> IO ()
     withGroupRegLink_ sendReply gId gName_ action =
       getGroupAndRegLink cc user gId >>= \case
         Left e -> sendReply $ "Group " <> tshow gId <> " error (getGroup): " <> T.pack e
@@ -1558,12 +1558,11 @@ getGroupLink' :: ChatController -> User -> GroupInfo -> IO (Either String GroupL
 getGroupLink' cc user gInfo =
   withDB "getGroupLink" cc $ \db -> withExceptT groupDBError $ getGroupLink db user gInfo
 
-updateGroupLinkData :: ChatController -> User -> GroupInfo -> GroupKeysData -> GroupLink -> IO (Either ChatError GroupLink)
+updateGroupLinkData :: ChatController -> User -> GroupInfo -> GroupKeysRow -> GroupLink -> IO (Either ChatError GroupLink)
 updateGroupLinkData cc user gInfo gksData gLink = runReaderT (runExceptT setLinkData) cc
   where
     setLinkData = do
-      cxt <- chatStoreCxt
-      gks <- withFastStore $ \db -> mkGroupKeys db cxt gInfo gksData
+      gks <- withFastStore $ \db -> mkGroupKeys db (storeCxt cc) gInfo gksData
       setGroupLinkData NRMBackground user gInfo gks gLink
 
 setGroupLinkRole :: ChatController -> GroupInfo -> GroupMemberRole -> IO (Maybe CreatedLinkContact)

@@ -886,7 +886,7 @@ processChatCommand cxt nm = \case
             else markDirectCIsDeleted user ct items =<< liftIO getCurrentTime
       pure $ CRChatItemsDeleted user deletions True False
     CTGroup -> withGroupLock "deleteChatItem" chatId $ do
-      (gInfo, gks, items) <- getCommandGroupChatItems user chatId itemIds
+      ((gInfo, gks), items) <- getCommandGroupChatItems user chatId itemIds
       -- TODO [knocking] check scope for all items?
       chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
       deletions <- case mode of
@@ -938,7 +938,7 @@ processChatCommand cxt nm = \case
              in (groupMsgSigning (onlyHistory || itemSigned) gInfo gks evt, evt)
           itemSigned = case msgVerified of Just (MVSigned _) -> True; _ -> False
   APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
-    (gInfo, gks, items) <- getCommandGroupChatItems user gId itemIds
+    ((gInfo, gks), items) <- getCommandGroupChatItems user gId itemIds
     -- TODO [knocking] check scope is Nothing for all items? (prohibit moderation in support chats?)
     ms <- withFastStore' $ \db -> getGroupMembers db cxt user gInfo
     let recipients = filter memberCurrent ms
@@ -950,7 +950,7 @@ processChatCommand cxt nm = \case
     ciIds <- liftIO $ markReceivedGroupReportsDeleted db user g deleteTs
     pure $ CRGroupChatItemsDeleted user g ciIds True (Just $ membership g)
   APIDeleteReceivedReports gId itemIds mode -> withUser $ \user -> withGroupLock "deleteReports" gId $ do
-    (gInfo, gks, items) <- getCommandGroupChatItems user gId itemIds
+    ((gInfo, gks), items) <- getCommandGroupChatItems user gId itemIds
     unless (all isRcvReport items) $ throwCmdError "some items are not received reports"
     -- TODO [knocking] scope can be different for each item if reports are from different members
     -- TODO            (currently we pass Nothing as scope which is wrong)
@@ -1030,7 +1030,7 @@ processChatCommand cxt nm = \case
   -- TODO [knocking] forward from scope?
   APIPlanForwardChatItems (ChatRef fromCType fromChatId _scope) itemIds -> withUser $ \user -> case fromCType of
     CTDirect -> planForward user . snd =<< getCommandDirectChatItems user fromChatId itemIds
-    CTGroup -> planForward user . (\(_, _, items) -> items) =<< getCommandGroupChatItems user fromChatId itemIds
+    CTGroup -> planForward user . snd =<< getCommandGroupChatItems user fromChatId itemIds
     CTLocal -> planForward user . snd =<< getCommandLocalChatItems user fromChatId itemIds
     CTContactRequest -> throwCmdError "not supported"
     CTContactConnection -> throwCmdError "not supported"
@@ -1119,7 +1119,7 @@ processChatCommand cxt nm = \case
                   | otherwise = displayName
         -- TODO [knocking] from scope?
         CTGroup -> withGroupLock "forwardChatItem, from group" fromChatId $ do
-          (gInfo, _gks, items) <- getCommandGroupChatItems user fromChatId itemIds
+          ((gInfo, _), items) <- getCommandGroupChatItems user fromChatId itemIds
           catMaybes <$> mapM (\ci -> ciComposeMsgReq gInfo ci <$$> prepareMsgReq ci) items
           where
             ciComposeMsgReq :: GroupInfo -> CChatItem 'CTGroup -> (MsgContent, Maybe CryptoFile) -> ComposedMessageReq
@@ -2293,7 +2293,7 @@ processChatCommand cxt nm = \case
             pure $ CRStartedConnectionToContact user ct' customUserProfile
           CVRConnectedContact ct' -> pure $ CRContactAlreadyExists user ct'
   APIConnectPreparedGroup {groupId, incognito, ownerContact, msgContent_} -> withUser $ \user -> do
-    (gInfo, keysData) <- withFastStore $ \db -> getGroupInfoRow db cxt user groupId
+    (gInfo, gks) <- withFastStore $ \db -> getGroupInfoKeys db cxt user groupId
     case gInfo of
       GroupInfo {preparedGroup = Nothing} -> throwCmdError "group doesn't have link to connect"
       GroupInfo {useRelays = BoolDef True, preparedGroup = Just PreparedGroup {connLinkToConnect}} -> do
@@ -2313,8 +2313,8 @@ processChatCommand cxt nm = \case
         -- set group link info and incognito profile, generate and store membership keys
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         let cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex} e2e
-        (gInfo', gks) <- withFastStore $ \db -> do
-          (gInfo', gks) <- updatePreparedRelayedGroup db cxt user gInfo mainCReq cReqHash incognitoProfile rootKey publicMemberCount_
+        (gInfo', gks') <- withFastStore $ \db -> do
+          (gInfo', gks') <- updatePreparedRelayedGroup db cxt user gInfo mainCReq cReqHash incognitoProfile rootKey publicMemberCount_
           -- Pre-emptively create owner members with trusted keys from link data
           forM_ owners $ \OwnerAuth {ownerId, ownerKey} -> do
             let ctId_ = case ownerContact of
@@ -2322,9 +2322,9 @@ processChatCommand cxt nm = \case
                     | memberId == MemberId ownerId -> Just contactId
                   _ -> Nothing
             void $ createLinkOwnerMember db cxt user gInfo' ctId_ (MemberId ownerId) ownerKey
-          pure (gInfo', gks)
+          pure (gInfo', gks')
         rs <- withGroupLock "connectPreparedGroup" groupId $
-          mapConcurrently (connectToRelay user gInfo' gks) relays
+          mapConcurrently (connectToRelay user gInfo' gks') relays
         let relayFailed = \case (_, _, Left _) -> True; _ -> False
             (failed, succeeded) = partition relayFailed rs
         if null succeeded
@@ -2359,7 +2359,7 @@ processChatCommand cxt nm = \case
             newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
             withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
       GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
-        (hostMember, gks) <- withFastStore $ \db -> (,) <$> getHostMember db cxt user groupId <*> mkGroupKeys db cxt gInfo keysData
+        hostMember <- withFastStore $ \db -> getHostMember db cxt user groupId
         msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
           Just smId -> pure (smId, mc)
           Nothing -> do
@@ -4984,12 +4984,12 @@ processChatCommand cxt nm = \case
       where
         getDirectCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTDirect))
         getDirectCI db itemId = runExceptT . withExceptT ChatErrorStore $ getDirectChatItem db user ctId itemId
-    getCommandGroupChatItems :: User -> Int64 -> NonEmpty ChatItemId -> CM (GroupInfo, GroupKeys, [CChatItem 'CTGroup])
+    getCommandGroupChatItems :: User -> Int64 -> NonEmpty ChatItemId -> CM ((GroupInfo, GroupKeys), [CChatItem 'CTGroup])
     getCommandGroupChatItems user gId itemIds = do
-      (gInfo, gks) <- withFastStore $ \db -> getGroupInfoKeys db cxt user gId
+      g@(gInfo, _) <- withFastStore $ \db -> getGroupInfoKeys db cxt user gId
       (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getGroupCI db gInfo) (L.toList itemIds))
       unless (null errs) $ toView $ CEvtChatErrors errs
-      pure (gInfo, gks, items)
+      pure (g, items)
       where
         getGroupCI :: DB.Connection -> GroupInfo -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
         getGroupCI db gInfo itemId = runExceptT . withExceptT ChatErrorStore $ getGroupCIWithReactions db user gInfo itemId

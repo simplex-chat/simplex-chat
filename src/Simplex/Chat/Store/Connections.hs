@@ -78,7 +78,7 @@ getChatLockEntity db agentConnId = do
 getConnectionEntity :: DB.Connection -> StoreCxt -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
 getConnectionEntity db cxt user agentConnId = fst <$> getConnectionEntityKeys db cxt user agentConnId
 
-getConnectionEntityKeys :: DB.Connection -> StoreCxt -> User -> AgentConnId -> ExceptT StoreError IO (ConnectionEntity, Maybe GroupKeysData)
+getConnectionEntityKeys :: DB.Connection -> StoreCxt -> User -> AgentConnId -> ExceptT StoreError IO (ConnectionEntity, Maybe GroupKeysRow)
 getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = do
   c@Connection {connType, entityId} <- getConnection_
   case entityId of
@@ -139,7 +139,7 @@ getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = d
           contactRequest = UserContactRequestRef <$> contactRequestId <*> (unBI <$> rejectionSupported_)
           groupDirectInv = toGroupDirectInvitation groupDirectInvRow
        in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactRequest, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
-    getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupKeysData, GroupMember)
+    getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupKeysRow, GroupMember)
     getGroupAndMember_ groupMemberId c = do
       currentTs <- liftIO getCurrentTime
       (g, keysData, m) <-
@@ -185,7 +185,7 @@ getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = d
               (groupMemberId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
       g' <- liftIO $ addGroupChatTags db g
       pure (g', keysData, m)
-    toGroupAndMember :: UTCTime -> Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupKeysData, GroupMember)
+    toGroupAndMember :: UTCTime -> Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupKeysRow, GroupMember)
     toGroupAndMember currentTs c (groupInfoRow :. memberRow) =
       let (groupInfo, keysData) = toGroupInfo currentTs cxt userContactId [] groupInfoRow
           member = toGroupMember currentTs userContactId memberRow

@@ -132,7 +132,7 @@ createOrUpdateContactRequest
               |]
               (userId, xContactId)
         mapM (addDirectChatTags db) ct_
-      getAcceptedBusinessChat :: XContactId -> IO (Maybe (GroupInfo, GroupKeysData))
+      getAcceptedBusinessChat :: XContactId -> IO (Maybe (GroupInfo, GroupKeysRow))
       getAcceptedBusinessChat xContactId = do
         currentTs <- getCurrentTime
         g_ <-

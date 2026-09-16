@@ -44,7 +44,6 @@ data GroupKeys
       }
   deriving (Eq, Show)
 
-groupPublicId :: GroupKeys -> Maybe B64UrlByteString
 publicGroupKeys :: GroupKeys -> Bool
 ```
 
@@ -56,6 +55,8 @@ publicGroupKeys :: GroupKeys -> Bool
 
 `PreparedChatEntity` becomes `PCEGroup {groupInfo, groupKeys, hostMember}`.
 
+`ReceivedGroupInvitation` gains `groupKeys :: GroupKeys`.
+
 ## 2. Reading
 
 `Simplex/Chat/Store/Shared.hs`.
@@ -66,16 +67,14 @@ publicGroupKeys :: GroupKeys -> Bool
 data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey, drg :: TVar ChaChaDRG}
 ```
 
-`mkStoreCxt` takes the generator alongside the config; its callers pass it.
-
-`toGroupInfo` returns `(GroupInfo, GroupKeysData)`; `toGroupInfo_` returns the group alone.
-
 ```haskell
-type GroupKeysData = GroupKeysRow
+mkStoreCxt :: ChatController -> StoreCxt
 ```
 
+`toGroupInfo` returns `(GroupInfo, GroupKeysRow)`; `toGroupInfo_` returns the group alone.
+
 ```haskell
-mkGroupKeys :: DB.Connection -> StoreCxt -> GroupInfo -> GroupKeysData -> ExceptT StoreError IO GroupKeys
+mkGroupKeys :: DB.Connection -> StoreCxt -> GroupInfo -> GroupKeysRow -> ExceptT StoreError IO GroupKeys
 ```
 
 The member key is taken from the row, or generated and stored. The constructor follows:
@@ -91,7 +90,7 @@ The member key is taken from the row, or generated and stored. The constructor f
 
 | function | returns |
 | --- | --- |
-| `getGroupInfoRow` | `(GroupInfo, GroupKeysData)` |
+| `getGroupInfoRow` | `(GroupInfo, GroupKeysRow)` |
 | `getGroupInfoKeys` | `(GroupInfo, GroupKeys)` |
 | `getGroupInfo` | `GroupInfo`, as `fst <$> getGroupInfoRow` |
 | `getGroupKeys_` | `(Group, GroupKeys)` |
@@ -107,15 +106,15 @@ A site that needs keys switches its existing read to `getGroupInfoKeys` or `getG
 
 | function | returns |
 | --- | --- |
-| `getConnectionEntityKeys` | `(ConnectionEntity, Maybe GroupKeysData)` |
+| `getConnectionEntityKeys` | `(ConnectionEntity, Maybe GroupKeysRow)` |
 | `getConnectionEntity` | `ConnectionEntity`, as `fst <$> getConnectionEntityKeys` |
-| `getGroupInvitation` | `(ReceivedGroupInvitation, GroupKeys)` |
+| `getGroupInvitation` | `ReceivedGroupInvitation`, with `groupKeys` |
 | `createGroupInvitation` | `(GroupInfo, GroupKeys, GroupMemberId)` |
 | `createBusinessRequestGroup` | `(GroupInfo, GroupKeys, GroupMember)` |
 | `updatePreparedRelayedGroup` | `(GroupInfo, GroupKeys)` |
 | `getRelayServedGroups` | `[(GroupInfo, GroupKeys)]` |
-| `getAcceptedBusinessChat` | `Maybe (GroupInfo, GroupKeysData)` |
-| `getGroupAndRegLink` (directory service) | `(GroupInfo, GroupKeysData, GroupReg, Maybe GroupLink)` |
+| `getAcceptedBusinessChat` | `Maybe (GroupInfo, GroupKeysRow)` |
+| `getGroupAndRegLink` (directory service) | `(GroupInfo, GroupKeysRow, GroupReg, Maybe GroupLink)` |
 
 ### Reads that discard the keys
 
@@ -218,7 +217,7 @@ The query count is unchanged. Every site that needs keys takes them from a read 
 | commands holding a group | `getGroupInfo` | `getGroupInfoKeys` |
 | commands holding a group and members | `getGroup` | `getGroupKeys_` |
 | `processAgentMessageConn` | `getConnectionEntity` | `getConnectionEntityKeys` |
-| `APIJoinGroup` | `getGroupInvitation` | same, returning keys |
+| `APIJoinGroup` | `getGroupInvitation` | same, with `groupKeys` in the record |
 | `APIConnectPreparedGroup` | `getGroupInfo` | `getGroupInfoRow` |
 | business request | `getGroupInfo` | `getGroupInfoRow` |
 | directory service link update | `getGroupLink` | `getGroupAndRegLink` |
@@ -240,7 +239,7 @@ Covered by the existing suites: relay request and prepared channel flows (`chat 
 
 ## Open
 
-`publicGroupId` in `GKPublicGroup` and `GKPreparedPublicGroup` restates `groupProfile.publicGroup`, and `groupPublicId` is unused. Dropping both leaves each constructor holding what is secret or absent from `GroupInfo`.
+`publicGroupId` in `GKPublicGroup` and `GKPreparedPublicGroup` restates `groupProfile.publicGroup` and is unread. Dropping it leaves each constructor holding what is secret or absent from `GroupInfo`.
 
 `bots/api/TYPES.md`, `packages/simplex-chat-client/types/typescript/src/types.ts` and `packages/simplex-chat-python/src/simplex_chat/types/_types.py` still declare `GroupKeys`. The `Bot API docs` test regenerates them once they are writable; they are owned by root.
 

@@ -499,12 +499,6 @@ data GroupKeys
       }
   deriving (Eq, Show)
 
-groupPublicId :: GroupKeys -> Maybe B64UrlByteString
-groupPublicId = \case
-  GKPublicGroup {publicGroupId} -> Just publicGroupId
-  GKPreparedPublicGroup {publicGroupId} -> Just publicGroupId
-  _ -> Nothing
-
 publicGroupKeys :: GroupKeys -> Bool
 publicGroupKeys = \case
   GKGroup {} -> False

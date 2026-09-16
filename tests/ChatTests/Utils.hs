@@ -708,10 +708,11 @@ getCtConn :: TestCC -> ContactId -> IO Connection
 getCtConn cc contactId = getTestCCContact cc contactId >>= maybe (fail "no connection") pure . contactConn
 
 getTestCCContact :: TestCC -> ContactId -> IO Contact
-getTestCCContact cc contactId =
+getTestCCContact cc contactId = do
+  let TestCC {chatController} = cc
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
-      runExceptT (getContact db (mkStoreCxt $ chatController cc) user contactId) >>= either (fail . show) pure
+      runExceptT (getContact db (mkStoreCxt chatController) user contactId) >>= either (fail . show) pure
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do

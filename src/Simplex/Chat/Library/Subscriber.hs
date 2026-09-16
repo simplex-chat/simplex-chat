@@ -141,7 +141,7 @@ processAgentMessage corrId connId msg = do
       Just (user, entity, groupKeysData_) -> processAgentMessageConn cxt user entity groupKeysData_ corrId connId msg `catchAllErrors` eToView
       _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
   where
-    getUserEntity :: StoreCxt -> DB.Connection -> ExceptT StoreError IO (Maybe (User, ConnectionEntity, Maybe GroupKeysData))
+    getUserEntity :: StoreCxt -> DB.Connection -> ExceptT StoreError IO (Maybe (User, ConnectionEntity, Maybe GroupKeysRow))
     getUserEntity cxt db =
       liftIO (getUserByAConnId db $ AgentConnId connId)
         >>= mapM (\user -> do
@@ -433,7 +433,7 @@ processAgentMsgRcvFile _corrId aFileId msg = do
 
 type ShouldDeleteGroupConns = Bool
 
-processAgentMessageConn :: StoreCxt -> User -> ConnectionEntity -> Maybe GroupKeysData -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
+processAgentMessageConn :: StoreCxt -> User -> ConnectionEntity -> Maybe GroupKeysRow -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
 processAgentMessageConn cxt user@User {userId} entity groupKeysData_ corrId agentConnId agentMessage = do
   let groupKeysFromRow gInfo = case groupKeysData_ of
         Just keysData -> withStore $ \db -> mkGroupKeys db cxt gInfo keysData
@@ -1229,7 +1229,8 @@ processAgentMessageConn cxt user@User {userId} entity groupKeysData_ corrId agen
             mc_ <- getAutoReplyMsg
             forM_ mc_ $ \mc -> do
               connReq_ <- withStore' $ \db -> getBusinessContactRequest db user groupId
-              sendGroupAutoReply mc connReq_
+              gks <- getGks
+              sendGroupAutoReply gks mc connReq_
       LDATA FixedLinkData {rootKey = relayKey, linkEntityId} cData cReq ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cmdFunction of
@@ -1266,7 +1267,7 @@ processAgentMessageConn cxt user@User {userId} entity groupKeysData_ corrId agen
                   relayProfile <- liftIO (decodeLinkUserData cData) >>= \case
                     Just RelayShortLinkData {relayProfile = p} -> pure p
                     Nothing -> throwChatError $ CEException "relay link: no relay link data"
-                  (confId, m', relay) <- withStore $ \db -> do
+                  (confId, m', relay)  <- withStore $ \db -> do
                     confId <- getRelayConfId db m
                     liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
                     (m', relay) <- setRelayLinkAccepted db cxt user m (MemberKey relayKey) relayProfile
@@ -1326,16 +1327,14 @@ processAgentMessageConn cxt user@User {userId} entity groupKeysData_ corrId agen
               where
                 useReply UserContactLink {addressSettings = AddressSettings {autoReply}} = autoReply
             _ -> pure Nothing
-        sendGroupAutoReply mc cr_ = do
-          gks <- getGks
-          case cr_ of
-            Just UserContactRequest {welcomeSharedMsgId = Just smId} ->
-              void $ sendGroupMessage' user gInfo gks [m] $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing
-            _ -> do
-              msg <- sendGroupMessage' user gInfo gks [m] $ XMsgNew $ mcSimple mc
-              ci <- saveSndChatItem user (CDGroupSnd gInfo Nothing) msg (CISndMsgContent mc)
-              withStore' $ \db -> createGroupSndStatus db (chatItemId' ci) (groupMemberId' m) GSSNew
-              toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing) ci]
+        sendGroupAutoReply gks mc = \case
+          Just UserContactRequest {welcomeSharedMsgId = Just smId} ->
+            void $ sendGroupMessage' user gInfo gks [m] $ XMsgUpdate smId mc M.empty Nothing Nothing Nothing Nothing
+          _ -> do
+            msg <- sendGroupMessage' user gInfo gks [m] $ XMsgNew $ mcSimple mc
+            ci <- saveSndChatItem user (CDGroupSnd gInfo Nothing) msg (CISndMsgContent mc)
+            withStore' $ \db -> createGroupSndStatus db (chatItemId' ci) (groupMemberId' m) GSSNew
+            toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing) ci]
 
     agentMsgDecryptError :: AgentCryptoError -> (MsgDecryptError, Word32)
     agentMsgDecryptError = \case
@@ -3613,8 +3612,7 @@ processAgentMessageConn cxt user@User {userId} entity groupKeysData_ corrId agen
           toView CEvtMemberRole {user, groupInfo = gInfo', byMember = author', member, fromRole, toRole, msgSigned = Just MSSVerified}
 
     sendRosterAck :: GroupInfo -> GroupKeys -> GroupMember -> VersionRoster -> Maybe Text -> CM ()
-    sendRosterAck gInfo gks owner ackVer err =
-      void $ sendGroupMessage' user gInfo gks [owner] (XGrpRosterAck ackVer err)
+    sendRosterAck gInfo gks owner ackVer err = void $ sendGroupMessage' user gInfo gks [owner] (XGrpRosterAck ackVer err)
 
     xGrpRosterAck :: GroupInfo -> CM GroupKeys -> GroupMember -> VersionRoster -> Maybe Text -> CM ()
     xGrpRosterAck gInfo getGks m ackVer err = do
