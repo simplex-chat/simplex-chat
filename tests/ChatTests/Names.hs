@@ -36,7 +36,7 @@ testConnectByName ps = withSmpServerAndNames $ \reg ->
       mapM_ enableNamesRole [alice, bob]
       alice ##> "/ad"
       (shortLink, _) <- getContactLinks alice True
-      registerName reg aliceName (contactNameRecord "alice" (T.pack shortLink))
+      registerName reg aliceName (contactNameRecord "alice.simplex" (T.pack shortLink))
       alice ##> "/_set domain 1 alice.simplex"
       alice <## "new contact address set"
       bob ##> "/c @alice.simplex"
@@ -71,7 +71,7 @@ testConnectByNameNotClaimed ps = withSmpServerAndNames $ \reg ->
       mapM_ enableNamesRole [alice, bob]
       alice ##> "/ad"
       (shortLink, _) <- getContactLinks alice True
-      registerName reg aliceName (contactNameRecord "alice" (T.pack shortLink))
+      registerName reg aliceName (contactNameRecord "alice.simplex" (T.pack shortLink))
       bob ##> "/c @alice.simplex"
       bob <## "SimpleX name alice.simplex is not included in the connection link's profile"
 
@@ -94,7 +94,7 @@ testConnectByNameKnownContactNotClaimed ps = withSmpServerAndNames $ \reg ->
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
-      registerName reg aliceName (contactNameRecord "alice" (T.pack shortLink))
+      registerName reg aliceName (contactNameRecord "alice.simplex" (T.pack shortLink))
       bob ##> "/c @alice.simplex"
       bob <## "SimpleX name alice.simplex is not included in the connection link's profile"
 
@@ -116,7 +116,7 @@ testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
       mapM_ enableNamesRole [alice, bob]
       bob ##> "/ad"
       (bobShortLink, _) <- getContactLinks bob True
-      registerName reg aliceName (contactNameRecord "alice" (T.pack bobShortLink))
+      registerName reg aliceName (contactNameRecord "alice.simplex" (T.pack bobShortLink))
       alice ##> "/ad"
       _ <- getContactLinks alice True
       alice ##> "/_set domain 1 alice.simplex"
@@ -130,7 +130,7 @@ testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames $ \reg ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
         mapM_ enableNamesRole [alice, cath, bob]
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
-        registerName reg teamName (channelNameRecord "team" (T.pack shortLink))
+        registerName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink))
         alice ##> "/public group access #team domain=team.simplex"
         alice <## "updated public group access: domain=team.simplex"
         cath <## "alice updated group #team: (signed)"
@@ -150,7 +150,7 @@ testChannelDomainVerify ps = withSmpServerAndNames $ \reg ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
         mapM_ enableNamesRole [alice, cath, bob]
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice cath
-        registerName reg teamName (channelNameRecord "team" (T.pack shortLink))
+        registerName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink))
         alice ##> "/public group access #team domain=team.simplex"
         alice <## "updated public group access: domain=team.simplex"
         cath <## "alice updated group #team: (signed)"
@@ -162,7 +162,7 @@ testChannelDomainVerify ps = withSmpServerAndNames $ \reg ->
         bob ##> "/_verify domain #1"
         bob <## "SimpleX name #team verified"
         -- the name is re-pointed to a different link: verification fails
-        registerName reg teamName (channelNameRecord "team" "https://simplex.chat/other")
+        registerName reg teamName (channelNameRecord "team.simplex" "https://simplex.chat/other")
         bob ##> "/_verify domain #1"
         bob <## "SimpleX name #team not verified: the name does not resolve to the link in the group profile"
         -- a link-data refresh keeps the failed status, not overwritten with verified
@@ -180,7 +180,7 @@ testConnectByChannelName ps = withSmpServerAndNames $ \reg ->
       withNewTestChat ps "bob" bobProfile $ \bob -> do
         mapM_ enableNamesRole [alice, cath, bob]
         (shortLink, _) <- prepareChannel1Relay "team" alice cath
-        registerName reg teamName (channelNameRecord "team" (T.pack shortLink))
+        registerName reg teamName (channelNameRecord "team.simplex" (T.pack shortLink))
         alice ##> "/public group access #team domain=team.simplex"
         alice <## "updated public group access: domain=team.simplex"
         cath <## "alice updated group #team: (signed)"
@@ -216,7 +216,7 @@ testConnectByNameChannelAndContact ps = withSmpServerAndNames $ \reg ->
         (channelLink, _) <- prepareChannel1Relay "team" alice cath
         alice ##> "/ad"
         (contactLink, _) <- getContactLinks alice True
-        registerName reg teamName (contactAndChannelNameRecord "team" (T.pack contactLink) (T.pack channelLink))
+        registerName reg teamName (contactAndChannelNameRecord "team.simplex" (T.pack contactLink) (T.pack channelLink))
         alice ##> "/public group access #team domain=team.simplex"
         alice <## "updated public group access: domain=team.simplex"
         cath <## "alice updated group #team: (signed)"
@@ -255,7 +255,7 @@ testConnectByNameContactAndChannel ps = withSmpServerAndNames $ \reg ->
         (channelLink, _) <- prepareChannel1Relay "acme" alice cath
         alice ##> "/ad"
         (contactLink, _) <- getContactLinks alice True
-        registerName reg acmeName (contactAndChannelNameRecord "acme" (T.pack contactLink) (T.pack channelLink))
+        registerName reg acmeName (contactAndChannelNameRecord "acme.simplex" (T.pack contactLink) (T.pack channelLink))
         alice ##> "/_set domain 1 acme.simplex"
         alice <## "new contact address set"
         bob ##> "/_connect plan 1 acme.simplex"
@@ -274,7 +274,7 @@ testConnectByNameBusinessAndChannel ps = withSmpServerAndNames $ \reg ->
         (channelLink, _) <- prepareChannel1Relay "biz" alice cath
         alice ##> "/ad"
         (contactLink, fullLink) <- getContactLinks alice True
-        registerName reg bizName (contactAndChannelNameRecord "biz" (T.pack contactLink) (T.pack channelLink))
+        registerName reg bizName (contactAndChannelNameRecord "biz.simplex" (T.pack contactLink) (T.pack channelLink))
         alice ##> "/auto_accept on business"
         alice <## "auto_accept on, business"
         alice ##> "/_set domain 1 biz.simplex"
