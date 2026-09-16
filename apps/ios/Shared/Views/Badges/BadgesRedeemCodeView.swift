@@ -44,15 +44,27 @@ struct BadgesRedeemCodeView: View {
     @State private var showQRCodeScanner = true
 
     var body: some View {
-        GeometryReader { g in
-            ScrollView {
-                VStack(alignment: .center, spacing: 16) {
-                    entryContent(g)
+        ZStack {
+            GeometryReader { g in
+                ScrollView {
+                    VStack(alignment: .center, spacing: 16) {
+                        entryContent(g)
+                    }
+                    .padding(.horizontal, 25)
+                    .padding(.top, 8)
+                    .padding(.bottom, 20)
+                    .frame(minHeight: g.size.height)
                 }
-                .padding(.horizontal, 25)
-                .padding(.top, 8)
-                .padding(.bottom, 20)
-                .frame(minHeight: g.size.height)
+            }
+
+            if submitting {
+                ZStack {
+                    Circle()
+                        .fill(.white)
+                        .opacity(0.7)
+                        .frame(width: 56, height: 56)
+                    ProgressView().scaleEffect(2)
+                }
             }
         }
         .frame(maxHeight: .infinity)
