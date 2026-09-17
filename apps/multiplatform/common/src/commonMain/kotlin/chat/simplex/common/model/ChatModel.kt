@@ -116,6 +116,34 @@ object ChannelRelaysModel {
   }
 }
 
+// The badge of whichever profile it was last loaded for, kept current by the badgeChanged event so
+// that a screen already open shows what the renewal worker did with no command behind it.
+object BadgeModel {
+  val rhId = mutableStateOf<Long?>(null)
+  val userId = mutableStateOf<Long?>(null)
+  val badgeState = mutableStateOf<BadgeState?>(null)
+  val alert = mutableStateOf<BadgeAlert?>(null)
+
+  // alert follows the state: getUserBadgeState derives it on every read, so a badgeChanged is
+  // never staler than the alert it carries - the invariant a new alert kind must keep
+  fun set(rhId: Long?, userId: Long, badgeState: BadgeState?) {
+    this.rhId.value = rhId
+    this.userId.value = userId
+    this.badgeState.value = badgeState
+    alert.value = badgeState?.alert
+  }
+
+  fun setAlert(rhId: Long?, userId: Long, alert: BadgeAlert) {
+    if (isCurrent(rhId, userId)) {
+      this.alert.value = alert
+      badgeState.value = badgeState.value?.copy(alert = alert)
+    }
+  }
+
+  fun isCurrent(rhId: Long?, userId: Long?): Boolean =
+    this.rhId.value == rhId && this.userId.value == userId
+}
+
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
@@ -2196,7 +2224,7 @@ enum class BadgeStatus {
 @Serializable
 data class BadgeInfo(
   val badgeType: BadgeType,
-  val badgeExpiry: Instant? = null,
+  val badgeExpiry: Instant,
   val badgeExtra: String = ""
 )
 
@@ -2205,6 +2233,49 @@ data class LocalBadge(
   val badge: BadgeInfo,
   val status: BadgeStatus
 )
+
+// paidThrough is the only date to show the user: BadgeInfo.badgeExpiry is the credential's expiry,
+// which outlives entitlement so the credential's window can cover a renewal.
+@Serializable
+data class BadgeState(
+  val badgePurchaseId: Long,
+  val badgeType: BadgeType,
+  val shown: Boolean,
+  val monthsLeft: Int,
+  val paidThrough: Instant,
+  val renewsAt: Instant? = null,
+  val willRenew: Boolean,
+  val alert: BadgeAlert? = null
+) {
+  val paidThroughText: String get() = badgeDateText(paidThrough)
+}
+
+@Serializable
+data class BadgeAlert(
+  val kind: BadgeAlertKind,
+  val episode: String,
+  val date: Instant,
+  val price: BadgeAlertPrice? = null
+) {
+  val dateText: String get() = badgeDateText(date)
+}
+
+@Serializable
+data class BadgeAlertPrice(val amount: Long, val currency: String)
+
+@Serializable
+enum class BadgeAlertKind {
+  @SerialName("renewalApproaching") RenewalApproaching,
+  @SerialName("paymentIssue") PaymentIssue,
+  @SerialName("subscriptionEnded") SubscriptionEnded,
+  @SerialName("prepaidEnding") PrepaidEnding,
+  @SerialName("supportEnded") SupportEnded
+}
+
+private fun badgeDateText(date: Instant): String {
+  val ts = date.toLocalDateTime(TimeZone.currentSystemDefault())
+  return ts.toJavaLocalDateTime().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG))
+}
 
 // the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)
 @Serializable
@@ -4259,6 +4330,13 @@ enum class MREmojiChar(val value: String) {
   @SerialName("✅") Check("✅");
 }
 
+// set by the core when the file is above the size the sender's badge allows; badgeStatus is null when no proof was sent
+@Serializable
+data class FileProhibited(
+  val maxSize: Long,
+  val badgeStatus: BadgeStatus? = null
+)
+
 @Serializable
 data class CIFile(
   val fileId: Long,
@@ -4266,8 +4344,12 @@ data class CIFile(
   val fileSize: Long,
   val fileSource: CryptoFile? = null,
   val fileStatus: CIFileStatus,
-  val fileProtocol: FileProtocol
+  val fileProtocol: FileProtocol,
+  val fileExpires: Instant? = null,
+  val fileProhibited: FileProhibited? = null
 ) {
+  val expired: Boolean = fileExpires != null && fileExpires < Clock.System.now()
+
   val loaded: Boolean = when (fileStatus) {
     is CIFileStatus.SndStored -> true
     is CIFileStatus.SndTransfer -> true
@@ -4317,7 +4399,7 @@ data class CIFile(
     is CIFileStatus.SndCancelled -> true
     is CIFileStatus.SndError -> true
     is CIFileStatus.SndWarning -> true
-    is CIFileStatus.RcvInvitation -> false
+    is CIFileStatus.RcvInvitation -> expired
     is CIFileStatus.RcvAccepted -> true
     is CIFileStatus.RcvTransfer -> true
     is CIFileStatus.RcvAborted -> true

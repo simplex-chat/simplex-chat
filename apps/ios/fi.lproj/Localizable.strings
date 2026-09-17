@@ -3141,26 +3141,26 @@ server test failure */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Sinulla on jo keskusteluprofiili samalla näyttönimellä. Valitse toinen nimi.";
 
+/* new chat alert */
+"You are a member" = "Olet jäsen";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Olet jo muodostanut yhteyden %@:n kanssa.";
+
+/* new chat alert */
+"You are an admin" = "Olet ylläpitäjä";
+
+/* new chat alert */
+"You are an observer" = "Olet tarkkailija";
+
+/* new chat alert */
+"You are an owner" = "Olet omistaja";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Sinut on kutsuttu ryhmään";
 
 /* No comment provided by engineer. */
 "you are observer" = "olet tarkkailija";
-
-/* new chat alert */
-"You are an observer" = "Olet tarkkailija";
-
-/* new chat alert */
-"You are a member" = "Olet jäsen";
-
-/* new chat alert */
-"You are an admin" = "Olet ylläpitäjä";
-
-/* new chat alert */
-"You are an owner" = "Olet omistaja";
 
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "Voit vastaanottaa puheluita lukitusnäytöltä ilman laitteen ja sovelluksen todennusta.";

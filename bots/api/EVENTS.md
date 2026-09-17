@@ -72,6 +72,10 @@ This file is generated automatically.
 - [ServiceRequest](#servicerequest)
 - [ServiceReplySent](#servicereplysent)
 
+[Remote control events](#remote-control-events)
+- [RemoteCtrlSessionCode](#remotectrlsessioncode)
+- [RemoteCtrlStopped](#remotectrlstopped)
+
 [Error events](#error-events)
 - [MessageError](#messageerror)
 - [ChatError](#chaterror)
@@ -789,6 +793,37 @@ Correlate `connectionId` with the connection ID from the response to [APISendSer
 **Record type**:
 - type: "serviceReplySent"
 - connectionId: string
+
+---
+
+
+## Remote control events
+
+Bots that act as remote control hosts receive these events during the remote control session lifecycle.
+
+
+### RemoteCtrlSessionCode
+
+Remote controller session code ready for verification.
+
+Use [VerifyRemoteCtrlSession](./COMMANDS.md#verifyremotectrlsession) to complete the connection.
+
+**Record type**:
+- type: "remoteCtrlSessionCode"
+- remoteCtrl_: [RemoteCtrlInfo](./TYPES.md#remotectrlinfo)?
+- sessionCode: string
+
+---
+
+
+### RemoteCtrlStopped
+
+Remote controller session stopped.
+
+**Record type**:
+- type: "remoteCtrlStopped"
+- rcsState: [RemoteCtrlSessionState](./TYPES.md#remotectrlsessionstate)
+- rcStopReason: [RemoteCtrlStopReason](./TYPES.md#remotectrlstopreason)
 
 ---
 

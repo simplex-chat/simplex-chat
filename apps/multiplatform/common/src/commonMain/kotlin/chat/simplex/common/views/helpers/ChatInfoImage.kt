@@ -207,9 +207,17 @@ private fun BadgeGlyph(badge: LocalBadge, modifier: Modifier, onBadgeClick: (() 
   }
 }
 
+// verbatim for an unknown type: it is the service's string, and must not be looked up as a localised key
+fun badgeTypeName(t: BadgeType): String = when (t) {
+  is BadgeType.Supporter -> generalGetString(MR.strings.badges_level_supporter)
+  is BadgeType.Legend -> generalGetString(MR.strings.badges_level_legend)
+  is BadgeType.Investor -> generalGetString(MR.strings.badges_type_investor)
+  is BadgeType.Unknown -> t.type
+}
+
 fun showBadgeInfoAlert(name: String, badge: LocalBadge, uriHandler: UriHandler) {
   // a verified badge's type is signed and can't be faked, so the real (possibly unknown) type name is the title
-  val title = badge.badge.badgeType.text.replaceFirstChar { it.uppercase() }
+  val title = badgeTypeName(badge.badge.badgeType)
   when {
     badge.status == BadgeStatus.Failed ->
       AlertManager.shared.showAlertMsg(
@@ -231,10 +239,9 @@ fun showBadgeInfoAlert(name: String, badge: LocalBadge, uriHandler: UriHandler) 
       )
     else -> {
       // Supporter, Legend and unknown types use the supporter wording
-      val expiry = badge.badge.badgeExpiry
       val supports =
-        if (badge.status == BadgeStatus.Expired && expiry != null)
-          String.format(generalGetString(MR.strings.badge_supported_simplex), name, localDate(expiry))
+        if (badge.status == BadgeStatus.Expired)
+          String.format(generalGetString(MR.strings.badge_supported_simplex), name, localDate(badge.badge.badgeExpiry))
         else
           String.format(generalGetString(MR.strings.badge_supports_simplex), name)
       AlertManager.shared.showAlertMsg(
@@ -245,7 +252,7 @@ fun showBadgeInfoAlert(name: String, badge: LocalBadge, uriHandler: UriHandler) 
   }
 }
 
-private fun badgeImage(t: BadgeType): ImageResource = when (t) {
+fun badgeImage(t: BadgeType): ImageResource = when (t) {
   is BadgeType.Legend -> MR.images.badge_legend
   is BadgeType.Investor -> MR.images.badge_investor
   else -> MR.images.badge_supporter // Supporter + Unknown

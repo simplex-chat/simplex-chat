@@ -35,7 +35,6 @@ fun CIVideoView(
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
   smallView: Boolean = false,
-  senderProfile: LocalProfile?,
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
@@ -99,7 +98,7 @@ fun CIVideoView(
           if (file != null) {
             when (file.fileStatus) {
               CIFileStatus.RcvInvitation, CIFileStatus.RcvAborted ->
-                receiveFileIfValidSize(file, senderProfile, receiveFile)
+                receiveFileIfValidSize(file, receiveFile)
               CIFileStatus.RcvAccepted ->
                 when (file.fileProtocol) {
                   FileProtocol.XFTP ->
@@ -129,7 +128,7 @@ fun CIVideoView(
           DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(duration * 1000L) }, remember { mutableStateOf(0L) }/*, soundEnabled*/)
         }
         if (showDownloadButton(file?.fileStatus) && !blurred.value && file != null) {
-          PlayButton(error = false, sizeMultiplier, { showMenu.value = true }) { receiveFileIfValidSize(file, senderProfile, receiveFile) }
+          PlayButton(error = false, sizeMultiplier, { showMenu.value = true }) { receiveFileIfValidSize(file, receiveFile) }
         }
       }
     }
@@ -525,7 +524,11 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
               showFileErrorAlert(file.fileStatus.sndFileError, temporary = true)
             }
           )
-        is CIFileStatus.RcvInvitation -> fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_video_asked_to_receive)
+        is CIFileStatus.RcvInvitation ->
+          if (file.expired && fileSizeValid(file))
+            fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+          else
+            fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_video_asked_to_receive)
         is CIFileStatus.RcvAccepted -> fileIcon(painterResource(MR.images.ic_more_horiz), MR.strings.icon_descr_waiting_for_video)
         is CIFileStatus.RcvTransfer ->
           if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
@@ -541,7 +544,7 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
             painterResource(MR.images.ic_close),
             MR.strings.icon_descr_file,
             onClick = {
-              showFileErrorAlert(file.fileStatus.rcvFileError)
+              showFileErrorAlert(file.fileStatus.rcvFileError, file)
             }
           )
         is CIFileStatus.RcvWarning ->
@@ -561,14 +564,11 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
 private fun showDownloadButton(status: CIFileStatus?): Boolean =
   status is CIFileStatus.RcvInvitation || status is CIFileStatus.RcvAborted
 
-private fun receiveFileIfValidSize(file: CIFile, senderProfile: LocalProfile?, receiveFile: (Long) -> Unit) {
-  if (fileSizeValid(file, senderProfile)) {
-    receiveFile(file.fileId)
+private fun receiveFileIfValidSize(file: CIFile, receiveFile: (Long) -> Unit) {
+  if (file.fileProhibited != null) {
+    showProhibitedFileAlert(file, file.fileProhibited)
   } else {
-    AlertManager.shared.showAlertMsg(
-      generalGetString(MR.strings.large_file),
-      String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol, senderProfile)))
-    )
+    receiveFile(file.fileId)
   }
 }
 

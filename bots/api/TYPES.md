@@ -10,9 +10,12 @@ This file is generated automatically.
 - [AgentCryptoError](#agentcryptoerror)
 - [AgentErrorType](#agenterrortype)
 - [AgentServiceError](#agentserviceerror)
+- [AppVersionRange](#appversionrange)
 - [AutoAccept](#autoaccept)
 - [BadgeInfo](#badgeinfo)
 - [BadgeProof](#badgeproof)
+- [BadgeRedeemError](#badgeredeemerror)
+- [BadgeServiceErrorCode](#badgeserviceerrorcode)
 - [BadgeStatus](#badgestatus)
 - [BadgeType](#badgetype)
 - [BlockingInfo](#blockinginfo)
@@ -77,6 +80,7 @@ This file is generated automatically.
 - [CreatedConnLink](#createdconnlink)
 - [CryptoFile](#cryptofile)
 - [CryptoFileArgs](#cryptofileargs)
+- [CtrlAppInfo](#ctrlappinfo)
 - [DroppedMsg](#droppedmsg)
 - [E2EInfo](#e2einfo)
 - [ErrorType](#errortype)
@@ -85,6 +89,7 @@ This file is generated automatically.
 - [FileError](#fileerror)
 - [FileErrorType](#fileerrortype)
 - [FileInvitation](#fileinvitation)
+- [FileProhibited](#fileprohibited)
 - [FileProtocol](#fileprotocol)
 - [FileStatus](#filestatus)
 - [FileTransferMeta](#filetransfermeta)
@@ -158,6 +163,7 @@ This file is generated automatically.
 - [ProxyError](#proxyerror)
 - [PublicGroupAccess](#publicgroupaccess)
 - [PublicGroupData](#publicgroupdata)
+- [PublicGroupKeys](#publicgroupkeys)
 - [PublicGroupProfile](#publicgroupprofile)
 - [RCErrorType](#rcerrortype)
 - [RatchetSyncState](#ratchetsyncstate)
@@ -169,8 +175,12 @@ This file is generated automatically.
 - [RcvGroupEvent](#rcvgroupevent)
 - [RcvMsgError](#rcvmsgerror)
 - [RelayCapabilities](#relaycapabilities)
+- [RelayConnectionResult](#relayconnectionresult)
 - [RelayProfile](#relayprofile)
 - [RelayStatus](#relaystatus)
+- [RemoteCtrlInfo](#remotectrlinfo)
+- [RemoteCtrlSessionState](#remotectrlsessionstate)
+- [RemoteCtrlStopReason](#remotectrlstopreason)
 - [ReportReason](#reportreason)
 - [RoleGroupPreference](#rolegrouppreference)
 - [SMPAgentError](#smpagenterror)
@@ -387,6 +397,17 @@ BadSignature:
 
 ---
 
+## AppVersionRange
+
+Remote controller app version range (min and max as version strings).
+
+**Record type**:
+- minVersion: string
+- maxVersion: string
+
+
+---
+
 ## AutoAccept
 
 **Record type**:
@@ -399,7 +420,7 @@ BadSignature:
 
 **Record type**:
 - badgeType: [BadgeType](#badgetype)
-- badgeExpiry: UTCTime?
+- badgeExpiry: UTCTime
 - badgeExtra: string
 
 
@@ -412,6 +433,98 @@ BadSignature:
 - presHeader: string
 - proof: string
 - badgeInfo: [BadgeInfo](#badgeinfo)
+
+
+---
+
+## BadgeRedeemError
+
+**Discriminated union type**:
+
+InvalidCode:
+- type: "invalidCode"
+
+ServiceNotConfigured:
+- type: "serviceNotConfigured"
+
+BadgeActive:
+- type: "badgeActive"
+
+ServiceError:
+- type: "serviceError"
+- serviceError: [BadgeServiceErrorCode](#badgeserviceerrorcode)
+
+InvalidResponse:
+- type: "invalidResponse"
+- message: string
+
+UnknownKeyIndex:
+- type: "unknownKeyIndex"
+
+CredentialNotVerified:
+- type: "credentialNotVerified"
+
+
+---
+
+## BadgeServiceErrorCode
+
+**Discriminated union type**:
+
+BadRequest:
+- type: "badRequest"
+
+UnsupportedVersion:
+- type: "unsupportedVersion"
+
+UnknownPurchaseKey:
+- type: "unknownPurchaseKey"
+
+UnknownOfferId:
+- type: "unknownOfferId"
+
+OfferDisabled:
+- type: "offerDisabled"
+
+OfferMismatch:
+- type: "offerMismatch"
+
+ProductUnavailable:
+- type: "productUnavailable"
+
+PaymentNotEntitled:
+- type: "paymentNotEntitled"
+
+PaymentPending:
+- type: "paymentPending"
+
+ProviderUnavailable:
+- type: "providerUnavailable"
+
+RateLimited:
+- type: "rateLimited"
+
+CodeInvalid:
+- type: "codeInvalid"
+
+CodeUsed:
+- type: "codeUsed"
+
+CodeExpired:
+- type: "codeExpired"
+
+ReceiptInvalid:
+- type: "receiptInvalid"
+
+ReceiptUsed:
+- type: "receiptUsed"
+
+Internal:
+- type: "internal"
+
+Unknown:
+- type: "unknown"
+- : string
 
 
 ---
@@ -747,6 +860,8 @@ LocalRcv:
 - fileSource: [CryptoFile](#cryptofile)?
 - fileStatus: [CIFileStatus](#cifilestatus)
 - fileProtocol: [FileProtocol](#fileprotocol)
+- fileExpires: UTCTime?
+- fileProhibited: [FileProhibited](#fileprohibited)?
 
 
 ---
@@ -1339,6 +1454,10 @@ AgentNoSubResult:
 CommandError:
 - type: "commandError"
 - message: string
+
+BadgeRedeemError:
+- type: "badgeRedeemError"
+- badgeRedeemError: [BadgeRedeemError](#badgeredeemerror)
 
 AgentCommandError:
 - type: "agentCommandError"
@@ -1967,6 +2086,18 @@ connFullLink + ((' ' + connShortLink) if connShortLink is not None else '') # Py
 
 ---
 
+## CtrlAppInfo
+
+Remote controller application info.
+
+**Record type**:
+- appVersionRange: [AppVersionRange](#appversionrange)
+- deviceName: string
+- compression: bool
+
+
+---
+
 ## DroppedMsg
 
 **Record type**:
@@ -2124,6 +2255,16 @@ NO_FILE:
 - fileConnReq: string?
 - fileInline: [InlineFileMode](#inlinefilemode)?
 - fileDescr: [FileDescr](#filedescr)?
+- fileBadge: [BadgeProof](#badgeproof)?
+
+
+---
+
+## FileProhibited
+
+**Record type**:
+- maxSize: int64
+- badgeStatus: [BadgeStatus](#badgestatus)?
 
 
 ---
@@ -2403,8 +2544,7 @@ MemberSupport:
 ## GroupKeys
 
 **Record type**:
-- publicGroupId: string
-- groupRootKey: [GroupRootKey](#grouprootkey)
+- publicGroupKeys: [PublicGroupKeys](#publicgroupkeys)?
 - memberPrivKey: string
 
 
@@ -3275,6 +3415,15 @@ NO_SESSION:
 
 ---
 
+## PublicGroupKeys
+
+**Record type**:
+- publicGroupId: string
+- groupRootKey: [GroupRootKey](#grouprootkey)
+
+
+---
+
 ## PublicGroupProfile
 
 **Record type**:
@@ -3441,6 +3590,7 @@ Cancelled:
 - fileId: int64
 - xftpRcvFile: [XFTPRcvFile](#xftprcvfile)?
 - fileInvitation: [FileInvitation](#fileinvitation)
+- fileProhibited: [FileProhibited](#fileprohibited)?
 - fileStatus: [RcvFileStatus](#rcvfilestatus)
 - fileType: [FileType](#filetype)
 - rcvFileInline: [InlineFileMode](#inlinefilemode)?
@@ -3550,6 +3700,15 @@ ParseError:
 
 ---
 
+## RelayConnectionResult
+
+**Record type**:
+- relayMember: [GroupMember](#groupmember)
+- relayError: [ChatError](#chaterror)?
+
+
+---
+
 ## RelayProfile
 
 **Record type**:
@@ -3571,6 +3730,62 @@ ParseError:
 - "active"
 - "inactive"
 - "rejected"
+
+
+---
+
+## RemoteCtrlInfo
+
+**Record type**:
+- remoteCtrlId: int64
+- ctrlDeviceName: string
+- sessionState: [RemoteCtrlSessionState](#remotectrlsessionstate)?
+
+
+---
+
+## RemoteCtrlSessionState
+
+**Discriminated union type**:
+
+Starting:
+- type: "starting"
+
+Searching:
+- type: "searching"
+
+Connecting:
+- type: "connecting"
+
+PendingConfirmation:
+- type: "pendingConfirmation"
+- sessionCode: string
+
+Connected:
+- type: "connected"
+- sessionCode: string
+
+
+---
+
+## RemoteCtrlStopReason
+
+**Discriminated union type**:
+
+DiscoveryFailed:
+- type: "discoveryFailed"
+- chatError: [ChatError](#chaterror)
+
+ConnectionFailed:
+- type: "connectionFailed"
+- chatError: [ChatError](#chaterror)
+
+SetupFailed:
+- type: "setupFailed"
+- chatError: [ChatError](#chaterror)
+
+Disconnected:
+- type: "disconnected"
 
 
 ---

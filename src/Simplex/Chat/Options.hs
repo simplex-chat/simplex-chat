@@ -67,6 +67,7 @@ data CoreChatOpts = CoreChatOpts
     logAgent :: Maybe LogLevel,
     logFile :: Maybe FilePath,
     tbqSize :: Natural,
+    maxChats :: Int,
     deviceName :: Maybe Text,
     chatRelay :: Bool,
     webPreviewConfig :: Maybe WebPreviewConfig,
@@ -235,6 +236,15 @@ coreChatOptsP appDir defaultDbName = do
           <> value 1024
           <> showDefault
       )
+  maxChats <-
+    option
+      auto
+      ( long "max-chats"
+          <> metavar "COUNT"
+          <> help "Max number of chats loaded by chat list API"
+          <> value 5000
+          <> showDefault
+      )
   deviceName <-
     optional $
       strOption
@@ -347,6 +357,7 @@ coreChatOptsP appDir defaultDbName = do
         logAgent = if logAgent || logLevel == CLLDebug then Just $ agentLogLevel logLevel else Nothing,
         logFile,
         tbqSize,
+        maxChats,
         deviceName,
         chatRelay,
         webPreviewConfig,

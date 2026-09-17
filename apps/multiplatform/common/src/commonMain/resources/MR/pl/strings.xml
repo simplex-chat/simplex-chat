@@ -1771,7 +1771,6 @@
     <string name="network_smp_proxy_mode_never">Nigdy</string>
     <string name="network_smp_proxy_mode_unprotected">Niezabezpieczony</string>
     <string name="network_smp_proxy_mode_never_description">NIE używaj prywatnego trasowania.</string>
-    <string name="update_network_smp_proxy_mode_question">Tryb trasowania wiadomości</string>
     <string name="network_smp_proxy_fallback_allow">Tak</string>
     <string name="network_smp_proxy_fallback_prohibit">Nie</string>
     <string name="network_smp_proxy_fallback_allow_protected">Gdy IP ukryty</string>
@@ -1781,7 +1780,6 @@
     <string name="private_routing_explanation">Aby chronić Twój adres IP, prywatne trasowanie używa Twoich serwerów SMP, aby dostarczyć wiadomości.</string>
     <string name="network_smp_proxy_mode_unknown">Nieznane serwery</string>
     <string name="network_smp_proxy_mode_unknown_description">Używaj prywatnego trasowania z nieznanymi serwerami.</string>
-    <string name="update_network_smp_proxy_fallback_question">Rezerwowe trasowania wiadomości</string>
     <string name="network_smp_proxy_mode_private_routing">Prywatne trasowanie</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Wysyłaj wiadomości bezpośrednio, gdy adres IP jest chroniony i Twój lub docelowy serwer nie obsługuje prywatnego trasowania.</string>
     <string name="network_smp_proxy_fallback_allow_description">Wysyłaj wiadomości bezpośrednio, gdy Twój lub docelowy serwer nie obsługuje prywatnego trasowania.</string>
@@ -1794,7 +1792,6 @@
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Bez Tor lub VPN, Twój adres IP będzie widoczny do serwerów plików.</string>
     <string name="settings_section_title_files">Pliki</string>
     <string name="settings_section_title_user_theme">Motyw profilu</string>
-    <string name="chat_list_always_visible">Pokaż listę czatów w nowym oknie</string>
     <string name="dark_mode_colors">Kolory ciemnego trybu</string>
     <string name="color_mode_light">Jasny</string>
     <string name="color_received_quote">Otrzymano odpowiedź</string>
@@ -1981,7 +1978,6 @@
     <string name="v6_0_increase_font_size">Zwiększ rozmiar czcionki.</string>
     <string name="info_view_message_button">wiadomość</string>
     <string name="compose_message_placeholder">Wiadomość</string>
-    <string name="info_view_open_button">otwórz</string>
     <string name="info_view_search_button">szukaj</string>
     <string name="selected_chat_items_selected_n">Zaznaczono %d</string>
     <string name="info_view_video_button">wideo</string>
@@ -2002,7 +1998,6 @@
     <string name="v6_0_chat_list_media">Odtwórz z listy czatów.</string>
     <string name="deleted_chats">Zarchiwizowane kontakty</string>
     <string name="info_view_call_button">zadzwoń</string>
-    <string name="info_view_connect_button">połącz</string>
     <string name="v6_0_connection_servers_status_descr">Stan połączenia i serwerów.</string>
     <string name="create_address_button">Utwórz</string>
     <string name="error_parsing_uri_title">Nieprawidłowy link</string>
@@ -2183,7 +2178,6 @@
     <string name="delete_chat_for_all_members_cannot_undo_warning">Czat zostanie usunięty dla wszystkich członków - nie można tego cofnąć!</string>
     <string name="operator_conditions_will_be_accepted_on">Warunki będą akceptowane w dniu: %s.</string>
     <string name="connection_security">Bezpieczeństwo połączenia</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Warunki będą akceptowane dla operatorów włączonych po 30 dniach.</string>
     <string name="change_order_chat_list_menu_action">Zmień kolejność</string>
     <string name="sync_connection_desc">Połączenie wymaga renegocjacji szyfrowania.</string>
     <string name="rcv_group_event_member_accepted">przyjął %1$s</string>
@@ -2288,14 +2282,12 @@
     <string name="file_error_blocked">Plik jest zablokowany przez operatora serwera:\n%1$s.</string>
     <string name="content_filter_files">Pliki</string>
     <string name="files_prohibited_in_this_chat">Pliki i media są zabronione na tym czacie.</string>
-    <string name="content_filter_menu_item">Filtr</string>
     <string name="proxy_destination_error_unknown_ca">Odcisk palca w docelowym serwerze nie pasuje do certyfikatu: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">Odcisk palca w adresie serwera nie pasuje do certyfikatu: %1$s.</string>
     <string name="network_error_unknown_ca">Odcisk palca w adresie serwera nie pasuje do certyfikatu: %1$s.</string>
     <string name="sync_connection_confirm">Napraw</string>
     <string name="sync_connection_question">Naprawić połączenie?</string>
     <string name="report_archive_for_all_moderators">Dla wszystkich moderatorów</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">Lepsza prywatność metadanych.</string>
     <string name="for_chat_profile">Dla profilu czatu %s:</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Na przykład, jeśli kontakt otrzyma wiadomości za pośrednictwem serwera czatu SimpleX, aplikacja dostarczy je za pośrednictwem serwera Flux.</string>
     <string name="report_archive_for_me">Dla mnie</string>
@@ -2417,7 +2409,6 @@
     <string name="group_preview_rejected">odrzucono</string>
     <string name="group_member_status_rejected">odrzucono</string>
     <string name="reject_pending_member_alert_title">Odrzucić członka?</string>
-    <string name="remote_hosts_section">Zdalne telefony komórkowe</string>
     <string name="remove_member_delete_messages_confirmation">Usuń i skasuj wiadomości</string>
     <string name="cant_send_message_mem_removed">usunięty z grupy</string>
     <string name="sanitize_links_toggle">Usuń śledzenie linków</string>
@@ -2442,7 +2433,6 @@
     <string name="operator_review_conditions">Przejrzyj warunki</string>
     <string name="reviewed_by_admins">sprawdzone przez administratorów</string>
     <string name="v6_4_review_members">Przejrzyj członków grupy</string>
-    <string name="onboarding_network_operators_review_later">Przejrzyj później</string>
     <string name="admission_stage_review">Przejrzyj członków</string>
     <string name="admission_stage_review_descr">Przejrzyj członków przed przyjęciem (pukanie).</string>
     <string name="save_admission_question">Zapisać ustawienia wstępu?</string>
@@ -2452,13 +2442,11 @@
     <string name="placeholder_search_links">Szukaj linków</string>
     <string name="placeholder_search_videos">Szukaj wideo</string>
     <string name="placeholder_search_voice_messages">Szukaj wiadomości głosowych</string>
-    <string name="onboarding_select_network_operators_to_use">Wybierz operatora sieci</string>
     <string name="compose_view_send_contact_request_alert_question">Wysłać prośbę o kontakt?</string>
     <string name="v6_3_reports">Wyślij prywatne zgłoszenia</string>
     <string name="compose_view_send_request">Wyślij prośbę</string>
     <string name="compose_view_send_request_without_message">Wyślij prośbę bez wiadomości</string>
     <string name="v6_4_support_chat_descr">Wyślij swoją prywatną opinię do grup.</string>
-    <string name="sent_to_your_contact_after_connection">Wysłano do Twojego kontaktu po połączeniu.</string>
     <string name="server_added_to_operator__name">Serwer dodany do operatora %s.</string>
     <string name="error_server_operator_changed">Operator serwera został zmieniony.</string>
     <string name="onboarding_choose_server_operators">Operatorzy serwera</string>
@@ -2484,7 +2472,6 @@
     <string name="chat_banner_connect_to_chat">Dotknij Połącz aby rozpocząć czat</string>
     <string name="chat_banner_send_request_to_connect">Dotknij Połącz, aby wysłać prośbę</string>
     <string name="chat_banner_connect_to_use_bot">Dotknij Połącz aby użyć bota</string>
-    <string name="address_creation_instruction">Dotknij Stwórz adres SimpleX w menu aby utworzyć go później.</string>
     <string name="chat_banner_join_group">Dotknij Dołącz do grupy</string>
     <string name="network_option_tcp_connection_timeout_background">Przekroczono limit czasu połączenia TCP</string>
     <string name="network_smp_web_port_section_title">Port TCP dla wiadomości</string>
@@ -2492,7 +2479,6 @@
     <string name="onboarding_network_operators_app_will_use_different_operators">Aplikacja chroni Twoją prywatność, korzystając z różnych operatorów w każdej rozmowie.</string>
     <string name="connection_error_quota_desc">Połączenie osiągnęło limit niedostarczonych wiadomości, Twój kontakt może być offline.</string>
     <string name="share_group_profile_via_link_alert_text">Link będzie krótki, a profil grupowy zostanie udostępniony poprzez link.</string>
-    <string name="report_archive_alert_desc">Raport zostanie dla Ciebie zarchiwizowany.</string>
     <string name="member_role_will_be_changed_with_notification_chat">Rola zostanie zmieniona na %s. Wszyscy uczestnicy czatu zostaną powiadomieni.</string>
     <string name="v6_2_network_decentralization_descr">Drugi predefiniowany operator w aplikacji!</string>
     <string name="the_sender_will_not_be_notified">Nadawca NIE zostanie poinformowany.</string>
@@ -2500,7 +2486,6 @@
     <string name="change_automatic_chat_deletion_message">Tej akcji nie można cofnąć - wiadomości wysłane i otrzymane na tym czacie wcześniej niż wybrane zostaną usunięte.</string>
     <string name="link_requires_newer_app_version_please_upgrade">Ten link wymaga nowszej wersji aplikacji. Zaktualizuj aplikację lub poproś osobę kontaktową o przesłanie kompatybilnego łącza.</string>
     <string name="message_deleted_or_not_received_error_desc">Ta wiadomość została usunięta lub jeszcze nie otrzymana.</string>
-    <string name="this_setting_is_for_your_current_profile">To ustawienie jest dla Twojego obecnego profilu.</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">Czas zniknięcia jest ustawiony tylko dla nowych kontaktów.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Aby zabezpieczyć się przed wymianą łącza, możesz porównać kody bezpieczeństwa kontaktu.</string>
     <string name="operator_use_for_messages_receiving">Żeby odebrać</string>
@@ -2510,9 +2495,7 @@
     <string name="appearance_in_app_bars_alpha">Przeźroczystość</string>
     <string name="unblock_members_for_all_question">Odblokować członków dla wszystkich?</string>
     <string name="connection_error_quota">Niedostarczone wiadomości</string>
-    <string name="unread_mentions">Nieprzeczytane wzmianki</string>
     <string name="unsupported_connection_link">Nieobsługiwane łącze połączenia</string>
-    <string name="onboarding_network_operators_update">Aktualizacja</string>
     <string name="operator_updated_conditions">Warunki aktualizacji</string>
     <string name="v6_4_1_short_address_update">Aktualizuj swój adres</string>
     <string name="share_profile_via_link_alert_confirm">Upgrade</string>
@@ -2532,14 +2515,12 @@
     <string name="view_conditions">Zobacz warunki</string>
     <string name="view_updated_conditions">Zobacz zaktualizowane warunki</string>
     <string name="content_filter_voice_messages">Wiadomości głosowe</string>
-    <string name="operator_website">Strona Internetowa</string>
     <string name="address_welcome_message">Wiadomość powitalna</string>
     <string name="v6_4_1_welcome_contacts">Powitaj swoje kontakty</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Gdy włączony jest więcej niż jeden operator, żaden z nich nie ma metadanych pozwalających dowiedzieć się, kto się z kim komunikuje.</string>
     <string name="privacy_chat_list_open_links_yes">Tak</string>
     <string name="snd_group_event_member_accepted">zaakceptowałeś tego członka</string>
     <string name="not_connected_to_server_to_receive_messages_no_sub">Nie masz połączenia z serwerem używanym do odbierania wiadomości z tego połączenia (brak subskrypcji).</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Możesz skonfigurować operatorów w ustawieniach sieci i serwerów.</string>
     <string name="onboarding_network_operators_configure_via_settings">Serwery można skonfigurować w ustawieniach.</string>
     <string name="maximum_message_size_reached_forwarding">Możesz skopiować i zmniejszyć rozmiar wiadomości, aby ją wysłać.</string>
     <string name="max_group_mentions_per_message_reached">Możesz wzmiankować do %1$s członków na wiadomość!</string>

@@ -373,8 +373,10 @@
     "file-proto-spec": "Sobre las especificaciones del protocolo XFTP →",
     "file-cta-subheading": "La transferencia de archivos que acabas de usar emplea el mismo protocolo de enrutamiento de datos que SimpleX Chat. La aplicación ofrece mensajería, llamadas de voz y video, grupos y envío de archivos con cifrado de extremo a extremo. Sin cuentas. Sin teléfono. Sin correo electrónico. Sin identificadores de usuario.",
     "send-file": "Enviar archivo",
-    "links": "Enlaces",
+    "links": "Comunidad",
     "links-title": "Enlaces de la comunidad",
     "links-all-languages": "Todos los idiomas",
-    "docs-dropdown-16": "Alojar un servidor de chat"
+    "docs-dropdown-16": "Alojar un servidor de chat",
+    "index-hero-invest": "Invierte en SimpleX Chat.",
+    "index-hero-invest-cta": "Descubre más en Wefunder."
 }

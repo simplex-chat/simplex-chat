@@ -192,6 +192,10 @@ enum ChatCommand: ChatCmdProtocol {
     case apiUploadStandaloneFile(userId: Int64, file: CryptoFile)
     case apiDownloadStandaloneFile(userId: Int64, url: String, file: CryptoFile)
     case apiStandaloneFileInfo(url: String)
+    // badges
+    case apiRedeemBadgeCode(userId: Int64, code: String)
+    case apiGetBadgeState(userId: Int64)
+    case apiAckBadgeAlert(userId: Int64, badgePurchaseId: Int64, alertKind: BadgeAlertKind, snooze: Bool, episode: String)
     // misc
     case showVersion
     case getAgentSubsTotal(userId: Int64)
@@ -417,6 +421,10 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiUploadStandaloneFile(userId, file): return "/_upload \(userId) \(file.filePath)"
             case let .apiDownloadStandaloneFile(userId, link, file): return "/_download \(userId) \(link) \(file.filePath)"
             case let .apiStandaloneFileInfo(link): return "/_download info \(link)"
+            case let .apiRedeemBadgeCode(userId, code): return "/_redeem_badge_code \(userId) \(code)"
+            case let .apiGetBadgeState(userId): return "/_badge state \(userId)"
+            case let .apiAckBadgeAlert(userId, badgePurchaseId, alertKind, snooze, episode):
+                return "/_badge ack \(userId) \(badgePurchaseId) \(badgeAlertKindParam(alertKind)) \(onOff(snooze)) \(episode)"
             case .showVersion: return "/version"
             case let .getAgentSubsTotal(userId): return "/get subs total \(userId)"
             case let .getAgentServersSummary(userId): return "/get servers summary \(userId)"
@@ -605,6 +613,9 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiUploadStandaloneFile: return "apiUploadStandaloneFile"
             case .apiDownloadStandaloneFile: return "apiDownloadStandaloneFile"
             case .apiStandaloneFileInfo: return "apiStandaloneFileInfo"
+            case .apiRedeemBadgeCode: return "apiRedeemBadgeCode"
+            case .apiGetBadgeState: return "apiGetBadgeState"
+            case .apiAckBadgeAlert: return "apiAckBadgeAlert"
             case .showVersion: return "showVersion"
             case .getAgentSubsTotal: return "getAgentSubsTotal"
             case .getAgentServersSummary: return "getAgentServersSummary"
@@ -658,6 +669,9 @@ enum ChatCommand: ChatCmdProtocol {
             return .apiDeleteUser(userId: userId, delSMPQueues: delSMPQueues, viewPwd: obfuscate(viewPwd))
         case let .testStorageEncryption(key):
             return .testStorageEncryption(key: obfuscate(key))
+        // a code is a bearer secret until it is redeemed, and the terminal shows and copies cmdString
+        case let .apiRedeemBadgeCode(userId, code):
+            return .apiRedeemBadgeCode(userId: userId, code: obfuscate(code))
         default: return self
         }
     }
@@ -682,6 +696,17 @@ enum ChatCommand: ChatCmdProtocol {
 
     private func maybePwd(_ pwd: String?) -> String {
         pwd == "" || pwd == nil ? "" : " " + encodeJSON(pwd)
+    }
+
+    // /_badge ack takes the kind in core's text encoding, not the JSON tag
+    private func badgeAlertKindParam(_ kind: BadgeAlertKind) -> String {
+        switch kind {
+        case .renewalApproaching: "renewal_approaching"
+        case .paymentIssue: "payment_issue"
+        case .subscriptionEnded: "subscription_ended"
+        case .prepaidEnding: "prepaid_ending"
+        case .supportEnded: "support_ended"
+        }
     }
 
     private func maybeContent(_ mc: MsgContent?) -> String {
@@ -1026,6 +1051,10 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case archiveExported(archiveErrors: [ArchiveError])
     case archiveImported(archiveErrors: [ArchiveError])
     case appSettings(appSettings: AppSettings)
+    // badges
+    // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
+    case badgeRedeemed(user: User, redeemedBadge: LocalBadge, newBadge: Bool, badgeState: BadgeState?)
+    case badgeState(user: UserRef, badgeState: BadgeState?)
 
     var responseType: String {
         switch self {
@@ -1077,6 +1106,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case .archiveExported: "archiveExported"
         case .archiveImported: "archiveImported"
         case .appSettings: "appSettings"
+        case .badgeRedeemed: "badgeRedeemed"
+        case .badgeState: "badgeState"
         }
     }
 
@@ -1130,6 +1161,8 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .archiveExported(archiveErrors): return String(describing: archiveErrors)
         case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
         case let .appSettings(appSettings): return String(describing: appSettings)
+        case let .badgeRedeemed(u, redeemedBadge, newBadge, badgeState): return withUser(u, "redeemedBadge: \(String(describing: redeemedBadge))\nnewBadge: \(newBadge)\nbadgeState: \(String(describing: badgeState))")
+        case let .badgeState(u, badgeState): return withUser(u, String(describing: badgeState))
         }
     }
 }
@@ -1212,6 +1245,9 @@ enum ChatEvent: Decodable, ChatAPIResult {
     case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason)
     // pq
     case contactPQEnabled(user: UserRef, contact: Contact, pqEnabled: Bool)
+    // badges
+    case badgeChanged(user: User, badgeState: BadgeState?)
+    case badgeAlert(user: UserRef, badgeAlert: BadgeAlert)
 
     var responseType: String {
         switch self {
@@ -1284,6 +1320,8 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .remoteCtrlConnected: "remoteCtrlConnected"
         case .remoteCtrlStopped: "remoteCtrlStopped"
         case .contactPQEnabled: "contactPQEnabled"
+        case .badgeChanged: "badgeChanged"
+        case .badgeAlert: "badgeAlert"
         }
     }
 
@@ -1366,6 +1404,8 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
         case let .remoteCtrlStopped(rcsState, rcStopReason): return "rcsState: \(String(describing: rcsState))\nrcStopReason: \(String(describing: rcStopReason))"
         case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
+        case let .badgeChanged(u, badgeState): return withUser(u, String(describing: badgeState))
+        case let .badgeAlert(u, badgeAlert): return withUser(u, String(describing: badgeAlert))
         }
     }
 }

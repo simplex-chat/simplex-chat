@@ -699,7 +699,7 @@ fun ChatView(
               }
             },
             showItemDetails = { cInfo, cItem ->
-              suspend fun loadChatItemInfo(): ChatItemInfo? = coroutineScope {
+              suspend fun loadChatItemInfo(): Pair<ChatItem, ChatItemInfo>? = coroutineScope {
                 val ciInfo = chatModel.controller.apiGetChatItemInfo(chatRh, cInfo.chatType, cInfo.apiId, cInfo.groupChatScope(), cItem.id)
                 if (ciInfo != null) {
                   if (chatInfo is ChatInfo.Group) {
@@ -717,11 +717,12 @@ fun ChatView(
                 }
                 ModalManager.end.showModalCloseable(endButtons = {
                   ShareButton {
-                    clipboard.shareText(itemInfoShareText(chatModel, cItem, initialCiInfo, chatModel.controller.appPrefs.developerTools.get()))
+                    clipboard.shareText(itemInfoShareText(chatModel, initialCiInfo.first, initialCiInfo.second, chatModel.controller.appPrefs.developerTools.get()))
                   }
                 }) { close ->
                   var ciInfo by remember(cItem.id) { mutableStateOf(initialCiInfo) }
-                  ChatItemInfoView(chatRh, cItem, ciInfo, devTools = chatModel.controller.appPrefs.developerTools.get(), chatInfo)
+                  val (item, info) = ciInfo
+                  ChatItemInfoView(chatRh, item, info, devTools = chatModel.controller.appPrefs.developerTools.get(), chatInfo)
                   LaunchedEffect(cItem.id) {
                     withContext(Dispatchers.Default) {
                       for (msg in controller.messagesChannel) {

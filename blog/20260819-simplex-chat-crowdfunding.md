@@ -53,6 +53,7 @@ The web solved this by letting anyone build any experience on one open platform.
 SimpleX Chat is the company that builds SimpleX Network, and now you can invest from $100 and get a stake in the company.
 
 If you invest $500 or more, you receive [a public SimpleX name](./20260722-simplex-public-names.md) on SimpleX Network:
+- for 7 years, if you invest by September 22,
 - for 5 years for early bird investors,
 - for 3 years after that.
 

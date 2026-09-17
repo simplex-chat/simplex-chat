@@ -4408,10 +4408,10 @@ chat item action */
 "Saved" = "Opgeslagen";
 
 /* No comment provided by engineer. */
-"Saved from" = "Opgeslagen van";
+"saved from" = "opgeslagen van";
 
 /* No comment provided by engineer. */
-"saved from" = "opgeslagen van";
+"Saved from" = "Opgeslagen van";
 
 /* message info title */
 "Saved message" = "Opgeslagen bericht";
@@ -5706,6 +5706,12 @@ server test failure */
 /* No comment provided by engineer. */
 "You already have a chat profile with the same display name. Please choose another name." = "Je hebt al een chatprofiel met dezelfde weergave naam. Kies een andere naam.";
 
+/* new chat alert */
+"You are a member" = "Je bent lid";
+
+/* new chat alert */
+"You are a moderator" = "Je bent moderator";
+
 /* No comment provided by engineer. */
 "You are already connected to %@." = "U bent al verbonden met %@.";
 
@@ -5730,6 +5736,15 @@ server test failure */
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Je sluit je al aan bij de groep!\nDeelnameverzoek herhalen?";
 
+/* new chat alert */
+"You are an admin" = "Je bent beheerder";
+
+/* new chat alert */
+"You are an observer" = "Je bent waarnemer";
+
+/* new chat alert */
+"You are an owner" = "Je bent eigenaar";
+
 /* No comment provided by engineer. */
 "You are invited to group" = "Je bent uitgenodigd voor de groep";
 
@@ -5738,21 +5753,6 @@ server test failure */
 
 /* No comment provided by engineer. */
 "you are observer" = "je bent waarnemer";
-
-/* new chat alert */
-"You are an observer" = "Je bent waarnemer";
-
-/* new chat alert */
-"You are a member" = "Je bent lid";
-
-/* new chat alert */
-"You are a moderator" = "Je bent moderator";
-
-/* new chat alert */
-"You are an admin" = "Je bent beheerder";
-
-/* new chat alert */
-"You are an owner" = "Je bent eigenaar";
 
 /* snd group event chat item */
 "you blocked %@" = "je hebt %@ geblokkeerd";

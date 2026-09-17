@@ -38,7 +38,6 @@ fun CIImageView(
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
   smallView: Boolean,
-  senderProfile: LocalProfile?,
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
@@ -83,7 +82,11 @@ fun CIImageView(
           is CIFileStatus.SndCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           is CIFileStatus.SndError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           is CIFileStatus.SndWarning -> fileIcon(painterResource(MR.images.ic_warning_filled), MR.strings.icon_descr_file)
-          is CIFileStatus.RcvInvitation -> fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_asked_to_receive)
+          is CIFileStatus.RcvInvitation ->
+            if (file.expired && fileSizeValid(file))
+              fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+            else
+              fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_asked_to_receive)
           is CIFileStatus.RcvAccepted -> fileIcon(painterResource(MR.images.ic_more_horiz), MR.strings.icon_descr_waiting_for_image)
           is CIFileStatus.RcvTransfer -> progressIndicator()
           is CIFileStatus.RcvComplete -> {}
@@ -216,13 +219,10 @@ fun CIImageView(
         if (file != null) {
           when {
             file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted ->
-              if (fileSizeValid(file, senderProfile)) {
-                receiveFile(file.fileId)
+              if (file.fileProhibited != null) {
+                showProhibitedFileAlert(file, file.fileProhibited)
               } else {
-                AlertManager.shared.showAlertMsg(
-                  generalGetString(MR.strings.large_file),
-                  String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol, senderProfile)))
-                )
+                receiveFile(file.fileId)
               }
             file.fileStatus is CIFileStatus.RcvAccepted ->
               when (file.fileProtocol) {
@@ -239,7 +239,7 @@ fun CIImageView(
                 FileProtocol.LOCAL -> {}
               }
             file.fileStatus is CIFileStatus.RcvError ->
-              showFileErrorAlert(file.fileStatus.rcvFileError)
+              showFileErrorAlert(file.fileStatus.rcvFileError, file)
             file.fileStatus is CIFileStatus.RcvWarning ->
               showFileErrorAlert(file.fileStatus.rcvFileError, temporary = true)
             file.fileStatus is CIFileStatus.SndError ->
