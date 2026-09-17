@@ -13,18 +13,20 @@ struct BadgesLedgerView: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
     let badgeState: BadgeState
-    @State private var entries: [StatementEntry] = []
+    @State private var entries: [StatementEntry]? = nil
     @State private var expanded: Set<String> = []
 
     var body: some View {
         List {
-            Section {
-                if entries.isEmpty {
-                    Text("No entries")
-                        .foregroundColor(theme.colors.secondary)
-                } else {
-                    ForEach(entries, id: \.entryId) { entry in
-                        ledgerRow(entry)
+            if let entries {
+                Section {
+                    if entries.isEmpty {
+                        Text("No entries")
+                            .foregroundColor(theme.colors.secondary)
+                    } else {
+                        ForEach(entries, id: \.entryId) { entry in
+                            ledgerRow(entry)
+                        }
                     }
                 }
             }

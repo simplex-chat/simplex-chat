@@ -33,7 +33,7 @@ import chat.simplex.res.MR
 
 @Composable
 fun BadgesLedgerView(badgeState: BadgeState) {
-  val entries = remember { mutableStateOf<List<StatementEntry>>(emptyList()) }
+  val entries = remember { mutableStateOf<List<StatementEntry>?>(null) }
 
   LaunchedEffect(Unit) {
     val user = chatModel.currentUser.value ?: return@LaunchedEffect
@@ -50,13 +50,16 @@ fun BadgesLedgerView(badgeState: BadgeState) {
 
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.badges_ledger))
-    SectionView {
-      if (entries.value.isEmpty()) {
-        SectionItemView {
-          Text(stringResource(MR.strings.badges_ledger_no_entries), color = MaterialTheme.colors.secondary)
+    val loaded = entries.value
+    if (loaded != null) {
+      SectionView {
+        if (loaded.isEmpty()) {
+          SectionItemView {
+            Text(stringResource(MR.strings.badges_ledger_no_entries), color = MaterialTheme.colors.secondary)
+          }
+        } else {
+          loaded.forEach { LedgerRow(it) }
         }
-      } else {
-        entries.value.forEach { LedgerRow(it) }
       }
     }
   }
