@@ -74,7 +74,7 @@
     "privacy-matters-overlay-card-3-p-2": "最令人震驚的故事之一是 <a href='https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi' target='_blank'>Mohamedou Ould Salahi</a> 的經歷，描述於他的回憶錄中，並在《The Mauritanian movie》中呈現。他在未經審訊的情況下被送進關塔納摩集中營，並在那裏遭受了長達 15 年的酷刑，原因是他被懷疑參與了 9/11 襲擊事件，而此前 10 年他一直住在德國。",
     "simplex-private-2-title": "伺服器附加加密層",
     "hero-overlay-card-2-p-1": "如使用者擁有持久性身份，即使只是一個隨機數，例如 Session ID，也會有服務提供者或攻擊者可以觀察使用者如何連線以及傳送了多少條訊息的風險。",
-    "simplex-unique-overlay-card-4-p-3": "如您正考慮針對 SimpleX 網路進行開發，例如針對 SimpleX 使用者的聊天機器人，或將 SimpleX 聊天函式庫整合至您的手機應用程式，請<a href='https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D' target='_blank'>與我們聯絡</a>以獲取支持與建議。",
+    "simplex-unique-overlay-card-4-p-3": "如您正考慮針對 SimpleX 網路進行開發，例如針對 SimpleX 使用者的聊天機器人，或將 SimpleX 聊天函式庫整合至您的手機應用程式，請<a href='https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw' target='_blank'>與我們聯絡</a>以獲取支持與建議。",
     "simplex-network-overlay-card-1-li-1": "點對點網路依賴 <a href='https://en.wikipedia.org/wiki/Distributed_hash_table'>DHT</a> 的某些變體來路由訊息。DHT 設計必須平衡傳送保證和延遲。與點對點相比，SimpleX 具有更好的傳送保證和更低的延遲，因為訊息可以使用收件者選擇的伺服器，經由多個伺服器並行冗餘地傳送。在點對點網路中，訊息依次經由<em>O(log N)</em>個由演算法選擇的節點。",
     "simplex-private-card-3-point-3": "連線恢復被停用，以防止會話攻擊。",
     "simplex-private-card-2-point-1": "傳送至收件者的伺服器加密附加層，以防止 TLS 遭到攻擊時，接收和傳送的伺服器流量之間的關聯。",
