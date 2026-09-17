@@ -67,6 +67,9 @@ fun BadgesYourBadgeView(badgeState: BadgeState) {
         SectionItemView({ clipboard.setText(AnnotatedString(badgeState.purchaseKey)) }) {
           Text(stringResource(MR.strings.badges_copy_purchase_key), color = MaterialTheme.colors.primary)
         }
+        SectionItemView({ ModalManager.start.showModal(cardScreen = true) { BadgesLedgerView(badgeState) } }) {
+          Text(stringResource(MR.strings.badges_ledger))
+        }
       }
       SectionSpacer()
     }

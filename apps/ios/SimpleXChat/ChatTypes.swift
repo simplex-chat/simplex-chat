@@ -338,6 +338,131 @@ public struct BadgeState: Codable, Hashable {
     public var paidThroughText: String { badgeDateText(paidThrough) }
 }
 
+public struct StatementEntry: Decodable, Hashable {
+    public var entryId: String
+    public var changeMonths: Int
+    public var balanceMonths: Int
+    public var balanceStartTs: Date
+    public var balanceAnchorTs: Date
+    public var balanceBadgeType: BadgeType
+    public var wasPausedSince: Date?
+    public var createdAt: Date
+    public var entryType: StatementEntryType
+}
+
+public enum StatementEntryType: Decodable, Hashable {
+    case credit(StatementCreditType)
+    case debit(StatementDebitType)
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case credit
+        case debit
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        switch type {
+        case "credit": self = .credit(try container.decode(StatementCreditType.self, forKey: .credit))
+        case "debit": self = .debit(try container.decode(StatementDebitType.self, forKey: .debit))
+        default: throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "unknown entry type \(type)")
+        }
+    }
+
+    public var text: String {
+        switch self {
+        case let .credit(c): c.text
+        case let .debit(d): d.text
+        }
+    }
+}
+
+// the service is deployed ahead of clients, so a type this version does not know keeps its tag
+public enum StatementCreditType: Decodable, Hashable {
+    case payment(invoiceId: String?)
+    case code
+    case charge(chargeId: String)
+    case support
+    case transferIn(fromPurchaseKey: String)
+    case opening
+    case unknown(type: String)
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case invoiceId
+        case chargeId
+        case fromPurchaseKey
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        switch type {
+        case "payment": self = .payment(invoiceId: try container.decodeIfPresent(String.self, forKey: .invoiceId))
+        case "code": self = .code
+        case "charge": self = .charge(chargeId: try container.decode(String.self, forKey: .chargeId))
+        case "support": self = .support
+        case "transferIn": self = .transferIn(fromPurchaseKey: try container.decode(String.self, forKey: .fromPurchaseKey))
+        case "opening": self = .opening
+        default: self = .unknown(type: type)
+        }
+    }
+
+    public var text: String {
+        switch self {
+        case .payment: "payment"
+        case .code: "code"
+        case .charge: "charge"
+        case .support: "support"
+        case .transferIn: "transferIn"
+        case .opening: "opening"
+        case let .unknown(type): type
+        }
+    }
+}
+
+public enum StatementDebitType: Decodable, Hashable {
+    case refund
+    case upgrade(toPurchaseKey: String)
+    case transferOut(toPurchaseKey: String)
+    case support
+    case badge
+    case lapse
+    case unknown(type: String)
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case toPurchaseKey
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        switch type {
+        case "refund": self = .refund
+        case "upgrade": self = .upgrade(toPurchaseKey: try container.decode(String.self, forKey: .toPurchaseKey))
+        case "transferOut": self = .transferOut(toPurchaseKey: try container.decode(String.self, forKey: .toPurchaseKey))
+        case "support": self = .support
+        case "badge": self = .badge
+        case "lapse": self = .lapse
+        default: self = .unknown(type: type)
+        }
+    }
+
+    public var text: String {
+        switch self {
+        case .refund: "refund"
+        case .upgrade: "upgrade"
+        case .transferOut: "transferOut"
+        case .support: "support"
+        case .badge: "badge"
+        case .lapse: "lapse"
+        case let .unknown(type): type
+        }
+    }
+}
+
 public struct BadgeAlert: Codable, Hashable {
     public var kind: BadgeAlertKind
     public var episode: String

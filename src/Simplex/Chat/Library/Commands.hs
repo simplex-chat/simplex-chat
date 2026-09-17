@@ -3567,6 +3567,8 @@ processChatCommand cxt nm = \case
     -- the read also signals the worker, whose results follow as CEvtBadgeChanged
     lift $ startBadgeWork user
     CRBadgeState user <$> getUserBadgeState user
+  APIGetBadgeLedger userId badgePurchaseId -> withUserId userId $ \user ->
+    CRBadgeLedger user <$> withStore' (\db -> getBadgeLedger db user badgePurchaseId)
   APIAckBadgeAlert userId badgePurchaseId alertKind snooze episode -> withUserId userId $ \user -> do
     now <- badgeNow
     let snoozeUntil = if snooze then Just (addUTCTime nominalDay now) else Nothing
@@ -6040,6 +6042,7 @@ chatCommandP =
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_redeem_badge_code " *> (APIRedeemBadgeCode <$> A.decimal <* A.space <*> textP),
       "/_badge state " *> (APIGetBadgeState <$> A.decimal),
+      "/_badge ledger " *> (APIGetBadgeLedger <$> A.decimal <* A.space <*> A.decimal),
       "/_badge ack " *> (APIAckBadgeAlert <$> A.decimal <* A.space <*> A.decimal <* A.space <*> badgeAlertKindP <* A.space <*> onOffP <* A.space <*> textP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
