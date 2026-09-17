@@ -93,7 +93,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NameRegistration, NameResponse, NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NameRegistration, NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
 import Simplex.Messaging.Session (SessionVar)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
@@ -884,7 +884,7 @@ data ChatResponse
   | CRInvitation {user :: User, connLinkInvitation :: CreatedLinkInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
-  | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, planSimplexName :: Maybe SimplexNameInfo, otherSimplexName :: Maybe SimplexNameInfo, connectionPlan :: ConnectionPlan, nameStatus :: Maybe NameStatus}
+  | CRConnectionPlan {user :: User, connLink :: Maybe ACreatedConnLink, planSimplexName :: Maybe SimplexNameInfo, otherSimplexName :: Maybe SimplexNameInfo, connectionPlan :: ConnectionPlan}
   | CRNewPreparedChat {user :: User, chat :: AChat}
   | CRContactUserChanged {user :: User, fromContact :: Contact, newUser :: User, toContact :: Contact}
   | CRGroupUserChanged {user :: User, fromGroup :: GroupInfo, newUser :: User, toGroup :: GroupInfo}
@@ -1153,6 +1153,7 @@ data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
   | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
   | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
+  | CPSimplexName {registration :: NameRegistration} -- the name is not registered or expired, nothing to connect
   | CPError {chatError :: ChatError}
   deriving (Show)
 
@@ -1164,7 +1165,7 @@ data InvitationLinkPlan
   deriving (Show)
 
 data ContactAddressPlan
-  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification}
+  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification, nameOwnerChanged :: Maybe Bool} -- nameOwnerChanged is set when a local chat had this name
   | CAPOwnLink
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
@@ -1173,7 +1174,7 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification}
+  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification, nameOwnerChanged :: Maybe Bool} -- nameOwnerChanged is set when a local chat had this name
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
@@ -1227,6 +1228,7 @@ connectionPlanProceed = \case
     GLPNoRelays _ -> False
     GLPUpdateRequired _ -> False
     _ -> False
+  CPSimplexName _ -> False
   CPError _ -> True
 
 data ForwardConfirmation
@@ -1473,20 +1475,11 @@ data ChatError
   | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
--- why a resolved SimpleX name could not be used
+-- why a resolved SimpleX name could not be used (the name itself resolved; a name that is not registered or expired is CPSimplexName)
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
-  | SDEUnknownDomain {claimedDomain :: Maybe SimplexDomain} -- the resolved link's profile has no name, or a different name
-  | SDEUnavailable {registration :: NameRegistration} -- the name is not registered
+  | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
   deriving (Eq, Show)
-
--- the registry answer for a resolved name
-data NameStatus = NameStatus
-  { response :: NameResponse,
-    ownerChanged :: Bool, -- the owner differs from the found chat's stored answer
-    otherUser :: Maybe User -- another profile on this device the name leads to
-  }
-  deriving (Show)
 
 data BadgeRedeemError
   = BREInvalidCode -- format or check character
@@ -1854,8 +1847,6 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
-
-$(JQ.deriveJSON defaultJSON ''NameStatus)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BRE") ''BadgeRedeemError)
 
