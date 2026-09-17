@@ -53,7 +53,12 @@ struct BadgesLedgerView: View {
             }
         } label: {
             HStack {
-                Text(entry.entryType.text)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(entry.entryType.text)
+                    Text(dateText(entry.createdAt))
+                        .font(.caption)
+                        .foregroundColor(theme.colors.secondary)
+                }
                 Spacer()
                 Text(changeText(entry))
                     .foregroundStyle(.secondary)
@@ -64,13 +69,17 @@ struct BadgesLedgerView: View {
         .foregroundColor(theme.colors.onBackground)
         if isExpanded {
             ForEach(entryFields(entry), id: \.0) { field in
-                infoRow(Text(field.0), field.1)
+                infoRow(Text(field.0), field.1).padding(.leading, 24)
             }
         }
     }
 
     private func changeText(_ entry: StatementEntry) -> String {
-        entry.changeMonths >= 0 ? "+\(entry.changeMonths)" : "\(entry.changeMonths)"
+        let n = entry.changeMonths
+        let months = abs(n) == 1
+            ? String.localizedStringWithFormat(NSLocalizedString("%d month", comment: "time interval"), n)
+            : String.localizedStringWithFormat(NSLocalizedString("%d months", comment: "time interval"), n)
+        return n > 0 ? "+" + months : months
     }
 
     private func entryFields(_ entry: StatementEntry) -> [(String, String)] {
@@ -120,6 +129,10 @@ struct BadgesLedgerView: View {
         encoder.outputFormatting = .prettyPrinted
         let data = (try? encoder.encode(entries ?? [])) ?? Data()
         return String(decoding: data, as: UTF8.self)
+    }
+
+    private func dateText(_ date: Date) -> String {
+        DateFormatter.localizedString(from: date, dateStyle: .medium, timeStyle: .none)
     }
 
     private func dateTimeText(_ date: Date) -> String {

@@ -3,6 +3,7 @@ package chat.simplex.common.views.badges
 import InfoRow
 import SectionItemView
 import SectionView
+import itemHPadding
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +25,7 @@ import chat.simplex.common.model.StatementDebitType
 import chat.simplex.common.model.StatementEntry
 import chat.simplex.common.model.StatementEntryType
 import chat.simplex.common.model.json
+import chat.simplex.common.model.localDate
 import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.platform.Log
@@ -36,6 +39,7 @@ import chat.simplex.common.views.helpers.ShareButton
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.views.helpers.withBGApi
 import chat.simplex.res.MR
+import kotlin.math.abs
 
 @Composable
 fun BadgesLedgerView(badgeState: BadgeState, close: () -> Unit) {
@@ -92,7 +96,10 @@ private fun LedgerRow(entry: StatementEntry) {
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-      Text(entry.entryType.text, Modifier.weight(1f))
+      Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(entry.entryType.text)
+        Text(localDate(entry.createdAt), color = MaterialTheme.colors.secondary, fontSize = 12.sp)
+      }
       Text(changeText(entry), color = MaterialTheme.colors.secondary)
       Icon(
         painterResource(if (expanded.value) MR.images.ic_chevron_up else MR.images.ic_chevron_down),
@@ -103,12 +110,16 @@ private fun LedgerRow(entry: StatementEntry) {
     }
   }
   if (expanded.value) {
-    entryFields(entry).forEach { (label, value) -> InfoRow(label, value) }
+    val indented = PaddingValues(start = 24.dp + itemHPadding, end = itemHPadding)
+    entryFields(entry).forEach { (label, value) -> InfoRow(label, value, padding = indented) }
   }
 }
 
-private fun changeText(entry: StatementEntry): String =
-  if (entry.changeMonths >= 0) "+${entry.changeMonths}" else entry.changeMonths.toString()
+private fun changeText(entry: StatementEntry): String {
+  val n = entry.changeMonths
+  val months = String.format(generalGetString(if (abs(n) == 1) MR.strings.ttl_month else MR.strings.ttl_months), n)
+  return if (n > 0) "+$months" else months
+}
 
 private fun entryFields(entry: StatementEntry): List<Pair<String, String>> {
   val fields = mutableListOf(

@@ -60,12 +60,8 @@ struct BadgesYourBadgeView: View {
                         }
                         infoRow("Months left", "\(badgeState.monthsLeft)")
                         infoRow("Purchase ID", "\(badgeState.badgePurchaseId)")
-                        Button {
+                        Button("Copy purchase key") {
                             UIPasteboard.general.string = badgeState.purchaseKey
-                        } label: {
-                            settingsRow("doc.on.doc", color: theme.colors.secondary) {
-                                Text("Copy purchase key")
-                            }
                         }
                         NavigationLink {
                             BadgesLedgerView(badgeState: badgeState)
