@@ -27,6 +27,7 @@ where
 
 import Control.Monad.Except
 import Control.Monad.IO.Class
+import Data.Bitraversable (bitraverse)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -89,7 +90,7 @@ getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = d
     Just entId ->
       case connType of
         ConnMember -> do
-          (gInfo, keysData, m) <- getGroupAndMember_ entId c
+          ((gInfo, keysData), m) <- getGroupAndMember_ entId c
           pure (RcvGroupMsgConnection c gInfo m, Just keysData)
         ConnContact -> (,Nothing) . RcvDirectMsgConnection c . Just <$> getContactRec_ entId c
         ConnUserContact -> (,Nothing) . UserContactConnection c <$> getUserContact_ entId
@@ -139,10 +140,10 @@ getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = d
           contactRequest = UserContactRequestRef <$> contactRequestId <*> (unBI <$> rejectionSupported_)
           groupDirectInv = toGroupDirectInvitation groupDirectInvRow
        in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactRequest, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
-    getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupKeysRow, GroupMember)
+    getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO ((GroupInfo, GroupKeysRow), GroupMember)
     getGroupAndMember_ groupMemberId c = do
       currentTs <- liftIO getCurrentTime
-      (g, keysData, m) <-
+      gm <-
         ExceptT $
           firstRow (toGroupAndMember currentTs c) (SEInternalError "referenced group member not found") $
             DB.query
@@ -183,13 +184,12 @@ getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = d
                   AND mu.member_status NOT IN (?,?,?)
               |]
               (groupMemberId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
-      g' <- liftIO $ addGroupChatTags db g
-      pure (g', keysData, m)
-    toGroupAndMember :: UTCTime -> Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupKeysRow, GroupMember)
+      liftIO $ bitraverse (\(g, keysData) -> (,keysData) <$> addGroupChatTags db g) pure gm
+    toGroupAndMember :: UTCTime -> Connection -> GroupInfoRow :. GroupMemberRow -> ((GroupInfo, GroupKeysRow), GroupMember)
     toGroupAndMember currentTs c (groupInfoRow :. memberRow) =
-      let (groupInfo, keysData) = toGroupInfo currentTs cxt userContactId [] groupInfoRow
+      let groupInfo = toGroupInfo currentTs cxt userContactId [] groupInfoRow
           member = toGroupMember currentTs userContactId memberRow
-       in (groupInfo, keysData, (member :: GroupMember) {activeConn = Just c})
+       in (groupInfo, (member :: GroupMember) {activeConn = Just c})
     getUserContact_ :: Int64 -> ExceptT StoreError IO UserContact
     getUserContact_ userContactLinkId = ExceptT $ do
       userContact_

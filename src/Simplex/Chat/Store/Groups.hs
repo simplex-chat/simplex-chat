@@ -2013,15 +2013,13 @@ isRelayGroupRejected db User {userId} groupLink =
 getRelayServedGroups :: DB.Connection -> StoreCxt -> User -> ExceptT StoreError IO [GroupInfoKeys]
 getRelayServedGroups db cxt User {userId, userContactId} = do
   currentTs <- liftIO getCurrentTime
-  rows <-
-    liftIO $
-      map (toGroupInfo currentTs cxt userContactId [])
-        <$> DB.query
-          db
-          ( groupInfoQuery
-              <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?, ?)"
-          )
-          (userId, userContactId, RSAccepted, RSAcknowledgedRoster, RSActive)
+  rows <- liftIO $ map (toGroupInfo currentTs cxt userContactId [])
+    <$> DB.query
+      db
+      ( groupInfoQuery
+          <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?, ?)"
+      )
+      (userId, userContactId, RSAccepted, RSAcknowledgedRoster, RSActive)
   forM rows $ \(g, keysData) -> GIK g <$> mkGroupKeys db cxt g keysData
 
 getRelayPublishableGroups :: DB.Connection -> User -> IO [(Int64, B64UrlByteString, Maybe PublicGroupAccess)]

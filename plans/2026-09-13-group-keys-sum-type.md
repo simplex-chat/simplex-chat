@@ -31,16 +31,14 @@ data GroupKeys
       { memberPrivKey :: C.PrivateKeyEd25519
       }
   | GKPublicGroup
-      { publicGroupId :: B64UrlByteString,
-        groupRootKey :: GroupRootKey,
+      { groupRootKey :: GroupRootKey,
         memberPrivKey :: C.PrivateKeyEd25519
       }
   | GKRelayRequest
       { memberPrivKey :: C.PrivateKeyEd25519
       }
   | GKPreparedPublicGroup
-      { publicGroupId :: B64UrlByteString,
-        memberPrivKey :: C.PrivateKeyEd25519
+      { memberPrivKey :: C.PrivateKeyEd25519
       }
   deriving (Eq, Show)
 
@@ -118,7 +116,7 @@ A site that needs keys switches its existing read to `getGroupInfoKeys` or `getG
 | `updatePreparedRelayedGroup` | `GroupInfoKeys` |
 | `getRelayServedGroups` | `[GroupInfoKeys]` |
 | `getAcceptedBusinessChat` | `Maybe (GroupInfo, GroupKeysRow)` |
-| `getGroupAndRegLink` (directory service) | `(GroupInfo, GroupKeysRow, GroupReg, Maybe GroupLink)` |
+| `getGroupAndRegLink` (directory service) | `(GroupInfoKeys, GroupReg, Maybe GroupLink)` |
 
 ### Reads that discard the keys
 
@@ -126,7 +124,7 @@ A site that needs keys switches its existing read to `getGroupInfoKeys` or `getG
 
 ## 3. Message handling
 
-`processAgentMessageConn` reads the entity with `getConnectionEntityKeys`, builds the keys from the row with `mkGroupKeys` and passes `GroupInfoKeys` to `processGroupMessage`. The first message on a row created before this change writes the member key.
+`getUserEntity` reads the entity with `getConnectionEntityKeys` and builds the keys from the row with `mkGroupKeys` in the same transaction; the first message on a row created before this change writes the member key. `processAgentMessageConn` takes `Maybe GroupKeys` and passes `GroupInfoKeys` to `processGroupMessage`.
 
 Handlers that send take `GroupInfoKeys`: `xGrpInfo`, `xGrpRosterAck`, `xGrpRosterRequest`, `xGrpLinkAcpt`, `xGrpMemNew`, `xGrpMemRole`, `xGrpMemDel`, `xGrpLeave`, `xGrpMsgForward`, `applyAtRosterVersion`, `bFileChunkGroup`, `receiveRosterChunk`, `rosterCompletion`, `sendRosterAck`. `updatePublicGroupData` in `Internal.hs` takes `GroupInfo` and `GroupKeys` and returns the updated `GroupInfo`.
 
@@ -210,6 +208,8 @@ groupMemberKey :: GroupKeys -> MemberKey
 
 `Subscriber.hs`: `processGroupMessage` and every handler under it that sends; `acceptJoin`, `getLinkDataCreateRelayLink`.
 
+Directory service: `updateGroupLinkData` and the `withGroupRegLink` callbacks.
+
 `saveConnInfo` returns `Maybe GroupInfoKeys`.
 
 ## 7. Queries
@@ -242,8 +242,6 @@ The schema is unchanged. The columns keep their meaning:
 Covered by the existing suites: relay request and prepared channel flows (`chat relay tests`), relay link signing (`chat relay tests`), `GroupInfo` JSON (`Bot API docs`, once the generated files are writable).
 
 ## Open
-
-`publicGroupId` in `GKPublicGroup` and `GKPreparedPublicGroup` restates `groupProfile.publicGroup` and is unread. Dropping it leaves each constructor holding what is secret or absent from `GroupInfo`.
 
 `bots/api/TYPES.md`, `packages/simplex-chat-client/types/typescript/src/types.ts` and `packages/simplex-chat-python/src/simplex_chat/types/_types.py` still declare `GroupKeys`. The `Bot API docs` test regenerates them once they are writable; they are owned by root.
 
