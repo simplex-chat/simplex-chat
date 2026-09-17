@@ -34,6 +34,14 @@ struct BadgesLedgerView: View {
         .navigationTitle("Badge ledger")
         .navigationBarTitleDisplayMode(.inline)
         .modifier(ThemedBackground(grouped: true))
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button { showShareSheet(items: [ledgerShareText()]) } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .disabled(entries?.isEmpty ?? true)
+            }
+        }
         .onAppear(perform: loadLedger)
     }
 
@@ -47,7 +55,7 @@ struct BadgesLedgerView: View {
             HStack {
                 Text(entry.entryType.text)
                 Spacer()
-                Text(entry.changeMonths >= 0 ? "+\(entry.changeMonths)" : "\(entry.changeMonths)")
+                Text(changeText(entry))
                     .foregroundStyle(.secondary)
                 Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                     .foregroundColor(theme.colors.secondary)
@@ -55,35 +63,63 @@ struct BadgesLedgerView: View {
         }
         .foregroundColor(theme.colors.onBackground)
         if isExpanded {
-            infoRow("Date", dateTimeText(entry.createdAt))
-            infoRow("Balance", "\(entry.balanceMonths)")
-            infoRow("Balance start", dateTimeText(entry.balanceStartTs))
-            infoRow("Anchor", dateTimeText(entry.balanceAnchorTs))
-            infoRow("Badge type", entry.balanceBadgeType.text)
-            if let pausedSince = entry.wasPausedSince {
-                infoRow("Paused since", dateTimeText(pausedSince))
+            ForEach(entryFields(entry), id: \.0) { field in
+                infoRow(Text(field.0), field.1)
             }
-            infoRow("Entry ID", entry.entryId)
-            payloadRow(entry.entryType)
         }
     }
 
-    @ViewBuilder private func payloadRow(_ entryType: StatementEntryType) -> some View {
+    private func changeText(_ entry: StatementEntry) -> String {
+        entry.changeMonths >= 0 ? "+\(entry.changeMonths)" : "\(entry.changeMonths)"
+    }
+
+    private func entryFields(_ entry: StatementEntry) -> [(String, String)] {
+        var fields = [
+            (NSLocalizedString("Date", comment: "ledger entry field"), dateTimeText(entry.createdAt)),
+            (NSLocalizedString("Balance", comment: "ledger entry field"), "\(entry.balanceMonths)"),
+            (NSLocalizedString("Balance start", comment: "ledger entry field"), dateTimeText(entry.balanceStartTs)),
+            (NSLocalizedString("Anchor", comment: "ledger entry field"), dateTimeText(entry.balanceAnchorTs)),
+            (NSLocalizedString("Badge type", comment: "ledger entry field"), entry.balanceBadgeType.text)
+        ]
+        if let pausedSince = entry.wasPausedSince {
+            fields.append((NSLocalizedString("Paused since", comment: "ledger entry field"), dateTimeText(pausedSince)))
+        }
+        fields.append((NSLocalizedString("Entry ID", comment: "ledger entry field"), entry.entryId))
+        if let payload = payloadField(entry.entryType) {
+            fields.append(payload)
+        }
+        return fields
+    }
+
+    private func payloadField(_ entryType: StatementEntryType) -> (String, String)? {
         switch entryType {
         case let .credit(credit):
             switch credit {
             case let .payment(invoiceId):
-                if let invoiceId { infoRow("Invoice ID", invoiceId) }
-            case let .charge(chargeId): infoRow("Charge ID", chargeId)
-            case let .transferIn(fromPurchaseKey): infoRow("From purchase key", fromPurchaseKey)
-            case .code, .support, .opening, .unknown: EmptyView()
+                return invoiceId.map { (NSLocalizedString("Invoice ID", comment: "ledger entry field"), $0) }
+            case let .charge(chargeId):
+                return (NSLocalizedString("Charge ID", comment: "ledger entry field"), chargeId)
+            case let .transferIn(fromPurchaseKey):
+                return (NSLocalizedString("From purchase key", comment: "ledger entry field"), fromPurchaseKey)
+            case .code, .support, .opening, .unknown:
+                return nil
             }
         case let .debit(debit):
             switch debit {
-            case let .upgrade(toPurchaseKey), let .transferOut(toPurchaseKey): infoRow("To purchase key", toPurchaseKey)
-            case .refund, .support, .badge, .lapse, .unknown: EmptyView()
+            case let .upgrade(toPurchaseKey), let .transferOut(toPurchaseKey):
+                return (NSLocalizedString("To purchase key", comment: "ledger entry field"), toPurchaseKey)
+            case .refund, .support, .badge, .lapse, .unknown:
+                return nil
             }
         }
+    }
+
+    // the JSON as core sent it: English field names and ISO dates, for support
+    private func ledgerShareText() -> String {
+        let encoder = getJSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        let data = (try? encoder.encode(entries ?? [])) ?? Data()
+        return String(decoding: data, as: UTF8.self)
     }
 
     private func dateTimeText(_ date: Date) -> String {

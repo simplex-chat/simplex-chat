@@ -338,7 +338,7 @@ public struct BadgeState: Codable, Hashable {
     public var paidThroughText: String { badgeDateText(paidThrough) }
 }
 
-public struct StatementEntry: Decodable, Hashable {
+public struct StatementEntry: Codable, Hashable {
     public var entryId: String
     public var changeMonths: Int
     public var balanceMonths: Int
@@ -350,7 +350,7 @@ public struct StatementEntry: Decodable, Hashable {
     public var entryType: StatementEntryType
 }
 
-public enum StatementEntryType: Decodable, Hashable {
+public enum StatementEntryType: Codable, Hashable {
     case credit(StatementCreditType)
     case debit(StatementDebitType)
 
@@ -370,6 +370,18 @@ public enum StatementEntryType: Decodable, Hashable {
         }
     }
 
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .credit(c):
+            try container.encode("credit", forKey: .type)
+            try container.encode(c, forKey: .credit)
+        case let .debit(d):
+            try container.encode("debit", forKey: .type)
+            try container.encode(d, forKey: .debit)
+        }
+    }
+
     public var text: String {
         switch self {
         case let .credit(c): c.text
@@ -379,7 +391,7 @@ public enum StatementEntryType: Decodable, Hashable {
 }
 
 // the service is deployed ahead of clients, so a type this version does not know keeps its tag
-public enum StatementCreditType: Decodable, Hashable {
+public enum StatementCreditType: Codable, Hashable {
     case payment(invoiceId: String?)
     case code
     case charge(chargeId: String)
@@ -409,6 +421,17 @@ public enum StatementCreditType: Decodable, Hashable {
         }
     }
 
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(text, forKey: .type)
+        switch self {
+        case let .payment(invoiceId): try container.encodeIfPresent(invoiceId, forKey: .invoiceId)
+        case let .charge(chargeId): try container.encode(chargeId, forKey: .chargeId)
+        case let .transferIn(fromPurchaseKey): try container.encode(fromPurchaseKey, forKey: .fromPurchaseKey)
+        case .code, .support, .opening, .unknown: ()
+        }
+    }
+
     public var text: String {
         switch self {
         case .payment: "payment"
@@ -422,7 +445,7 @@ public enum StatementCreditType: Decodable, Hashable {
     }
 }
 
-public enum StatementDebitType: Decodable, Hashable {
+public enum StatementDebitType: Codable, Hashable {
     case refund
     case upgrade(toPurchaseKey: String)
     case transferOut(toPurchaseKey: String)
@@ -447,6 +470,15 @@ public enum StatementDebitType: Decodable, Hashable {
         case "badge": self = .badge
         case "lapse": self = .lapse
         default: self = .unknown(type: type)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(text, forKey: .type)
+        switch self {
+        case let .upgrade(toPurchaseKey), let .transferOut(toPurchaseKey): try container.encode(toPurchaseKey, forKey: .toPurchaseKey)
+        case .refund, .support, .badge, .lapse, .unknown: ()
         }
     }
 
