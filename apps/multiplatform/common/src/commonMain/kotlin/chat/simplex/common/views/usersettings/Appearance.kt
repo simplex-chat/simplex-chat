@@ -282,7 +282,7 @@ object AppearanceScope {
     Column(Modifier
       .drawWithCache {
         if (wallpaperImage != null && wallpaperType != null && backgroundColor != null && tintColor != null) {
-          chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor, null, null)
+          chatViewBackground(wallpaperImage, wallpaperType, backgroundColor, tintColor, null, null, theme, previewMode = true)
         } else {
           onDrawBehind {
             drawRect(themeBackgroundColor)
