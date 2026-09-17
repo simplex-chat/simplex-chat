@@ -807,10 +807,9 @@ object ChatModel {
       }
     }
 
-    val popChatCollector = PopChatCollector(this)
+    val popChatCollector = PopChatCollector()
 
-    // TODO [contexts] no reason for this to be nested?
-    class PopChatCollector(chatsCtx: ChatsContext) {
+    inner class PopChatCollector {
       private val subject = MutableSharedFlow<Unit>()
       private var remoteHostId: Long? = null
       private val chatsToPop = mutableMapOf<ChatId, Instant>()
@@ -821,7 +820,7 @@ object ChatModel {
             .throttleLatest(2000)
             .collect {
               withContext(Dispatchers.Main) {
-                chatsCtx.chats.replaceAll(popCollectedChats())
+                chats.replaceAll(popCollectedChats())
               }
             }
         }
