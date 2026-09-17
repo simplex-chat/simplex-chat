@@ -254,6 +254,7 @@ desktop/src/jvmMain/kotlin/chat/simplex/desktop/ -- Desktop app (1 file)
 | common/.../common/views/call/IncomingCallAlertView.kt | spec/services/calls.md | product/views/call.md |
 | common/.../common/views/call/WebRTC.kt | spec/services/calls.md | product/flows/calling.md |
 | common/.../common/views/newchat/NewChatView.kt | spec/client/navigation.md | product/views/new-chat.md |
+| common/.../common/views/newchat/WrongQRCode.kt | spec/client/navigation.md | product/views/new-chat.md |
 | common/.../common/views/newchat/AddGroupView.kt | spec/client/navigation.md | product/views/new-chat.md |
 | common/.../common/views/usersettings/SettingsView.kt | spec/client/navigation.md | product/views/settings.md |
 | common/.../common/views/usersettings/Appearance.kt | spec/services/theme.md | product/views/settings.md |

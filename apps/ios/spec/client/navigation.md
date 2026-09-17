@@ -329,14 +329,22 @@ In `connectViaUrl_()`, relay address links (URL path `/r`) are intercepted befor
 ```swift
 if path == "/r" {
     showAlert(NSLocalizedString("Relay address", ...),
-              message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", ...))
-    return
+              message: NSLocalizedString("This is a chat relay address, it cannot be used to connect. To use it, open Network & servers, Your servers, Add server, then Chat relay, paste the address, then Test relay.", ...))
 }
 ```
 
 Similarly, in `planAndConnect()` (`NewChatView.swift`), `.simplexLink(_, .relay, _, _)` patterns trigger the same alert and block connection.
 
-## 11. Channel-Specific NewChatView Behavior
+## 11. Scanned Link Classification
+
+**Source:** [`Shared/Views/NewChat/WrongQRCode.swift`](../../Shared/Views/NewChat/WrongQRCode.swift)
+
+Each scanner, and the Migrate-to-device paste button, routes its input through
+`checkLink()` first. A recognised code of the wrong kind is reported by
+`wrongQRCodeMessage(_:)` / `wrongQRCodeAlert(_:)`, which name what the code is and
+where to use it; an unrecognised string falls back to that scanner's own error.
+
+## 12. Channel-Specific NewChatView Behavior
 
 **Source:** [`Shared/Views/NewChat/NewChatView.swift`](../../Shared/Views/NewChat/NewChatView.swift)
 
@@ -372,6 +380,7 @@ For channels (`groupInfo.useRelays`): the title is "Open channel"; for groups, "
 | New chat view | [`Shared/Views/NewChat/NewChatView.swift`](../../Shared/Views/NewChat/NewChatView.swift) |
 | Channel creation | [`Shared/Views/NewChat/AddChannelView.swift`](../../Shared/Views/NewChat/AddChannelView.swift) |
 | New chat menu | [`Shared/Views/NewChat/NewChatMenuButton.swift`](../../Shared/Views/NewChat/NewChatMenuButton.swift) |
+| Wrong QR code alert | [`Shared/Views/NewChat/WrongQRCode.swift`](../../Shared/Views/NewChat/WrongQRCode.swift) |
 | Settings view | [`Shared/Views/UserSettings/SettingsView.swift`](../../Shared/Views/UserSettings/SettingsView.swift) |
 | User profiles | [`Shared/Views/UserSettings/UserProfilesView.swift`](../../Shared/Views/UserSettings/UserProfilesView.swift) |
 | Onboarding view | [`Shared/Views/Onboarding/OnboardingView.swift`](../../Shared/Views/Onboarding/OnboardingView.swift) |

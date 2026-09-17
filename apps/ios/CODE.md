@@ -178,6 +178,7 @@ After completing all changes (code + documentation), you MUST run an adversarial
 | Shared/Views/Chat/Group/ChannelRelaysView.swift | spec/client/chat-view.md | product/views/group-info.md |
 | Shared/Views/NewChat/NewChatView.swift | spec/client/navigation.md | product/views/new-chat.md |
 | Shared/Views/NewChat/QRCode.swift | spec/client/navigation.md | product/views/new-chat.md |
+| Shared/Views/NewChat/WrongQRCode.swift | spec/client/navigation.md | product/views/new-chat.md |
 | Shared/Views/Call/ActiveCallView.swift | spec/services/calls.md | product/views/call.md |
 | Shared/Views/Call/CallController.swift | spec/services/calls.md | product/flows/calling.md |
 | Shared/Views/Call/WebRTCClient.swift | spec/services/calls.md | product/flows/calling.md |
