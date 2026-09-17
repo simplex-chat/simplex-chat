@@ -215,10 +215,11 @@ data BadgeAlertPrice = BadgeAlertPrice
   }
   deriving (Show)
 
--- | The user's badge as the badge surfaces render it. The purchase keys are deliberately absent:
--- this travels to the UI and over remote control, and they are secrets that stay in core.
+-- | The user's badge as the badge surfaces render it. The private purchase key is deliberately
+-- absent: this travels to the UI and over remote control, and it is a secret that stays in core.
 data BadgeState = BadgeState
   { badgePurchaseId :: Int64,
+    purchaseKey :: C.PublicKeyEd25519, -- the purchase's identifier on the service
     badgeType :: BadgeType,
     shown :: BoolDef,
     monthsLeft :: Int,
