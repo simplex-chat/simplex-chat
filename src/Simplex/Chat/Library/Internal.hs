@@ -3281,7 +3281,7 @@ createChatItems ::
 createChatItems user itemTs_ dirsCIContents = do
   createdAt <- liftIO getCurrentTime
   let itemTs = fromMaybe createdAt itemTs_
-  cxt <- chatStoreCxt'
+  cxt <- asks storeCxt
   void . withStoreBatch' $ \db -> map (updateChat db cxt createdAt) dirsCIContents
   withStoreBatch' $ \db -> concatMap (createACIs db itemTs createdAt) dirsCIContents
   where
@@ -3379,12 +3379,8 @@ waitChatStartedAndActivated = do
     unless (isJust started && activated) retry
 
 chatStoreCxt :: CM StoreCxt
-chatStoreCxt = lift chatStoreCxt'
+chatStoreCxt = asks storeCxt
 {-# INLINE chatStoreCxt #-}
-
-chatStoreCxt' :: CM' StoreCxt
-chatStoreCxt' = asks storeCxt
-{-# INLINE chatStoreCxt' #-}
 
 chatVersionRange :: CM VersionRangeChat
 chatVersionRange = lift chatVersionRange'
