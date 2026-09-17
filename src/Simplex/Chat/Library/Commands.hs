@@ -3100,7 +3100,7 @@ processChatCommand cxt nm = \case
       -- Read group info with updated membersRequireAttention and publicMemberCount
       gInfo' <-
         if useRelays' gInfo
-          then updatePublicGroupData user gInfo (pure gks)
+          then updatePublicGroupData user gInfo gks
           else withFastStore $ \db -> getGroupInfo db cxt user groupId
       let acis' = map (updateACIGroupInfo gInfo') acis
       unless (null acis') $ toView $ CEvtNewChatItems user acis'

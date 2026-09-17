@@ -126,9 +126,9 @@ A site that needs keys switches its existing read to `getGroupInfoKeys` or `getG
 
 ## 3. Message handling
 
-`processAgentMessageConn` reads the entity with `getConnectionEntityKeys` and passes `CM GroupKeys` to `processGroupMessage` as `getGks`. A handler that signs forces it; the rest pay nothing. `getGks` builds the keys from the row read with the entity. Forcing it opens one store transaction, which writes on the first read of a row created before this change.
+`processAgentMessageConn` reads the entity with `getConnectionEntityKeys`, builds the keys from the row with `mkGroupKeys` and passes `GroupInfoKeys` to `processGroupMessage`. The first message on a row created before this change writes the member key.
 
-A handler with an unsigned path takes `CM GroupKeys` and forces it on the signing path: `xGrpInfo`, `xGrpRosterAck`, `xGrpRosterRequest`, `xGrpLinkAcpt`, `xGrpMemNew`, `xGrpMemRole`, `xGrpMemDel`, `xGrpLeave`, `xGrpMsgForward`, `applyAtRosterVersion`, `bFileChunkGroup`, `receiveRosterChunk`, `rosterCompletion`, and `updatePublicGroupData` in `Internal.hs`. A handler that always signs takes `GroupKeys`.
+Handlers that send take `GroupInfoKeys`: `xGrpInfo`, `xGrpRosterAck`, `xGrpRosterRequest`, `xGrpLinkAcpt`, `xGrpMemNew`, `xGrpMemRole`, `xGrpMemDel`, `xGrpLeave`, `xGrpMsgForward`, `applyAtRosterVersion`, `bFileChunkGroup`, `receiveRosterChunk`, `rosterCompletion`, `sendRosterAck`. `updatePublicGroupData` in `Internal.hs` takes `GroupInfo` and `GroupKeys` and returns the updated `GroupInfo`.
 
 An entity of a group connection without keys raises `CEInternalError`.
 
@@ -208,7 +208,7 @@ groupMemberKey :: GroupKeys -> MemberKey
 
 `joinContact` takes `Maybe (Maybe GroupInfoKeys)` and `Maybe MemberId`.
 
-`Subscriber.hs`: every handler under `processGroupMessage` that sends, as `CM GroupKeys`; `sendXGrpLinkMem`, `acceptJoin`, `sendGroupAutoReply`, `getLinkDataCreateRelayLink`.
+`Subscriber.hs`: `processGroupMessage` and every handler under it that sends; `acceptJoin`, `getLinkDataCreateRelayLink`.
 
 `saveConnInfo` returns `Maybe GroupInfoKeys`.
 

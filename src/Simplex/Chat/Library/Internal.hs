@@ -1595,15 +1595,14 @@ connectToRelayAsync user gInfo relayLink = do
       newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
       withFastStore' $ \db -> createRelayMemberConnectionAsync db user gInfo relayMember relayLink newConnIds subMode
 
-updatePublicGroupData :: User -> GroupInfo -> CM GroupKeys -> CM GroupInfo
-updatePublicGroupData user gInfo getGks
+updatePublicGroupData :: User -> GroupInfo -> GroupKeys -> CM GroupInfo
+updatePublicGroupData user gInfo gks
   | useRelays' gInfo && memberRole' (membership gInfo) == GROwner = do
       cxt <- chatStoreCxt
       (gInfo', gLink) <- withStore $ \db -> do
         gInfo' <- updatePublicMemberCount db cxt user gInfo
         gLink <- getGroupLink db user gInfo'
         pure (gInfo', gLink)
-      gks <- getGks
       setGroupLinkDataAsync user (GIK gInfo' gks) gLink
       pure gInfo'
   | useRelays' gInfo && isRelay (membership gInfo) = do
