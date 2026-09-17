@@ -737,26 +737,26 @@ testCreateAddressOnServer :: HasCallStack => TestParams -> IO ()
 testCreateAddressOnServer ps = testChat aliceProfile test ps
   where
     tmp = tmpPath ps
-    -- second SMP server, distinct from alice's configured server (localhost:7001)
-    altServer = "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"
+    -- second SMP server, distinct from alice's configured server
+    altServer = smpServer2Str ps
     altServerCfg =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
     test alice = do
       withSmpServer' altServerCfg $ do
-        -- without a server the address is created on the configured server (7001)
+        -- without a server the address is created on the configured server
         alice ##> "/_address 1"
         (_, defaultLink) <- getContactLinks alice True
-        defaultLink `shouldContain` "localhost%3A7001" -- server is URL-encoded in the link
+        defaultLink `shouldContain` ("localhost%3A" <> smpTestPort ps) -- server is URL-encoded in the link
         alice ##> "/_delete_address 1"
         alice <## "Your chat address is deleted - accepted contacts will remain connected."
         alice <## "To create a new chat address use /ad"
-        -- with a server the address is pinned to the requested server (7003)
+        -- with a server the address is pinned to the requested server
         alice ##> ("/_address 1 " <> altServer)
         (_, pinnedLink) <- getContactLinks alice True
-        pinnedLink `shouldContain` "localhost%3A7003"
+        pinnedLink `shouldContain` ("localhost%3A" <> smpTestPort2 ps)
       alice <## "disconnected 1 connections on server localhost"
 
 testRetryConnectingViaContactLink :: HasCallStack => TestParams -> IO ()
@@ -800,8 +800,8 @@ testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile 
       alice <## "disconnected 2 connections on server localhost"
       bob <## "disconnected 1 connections on server localhost"
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           msgQueueQuota = 2,
           serverStoreCfg = persistentServerStoreCfg tmp
         }
@@ -2467,12 +2467,12 @@ testChangePCCUserDiffSrv ps = do
         alice ##> "/smp"
         alice <## "Your servers"
         alice <## "  SMP servers"
-        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
-        alice #$> ("/smp smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003", id, "ok")
+        alice <## ("    " <> smpServerStr ps)
+        alice #$> ("/smp " <> altServer, id, "ok")
         alice ##> "/smp"
         alice <## "Your servers"
         alice <## "  SMP servers"
-        alice <## "    smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@127.0.0.1:7003"
+        alice <## ("    " <> altServer)
         alice ##> "/user alice"
         showActiveUser alice "alice (Alice)"
         -- Change connection to newly created user and use the newly created connection
@@ -2494,9 +2494,10 @@ testChangePCCUserDiffSrv ps = do
           (bob <## "alisa: contact is connected")
         alice <##> bob
   where
+    altServer = "smp://" <> testServerKeyHash <> ":server_password@127.0.0.1:" <> smpTestPort2 ps
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False), ("7002", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False), (xftpTestPort ps, transport @TLS, False)],
           msgQueueQuota = 2
         }
 
@@ -2534,13 +2535,13 @@ testSetGroupAlias = testChat2 aliceProfile bobProfile $
 
 testSetContactPrefs :: HasCallStack => TestParams -> IO ()
 testSetContactPrefs = testChat2 aliceProfile bobProfile $
-  \alice bob -> withXFTPServer $ do
-    alice #$> ("/_files_folder ./tests/tmp/alice", id, "ok")
-    bob #$> ("/_files_folder ./tests/tmp/bob", id, "ok")
-    createDirectoryIfMissing True "./tests/tmp/alice"
-    createDirectoryIfMissing True "./tests/tmp/bob"
-    copyFile "./tests/fixtures/test.txt" "./tests/tmp/alice/test.txt"
-    copyFile "./tests/fixtures/test.txt" "./tests/tmp/bob/test.txt"
+  \alice bob -> withXFTPServer alice $ do
+    alice #$> ("/_files_folder " <> tmpFile alice "alice", id, "ok")
+    bob #$> ("/_files_folder " <> tmpFile bob "bob", id, "ok")
+    createDirectoryIfMissing True $ tmpFile alice "alice"
+    createDirectoryIfMissing True $ tmpFile bob "bob"
+    copyFile "./tests/fixtures/test.txt" $ tmpFile alice "alice/test.txt"
+    copyFile "./tests/fixtures/test.txt" $ tmpFile bob "bob/test.txt"
     bob ##> "/_profile 1 {\"displayName\": \"bob\", \"fullName\": \"\", \"shortDescr\": \"Bob\", \"preferences\": {\"voice\": {\"allow\": \"no\"}, \"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
     bob <## "profile image removed"
     bob <## "updated preferences:"
@@ -3010,13 +3011,13 @@ testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danP
 
 testGroupPrefsFilesForRole :: HasCallStack => TestParams -> IO ()
 testGroupPrefsFilesForRole = testChat3 aliceProfile bobProfile cathProfile $
-  \alice bob cath -> withXFTPServer $ do
-    alice #$> ("/_files_folder ./tests/tmp/alice", id, "ok")
-    bob #$> ("/_files_folder ./tests/tmp/bob", id, "ok")
-    createDirectoryIfMissing True "./tests/tmp/alice"
-    createDirectoryIfMissing True "./tests/tmp/bob"
-    copyFile "./tests/fixtures/test.txt" "./tests/tmp/alice/test1.txt"
-    copyFile "./tests/fixtures/test.txt" "./tests/tmp/bob/test2.txt"
+  \alice bob cath -> withXFTPServer alice $ do
+    alice #$> ("/_files_folder " <> tmpFile alice "alice", id, "ok")
+    bob #$> ("/_files_folder " <> tmpFile bob "bob", id, "ok")
+    createDirectoryIfMissing True $ tmpFile alice "alice"
+    createDirectoryIfMissing True $ tmpFile bob "bob"
+    copyFile "./tests/fixtures/test.txt" $ tmpFile alice "alice/test1.txt"
+    copyFile "./tests/fixtures/test.txt" $ tmpFile bob "bob/test2.txt"
     createGroup3 "team" alice bob cath
     threadDelay 1000000
     alice ##> "/set files #team on owner"
@@ -3045,7 +3046,7 @@ testGroupPrefsFilesForRole = testChat3 aliceProfile bobProfile cathProfile $
 
 testGroupPrefsSimplexLinksForRole :: HasCallStack => TestParams -> IO ()
 testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfile $
-  \alice bob cath -> withXFTPServer $ do
+  \alice bob cath -> withXFTPServer alice $ do
     createGroup3 "team" alice bob cath
     threadDelay 1000000
     alice ##> "/set links #team on owner"
@@ -3421,8 +3422,8 @@ testShortLinkInvitationConnectRetry ps = testChatOpts2 opts' aliceProfile bobPro
       bob <## "disconnected 1 connections on server localhost"
     tmp = tmpPath ps
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
     opts' =
@@ -3594,8 +3595,8 @@ testShortLinkAddressConnectRetry ps =
   where
     tmp = tmpPath ps
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
     opts' =
@@ -3657,8 +3658,8 @@ testShortLinkAddressConnectRetryIncognito ps =
   where
     tmp = tmpPath ps
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
     opts' =
@@ -3939,8 +3940,8 @@ testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
       bob <## "disconnected 2 connections on server localhost"
     tmp = tmpPath ps
     serverCfg' =
-      smpServerCfg
-        { transports = [("7003", transport @TLS, False)],
+      (smpServerCfg ps)
+        { transports = [(smpTestPort2 ps, transport @TLS, False)],
           serverStoreCfg = persistentServerStoreCfg tmp
         }
     opts' =

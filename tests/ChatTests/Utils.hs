@@ -34,7 +34,6 @@ import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -43,9 +42,9 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern P
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
-import System.Environment (lookupEnv, withArgs)
-import System.IO.Silently (capture_)
+import System.Environment (getExecutablePath, lookupEnv)
 import System.Info (os)
+import System.Process (readProcess)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
 import UnliftIO (timeout)
@@ -745,7 +744,7 @@ connectUsers_ cc1 cc2 noShortLink = do
     (cc1 <## (name2 <> ": contact is connected"))
 
 showName :: TestCC -> IO String
-showName (TestCC ChatController {currentUser} _ _ _ _ _) = do
+showName TestCC {chatController = ChatController {currentUser}} = do
   Just User {localDisplayName, profile = LocalProfile {fullName, shortDescr}} <- readTVarIO currentUser
   pure . T.unpack $ viewName localDisplayName <> optionalFullName localDisplayName fullName shortDescr
 
@@ -890,7 +889,9 @@ linkAnotherSchema link
   | otherwise = error "link starts with neither https://simplex.chat/ nor simplex:/"
 
 xftpCLI :: [String] -> IO [String]
-xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
+xftpCLI params = do
+  exe <- getExecutablePath
+  lines <$> readProcess exe ("xftp-cli" : params) ""
 
 setRelativePaths :: HasCallStack => TestCC -> String -> String -> IO ()
 setRelativePaths cc filesFolder tempFolder = do
