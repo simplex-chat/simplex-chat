@@ -2031,12 +2031,7 @@ class GroupInfo(TypedDict):
     rosterVersion: NotRequired[int]  # int64
     membersRequireAttention: int  # int
     viaGroupLinkUri: NotRequired[str]
-    groupKeys: NotRequired["GroupKeys"]
     groupDomainVerified: NotRequired[bool]
-
-class GroupKeys(TypedDict):
-    publicGroupKeys: NotRequired["PublicGroupKeys"]
-    memberPrivKey: str
 
 class GroupLink(TypedDict):
     userContactLinkId: int  # int64
@@ -2171,18 +2166,6 @@ class GroupRelay(TypedDict):
     relayStatus: "RelayStatus"
     relayLink: NotRequired[str]
     relayCap: "RelayCapabilities"
-
-class GroupRootKey_private(TypedDict):
-    type: Literal["private"]
-    rootPrivKey: str
-
-class GroupRootKey_public(TypedDict):
-    type: Literal["public"]
-    rootPubKey: str
-
-GroupRootKey = GroupRootKey_private | GroupRootKey_public
-
-GroupRootKey_Tag = Literal["private", "public"]
 
 class GroupShortLinkData(TypedDict):
     groupProfile: "GroupProfile"
@@ -2625,10 +2608,6 @@ class PublicGroupAccess(TypedDict):
 
 class PublicGroupData(TypedDict):
     publicMemberCount: int  # int64
-
-class PublicGroupKeys(TypedDict):
-    publicGroupId: str
-    groupRootKey: "GroupRootKey"
 
 class PublicGroupProfile(TypedDict):
     groupType: "GroupType"

@@ -105,7 +105,6 @@ This file is generated automatically.
 - [GroupFeature](#groupfeature)
 - [GroupFeatureEnabled](#groupfeatureenabled)
 - [GroupInfo](#groupinfo)
-- [GroupKeys](#groupkeys)
 - [GroupLink](#grouplink)
 - [GroupLinkOwner](#grouplinkowner)
 - [GroupLinkPlan](#grouplinkplan)
@@ -120,7 +119,6 @@ This file is generated automatically.
 - [GroupPreferences](#grouppreferences)
 - [GroupProfile](#groupprofile)
 - [GroupRelay](#grouprelay)
-- [GroupRootKey](#grouprootkey)
 - [GroupShortLinkData](#groupshortlinkdata)
 - [GroupShortLinkInfo](#groupshortlinkinfo)
 - [GroupSummary](#groupsummary)
@@ -163,7 +161,6 @@ This file is generated automatically.
 - [ProxyError](#proxyerror)
 - [PublicGroupAccess](#publicgroupaccess)
 - [PublicGroupData](#publicgroupdata)
-- [PublicGroupKeys](#publicgroupkeys)
 - [PublicGroupProfile](#publicgroupprofile)
 - [RCErrorType](#rcerrortype)
 - [RatchetSyncState](#ratchetsyncstate)
@@ -2535,17 +2532,7 @@ MemberSupport:
 - rosterVersion: int64?
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
-- groupKeys: [GroupKeys](#groupkeys)?
 - groupDomainVerified: bool?
-
-
----
-
-## GroupKeys
-
-**Record type**:
-- publicGroupKeys: [PublicGroupKeys](#publicgroupkeys)?
-- memberPrivKey: string
 
 
 ---
@@ -2767,21 +2754,6 @@ UpdateRequired:
 - relayStatus: [RelayStatus](#relaystatus)
 - relayLink: string?
 - relayCap: [RelayCapabilities](#relaycapabilities)
-
-
----
-
-## GroupRootKey
-
-**Discriminated union type**:
-
-Private:
-- type: "private"
-- rootPrivKey: string
-
-Public:
-- type: "public"
-- rootPubKey: string
 
 
 ---
@@ -3411,15 +3383,6 @@ NO_SESSION:
 
 **Record type**:
 - publicMemberCount: int64
-
-
----
-
-## PublicGroupKeys
-
-**Record type**:
-- publicGroupId: string
-- groupRootKey: [GroupRootKey](#grouprootkey)
 
 
 ---
