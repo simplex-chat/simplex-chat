@@ -143,7 +143,7 @@ The `filteredChats` function (line ~1188) applies filters in this order:
 3. **Active filter:**
    - `PresetTag`: Matches chat type and characteristics (e.g., `CONTACTS` filters `ChatInfo.Direct`, `GROUPS` filters `ChatInfo.Group`).
    - `UserTag`: Matches chats whose `chatTags` contain the tag ID.
-   - `Unread`: Matches chats with `unreadCount > 0` or `unreadChat == true`.
+   - `Unread`: Matches `Chat.hasUnread` — a chat marked unread by hand, unread messages as the chat's notification setting counts them, or unread support chats unless the chat is muted to "mute all".
 
 ### Search Bar
 
