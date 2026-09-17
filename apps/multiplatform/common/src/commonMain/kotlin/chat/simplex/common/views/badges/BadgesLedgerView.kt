@@ -1,6 +1,7 @@
 package chat.simplex.common.views.badges
 
 import InfoRow
+import SectionBottomSpacer
 import SectionItemView
 import SectionView
 import itemHPadding
@@ -83,6 +84,7 @@ fun BadgesLedgerView(badgeState: BadgeState, close: () -> Unit) {
           }
         }
       }
+      SectionBottomSpacer()
     }
   }
 }
