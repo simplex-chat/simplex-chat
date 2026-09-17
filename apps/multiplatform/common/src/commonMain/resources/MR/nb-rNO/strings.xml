@@ -47,7 +47,6 @@
     <string name="button_add_friends">Legg til venner</string>
     <string name="chat_list_add_list">Legg til en liste</string>
     <string name="compose_view_add_message">Legg til en melding</string>
-    <string name="smp_servers_preset_add">Legg til forhåndsvalgte servere</string>
     <string name="users_add">Legg til en profil</string>
     <string name="address_section_title">Adresse</string>
     <string name="abort_switch_receiving_address_desc">Adresseendringen vil bli avbrutt. Den gamle mottakeradressen vil bli brukt.</string>
@@ -124,7 +123,6 @@
     <string name="connect__a_new_random_profile_will_be_shared">En ny tilfeldig profil vil bli delt.</string>
     <string name="report_reason_other">En annen grunn</string>
     <string name="answer_call">Svar anrop</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Hvem som helst kan være vert for servere.</string>
     <string name="settings_section_title_app">App</string>
     <string name="onboarding_notifications_mode_service_desc_short">Appen kjører alltid i bakgrunnen</string>
     <string name="app_version_code">App build: %s</string>
@@ -179,7 +177,6 @@
     <string name="auto_accept_contact">Godta automatisk</string>
     <string name="v4_2_auto_accept_contact_requests">Godta kontaktforespørsler automatisk</string>
     <string name="auto_accept_images">Godta bilder automatisk</string>
-    <string name="available_in_v51">\nTilgjengelig i v5.1</string>
     <string name="back">Tilbake</string>
     <string name="color_background">Bakgrunn</string>
     <string name="notifications_mode_service_desc">Bakgrunnstjenesten kjører alltid - varsler vises så snart meldingene er tilgjengelige.</string>
