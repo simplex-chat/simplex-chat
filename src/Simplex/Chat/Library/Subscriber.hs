@@ -4497,6 +4497,9 @@ runRelayRequestWorker a Worker {doWork} = do
           where
             getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfoKeys -> CM (GroupInfo, ShortLinkContact)
             getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} (GIK gInfo gks) = do
+              memberPrivKey' <- case gks of
+                GKRelayRequest {memberPrivKey} -> pure memberPrivKey
+                _ -> throwChatError $ CEException "getLinkDataCreateRelayLink: group is not a relay request"
               (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners}), _) <- getShortLinkConnReq' NRMBackground user reqGroupLink
               liftIO (decodeLinkUserData cData) >>= \case
                 Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
@@ -4506,7 +4509,6 @@ runRelayRequestWorker a Worker {doWork} = do
                       | B64UrlByteString entityId == publicGroupId -> pure pg
                     _ -> throwChatError $ CEException "getLinkDataCreateRelayLink: linkEntityId does not match profile publicGroupId"
                   validateGroupProfile gp
-                  let memberPrivKey' = memberPrivKey gks
                   sLnk <- createRelayLink gInfo (C.publicKey memberPrivKey', memberPrivKey')
                   gInfo' <- withStore $ \db -> do
                     void $ updateGroupProfile db user gInfo gp
