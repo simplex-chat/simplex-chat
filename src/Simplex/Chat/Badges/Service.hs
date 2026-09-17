@@ -27,6 +27,9 @@ module Simplex.Chat.Badges.Service
     StatementEntryType (..),
     StatementCreditType (..),
     StatementDebitType (..),
+    NameCredit (..),
+    NameReveal (..),
+    SignedNameLinks (..),
   ) where
 
 import Control.Applicative ((<|>))
@@ -44,6 +47,8 @@ import Simplex.Chat.PaymentService
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
+import Simplex.Messaging.Protocol (NameResponse)
+import Simplex.Messaging.SimplexName (SimplexDomain)
 import Simplex.Messaging.Version (VersionRange, VersionScope, mkVersionRange)
 import Simplex.Messaging.Version.Internal (Version (..))
 
@@ -61,8 +66,11 @@ type VersionRangeBadgeService = VersionRange BadgeServiceVersion
 initialBadgeServiceVersion :: VersionBadgeService
 initialBadgeServiceVersion = VersionBadgeService 1
 
+namesBadgeServiceVersion :: VersionBadgeService
+namesBadgeServiceVersion = VersionBadgeService 2
+
 currentBadgeServiceVersion :: VersionBadgeService
-currentBadgeServiceVersion = VersionBadgeService 1
+currentBadgeServiceVersion = namesBadgeServiceVersion
 
 -- the service is deployed ahead of app releases, so it answers within the client's version
 supportedBadgeServiceVRange :: VersionRangeBadgeService
@@ -101,6 +109,24 @@ data BadgeServiceCommand
       { balance :: BadgeBalance -- no badgeRequest: the service holds the key, the tier and the expiry
       }
   | BSCPauseBadge
+  | BSCPurchaseName
+      { payment :: ServicePayment -- credits the purchase key with one name
+      }
+  | BSCRedeemNameCode
+      { code :: Text
+      }
+  | BSCCommitName
+      { commitment :: Text -- 0x keccak of the label, owner and secret, so the name stays unknown until revealed
+      }
+  | BSCRevealName
+      { nameReveal :: NameReveal
+      }
+  | BSCRenewName
+      { domain :: SimplexDomain
+      }
+  | BSCSetNameLinks
+      { nameLinks :: SignedNameLinks
+      }
 
 data BadgeUpgrade = BadgeUpgrade
   { fromPurchaseKey :: C.PublicKeyEd25519,
@@ -123,6 +149,15 @@ data BadgeServiceResponse
       { credential :: Maybe BadgeCredential, -- Nothing when no balance to issueBadge or no current credential for pause
         receipt :: Maybe Text, -- not provided for lifetime badges
         statement :: BadgeStatement
+      }
+  | BSPNameCredit
+      { credit :: NameCredit -- what a payment or code covers, before it is spent
+      }
+  | BSPNameCommitted
+      { revealAfter :: UTCTime
+      }
+  | BSPName
+      { registration :: NameResponse -- as the service wrote it
       }
   | BSPError
       { code :: BadgeServiceErrorCode,
@@ -223,8 +258,38 @@ data BadgeServiceErrorCode
   | BSEReceiptInvalid
   | BSEReceiptUsed
   | BSEInternal
+  | BSENameTaken
+  | BSENameNotCovered -- the credit covers longer names only
   | BSEUnknown Text -- forwards-compatible: service is deployed ahead of clients
   deriving (Eq, Show)
+
+-- what one name purchase covers
+data NameCredit = NameCredit
+  { minLength :: Int,
+    years :: Word8,
+    expiresAt :: Maybe UTCTime -- a code's own expiry, absent for a store payment
+  }
+  deriving (Show)
+
+-- sent once the commitment is old enough; the owner and secret bind the name to the client
+data NameReveal = NameReveal
+  { label :: Text,
+    owner :: Text, -- 0x address of the name's key
+    secret :: Text, -- 0x
+    simplexContact :: [Text], -- the records the name is registered with, as NameRecord has them
+    simplexChannel :: [Text]
+  }
+  deriving (Show)
+
+-- new records for a name, signed by its key (EIP-712)
+data SignedNameLinks = SignedNameLinks
+  { domain :: SimplexDomain,
+    simplexContact :: [Text],
+    simplexChannel :: [Text],
+    nonce :: Word32,
+    signature :: Text -- 0x
+  }
+  deriving (Show)
 
 instance TextEncoding BadgeServiceErrorCode where
   textEncode = \case
@@ -245,6 +310,8 @@ instance TextEncoding BadgeServiceErrorCode where
     BSEReceiptInvalid -> "receipt_invalid"
     BSEReceiptUsed -> "receipt_used"
     BSEInternal -> "internal"
+    BSENameTaken -> "name_taken"
+    BSENameNotCovered -> "name_not_covered"
     BSEUnknown t -> t
   textDecode s = Just $ case s of
     "bad_request" -> BSEBadRequest
@@ -264,6 +331,8 @@ instance TextEncoding BadgeServiceErrorCode where
     "receipt_invalid" -> BSEReceiptInvalid
     "receipt_used" -> BSEReceiptUsed
     "internal" -> BSEInternal
+    "name_taken" -> BSENameTaken
+    "name_not_covered" -> BSENameNotCovered
     t -> BSEUnknown t
 
 instance ToJSON BadgeServiceErrorCode where
@@ -314,6 +383,12 @@ $(JQ.deriveJSON defaultJSON ''BadgeStatement)
 $(JQ.deriveJSON defaultJSON ''BadgeBalance)
 
 $(JQ.deriveJSON defaultJSON ''BadgeUpgrade)
+
+$(JQ.deriveJSON defaultJSON ''NameCredit)
+
+$(JQ.deriveJSON defaultJSON ''NameReveal)
+
+$(JQ.deriveJSON defaultJSON ''SignedNameLinks)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "BSC") ''BadgeServiceCommand)
 
