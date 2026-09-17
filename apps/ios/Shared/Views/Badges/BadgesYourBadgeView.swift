@@ -11,6 +11,8 @@ import SimpleXChat
 
 struct BadgesYourBadgeView: View {
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var chatModel: ChatModel
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     let badgeState: BadgeState
     var showsAsSheet: Bool = false
 
@@ -47,6 +49,24 @@ struct BadgesYourBadgeView: View {
                     } label: {
                         settingsRow("info.circle", color: theme.colors.secondary) {
                             Text("How private badges work")
+                        }
+                    }
+                }
+                if developerTools {
+                    Section(header: Text("Credential").foregroundColor(theme.colors.secondary)) {
+                        if let badge = chatModel.currentUser?.profile.localBadge {
+                            infoRow("Status", badge.status.rawValue)
+                            infoRow("Expires", DateFormatter.localizedString(from: badge.badge.badgeExpiry, dateStyle: .medium, timeStyle: .short))
+                        }
+                        infoRow("Months left", "\(badgeState.monthsLeft)")
+                        infoRow("Purchase ID", "\(badgeState.badgePurchaseId)")
+                        Button("Copy purchase key") {
+                            UIPasteboard.general.string = badgeState.purchaseKey
+                        }
+                        NavigationLink {
+                            BadgesLedgerView(badgeState: badgeState)
+                        } label: {
+                            Text("Badge ledger")
                         }
                     }
                 }

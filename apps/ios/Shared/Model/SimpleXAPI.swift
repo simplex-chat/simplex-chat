@@ -2229,6 +2229,12 @@ func apiGetBadgeStateSync(_ userId: Int64) throws -> BadgeState? {
     throw r.unexpected
 }
 
+func apiGetBadgeLedger(_ userId: Int64, _ badgePurchaseId: Int64) async throws -> [StatementEntry] {
+    let r: ChatResponse2 = try await chatSendCmd(.apiGetBadgeLedger(userId: userId, badgePurchaseId: badgePurchaseId))
+    if case let .badgeLedger(_, badgeLedger) = r { return badgeLedger }
+    throw r.unexpected
+}
+
 func apiAckBadgeAlert(_ userId: Int64, _ badgePurchaseId: Int64, _ alertKind: BadgeAlertKind, snooze: Bool, episode: String) async throws -> BadgeState? {
     let r: ChatResponse2 = try await chatSendCmd(.apiAckBadgeAlert(userId: userId, badgePurchaseId: badgePurchaseId, alertKind: alertKind, snooze: snooze, episode: episode))
     if case let .badgeState(_, badgeState) = r { return badgeState }

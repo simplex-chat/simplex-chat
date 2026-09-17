@@ -606,6 +606,12 @@ object ChatController {
     throw Exception("apiGetBadgeState: unexpected ${r.responseType}")
   }
 
+  suspend fun apiGetBadgeLedger(rh: Long?, userId: Long, badgePurchaseId: Long): List<StatementEntry> {
+    val r = sendCmd(rh, CC.ApiGetBadgeLedger(userId, badgePurchaseId))
+    if (r is API.Result && r.res is CR.BadgeLedger) return r.res.badgeLedger
+    throw Exception("apiGetBadgeLedger: unexpected ${r.responseType}")
+  }
+
   suspend fun apiAckBadgeAlert(rh: Long?, userId: Long, badgePurchaseId: Long, alertKind: BadgeAlertKind, snooze: Boolean, episode: String): BadgeState? {
     val r = sendCmd(rh, CC.ApiAckBadgeAlert(userId, badgePurchaseId, alertKind, snooze, episode))
     if (r is API.Result && r.res is CR.BadgeStateR) return r.res.badgeState
@@ -4057,6 +4063,7 @@ sealed class CC {
   // badges
   class ApiRedeemBadgeCode(val userId: Long, val code: String): CC()
   class ApiGetBadgeState(val userId: Long): CC()
+  class ApiGetBadgeLedger(val userId: Long, val badgePurchaseId: Long): CC()
   class ApiAckBadgeAlert(val userId: Long, val badgePurchaseId: Long, val alertKind: BadgeAlertKind, val snooze: Boolean, val episode: String): CC()
   // misc
   class ShowVersion(): CC()
@@ -4281,6 +4288,7 @@ sealed class CC {
     is ApiStandaloneFileInfo -> "/_download info $url"
     is ApiRedeemBadgeCode -> "/_redeem_badge_code $userId $code"
     is ApiGetBadgeState -> "/_badge state $userId"
+    is ApiGetBadgeLedger -> "/_badge ledger $userId $badgePurchaseId"
     is ApiAckBadgeAlert -> "/_badge ack $userId $badgePurchaseId ${badgeAlertKindParam(alertKind)} ${onOff(snooze)} $episode"
     is ShowVersion -> "/version"
     is ResetAgentServersStats -> "/reset servers stats"
@@ -4464,6 +4472,7 @@ sealed class CC {
     is ApiStandaloneFileInfo -> "apiStandaloneFileInfo"
     is ApiRedeemBadgeCode -> "apiRedeemBadgeCode"
     is ApiGetBadgeState -> "apiGetBadgeState"
+    is ApiGetBadgeLedger -> "apiGetBadgeLedger"
     is ApiAckBadgeAlert -> "apiAckBadgeAlert"
     is ShowVersion -> "showVersion"
     is ResetAgentServersStats -> "resetAgentServersStats"
@@ -6854,6 +6863,7 @@ sealed class CR {
   // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
   @Serializable @SerialName("badgeRedeemed") class BadgeRedeemed(val user: User, val redeemedBadge: LocalBadge, val newBadge: Boolean, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeState") class BadgeStateR(val user: UserRef, val badgeState: BadgeState?): CR()
+  @Serializable @SerialName("badgeLedger") class BadgeLedger(val user: UserRef, val badgeLedger: List<StatementEntry>): CR()
   @Serializable @SerialName("badgeChanged") class BadgeChanged(val user: User, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeAlert") class BadgeAlertR(val user: UserRef, val badgeAlert: BadgeAlert): CR()
   // general
@@ -7044,6 +7054,7 @@ sealed class CR {
     is AppSettingsR -> "appSettings"
     is BadgeRedeemed -> "badgeRedeemed"
     is BadgeStateR -> "badgeState"
+    is BadgeLedger -> "badgeLedger"
     is BadgeChanged -> "badgeChanged"
     is BadgeAlertR -> "badgeAlert"
     is Response -> "* $type"
@@ -7251,6 +7262,7 @@ sealed class CR {
     is AppSettingsR -> json.encodeToString(appSettings)
     is BadgeRedeemed -> withUser(user, "redeemedBadge: ${json.encodeToString(redeemedBadge)}\nnewBadge: $newBadge\nbadgeState: ${json.encodeToString(badgeState)}")
     is BadgeStateR -> withUser(user, json.encodeToString(badgeState))
+    is BadgeLedger -> withUser(user, json.encodeToString(badgeLedger))
     is BadgeChanged -> withUser(user, json.encodeToString(badgeState))
     is BadgeAlertR -> withUser(user, json.encodeToString(badgeAlert))
     is Response -> json

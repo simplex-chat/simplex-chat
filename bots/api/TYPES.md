@@ -14,6 +14,8 @@ This file is generated automatically.
 - [AutoAccept](#autoaccept)
 - [BadgeInfo](#badgeinfo)
 - [BadgeProof](#badgeproof)
+- [BadgeRedeemError](#badgeredeemerror)
+- [BadgeServiceErrorCode](#badgeserviceerrorcode)
 - [BadgeStatus](#badgestatus)
 - [BadgeType](#badgetype)
 - [BlockingInfo](#blockinginfo)
@@ -431,6 +433,98 @@ Remote controller app version range (min and max as version strings).
 - presHeader: string
 - proof: string
 - badgeInfo: [BadgeInfo](#badgeinfo)
+
+
+---
+
+## BadgeRedeemError
+
+**Discriminated union type**:
+
+InvalidCode:
+- type: "invalidCode"
+
+ServiceNotConfigured:
+- type: "serviceNotConfigured"
+
+BadgeActive:
+- type: "badgeActive"
+
+ServiceError:
+- type: "serviceError"
+- serviceError: [BadgeServiceErrorCode](#badgeserviceerrorcode)
+
+InvalidResponse:
+- type: "invalidResponse"
+- message: string
+
+UnknownKeyIndex:
+- type: "unknownKeyIndex"
+
+CredentialNotVerified:
+- type: "credentialNotVerified"
+
+
+---
+
+## BadgeServiceErrorCode
+
+**Discriminated union type**:
+
+BadRequest:
+- type: "badRequest"
+
+UnsupportedVersion:
+- type: "unsupportedVersion"
+
+UnknownPurchaseKey:
+- type: "unknownPurchaseKey"
+
+UnknownOfferId:
+- type: "unknownOfferId"
+
+OfferDisabled:
+- type: "offerDisabled"
+
+OfferMismatch:
+- type: "offerMismatch"
+
+ProductUnavailable:
+- type: "productUnavailable"
+
+PaymentNotEntitled:
+- type: "paymentNotEntitled"
+
+PaymentPending:
+- type: "paymentPending"
+
+ProviderUnavailable:
+- type: "providerUnavailable"
+
+RateLimited:
+- type: "rateLimited"
+
+CodeInvalid:
+- type: "codeInvalid"
+
+CodeUsed:
+- type: "codeUsed"
+
+CodeExpired:
+- type: "codeExpired"
+
+ReceiptInvalid:
+- type: "receiptInvalid"
+
+ReceiptUsed:
+- type: "receiptUsed"
+
+Internal:
+- type: "internal"
+
+Unknown:
+- type: "unknown"
+- : string
 
 
 ---
@@ -1360,6 +1454,10 @@ AgentNoSubResult:
 CommandError:
 - type: "commandError"
 - message: string
+
+BadgeRedeemError:
+- type: "badgeRedeemError"
+- badgeRedeemError: [BadgeRedeemError](#badgeredeemerror)
 
 AgentCommandError:
 - type: "agentCommandError"

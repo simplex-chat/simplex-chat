@@ -35,6 +35,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
 import Simplex.Chat.Badges
+import Simplex.Chat.Badges.Service
 import Simplex.Chat.Names
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -49,7 +50,6 @@ import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
 import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NetworkError (..), ProxyError (..))
 import Simplex.Messaging.Protocol.Types (ClientNotice (..))
 import Simplex.Messaging.Transport
-import Simplex.Chat.Remote.AppVersion (AppVersion, AppVersionRange)
 import Simplex.Chat.Remote.Types (CtrlAppInfo (..))
 import Simplex.RemoteControl.Types
 import System.Console.ANSI.Types (Color (..))
@@ -216,6 +216,8 @@ chatTypesDocsData =
     (STI "AppVersionRange" [RecordTypeInfo "AppVersionRange" [FieldInfo "minVersion" (TIType (ST TString [])), FieldInfo "maxVersion" (TIType (ST TString []))]], STRecord, "", [], "", "Remote controller app version range (min and max as version strings)."),
     (sti @AutoAccept, STRecord, "", [], "", ""),
     (sti @BadgeProof, STRecord, "", [], "", ""),
+    (sti @BadgeRedeemError, STUnion, "BRE", [], "", ""),
+    (sti @BadgeServiceErrorCode, STUnion, "BSE", [], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),
     (sti @BlockingReason, STEnum, "BR", [], "", ""),
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
@@ -447,6 +449,8 @@ deriving instance Generic AgentErrorType
 deriving instance Generic AgentServiceError
 deriving instance Generic AutoAccept
 deriving instance Generic BadgeProof
+deriving instance Generic BadgeRedeemError
+deriving instance Generic BadgeServiceErrorCode
 deriving instance Generic BlockingInfo
 deriving instance Generic BlockingReason
 deriving instance Generic BrokerErrorType

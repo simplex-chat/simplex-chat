@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store.Badges
   ( BadgeCodeRedemption (..),
@@ -22,6 +23,7 @@ module Simplex.Chat.Store.Badges
     getLatestIssuedCredential,
     storeBadgeStatement,
     getBadgeLedgerLastEntry,
+    getBadgeLedger,
     getBadgeLedgerEntryId,
   )
 where
@@ -31,7 +33,7 @@ import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
@@ -306,7 +308,7 @@ storeBadgeStatement db badgePurchaseId badgeType tip entries now =
 -- | The balance is the last row; nothing derives it by summing the history.
 getBadgeLedgerLastEntry :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
 getBadgeLedgerLastEntry db badgePurchaseId =
-  maybeFirstRow' Nothing toEntry $
+  maybeFirstRow' Nothing toStatementEntry $
     DB.query
       db
       [sql|
@@ -318,10 +320,27 @@ getBadgeLedgerLastEntry db badgePurchaseId =
         LIMIT 1
       |]
       (Only badgePurchaseId)
-  where
-    toEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) :. (wasPausedSince, createdAt, entryType_, credit_, debit_, value_)) =
-      (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType})
-        <$> maybe (entryTypeFromColumns entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
+
+-- | Oldest first. A row whose type this version cannot rebuild is left out, as it is from the tip.
+getBadgeLedger :: DB.Connection -> User -> Int64 -> IO [StatementEntry]
+getBadgeLedger db User {userId} badgePurchaseId =
+  mapMaybe toStatementEntry
+    <$> DB.query
+      db
+      [sql|
+        SELECT l.entry_uuid, l.change_months, l.balance_months, l.balance_start_ts, l.balance_anchor_ts, l.balance_badge_type,
+               l.was_paused_since, l.service_created_at, l.entry_type, l.entry_credit_type, l.entry_debit_type, l.entry_type_value
+        FROM badge_ledger l
+        JOIN badge_purchases p ON p.badge_purchase_id = l.badge_purchase_id
+        WHERE l.badge_purchase_id = ? AND p.user_id = ?
+        ORDER BY l.entry_id
+      |]
+      (badgePurchaseId, userId)
+
+toStatementEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType) :. (Maybe UTCTime, UTCTime, Text, Maybe Text, Maybe Text, Maybe Text) -> Maybe StatementEntry
+toStatementEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) :. (wasPausedSince, createdAt, entryType_, credit_, debit_, value_)) =
+  (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType})
+    <$> maybe (entryTypeFromColumns entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
 
 -- | Decodes the stored JSON rather than rebuilding from the tag, so a version that has since
 -- learnt the type reads it with its fields, and one that has not still gets it back verbatim.

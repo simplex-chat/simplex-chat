@@ -378,6 +378,7 @@ undocumentedCommands =
     "APIExportArchive",
     "APIForwardChatItems",
     "APIGetAppSettings",
+    "APIGetBadgeLedger",
     "APIGetBadgeState",
     "APIGetCallInvitations",
     "APIGetChat",

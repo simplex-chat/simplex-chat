@@ -44,6 +44,8 @@ import Simplex.Chat.Help
 import Simplex.Chat.Library.Commands (badgeServiceErrorText, maxImageSize)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
+import Simplex.Chat.Badges.Ledger (creditTypeTag, debitTypeTag)
+import Simplex.Chat.Badges.Service (StatementEntry (..), StatementEntryType (..))
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeState (..))
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
@@ -192,6 +194,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   -- the badge is only shown when it is the one now on the profile; a replayed code's badge may not be
   CRBadgeRedeemed u badge newBadge _ -> ttyUser u $ if newBadge then "badge redeemed" : viewContactBadge (Just badge) else ["badge already redeemed"]
   CRBadgeState u st -> ttyUser u $ viewUserBadgeState st
+  CRBadgeLedger u entries -> ttyUser u $ viewBadgeLedger entries
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
@@ -1853,6 +1856,17 @@ viewUserBadgeState = maybe [] viewBadge
 
 viewBadgeAlert :: BadgeAlert -> [StyledString]
 viewBadgeAlert BadgeAlert {kind, date} = [plain $ "badge alert: " <> textEncode kind <> " " <> day date]
+
+viewBadgeLedger :: [StatementEntry] -> [StyledString]
+viewBadgeLedger [] = ["no ledger entries"]
+viewBadgeLedger entries = map viewEntry entries
+  where
+    viewEntry StatementEntry {createdAt, entryType, changeMonths, balanceMonths, balanceStartTs} =
+      plain $ day createdAt <> " " <> entryKind entryType <> " " <> withSign changeMonths <> " -> " <> tshow balanceMonths <> ", from " <> day balanceStartTs
+    entryKind = \case
+      SECredit c -> creditTypeTag c
+      SEDebit d -> debitTypeTag d
+    withSign n = (if n >= 0 then "+" else "") <> tshow n
 
 day :: UTCTime -> Text
 day = T.pack . formatTime defaultTimeLocale "%Y-%m-%d"
