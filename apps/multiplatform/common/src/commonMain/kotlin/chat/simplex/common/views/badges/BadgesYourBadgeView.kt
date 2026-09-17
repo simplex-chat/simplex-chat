@@ -1,5 +1,7 @@
 package chat.simplex.common.views.badges
 
+import InfoRow
+import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -11,12 +13,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.BadgeState
+import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.AppBarTitle
 import chat.simplex.common.views.helpers.ModalManager
@@ -47,6 +54,22 @@ fun BadgesYourBadgeView(badgeState: BadgeState) {
       )
     }
     SectionSpacer()
+    if (appPrefs.developerTools.get()) {
+      val clipboard = LocalClipboardManager.current
+      SectionView(stringResource(MR.strings.badges_credential)) {
+        val badge = chatModel.currentUser.value?.profile?.localBadge
+        if (badge != null) {
+          InfoRow(stringResource(MR.strings.badges_credential_status), badge.status.name)
+          InfoRow(stringResource(MR.strings.badges_credential_expires), localTimestamp(badge.badge.badgeExpiry))
+        }
+        InfoRow(stringResource(MR.strings.badges_credential_months_left), badgeState.monthsLeft.toString())
+        InfoRow(stringResource(MR.strings.badges_credential_purchase_id), badgeState.badgePurchaseId.toString())
+        SectionItemView({ clipboard.setText(AnnotatedString(badgeState.purchaseKey)) }) {
+          Text(stringResource(MR.strings.badges_copy_purchase_key), color = MaterialTheme.colors.primary)
+        }
+      }
+      SectionSpacer()
+    }
   }
 }
 

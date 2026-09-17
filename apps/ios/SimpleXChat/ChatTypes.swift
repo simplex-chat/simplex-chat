@@ -326,6 +326,7 @@ public struct LocalBadge: Codable, Hashable {
 // which outlives entitlement so the credential's window can cover a renewal.
 public struct BadgeState: Codable, Hashable {
     public var badgePurchaseId: Int64
+    public var purchaseKey: String
     public var badgeType: BadgeType
     public var shown: Bool
     public var monthsLeft: Int

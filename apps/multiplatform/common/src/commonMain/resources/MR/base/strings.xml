@@ -3267,6 +3267,12 @@
   <string name="badges_support_ended_on">Your support ended on %1$s.</string>
   <string name="badges_remind_me_later">Remind me later</string>
   <string name="badges_dismiss">Dismiss</string>
+  <string name="badges_credential">Credential</string>
+  <string name="badges_credential_status">Status</string>
+  <string name="badges_credential_expires">Expires</string>
+  <string name="badges_credential_months_left">Months left</string>
+  <string name="badges_credential_purchase_id">Purchase ID</string>
+  <string name="badges_copy_purchase_key">Copy purchase key</string>
   <string name="supporter_perks">Supporter perks</string>
   <string name="v7_1_supporter_badge_title">Supporter badge ❤️</string>
   <string name="v7_1_supporter_badge_body">Help keep the network running — send files up to 2 GB.</string>

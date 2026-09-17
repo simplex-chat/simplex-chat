@@ -5417,9 +5417,10 @@ getUserBadgeState user = do
     Just p@UserBadgePurchase {badgePurchaseId} ->
       fmap (badgeStateOf now p) <$> withStore' (`getBadgeLedgerLastEntry` badgePurchaseId)
   where
-    badgeStateOf now p@UserBadgePurchase {badgePurchaseId, badgeType, shown} balance =
+    badgeStateOf now p@UserBadgePurchase {badgePurchaseId, purchaseKey, badgeType, shown} balance =
       BadgeState
         { badgePurchaseId,
+          purchaseKey,
           badgeType,
           shown = BoolDef shown,
           monthsLeft = balanceMonths balance,

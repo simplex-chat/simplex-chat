@@ -2225,6 +2225,7 @@ data class LocalBadge(
 @Serializable
 data class BadgeState(
   val badgePurchaseId: Long,
+  val purchaseKey: String,
   val badgeType: BadgeType,
   val shown: Boolean,
   val monthsLeft: Int,
