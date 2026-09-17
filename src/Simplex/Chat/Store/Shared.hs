@@ -743,13 +743,11 @@ mkGroupKeys db cxt g@GroupInfo {groupId, groupProfile = GroupProfile {publicGrou
     Nothing -> do
       (_, k) <- atomically $ C.generateKeyPair (drg cxt)
       setUserMemberKey db groupId (groupMemberId' membership) k
-  pure $ case (useRelays' g, publicGroupId_, GRKPrivate <$> rootPrivKey <|> GRKPublic <$> rootPubKey) of
+  pure $ case (useRelays' g, isJust publicGroup, GRKPrivate <$> rootPrivKey <|> GRKPublic <$> rootPubKey) of
     (False, _, _) -> GKGroup {memberPrivKey}
-    (True, Just publicGroupId, Just groupRootKey) -> GKPublicGroup {publicGroupId, groupRootKey, memberPrivKey}
-    (True, Just publicGroupId, Nothing) -> GKPreparedPublicGroup {publicGroupId, memberPrivKey}
-    (True, Nothing, _) -> GKRelayRequest {memberPrivKey}
-  where
-    publicGroupId_ = (\PublicGroupProfile {publicGroupId} -> publicGroupId) <$> publicGroup
+    (True, True, Just groupRootKey) -> GKPublicGroup {groupRootKey, memberPrivKey}
+    (True, True, Nothing) -> GKPreparedPublicGroup {memberPrivKey}
+    (True, False, _) -> GKRelayRequest {memberPrivKey}
 
 setUserMemberKey :: DB.Connection -> GroupId -> GroupMemberId -> C.PrivateKeyEd25519 -> ExceptT StoreError IO C.PrivateKeyEd25519
 setUserMemberKey db groupId membershipId newKey = do

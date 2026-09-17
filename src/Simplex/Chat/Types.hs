@@ -486,16 +486,14 @@ data GroupKeys
       { memberPrivKey :: C.PrivateKeyEd25519
       }
   | GKPublicGroup
-      { publicGroupId :: B64UrlByteString,
-        groupRootKey :: GroupRootKey,
+      { groupRootKey :: GroupRootKey,
         memberPrivKey :: C.PrivateKeyEd25519
       }
   | GKRelayRequest
       { memberPrivKey :: C.PrivateKeyEd25519
       }
   | GKPreparedPublicGroup
-      { publicGroupId :: B64UrlByteString,
-        memberPrivKey :: C.PrivateKeyEd25519
+      { memberPrivKey :: C.PrivateKeyEd25519
       }
   deriving (Eq, Show)
 
