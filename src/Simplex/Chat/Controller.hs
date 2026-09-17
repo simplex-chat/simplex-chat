@@ -1153,7 +1153,7 @@ data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
   | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameRegistration_ :: Maybe NameRegistration} -- nameRegistration_ is set when the target was a name
   | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameRegistration_ :: Maybe NameRegistration}
-  | CPSimplexName {nameRegistration :: NameRegistration} -- the name is not registered or expired, and no local chat has it
+  | CPSimplexName {nameRegistration :: NameRegistration} -- the name is not registered, expired or has no usable link, and no local chat has it
   | CPError {chatError :: ChatError}
   deriving (Show)
 
@@ -1475,7 +1475,7 @@ data ChatError
   | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
--- why a resolved SimpleX name could not be used (the name itself resolved; a name that is not registered or expired is in the plan)
+-- why a resolved SimpleX name could not be used (the name itself resolved; in a connection plan, a name with nothing to connect is CPSimplexName)
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
