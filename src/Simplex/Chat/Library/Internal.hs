@@ -1299,22 +1299,22 @@ serveRoster user gInfo@(GIK g _) member =
 -- This doesn't create introduction records in db, compared to above methods.
 introduceInChannel :: StoreCxt -> User -> GroupInfoKeys -> GroupMember -> CM ()
 introduceInChannel _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
-introduceInChannel cxt user gik@(GIK gInfo _) subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
+introduceInChannel cxt user g@(GIK gInfo _) subscriber@GroupMember {activeConn = Just conn, indexInGroup = subscriberIdx} = do
   (owners, adminsMods) <- withStore' $ \db ->
     (,) <$> getGroupOwners db cxt user gInfo <*> getGroupAdminsMods db cxt user gInfo
   let modMs = owners <> adminsMods
-  void $ sendGroupMessage' user gik modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
+  void $ sendGroupMessage' user g modMs $ XGrpMemNew (memberInfo gInfo subscriber) Nothing
   withStore' $ \db ->
     setMemberVectorNewRelations db subscriber [(indexInGroup m, (IDSubjectIntroduced, MRIntroduced)) | m <- modMs]
   -- owner intros first so the joiner has the owner profile loaded before applying the saved roster (signed by the owner)
   sendIntros owners
-  serveRoster user gik subscriber
+  serveRoster user g subscriber
   sendIntros adminsMods
   withStore' $ \db ->
     setMembersVectorsNewRelation db modMs subscriberIdx IDSubjectIntroduced MRIntroduced
   where
     sendIntros ms = forM_ (L.nonEmpty $ map (memberIntroEvt gInfo) ms) $ \evts ->
-      sendGroupMemberMessages user gik conn evts
+      sendGroupMemberMessages user g conn evts
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user g = userProfileInGroup' user (Just g)
@@ -1566,21 +1566,21 @@ setGroupLinkData' nm user gInfo@(GIK g _) =
     _ -> pure Nothing
 
 setGroupLinkData :: NetworkRequestMode -> User -> GroupInfoKeys -> GroupLink -> CM GroupLink
-setGroupLinkData nm user gik@(GIK gInfo _) gLink = do
+setGroupLinkData nm user g@(GIK gInfo _) gLink = do
   cxt <- chatStoreCxt
   (conn, groupRelays) <- withFastStore $ \db ->
     (,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (getPublishableGroupRelays db cxt user gInfo)
-  let (userLinkData, crClientData) = groupLinkData gik gLink groupRelays
+  let (userLinkData, crClientData) = groupLinkData g gLink groupRelays
       linkType = if useRelays' gInfo then CCTChannel else CCTGroup
   sLnk <- shortenShortLink' . setShortLinkType_ linkType =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData) False Nothing)
   withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
 
 setGroupLinkDataAsync :: User -> GroupInfoKeys -> GroupLink -> CM ()
-setGroupLinkDataAsync user gik@(GIK gInfo _) gLink = do
+setGroupLinkDataAsync user g@(GIK gInfo _) gLink = do
   cxt <- chatStoreCxt
   (conn, groupRelays) <- withStore $ \db ->
     (,) <$> getGroupLinkConnection db cxt user gInfo <*> liftIO (getPublishableGroupRelays db cxt user gInfo)
-  let (userLinkData, crClientData) = groupLinkData gik gLink groupRelays
+  let (userLinkData, crClientData) = groupLinkData g gLink groupRelays
   setAgentConnShortLinkAsync user conn userLinkData (Just crClientData)
 
 connectToRelayAsync :: User -> GroupInfo -> ShortLinkContact -> CM ()
@@ -2392,9 +2392,9 @@ groupMemberKey :: GroupKeys -> MemberKey
 groupMemberKey gks = MemberKey $ C.publicKey $ memberPrivKey gks
 
 sendGroupMemberMessages :: forall e. MsgEncodingI e => User -> GroupInfoKeys -> Connection -> NonEmpty (ChatMsgEvent e) -> CM ()
-sendGroupMemberMessages user gik@(GIK gInfo@GroupInfo {groupId} _) conn events = do
+sendGroupMemberMessages user g@(GIK gInfo@GroupInfo {groupId} _) conn events = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
-  let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning False gik evt, evt)) events
+  let idsEvts = L.map (\evt -> (GroupId groupId, groupMsgSigning False g evt, evt)) events
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CEvtChatErrors errs
   forM_ (L.nonEmpty msgs) $ \msgs' ->
@@ -2563,7 +2563,7 @@ applyRosterDelta delta current = case delta of
 -- onto the served roster (so it excludes demoted/removed members). Returns the reserved version for the delta
 -- that follows. The blob send is best-effort - a failed send heals on the next change or on resume.
 broadcastRoster :: User -> GroupInfoKeys -> RosterDelta -> CM VersionRoster
-broadcastRoster user gik@(GIK gInfo _) delta = do
+broadcastRoster user g@(GIK gInfo _) delta = do
   let rosterVer = maybe (VersionRoster 0) (\(VersionRoster n) -> VersionRoster (n + 1)) (rosterVersion gInfo)
   withStore' $ \db -> setGroupRosterVersion db gInfo rosterVer
   sendRosterBlob rosterVer `catchAllErrors` eToView
@@ -2574,15 +2574,15 @@ broadcastRoster user gik@(GIK gInfo _) delta = do
       (relays, rosterMems) <- withStore' $ \db ->
         (,) <$> getGroupRelayMembers db cxt user gInfo <*> getGroupRosterMembers db cxt user gInfo
       forM_ (L.nonEmpty relays) $ \relays' ->
-        sendRoster user gik (L.toList relays') rosterVer (buildGroupRoster $ applyRosterDelta delta rosterMems)
+        sendRoster user g (L.toList relays') rosterVer (buildGroupRoster $ applyRosterDelta delta rosterMems)
 
 -- Send the current roster (no version bump) to a newly added relay so it can serve joiners.
 sendGroupRosterToRelay :: User -> GroupInfoKeys -> GroupMember -> CM ()
-sendGroupRosterToRelay user gik@(GIK gInfo _) relayMember =
+sendGroupRosterToRelay user g@(GIK gInfo _) relayMember =
   forM_ (rosterVersion gInfo) $ \rosterVer -> do
     cxt <- chatStoreCxt
     rosterMems <- withStore' $ \db -> getGroupRosterMembers db cxt user gInfo
-    sendRoster user gik [relayMember] rosterVer (buildGroupRoster rosterMems)
+    sendRoster user g [relayMember] rosterVer (buildGroupRoster rosterMems)
 
 -- Row-less send (no files/snd_files rows, so no send-side cleanup); redelivery is the agent's.
 sendRoster :: User -> GroupInfoKeys -> [GroupMember] -> VersionRoster -> [RosterMember] -> CM ()
@@ -2607,7 +2607,7 @@ sendInlineBlobChunks user gInfo members sharedMsgId blob = do
 -- Idempotent: sends only when the configured web domain differs from what was last sent, and only to
 -- owners whose recorded chat version supports relayWebCapVersion (older apps can't parse XGrpRelayCap).
 sendRelayCapIfNeeded :: User -> GroupInfoKeys -> CM ()
-sendRelayCapIfNeeded user gik@(GIK gInfo _) = do
+sendRelayCapIfNeeded user g@(GIK gInfo _) = do
   ChatConfig {webPreviewConfig} <- asks config
   let currentWebDomain = (\WebPreviewConfig {webDomain} -> webDomain) <$> webPreviewConfig
   sentWebDomain <- withStore' (`getRelaySentWebDomain` gInfo)
@@ -2616,7 +2616,7 @@ sendRelayCapIfNeeded user gik@(GIK gInfo _) = do
     owners <- withStore' $ \db -> getGroupOwners db cxt user gInfo
     let capableOwners = filter (\m -> memberCurrent m && m `supportsVersion` relayWebCapVersion) owners
     unless (null capableOwners) $ do
-      void $ sendGroupMessage' user gik capableOwners (XGrpRelayCap RelayCapabilities {webDomain = currentWebDomain})
+      void $ sendGroupMessage' user g capableOwners (XGrpRelayCap RelayCapabilities {webDomain = currentWebDomain})
       withStore' $ \db -> updateRelaySentWebDomain db gInfo currentWebDomain
 
 sendGroupMessages :: MsgEncodingI e => User -> GroupInfoKeys -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> Bool -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
@@ -2631,7 +2631,7 @@ sendGroupSignedMessages user gInfo@(GIK g _) scope asGroup members signedEvents 
   sendGroupSignedMessages_ g members signedEvents
 
 sendGroupProfileUpdate :: User -> GroupInfoKeys -> Maybe GroupChatScope -> ShowGroupAsSender -> [GroupMember] -> CM ()
-sendGroupProfileUpdate user gik@(GIK gInfo gks) scope asGroup members =
+sendGroupProfileUpdate user g@(GIK gInfo gks) scope asGroup members =
   -- TODO [knocking] send current profile to pending member after approval?
   when shouldSendProfileUpdate $
     sendProfileUpdate `catchAllErrors` eToView
@@ -2650,7 +2650,7 @@ sendGroupProfileUpdate user gik@(GIK gInfo gks) scope asGroup members =
     sendProfileUpdate = do
       -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
       profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile gInfo (membership gInfo) $ fromLocalProfile p
-      void $ sendGroupMessage' user gik members $ XInfo profileUpdate (Just $ groupMemberKey gks)
+      void $ sendGroupMessage' user g members $ XInfo profileUpdate (Just $ groupMemberKey gks)
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
 
