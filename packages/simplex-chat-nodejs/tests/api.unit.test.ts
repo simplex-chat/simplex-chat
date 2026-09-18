@@ -66,9 +66,11 @@ describe("startChat lifecycle", () => {
   })
 
   it("reports stop failures as stop errors", async () => {
-    const chat = await chatWithResponses({type: "chatStarted"}, {type: "chatCmdError"})
+    const chat = await chatWithResponses({type: "chatStarted"}, {type: "chatCmdError"}, {type: "chatStopped"})
     await chat.startChat()
     await expect(chat.stopChat()).rejects.toThrow("error stopping chat")
+    expect(chat.started).toBe(true)
+    await chat.stopChat()
   })
 
   it("receives with a 500 ms wait", async () => {

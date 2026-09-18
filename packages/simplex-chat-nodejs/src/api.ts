@@ -145,12 +145,9 @@ export class ChatApi {
    * Usually doesn't need to be called in chat bots.
    */
   async stopChat(): Promise<void> {
-    try {
-      const r = await this.sendChatCmd("/_stop")
-      if (r.type !== "chatStopped") throw new ChatCommandError("error stopping chat", r)
-    } finally {
-      await this.stopEventsLoop()
-    }
+    const r = await this.sendChatCmd("/_stop")
+    if (r.type !== "chatStopped") throw new ChatCommandError("error stopping chat", r)
+    await this.stopEventsLoop()
   }
 
   /**
