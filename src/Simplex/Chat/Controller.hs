@@ -669,6 +669,7 @@ data ChatCommand
   | APICheckNameCode {userId :: UserId, code :: Text} -- what a code covers, checked on the device without spending it
   | APIGetNameState {userId :: UserId} -- the user's names, and registrations in progress
   | APIRetryName {userId :: UserId, namePurchaseId :: Int64, domain_ :: Maybe SimplexDomain} -- the payment is kept after a failure: the same name again, or another one when it was taken
+  | APICancelName {userId :: UserId, namePurchaseId :: Int64} -- stop a registration that is still running; the payment stays for another name
   | APISetNameLinks {userId :: UserId, namePurchaseId :: Int64, nameLinks :: NameLinks}
   | APIRenewName {userId :: UserId, namePurchaseId :: Int64, payment :: ServicePayment}
   | APIRenewNameCode {userId :: UserId, namePurchaseId :: Int64, code :: Text}
@@ -1527,6 +1528,7 @@ data NamePurchaseStatus
   | NPSRegistered
   | NPSTaken -- registered by someone else first; the payment is kept for another name
   | NPSFailed -- not registered; the payment is kept
+  | NPSCancelled -- stopped on the user's word; the payment is kept
   deriving (Show)
 
 data NameError
