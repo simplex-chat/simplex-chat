@@ -56,7 +56,7 @@ Investors in our [equity crowdfunding on Wefunder](https://wefunder.com/simplex.
 | $5,000 | legend, 6 months* |
 | $10,000 | legend, 12 months |
 
-* If you invest $1000 or more, you can also get supporter badge for 12 months, if you prefer.
+* If you invest $1000 or more, you can get a supporter badge for 12 months instead, if you prefer.
 
 If you invest by September 22, you will receive 2 extra months. We will send the codes once the rolling close starts in October.
 
