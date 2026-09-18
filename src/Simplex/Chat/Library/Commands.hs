@@ -5407,17 +5407,18 @@ updateUserBadge userId emitted now = do
 -- while topping up cannot credit months without issuing.
 -- TODO [badges] BAPrepaidEnding belongs here, three days before paidThrough, once that exists.
 derivedBadgeAlert :: UTCTime -> UserBadgePurchase -> Maybe BadgeCredential -> StatementEntry -> Maybe BadgeAlert
-derivedBadgeAlert now UserBadgePurchase {issueError} shownCred b
+derivedBadgeAlert now p shownCred b
   | endsAt <= now = Just $ alertOf BASupportEnded endsAt
-  | otherwise = case issueError of
-      Just BadgeIssueError {failedSince, reason} | worthAlerting reason -> Just $ alertOf BAIssueFailed failedSince
-      _ -> Nothing
+  | otherwise = (\BadgeIssueError {failedSince} -> alertOf BAIssueFailed failedSince) <$> shownIssueError now p shownCred
   where
     endsAt = L.paidThrough b
     alertOf kind date = BadgeAlert {kind, episode = safeDecodeUtf8 $ strEncode date, date, price = Nothing}
-    -- a failure that can clear on its own is only worth a word once contacts see the badge as
-    -- expired, which is the moment the shown credential lapses
-    worthAlerting reason = not (badgeFailureTransient reason) || maybe False ((<= now) . credentialExpiry) shownCred
+
+-- | A failure that can clear on its own is only shown once the credential lapses and contacts see it.
+shownIssueError :: UTCTime -> UserBadgePurchase -> Maybe BadgeCredential -> Maybe BadgeIssueError
+shownIssueError now UserBadgePurchase {issueError} shownCred = mfilter worthAlerting issueError
+  where
+    worthAlerting BadgeIssueError {reason} = not (badgeFailureTransient reason) || maybe False ((<= now) . credentialExpiry) shownCred
 
 -- | Derived from state rather than kept pending: raised unless this occurrence is the one already
 -- answered, and raised again once a snooze that answered it lapses.
@@ -5444,20 +5445,21 @@ getUserBadgeState user = do
     Just p@UserBadgePurchase {badgePurchaseId} ->
       fmap (badgeStateOf now p) <$> withStore' (`getBadgeLedgerLastEntry` badgePurchaseId)
   where
-    badgeStateOf now p@UserBadgePurchase {badgePurchaseId, purchaseKey, badgeType, shown, issueError, nextWakeAt} balance =
-      BadgeState
-        { badgePurchaseId,
-          purchaseKey,
-          badgeType,
-          shown = BoolDef shown,
-          monthsLeft = balanceMonths balance,
-          paidThrough = L.paidThrough balance,
-          renewsAt = Nothing,
-          willRenew = False,
-          alert = unansweredBadgeAlert now p (shownBadgeCredential user p) balance,
-          issueError,
-          nextWakeAt
-        }
+    badgeStateOf now p@UserBadgePurchase {badgePurchaseId, purchaseKey, badgeType, shown, nextWakeAt} balance =
+      let shownCred = shownBadgeCredential user p
+       in BadgeState
+            { badgePurchaseId,
+              purchaseKey,
+              badgeType,
+              shown = BoolDef shown,
+              monthsLeft = balanceMonths balance,
+              paidThrough = L.paidThrough balance,
+              renewsAt = Nothing,
+              willRenew = False,
+              alert = unansweredBadgeAlert now p shownCred balance,
+              issueError = shownIssueError now p shownCred,
+              nextWakeAt
+            }
 
 -- | How long a month that did not issue waits before it is tried again, whatever stopped it. Not
 -- derived from the failure, so a misclassified one cannot leave a funded badge to expire.

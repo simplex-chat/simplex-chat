@@ -989,7 +989,8 @@ testIssueFailedAlert ps =
       waitIssueErrorCleared (chatController alice)
 
 -- A failure that can clear on its own is not worth a word while contacts still see the badge as
--- valid. The alert waits for the shown credential to lapse, which is when they stop.
+-- valid: neither the alert nor the state shows it until the shown credential lapses, which is when
+-- they stop. It is recorded from the first attempt, so the run's start is not lost.
 testIssueFailedWaitsForExpiry :: HasCallStack => TestParams -> IO ()
 testIssueFailedWaitsForExpiry ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc, bsStop} -> do
@@ -1004,12 +1005,13 @@ testIssueFailedWaitsForExpiry ps =
     setClockAt bsClock requestAt
     failedSince <- withTestChatCfg ps cfg "alice" $ \alice -> do
       alice <##. "1: supporter"
-      alice <##. "renewal failing since "
-      -- and no alert with it: /p prints only its own output
+      -- the state carries no failure and no alert: /p prints only its own output
       alice ##> "/p"
       alice <## "user profile: alice (Alice, * supporter)"
       alice <## "use /p <name> [<bio>] to change it"
-      fst <$> issueErrorRow (chatController alice)
+      (since, reason) <- issueErrorRow (chatController alice)
+      reason `shouldBe` Just "service_timeout"
+      pure since
     -- the shown credential lapses: from here contacts see the badge as expired, and it is worth a word
     setClockAt bsClock presentAt
     withTestChatCfg ps cfg "alice" $ \alice -> do
