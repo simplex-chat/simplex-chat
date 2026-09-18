@@ -626,6 +626,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             XGrpLinkInv glInv -> do
               -- XGrpLinkInv here means we are connecting via business contact card, so we replace contact with group
+              when (isPublicGroupInv glInv) $ throwChatError $ CEInvalidChatMessage conn'' Nothing (safeDecodeUtf8 connInfo) "x.grp.link.inv: publicGroup not allowed in p2p groups"
               memberKeys <- atomically . C.generateKeyPair =<< asks random
               (gInfo, host) <- withStore $ \db -> do
                 liftIO $ deleteContactCardKeepConn db connId ct
@@ -3159,6 +3160,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
         XGrpLinkInv glInv -> do
+          when (isPublicGroupInv glInv) $ throwChatError $ CEInvalidChatMessage conn' Nothing (safeDecodeUtf8 connInfo) "x.grp.link.inv: publicGroup not allowed in p2p groups"
           memberKeys <- atomically . C.generateKeyPair =<< asks random
           (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db cxt user conn' memberKeys glInv
           toView $ CEvtGroupLinkConnecting user gInfo host
@@ -3171,6 +3173,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           pure (conn', Just $ GIK gInfo GKGroup {memberPrivKey = snd memberKeys})
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure (conn', Nothing)
+
+    isPublicGroupInv :: GroupLinkInvitation -> Bool
+    isPublicGroupInv GroupLinkInvitation {groupProfile = GroupProfile {publicGroup}} = isJust publicGroup
 
     xGrpMemNew :: GroupInfoKeys -> GroupMember -> MemberInfo -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemNew (GIK gInfo gks) m memInfo@(MemberInfo memId memRole _ _ assertedKey_) msgScope_ msg brokerTs = do

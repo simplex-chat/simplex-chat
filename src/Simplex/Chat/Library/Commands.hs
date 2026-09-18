@@ -4254,11 +4254,12 @@ processChatCommand cxt nm = \case
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
     newGroup :: User -> IncognitoEnabled -> GroupProfile -> MemberId -> GroupKeys -> Maybe Int64 -> CM GroupInfo
-    newGroup user incognito gProfile@GroupProfile {displayName, image, memberAdmission} memberId groupKeys publicMemberCount_ = do
+    newGroup user incognito gProfile@GroupProfile {displayName, image, memberAdmission, publicGroup} memberId groupKeys publicMemberCount_ = do
       checkValidName displayName
       checkProfileImageSize image
       checkGroupProfileSize gProfile
       when (isPublicGroup groupKeys && isJust (memberAdmission >>= review)) $ throwCmdError "Admission review is not supported in channels"
+      when (not (isPublicGroup groupKeys) && isJust publicGroup) $ throwCmdError "publicGroup is not allowed in groups"
       -- [incognito] generate incognito profile for group membership
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
       withFastStore $ \db -> createNewGroup db cxt user gProfile incognitoProfile memberId groupKeys publicMemberCount_
