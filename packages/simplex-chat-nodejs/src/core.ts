@@ -50,7 +50,7 @@ export async function chatRecvMsgWait(ctrl: bigint, wait: number): Promise<ChatE
 /**
  * Write buffer to encrypted file
  */
-export async function chatWriteFile(ctrl: bigint, path: string, buffer: ArrayBuffer): Promise<CryptoArgs> {
+export async function chatWriteFile(ctrl: bigint, path: string, buffer: ArrayBuffer | Uint8Array): Promise<CryptoArgs> {
   const res = await simplex.chat_write_file(ctrl, path, buffer)
   return cryptoArgsResult(res)
 }
@@ -58,7 +58,7 @@ export async function chatWriteFile(ctrl: bigint, path: string, buffer: ArrayBuf
 /**
  * Read buffer from encrypted file
  */
-export async function chatReadFile(path: string, {fileKey, fileNonce}: CryptoArgs): Promise<ArrayBuffer> {
+export async function chatReadFile(path: string, {fileKey, fileNonce}: CryptoArgs): Promise<Buffer> {
   return await simplex.chat_read_file(path, fileKey, fileNonce)
 }
 

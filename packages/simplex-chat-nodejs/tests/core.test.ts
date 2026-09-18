@@ -74,6 +74,24 @@ describe("Core tests", () => {
     await core.chatCloseStore(ctrl);
   });
 
+  it("should write the view of a Uint8Array and read an empty file", async () => {
+    const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+
+    const viewPath = path.join(tmpDir, "view.txt");
+    const viewArgs = await core.chatWriteFile(ctrl, viewPath, Buffer.from("xxabcxx").subarray(2, 5));
+    const view = await core.chatReadFile(viewPath, viewArgs);
+    expect(Buffer.isBuffer(view)).toBe(true);
+    expect(view.toString()).toBe("abc");
+
+    const emptyPath = path.join(tmpDir, "empty.txt");
+    const emptyArgs = await core.chatWriteFile(ctrl, emptyPath, new Uint8Array(0));
+    const empty = await core.chatReadFile(emptyPath, emptyArgs);
+    expect(Buffer.isBuffer(empty)).toBe(true);
+    expect(empty.length).toBe(0);
+
+    await core.chatCloseStore(ctrl);
+  });
+
   it("should encrypt/decrypt file", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
 

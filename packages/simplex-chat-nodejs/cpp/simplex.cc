@@ -3,6 +3,7 @@
 #include <string>
 #include <functional>
 #include <cstdlib>
+#include <climits>
 #include "simplex.h"
 
 namespace simplex {
@@ -81,6 +82,11 @@ class ResultAsyncWorker : public AsyncWorker {
     return ctrl_;
   }
 
+  // the worker thread reads this object's memory until the worker completes
+  void KeepAlive(Object obj) {
+    keep_alive_ = Persistent(obj);
+  }
+
  protected:
   std::string result_;
   uintptr_t ctrl_ = 0;
@@ -88,6 +94,7 @@ class ResultAsyncWorker : public AsyncWorker {
  private:
   ExecuteFn execute_fn_;
   ResultProcessor result_processor_;
+  ObjectReference keep_alive_;
 };
 
 class BinaryAsyncWorker : public AsyncWorker {
@@ -97,21 +104,25 @@ class BinaryAsyncWorker : public AsyncWorker {
   BinaryAsyncWorker(Function& callback, ExecuteFn execute_fn)
       : AsyncWorker(callback), execute_fn_(std::move(execute_fn)) {}
 
+  ~BinaryAsyncWorker() {
+    free(original_buf);
+  }
+
   void Execute() override {
     execute_fn_(this);
   }
 
   void OnOK() override {
     HandleScope scope(Env());
-    if (original_buf == nullptr || binary_len == 0) {
-      Callback().Call({Env().Null(), Env().Undefined()});
+    char* buf = original_buf;
+    original_buf = nullptr;
+    if (binary_len == 0) {
+      free(buf);
+      Callback().Call({Env().Null(), Buffer<char>::New(Env(), 0)});
       return;
     }
-    char* data_ptr = original_buf + 5;
-    auto finalizer = [](Napi::Env env, char* finalize_data, char* orig) {
-      free(orig);
-    };
-    Napi::Buffer<char> buffer = Napi::Buffer<char>::New(Env(), data_ptr, binary_len, finalizer, original_buf);
+    // Copies when the runtime forbids external buffers (Electron); the finalizer then runs immediately.
+    Buffer<char> buffer = Buffer<char>::NewOrCopy(Env(), buf + 5, binary_len, [](Napi::Env, char*, char* orig) { free(orig); }, buf);
     Callback().Call({Env().Null(), buffer});
   }
 
@@ -321,27 +332,39 @@ Value ChatRecvMsgWait(const CallbackInfo& args) {
 
 Value ChatWriteFile(const CallbackInfo& args) {
   Env env = args.Env();
-  if (args.Length() < 3 || !args[0].IsBigInt() || !args[1].IsString() || !args[2].IsArrayBuffer()) {
-    TypeError::New(env, "Expected bigint (ctrl), string (path), ArrayBuffer").ThrowAsJavaScriptException();
+  if (args.Length() < 3 || !args[0].IsBigInt() || !args[1].IsString() || !(args[2].IsArrayBuffer() || args[2].IsTypedArray())) {
+    TypeError::New(env, "Expected bigint (ctrl), string (path), ArrayBuffer or Uint8Array").ThrowAsJavaScriptException();
     return env.Undefined();
   }
 
   chat_ctrl ctrl = FromChatCtrlBigInt(args[0]);
   std::string path = args[1].As<String>().Utf8Value();
-  ArrayBuffer ab = args[2].As<ArrayBuffer>();
-  char* data = static_cast<char*>(ab.Data());
-  size_t len = ab.ByteLength();
+  char* data;
+  size_t len;
+  if (args[2].IsArrayBuffer()) {
+    ArrayBuffer ab = args[2].As<ArrayBuffer>();
+    data = static_cast<char*>(ab.Data());
+    len = ab.ByteLength();
+  } else {
+    TypedArray view = args[2].As<TypedArray>();
+    data = static_cast<char*>(view.ArrayBuffer().Data()) + view.ByteOffset();
+    len = view.ByteLength();
+  }
+  if (len > static_cast<size_t>(INT_MAX)) {
+    RangeError::New(env, "Buffer is too large").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
 
   Function cb;
   Promise promise = CreatePromiseAndCallback(env, cb);
 
-  auto execute_fn = [ctrl, path, ab, data, len](ResultAsyncWorker* worker) {
-    (void)ab; // to keep ArrayBuffer alive
+  auto execute_fn = [ctrl, path, data, len](ResultAsyncWorker* worker) {
     char* c_res = chat_write_file(ctrl, path.c_str(), data, static_cast<int>(len));
     HandleCResult(worker, c_res, "chat_write_file");
   };
 
   ResultAsyncWorker* worker = new ResultAsyncWorker(cb, std::move(execute_fn));
+  worker->KeepAlive(args[2].As<Object>());
   worker->Queue();
 
   return promise;
