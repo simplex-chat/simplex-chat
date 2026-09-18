@@ -123,7 +123,7 @@ struct BadgesYourBadgeView: View {
         case .network: NSLocalizedString("The badge service could not be reached.", comment: "badge renewal error")
         case .invalidCredential: NSLocalizedString("The badge issued by the service cannot be verified.", comment: "badge renewal error")
         case let .unexpected(message):
-            String.localizedStringWithFormat(NSLocalizedString("Unexpected response from the badge service: %@", comment: "badge renewal error"), message)
+            String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "badge renewal error"), message)
         }
     }
 

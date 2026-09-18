@@ -116,7 +116,7 @@ private fun badgeIssueFailureText(reason: BadgeIssueFailure): String = when (rea
   is BadgeIssueFailure.ServiceTimeout -> stringResource(MR.strings.badges_error_no_response)
   is BadgeIssueFailure.Network -> stringResource(MR.strings.badges_error_unreachable)
   is BadgeIssueFailure.InvalidCredential -> stringResource(MR.strings.badges_error_credential_invalid)
-  is BadgeIssueFailure.Unexpected -> String.format(stringResource(MR.strings.badges_error_unexpected_response), reason.message)
+  is BadgeIssueFailure.Unexpected -> String.format(stringResource(MR.strings.badges_error_unexpected), reason.message)
 }
 
 @Composable

@@ -3230,7 +3230,7 @@
   <string name="badges_error_no_response">The badge service did not respond.</string>
   <string name="badges_error_unreachable">The badge service could not be reached.</string>
   <string name="badges_error_credential_invalid">The badge issued by the service cannot be verified.</string>
-  <string name="badges_error_unexpected_response">Unexpected response from the badge service: %1$s</string>
+  <string name="badges_error_unexpected">Unexpected error: %1$s</string>
   <string name="badges_error_since">Since</string>
   <string name="badges_error_next_attempt">Next attempt</string>
   <string name="badges_contact_team">Contact SimpleX team</string>
