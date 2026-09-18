@@ -197,3 +197,22 @@ def test_receive_file_reports_cancelled_by_sender():
     api = FakeCtrl({"type": "rcvFileAcceptedSndCancelled", "rcvFileTransfer": {}})
     with pytest.raises(ChatCommandError, match="file cancelled by sender"):
         asyncio.run(api.api_receive_file(3))
+
+
+async def test_init_loads_library_off_the_event_loop(monkeypatch):
+    import threading
+
+    from simplex_chat import _native, core
+    from simplex_chat.api import SqliteDb
+
+    threads: list[int] = []
+    monkeypatch.setattr(_native, "lib_for", lambda _backend: threads.append(threading.get_ident()))
+
+    async def fake_migrate_init(*_args):
+        return 1
+
+    monkeypatch.setattr(core, "chat_migrate_init", fake_migrate_init)
+
+    loop_thread = threading.get_ident()
+    await ChatApi.init(SqliteDb(file_prefix="/tmp/unused"))
+    assert threads and threads[0] != loop_thread

@@ -293,6 +293,31 @@ def test_send_and_wait_parallel_different_contacts():
     assert (a, b) == ("A", "B")
 
 
+def test_send_and_wait_keeps_waiter_registered_during_previous_cleanup():
+    bot, _api = _bot_with_fake_api()
+
+    def reply(text: str) -> dict[str, Any]:
+        return {"type": "newChatItems", "chatItems": [
+            {
+                "chatInfo": {"type": "direct", "contact": {"contactId": 42}},
+                "chatItem": {"content": {"type": "rcvMsgContent", "msgContent": {"type": "text", "text": text}}},
+            }
+        ]}
+
+    async def go() -> tuple[str, str]:
+        first = asyncio.create_task(bot.send_and_wait(42, "a", timeout=2.0))
+        await asyncio.sleep(0)
+        # Created before the reply is dispatched, so it registers before `first` runs its cleanup.
+        second = asyncio.create_task(bot.send_and_wait(42, "b", timeout=2.0))
+        await bot._dispatch_event(reply("ra"))  # type: ignore[arg-type]
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        await bot._dispatch_event(reply("rb"))  # type: ignore[arg-type]
+        return (await first).text or "", (await second).text or ""
+
+    assert asyncio.run(go()) == ("ra", "rb")
+
+
 # ---------------------------------------------------------------------------
 # connect_to
 # ---------------------------------------------------------------------------

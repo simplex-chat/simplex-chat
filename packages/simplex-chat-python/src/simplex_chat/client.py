@@ -619,7 +619,7 @@ class Client:
             # message resolve a future no one is waiting on.
             if waiter in waiters:
                 waiters.remove(waiter)
-            if not waiters:
+            if not waiters and self._reply_waiters.get(contact_id) is waiters:
                 self._reply_waiters.pop(contact_id, None)
 
     async def _receive_loop(self) -> None:

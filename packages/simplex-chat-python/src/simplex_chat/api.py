@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -75,7 +76,8 @@ class ChatApi:
     ) -> ChatApi:
         path_or_prefix, key_or_conn, backend = _db_to_migrate_args(db)
         # Trigger lazy lib load with the right backend BEFORE chat_migrate_init.
-        _native.lib_for(backend)
+        # It may download ~100 MB, so it must not block the event loop.
+        await asyncio.to_thread(_native.lib_for, backend)
         ctrl = await core.chat_migrate_init(path_or_prefix, key_or_conn, confirm, queue_size)
         return cls(ctrl)
 
