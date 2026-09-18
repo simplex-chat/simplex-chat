@@ -5,6 +5,7 @@ import * as core from "../src/core"
 const user = {userId: 1} as T.User
 
 async function chatWithResponse(response: object): Promise<api.ChatApi> {
+  jest.spyOn(core, "loadLibrary").mockResolvedValue()
   jest.spyOn(core, "chatMigrateInit").mockResolvedValue(BigInt(1))
   jest.spyOn(core, "chatSendCmd").mockResolvedValue(response as ChatResponse)
   return api.ChatApi.init({type: "sqlite", filePrefix: "unused"})
@@ -38,6 +39,7 @@ describe("documented success responses", () => {
 
 describe("startChat lifecycle", () => {
   function chatWithResponses(...responses: object[]): Promise<api.ChatApi> {
+    jest.spyOn(core, "loadLibrary").mockResolvedValue()
     jest.spyOn(core, "chatMigrateInit").mockResolvedValue(BigInt(1))
     jest.spyOn(core, "chatRecvMsgWait").mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(undefined), 10)))
     const send = jest.spyOn(core, "chatSendCmd")
@@ -98,5 +100,14 @@ describe("startChat lifecycle", () => {
     const chat = await chatWithResponses()
     await chat.recvChatEvent()
     expect(core.chatRecvMsgWait).toHaveBeenCalledWith(BigInt(1), 500_000)
+  })
+})
+
+describe("ChatApi.init", () => {
+  it("loads the library for the configured backend", async () => {
+    const load = jest.spyOn(core, "loadLibrary").mockResolvedValue()
+    jest.spyOn(core, "chatMigrateInit").mockResolvedValue(BigInt(1))
+    await api.ChatApi.init({type: "postgres", connectionString: "postgres://unused"})
+    expect(load).toHaveBeenCalledWith("postgres")
   })
 })

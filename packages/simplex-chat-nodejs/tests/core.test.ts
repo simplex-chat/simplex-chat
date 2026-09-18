@@ -2,8 +2,10 @@ import {execFile, spawnSync} from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import {core} from "../src/index";
+import * as libs from "../src/libs";
 
 describe("Core tests", () => {
+  beforeAll(() => core.loadLibrary("sqlite"));
   const tmpDir = "./tests/tmp";
   const dbPath = path.join(tmpDir, "simplex_v1");
 
@@ -191,10 +193,12 @@ describe("Core tests", () => {
     expect(await receives).toEqual([{event: undefined}, {error: "chat receiver stopped"}]);
   }, 10000);
 
-  it("should let the process exit while a receiver is idle", () => {
+  it("should let the process exit while a receiver is idle", async () => {
     const childDbPath = path.resolve(tmpDir, "simplex_child");
+    const libPath = path.resolve(libs.libPath(await libs.resolveLibsDir("sqlite")));
     const script = `
       const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
       simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp")
         .then(([ctrl]) => simplex.chat_recv_msg_wait(ctrl, 1))
         .then((res) => console.log("received " + JSON.stringify(res)));

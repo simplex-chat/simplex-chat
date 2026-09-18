@@ -16,10 +16,9 @@
     "examples"
   ],
   "scripts": {
-    "preinstall": "node src/download-libs.js",
-    "install": "node-gyp configure; node-gyp rebuild --release",
+    "install": "node-gyp rebuild --release",
     "install-tools": "npm install -g node-gyp",
-    "configure": "node-gyp configure; mkdir libs 2> /dev/null | true",
+    "configure": "node-gyp configure",
     "build": "node-gyp rebuild && tsc && cp ./src/simplex.* ./dist",
     "run": "node src/index.js",
     "build-run": "node-gyp build && node src/index.js",

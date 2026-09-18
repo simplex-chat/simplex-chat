@@ -11,11 +11,82 @@
 #include <condition_variable>
 #include <deque>
 #include <unordered_map>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
 #include "simplex.h"
 
 namespace simplex {
 
 using namespace Napi;
+
+struct Library {
+  std::string path;
+  hs_init_with_rtsopts_fn hs_init_with_rtsopts = nullptr;
+  hs_thread_done_fn hs_thread_done = nullptr;
+  chat_migrate_init_fn chat_migrate_init = nullptr;
+  chat_migrate_init_queue_fn chat_migrate_init_queue = nullptr;
+  chat_close_store_fn chat_close_store = nullptr;
+  chat_send_cmd_fn chat_send_cmd = nullptr;
+  chat_recv_msg_wait_fn chat_recv_msg_wait = nullptr;
+  chat_write_file_fn chat_write_file = nullptr;
+  chat_read_file_fn chat_read_file = nullptr;
+  chat_encrypt_file_fn chat_encrypt_file = nullptr;
+  chat_decrypt_file_fn chat_decrypt_file = nullptr;
+};
+
+static Library lib;
+static bool loaded = false;
+
+#ifdef _WIN32
+typedef HMODULE LibHandle;
+
+static LibHandle OpenLibrary(const std::string& path) {
+  int n = MultiByteToWideChar(CP_UTF8, 0, path.c_str(), -1, nullptr, 0);
+  std::wstring wpath(n, L'\0');
+  MultiByteToWideChar(CP_UTF8, 0, path.c_str(), -1, &wpath[0], n);
+  // resolves the GHC runtime DLLs shipped next to libsimplex.dll
+  return LoadLibraryExW(wpath.c_str(), nullptr, LOAD_WITH_ALTERED_SEARCH_PATH);
+}
+
+static void* FindSymbol(LibHandle h, const char* name) {
+  return reinterpret_cast<void*>(GetProcAddress(h, name));
+}
+
+static std::string LastLoadError() {
+  DWORD code = GetLastError();
+  char* msg = nullptr;
+  FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                 nullptr, code, 0, reinterpret_cast<LPSTR>(&msg), 0, nullptr);
+  std::string err = msg ? msg : "error " + std::to_string(code);
+  LocalFree(msg);
+  return err;
+}
+#else
+typedef void* LibHandle;
+
+static LibHandle OpenLibrary(const std::string& path) {
+  return dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
+}
+
+static void* FindSymbol(LibHandle h, const char* name) {
+  return dlsym(h, name);
+}
+
+static std::string LastLoadError() {
+  const char* err = dlerror();
+  return err ? err : "unknown error";
+}
+#endif
+
+template <typename F>
+static bool Resolve(LibHandle h, const char* name, F& fn, std::string& missing) {
+  fn = reinterpret_cast<F>(FindSymbol(h, name));
+  if (fn == nullptr && missing.empty()) missing = name;
+  return fn != nullptr;
+}
 
 void haskell_init() {
 #ifdef _WIN32
@@ -40,7 +111,53 @@ void haskell_init() {
       nullptr};
 #endif
   char **pargv = const_cast<char **>(argv);
-  hs_init_with_rtsopts(&argc, &pargv);
+  lib.hs_init_with_rtsopts(&argc, &pargv);
+}
+
+static bool RequireLoaded(Env env) {
+  if (!loaded) Error::New(env, "libsimplex is not loaded, call core.loadLibrary(backend) first").ThrowAsJavaScriptException();
+  return loaded;
+}
+
+Value Load(const CallbackInfo& args) {
+  Env env = args.Env();
+  if (args.Length() < 1 || !args[0].IsString()) {
+    TypeError::New(env, "Expected string (libPath)").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+  std::string path = args[0].As<String>().Utf8Value();
+  if (loaded) {
+    if (path != lib.path) Error::New(env, "libsimplex already loaded from " + lib.path).ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+  LibHandle h = OpenLibrary(path);
+  if (h == nullptr) {
+    Error::New(env, "cannot load " + path + ": " + LastLoadError()).ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+  Library l;
+  l.path = path;
+  std::string missing;
+  Resolve(h, "hs_init_with_rtsopts", l.hs_init_with_rtsopts, missing);
+  Resolve(h, "chat_migrate_init", l.chat_migrate_init, missing);
+  Resolve(h, "chat_close_store", l.chat_close_store, missing);
+  Resolve(h, "chat_send_cmd", l.chat_send_cmd, missing);
+  Resolve(h, "chat_recv_msg_wait", l.chat_recv_msg_wait, missing);
+  Resolve(h, "chat_write_file", l.chat_write_file, missing);
+  Resolve(h, "chat_read_file", l.chat_read_file, missing);
+  Resolve(h, "chat_encrypt_file", l.chat_encrypt_file, missing);
+  Resolve(h, "chat_decrypt_file", l.chat_decrypt_file, missing);
+  if (!missing.empty()) {
+    Error::New(env, path + " does not export " + missing).ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+  std::string optional;
+  Resolve(h, "chat_migrate_init_queue", l.chat_migrate_init_queue, optional);
+  Resolve(h, "hs_thread_done", l.hs_thread_done, optional);
+  lib = l;
+  haskell_init();
+  loaded = true;
+  return env.Undefined();
 }
 
 class ResultAsyncWorker : public AsyncWorker {
@@ -287,7 +404,7 @@ class Receiver {
         request = std::move(queue_.front());
         queue_.pop_front();
       }
-      char* c_res = chat_recv_msg_wait(ctrl_, request.wait);
+      char* c_res = lib.chat_recv_msg_wait(ctrl_, request.wait);
       napi_status status = Settle(request.deferred, [c_res](Napi::Env env, Promise::Deferred& deferred) {
         if (c_res == nullptr) {
           deferred.Reject(Error::New(env, "chat_recv_msg_wait failed").Value());
@@ -312,7 +429,7 @@ class Receiver {
     }
     pending_->Tsfn().Release();
     // Each OS thread that enters Haskell keeps an RTS task record until it calls hs_thread_done.
-    hs_thread_done();
+    if (lib.hs_thread_done) lib.hs_thread_done();
   }
 
   template <typename SettleFn>
@@ -361,6 +478,7 @@ ResultAsyncWorker::ResultProcessor MigrateResultProcessor() {
 
 Value ChatMigrateInit(const CallbackInfo& args) {
   Env env = args.Env();
+  if (!RequireLoaded(env)) return env.Undefined();
   if (args.Length() < 3 || !args[0].IsString() || !args[1].IsString() || !args[2].IsString()) {
     TypeError::New(env, "Expected three string arguments").ThrowAsJavaScriptException();
     return env.Undefined();
@@ -375,7 +493,7 @@ Value ChatMigrateInit(const CallbackInfo& args) {
 
   auto execute_fn = [path, key, confirm](ResultAsyncWorker* worker) {
     chat_ctrl ctrl = nullptr;
-    char* c_res = chat_migrate_init(path.c_str(), key.c_str(), confirm.c_str(), &ctrl);
+    char* c_res = lib.chat_migrate_init(path.c_str(), key.c_str(), confirm.c_str(), &ctrl);
     worker->SetCtrl(reinterpret_cast<uintptr_t>(ctrl));
     HandleCResult(worker, c_res, "chat_migrate_init");
   };
@@ -388,6 +506,11 @@ Value ChatMigrateInit(const CallbackInfo& args) {
 
 Value ChatMigrateInitQueue(const CallbackInfo& args) {
   Env env = args.Env();
+  if (!RequireLoaded(env)) return env.Undefined();
+  if (lib.chat_migrate_init_queue == nullptr) {
+    Error::New(env, "loaded libsimplex does not export chat_migrate_init_queue; queue size needs a newer libsimplex").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
   if (args.Length() < 4 || !args[0].IsString() || !args[1].IsString() || !args[2].IsString() || !args[3].IsNumber()) {
     TypeError::New(env, "Expected three string arguments and number").ThrowAsJavaScriptException();
     return env.Undefined();
@@ -408,7 +531,7 @@ Value ChatMigrateInitQueue(const CallbackInfo& args) {
 
   auto execute_fn = [path, key, confirm, queue_size](ResultAsyncWorker* worker) {
     chat_ctrl ctrl = nullptr;
-    char* c_res = chat_migrate_init_queue(path.c_str(), key.c_str(), confirm.c_str(), queue_size, &ctrl);
+    char* c_res = lib.chat_migrate_init_queue(path.c_str(), key.c_str(), confirm.c_str(), queue_size, &ctrl);
     worker->SetCtrl(reinterpret_cast<uintptr_t>(ctrl));
     HandleCResult(worker, c_res, "chat_migrate_init_queue");
   };
@@ -421,6 +544,7 @@ Value ChatMigrateInitQueue(const CallbackInfo& args) {
 
 Value ChatCloseStore(const CallbackInfo& args) {
   Env env = args.Env();
+  if (!RequireLoaded(env)) return env.Undefined();
   if (args.Length() < 1 || !args[0].IsBigInt()) {
     TypeError::New(env, "Expected bigint (ctrl)").ThrowAsJavaScriptException();
     return env.Undefined();
@@ -436,7 +560,7 @@ Value ChatCloseStore(const CallbackInfo& args) {
     if (receiver) {
       receiver->Stop();
     }
-    char* c_res = chat_close_store(ctrl);
+    char* c_res = lib.chat_close_store(ctrl);
     HandleCResult(worker, c_res, "chat_close_store");
   };
 
@@ -448,6 +572,7 @@ Value ChatCloseStore(const CallbackInfo& args) {
 
 Value ChatSendCmd(const CallbackInfo& args) {
   Env env = args.Env();
+  if (!RequireLoaded(env)) return env.Undefined();
   if (args.Length() < 2 || !args[0].IsBigInt() || !args[1].IsString()) {
     TypeError::New(env, "Expected bigint (ctrl) and string (cmd)").ThrowAsJavaScriptException();
     return env.Undefined();
@@ -460,7 +585,7 @@ Value ChatSendCmd(const CallbackInfo& args) {
   Promise promise = CreatePromiseAndCallback(env, cb);
 
   auto execute_fn = [ctrl, cmd](ResultAsyncWorker* worker) {
-    char* c_res = chat_send_cmd(ctrl, cmd.c_str());
+    char* c_res = lib.chat_send_cmd(ctrl, cmd.c_str());
     HandleCResult(worker, c_res, "chat_send_cmd");
   };
 
@@ -472,6 +597,7 @@ Value ChatSendCmd(const CallbackInfo& args) {
 
 Value ChatRecvMsgWait(const CallbackInfo& args) {
   Env env = args.Env();
+  if (!RequireLoaded(env)) return env.Undefined();
   if (args.Length() < 2 || !args[0].IsBigInt() || !args[1].IsNumber()) {
     TypeError::New(env, "Expected bigint (ctrl), number (wait)").ThrowAsJavaScriptException();
     return env.Undefined();
@@ -503,6 +629,7 @@ Value ChatRecvMsgWait(const CallbackInfo& args) {
 
 Value ChatWriteFile(const CallbackInfo& args) {
   Env env = args.Env();
+  if (!RequireLoaded(env)) return env.Undefined();
   if (args.Length() < 3 || !args[0].IsBigInt() || !args[1].IsString() || !(args[2].IsArrayBuffer() || args[2].IsTypedArray())) {
     TypeError::New(env, "Expected bigint (ctrl), string (path), ArrayBuffer or Uint8Array").ThrowAsJavaScriptException();
     return env.Undefined();
@@ -530,7 +657,7 @@ Value ChatWriteFile(const CallbackInfo& args) {
   Promise promise = CreatePromiseAndCallback(env, cb);
 
   auto execute_fn = [ctrl, path, data, len](ResultAsyncWorker* worker) {
-    char* c_res = chat_write_file(ctrl, path.c_str(), data, static_cast<int>(len));
+    char* c_res = lib.chat_write_file(ctrl, path.c_str(), data, static_cast<int>(len));
     HandleCResult(worker, c_res, "chat_write_file");
   };
 
@@ -543,6 +670,7 @@ Value ChatWriteFile(const CallbackInfo& args) {
 
 Value ChatReadFile(const CallbackInfo& args) {
   Env env = args.Env();
+  if (!RequireLoaded(env)) return env.Undefined();
   if (args.Length() < 3 || !args[0].IsString() || !args[1].IsString() || !args[2].IsString()) {
     TypeError::New(env, "Expected three strings (path, key, nonce)").ThrowAsJavaScriptException();
     return env.Undefined();
@@ -556,7 +684,7 @@ Value ChatReadFile(const CallbackInfo& args) {
   Promise promise = CreatePromiseAndCallback(env, cb);
 
   auto execute_fn = [path, key, nonce](BinaryAsyncWorker* worker) {
-    char* buf = chat_read_file(path.c_str(), key.c_str(), nonce.c_str());
+    char* buf = lib.chat_read_file(path.c_str(), key.c_str(), nonce.c_str());
     if (buf == nullptr) {
       worker->SetWorkerError("chat_read_file failed");
       return;
@@ -586,6 +714,7 @@ Value ChatReadFile(const CallbackInfo& args) {
 
 Value ChatEncryptFile(const CallbackInfo& args) {
   Env env = args.Env();
+  if (!RequireLoaded(env)) return env.Undefined();
   if (args.Length() < 3 || !args[0].IsBigInt() || !args[1].IsString() || !args[2].IsString()) {
     TypeError::New(env, "Expected bigint (ctrl), two strings (fromPath, toPath)").ThrowAsJavaScriptException();
     return env.Undefined();
@@ -599,7 +728,7 @@ Value ChatEncryptFile(const CallbackInfo& args) {
   Promise promise = CreatePromiseAndCallback(env, cb);
 
   auto execute_fn = [ctrl, fromPath, toPath](ResultAsyncWorker* worker) {
-    char* c_res = chat_encrypt_file(ctrl, fromPath.c_str(), toPath.c_str());
+    char* c_res = lib.chat_encrypt_file(ctrl, fromPath.c_str(), toPath.c_str());
     HandleCResult(worker, c_res, "chat_encrypt_file");
   };
 
@@ -611,6 +740,7 @@ Value ChatEncryptFile(const CallbackInfo& args) {
 
 Value ChatDecryptFile(const CallbackInfo& args) {
   Env env = args.Env();
+  if (!RequireLoaded(env)) return env.Undefined();
   if (args.Length() < 4 || !args[0].IsString() || !args[1].IsString() || !args[2].IsString() || !args[3].IsString()) {
     TypeError::New(env, "Expected four strings (fromPath, key, nonce, toPath)").ThrowAsJavaScriptException();
     return env.Undefined();
@@ -625,7 +755,7 @@ Value ChatDecryptFile(const CallbackInfo& args) {
   Promise promise = CreatePromiseAndCallback(env, cb);
 
   auto execute_fn = [fromPath, key, nonce, toPath](ResultAsyncWorker* worker) {
-    char* c_res = chat_decrypt_file(fromPath.c_str(), key.c_str(), nonce.c_str(), toPath.c_str());
+    char* c_res = lib.chat_decrypt_file(fromPath.c_str(), key.c_str(), nonce.c_str(), toPath.c_str());
     HandleCResult(worker, c_res, "chat_decrypt_file");
   };
 
@@ -636,7 +766,7 @@ Value ChatDecryptFile(const CallbackInfo& args) {
 }
 
 Object Init(Env env, Object exports) {
-  haskell_init();
+  exports.Set("load", Function::New(env, Load));
   auto* receivers = new Receivers();
   // Stopping all receivers before joining any bounds teardown by the longest in-flight receive.
   env.AddCleanupHook([receivers]() {
