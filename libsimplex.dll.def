@@ -2,6 +2,7 @@ LIBRARY libsimplex
 EXPORTS
     hs_init
     hs_init_with_rtsopts
+    hs_thread_done
     chat_migrate_init
     chat_migrate_init_queue
     chat_close_store

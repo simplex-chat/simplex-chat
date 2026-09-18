@@ -11,6 +11,7 @@
 
 extern "C" void hs_init(int argc, char **argv[]);
 extern "C" void hs_init_with_rtsopts(int * argc, char **argv[]);
+extern "C" void hs_thread_done(void);
 
 typedef long* chat_ctrl;
 
