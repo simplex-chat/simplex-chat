@@ -62,30 +62,24 @@ There is an example with more options in [./examples/squaring-bot.ts](./examples
 
 You can run it with: `npx ts-node ./examples/squaring-bot.ts`
 
-## PostgreSQL backend
+## Native library
 
-By default, the package uses SQLite. To use PostgreSQL instead:
+`libsimplex` is downloaded on first use into the user cache (`~/.cache/simplex-chat` on Linux, `~/Library/Caches/simplex-chat` on macOS, `%LOCALAPPDATA%\simplex-chat` on Windows), shared with the Python library. To download it ahead of time, for example in a Dockerfile:
 
 ```bash
-npm install simplex-chat --simplex_backend=postgres
+npx simplex-chat install                     # sqlite (default)
+npx simplex-chat install --backend postgres  # Linux x86_64 only
 ```
 
-Or persist the setting in `.npmrc`:
+Set `SIMPLEX_LIBS_DIR` to use a local build instead.
 
-```ini
-simplex_backend=postgres
-```
+## PostgreSQL backend
 
-### Prerequisites (PostgreSQL)
+`DbConfig.type` selects the backend; one backend per process.
 
 - `libpq5` must be installed on the host system (`apt install libpq5` on Debian/Ubuntu)
 - PostgreSQL backend is only available for Linux x86_64
 - A PostgreSQL server accessible via connection string
-
-### Passing PostgreSQL connection
-
-The `DbConfig` type is a discriminated union — pick the variant that matches
-the backend you installed:
 
 ```ts
 // SQLite (default)
