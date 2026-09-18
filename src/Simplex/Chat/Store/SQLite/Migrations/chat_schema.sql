@@ -932,6 +932,10 @@ CREATE TABLE badge_purchases(
   alert_acked_episode TEXT,
   alert_snooze_until TEXT,
   badge_code_redemption_id INTEGER REFERENCES badge_code_redemptions,
+  issue_failed_since TEXT,
+  issue_error_at TEXT,
+  issue_error TEXT,
+  next_wake_at TEXT,
   UNIQUE(purchase_key)
 ) STRICT;
 CREATE TABLE badge_ledger(
