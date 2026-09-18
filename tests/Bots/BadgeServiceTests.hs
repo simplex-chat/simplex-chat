@@ -20,6 +20,7 @@ import Control.Concurrent.STM (atomically, readTMVar)
 import Control.Monad (forM_, void, when)
 import Control.Exception (finally)
 import qualified Data.Aeson as J
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (toLower)
 import Data.Either (isLeft, isRight)
@@ -41,8 +42,10 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatRespon
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
+import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
-import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
+import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -83,6 +86,9 @@ badgeServiceTests = do
   it "should retire when entitlement ends, not when the credential expires" testRetiresWhenEntitlementEnds
   it "should alert that support ended, survive a restart, and go silent once acknowledged" testEndedAlert
   it "should raise a snoozed alert once more when the snooze lapses" testSnoozedAlertReturns
+  it "should alert that renewal failed when the service refuses it, and clear when it succeeds" testIssueFailedAlert
+  it "should wait for the shown credential to lapse before alerting on a failure that can clear" testIssueFailedWaitsForExpiry
+  it "should silence an acknowledged run of failures, and alert again on the next run" testIssueFailedAckAndNewRun
   it "should renew a badge on a profile that is not active, without switching to it" testRenewalKeepsActiveProfile
   it "should broadcast the current profile when a renewal presents a badge" testRenewalKeepsProfileEdits
   it "should present the month already issued when a previous pass did not" testPresentationCatchesUp
@@ -142,6 +148,11 @@ data BadgeServiceEnv = BadgeServiceEnv
     bsAddress :: String,
     bsController :: ChatController
   }
+
+-- | Stop the service for good: requests sent after it go unanswered until they time out. Stopping
+-- chat unsubscribes its queues, where killing the thread could still let a request arrive mid-teardown.
+stopBadgeService :: ChatController -> IO ()
+stopBadgeService cc = void $ sendChatCmdStr cc "/_stop"
 
 -- | Start the badge service on a fresh issuer key, and hand the test body what depends on it:
 -- the client config trusting that key and addressing the service, the address, and the controller.
@@ -930,6 +941,190 @@ testEndedAlert ps =
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
       alice <## "use /p <name> [<bio>] to change it"
+
+-- A refusal the service will not take back is worth telling the user at once: the badge is still
+-- worn and will start showing as expired. The recorded failure survives a restart, and a renewal
+-- that succeeds clears it along with the alert.
+testIssueFailedAlert :: HasCallStack => TestParams -> IO ()
+testIssueFailedAlert ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} -> do
+    (purchaseKey, failedSince) <- withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 3
+      redeemFirstBadge alice code
+      rows <- ledgerRows (chatController alice) "badge_ledger"
+      purchaseKey <- servicePurchaseKey cc
+      -- the service no longer knows this purchase, so it refuses with no retryAfter: terminal
+      setServicePurchaseKey cc "not the purchase key"
+      setClockAt bsClock $ fst $ renewalMoments rows
+      alice ##> "/_app activate"
+      alice <## "ok"
+      alice <## badgeServiceRefused
+      alice <##. "badge alert: issue_failed "
+      -- the state reports the failure, when the next attempt is due, and the alert it raised
+      alice <##. "1: supporter"
+      alice <##. "renewal failing since "
+      alice <##. "badge alert: issue_failed "
+      (failedSince, reason) <- issueErrorRow (chatController alice)
+      reason `shouldBe` Just "service_error final unknown_purchase_key"
+      pure (purchaseKey, failedSince)
+    -- nothing was stored as pending: the same run is derived again on the next start
+    withTestChatCfg ps bsClientCfg "alice" $ \alice -> do
+      alice <## "subscribed 1 connections on server localhost"
+      alice <## badgeServiceRefused
+      alice <##. "badge alert: issue_failed "
+      alice <##. "1: supporter"
+      alice <##. "renewal failing since "
+      alice <##. "badge alert: issue_failed "
+      -- the run started when it first failed, not when the app started
+      issueErrorRow (chatController alice) >>= \(since, _) -> since `shouldBe` failedSince
+      -- the service knows the purchase again, and the month it owes is issued
+      setServicePurchaseKey cc purchaseKey
+      alice ##> "/_app activate"
+      alice <## "ok"
+      void $ waitLedgerRows (chatController alice) 3
+      alice <##. "1: supporter"
+      -- the issuance cleared the run, and with it the alert and the error section
+      waitIssueErrorCleared (chatController alice)
+
+-- A failure that can clear on its own is not worth a word while contacts still see the badge as
+-- valid: neither the alert nor the state shows it until the shown credential lapses, which is when
+-- they stop. It is recorded from the first attempt, so the run's start is not lost.
+testIssueFailedWaitsForExpiry :: HasCallStack => TestParams -> IO ()
+testIssueFailedWaitsForExpiry ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} -> do
+    -- the redemption runs against the service, so it keeps the ordinary request timeout
+    (requestAt, presentAt) <- withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 3
+      redeemFirstBadge alice code
+      renewalMoments <$> ledgerRows (chatController alice) "badge_ledger"
+    stopBadgeService cc
+    let cfg = failingServiceCfg bsClientCfg
+    -- the request goes unanswered and times out, which is a failure that can clear on its own
+    setClockAt bsClock requestAt
+    failedSince <- withTestChatCfg ps cfg "alice" $ \alice -> do
+      alice <##. "1: supporter"
+      -- the state carries no failure and no alert: /p prints only its own output
+      alice ##> "/p"
+      alice <## "user profile: alice (Alice, * supporter)"
+      alice <## "use /p <name> [<bio>] to change it"
+      (since, reason) <- issueErrorRow (chatController alice)
+      reason `shouldBe` Just "service_timeout"
+      pure since
+    -- the shown credential lapses: from here contacts see the badge as expired, and it is worth a word
+    setClockAt bsClock presentAt
+    withTestChatCfg ps cfg "alice" $ \alice -> do
+      alice <##. "1: supporter"
+      alice <##. "renewal failing since "
+      alice <##. "badge alert: issue_failed "
+      -- still the one run: the alert's episode is when it started, not this pass
+      issueErrorRow (chatController alice) >>= \(since, _) -> since `shouldBe` failedSince
+
+-- Acknowledging answers the run that is failing, not the failure: the error stays on the badge
+-- screen while the alert goes quiet, and a later run raises it again under a new episode.
+testIssueFailedAckAndNewRun :: HasCallStack => TestParams -> IO ()
+testIssueFailedAckAndNewRun ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 3
+      redeemFirstBadge alice code
+      rows <- ledgerRows (chatController alice) "badge_ledger"
+      purchaseKey <- servicePurchaseKey cc
+      setServicePurchaseKey cc "not the purchase key"
+      let (requestAt, presentAt) = renewalMoments rows
+      setClockAt bsClock requestAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      alice <## badgeServiceRefused
+      alice <##. "badge alert: issue_failed "
+      alice <##. "1: supporter"
+      alice <##. "renewal failing since "
+      alice <##. "badge alert: issue_failed "
+      episode <- episodeOf . fst <$> issueErrorRow (chatController alice)
+      alice ##> ("/_badge ack 1 1 issue_failed off " <> T.unpack episode)
+      -- the state still carries the error, and no alert with it
+      alice <##. "1: supporter"
+      alice <##. "renewal failing since "
+      -- the ack signalled the worker, and the pass it ran failed again and raised nothing
+      alice <## badgeServiceRefused
+      alice <##. "1: supporter"
+      alice <##. "renewal failing since "
+      ackedEpisode (chatController alice) `shouldReturn` (Just "issue_failed", Just episode)
+      -- the service is back: the month it owes is issued, which ends the run
+      setServicePurchaseKey cc purchaseKey
+      alice ##> "/_app activate"
+      alice <## "ok"
+      renewed <- waitLedgerRows (chatController alice) 3
+      alice <##. "1: supporter"
+      waitIssueErrorCleared (chatController alice)
+      -- the month issued is presented when the one on the profile lapses, and only then is the
+      -- next renewal asked for - so the run that fails next is a new one
+      setClockAt bsClock presentAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      waitShownIssued (chatController alice)
+      setServicePurchaseKey cc "not the purchase key"
+      setClockAt bsClock $ fst $ renewalMoments renewed
+      alice ##> "/_app activate"
+      alice <## "ok"
+      alice <## badgeServiceRefused
+      alice <##. "badge alert: issue_failed "
+      alice <##. "1: supporter"
+      alice <##. "renewal failing since "
+      alice <##. "badge alert: issue_failed "
+      -- a new run, so acknowledging the first one does not silence this one
+      newEpisode <- episodeOf . fst <$> issueErrorRow (chatController alice)
+      newEpisode `shouldNotBe` episode
+
+badgeServiceRefused :: String
+badgeServiceRefused = "bad chat command: badge service error: unknown_purchase_key"
+
+-- | The alert's episode is the start of the run of failures, as the ack command spells it.
+episodeOf :: HasCallStack => Maybe UTCTime -> Text
+episodeOf = maybe (error "no failure recorded") (safeDecodeUtf8 . strEncode)
+
+-- | A client that gives up on an unanswered service request in seconds rather than half a minute,
+-- and does not retry a failed pass on its own - so every pass is one the test asked for.
+failingServiceCfg :: ChatConfig -> ChatConfig
+failingServiceCfg cfg =
+  cfg
+    { agentConfig = (agentConfig cfg) {serviceRequestTimeout = 2},
+      badgeRetryInterval = RetryInterval {initialInterval = 3600000000, increaseAfter = 0, maxInterval = 3600000000}
+    }
+
+-- | The service reaches a purchase by the verified signer's key and no other way, so changing the
+-- key it holds makes it answer unknown_purchase_key, and putting it back makes renewals work again.
+servicePurchaseKey :: HasCallStack => ChatController -> IO ByteString
+servicePurchaseKey ChatController {chatStore} = do
+  rows :: [(Binary ByteString, Int64)] <-
+    withTransaction chatStore $ \db ->
+      DB.query_ db "SELECT purchase_key, badge_purchase_id FROM sx_badge_service_badge_purchases"
+  pure $ case rows of
+    [(Binary k, _)] -> k
+    _ -> error $ "expected one service purchase, got " <> show (length rows)
+
+setServicePurchaseKey :: ChatController -> ByteString -> IO ()
+setServicePurchaseKey ChatController {chatStore} k =
+  withTransaction chatStore $ \db ->
+    DB.execute db "UPDATE sx_badge_service_badge_purchases SET purchase_key = ?" (Only (Binary k))
+
+-- the run of failed renewals the purchase carries: when it started, and the last failure as stored
+issueErrorRow :: HasCallStack => ChatController -> IO (Maybe UTCTime, Maybe Text)
+issueErrorRow ChatController {chatStore} = do
+  rows :: [(Maybe UTCTime, Maybe Text)] <-
+    withTransaction chatStore $ \db ->
+      DB.query_ db "SELECT issue_failed_since, issue_error FROM badge_purchases"
+  pure $ case rows of
+    [r] -> r
+    _ -> error $ "expected one badge purchase, got " <> show (length rows)
+
+-- the clearing is written by the pass that stored the issuance, which the test waits for
+waitIssueErrorCleared :: HasCallStack => ChatController -> IO ()
+waitIssueErrorCleared cc = loop (100 :: Int)
+  where
+    loop 0 = issueErrorRow cc >>= (`shouldBe` (Nothing, Nothing))
+    loop i =
+      issueErrorRow cc >>= \r ->
+        if r == (Nothing, Nothing) then pure () else threadDelay 50000 >> loop (i - 1)
 
 -- A worker runs for every profile, not only the one in use, so presenting a renewed badge must not
 -- make its profile active - the next message would then be sent from the wrong identity.

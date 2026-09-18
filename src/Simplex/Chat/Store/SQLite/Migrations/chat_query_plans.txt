@@ -4061,7 +4061,8 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
         SELECT p.badge_purchase_id, p.purchase_key, p.purchase_priv_key, p.master_key, p.current_badge_type,
                (CASE WHEN u.shown_badge_id = p.badge_purchase_id THEN 1 ELSE 0 END),
-               p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until
+               p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until,
+               p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
@@ -5151,6 +5152,14 @@ Plan:
 SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH s USING COVERING INDEX idx_snd_files_file_id (file_id=?) LEFT-JOIN
 SEARCH r USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
+      UPDATE badge_purchases
+      SET issue_failed_since = COALESCE(issue_failed_since, ?), issue_error_at = ?, issue_error = ?
+      WHERE badge_purchase_id = ?
+    
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE chat_items
@@ -7576,6 +7585,10 @@ Query: SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1
 Plan:
 SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
 
+Query: SELECT issue_failed_since, issue_error FROM badge_purchases
+Plan:
+SCAN badge_purchases
+
 Query: SELECT last_insert_rowid()
 Plan:
 SCAN CONSTANT ROW
@@ -7761,6 +7774,14 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE badge_purchases SET alert_acked_kind = ?, alert_acked_episode = ?, alert_snooze_until = ? WHERE badge_purchase_id = ? AND user_id = ?
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_purchases SET issue_failed_since = NULL, issue_error_at = NULL, issue_error = NULL WHERE badge_purchase_id = ?
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 

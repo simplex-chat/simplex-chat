@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
@@ -34,6 +35,7 @@ import chat.simplex.res.MR
 fun SupportSimpleXBanner(
   title: String = generalGetString(MR.strings.badges_banner_title),
   subtitle: String = generalGetString(MR.strings.badges_banner_subtitle),
+  warning: Boolean = false,
   onTap: () -> Unit,
   onDismiss: () -> Unit
 ) {
@@ -81,7 +83,7 @@ fun SupportSimpleXBanner(
             title,
             style = MaterialTheme.typography.body1,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colors.primary,
+            color = if (warning) Color.Red else MaterialTheme.colors.primary,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
           )

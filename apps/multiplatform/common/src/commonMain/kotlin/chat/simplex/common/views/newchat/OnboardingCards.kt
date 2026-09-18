@@ -48,11 +48,14 @@ private const val GRADIENT_ANGLE_RAD = 80.0 * Math.PI / 180.0
 fun shouldShowOnboarding(): Boolean {
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
   val chats = chatModel.chats.value
-  return !addressCreationCardShown.value && chats.isNotEmpty() && !hasConversations(chats) && !supportEnded()
+  return !addressCreationCardShown.value && chats.isNotEmpty() && !hasConversations(chats) && !supportEnded() && !badgeIssueFailed()
 }
 
 fun supportEnded(): Boolean =
   BadgeModel.alert.value?.kind == BadgeAlertKind.SupportEnded && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
+
+fun badgeIssueFailed(): Boolean =
+  BadgeModel.alert.value?.kind == BadgeAlertKind.IssueFailed && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
 
 fun hasShownBadge(): Boolean =
   BadgeModel.badgeState.value?.shown == true && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)

@@ -585,14 +585,7 @@ object ChatController {
         is BadgeRedeemError.InvalidCode -> return generalGetString(MR.strings.badges_error_invalid_code)
         is BadgeRedeemError.ServiceNotConfigured -> return generalGetString(MR.strings.badges_error_service_not_configured)
         is BadgeRedeemError.BadgeActive -> return generalGetString(MR.strings.badges_error_already_active)
-        is BadgeRedeemError.ServiceError -> when (e.serviceError) {
-          is BadgeServiceErrorCode.CodeInvalid -> return generalGetString(MR.strings.badges_error_code_invalid)
-          is BadgeServiceErrorCode.CodeUsed -> return generalGetString(MR.strings.badges_error_code_used)
-          is BadgeServiceErrorCode.CodeExpired -> return generalGetString(MR.strings.badges_error_code_expired)
-          is BadgeServiceErrorCode.RateLimited -> return generalGetString(MR.strings.badges_error_rate_limited)
-          is BadgeServiceErrorCode.UnsupportedVersion -> return generalGetString(MR.strings.badges_error_unsupported_version)
-          else -> {}
-        }
+        is BadgeRedeemError.ServiceError -> badgeServiceErrorText(e.serviceError)?.let { return it }
         is BadgeRedeemError.InvalidResponse -> return String.format(generalGetString(MR.strings.badges_error_bad_service_response), e.message)
         is BadgeRedeemError.UnknownKeyIndex, is BadgeRedeemError.CredentialNotVerified -> return generalGetString(MR.strings.badges_error_credential_not_verified)
       }
@@ -4539,6 +4532,7 @@ private fun badgeAlertKindParam(kind: BadgeAlertKind): String = when (kind) {
   BadgeAlertKind.SubscriptionEnded -> "subscription_ended"
   BadgeAlertKind.PrepaidEnding -> "prepaid_ending"
   BadgeAlertKind.SupportEnded -> "support_ended"
+  BadgeAlertKind.IssueFailed -> "issue_failed"
 }
 
 @Serializable
@@ -7379,6 +7373,17 @@ sealed class BadgeServiceErrorCode {
       is Internal -> "internal"
       is Unknown -> code
     }
+}
+
+fun badgeServiceErrorText(code: BadgeServiceErrorCode): String? = when (code) {
+  is BadgeServiceErrorCode.CodeInvalid -> generalGetString(MR.strings.badges_error_code_invalid)
+  is BadgeServiceErrorCode.CodeUsed -> generalGetString(MR.strings.badges_error_code_used)
+  is BadgeServiceErrorCode.CodeExpired -> generalGetString(MR.strings.badges_error_code_expired)
+  is BadgeServiceErrorCode.RateLimited -> generalGetString(MR.strings.badges_error_rate_limited)
+  is BadgeServiceErrorCode.UnsupportedVersion -> generalGetString(MR.strings.badges_error_unsupported_version)
+  is BadgeServiceErrorCode.UnknownPurchaseKey -> generalGetString(MR.strings.badges_error_unknown_purchase)
+  is BadgeServiceErrorCode.Internal -> generalGetString(MR.strings.badges_error_service_internal)
+  else -> null
 }
 
 object BadgeServiceErrorCodeSerializer : KSerializer<BadgeServiceErrorCode> {
