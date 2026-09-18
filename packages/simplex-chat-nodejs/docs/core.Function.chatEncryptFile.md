@@ -8,7 +8,7 @@
 
 > **chatEncryptFile**(`ctrl`, `fromPath`, `toPath`): `Promise`\<[`CryptoArgs`](core.Interface.CryptoArgs.md)\>
 
-Defined in: [src/core.ts:65](../src/core.ts#L65)
+Defined in: [src/core.ts:68](../src/core.ts#L68)
 
 Encrypt file
 

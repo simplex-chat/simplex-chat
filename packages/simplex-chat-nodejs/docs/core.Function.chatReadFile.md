@@ -8,7 +8,7 @@
 
 > **chatReadFile**(`path`, `__namedParameters`): `Promise`\<`ArrayBuffer`\>
 
-Defined in: [src/core.ts:58](../src/core.ts#L58)
+Defined in: [src/core.ts:61](../src/core.ts#L61)
 
 Read buffer from encrypted file
 
