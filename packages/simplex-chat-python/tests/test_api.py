@@ -7,6 +7,7 @@ shape it accepts.
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import pytest
@@ -172,3 +173,27 @@ async def test_a_failed_custom_data_write_raises():
     api = FakeCtrl({"type": "chatCmdError"})
     with pytest.raises(ChatCommandError):
         await api.api_merge_group_custom_data({"groupId": 9}, "mine", 1)
+
+
+# ---------------------------------------------------------------------- #
+# Documented success responses
+# ---------------------------------------------------------------------- #
+
+
+def test_update_chat_item_accepts_not_changed():
+    chat_item = {"meta": {"itemId": 2}}
+    api = FakeCtrl({"type": "chatItemNotChanged", "chatItem": {"chatItem": chat_item}})
+    msg_content = {"type": "text", "text": "same"}
+    assert asyncio.run(api.api_update_chat_item("direct", 1, 2, msg_content)) == chat_item
+
+
+def test_set_profile_address_accepts_no_change():
+    api = FakeCtrl({"type": "userProfileNoChange"})
+    summary = asyncio.run(api.api_set_profile_address(1, True))
+    assert summary == {"updateSuccesses": 0, "updateFailures": 0, "changedContacts": []}
+
+
+def test_receive_file_reports_cancelled_by_sender():
+    api = FakeCtrl({"type": "rcvFileAcceptedSndCancelled", "rcvFileTransfer": {}})
+    with pytest.raises(ChatCommandError, match="file cancelled by sender"):
+        asyncio.run(api.api_receive_file(3))

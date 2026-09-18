@@ -159,6 +159,8 @@ class ChatApi:
         )
         if r["type"] == "userProfileUpdated":
             return r["updateSummary"]
+        if r["type"] == "userProfileNoChange":
+            return {"updateSuccesses": 0, "updateFailures": 0, "changedContacts": []}
         raise ChatCommandError("error setting profile address", r)
 
     async def api_set_address_settings(self, user_id: int, settings: T.AddressSettings) -> None:
@@ -237,6 +239,8 @@ class ChatApi:
         )
         if r["type"] == "chatItemUpdated":
             return r["chatItem"]["chatItem"]
+        if r["type"] == "chatItemNotChanged":
+            return r["chatItem"]["chatItem"]
         raise ChatCommandError("error updating chat item", r)
 
     async def api_delete_chat_items(
@@ -303,6 +307,8 @@ class ChatApi:
         )
         if r["type"] == "rcvFileAccepted":
             return r["chatItem"]
+        if r["type"] == "rcvFileAcceptedSndCancelled":
+            raise ChatCommandError("file cancelled by sender", r)
         raise ChatCommandError("error receiving file", r)
 
     async def api_cancel_file(self, file_id: int) -> None:
