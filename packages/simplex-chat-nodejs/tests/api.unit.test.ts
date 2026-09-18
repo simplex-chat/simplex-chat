@@ -35,3 +35,45 @@ describe("documented success responses", () => {
     await expect(chat.apiReceiveFile(3)).rejects.toThrow("file cancelled by sender")
   })
 })
+
+describe("startChat lifecycle", () => {
+  function chatWithResponses(...responses: object[]): Promise<api.ChatApi> {
+    jest.spyOn(core, "chatMigrateInit").mockResolvedValue(BigInt(1))
+    jest.spyOn(core, "chatRecvMsgWait").mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(undefined), 10)))
+    const send = jest.spyOn(core, "chatSendCmd")
+    for (const r of responses) send.mockResolvedValueOnce(r as ChatResponse)
+    return api.ChatApi.init({type: "sqlite", filePrefix: "unused"})
+  }
+
+  it("rejects a second start", async () => {
+    const chat = await chatWithResponses({type: "chatStarted"}, {type: "chatStopped"})
+    await chat.startChat()
+    await expect(chat.startChat()).rejects.toThrow("chat already started")
+    await chat.stopChat()
+  })
+
+  it("stops the events loop when start fails", async () => {
+    const chat = await chatWithResponses({type: "chatCmdError"})
+    await expect(chat.startChat()).rejects.toThrow("error starting chat")
+    expect(chat.started).toBe(false)
+  })
+
+  it("rejects start after close", async () => {
+    const chat = await chatWithResponses()
+    jest.spyOn(core, "chatCloseStore").mockResolvedValue()
+    await chat.close()
+    await expect(chat.startChat()).rejects.toThrow("chat api controller not initialized")
+  })
+
+  it("reports stop failures as stop errors", async () => {
+    const chat = await chatWithResponses({type: "chatStarted"}, {type: "chatCmdError"})
+    await chat.startChat()
+    await expect(chat.stopChat()).rejects.toThrow("error stopping chat")
+  })
+
+  it("receives with a 500 ms wait", async () => {
+    const chat = await chatWithResponses()
+    await chat.recvChatEvent()
+    expect(core.chatRecvMsgWait).toHaveBeenCalledWith(BigInt(1), 500_000)
+  })
+})

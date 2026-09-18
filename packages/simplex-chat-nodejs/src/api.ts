@@ -122,25 +122,35 @@ export class ChatApi {
    * Start chat controller. Must be called with the existing user profile.
    */
   async startChat(): Promise<void> {
+    if (this.eventsLoop) throw new Error("chat already started")
+    const ctrl = this.ctrl
     this.receiveEvents = true
     this.eventsLoop = this.runEventsLoop()
-    const r = await this.sendChatCmd(CC.StartChat.cmdString({mainApp: true, enableSndFiles: true, serviceRequests: false}))
+    let r: ChatResponse
+    try {
+      r = await core.chatSendCmd(ctrl, CC.StartChat.cmdString({mainApp: true, enableSndFiles: true, serviceRequests: false}))
+    } catch (e) {
+      await this.stopEventsLoop()
+      throw e
+    }
     if (r.type !== "chatStarted" && r.type !== "chatRunning") {
+      await this.stopEventsLoop()
       throw new ChatCommandError("error starting chat", r)
     }
   }
-  
+
   /**
    * Stop chat controller.
    * Must be called before closing the database.
    * Usually doesn't need to be called in chat bots.
    */
   async stopChat(): Promise<void> {
-    const r = await this.sendChatCmd("/_stop")
-    if (r.type !== "chatStopped") throw new ChatCommandError("error starting chat", r)
-    this.receiveEvents = false
-    if (this.eventsLoop) await this.eventsLoop
-    this.eventsLoop = undefined    
+    try {
+      const r = await this.sendChatCmd("/_stop")
+      if (r.type !== "chatStopped") throw new ChatCommandError("error stopping chat", r)
+    } finally {
+      await this.stopEventsLoop()
+    }
   }
 
   /**
@@ -148,13 +158,17 @@ export class ChatApi {
    * Usually doesn't need to be called in chat bots.
    */
   async close(): Promise<void> {
-    this.receiveEvents = false
-    if (this.eventsLoop) await this.eventsLoop
-    this.eventsLoop = undefined    
+    await this.stopEventsLoop()
     await core.chatCloseStore(this.ctrl)
     this.ctrl_ = undefined
   }
-  
+
+  private async stopEventsLoop(): Promise<void> {
+    this.receiveEvents = false
+    if (this.eventsLoop) await this.eventsLoop
+    this.eventsLoop = undefined
+  }
+
   private async runEventsLoop(): Promise<void> {
     while (this.receiveEvents) {
       try {
@@ -337,7 +351,7 @@ export class ChatApi {
     return await core.chatSendCmd(this.ctrl, cmd)
   }
   
-  async recvChatEvent(wait: number = 5_000_000): Promise<ChatEvent | undefined> {
+  async recvChatEvent(wait: number = 500_000): Promise<ChatEvent | undefined> {
     return await core.chatRecvMsgWait(this.ctrl, wait)
   }
   
