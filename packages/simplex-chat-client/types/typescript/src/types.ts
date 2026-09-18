@@ -2895,13 +2895,7 @@ export interface GroupInfo {
   rosterVersion?: number // int64
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
-  groupKeys?: GroupKeys
   groupDomainVerified?: boolean
-}
-
-export interface GroupKeys {
-  publicGroupKeys?: PublicGroupKeys
-  memberPrivKey: string
 }
 
 export interface GroupLink {
@@ -3095,26 +3089,6 @@ export interface GroupRelay {
   relayStatus: RelayStatus
   relayLink?: string
   relayCap: RelayCapabilities
-}
-
-export type GroupRootKey = GroupRootKey.Private | GroupRootKey.Public
-
-export namespace GroupRootKey {
-  export type Tag = "private" | "public"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface Private extends Interface {
-    type: "private"
-    rootPrivKey: string
-  }
-
-  export interface Public extends Interface {
-    type: "public"
-    rootPubKey: string
-  }
 }
 
 export interface GroupShortLinkData {
@@ -3745,11 +3719,6 @@ export interface PublicGroupAccess {
 
 export interface PublicGroupData {
   publicMemberCount: number // int64
-}
-
-export interface PublicGroupKeys {
-  publicGroupId: string
-  groupRootKey: GroupRootKey
 }
 
 export interface PublicGroupProfile {
