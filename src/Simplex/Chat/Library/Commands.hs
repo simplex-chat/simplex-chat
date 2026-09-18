@@ -5520,14 +5520,11 @@ earliestTime ts = case catMaybes ts of
   [] -> Nothing
   ts' -> Just $ minimum ts'
 
--- | What a thrown renewal request failed at. An unanswered request is the likeliest renewal failure
--- and temporaryOrHostError does not cover it: that classifies reaching the server, and this timeout
--- is the agent's own.
+-- | temporaryOrHostError covers failing to reach the server; the service timeout is a request sent and not answered.
 badgeIssueFailure :: ChatError -> BadgeIssueFailure
 badgeIssueFailure e = case e of
   ChatErrorAgent {agentError = AGENT (A_SERVICE ASETimeout)} -> BIFServiceTimeout
   ChatErrorAgent {agentError} | temporaryOrHostError agentError -> BIFNetwork {agentError = tshow agentError}
-  -- the errors this path raises itself already read as a sentence; the rest have none
   ChatError (CECommandError m) -> BIFUnexpected {message = T.pack m}
   ChatError (CEInternalError m) -> BIFUnexpected {message = T.pack m}
   _ -> BIFUnexpected {message = tshow e}
