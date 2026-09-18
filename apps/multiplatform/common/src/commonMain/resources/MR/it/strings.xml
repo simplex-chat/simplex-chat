@@ -665,10 +665,7 @@
     <string name="video_call_no_encryption">videochiamata (non crittografata e2e)</string>
     <string name="onboarding_notifications_mode_off">Quando l\'app è in esecuzione</string>
     <string name="contact_wants_to_connect_via_call">%1$s vuole connettersi con te via</string>
-    <string name="alert_text_skipped_messages_it_can_happen_when">Può accadere quando:
-\n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 30 giorni.
-\n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del database vecchio.
-\n3. La connessione è stata compromessa.</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Può accadere quando: \n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 30 giorni. \n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del vecchio database. \n3. La connessione è stata compromessa.</string>
     <string name="icon_descr_call_rejected">Chiamata rifiutata</string>
     <string name="icon_descr_call_missed">Chiamata persa</string>
     <string name="status_no_e2e_encryption">nessuna crittografia e2e</string>
@@ -1069,7 +1066,7 @@
     <string name="decryption_error">Errore di decifrazione</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d messaggi saltati.</string>
     <string name="alert_title_msg_bad_id">ID del messaggio errato</string>
-    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Può accadere quando tu o il tuo contatto avete usato il backup del database vecchio.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Può accadere quando tu o il tuo contatto avete usato il backup del vecchio database.</string>
     <string name="alert_text_msg_bad_id">L\'ID del messaggio successivo non è corretto (inferiore o uguale al precedente).
 \nPuò accadere a causa di qualche bug o quando la connessione è compromessa.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d messaggi non decifrati.</string>
@@ -1602,7 +1599,7 @@
     <string name="v5_5_simpler_connect_ui_descr">La barra di ricerca accetta i link di invito.</string>
     <string name="profile_update_event_set_new_picture">ha impostato una nuova immagine del profilo</string>
     <string name="profile_update_event_set_new_address">impostato nuovo indirizzo di contatto</string>
-    <string name="profile_update_event_updated_profile">profilo aggiornato</string>
+    <string name="profile_update_event_updated_profile">ha aggiornato il profilo</string>
     <string name="saved_message_title">Messaggio salvato</string>
     <string name="v5_5_message_delivery_descr">Con consumo di batteria ridotto.</string>
     <string name="blocked_by_admin_items_description">%d messaggi bloccati dall\'amministratore</string>
@@ -2975,7 +2972,7 @@
     <string name="badges_level_legend_files">Invia file di 5GB</string>
     <string name="badges_shown_on_your_profile">mostrato sul tuo profilo</string>
     <string name="badges_support_simplex_body">SimpleX non vende annunci o dati. È finanziato dai suoi utenti e dagli investitori che condividono la missione. Puoi sostenere il progetto e mostrare un distintivo sul tuo profilo.</string>
-    <string name="badges_support_ended">Supporto terminato</string>
+    <string name="badges_support_ended">Sostegno terminato</string>
     <string name="badges_level_supporter">Sostenitore</string>
     <string name="v7_1_supporter_badge_title">Distintivo sostenitore ❤️</string>
     <string name="badges_support_simplex_title">Sostieni SimpleX</string>
@@ -3000,6 +2997,6 @@
     <string name="badges_your_badge">Il tuo distintivo</string>
     <string name="badges_how_it_works_p2">I tuoi contatti vedono il distintivo e la sua data di scadenza, nient\'altro. Il distintivo non porta alcun identificatore, quindi non può essere usato per scoprire chi sei o per trovarti tra le chat.</string>
     <string name="badges_your_level_title">Il tuo livello</string>
-    <string name="badges_support_ended_on">Il tuo supporto è finito il %1$s.</string>
+    <string name="badges_support_ended_on">Il tuo sostegno è finito il %1$s.</string>
     <string name="supporter_perks">Vantaggi dei sostenitori</string>
 </resources>
