@@ -388,8 +388,10 @@ export class ChatApi {
     switch (r.type) {
       case "userProfileUpdated":
         return r.updateSummary
+      case "userProfileNoChange":
+        return {updateSuccesses: 0, updateFailures: 0, changedContacts: []}
       default:
-        throw new ChatCommandError("error loading user address", r)
+        throw new ChatCommandError("error setting profile address", r)
     }
   }
 
@@ -462,7 +464,7 @@ export class ChatApi {
         updatedMessage: {msgContent, mentions: {}},
       })
     )
-    if (r.type === "chatItemUpdated") return r.chatItem.chatItem
+    if (r.type === "chatItemUpdated" || r.type === "chatItemNotChanged") return r.chatItem.chatItem
     throw new ChatCommandError("error updating chat item", r)
   }
 
@@ -501,10 +503,10 @@ export class ChatApi {
     chatItemId: number,
     add: boolean,
     reaction: T.MsgReaction
-  ) {
+  ): Promise<T.ACIReaction> {
     const r = await this.sendChatCmd(CC.APIChatItemReaction.cmdString({chatRef: {chatType, chatId}, chatItemId, add, reaction}))
-    if (r.type === "chatItemsDeleted") return r.chatItemDeletions
-    throw new ChatCommandError("error setting item reaction", r)  
+    if (r.type === "chatItemReaction") return r.reaction
+    throw new ChatCommandError("error setting item reaction", r)
   }
 
   /**
@@ -514,6 +516,7 @@ export class ChatApi {
   async apiReceiveFile(fileId: number): Promise<T.AChatItem> {
     const r = await this.sendChatCmd(CC.ReceiveFile.cmdString({fileId, userApprovedRelays: true}))
     if (r.type === "rcvFileAccepted") return r.chatItem
+    if (r.type === "rcvFileAcceptedSndCancelled") throw new ChatCommandError("file cancelled by sender", r)
     throw new ChatCommandError("error receiving file", r)
   }
 
