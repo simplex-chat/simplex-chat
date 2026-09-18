@@ -28,7 +28,7 @@ Revision 1, 2026-09-18
 
 ## Introduction
 
-SimpleX Chat is funded in part by its users, who buy supporter badges. A badge is shown on the profile of the person who bought it, and it raises the limits that other users and servers apply to that person's files. This document describes what a badge is, what it grants, how it is issued and presented, and what it discloses about the person who holds it.
+The goal is for SimpleX Chat to be partly funded by its users, who buy supporter badges. A badge is shown on the profile of the person who bought it, and it raises the limits that other users and servers apply to that person's files. This document describes what a badge is, what it grants, how it is issued and presented, and what it discloses about the holder.
 
 In an ordinary messenger a paid feature is attached to an account, and the operator sees in one record who paid and what they did with the feature. The SimpleX network has no accounts, so there is nothing to attach a purchase to, and introducing something for the purpose would undo what the rest of the design achieves. A badge is therefore designed so that the purchase, which the badge service necessarily records, cannot be connected with the profile, the conversations or the servers of the person who made it.
 
