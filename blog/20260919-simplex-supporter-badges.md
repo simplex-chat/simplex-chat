@@ -11,7 +11,7 @@ permalink: "/blog/20260919-simplex-supporter-badges.html"
 
 **Published:** Sep 19, 2026
 
-You can now support SimpleX Chat and get a supporter badge, larger files and longer file storage &mdash; from v7.1 beta[^beta]. Watch <a href="https://www.youtube.com/watch?v=gHCpFG8UsmM" target="_blank">how to buy a badge</a>.
+You can now support SimpleX Chat and get a supporter badge, larger files and longer file storage &mdash; from v7.1 beta[^beta]. Watch <a href="https://youtu.be/7D1tI5sQWFU" target="_blank">how to buy a badge</a>.
 
 ## A paid feature that cannot identify you
 
@@ -30,7 +30,7 @@ Read more about badges in the [whitepaper](https://github.com/simplex-chat/simpl
 
 ## How to get a badge
 
-<a href="https://www.youtube.com/watch?v=gHCpFG8UsmM" target="_blank"><img src="./images/20260919-buy-badge.jpg" width="40%" class="float-to-right"></a>
+<a href="https://youtu.be/7D1tI5sQWFU" target="_blank"><img src="./images/20260919-buy-badge.jpg" width="40%" class="float-to-right"></a>
 
 Buy a code on [simplex.chat/badges](https://simplex.chat/badges/), paying by card, Bitcoin or Monero, and redeem it in the app: open Settings, tap **Supporter perks**, and enter the code. The badge appears on your profile. The badge does not renew by itself, and no account is created.
 
