@@ -1,5 +1,14 @@
 # Blog
 
+Sep 19, 2026 [SimpleX Supporter Badges - Send Larger Files and Fund the Network Without Being Identified](./20260919-simplex-supporter-badges.md)
+
+Supporter badges are available in v7.1 beta: a badge on your profile, larger files and longer file storage - and the purchase cannot be linked to your profile.
+
+Investors in our equity crowdfunding receive badges as perks. If you invest $500 or more by September 22, you will also receive a public SimpleX name for 7 years.
+
+
+---
+
 Aug 20, 2026 [Equity Crowdfunding Launched - You Can Get a Stake in SimpleX Chat](./20260819-simplex-chat-crowdfunding.md)
 
 SimpleX is the first and the only messaging network without user identifiers of any kind. Our equity crowdfunding round is now launched on Wefunder, so network users, and anybody else, can get a stake in SimpleX Chat - the company that builds it.

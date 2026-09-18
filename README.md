@@ -220,6 +220,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Sep 19, 2026. SimpleX Supporter Badges — Send Larger Files and Fund the Network Without Being Identified](./blog/20260919-simplex-supporter-badges.md)
+
 [Aug 20, 2026. Equity Crowdfunding Launched - You Can Get a Stake in SimpleX Chat](./blog/20260819-simplex-chat-crowdfunding.md)
 
 [Jul 22, 2026. SimpleX Public Names — a Name Nobody Can Take From You](./blog/20260722-simplex-public-names.md)
