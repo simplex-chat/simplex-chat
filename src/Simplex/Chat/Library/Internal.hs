@@ -470,9 +470,8 @@ sndBadgeProof_ User {profile = LocalProfile {localBadge}} ph = case localBadge o
   _ -> pure Nothing
 
 sndGroupChatBinding :: GroupInfo -> ShowGroupAsSender -> Maybe ByteString
-sndGroupChatBinding gInfo@GroupInfo {groupProfile = GroupProfile {publicGroup}, membership = GroupMember {memberId, memberPubKey}} asGroup
-  | asGroup, useRelays' gInfo = (\PublicGroupProfile {publicGroupId} -> encodeChatBinding CBChannel $ smpEncode publicGroupId) <$> publicGroup
-  | asGroup = Nothing
+sndGroupChatBinding gInfo@GroupInfo {membership = GroupMember {memberId, memberPubKey}} asGroup
+  | asGroup = (\PublicGroupProfile {publicGroupId} -> encodeChatBinding CBChannel $ smpEncode publicGroupId) <$> publicGroup' gInfo
   | otherwise = (\k -> encodeChatBinding CBGroup $ groupBindingData gInfo memberId k) <$> memberPubKey
 
 cryptoFileDigest :: CryptoFile -> CM FD.FileDigest
@@ -2320,9 +2319,9 @@ groupMsgSigning sign (GIK gInfo@GroupInfo {membership = GroupMember {memberId}} 
     bindingData = groupBindingData gInfo memberId (C.publicKey memberPrivKey')
 
 groupBindingData :: GroupInfo -> MemberId -> C.PublicKeyEd25519 -> ByteString
-groupBindingData gInfo@GroupInfo {groupProfile = GroupProfile {publicGroup}} memberId memberKey = case publicGroup of
-  Just PublicGroupProfile {publicGroupId} | useRelays' gInfo -> smpEncode (publicGroupId, memberId)
-  _ -> smpEncode (memberId, memberKey)
+groupBindingData gInfo memberId memberKey = case publicGroup' gInfo of
+  Just PublicGroupProfile {publicGroupId} -> smpEncode (publicGroupId, memberId)
+  Nothing -> smpEncode (memberId, memberKey)
 
 type HistoryFile = (FileInvitation, RcvFileDescrText, Maybe UTCTime, Maybe BadgeProof)
 
@@ -2332,13 +2331,13 @@ directChatBinding ct =
     encodeChatBinding CBDirect <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
 
 rcvGroupChatBinding :: GroupInfo -> Maybe GroupMember -> ShowGroupAsSender -> Maybe BadgeProof -> Maybe ByteString
-rcvGroupChatBinding gInfo@GroupInfo {groupProfile = GroupProfile {publicGroup}} m_ asGroup badge_ =
-  case (publicGroup, asGroup, m_) of
-    (Just PublicGroupProfile {publicGroupId}, True, _) | useRelays' gInfo ->
+rcvGroupChatBinding gInfo m_ asGroup badge_ =
+  case (publicGroup' gInfo, asGroup, m_) of
+    (Just PublicGroupProfile {publicGroupId}, True, _) ->
       Just $ encodeChatBinding CBChannel $ smpEncode publicGroupId
-    (Just PublicGroupProfile {publicGroupId}, False, Just GroupMember {memberId}) | useRelays' gInfo ->
+    (Just PublicGroupProfile {publicGroupId}, False, Just GroupMember {memberId}) ->
       Just $ encodeChatBinding CBGroup $ smpEncode (publicGroupId, memberId)
-    (_, False, Just GroupMember {memberId, memberPubKey}) ->
+    (Nothing, False, Just GroupMember {memberId, memberPubKey}) ->
       (\k -> encodeChatBinding CBGroup $ smpEncode (memberId, k)) <$> (memberPubKey <|> proofMemberKey memberId badge_)
     _ -> Nothing
 

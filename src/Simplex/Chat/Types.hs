@@ -537,6 +537,9 @@ data GroupInfo = GroupInfo
 useRelays' :: GroupInfo -> Bool
 useRelays' GroupInfo {useRelays} = isTrue useRelays
 
+publicGroup' :: GroupInfo -> Maybe PublicGroupProfile
+publicGroup' g@GroupInfo {groupProfile = GroupProfile {publicGroup}} = if useRelays' g then publicGroup else Nothing
+
 relayServesGroup :: GroupInfo -> Bool
 relayServesGroup GroupInfo {relayOwnStatus} = case relayOwnStatus of
   Just RSInactive -> False
