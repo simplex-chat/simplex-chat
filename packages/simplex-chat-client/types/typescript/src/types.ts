@@ -301,123 +301,24 @@ export namespace BadgeRedeemError {
   }
 }
 
-export type BadgeServiceErrorCode = 
-  | BadgeServiceErrorCode.BadRequest
-  | BadgeServiceErrorCode.UnsupportedVersion
-  | BadgeServiceErrorCode.UnknownPurchaseKey
-  | BadgeServiceErrorCode.UnknownOfferId
-  | BadgeServiceErrorCode.OfferDisabled
-  | BadgeServiceErrorCode.OfferMismatch
-  | BadgeServiceErrorCode.ProductUnavailable
-  | BadgeServiceErrorCode.PaymentNotEntitled
-  | BadgeServiceErrorCode.PaymentPending
-  | BadgeServiceErrorCode.ProviderUnavailable
-  | BadgeServiceErrorCode.RateLimited
-  | BadgeServiceErrorCode.CodeInvalid
-  | BadgeServiceErrorCode.CodeUsed
-  | BadgeServiceErrorCode.CodeExpired
-  | BadgeServiceErrorCode.ReceiptInvalid
-  | BadgeServiceErrorCode.ReceiptUsed
-  | BadgeServiceErrorCode.Internal
-  | BadgeServiceErrorCode.Unknown
-
-export namespace BadgeServiceErrorCode {
-  export type Tag = 
-    | "badRequest"
-    | "unsupportedVersion"
-    | "unknownPurchaseKey"
-    | "unknownOfferId"
-    | "offerDisabled"
-    | "offerMismatch"
-    | "productUnavailable"
-    | "paymentNotEntitled"
-    | "paymentPending"
-    | "providerUnavailable"
-    | "rateLimited"
-    | "codeInvalid"
-    | "codeUsed"
-    | "codeExpired"
-    | "receiptInvalid"
-    | "receiptUsed"
-    | "internal"
-    | "unknown"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface BadRequest extends Interface {
-    type: "badRequest"
-  }
-
-  export interface UnsupportedVersion extends Interface {
-    type: "unsupportedVersion"
-  }
-
-  export interface UnknownPurchaseKey extends Interface {
-    type: "unknownPurchaseKey"
-  }
-
-  export interface UnknownOfferId extends Interface {
-    type: "unknownOfferId"
-  }
-
-  export interface OfferDisabled extends Interface {
-    type: "offerDisabled"
-  }
-
-  export interface OfferMismatch extends Interface {
-    type: "offerMismatch"
-  }
-
-  export interface ProductUnavailable extends Interface {
-    type: "productUnavailable"
-  }
-
-  export interface PaymentNotEntitled extends Interface {
-    type: "paymentNotEntitled"
-  }
-
-  export interface PaymentPending extends Interface {
-    type: "paymentPending"
-  }
-
-  export interface ProviderUnavailable extends Interface {
-    type: "providerUnavailable"
-  }
-
-  export interface RateLimited extends Interface {
-    type: "rateLimited"
-  }
-
-  export interface CodeInvalid extends Interface {
-    type: "codeInvalid"
-  }
-
-  export interface CodeUsed extends Interface {
-    type: "codeUsed"
-  }
-
-  export interface CodeExpired extends Interface {
-    type: "codeExpired"
-  }
-
-  export interface ReceiptInvalid extends Interface {
-    type: "receiptInvalid"
-  }
-
-  export interface ReceiptUsed extends Interface {
-    type: "receiptUsed"
-  }
-
-  export interface Internal extends Interface {
-    type: "internal"
-  }
-
-  export interface Unknown extends Interface {
-    type: "unknown"
-    : string
-  }
+export enum BadgeServiceErrorCode {
+  Bad_request = "bad_request",
+  Unsupported_version = "unsupported_version",
+  Unknown_purchase_key = "unknown_purchase_key",
+  Unknown_offer_id = "unknown_offer_id",
+  Offer_disabled = "offer_disabled",
+  Offer_mismatch = "offer_mismatch",
+  Product_unavailable = "product_unavailable",
+  Payment_not_entitled = "payment_not_entitled",
+  Payment_pending = "payment_pending",
+  Provider_unavailable = "provider_unavailable",
+  Rate_limited = "rate_limited",
+  Code_invalid = "code_invalid",
+  Code_used = "code_used",
+  Code_expired = "code_expired",
+  Receipt_invalid = "receipt_invalid",
+  Receipt_used = "receipt_used",
+  Internal = "internal",
 }
 
 export enum BadgeStatus {
