@@ -167,6 +167,7 @@ struct ChatListView: View {
     @State private var userPickerShown: Bool = false
     @State private var sheet: SomeSheet<AnyView>? = nil
     @StateObject private var chatTagsModel = ChatTagsModel.shared
+    @StateObject private var directorySearch = DirectorySearchModel()
     @State private var scrollToItemId: ChatItem.ID? = nil
 
     // iOS 15 is required it to show/hide toolbar while chat is hidden/visible
@@ -425,11 +426,53 @@ struct ChatListView: View {
 
     @ViewBuilder private var chatList: some View {
         if shouldShowOnboarding {
-            ConnectOnboardingView()
+            // the onboarding content stays, but below a live search bar rather than instead of
+            // it: a user with no conversations is exactly who needs to find some
+            VStack(spacing: 0) {
+                ChatListSearchBar(
+                    searchMode: $searchMode,
+                    searchFocussed: $searchFocussed,
+                    searchText: $searchText,
+                    searchShowingSimplexLink: $searchShowingSimplexLink,
+                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
+                    parentSheet: $sheet,
+                    directorySearch: directorySearch
+                )
                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                .modifier(ThemedBackground())
+                .padding(.horizontal)
+                if directorySearch.showResults {
+                    List { directoryRows() }.listStyle(.plain)
+                } else {
+                    ConnectOnboardingView()
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                }
+            }
+            .modifier(ThemedBackground())
         } else {
             chatListContent
+        }
+    }
+
+    @ViewBuilder private func directoryRows() -> some View {
+        ForEach(directorySearch.entries) { entry in
+            DirectorySearchRow(entry: entry)
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                .listRowBackground(Color.clear)
+                .onTapGesture {
+                    guard let link = entry.connectLink else { return }
+                    searchFocussed = false
+                    planAndConnect(link, theme: theme, dismiss: false, cleanup: nil)
+                }
+        }
+        if directorySearch.failed {
+            directoryRetryRow()
+        } else if directorySearch.hasMore {
+            directoryShowMoreRow()
+        } else if directorySearch.searched && directorySearch.entries.isEmpty {
+            Text("No results")
+                .foregroundColor(theme.colors.secondary)
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                .listRowBackground(Color.clear)
         }
     }
 
@@ -438,22 +481,23 @@ struct ChatListView: View {
         return ZStack {
             ScrollViewReader { scrollProxy in
                 List {
-                    if !chatModel.chats.isEmpty {
-                        ChatListSearchBar(
-                            searchMode: $searchMode,
-                            searchFocussed: $searchFocussed,
-                            searchText: $searchText,
-                            searchShowingSimplexLink: $searchShowingSimplexLink,
-                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
-                            parentSheet: $sheet
-                        )
-                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, oneHandUI ? 8 : 0)
-                        .id("searchBar")
-                    }
+                    // always shown: the search field is now the way to discover chats, not only
+                    // to filter the ones that already exist
+                    ChatListSearchBar(
+                        searchMode: $searchMode,
+                        searchFocussed: $searchFocussed,
+                        searchText: $searchText,
+                        searchShowingSimplexLink: $searchShowingSimplexLink,
+                        searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
+                        parentSheet: $sheet,
+                        directorySearch: directorySearch
+                    )
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, oneHandUI ? 8 : 0)
+                    .id("searchBar")
                     if !oneHandUICardShown {
                         OneHandUICard()
                             .padding(.vertical, 6)
@@ -504,6 +548,14 @@ struct ChatListView: View {
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                         }
                     }
+                    if directorySearch.showResults {
+                        Section {
+                            directoryRows()
+                        } header: {
+                            Text("Directory")
+                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                        }
+                    }
                     if !addressCreationCardShown && hasConversations {
                         ConnectBannerCard()
                             .padding(.vertical, 6)
@@ -530,12 +582,43 @@ struct ChatListView: View {
                     }
                 }
             }
-            if cs.isEmpty && !chatModel.chats.isEmpty {
+            // the overlay covers the list, so it yields to the directory section and its own empty and retry rows
+            if cs.isEmpty && !chatModel.chats.isEmpty && !directorySearch.showResults {
                 noChatsView()
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
             }
         }
+    }
+
+    @ViewBuilder private func directoryShowMoreRow() -> some View {
+        Button {
+            Task { await directorySearch.loadMore() }
+        } label: {
+            Text("Show more")
+                .foregroundColor(theme.colors.primary)
+        }
+        .disabled(directorySearch.loading)
+        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+        .listRowBackground(Color.clear)
+    }
+
+    @ViewBuilder private func directoryRetryRow() -> some View {
+        Button {
+            // a failed "Show more" keeps its cursor, so the retry resumes the page rather than starting over
+            Task {
+                if directorySearch.hasMore {
+                    await directorySearch.loadMore()
+                } else {
+                    await directorySearch.search(searchText)
+                }
+            }
+        } label: {
+            Text("Search failed, tap to retry")
+                .foregroundColor(theme.colors.primary)
+        }
+        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+        .listRowBackground(Color.clear)
     }
     
     @ViewBuilder private func noChatsView() -> some View {
@@ -705,7 +788,9 @@ struct ChatListSearchBar: View {
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: Set<String>
     @Binding var parentSheet: SomeSheet<AnyView>?
+    @ObservedObject var directorySearch: DirectorySearchModel
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
+    @AppStorage(DEFAULT_DIRECTORY_SEARCH_ALERT_SHOWN) private var directorySearchAlertShown = false
     @State private var ignoreSearchTextChange = false
     // when the search text is a SimpleX name, the string to connect to (with @/# preserved); nil otherwise
     @State private var connectNameCandidate: String? = nil
@@ -723,6 +808,9 @@ struct ChatListSearchBar: View {
                     searchFocussed: $searchFocussed,
                     dismiss: false
                 )
+                searchInDirectoryRow()
+            } else if oneHandUI, !searchTrimmed.isEmpty {
+                searchInDirectoryRow()
             } else {
                 ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
             }
@@ -734,6 +822,8 @@ struct ChatListSearchBar: View {
                         .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
                         .frame(maxWidth: .infinity)
+                        .submitLabel(.search)
+                        .onSubmit(runDirectorySearch)
                     if connectProgressManager.showConnectProgress != nil {
                         ProgressView()
                     }
@@ -769,9 +859,19 @@ struct ChatListSearchBar: View {
                     dismiss: false
                 )
             }
+            if !oneHandUI, !searchTrimmed.isEmpty {
+                searchInDirectoryRow()
+            }
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
+        }
+        .onChange(of: searchText) { _ in
+            // results belong to the text that produced them
+            directorySearch.reset()
+        }
+        .onChange(of: m.currentUser?.userId) { _ in
+            directorySearch.reset()
         }
         .onChange(of: searchText) { t in
             if ignoreSearchTextChange {
@@ -861,6 +961,29 @@ struct ChatListSearchBar: View {
             filterKnownContact: { searchChatFilteredBySimplexLink = [$0.id] },
             filterKnownGroup: { searchChatFilteredBySimplexLink = [$0.id] }
         )
+    }
+
+    private var searchTrimmed: String {
+        searchText.trimmingCharacters(in: .whitespaces)
+    }
+
+    @ViewBuilder private func searchInDirectoryRow() -> some View {
+        // a SimpleX link connects on its own, so the directory is not offered for one
+        if !searchShowingSimplexLink {
+            SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: runDirectorySearch)
+        }
+    }
+
+    // The search text leaves the device, so the first time it does the user is asked first.
+    private func runDirectorySearch() {
+        let text = searchTrimmed
+        guard !text.isEmpty, !searchShowingSimplexLink else { return }
+        let search = { Task { await directorySearch.search(text) } }
+        if directorySearchAlertShown {
+            search()
+        } else {
+            showDirectorySearchAlert(onSearch: search)
+        }
     }
 }
 

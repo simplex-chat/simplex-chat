@@ -74,6 +74,7 @@ data CoreChatOpts = CoreChatOpts
     chatRelayServer :: Maybe SMPServerWithAuth,
     headless :: Bool,
     highlyAvailable :: Bool,
+    serviceRequests :: Bool,
     yesToUpMigrations :: Bool,
     migrationBackupPath :: Maybe FilePath,
     maintenance :: Bool    
@@ -314,6 +315,11 @@ coreChatOptsP appDir defaultDbName = do
       ( long "ha"
           <> help "Run as a highly available client (this may increase traffic in groups)"
       )
+  serviceRequests <-
+    switch
+      ( long "service-requests"
+          <> help "Process service requests received on the address (requires an address with DR keys)"
+      )
   yesToUpMigrations <-
     switch
       ( long "yes-migrate"
@@ -361,6 +367,7 @@ coreChatOptsP appDir defaultDbName = do
           True | not chatRelay -> errorWithoutStackTrace "--headless option requires --relay option"
           _ -> headless,
         highlyAvailable,
+        serviceRequests,
         yesToUpMigrations,
         migrationBackupPath,
         maintenance

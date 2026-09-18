@@ -164,6 +164,7 @@ testCoreOpts =
       chatRelayServer = Nothing,
       headless = False,
       highlyAvailable = False,
+      serviceRequests = False,
       yesToUpMigrations = False,
       migrationBackupPath = Nothing,
       maintenance = False      

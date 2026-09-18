@@ -1039,6 +1039,46 @@ markCompressedBatch :: ByteString -> ByteString
 markCompressedBatch = B.cons 'X'
 {-# INLINE markCompressedBatch #-}
 
+-- Service payloads are padded to e2eEncConnInfoLength, the same budget as connection info,
+-- so they use the compression, marker and size bound of encodeConnInfoPQ. A JSON payload
+-- never starts with 'X', so the marker is unambiguous.
+compressServiceBody :: ByteString -> Either String ByteString
+compressServiceBody body
+  | B.length body <= maxCompressedInfoLength = Right body
+  | B.length body' > maxCompressedInfoLength = Left "service payload is too large"
+  | otherwise = Right body'
+  where
+    body' = compressedBatchMsgBody_ body
+
+decompressServiceBody :: ByteString -> Either String ByteString
+decompressServiceBody body = case B.uncons body of
+  Nothing -> Left "empty service payload"
+  Just ('X', body') -> case smpDecode body' :: Either String (L.NonEmpty Compressed) of
+    Left e -> Left e
+    Right (c L.:| []) -> case decompressedSize c of
+      -- the bound is required: without it a small payload can expand to an unbounded one
+      Just size | size > maxDecompressedMsgLength -> Left "decompressed size exceeds limit"
+      Just _ -> decompress1 c
+      Nothing -> Left "compressed size not specified"
+    Right _ -> Left "unexpected compressed batch"
+  _ -> Right body
+
+-- The apps decode a service payload recursively on a fixed stack, and no service nests deeper
+-- than a few levels, so depth is bounded here rather than left to each client.
+maxServiceBodyDepth :: Int
+maxServiceBodyDepth = 32
+
+parseServiceBody :: ByteString -> Either String J.Object
+parseServiceBody body = do
+  o <- J.eitherDecodeStrict' =<< decompressServiceBody body
+  when (depth (J.Object o) > maxServiceBodyDepth) $ Left "service payload is nested too deeply"
+  pure o
+  where
+    depth = \case
+      J.Object kv -> 1 + foldr (max . depth) 0 kv
+      J.Array vs -> 1 + foldr (max . depth) 0 vs
+      _ -> 0
+
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
 justTrue False = Nothing

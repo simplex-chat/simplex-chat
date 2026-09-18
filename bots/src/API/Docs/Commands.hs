@@ -194,7 +194,8 @@ chatCommandsDocsData =
     ),
     ( "Service commands",
       "Bots with a double ratchet address can answer service requests.",
-      [ ("APISendServiceResponse", [], "Send a reply to a received service request. Returns the connection ID that correlates the reply delivery event.", ["CRServiceReplyAccepted", "CRChatCmdError"], [], Just UNBackground, "/_service_response " <> Param "userId" <> " " <> Param "requestId" <> " " <> Json "responseData")
+      [ ("APISendServiceResponse", [], "Send a reply to a received service request. Returns the connection ID that correlates the reply delivery event.", ["CRServiceReplyAccepted", "CRChatCmdError"], [], Just UNBackground, "/_service_response " <> Param "userId" <> " " <> Param "requestId" <> " " <> Json "responseData"),
+        ("APIRejectServiceRequest", [], "Reject a received service request. With a reason the requester fails fast; without it the request is dropped and the requester waits out its timeout.", ["CRCmdOk", "CRChatCmdError"], [], Just UNBackground, "/_reject_service_request " <> Param "userId" <> " " <> Param "requestId" <> Optional "" (" " <> Param "$0") "rejectionReason")
       ]
     ),
     ( "Chat management",

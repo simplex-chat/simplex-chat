@@ -267,6 +267,8 @@
 		E5AEC0AF2F91A73500270665 /* ComposeChatLinkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AE2F91A73500270665 /* ComposeChatLinkView.swift */; };
 		E5C0BBE82F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */; };
 		E5C0BBE92F82B45500EA7527 /* SimpleXAssets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */; };
+		E5D5A0012F9B0000AAAA0001 /* DirectorySearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5D5A0022F9B0000AAAA0001 /* DirectorySearch.swift */; };
+		E5D5A0032F9B0000AAAA0001 /* DirectorySearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5D5A0042F9B0000AAAA0001 /* DirectorySearchView.swift */; };
 		E5DBF1932F88169800E1D7FD /* ConnectBannerCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5DBF1922F88169800E1D7FD /* ConnectBannerCard.swift */; };
 		E5DCF8DB2C56FAC1007928CC /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; };
 		E5DCF9712C590272007928CC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = E5DCF96F2C590272007928CC /* Localizable.strings */; };
@@ -656,6 +658,8 @@
 		E5C0BBE72F82B45500EA7527 /* SimpleXAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = SimpleXAssets.xcassets; sourceTree = "<group>"; };
 		E5C0BBFD2F82BBC000EA7527 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		E5C0BBFE2F82BBC900EA7527 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		E5D5A0022F9B0000AAAA0001 /* DirectorySearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectorySearch.swift; sourceTree = "<group>"; };
+		E5D5A0042F9B0000AAAA0001 /* DirectorySearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectorySearchView.swift; sourceTree = "<group>"; };
 		E5DBF1922F88169800E1D7FD /* ConnectBannerCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectBannerCard.swift; sourceTree = "<group>"; };
 		E5DCF9702C590272007928CC /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		E5DCF9722C590274007928CC /* bg */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = bg; path = bg.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -869,6 +873,7 @@
 			children = (
 				E5DDBE6D2DC4106200A0EFF0 /* AppAPITypes.swift */,
 				5C764E88279CBCB3000C6508 /* ChatModel.swift */,
+				E5D5A0022F9B0000AAAA0001 /* DirectorySearch.swift */,
 				5C2E260627A2941F00F70299 /* SimpleXAPI.swift */,
 				5C35CFC727B2782E00FB6C6D /* BGManager.swift */,
 				5C35CFCA27B2E91D00FB6C6D /* NtfManager.swift */,
@@ -1053,6 +1058,7 @@
 			isa = PBXGroup;
 			children = (
 				5C2E260A27A30CFA00F70299 /* ChatListView.swift */,
+				E5D5A0042F9B0000AAAA0001 /* DirectorySearchView.swift */,
 				5C5346A727B59A6A004DF848 /* ChatHelp.swift */,
 				5CB9250C27A9432000ACCCDD /* ChatListNavLink.swift */,
 				5C063D2627A4564100AEC577 /* ChatPreviewView.swift */,
@@ -1568,6 +1574,8 @@
 				64A779FE2DC3AFF200FDEF2F /* MemberSupportChatToolbar.swift in Sources */,
 				5C3F1D58284363C400EC8A82 /* PrivacySettings.swift in Sources */,
 				E5E418012F83D2CA00252B9E /* OnboardingCards.swift in Sources */,
+				E5D5A0012F9B0000AAAA0001 /* DirectorySearch.swift in Sources */,
+				E5D5A0032F9B0000AAAA0001 /* DirectorySearchView.swift in Sources */,
 				5C55A923283CEDE600C4E99E /* SoundPlayer.swift in Sources */,
 				64A779F82DBFDBF200FDEF2F /* MemberSupportView.swift in Sources */,
 				5C93292F29239A170090FFF9 /* ProtocolServersView.swift in Sources */,

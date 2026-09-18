@@ -87,10 +87,10 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
       exitFailure
 
 runSimplexChat :: ChatConfig -> ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
-runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay, chatRelayServer, headless, maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
+runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay, chatRelayServer, headless, serviceRequests, maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
-      a1 <- runReaderT (startChatController True True False) cc
+      a1 <- runReaderT (startChatController True True serviceRequests) cc
       when (chatRelay && not testView) $ askCreateRelayAddress cc u chatRelayServer headless
       forM_ (postStartHook chatHooks) ($ cc)
       a2 <- async $ chat u cc

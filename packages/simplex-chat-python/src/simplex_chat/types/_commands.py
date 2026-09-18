@@ -768,6 +768,20 @@ def APISendServiceResponse_cmd_string(self: APISendServiceResponse) -> str:
 APISendServiceResponse_Response = CR.ServiceReplyAccepted | CR.ChatCmdError
 
 
+# Reject a received service request. With a reason the requester fails fast; without it the request is dropped and the requester waits out its timeout.
+# Network usage: background.
+class APIRejectServiceRequest(TypedDict):
+    userId: int  # int64
+    requestId: str
+    rejectionReason: NotRequired[str]
+
+
+def APIRejectServiceRequest_cmd_string(self: APIRejectServiceRequest) -> str:
+    return '/_reject_service_request ' + str(self['userId']) + ' ' + self['requestId'] + ((' ' + self.get('rejectionReason')) if self.get('rejectionReason') is not None else '')
+
+APIRejectServiceRequest_Response = CR.CmdOk | CR.ChatCmdError
+
+
 # Chat management
 # These commands should not be used with CLI-based bots
 
