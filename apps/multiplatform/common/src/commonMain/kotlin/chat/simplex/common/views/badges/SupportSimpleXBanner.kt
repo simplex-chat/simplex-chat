@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
@@ -34,6 +35,7 @@ import chat.simplex.res.MR
 fun SupportSimpleXBanner(
   title: String = generalGetString(MR.strings.badges_banner_title),
   subtitle: String = generalGetString(MR.strings.badges_banner_subtitle),
+  warning: Boolean = false,
   onTap: () -> Unit,
   onDismiss: () -> Unit
 ) {
@@ -81,7 +83,7 @@ fun SupportSimpleXBanner(
             title,
             style = MaterialTheme.typography.body1,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colors.primary,
+            color = if (warning) Color.Red else MaterialTheme.colors.primary,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
           )
@@ -114,7 +116,8 @@ fun SupportSimpleXBanner(
       heroWidth = heroWidth,
       heroVisibleHeight = heroVisibleHeight,
       cardHeight = cardHeight,
-      trailingPadding = heroTrailingPadding
+      trailingPadding = heroTrailingPadding,
+      warning = warning
     )
   }) { measurables, constraints ->
     val cardPlaceable = measurables[0].measure(constraints)
@@ -127,8 +130,18 @@ fun SupportSimpleXBanner(
 }
 
 @Composable
-private fun HeroThumbnail(heroWidth: Dp, heroVisibleHeight: Dp, cardHeight: Dp, trailingPadding: Dp) {
-  if (BuildConfigCommon.SIMPLEX_ASSETS) {
+private fun HeroThumbnail(heroWidth: Dp, heroVisibleHeight: Dp, cardHeight: Dp, trailingPadding: Dp, warning: Boolean) {
+  if (warning) {
+    val badgeSize = 48.dp
+    Icon(
+      painterResource(MR.images.ic_warning),
+      contentDescription = null,
+      tint = Color.Red,
+      modifier = Modifier
+        .padding(end = trailingPadding + 12.dp, top = (cardHeight - badgeSize) / 2, bottom = (cardHeight - badgeSize) / 2)
+        .size(badgeSize)
+    )
+  } else if (BuildConfigCommon.SIMPLEX_ASSETS) {
     // draws at natural aspect, top-aligned in a shorter slot; ContentScale.Crop cuts the overflow at card bottom
     Image(
       painterResource(if (isInDarkTheme()) MR.images.phone_supporter_light else MR.images.phone_supporter),

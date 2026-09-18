@@ -4539,6 +4539,7 @@ private fun badgeAlertKindParam(kind: BadgeAlertKind): String = when (kind) {
   BadgeAlertKind.SubscriptionEnded -> "subscription_ended"
   BadgeAlertKind.PrepaidEnding -> "prepaid_ending"
   BadgeAlertKind.SupportEnded -> "support_ended"
+  BadgeAlertKind.IssueFailed -> "issue_failed"
 }
 
 @Serializable

@@ -2232,9 +2232,36 @@ data class BadgeState(
   val paidThrough: Instant,
   val renewsAt: Instant? = null,
   val willRenew: Boolean,
-  val alert: BadgeAlert? = null
+  val alert: BadgeAlert? = null,
+  val issueError: BadgeIssueError? = null,
+  val nextWakeAt: Instant? = null
 ) {
   val paidThroughText: String get() = badgeDateText(paidThrough)
+}
+
+@Serializable
+data class BadgeIssueError(
+  val failedSince: Instant,
+  val lastAttemptAt: Instant,
+  val reason: BadgeIssueFailure
+)
+
+@Serializable
+sealed class BadgeIssueFailure {
+  // retryable is the service's own view of transience: it gave retryAfter
+  @Serializable @SerialName("serviceError") data class ServiceError(val code: BadgeServiceErrorCode, val retryable: Boolean) : BadgeIssueFailure()
+  @Serializable @SerialName("timeout") object Timeout : BadgeIssueFailure()
+  @Serializable @SerialName("network") object Network : BadgeIssueFailure()
+  @Serializable @SerialName("invalidCredential") object InvalidCredential : BadgeIssueFailure()
+  @Serializable @SerialName("unexpected") data class Unexpected(val message: String) : BadgeIssueFailure()
+
+  val tag: String get() = when (this) {
+    is ServiceError -> "serviceError ${if (retryable) "retry" else "final"} ${code.text}"
+    is Timeout -> "timeout"
+    is Network -> "network"
+    is InvalidCredential -> "invalidCredential"
+    is Unexpected -> "unexpected $message"
+  }
 }
 
 @Serializable
@@ -2387,7 +2414,8 @@ enum class BadgeAlertKind {
   @SerialName("paymentIssue") PaymentIssue,
   @SerialName("subscriptionEnded") SubscriptionEnded,
   @SerialName("prepaidEnding") PrepaidEnding,
-  @SerialName("supportEnded") SupportEnded
+  @SerialName("supportEnded") SupportEnded,
+  @SerialName("issueFailed") IssueFailed
 }
 
 private fun badgeDateText(date: Instant): String {

@@ -14,6 +14,7 @@ struct SupportSimpleXBanner: View {
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     var title: LocalizedStringKey = "Support SimpleX"
     var subtitle: LocalizedStringKey = "Get badge + files up to 5GB"
+    var warning: Bool = false
     let onTap: () -> Void
     let onDismiss: () -> Void
 
@@ -41,7 +42,7 @@ struct SupportSimpleXBanner: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(title)
                             .font(.headline)
-                            .foregroundColor(theme.colors.primary)
+                            .foregroundColor(warning ? .red : theme.colors.primary)
                             .lineLimit(2)
                         Text(subtitle)
                             .font(.subheadline)
@@ -78,6 +79,21 @@ struct SupportSimpleXBanner: View {
 
     @ViewBuilder
     private func heroThumbnail() -> some View {
+        if warning {
+            Image(systemName: "exclamationmark.triangle")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(.red)
+                .frame(width: 48, height: 48)
+                .padding(.vertical, (cardHeight - 48) / 2)
+                .padding(.trailing, 12)
+        } else {
+            defaultHero()
+        }
+    }
+
+    @ViewBuilder
+    private func defaultHero() -> some View {
         #if SIMPLEX_ASSETS
         // draws at natural aspect, top-aligned in a shorter slot; .clipped() cuts the overflow at card bottom
         Image(colorScheme == .light ? "phone-supporter" : "phone-supporter-light")

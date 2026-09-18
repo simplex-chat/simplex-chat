@@ -324,7 +324,8 @@ public struct LocalBadge: Codable, Hashable {
 
 // paidThrough is the only date to show the user: BadgeInfo.badgeExpiry is the credential's expiry,
 // which outlives entitlement so the credential's window can cover a renewal.
-public struct BadgeState: Codable, Hashable {
+// Decodable only: BadgeIssueFailure below is, and nothing encodes badge state.
+public struct BadgeState: Decodable, Hashable {
     public var badgePurchaseId: Int64
     public var purchaseKey: String
     public var badgeType: BadgeType
@@ -334,8 +335,25 @@ public struct BadgeState: Codable, Hashable {
     public var renewsAt: Date?
     public var willRenew: Bool
     public var alert: BadgeAlert?
+    public var issueError: BadgeIssueError?
+    public var nextWakeAt: Date?
 
     public var paidThroughText: String { badgeDateText(paidThrough) }
+}
+
+public struct BadgeIssueError: Decodable, Hashable {
+    public var failedSince: Date
+    public var lastAttemptAt: Date
+    public var reason: BadgeIssueFailure
+}
+
+public enum BadgeIssueFailure: Decodable, Hashable {
+    // retryable is the service's own view of transience: it gave retryAfter
+    case serviceError(code: BadgeServiceErrorCode, retryable: Bool)
+    case timeout
+    case network
+    case invalidCredential
+    case unexpected(message: String)
 }
 
 public struct StatementEntry: Codable, Hashable {
@@ -519,6 +537,7 @@ public enum BadgeAlertKind: String, Codable, Hashable {
     case subscriptionEnded
     case prepaidEnding
     case supportEnded
+    case issueFailed
 }
 
 // the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)

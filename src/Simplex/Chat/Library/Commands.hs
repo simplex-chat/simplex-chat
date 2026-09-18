@@ -61,7 +61,7 @@ import Crypto.Random (ChaChaDRG)
 import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
 import qualified Simplex.Chat.Badges.Ledger as L
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeState (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
@@ -5256,14 +5256,18 @@ redeemBadgeCode nm user@User {userId} codeText = do
 throwRedeemError :: BadgeRedeemError -> CM a
 throwRedeemError = throwChatError . CEBadgeRedeemError
 
--- | An unknown code is reported, since the service is deployed ahead of clients, but its text is
--- the service's - so it is bounded and stripped before reaching a terminal that acts on controls.
 badgeServiceErrorText :: BadgeServiceErrorCode -> Text
-badgeServiceErrorText = \case
-  BSEUnknown t -> case T.filter errorCodeChar (T.take 32 t) of
+badgeServiceErrorText = textEncode . boundedServiceErrorCode
+
+-- | An unknown code is reported and recorded, since the service is deployed ahead of clients, but
+-- its text is the service's - so it is bounded and stripped before it reaches a terminal that acts
+-- on controls, or a sentence the app shows the user as its own.
+boundedServiceErrorCode :: BadgeServiceErrorCode -> BadgeServiceErrorCode
+boundedServiceErrorCode = \case
+  BSEUnknown t -> BSEUnknown $ case T.filter errorCodeChar (T.take 32 t) of
     "" -> "unknown"
     t' -> t'
-  code -> textEncode code
+  code -> code
   where
     errorCodeChar c = isAsciiLower c || isDigit c || c == '_'
 
@@ -5305,16 +5309,32 @@ runBadgeWorker userId badgeWork = do
   emitted <- newTVarIO Nothing
   ri <- asks $ badgeRetryInterval . config
   forever $ do
-    at_ <- withRetryInterval ri $ \_ loop -> do
+    at_ <- withRetryInterval ri $ \delay loop -> do
       lift waitChatStartedAndActivated
       now <- badgeNow
-      let stalled = pure $ Just $ badgeStalledInterval `addUTCTime` now
-      updateUserBadge userId emitted now `catchAllErrors` retryBadgeError loop stalled
+      updateUserBadge userId emitted now `catchAllErrors` retryBadgeError userId now delay loop
     now <- badgeNow
     liftIO $ waitBadgeWake badgeWork now at_
 
-retryBadgeError :: CM a -> CM a -> ChatError -> CM a
-retryBadgeError loop stalled e = eToView e >> if badgeErrorRetry e then loop else stalled
+-- | Records the wake before waiting it out, so the state the apps hold carries the next attempt
+-- however the pass ended.
+retryBadgeError :: UserId -> UTCTime -> Int64 -> CM (Maybe UTCTime) -> ChatError -> CM (Maybe UTCTime)
+retryBadgeError userId now delay loop e = do
+  eToView e
+  let retrying = badgeErrorRetry e
+      at = (if retrying then fromIntegral delay / 1000000 else badgeStalledInterval) `addUTCTime` now
+  badgeNextWakeChanged userId at
+  if retrying then loop else pure (Just at)
+
+-- | Runs in the worker's error handler, so its own errors are reported and dropped: a throw here
+-- would end the worker.
+badgeNextWakeChanged :: UserId -> UTCTime -> CM ()
+badgeNextWakeChanged userId at = (`catchAllErrors` eToView) $ do
+  user <- withStore $ \db -> getUser db userId
+  p_ <- withStore' (`getUserBadgePurchase` user)
+  forM_ p_ $ \UserBadgePurchase {badgePurchaseId} -> do
+    withStore' $ \db -> setBadgeNextWake db badgePurchaseId (Just at)
+    toView . CEvtBadgeChanged user =<< getUserBadgeState user
 
 -- | The signal is taken only by the wait that reports it - the take and the timer read are one
 -- transaction. now is the badge clock, so the remaining time counts down rather than re-reading it.
@@ -5367,40 +5387,50 @@ updateUserBadge userId emitted now = do
           let issued = balanceStartTs balance' /= balanceStartTs balance
           -- outside the badge lock: the chat lock must not be taken under it
           unless retired $ presentIssuedBadge user' p' now
-          emitBadgeAlert user' emitted p' now balance'
           -- retiring and presenting both replace the badge on the record read above, so it is read again
           user'' <- withStore $ \db -> getUser db userId
-          when (retired || issued) $ toView . CEvtBadgeChanged user'' =<< getUserBadgeState user''
+          emitBadgeAlert user'' emitted p' (shownBadgeCredential user'' p') now balance'
           -- a snooze is the one wake that is not in the ledger: nothing else brings the alert back,
           -- since support having ended leaves both ledger boundaries in the past
-          let UserBadgePurchase {alertSnoozeUntil} = p'
+          let UserBadgePurchase {issueError = failureBefore} = p
+              UserBadgePurchase {alertSnoozeUntil, issueError = failureAfter} = p'
               snoozeAt = find (> now) alertSnoozeUntil
               stalledAt = if requestDue && not issued then Just $ badgeStalledInterval `addUTCTime` now else Nothing
-          pure $ earliestTime [serviceAt, snoozeAt, stalledAt, badgeBoundary now (shownBadgeCredential user'' p') balance']
+              wakeAt = earliestTime [serviceAt, snoozeAt, stalledAt, badgeBoundary now (shownBadgeCredential user'' p') balance']
+              failed = failureAfter /= failureBefore
+          -- written before the event, so the state it reports carries the attempt it leads to
+          withStore' $ \db -> setBadgeNextWake db badgePurchaseId wakeAt
+          when (retired || issued || failed) $ toView . CEvtBadgeChanged user'' =<< getUserBadgeState user''
+          pure wakeAt
 
--- | Support ended is the only alert raised here: the others need subscriptions, and warning before
--- a prepaid badge ends is not actionable while topping up cannot credit months without issuing.
+-- | The other kinds need subscriptions, and warning before a prepaid badge ends is not actionable
+-- while topping up cannot credit months without issuing.
 -- TODO [badges] BAPrepaidEnding belongs here, three days before paidThrough, once that exists.
-derivedBadgeAlert :: UTCTime -> StatementEntry -> Maybe BadgeAlert
-derivedBadgeAlert now b
-  | balanceMonths b == 0 && endsAt <= now =
-      Just BadgeAlert {kind = BASupportEnded, episode = safeDecodeUtf8 $ strEncode endsAt, date = endsAt, price = Nothing}
-  | otherwise = Nothing
+derivedBadgeAlert :: UTCTime -> UserBadgePurchase -> Maybe BadgeCredential -> StatementEntry -> Maybe BadgeAlert
+derivedBadgeAlert now UserBadgePurchase {issueError} shownCred b
+  | endsAt <= now = Just $ alertOf BASupportEnded endsAt
+  | otherwise = case issueError of
+      Just BadgeIssueError {failedSince, reason} | worthAlerting reason -> Just $ alertOf BAIssueFailed failedSince
+      _ -> Nothing
   where
     endsAt = L.paidThrough b
+    alertOf kind date = BadgeAlert {kind, episode = safeDecodeUtf8 $ strEncode date, date, price = Nothing}
+    -- a failure that can clear on its own is only worth a word once contacts see the badge as
+    -- expired, which is the moment the shown credential lapses
+    worthAlerting reason = not (badgeFailureTransient reason) || maybe False ((<= now) . credentialExpiry) shownCred
 
 -- | Derived from state rather than kept pending: raised unless this occurrence is the one already
 -- answered, and raised again once a snooze that answered it lapses.
-unansweredBadgeAlert :: UTCTime -> UserBadgePurchase -> StatementEntry -> Maybe BadgeAlert
-unansweredBadgeAlert now UserBadgePurchase {alertAcked, alertSnoozeUntil} balance =
-  case derivedBadgeAlert now balance of
+unansweredBadgeAlert :: UTCTime -> UserBadgePurchase -> Maybe BadgeCredential -> StatementEntry -> Maybe BadgeAlert
+unansweredBadgeAlert now p@UserBadgePurchase {alertAcked, alertSnoozeUntil} shownCred balance =
+  case derivedBadgeAlert now p shownCred balance of
     Just alert@BadgeAlert {kind, episode}
       | alertAcked /= Just (kind, episode) || maybe False (now >=) alertSnoozeUntil -> Just alert
     _ -> Nothing
 
-emitBadgeAlert :: User -> TVar (Maybe BadgeOccurrence) -> UserBadgePurchase -> UTCTime -> StatementEntry -> CM ()
-emitBadgeAlert user emitted p@UserBadgePurchase {alertSnoozeUntil} now balance =
-  forM_ (unansweredBadgeAlert now p balance) $ \alert@BadgeAlert {kind, episode} -> do
+emitBadgeAlert :: User -> TVar (Maybe BadgeOccurrence) -> UserBadgePurchase -> Maybe BadgeCredential -> UTCTime -> StatementEntry -> CM ()
+emitBadgeAlert user emitted p@UserBadgePurchase {alertSnoozeUntil} shownCred now balance =
+  forM_ (unansweredBadgeAlert now p shownCred balance) $ \alert@BadgeAlert {kind, episode} -> do
     let occurrence = Just (kind, episode, alertSnoozeUntil)
     raised <- atomically $ stateTVar emitted (,occurrence)
     when (raised /= occurrence) $ toView $ CEvtBadgeAlert user alert
@@ -5414,7 +5444,7 @@ getUserBadgeState user = do
     Just p@UserBadgePurchase {badgePurchaseId} ->
       fmap (badgeStateOf now p) <$> withStore' (`getBadgeLedgerLastEntry` badgePurchaseId)
   where
-    badgeStateOf now p@UserBadgePurchase {badgePurchaseId, purchaseKey, badgeType, shown} balance =
+    badgeStateOf now p@UserBadgePurchase {badgePurchaseId, purchaseKey, badgeType, shown, issueError, nextWakeAt} balance =
       BadgeState
         { badgePurchaseId,
           purchaseKey,
@@ -5424,7 +5454,9 @@ getUserBadgeState user = do
           paidThrough = L.paidThrough balance,
           renewsAt = Nothing,
           willRenew = False,
-          alert = unansweredBadgeAlert now p balance
+          alert = unansweredBadgeAlert now p (shownBadgeCredential user p) balance,
+          issueError,
+          nextWakeAt
         }
 
 -- | How long a month that did not issue waits before it is tried again, whatever stopped it. Not
@@ -5485,22 +5517,37 @@ earliestTime ts = case catMaybes ts of
   [] -> Nothing
   ts' -> Just $ minimum ts'
 
+-- | What a thrown renewal request failed at. An unanswered request is the likeliest renewal failure
+-- and temporaryOrHostError does not cover it: that classifies reaching the server, and this timeout
+-- is the agent's own.
+badgeIssueFailure :: ChatError -> BadgeIssueFailure
+badgeIssueFailure e = case e of
+  ChatErrorAgent {agentError = AGENT (A_SERVICE ASETimeout)} -> BIFTimeout
+  ChatErrorAgent {agentError} | temporaryOrHostError agentError -> BIFNetwork
+  -- the errors this path raises itself already read as a sentence; the rest have none
+  ChatError (CECommandError m) -> BIFUnexpected {message = T.pack m}
+  ChatError (CEInternalError m) -> BIFUnexpected {message = T.pack m}
+  _ -> BIFUnexpected {message = tshow e}
+
+-- | Whether a failure can clear on its own, which decides both the retry and whether the alert
+-- waits for the shown credential to lapse.
+badgeFailureTransient :: BadgeIssueFailure -> Bool
+badgeFailureTransient = \case
+  BIFServiceError {retryable} -> retryable
+  BIFTimeout -> True
+  BIFNetwork -> True
+  BIFInvalidCredential -> False
+  BIFUnexpected {} -> False
+
 -- | Only a failure that can clear on its own is repeated; every other throw is terminal, and
 -- repeating it would spin. Service errors are classified by retryAfter in requestBadgeIssue.
 badgeErrorRetry :: ChatError -> Bool
-badgeErrorRetry = \case
-  ChatErrorAgent {agentError} -> retryable agentError
-  _ -> False
-  where
-    -- an unanswered request is the likeliest renewal failure and temporaryOrHostError does not
-    -- cover it: that classifies reaching the server, and this timeout is the agent's own
-    retryable = \case
-      AGENT (A_SERVICE ASETimeout) -> True
-      e -> temporaryOrHostError e
+badgeErrorRetry = badgeFailureTransient . badgeIssueFailure
 
 -- | Ask the service for the month that is due and apply the response. A timeout writes nothing, so
 -- the same request is sent again on the next pass. 'Left' is a service error, already reported, and
--- carries when to try again, since a service error is answered rather than thrown.
+-- carries when to try again, since a service error is answered rather than thrown. Every outcome
+-- that stores no credential is recorded on the purchase, here and nowhere else.
 requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either UTCTime StatementEntry)
 requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchaseKey, purchasePrivKey, masterKey} now = do
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
@@ -5513,24 +5560,39 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchase
               purchaseKey = Just purchaseKey,
               request = BSCIssueBadge {balance = BadgeBalance {lastEntry}}
             }
-    respData <- sendServiceRequestTo NRMBackground user sendTarget Nothing (Just purchasePrivKey) req
+    respData <-
+      sendServiceRequestTo NRMBackground user sendTarget Nothing (Just purchasePrivKey) req
+        `catchAllErrors` \e -> recordFailure (badgeIssueFailure e) >> throwError e
     case J.fromJSON (J.Object respData) of
       J.Success BSPBadgeCredential {credential, statement} -> do
         cred_ <- verifyIssuedCredential masterKey credential
-        -- TODO [badges] the statement is applied either way, so a failed verification spends the
-        -- month with nothing to show for it; that needs an alert, not only a line in the log
         g <- asks random
         -- read again: now was taken before a lock wait and an untimed request, and the check reads
         -- it as the client's clock against the timestamps the service put on the rows
         storedAt <- badgeNow
         applied <- withStore' $ \db -> applyBadgeStatement db g badgePurchaseId badgeType statement cred_ storedAt
-        unless applied $ eToView $ ChatError $ CEInternalError "issued badge credential has no ledger row to store it against"
+        -- the statement is applied either way, so a month can be spent with nothing to show for it
+        case (cred_, applied) of
+          (Nothing, _) -> recordFailure BIFInvalidCredential
+          (_, False) -> do
+            eToView $ ChatError $ CEInternalError $ T.unpack noLedgerRow
+            recordFailure BIFUnexpected {message = noLedgerRow}
+          _ -> pure ()
         Right <$> (withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no balance") pure)
       J.Success BSPError {code, retryAfter} -> do
         eToView $ ChatError $ CECommandError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
+        recordFailure BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
         ri <- asks $ badgeRetryInterval . config
         pure $ Left $ badgeRetryAfter ri retryAfter `addUTCTime` now
-      _ -> throwCmdError "unexpected badge service response"
+      _ -> do
+        recordFailure BIFUnexpected {message = unexpectedResponse}
+        throwCmdError $ T.unpack unexpectedResponse
+  where
+    noLedgerRow = "issued badge credential has no ledger row to store it against"
+    unexpectedResponse = "unexpected badge service response"
+    recordFailure failure = do
+      failedAt <- badgeNow
+      withStore' $ \db -> setBadgeIssueError db badgePurchaseId failedAt failure
 
 -- | The signature covers the master key inside the credential, so it verifies no matter which key
 -- that is - the credential is stored only when that key is also this purchase's.

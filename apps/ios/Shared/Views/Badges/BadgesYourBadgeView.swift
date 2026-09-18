@@ -12,6 +12,7 @@ import SimpleXChat
 struct BadgesYourBadgeView: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
+    @Environment(\.dismiss) private var dismiss
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     let badgeState: BadgeState
     var showsAsSheet: Bool = false
@@ -52,14 +53,46 @@ struct BadgesYourBadgeView: View {
                         }
                     }
                 }
+                if let issueError = badgeState.issueError {
+                    Section {
+                        Text(issueFailureText(issueError.reason))
+                            .foregroundColor(theme.colors.secondary)
+                        infoRow("Since", badgeTimestamp(issueError.failedSince))
+                        if let nextWakeAt = badgeState.nextWakeAt {
+                            infoRow("Next attempt", badgeTimestamp(nextWakeAt))
+                        }
+                        settingsRow("number", color: theme.colors.secondary) {
+                            Button("Contact SimpleX team") {
+                                dismiss()
+                                DispatchQueue.main.async {
+                                    // simplexTeamURL targets this same app; route to the in-app connect flow
+                                    ChatModel.shared.appOpenUrl = simplexTeamURL
+                                }
+                            }
+                        }
+                    } header: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundColor(.red)
+                            Text("Error")
+                        }
+                    }
+                }
                 if developerTools {
                     Section(header: Text("Credential").foregroundColor(theme.colors.secondary)) {
                         if let badge = chatModel.currentUser?.profile.localBadge {
                             infoRow("Status", badge.status.rawValue)
-                            infoRow("Expires", DateFormatter.localizedString(from: badge.badge.badgeExpiry, dateStyle: .medium, timeStyle: .short))
+                            infoRow("Expires", badgeTimestamp(badge.badge.badgeExpiry))
                         }
                         infoRow("Months left", "\(badgeState.monthsLeft)")
                         infoRow("Purchase ID", "\(badgeState.badgePurchaseId)")
+                        if let nextWakeAt = badgeState.nextWakeAt {
+                            infoRow("Next check", badgeTimestamp(nextWakeAt))
+                        }
+                        if let issueError = badgeState.issueError {
+                            infoRow("Last attempt", badgeTimestamp(issueError.lastAttemptAt))
+                            infoRow("Last error", issueFailureTag(issueError.reason))
+                        }
                         Button("Copy purchase key") {
                             UIPasteboard.general.string = badgeState.purchaseKey
                         }
@@ -76,6 +109,32 @@ struct BadgesYourBadgeView: View {
         .navigationTitle(showsAsSheet ? "" : "Your badge")
         .navigationBarTitleDisplayMode(showsAsSheet ? .inline : .large)
         .modifier(ThemedBackground(grouped: true))
+    }
+
+    private func badgeTimestamp(_ date: Date) -> String {
+        DateFormatter.localizedString(from: date, dateStyle: .medium, timeStyle: .short)
+    }
+
+    private func issueFailureText(_ reason: BadgeIssueFailure) -> String {
+        switch reason {
+        case let .serviceError(code, _):
+            String.localizedStringWithFormat(NSLocalizedString("The badge service refused the renewal: %@", comment: "badge renewal error"), code.text)
+        case .timeout: NSLocalizedString("The badge service did not respond.", comment: "badge renewal error")
+        case .network: NSLocalizedString("The badge service could not be reached.", comment: "badge renewal error")
+        case .invalidCredential: NSLocalizedString("The badge issued by the service cannot be verified.", comment: "badge renewal error")
+        case let .unexpected(message):
+            String.localizedStringWithFormat(NSLocalizedString("Unexpected response from the badge service: %@", comment: "badge renewal error"), message)
+        }
+    }
+
+    private func issueFailureTag(_ reason: BadgeIssueFailure) -> String {
+        switch reason {
+        case let .serviceError(code, retryable): "serviceError \(retryable ? "retry" : "final") \(code.text)"
+        case .timeout: "timeout"
+        case .network: "network"
+        case .invalidCredential: "invalidCredential"
+        case let .unexpected(message): "unexpected \(message)"
+        }
     }
 }
 
