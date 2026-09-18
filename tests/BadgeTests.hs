@@ -693,8 +693,8 @@ testIssueFailureEncoding = do
       BIFServiceError {code = BSEUnknown "future_code", retryable = True},
       BIFServiceError {code = BSEUnknown "code with spaces", retryable = False},
       BIFServiceError {code = BSEUnknown "", retryable = False},
-      BIFTimeout,
-      BIFNetwork,
+      BIFServiceTimeout,
+      BIFNetwork {agentError = "BROKER \"smp://x\" NETWORK"},
       BIFInvalidCredential,
       BIFUnexpected {message = "unexpected badge service response"},
       BIFUnexpected {message = "several words and : punctuation"}
@@ -702,7 +702,7 @@ testIssueFailureEncoding = do
   -- the row the CLI prints, and what a reader of the database sees
   strEncode BIFServiceError {code = BSECodeUsed, retryable = False} `shouldBe` "service_error final code_used"
   strEncode BIFServiceError {code = BSERateLimited, retryable = True} `shouldBe` "service_error retry rate_limited"
-  strEncode BIFTimeout `shouldBe` "timeout"
+  strEncode BIFServiceTimeout `shouldBe` "service_timeout"
 
 -- The text of a code this version does not know is chosen by the service, and the app shows it in
 -- a sentence of its own - so it is bounded and stripped of anything but a code before it is stored.

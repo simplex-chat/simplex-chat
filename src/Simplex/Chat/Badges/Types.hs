@@ -249,8 +249,8 @@ data BadgeServiceErrorCode
 -- transience: it gave retryAfter, which holds for codes this version does not know.
 data BadgeIssueFailure
   = BIFServiceError {code :: BadgeServiceErrorCode, retryable :: Bool}
-  | BIFTimeout
-  | BIFNetwork
+  | BIFServiceTimeout
+  | BIFNetwork {agentError :: Text}
   | BIFInvalidCredential
   | BIFUnexpected {message :: Text}
   deriving (Eq, Show)
@@ -362,17 +362,17 @@ instance FromJSON BadgeServiceErrorCode where
 instance StrEncoding BadgeIssueFailure where
   strEncode = \case
     BIFServiceError {code, retryable} -> "service_error " <> (if retryable then "retry " else "final ") <> encodeUtf8 (textEncode code)
-    BIFTimeout -> "timeout"
-    BIFNetwork -> "network"
+    BIFServiceTimeout -> "service_timeout"
+    BIFNetwork {agentError} -> "network " <> encodeUtf8 agentError
     BIFInvalidCredential -> "invalid_credential"
     BIFUnexpected {message} -> "unexpected " <> encodeUtf8 message
   strP =
     A.takeWhile1 (/= ' ') >>= \case
       "service_error" -> serviceErrorP
-      "timeout" -> pure BIFTimeout
-      "network" -> pure BIFNetwork
+      "service_timeout" -> pure BIFServiceTimeout
+      "network" -> BIFNetwork <$> restP
       "invalid_credential" -> pure BIFInvalidCredential
-      "unexpected" -> BIFUnexpected . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+      "unexpected" -> BIFUnexpected <$> restP
       _ -> fail "bad BadgeIssueFailure"
     where
       -- the code is encoded last because a code this version does not know keeps the service's own
@@ -387,6 +387,7 @@ instance StrEncoding BadgeIssueFailure where
           "final" -> pure False
           _ -> fail "bad BadgeIssueFailure retry flag"
       codeP = A.takeByteString >>= maybe (fail "bad BadgeServiceErrorCode") pure . textDecode . safeDecodeUtf8
+      restP = safeDecodeUtf8 <$> (A.space *> A.takeByteString)
 
 instance ToField BadgeIssueFailure where toField = toField . decodeLatin1 . strEncode
 

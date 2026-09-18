@@ -113,7 +113,7 @@ fun BadgesYourBadgeView(badgeState: BadgeState) {
 @Composable
 private fun badgeIssueFailureText(reason: BadgeIssueFailure): String = when (reason) {
   is BadgeIssueFailure.ServiceError -> String.format(stringResource(MR.strings.badges_error_service_refused), reason.code.text)
-  is BadgeIssueFailure.Timeout -> stringResource(MR.strings.badges_error_no_response)
+  is BadgeIssueFailure.ServiceTimeout -> stringResource(MR.strings.badges_error_no_response)
   is BadgeIssueFailure.Network -> stringResource(MR.strings.badges_error_unreachable)
   is BadgeIssueFailure.InvalidCredential -> stringResource(MR.strings.badges_error_credential_invalid)
   is BadgeIssueFailure.Unexpected -> String.format(stringResource(MR.strings.badges_error_unexpected_response), reason.message)

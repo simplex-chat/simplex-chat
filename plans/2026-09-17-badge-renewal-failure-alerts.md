@@ -34,17 +34,17 @@ The sentences: "The badge service refused the renewal: %@" (the service code, e.
 ```haskell
 data BadgeIssueFailure
   = BIFServiceError {code :: BadgeServiceErrorCode, retryable :: Bool} -- retryable = the service gave retryAfter
-  | BIFTimeout
-  | BIFNetwork
+  | BIFServiceTimeout -- the agent's own service-request timeout
+  | BIFNetwork {agentError :: Text} -- the agent error as text, for support
   | BIFInvalidCredential
   | BIFUnexpected {message :: Text} -- undecodable or unexpected reply, or any other throw
 
 data BadgeIssueError = BadgeIssueError {failedSince :: UTCTime, lastAttemptAt :: UTCTime, reason :: BadgeIssueFailure}
 ```
 
-`BadgeIssueFailure` is stored as text the way `CIStatus` is (`Messages.hs`, `instance StrEncoding (CIStatus d)` and its `ToField`/`FromField` through `strEncode`/`strDecode`): a tag and space-separated payload — `service_error <code> retry|final`, `timeout`, `network`, `invalid_credential`, `unexpected <message to end of input>`. To the UI it goes as `sumTypeJSON $ dropPrefix "BIF"`, exactly as `BadgeRedeemError` does (`sumTypeJSON $ dropPrefix "BRE"`), so both apps mirror it the way they mirror that one — an iOS `enum … : Decodable, Hashable`, a Kotlin `@Serializable sealed class` with `@SerialName` per case — with no hand-written decoder. `BadgeIssueError` and the new `BadgeState` fields use `defaultJSON`. `BadgeAlertKind` gains `BAIssueFailed`, text `issue_failed` in its `TextEncoding` (the ack command and the `alert_acked_kind` column), JSON `issueFailed` from the existing `enumJSON` derivation.
+`BadgeIssueFailure` is stored as text the way `CIStatus` is (`Messages.hs`, `instance StrEncoding (CIStatus d)` and its `ToField`/`FromField` through `strEncode`/`strDecode`): a tag and space-separated payload — `service_error retry|final <code>`, `service_timeout`, `network <agent error to end of input>`, `invalid_credential`, `unexpected <message to end of input>` (the unbounded field always last, so any content parses). To the UI it goes as `sumTypeJSON $ dropPrefix "BIF"`, exactly as `BadgeRedeemError` does (`sumTypeJSON $ dropPrefix "BRE"`), so both apps mirror it the way they mirror that one — an iOS `enum … : Decodable, Hashable`, a Kotlin `@Serializable sealed class` with `@SerialName` per case — with no hand-written decoder. `BadgeIssueError` and the new `BadgeState` fields use `defaultJSON`. `BadgeAlertKind` gains `BAIssueFailed`, text `issue_failed` in its `TextEncoding` (the ack command and the `alert_acked_kind` column), JSON `issueFailed` from the existing `enumJSON` derivation.
 
-Classification of a thrown request error, next to `badgeErrorRetry` and by its rule: `AGENT (A_SERVICE ASETimeout)` → `BIFTimeout`; `temporaryOrHostError` → `BIFNetwork`; anything else → `BIFUnexpected` with the error's text. Transient: `BIFTimeout`, `BIFNetwork`, `BIFServiceError` with `retryable`. Terminal: the rest.
+Classification of a thrown request error, next to `badgeErrorRetry` and by its rule: `AGENT (A_SERVICE ASETimeout)` → `BIFServiceTimeout`; `temporaryOrHostError` → `BIFNetwork` with the agent error's text; anything else → `BIFUnexpected` with the error's text. Transient: `BIFServiceTimeout`, `BIFNetwork`, `BIFServiceError` with `retryable`. Terminal: the rest.
 
 **Schema.** `M20260918_badge_issue_errors`, SQLite and Postgres, registered in both `Migrations.hs` and the cabal file, with a down migration:
 
@@ -64,7 +64,7 @@ ALTER TABLE badge_purchases ADD COLUMN next_wake_at TEXT;
 - `derivedBadgeAlert now purchase shownCred balance`: Support ended when `paidThrough <= now`; else, when `issueError` is present, `BAIssueFailed {episode = strEncode failedSince, date = failedSince}` by §2, with the transient threshold read off `shownBadgeCredential`; else nothing. `unansweredBadgeAlert` and `getUserBadgeState` pass the purchase and the shown credential through; ack, snooze and the emitted-occurrence key work unchanged.
 - `getUserBadgeState` fills `issueError` and `nextWakeAt` from the purchase.
 
-**Apps.** `BadgeState` gains the two optional fields; `BadgeIssueError` and `BadgeIssueFailure` are mirrored as ordinary decodable types (iOS: `BadgeState` becomes `Decodable, Hashable`, nothing encodes it; Kotlin: sealed class with `@SerialName` tags `serviceError`, `timeout`, `network`, `invalidCredential`, `unexpected`). `BadgeAlertKind` gains `issueFailed`, and `badgeAlertKindParam` maps it to `issue_failed`. `SupportSimpleXBanner` takes a `warning` flag for §3; the chat list computes `badgeIssueFailed` next to `supportEnded` and shows the banner under the same conditions, with the dismiss alert titled "Badge renewal failed". Your Badge gets §4 and §5. New Kotlin strings: about thirteen keys.
+**Apps.** `BadgeState` gains the two optional fields; `BadgeIssueError` and `BadgeIssueFailure` are mirrored as ordinary decodable types (iOS: `BadgeState` becomes `Decodable, Hashable`, nothing encodes it; Kotlin: sealed class with `@SerialName` tags `serviceError`, `serviceTimeout`, `network`, `invalidCredential`, `unexpected`). `BadgeAlertKind` gains `issueFailed`, and `badgeAlertKindParam` maps it to `issue_failed`. `SupportSimpleXBanner` takes a `warning` flag for §3; the chat list computes `badgeIssueFailed` next to `supportEnded` and shows the banner under the same conditions, with the dismiss alert titled "Badge renewal failed". Your Badge gets §4 and §5. New Kotlin strings: about thirteen keys.
 
 ## Tests
 

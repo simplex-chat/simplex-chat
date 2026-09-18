@@ -119,7 +119,7 @@ struct BadgesYourBadgeView: View {
         switch reason {
         case let .serviceError(code, _):
             String.localizedStringWithFormat(NSLocalizedString("The badge service refused the renewal: %@", comment: "badge renewal error"), code.text)
-        case .timeout: NSLocalizedString("The badge service did not respond.", comment: "badge renewal error")
+        case .serviceTimeout: NSLocalizedString("The badge service did not respond.", comment: "badge renewal error")
         case .network: NSLocalizedString("The badge service could not be reached.", comment: "badge renewal error")
         case .invalidCredential: NSLocalizedString("The badge issued by the service cannot be verified.", comment: "badge renewal error")
         case let .unexpected(message):
@@ -130,8 +130,8 @@ struct BadgesYourBadgeView: View {
     private func issueFailureTag(_ reason: BadgeIssueFailure) -> String {
         switch reason {
         case let .serviceError(code, retryable): "serviceError \(retryable ? "retry" : "final") \(code.text)"
-        case .timeout: "timeout"
-        case .network: "network"
+        case .serviceTimeout: "serviceTimeout"
+        case let .network(agentError): "network \(agentError)"
         case .invalidCredential: "invalidCredential"
         case let .unexpected(message): "unexpected \(message)"
         }

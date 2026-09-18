@@ -2250,15 +2250,15 @@ data class BadgeIssueError(
 sealed class BadgeIssueFailure {
   // retryable is the service's own view of transience: it gave retryAfter
   @Serializable @SerialName("serviceError") data class ServiceError(val code: BadgeServiceErrorCode, val retryable: Boolean) : BadgeIssueFailure()
-  @Serializable @SerialName("timeout") object Timeout : BadgeIssueFailure()
-  @Serializable @SerialName("network") object Network : BadgeIssueFailure()
+  @Serializable @SerialName("serviceTimeout") object ServiceTimeout : BadgeIssueFailure()
+  @Serializable @SerialName("network") data class Network(val agentError: String) : BadgeIssueFailure()
   @Serializable @SerialName("invalidCredential") object InvalidCredential : BadgeIssueFailure()
   @Serializable @SerialName("unexpected") data class Unexpected(val message: String) : BadgeIssueFailure()
 
   val tag: String get() = when (this) {
     is ServiceError -> "serviceError ${if (retryable) "retry" else "final"} ${code.text}"
-    is Timeout -> "timeout"
-    is Network -> "network"
+    is ServiceTimeout -> "serviceTimeout"
+    is Network -> "network $agentError"
     is InvalidCredential -> "invalidCredential"
     is Unexpected -> "unexpected $message"
   }
