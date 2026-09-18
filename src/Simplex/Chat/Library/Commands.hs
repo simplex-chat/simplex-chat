@@ -5331,10 +5331,10 @@ retryBadgeError userId now delay loop e = do
 badgeNextWakeChanged :: UserId -> UTCTime -> CM ()
 badgeNextWakeChanged userId at = (`catchAllErrors` eToView) $ do
   user <- withStore $ \db -> getUser db userId
-  p_ <- withStore' (`getUserBadgePurchase` user)
-  forM_ p_ $ \UserBadgePurchase {badgePurchaseId} -> do
-    withStore' $ \db -> setBadgeNextWake db badgePurchaseId (Just at)
-    toView . CEvtBadgeChanged user =<< getUserBadgeState user
+  written <- withStore' $ \db -> do
+    p_ <- getUserBadgePurchase db user
+    forM p_ $ \UserBadgePurchase {badgePurchaseId} -> setBadgeNextWake db badgePurchaseId (Just at)
+  when (isJust written) $ toView . CEvtBadgeChanged user =<< getUserBadgeState user
 
 -- | The signal is taken only by the wait that reports it - the take and the timer read are one
 -- transaction. now is the badge clock, so the remaining time counts down rather than re-reading it.
