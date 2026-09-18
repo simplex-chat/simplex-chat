@@ -1500,9 +1500,7 @@ processChatCommand cxt nm = \case
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
   APIRejectServiceRequest userId requestId reason -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
-    -- A reason is required for the requester to fail fast; without it the request is dropped
-    -- silently and the caller waits out its timeout. Async, so a service shedding load does
-    -- not block on a network round trip per rejected request.
+    -- without a reason the request is dropped silently and the requester waits out its timeout
     withAgent $ \a -> rejectServiceRequestAsync a "" (aUserId user) invId (encodeUtf8 <$> reason)
     ok user
   APISendCallInvitation contactId callType -> withUser $ \user -> do
@@ -5245,7 +5243,7 @@ redeemBadgeCode nm user@User {userId} codeText = do
       maybe (withStore' $ \db -> createBadgeCodeRedemption db g user codeSent now) pure redemption_
     let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request = BSCRedeemBadgeCode {masterKey, code = codeSent}}
     respBytes <- sendServiceRequestBytes nm user sendTarget Nothing (Just purchasePrivKey) req
-    respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ J.eitherDecodeStrict' respBytes
+    respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ parseServiceBody respBytes
     case J.fromJSON (J.Object respData) of
       J.Error _ -> throwRedeemError $ BREInvalidResponse "not a badge service response"
       J.Success BSPError {code = errCode} -> do
@@ -5640,14 +5638,13 @@ applyBadgeStatement db g purchaseId badgeType BadgeStatement {entries} cred_ now
 sendServiceRequestTo :: J.ToJSON a => NetworkRequestMode -> User -> ConnectTarget 'CMContact -> Maybe NominalDiffTime -> Maybe C.PrivateKeyEd25519 -> a -> CM J.Object
 sendServiceRequestTo nm user sendTarget requestTimeout signKey request =
   sendServiceRequestBytes nm user sendTarget requestTimeout signKey request
-    >>= either (const $ throwCmdError "invalid service response") pure . J.eitherDecodeStrict'
+    >>= either (const $ throwCmdError "invalid service response") pure . parseServiceBody
 
 sendServiceRequestBytes :: J.ToJSON a => NetworkRequestMode -> User -> ConnectTarget 'CMContact -> Maybe NominalDiffTime -> Maybe C.PrivateKeyEd25519 -> a -> CM ByteString
 sendServiceRequestBytes nm user sendTarget requestTimeout signKey request = do
   cReq <- resolveServiceTarget sendTarget
   reqData <- either throwCmdError pure $ compressServiceBody $ LB.toStrict $ J.encode request
-  respData <- withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout signKey reqData
-  either (const $ throwCmdError "invalid service response") pure $ decompressServiceBody respData
+  withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout signKey reqData
   where
     resolveServiceTarget = \case
       CTFullContact cReq -> pure cReq

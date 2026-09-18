@@ -438,39 +438,42 @@ struct ChatListView: View {
                     parentSheet: $sheet,
                     directorySearch: directorySearch
                 )
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                 .padding(.horizontal)
-                if directorySearch.entries.isEmpty && !directorySearch.loading {
-                    ConnectOnboardingView()
+                if directorySearch.showResults {
+                    List { directoryRows() }.listStyle(.plain)
                 } else {
-                    directorySearchList()
+                    ConnectOnboardingView()
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                 }
             }
-            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
             .modifier(ThemedBackground())
         } else {
             chatListContent
         }
     }
 
-    // the directory results on their own, for the onboarding state where there is no chat list
-    @ViewBuilder private func directorySearchList() -> some View {
-        List {
-            ForEach(directorySearch.entries) { entry in
-                DirectorySearchRow(entry: entry)
-                    .listRowBackground(Color.clear)
-                    .onTapGesture {
-                        guard let link = entry.connectLink else { return }
-                        searchFocussed = false
-                        planAndConnect(link, theme: theme, dismiss: false, cleanup: nil)
-                    }
-            }
-            if directorySearch.failed {
-                directoryRetryRow()
-            } else if directorySearch.hasMore {
-                directoryShowMoreRow()
-            }
+    @ViewBuilder private func directoryRows() -> some View {
+        ForEach(directorySearch.entries) { entry in
+            DirectorySearchRow(entry: entry)
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                .listRowBackground(Color.clear)
+                .onTapGesture {
+                    guard let link = entry.connectLink else { return }
+                    searchFocussed = false
+                    planAndConnect(link, theme: theme, dismiss: false, cleanup: nil)
+                }
         }
-        .listStyle(.plain)
+        if directorySearch.failed {
+            directoryRetryRow()
+        } else if directorySearch.hasMore {
+            directoryShowMoreRow()
+        } else if directorySearch.searched && directorySearch.entries.isEmpty {
+            Text("No results")
+                .foregroundColor(theme.colors.secondary)
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                .listRowBackground(Color.clear)
+        }
     }
 
     private var chatListContent: some View {
@@ -545,23 +548,9 @@ struct ChatListView: View {
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                         }
                     }
-                    if !directorySearch.entries.isEmpty || directorySearch.loading || directorySearch.failed {
+                    if directorySearch.showResults {
                         Section {
-                            ForEach(directorySearch.entries) { entry in
-                                DirectorySearchRow(entry: entry)
-                                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                                    .listRowBackground(Color.clear)
-                                    .onTapGesture {
-                                        guard let link = entry.connectLink else { return }
-                                        searchFocussed = false
-                                        planAndConnect(link, theme: theme, dismiss: false, cleanup: nil)
-                                    }
-                            }
-                            if directorySearch.failed {
-                                directoryRetryRow()
-                            } else if directorySearch.hasMore {
-                                directoryShowMoreRow()
-                            }
+                            directoryRows()
                         } header: {
                             Text("Directory")
                                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -593,8 +582,8 @@ struct ChatListView: View {
                     }
                 }
             }
-            // the overlay covers the list, so it must not appear while directory results are shown
-            if cs.isEmpty && !chatModel.chats.isEmpty && directorySearch.entries.isEmpty && !directorySearch.loading {
+            // the overlay covers the list, so it yields to the directory section and its own empty and retry rows
+            if cs.isEmpty && !chatModel.chats.isEmpty && !directorySearch.showResults {
                 noChatsView()
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
@@ -616,7 +605,14 @@ struct ChatListView: View {
 
     @ViewBuilder private func directoryRetryRow() -> some View {
         Button {
-            Task { await directorySearch.search(searchText) }
+            // a failed "Show more" keeps its cursor, so the retry resumes the page rather than starting over
+            Task {
+                if directorySearch.hasMore {
+                    await directorySearch.loadMore()
+                } else {
+                    await directorySearch.search(searchText)
+                }
+            }
         } label: {
             Text("Search failed, tap to retry")
                 .foregroundColor(theme.colors.primary)
@@ -974,11 +970,7 @@ struct ChatListSearchBar: View {
     @ViewBuilder private func searchInDirectoryRow() -> some View {
         // a SimpleX link connects on its own, so the directory is not offered for one
         if !searchShowingSimplexLink {
-            SearchInDirectoryRow(
-                searchText: searchTrimmed,
-                searchFocussed: $searchFocussed,
-                onSearch: runDirectorySearch
-            )
+            SearchInDirectoryRow(searchFocussed: $searchFocussed, onSearch: runDirectorySearch)
         }
     }
 

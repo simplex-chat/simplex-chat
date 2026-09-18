@@ -57,6 +57,10 @@ serviceBodyTests = describe "service payload compression" $ do
     let bomb = compressedBatchMsgBody_ $ B.replicate (maxDecompressedMsgLength + 1) 'a'
     B.length bomb `shouldSatisfy` (< maxCompressedInfoLength)
     decompressServiceBody bomb `shouldBe` Left "decompressed size exceeds limit"
+  it "rejects a payload nested deeper than the bound" $ do
+    let nested n = "{\"a\":" <> B.replicate n '[' <> B.replicate n ']' <> "}"
+    parseServiceBody (nested 10) `shouldBe` J.eitherDecodeStrict' (nested 10)
+    parseServiceBody (nested 100) `shouldBe` Left "service payload is nested too deeply"
 
 batchLimitTests :: Spec
 batchLimitTests = describe "Chat message batch limits" $ do

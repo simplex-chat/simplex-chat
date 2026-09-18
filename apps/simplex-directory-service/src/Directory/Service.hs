@@ -28,12 +28,9 @@ import Control.Monad.IO.Class
 import Control.Monad.Reader (runReaderT)
 import qualified Data.Attoparsec.Text as A
 import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.Types as JT
 import Data.Bifunctor (first)
-import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Either (fromRight, isRight)
-import Data.Foldable (foldl')
+import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
@@ -63,7 +60,7 @@ import Simplex.Chat.Library.Internal (setGroupLinkData)
 import Simplex.Chat.Markdown (Format (..), FormattedText (..), SimplexLinkType (..), parseMaybeMarkdownList, viewName)
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (GroupShortLinkData (..), compressServiceBody, LinkOwnerSig (..), MsgChatLink (..), MsgContent (..), memberSupportVoiceVersion)
+import Simplex.Chat.Protocol (GroupShortLinkData (..), LinkOwnerSig (..), MsgChatLink (..), MsgContent (..), memberSupportVoiceVersion)
 import Simplex.Chat.Store.Direct (getContact)
 import Simplex.Chat.Store.Groups (getGroupLink, getGroupMember, getGroupMemberByMemberId, setGroupCustomData) -- TODO remove setGroupCustomData
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
@@ -140,11 +137,10 @@ newServiceState opts = do
   serviceRequestsInFlight <- newTVarIO 0
   pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, serviceCC, eventQ, updateListingsJob, serviceRequestsInFlight}
 
--- Requests are answered off the event loop, which is shared with registrations and captchas,
--- so the bound has to be here rather than in the loop. Over the bound requests are refused
--- immediately: a caller gets an error rather than waiting out its timeout.
-maxServiceRequestsInFlight :: Int
-maxServiceRequestsInFlight = 8
+-- bounds the LIKE scan an unauthenticated request can demand;
+-- no substring of a name or description worth matching is longer
+maxSearchTextLength :: Int
+maxSearchTextLength = 100
 
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
@@ -232,7 +228,7 @@ directoryPostStartHook opts@DirectoryOpts {noAddress, testing} env cc =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just User {userId, profile = p@LocalProfile {preferences}} -> do
-      unless noAddress $ initializeBotAddress' (not testing) Nothing True cc
+      unless noAddress $ initializeBotAddress' (not testing) (Just True) True cc
       void $ atomically $ tryPutTMVar (serviceCC env) cc
       listingsUpdated env
       let cmds = fromMaybe [] $ preferences >>= commands_
@@ -330,7 +326,7 @@ readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, na
   pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
 directoryServiceEvent :: DirectoryOpts -> ServiceState -> User -> ChatController -> DirectoryEvent -> IO ()
-directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults, prohibitedToObserver, alwaysCaptcha, alwaysObserver} env@ServiceState {searchRequests, serviceRequestsInFlight} user@User {userId} cc = \case
+directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults, maxServiceRequestsInFlight, prohibitedToObserver, alwaysCaptcha, alwaysObserver} env@ServiceState {searchRequests, serviceRequestsInFlight} user@User {userId} cc = \case
     DEContactConnected ct -> deContactConnected ct
     DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
     DEServiceJoinedGroup ctId g owner -> deServiceJoinedGroup ctId g owner
@@ -361,6 +357,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
   where
     deServiceRequest :: AgentInvId -> J.Object -> IO ()
     deServiceRequest reqId req = do
+      -- the loop is shared with registrations and captchas, so the bound is on the forked handlers
       accepted <- atomically $ stateTVar serviceRequestsInFlight $ \n ->
         if n < maxServiceRequestsInFlight then (True, n + 1) else (False, n)
       if accepted
@@ -376,53 +373,21 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
             Left e -> logError $ "service reject error: " <> tshow e
         requestResponse = case JT.parseMaybe JT.parseJSON (J.Object req) of
           Nothing -> pure $ DRError "unsupported request"
-          Just DRSearch {searchText, searchCursor} -> directorySearch searchText searchCursor
+          Just DRSearch {searchText, searchCursor}
+            | T.length searchText > maxSearchTextLength -> pure $ DRError "search text is too long"
+            | otherwise -> directorySearch searchText searchCursor
         respond resp =
           sendChatCmd cc (APISendServiceResponse userId reqId $ responseObject resp) >>= \case
             Right _ -> pure ()
             Left e -> logError $ "service response error: " <> tshow e
-        responseObject resp = case J.toJSON resp of
-          J.Object o -> o
-          -- unreachable: DirectoryResponse encodes as a tagged object; kept for totality
-          _ -> JM.fromList [("type", J.String "error"), ("errorMessage", J.String "internal error")]
     directorySearch :: Text -> Maybe SearchCursor -> IO DirectoryResponse
     directorySearch searchText cursor_ =
       searchListedGroups cc user (STSearch searchText) cursor_ searchResults >>= \case
         Left e -> logError ("searchListedGroups error: " <> T.pack e) $> DRError "search failed"
         Right (gs, n) -> do
           now <- getCurrentTime
-          let rows = map (\row@(g, _, gLink_) -> (row, searchEntry now g gLink_)) gs
-              -- rows with no link cannot be connected to, so they are not sent
-              entryRows = [(row, e) | (row, Just e) <- rows]
-              (sent, lastFitted) = fitPage entryRows
-              fittedAll = length sent == length entryRows
-              -- when the whole page fitted, the cursor covers every row read, including
-              -- rows dropped for having no link; otherwise it stops where sending stopped
-              cursorRow = if fittedAll then fst <$> lastMaybe rows else lastFitted
-              more = not fittedAll || n > length gs
-          pure
-            DRSearchResults
-              { entries = map snd sent,
-                searchCursor = if more then rowCursor <$> cursorRow else Nothing
-              }
+          pure $ searchResultsPage rowCursor (n > length gs) [(row, searchEntry now g gLink_) | row@(g, _, gLink_) <- gs]
       where
-        -- Send as many entries as the padded envelope allows, and report the last row consumed
-        -- so the cursor can move past rows that were read but not sent. A lone entry that does
-        -- not fit is retried without its image; if it still does not fit it is skipped rather
-        -- than sent, or every retry would land on it again and paging would stall there.
-        fitPage [] = ([], Nothing)
-        fitPage rows
-          | fits rows = (rows, fst <$> lastMaybe rows)
-          | [(gr, _)] <- rows = (if fits noImage then noImage else [], Just gr)
-          | otherwise = fitPage $ init rows
-          where
-            noImage = [(gr, dropImage e) | (gr, e) <- rows]
-        dropImage :: DirectorySearchEntry -> DirectorySearchEntry
-        dropImage e = e {image = Nothing}
-        fits rows = isRight $ compressServiceBody $ LB.toStrict $ J.encode $ page rows
-        page rows =
-          DRSearchResults {entries = map snd rows, searchCursor = rowCursor . fst <$> lastMaybe rows}
-        lastMaybe = foldl' (\_ x -> Just x) Nothing
         rowCursor (GroupInfo {groupId, groupSummary = GroupSummary {currentMembers}}, GroupReg {createdAt}, _) =
           SearchCursor {lastMembers = currentMembers, lastCreatedAt = createdAt, lastGroupId = groupId}
     groupLinkText (CCLink cReq sLnk_) = maybe (strEncodeTxt $ simplexChatContact cReq) strEncodeTxt sLnk_

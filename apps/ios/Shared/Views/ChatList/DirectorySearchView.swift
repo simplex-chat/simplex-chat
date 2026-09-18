@@ -27,6 +27,7 @@ class DirectorySearchModel: ObservableObject {
     private var generation = 0
 
     var hasMore: Bool { cursor != nil }
+    var showResults: Bool { loading || searched }
 
     func reset() {
         generation += 1
@@ -36,11 +37,18 @@ class DirectorySearchModel: ObservableObject {
         failed = false
         searched = false
         searchedText = ""
+        ConnectProgressManager.shared.stopConnectProgress(.directorySearch)
+    }
+
+    // a way out of the wait, not out of the results: the page already shown stays
+    func cancelRequest() {
+        generation += 1
+        loading = false
     }
 
     func search(_ text: String) async {
         let text = text.trimmingCharacters(in: .whitespaces)
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty, !(loading && text == searchedText) else { return }
         reset()
         searchedText = text
         await request(append: false)
@@ -59,11 +67,11 @@ class DirectorySearchModel: ObservableObject {
             NSLocalizedString("Searching directory…", comment: "in progress text"),
             owner: .directorySearch
         ) { [weak self] in
-            Task { @MainActor in self?.reset() }
+            Task { @MainActor in self?.cancelRequest() }
         }
         let r = await apiSearchDirectory(searchedText, cursor: cursor)
-        ConnectProgressManager.shared.stopConnectProgress(.directorySearch)
         guard gen == generation else { return }
+        ConnectProgressManager.shared.stopConnectProgress(.directorySearch)
         loading = false
         searched = true
         guard let r else {
@@ -82,7 +90,6 @@ class DirectorySearchModel: ObservableObject {
 // text to the directory.
 struct SearchInDirectoryRow: View {
     @EnvironmentObject var theme: AppTheme
-    var searchText: String
     @FocusState.Binding var searchFocussed: Bool
     var onSearch: () -> Void
 
@@ -109,7 +116,11 @@ struct DirectorySearchRow: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            ProfileImage(imageStr: entry.image, size: 42)
+            ProfileImage(
+                imageStr: entry.image,
+                iconName: isChannel ? "antenna.radiowaves.left.and.right.circle.fill" : "person.2.circle.fill",
+                size: 42
+            )
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     Text(displayName).fontWeight(.bold).lineLimit(1)
@@ -137,11 +148,14 @@ struct DirectorySearchRow: View {
 
     private var displayName: String { "#" + entry.displayName }
 
+    private var isChannel: Bool { entry.entryType.groupType == .channel }
+
     private var membersText: String {
-        String.localizedStringWithFormat(
-            NSLocalizedString("%d members", comment: "directory search result"),
-            Int(entry.entryType.summary.currentMembers)
-        )
+        let summary = entry.entryType.summary
+        let count = summary.publicMemberCount ?? summary.currentMembers
+        return isChannel
+            ? subscriberCountStr(count)
+            : String.localizedStringWithFormat(NSLocalizedString("%d members", comment: "directory search result"), Int(count))
     }
 }
 

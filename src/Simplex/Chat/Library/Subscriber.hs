@@ -108,7 +108,6 @@ import Text.Read (readMaybe)
 import UnliftIO.Concurrent (ThreadId, forkIO, mkWeakThreadId)
 import UnliftIO.Directory
 import UnliftIO.STM
-import qualified Data.Aeson as J
 
 smallGroupsRcptsMemLimit :: Int
 smallGroupsRcptsMemLimit = 20
@@ -1396,7 +1395,7 @@ processAgentMessageConn cxt user@User {userId} entity corrId agentConnId agentMe
           _ -> pure ()
       SREQ invId sigKey_ payload ->
         chatReadVar processServiceRequests >>= \case
-          True -> case J.eitherDecodeStrict' =<< decompressServiceBody payload of
+          True -> case parseServiceBody payload of
             Right request -> toView $ CEvtServiceRequest user (AgentInvId invId) sigKey_ request
             Left e -> logError ("service request dropped, invalid payload: " <> tshow e) >> dropSReq
           -- the requester gets no reply and waits out its timeout, so this must be visible

@@ -315,7 +315,6 @@ coreChatOptsP appDir defaultDbName = do
       ( long "ha"
           <> help "Run as a highly available client (this may increase traffic in groups)"
       )
-  -- TODO [directory] default this on for the directory binary, so a deployment cannot omit it
   serviceRequests <-
     switch
       ( long "service-requests"

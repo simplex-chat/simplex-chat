@@ -11,13 +11,20 @@ import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
+import Control.Concurrent.STM (atomically)
 import Control.Exception (finally)
 import Control.Monad (forM_, when, void)
+import Data.Aeson ((.:), (.:?), (.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Types as JT
+import qualified Data.ByteString.Lazy.Char8 as LB
 import qualified Data.Text as T
+import Data.Time.Clock (getCurrentTime)
 import Directory.Captcha
 import Directory.Listing
 import Directory.Options
+import Directory.Rpc
+import Directory.Search (SearchCursor (..))
 import Directory.Service
 import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
 import Simplex.Chat.Bot.KnownContacts
@@ -26,9 +33,12 @@ import qualified Simplex.Chat.Markdown as MD
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (memberSupportVoiceVersion)
-import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
+import Simplex.Chat.Types (ChatPeerType (..), GroupSummary (..), ImageData (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
+import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import NameResolver
 import System.FilePath ((</>))
@@ -47,6 +57,10 @@ directoryServiceTests = do
   it "should return more groups in search, all and recent groups" testSearchGroups
   it "should page from the sort key, not group ID" testSearchGroupsPaging
   it "should answer search over service RPC" testDirectorySearchRpc
+  it "should page search over service RPC by the echoed cursor" testDirectorySearchRpcPaging
+  it "should match LIKE wildcards in search text literally" testDirectorySearchRpcLiteral
+  it "should reject service requests over the cap" testDirectorySearchRpcBusy
+  it "should fit the search page to the envelope" testSearchResultsPage
   it "should invite to owners' group if specified" testInviteToOwnersGroup
   it "should re-invite owner who left owners' group" testInviteOwnerAfterLeavingOwnersGroup
   describe "de-listing the group" $ do
@@ -119,8 +133,7 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
   DirectoryOpts
     { coreOptions =
         testCoreOpts
-          { serviceRequests = True,
-            dbOptions =
+          { dbOptions =
               (dbOptions testCoreOpts)
 #if defined(dbPostgres)
                 {dbSchemaPrefix = "client_" <> serviceDbPrefix}
@@ -144,6 +157,7 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
       clientService = True,
       runCLI = False,
       searchResults = 3,
+      maxServiceRequestsInFlight = 8,
       webFolder,
       linkCheckInterval = 0,
       prohibitedToObserver = False,
@@ -672,6 +686,105 @@ testDirectorySearchRpc ps =
         cath <## "service response: {\"entries\":[],\"type\":\"searchResults\"}"
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"nonsense\"}")
         cath <## "service response: {\"errorMessage\":\"unsupported request\",\"type\":\"error\"}"
+
+-- the contract the apps page by: the cursor is opaque, echoed back as received, and continues where the page stopped
+testDirectorySearchRpcPaging :: HasCallStack => TestParams -> IO ()
+testDirectorySearchRpcPaging ps =
+  withDirectoryService ps $ \superUser (dsShortLink, _) ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsShortLink
+      forM_ [1 .. 4 :: Int] $ \i -> registerGroupId superUser bob ("group" <> show i) "" i i
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (page1, cursor) <- searchDirectory cath dsShortLink "group" Nothing
+        page1 `shouldBe` ["group1", "group2", "group3"]
+        (page2, cursor') <- searchDirectory cath dsShortLink "group" cursor
+        page2 `shouldBe` ["group4"]
+        cursor' `shouldBe` Nothing
+
+-- the search text is a substring: '%' and '_' in it match literally, and its length is bounded
+testDirectorySearchRpcLiteral :: HasCallStack => TestParams -> IO ()
+testDirectorySearchRpcLiteral ps =
+  withDirectoryService ps $ \superUser (dsShortLink, _) ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsShortLink
+      registerGroupId superUser bob "PrivacyGroup" "" 1 1
+      let descr = replicate 200 'e'
+      bob ##> ("/set welcome #PrivacyGroup " <> descr)
+      bob <## "welcome message changed to:"
+      bob <## descr
+      groupUpdatedHidden superUser bob "PrivacyGroup" ""
+      notifySuperUser_ superUser bob "PrivacyGroup" "" (Just descr) 1 1
+      void $ approveRegistrationId superUser bob "PrivacyGroup" 1 1
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (found, _) <- searchDirectory cath dsShortLink "privacy" Nothing
+        found `shouldBe` ["PrivacyGroup"]
+        -- ten wildcard pairs against two hundred e's, then a character the description lacks
+        (none, _) <- searchDirectory cath dsShortLink (concat (replicate 10 "%e") <> "%q") Nothing
+        none `shouldBe` []
+        -- as a wildcard, '_' would match the 'g'
+        (none', _) <- searchDirectory cath dsShortLink "privacy_roup" Nothing
+        none' `shouldBe` []
+        cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"" <> replicate 101 'a' <> "\"}")
+        cath <## "service response: {\"errorMessage\":\"search text is too long\",\"type\":\"error\"}"
+
+-- over the cap a request is refused at once with a reason, so the requester does not wait out its timeout
+testDirectorySearchRpcBusy :: HasCallStack => TestParams -> IO ()
+testDirectorySearchRpcBusy ps =
+  withDirectoryServiceOpts ps (\o -> o {maxServiceRequestsInFlight = 0}) $ \_superUser (dsShortLink, _) ->
+    withNewTestChat ps "cath" cathProfile $ \cath -> do
+      cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"privacy\"}")
+      cath <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASERejected {rejectReason = \"service is busy\"}}}"
+
+searchDirectory :: HasCallStack => TestCC -> String -> String -> Maybe J.Value -> IO ([String], Maybe J.Value)
+searchDirectory u dsLink text cursor_ = do
+  let req = J.object $ ["type" .= ("search" :: String), "searchText" .= text] <> maybe [] (\c -> ["searchCursor" .= c]) cursor_
+  u ##> ("/_service_request 1 " <> dsLink <> " " <> LB.unpack (J.encode req))
+  resp <- dropStrPrefix "service response: " <$> getTermLine u
+  maybe (fail $ "unexpected response: " <> resp) pure $ JT.parseMaybe searchResults =<< J.decode (LB.pack resp)
+  where
+    searchResults = J.withObject "searchResults" $ \o -> do
+      entries <- o .: "entries" :: JT.Parser [J.Object]
+      names <- mapM (.: "displayName") entries
+      cursor <- o .:? "searchCursor"
+      pure (names, cursor)
+
+-- the page is bounded by the envelope, not by searchResults: entries are cut from the end, the cursor
+-- follows the last row consumed, and a lone oversize entry loses its image or is skipped
+testSearchResultsPage :: HasCallStack => TestParams -> IO ()
+testSearchResultsPage _ps = do
+  g <- C.newRandom
+  now <- getCurrentTime
+  -- base64 of random bytes does not compress, so the envelope decides what fits
+  let randomText n = safeDecodeUtf8 . strEncode <$> atomically (C.randomBytes n g)
+      cursor gId = SearchCursor {lastMembers = 1, lastCreatedAt = now, lastGroupId = gId}
+      page r = case r of
+        DRSearchResults {entries, searchCursor} -> (map (\DirectorySearchEntry {displayName} -> displayName) entries, lastGroupId <$> searchCursor)
+        DRError e -> error $ T.unpack e
+      entry name descr img =
+        DirectorySearchEntry
+          { entryType = DETGroup {groupType = Nothing, admission = Nothing, summary = GroupSummary {currentMembers = 1, publicMemberCount = Nothing}},
+            displayName = name,
+            simplexName = Nothing,
+            groupLink = PublicLink {connFullLink = Nothing, connShortLink = Nothing},
+            shortDescr = Just descr,
+            image = ImageData <$> img,
+            activeAt = Nothing,
+            createdAt = Nothing
+          }
+      -- about 4.7 KB compressed each: two fit the 10,968-byte envelope, three do not
+      sized name = entry name <$> randomText 4500 <*> pure Nothing
+  a <- sized "a"
+  b <- sized "b"
+  c <- sized "c"
+  page (searchResultsPage cursor False [(1, Just a), (2, Just b), (3, Just c)]) `shouldBe` (["a", "b"], Just 2)
+  page (searchResultsPage cursor False [(1, Just a), (2, Just b)]) `shouldBe` (["a", "b"], Nothing)
+  page (searchResultsPage cursor True [(1, Just a), (2, Just b)]) `shouldBe` (["a", "b"], Just 2)
+  -- a row without a link is consumed by the cursor, not sent
+  page (searchResultsPage cursor True [(1, Just a), (2, Nothing)]) `shouldBe` (["a"], Just 2)
+  page (searchResultsPage cursor False [(1, Just a), (2, Nothing)]) `shouldBe` (["a"], Nothing)
+  big <- randomText 12000
+  page (searchResultsPage cursor False [(1, Just $ entry "d" "" (Just big))]) `shouldBe` (["d"], Nothing)
+  page (searchResultsPage cursor False [(1, Just $ entry "e" big Nothing)]) `shouldBe` ([], Just 1)
 
 testInviteToOwnersGroup :: HasCallStack => TestParams -> IO ()
 testInviteToOwnersGroup ps =

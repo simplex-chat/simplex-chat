@@ -376,7 +376,7 @@ searchListedGroups cc user@User {userId, userContactId} searchType cursor_ pageS
           n <- count $ DB.query db (countQuery' <> membersCond <> searchCond) ((GRSActive, lastMembers, lastMembers, lastGroupId) :. (s, s, s, s, sDomain))
           pure (gs, n)
         where
-          s = T.toLower search
+          s = likeEscape $ T.toLower search
           -- a bare "#"/"@" maps to "#", matching no stored domain (domains are stored unprefixed)
           sDomain = case T.uncons s of
             Just (c, rest) | c == '#' || c == '@' -> if T.null rest then "#" else rest
@@ -395,13 +395,17 @@ searchListedGroups cc user@User {userId, userContactId} searchType cursor_ pageS
     recentCond = " AND (r.created_at < ? OR (r.created_at = ? AND r.group_id > ?)) "
     searchCond =
       [sql|
-        AND (LOWER(gp.display_name) LIKE '%' || ? || '%'
-          OR LOWER(gp.full_name) LIKE '%' || ? || '%'
-          OR LOWER(gp.short_descr) LIKE '%' || ? || '%'
-          OR LOWER(gp.description) LIKE '%' || ? || '%'
-          OR (LOWER(gp.group_domain) LIKE '%' || ? || '%' AND g.group_domain_verified = 1)
+        AND (LOWER(gp.display_name) LIKE '%' || ? || '%' ESCAPE '\'
+          OR LOWER(gp.full_name) LIKE '%' || ? || '%' ESCAPE '\'
+          OR LOWER(gp.short_descr) LIKE '%' || ? || '%' ESCAPE '\'
+          OR LOWER(gp.description) LIKE '%' || ? || '%' ESCAPE '\'
+          OR (LOWER(gp.group_domain) LIKE '%' || ? || '%' ESCAPE '\' AND g.group_domain_verified = 1)
         )
       |]
+
+-- the search text is a substring, not a pattern: its '%' and '_' must match literally
+likeEscape :: Text -> Text
+likeEscape = T.concatMap $ \c -> if c `elem` ['%', '_', '\\'] then T.pack ['\\', c] else T.singleton c
 
 getAllGroupRegs_ :: DB.Connection -> StoreCxt -> User -> IO [(GroupInfo, GroupReg)]
 getAllGroupRegs_ db cxt user@User {userId, userContactId} = do

@@ -1063,6 +1063,22 @@ decompressServiceBody body = case B.uncons body of
     Right _ -> Left "unexpected compressed batch"
   _ -> Right body
 
+-- The apps decode a service payload recursively on a fixed stack, and no service nests deeper
+-- than a few levels, so depth is bounded here rather than left to each client.
+maxServiceBodyDepth :: Int
+maxServiceBodyDepth = 32
+
+parseServiceBody :: ByteString -> Either String J.Object
+parseServiceBody body = do
+  o <- J.eitherDecodeStrict' =<< decompressServiceBody body
+  when (depth (J.Object o) > maxServiceBodyDepth) $ Left "service payload is nested too deeply"
+  pure o
+  where
+    depth = \case
+      J.Object kv -> 1 + foldr (max . depth) 0 kv
+      J.Array vs -> 1 + foldr (max . depth) 0 vs
+      _ -> 0
+
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
 justTrue False = Nothing

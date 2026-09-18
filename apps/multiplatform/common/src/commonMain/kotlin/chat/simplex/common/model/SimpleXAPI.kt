@@ -1623,11 +1623,12 @@ object ChatController {
   }
 
   // Blocks until the directory replies or the timeout elapses, so callers must use
-  // withLongRunningApi, not the single-threaded withBGApi.
+  // withLongRunningApi, not the single-threaded withBGApi. A timeout becomes a retry row,
+  // not the retry alert sendCmdWithRetry would show.
   suspend fun apiSearchDirectory(rh: Long?, text: String, cursor: JsonObject?): DirectorySearchResults? {
     val userId = kotlin.runCatching { currentUserId("apiSearchDirectory") }.getOrElse { return null }
     val req = directorySearchRequest(text, cursor)
-    val r = sendCmdWithRetry(rh, CC.APISendServiceRequest(userId, DIRECTORY_SERVICE_LINK, DIRECTORY_SEARCH_TIMEOUT_SEC, req))
+    val r = sendCmd(rh, CC.APISendServiceRequest(userId, DIRECTORY_SERVICE_LINK, DIRECTORY_SEARCH_TIMEOUT_SEC, req))
     if (r is API.Result && r.res is CR.CRServiceResponse) return parseDirectorySearchResponse(r.res.responseData)
     Log.e(TAG, "apiSearchDirectory error: $r")
     return null
