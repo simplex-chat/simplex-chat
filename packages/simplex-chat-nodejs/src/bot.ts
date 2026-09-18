@@ -6,6 +6,7 @@ import equal = require("fast-deep-equal")
 
 export type BotDbOpts = api.DbConfig & {
   confirmMigrations?: core.MigrationConfirmation
+  queueSize?: number
 }
 
 export interface BotOptions {
@@ -45,7 +46,7 @@ export interface BotConfig {
 }
 
 export async function run({profile, dbOpts, options = defaultOpts, onMessage, onCommands = {}, events = {}}: BotConfig): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {
-  const bot = await api.ChatApi.init(dbOpts, dbOpts.confirmMigrations || core.MigrationConfirmation.YesUp)
+  const bot = await api.ChatApi.init(dbOpts, dbOpts.confirmMigrations || core.MigrationConfirmation.YesUp, dbOpts.queueSize)
   const opts = fullOptions(options)
   if (onMessage) subscribeMessages(bot, onMessage)
   if (Object.keys(onCommands).length > 0) subscribeCommands(bot, onCommands)

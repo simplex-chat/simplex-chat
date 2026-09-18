@@ -19,7 +19,19 @@ describe("Core tests", () => {
       dbMigrationError: expect.objectContaining({type: "errorNotADatabase"})
     });
   });
-  
+
+  it("should initialize chat controller with queue size", async () => {
+    const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp, 65536);
+    expect(typeof ctrl).toBe("bigint");
+    await expect(core.chatCloseStore(ctrl)).resolves.toBe(undefined);
+
+    await expect(core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp, 0)).rejects.toMatchObject({
+      dbMigrationError: {type: "invalidQueueSize"}
+    });
+    await expect(core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp, 2 ** 31)).rejects.toThrow("Expected 32-bit integer queue size");
+    await expect(core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp, 1.5)).rejects.toThrow("Expected 32-bit integer queue size");
+  });
+
   it("should send command and receive event", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
 

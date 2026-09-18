@@ -106,13 +106,15 @@ export class ChatApi {
    * Initializes the ChatApi.
    * @param {DbConfig} db - Database configuration (sqlite or postgres).
    * @param {core.MigrationConfirmation} [confirm=core.MigrationConfirmation.YesUp] - Migration confirmation mode.
+   * @param {number} [queueSize] - Size of internal queues, the core default is used when omitted.
    */
   static async init(
     db: DbConfig,
-    confirm = core.MigrationConfirmation.YesUp
+    confirm = core.MigrationConfirmation.YesUp,
+    queueSize?: number
   ): Promise<ChatApi> {
     const [path, key] = dbConfigToMigrateArgs(db)
-    const ctrl = await core.chatMigrateInit(path, key, confirm)
+    const ctrl = await core.chatMigrateInit(path, key, confirm, queueSize)
     return new ChatApi(ctrl)
   }
 

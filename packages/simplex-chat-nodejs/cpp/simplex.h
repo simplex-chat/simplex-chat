@@ -16,6 +16,7 @@ typedef long* chat_ctrl;
 
 // the last parameter is used to return the pointer to chat controller
 extern "C" char *chat_migrate_init(const char *path, const char *key, const char *confirm, chat_ctrl *ctrl);
+extern "C" char *chat_migrate_init_queue(const char *path, const char *key, const char *confirm, const int queueSize, chat_ctrl *ctrl);
 extern "C" char *chat_close_store(chat_ctrl ctrl);
 extern "C" char *chat_reopen_store(chat_ctrl ctrl);
 extern "C" char *chat_send_cmd(chat_ctrl ctrl, const char *cmd);

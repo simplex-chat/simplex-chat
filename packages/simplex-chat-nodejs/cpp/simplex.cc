@@ -215,6 +215,39 @@ Value ChatMigrateInit(const CallbackInfo& args) {
   return promise;
 }
 
+Value ChatMigrateInitQueue(const CallbackInfo& args) {
+  Env env = args.Env();
+  if (args.Length() < 4 || !args[0].IsString() || !args[1].IsString() || !args[2].IsString() || !args[3].IsNumber()) {
+    TypeError::New(env, "Expected three string arguments and number").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  std::string path = args[0].As<String>().Utf8Value();
+  std::string key = args[1].As<String>().Utf8Value();
+  std::string confirm = args[2].As<String>().Utf8Value();
+  Number queue_size_arg = args[3].As<Number>();
+  int queue_size = queue_size_arg.Int32Value();
+  if (static_cast<double>(queue_size) != queue_size_arg.DoubleValue()) {
+    RangeError::New(env, "Expected 32-bit integer queue size").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  Function cb;
+  Promise promise = CreatePromiseAndCallback(env, cb);
+
+  auto execute_fn = [path, key, confirm, queue_size](ResultAsyncWorker* worker) {
+    chat_ctrl ctrl = nullptr;
+    char* c_res = chat_migrate_init_queue(path.c_str(), key.c_str(), confirm.c_str(), queue_size, &ctrl);
+    worker->SetCtrl(reinterpret_cast<uintptr_t>(ctrl));
+    HandleCResult(worker, c_res, "chat_migrate_init_queue");
+  };
+
+  ResultAsyncWorker* worker = new ResultAsyncWorker(cb, std::move(execute_fn), MigrateResultProcessor());
+  worker->Queue();
+
+  return promise;
+}
+
 Value ChatCloseStore(const CallbackInfo& args) {
   Env env = args.Env();
   if (args.Length() < 1 || !args[0].IsBigInt()) {
@@ -411,6 +444,7 @@ Value ChatDecryptFile(const CallbackInfo& args) {
 Object Init(Env env, Object exports) {
   haskell_init();
   exports.Set("chat_migrate_init", Function::New(env, ChatMigrateInit));
+  exports.Set("chat_migrate_init_queue", Function::New(env, ChatMigrateInitQueue));
   exports.Set("chat_close_store", Function::New(env, ChatCloseStore));
   exports.Set("chat_send_cmd", Function::New(env, ChatSendCmd));
   exports.Set("chat_recv_msg_wait", Function::New(env, ChatRecvMsgWait));

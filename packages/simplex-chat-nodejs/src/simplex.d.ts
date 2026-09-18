@@ -1,6 +1,7 @@
 // These functions are defined in CPP add-on ../cpp/simplex.cc
 
 export function chat_migrate_init(dbPath: string, dbKey: string, confirm: string): Promise<[bigint, string]>
+export function chat_migrate_init_queue(dbPath: string, dbKey: string, confirm: string, queueSize: number): Promise<[bigint, string]>
 export function chat_close_store(ctrl: bigint): Promise<string>
 export function chat_send_cmd(ctrl: bigint, cmd: string): Promise<string>
 export function chat_recv_msg_wait(ctrl: bigint, wait: number): Promise<string>
