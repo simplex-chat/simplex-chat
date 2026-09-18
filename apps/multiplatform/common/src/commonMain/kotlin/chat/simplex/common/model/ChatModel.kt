@@ -2255,6 +2255,15 @@ sealed class BadgeIssueFailure {
   @Serializable @SerialName("invalidCredential") object InvalidCredential : BadgeIssueFailure()
   @Serializable @SerialName("unexpected") data class Unexpected(val message: String) : BadgeIssueFailure()
 
+  val text: String get() = when (this) {
+    is ServiceError -> badgeServiceErrorText(code) ?: String.format(generalGetString(MR.strings.badges_error_service_refused), code.text)
+    is ServiceTimeout -> generalGetString(MR.strings.badges_error_no_response)
+    is Network -> generalGetString(MR.strings.badges_error_unreachable)
+    is InvalidCredential -> generalGetString(MR.strings.badges_error_credential_invalid)
+    is Unexpected -> String.format(generalGetString(MR.strings.badges_error_unexpected), message)
+  }
+
+  // the stored form, for support
   val tag: String get() = when (this) {
     is ServiceError -> "serviceError ${if (retryable) "retry" else "final"} ${code.text}"
     is ServiceTimeout -> "serviceTimeout"

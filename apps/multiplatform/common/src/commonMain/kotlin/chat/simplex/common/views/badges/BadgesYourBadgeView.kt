@@ -21,7 +21,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import chat.simplex.common.model.BadgeIssueFailure
 import chat.simplex.common.model.BadgeState
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.localTimestamp
@@ -64,12 +63,11 @@ fun BadgesYourBadgeView(badgeState: BadgeState) {
       val uriHandler = LocalUriHandler.current
       SectionView(title = stringResource(MR.strings.error), icon = painterResource(MR.images.ic_warning), iconTint = Color.Red, leadingIcon = true) {
         SectionItemView {
-          Text(badgeIssueFailureText(issueError.reason), color = MaterialTheme.colors.secondary)
+          Text(issueError.reason.text, color = MaterialTheme.colors.secondary)
         }
         InfoRow(stringResource(MR.strings.badges_error_since), localTimestamp(issueError.failedSince))
-        val nextWakeAt = badgeState.nextWakeAt
-        if (nextWakeAt != null) {
-          InfoRow(stringResource(MR.strings.badges_error_next_attempt), localTimestamp(nextWakeAt))
+        if (issueError.lastAttemptAt != issueError.failedSince) {
+          InfoRow(stringResource(MR.strings.badges_error_last_attempt), localTimestamp(issueError.lastAttemptAt))
         }
         SettingsActionItem(
           painterResource(MR.images.ic_tag),
@@ -95,8 +93,7 @@ fun BadgesYourBadgeView(badgeState: BadgeState) {
           InfoRow(stringResource(MR.strings.badges_credential_next_check), localTimestamp(nextCheckAt))
         }
         if (issueError != null) {
-          InfoRow(stringResource(MR.strings.badges_credential_last_attempt), localTimestamp(issueError.lastAttemptAt))
-          InfoRow(stringResource(MR.strings.badges_credential_last_error), issueError.reason.tag)
+          InfoRow(stringResource(MR.strings.error), issueError.reason.tag)
         }
         SectionItemView({ clipboard.setText(AnnotatedString(badgeState.purchaseKey)) }) {
           Text(stringResource(MR.strings.badges_copy_purchase_key), color = MaterialTheme.colors.primary)
@@ -108,15 +105,6 @@ fun BadgesYourBadgeView(badgeState: BadgeState) {
       SectionSpacer()
     }
   }
-}
-
-@Composable
-private fun badgeIssueFailureText(reason: BadgeIssueFailure): String = when (reason) {
-  is BadgeIssueFailure.ServiceError -> String.format(stringResource(MR.strings.badges_error_service_refused), reason.code.text)
-  is BadgeIssueFailure.ServiceTimeout -> stringResource(MR.strings.badges_error_no_response)
-  is BadgeIssueFailure.Network -> stringResource(MR.strings.badges_error_unreachable)
-  is BadgeIssueFailure.InvalidCredential -> stringResource(MR.strings.badges_error_credential_invalid)
-  is BadgeIssueFailure.Unexpected -> String.format(stringResource(MR.strings.badges_error_unexpected), reason.message)
 }
 
 @Composable

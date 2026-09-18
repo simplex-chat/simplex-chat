@@ -79,21 +79,6 @@ struct SupportSimpleXBanner: View {
 
     @ViewBuilder
     private func heroThumbnail() -> some View {
-        if warning {
-            Image(systemName: "exclamationmark.triangle")
-                .resizable()
-                .scaledToFit()
-                .foregroundColor(.red)
-                .frame(width: 48, height: 48)
-                .padding(.vertical, (cardHeight - 48) / 2)
-                .padding(.trailing, 12)
-        } else {
-            defaultHero()
-        }
-    }
-
-    @ViewBuilder
-    private func defaultHero() -> some View {
         #if SIMPLEX_ASSETS
         // draws at natural aspect, top-aligned in a shorter slot; .clipped() cuts the overflow at card bottom
         Image(colorScheme == .light ? "phone-supporter" : "phone-supporter-light")

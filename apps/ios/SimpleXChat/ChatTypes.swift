@@ -354,6 +354,30 @@ public enum BadgeIssueFailure: Decodable, Hashable {
     case network(agentError: String)
     case invalidCredential
     case unexpected(message: String)
+
+    public var text: String {
+        switch self {
+        case let .serviceError(code, _):
+            badgeServiceErrorText(code)
+                ?? String.localizedStringWithFormat(NSLocalizedString("The badge service refused the renewal: %@", comment: "badge renewal error"), code.text)
+        case .serviceTimeout: NSLocalizedString("The badge service did not respond.", comment: "badge renewal error")
+        case .network: NSLocalizedString("The badge service could not be reached.", comment: "badge renewal error")
+        case .invalidCredential: NSLocalizedString("The badge issued by the service cannot be verified.", comment: "badge renewal error")
+        case let .unexpected(message):
+            String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "badge renewal error"), message)
+        }
+    }
+
+    // the stored form, for support
+    public var tag: String {
+        switch self {
+        case let .serviceError(code, retryable): "serviceError \(retryable ? "retry" : "final") \(code.text)"
+        case .serviceTimeout: "serviceTimeout"
+        case let .network(agentError): "network \(agentError)"
+        case .invalidCredential: "invalidCredential"
+        case let .unexpected(message): "unexpected \(message)"
+        }
+    }
 }
 
 public struct StatementEntry: Codable, Hashable {

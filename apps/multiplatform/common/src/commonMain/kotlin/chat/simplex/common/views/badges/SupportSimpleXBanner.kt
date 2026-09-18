@@ -116,8 +116,7 @@ fun SupportSimpleXBanner(
       heroWidth = heroWidth,
       heroVisibleHeight = heroVisibleHeight,
       cardHeight = cardHeight,
-      trailingPadding = heroTrailingPadding,
-      warning = warning
+      trailingPadding = heroTrailingPadding
     )
   }) { measurables, constraints ->
     val cardPlaceable = measurables[0].measure(constraints)
@@ -130,18 +129,8 @@ fun SupportSimpleXBanner(
 }
 
 @Composable
-private fun HeroThumbnail(heroWidth: Dp, heroVisibleHeight: Dp, cardHeight: Dp, trailingPadding: Dp, warning: Boolean) {
-  if (warning) {
-    val badgeSize = 48.dp
-    Icon(
-      painterResource(MR.images.ic_warning),
-      contentDescription = null,
-      tint = Color.Red,
-      modifier = Modifier
-        .padding(end = trailingPadding + 12.dp, top = (cardHeight - badgeSize) / 2, bottom = (cardHeight - badgeSize) / 2)
-        .size(badgeSize)
-    )
-  } else if (BuildConfigCommon.SIMPLEX_ASSETS) {
+private fun HeroThumbnail(heroWidth: Dp, heroVisibleHeight: Dp, cardHeight: Dp, trailingPadding: Dp) {
+  if (BuildConfigCommon.SIMPLEX_ASSETS) {
     // draws at natural aspect, top-aligned in a shorter slot; ContentScale.Crop cuts the overflow at card bottom
     Image(
       painterResource(if (isInDarkTheme()) MR.images.phone_supporter_light else MR.images.phone_supporter),

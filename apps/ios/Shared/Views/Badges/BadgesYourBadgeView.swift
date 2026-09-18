@@ -55,11 +55,11 @@ struct BadgesYourBadgeView: View {
                 }
                 if let issueError = badgeState.issueError {
                     Section {
-                        Text(issueFailureText(issueError.reason))
+                        Text(issueError.reason.text)
                             .foregroundColor(theme.colors.secondary)
                         infoRow("Since", badgeTimestamp(issueError.failedSince))
-                        if let nextWakeAt = badgeState.nextWakeAt {
-                            infoRow("Next attempt", badgeTimestamp(nextWakeAt))
+                        if issueError.lastAttemptAt != issueError.failedSince {
+                            infoRow("Last attempt", badgeTimestamp(issueError.lastAttemptAt))
                         }
                         settingsRow("number", color: theme.colors.secondary) {
                             Button("Contact SimpleX team") {
@@ -90,8 +90,7 @@ struct BadgesYourBadgeView: View {
                             infoRow("Next check", badgeTimestamp(nextWakeAt))
                         }
                         if let issueError = badgeState.issueError {
-                            infoRow("Last attempt", badgeTimestamp(issueError.lastAttemptAt))
-                            infoRow("Last error", issueFailureTag(issueError.reason))
+                            infoRow("Error", issueError.reason.tag)
                         }
                         Button("Copy purchase key") {
                             UIPasteboard.general.string = badgeState.purchaseKey
@@ -113,28 +112,6 @@ struct BadgesYourBadgeView: View {
 
     private func badgeTimestamp(_ date: Date) -> String {
         DateFormatter.localizedString(from: date, dateStyle: .medium, timeStyle: .short)
-    }
-
-    private func issueFailureText(_ reason: BadgeIssueFailure) -> String {
-        switch reason {
-        case let .serviceError(code, _):
-            String.localizedStringWithFormat(NSLocalizedString("The badge service refused the renewal: %@", comment: "badge renewal error"), code.text)
-        case .serviceTimeout: NSLocalizedString("The badge service did not respond.", comment: "badge renewal error")
-        case .network: NSLocalizedString("The badge service could not be reached.", comment: "badge renewal error")
-        case .invalidCredential: NSLocalizedString("The badge issued by the service cannot be verified.", comment: "badge renewal error")
-        case let .unexpected(message):
-            String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "badge renewal error"), message)
-        }
-    }
-
-    private func issueFailureTag(_ reason: BadgeIssueFailure) -> String {
-        switch reason {
-        case let .serviceError(code, retryable): "serviceError \(retryable ? "retry" : "final") \(code.text)"
-        case .serviceTimeout: "serviceTimeout"
-        case let .network(agentError): "network \(agentError)"
-        case .invalidCredential: "invalidCredential"
-        case let .unexpected(message): "unexpected \(message)"
-        }
     }
 }
 
