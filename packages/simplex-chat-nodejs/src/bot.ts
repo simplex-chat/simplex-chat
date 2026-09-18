@@ -48,8 +48,7 @@ export interface BotConfig {
 export async function run({profile, dbOpts, options = defaultOpts, onMessage, onCommands = {}, events = {}}: BotConfig): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {
   const bot = await api.ChatApi.init(dbOpts, dbOpts.confirmMigrations || core.MigrationConfirmation.YesUp, dbOpts.queueSize)
   const opts = fullOptions(options)
-  if (onMessage) subscribeMessages(bot, onMessage)
-  if (Object.keys(onCommands).length > 0) subscribeCommands(bot, onCommands)
+  if (onMessage || Object.keys(onCommands).length > 0) subscribeChatItems(bot, onMessage, onCommands)
   if (Object.keys(events).length > 0) bot.on(events)
   subscribeLogEvents(bot, opts)
   const botProfile = mkBotProfile(profile, opts)
@@ -106,38 +105,25 @@ function mkBotProfile(profile: T.Profile, opts: Required<BotOptions>): T.Profile
   return profile 
 }
 
-function subscribeMessages(bot: api.ChatApi, onMessage: (chatItem: T.AChatItem, content: T.MsgContent) => void | Promise<void>) {
+export function subscribeChatItems(
+  bot: api.ChatApi,
+  onMessage: ((chatItem: T.AChatItem, content: T.MsgContent) => void | Promise<void>) | undefined,
+  commands: {[K in string]?: ((chatItem: T.AChatItem, command: util.BotCommand) => void | Promise<void>)}
+) {
   bot.on("newChatItems", async ({chatItems}) => {
     for (const ci of chatItems) {
-      if (ci.chatItem.content.type === "rcvMsgContent") {
-        try {
-          const p = onMessage(ci, ci.chatItem.content.msgContent)
-          if (p instanceof Promise) await p
-        } catch (e) {
-          console.log("message processing error", e)
-        }
+      const content = ci.chatItem.content
+      if (content.type !== "rcvMsgContent") continue
+      const cmd = util.ciBotCommand(ci.chatItem)
+      const cmdFunc = cmd && (commands[cmd.keyword] || commands[""])
+      try {
+        if (cmd && cmdFunc) await cmdFunc(ci, cmd)
+        else if (onMessage) await onMessage(ci, content.msgContent)
+      } catch (e) {
+        console.log(cmd && cmdFunc ? `${cmd.keyword} command processing error` : "message processing error", e)
       }
     }
   })
-}
-
-function subscribeCommands(bot: api.ChatApi, commands: {[K in string]?: ((chatItem: T.AChatItem, command: util.BotCommand) => void | Promise<void>)}) {
-  bot.on("newChatItems", async (evt) => {
-    for (const ci of evt.chatItems) {
-      const cmd = util.ciBotCommand(ci.chatItem)
-      if (cmd) {
-        const cmdFunc = commands[cmd.keyword] || commands[""]
-        if (cmdFunc) {
-          try {
-            const p = cmdFunc(ci, cmd)
-            if (p instanceof Promise) await p
-          } catch(e) {
-            console.log(`${cmd} command processing error`, e)
-          }
-        }
-      }
-    }
-  })    
 }
 
 function subscribeLogEvents(bot: api.ChatApi, opts: Required<BotOptions>) {
