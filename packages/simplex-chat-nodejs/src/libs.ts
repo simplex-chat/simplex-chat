@@ -82,7 +82,10 @@ export async function installLibs(url: string, target: string, lib: string, time
       // Another process installed the same version first; its files are identical.
       const code = (e as NodeJS.ErrnoException).code
       const lost = code === "EEXIST" || code === "ENOTEMPTY" || code === "EPERM"
-      if (!lost || !fs.existsSync(path.join(target, lib))) throw e
+      if (!lost) throw e
+      if (!fs.existsSync(path.join(target, lib))) {
+        throw new Error(`another process partially populated ${target} but libsimplex is missing; remove the directory manually and retry`)
+      }
     }
   } finally {
     await fs.promises.rm(tmp, {recursive: true, force: true})
@@ -92,22 +95,28 @@ export async function installLibs(url: string, target: string, lib: string, time
 function download(url: string, dest: string, timeoutMs: number, redirects = 0): Promise<void> {
   return new Promise((resolve, reject) => {
     const get = url.startsWith("https:") ? https.get : http.get
-    const req = get(url, {headers: {"User-Agent": "simplex-chat-nodejs"}, timeout: timeoutMs}, res => {
-      const status = res.statusCode ?? 0
-      const location = res.headers.location
+    // Once the response starts, reject only through the pipeline promise: it settles
+    // after the write stream is closed, so installLibs's tmp-dir cleanup never races
+    // an open file handle (EBUSY/EPERM on Windows).
+    let res: http.IncomingMessage | undefined
+    const req = get(url, {headers: {"User-Agent": "simplex-chat-nodejs"}, timeout: timeoutMs}, response => {
+      res = response
+      const status = response.statusCode ?? 0
+      const location = response.headers.location
       if (status >= 300 && status < 400 && location) {
-        res.resume()
+        response.resume()
         if (redirects >= MAX_REDIRECTS) return reject(new Error(`too many redirects downloading ${url}`))
         download(new URL(location, url).toString(), dest, timeoutMs, redirects + 1).then(resolve, reject)
         return
       }
       if (status !== 200) {
-        res.resume()
+        response.resume()
         return reject(new Error(`HTTP ${status} downloading ${url}`))
       }
-      pipeline(res, fs.createWriteStream(dest)).then(resolve, reject)
+      pipeline(response, fs.createWriteStream(dest)).then(resolve, reject)
     })
-    req.on("timeout", () => req.destroy(new Error(`timeout downloading ${url}`)))
-    req.on("error", reject)
+    const abort = (err: Error) => (res ? res.destroy(err) : req.destroy(err))
+    req.on("timeout", () => abort(new Error(`timeout downloading ${url}`)))
+    req.on("error", e => { if (!res) reject(e) })
   })
 }
