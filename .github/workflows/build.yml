@@ -725,7 +725,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install packages for archiving
-        run: sudo apt install -y msitools gcc-mingw-w64
+        run: sudo apt install -y msitools
 
       - name: Download postgres libs artifact
         if: needs.build-linux-postgres.result == 'success'
@@ -741,8 +741,6 @@ jobs:
           TAG='${{ github.ref_name }}'
           URL='https://github.com/${{ github.repository }}/releases/download'
           PREFIX='${{ github.event.repository.name }}-libs'
-          # Windows-specific
-          FILE_URL='https://raw.githubusercontent.com/${{ github.repository }}/refs/tags/${{ github.ref_name }}'
 
           # Setup directories
           mkdir "$INIT_DIR" "$RELEASE_DIR" && cd "$INIT_DIR"
@@ -781,12 +779,7 @@ jobs:
           # Windows: x86_64
           # ---------------
           msiextract windows-x86_64.msi -C windows-out && cd windows-out/SimpleX/app/resources
-
-          # We need to generate library that exports symbols from Windows dll
-          curl --proto '=https' --tlsv1.2 -sSf -LO "${FILE_URL}/libsimplex.dll.def"
-          x86_64-w64-mingw32-dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll
-
-          mkdir libs && cp *.dll *.lib libs/
+          mkdir libs && cp *.dll libs/
           zip -r "${PREFIX}-windows-x86_64.zip" libs
           mv "${PREFIX}-windows-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
 
