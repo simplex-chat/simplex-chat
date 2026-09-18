@@ -54,12 +54,12 @@ export async function resolveLibsDir(
   platform: string = process.platform,
   arch: string = process.arch
 ): Promise<string> {
-  if (env.SIMPLEX_LIBS_DIR) return env.SIMPLEX_LIBS_DIR
+  if (env.SIMPLEX_LIBS_DIR) return path.resolve(env.SIMPLEX_LIBS_DIR)
   const tag = platformTag(platform, arch)
   if (backend === "postgres" && tag !== "linux-x86_64") {
     throw new Error(`postgres backend is only supported on linux-x86_64; current platform is ${tag}`)
   }
-  const target = path.join(cacheRoot(platform, env), `v${LIBS_VERSION}`, backend)
+  const target = path.resolve(cacheRoot(platform, env), `v${LIBS_VERSION}`, backend)
   const lib = libName(platform)
   if (!fs.existsSync(path.join(target, lib))) await installLibs(libsUrl(backend, tag), target, lib)
   return target

@@ -1,9 +1,10 @@
 import * as fs from "fs"
 import * as http from "http"
+import * as https from "https"
 import * as os from "os"
 import * as path from "path"
 import {AddressInfo} from "net"
-import {cacheRoot, installLibs, platformTag, resolveLibsDir} from "../src/libs"
+import {cacheRoot, installLibs, LIBS_VERSION, libsUrl, platformTag, resolveLibsDir} from "../src/libs"
 import {main, parseInstallArgs} from "../src/cli"
 import {storedZip} from "./zip"
 
@@ -22,8 +23,12 @@ describe("paths", () => {
     expect(() => platformTag("win32", "arm64")).toThrow("Unsupported platform")
   })
 
-  it("returns SIMPLEX_LIBS_DIR unchanged", async () => {
+  it("returns SIMPLEX_LIBS_DIR unchanged when absolute", async () => {
     await expect(resolveLibsDir("postgres", {SIMPLEX_LIBS_DIR: "/d"})).resolves.toBe("/d")
+  })
+
+  it("returns a relative SIMPLEX_LIBS_DIR as absolute", async () => {
+    await expect(resolveLibsDir("sqlite", {SIMPLEX_LIBS_DIR: "rel/libs"})).resolves.toBe(path.join(process.cwd(), "rel", "libs"))
   })
 
   it("rejects postgres outside linux-x86_64", async () => {
@@ -86,6 +91,27 @@ describe("installLibs", () => {
     const target = path.join(tmp, "sqlite")
     await expect(installLibs(`${base}/stall.zip`, target, LIB, 200)).rejects.toThrow("timeout")
     expect(leftovers()).toEqual([])
+  })
+
+  it("installs into a relative XDG_CACHE_HOME and returns an absolute path", async () => {
+    const zip = storedZip({"libs/libsimplex.so": "lib"})
+    routes["/libsimplex.zip"] = res => res.writeHead(200).end(zip)
+    const requested: string[] = []
+    // resolveLibsDir always downloads from GitHub over https; redirect it to the local server.
+    const get = jest.spyOn(https, "get").mockImplementation(((url: string, options: http.RequestOptions, cb: (res: http.IncomingMessage) => void) => {
+      requested.push(url)
+      return http.get(`${base}/libsimplex.zip`, options, cb)
+    }) as unknown as typeof https.get)
+    try {
+      const cache = path.relative(process.cwd(), path.join(tmp, "cache"))
+      const dir = await resolveLibsDir("sqlite", {XDG_CACHE_HOME: cache}, "linux", "x64")
+      expect(requested).toEqual([libsUrl("sqlite", "linux-x86_64")])
+      expect(path.isAbsolute(dir)).toBe(true)
+      expect(dir).toBe(path.join(tmp, "cache", "simplex-chat", `v${LIBS_VERSION}`, "sqlite"))
+      expect(fs.readFileSync(path.join(dir, "libsimplex.so"), "utf8")).toBe("lib")
+    } finally {
+      get.mockRestore()
+    }
   })
 
   it("lets concurrent installs share one target", async () => {
