@@ -21,9 +21,7 @@ Revision 1, 2026-09-18
 - [Security](#security)
   - [Design objectives](#design-objectives)
   - [Threat model](#threat-model)
-  - [Current gaps](#current-gaps)
 - [Future work](#future-work)
-- [Conclusion](#conclusion)
 
 
 ## Introduction
@@ -42,17 +40,18 @@ The transport protocols of the network call the same credential an entitlement: 
 
 ### What a badge grants
 
-A badge is shown on the profile to contacts, to the members of groups, and to the subscribers of channels.
+- A badge is shown on the profile to contacts, to the members of groups, and to the subscribers of channels.
+- A badge allows larger files. The default limit is 1GB; a supporter can send files up to 2GB, and a legend up to 5GB. The limit is applied by the recipient, whose app verifies the sender's proof before it accepts a file above the default size.
+- A badge extends the storage of files on servers. An XFTP server stores a file for 48 hours by default. It may be configured to store files for longer when they are uploaded by the holder of a badge of a given type; the example values in the server configuration file are 7 and 21 days for supporter and legend badge holders, respectively.
 
-A badge allows larger files. The default limit is 1GB; a supporter can send files up to 2GB, and a legend up to 5GB. The limit is applied by the recipient, whose app verifies the sender's proof before it accepts a file above the default size.
+Two other uses are planned and described under [Future work](#future-work):
 
-A badge extends the storage of files on servers. An XFTP server stores a file for 48 hours by default. It may be configured to store files for longer when they are uploaded by the holder of a badge of a given type; the example values in the server configuration file are 7 days for supporters and 21 days for legends.
-
-Two other uses are planned. A backup will be a link whose content the app replaces each time it makes a new backup, so that the same link restores the latest state; a badge will raise the size of the backup and the time it is stored, and the storage time is then the period the app can remain offline before the backup is lost. Servers that verify the proof will apply higher rate limits when creating messaging queues, file chunks and notification tokens. Both are described under [Future work](#future-work).
+- A backup will be a link whose content the app replaces each time it makes a new backup, so that the same link restores the latest state. A badge will raise the size of the backup and the time it is stored, and the storage time is then the period the app can remain offline before the backup is lost.
+- Servers that verify the proof will apply higher rate limits when creating messaging queues, file chunks and notification tokens.
 
 ### What a badge discloses
 
-The badge service holds the purchase key, the number of months bought, and the payment record of the purchase. A card payment is linked to the purchase, as in any other service; a user who wants the payment itself to be private may pay with XMR. In either case the record is held by the service alone, and the service does not learn where the badge is later shown or used, because a zero-knowledge proof contains nothing that refers back to the credential or the purchase.
+The badge service holds the purchase key, the number of months bought, and the payment record of the purchase. A card payment is linked to the purchase, as in any other service; a user who wants the payment itself to be private may pay with cryptocurrency. In either case the record is held by the service alone, and the service does not learn where the badge is later shown or used, because a zero-knowledge proof contains nothing that refers back to the credential or the purchase.
 
 A party that verifies a proof learns the badge type and the expiry date. Since all credentials expiring in the same week have the same expiry date, these two values place the holder among the supporters whose badges expire that week.
 
@@ -78,9 +77,24 @@ In SimpleX:
 - The request for a renewed credential and the profile update that presents it are made on different days.
 - All credentials expiring in the same week have the same expiry.
 
+| Property | Signal badges | SimpleX badges |
+|---|---|---|
+| Account required | Yes | No |
+| Operator holds the list of badge holders | Yes | No |
+| Verified by | The issuing server | Any party with the issuer's public key |
+| Presentations per credential | One | Unlimited |
+| Proof bound to the context of presentation | No | Yes |
+| Expiry rounded up to | The next day | The following Monday |
+| Issuance and presentation on different days | No | Yes |
+| Usable on independently operated servers | No | Yes |
+
 ### Non-goals
 
-A badge does not restrict anything that is available today: the defaults are unchanged, and a badge only raises them. It does not create an identity: it has no persistent identifier, it is not linked across conversations, and an incognito profile does not show it. It cannot be transferred: a code can be redeemed once, and the credential obtained with it is usable only with the master key it was issued for. It does not exempt its holder from the limits a server applies: since a credential can be presented in any number of unlinkable sessions, a badge lowers the cost of a resource without removing the limit on it. It cannot be revoked; credentials are issued for one month at a time instead.
+- A badge does not restrict anything that is available today: the defaults are unchanged, and a badge only raises them.
+- A badge does not create an identity: it has no persistent identifier, it is not linked across conversations, and an incognito profile does not show it.
+- A badge cannot be transferred: a code can be redeemed once, and the credential obtained with it is usable only with the master key it was issued for.
+- A badge does not exempt its holder from the limits a server applies: it lowers the cost of a resource without removing the limit on it.
+- A badge cannot be revoked; credentials are issued for one month at a time instead.
 
 ## Architecture
 
@@ -102,19 +116,22 @@ A badge does not restrict anything that is available today: the defaults are unc
 
 ### Participants
 
-The issuer is the badge service, a bot on the SimpleX network with a contact address. It holds the secret key with which credentials are signed. Apps and servers hold a list of eight issuer public keys, and every credential includes the index of the key that signed it, so the service can move to the next key without a release of apps or servers.
-
-The holder is the app. It keeps the credential in the user's profile, generates proofs on the device, and renews the credential every month by means of a background task.
-
-The verifiers are contacts, group members, channel relays, the recipients of files, and the user's own servers. A verifier holds the issuer public keys and no other information about badges.
+- The issuer is the badge service, a bot on the SimpleX network with a contact address. It holds the secret key with which credentials are signed. Apps and servers hold a list of eight issuer public keys, and every credential includes the index of the key that signed it, so the service can move to the next key without a release of apps or servers.
+- The holder is the app. It keeps the credential in the user's profile, generates proofs on the device, and renews the credential every month.
+- The verifiers are contacts, group members, channel relays, the recipients of files, and the user's own servers. A verifier holds the issuer public keys and no other information about badges.
 
 ### Service requests
 
-The app and the badge service communicate through one-off service requests, a primitive of the SimpleX agent described in [One-off requests to service addresses](https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2026-07-11-service-rpc.md). Although the service has a contact address, it is not a contact of the app: the app does not establish a permanent connection or a conversation with the service, and neither side keeps any state once a request has been answered.
+The app and the badge service communicate through one-off service requests, a primitive of the SimpleX agent described in [One-off requests to service addresses](https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2026-07-11-service-rpc.md). Although the service has a contact address, it is not a contact of the app, and no conversation with it exists.
 
 A request is a single message to the service's address. The app establishes a double ratchet, with post-quantum key agreement, from the keys published in the service's address link, encrypts the request with the double ratchet, and sends it to the address queue on the service's server in the same way as any message to a server chosen by another party, that is, through a proxy server when private routing is enabled (which is the default). With the request the app sends the address of a reply queue that it created for this request on one of its own servers. The service decrypts the request with a receiving ratchet initialised from its private keys, sends the reply to the reply queue under the same ratchet, and deletes its state; the app deletes the reply queue and the ratchet when it has the reply or when the request times out.
 
-Unlike a request made directly to the service over HTTP, the app does not connect to the service, nor the service to the app: each communicates only with SMP servers, so the service does not see the app's network address, and with private routing the service's server does not see it either. Unlike a chat connection, which is a persistent channel through which all requests made over it can be linked to each other, a service request does not create persistent state: each request uses new keys and a new reply queue, so two requests from the same app cannot be linked by the service or by servers. As in any connection to an address of this kind, a reply that decrypts proves that it came from the holder of the keys published in the service's link and signed by its root key, so a server cannot substitute a reply. The badge service also answers a repeated request with the same result and does not execute the operation twice, so the app can repeat a request whose reply was lost.
+This exchange has the following properties:
+
+- Unlike a request made directly to the service over HTTP, the app does not connect to the service, nor the service to the app. Each communicates only with SMP servers, so the service does not see the app's network address, and with private routing the service's server does not see it either.
+- Unlike a chat connection, which is a persistent channel through which all requests made over it can be linked to each other, a service request does not create persistent state. Each request uses new keys and a new reply queue, so two requests from the same app cannot be linked by the service or by servers.
+- A reply that decrypts proves that it came from the holder of the keys published in the service's link and signed by its root key, so a server cannot substitute a reply.
+- The badge service answers a repeated request with the same result and does not execute the operation twice, so the app can repeat a request whose reply was lost.
 
 A purchase is identified by an Ed25519 key pair that the app generates for it and does not use for any other purpose. Every request concerning the purchase, the redemption and each monthly renewal, is signed with this key, and the signature covers the request together with a value derived from the ratchet of that exchange, so it is valid for that exchange only and cannot be replayed. The agent verifies the signature and delivers the verified public key to the service with the request, and the service accepts a request about a purchase only when the verified key is the purchase key.
 
@@ -126,46 +143,57 @@ On the web the purchase produces a code, which is then redeemed in the app. The 
 
 In the app, the user pays by card, in cryptocurrency, or through the app store. The app requests an invoice from the service, or presents the receipt of the app store, and the service issues the credential once the payment is confirmed.
 
-In both cases the app generates the master key and the purchase key pair before the purchase, and signs every request with the purchase key. To redeem a code, the app sends the code and the master key to the service. The service checks that the verified signing key is the purchase key named in the request, signs the credential, and only then records the code as spent; if signing fails, the code remains unspent and can be tried again. An unknown code and a malformed code receive the same error. A code redeemed a second time with the same purchase key returns the same credential; a code redeemed with a different purchase key is refused.
+In both cases the app generates the master key and the purchase key pair before the purchase. To redeem a code, the app sends the code and the master key to the service, which issues the credential. A code redeemed a second time with the same purchase key returns the same credential; a code redeemed with a different purchase key is refused.
 
 ### Monthly issuance
 
-A credential is issued for one month at a time, however many months were bought. The service keeps a count of the months remaining for each purchase key, and issues the next credential when the app asks for it. The user sees a single date: the day on which the support ends.
+A credential is issued for one month at a time, however many months were bought. The service keeps a count of the months remaining for each purchase key, and issues the next credential when the app asks for it.
 
-Credentials are issued monthly to limit what the expiry date discloses. If credentials were issued for the whole term, a user who bought a year would hold a credential expiring on a day a year ahead, when few other credentials expire, and this date would be disclosed in every proof for a year. Instead, every credential is issued for one month, and its expiry is rounded to the end of the Monday following the end of the paid month (UTC). For example, if the paid month ends on Wednesday 14 October 2026, the credential expires at the end of Monday 19 October, and so does every credential whose month ends between Monday 12 and Sunday 18 October. All credentials whose paid month ends in the same week thus expire at the same instant, and a proof discloses only that its holder is one of the supporters whose badges expire that week.
+Credentials are issued monthly to limit what the expiry date discloses. If credentials were issued for the whole term, a user who bought a year would hold a credential expiring on a day a year ahead, when few other credentials expire, and this date would be disclosed in every proof for a year. Instead, every credential is issued for one month, and its expiry is rounded to the end of the Monday following the end of the paid month (UTC). For example, if the paid month ends on Wednesday 14 October 2026, the credential expires at the end of Monday 19 October, and so does every credential whose month ends between Monday 12 and Sunday 18 October. All credentials whose paid month ends in the same week thus expire at the same instant.
 
 The renewal is split over two days for the same reason. The app requests the next credential on the day before the current one expires, and when the current one expires, it switches to the new one and sends its updated profile to its contacts. In the example above, the app asks the service for the new credential on Monday 19 October and starts showing it on Tuesday 20 October, so an observer of both the request and the profile update cannot correlate them by time.
 
-The renewal runs in the background and does not require any action from the user. If the app is offline when a renewal is due, it renews at the next start; recipients accept a badge for seven days after its expiry, and servers for one day, so a renewal delayed by a few days is not visible to contacts.
+The renewal runs in the background and does not require any action from the user. Recipients accept a badge for seven days after its expiry, and servers for one day, so a renewal delayed by a few days is not visible to contacts.
 
 ### Presentation
 
 A BBS proof is generated over a string, called the presentation header, and is verified only against the same string. The string binds the proof to the context in which it is presented. Without it, a proof received in one conversation could be copied and presented in another. Between apps the string is sent with the proof, and the recipient checks that it is the string it expects; servers know the string already, so it is not sent to them.
 
-The context of a conversation is the same string over which message signatures are computed. In a direct chat it is a hash derived from the state of the end-to-end encryption, which only the two sides hold; in a group it is the member's identifier together with the member's signing key; in a channel it is the channel's identifier together with the member's identifier, or the channel's identifier alone when a message is sent in the name of the channel. A session with a server is identified by the TLS session identifier, which both sides derive from the TLS handshake and which differs on every connection.
+The context of a conversation is the same string over which message signatures are computed:
 
-Each time the app sends its profile, whether to a new contact, to a group it joins, or to everyone when the profile is updated, it generates a new proof and includes it. An incognito profile does not include a badge. The proof is bound to the conversation in which the profile is sent: in a direct chat to the connection with the contact, in a group to the member's identity in that group, and in a channel to the member's identity established by the channel's roster. In a group the badge is accepted only from a message signed with the member's key, and in a channel it is verified against the key that the roster establishes for the member. A proof copied from a received profile is therefore not accepted in another profile.
+- In a direct chat it is a hash derived from the state of the end-to-end encryption, which only the two sides hold.
+- In a group it is the member's identifier together with the member's signing key.
+- In a channel it is the channel's identifier together with the member's identifier, or the channel's identifier alone when a message is sent in the name of the channel.
 
-A file larger than the default limit is sent with two proofs. The first is placed in the file invitation, the message that announces the file, and is bound to the conversation and to the size of the file; the recipient's app verifies it when the invitation arrives and records whether the file may be received. The second is placed in the file description, the record of where the chunks of the file are stored and how they are decrypted, and is bound in addition to a hash of the description and to the storage time of the file; the app verifies it before the download begins. A proof taken from a profile is therefore not accepted for a file, and a proof made for one file is not accepted for another. When a file is forwarded to a member who has just joined a group, the forwarding app includes the proofs it stored with the file. The sender's app applies the same limit to itself, and stops applying the badge one day after the badge expires, whereas recipients continue to accept the badge for seven days, so that a file sent on the last day of the badge is still accepted.
+A session with a server is identified by the TLS session identifier, which both sides derive from the TLS handshake and which differs on every connection.
 
-A received proof is verified with the issuer key it names, and the result is stored with the profile or with the file. The badge is shown as active until seven days after its expiry, as expired between seven and 38 days, and is hidden after that. If the proof names an issuer key the app does not know, the badge is stored as unverified and verified again when the profile is next received after an app update. A badge type the app does not know is accepted and stored under its name.
+Each time the app sends its profile, whether to a new contact, to a group it joins, or to everyone when the profile is updated, it generates a new proof and includes it. The proof is bound to the conversation in which the profile is sent: in a direct chat to the connection with the contact, in a group to the member's identity in that group, and in a channel to the member's identity established by the channel's roster. In a group the badge is accepted only from a message signed with the member's key, and in a channel it is verified against the key that the roster establishes for the member.
+
+A file larger than the default limit is sent with two proofs. The first is placed in the file invitation, the message that announces the file, and is bound to the conversation and to the size of the file; the recipient's app verifies it when the invitation arrives. The second is placed in the file description, the record of where the chunks of the file are stored and how they are decrypted, and is bound in addition to a hash of the description and to the storage time of the file; the app verifies it before the download begins.
 
 ### Servers
 
-The client presents the entitlement proof in the transport handshake, bound to the TLS session identifier. The server verifies it once, when the session is established, and applies the result to every command in the session. If the proof names a badge type for which the server has no configuration, it is ignored without verification.
+The client presents the entitlement proof in the transport handshake, bound to the TLS session identifier. The server verifies it once, when the session is established, and applies the result to every command in the session.
 
 The client presents the proof only to its own servers, that is, to those configured for the profile, which are identified by the certificate fingerprint pinned in TLS. It does not present the proof to a server whose address it received from a contact or found in a file description, because a file description names the servers on which the chunks are stored, and these are chosen by the sender. If the app presented its proof to every server it connected to, a sender could store a file on a server of their own and learn, when the file is downloaded, that the person downloading it holds a badge.
 
-On XFTP servers the proof extends the storage time of files. When the client creates a file it may ask for a storage time. The server grants the smaller of the requested time and the maximum configured for the badge type, or the maximum when no time is requested, and returns the resulting expiry, which the client passes on to the recipients. A server refuses to start if the maximum for any badge type is below its default, so a proof cannot shorten storage. SMP servers and notification servers accept the same proof in their handshakes, since version 22 of the SMP protocol and version 4 of the notifications protocol, but do not yet make use of it.
+On XFTP servers the proof extends the storage time of files. The server grants the smaller of the time requested by the client and the maximum configured for the badge type, and returns the resulting expiry. SMP servers and notification servers accept the same proof in their handshakes but do not yet make use of it.
 
 The exchange between the app and the badge service, that is, the commands, responses and errors, is described in the [badge service protocol](./badges-rpc.md).
 
 
 ## Cryptographic primitives
 
-Badges are built on [BBS signatures](https://datatracker.ietf.org/doc/draft-irtf-cfrg-bbs-signatures/), in the BLS12-381-SHA-256 suite, implemented by [libbbs](https://github.com/Fraunhofer-AISEC/libbbs) over [blst](https://github.com/supranational/blst). A credential is a signature over four values under the header `SimpleX badges v1`; a proof discloses three of them and is 304 bytes long. BBS was chosen for three properties that the design needs together: a proof can be verified by anyone who holds the issuer's public key, so contacts and independently operated servers verify badges without consulting the issuer; a proof discloses only the values selected, which keeps the master key hidden while the type and expiry are shown; and a proof cannot be linked to any other proof of the same credential, so the same badge can be presented many times without the presentations being linked. Credentials of the kind Signal uses can be verified only by their issuer, and a receipt credential discloses its serial number when presented, so it is presented once. Single-use tokens, such as blind signatures and the tokens of Privacy Pass, are likewise spent when presented and do not include values such as an expiry or a type.
+Badges are built on [BBS signatures](https://datatracker.ietf.org/doc/draft-irtf-cfrg-bbs-signatures/), in the BLS12-381-SHA-256 suite, implemented by [libbbs](https://github.com/Fraunhofer-AISEC/libbbs) over [blst](https://github.com/supranational/blst). A credential is a signature over four values under the header `SimpleX badges v1`; a proof discloses three of them and is 304 bytes long. BBS was chosen for four properties that the design needs together:
 
-Service requests are protected by the double ratchet of the [SimpleX agent](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md), with X448 key agreement and the sntrup761 KEM, established from keys published in the service's link. The purchase keys with which requests are signed, and the member keys that form part of the conversation context in groups, are Ed25519 keys. Codes are hashed with SHA-256, and the file description in the context of a file proof with SHA-512. The TLS session identifier binds a proof to a single server connection.
+- A proof can be verified by anyone who holds the issuer's public key, so contacts and independently operated servers verify badges without consulting the issuer.
+- A proof discloses only the values selected.
+- A proof cannot be linked to any other proof of the same credential.
+- A proof is generated over a presentation header, so it can be bound to the context in which it is presented.
+
+Credentials of the kind Signal uses can be verified only by their issuer, and a receipt credential discloses its serial number when presented, so it is presented once. Single-use tokens, such as blind signatures and the tokens of Privacy Pass, are likewise spent when presented and do not include values such as an expiry or a type.
+
+Service requests are protected by the double ratchet of the [SimpleX agent](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/agent-protocol.md), with X448 key agreement and the sntrup761 KEM, established from keys published in the service's link. The purchase keys with which requests are signed, and the member keys that form part of the conversation context in groups, are Ed25519 keys. Codes are hashed with SHA-256, and the file description in the context of a file proof with SHA-512.
 
 
 ## Security
@@ -173,7 +201,7 @@ Service requests are protected by the double ratchet of the [SimpleX agent](http
 ### Design objectives
 
 1. A proof discloses no value that links it to another proof or to the purchase.
-2. A proof is accepted only in the session, conversation or file for which it was generated.
+2. A proof used in one context, whether a session, a conversation or a file, cannot be used in another context.
 3. The timing of presentations does not identify the holder: all credentials expiring in the same week share the same expiry, and the renewal request and the profile update are made on different days.
 4. Requests to the badge service cannot be linked to each other, to a profile or to a network address, and a request about a purchase can be made only by the holder of the purchase key.
 5. A credential cannot be forged: the issuer keys are fixed in apps and servers, and the app verifies a credential before storing it.
@@ -183,39 +211,81 @@ Service requests are protected by the double ratchet of the [SimpleX agent](http
 
 This threat model assumes the [SimpleX network threat model](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/security.md) and addresses the threats specific to badges.
 
-**The badge service.** The service sees the purchase key of every badge, the master key generated for it, the number of months bought, and any payment record; and since it holds the issuer key, it can issue any credential and can refuse to issue. It cannot connect a purchase with a profile, a contact, a group or a session with a server, because nothing in a proof refers back to the purchase, and it does not learn where a badge is shown or used, or the network address of the app, since requests reach it through SMP servers on connections created for the purpose.
+**The badge service**
 
-**A contact, a group member or a channel relay.** Such a party sees the badge type and the expiry date. It cannot tell whether a badge seen in another conversation belongs to the same person, reuse a profile proof or a file proof in another context, or distinguish the holder from the other supporters of the same week by anything in the proof.
+*can:*
 
-**A server operator.** The operator sees the badge type and the expiry once in each session, and can group together the sessions of the supporters of one week. The operator cannot reuse the proof on another connection, link a session to the purchase, a profile or sessions on other servers except through the week of expiry, or obtain a proof from a client that does not use the server. The server that hosts the badge service's address sees that requests arrive for the service, but not their content, nor the address of the app when private routing is used; replies are sent to a queue on a server chosen by the app.
+- See the purchase key of every badge, the master key generated for it, the number of months bought, and the payment record.
+- Issue any credential, or refuse to issue one, as it holds the issuer key.
 
-**One badge on many machines.** Since proofs are unlinkable, a server cannot count the sessions of a single credential, so the benefit granted by a badge must be limited without counting sessions. For this reason a badge lowers the cost of a resource without removing the limit on it, and limits per session remain in force.
+*cannot:*
 
-**Compromise of the user's device or backup.** An attacker who obtains the credential and the purchase key can use the badge until it expires and renew it while months remain. There is no revocation, so the loss is limited to the months bought.
+- Connect a purchase with a profile, a contact, a group or a session with a server - a proof contains nothing that refers back to the purchase.
+- Learn where a badge is shown or used.
+- Learn the network address of the app - requests reach the service through SMP servers, on connections created for the request.
 
-**Interception of a code.** A code is a bearer secret until it is redeemed; once redeemed, it is refused to any other purchase key.
+**A contact, a group member or a channel relay**
 
-**A passive network observer.** The observer sees SimpleX traffic between clients and servers, but does not see a proof, and cannot distinguish a session in which a proof was presented from one in which it was not: proofs to servers are inside TLS, in a handshake block of fixed size, and proofs to other users and requests to the badge service are inside end-to-end encrypted messages.
+*can:*
 
-### Current gaps
+- See the badge type and the expiry date.
 
-1. SMP servers and notification servers do not verify the proof; the field in the handshake exists, but the servers ignore it.
-2. While few badges have been sold, the supporters of any one week form a small group.
-3. All apps whose credentials share an expiry request their renewal at the same time.
-4. There is no revocation, so a stolen credential remains usable until it expires.
+*cannot:*
 
+- Tell whether a badge seen in another conversation belongs to the same person.
+- Reuse a profile proof or a file proof in another context.
+- Distinguish the holder from the other supporters whose badges expire in the same week.
+
+**A server operator**
+
+*can:*
+
+- See the badge type and the expiry date once in each session.
+- Group together the sessions of the supporters whose badges expire in the same week.
+
+*cannot:*
+
+- Reuse the proof on another connection.
+- Link a session to the purchase, to a profile or to sessions on other servers, except through the week of expiry.
+- Obtain a proof from a client that does not use the server.
+
+**The server that hosts the badge service's address**
+
+*can:*
+
+- See that requests arrive for the service.
+
+*cannot:*
+
+- See the content of requests.
+- See the network address of the app when private routing is used.
+- See the replies, which are sent to a queue on a server chosen by the app.
+
+**One badge on many machines**
+
+Since proofs are unlinkable, a server cannot count the sessions of a single credential, so the benefit granted by a badge must be limited without counting sessions. For this reason a badge lowers the cost of a resource without removing the limit on it, and limits per session remain in force.
+
+**Compromise of the user's device or backup**
+
+An attacker who obtains the credential and the purchase key can use the badge until it expires and renew it while months remain. There is no revocation, so the loss is limited to the months bought.
+
+**Interception of a code**
+
+A code is a bearer secret until it is redeemed; once redeemed, it is refused to any other purchase key.
+
+**A passive network observer**
+
+*can:*
+
+- Observe SimpleX traffic between clients and servers.
+
+*cannot:*
+
+- See a proof - proofs to servers are inside TLS, in a handshake block of fixed size, and proofs to other users and requests to the badge service are inside end-to-end encrypted messages.
+- Distinguish a session in which a proof was presented from a session without one.
 
 ## Future work
 
-Backups will be stored on XFTP servers, and a badge will raise their size and their storage time, as described under [What a badge grants](#what-a-badge-grants).
-
-The next step on the server side is for SMP servers and notification servers to verify the proof, which closes the first gap. A server that verifies it can charge the holder of a badge less for creating queues, file chunks and notification tokens (under the planned proof-of-work scheme, the required effort is divided by a factor configured for each badge type), and can apply higher rate limits and larger quotas.
-
-Renewal requests will be spread over the day before the expiry rather than made all at once, which closes the third gap.
-
-Subscriptions that renew automatically, the transfer of remaining months to a new device, and the pausing of a prepaid badge are planned.
-
-
-## Conclusion
-
-A supporter badge is a credential that is presented as a series of unlinkable proofs. The badge service records the purchase and is reached through one-off requests that leave no connection behind; contacts, relays and servers verify proofs that disclose the badge type and an expiry date shared by all credentials of the same week; and no proof can be linked to the purchase, to another proof or to a profile. The same credential is shown on the profile and presented to servers as an entitlement, and it serves as the mechanism for larger files, longer storage, backups and lower resource costs on servers.
+- Backups will be stored on XFTP servers, and a badge will raise their size and their storage time, as described under [What a badge grants](#what-a-badge-grants).
+- SMP servers and notification servers will verify the proof. A server that verifies it can charge the holder of a badge less for creating queues, file chunks and notification tokens (under the planned proof-of-work scheme, the required effort is divided by a factor configured for each badge type), and can apply higher rate limits and larger quotas.
+- Subscriptions that renew automatically, the transfer of remaining months to a new device, and the pausing of a prepaid badge are planned.
