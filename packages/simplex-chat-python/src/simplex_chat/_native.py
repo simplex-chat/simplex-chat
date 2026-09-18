@@ -171,13 +171,15 @@ def _load_libc() -> ctypes.CDLL:
 
 
 def _setup_signatures(lib: ctypes.CDLL) -> None:
-    """Declare argtypes/restype for the 8 chat_* functions exported by libsimplex.
+    """Declare argtypes/restype for the 9 chat_* functions exported by libsimplex.
 
     All result strings come back as raw c_void_p so the caller can free them
     after copying — matches HandleCResult in cpp/simplex.cc:157-165.
     """
     lib.chat_migrate_init.argtypes = [c_char_p, c_char_p, c_char_p, POINTER(c_void_p)]
     lib.chat_migrate_init.restype = c_void_p
+    lib.chat_migrate_init_queue.argtypes = [c_char_p, c_char_p, c_char_p, c_int, POINTER(c_void_p)]
+    lib.chat_migrate_init_queue.restype = c_void_p
     lib.chat_close_store.argtypes = [c_void_p]
     lib.chat_close_store.restype = c_void_p
     lib.chat_send_cmd.argtypes = [c_void_p, c_char_p]

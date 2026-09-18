@@ -19,6 +19,7 @@ from simplex_chat import (
     Profile,
     SqliteDb,
 )
+from simplex_chat.core import MigrationConfirmation
 
 
 class FakeApi:
@@ -496,6 +497,34 @@ def test_aexit_nulls_api_even_if_close_raises(monkeypatch):
         assert init_count[0] == 2, "re-entry didn't re-init the controller"
 
     asyncio.run(go())
+
+
+@pytest.mark.parametrize("queue_size", [None, 65536])
+def test_bot_passes_queue_size_to_chat_api_init(monkeypatch, queue_size):
+    import simplex_chat.client as client_mod
+
+    init_args: list[tuple[Any, ...]] = []
+
+    class StopInit(RuntimeError):
+        pass
+
+    class FakeChatApi:
+        @classmethod
+        async def init(cls, *args):
+            init_args.append(args)
+            raise StopInit
+
+    monkeypatch.setattr(client_mod, "ChatApi", FakeChatApi)
+    db = SqliteDb(file_prefix="/tmp/test")
+    bot = Bot(profile=BotProfile(display_name="x"), db=db, queue_size=queue_size)
+
+    async def go():
+        with pytest.raises(StopInit):
+            async with bot:
+                pytest.fail("should not enter the with-block")
+
+    asyncio.run(go())
+    assert init_args == [(db, MigrationConfirmation.YES_UP, queue_size)]
 
 
 def test_aenter_rolls_back_partial_init_on_post_start_failure(monkeypatch):

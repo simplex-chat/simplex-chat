@@ -71,11 +71,12 @@ class ChatApi:
         cls,
         db: Db,
         confirm: MigrationConfirmation = MigrationConfirmation.YES_UP,
+        queue_size: int | None = None,
     ) -> ChatApi:
         path_or_prefix, key_or_conn, backend = _db_to_migrate_args(db)
         # Trigger lazy lib load with the right backend BEFORE chat_migrate_init.
         _native.lib_for(backend)
-        ctrl = await core.chat_migrate_init(path_or_prefix, key_or_conn, confirm)
+        ctrl = await core.chat_migrate_init(path_or_prefix, key_or_conn, confirm, queue_size)
         return cls(ctrl)
 
     @property

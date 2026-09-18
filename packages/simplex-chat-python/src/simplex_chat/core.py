@@ -122,17 +122,28 @@ async def chat_recv_msg_wait(ctrl: int, wait_us: int = 500_000) -> CEvt.ChatEven
     raise ChatAPIError(f"invalid chat event: {raw[:200]}")
 
 
-async def chat_migrate_init(db_path: str, db_key: str, confirm: MigrationConfirmation) -> int:
-    """Initialize chat controller. Returns opaque ctrl pointer as Python int."""
+async def chat_migrate_init(
+    db_path: str,
+    db_key: str,
+    confirm: MigrationConfirmation,
+    queue_size: int | None = None,
+) -> int:
+    """Initialize chat controller. Returns opaque ctrl pointer as Python int.
+
+    `queue_size` is the size of internal queues; the core default is used when None.
+    """
+    # ctypes silently wraps ints that do not fit C int.
+    if queue_size is not None and ctypes.c_int(queue_size).value != queue_size:
+        raise ValueError(f"queue_size {queue_size} does not fit C int")
 
     def _call() -> tuple[int, str]:
         ctrl = ctypes.c_void_p()
-        ptr = _native.lib().chat_migrate_init(
-            db_path.encode("utf-8"),
-            db_key.encode("utf-8"),
-            confirm.encode("utf-8"),
-            ctypes.byref(ctrl),
-        )
+        args = (db_path.encode("utf-8"), db_key.encode("utf-8"), confirm.encode("utf-8"))
+        lib = _native.lib()
+        if queue_size is None:
+            ptr = lib.chat_migrate_init(*args, ctypes.byref(ctrl))
+        else:
+            ptr = lib.chat_migrate_init_queue(*args, queue_size, ctypes.byref(ctrl))
         return (ctrl.value or 0, _read_and_free(ptr))
 
     ctrl_val, raw = await asyncio.to_thread(_call)

@@ -149,6 +149,7 @@ class Client:
         profile: Profile,
         db: Db,
         confirm_migrations: MigrationConfirmation = MigrationConfirmation.YES_UP,
+        queue_size: int | None = None,
         update_profile: bool = True,
         log_contacts: bool = False,
         log_network: bool = False,
@@ -156,6 +157,7 @@ class Client:
         self._profile = profile
         self._db = db
         self._confirm_migrations = confirm_migrations
+        self._queue_size = queue_size
         self._update_profile = update_profile
         self._log_contacts = log_contacts
         self._log_network = log_network
@@ -343,7 +345,7 @@ class Client:
         # do post-start setup (profile sync; Bot adds address sync).
         # `_stop_event` is never cleared: a stop requested during startup has
         # to survive into the receive loop. A stopped client is spent.
-        self._api = await ChatApi.init(self._db, self._confirm_migrations)
+        self._api = await ChatApi.init(self._db, self._confirm_migrations, self._queue_size)
         try:
             user = await self._ensure_active_user()
             await self._api.start_chat()
