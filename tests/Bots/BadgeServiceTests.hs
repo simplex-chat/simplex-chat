@@ -146,13 +146,11 @@ data BadgeServiceEnv = BadgeServiceEnv
     bsClock :: TestClock,
     bsClientCfg :: ChatConfig,
     bsAddress :: String,
-    bsController :: ChatController,
-    -- | Stop the service for good, so requests sent after it go unanswered until they time out.
-    bsStop :: IO ()
+    bsController :: ChatController
   }
 
--- | Stopping chat unsubscribes the service's queues, so a request sent afterwards is never read.
--- Killing the thread would not: the request can arrive while the controller is being torn down.
+-- | Stop the service for good: requests sent after it go unanswered until they time out. Stopping
+-- chat unsubscribes its queues, where killing the thread could still let a request arrive mid-teardown.
 stopBadgeService :: ChatController -> IO ()
 stopBadgeService cc = void $ sendChatCmdStr cc "/_stop"
 
@@ -184,7 +182,7 @@ withBadgeServiceEnv ps test = do
   -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
   runBadgeService svcCfg opts $ \env -> do
     cc <- atomically $ readTMVar $ serviceCC env
-    test BadgeServiceEnv {bsIssuerKey = BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk}, bsClock = clock, bsClientCfg = clientCfg, bsAddress = bsLink, bsController = cc, bsStop = stopBadgeService cc}
+    test BadgeServiceEnv {bsIssuerKey = BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk}, bsClock = clock, bsClientCfg = clientCfg, bsAddress = bsLink, bsController = cc}
 
 -- through the operator command the service actually exposes, not the function behind it
 issueCode :: HasCallStack => ChatController -> BadgeType -> Int -> IO BadgeCode
@@ -993,13 +991,13 @@ testIssueFailedAlert ps =
 -- they stop. It is recorded from the first attempt, so the run's start is not lost.
 testIssueFailedWaitsForExpiry :: HasCallStack => TestParams -> IO ()
 testIssueFailedWaitsForExpiry ps =
-  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc, bsStop} -> do
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} -> do
     -- the redemption runs against the service, so it keeps the ordinary request timeout
     (requestAt, presentAt) <- withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       code <- issueCode cc BTSupporter 3
       redeemFirstBadge alice code
       renewalMoments <$> ledgerRows (chatController alice) "badge_ledger"
-    bsStop
+    stopBadgeService cc
     let cfg = failingServiceCfg bsClientCfg
     -- the request goes unanswered and times out, which is a failure that can clear on its own
     setClockAt bsClock requestAt
