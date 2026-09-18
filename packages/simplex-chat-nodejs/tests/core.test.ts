@@ -112,4 +112,14 @@ describe("Core tests", () => {
     
     await core.chatCloseStore(ctrl);
   });
+
+  it("should not block the libuv pool while receiving", async () => {
+    const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+    const receives = [1, 2, 3, 4].map(() => core.chatRecvMsgWait(ctrl, 2_000_000));
+    const start = Date.now();
+    await fs.promises.stat(tmpDir);
+    expect(Date.now() - start).toBeLessThan(200);
+    await Promise.all(receives);
+    await core.chatCloseStore(ctrl);
+  }, 10000);
 });

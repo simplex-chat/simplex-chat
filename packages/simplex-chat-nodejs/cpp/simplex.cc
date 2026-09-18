@@ -4,6 +4,8 @@
 #include <functional>
 #include <cstdlib>
 #include <climits>
+#include <memory>
+#include <thread>
 #include "simplex.h"
 
 namespace simplex {
@@ -316,18 +318,23 @@ Value ChatRecvMsgWait(const CallbackInfo& args) {
   chat_ctrl ctrl = FromChatCtrlBigInt(args[0]);
   int wait = static_cast<int>(args[1].As<Number>().Int32Value());
 
-  Function cb;
-  Promise promise = CreatePromiseAndCallback(env, cb);
-
-  auto execute_fn = [ctrl, wait](ResultAsyncWorker* worker) {
+  auto deferred = std::make_shared<Promise::Deferred>(Promise::Deferred::New(env));
+  auto tsfn = ThreadSafeFunction::New(env, Function::New(env, [](const CallbackInfo&) {}), "chat_recv_msg_wait", 0, 1);
+  // A blocking receive would hold a libuv pool thread for up to `wait`, stalling fs, dns and crypto.
+  std::thread([tsfn, deferred, ctrl, wait]() mutable {
     char* c_res = chat_recv_msg_wait(ctrl, wait);
-    HandleCResult(worker, c_res, "chat_recv_msg_wait");
-  };
+    tsfn.BlockingCall([deferred, c_res](Napi::Env env, Function) {
+      if (c_res == nullptr) {
+        deferred->Reject(Error::New(env, "chat_recv_msg_wait failed").Value());
+      } else {
+        deferred->Resolve(String::New(env, c_res));
+        free(c_res);
+      }
+    });
+    tsfn.Release();
+  }).detach();
 
-  ResultAsyncWorker* worker = new ResultAsyncWorker(cb, std::move(execute_fn));
-  worker->Queue();
-
-  return promise;
+  return deferred->Promise();
 }
 
 Value ChatWriteFile(const CallbackInfo& args) {
