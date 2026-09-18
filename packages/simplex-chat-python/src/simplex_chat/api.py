@@ -478,12 +478,13 @@ class ChatApi:
         self,
         user_id: int,
         incognito: bool,
-        prepared_link: T.CreatedConnLink | None = None,
+        prepared_link: T.CreatedConnLink,
     ) -> ConnReqType:
-        args: CC.APIConnect = {"userId": user_id, "incognito": incognito}
-        if prepared_link is not None:
-            args["preparedLink_"] = prepared_link
-        r = await self.send_chat_cmd(CC.APIConnect_cmd_string(args))
+        r = await self.send_chat_cmd(
+            CC.APIConnect_cmd_string(
+                {"userId": user_id, "incognito": incognito, "preparedLink_": prepared_link}
+            )
+        )
         return self._handle_connect_result(r)
 
     async def api_connect_active_user(self, conn_link: str) -> ConnReqType:

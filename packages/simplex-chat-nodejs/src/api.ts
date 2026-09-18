@@ -700,7 +700,7 @@ export class ChatApi {
    * Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
    * Network usage: interactive.
    */
-  async apiConnect(userId: number, incognito: boolean, preparedLink?: T.CreatedConnLink): Promise<ConnReqType> {
+  async apiConnect(userId: number, incognito: boolean, preparedLink: T.CreatedConnLink): Promise<ConnReqType> {
     const r = await this.sendChatCmd(CC.APIConnect.cmdString({userId, incognito, preparedLink_: preparedLink}))
     return this.handleConnectResult(r)
   }
