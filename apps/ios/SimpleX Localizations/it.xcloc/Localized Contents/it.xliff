@@ -5339,19 +5339,19 @@ Altri miglioramenti sono in arrivo!</target>
         <target>Permette di avere molte connessioni anonime senza dati condivisi tra di loro in un unico profilo di chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
+      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve" approved="no">
         <source>It can happen when you or your connection used the old database backup.</source>
-        <target>Può accadere quando tu o il tuo contatto avete usato il backup del database vecchio.</target>
+        <target state="translated">Può accadere quando tu o il tuo contatto avete usato il backup del vecchio database.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve" approved="no">
         <source>It can happen when:
 1. The messages expired in the sending client after 2 days or on the server after 30 days.
 2. Message decryption failed, because you or your contact used old database backup.
 3. The connection was compromised.</source>
-        <target>Può accadere quando:
+        <target state="translated">Può accadere quando:
 1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 30 giorni.
-2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del database vecchio.
+2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del vecchio database.
 3. La connessione è stata compromessa.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -12290,9 +12290,9 @@ ultimo msg ricevuto: %2$@</target>
         <target>ha aggiornato il profilo del gruppo</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="updated profile" xml:space="preserve">
+      <trans-unit id="updated profile" xml:space="preserve" approved="no">
         <source>updated profile</source>
-        <target>profilo aggiornato</target>
+        <target state="translated">ha aggiornato il profilo</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="v%@" xml:space="preserve">
