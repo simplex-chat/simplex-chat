@@ -5416,9 +5416,10 @@ derivedBadgeAlert now p shownCred b
 
 -- | A failure that can clear on its own is only shown once the credential lapses and contacts see it.
 shownIssueError :: UTCTime -> UserBadgePurchase -> Maybe BadgeCredential -> Maybe BadgeIssueError
-shownIssueError now UserBadgePurchase {issueError} shownCred = mfilter worthAlerting issueError
-  where
-    worthAlerting BadgeIssueError {reason} = not (badgeFailureTransient reason) || maybe False ((<= now) . credentialExpiry) shownCred
+shownIssueError now UserBadgePurchase {issueError} shownCred = case issueError of
+  Just e@BadgeIssueError {reason}
+    | not (badgeFailureTransient reason) || maybe False ((<= now) . credentialExpiry) shownCred -> Just e
+  _ -> Nothing
 
 -- | Derived from state rather than kept pending: raised unless this occurrence is the one already
 -- answered, and raised again once a snooze that answered it lapses.
