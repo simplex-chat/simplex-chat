@@ -122,7 +122,7 @@ export class ChatApi {
   async startChat(): Promise<void> {
     this.receiveEvents = true
     this.eventsLoop = this.runEventsLoop()
-    const r = await this.sendChatCmd(CC.StartChat.cmdString({mainApp: true, enableSndFiles: true}))
+    const r = await this.sendChatCmd(CC.StartChat.cmdString({mainApp: true, enableSndFiles: true, serviceRequests: false}))
     if (r.type !== "chatStarted" && r.type !== "chatRunning") {
       throw new ChatCommandError("error starting chat", r)
     }
@@ -740,7 +740,7 @@ export class ChatApi {
    * Network usage: no.
    */
   async apiRejectContactRequest(contactReqId: number): Promise<void> {
-    const r = await this.sendChatCmd(CC.APIRejectContact.cmdString({contactReqId}))
+    const r = await this.sendChatCmd(CC.APIRejectContact.cmdString({contactReqId, notify: false}))
     if (r.type === "contactRequestRejected") return
     throw new ChatCommandError("error rejecting contact request", r)
   }
