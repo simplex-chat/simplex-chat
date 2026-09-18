@@ -1,7 +1,7 @@
 ---
 layout: layouts/article.html
 title: "SimpleX Supporter Badges &mdash; Send Larger Files and Fund the Network Without Being Identified"
-date: 2026-09-21
+date: 2026-09-19
 preview: "Supporter badges are available in v7.1 beta: a badge on your profile, larger files and longer file storage &mdash; and nobody can tell that you paid."
 image: images/20260921-badge.png
 permalink: "/blog/20260921-simplex-supporter-badges.html"
@@ -9,13 +9,13 @@ permalink: "/blog/20260921-simplex-supporter-badges.html"
 
 # SimpleX Supporter Badges &mdash; Send Larger Files and Fund the Network Without Being Identified
 
-**Published:** Sep 21, 2026
+**Published:** Sep 19, 2026
 
 You can now support SimpleX Chat and get a supporter badge, larger files and longer file storage &mdash; from v7.1 beta[^beta]. Watch [how to buy a badge](https://www.youtube.com/watch?v=gHCpFG8UsmM).
 
 ## A paid feature that cannot identify you
 
-<img src="./images/20260921-phone-badge.png" width="19%" class="float-to-right">
+<img src="./images/20260919-phone-badge.png" width="19%" class="float-to-right">
 
 A supporter badge is shown on your profile to your contacts, group members and channel subscribers. With a badge you can send files up to 2GB, or 5GB with a legend badge, instead of 1GB, and servers keep your files for longer - 7 days with a supporter badge and 21 days with a legend badge.
 
