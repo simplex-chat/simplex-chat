@@ -78,6 +78,10 @@ class AppBarHandler(
 
   val backgroundGraphicsLayerSize: MutableState<IntSize> = mutableStateOf(IntSize.Zero)
 
+  // Bars that blur a copy of the scrolled content depend on this to know the copy moved. It is bumped from a collector
+  // rather than while drawing: a write made during the draw phase invalidates the bars every frame and never settles.
+  val contentVersion: MutableState<Int> = mutableStateOf(0)
+
   companion object {
     var appBarMaxHeightPx: Int = 0
   }
