@@ -5544,10 +5544,10 @@ badgeFailureTransient = \case
 badgeErrorRetry :: ChatError -> Bool
 badgeErrorRetry = badgeFailureTransient . badgeIssueFailure
 
--- | Ask the service for the month that is due and apply the response. A timeout writes nothing, so
--- the same request is sent again on the next pass. 'Left' is a service error, already reported, and
--- carries when to try again, since a service error is answered rather than thrown. Every outcome
--- that stores no credential is recorded on the purchase, here and nowhere else.
+-- | Ask the service for the month that is due and apply the response. A timeout stores no ledger row,
+-- so the same request is sent again on the next pass. 'Left' is a service error, already reported, and
+-- carries when to try again, since a service error is answered rather than thrown. Any request that
+-- ends without a credential is recorded on the purchase as a failed renewal; nothing else records one.
 requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either UTCTime StatementEntry)
 requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchaseKey, purchasePrivKey, masterKey} now = do
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
