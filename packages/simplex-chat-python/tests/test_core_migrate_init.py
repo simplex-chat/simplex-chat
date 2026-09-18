@@ -30,8 +30,27 @@ class FakeLib:
     def chat_migrate_init(self, *args: Any) -> str:
         return self._init("chat_migrate_init", args)
 
-    def chat_migrate_init_queue(self, *args: Any) -> str:
-        return self._init("chat_migrate_init_queue", args)
+    @property
+    def chat_migrate_init_queue(self) -> Any:
+        lib = self
+
+        class Fn:
+            argtypes: Any = None
+            restype: Any = None
+
+            def __call__(self, *args: Any) -> str:
+                return lib._init("chat_migrate_init_queue", args)
+
+        return Fn()
+
+
+class OldLib(FakeLib):
+    """A libsimplex released before chat_migrate_init_queue existed."""
+
+    def __getattribute__(self, name: str) -> Any:
+        if name == "chat_migrate_init_queue":
+            raise AttributeError(name)
+        return super().__getattribute__(name)
 
 
 @pytest.fixture
@@ -76,3 +95,29 @@ def test_queue_size_outside_c_int_is_rejected_before_ffi(fake_lib, queue_size):
     with pytest.raises(ValueError, match="does not fit C int"):
         migrate_init(queue_size)
     assert lib.calls == []
+
+
+def test_queue_size_on_old_lib_raises_clear_error(monkeypatch):
+    lib = OldLib({"type": "ok"})
+    monkeypatch.setattr(core._native, "lib", lambda: lib)
+    with pytest.raises(RuntimeError, match="does not export chat_migrate_init_queue"):
+        migrate_init(65536)
+    assert lib.calls == []
+
+
+def test_setup_signatures_accepts_old_lib():
+    class Fn:
+        argtypes: Any = None
+        restype: Any = None
+
+    class Lib:
+        def __getattr__(self, name: str) -> Fn:
+            if name == "chat_migrate_init_queue":
+                raise AttributeError(name)
+            fn = Fn()
+            setattr(self, name, fn)
+            return fn
+
+    from simplex_chat import _native
+
+    _native._setup_signatures(Lib())  # type: ignore[arg-type]

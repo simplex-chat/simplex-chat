@@ -16,7 +16,7 @@ import urllib.request
 import zipfile
 from ctypes import POINTER, c_char_p, c_int, c_uint8, c_void_p
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from ._version import LIBS_VERSION
 
@@ -171,15 +171,13 @@ def _load_libc() -> ctypes.CDLL:
 
 
 def _setup_signatures(lib: ctypes.CDLL) -> None:
-    """Declare argtypes/restype for the 9 chat_* functions exported by libsimplex.
+    """Declare argtypes/restype for the 8 chat_* functions exported by libsimplex.
 
     All result strings come back as raw c_void_p so the caller can free them
     after copying — matches HandleCResult in cpp/simplex.cc:157-165.
     """
     lib.chat_migrate_init.argtypes = [c_char_p, c_char_p, c_char_p, POINTER(c_void_p)]
     lib.chat_migrate_init.restype = c_void_p
-    lib.chat_migrate_init_queue.argtypes = [c_char_p, c_char_p, c_char_p, c_int, POINTER(c_void_p)]
-    lib.chat_migrate_init_queue.restype = c_void_p
     lib.chat_close_store.argtypes = [c_void_p]
     lib.chat_close_store.restype = c_void_p
     lib.chat_send_cmd.argtypes = [c_void_p, c_char_p]
@@ -257,3 +255,19 @@ def lib() -> ctypes.CDLL:
     if _lib is None:
         raise RuntimeError("lib_for() must be called before lib()")
     return _lib
+
+
+QUEUE_SIZE_UNSUPPORTED = (
+    "loaded libsimplex does not export chat_migrate_init_queue; queue size needs a newer libsimplex"
+)
+
+
+def migrate_init_queue() -> Any:
+    """`chat_migrate_init_queue`, which older libsimplex releases do not export."""
+    try:
+        fn = lib().chat_migrate_init_queue
+    except AttributeError as e:
+        raise RuntimeError(QUEUE_SIZE_UNSUPPORTED) from e
+    fn.argtypes = [c_char_p, c_char_p, c_char_p, c_int, POINTER(c_void_p)]
+    fn.restype = c_void_p
+    return fn

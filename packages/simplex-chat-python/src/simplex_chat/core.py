@@ -136,14 +136,15 @@ async def chat_migrate_init(
     if queue_size is not None and ctypes.c_int(queue_size).value != queue_size:
         raise ValueError(f"queue_size {queue_size} does not fit C int")
 
+    init_queue = _native.migrate_init_queue() if queue_size is not None else None
+
     def _call() -> tuple[int, str]:
         ctrl = ctypes.c_void_p()
         args = (db_path.encode("utf-8"), db_key.encode("utf-8"), confirm.encode("utf-8"))
-        lib = _native.lib()
-        if queue_size is None:
-            ptr = lib.chat_migrate_init(*args, ctypes.byref(ctrl))
+        if init_queue is None:
+            ptr = _native.lib().chat_migrate_init(*args, ctypes.byref(ctrl))
         else:
-            ptr = lib.chat_migrate_init_queue(*args, queue_size, ctypes.byref(ctrl))
+            ptr = init_queue(*args, queue_size, ctypes.byref(ctrl))
         return (ctrl.value or 0, _read_and_free(ptr))
 
     ctrl_val, raw = await asyncio.to_thread(_call)
