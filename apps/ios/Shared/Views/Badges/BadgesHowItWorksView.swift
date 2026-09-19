@@ -22,9 +22,10 @@ struct BadgesHowItWorksView: View {
                 .padding(.bottom, 16)
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("A badge is not an account. It is a signed credential stored on your device. It does not identify you, and no one keeps a record of who holds which badge.")
-                    Text("Your contacts see the badge and its expiry date, and nothing else. The badge carries no identifier, so it cannot be used to find out who you are or to match you across chats.")
-                    Text("Payment and badge are kept apart. Paying is one step; the badge is issued in another, under a key that exists only for that badge. Whoever handles the payment cannot see where the badge ends up.")
+                    Text("A badge is an anonymous credential stored in your profile on your device. It is not an account, and it does not identify you.")
+                    Text("The credential itself is never sent to anyone. To show the badge to a contact or to present it to a server, the app generates a new proof that reveals only the badge type and the expiry date.")
+                    Text("No two proofs can be linked to each other or to the purchase – by the badge service, your contacts or servers.")
+                    ExternalLink("Read more in our blog.", destination: URL(string: "https://simplex.chat/blog/20260919-simplex-supporter-badges.html")!)
                 }
                 .lineLimit(nil)
                 .fixedSize(horizontal: false, vertical: true)
