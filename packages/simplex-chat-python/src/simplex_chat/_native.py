@@ -166,7 +166,8 @@ _backend: Backend | None = None
 
 def _load_libc() -> ctypes.CDLL:
     if sys.platform == "win32":
-        return ctypes.CDLL("msvcrt")
+        # libsimplex.dll allocates results with UCRT malloc; msvcrt free would corrupt the heap.
+        return ctypes.CDLL("ucrtbase")
     return ctypes.CDLL(None)  # libc on POSIX is the process's own symbol table
 
 
