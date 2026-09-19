@@ -12,9 +12,9 @@ const LIB = "libtest.so"
 
 describe("paths", () => {
   it("uses the Python cache layout", () => {
-    expect(cacheRoot("linux", {XDG_CACHE_HOME: "/x"}, "/h")).toBe("/x/simplex-chat")
-    expect(cacheRoot("linux", {}, "/h")).toBe("/h/.cache/simplex-chat")
-    expect(cacheRoot("darwin", {}, "/h")).toBe("/h/Library/Caches/simplex-chat")
+    expect(cacheRoot("linux", {XDG_CACHE_HOME: "/x"}, "/h")).toBe(path.join("/x", "simplex-chat"))
+    expect(cacheRoot("linux", {}, "/h")).toBe(path.join("/h", ".cache", "simplex-chat"))
+    expect(cacheRoot("darwin", {}, "/h")).toBe(path.join("/h", "Library", "Caches", "simplex-chat"))
     expect(cacheRoot("win32", {LOCALAPPDATA: "C:\\L"}, "/h")).toBe(path.join("C:\\L", "simplex-chat"))
   })
 
@@ -23,8 +23,8 @@ describe("paths", () => {
     expect(() => platformTag("win32", "arm64")).toThrow("Unsupported platform")
   })
 
-  it("returns SIMPLEX_LIBS_DIR unchanged when absolute", async () => {
-    await expect(resolveLibsDir("postgres", {SIMPLEX_LIBS_DIR: "/d"})).resolves.toBe("/d")
+  it("resolves an absolute SIMPLEX_LIBS_DIR", async () => {
+    await expect(resolveLibsDir("postgres", {SIMPLEX_LIBS_DIR: "/d"})).resolves.toBe(path.resolve("/d"))
   })
 
   it("returns a relative SIMPLEX_LIBS_DIR as absolute", async () => {
