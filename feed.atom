@@ -5,7 +5,7 @@
     <link type="application/atom+xml" rel="self" href="https://simplex.chat/feed.atom"/>
     <title>SimpleX Chat Blog</title>
     <subtitle>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</subtitle>
-    <updated>2026-09-08T00:00:00Z</updated>
+    <updated>2026-09-19T00:00:00Z</updated>
     <author>
         <name>SimpleX Chat</name>
         <email>chat@simplex.chat</email>
@@ -3949,6 +3949,82 @@ A few bugs and UX issues but great foundation. Love that it’s public domain.&l
 &lt;p&gt;If you believe that the future of communication should belong to individuals rather than centralized platforms, I encourage you to join us as an investor.&lt;/p&gt;
 &lt;p&gt;👉 &lt;strong&gt;Invest in SimpleX Chat on Wefunder:&lt;/strong&gt; &lt;a href=&quot;https://wefunder.com/simplexchat?utm_source=nr_post&quot;&gt;wefunder.com/simplexchat&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;(Note: Anyone investing $500 or more before September 22 secures their &lt;code&gt;.simplex&lt;/code&gt; public name for 7 years prior to the public launch.)&lt;/em&gt;&lt;/p&gt;
+</content>
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
+        </entry>
+        <entry>
+            <id>https://simplex.chat/blog/20260919-simplex-supporter-badges.html</id>
+            <!-- <updated>19 Sep 2026</updated> -->
+            <updated>2026-09-19T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20260919-simplex-supporter-badges.html"/>
+            <title>SimpleX Supporter Badges &amp;mdash; Send Larger Files That Stay Available Longer, Without Being Identified</title>
+            <content type="html">&lt;h1 id=&quot;simplex-supporter-badges-send-larger-files-that-stay-available-longer-without-being-identified&quot; tabindex=&quot;-1&quot;&gt;SimpleX Supporter Badges — Send Larger Files That Stay Available Longer, Without Being Identified&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Sep 19, 2026&lt;/p&gt;
+&lt;p&gt;You can now support SimpleX Chat and get a supporter badge, larger files and longer file storage — from v7.1 beta&lt;sup class=&quot;footnote-ref&quot;&gt;&lt;a href=&quot;https://simplex.chat/blog/20260919-simplex-supporter-badges.html#note-beta&quot; id=&quot;ref-beta&quot;&gt;1&lt;/a&gt;&lt;/sup&gt;. Watch &lt;a href=&quot;https://youtu.be/7D1tI5sQWFU&quot; target=&quot;_blank&quot;&gt;how to buy a badge&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;a-paid-feature-that-cannot-identify-you&quot; tabindex=&quot;-1&quot;&gt;A paid feature that cannot identify you&lt;/h2&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20260919-phone-supporter.png&quot; width=&quot;19%&quot; class=&quot;float-to-right dark:hidden&quot; /&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20260919-phone-supporter-light.png&quot; width=&quot;19%&quot; class=&quot;float-to-right hidden dark:block&quot; /&gt;
+&lt;p&gt;A supporter badge is shown on your profile to your contacts, group members and channel subscribers. With a badge you can send files up to 2GB, or 5GB with a legend badge, instead of 1GB, and servers keep your files for longer — 7 days with a supporter badge and 21 days with a legend badge.&lt;/p&gt;
+&lt;p&gt;A badge is a credential stored in your profile on your device. The credential itself is not sent to anyone: to show the badge to a contact or to present it to a server, the app generates a new zero-knowledge proof that reveals only the badge type and the expiry date, and no two proofs can be linked to each other or to the purchase, by the badge service, your contacts or servers. Credentials are issued for one month at a time, and all badges expire on the same day of the week, so a badge places you among all supporters of that week and nothing more.&lt;/p&gt;
+&lt;p&gt;This is only possible because the network has no user identifiers — in other messengers a paid feature is attached to the account, so the operator knows who paid and what they do with the feature.&lt;/p&gt;
+&lt;p&gt;Read more about badges in the &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/badges-overview.md&quot;&gt;whitepaper&lt;/a&gt;: what they grant, how they are issued and presented, and their privacy and security model.&lt;/p&gt;
+&lt;h2 id=&quot;how-to-get-a-badge&quot; tabindex=&quot;-1&quot;&gt;How to get a badge&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://youtu.be/7D1tI5sQWFU&quot; target=&quot;_blank&quot;&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20260919-buy-badge.jpg&quot; width=&quot;40%&quot; class=&quot;float-to-right&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Buy a code on &lt;a href=&quot;https://simplex.chat/badges/&quot;&gt;simplex.chat/badges&lt;/a&gt;, paying by card, Bitcoin or Monero, and redeem it in the app: open Settings, tap &lt;strong&gt;Supporter perks&lt;/strong&gt;, and enter the code. The badge appears on your profile. The badge does not renew by itself, and no account is created.&lt;/p&gt;
+&lt;p&gt;The v7.1 release will add purchases in the app: via the app store, or by card or cryptocurrency if you downloaded the app from GitHub or F-Droid.&lt;/p&gt;
+&lt;h2 id=&quot;what-badges-will-do-next&quot; tabindex=&quot;-1&quot;&gt;What badges will do next&lt;/h2&gt;
+&lt;p&gt;The same mechanism will be used for other resources that cost the network more than the default. Two uses are coming:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Backups.&lt;/strong&gt; A backup will be a link whose content the app updates in place, so the same link restores the latest state. A badge will extend how long the backup is kept on the servers — that is, how long the app can stay offline before the backup is lost.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Better limits on servers.&lt;/strong&gt; Servers that verify the badge will apply higher rate limits for creating messaging queues, uploading file chunks, and registering notification tokens.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;community-crowdfunding&quot; tabindex=&quot;-1&quot;&gt;Community Crowdfunding&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://wefunder.com/simplex.chat?utm_source=blog&quot;&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20260819-wefunder.jpg&quot; width=&quot;40%&quot; class=&quot;float-to-right&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Investors in our &lt;a href=&quot;https://wefunder.com/simplex.chat?utm_source=blog&quot;&gt;equity crowdfunding on Wefunder&lt;/a&gt; receive badges as perks:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Investment&lt;/th&gt;
+&lt;th&gt;Badge&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;$100&lt;/td&gt;
+&lt;td&gt;supporter, 1 month&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;$250&lt;/td&gt;
+&lt;td&gt;supporter, 3 months&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;$1,000&lt;/td&gt;
+&lt;td&gt;supporter, 12 months, or legend, 1 month&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;$2,500&lt;/td&gt;
+&lt;td&gt;supporter, 12 months, or legend, 3 months&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;$10,000&lt;/td&gt;
+&lt;td&gt;legend, 12 months&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;If you invest $500 or more by September 22, you will also receive &lt;a href=&quot;https://simplex.domains/?utm_source=blog&quot;&gt;a public SimpleX name&lt;/a&gt; for 7 years&lt;sup class=&quot;footnote-ref&quot;&gt;&lt;a href=&quot;https://simplex.chat/blog/20260919-simplex-supporter-badges.html#note-name&quot; id=&quot;ref-name&quot;&gt;2&lt;/a&gt;&lt;/sup&gt;.&lt;/p&gt;
+&lt;p&gt;Learn more and invest on Wefunder: &lt;a href=&quot;https://wefunder.com/simplex.chat?utm_source=blog&quot;&gt;https://wefunder.com/simplex.chat&lt;/a&gt;&lt;/p&gt;
+&lt;hr class=&quot;footnotes-sep&quot; /&gt;
+&lt;section class=&quot;footnotes&quot;&gt;
+&lt;ol class=&quot;footnotes-list&quot;&gt;
+&lt;li id=&quot;note-beta&quot; class=&quot;footnote-item&quot;&gt;&lt;p&gt;v7.1 beta is available via &lt;a href=&quot;https://play.google.com/store/apps/details?id=chat.simplex.app&quot;&gt;Play Store&lt;/a&gt; (Android beta), &lt;a href=&quot;https://testflight.apple.com/join/DWuT2LQu&quot;&gt;TestFlight&lt;/a&gt; (iOS), our &lt;a href=&quot;https://simplex.chat/fdroid/&quot;&gt;F-Droid repo&lt;/a&gt; and &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/releases&quot;&gt;GitHub&lt;/a&gt; (Android and desktop). &lt;a href=&quot;https://simplex.chat/blog/20260919-simplex-supporter-badges.html#ref-beta&quot; class=&quot;footnote-backref&quot;&gt;↩︎&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id=&quot;note-name&quot; class=&quot;footnote-item&quot;&gt;&lt;p&gt;After September 22, investors of $500 or more receive a name for 5 years as early bird investors, and for 3 years after that — ahead of the public launch of names on December 12. &lt;a href=&quot;https://simplex.chat/blog/20260919-simplex-supporter-badges.html#ref-name&quot; class=&quot;footnote-backref&quot;&gt;↩︎&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/section&gt;
 </content>
             <author>
                 <name>SimpleX Chat</name>
