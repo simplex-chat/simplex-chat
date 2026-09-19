@@ -84,7 +84,7 @@ In SimpleX:
 | Verified by | The issuing server | Any party with the issuer's public key |
 | Presentations per credential | One | Unlimited |
 | Proof bound to the context of presentation | No | Yes |
-| Expiry rounded up to | The next day | The following Monday |
+| Expiry rounded up to | The next day | The end of the following Monday |
 | Issuance and presentation on different days | No | Yes |
 | Usable on independently operated servers | No | Yes |
 
@@ -147,7 +147,7 @@ In both cases the app generates the master key and the purchase key pair before 
 
 ### Monthly issuance
 
-A credential is issued for one month at a time, however many months were bought. The service keeps a count of the months remaining for each purchase key, and issues the next credential when the app asks for it.
+A credential is issued for one month at a time, however many months were bought. The service keeps a count of the months remaining for each purchase key, and issues the next credential when the app asks for it. Unused months, e.g. if the app was offline, lapse at the next badge issuance.
 
 Credentials are issued monthly to limit what the expiry date discloses. If credentials were issued for the whole term, a user who bought a year would hold a credential expiring on a day a year ahead, when few other credentials expire, and this date would be disclosed in every proof for a year. Instead, every credential is issued for one month, and its expiry is rounded to the end of the Monday following the end of the paid month (UTC). For example, if the paid month ends on Wednesday 14 October 2026, the credential expires at the end of Monday 19 October, and so does every credential whose month ends between Monday 12 and Sunday 18 October. All credentials whose paid month ends in the same week thus expire at the same instant.
 
