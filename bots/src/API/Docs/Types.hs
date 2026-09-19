@@ -217,7 +217,7 @@ chatTypesDocsData =
     (sti @AutoAccept, STRecord, "", [], "", ""),
     (sti @BadgeProof, STRecord, "", [], "", ""),
     (sti @BadgeRedeemError, STUnion, "BRE", [], "", ""),
-    (sti @BadgeServiceErrorCode, STUnion, "BSE", [], "", ""),
+    (sti @BadgeServiceErrorCode, STEnum' (consSep "BSE" '_'), "", ["BSEUnknown"], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),
     (sti @BlockingReason, STEnum, "BR", [], "", ""),
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
