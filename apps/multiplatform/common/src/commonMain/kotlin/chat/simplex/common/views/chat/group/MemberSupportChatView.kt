@@ -78,8 +78,9 @@ fun MemberSupportChatAppBar(
       onTitleClick = {
         val connStats = mutableStateOf<ConnectionStats?>(null)
         val connectionCode = mutableStateOf<String?>(null)
+        val connectionLoaded = mutableStateOf(false)
         ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { closeCurrent ->
-          GroupMemberInfoView(rhId, groupInfo, scopeMember_, scrollToItemId, connStats, connectionCode, chatModel, openedFromSupportChat = true, close = closeCurrent) {
+          GroupMemberInfoView(rhId, groupInfo, scopeMember_, scrollToItemId, connStats, connectionCode, connectionLoaded, chatModel, openedFromSupportChat = true, close = closeCurrent) {
             closeCurrent()
             close()
           }
@@ -95,6 +96,7 @@ fun MemberSupportChatAppBar(
           }
           connStats.value = stats
           connectionCode.value = code
+          connectionLoaded.value = true
         }
       },
       onTop = !oneHandUI.value || !chatBottomBar.value,

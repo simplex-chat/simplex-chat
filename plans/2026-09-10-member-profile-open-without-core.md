@@ -104,14 +104,53 @@ recomposition of the card, with no storage of its own.
 which the core *clears* when the code no longer matches. So the code has to be
 held by the UI - it cannot be read back off `member.activeConn`.
 
-### No loading gate
+### The rows are reserved, not gated and not inserted
 
-iOS hides its body below the action buttons behind `connectionLoaded`
-(GroupMemberInfoView.swift:123). The Kotlin layout already tests for null at each
-connection-dependent point - `canVerifyCode` (:550), `canSyncConn` (:551) and the
-Servers section (:629) - so those rows appear when the data arrives and
-everything else renders immediately. A blanket gate would hide content that is
-already available locally.
+iOS wraps everything below the action buttons in `if connectionLoaded`
+(GroupMemberInfoView.swift:123-288) - the action section, Address, Member,
+Servers, Connection failed and For console. Until both queries return its card is
+a header and three buttons over blank space. That is tolerable when the core
+answers in 1-2 ms; it is the wrong trade for the case this change exists for,
+where the core is busy and the wait is what the user sees.
+
+Letting each row appear as its data arrives is no better: the card is complete
+from the first frame but grows under the finger.
+
+So the rows that depend on the load are rendered from the first frame in their
+final positions, disabled, and enabled in place when the data arrives:
+
+```kotlin
+val canVerifyCode = member.memberRole != GroupMemberRole.Relay && (connectionCode != null || !connectionLoaded)
+...
+VerifyCodeButton(member.verified, verifyClicked, disabled = connectionCode == null)
+```
+
+`SectionItemView` already drops the `clickable` modifier when `disabled`
+(Section.kt:213), so a disabled row is inert and identical in size to the enabled
+one - nothing moves when it is enabled.
+
+Only rows that can be predicted locally are reserved:
+
+- **Verify security code.** The enclosing condition is already
+  `memberActive || (useRelays && memberCurrent)`, so inside it the loader's
+  `getCode` reduces to `memberRole != Relay` - known from the member at the tap.
+- **Servers.** Reserved as a whole section with a disabled "Change receiving
+  address" and empty Receiving/Sending rows, for a member the same condition says
+  is connected.
+- **Fix connection is not reserved.** `canSyncConn` needs
+  `cStats.ratchetSyncAllowed`, which is false except during ratchet desync, so a
+  placeholder for it would disappear on nearly every open - the same jump in the
+  opposite direction.
+
+A third state, `connectionLoaded`, is created at the tap beside the other two and
+set when the queries return, including on failure. Without it a failed load would
+leave the row disabled forever, because "no code yet" and "no code at all" look
+the same.
+
+The remaining shift is the Network status row: it is inside the Servers section
+and depends on `cStats.subStatus`, which comes from the agent's subscription
+state and cannot be predicted locally, so the section still grows by one row when
+it is present.
 
 iOS needs its gate for a reason Kotlin does not have: `newRole` is `@State`
 initialised to a placeholder `.member` and corrected inside `.task`
@@ -136,9 +175,14 @@ info load would open its modal on top of the member card.
 - The card renders from the member known at the tap, so it can be marginally
   staler for the duration of the load. iOS has the same window - it renders the
   header before `connectionLoaded`.
-- Connection-dependent rows ("Verify security code", "Fix connection", Servers)
-  appear when the queries return rather than with the card. That is the point of
-  the change: the alternative is the card not appearing at all.
+- "Verify security code" and the Servers section are shown disabled until the
+  queries return, so the card does not change height as they arrive. This is a
+  third behaviour, matching neither the old Kotlin (rows inserted as data landed)
+  nor iOS (whole body hidden until loaded); porting it to iOS would be the way to
+  converge them.
+- "Fix connection" still appears on arrival when the ratchet needs syncing. It is
+  rare enough that reserving space for it would move the card more often than it
+  saves.
 - "Send message" for a member with `!sendMsgEnabled` does nothing if tapped
   before the stats arrive. iOS is identical: `createMemberContactButton` has the
   same `else if let connStats` with no else, and renders the action buttons

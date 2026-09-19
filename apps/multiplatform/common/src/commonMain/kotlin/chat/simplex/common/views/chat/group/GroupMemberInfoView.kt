@@ -49,6 +49,7 @@ fun GroupMemberInfoView(
   scrollToItemId: MutableState<Long?>,
   connStats: MutableState<ConnectionStats?>,
   connectionCode: State<String?>,
+  connectionLoaded: State<Boolean>,
   chatModel: ChatModel,
   openedFromSupportChat: Boolean,
   groupRelay: GroupRelay? = null,
@@ -95,6 +96,7 @@ fun GroupMemberInfoView(
       newRole,
       developerTools,
       connectionCode.value,
+      connectionLoaded.value,
       groupRelay = groupRelay,
       getContactChat = { chatModel.getContactChat(it) },
       openDirectChat = { contactId ->
@@ -372,6 +374,7 @@ fun GroupMemberInfoLayout(
   newRole: MutableState<GroupMemberRole>,
   developerTools: Boolean,
   connectionCode: String?,
+  connectionLoaded: Boolean,
   groupRelay: GroupRelay? = null,
   getContactChat: (Long) -> Chat?,
   openDirectChat: (Long) -> Unit,
@@ -542,22 +545,23 @@ fun GroupMemberInfoLayout(
       SectionDividerSpaced()
     }
 
+    val memberConnected = member.memberActive || (groupInfo.useRelays && member.memberCurrent)
     val showMemberSupportChat = !openedFromSupportChat &&
       groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
       member.memberRole != GroupMemberRole.Relay &&
       ((groupInfo.fullGroupPreferences.support.on && member.memberRole < GroupMemberRole.Moderator)
         || member.supportChat != null)
-    val canVerifyCode = connectionCode != null && member.memberRole != GroupMemberRole.Relay
+    // the same condition decides whether the code is requested, so the row is shown disabled until it arrives
+    val canVerifyCode = member.memberRole != GroupMemberRole.Relay && (connectionCode != null || !connectionLoaded)
     val canSyncConn = cStats != null && cStats.ratchetSyncAllowed
 
-    if ((member.memberActive || (groupInfo.useRelays && member.memberCurrent))
-        && (showMemberSupportChat || canVerifyCode || canSyncConn)) {
+    if (memberConnected && (showMemberSupportChat || canVerifyCode || canSyncConn)) {
       SectionView {
         if (showMemberSupportChat) {
           SupportChatButton()
         }
         if (canVerifyCode) {
-          VerifyCodeButton(member.verified, verifyClicked)
+          VerifyCodeButton(member.verified, verifyClicked, disabled = connectionCode == null)
         }
         if (canSyncConn) {
           SynchronizeConnectionButton(syncMemberConnection)
@@ -658,6 +662,13 @@ fun GroupMemberInfoLayout(
         if (sndServers.isNotEmpty()) {
           SimplexServers(stringResource(MR.strings.sending_via), sndServers)
         }
+      }
+    } else if (!connectionLoaded && memberConnected) {
+      SectionDividerSpaced()
+      SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
+        SwitchAddressButton(disabled = true, switchAddress = {})
+        SimplexServers(stringResource(MR.strings.receiving_via), emptyList())
+        SimplexServers(stringResource(MR.strings.sending_via), emptyList())
       }
     }
 
@@ -1121,6 +1132,7 @@ fun PreviewGroupMemberInfoLayout() {
       newRole = remember { mutableStateOf(GroupMemberRole.Member) },
       developerTools = false,
       connectionCode = "123",
+      connectionLoaded = true,
       getContactChat = { Chat.sampleData },
       openDirectChat = {},
       createMemberContact = {},
