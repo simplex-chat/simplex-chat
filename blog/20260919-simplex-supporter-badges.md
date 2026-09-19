@@ -22,7 +22,7 @@ A supporter badge is shown on your profile to your contacts, group members and c
 
 A badge is a credential stored in your profile on your device. The credential itself is not sent to anyone: to show the badge to a contact or to present it to a server, the app generates a new zero-knowledge proof that reveals only the badge type and the expiry date, and no two proofs can be linked to each other or to the purchase, by the badge service, your contacts or servers. Credentials are issued for one month at a time, and all badges expire on the same day of the week, so a badge places you among all supporters of that week and nothing more.
 
-This is only possible because the network has no user identifiers: in other messengers a paid feature is attached to the account, so the operator knows who paid and what they do with the feature.
+This is only possible because the network has no user identifiers &mdash; in other messengers a paid feature is attached to the account, so the operator knows who paid and what they do with the feature.
 
 Read more about badges in the [whitepaper](https://github.com/simplex-chat/simplex-chat/blob/master/docs/protocol/badges-overview.md): what they grant, how they are issued and presented, and their privacy and security model.
 
