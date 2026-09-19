@@ -59,10 +59,31 @@ describe("startChat lifecycle", () => {
   })
 
   it("rejects start after close", async () => {
-    const chat = await chatWithResponses()
+    const chat = await chatWithResponses({type: "chatStopped"})
     jest.spyOn(core, "chatCloseStore").mockResolvedValue()
     await chat.close()
     await expect(chat.startChat()).rejects.toThrow("chat api controller not initialized")
+  })
+
+  it("stops the chat before closing the store", async () => {
+    const chat = await chatWithResponses()
+    const calls: string[] = []
+    jest.mocked(core.chatSendCmd).mockImplementation(async (_ctrl, cmd) => {
+      calls.push(`send ${cmd}`)
+      return {type: "chatStopped"} as ChatResponse
+    })
+    jest.spyOn(core, "chatCloseStore").mockImplementation(async () => { calls.push("closeStore") })
+    await chat.close()
+    expect(calls).toEqual(["send /_stop", "closeStore"])
+    expect(chat.initialized).toBe(false)
+  })
+
+  it("does not close the store when stopping fails", async () => {
+    const chat = await chatWithResponses({type: "chatCmdError"})
+    const closeStore = jest.spyOn(core, "chatCloseStore").mockResolvedValue()
+    await expect(chat.close()).rejects.toThrow("error stopping chat")
+    expect(closeStore).not.toHaveBeenCalled()
+    expect(chat.initialized).toBe(true)
   })
 
   it("reports stop failures as stop errors", async () => {

@@ -141,7 +141,7 @@ export class ChatApi {
 
   /**
    * Stop chat controller.
-   * Must be called before closing the database.
+   * `close` calls it before closing the database.
    * Usually doesn't need to be called in chat bots.
    */
   async stopChat(): Promise<void> {
@@ -151,11 +151,13 @@ export class ChatApi {
   }
 
   /**
-   * Close chat database.
+   * Stop chat controller and close chat database.
+   * The database is not closed if stopping fails.
    * Usually doesn't need to be called in chat bots.
    */
   async close(): Promise<void> {
-    await this.stopEventsLoop()
+    // a running controller keeps using the database connections that closing frees
+    await this.stopChat()
     await core.chatCloseStore(this.ctrl)
     this.ctrl_ = undefined
   }
