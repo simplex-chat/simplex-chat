@@ -13,7 +13,7 @@ struct SupportSimpleXBanner: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     var title: LocalizedStringKey = "Support SimpleX"
-    var subtitle: LocalizedStringKey = "Get badge + files up to 5GB"
+    var subtitle: LocalizedStringKey = "Get badge + better files"
     let onTap: () -> Void
     let onDismiss: () -> Void
 

@@ -48,7 +48,7 @@ struct BadgesYourBadgeView: View {
                             .modifier(ThemedBackground())
                     } label: {
                         settingsRow("info.circle", color: theme.colors.secondary) {
-                            Text("How private badges work")
+                            Text("How badges protect your privacy")
                         }
                     }
                 }

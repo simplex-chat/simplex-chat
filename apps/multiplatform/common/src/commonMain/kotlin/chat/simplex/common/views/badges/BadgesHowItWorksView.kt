@@ -10,9 +10,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.views.onboarding.ReadableTextWithLink
 import chat.simplex.res.MR
 
-// TODO [badges]: replace lorem ipsum with the real copy once the badge protocol and privacy properties are documented.
 @Composable
 fun BadgesHowItWorksView() {
   ColumnWithScrollBar(
@@ -30,5 +30,6 @@ fun BadgesHowItWorksView() {
     Text(stringResource(MR.strings.badges_how_it_works_p1), style = MaterialTheme.typography.body1)
     Text(stringResource(MR.strings.badges_how_it_works_p2), style = MaterialTheme.typography.body1)
     Text(stringResource(MR.strings.badges_how_it_works_p3), style = MaterialTheme.typography.body1)
+    ReadableTextWithLink(MR.strings.badges_how_it_works_read_more_with_link, "https://simplex.chat/blog/20260919-simplex-supporter-badges.html")
   }
 }
