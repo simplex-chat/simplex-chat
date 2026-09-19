@@ -119,6 +119,9 @@ class ChatApi:
         self._started = False
 
     async def close(self) -> None:
+        """Stop the chat and close its store; the store stays open if stopping fails."""
+        # a running controller keeps using the database connections that closing frees
+        await self.stop_chat()
         if self._recv_executor is not None:
             # Waits for a receive already in flight (up to wait_us) so the store
             # never closes underneath one; run off-loop since shutdown blocks.

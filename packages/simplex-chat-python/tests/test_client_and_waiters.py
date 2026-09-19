@@ -604,7 +604,7 @@ def test_aenter_rolls_back_partial_init_on_post_start_failure(monkeypatch):
                 pytest.fail("should not enter the with-block")
 
     asyncio.run(go())
-    assert closed == ["stop", "close"], f"controller not cleaned up: {closed}"
+    assert closed == ["close"], f"controller not cleaned up: {closed}"
     assert c._api is None, "Client._api should be reset to None after rollback"
 
 

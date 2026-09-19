@@ -16,7 +16,7 @@ from typing import Any
 
 import pytest
 
-from simplex_chat import ChatApi
+from simplex_chat import ChatApi, ChatCommandError
 
 RECV_SLEEP = 0.3
 
@@ -24,14 +24,20 @@ RECV_SLEEP = 0.3
 class FakeRecvLib:
     """Fake chat_recv_msg_wait: blocks for `sleep` seconds, then returns a scripted result.
 
-    `events` records "recv_start" / "recv_end" / "close_store" in call order, across all
-    ChatApi instances sharing this fake, so tests can assert ordering between receive and
-    store-close calls (not just that both happened).
+    `events` records "stop" / "recv_start" / "recv_end" / "close_store" in call order, across
+    all ChatApi instances sharing this fake, so tests can assert ordering between stop, receive
+    and store-close calls (not just that they happened).
     """
 
-    def __init__(self, sleep: float = RECV_SLEEP, results: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        sleep: float = RECV_SLEEP,
+        results: list[str] | None = None,
+        stop_response: str = "chatStopped",
+    ) -> None:
         self.sleep = sleep
         self._results = iter(results or [])
+        self._stop_response = stop_response
         self.calls: list[tuple[int, int]] = []  # (ctrl, thread ident)
         self.events: list[str] = []
         self._lock = threading.Lock()
@@ -45,6 +51,12 @@ class FakeRecvLib:
             self.calls.append((ctrl, threading.get_ident()))
         return next(self._results, "")
 
+    def chat_send_cmd(self, ctrl: int, cmd: bytes) -> str:
+        assert cmd == b"/_stop", f"unexpected command {cmd!r}"
+        with self._lock:
+            self.events.append("stop")
+        return json.dumps({"result": {"type": self._stop_response}})
+
     def chat_close_store(self, ctrl: int) -> str:
         with self._lock:
             self.events.append("close_store")
@@ -53,8 +65,12 @@ class FakeRecvLib:
 
 @pytest.fixture
 def fake_lib(monkeypatch: pytest.MonkeyPatch):
-    def install(sleep: float = RECV_SLEEP, results: list[str] | None = None) -> FakeRecvLib:
-        lib = FakeRecvLib(sleep=sleep, results=results)
+    def install(
+        sleep: float = RECV_SLEEP,
+        results: list[str] | None = None,
+        stop_response: str = "chatStopped",
+    ) -> FakeRecvLib:
+        lib = FakeRecvLib(sleep=sleep, results=results, stop_response=stop_response)
         monkeypatch.setattr("simplex_chat.core._native.lib", lambda: lib)
         monkeypatch.setattr("simplex_chat.core._read_and_free", lambda ptr: ptr)
         return lib
@@ -151,7 +167,24 @@ async def test_close_shuts_down_executor_before_closing_the_store(fake_lib):
 
     # recv_end (executor drained) must precede close_store: a receive must never
     # be in flight while the store closes underneath it.
-    assert lib.events == ["recv_start", "recv_end", "close_store"]
+    assert lib.events == ["recv_start", "stop", "recv_end", "close_store"]
+
+
+async def test_close_stops_the_chat_before_closing_the_store(fake_lib):
+    lib = fake_lib()
+    api = ChatApi(ctrl=1)
+    await api.close()
+    assert lib.events == ["stop", "close_store"]
+    assert not api.initialized
+
+
+async def test_close_does_not_close_the_store_when_stop_fails(fake_lib):
+    lib = fake_lib(stop_response="chatCmdError")
+    api = ChatApi(ctrl=1)
+    with pytest.raises(ChatCommandError, match="error stopping chat"):
+        await api.close()
+    assert lib.events == ["stop"]
+    assert api.initialized
 
 
 async def test_recv_chat_event_after_close_raises_before_touching_executor(fake_lib):

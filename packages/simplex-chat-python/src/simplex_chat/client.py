@@ -364,11 +364,6 @@ class Client:
         api = self._api
         if api is None:
             return
-        if api.started:
-            try:
-                await api.stop_chat()
-            except Exception:
-                log.exception("stop_chat failed during init rollback")
         try:
             await api.close()
         except Exception:
@@ -381,13 +376,10 @@ class Client:
         if api is None:
             return
         # Null out the reference up-front so the Client appears closed even
-        # if stop_chat / close raise — otherwise `client.api` would still
+        # if close raises — otherwise `client.api` would still
         # hand back a half-shutdown controller after `async with` exits.
         self._api = None
-        try:
-            await api.stop_chat()
-        finally:
-            await api.close()
+        await api.close()
 
     async def _post_start(self, user: T.User) -> None:
         """Hook for subclasses to add work between `start_chat` and serving.
