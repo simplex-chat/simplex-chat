@@ -157,6 +157,7 @@ testCoreOpts =
       logAgent = Nothing,
       logFile = Nothing,
       tbqSize = 16,
+      maxChats = 5000,
       deviceName = Nothing,
       chatRelay = False,
       webPreviewConfig = Nothing,

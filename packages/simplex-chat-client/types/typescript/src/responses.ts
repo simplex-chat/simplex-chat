@@ -47,11 +47,16 @@ export type ChatResponse =
   | CR.RcvFileAccepted
   | CR.RcvFileAcceptedSndCancelled
   | CR.RcvFileCancelled
+  | CR.RemoteCtrlConnected
+  | CR.RemoteCtrlConnecting
   | CR.SentConfirmation
   | CR.SentGroupInvitation
   | CR.SentInvitation
+  | CR.SentInvitationToContact
   | CR.ServiceReplyAccepted
   | CR.SndFileCancelled
+  | CR.StartedConnectionToContact
+  | CR.StartedConnectionToGroup
   | CR.UserAcceptedGroupSent
   | CR.UserContactLink
   | CR.UserContactLinkCreated
@@ -108,11 +113,16 @@ export namespace CR {
     | "rcvFileAccepted"
     | "rcvFileAcceptedSndCancelled"
     | "rcvFileCancelled"
+    | "remoteCtrlConnected"
+    | "remoteCtrlConnecting"
     | "sentConfirmation"
     | "sentGroupInvitation"
     | "sentInvitation"
+    | "sentInvitationToContact"
     | "serviceReplyAccepted"
     | "sndFileCancelled"
+    | "startedConnectionToContact"
+    | "startedConnectionToGroup"
     | "userAcceptedGroupSent"
     | "userContactLink"
     | "userContactLinkCreated"
@@ -407,6 +417,19 @@ export namespace CR {
     rcvFileTransfer: T.RcvFileTransfer
   }
 
+  export interface RemoteCtrlConnected extends Interface {
+    type: "remoteCtrlConnected"
+    remoteCtrl: T.RemoteCtrlInfo
+    compression: boolean
+  }
+
+  export interface RemoteCtrlConnecting extends Interface {
+    type: "remoteCtrlConnecting"
+    remoteCtrl_?: T.RemoteCtrlInfo
+    ctrlAppInfo: T.CtrlAppInfo
+    appVersion: string
+  }
+
   export interface SentConfirmation extends Interface {
     type: "sentConfirmation"
     user: T.User
@@ -429,6 +452,13 @@ export namespace CR {
     customUserProfile?: T.Profile
   }
 
+  export interface SentInvitationToContact extends Interface {
+    type: "sentInvitationToContact"
+    user: T.User
+    contact: T.Contact
+    customUserProfile?: T.Profile
+  }
+
   export interface ServiceReplyAccepted extends Interface {
     type: "serviceReplyAccepted"
     user: T.User
@@ -441,6 +471,21 @@ export namespace CR {
     chatItem_?: T.AChatItem
     fileTransferMeta: T.FileTransferMeta
     sndFileTransfers: T.SndFileTransfer[]
+  }
+
+  export interface StartedConnectionToContact extends Interface {
+    type: "startedConnectionToContact"
+    user: T.User
+    contact: T.Contact
+    customUserProfile?: T.Profile
+  }
+
+  export interface StartedConnectionToGroup extends Interface {
+    type: "startedConnectionToGroup"
+    user: T.User
+    groupInfo: T.GroupInfo
+    customUserProfile?: T.Profile
+    relayResults: T.RelayConnectionResult[]
   }
 
   export interface UserAcceptedGroupSent extends Interface {

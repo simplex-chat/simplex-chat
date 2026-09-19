@@ -14,6 +14,7 @@ module ChatTests.Groups where
 
 import ChatClient
 import ChatTests.DBUtils
+import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -29,6 +30,7 @@ import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf, isSuffixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
+import Simplex.Chat.Badges (FileSizeLimits (..))
 import Simplex.Chat.Controller (ChatController (ChatController, smpAgent), ChatConfig (..), ChatHooks (..), ChatLogLevel (..), defaultChatHooks)
 import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
@@ -46,6 +48,7 @@ import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff)
 import Simplex.Messaging.Protocol (MsgFlags (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
@@ -111,6 +114,7 @@ chatGroupTests = do
     it "shared batch body reference across binary and json members" testGroupSharedBatchBodyMixedModes
     it "shared batch body reused across binary and json members" testSharedBatchBodyMixed
     it "all old members group upgrades to current version" testGroupAllOldThenUpgrade
+    it "member key is generated at the first read of a group created without one" testGroupMemberKeyGenerated
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -188,6 +192,8 @@ chatGroupTests = do
   describe "group history" $ do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
+    it "file with badge proof is received from history" testGroupHistoryFileBadgeProof
+    it "file received from member with badge proof is received from history" testGroupHistoryRcvFileBadgeProof
     it "history is not sent if preference is disabled" testGroupHistoryPreferenceOff
     it "host's file" testGroupHistoryHostFile
     it "member's file" testGroupHistoryMemberFile
@@ -332,6 +338,7 @@ chatGroupTests = do
       it "should update channel message sent as member" testChannelOwnerUpdateAsMember
       it "should delete channel message sent as member" testChannelOwnerDeleteAsMember
       it "should send and receive file sent as member" testChannelOwnerFileTransferAsMember
+      it "should send and receive file with badge proof" testChannelFileBadgeProof
       it "should cancel file sent as member" testChannelOwnerFileCancelAsMember
       it "should attribute reactions to member" testChannelReactionAttribution
       it "should recreate deleted item with correct sendAsGroup from update" testChannelUpdateFallbackSendAsGroup
@@ -2587,6 +2594,60 @@ testGroupAllOldThenUpgrade ps =
         rc `shouldContain` [(0, "updated profile (signed)")]
   where
     oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
+
+testGroupMemberKeyGenerated :: HasCallStack => TestParams -> IO ()
+testGroupMemberKeyGenerated =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/create link #team"
+    gLink <- getGroupLink alice "team" GRMember True
+    bob ##> ("/c " <> gLink)
+    bob <## "connection request sent!"
+    alice <## "bob (Bob): accepting request to join group #team..."
+    concurrentlyN_
+      [ alice <## "#team: bob joined the group",
+        do
+          bob <## "#team: joining the group..."
+          bob <## "#team: you joined the group"
+      ]
+    alice #> "#team hi0"
+    bob <# "#team alice> hi0"
+    void $ withCCTransaction alice $ \db -> do
+      DB.execute_ db "UPDATE groups SET member_priv_key = NULL"
+      DB.execute_ db "UPDATE group_members SET member_pub_key = NULL WHERE member_category = 'user'"
+    void $ withCCTransaction bob $ \db ->
+      DB.execute_ db "UPDATE group_members SET member_pub_key = NULL WHERE member_category = 'host'"
+    alice ##> "/p alisa"
+    alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+    alice #> "#team hi1"
+    bob <# "#team alisa> hi1"
+    bob ##> "/_get chat #1 count=100"
+    r <- chat <$> getTermLine bob
+    r `shouldContain` [(0, "updated profile (signed, no key to verify)")]
+    privKey1 <- alicePrivKey alice
+    pubKey1 <- alicePubKey alice
+    bobKnownKey <- withCCTransaction bob $ \db ->
+      DB.query_ db "SELECT member_pub_key FROM group_members WHERE member_category = 'host'" :: IO [Only (Maybe C.PublicKeyEd25519)]
+    (C.publicKey <$> privKey1) `shouldBe` pubKey1
+    bobKnownKey `shouldBe` [Only pubKey1]
+    alice ##> "/p alisa2"
+    alice <## "user profile is changed to alisa2 (your 0 contacts are notified)"
+    alice #> "#team hi2"
+    bob <# "#team alisa2> hi2"
+    bob ##> "/_get chat #1 count=100"
+    r' <- chat <$> getTermLine bob
+    r' `shouldContain` [(0, "updated profile (signed)")]
+    privKey2 <- alicePrivKey alice
+    privKey2 `shouldBe` privKey1
+  where
+    alicePrivKey alice = do
+      [Only k] <- withCCTransaction alice $ \db -> DB.query_ db "SELECT member_priv_key FROM groups" :: IO [Only (Maybe C.PrivateKeyEd25519)]
+      pure k
+    alicePubKey alice = do
+      [Only k] <- withCCTransaction alice $ \db -> DB.query_ db "SELECT member_pub_key FROM group_members WHERE member_category = 'user'" :: IO [Only (Maybe C.PublicKeyEd25519)]
+      pure k
 
 testGroupAsync :: HasCallStack => TestParams -> IO ()
 testGroupAsync ps = do
@@ -12219,6 +12280,174 @@ testChannelOwnerFileTransferAsMember ps =
              ]
       cc <## ("completed receiving file " <> show fileId <> " (test.jpg) from alice")
       B.readFile path >>= (`shouldBe` src)
+
+testGroupHistoryFileBadgeProof :: HasCallStack => TestParams -> IO ()
+testGroupHistoryFileBadgeProof ps = do
+  Right (pk, sk) <- bbsKeyGen
+  let cfg = testCfg {badgePublicKeys = testBadgeKeys pk, fileSizeLimits = FileSizeLimits {noBadge = 100000, supporter = 300000, legend = 400000}}
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile (test sk) ps
+  where
+    test sk alice bob cath = withXFTPServer $ do
+      createGroup2 "team" alice bob
+      addTestBadge alice =<< issueTestBadge sk futureDate
+
+      alice #> "/f #team ./tests/fixtures/test.pdf"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.pdf) for #team"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   WithTime "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes) [>>]",
+                   "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
+               "started receiving file 1 (test.pdf) from alice"
+             ]
+      cath <## "completed receiving file 1 (test.pdf) from alice"
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test.pdf"
+      dest `shouldBe` src
+
+testGroupHistoryRcvFileBadgeProof :: HasCallStack => TestParams -> IO ()
+testGroupHistoryRcvFileBadgeProof ps = do
+  Right (pk, sk) <- bbsKeyGen
+  let cfg = testCfg {badgePublicKeys = testBadgeKeys pk, fileSizeLimits = FileSizeLimits {noBadge = 100000, supporter = 300000, legend = 400000}}
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile (test sk) ps
+  where
+    test sk alice bob cath = withXFTPServer $ do
+      createGroup2 "team" alice bob
+      addTestBadge bob =<< issueTestBadge sk futureDate
+
+      bob #> "/f #team ./tests/fixtures/test.pdf"
+      bob <## "use /fc 1 to cancel sending"
+      alice <# "#team bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice ##> "/fr 1 ./tests/tmp"
+      concurrentlyN_
+        [ bob <## "completed uploading file 1 (test.pdf) for #team",
+          alice
+            <### [ "saving file 1 from bob to ./tests/tmp/test.pdf",
+                   "started receiving file 1 (test.pdf) from bob"
+                 ]
+        ]
+      alice <## "completed receiving file 1 (test.pdf) from bob"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   WithTime "#team bob> sends file test.pdf (266.0 KiB / 272376 bytes) [>>]",
+                   "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from bob to ./tests/tmp/test_1.pdf",
+               "started receiving file 1 (test.pdf) from bob"
+             ]
+      cath <## "completed receiving file 1 (test.pdf) from bob"
+      src <- B.readFile "./tests/fixtures/test.pdf"
+      dest <- B.readFile "./tests/tmp/test_1.pdf"
+      dest `shouldBe` src
+
+testChannelFileBadgeProof :: HasCallStack => TestParams -> IO ()
+testChannelFileBadgeProof ps = do
+  Right (pk, sk) <- bbsKeyGen
+  let cfg = testCfg {badgePublicKeys = testBadgeKeys pk, fileSizeLimits = FileSizeLimits {noBadge = 100000, supporter = 300000, legend = 400000}}
+  withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatCfg ps cfg "cath" cathProfile $ \cath ->
+        withNewTestChatCfg ps cfg "dan" danProfile $ \dan ->
+          withNewTestChatCfg ps cfg "eve" eveProfile $ \eve -> withXFTPServer $ do
+            createChannel1Relay "team" alice bob cath dan eve
+            addTestBadge alice =<< issueTestBadge sk futureDate
+#if defined(dbPostgres)
+            let rcvFileId = 2 :: Int
+#else
+            let rcvFileId = 1 :: Int
+#endif
+            alice ##> "/_send #1(as_group=off) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
+            alice <# "/f #team ./tests/fixtures/test.jpg"
+            alice <## "use /fc 1 to cancel sending"
+            alice <## "completed uploading file 1 (test.jpg) for #team"
+            bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it")
+            concurrentlyN_
+              [ do
+                  cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  cath <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
+                do
+                  dan <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  dan <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]"),
+                do
+                  eve <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  eve <## ("use /fr " <> show rcvFileId <> " [<dir>/ | <path>] to receive it [>>]")
+              ]
+
+            src <- B.readFile "./tests/fixtures/test.jpg"
+            let path = "./tests/tmp/test_cath.jpg"
+            cath ##> ("/fr " <> show rcvFileId <> " " <> path)
+            cath
+              <### [ ConsoleString ("saving file " <> show rcvFileId <> " from alice to " <> path),
+                     ConsoleString ("started receiving file " <> show rcvFileId <> " (test.jpg) from alice")
+                   ]
+            cath <## ("completed receiving file " <> show rcvFileId <> " (test.jpg) from alice")
+            B.readFile path >>= (`shouldBe` src)
+
+            alice ##> "/_send #1(as_group=on) json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}]"
+            alice <# "/f #team ./tests/fixtures/test.jpg"
+            alice <## "use /fc 2 to cancel sending"
+            alice <## "completed uploading file 2 (test.jpg) for #team"
+            bob <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## ("use /fr " <> show (rcvFileId + 1) <> " [<dir>/ | <path>] to receive it")
+            concurrentlyN_
+              [ do
+                  cath <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  cath <## ("use /fr " <> show (rcvFileId + 1) <> " [<dir>/ | <path>] to receive it [>>]"),
+                do
+                  dan <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  dan <## ("use /fr " <> show (rcvFileId + 1) <> " [<dir>/ | <path>] to receive it [>>]"),
+                do
+                  eve <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  eve <## ("use /fr " <> show (rcvFileId + 1) <> " [<dir>/ | <path>] to receive it [>>]")
+              ]
+            let path2 = "./tests/tmp/test_cath_2.jpg"
+            cath ##> ("/fr " <> show (rcvFileId + 1) <> " " <> path2)
+            cath
+              <### [ ConsoleString ("saving file " <> show (rcvFileId + 1) <> " from #team to " <> path2),
+                     ConsoleString ("started receiving file " <> show (rcvFileId + 1) <> " (test.jpg) from #team")
+                   ]
+            cath <## ("completed receiving file " <> show (rcvFileId + 1) <> " (test.jpg) from #team")
+            B.readFile path2 >>= (`shouldBe` src)
 
 testChannelOwnerFileCancelAsMember :: HasCallStack => TestParams -> IO ()
 testChannelOwnerFileCancelAsMember ps =

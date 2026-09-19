@@ -24,7 +24,7 @@ import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Map.Strict as M
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatHooks (..), defaultChatHooks, mkStoreCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks, storeCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
 import Simplex.Chat.Store.Shared (createContact)
@@ -281,10 +281,13 @@ futureDate = posixSecondsToUTCTime 4102444800 -- 2100-01-01
 
 -- issue a supporter badge credential with the given expiry (test issuer)
 issueTestBadge :: BBSSecretKey -> UTCTime -> IO BadgeCredential
-issueTestBadge sk badgeExpiry = do
+issueTestBadge sk = issueTestBadgeType sk BTSupporter
+
+issueTestBadgeType :: BBSSecretKey -> BadgeType -> UTCTime -> IO BadgeCredential
+issueTestBadgeType sk badgeType badgeExpiry = do
   drg <- C.newRandom
   mk <- generateMasterKey drg
-  let info = BadgeInfo {badgeType = BTSupporter, badgeExpiry, badgeExtra = ""}
+  let info = BadgeInfo {badgeType, badgeExpiry, badgeExtra = ""}
   Just vreq <- verifyPayment (BPRedeemCode "TEST") BadgeRequest {masterKey = mk, badgeInfo = info}
   Right cred <- issueBadge 1 sk vreq
   pure cred
@@ -1608,13 +1611,13 @@ testPlanAddressContactViaAddress =
         Left _ -> error "error parsing contact link"
         Right cReq -> do
           let profile = aliceProfile {contactLink = Just cReq}
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config}} = bob in runExceptT $ createContact db (mkStoreCxt config) user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (storeCxt $ chatController bob) user profile
           bob @@@ [("@alice", "")]
 
           bob ##> "/delete @alice"
           bob <## "alice: contact is deleted"
 
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config}} = bob in runExceptT $ createContact db (mkStoreCxt config) user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (storeCxt $ chatController bob) user profile
           bob @@@ [("@alice", "")]
 
           bob ##> ("/_connect plan 1 " <> cLink)
@@ -1629,7 +1632,7 @@ testPlanAddressContactViaAddress =
           alice ##> "/delete @bob"
           alice <## "bob: contact is deleted"
 
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config}} = bob in runExceptT $ createContact db (mkStoreCxt config) user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (storeCxt $ chatController bob) user profile
           bob @@@ [("@alice", "")]
 
           -- GUI api
@@ -1670,13 +1673,13 @@ testPlanAddressContactViaShortAddress =
         Left _ -> error "error parsing contact link"
         Right shortLink -> do
           let profile = aliceProfile {contactLink = Just shortLink}
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config}} = bob in runExceptT $ createContact db (mkStoreCxt config) user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (storeCxt $ chatController bob) user profile
           bob @@@ [("@alice", "")]
 
           bob ##> "/delete @alice"
           bob <## "alice: contact is deleted"
 
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config}} = bob in runExceptT $ createContact db (mkStoreCxt config) user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (storeCxt $ chatController bob) user profile
           bob @@@ [("@alice", "")]
 
           bob ##> ("/_connect plan 1 " <> sLink)
@@ -1691,7 +1694,7 @@ testPlanAddressContactViaShortAddress =
           alice ##> "/delete @bob"
           alice <## "bob: contact is deleted"
 
-          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> let TestCC {chatController = ChatController {config}} = bob in runExceptT $ createContact db (mkStoreCxt config) user profile
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (storeCxt $ chatController bob) user profile
           bob @@@ [("@alice", "")]
 
           -- GUI api

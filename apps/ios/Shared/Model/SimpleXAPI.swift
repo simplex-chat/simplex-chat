@@ -124,8 +124,8 @@ func chatSendCmd<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDe
 }
 
 // Spec: spec/api.md#chatApiSendCmdWithRetry
-func chatApiSendCmdWithRetry<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, inProgress: BoxedValue<Bool>? = nil, retryNum: Int32 = 0) async -> APIResult<R>? {
-    let r: APIResult<R> = await chatApiSendCmd(cmd, bgTask: bgTask, bgDelay: bgDelay, retryNum: retryNum)
+func chatApiSendCmdWithRetry<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, inProgress: BoxedValue<Bool>? = nil, retryNum: Int32 = 0, log: Bool = true) async -> APIResult<R>? {
+    let r: APIResult<R> = await chatApiSendCmd(cmd, bgTask: bgTask, bgDelay: bgDelay, retryNum: retryNum, log: log)
     if inProgress == nil || inProgress?.boxedValue == true,
        case let .error(e) = r, let alert = retryableNetworkErrorAlert(e) {
         return await withCheckedContinuation { cont in
@@ -135,7 +135,7 @@ func chatApiSendCmdWithRetry<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool 
                     cont.resume(returning: nil)
                 },
                 onRetry: {
-                    let r1: APIResult<R>? = await chatApiSendCmdWithRetry(cmd, bgTask: bgTask, bgDelay: bgDelay, inProgress: inProgress, retryNum: retryNum + 1)
+                    let r1: APIResult<R>? = await chatApiSendCmdWithRetry(cmd, bgTask: bgTask, bgDelay: bgDelay, inProgress: inProgress, retryNum: retryNum + 1, log: log)
                     cont.resume(returning: r1)
                 }
             )
@@ -199,6 +199,10 @@ func retryableNetworkErrorAlert(_ e: ChatError) -> (title: String, message: Stri
     case let .errorAgent(.PROXY(proxyServer, destServer, .protocolError(.PROXY(.NO_SESSION)))): (
         title: NSLocalizedString("No private routing session", comment: "alert title"),
         message: proxyDestinationErrorAlertMessage(proxyServer: proxyServer, destServer: destServer)
+    )
+    case .errorAgent(.AGENT(.A_SERVICE(.timeout))): (
+        title: NSLocalizedString("Connection timeout", comment: "alert title"),
+        message: NSLocalizedString("The service did not respond. Please try again.", comment: "alert message")
     )
     default: nil
     }
@@ -2182,6 +2186,74 @@ func resetAgentServersStats() async throws {
     try await sendCommandOkResp(.resetAgentServersStats)
 }
 
+// log: false because the code is a bearer secret until it is redeemed - it is in the command.
+// nil when the user cancels the retry alert.
+func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: User, newBadge: Bool, badgeState: BadgeState?)? {
+    let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiRedeemBadgeCode(userId: userId, code: code), log: false)
+    guard let r else { return nil }
+    // redeemedBadge is dropped: the user's profile carries what is shown
+    if case let .result(.badgeRedeemed(user, _, newBadge, badgeState)) = r { return (user, newBadge, badgeState) }
+    throw r.unexpected
+}
+
+// localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
+func redeemErrorText(_ error: Error) -> String {
+    if case let .error(.badgeRedeemError(e)) = error as? ChatError {
+        switch e {
+        case .invalidCode: return NSLocalizedString("This code is not valid.", comment: "alert message")
+        case .serviceNotConfigured: return NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
+        case .badgeActive: return NSLocalizedString("This profile already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "alert message")
+        case .serviceError(.codeInvalid): return NSLocalizedString("This code was not recognised.", comment: "alert message")
+        case .serviceError(.codeUsed): return NSLocalizedString("This code has already been used.", comment: "alert message")
+        case .serviceError(.codeExpired): return NSLocalizedString("This code has expired.", comment: "alert message")
+        case .serviceError(.rateLimited): return NSLocalizedString("Too many attempts. Please try again later.", comment: "alert message")
+        case .serviceError(.unsupportedVersion): return NSLocalizedString("This app version is too old for the badge service. Please update the app.", comment: "alert message")
+        case .serviceError: break
+        case let .invalidResponse(message):
+            return String.localizedStringWithFormat(NSLocalizedString("The badge service sent an unexpected response: %@", comment: "alert message"), message)
+        case .unknownKeyIndex, .credentialNotVerified: return NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")
+        }
+    }
+    return String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "alert message"), responseError(error))
+}
+
+func apiGetBadgeState(_ userId: Int64) async throws -> BadgeState? {
+    let r: ChatResponse2 = try await chatSendCmd(.apiGetBadgeState(userId: userId))
+    if case let .badgeState(_, badgeState) = r { return badgeState }
+    throw r.unexpected
+}
+
+func apiGetBadgeStateSync(_ userId: Int64) throws -> BadgeState? {
+    let r: ChatResponse2 = try chatSendCmdSync(.apiGetBadgeState(userId: userId))
+    if case let .badgeState(_, badgeState) = r { return badgeState }
+    throw r.unexpected
+}
+
+func apiGetBadgeLedger(_ userId: Int64, _ badgePurchaseId: Int64) async throws -> [StatementEntry] {
+    let r: ChatResponse2 = try await chatSendCmd(.apiGetBadgeLedger(userId: userId, badgePurchaseId: badgePurchaseId))
+    if case let .badgeLedger(_, badgeLedger) = r { return badgeLedger }
+    throw r.unexpected
+}
+
+func apiAckBadgeAlert(_ userId: Int64, _ badgePurchaseId: Int64, _ alertKind: BadgeAlertKind, snooze: Bool, episode: String) async throws -> BadgeState? {
+    let r: ChatResponse2 = try await chatSendCmd(.apiAckBadgeAlert(userId: userId, badgePurchaseId: badgePurchaseId, alertKind: alertKind, snooze: snooze, episode: episode))
+    if case let .badgeState(_, badgeState) = r { return badgeState }
+    throw r.unexpected
+}
+
+// An API call and not a stored flag: the ack is kept on the purchase in core, which then stops
+// raising this occurrence on every pass and across restarts, or until a snooze lapses.
+func ackBadgeAlert(snooze: Bool) async {
+    let badgeModel = BadgeModel.shared
+    guard let userId = badgeModel.userId, let purchaseId = badgeModel.badgeState?.badgePurchaseId, let alert = badgeModel.alert else { return }
+    do {
+        let badgeState = try await apiAckBadgeAlert(userId, purchaseId, alert.kind, snooze: snooze, episode: alert.episode)
+        await MainActor.run { badgeModel.set(userId: userId, badgeState: badgeState) }
+    } catch let error {
+        logger.error("ackBadgeAlert: \(responseError(error))")
+    }
+}
+
 private func currentUserId(_ funcName: String) throws -> Int64 {
     if let userId = ChatModel.shared.currentUser?.userId {
         return userId
@@ -2352,12 +2424,34 @@ func getUserChatData() throws {
     tm.activeFilter = nil
     tm.userTags = tags
     tm.updateChatTags(m.chats)
+    loadBadgeState()
+}
+
+// Not thrown: a failed badge read must not stop the app starting, and the model is left alone
+// rather than set to nil, which would read as "no badge".
+private func loadBadgeState() {
+    do {
+        let userId = try currentUserId("loadBadgeState")
+        let badgeState = try apiGetBadgeStateSync(userId)
+        BadgeModel.shared.set(userId: userId, badgeState: badgeState)
+    } catch let error {
+        logger.error("loadBadgeState: \(responseError(error))")
+    }
+}
+
+private func loadBadgeStateAsync(_ userId: Int64) async {
+    do {
+        let badgeState = try await apiGetBadgeState(userId)
+        await MainActor.run { BadgeModel.shared.set(userId: userId, badgeState: badgeState) }
+    } catch let error {
+        logger.error("loadBadgeState: \(responseError(error))")
+    }
 }
 
 private func getUserChatDataAsync(keepingChatId: String?) async throws {
     let m = ChatModel.shared
     let tm = ChatTagsModel.shared
-    if m.currentUser != nil {
+    if let userId = m.currentUser?.userId {
         let userAddress = try await apiGetUserAddressAsync()
         let chatItemTTL = try await getChatItemTTLAsync()
         let chats = try await apiGetChatsAsync()
@@ -2370,6 +2464,7 @@ private func getUserChatDataAsync(keepingChatId: String?) async throws {
             tm.userTags = tags
             tm.updateChatTags(m.chats)
         }
+        await loadBadgeStateAsync(userId)
     } else {
         await MainActor.run {
             m.userAddress = nil
@@ -2946,6 +3041,20 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if active(user) {
             await MainActor.run {
                 m.updateContact(contact)
+            }
+        }
+    case let .badgeChanged(user, badgeState):
+        await MainActor.run {
+            // read by core after retiring or presenting, so it carries the profile badge as changed
+            m.updateUser(user)
+            if active(user) {
+                BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
+            }
+        }
+    case let .badgeAlert(user, badgeAlert):
+        if active(user) {
+            await MainActor.run {
+                BadgeModel.shared.setAlert(userId: user.userId, alert: badgeAlert)
             }
         }
     default:

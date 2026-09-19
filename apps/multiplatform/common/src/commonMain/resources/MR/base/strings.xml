@@ -12,8 +12,6 @@
   <string name="connect_use_incognito_profile">Use incognito profile</string>
   <string name="profile_will_be_sent_to_contact_sending_link">Your profile will be sent to the contact that you received this link from.</string>
   <string name="you_will_join_group">You will connect to all group members.</string>
-  <string name="connect_via_link_verb">Connect</string>
-  <string name="connect_via_link_incognito">Connect incognito</string>
   <string name="connect_plan_open_chat">Open chat</string>
   <string name="connect_plan_join_name">Join channel %s</string>
   <string name="connect_plan_connect_to_name">Connect to %s</string>
@@ -128,12 +126,6 @@
   <string name="report_reason_other">Another reason</string>
 
   <!-- SimpleXAPI.kt -->
-  <string name="error_saving_smp_servers">Error saving SMP servers</string>
-  <string name="error_saving_xftp_servers">Error saving XFTP servers</string>
-  <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
-  <string name="ensure_xftp_server_address_are_correct_format_and_unique">Make sure XFTP server addresses are in correct format, line separated and are not duplicated.</string>
-  <string name="error_loading_smp_servers">Error loading SMP servers</string>
-  <string name="error_loading_xftp_servers">Error loading XFTP servers</string>
   <string name="error_setting_network_config">Error updating network configuration</string>
   <string name="failed_to_parse_chat_title">Failed to load chat</string>
   <string name="failed_to_parse_chats_title">Failed to load chats</string>
@@ -178,6 +170,7 @@
   <string name="proxy_destination_error_failed_to_connect">Forwarding server %1$s failed to connect to destination server %2$s. Please try later.</string>
   <string name="proxy_destination_error_broker_host">Destination server address of %1$s is incompatible with forwarding server %2$s settings.</string>
   <string name="proxy_destination_error_broker_version">Destination server version of %1$s is incompatible with forwarding server %2$s.</string>
+  <string name="service_request_timeout_desc">The service did not respond. Please try again.</string>
   <string name="please_try_later">Please try later.</string>
   <string name="error_sending_message">Error sending message</string>
   <string name="error_forwarding_messages">Error forwarding messages</string>
@@ -203,11 +196,6 @@
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
   <string name="unsupported_connection_link">Unsupported connection link</string>
   <string name="link_requires_newer_app_version_please_upgrade">This link requires a newer app version. Please upgrade the app or ask your contact to send a compatible link.</string>
-  <string name="unsupported_channel_name">Unsupported channel name</string>
-  <string name="unsupported_contact_name">Unsupported contact name</string>
-  <string name="channel_name_requires_newer_app_version">Connecting via channel name requires a newer app version.</string>
-  <string name="contact_name_requires_newer_app_version">Connecting via contact name requires a newer app version.</string>
-  <string name="please_upgrade_the_app">Please upgrade the app.</string>
   <string name="simplex_name_error">SimpleX name error</string>
   <string name="simplex_name_no_servers_desc">None of your servers are set to resolve SimpleX names. Configure servers, or use a connection link.</string>
   <string name="simplex_name_server_no_resolver_desc">Server %1$s does not support name resolution. Configure servers, or use a connection link.</string>
@@ -373,7 +361,6 @@
   <string name="report_archive_alert_title">Archive report?</string>
   <string name="report_archive_alert_title_nth">Archive %d reports?</string>
   <string name="report_archive_alert_title_all">Archive all reports?</string>
-  <string name="report_archive_alert_desc">The report will be archived for you.</string>
   <string name="report_archive_alert_desc_all">All reports will be archived for you.</string>
   <string name="report_archive_for_me">For me</string>
   <string name="report_archive_for_all_moderators">For all moderators</string>
@@ -424,7 +411,6 @@
   <string name="content_filter_files">Files</string>
   <string name="content_filter_links">Links</string>
   <string name="content_filter_all_messages">All messages</string>
-  <string name="content_filter_menu_item">Filter</string>
   <string name="archive_verb">Archive</string>
   <string name="archive_report">Archive report</string>
   <string name="archive_reports">Archive reports</string>
@@ -492,8 +478,6 @@
 
   <!-- ChatListView.kt -->
   <string name="personal_welcome">Welcome %1$s!</string>
-  <string name="welcome">Welcome!</string>
-  <string name="this_text_is_available_in_settings">This text is available in settings</string>
   <string name="your_chats">Chats</string>
   <string name="toolbar_settings">Settings</string>
   <string name="contact_connection_pending">connecting…</string>
@@ -503,7 +487,6 @@
   <string name="group_preview_join_as">Join as %s</string>
   <string name="group_preview_rejected">rejected</string>
   <string name="group_connection_pending">connecting…</string>
-  <string name="tap_to_start_new_chat">Tap to start a new chat</string>
   <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
   <string name="talk_to_someone">Talk to someone</string>
@@ -528,7 +511,6 @@
   <string name="contact_should_accept">contact should accept…</string>
   <string name="connect_with_contact_name_question">Connect with %1$s?</string>
   <string name="search_or_paste_simplex_link">Search or paste SimpleX link</string>
-  <string name="address_creation_instruction">Tap Create SimpleX address in the menu to create it later.</string>
 
   <!-- ChatView.kt -->
   <string name="no_selected_chat">No selected chat</string>
@@ -687,6 +669,15 @@
   <string name="icon_descr_file">File</string>
   <string name="large_file">Large file!</string>
   <string name="contact_sent_large_file">Your contact sent a file that is larger than currently supported maximum size (%1$s).</string>
+  <string name="supporter_badge">supporter badge</string>
+  <string name="legend_badge">legend badge</string>
+  <string name="large_file_requires_badge">You need a %1$s to send files larger than %2$s.</string>
+  <string name="max_file_size_with_badge">Maximum supported file size is %1$s, with a %2$s.</string>
+  <string name="badge_expired">Contact\'s badge expired.</string>
+  <string name="badge_verification_failed">Contact\'s badge verification failed.</string>
+  <string name="badge_no_key">No key to verify contact\'s badge.</string>
+  <string name="your_badge_expired">Your badge expired.</string>
+  <string name="large_file_incognito">Files larger than %1$s cannot be sent in incognito chats.</string>
   <string name="maximum_supported_file_size">Currently maximum supported file size is %1$s.</string>
   <string name="waiting_for_file">Waiting for file</string>
   <string name="file_will_be_received_when_contact_completes_uploading">File will be received when your contact completes uploading it.</string>
@@ -717,8 +708,6 @@
   <string name="chat_ttl_options_footer">Delete chat messages from your device.</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
-  <string name="info_view_connect_button">connect</string>
-  <string name="info_view_open_button">open</string>
   <string name="info_view_message_button">message</string>
   <string name="info_view_call_button">call</string>
   <string name="info_view_search_button">search</string>
@@ -741,7 +730,6 @@
   <string name="icon_descr_server_status_connected">Connected</string>
   <string name="icon_descr_server_status_disconnected">Disconnected</string>
   <string name="icon_descr_server_status_error">Error</string>
-  <string name="icon_descr_server_status_pending">Pending</string>
   <string name="switch_receiving_address_question">Change receiving address?</string>
   <string name="switch_receiving_address_desc">Receiving address will be changed to a different server. Address change will complete after sender comes online.</string>
   <string name="abort_switch_receiving_address_question">Abort changing address?</string>
@@ -803,12 +791,8 @@
 
   <!-- NewChatSheet -->
   <string name="add_contact_or_create_group">Start new chat</string>
-  <string name="share_one_time_link">Create one-time invitation link</string>
-  <string name="connect_via_link_or_qr">Connect via link / QR code</string>
   <string name="scan_QR_code">Scan QR code</string>
   <string name="create_group">Create secret group</string>
-  <string name="to_share_with_your_contact">(to share with your contact)</string>
-  <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scan or paste from clipboard)</string>
   <string name="only_stored_on_members_devices">(only stored by group members)</string>
 
   <!-- QRCodeScanner -->
@@ -871,7 +855,6 @@
   <string name="unmute_chat">Unmute</string>
   <string name="favorite_chat">Favorite</string>
   <string name="unfavorite_chat">Unfavorite</string>
-  <string name="unread_mentions">Unread mentions</string>
 
   <!-- Tags - ChatListNavLinkView.kt -->
   <string name="create_list">Create list</string>
@@ -921,19 +904,12 @@
   <string name="show_QR_code">Show QR code</string>
 
   <!-- Add Contact - AddContactView.kt -->
-  <string name="invalid_QR_code">Invalid QR code</string>
-  <string name="this_QR_code_is_not_a_link">This QR code is not a link!</string>
   <string name="invalid_contact_link">Invalid link!</string>
-  <string name="this_link_is_not_a_valid_connection_link">This link is not a valid connection link!</string>
   <string name="connection_request_sent">Connection request sent!</string>
   <string name="you_will_be_connected_when_group_host_device_is_online">You will be connected to group when the group host\'s device is online, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_connection_request_is_accepted">You will be connected when your connection request is accepted, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_contacts_device_is_online">You will be connected when your contact\'s device is online, please wait or check later!</string>
-  <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[If you can\'t meet in person, <b>show QR code in the video call</b>, or share the link.]]></string>
-  <string name="your_chat_profile_will_be_sent_to_your_contact">Your chat profile will be sent\nto your contact</string>
-  <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[If you cannot meet in person, you can <b>scan QR code in the video call</b>, or your contact can share an invitation link.]]></string>
   <string name="share_invitation_link">Share 1-time link</string>
-  <string name="paste_the_link_you_received_to_connect_with_your_contact">Paste the link you received to connect with your contact…</string>
   <string name="learn_more">Learn more</string>
   <string name="learn_more_about_address">About SimpleX address</string>
 
@@ -947,7 +923,6 @@
   <!-- User Address Learn More - UserAddressLearnMore.kt -->
   <string name="share_address_publicly">Share address publicly</string>
   <string name="share_simplex_address_on_social_media">Share SimpleX address on social media.</string>
-  <string name="you_can_share_your_address">You can share your address as a link or QR code - anybody can connect to you.</string>
   <string name="you_wont_lose_your_contacts_if_delete_address">You won\'t lose your contacts if you later delete your address.</string>
   <string name="share_1_time_link_with_a_friend">Share 1-time link with a friend</string>
   <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[1-time link can be used <i>with one contact only</i> - share in person or via any messenger.]]></string>
@@ -955,7 +930,6 @@
   <string name="connection_security">Connection security</string>
   <string name="simplex_address_and_1_time_links_are_safe_to_share">SimpleX address and 1-time links are safe to share via any messenger.</string>
   <string name="to_protect_against_your_link_replaced_compare_codes">To protect against your link being replaced, you can compare contact security codes.</string>
-  <string name="you_can_accept_or_reject_connection">When people request to connect, you can accept or reject it.</string>
   <string name="read_more_in_user_guide_with_link"><![CDATA[Read more in <font color="#0088ff">User Guide</font>.]]></string>
   <string name="address_or_1_time_link">Address or 1-time link?</string>
 
@@ -964,7 +938,6 @@
   <string name="connect_button">Connect</string>
   <string name="paste_button">Paste</string>
   <string name="this_string_is_not_a_connection_link">This string is not a connection link!</string>
-  <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[You can also connect by clicking the link. If it opens in the browser, click <b>Open in mobile app</b> button.]]></string>
 
   <!-- NewChatView.kt -->
   <string name="new_chat">New chat</string>
@@ -978,7 +951,6 @@
   <string name="verify_simplex_name_action">Verify name</string>
   <string name="verify_simplex_names">Verify SimpleX names</string>
   <string name="simplex_name_not_verified">SimpleX name not verified</string>
-  <string name="simplex_name">SimpleX name</string>
   <string name="your_simplex_name">Your SimpleX name</string>
   <string name="set_simplex_name">Set SimpleX name</string>
   <string name="error_saving_simplex_name">Error saving name</string>
@@ -1046,11 +1018,7 @@
   <string name="chat_lock">SimpleX Lock</string>
   <string name="chat_console">Chat console</string>
   <string name="message_servers">Message servers</string>
-  <string name="smp_servers">SMP servers</string>
-  <string name="smp_servers_configured">Configured SMP servers</string>
-  <string name="smp_servers_other">Other SMP servers</string>
   <string name="smp_servers_preset_address">Preset server address</string>
-  <string name="smp_servers_preset_add">Add preset servers</string>
   <string name="smp_servers_add">Add server</string>
   <string name="smp_servers_test_server">Test server</string>
   <string name="smp_servers_test_servers">Test servers</string>
@@ -1060,8 +1028,6 @@
   <string name="smp_servers_scan_qr">Scan server QR code</string>
   <string name="smp_servers_enter_manually">Enter server manually</string>
   <string name="smp_servers_new_server">New server</string>
-  <string name="smp_servers_preset_server">Preset server</string>
-  <string name="smp_servers_your_server">Your server</string>
   <string name="smp_servers_your_server_address">Your server address</string>
   <string name="smp_servers_use_server">Use server</string>
   <string name="smp_servers_use_server_for_new_conn">Use for new connections</string>
@@ -1072,9 +1038,6 @@
   <string name="smp_servers_per_user">The servers for new connections of your current chat profile</string>
   <string name="smp_save_servers_question">Save servers?</string>
   <string name="media_and_file_servers">Media &amp; file servers</string>
-  <string name="xftp_servers">XFTP servers</string>
-  <string name="xftp_servers_configured">Configured XFTP servers</string>
-  <string name="xftp_servers_other">Other XFTP servers</string>
   <string name="subscription_percentage">Show percentage</string>
   <string name="install_simplex_chat_for_terminal">Install SimpleX Chat for terminal</string>
   <string name="reset_all_hints">Reset all hints</string>
@@ -1082,8 +1045,6 @@
   <string name="contribute">Contribute</string>
   <string name="rate_the_app">Rate the app</string>
   <string name="use_simplex_chat_servers__question">Use SimpleX Chat servers?</string>
-  <string name="your_SMP_servers">Your SMP servers</string>
-  <string name="your_XFTP_servers">Your XFTP servers</string>
   <string name="using_simplex_chat_servers">Using SimpleX Chat servers.</string>
   <string name="how_to">How to</string>
   <string name="how_to_use_your_servers">How to use your servers</string>
@@ -1133,7 +1094,6 @@
   <string name="network_session_mode_session_description">New SOCKS credentials will be used every time you start the app.</string>
   <string name="network_session_mode_server_description">New SOCKS credentials will be used for each server.</string>
   <string name="network_session_mode_entity_description"><![CDATA[A separate TCP connection (and SOCKS credential) will be used <b>for each contact and group member</b>.\n<b>Please note</b>: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.]]></string>
-  <string name="update_network_session_mode_question">Update transport isolation mode?</string>
   <string name="disable_onion_hosts_when_not_supported"><![CDATA[Set <i>Use .onion hosts</i> to No if SOCKS proxy does not support them.]]></string>
   <string name="socks_proxy_setting_limitations"><![CDATA[<b>Please note</b>: message and file relays are connected via SOCKS proxy. Calls use direct connection.]]></string>
   <string name="network_smp_proxy_mode_private_routing">Private routing</string>
@@ -1145,7 +1105,6 @@
   <string name="network_smp_proxy_mode_unknown_description">Use private routing with unknown servers.</string>
   <string name="network_smp_proxy_mode_unprotected_description">Use private routing with unknown servers when IP address is not protected.</string>
   <string name="network_smp_proxy_mode_never_description">Do NOT use private routing.</string>
-  <string name="update_network_smp_proxy_mode_question">Message routing mode</string>
   <string name="network_smp_proxy_fallback_allow_downgrade">Allow downgrade</string>
   <string name="network_smp_proxy_fallback_allow">Yes</string>
   <string name="network_smp_proxy_fallback_allow_protected">When IP hidden</string>
@@ -1153,7 +1112,6 @@
   <string name="network_smp_proxy_fallback_allow_description">Send messages directly when your or destination server does not support private routing.</string>
   <string name="network_smp_proxy_fallback_allow_protected_description">Send messages directly when IP address is protected and your or destination server does not support private routing.</string>
   <string name="network_smp_proxy_fallback_prohibit_description">Do NOT send messages directly, even if your or destination server does not support private routing.</string>
-  <string name="update_network_smp_proxy_fallback_question">Message routing fallback</string>
   <string name="private_routing_show_message_status">Show message status</string>
   <string name="private_routing_explanation">To protect your IP address, private routing uses your SMP servers to deliver messages.</string>
   <string name="network_smp_web_port_section_title">TCP port for messaging</string>
@@ -1211,7 +1169,6 @@
   <string name="all_your_contacts_will_remain_connected_update_sent">All your contacts will remain connected. Profile update will be sent to your contacts.</string>
   <string name="share_link">Share link</string>
   <string name="add_address_to_your_profile">Add address to your profile, so that your SimpleX contacts can share it with other people. Profile update will be sent to your SimpleX contacts.</string>
-  <string name="create_address_and_let_people_connect">Create an address to let people connect with you.</string>
   <string name="create_simplex_address">Create SimpleX address</string>
   <string name="share_with_contacts">Share with SimpleX contacts</string>
   <string name="share_address_with_contacts_question">Share address with SimpleX contacts?</string>
@@ -1220,7 +1177,6 @@
   <string name="stop_sharing">Stop sharing</string>
   <string name="auto_accept_contact">Auto-accept</string>
   <string name="group_invitations">Group invitations</string>
-  <string name="sent_to_your_contact_after_connection">Sent to your contact after connection.</string>
   <string name="address_welcome_message">Welcome message</string>
   <string name="enter_welcome_message_optional">Enter welcome message… (optional)</string>
   <string name="save_settings_question">Save settings?</string>
@@ -1253,9 +1209,6 @@
 
   <!-- CreateSimpleXAddress.kt -->
   <string name="continue_to_next_step">Continue</string>
-  <string name="dont_create_address">Don\'t create address</string>
-  <string name="you_can_create_it_later">You can create it later</string>
-  <string name="you_can_make_address_visible_via_settings">You can make it visible to your SimpleX contacts via Settings.</string>
   <string name="invite_friends_short">Invite</string>
 
   <!-- User profile details - UserProfileView.kt -->
@@ -1289,16 +1242,12 @@
   <string name="error_saving_user_password">Error saving user password</string>
 
   <!-- Welcome Prompts - WelcomeView.kt -->
-  <string name="you_control_your_chat">You control your chat!</string>
-  <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">The messaging and application platform protecting your privacy and security.</string>
-  <string name="we_do_not_store_contacts_or_messages_on_servers">We don\'t store any of your contacts or messages (once delivered) on the servers.</string>
   <string name="create_profile">Create profile</string>
   <string name="your_profile_is_stored_on_your_device">Your profile, contacts and delivered messages are stored on your device.</string>
   <string name="profile_is_only_shared_with_your_contacts">The profile is only shared with your contacts.</string>
   <string name="display_name_cannot_contain_whitespace">Display name cannot contain whitespace.</string>
   <string name="display_name">Enter your name:</string>
   <string name="short_descr">Your bio:</string>
-  <string name="create_profile_button">Create</string>
   <string name="create_another_profile_button">Create profile</string>
   <string name="create_address_button">Create</string>
   <string name="invalid_name">Invalid name!</string>
@@ -1354,13 +1303,6 @@
   <string name="error_initializing_web_view_wrong_arch">Error initializing WebView. Make sure you have WebView installed and it\'s supported architecture is arm64.\nError: %s</string>
 
   <!-- SimpleXInfo -->
-  <string name="next_generation_of_private_messaging">The future of messaging</string>
-  <string name="privacy_redefined">Privacy redefined</string>
-  <string name="first_platform_without_user_ids">No user identifiers.</string>
-  <string name="immune_to_spam_and_abuse">Immune to spam</string>
-  <string name="people_can_connect_only_via_links_you_share">You decide who can connect.</string>
-  <string name="decentralized">Decentralized</string>
-  <string name="opensource_protocol_and_code_anybody_can_run_servers">Anybody can host servers.</string>
   <string name="create_your_profile">Create your profile</string>
   <string name="make_private_connection">Make a private connection</string>
   <string name="migrate_from_another_device">Migrate from another device</string>
@@ -1386,13 +1328,8 @@
   <string name="why_built_p6">The oldest human freedom — to speak to another person without being watched — built on infrastructure that cannot betray it.</string>
   <string name="why_built_p7">Because we destroyed the power to know who you are. So that your power can never be taken.</string>
   <string name="why_built_tagline">Be free in your network.</string>
-  <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect your privacy, SimpleX uses separate IDs for each of your contacts.</string>
-  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Only client devices store user profiles, contacts, groups, and messages.</string>
-  <string name="all_message_and_files_e2e_encrypted"><![CDATA[All messages and files are sent <b>end-to-end encrypted</b>, with post-quantum security in direct messages.]]></string>
-  <string name="read_more_in_github_with_link"><![CDATA[Read more in our <font color="#0088ff">GitHub repository</font>.]]></string>
 
   <!-- SetNotificationsMode.kt -->
-  <string name="use_chat">Use chat</string>
   <string name="onboarding_notifications_mode_title">Private notifications</string>
   <string name="onboarding_notifications_mode_subtitle">How it affects battery</string>
   <string name="onboarding_notifications_mode_off">When app is running</string>
@@ -1423,13 +1360,8 @@
   <string name="onboarding_network_operators_cant_see_who_talks_to_whom">When more than one operator is enabled, none of them has metadata to learn who communicates with whom.</string>
   <string name="onboarding_network_operators_app_will_use_for_routing">For example, if your contact receives messages via a SimpleX Chat server, your app will deliver them via a Flux server.</string>
   <string name="onboarding_network_about_operators">About operators</string>
-  <string name="onboarding_select_network_operators_to_use">Select network operators to use.</string>
   <string name="how_it_helps_privacy">How it helps privacy</string>
   <string name="onboarding_network_operators_configure_via_settings">You can configure servers via settings.</string>
-  <string name="onboarding_network_operators_conditions_will_be_accepted">Conditions will be accepted for enabled operators after 30 days.</string>
-  <string name="onboarding_network_operators_conditions_you_can_configure">You can configure operators in Network &amp; servers settings.</string>
-  <string name="onboarding_network_operators_review_later">Review later</string>
-  <string name="onboarding_network_operators_update">Update</string>
   <string name="onboarding_network_operators_continue">Continue</string>
 
   <!-- Onboarding Step 3: Your Network -->
@@ -1467,7 +1399,6 @@
   <string name="accept_call_on_lock_screen">Accept</string>
   <string name="show_call_on_lock_screen">Show</string>
   <string name="no_call_on_lock_screen">Disable</string>
-  <string name="your_ice_servers">Your ICE servers</string>
   <string name="webrtc_ice_servers">WebRTC ICE servers</string>
   <string name="relay_server_protects_ip">Relay server protects your IP address, but it can observe the duration of the call.</string>
   <string name="relay_server_if_necessary">Relay server is only used if necessary. Another party can observe your IP address.</string>
@@ -1570,7 +1501,6 @@
   <string name="empty_chat_profile_is_created">An empty chat profile with the provided name is created, and the app opens as usual.</string>
   <string name="if_you_enter_passcode_data_removed">If you enter this passcode when opening the app, all app data will be irreversibly removed!</string>
   <string name="set_passcode">Set passcode</string>
-  <string name="this_setting_is_for_your_current_profile">This setting is for your current profile</string>
   <string name="these_settings_are_for_your_current_profile">These settings are for your current profile</string>
   <string name="receipts_section_description_1">They can be overridden in contact and group settings.</string>
   <string name="receipts_section_contacts">Contacts</string>
@@ -1617,7 +1547,6 @@
   <string name="settings_section_title_files">Files</string>
   <string name="settings_section_title_delivery_receipts">Send delivery receipts to</string>
   <string name="settings_section_title_contact_requests_from_groups">Contact requests in groups</string>
-  <string name="settings_section_title_about">About</string>
   <string name="settings_section_title_contact">Contact</string>
   <string name="settings_section_title_support_project">Support the project</string>
   <string name="chat_data">Chat data</string>
@@ -1628,7 +1557,6 @@
   <string name="settings_shutdown">Shutdown</string>
   <string name="settings_developer_tools">Developer tools</string>
   <string name="settings_experimental_features">Experimental features</string>
-  <string name="settings_section_title_socks">SOCKS proxy</string>
   <string name="settings_section_title_interface" translatable="false">Interface</string>
   <string name="settings_section_title_language" translatable="false">LANGUAGE</string>
   <string name="settings_section_title_icon">App icon</string>
@@ -1651,7 +1579,6 @@
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
   <string name="run_chat_section">Run chat</string>
-  <string name="remote_hosts_section">Remote mobiles</string>
   <string name="chat_is_running">Chat is running</string>
   <string name="chat_is_stopped">Chat is stopped</string>
   <string name="chat_database_section">Chat database</string>
@@ -1785,7 +1712,6 @@
   <string name="one_hand_ui_top_bar">Top bar</string>
   <string name="one_hand_ui_change_instruction">You can change it in Appearance settings.</string>
   <string name="terminal_always_visible">Show console in new window</string>
-  <string name="chat_list_always_visible">Show chat list in new window</string>
   <string name="invalid_migration_confirmation">Invalid migration confirmation</string>
   <string name="upgrade_and_open_chat">Upgrade and open chat</string>
   <string name="downgrade_and_open_chat">Downgrade and open chat</string>
@@ -2028,7 +1954,6 @@
   <string name="action_button_add_members">Invite</string>
   <string name="action_button_channel_link">Link</string>
   <string name="button_support_chat">Chat with admins</string>
-  <string name="button_channel_members">Channel members</string>
   <string name="button_channel_relays">Chat relays</string>
 
   <!-- Chat / Chat item info -->
@@ -2199,7 +2124,6 @@
   <string name="operator">Operator</string>
   <string name="operator_servers_title">%s servers</string>
   <string name="operator_info_title">Network operator</string>
-  <string name="operator_website">Website</string>
   <string name="operator_conditions_accepted_on">Conditions accepted on: %s.</string>
   <string name="operator_conditions_will_be_accepted_on">Conditions will be accepted on: %s.</string>
   <string name="operator_use_operator_toggle_description">Use servers</string>
@@ -2378,7 +2302,6 @@
   <string name="simplex_links">SimpleX links</string>
   <string name="recent_history">Visible history</string>
   <string name="audio_video_calls">Audio/video calls</string>
-  <string name="available_in_v51">\nAvailable in v5.1</string>
   <string name="feature_enabled">enabled</string>
   <string name="feature_enabled_for_you">enabled for you</string>
   <string name="feature_enabled_for_contact">enabled for contact</string>
@@ -2705,7 +2628,6 @@
   <string name="v6_2_network_decentralization">Network decentralization</string>
   <string name="v6_2_network_decentralization_descr">The second preset operator in the app!</string>
   <string name="v6_2_network_decentralization_enable_flux">Enable Flux in Network &amp; servers settings for better metadata privacy.</string>
-  <string name="v6_2_network_decentralization_enable_flux_reason">for better metadata privacy.</string>
   <string name="v6_2_improved_chat_navigation">Improved chat navigation</string>
   <string name="v6_2_improved_chat_navigation_descr">- Open chat on the first unread message.\n- Jump to quoted messages.</string>
   <string name="v6_2_business_chats">Business chats</string>
@@ -3047,7 +2969,6 @@
   <string name="downloaded_files">Downloaded files</string>
   <string name="download_errors">Download errors</string>
   <string name="server_address">Server address</string>
-  <string name="open_server_settings_button">Open server settings</string>
 
   <!-- GroupMentions.kt -->
   <string name="max_group_mentions_per_message_reached">You can mention up to %1$s members per message!</string>
@@ -3166,7 +3087,6 @@
   <string name="your_profile_shared_with_channel_relays">Your profile %1$s will be shared with channel relays and subscribers.\nRelays can access channel messages.</string>
   <string name="configure_relays">Configure relays</string>
   <string name="relay_status_failed">failed</string>
-  <string name="add_button">Add</string>
   <string name="add_relay_button">Add relay</string>
   <string name="add_relays_title">Add relays</string>
   <string name="no_available_relays">No available relays</string>
@@ -3184,12 +3104,10 @@
   <string name="relay_address_alert_title">Relay address</string>
   <string name="relay_address_alert_message">This is a chat relay address, it cannot be used to connect.</string>
   <string name="connect_plan_open_channel">Open channel</string>
-  <string name="connect_plan_open_new_channel">Open new channel</string>
   <string name="connect_plan_you_are_subscriber">You are a subscriber</string>
   <string name="connect_plan_you_are_contributor">You are a contributor</string>
   <string name="connect_plan_this_is_your_link_for_channel">Your channel</string>
   <string name="connect_plan_this_is_your_link_for_channel_vName"><![CDATA[This is your link for channel <b>%1$s</b>!]]></string>
-  <string name="error_opening_channel">Error opening channel</string>
 
   <!-- ChatListNavLinkView.kt channel-related -->
   <string name="unblock_subscriber_for_all_question">Unblock subscriber for all?</string>
@@ -3220,4 +3138,93 @@
   <string name="badge_unverified_desc">This badge could not be verified and may not be genuine.</string>
   <string name="badge_unknown_key_title">Badge cannot be verified</string>
   <string name="badge_unknown_key_desc">The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge.</string>
+  <string name="badges_level_supporter">Supporter</string>
+  <string name="badges_level_legend">Legend</string>
+  <string name="badges_level_supporter_files">Send 2GB files</string>
+  <string name="badges_level_legend_files">Send 5GB files</string>
+  <string name="badges_price_monthly">%1$s/month</string>
+  <string name="badges_price_annual">%1$s/year</string>
+  <string name="badges_pay_monthly">Pay %1$s/month</string>
+  <string name="badges_pay_annual">Pay %1$s/year</string>
+  <string name="badges_pay_once">Pay %1$s</string>
+  <string name="badges_price_loading">Loading…</string>
+  <string name="badges_price_unavailable">Not available</string>
+  <string name="badges_savings">Save %1$s</string>
+  <string name="badges_level_supporter_tagline">Optional profile badge\nand 2GB files</string>
+  <string name="badges_level_legend_tagline">Optional profile badge\nand 5GB files</string>
+  <string name="badges_period_one_month">1 month</string>
+  <string name="badges_period_monthly">Monthly</string>
+  <string name="badges_period_annual">Annual</string>
+  <string name="badges_billing_footer_subscribe">Renews on %1$s. Cancel anytime.</string>
+  <string name="badges_billing_footer_one_month">Ends on %1$s.</string>
+  <string name="badges_your_level_title">Your level</string>
+  <string name="badges_support_simplex_title">Support SimpleX</string>
+  <string name="badges_support_simplex_body">SimpleX doesn\'t sell ads or data. It\'s funded by its users and by investors who share the mission. You can support the project and show a badge on your profile.</string>
+  <string name="badges_why_simplex_is_built">Why SimpleX is built.</string>
+  <string name="badges_choose_your_level">Choose your level</string>
+  <string name="badges_redeem_code_button">Redeem badge code</string>
+  <string name="badges_continue">Continue</string>
+  <string name="badges_how_it_works_button">How private badges work</string>
+  <string name="badges_how_it_works_title">How private badges work</string>
+  <string name="badges_how_it_works_p1">A badge is not an account. It is a signed credential stored on your device. It does not identify you, and no one keeps a record of who holds which badge.</string>
+  <string name="badges_how_it_works_p2">Your contacts see the badge and its expiry date, and nothing else. The badge carries no identifier, so it cannot be used to find out who you are or to match you across chats.</string>
+  <string name="badges_how_it_works_p3">Payment and badge are kept apart. Paying is one step; the badge is issued in another, under a key that exists only for that badge. Whoever handles the payment cannot see where the badge ends up.</string>
+  <string name="badges_preview_my_nickname">My nickname</string>
+  <string name="badges_banner_title">Support SimpleX</string>
+  <string name="badges_banner_subtitle">Get badge + files up to 5GB</string>
+  <string name="badges_banner_dismiss_message">You can support SimpleX later in Settings.</string>
+  <string name="badges_purchase_successful">Purchase successful</string>
+  <string name="badges_purchase_pending">Purchase pending</string>
+  <string name="badges_purchase_pending_desc">The purchase is awaiting approval. This build does not deliver purchases approved later.</string>
+  <string name="badges_purchase_error">Purchase error</string>
+  <string name="badges_get_your_code">Get your code</string>
+  <string name="badges_redeem_code_title">Redeem code</string>
+  <string name="badges_redeem_code_body">Paste the code from your receipt.</string>
+  <string name="badges_redeem_code_placeholder" translatable="false">SB-XXXXX-XXXXX-XXXXX-XXXXX</string>
+  <string name="badges_redeem">Redeem</string>
+  <string name="badges_error_title">Cannot redeem code</string>
+  <string name="badges_error_invalid_code">This code is not valid.</string>
+  <string name="badges_error_service_not_configured">This app version cannot redeem badge codes.</string>
+  <string name="badges_error_already_active">This profile already has a badge. Redeem the code on another profile, or once this badge ends.</string>
+  <string name="badges_error_code_invalid">This code was not recognised.</string>
+  <string name="badges_error_code_used">This code has already been used.</string>
+  <string name="badges_error_code_expired">This code has expired.</string>
+  <string name="badges_error_rate_limited">Too many attempts. Please try again later.</string>
+  <string name="badges_error_bad_service_response">The badge service sent an unexpected response: %1$s</string>
+  <string name="badges_error_credential_not_verified">This app version cannot verify this badge. Please update the app.</string>
+  <string name="badges_error_unsupported_version">This app version is too old for the badge service. Please update the app.</string>
+  <string name="badges_error_badge_ended">The code was accepted, but the badge it grants has already ended.</string>
+  <string name="badges_error_unknown">The code could not be redeemed.</string>
+  <string name="badges_code_you_scanned_is_not_badge_code">The code you scanned is not a badge code.</string>
+  <string name="badges_your_badge">Your badge</string>
+  <string name="badges_support_ended">Support ended</string>
+  <string name="badges_shown_on_your_profile">shown on your profile</string>
+  <string name="badges_ends">Ends</string>
+  <string name="badges_prepaid_footer">Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.</string>
+  <string name="badges_type_investor">Investor</string>
+  <string name="badges_support_ended_on">Your support ended on %1$s.</string>
+  <string name="badges_remind_me_later">Remind me later</string>
+  <string name="badges_dismiss">Dismiss</string>
+  <string name="badges_credential">Credential</string>
+  <string name="badges_credential_status">Status</string>
+  <string name="badges_credential_expires">Expires</string>
+  <string name="badges_credential_months_left">Months left</string>
+  <string name="badges_credential_purchase_id">Purchase ID</string>
+  <string name="badges_copy_purchase_key">Copy purchase key</string>
+  <string name="badges_ledger">Badge ledger</string>
+  <string name="badges_ledger_no_entries">No entries</string>
+  <string name="badges_ledger_date">Date</string>
+  <string name="badges_ledger_balance">Balance</string>
+  <string name="badges_ledger_balance_start">Balance start</string>
+  <string name="badges_ledger_anchor">Anchor</string>
+  <string name="badges_ledger_badge_type">Badge type</string>
+  <string name="badges_ledger_paused_since">Paused since</string>
+  <string name="badges_ledger_entry_id">Entry ID</string>
+  <string name="badges_ledger_invoice_id">Invoice ID</string>
+  <string name="badges_ledger_charge_id">Charge ID</string>
+  <string name="badges_ledger_from_purchase_key">From purchase key</string>
+  <string name="badges_ledger_to_purchase_key">To purchase key</string>
+  <string name="supporter_perks">Supporter perks</string>
+  <string name="v7_1_supporter_badge_title">Supporter badge ❤️</string>
+  <string name="v7_1_supporter_badge_body">Help keep the network running — send files up to 2 GB.</string>
 </resources>

@@ -324,13 +324,13 @@ fun ChatPreviewView(
         }
       }
       is MsgContent.MCImage -> SmallContentPreview {
-        CIImageView(image = mc.image, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true, senderProfile = ciSenderProfile(ci, chat.chatInfo)) {
+        CIImageView(image = mc.image, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true) {
           val user = chatModel.currentUser.value ?: return@CIImageView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
         }
       }
       is MsgContent.MCVideo -> SmallContentPreview {
-        CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true, senderProfile = ciSenderProfile(ci, chat.chatInfo)) {
+        CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true) {
           val user = chatModel.currentUser.value ?: return@CIVideoView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
         }
@@ -342,7 +342,7 @@ fun ChatPreviewView(
         }
       }
       is MsgContent.MCFile -> SmallContentPreviewFile {
-        CIFileView(ci.file, ci.meta, cInfo.timedMessagesTTL, showViaProxy = false, showTimestamp = true, showMenu = remember { mutableStateOf(false) }, smallView = true, senderProfile = ciSenderProfile(ci, chat.chatInfo)) {
+        CIFileView(ci.file, ci.meta, cInfo.timedMessagesTTL, showViaProxy = false, showTimestamp = true, showMenu = remember { mutableStateOf(false) }, smallView = true) {
           val user = chatModel.currentUser.value ?: return@CIFileView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
         }

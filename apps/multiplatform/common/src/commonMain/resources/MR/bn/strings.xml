@@ -21,7 +21,6 @@
     <string name="accept_contact_button">গ্রহণ করুন</string>
     <string name="accept_connection_request__question">সংযোগের অনুরোধটি গ্রহণ করবেন কি\?</string>
     <string name="callstatus_accepted">কলটি গৃহীত হয়েছে</string>
-    <string name="smp_servers_preset_add">পূর্বনির্ধারিত সার্ভারগুলি যুক্ত করুন</string>
     <string name="group_member_role_admin">অ্যাডমিন</string>
     <string name="connect_plan_you_are_admin">আপনি একজন অ্যাডমিন</string>
     <string name="button_add_welcome_message">স্বাগত বার্তা যুক্ত করুন</string>

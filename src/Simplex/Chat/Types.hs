@@ -30,7 +30,9 @@
 module Simplex.Chat.Types where
 
 import Control.Applicative ((<|>))
+import Control.Concurrent.STM (TVar)
 import Crypto.Number.Serialize (os2ip)
+import Crypto.Random (ChaChaDRG)
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -437,7 +439,7 @@ instance ToJSON ConnReqUriHash where
 
 data RequestEntity
   = REContact Contact
-  | REBusinessChat GroupInfo GroupMember
+  | REBusinessChat GroupInfoKeys GroupMember
 
 type RepeatRequest = Bool
 
@@ -479,17 +481,30 @@ groupRootPubKey :: GroupRootKey -> C.PublicKeyEd25519
 groupRootPubKey (GRKPrivate pk) = C.publicKey pk
 groupRootPubKey (GRKPublic pk) = pk
 
-data GroupKeys = GroupKeys
-  { publicGroupKeys :: Maybe PublicGroupKeys,
-    memberPrivKey :: C.PrivateKeyEd25519
-  }
+data GroupKeys
+  = GKGroup
+      { memberPrivKey :: C.PrivateKeyEd25519
+      }
+  | GKPublicGroup
+      { groupRootKey :: GroupRootKey,
+        memberPrivKey :: C.PrivateKeyEd25519
+      }
+  | GKRelayRequest
+      { memberPrivKey :: C.PrivateKeyEd25519
+      }
+  | GKPreparedPublicGroup
+      { memberPrivKey :: C.PrivateKeyEd25519
+      }
   deriving (Eq, Show)
 
-data PublicGroupKeys = PublicGroupKeys
-  { publicGroupId :: B64UrlByteString,
-    groupRootKey :: GroupRootKey
-  }
-  deriving (Eq, Show)
+isPublicGroup :: GroupKeys -> Bool
+isPublicGroup = \case
+  GKGroup {} -> False
+  GKPublicGroup {} -> True
+  GKRelayRequest {} -> True
+  GKPreparedPublicGroup {} -> True
+
+data GroupInfoKeys = GIK GroupInfo GroupKeys
 
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
@@ -515,13 +530,15 @@ data GroupInfo = GroupInfo
     rosterVersion :: Maybe VersionRoster,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
-    groupKeys :: Maybe GroupKeys,
     groupDomainVerified :: Maybe Bool
   }
   deriving (Eq, Show)
 
 useRelays' :: GroupInfo -> Bool
 useRelays' GroupInfo {useRelays} = isTrue useRelays
+
+publicGroup' :: GroupInfo -> Maybe PublicGroupProfile
+publicGroup' g@GroupInfo {groupProfile = GroupProfile {publicGroup}} = if useRelays' g then publicGroup else Nothing
 
 relayServesGroup :: GroupInfo -> Bool
 relayServesGroup GroupInfo {relayOwnStatus} = case relayOwnStatus of
@@ -595,7 +612,7 @@ data GroupLink = GroupLink
 
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
 
-data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
+data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfoKeys, hostMember :: GroupMember}
 
 contactAndGroupIds :: ContactOrGroup -> (Maybe ContactId, Maybe GroupId)
 contactAndGroupIds = \case
@@ -1145,7 +1162,8 @@ memberRestrictions m
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
     connRequest :: ConnReqInvitation,
-    groupInfo :: GroupInfo
+    groupInfo :: GroupInfo,
+    groupKeys :: GroupKeys
   }
   deriving (Eq, Show)
 
@@ -1558,7 +1576,8 @@ data FileInvitation = FileInvitation
     fileDigest :: Maybe FileDigest,
     fileConnReq :: Maybe ConnReqInvitation,
     fileInline :: Maybe InlineFileMode,
-    fileDescr :: Maybe FileDescr
+    fileDescr :: Maybe FileDescr,
+    fileBadge :: Maybe BadgeProof
   }
   deriving (Eq, Show)
 
@@ -1573,7 +1592,8 @@ xftpFileInvitation fileName fileSize fileDescr =
       fileDigest = Nothing,
       fileConnReq = Nothing,
       fileInline = Nothing,
-      fileDescr = Just fileDescr
+      fileDescr = Just fileDescr,
+      fileBadge = Nothing
     }
 
 data InlineFileMode
@@ -1627,10 +1647,14 @@ instance ToJSON FileType where
   toJSON = J.String . textEncode
   toEncoding = JE.text . textEncode
 
+data FileProhibited = FileProhibited {maxSize :: Integer, badgeStatus :: Maybe BadgeStatus}
+  deriving (Eq, Show)
+
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,
     xftpRcvFile :: Maybe XFTPRcvFile,
     fileInvitation :: FileInvitation,
+    fileProhibited :: Maybe FileProhibited,
     fileStatus :: RcvFileStatus,
     fileType :: FileType,
     rcvFileInline :: Maybe InlineFileMode,
@@ -2234,8 +2258,8 @@ type VersionChat = Version ChatVersion
 type VersionRangeChat = VersionRange ChatVersion
 
 -- | Store-wide context passed to store functions in place of the bare `vr`
--- parameter. Built from config by mkStoreCxt; more fields are added here over time.
-data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey}
+-- parameter. Built from config by storeCxt; more fields are added here over time.
+data StoreCxt = StoreCxt {vr :: VersionRangeChat, badgeKeys :: Map Int BBSPublicKey, drg :: TVar ChaChaDRG}
 
 pattern VersionChat :: Word16 -> VersionChat
 pattern VersionChat v = Version v
@@ -2341,12 +2365,6 @@ instance FromJSON GroupSummary where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''GroupSummary)
   omittedField = Just GroupSummary {currentMembers = 0, publicMemberCount = Nothing}
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GRK") ''GroupRootKey)
-
-$(JQ.deriveJSON defaultJSON ''PublicGroupKeys)
-
-$(JQ.deriveJSON defaultJSON ''GroupKeys)
-
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
 $(JQ.deriveJSON defaultJSON ''Group)
@@ -2378,6 +2396,8 @@ $(JQ.deriveJSON defaultJSON ''MemberRestrictions)
 $(JQ.deriveJSON defaultJSON ''GroupMemberRef)
 
 $(JQ.deriveJSON defaultJSON ''FileDescr)
+
+$(JQ.deriveJSON defaultJSON ''FileProhibited)
 
 $(JQ.deriveJSON defaultJSON ''FileInvitation)
 

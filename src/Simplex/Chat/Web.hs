@@ -24,7 +24,7 @@ module Simplex.Chat.Web
 where
 
 import Control.Concurrent.STM (check, flushTQueue)
-import Control.Exception (SomeException, catch)
+import Control.Exception (SomeException)
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except (runExceptT)
@@ -42,7 +42,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Simplex.Chat.Controller (ChatController (..), CorsOrigin (..), PublishableGroup (..), WebPreviewConfig (..), WebPreviewState (..), mkStoreCxt)
+import Simplex.Chat.Controller (ChatController (..), CorsOrigin (..), PublishableGroup (..), WebPreviewConfig (..), WebPreviewState (..), storeCxt)
 import Simplex.Chat.Markdown (FormattedText (..), MarkdownList, parseMaybeMarkdownList)
 import Simplex.Chat.Messages
   ( CChatItem (..),
@@ -75,7 +75,7 @@ import Simplex.Chat.Types
   )
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Util (catchOwn, eitherToMaybe, safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (catchOwn, catchOwn', eitherToMaybe, safeDecodeUtf8, tshow)
 import Simplex.Messaging.Parsers (defaultJSON)
 import System.Directory (createDirectoryIfMissing, listDirectory, removeFile, renameFile)
 import System.FilePath (dropExtension, takeExtension, (</>))
@@ -137,7 +137,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
     seedRoutinePending wps
     forever $ workerLoop wps `catchOwn` \e -> logError ("web preview worker error: " <> tshow e)
   where
-    cxt = mkStoreCxt (config cc)
+    cxt = storeCxt cc
 
     workerLoop wps@WebPreviewState {priorityRender, filesToRemove, corsNeeded, routinePending, wakeSignal} = do
       drainRemovals
@@ -150,7 +150,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
         drainRemovals = atomically (tryReadTQueue filesToRemove) >>= \case
           Nothing -> pure ()
           Just f -> do
-            removeFile (webJsonDir </> f) `catch` \(_ :: SomeException) -> pure ()
+            removeFile (webJsonDir </> f) `catchOwn'` \(_ :: SomeException) -> pure ()
             drainRemovals
 
         -- flush the whole queue and render each group once: a burst of changes in one
@@ -202,7 +202,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
     renderOneGroup WebPreviewState {publishableGroupIds} gId = do
       publishable <- atomically $ M.member gId <$> readTVar publishableGroupIds
       when publishable $
-        renderOrRemoveStale `catch` \(e :: SomeException) ->
+        renderOrRemoveStale `catchOwn'` \(e :: SomeException) ->
           logError $ "web preview: error rendering group " <> T.pack (show gId) <> ": " <> T.pack (show e)
       where
         renderOrRemoveStale = do
@@ -217,7 +217,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
                 modifyTVar' publishableGroupIds (M.delete gId)
                 pure $ pgFileName <$> pg
               forM_ fName $ \f ->
-                removeFile (webJsonDir </> f) `catch` \(_ :: SomeException) -> pure ()
+                removeFile (webJsonDir </> f) `catchOwn'` \(_ :: SomeException) -> pure ()
               logInfo $ "web preview: group " <> T.pack (show gId) <> " no longer publishable"
 
     findUser f = go users
@@ -262,7 +262,7 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
       pure $ corsEntry publicGroupId <$> publicGroupAccess
     Nothing -> pure Nothing
   where
-    cxt = mkStoreCxt (config cc)
+    cxt = storeCxt cc
 
 channelContentChanged :: ChatController -> Int64 -> STM ()
 channelContentChanged cc gId =
