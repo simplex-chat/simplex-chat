@@ -15,6 +15,7 @@ EXPORTS
     chat_parse_uri
     chat_password_hash
     chat_valid_name
+    chat_parse_badge_code
     chat_json_length
     chat_badge_keygen
     chat_badge_issue

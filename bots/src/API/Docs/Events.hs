@@ -179,6 +179,8 @@ undocumentedEvents =
     "CEvtAgentConnsDeleted",
     "CEvtAgentRcvQueuesDeleted",
     "CEvtAgentUserDeleted",
+    "CEvtBadgeAlert",
+    "CEvtBadgeChanged",
     "CEvtBusinessRequestAlreadyAccepted",
     "CEvtCallAnswer",
     "CEvtCallEnded",

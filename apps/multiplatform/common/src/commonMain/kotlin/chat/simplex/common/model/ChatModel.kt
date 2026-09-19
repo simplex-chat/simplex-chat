@@ -102,6 +102,34 @@ object ChannelRelaysModel {
   }
 }
 
+// The badge of whichever profile it was last loaded for, kept current by the badgeChanged event so
+// that a screen already open shows what the renewal worker did with no command behind it.
+object BadgeModel {
+  val rhId = mutableStateOf<Long?>(null)
+  val userId = mutableStateOf<Long?>(null)
+  val badgeState = mutableStateOf<BadgeState?>(null)
+  val alert = mutableStateOf<BadgeAlert?>(null)
+
+  // alert follows the state: getUserBadgeState derives it on every read, so a badgeChanged is
+  // never staler than the alert it carries - the invariant a new alert kind must keep
+  fun set(rhId: Long?, userId: Long, badgeState: BadgeState?) {
+    this.rhId.value = rhId
+    this.userId.value = userId
+    this.badgeState.value = badgeState
+    alert.value = badgeState?.alert
+  }
+
+  fun setAlert(rhId: Long?, userId: Long, alert: BadgeAlert) {
+    if (isCurrent(rhId, userId)) {
+      this.alert.value = alert
+      badgeState.value = badgeState.value?.copy(alert = alert)
+    }
+  }
+
+  fun isCurrent(rhId: Long?, userId: Long?): Boolean =
+    this.rhId.value == rhId && this.userId.value == userId
+}
+
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
  * */
@@ -2191,6 +2219,181 @@ data class LocalBadge(
   val badge: BadgeInfo,
   val status: BadgeStatus
 )
+
+// paidThrough is the only date to show the user: BadgeInfo.badgeExpiry is the credential's expiry,
+// which outlives entitlement so the credential's window can cover a renewal.
+@Serializable
+data class BadgeState(
+  val badgePurchaseId: Long,
+  val purchaseKey: String,
+  val badgeType: BadgeType,
+  val shown: Boolean,
+  val monthsLeft: Int,
+  val paidThrough: Instant,
+  val renewsAt: Instant? = null,
+  val willRenew: Boolean,
+  val alert: BadgeAlert? = null
+) {
+  val paidThroughText: String get() = badgeDateText(paidThrough)
+}
+
+@Serializable
+data class StatementEntry(
+  val entryId: String,
+  val changeMonths: Int,
+  val balanceMonths: Int,
+  val balanceStartTs: Instant,
+  val balanceAnchorTs: Instant,
+  val balanceBadgeType: BadgeType,
+  val wasPausedSince: Instant? = null,
+  val createdAt: Instant,
+  val entryType: StatementEntryType
+)
+
+@Serializable
+sealed class StatementEntryType {
+  @Serializable @SerialName("credit") data class Credit(val credit: StatementCreditType): StatementEntryType()
+  @Serializable @SerialName("debit") data class Debit(val debit: StatementDebitType): StatementEntryType()
+
+  val text: String
+    get() = when (this) {
+      is Credit -> credit.text
+      is Debit -> debit.text
+    }
+}
+
+// the service is deployed ahead of clients, so a type this version does not know keeps its tag
+@Serializable(with = StatementCreditTypeSerializer::class)
+sealed class StatementCreditType {
+  @Serializable data class Payment(val invoiceId: String? = null): StatementCreditType()
+  object Code: StatementCreditType()
+  @Serializable data class Charge(val chargeId: String): StatementCreditType()
+  object Support: StatementCreditType()
+  @Serializable data class TransferIn(val fromPurchaseKey: String): StatementCreditType()
+  object Opening: StatementCreditType()
+  data class Unknown(val type: String): StatementCreditType()
+
+  val text: String
+    get() = when (this) {
+      is Payment -> "payment"
+      is Code -> "code"
+      is Charge -> "charge"
+      is Support -> "support"
+      is TransferIn -> "transferIn"
+      is Opening -> "opening"
+      is Unknown -> type
+    }
+}
+
+object StatementCreditTypeSerializer : KSerializer<StatementCreditType> {
+  override val descriptor: SerialDescriptor = buildClassSerialDescriptor("StatementCreditType")
+
+  override fun deserialize(decoder: Decoder): StatementCreditType {
+    require(decoder is JsonDecoder)
+    val json = decoder.decodeJsonElement().jsonObject
+    return when (val type = json["type"]?.jsonPrimitive?.content ?: "") {
+      "payment" -> decoder.json.decodeFromJsonElement<StatementCreditType.Payment>(json)
+      "code" -> StatementCreditType.Code
+      "charge" -> decoder.json.decodeFromJsonElement<StatementCreditType.Charge>(json)
+      "support" -> StatementCreditType.Support
+      "transferIn" -> decoder.json.decodeFromJsonElement<StatementCreditType.TransferIn>(json)
+      "opening" -> StatementCreditType.Opening
+      else -> StatementCreditType.Unknown(type)
+    }
+  }
+
+  override fun serialize(encoder: Encoder, value: StatementCreditType) {
+    require(encoder is JsonEncoder)
+    encoder.encodeJsonElement(buildJsonObject {
+      put("type", value.text)
+      when (value) {
+        is StatementCreditType.Payment -> value.invoiceId?.let { put("invoiceId", it) }
+        is StatementCreditType.Charge -> put("chargeId", value.chargeId)
+        is StatementCreditType.TransferIn -> put("fromPurchaseKey", value.fromPurchaseKey)
+        is StatementCreditType.Code, is StatementCreditType.Support, is StatementCreditType.Opening, is StatementCreditType.Unknown -> {}
+      }
+    })
+  }
+}
+
+@Serializable(with = StatementDebitTypeSerializer::class)
+sealed class StatementDebitType {
+  object Refund: StatementDebitType()
+  @Serializable data class Upgrade(val toPurchaseKey: String): StatementDebitType()
+  @Serializable data class TransferOut(val toPurchaseKey: String): StatementDebitType()
+  object Support: StatementDebitType()
+  object Badge: StatementDebitType()
+  object Lapse: StatementDebitType()
+  data class Unknown(val type: String): StatementDebitType()
+
+  val text: String
+    get() = when (this) {
+      is Refund -> "refund"
+      is Upgrade -> "upgrade"
+      is TransferOut -> "transferOut"
+      is Support -> "support"
+      is Badge -> "badge"
+      is Lapse -> "lapse"
+      is Unknown -> type
+    }
+}
+
+object StatementDebitTypeSerializer : KSerializer<StatementDebitType> {
+  override val descriptor: SerialDescriptor = buildClassSerialDescriptor("StatementDebitType")
+
+  override fun deserialize(decoder: Decoder): StatementDebitType {
+    require(decoder is JsonDecoder)
+    val json = decoder.decodeJsonElement().jsonObject
+    return when (val type = json["type"]?.jsonPrimitive?.content ?: "") {
+      "refund" -> StatementDebitType.Refund
+      "upgrade" -> decoder.json.decodeFromJsonElement<StatementDebitType.Upgrade>(json)
+      "transferOut" -> decoder.json.decodeFromJsonElement<StatementDebitType.TransferOut>(json)
+      "support" -> StatementDebitType.Support
+      "badge" -> StatementDebitType.Badge
+      "lapse" -> StatementDebitType.Lapse
+      else -> StatementDebitType.Unknown(type)
+    }
+  }
+
+  override fun serialize(encoder: Encoder, value: StatementDebitType) {
+    require(encoder is JsonEncoder)
+    encoder.encodeJsonElement(buildJsonObject {
+      put("type", value.text)
+      when (value) {
+        is StatementDebitType.Upgrade -> put("toPurchaseKey", value.toPurchaseKey)
+        is StatementDebitType.TransferOut -> put("toPurchaseKey", value.toPurchaseKey)
+        is StatementDebitType.Refund, is StatementDebitType.Support, is StatementDebitType.Badge, is StatementDebitType.Lapse, is StatementDebitType.Unknown -> {}
+      }
+    })
+  }
+}
+
+@Serializable
+data class BadgeAlert(
+  val kind: BadgeAlertKind,
+  val episode: String,
+  val date: Instant,
+  val price: BadgeAlertPrice? = null
+) {
+  val dateText: String get() = badgeDateText(date)
+}
+
+@Serializable
+data class BadgeAlertPrice(val amount: Long, val currency: String)
+
+@Serializable
+enum class BadgeAlertKind {
+  @SerialName("renewalApproaching") RenewalApproaching,
+  @SerialName("paymentIssue") PaymentIssue,
+  @SerialName("subscriptionEnded") SubscriptionEnded,
+  @SerialName("prepaidEnding") PrepaidEnding,
+  @SerialName("supportEnded") SupportEnded
+}
+
+private fun badgeDateText(date: Instant): String {
+  val ts = date.toLocalDateTime(TimeZone.currentSystemDefault())
+  return ts.toJavaLocalDateTime().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG))
+}
 
 // the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)
 @Serializable

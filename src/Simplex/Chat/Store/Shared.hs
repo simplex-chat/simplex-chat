@@ -73,6 +73,7 @@ data ChatLockEntity
   | CLUserContact Int64
   | CLContactRequest Int64
   | CLFile Int64
+  | CLBadgeUser Int64 -- one signed badge request per profile in flight
   deriving (Eq, Ord)
 
 -- These error type constructors must be added to mobile apps
@@ -693,18 +694,21 @@ type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, Ver
 
 type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Preferences) :. BadgeRow :. ContactDomainRow
 
-toGroupInfo :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
+toGroupInfo :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> (GroupInfo, GroupKeysRow)
 toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri, groupDomainVerified) :. groupKeysRow :. userMemberRow) =
   let membership = (toGroupMember now userContactId userMemberRow) {memberChatVRange = vr cxt}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       publicGroup = toPublicGroupProfile groupType_ groupLink_ publicGroupId_ (toPublicGroupAccess accessRow)
-      groupKeys = toGroupKeys publicGroupId_ groupKeysRow
       groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, publicGroup, groupPreferences, memberAdmission}
       businessChat = toBusinessChatInfo (toPublicGroupAccess accessRow >>= groupDomainClaim) businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
-   in GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupKeys, groupDomainVerified = unBI <$> groupDomainVerified}
+      gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified = unBI <$> groupDomainVerified}
+   in (gInfo, groupKeysRow)
+
+toGroupInfo_ :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
+toGroupInfo_ now cxt userContactId chatTags row = fst $ toGroupInfo now cxt userContactId chatTags row
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case
@@ -732,13 +736,35 @@ toPublicGroupAccess (groupWebPage, groupDomain_, domainWebPage_, allowEmbedding_
     domainWebPage = maybe False unBI domainWebPage_
     allowEmbedding = maybe False unBI allowEmbedding_
 
-toGroupKeys :: Maybe B64UrlByteString -> GroupKeysRow -> Maybe GroupKeys
-toGroupKeys publicGroupId_ (rootPrivKey, rootPubKey, memberPrivKey) =
-  let publicGroupKeys = case (publicGroupId_, GRKPrivate <$> rootPrivKey <|> GRKPublic <$> rootPubKey) of
-        (Just publicGroupId, Just groupRootKey) -> Just $ Just PublicGroupKeys {publicGroupId, groupRootKey}
-        (Nothing, Nothing) -> Just Nothing
-        _ -> Nothing -- invalid state, in which case messages won't be signed even if memberPrivKey is present
-   in GroupKeys <$> publicGroupKeys <*> memberPrivKey
+mkGroupKeys :: DB.Connection -> StoreCxt -> GroupInfo -> GroupKeysRow -> ExceptT StoreError IO GroupKeys
+mkGroupKeys db cxt g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup}, membership} (rootPrivKey, rootPubKey, memberPrivKey_) = do
+  memberPrivKey <- case memberPrivKey_ of
+    Just k -> pure k
+    Nothing -> do
+      (_, k) <- atomically $ C.generateKeyPair (drg cxt)
+      setUserMemberKey db groupId (groupMemberId' membership) k
+  pure $ case (useRelays' g, isJust publicGroup, GRKPrivate <$> rootPrivKey <|> GRKPublic <$> rootPubKey) of
+    (False, _, _) -> GKGroup {memberPrivKey}
+    (True, True, Just groupRootKey) -> GKPublicGroup {groupRootKey, memberPrivKey}
+    (True, True, Nothing) -> GKPreparedPublicGroup {memberPrivKey}
+    (True, False, _) -> GKRelayRequest {memberPrivKey}
+
+setUserMemberKey :: DB.Connection -> GroupId -> GroupMemberId -> C.PrivateKeyEd25519 -> ExceptT StoreError IO C.PrivateKeyEd25519
+setUserMemberKey db groupId membershipId newKey = do
+  currentTs <- liftIO getCurrentTime
+  memberPrivKey <-
+    ExceptT . firstRow fromOnly (SEGroupNotFound groupId) $
+      DB.query
+        db
+        [sql|
+          UPDATE groups
+          SET member_priv_key = COALESCE(member_priv_key, ?), updated_at = ?
+          WHERE group_id = ?
+          RETURNING member_priv_key
+        |]
+        (newKey, currentTs, groupId)
+  liftIO $ DB.execute db "UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_member_id = ?" (C.publicKey memberPrivKey, currentTs, membershipId)
+  pure memberPrivKey
 
 toGroupMember :: UTCTime -> Int64 -> GroupMemberRow -> GroupMember
 toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey, relayLink, memberCode_, memberCodeVerifiedAt_)) =
@@ -900,8 +926,18 @@ addGroupChatTags db g@GroupInfo {groupId} = do
   chatTags <- getGroupChatTags db groupId
   pure (g :: GroupInfo) {chatTags}
 
+getGroupInfoKeys :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO GroupInfoKeys
+getGroupInfoKeys db cxt user groupId = do
+  (g@GroupInfo {membership}, keysData) <- getGroupInfoRow db cxt user groupId
+  gks <- mkGroupKeys db cxt g keysData
+  let membership' = membership {memberPubKey = Just $ C.publicKey $ memberPrivKey gks} :: GroupMember
+  pure $ GIK (g :: GroupInfo) {membership = membership'} gks
+
 getGroupInfo :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO GroupInfo
-getGroupInfo db cxt User {userId, userContactId} groupId = ExceptT $ do
+getGroupInfo db cxt user groupId = fst <$> getGroupInfoRow db cxt user groupId
+
+getGroupInfoRow :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO (GroupInfo, GroupKeysRow)
+getGroupInfoRow db cxt User {userId, userContactId} groupId = ExceptT $ do
   currentTs <- getCurrentTime
   chatTags <- getGroupChatTags db groupId
   firstRow (toGroupInfo currentTs cxt userContactId chatTags) (SEGroupNotFound groupId) $
