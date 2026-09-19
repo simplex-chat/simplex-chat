@@ -1,6 +1,6 @@
 # Blog
 
-Sep 19, 2026 [SimpleX Supporter Badges - Send Larger Files and Fund the Network Without Being Identified](./20260919-simplex-supporter-badges.md)
+Sep 19, 2026 [SimpleX Supporter Badges - Send Larger Files That Stay Available Longer, Without Being Identified](./20260919-simplex-supporter-badges.md)
 
 Supporter badges are available in v7.1 beta: a badge on your profile, larger files and longer file storage - and the purchase cannot be linked to your profile.
 
