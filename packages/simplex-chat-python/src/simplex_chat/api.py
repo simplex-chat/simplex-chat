@@ -67,6 +67,7 @@ class ChatApi:
     def __init__(self, ctrl: int):
         self._ctrl: int | None = ctrl
         self._started = False
+        self._recv_executor: ThreadPoolExecutor | None = None
 
     @classmethod
     async def init(
@@ -118,12 +119,11 @@ class ChatApi:
         self._started = False
 
     async def close(self) -> None:
-        executor = getattr(self, "_recv_executor", None)
-        if executor is not None:
+        if self._recv_executor is not None:
             # Waits for a receive already in flight (up to wait_us) so the store
             # never closes underneath one; run off-loop since shutdown blocks.
-            await asyncio.to_thread(executor.shutdown, wait=True)
-            del self._recv_executor
+            await asyncio.to_thread(self._recv_executor.shutdown, wait=True)
+            self._recv_executor = None
         await core.chat_close_store(self.ctrl)
         self._ctrl = None
         self._started = False
@@ -133,13 +133,13 @@ class ChatApi:
 
     async def recv_chat_event(self, wait_us: int = 500_000) -> CEvt.ChatEvent | None:
         ctrl = self.ctrl  # raises before touching the executor if close() was called
-        executor = getattr(self, "_recv_executor", None)
-        if executor is None:
+        if self._recv_executor is None:
             # A receive blocks for up to wait_us almost back to back, so it would
             # otherwise pin one of the default executor's few worker threads.
-            executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="simplex-recv")
-            self._recv_executor = executor
-        return await core.chat_recv_msg_wait(ctrl, wait_us, executor)
+            self._recv_executor = ThreadPoolExecutor(
+                max_workers=1, thread_name_prefix="simplex-recv"
+            )
+        return await core.chat_recv_msg_wait(ctrl, wait_us, self._recv_executor)
 
     # ------------------------------------------------------------------ #
     # Address commands

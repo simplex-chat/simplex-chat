@@ -22,21 +22,32 @@ RECV_SLEEP = 0.3
 
 
 class FakeRecvLib:
-    """Fake chat_recv_msg_wait: blocks for `sleep` seconds, then returns a scripted result."""
+    """Fake chat_recv_msg_wait: blocks for `sleep` seconds, then returns a scripted result.
+
+    `events` records "recv_start" / "recv_end" / "close_store" in call order, across all
+    ChatApi instances sharing this fake, so tests can assert ordering between receive and
+    store-close calls (not just that both happened).
+    """
 
     def __init__(self, sleep: float = RECV_SLEEP, results: list[str] | None = None) -> None:
         self.sleep = sleep
         self._results = iter(results or [])
         self.calls: list[tuple[int, int]] = []  # (ctrl, thread ident)
+        self.events: list[str] = []
         self._lock = threading.Lock()
 
     def chat_recv_msg_wait(self, ctrl: int, wait_us: int) -> str:
+        with self._lock:
+            self.events.append("recv_start")
         time.sleep(self.sleep)
         with self._lock:
+            self.events.append("recv_end")
             self.calls.append((ctrl, threading.get_ident()))
         return next(self._results, "")
 
     def chat_close_store(self, ctrl: int) -> str:
+        with self._lock:
+            self.events.append("close_store")
         return ""
 
 
@@ -62,15 +73,17 @@ async def test_receives_do_not_use_the_default_executor(fake_lib):
 
     apis = [ChatApi(ctrl=i) for i in range(3)]
     recv_tasks = [asyncio.create_task(api.recv_chat_event()) for api in apis]
-    await asyncio.sleep(0.05)  # let all three receives claim their own thread
+    try:
+        await asyncio.sleep(0.05)  # let all three receives claim their own thread
 
-    start = time.monotonic()
-    await asyncio.to_thread(lambda: None)
-    elapsed = time.monotonic() - start
+        start = time.monotonic()
+        await asyncio.to_thread(lambda: None)
+        elapsed = time.monotonic() - start
 
-    await asyncio.gather(*recv_tasks)
-    for api in apis:
-        await api.close()
+        await asyncio.gather(*recv_tasks)
+    finally:
+        for api in apis:
+            await api.close()
 
     assert elapsed < 0.1
 
@@ -78,29 +91,31 @@ async def test_receives_do_not_use_the_default_executor(fake_lib):
 async def test_one_receive_thread_per_chatapi_reused(fake_lib):
     lib = fake_lib(sleep=0.02)
     api = ChatApi(ctrl=1)
-    for _ in range(3):
-        await api.recv_chat_event()
-
-    idents = {ident for ctrl, ident in lib.calls if ctrl == 1}
-    assert len(idents) == 1
-    recv_ident = idents.pop()
-    thread = next(t for t in threading.enumerate() if t.ident == recv_ident)
-    assert thread.name.startswith("simplex-recv")
-    assert thread.ident != threading.get_ident()
-
     other_api = ChatApi(ctrl=2)
-    await other_api.recv_chat_event()
-    other_idents = {ident for ctrl, ident in lib.calls if ctrl == 2}
-    assert other_idents and other_idents != {thread.ident}
+    try:
+        for _ in range(3):
+            await api.recv_chat_event()
 
-    await api.close()
-    await other_api.close()
+        idents = {ident for ctrl, ident in lib.calls if ctrl == 1}
+        assert len(idents) == 1
+        recv_ident = idents.pop()
+        thread = next(t for t in threading.enumerate() if t.ident == recv_ident)
+        assert thread.name.startswith("simplex-recv")
+        assert thread.ident != threading.get_ident()
+
+        await other_api.recv_chat_event()
+        other_idents = {ident for ctrl, ident in lib.calls if ctrl == 2}
+        assert other_idents and other_idents != {thread.ident}
+    finally:
+        await api.close()
+        await other_api.close()
 
 
 def test_no_thread_until_first_receive():
+    # A bare ThreadPoolExecutor spawns no worker thread until the first submit,
+    # so the real assertion is the attribute itself, not threading.enumerate().
     api = ChatApi(ctrl=1)
-    assert not hasattr(api, "_recv_executor")
-    assert _recv_thread_names() == []
+    assert api._recv_executor is None
 
 
 async def test_close_shuts_down_the_executor_without_blocking_the_loop(fake_lib):
@@ -122,13 +137,30 @@ async def test_close_shuts_down_the_executor_without_blocking_the_loop(fake_lib)
     assert _recv_thread_names() == []
 
 
+async def test_close_shuts_down_executor_before_closing_the_store(fake_lib):
+    lib = fake_lib(sleep=RECV_SLEEP)
+    api = ChatApi(ctrl=1)
+    recv_task = asyncio.create_task(api.recv_chat_event())
+    try:
+        await asyncio.sleep(0.05)  # ensure the receive is in flight before close() starts
+        await api.close()
+        await recv_task
+    finally:
+        if not recv_task.done():
+            recv_task.cancel()
+
+    # recv_end (executor drained) must precede close_store: a receive must never
+    # be in flight while the store closes underneath it.
+    assert lib.events == ["recv_start", "recv_end", "close_store"]
+
+
 async def test_recv_chat_event_after_close_raises_before_touching_executor(fake_lib):
     fake_lib()
     api = ChatApi(ctrl=1)
     await api.close()
     with pytest.raises(RuntimeError, match="controller not initialized"):
         await api.recv_chat_event()
-    assert not hasattr(api, "_recv_executor")
+    assert api._recv_executor is None
 
 
 async def test_receive_parses_event_json_and_none_on_timeout(fake_lib):
