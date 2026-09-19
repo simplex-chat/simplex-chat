@@ -22,8 +22,8 @@ struct BadgesHowItWorksView: View {
                 .padding(.bottom, 16)
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("A badge is an anonymous credential stored in your profile on your device.")
-                    Text("The credential itself is never sent to anyone. To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week.")
+                    Text("A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone.")
+                    Text("To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week.")
                     Text("Nobody can link two different proofs to each other or to the purchase.")
                     ExternalLink("Read more in our blog.", destination: URL(string: "https://simplex.chat/blog/20260919-simplex-supporter-badges.html")!)
                 }
