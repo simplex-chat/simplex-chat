@@ -14,6 +14,7 @@ import pytest
 from simplex_chat import (
     Bot,
     BotProfile,
+    ChatCommandError,
     Client,
     ContactAlreadyExistsError,
     Profile,
@@ -492,6 +493,10 @@ def test_aexit_nulls_api_even_if_close_raises(monkeypatch):
         async def stop_chat(self):
             pass
 
+        @property
+        def initialized(self):
+            return False
+
         async def close(self):
             raise RuntimeError("close failed")
 
@@ -520,6 +525,55 @@ def test_aexit_nulls_api_even_if_close_raises(monkeypatch):
         except RuntimeError:
             pass  # close raises again, fine
         assert init_count[0] == 2, "re-entry didn't re-init the controller"
+
+    asyncio.run(go())
+
+
+def test_aexit_keeps_api_for_retry_when_stop_fails(monkeypatch):
+    """A failed stop leaves the store open, so the Client must keep the
+    controller: dropping it would leak the store with no way to close it."""
+    import simplex_chat.client as client_mod
+
+    stop_results = ["chatCmdError", "chatStopped"]
+    closed: list[bool] = [False]
+
+    class _FailingStopApi:
+        @classmethod
+        async def init(cls, *_a, **_kw):
+            return cls()
+
+        @property
+        def initialized(self):
+            return not closed[0]
+
+        async def start_chat(self):
+            pass
+
+        async def close(self):
+            response = stop_results.pop(0)
+            if response != "chatStopped":
+                raise ChatCommandError("error stopping chat", {"type": response})
+            closed[0] = True
+
+        async def api_get_active_user(self):
+            return {"userId": 1, "profile": {"displayName": "x"}}
+
+        async def send_chat_cmd(self, _cmd):
+            return {"type": "cmdOk"}
+
+    monkeypatch.setattr(client_mod, "ChatApi", _FailingStopApi)
+
+    c = Client(profile=Profile(display_name="x"), db=SqliteDb(file_prefix="/tmp/test"))
+
+    async def go():
+        with pytest.raises(ChatCommandError, match="error stopping chat"):
+            async with c:
+                pass
+        assert c._api is not None, "controller dropped while its store is still open"
+        assert closed == [False]
+        await c.__aexit__(None, None, None)
+        assert closed == [True]
+        assert c._api is None
 
     asyncio.run(go())
 

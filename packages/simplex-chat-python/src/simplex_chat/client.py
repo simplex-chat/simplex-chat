@@ -379,7 +379,13 @@ class Client:
         # if close raises — otherwise `client.api` would still
         # hand back a half-shutdown controller after `async with` exits.
         self._api = None
-        await api.close()
+        try:
+            await api.close()
+        except BaseException:
+            # A failed stop leaves the store open; keep it so the caller can retry.
+            if api.initialized:
+                self._api = api
+            raise
 
     async def _post_start(self, user: T.User) -> None:
         """Hook for subclasses to add work between `start_chat` and serving.

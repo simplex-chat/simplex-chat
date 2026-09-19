@@ -6,7 +6,7 @@
 
 # Function: chatReadFile()
 
-> **chatReadFile**(`path`, `__namedParameters`): `Promise`\<`ArrayBuffer`\>
+> **chatReadFile**(`path`, `__namedParameters`): `Promise`\<`Buffer`\<`ArrayBufferLike`\>\>
 
 Defined in: [src/core.ts:61](../src/core.ts#L61)
 
@@ -24,4 +24,4 @@ Read buffer from encrypted file
 
 ## Returns
 
-`Promise`\<`ArrayBuffer`\>
+`Promise`\<`Buffer`\<`ArrayBufferLike`\>\>

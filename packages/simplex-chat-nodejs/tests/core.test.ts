@@ -207,11 +207,11 @@ describe("Core tests", () => {
 
   it("should not crash when closing stopped controllers repeatedly", async () => {
     const script = `
-      const fs = require("fs"), os = require("os"), path = require("path");
+      const fs = require("fs"), path = require("path");
       const simplex = require("./build/Release/simplex.node");
       (async () => {
         for (let i = 0; i < 40; i++) {
-          const dir = fs.mkdtempSync(path.join(os.tmpdir(), "simplex-close-"));
+          const dir = fs.mkdtempSync(path.join(${JSON.stringify(path.resolve(tmpDir))}, "close-"));
           const [ctrl] = await simplex.chat_migrate_init(path.join(dir, "simplex"), "key", "yesUp");
           await simplex.chat_send_cmd(ctrl, "/v");
           await simplex.chat_send_cmd(ctrl, "/_stop");
@@ -222,7 +222,7 @@ describe("Core tests", () => {
       })();
     `;
     const runChild = () => new Promise<{code: number | null, signal: NodeJS.Signals | null, stderr: string}>((resolve) => {
-      const child = execFile(process.execPath, ["-e", script], {cwd: path.join(__dirname, "..")}, (_error, _stdout, stderr) =>
+      const child = execFile(process.execPath, ["-e", script], {cwd: path.join(__dirname, ".."), timeout: 150000}, (_error, _stdout, stderr) =>
         resolve({code: child.exitCode, signal: child.signalCode, stderr}));
     });
     const childCount = 3;

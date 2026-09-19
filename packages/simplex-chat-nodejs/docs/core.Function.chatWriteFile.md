@@ -24,7 +24,7 @@ Write buffer to encrypted file
 
 ### buffer
 
-`ArrayBuffer`
+`ArrayBuffer` \| `Uint8Array`\<`ArrayBufferLike`\>
 
 ## Returns
 
