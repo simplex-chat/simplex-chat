@@ -1,3 +1,4 @@
+import {spawnSync} from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import {core} from "../src/index";
@@ -122,4 +123,76 @@ describe("Core tests", () => {
     await Promise.all(receives);
     await core.chatCloseStore(ctrl);
   }, 10000);
+
+  const itOnLinux = process.platform === "linux" ? it : it.skip;
+
+  // Thread count is read from /proc/self/task, which only exists on Linux.
+  itOnLinux("should keep the thread count constant while receiving", async () => {
+    const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+    for (let i = 0; i < 10; i++) await core.chatRecvMsgWait(ctrl, 1);
+    const threadCount = () => fs.readdirSync("/proc/self/task").length;
+    const warmCount = threadCount();
+    const counts = new Set<number>();
+    for (let i = 0; i < 200; i++) {
+      await core.chatRecvMsgWait(ctrl, 1);
+      counts.add(threadCount());
+    }
+    expect({warmCount, counts: [...counts]}).toEqual({warmCount, counts: [warmCount]});
+    await core.chatCloseStore(ctrl);
+  }, 30000);
+
+  it("should receive on two controllers concurrently", async () => {
+    const ctrlA = await core.chatMigrateInit(path.join(tmpDir, "simplex_a"), "key", core.MigrationConfirmation.YesUp);
+    const ctrlB = await core.chatMigrateInit(path.join(tmpDir, "simplex_b"), "key", core.MigrationConfirmation.YesUp);
+    const start = Date.now();
+    await expect(Promise.all([core.chatRecvMsgWait(ctrlA, 1_000_000), core.chatRecvMsgWait(ctrlB, 1_000_000)]))
+      .resolves.toEqual([undefined, undefined]);
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeGreaterThanOrEqual(900);
+    expect(elapsed).toBeLessThan(1800);
+    await core.chatCloseStore(ctrlA);
+    await core.chatCloseStore(ctrlB);
+  }, 10000);
+
+  it("should receive events of one controller in order", async () => {
+    const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+    for (const action of ["first", "second"]) {
+      await expect(core.chatSendCmd(ctrl, `/debug event {"type": "timedAction", "action": "${action}", "durationMilliseconds": 1}`))
+        .resolves.toMatchObject({type: "cmdOk"});
+    }
+    const events = await Promise.all([core.chatRecvMsgWait(ctrl, 500_000), core.chatRecvMsgWait(ctrl, 500_000)]);
+    expect(events).toMatchObject([
+      {type: "timedAction", action: "first"},
+      {type: "timedAction", action: "second"}
+    ]);
+    await core.chatCloseStore(ctrl);
+  }, 10000);
+
+  it("should close the store while a receive is in flight", async () => {
+    const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+    const settle = (p: Promise<unknown>) => p.then((event) => ({event}), (e: Error) => ({error: e.message}));
+    const receives = Promise.all([settle(core.chatRecvMsgWait(ctrl, 2_000_000)), settle(core.chatRecvMsgWait(ctrl, 2_000_000))]);
+    // lets the receiver thread enter the first receive, so the second one is still queued at close
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    let closed = false;
+    const close = core.chatCloseStore(ctrl).then(() => { closed = true; });
+    const timerStart = Date.now();
+    const timerDelay = await new Promise<number>((resolve) => setTimeout(() => resolve(Date.now() - timerStart), 10));
+    expect({closed, timerDelayBelow100ms: timerDelay < 100}).toEqual({closed: false, timerDelayBelow100ms: true});
+    await close;
+    expect(await receives).toEqual([{event: undefined}, {error: "chat receiver stopped"}]);
+  }, 10000);
+
+  it("should let the process exit while a receiver is idle", () => {
+    const childDbPath = path.resolve(tmpDir, "simplex_child");
+    const script = `
+      const simplex = require("./build/Release/simplex.node");
+      simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp")
+        .then(([ctrl]) => simplex.chat_recv_msg_wait(ctrl, 1))
+        .then((res) => console.log("received " + JSON.stringify(res)));
+    `;
+    const child = spawnSync(process.execPath, ["-e", script], {cwd: path.join(__dirname, ".."), timeout: 10000, encoding: "utf8"});
+    expect({status: child.status, signal: child.signal, stdout: child.stdout.trim(), stderr: child.stderr})
+      .toEqual({status: 0, signal: null, stdout: 'received ""', stderr: ""});
+  }, 15000);
 });

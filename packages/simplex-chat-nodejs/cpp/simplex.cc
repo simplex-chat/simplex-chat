@@ -7,6 +7,10 @@
 #include <memory>
 #include <thread>
 #include <system_error>
+#include <mutex>
+#include <condition_variable>
+#include <deque>
+#include <unordered_map>
 #include "simplex.h"
 
 namespace simplex {
@@ -190,6 +194,155 @@ Napi::Promise CreatePromiseAndCallback(Env env, Function& cb_out) {
   return deferred.Promise();
 }
 
+const char* const RECEIVER_STOPPED = "chat receiver stopped";
+
+struct RecvRequest {
+  int wait = 0;
+  std::shared_ptr<Promise::Deferred> deferred;
+};
+
+// Holds the event loop open only while receives are pending; used only on the JS main thread.
+class PendingReceives {
+ public:
+  explicit PendingReceives(ThreadSafeFunction tsfn) : tsfn_(tsfn) {}
+
+  const ThreadSafeFunction& Tsfn() const {
+    return tsfn_;
+  }
+
+  void Add(Napi::Env env) {
+    if (count_++ == 0) tsfn_.Ref(env);
+  }
+
+  void Remove(Napi::Env env) {
+    if (--count_ == 0) tsfn_.Unref(env);
+  }
+
+ private:
+  ThreadSafeFunction tsfn_;
+  size_t count_ = 0;
+};
+
+// A blocking receive would hold a libuv pool thread for up to `wait`, stalling fs, dns and crypto.
+class Receiver {
+ public:
+  // Returns nullptr with a pending JS exception if the TSFN cannot be created, throws std::system_error if the thread cannot start.
+  static std::shared_ptr<Receiver> Start(Napi::Env env, chat_ctrl ctrl) {
+    ThreadSafeFunction tsfn = ThreadSafeFunction::New(env, Function::New(env, [](const CallbackInfo&) {}), "chat_recv_msg_wait", 0, 1);
+    if (env.IsExceptionPending()) {
+      return nullptr;
+    }
+    auto receiver = std::make_shared<Receiver>(ctrl, tsfn);
+    try {
+      receiver->thread_ = std::thread(&Receiver::Run, receiver.get());
+    } catch (const std::system_error&) {
+      tsfn.Release();
+      throw;
+    }
+    return receiver;
+  }
+
+  Receiver(chat_ctrl ctrl, ThreadSafeFunction tsfn) : ctrl_(ctrl), pending_(std::make_shared<PendingReceives>(tsfn)) {}
+
+  Receiver(const Receiver&) = delete;
+  Receiver& operator=(const Receiver&) = delete;
+
+  ~Receiver() {
+    Stop();
+  }
+
+  void Enqueue(Napi::Env env, RecvRequest request) {
+    pending_->Add(env);
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      queue_.push_back(std::move(request));
+    }
+    cv_.notify_one();
+  }
+
+  // Waits for the receive in progress, so it must not run on the JS main thread outside env teardown.
+  void Stop() {
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      stop_ = true;
+    }
+    cv_.notify_one();
+    if (thread_.joinable()) {
+      thread_.join();
+    }
+  }
+
+ private:
+  void Run() {
+    for (;;) {
+      RecvRequest request;
+      {
+        std::unique_lock<std::mutex> lock(mutex_);
+        cv_.wait(lock, [this] { return stop_ || !queue_.empty(); });
+        if (stop_) break;
+        request = std::move(queue_.front());
+        queue_.pop_front();
+      }
+      char* c_res = chat_recv_msg_wait(ctrl_, request.wait);
+      napi_status status = Settle(request.deferred, [c_res](Napi::Env env, Promise::Deferred& deferred) {
+        if (c_res == nullptr) {
+          deferred.Reject(Error::New(env, "chat_recv_msg_wait failed").Value());
+        } else {
+          deferred.Resolve(String::New(env, c_res));
+          free(c_res);
+        }
+      });
+      if (status != napi_ok) {
+        free(c_res);
+      }
+    }
+    std::deque<RecvRequest> unserved;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      unserved.swap(queue_);
+    }
+    for (RecvRequest& request : unserved) {
+      Settle(request.deferred, [](Napi::Env env, Promise::Deferred& deferred) {
+        deferred.Reject(Error::New(env, RECEIVER_STOPPED).Value());
+      });
+    }
+    pending_->Tsfn().Release();
+    // Each OS thread that enters Haskell keeps an RTS task record until it calls hs_thread_done.
+    hs_thread_done();
+  }
+
+  template <typename SettleFn>
+  napi_status Settle(std::shared_ptr<Promise::Deferred> deferred, SettleFn settle) {
+    // The callback may run after this Receiver is destroyed, so it owns the pending count.
+    std::shared_ptr<PendingReceives> pending = pending_;
+    return pending->Tsfn().BlockingCall([pending, deferred, settle](Napi::Env env, Function) {
+      settle(env, *deferred);
+      pending->Remove(env);
+    });
+  }
+
+  const chat_ctrl ctrl_;
+  const std::shared_ptr<PendingReceives> pending_;
+  std::mutex mutex_;
+  std::condition_variable cv_;
+  std::deque<RecvRequest> queue_;
+  bool stop_ = false;
+  std::thread thread_;
+};
+
+// Keyed by chat_ctrl, accessed only on the JS main thread.
+using Receivers = std::unordered_map<uintptr_t, std::shared_ptr<Receiver>>;
+
+std::shared_ptr<Receiver> TakeReceiver(Receivers& receivers, chat_ctrl ctrl) {
+  auto it = receivers.find(reinterpret_cast<uintptr_t>(ctrl));
+  if (it == receivers.end()) {
+    return nullptr;
+  }
+  std::shared_ptr<Receiver> receiver = std::move(it->second);
+  receivers.erase(it);
+  return receiver;
+}
+
 // Common result processors
 ResultAsyncWorker::ResultProcessor MigrateResultProcessor() {
   return [](ResultAsyncWorker* worker, Napi::Env env) {
@@ -270,11 +423,15 @@ Value ChatCloseStore(const CallbackInfo& args) {
   }
 
   chat_ctrl ctrl = FromChatCtrlBigInt(args[0]);
+  std::shared_ptr<Receiver> receiver = TakeReceiver(*static_cast<Receivers*>(args.Data()), ctrl);
 
   Function cb;
   Promise promise = CreatePromiseAndCallback(env, cb);
 
-  auto execute_fn = [ctrl](ResultAsyncWorker* worker) {
+  auto execute_fn = [ctrl, receiver](ResultAsyncWorker* worker) {
+    if (receiver) {
+      receiver->Stop();
+    }
     char* c_res = chat_close_store(ctrl);
     HandleCResult(worker, c_res, "chat_close_store");
   };
@@ -318,35 +475,24 @@ Value ChatRecvMsgWait(const CallbackInfo& args) {
 
   chat_ctrl ctrl = FromChatCtrlBigInt(args[0]);
   int wait = static_cast<int>(args[1].As<Number>().Int32Value());
+  Receivers& receivers = *static_cast<Receivers*>(args.Data());
 
   auto deferred = std::make_shared<Promise::Deferred>(Promise::Deferred::New(env));
-  auto tsfn = ThreadSafeFunction::New(env, Function::New(env, [](const CallbackInfo&) {}), "chat_recv_msg_wait", 0, 1);
-  if (env.IsExceptionPending()) {
-    return env.Undefined();
+  auto it = receivers.find(reinterpret_cast<uintptr_t>(ctrl));
+  if (it == receivers.end()) {
+    std::shared_ptr<Receiver> receiver;
+    try {
+      receiver = Receiver::Start(env, ctrl);
+    } catch (const std::system_error& e) {
+      deferred->Reject(Error::New(env, e.what()).Value());
+      return deferred->Promise();
+    }
+    if (!receiver) {
+      return env.Undefined();
+    }
+    it = receivers.emplace(reinterpret_cast<uintptr_t>(ctrl), std::move(receiver)).first;
   }
-  // A blocking receive would hold a libuv pool thread for up to `wait`, stalling fs, dns and crypto.
-  try {
-    std::thread([tsfn, deferred, ctrl, wait]() mutable {
-      char* c_res = chat_recv_msg_wait(ctrl, wait);
-      napi_status status = tsfn.BlockingCall([deferred, c_res](Napi::Env env, Function) {
-        if (c_res == nullptr) {
-          deferred->Reject(Error::New(env, "chat_recv_msg_wait failed").Value());
-        } else {
-          deferred->Resolve(String::New(env, c_res));
-          free(c_res);
-        }
-      });
-      if (status != napi_ok) {
-        free(c_res);
-      }
-      tsfn.Release();
-      // Each OS thread that enters Haskell keeps an RTS task record until it calls hs_thread_done.
-      hs_thread_done();
-    }).detach();
-  } catch (const std::system_error& e) {
-    tsfn.Release();
-    deferred->Reject(Error::New(env, e.what()).Value());
-  }
+  it->second->Enqueue(env, {wait, deferred});
 
   return deferred->Promise();
 }
@@ -487,11 +633,14 @@ Value ChatDecryptFile(const CallbackInfo& args) {
 
 Object Init(Env env, Object exports) {
   haskell_init();
+  auto* receivers = new Receivers();
+  // Destroying a Receiver joins its thread, which can only finish its current receive.
+  env.AddCleanupHook([receivers]() { delete receivers; });
   exports.Set("chat_migrate_init", Function::New(env, ChatMigrateInit));
   exports.Set("chat_migrate_init_queue", Function::New(env, ChatMigrateInitQueue));
-  exports.Set("chat_close_store", Function::New(env, ChatCloseStore));
+  exports.Set("chat_close_store", Function::New(env, ChatCloseStore, "chat_close_store", receivers));
   exports.Set("chat_send_cmd", Function::New(env, ChatSendCmd));
-  exports.Set("chat_recv_msg_wait", Function::New(env, ChatRecvMsgWait));
+  exports.Set("chat_recv_msg_wait", Function::New(env, ChatRecvMsgWait, "chat_recv_msg_wait", receivers));
   exports.Set("chat_write_file", Function::New(env, ChatWriteFile));
   exports.Set("chat_read_file", Function::New(env, ChatReadFile));
   exports.Set("chat_encrypt_file", Function::New(env, ChatEncryptFile));
