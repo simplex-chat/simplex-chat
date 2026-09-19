@@ -29,7 +29,7 @@ struct BadgesSupportSimplexView: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Text("SimpleX doesn't sell ads or data. It's funded by its users and by investors who share the mission. You can support the project and show a badge on your profile.")
+                Text("Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile.")
                     .font(.body)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -110,7 +110,7 @@ struct BadgesSupportSimplexView: View {
             Button { howItWorksActive = true } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "info.circle")
-                    Text("How private badges work").fontWeight(.medium)
+                    Text("How badges protect your privacy").fontWeight(.medium)
                 }
                 .font(.body)
             }
