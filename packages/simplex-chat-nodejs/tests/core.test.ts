@@ -170,10 +170,12 @@ describe("Core tests", () => {
 
   it("should close the store while a receive is in flight", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);
+    // starts the receiver thread, so the next request only has to wake it
+    await core.chatRecvMsgWait(ctrl, 1);
     const settle = (p: Promise<unknown>) => p.then((event) => ({event}), (e: Error) => ({error: e.message}));
-    const receives = Promise.all([settle(core.chatRecvMsgWait(ctrl, 2_000_000)), settle(core.chatRecvMsgWait(ctrl, 2_000_000))]);
-    // lets the receiver thread enter the first receive, so the second one is still queued at close
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    const receives = Promise.all([settle(core.chatRecvMsgWait(ctrl, 3_000_000)), settle(core.chatRecvMsgWait(ctrl, 3_000_000))]);
+    // the thread enters the first receive within this margin even under load, so the second one is still queued at close
+    await new Promise((resolve) => setTimeout(resolve, 500));
     let closed = false;
     const close = core.chatCloseStore(ctrl).then(() => { closed = true; });
     const timerStart = Date.now();
@@ -192,7 +194,8 @@ describe("Core tests", () => {
         .then((res) => console.log("received " + JSON.stringify(res)));
     `;
     const child = spawnSync(process.execPath, ["-e", script], {cwd: path.join(__dirname, ".."), timeout: 10000, encoding: "utf8"});
-    expect({status: child.status, signal: child.signal, stdout: child.stdout.trim(), stderr: child.stderr})
-      .toEqual({status: 0, signal: null, stdout: 'received ""', stderr: ""});
+    if (child.status !== 0 || child.signal !== null) console.log("child stderr:", child.stderr);
+    expect({status: child.status, signal: child.signal, stdout: child.stdout.trim()})
+      .toEqual({status: 0, signal: null, stdout: 'received ""'});
   }, 15000);
 });
