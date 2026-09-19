@@ -22,6 +22,8 @@ public let GROUP_DEFAULT_CHAT_LAST_BACKGROUND_RUN = "chatLastBackgroundRun"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
 public let GROUP_DEFAULT_NTF_ENABLE_LOCAL = "ntfEnableLocal" // no longer used
 public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic" // no longer used
+public let GROUP_DEFAULT_NTF_QUICK_REPLY = "ntfQuickReply"
+public let GROUP_DEFAULT_NTF_QUICK_REPLY_WHEN_LOCKED = "ntfQuickReplyWhenLocked"
 // replaces DEFAULT_PERFORM_LA
 let GROUP_DEFAULT_APP_LOCAL_AUTH_ENABLED = "appLocalAuthEnabled"
 public let GROUP_DEFAULT_ALLOW_SHARE_EXTENSION = "allowShareExtension"
@@ -73,6 +75,8 @@ public let groupDefaults = UserDefaults(suiteName: APP_GROUP_NAME)!
 public let groupAppDefaults: [String: Any] = [
     GROUP_DEFAULT_NTF_ENABLE_LOCAL: false,
     GROUP_DEFAULT_NTF_ENABLE_PERIODIC: false,
+    GROUP_DEFAULT_NTF_QUICK_REPLY: true,
+    GROUP_DEFAULT_NTF_QUICK_REPLY_WHEN_LOCKED: false,
     GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS: OnionHosts.no.rawValue,
     GROUP_DEFAULT_NETWORK_SESSION_MODE: TransportSessionMode.session.rawValue,
     GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE: SMPProxyMode.unknown.rawValue,
@@ -219,6 +223,10 @@ public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
     forKey: GROUP_DEFAULT_NTF_PREVIEW_MODE,
     withDefault: .message
 )
+
+public let ntfQuickReplyGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_QUICK_REPLY)
+
+public let ntfQuickReplyWhenLockedGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_QUICK_REPLY_WHEN_LOCKED)
 
 public let incognitoGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_INCOGNITO)
 

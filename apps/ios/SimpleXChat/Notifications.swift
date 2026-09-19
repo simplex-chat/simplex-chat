@@ -14,6 +14,7 @@ import SwiftUI
 public let ntfCategoryContactRequest = "NTF_CAT_CONTACT_REQUEST"
 public let ntfCategoryContactConnected = "NTF_CAT_CONTACT_CONNECTED"
 public let ntfCategoryMessageReceived = "NTF_CAT_MESSAGE_RECEIVED"
+public let ntfCategoryMessageReceivedReply = "NTF_CAT_MESSAGE_RECEIVED_REPLY"
 public let ntfCategoryCallInvitation = "NTF_CAT_CALL_INVITATION"
 public let ntfCategoryConnectionEvent = "NTF_CAT_CONNECTION_EVENT"
 public let ntfCategoryManyEvents = "NTF_CAT_MANY_EVENTS"
@@ -71,8 +72,15 @@ public func createMessageReceivedNtf(_ user: any UserLike, _ cInfo: ChatInfo, _ 
     } else {
         title = previewMode == .hidden ? contactHidden : "\(cInfo.chatViewName):"
     }
+    // offer inline reply only for a sendable direct/group chat with preview shown and quick reply on,
+    // and (when app-locked) reply-when-locked on
+    let quickReply = ntfQuickReplyGroupDefault.get()
+        && previewMode != .hidden
+        && (cInfo.chatType == .direct || cInfo.chatType == .group)
+        && cInfo.sendMsgEnabled
+        && (!appLocalAuthEnabledGroupDefault.get() || ntfQuickReplyWhenLockedGroupDefault.get())
     return createNotification(
-        categoryIdentifier: ntfCategoryMessageReceived,
+        categoryIdentifier: quickReply ? ntfCategoryMessageReceivedReply : ntfCategoryMessageReceived,
         title: title,
         body: previewMode == .message ? hideSecrets(cItem, isChannel: cInfo.isChannel) : NSLocalizedString("new message", comment: "notification"),
         targetContentIdentifier: cInfo.id,
