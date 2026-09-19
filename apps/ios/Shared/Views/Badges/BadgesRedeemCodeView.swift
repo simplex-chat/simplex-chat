@@ -80,7 +80,7 @@ struct BadgesRedeemCodeView: View {
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
 
-        Text("Paste the code from your receipt.")
+        Text("Paste the code you received.")
             .font(.body)
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)

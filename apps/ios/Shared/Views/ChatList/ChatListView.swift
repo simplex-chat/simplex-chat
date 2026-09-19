@@ -387,7 +387,7 @@ struct ChatListView: View {
     }
 
     private func showSupportEndedDismissAlert() {
-        showAlert(NSLocalizedString("Support ended", comment: "alert title")) {
+        showAlert(NSLocalizedString("Your badge expired", comment: "alert title")) {
             [
                 UIAlertAction(title: NSLocalizedString("Remind me later", comment: "alert button"), style: .default) { _ in
                     Task { await ackBadgeAlert(snooze: true) }
@@ -464,8 +464,8 @@ struct ChatListView: View {
                     // one slot: a badge the user paid for ending outranks the pitch to get one
                     if supportEnded, let alert = badgeModel.alert {
                         SupportSimpleXBanner(
-                            title: "Support ended",
-                            subtitle: "Your support ended on \(alert.dateText).",
+                            title: "Your badge expired",
+                            subtitle: "Your badge expired on \(alert.dateText).",
                             onTap: { showBadgesSheet = true },
                             onDismiss: showSupportEndedDismissAlert
                         )
