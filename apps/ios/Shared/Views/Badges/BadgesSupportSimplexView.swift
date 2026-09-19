@@ -29,7 +29,7 @@ struct BadgesSupportSimplexView: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Text("Get a badge to send larger files (up to 5GB) that stay available longer (up to 21 days), to show it on your profile, and to support SimpleX Chat.")
+                Text("Get a badge to send larger files (up to 5GB) that stay available longer (up to 21 days), and to show it on your profile.")
                     .font(.body)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
