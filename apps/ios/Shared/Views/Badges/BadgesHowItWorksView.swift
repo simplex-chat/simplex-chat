@@ -14,7 +14,7 @@ struct BadgesHowItWorksView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("How private badges work")
+            Text("How badges protect your privacy")
                 .font(.largeTitle)
                 .bold()
                 .foregroundColor(theme.colors.primary)
