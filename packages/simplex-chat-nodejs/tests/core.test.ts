@@ -210,9 +210,11 @@ describe("Core tests", () => {
   }, 15000);
 
   it("should not crash when closing stopped controllers repeatedly", async () => {
+    const libPath = path.resolve(libs.libPath(await libs.resolveLibsDir("sqlite")));
     const script = `
       const fs = require("fs"), path = require("path");
       const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
       (async () => {
         for (let i = 0; i < 40; i++) {
           const dir = fs.mkdtempSync(path.join(${JSON.stringify(path.resolve(tmpDir))}, "close-"));
