@@ -25,7 +25,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Time.Clock (getCurrentTime)
 import Data.Word (Word8, Word32)
 import Foreign.C
-import Foreign.Marshal.Alloc (mallocBytes)
+import Foreign.Marshal.Alloc (alloca, mallocBytes)
 import Foreign.Marshal.Utils (copyBytes)
 import Foreign.Ptr
 import Foreign.StablePtr
@@ -34,7 +34,7 @@ import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEnco
 import JSONFixtures
 import Simplex.Chat
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeRequest (..), BadgeType (..), generateMasterKey, verifyCredential)
-import Simplex.Chat.Controller (ChatController (..), ChatDatabase (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..))
 import Simplex.Chat.Mobile hiding (error)
 import Simplex.Chat.Mobile.Badges hiding (error)
 import Simplex.Chat.Mobile.File
@@ -44,6 +44,8 @@ import Simplex.Chat.Options.DB
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
+import Simplex.Messaging.Agent.Client (AgentClient (..))
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), Env (..))
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
@@ -65,6 +67,7 @@ mobileTests = do
       setForeignEncoding utf8
     it "start new chat without user" testChatApiNoUser
     it "start new chat with existing user" testChatApi
+    it "should set queue size via C API" testChatMigrateInitQueueCApi
     it "should encrypt/decrypt WebRTC frames" testMediaApi
     it "should encrypt/decrypt WebRTC frames via C API" testMediaCApi
     describe "should read/write encrypted files via C API" $ do
@@ -164,6 +167,22 @@ testChatApi ps = do
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown
+
+testChatMigrateInitQueueCApi :: TestParams -> IO ()
+testChatMigrateInitQueueCApi ps = do
+  cPath <- newCString $ tmpPath ps </> "1"
+  cKey <- newCString ""
+  cConfirm <- newCString "yesUp"
+  alloca $ \ctrlPtr -> do
+    let migrateInit queueSize = peekCAString =<< cChatMigrateInitQueue cPath cKey cConfirm queueSize ctrlPtr
+    migrateInit 0 `shouldReturn` jsonStr DBMInvalidQueueSize
+    migrateInit (-1) `shouldReturn` jsonStr DBMInvalidQueueSize
+    migrateInit 65536 `shouldReturn` jsonStr DBMOk
+    ChatController {config = ChatConfig {tbqSize}, smpAgent = AgentClient {agentEnv = Env {config = AgentConfig {tbqSize = agentQSize}}}} <- deRefStablePtr =<< peek ctrlPtr
+    tbqSize `shouldBe` 65536
+    agentQSize `shouldBe` 65536
+  where
+    jsonStr = LB.unpack . J.encode
 
 testMediaApi :: HasCallStack => TestParams -> IO ()
 testMediaApi ps = do

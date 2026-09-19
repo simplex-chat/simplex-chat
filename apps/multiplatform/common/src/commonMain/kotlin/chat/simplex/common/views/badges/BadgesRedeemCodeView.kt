@@ -21,7 +21,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -38,13 +37,6 @@ import chat.simplex.res.MR
 private const val badgeCodePrefix = "SB"
 private const val badgeCodeBodyLength = 20
 private const val badgeCodeGroupLength = 5
-
-// The code as core will accept it - prefix and 20 characters, no separators - or null if it does not
-// parse. Validity is decided only here: a second check-character implementation would drift.
-fun parseBadgeCode(s: String): String? {
-  val canonical = chatParseBadgeCode(s)
-  return if (canonical.isEmpty()) null else canonical
-}
 
 // Regroups what was typed; validity and the folding of ambiguous characters are core's alone.
 private fun formatBadgeCodeInput(s: String): String {
@@ -73,9 +65,11 @@ fun BadgesRedeemCodeView() {
   val canonicalCode = remember { mutableStateOf<String?>(null) }
   val submitting = remember { mutableStateOf(false) }
 
-  fun applyCodeInput(s: String) {
-    val formatted = formatBadgeCodeInput(s)
-    if (formatted != code.value.text) code.value = TextFieldValue(formatted, selection = TextRange(formatted.length))
+  // when the text is unchanged, the field's own value is kept: it carries the cursor position and the
+  // keyboard's composition state, which BasicTextField loses unless they are passed back to it
+  fun applyCodeInput(v: TextFieldValue) {
+    val formatted = formatBadgeCodeInput(v.text)
+    code.value = if (formatted != v.text) TextFieldValue(formatted, selection = TextRange(formatted.length)) else v
     canonicalCode.value = parseBadgeCode(formatted)
   }
 
@@ -85,23 +79,20 @@ fun BadgesRedeemCodeView() {
     submitting.value = true
     withBGApi {
       when (val result = chatModel.controller.apiRedeemBadgeCode(rhId, user.userId, sending)) {
+        null -> withContext(Dispatchers.Main) { submitting.value = false }
         is BadgeRedeemResult.Redeemed -> {
-          val badgeState = try { chatModel.controller.apiGetBadgeState(rhId, user.userId) } catch (e: Exception) { null }
+          val badgeState = result.badgeState
           withContext(Dispatchers.Main) {
             submitting.value = false
-            // written before the pop: BadgesView swaps its content under this pushed view, so
-            // the pop reveals Your Badge already in place rather than animating it afterwards
-            if (badgeState != null) {
-              BadgeModel.set(rhId, user.userId, badgeState)
-            }
-            // the response is the only carrier: redeeming raises no event that refreshes the
-            // profile, so without this the badge beside the name is the one from before
+            // set before dismissing: BadgesView then switches Support to Your Badge while this screen
+            // still covers it, so the pop lands on Your Badge instead of showing the switch
+            BadgeModel.set(rhId, user.userId, badgeState)
             chatModel.updateUser(result.user)
             if (badgeState != null && !badgeState.shown) {
               // a replay adds no purchase; a fresh code's badge can be retired on arrival
               AlertManager.shared.showAlertMsg(
                 title = generalGetString(MR.strings.badges_error_title),
-                text = generalGetString(failureMessage(if (result.newBadge) BadgeRedeemError.BadgeEnded else BadgeRedeemError.CodeUsed))
+                text = generalGetString(if (result.newBadge) MR.strings.badges_error_badge_ended else MR.strings.badges_error_code_used)
               )
             } else {
               supporterBannerShown.set(true)
@@ -110,13 +101,12 @@ fun BadgesRedeemCodeView() {
           }
         }
         is BadgeRedeemResult.Failed -> {
-          // the mapped case only - core embeds the service's response in some of these messages
-          Log.e(TAG, "apiRedeemBadgeCode: ${result.error}")
+          Log.e(TAG, "apiRedeemBadgeCode: ${result.err?.string}")
           withContext(Dispatchers.Main) {
             submitting.value = false
             AlertManager.shared.showAlertMsg(
               title = generalGetString(MR.strings.badges_error_title),
-              text = generalGetString(failureMessage(result.error))
+              text = chatModel.controller.redeemErrorText(result.err)
             )
           }
         }
@@ -163,7 +153,7 @@ fun BadgesRedeemCodeView() {
             false
           }
           else -> {
-            applyCodeInput(formatted)
+            applyCodeInput(TextFieldValue(formatted, selection = TextRange(formatted.length)))
             redeem()
             true
           }
@@ -178,10 +168,26 @@ fun BadgesRedeemCodeView() {
       TextButtonBelowOnboardingButton("", null)
     }
   }
+
+  if (submitting.value) {
+    Box(
+      Modifier.fillMaxSize(),
+      contentAlignment = Alignment.Center
+    ) {
+      Surface(Modifier.size(50.dp), color = MaterialTheme.colors.background.copy(0.9f), contentColor = LocalContentColor.current, shape = RoundedCornerShape(50)){}
+      CircularProgressIndicator(
+        Modifier
+          .padding(horizontal = 2.dp)
+          .size(30.dp),
+        color = MaterialTheme.colors.secondary,
+        strokeWidth = 3.dp
+      )
+    }
+  }
 }
 
 @Composable
-private fun CodeField(code: MutableState<TextFieldValue>, submitting: Boolean, applyCodeInput: (String) -> Unit) {
+private fun CodeField(code: MutableState<TextFieldValue>, submitting: Boolean, applyCodeInput: (TextFieldValue) -> Unit) {
   val colors = TextFieldDefaults.textFieldColors(
     backgroundColor = MaterialTheme.appColors.sentMessage,
     textColor = MaterialTheme.colors.onBackground,
@@ -190,7 +196,7 @@ private fun CodeField(code: MutableState<TextFieldValue>, submitting: Boolean, a
   )
   BasicTextField(
     value = code.value,
-    onValueChange = { applyCodeInput(it.text) },
+    onValueChange = applyCodeInput,
     enabled = !submitting,
     singleLine = true,
     textStyle = TextStyle.Default.copy(
@@ -218,10 +224,10 @@ private fun CodeField(code: MutableState<TextFieldValue>, submitting: Boolean, a
 }
 
 @Composable
-private fun PasteButton(submitting: Boolean, applyCodeInput: (String) -> Unit) {
+private fun PasteButton(submitting: Boolean, applyCodeInput: (TextFieldValue) -> Unit) {
   val clipboard = LocalClipboardManager.current
   TextButton(
-    onClick = { clipboard.getText()?.text?.let { applyCodeInput(it) } },
+    onClick = { clipboard.getText()?.text?.let { applyCodeInput(TextFieldValue(it, selection = TextRange(it.length))) } },
     enabled = !submitting
   ) {
     Text(stringResource(MR.strings.paste_button), color = MaterialTheme.colors.primary, fontWeight = FontWeight.Medium)
@@ -237,21 +243,4 @@ private fun SubmitButton(enabled: Boolean, onClick: () -> Unit) {
     enabled = enabled,
     onclick = onClick
   )
-}
-
-private fun failureMessage(failure: BadgeRedeemError): StringResource = when (failure) {
-  BadgeRedeemError.InvalidCode -> MR.strings.badges_error_invalid_code
-  BadgeRedeemError.ServiceNotConfigured -> MR.strings.badges_error_service_not_configured
-  BadgeRedeemError.AlreadyActive -> MR.strings.badges_error_already_active
-  BadgeRedeemError.CodeInvalid -> MR.strings.badges_error_code_invalid
-  BadgeRedeemError.CodeUsed -> MR.strings.badges_error_code_used
-  BadgeRedeemError.CodeExpired -> MR.strings.badges_error_code_expired
-  BadgeRedeemError.RateLimited -> MR.strings.badges_error_rate_limited
-  BadgeRedeemError.ServiceFailed -> MR.strings.badges_error_service_failed
-  BadgeRedeemError.BadServiceResponse -> MR.strings.badges_error_bad_service_response
-  BadgeRedeemError.CredentialNotVerified -> MR.strings.badges_error_credential_not_verified
-  BadgeRedeemError.UnsupportedVersion -> MR.strings.badges_error_unsupported_version
-  BadgeRedeemError.NetworkError -> MR.strings.badges_error_network
-  BadgeRedeemError.BadgeEnded -> MR.strings.badges_error_badge_ended
-  BadgeRedeemError.Unknown -> MR.strings.badges_error_unknown
 }

@@ -125,14 +125,10 @@ private fun RedeemCodeButton() {
 @Composable
 private fun GetCodeButton() {
   val uriHandler = LocalUriHandler.current
-  if (platform.androidHasPlatformStore) {
-    TextButtonBelowOnboardingButton("", null)
-  } else {
-    TextButtonBelowOnboardingButton(
-      text = stringResource(MR.strings.badges_get_your_code),
-      onClick = { uriHandler.openExternalLink("https://simplex.chat/badges/") }
-    )
-  }
+  TextButtonBelowOnboardingButton(
+    text = stringResource(MR.strings.badges_get_your_code),
+    onClick = { uriHandler.openExternalLink("https://simplex.chat/badges/") }
+  )
 }
 
 @Composable

@@ -124,8 +124,8 @@ func chatSendCmd<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDe
 }
 
 // Spec: spec/api.md#chatApiSendCmdWithRetry
-func chatApiSendCmdWithRetry<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, inProgress: BoxedValue<Bool>? = nil, retryNum: Int32 = 0) async -> APIResult<R>? {
-    let r: APIResult<R> = await chatApiSendCmd(cmd, bgTask: bgTask, bgDelay: bgDelay, retryNum: retryNum)
+func chatApiSendCmdWithRetry<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, inProgress: BoxedValue<Bool>? = nil, retryNum: Int32 = 0, log: Bool = true) async -> APIResult<R>? {
+    let r: APIResult<R> = await chatApiSendCmd(cmd, bgTask: bgTask, bgDelay: bgDelay, retryNum: retryNum, log: log)
     if inProgress == nil || inProgress?.boxedValue == true,
        case let .error(e) = r, let alert = retryableNetworkErrorAlert(e) {
         return await withCheckedContinuation { cont in
@@ -135,7 +135,7 @@ func chatApiSendCmdWithRetry<R: ChatAPIResult>(_ cmd: ChatCommand, bgTask: Bool 
                     cont.resume(returning: nil)
                 },
                 onRetry: {
-                    let r1: APIResult<R>? = await chatApiSendCmdWithRetry(cmd, bgTask: bgTask, bgDelay: bgDelay, inProgress: inProgress, retryNum: retryNum + 1)
+                    let r1: APIResult<R>? = await chatApiSendCmdWithRetry(cmd, bgTask: bgTask, bgDelay: bgDelay, inProgress: inProgress, retryNum: retryNum + 1, log: log)
                     cont.resume(returning: r1)
                 }
             )
@@ -199,6 +199,10 @@ func retryableNetworkErrorAlert(_ e: ChatError) -> (title: String, message: Stri
     case let .errorAgent(.PROXY(proxyServer, destServer, .protocolError(.PROXY(.NO_SESSION)))): (
         title: NSLocalizedString("No private routing session", comment: "alert title"),
         message: proxyDestinationErrorAlertMessage(proxyServer: proxyServer, destServer: destServer)
+    )
+    case .errorAgent(.AGENT(.A_SERVICE(.timeout))): (
+        title: NSLocalizedString("Connection timeout", comment: "alert title"),
+        message: NSLocalizedString("The service did not respond. Please try again.", comment: "alert message")
     )
     default: nil
     }
@@ -2182,86 +2186,35 @@ func resetAgentServersStats() async throws {
     try await sendCommandOkResp(.resetAgentServersStats)
 }
 
-// The failures redeemBadgeCode raises, as core flattens them to command error text.
-// tests/Bots/BadgeServiceTests.hs asserts that text, so a change in core breaks a test there.
-enum BadgeRedeemError: Error {
-    case invalidCode
-    case serviceNotConfigured
-    case alreadyActive
-    case codeInvalid
-    case codeUsed
-    case codeExpired
-    case rateLimited
-    case serviceFailed
-    case badServiceResponse
-    case credentialNotVerified
-    case unsupportedVersion
-    case networkError
-    case badgeEnded
-    case unknown
+// log: false because the code is a bearer secret until it is redeemed - it is in the command.
+// nil when the user cancels the retry alert.
+func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: User, newBadge: Bool, badgeState: BadgeState?)? {
+    let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiRedeemBadgeCode(userId: userId, code: code), log: false)
+    guard let r else { return nil }
+    // redeemedBadge is dropped: the user's profile carries what is shown
+    if case let .result(.badgeRedeemed(user, _, newBadge, badgeState)) = r { return (user, newBadge, badgeState) }
+    throw r.unexpected
 }
 
-private enum BadgeErrorText {
-    static let invalidCode = "invalid badge code"
-    static let serviceNotConfigured = "badge service not configured"
-    static let alreadyActive = "badge already active"
-    static let unknownKeyIndex = "unknown badge key index"
-    static let credentialNotVerified = "badge credential does not verify against configured key"
-    static let invalidResponse = "invalid badge service response, "
-    static let unexpectedResponse = "unexpected badge service response: "
-    static let serviceError = "badge service error: "
-    // raised by sendServiceRequestTo, not by redeemBadgeCode itself, when the reply is not JSON
-    static let undecodableResponse = "invalid service response"
-}
-
-func badgeRedeemError(_ error: ChatError) -> BadgeRedeemError {
-    // the app's own classifier decides what counts as a network failure; only the classification is
-    // used here, not its retry policy - a client that retries makes code guessing cheaper
-    if retryableNetworkErrorAlert(error) != nil { return .networkError }
-    guard case let .error(.commandError(message)) = error else { return .unknown }
-    switch message {
-    case BadgeErrorText.invalidCode: return .invalidCode
-    case BadgeErrorText.serviceNotConfigured: return .serviceNotConfigured
-    case BadgeErrorText.alreadyActive: return .alreadyActive
-    case BadgeErrorText.unknownKeyIndex, BadgeErrorText.credentialNotVerified: return .credentialNotVerified
-    case BadgeErrorText.undecodableResponse: return .badServiceResponse
-    default: break
+// localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
+func redeemErrorText(_ error: Error) -> String {
+    if case let .error(.badgeRedeemError(e)) = error as? ChatError {
+        switch e {
+        case .invalidCode: return NSLocalizedString("This code is not valid.", comment: "alert message")
+        case .serviceNotConfigured: return NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
+        case .badgeActive: return NSLocalizedString("This profile already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "alert message")
+        case .serviceError(.codeInvalid): return NSLocalizedString("This code was not recognised.", comment: "alert message")
+        case .serviceError(.codeUsed): return NSLocalizedString("This code has already been used.", comment: "alert message")
+        case .serviceError(.codeExpired): return NSLocalizedString("This code has expired.", comment: "alert message")
+        case .serviceError(.rateLimited): return NSLocalizedString("Too many attempts. Please try again later.", comment: "alert message")
+        case .serviceError(.unsupportedVersion): return NSLocalizedString("This app version is too old for the badge service. Please update the app.", comment: "alert message")
+        case .serviceError: break
+        case let .invalidResponse(message):
+            return String.localizedStringWithFormat(NSLocalizedString("The badge service sent an unexpected response: %@", comment: "alert message"), message)
+        case .unknownKeyIndex, .credentialNotVerified: return NSLocalizedString("This app version cannot verify this badge. Please update the app.", comment: "alert message")
+        }
     }
-    if message.hasPrefix(BadgeErrorText.invalidResponse) || message.hasPrefix(BadgeErrorText.unexpectedResponse) {
-        return .badServiceResponse
-    }
-    if message.hasPrefix(BadgeErrorText.serviceError) {
-        return badgeServiceError(String(message.dropFirst(BadgeErrorText.serviceError.count)))
-    }
-    return .unknown
-}
-
-// the service's own tag, which core bounds to [a-z0-9_] and 32 characters and which is never shown
-private func badgeServiceError(_ tag: String) -> BadgeRedeemError {
-    switch tag {
-    case "code_invalid": return .codeInvalid
-    case "code_used": return .codeUsed
-    case "code_expired": return .codeExpired
-    case "rate_limited": return .rateLimited
-    // retrying never succeeds: the client is too old for the service
-    case "unsupported_version": return .unsupportedVersion
-    default: return .serviceFailed
-    }
-}
-
-// log: false because the code is a bearer secret until it is redeemed - it is in the command, and a
-// service response echoed into an error message would carry it into the terminal with the response.
-func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: User, newBadge: Bool) {
-    let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiRedeemBadgeCode(userId: userId, code: code), log: false)
-    switch r {
-    // redeemedBadge is dropped: it is the credential, and the user's profile carries what is shown
-    case let .result(.badgeRedeemed(user, _, newBadge)): return (user, newBadge)
-    case let .error(e): throw badgeRedeemError(e)
-    default:
-        // the response type alone - it names a case or a JSON key, never the service's message
-        logger.error("apiRedeemBadgeCode: unexpected \(r.responseType)")
-        throw BadgeRedeemError.unknown
-    }
+    return String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "alert message"), responseError(error))
 }
 
 func apiGetBadgeState(_ userId: Int64) async throws -> BadgeState? {
@@ -2273,6 +2226,12 @@ func apiGetBadgeState(_ userId: Int64) async throws -> BadgeState? {
 func apiGetBadgeStateSync(_ userId: Int64) throws -> BadgeState? {
     let r: ChatResponse2 = try chatSendCmdSync(.apiGetBadgeState(userId: userId))
     if case let .badgeState(_, badgeState) = r { return badgeState }
+    throw r.unexpected
+}
+
+func apiGetBadgeLedger(_ userId: Int64, _ badgePurchaseId: Int64) async throws -> [StatementEntry] {
+    let r: ChatResponse2 = try await chatSendCmd(.apiGetBadgeLedger(userId: userId, badgePurchaseId: badgePurchaseId))
+    if case let .badgeLedger(_, badgeLedger) = r { return badgeLedger }
     throw r.unexpected
 }
 
@@ -3085,10 +3044,10 @@ func processReceivedMsg(_ res: ChatEvent) async {
             }
         }
     case let .badgeChanged(user, badgeState):
-        if active(user) {
-            await MainActor.run {
-                // read by core after retiring or presenting, so it carries the profile badge as changed
-                m.updateUser(user)
+        await MainActor.run {
+            // read by core after retiring or presenting, so it carries the profile badge as changed
+            m.updateUser(user)
+            if active(user) {
                 BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
             }
         }
