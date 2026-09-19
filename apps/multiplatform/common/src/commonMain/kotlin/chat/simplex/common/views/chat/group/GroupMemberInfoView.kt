@@ -666,6 +666,13 @@ fun GroupMemberInfoLayout(
     } else if (!connectionLoaded && memberConnected) {
       SectionDividerSpaced()
       SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
+        // the status is set from the same receiving queues as the servers below, so it is reserved with them
+        SectionItemView {
+          Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(stringResource(MR.strings.network_status))
+            Icon(painterResource(MR.images.ic_info), stringResource(MR.strings.network_status), tint = MaterialTheme.colors.secondary)
+          }
+        }
         SwitchAddressButton(disabled = true, switchAddress = {})
         SimplexServers(stringResource(MR.strings.receiving_via), emptyList())
         SimplexServers(stringResource(MR.strings.sending_via), emptyList())

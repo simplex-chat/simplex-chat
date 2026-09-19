@@ -147,10 +147,16 @@ set when the queries return, including on failure. Without it a failed load woul
 leave the row disabled forever, because "no code yet" and "no code at all" look
 the same.
 
-The remaining shift is the Network status row: it is inside the Servers section
-and depends on `cStats.subStatus`, which comes from the agent's subscription
-state and cannot be predicted locally, so the section still grows by one row when
-it is present.
+Network status is reserved with them. It looks like agent state that cannot be
+predicted, but `connSubStatus` (simplexmq Agent.hs:2736) returns `Just` whenever
+`rcvQueuesInfo` is non-empty and `Nothing` only when it is empty - the same list
+that decides whether "Receiving via" is rendered. The two rows appear together,
+so reserving one and not the other is what leaves a gap.
+
+The remaining shift is "Abort changing address", which renders only while
+`rcvSwitchStatus != null` on a receiving queue. That is a switch the user
+started, so it is absent in normal use and reserving it would add a row that
+disappears on nearly every open.
 
 iOS needs its gate for a reason Kotlin does not have: `newRole` is `@State`
 initialised to a placeholder `.member` and corrected inside `.task`
