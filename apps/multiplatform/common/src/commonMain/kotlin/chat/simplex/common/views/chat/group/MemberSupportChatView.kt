@@ -76,6 +76,14 @@ fun MemberSupportChatAppBar(
       navigationButton = { NavigationButtonBack(onBackClicked) },
       title = { MemberSupportChatToolbarTitle(scopeMember_) },
       onTitleClick = {
+        val connStats = mutableStateOf<ConnectionStats?>(null)
+        val connectionCode = mutableStateOf<String?>(null)
+        ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { closeCurrent ->
+          GroupMemberInfoView(rhId, groupInfo, scopeMember_, scrollToItemId, connStats, connectionCode, chatModel, openedFromSupportChat = true, close = closeCurrent) {
+            closeCurrent()
+            close()
+          }
+        }
         withBGApi {
           val r = chatModel.controller.apiGroupMemberInfo(rhId, groupInfo.groupId, scopeMember_.groupMemberId)
           val stats = r?.second
@@ -85,14 +93,8 @@ fun MemberSupportChatAppBar(
           } else {
             null
           }
-          ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { closeCurrent ->
-            remember { derivedStateOf { chatModel.getGroupMember(scopeMember_.groupMemberId) } }.value?.let { mem ->
-              GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = true, close = closeCurrent) {
-                closeCurrent()
-                close()
-              }
-            }
-          }
+          connStats.value = stats
+          connectionCode.value = code
         }
       },
       onTop = !oneHandUI.value || !chatBottomBar.value,

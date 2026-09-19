@@ -499,6 +499,14 @@ fun ChatView(
             showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
               hideKeyboard(view)
               groupMembersJob.cancel()
+              val connStats = mutableStateOf<ConnectionStats?>(null)
+              val connectionCode = mutableStateOf<String?>(null)
+              if (chatsCtx.secondaryContextFilter == null) {
+                ModalManager.end.closeModals()
+              }
+              ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
+                GroupMemberInfoView(chatRh, groupInfo, member, scrollToItemId, connStats, connectionCode, chatModel, openedFromSupportChat = false, close = close, closeAll = close)
+              }
               groupMembersJob = scope.launch(Dispatchers.Default) {
                 val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
                 val stats = r?.second
@@ -513,15 +521,8 @@ fun ChatView(
                 withContext(Dispatchers.Main) {
                   chatModel.chatsContext.upsertGroupMember(chatRh, groupInfo, updatedMember)
                 }
-
-                if (chatsCtx.secondaryContextFilter == null) {
-                  ModalManager.end.closeModals()
-                }
-                ModalManager.end.showModalCloseable(showClose = true, cardScreen = true) { close ->
-                  remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
-                    GroupMemberInfoView(chatRh, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, close = close, closeAll = close)
-                  }
-                }
+                connStats.value = stats
+                connectionCode.value = code
               }
             },
             loadMessages = { chatId, pagination, visibleItemIndexes ->

@@ -45,10 +45,10 @@ import kotlinx.coroutines.*
 fun GroupMemberInfoView(
   rhId: Long?,
   groupInfo: GroupInfo,
-  member: GroupMember,
+  groupMember: GroupMember,
   scrollToItemId: MutableState<Long?>,
-  connectionStats: ConnectionStats?,
-  connectionCode: String?,
+  connStats: MutableState<ConnectionStats?>,
+  connectionCode: State<String?>,
   chatModel: ChatModel,
   openedFromSupportChat: Boolean,
   groupRelay: GroupRelay? = null,
@@ -60,7 +60,10 @@ fun GroupMemberInfoView(
   }
   BackHandler(onBack = close)
   val chat = chatModel.chats.value.firstOrNull { ch -> ch.id == chatModel.chatId.value && ch.remoteHostId == rhId }
-  val connStats = remember { mutableStateOf(connectionStats) }
+  // the passed member is shown until the loaded one is added to the model, so that the profile opens without waiting for the core
+  val member = remember(groupMember.groupMemberId) {
+    derivedStateOf { chatModel.getGroupMember(groupMember.groupMemberId) ?: groupMember }
+  }.value
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   var progressIndicator by remember { mutableStateOf(false) }
   val scope = rememberCoroutineScope()
@@ -91,7 +94,7 @@ fun GroupMemberInfoView(
       connStats,
       newRole,
       developerTools,
-      connectionCode,
+      connectionCode.value,
       groupRelay = groupRelay,
       getContactChat = { chatModel.getContactChat(it) },
       openDirectChat = { contactId ->
@@ -101,6 +104,7 @@ fun GroupMemberInfoView(
         }
       },
       createMemberContact = {
+        val connectionStats = connStats.value
         if (member.sendMsgEnabled) {
           withBGApi {
             progressIndicator = true
@@ -209,7 +213,7 @@ fun GroupMemberInfoView(
           remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
             VerifyCodeView(
               mem.displayName,
-              connectionCode,
+              connectionCode.value,
               mem.verified,
               verify = { code ->
                 chatModel.controller.apiVerifyGroupMember(rhId, mem.groupId, mem.groupMemberId, code)?.let { r ->
