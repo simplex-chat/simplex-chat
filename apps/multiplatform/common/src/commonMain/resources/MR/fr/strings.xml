@@ -2970,4 +2970,19 @@
     <string name="badges_error_code_used">Ce code a déjà été utilisé.</string>
     <string name="badges_error_code_expired">Ce code a expiré.</string>
     <string name="badges_error_rate_limited">Trop de tentatives. Veuillez réessayer plus tard.</string>
+    <string name="badges_error_service_failed">Le service de badges est indisponible. Veuillez réessayer plus tard.</string>
+    <string name="badges_error_bad_service_response">Le service de badges a envoyé une réponse inattendue.</string>
+    <string name="badges_error_credential_not_verified">Cette version de l’application ne peut pas vérifier ce badge. Veuillez mettre à jour l’application.</string>
+    <string name="badges_error_unsupported_version">Cette version de l’application est trop ancienne pour le service de badges. Veuillez mettre à jour l’application.</string>
+    <string name="badges_error_network">Erreur de connexion. Veuillez vérifier votre connexion réseau.</string>
+    <string name="badges_error_badge_ended">Le code a été accepté, mais le badge qu’il accorde a déjà expiré.</string>
+    <string name="badges_error_unknown">Impossible d’utiliser le code.</string>
+    <string name="badges_code_you_scanned_is_not_badge_code">Le code que vous avez scanné n’est pas un code de badge.</string>
+    <string name="badges_your_badge">Votre badge</string>
+    <string name="badges_support_ended">Soutien terminé</string>
+    <string name="badges_shown_on_your_profile">affiché sur votre profil</string>
+    <string name="badges_ends">Se termine</string>
+    <string name="badges_prepaid_footer">Les mois prépayés n’ont pas de date de facturation. Le badge est réémis chaque mois à partir du solde que vous avez déjà payé, et se termine lorsque celui-ci est épuisé.</string>
+    <string name="badges_type_investor">Investisseur</string>
+    <string name="badges_support_ended_on">Votre soutien a pris fin le %1$s.</string>
 </resources>
