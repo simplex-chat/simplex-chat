@@ -11,21 +11,15 @@ import SimpleXChat
 
 struct BadgesYourBadgeView: View {
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var chatModel: ChatModel
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     let badgeState: BadgeState
     var showsAsSheet: Bool = false
-
-    private var title: LocalizedStringKey {
-        badgeState.shown ? "Your badge" : "Support ended"
-    }
-
-    // pushed, the navigation bar carries the title and animates it; as a sheet root there is no bar
-    // to put it in, so the title is drawn in the content, as the Support screen does
-    private var navTitle: LocalizedStringKey { showsAsSheet ? "" : title }
 
     var body: some View {
         VStack(spacing: 0) {
             if showsAsSheet {
-                Text(title)
+                Text("Your badge")
                     .font(.largeTitle)
                     .bold()
                     .foregroundColor(theme.colors.primary)
@@ -48,10 +42,38 @@ struct BadgesYourBadgeView: View {
                     Text("Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.")
                         .foregroundColor(theme.colors.secondary)
                 }
+                Section {
+                    NavigationLink {
+                        BadgesHowItWorksView()
+                            .modifier(ThemedBackground())
+                    } label: {
+                        settingsRow("info.circle", color: theme.colors.secondary) {
+                            Text("How private badges work")
+                        }
+                    }
+                }
+                if developerTools {
+                    Section(header: Text("Credential").foregroundColor(theme.colors.secondary)) {
+                        if let badge = chatModel.currentUser?.profile.localBadge {
+                            infoRow("Status", badge.status.rawValue)
+                            infoRow("Expires", DateFormatter.localizedString(from: badge.badge.badgeExpiry, dateStyle: .medium, timeStyle: .short))
+                        }
+                        infoRow("Months left", "\(badgeState.monthsLeft)")
+                        infoRow("Purchase ID", "\(badgeState.badgePurchaseId)")
+                        Button("Copy purchase key") {
+                            UIPasteboard.general.string = badgeState.purchaseKey
+                        }
+                        NavigationLink {
+                            BadgesLedgerView(badgeState: badgeState)
+                        } label: {
+                            Text("Badge ledger")
+                        }
+                    }
+                }
             }
         }
         .frame(maxHeight: .infinity)
-        .navigationTitle(navTitle)
+        .navigationTitle(showsAsSheet ? "" : "Your badge")
         .navigationBarTitleDisplayMode(showsAsSheet ? .inline : .large)
         .modifier(ThemedBackground(grouped: true))
     }
@@ -69,7 +91,7 @@ struct BadgeSummary: View {
                 .frame(width: 68, height: 68)
                 .padding(.bottom, 8)
 
-            badgeTypeName(badgeState.badgeType)
+            Text(badgeTypeName(badgeState.badgeType))
                 .font(.title3)
                 .fontWeight(.semibold)
 
@@ -79,15 +101,5 @@ struct BadgeSummary: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
-    }
-}
-
-// verbatim for an unknown type: it is the service's string, and must not be looked up as a localised key
-private func badgeTypeName(_ t: BadgeType) -> Text {
-    switch t {
-    case .supporter: Text("Supporter")
-    case .legend: Text("Legend")
-    case .investor: Text("Investor")
-    case let .unknown(s): Text(verbatim: s)
     }
 }

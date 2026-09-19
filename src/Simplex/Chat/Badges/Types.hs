@@ -24,6 +24,7 @@ module Simplex.Chat.Badges.Types
     BadgeCharge (..),
     BadgeIssuance (..),
     BadgeAlert (..),
+    BadgeAlertPrice (..),
     BadgeState (..),
   ) where
 
@@ -204,14 +205,21 @@ data BadgeAlert = BadgeAlert
   { kind :: BadgeAlertKind,
     episode :: Text,
     date :: UTCTime,
-    price :: Maybe (Int64, Text)
+    price :: Maybe BadgeAlertPrice
   }
   deriving (Show)
 
--- | The user's badge as the badge surfaces render it. The purchase keys are deliberately absent:
--- this travels to the UI and over remote control, and they are secrets that stay in core.
+data BadgeAlertPrice = BadgeAlertPrice
+  { amount :: Int64,
+    currency :: Text
+  }
+  deriving (Show)
+
+-- | The user's badge as the badge surfaces render it. The private purchase key is deliberately
+-- absent: this travels to the UI and over remote control, and it is a secret that stays in core.
 data BadgeState = BadgeState
   { badgePurchaseId :: Int64,
+    purchaseKey :: C.PublicKeyEd25519, -- the purchase's identifier on the service
     badgeType :: BadgeType,
     shown :: BoolDef,
     monthsLeft :: Int,
@@ -259,12 +267,9 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "BIS") ''BadgeItemStatus)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "OD") ''OfferDiscount)
 
-instance ToJSON BadgeAlertKind where
-  toJSON = textToJSON
-  toEncoding = textToEncoding
+$(JQ.deriveJSON (enumJSON $ dropPrefix "BA") ''BadgeAlertKind)
 
-instance FromJSON BadgeAlertKind where
-  parseJSON = textParseJSON "BadgeAlertKind"
+$(JQ.deriveJSON defaultJSON ''BadgeAlertPrice)
 
 $(JQ.deriveJSON defaultJSON ''BadgeAlert)
 

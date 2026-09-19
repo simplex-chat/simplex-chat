@@ -17,7 +17,7 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.STM (atomically, readTMVar)
-import Control.Monad (void, when)
+import Control.Monad (forM_, void, when)
 import Control.Exception (finally)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -32,6 +32,7 @@ import System.Timeout (timeout)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), generateMasterKey)
 import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeText, formatBadgeCode, parseBadgeCode, randomBadgeCode)
 import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag, endOfMondayAfter)
@@ -257,10 +258,10 @@ testRedeemUnknownCode ps =
       g <- C.newRandom
       unknown <- randomBadgeCode g
       alice ##> ("/_redeem_badge_code 1 " <> codeArg unknown)
-      alice <## "bad chat command: badge service error: code_invalid"
+      alice <## "cannot redeem badge code: badge service error: code_invalid"
       -- a failed check character is refused before anything leaves the device
       alice ##> "/_redeem_badge_code 1 SB-00000-00000-00000-00001"
-      alice <## "bad chat command: invalid badge code"
+      alice <## "cannot redeem badge code: invalid code"
       -- sent straight to the service, past the client's own check, the two are one answer
       (_, redeemPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
       redeemDirect alice bsLink redeemPriv (T.unpack $ badgeCodeText unknown)
@@ -315,7 +316,7 @@ testRedeemSecondCode ps =
       alice <## "supporter badge - active"
       alice <##. "expires "
       alice ##> ("/_redeem_badge_code 1 " <> codeArg legend)
-      alice <## "bad chat command: badge already active"
+      alice <## "cannot redeem badge code: badge already active"
       alice ##> "/p"
       showActiveUser alice "alice (Alice, * supporter)"
       alice ##> "/create user alisa"
@@ -339,7 +340,7 @@ testRedeemSameCodeOtherProfile ps =
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       alice ##> ("/_redeem_badge_code 2 " <> codeArg code)
-      alice <## "bad chat command: badge service error: code_used"
+      alice <## "cannot redeem badge code: badge service error: code_used"
       alice ##> "/p"
       showActiveUser alice "alisa"
       alice ##> "/user alice"
@@ -504,6 +505,12 @@ ledgerRows ChatController {chatStore} table =
         <> table
         <> " ORDER BY entry_id"
 
+-- the two dates the CLI prints for each row
+ledgerTimes :: ChatController -> IO [(UTCTime, UTCTime)]
+ledgerTimes ChatController {chatStore} =
+  withTransaction chatStore $ \db ->
+    DB.query_ db "SELECT service_created_at, balance_start_ts FROM badge_ledger ORDER BY entry_id"
+
 -- | The client's verdict on each row, in ledger order. The service has no such column: it computes
 -- the rows rather than checking what someone else computed.
 balanceChecks :: ChatController -> IO [Maybe Bool]
@@ -539,6 +546,18 @@ testClientReplicatesLedger ps =
       -- nor a second issuance for the one month issued: the replay names a month already stored
       expiries <- issuedExpiries (chatController alice)
       length expiries `shouldBe` 1
+      -- the CLI lists the rows oldest first, with the dates they carry
+      times <- ledgerTimes (chatController alice)
+      alice ##> "/_badge ledger 1 1"
+      forM_ (zip times [("code", "+3", "3"), ("badge", "-1", "2")]) $ \((createdAt, from), (kind, change, balance)) ->
+        alice <## (day createdAt <> " " <> kind <> " " <> change <> " -> " <> balance <> ", from " <> day from)
+      -- and nothing for a purchase that is another profile's
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> "/_badge ledger 2 1"
+      alice <## "no ledger entries"
+  where
+    day = formatTime defaultTimeLocale "%Y-%m-%d"
 
 -- the balance start of the last row, which is when the next month falls due
 dueAtOf :: [ReplicatedRow] -> UTCTime

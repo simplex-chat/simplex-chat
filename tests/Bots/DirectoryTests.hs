@@ -2185,7 +2185,7 @@ testDirectoryChannelName ps = withSmpServerAndNames $ \reg ->
         enableNamesRole bob
         bob `connectVia` dsLink
         (shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
-        registerName reg newsName (channelNameRecord "news" (T.pack shortLink))
+        registerName reg newsName (channelNameRecord "news.simplex" (T.pack shortLink))
         bob ##> "/public group access #news domain=news.simplex"
         bob <## "updated public group access: domain=news.simplex"
         relay <## "bob updated group #news: (signed)"
@@ -2226,13 +2226,13 @@ testDirectoryChannelNameNotVerified ps = withSmpServerAndNames $ \reg ->
         enableNamesRole bob
         bob `connectVia` dsLink
         (shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
-        registerName reg newsName (channelNameRecord "news" (T.pack shortLink))
+        registerName reg newsName (channelNameRecord "news.simplex" (T.pack shortLink))
         bob ##> "/public group access #news domain=news.simplex"
         bob <## "updated public group access: domain=news.simplex"
         relay <## "bob updated group #news: (signed)"
         relay <## "updated public group access: domain=news.simplex"
         -- the name is re-pointed to a different link after the owner set it
-        registerName reg newsName (channelNameRecord "news" "https://simplex.chat/other")
+        registerName reg newsName (channelNameRecord "news.simplex" "https://simplex.chat/other")
         bob ##> "/share chat #news @'SimpleX Directory'"
         bob <# "@'SimpleX Directory' link to join channel #news (signed):"
         _ <- getTermLine bob -- short link

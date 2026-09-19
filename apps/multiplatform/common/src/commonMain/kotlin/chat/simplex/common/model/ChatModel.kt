@@ -2225,6 +2225,7 @@ data class LocalBadge(
 @Serializable
 data class BadgeState(
   val badgePurchaseId: Long,
+  val purchaseKey: String,
   val badgeType: BadgeType,
   val shown: Boolean,
   val monthsLeft: Int,
@@ -2237,6 +2238,137 @@ data class BadgeState(
 }
 
 @Serializable
+data class StatementEntry(
+  val entryId: String,
+  val changeMonths: Int,
+  val balanceMonths: Int,
+  val balanceStartTs: Instant,
+  val balanceAnchorTs: Instant,
+  val balanceBadgeType: BadgeType,
+  val wasPausedSince: Instant? = null,
+  val createdAt: Instant,
+  val entryType: StatementEntryType
+)
+
+@Serializable
+sealed class StatementEntryType {
+  @Serializable @SerialName("credit") data class Credit(val credit: StatementCreditType): StatementEntryType()
+  @Serializable @SerialName("debit") data class Debit(val debit: StatementDebitType): StatementEntryType()
+
+  val text: String
+    get() = when (this) {
+      is Credit -> credit.text
+      is Debit -> debit.text
+    }
+}
+
+// the service is deployed ahead of clients, so a type this version does not know keeps its tag
+@Serializable(with = StatementCreditTypeSerializer::class)
+sealed class StatementCreditType {
+  @Serializable data class Payment(val invoiceId: String? = null): StatementCreditType()
+  object Code: StatementCreditType()
+  @Serializable data class Charge(val chargeId: String): StatementCreditType()
+  object Support: StatementCreditType()
+  @Serializable data class TransferIn(val fromPurchaseKey: String): StatementCreditType()
+  object Opening: StatementCreditType()
+  data class Unknown(val type: String): StatementCreditType()
+
+  val text: String
+    get() = when (this) {
+      is Payment -> "payment"
+      is Code -> "code"
+      is Charge -> "charge"
+      is Support -> "support"
+      is TransferIn -> "transferIn"
+      is Opening -> "opening"
+      is Unknown -> type
+    }
+}
+
+object StatementCreditTypeSerializer : KSerializer<StatementCreditType> {
+  override val descriptor: SerialDescriptor = buildClassSerialDescriptor("StatementCreditType")
+
+  override fun deserialize(decoder: Decoder): StatementCreditType {
+    require(decoder is JsonDecoder)
+    val json = decoder.decodeJsonElement().jsonObject
+    return when (val type = json["type"]?.jsonPrimitive?.content ?: "") {
+      "payment" -> decoder.json.decodeFromJsonElement<StatementCreditType.Payment>(json)
+      "code" -> StatementCreditType.Code
+      "charge" -> decoder.json.decodeFromJsonElement<StatementCreditType.Charge>(json)
+      "support" -> StatementCreditType.Support
+      "transferIn" -> decoder.json.decodeFromJsonElement<StatementCreditType.TransferIn>(json)
+      "opening" -> StatementCreditType.Opening
+      else -> StatementCreditType.Unknown(type)
+    }
+  }
+
+  override fun serialize(encoder: Encoder, value: StatementCreditType) {
+    require(encoder is JsonEncoder)
+    encoder.encodeJsonElement(buildJsonObject {
+      put("type", value.text)
+      when (value) {
+        is StatementCreditType.Payment -> value.invoiceId?.let { put("invoiceId", it) }
+        is StatementCreditType.Charge -> put("chargeId", value.chargeId)
+        is StatementCreditType.TransferIn -> put("fromPurchaseKey", value.fromPurchaseKey)
+        is StatementCreditType.Code, is StatementCreditType.Support, is StatementCreditType.Opening, is StatementCreditType.Unknown -> {}
+      }
+    })
+  }
+}
+
+@Serializable(with = StatementDebitTypeSerializer::class)
+sealed class StatementDebitType {
+  object Refund: StatementDebitType()
+  @Serializable data class Upgrade(val toPurchaseKey: String): StatementDebitType()
+  @Serializable data class TransferOut(val toPurchaseKey: String): StatementDebitType()
+  object Support: StatementDebitType()
+  object Badge: StatementDebitType()
+  object Lapse: StatementDebitType()
+  data class Unknown(val type: String): StatementDebitType()
+
+  val text: String
+    get() = when (this) {
+      is Refund -> "refund"
+      is Upgrade -> "upgrade"
+      is TransferOut -> "transferOut"
+      is Support -> "support"
+      is Badge -> "badge"
+      is Lapse -> "lapse"
+      is Unknown -> type
+    }
+}
+
+object StatementDebitTypeSerializer : KSerializer<StatementDebitType> {
+  override val descriptor: SerialDescriptor = buildClassSerialDescriptor("StatementDebitType")
+
+  override fun deserialize(decoder: Decoder): StatementDebitType {
+    require(decoder is JsonDecoder)
+    val json = decoder.decodeJsonElement().jsonObject
+    return when (val type = json["type"]?.jsonPrimitive?.content ?: "") {
+      "refund" -> StatementDebitType.Refund
+      "upgrade" -> decoder.json.decodeFromJsonElement<StatementDebitType.Upgrade>(json)
+      "transferOut" -> decoder.json.decodeFromJsonElement<StatementDebitType.TransferOut>(json)
+      "support" -> StatementDebitType.Support
+      "badge" -> StatementDebitType.Badge
+      "lapse" -> StatementDebitType.Lapse
+      else -> StatementDebitType.Unknown(type)
+    }
+  }
+
+  override fun serialize(encoder: Encoder, value: StatementDebitType) {
+    require(encoder is JsonEncoder)
+    encoder.encodeJsonElement(buildJsonObject {
+      put("type", value.text)
+      when (value) {
+        is StatementDebitType.Upgrade -> put("toPurchaseKey", value.toPurchaseKey)
+        is StatementDebitType.TransferOut -> put("toPurchaseKey", value.toPurchaseKey)
+        is StatementDebitType.Refund, is StatementDebitType.Support, is StatementDebitType.Badge, is StatementDebitType.Lapse, is StatementDebitType.Unknown -> {}
+      }
+    })
+  }
+}
+
+@Serializable
 data class BadgeAlert(
   val kind: BadgeAlertKind,
   val episode: String,
@@ -2246,55 +2378,16 @@ data class BadgeAlert(
   val dateText: String get() = badgeDateText(date)
 }
 
-@Serializable(with = BadgeAlertPriceSerializer::class)
+@Serializable
 data class BadgeAlertPrice(val amount: Long, val currency: String)
 
-// encoded as the Haskell tuple it comes from: [amount, currency]
-object BadgeAlertPriceSerializer : KSerializer<BadgeAlertPrice> {
-  override val descriptor: SerialDescriptor = buildClassSerialDescriptor("BadgeAlertPrice")
-  override fun deserialize(decoder: Decoder): BadgeAlertPrice {
-    require(decoder is JsonDecoder)
-    val arr = decoder.decodeJsonElement().jsonArray
-    return BadgeAlertPrice(arr[0].jsonPrimitive.long, arr[1].jsonPrimitive.content)
-  }
-  override fun serialize(encoder: Encoder, value: BadgeAlertPrice) {
-    require(encoder is JsonEncoder)
-    encoder.encodeJsonElement(buildJsonArray { add(value.amount); add(value.currency) })
-  }
-}
-
-@Serializable(with = BadgeAlertKindSerializer::class)
-sealed class BadgeAlertKind {
-  @Serializable @SerialName("renewal_approaching") object RenewalApproaching: BadgeAlertKind()
-  @Serializable @SerialName("payment_issue") object PaymentIssue: BadgeAlertKind()
-  @Serializable @SerialName("subscription_ended") object SubscriptionEnded: BadgeAlertKind()
-  @Serializable @SerialName("prepaid_ending") object PrepaidEnding: BadgeAlertKind()
-  @Serializable @SerialName("support_ended") object SupportEnded: BadgeAlertKind()
-  @Serializable @SerialName("unknown") data class Unknown(val kind: String): BadgeAlertKind()
-
-  val text: String
-    get() = when (this) {
-      is RenewalApproaching -> "renewal_approaching"
-      is PaymentIssue -> "payment_issue"
-      is SubscriptionEnded -> "subscription_ended"
-      is PrepaidEnding -> "prepaid_ending"
-      is SupportEnded -> "support_ended"
-      is Unknown -> kind
-    }
-}
-
-object BadgeAlertKindSerializer : KSerializer<BadgeAlertKind> {
-  override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BadgeAlertKind", PrimitiveKind.STRING)
-  override fun deserialize(decoder: Decoder): BadgeAlertKind =
-    when (val v = decoder.decodeString()) {
-      "renewal_approaching" -> BadgeAlertKind.RenewalApproaching
-      "payment_issue" -> BadgeAlertKind.PaymentIssue
-      "subscription_ended" -> BadgeAlertKind.SubscriptionEnded
-      "prepaid_ending" -> BadgeAlertKind.PrepaidEnding
-      "support_ended" -> BadgeAlertKind.SupportEnded
-      else -> BadgeAlertKind.Unknown(v)
-    }
-  override fun serialize(encoder: Encoder, value: BadgeAlertKind) = encoder.encodeString(value.text)
+@Serializable
+enum class BadgeAlertKind {
+  @SerialName("renewalApproaching") RenewalApproaching,
+  @SerialName("paymentIssue") PaymentIssue,
+  @SerialName("subscriptionEnded") SubscriptionEnded,
+  @SerialName("prepaidEnding") PrepaidEnding,
+  @SerialName("supportEnded") SupportEnded
 }
 
 private fun badgeDateText(date: Instant): String {

@@ -84,6 +84,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits, LocalBadge)
+import Simplex.Chat.Badges.Service (BadgeServiceErrorCode, StatementEntry)
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeState (..))
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
@@ -227,9 +228,9 @@ newWebPreviewState = do
 
 -- | Builds the read-only context threaded through store functions from chat config.
 -- The single construction point, so new store-wide config (e.g. server keys) is added in one place.
-mkStoreCxt :: ChatConfig -> StoreCxt
-mkStoreCxt ChatConfig {chatVRange, badgePublicKeys} = StoreCxt chatVRange badgePublicKeys
-{-# INLINE mkStoreCxt #-}
+storeCxt :: ChatController -> StoreCxt
+storeCxt ChatController {config = ChatConfig {chatVRange, badgePublicKeys}, random} = StoreCxt chatVRange badgePublicKeys random
+{-# INLINE storeCxt #-}
 
 data RandomAgentServers = RandomAgentServers
   { smpServers :: NonEmpty (ServerCfg 'PSMP),
@@ -659,6 +660,7 @@ data ChatCommand
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
   | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
   | APIGetBadgeState {userId :: UserId} -- the user's badges, their balances and any current alert
+  | APIGetBadgeLedger {userId :: UserId, badgePurchaseId :: Int64} -- the purchase's ledger, oldest first
   -- episode is last because it is free text: it is the value that makes one occurrence of an
   -- alert distinct from the next, and the app returns whatever it was given
   | APIAckBadgeAlert {userId :: UserId, badgePurchaseId :: Int64, alertKind :: BadgeAlertKind, snooze :: Bool, episode :: Text}
@@ -866,8 +868,9 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
-  | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool}
+  | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
   | CRBadgeState {user :: User, badgeState :: Maybe BadgeState}
+  | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
@@ -1476,6 +1479,16 @@ data SimplexDomainError
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
   deriving (Eq, Show)
 
+data BadgeRedeemError
+  = BREInvalidCode -- format or check character
+  | BREServiceNotConfigured
+  | BREBadgeActive
+  | BREServiceError {serviceError :: BadgeServiceErrorCode}
+  | BREInvalidResponse {message :: String}
+  | BREUnknownKeyIndex
+  | BRECredentialNotVerified
+  deriving (Eq, Show)
+
 data ChatErrorType
   = CENoActiveUser
   | CENoConnectionUser {agentConnId :: AgentConnId}
@@ -1548,6 +1561,7 @@ data ChatErrorType
   | CEAgentVersion
   | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
+  | CEBadgeRedeemError {badgeRedeemError :: BadgeRedeemError}
   | CEServerProtocol {serverProtocol :: AProtocolType}
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
@@ -1831,6 +1845,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BRE") ''BadgeRedeemError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
 

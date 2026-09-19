@@ -54,6 +54,9 @@ fun shouldShowOnboarding(): Boolean {
 fun supportEnded(): Boolean =
   BadgeModel.alert.value?.kind == BadgeAlertKind.SupportEnded && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
 
+fun hasShownBadge(): Boolean =
+  BadgeModel.badgeState.value?.shown == true && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
+
 fun hasConversations(chats: List<Chat>): Boolean =
   chats.any { chat ->
     when (val c = chat.chatInfo) {

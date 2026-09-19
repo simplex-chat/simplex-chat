@@ -17,7 +17,6 @@
     <string name="allow_verb">Επέτρεψε</string>
     <string name="accept_contact_button">Αποδοχή</string>
     <string name="accept_contact_incognito_button">Αποδοχή ανώνυμης περιήγησης</string>
-    <string name="smp_servers_preset_add">Προσθήκη προκαθορισμένου διακομιστή</string>
     <string name="smp_servers_add_to_another_device">Προσθήκη σε άλλη συσκευή</string>
     <string name="all_your_contacts_will_remain_connected">Όλες οι επαφές σου θα παραμείνουν ενεργές.</string>
     <string name="accept_call_on_lock_screen">Αποδοχή</string>
@@ -61,11 +60,9 @@
     <string name="full_backup">Αντίγραφο δεδομένων εφαρμογής</string>
     <string name="send_disappearing_message_5_minutes">5 λεπτά</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Θα συνδεθείς όταν η συσκευή της επαφής σου είναι συνδεδεμένη, παρακαλώ περίμενε ή έλεγξε αργότερα!</string>
-    <string name="your_ice_servers">Ο ICE διακομιστής σου</string>
     <string name="app_version_title">Έκδοση εφαρμογής</string>
     <string name="you_sent_group_invitation">Έστειλες πρόσκληση ομάδας</string>
     <string name="send_disappearing_message_1_minute">1 λεπτό</string>
-    <string name="smp_servers_your_server">Ο διακομιστής σου</string>
     <string name="address_section_title">Διεύθυνση</string>
     <string name="abort_switch_receiving_address_confirm">Ακύρωση</string>
     <string name="back">Πίσω</string>
@@ -73,10 +70,8 @@
     <string name="you_will_join_group">Θα συνδεθείς με όλα τα μέλη της ομάδας.</string>
     <string name="contact_wants_to_connect_via_call">%1$s θέλει να συνδεθεί μαζί σου μέσω</string>
     <string name="allow_message_reactions">Επέτρεψε τις αντιδράσεις σε μηνύματα.</string>
-    <string name="your_XFTP_servers">Ο διακομιστής XFTP σου</string>
     <string name="smp_servers_your_server_address">Η διεύθυνση του διακομιστή σου</string>
     <string name="your_profile_is_stored_on_your_device">Το προφίλ, επαφές και παραδομένα μηνύματα σου είναι αποθηκευμένα στην συσκευή σου.</string>
-    <string name="your_SMP_servers">Ο διακομιστής SMP σου</string>
     <string name="allow_to_send_files">Επιτρέπεται να σταλούν αρχεία και μέσα.</string>
     <string name="incognito_random_profile">Το τυχαίο προφίλ σου</string>
     <string name="group_info_section_title_num_members">%1$s ΜΕΛΗ</string>
@@ -103,7 +98,6 @@
     <string name="switch_receiving_address">Αλλαγή διεύθυνσης λήψης</string>
     <string name="auth_unavailable">Πιστοποίηση μη διαθέσιμη</string>
     <string name="change_verb">Άλλαξε</string>
-    <string name="available_in_v51">\nΔιαθέσιμο στην έκδοση 5.1</string>
     <string name="icon_descr_call_ended">Τέλος κλήσης</string>
     <string name="settings_section_title_calls">Κλήσεις</string>
     <string name="auto_accept_contact">Αυτόματη αποδοχή</string>
@@ -146,7 +140,6 @@
     <string name="contacts_can_mark_messages_for_deletion">Οι επαφές μπορούν να επισημάνουν μηνύματα προς διαγραφή, τα οποία θα μπορείς να τα δεις.</string>
     <string name="connect_via_invitation_link">Σύνδεση μέσω μιας εφάπαξ σύνδεσης;</string>
     <string name="button_create_group_link">Δημιουργία σύνδεσμου</string>
-    <string name="connect_via_link_or_qr">Σύνδεση μέσω σύνδεσμο/κωδικό γρήγορης ανταπόκρισης</string>
     <string name="connection_error_auth">Σφάλμα σύνδεσης (πιστοποίηση)</string>
     <string name="group_member_status_connecting">συνδέεται</string>
     <string name="group_connection_pending">συνδέεται…</string>
@@ -169,7 +162,6 @@
     <string name="connect_with_contact_name_question">Σύνδεση με %1$s?</string>
     <string name="create_your_profile">Δημιουργία του προφίλ σου</string>
     <string name="display_name_connecting">συνδέεται…</string>
-    <string name="create_profile_button">Δημιουργία</string>
     <string name="contact_preferences">Προτιμήσεις επαφής</string>
     <string name="connected_mobile">Συνδεδεμένο κινητό</string>
     <string name="info_row_connection">Σύνδεση</string>
@@ -177,7 +169,6 @@
     <string name="callstate_connecting">συνδέεται…</string>
     <string name="desktop_connection_terminated">Σύνδεση τερματίστηκε</string>
     <string name="server_connecting">Συνδε</string>
-    <string name="connect_via_link_incognito">Σύνδεση ανώνυμης περιήγησης</string>
     <string name="display_name_connection_established">σύνδεση επετεύχθη</string>
     <string name="status_contact_has_no_e2e_encryption">η επαφή δεν έχει κρυπτογράφηση από άκρη-σε-άκρη</string>
     <string name="chat_preferences_contact_allows">Η επαφή επιτρέπει</string>
@@ -196,13 +187,11 @@
     <string name="rcv_group_event_member_created_contact">αιτούμενη σύνδεση</string>
     <string name="your_privacy">Η ιδιωτικότητά σου</string>
     <string name="contact_sent_large_file">Η επαφή σου έστειλε ένα αρχείο το οποίο είναι μεγαλύτερο από το παρόν υποστηριζόμενο μέγεθος (%1$s).</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">Το προφίλ της συνομιλίας σου θα σταλεί\nστην επαφή σου</string>
     <string name="connect_use_new_incognito_profile">Χρήση νέου ανώνυμου προφίλ</string>
     <string name="connect_plan_already_connecting">Ήδη συνδέεται</string>
     <string name="you_rejected_group_invitation">Απέρριψες την πρόσκληση της ομάδας</string>
     <string name="connect_via_contact_link">Σύνδεση μέσω διεύθυνση επαφής</string>
     <string name="connect_use_current_profile">Χρήση του τρέχοντος προφίλ</string>
-    <string name="connect_via_link_verb">Συνδέσου</string>
     <string name="your_current_profile">Το τρέχον προφίλ σου</string>
     <string name="snd_group_event_member_deleted">αφαίρεσες %1$s</string>
     <string name="connect_via_group_link">Συμμετοχή ομάδας;</string>
@@ -276,7 +265,6 @@
     <string name="network_smp_proxy_mode_always">Πάντα</string>
     <string name="app_check_for_updates_download_completed_title">Η ενημέρωση της εφαρμογής κατέβηκε</string>
     <string name="app_check_for_updates_notice_title">Έλεγχος για ενημερώσεις</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Οποιοσδήποτε μπορεί να φιλοξενήσει διακομιστές.</string>
     <string name="audio_call_no_encryption">κλήση ήχου (χωρίς κρυπτογράφηση e2e)</string>
     <string name="call_on_lock_screen">Κλήσεις στην οθόνη κλειδώματος:</string>
     <string name="call_service_notification_audio_call">Κλήση ήχου</string>
@@ -461,7 +449,6 @@
     <string name="cant_send_message_generic">δεν μπορείς να στείλεις μηνύματα</string>
     <string name="v6_4_1_new_interface_languages_descr">Καταλανικά, Ινδονησιακά, Ρουμανικά και Βιετναμέζικα – ευχαριστούμε τους χρήστες μας!</string>
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Ο σύνδεσμος 1-χρήσης, μπορεί να χρησιμοποιηθεί <i>με μία μόνο επαφή</i> - προσωπικό διαμοιρασμό ή μέσω οποιασδήποτε εφαρμογής μηνυμάτων.]]></string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Όλα τα μηνύματα και τα αρχεία αποστέλλονται <b>με κρυπτογράφηση από άκρη-σε-άκρη</b> και με μετα-κβαντική ασφάλεια σε άμεσα μηνύματα.]]></string>
     <string name="turn_off_battery_optimization"><![CDATA[<b>Επέτρεψε το</b> στο επόμενο παράθυρο διαλόγου για να λαμβάνεις ειδοποιήσεις άμεσα.]]></string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Συσκευές Xiaomi</b>: ενεργοποίησε το Αυτόματο Ξεκίνημα στις ρυθμίσεις συστήματος για να λειτουργούν οι ειδοποιήσεις.]]></string>
     <string name="operators_conditions_accepted_for"><![CDATA[Οι όροι γίνονται αποδεκτοί για τον/τους χειριστή/ές: <b>%s</b>.]]></string>
@@ -471,8 +458,6 @@
     <string name="remote_host_error_bad_state"><![CDATA[Η σύνδεση με το κινητό <b>%s</b> βρίσκεται σε κακή κατάσταση]]></string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 Υπολογιστής: σκάναρε τον εμφανιζόμενο QR κωδικό από την εφαρμογή, μέσω <b>Σάρωση QR κωδικού</b>.]]></string>
     <string name="remote_host_disconnected_from"><![CDATA[Αποσυνδέθηκε από το κινητό<b>%s</b> με τον λόγο: %s]]></string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Αν δεν μπορείς να συναντηθείς προσωπικά, μπορείς να <b>σαρώσεις τον QR κωδικό στη βιντεοκλήση</b>, ή η επαφή σου να διαμοιραστεί ένα σύνδεσμο πρόσκλησης.]]></string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Αν δεν μπορείς να συναντηθείς προσωπικά,<b>δείξε τον QR κωδικό στη βιντεοκλήση</b>, ή μοιράσου το σύνδεσμο.]]></string>
     <string name="new_desktop"><![CDATA[<i>(νέο)</i>]]></string>
     <string name="this_device_version"><![CDATA[<i>(αυτή η συσκευή v%s)</i>]]></string>
     <string name="e2ee_info_e2ee"><![CDATA[Τα μηνύματα είναι προστατευμένα με <b>κρυπτογράφηση από άκρη-σε-άκρη</b>.]]></string>
@@ -487,7 +472,6 @@
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 κινητό: πάτα <b>Άνοιγμα στην εφαρμογή κινητού</b>, μετά πάτα <b>Σύνδεση</b> μέσα στην εφαρμογή.]]></string>
     <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Άνοιγμα <i>Χρήση από τον υπολογιστή</i> στην εφαρμογή του κινητού και σκάναρε τον QR κωδικό.]]></string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Διάβασε περισσότερα στον <font color="#0088ff">Οδηγό Χρήσης</font>.]]></string>
-    <string name="read_more_in_github_with_link"><![CDATA[Διάβασε περισσότερα στο <font color="#0088ff">αποθετήριό μας στο GitHub</font>.]]></string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[Ρύθμισε το <i>Χρήση .onion hosts</i> σε Όχι, αν ο διακομιστής μεσολάβησης SOCKS δεν τα υποστηρίζει.]]></string>
     <string name="operator_same_conditions_will_be_applied"><![CDATA[Οι ίδιες προϋποθέσεις θα ισχύσουν και για τον χειριστή <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Οι ίδιες προϋποθέσεις θα ισχύσουν και για τον/τους χειριστή/στές <b>%s</b>.]]></string>
@@ -504,7 +488,6 @@
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Είσαι ήδη στην ομάδα <b>%1$s</b>.]]></string>
     <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Ήδη προσπαθείς να μπεις στην ομάδα <b>%1$s</b>.]]></string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Δεν <b>πρέπει να</b> χρησιμοποιείς την ίδια βάση δεδομένων σε δύο συσκευές.]]></string>
-    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Μπορείς επίσης να συνδεθείς κάνοντας κλικ στο σύνδεσμο. Αν ανοίξει στον browser, πάτα το <b>Άνοιγμα στην εφαρμογή κινητού</b> κουμπί.]]></string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Μπορείς να <font color="#0088ff">συνδεθείς με τους δημιουργούς του SimpleX Chat για να κάνεις ερωτήσεις και να λαμβάνεις ενημερώσεις</font>.]]></string>
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Θα μπορείς να στέλνεις μηνύματα <b>μόνο αφού γίνει αποδεκτό το αίτημά σου</b>.]]></string>
     <string name="change_automatic_deletion_question">Να αλλάξεις την αυτόματη διαγραφή μηνυμάτων;</string>
@@ -545,8 +528,6 @@
     <string name="operator_conditions_of_use">Όροι χρήσης</string>
     <string name="operator_conditions_will_be_accepted_on">Οι όροι θα γίνουν αποδεκτοί στις: %s.</string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">Οι όροι θα γίνουν αυτόματα αποδεκτοί για τους ενεργούς χειριστές στις: %s.</string>
-    <string name="smp_servers_configured">Διαμορφωμένοι SMP διακομιστές</string>
-    <string name="xftp_servers_configured">Διαμορφωμένοι XFTP διακομιστές</string>
     <string name="configure_ICE_servers">Διαμορφωμένοι ICE διακομιστές</string>
     <string name="confirm_verb">Επιβεβαίωσε</string>
     <string name="confirm_delete_contact_question">Επιβεβαίωση διαγραφής επαφής;</string>
@@ -615,13 +596,11 @@
     <string name="settings_message_shape_corner">Γωνία</string>
     <string name="create_address_button">Δημιουργία</string>
     <string name="create_1_time_link">Δημιουργία συνδέσμου 1-χρήσης</string>
-    <string name="create_address_and_let_people_connect">Δημιούργησε μια διεύθυνση για να μπορούν οι άλλοι να συνδεθούν μαζί σου.</string>
     <string name="created">Δημιουργήθηκε</string>
     <string name="info_row_created_at">Δημιουργήθηκε στις</string>
     <string name="share_text_created_at">Δημιουργήθηκε στις: %s</string>
     <string name="create_list">Δημιουργία λίστας</string>
     <string name="v5_3_new_desktop_app_descr">Δημιουργία νέου προφίλ στην εφαρμογή υπολογιστή. 💻</string>
-    <string name="share_one_time_link">Δημιουργία συνδέσμου 1-χρήσης</string>
     <string name="smp_server_test_create_queue">Δημιουργία ουράς</string>
     <string name="v6_4_1_short_address_create">Δημιούργησε τη διεύθυνσή σου</string>
     <string name="migrate_from_device_creating_archive_link">Δημιουργία συνδέσμου αρχειοθέτησης</string>
@@ -673,7 +652,6 @@
     <string name="ttl_day">%d ημέρα</string>
     <string name="ttl_days">%d ημέρες</string>
     <string name="info_row_debug_delivery">Αποστολή για αποσφαλμάτωση</string>
-    <string name="decentralized">Αποκεντρωμένο</string>
     <string name="image_decoding_exception_title">Σφάλμα αποκωδικοποίησης</string>
     <string name="decryption_error">Σφάλμα αποκρυπτογράφησης</string>
     <string name="decryption_errors">σφάλματα αποκρυπτογράφησης</string>
@@ -817,7 +795,6 @@
     <string name="network_smp_proxy_fallback_prohibit_description">ΜΗΝ στέλνεις μηνύματα απευθείας, ακόμα κι αν ο δικός σου διακομιστής ή ο διακομιστής προορισμού δεν υποστηρίζει ιδιωτική δρομολόγηση.</string>
     <string name="network_proxy_auth_mode_no_auth">Μην χρησιμοποιείς διαπιστευτήρια με το διακομιστή μεσολάβησης (proxy).</string>
     <string name="network_smp_proxy_mode_never_description">ΜΗΝ χρησιμοποιείς ιδιωτική δρομολόγηση.</string>
-    <string name="dont_create_address">Μην δημιουργήσεις διεύθυνση</string>
     <string name="dont_enable_receipts">Μην ενεργοποιήσεις</string>
     <string name="v6_3_organize_chat_lists_descr">Μην χάσεις σημαντικά μηνύματα.</string>
     <string name="dont_show_again">Να μην εμφανιστεί ξανά</string>
@@ -1023,7 +1000,6 @@
     <string name="image_will_be_received_when_contact_completes_uploading">Η εικόνα θα ληφθεί όταν η επαφή σου ολοκληρώσει τη μεταφόρτωσή της.</string>
     <string name="image_will_be_received_when_contact_is_online">Η εικόνα θα ληφθεί όταν η επαφή σου είναι συνδεδεμένη, περίμενε ή έλεγξε αργότερα!</string>
     <string name="la_immediately">Άμεσα</string>
-    <string name="immune_to_spam_and_abuse">Ανοσοποιημένο στο spam</string>
     <string name="import_database_confirmation">Εισαγωγή</string>
     <string name="import_database_question">Εισαγωγή βάσης δεδομένων συνομιλίας;</string>
     <string name="import_database">Εισαγωγή βάσης δεδομένων</string>
@@ -1078,7 +1054,6 @@
     <string name="invalid_message_format">μη έγκυρη διαμόρφωση μηνύματος</string>
     <string name="invalid_migration_confirmation">Μη έγκυρη επιβεβαίωση μετεγκατάστασης</string>
     <string name="invalid_name">Μη έγκυρο όνομα!</string>
-    <string name="invalid_QR_code">Μη έγκυρος QR κωδικός</string>
     <string name="invalid_qr_code">Μη έγκυρος QR κωδικός</string>
     <string name="smp_servers_invalid_address">Μη έγκυρη διεύθυνση διακομιστή!</string>
     <string name="alert_title_group_invitation_expired">Η πρόσκληση έληξε!</string>
@@ -1158,10 +1133,8 @@
     <string name="v5_2_disappear_one_message">Εξαφάνισε ένα μήνυμα</string>
     <string name="make_profile_private">Κάνε το προφίλ ιδιωτικό!</string>
     <string name="network_proxy_incorrect_config_desc">Βεβαιώσου ότι έχεις σωστή διαμόρφωση του διακομιστή μεσολάβησης.</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Βεβαιώσου ότι οι διευθύνσεις του διακομιστή SMP έχουν σωστή μορφή, διαχωρίζονται με νέα γραμμή και δεν είναι διπλότυπες.</string>
     <string name="import_theme_error_desc">Βεβαιώσου ότι το αρχείο έχει σωστή σύνταξη YAML. Κάνε εξαγωγή ενός θέματος για να έχεις παράδειγμα της δομής αρχείου των θεμάτων.</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">"Βεβαιώσου ότι οι διευθύνσεις των διακομιστών WebRTC ICE  έχουν σωστή μορφή, διαχωρίζονται με νέα γραμμή και δεν είναι διπλότυπες."</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Βεβαιώσου ότι οι διευθύνσεις των διακομιστών XFTP έχουν σωστή μορφή, διαχωρίζονται με νέα γραμμή και δεν είναι διπλότυπες.</string>
     <string name="v5_8_chat_themes_descr">Κάνε τις συνομιλίες σου να ξεχωρίζουν!</string>
     <string name="markdown_help">Βοήθεια στη Markdown σύνταξη</string>
     <string name="markdown_in_messages">Σύνταξη Markdown στα μηνύματα</string>
@@ -1291,7 +1264,6 @@
     <string name="group_invitation_tap_to_join_incognito">Πάτα για ανώνυμη συμμετοχή</string>
     <string name="tap_to_paste_link">Πάτα για επικόλληση συνδέσμου</string>
     <string name="tap_to_scan">Πάτα για σάρωση</string>
-    <string name="tap_to_start_new_chat">Πάτα για να ξεκινήσεις μία νέα συνομιλία</string>
     <string name="network_option_tcp_connection">Σύνδεση TCP</string>
     <string name="network_option_tcp_connection_timeout_background">Χρόνος λήξης σύνδεσης TCP στο παρασκήνιο</string>
     <string name="network_option_tcp_connection_timeout">Χρόνος λήξης σύνδεσης TCP</string>
@@ -1320,7 +1292,6 @@
     <string name="unable_to_open_browser_desc">Για τις κλήσεις απαιτείται ο προεπιλεγμένος περιηγητής. Ρύθμισε τον προεπιλεγμένο περιηγητή στο σύστημα σου και μοιράσου περισσότερες πληροφορίες με τους προγραμματιστές.</string>
     <string name="this_device_name_shared_with_mobile">Το όνομα της συσκευής θα κοινοποιηθεί στην εφαρμογή του συνδεδεμένου κινητού.</string>
     <string name="sync_connection_force_desc">Η κρυπτογράφηση λειτουργεί και η νέα κρυπτογράφηση δεν είναι απαραίτητη. Μπορεί να προκαλέσει σφάλματα σύνδεσης!</string>
-    <string name="next_generation_of_private_messaging">Το μέλλον στην ανταλλαγή μηνυμάτων</string>
     <string name="alert_text_msg_bad_hash">Ο κωδικός ελέγχου του προηγούμενου μηνύματος είναι διαφορετικός.</string>
     <string name="alert_text_msg_bad_id">Ο αναγνωριστικός κωδικός του επόμενου μηνύματος είναι λανθασμένος (μικρότερος ή ίσος με τον προηγούμενο).\nΑυτό μπορεί να συμβεί λόγω κάποιου σφάλματος ή όταν η σύνδεση έχει παραβιαστεί.</string>
     <string name="image_decoding_exception_desc">Η εικόνα δεν μπορεί να αποκωδικοποιηθεί. Δοκίμασε μια άλλη εικόνα ή επικοινώνησε με τους προγραμματιστές.</string>
@@ -1331,7 +1302,6 @@
     <string name="moderate_messages_will_be_marked_warning">Τα μηνύματα θα επισημαίνονται ως ελεγχόμενα για όλα τα μέλη.</string>
     <string name="moderate_message_will_be_deleted_warning">Το μήνυμα θα διαγραφεί για όλα τα μέλη.</string>
     <string name="moderate_message_will_be_marked_warning">Το μήνυμα θα επισημανθεί ως υπό έλεγχο για όλα τα μέλη.</string>
-    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Η πλατφόρμα μηνυμάτων και εφαρμογών που προστατεύει το απόρρητο και την ασφάλειά σου.</string>
     <string name="settings_is_storing_in_clear_text">Η φράση πρόσβασης αποθηκεύεται στις ρυθμίσεις ως απλό κείμενο.</string>
     <string name="passphrase_will_be_saved_in_settings">Η φράση πρόσβασης θα αποθηκευτεί στις ρυθμίσεις ως απλό κείμενο μετά την αλλαγή της ή την επανεκκίνηση της εφαρμογής.</string>
     <string name="profile_is_only_shared_with_your_contacts">Το προφίλ κοινοποιείται μόνο στις επαφές σου.</string>
@@ -1362,14 +1332,11 @@
     <string name="alert_message_no_group">Αυτή η ομάδα δεν υπάρχει πλέον.</string>
     <string name="connect_plan_this_is_your_own_one_time_link">Αυτός είναι ο δικός σου σύνδεσμος 1-χρήσης!</string>
     <string name="connect_plan_this_is_your_own_simplex_address">Αυτή είναι η διεύθυνση σου SimpeX!</string>
-    <string name="this_link_is_not_a_valid_connection_link">Αυτός ο σύνδεσμος δεν είναι έγκυρος!</string>
     <string name="link_requires_newer_app_version_please_upgrade">Αυτός ο σύνδεσμος απαιτεί νεότερη έκδοση της εφαρμογής. Αναβάθμισε την εφαρμογή ή ζήτησε από την επαφή σου να σου στείλει ένα συμβατό σύνδεσμο.</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Αυτός ο σύνδεσμος χρησιμοποιήθηκε με άλλη κινητή συσκευή. Δημιούργησε ένα νέο σύνδεσμο στον υπολογιστή σου.</string>
     <string name="message_deleted_or_not_received_error_desc">Αυτό το μήνυμα διαγράφηκε ή δεν έχει ληφθεί ακόμα.</string>
-    <string name="this_QR_code_is_not_a_link">Αυτός ο κωδικός QR δεν είναι σύνδεσμος!</string>
     <string name="messages_section_description">Αυτή η ρύθμιση ισχύει για τα μηνύματα στο τρέχον προφίλ συνομιλίας σου.</string>
     <string name="this_string_is_not_a_connection_link">Αυτό το κείμενο δεν είναι σύνδεσμος!</string>
-    <string name="this_text_is_available_in_settings">Αυτό το κείμενο είναι διαθέσιμο στις ρυθμίσεις</string>
     <string name="remote_ctrl_error_timeout">Εξαντλήθηκε ο χρόνος αναμονής κατά τη σύνδεση με τον υπολογιστή</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">Ο χρόνος εξαφάνισης ορίζεται μόνο για τις νέες επαφές.</string>
     <string name="color_title">Τίτλος</string>
@@ -1386,13 +1353,11 @@
     <string name="v4_5_private_filenames_descr">Για την προστασία της ζώνης ώρας, τα αρχεία εικόνας/φωνής χρησιμοποιούν UTC ώρα.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Για να προστατεύσεις τις πληροφορίες σου, ενεργοποίησε το SimpleX Lock.\nΘα σου ζητηθεί να ολοκληρώσεις την επαλήθευση ταυτότητας πριν ενεργοποιηθεί αυτή η λειτουργία.</string>
     <string name="private_routing_explanation">Για την προστασία της IP διεύθυνσής σου, η ιδιωτική δρομολόγηση χρησιμοποιεί τους διακομιστές SMP για την παράδοση μηνυμάτων.</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Για την προστασία της ιδιωτικότητάς σου, το SimpleX χρησιμοποιεί ξεχωριστά αναγνωριστικά για κάθε μία από τις επαφές σου.</string>
     <string name="operator_use_for_messages_receiving">Για λήψη</string>
     <string name="enter_passphrase_notification_desc">Για να λαμβάνεις ειδοποιήσεις, παρακαλώ εισήγαγε τη φράση πρόσβασης της βάσης δεδομένων.</string>
     <string name="to_reveal_profile_enter_password">Για να αποκαλύψεις το κρυφό προφίλ σου, εισήγαγε έναν πλήρη κωδικό στο πεδίο αναζήτησης στη σελίδα Τα προφίλ συνομιλίας σου.</string>
     <string name="operator_use_for_sending">Για αποστολή</string>
     <string name="cant_send_commands_alert_text">Για αποστολή εντολών, θα πρέπει να είσαι συνδεδεμένος.</string>
-    <string name="to_share_with_your_contact">(για διαμοιρασμό με την επαφή σου)</string>
     <string name="to_start_a_new_chat_help_header">Για να ξεκινήσεις μία νέα συνομιλία</string>
     <string name="servers_info_subscriptions_total">Συνολικά</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Για να χρησιμοποιήσεις άλλο προφίλ μετά την προσπάθεια σύνδεσης, διέγραψε τη συνομιλία και χρησιμοποίησε ξανά τον σύνδεσμο.</string>
@@ -1440,7 +1405,6 @@
     <string name="app_check_for_updates_canceled">Η λήψη της ενημέρωσης ακυρώθηκε</string>
     <string name="profile_update_event_updated_profile">ενημερωμένο προφίλ</string>
     <string name="update_network_settings_question">Ενημέρωση ρυθμίσεων δικτύου;</string>
-    <string name="update_network_session_mode_question">Ενημέρωση της λειτουργίας απομόνωσης μεταφοράς;</string>
     <string name="v6_4_1_short_address_update">Ενημέρωσε τη διεύθυνσή σου</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Η ενημέρωση των ρυθμίσεων θα επανασυνδέσει την εφαρμογή με όλους τους διακομιστές.</string>
     <string name="share_profile_via_link_alert_confirm">Αναβάθμιση</string>
@@ -1457,7 +1421,6 @@
     <string name="smp_server_test_upload_file">Ανέβασμα αρχείου</string>
     <string name="migrate_from_device_uploading_archive">Ανεβαίνει το αρχείο αρχειοθέτησης</string>
     <string name="recent_history_is_sent_to_new_members">Τα τελευταία 100 μηνύματα αποστέλλονται στα νέα μέλη.</string>
-    <string name="use_chat">Χρήση συνομιλίας</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_entity">Χρησιμοποίησε διαφορετικά διαπιστευτήρια διακομιστή μεσολάβησης για κάθε σύνδεση.</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_user">Χρησιμοποίησε διαφορετικά διαπιστευτήρια διακομιστή μεσολάβησης για κάθε προφίλ.</string>
     <string name="network_disable_socks">Χρήση απευθείας σύνδεσης στο Διαδίκτυο;</string>
@@ -1522,8 +1485,6 @@
     <string name="error_joining_group">Σφάλμα κατά τη συμμετοχή στην ομάδα</string>
     <string name="error_loading_chat_tags">Σφάλμα κατά τη φόρτωση των λιστών συνομιλιών</string>
     <string name="error_loading_details">Σφάλμα κατά τη φόρτωση των λεπτομερειών</string>
-    <string name="error_loading_smp_servers">Σφάλμα κατά τη φόρτωση των διακομιστών SMP</string>
-    <string name="error_loading_xftp_servers">Σφάλμα κατά τη φόρτωση των διακομιστών XFTP</string>
     <string name="error_marking_member_support_chat_read">Σφάλμα επισήμανσης ως αναγνωσμένου</string>
     <string name="unable_to_open_browser_title">Σφάλμα κατά το άνοιγμα του προγράμματος περιήγησης</string>
     <string name="error_preparing_contact">Σφάλμα κατά το άνοιγμα της συνομιλίας</string>
@@ -1545,9 +1506,7 @@
     <string name="failed_to_save_servers">Σφάλμα κατά την αποθήκευση διακομιστών</string>
     <string name="migrate_from_device_error_saving_settings">Σφάλμα κατά την αποθήκευση των ρυθμίσεων</string>
     <string name="prefs_error_saving_settings">Σφάλμα κατά την αποθήκευση των ρυθμίσεων</string>
-    <string name="error_saving_smp_servers">Σφάλμα κατά την αποθήκευση των διακομιστών SMP</string>
     <string name="error_saving_user_password">Σφάλμα κατά την αποθήκευση του κωδικού πρόσβασης χρήστη</string>
-    <string name="error_saving_xftp_servers">Σφάλμα κατά την αποθήκευση διακομιστών XFTP</string>
     <string name="error_sending_message_contact_invitation">Σφάλμα κατά την αποστολή της πρόσκλησης</string>
     <string name="error_sending_message">Σφάλμα κατά την αποστολή του μηνύματος</string>
     <string name="error_setting_address">Σφάλμα κατά τη ρύθμιση της διεύθυνσης</string>
@@ -1685,7 +1644,6 @@
     <string name="shutdown_alert_desc">Οι ειδοποιήσεις θα σταματήσουν να λειτουργούν μέχρι να επανεκκινήσεις την εφαρμογή.</string>
     <string name="cant_send_message_contact_not_synchronized">μη συγχρονισμένο</string>
     <string name="no_unread_chats">Δεν υπάρχουν μη αναγνωσμένες συνομιλίες</string>
-    <string name="first_platform_without_user_ids">Χωρίς αναγνωριστικά χρήστη.</string>
     <string name="v4_6_group_moderation_descr">Τώρα οι διαχειριστές μπορούν:\n- να διαγράφουν τα μηνύματα των μελών.\n- να απενεργοποιούν μέλη (ρόλος παρατηρητή)</string>
     <string name="group_member_role_observer">παρατηρητής</string>
     <string name="chat_preferences_off">κλειστό</string>`
@@ -1706,7 +1664,6 @@
     <string name="images_limit_desc">Μπορούν να σταλούν μόνο 10 εικόνες ταυτόχρονα</string>
     <string name="videos_limit_desc">Μπορούν να σταλούν μόνο 10 βίντεο ταυτόχρονα</string>
     <string name="only_chat_owners_can_change_prefs">Μόνο οι ιδιοκτήτες του chat μπορούν να αλλάξουν τις προτιμήσεις.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Μόνο οι συσκευές αποθηκεύουν προφίλ χρηστών, επαφές, ομάδες και μηνύματα.</string>
     <string name="only_delete_conversation">Διαγραφή μόνο της συνομιλίας</string>
     <string name="only_group_owners_can_change_prefs">Μόνο οι ιδιοκτήτες ομάδων μπορούν να αλλάξουν τις προτιμήσεις της ομάδας.</string>
     <string name="only_owners_can_enable_files_and_media">Μόνο οι ιδιοκτήτες ομάδων μπορούν να ενεργοποιήσουν αρχεία και πολυμέσα.</string>
@@ -1749,7 +1706,6 @@
     <string name="connect_plan_open_new_group">Άνοιξε νέα ομάδα</string>
     <string name="open_port_in_firewall_title">Άνοιγμα θύρας στο τείχος προστασίας</string>
     <string name="call_desktop_permission_denied_safari">Άνοιξε τις Ρυθμίσεις Safari / Ιστοσελίδες / Μικρόφωνο και στη συνέχεια επέλεξε Να επιτρέπεται για το localhost.</string>
-    <string name="open_server_settings_button">Άνοιγμα ρυθμίσεων διακομιστή</string>
     <string name="permissions_open_settings">Άνοιγμα ρυθμίσεων</string>
     <string name="open_simplex_chat_to_accept_call">Άνοιξε το SimpleX Chat για να αποδεχθείς την κλήση</string>
     <string name="open_to_accept">Άνοιξε για να αποδεχθείς</string>
@@ -1771,8 +1727,6 @@
     <string name="other_label">άλλο</string>
     <string name="network_type_other">Άλλο</string>
     <string name="other_errors">άλλα σφάλματα</string>
-    <string name="smp_servers_other">Άλλοι διακομιστές SMP</string>
-    <string name="xftp_servers_other">Άλλοι διακομιστές XFTP</string>
     <string name="group_member_role_owner">ιδιοκτήτης</string>
     <string name="feature_roles_owners">ιδιοκτήτες</string>
     <string name="la_mode_passcode">Κωδικός πρόσβασης</string>
@@ -1792,10 +1746,8 @@
     <string name="paste_link">Επικόλληση συνδέσμου</string>
     <string name="v5_5_simpler_connect_ui">Επικόλλησε το σύνδεσμο για να συνδεθείς!</string>
     <string name="paste_the_link_you_received">Επικόλλησε το σύνδεσμο που έλαβες</string>
-    <string name="paste_the_link_you_received_to_connect_with_your_contact">Επικόλλησε το σύνδεσμο που έλαβες για να συνδεθείς με την επαφή σου…</string>
     <string name="call_connection_peer_to_peer">από άκρη-σε-άκρη</string>
     <string name="group_member_status_pending_approval_short">εκκρεμής</string>
-    <string name="icon_descr_server_status_pending">Εκκρεμής</string>
     <string name="servers_info_subscriptions_connections_pending">Εκκρεμής</string>
     <string name="group_member_status_pending_approval">σε αναμονή έγκρισης</string>
     <string name="icon_descr_call_pending_sent">Εκκρεμής κλήση</string>
@@ -1838,7 +1790,6 @@
     <string name="migrate_to_device_database_init">Προετοιμασία λήψης</string>
     <string name="migrate_from_device_database_init">Προετοιμασία μεταφόρτωσης</string>
     <string name="v4_5_message_draft_descr">Διατήρηση του τελευταίου πρόχειρου μηνύματος, με τα συνημμένα.</string>
-    <string name="smp_servers_preset_server">Προκαθορισμένος διακομιστής</string>
     <string name="smp_servers_preset_address">Διεύθυνση προκαθορισμένου διακομιστή</string>
     <string name="network_preset_servers_title">Προκαθορισμένοι διακομιστές</string>
     <string name="network_smp_web_port_preset">Προκαθορισμένοι διακομιστές</string>
@@ -1846,7 +1797,6 @@
     <string name="servers_info_previously_connected_servers_section_header">Προηγούμενοι συνδεδεμένοι διακομιστές</string>
     <string name="v6_2_business_chats_descr">Προστασία της ιδιωτικότητας των πελατών σου.</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Πολιτική απορρήτου και όροι χρήσης.</string>
-    <string name="privacy_redefined">Επαναπροσδιορισμός της ιδιωτικότητας</string>
     <string name="privacy_and_security">Απόρρητο &amp; ασφάλεια</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Οι ιδιωτικές συνομιλίες, οι ομάδες και οι επαφές σου δεν είναι προσβάσιμες στους χειριστές του διακομιστή.</string>
     <string name="v4_5_private_filenames">Ιδιωτικά ονόματα αρχείων</string>
@@ -2057,7 +2007,6 @@
     <string name="wallpaper_scale">Κλιμάκωση στην οθόνη</string>
     <string name="scan_code">Σάρωση κωδικού</string>
     <string name="scan_from_mobile">Σάρωση από κινητό</string>
-    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(σάρωσε ή επικόλλησε από το πρόχειρο)</string>
     <string name="scan_paste_link">Σάρωση / Επικόλληση συνδέσμου</string>
     <string name="scan_qr_code_from_desktop">Σάρωσε τον κωδικό QR από τον υπολογιστή</string>
     <string name="rcv_group_event_1_member_connected">%s συνδέθηκε</string>
@@ -2242,9 +2191,7 @@
     <string name="possible_slow_function_title">Αργή λειτουργία</string>
     <string name="receipts_section_groups">Μικρές ομάδες (μέγιστο 20 άτομα)</string>
     <string name="smp_server">Διακομιστής SMP</string>
-    <string name="smp_servers">Διακομιστές SMP</string>
     <string name="network_socks_proxy">Διακομιστής μεσολάβησης SOCKS</string>
-    <string name="settings_section_title_socks">Διακομιστής μεσολάβησης SOCKS</string>
     <string name="network_socks_proxy_settings">Ρυθμίσεις διακομιστή μεσολάβησης SOCKS</string>
     <string name="privacy_media_blur_radius_soft">Απαλό</string>
     <string name="chat_database_exported_not_all_files">Κάποιο/α αρχείο/α δεν εξήχθησαν</string>
@@ -2361,9 +2308,7 @@
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Προειδοποίηση: η έναρξη συνομιλίας σε πολλαπλές συσκευές δεν υποστηρίζεται και θα προκαλέσει σφάλματα στην παράδοση των μηνυμάτων.</string>
     <string name="database_downgrade_warning">Προειδοποίηση: ενδέχεται να χάσεις ορισμένα δεδομένα!</string>
     <string name="webrtc_ice_servers">Διακομιστές WebRTC ICE</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">Δεν αποθηκεύουμε καμία από τις επαφές ή τα μηνύματά σου (αφού παραδοθούν) στους διακομιστές.</string>
     <string name="custom_time_unit_weeks">εβδομάδες</string>
-    <string name="welcome">Καλωσόρισες!</string>
     <string name="personal_welcome">Καλωσόρισες %1$s!</string>
     <string name="button_welcome_message">Μήνυμα καλωσορίσματος</string>
     <string name="group_welcome_title">Μήνυμα καλωσορίσματος</string>
@@ -2376,7 +2321,6 @@
     <string name="v5_7_call_sounds_descr">Κατά τη σύνδεση κλήσεων ήχου και βίντεο.</string>
     <string name="network_smp_proxy_fallback_allow_protected">Όταν η IP είναι κρυφή</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Όταν είναι ενεργοποιημένοι περισσότεροι από ένας χειριστές, κανένας από αυτούς δεν διαθέτει μεταδεδομένα για να μάθει ποιος επικοινωνεί με ποιον.</string>
-    <string name="you_can_accept_or_reject_connection">Όταν κάποιος ζητήσει να συνδεθεί, μπορείς να αποδεχτείς ή να απορρίψεις το αίτημα.</string>
     <string name="incognito_info_share">Όταν μοιράζεσε ένα ανώνυμο προφίλ με κάποιον, αυτό το προφίλ θα χρησιμοποιείται για τις ομάδες στις οποίες σε προσκαλούν.</string>
     <string name="network_type_network_wifi">WiFi</string>
     <string name="v5_7_quantum_resistant_encryption_descr">Θα ενεργοποιηθεί στις άμεσες συνομιλίες!</string>
@@ -2392,7 +2336,6 @@
     <string name="file_error_auth">Λανθασμένο κλειδί ή άγνωστη διεύθυνση τμήματος αρχείου - πιθανότατα το αρχείο έχει διαγραφεί.</string>
     <string name="wrong_passphrase_title">Λανθασμένη φράση πρόσβασης!</string>
     <string name="xftp_server">Διακομιστής XFTP</string>
-    <string name="xftp_servers">Διακομιστές XFTP</string>
     <string name="chat_preferences_yes">ναι</string>
     <string name="network_smp_proxy_fallback_allow">Ναι</string>
     <string name="privacy_chat_list_open_links_yes">Ναι</string>
@@ -2422,19 +2365,16 @@
     <string name="one_hand_ui_change_instruction">Μπορείς να το αλλάξεις στις ρυθμίσεις Εμφάνισης.</string>
     <string name="onboarding_network_operators_configure_via_settings">Μπορείς να διαμορφώσεις τους διακομιστές μέσω των ρυθμίσεων.</string>
     <string name="maximum_message_size_reached_forwarding">Μπορείς να αντιγράψεις και να μειώσεις το μέγεθος του μηνύματος για να το στείλεις.</string>
-    <string name="you_can_create_it_later">Μπορείς να το δημιουργήσεις αργότερα</string>
     <string name="you_can_enable_delivery_receipts_later">Μπορείς να το ενεργοποιήσεις αργότερα μέσω των Ρυθμίσεων.</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Μπορείς να τις ενεργοποιήσεις αργότερα μέσω των ρυθμίσεων απορρήτου και ασφάλειας της εφαρμογής.</string>
     <string name="migrate_to_device_try_again">Μπορείς να δοκιμάσεις ξανά.</string>
     <string name="migrate_from_device_try_again">Μπορείς να δοκιμάσεις ξανά.</string>
     <string name="you_can_hide_or_mute_user_profile">Μπορείς να αποκρύψεις ή να σιγάσεις ένα προφίλ χρήστη - κράτησέ το πατημένο για να εμφανιστεί το μενού.</string>
-    <string name="you_can_make_address_visible_via_settings">Μπορείς να το κάνεις ορατό στις επαφές σου στο SimpleX μέσω των Ρυθμίσεων.</string>
     <string name="max_group_mentions_per_message_reached">Μπορείς να αναφέρεις εώς και %1$s μέλη ανά μήνυμα!</string>
     <string name="you_can_still_send_messages_to_contact">Μπορείς να στείλεις μηνύματα στην επαφή %1$s από τις αρχειοθετημένες επαφές.</string>
     <string name="you_can_set_connection_name_to_remember">Μπορείς να ορίσεις το όνομα της σύνδεσης για να θυμάσε με ποιον μοιράστηκες το σύνδεσμο.</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Μπορείς να μοιραστείς ένα σύνδεσμο ή έναν κωδικό QR - οποιοσδήποτε θα μπορεί να συμμετάσχει στην ομάδα. Δεν θα χάσεις μέλη της ομάδας αν τον διαγράψεις αργότερα.</string>
     <string name="you_can_share_this_address_with_your_contacts">Μπορείς να μοιραστείς αυτήν τη διεύθυνση με τις επαφές σου για να τους επιτρέψεις να συνδεθούν με την επαφή %s.</string>
-    <string name="you_can_share_your_address">Μπορείς να διαμοιραστείς τη διεύθυνσή σου ως σύνδεσμο ή κωδικό QR - οποιοσδήποτε θα μπορεί να συνδεθεί μαζί σου.</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Μπορείς να ξεκινήσεις τη συνομιλία μέσω της εφαρμογής Ρυθμίσεις / Βάση δεδομένων ή επανεκκινώντας την εφαρμογή.</string>
     <string name="you_can_still_view_conversation_with_contact">Μπορείς ακόμα να δεις τη συνομιλία με την επαφή %1$s, στη λίστα των συνομιλιών.</string>
     <string name="cant_send_message_alert_title">Δεν μπορείς να στείλεις μηνύματα!</string>
@@ -2446,9 +2386,7 @@
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">άλλαξες διεύθυνση για %s</string>
     <string name="snd_group_event_changed_role_for_yourself">άλλαξες ρόλο για τον εαυτό σου σε %s</string>
     <string name="snd_group_event_changed_member_role">άλλαξες το ρόλο του μέλους %s σε %s</string>
-    <string name="you_control_your_chat">Έχεις τον έλεγχο της συνομιλίας σου!</string>
     <string name="la_could_not_be_verified">Δεν ήταν δυνατή η επαλήθευση. Παρακαλώ, δοκίμασε ξανά.</string>
-    <string name="people_can_connect_only_via_links_you_share">Εσύ αποφασίζεις ποιος μπορεί να συνδεθεί.</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Έχεις ήδη ζητήσει σύνδεση μέσω αυτής της διεύθυνσης!</string>
     <string name="you_have_no_chats">Δεν έχεις συνομιλίες</string>
     <string name="you_have_to_enter_passphrase_every_time">Πρέπει να εισάγεις τη φράση πρόσβασης κάθε φορά που ξεκινά η εφαρμογή - δεν αποθηκεύεται στη συσκευή.</string>

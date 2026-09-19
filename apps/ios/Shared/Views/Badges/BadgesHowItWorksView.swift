@@ -33,6 +33,7 @@ struct BadgesHowItWorksView: View {
         }
         .padding(.horizontal, 25)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

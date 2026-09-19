@@ -194,6 +194,7 @@ enum ChatCommand: ChatCmdProtocol {
     // badges
     case apiRedeemBadgeCode(userId: Int64, code: String)
     case apiGetBadgeState(userId: Int64)
+    case apiGetBadgeLedger(userId: Int64, badgePurchaseId: Int64)
     case apiAckBadgeAlert(userId: Int64, badgePurchaseId: Int64, alertKind: BadgeAlertKind, snooze: Bool, episode: String)
     // misc
     case showVersion
@@ -419,8 +420,9 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiStandaloneFileInfo(link): return "/_download info \(link)"
             case let .apiRedeemBadgeCode(userId, code): return "/_redeem_badge_code \(userId) \(code)"
             case let .apiGetBadgeState(userId): return "/_badge state \(userId)"
+            case let .apiGetBadgeLedger(userId, badgePurchaseId): return "/_badge ledger \(userId) \(badgePurchaseId)"
             case let .apiAckBadgeAlert(userId, badgePurchaseId, alertKind, snooze, episode):
-                return "/_badge ack \(userId) \(badgePurchaseId) \(alertKind.text) \(onOff(snooze)) \(episode)"
+                return "/_badge ack \(userId) \(badgePurchaseId) \(badgeAlertKindParam(alertKind)) \(onOff(snooze)) \(episode)"
             case .showVersion: return "/version"
             case let .getAgentSubsTotal(userId): return "/get subs total \(userId)"
             case let .getAgentServersSummary(userId): return "/get servers summary \(userId)"
@@ -610,6 +612,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiStandaloneFileInfo: return "apiStandaloneFileInfo"
             case .apiRedeemBadgeCode: return "apiRedeemBadgeCode"
             case .apiGetBadgeState: return "apiGetBadgeState"
+            case .apiGetBadgeLedger: return "apiGetBadgeLedger"
             case .apiAckBadgeAlert: return "apiAckBadgeAlert"
             case .showVersion: return "showVersion"
             case .getAgentSubsTotal: return "getAgentSubsTotal"
@@ -691,6 +694,17 @@ enum ChatCommand: ChatCmdProtocol {
 
     private func maybePwd(_ pwd: String?) -> String {
         pwd == "" || pwd == nil ? "" : " " + encodeJSON(pwd)
+    }
+
+    // /_badge ack takes the kind in core's text encoding, not the JSON tag
+    private func badgeAlertKindParam(_ kind: BadgeAlertKind) -> String {
+        switch kind {
+        case .renewalApproaching: "renewal_approaching"
+        case .paymentIssue: "payment_issue"
+        case .subscriptionEnded: "subscription_ended"
+        case .prepaidEnding: "prepaid_ending"
+        case .supportEnded: "support_ended"
+        }
     }
 
     private func maybeContent(_ mc: MsgContent?) -> String {
@@ -1035,8 +1049,9 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case appSettings(appSettings: AppSettings)
     // badges
     // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
-    case badgeRedeemed(user: User, redeemedBadge: LocalBadge, newBadge: Bool)
+    case badgeRedeemed(user: User, redeemedBadge: LocalBadge, newBadge: Bool, badgeState: BadgeState?)
     case badgeState(user: UserRef, badgeState: BadgeState?)
+    case badgeLedger(user: UserRef, badgeLedger: [StatementEntry])
 
     var responseType: String {
         switch self {
@@ -1090,6 +1105,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case .appSettings: "appSettings"
         case .badgeRedeemed: "badgeRedeemed"
         case .badgeState: "badgeState"
+        case .badgeLedger: "badgeLedger"
         }
     }
 
@@ -1143,8 +1159,9 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .archiveExported(archiveErrors): return String(describing: archiveErrors)
         case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
         case let .appSettings(appSettings): return String(describing: appSettings)
-        case let .badgeRedeemed(u, redeemedBadge, newBadge): return withUser(u, "redeemedBadge: \(String(describing: redeemedBadge))\nnewBadge: \(newBadge)")
+        case let .badgeRedeemed(u, redeemedBadge, newBadge, badgeState): return withUser(u, "redeemedBadge: \(String(describing: redeemedBadge))\nnewBadge: \(newBadge)\nbadgeState: \(String(describing: badgeState))")
         case let .badgeState(u, badgeState): return withUser(u, String(describing: badgeState))
+        case let .badgeLedger(u, badgeLedger): return withUser(u, String(describing: badgeLedger))
         }
     }
 }

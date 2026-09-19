@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="notifications">Bildirimler</string>
-    <string name="connect_via_link_or_qr">Bağlantı ya da karekod ile bağlan</string>
     <string name="create_group">Gizli grup oluştur</string>
     <string name="your_simplex_contact_address">SimpleX adresin</string>
     <string name="callstatus_missed">cevapsız çağrı</string>
@@ -77,7 +76,6 @@
     <string name="search_verb">Ara</string>
     <string name="reveal_verb">Göster</string>
     <string name="revoke_file__confirm">İptal</string>
-    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(kodu okut ya da panodan yapıştır)</string>
     <string name="scan_QR_code">Karekodu okut</string>
     <string name="simplex_address">SimpleX adresi</string>
     <string name="smp_servers_save">Sunucuları kaydet</string>
@@ -93,7 +91,6 @@
     <string name="save_preferences_question">Tercihleri kaydet\?</string>
     <string name="save_profile_password">Profil parolasını kaydet</string>
     <string name="profile_is_only_shared_with_your_contacts">Profil sadece konuştuğun kişilerle paylaşılır.</string>
-    <string name="next_generation_of_private_messaging">Mesajlaşmanın geleceği</string>
     <string name="icon_descr_audio_off">Ses kapalı</string>
     <string name="authentication_cancelled">Doğrulama iptal edildi</string>
     <string name="settings_restart_app">Yeniden başlat</string>
@@ -141,7 +138,6 @@
     <string name="la_auth_failed">Kimlik doğrulama başarısız</string>
     <string name="icon_descr_address">SimpleX Adresi</string>
     <string name="moderate_message_will_be_deleted_warning">Mesaj, tüm üyeler için silinecek.</string>
-    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Gizliliğinizi ve güvenliğinizi koruyan mesajlaşma ve uygulama platformu.</string>
     <string name="settings_section_title_incognito">Gizlilik kipi</string>
     <string name="member_role_will_be_changed_with_invitation">Yetki, "%s" olarak değiştirilecek. Üye, yeni bir davet alacak.</string>
     <string name="role_in_group">Yetki</string>
@@ -179,7 +175,6 @@
     <string name="profile_will_be_sent_to_contact_sending_link">Profiliniz, bu bağlantıyı aldığınız kişiye gönderilecek.</string>
     <string name="connect_via_contact_link">Adres bağlantısı üzerinden bağlan?</string>
     <string name="server_error">hata</string>
-    <string name="connect_via_link_verb">Bağlan</string>
     <string name="server_connected">bağlanıldı</string>
     <string name="deleted_description">silindi</string>
     <string name="receiving_files_not_yet_supported">dosya alma henüz desteklenmiyor</string>
@@ -225,7 +220,6 @@
     <string name="colored_text">renklendirilmiş</string>
     <string name="confirm_password">Parolayı onayla</string>
     <string name="callstatus_rejected">geri çevrilmiş çağrı</string>
-    <string name="create_profile_button">Oluştur</string>
     <string name="callstatus_error">arama hatası</string>
     <string name="callstate_connected">bağlanıldı</string>
     <string name="callstate_connecting">bağlanılıyor…</string>
@@ -313,10 +307,6 @@
     <string name="description_via_contact_address_link">kişi adres bağlantısı ile</string>
     <string name="simplex_link_contact">SimpleX bağlantı adresi</string>
     <string name="simplex_link_mode_browser_warning">Bağlantıyı tarayıcıda açmak, bağlantı gizliliğini ve güvenliğini azaltabilir. Güvenilmeyen SimpleX bağlantıları kırmızı olacaktır.</string>
-    <string name="error_saving_smp_servers">SMP sunucuları kaydedilirken hata oluştu</string>
-    <string name="error_saving_xftp_servers">XFTP sunucuları kaydedilirken hata oluştu</string>
-    <string name="error_loading_smp_servers">SMP sunucuları yüklenirken hata oluştu</string>
-    <string name="error_loading_xftp_servers">XFTP sunucuları yüklenirken hata oluştu</string>
     <string name="error_setting_network_config">Bağlantı yapılandırması güncellenirken hata</string>
     <string name="failed_to_parse_chat_title">Konuşma yüklenemedi</string>
     <string name="failed_to_parse_chats_title">Konuşmalar yüklenemedi</string>
@@ -381,7 +371,6 @@
     <string name="icon_descr_server_status_error">Hata</string>
     <string name="send_disappearing_message_custom_time">Kişiselleştirilmiş süre</string>
     <string name="copied">Panoya kopyalandı</string>
-    <string name="share_one_time_link">Tek seferlik davet bağlantısı oluştur</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 masaüstü: uygulamadaki <b>Karekodu okut</b> ile karekodu okut]]></string>
     <string name="delete_pending_connection__question">Bekleyen bağlantıları sil\?</string>
     <string name="delete_contact_menu_action">Sil</string>
@@ -394,14 +383,11 @@
     <string name="customize_theme_title">Renk temalarını kişiselleştir</string>
     <string name="core_version">Çekirdek sürümü: v%s</string>
     <string name="delete_address__question">Adresi sil\?</string>
-    <string name="create_address_and_let_people_connect">Kişilerin sana bağlanması için bir adres oluştur.</string>
     <string name="create_simplex_address">SimpleX adresi oluştur</string>
     <string name="delete_address">Adresi sil</string>
     <string name="continue_to_next_step">Devam et</string>
     <string name="delete_image">Görseli sil</string>
-    <string name="you_control_your_chat">Konuşman, senin elinde!</string>
     <string name="create_profile">Profil oluştur</string>
-    <string name="decentralized">Merkezi olmayan</string>
     <string name="confirm_passcode">Erişim kodunu onayla</string>
     <string name="incorrect_passcode">Yanlış erişim kodu</string>
     <string name="new_passcode">Yeni erişim kodu</string>
@@ -507,7 +493,6 @@
     <string name="display_name__field">Profil adı:</string>
     <string name="ttl_mth">%day</string>
     <string name="ttl_s">%dsn</string>
-    <string name="dont_create_address">Adres oluşturma</string>
     <string name="smp_server_test_download_file">Dosyayı indir</string>
     <string name="edit_verb">Düzelt</string>
     <string name="network_option_enable_tcp_keep_alive">TCP keep-alive özelliğini etkinleştir</string>
@@ -587,7 +572,6 @@
     <string name="hidden_profile_password">Gizli profil parolası</string>
     <string name="how_to_use_markdown">Markdown nasıl kullanılır</string>
     <string name="how_it_works">Nasıl çalışıyor</string>
-    <string name="immune_to_spam_and_abuse">Spamdan etkilenmez</string>
     <string name="icon_descr_hang_up">Çağırıyı bitir.</string>
     <string name="icon_descr_flip_camera">Kameranın karşı yüzüne geç</string>
     <string name="import_database_question">Konuşma veri tabanı içe aktarılsın mı?</string>
@@ -611,8 +595,6 @@
     <string name="user_hide">Gizle</string>
     <string name="notification_display_mode_hidden_desc">Konuşulan kişileri ve mesajları gizle</string>
     <string name="v4_3_improved_privacy_and_security_desc">Uygulamayı, son kullanılanlar kısmından gizle.</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Eğer yüz yüze görüşemiyorsanız <b>bir görüntülü aramada karşıdakine karekodunu gösterebilir</b> ya da konuştuğun kişiye bir katılım bağlantısı paylaşabilirsin.]]></string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Eğer yüz yüze görüşemiyorsanız <b>bir görüntülü aramada karşıdakinin karekodunu okutabilirsin</b> ya da konuştuğun kişi seninle bir katılım bağlantısı paylaşabilir.]]></string>
     <string name="if_you_cant_meet_in_person">Eğer yüz yüze görüşemiyorsanız bir görüntülü aramada karşıdakine karekodunu gösterebilir ya da konuştuğun kişiye bir katılım bağlantısı paylaşabilirsin.</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Eğer geri çevirmeyi seçersen göndericiye bildirilmeyecek.</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Eğer SimplexX Chat katılım bağlantısı alırsan bu bağlantıyı tarayıcında açabilirsin:</string>
@@ -663,7 +645,6 @@
     <string name="custom_time_unit_hours">saat</string>
     <string name="notifications_mode_off_desc">Sadece uygulama çalışırken bildirim alabileceksiniz, hiçbir arka plan hizmeti başlatılmayacaktır</string>
     <string name="notification_preview_new_message">yeni mesaj</string>
-    <string name="welcome">Hoşgeldin!</string>
     <string name="personal_welcome">Hoşgeldin %1$s!</string>
     <string name="icon_descr_waiting_for_image">Görsel bekleniyor</string>
     <string name="waiting_for_image">Görsel bekleniyor</string>
@@ -672,10 +653,8 @@
     <string name="waiting_for_file">Dosya bekleniyor</string>
     <string name="voice_messages_prohibited">Sesli mesajlar yasaktır!</string>
     <string name="contact_wants_to_connect_with_you">sana bağlanmak istiyor!</string>
-    <string name="you_can_accept_or_reject_connection">İnsanlar bağlantı talebinde bulunduğunda, kabul edebilir veya reddedebilirsiniz.</string>
     <string name="network_use_onion_hosts_prefer">Mevcut olduğunda</string>
     <string name="auto_accept_contact">Otomatik kabul etme</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">Kişilerinizin veya mesajlarınızın hiçbirini (teslim edildikten sonra) sunucularda saklamıyoruz.</string>
     <string name="callstate_waiting_for_answer">yanıt bekleniyor…</string>
     <string name="callstate_waiting_for_confirmation">onay bekleniyor…</string>
     <string name="onboarding_notifications_mode_off">Uygulama çalışıyorken</string>
@@ -710,7 +689,6 @@
     <string name="in_reply_to">Şuna cevap olarak</string>
     <string name="group_preview_join_as">%s olarak katılın</string>
     <string name="invalid_contact_link">Geçersiz link!</string>
-    <string name="invalid_QR_code">Geçersiz QR kodu</string>
     <string name="smp_servers_invalid_address">Geçersiz sunucu adresi!</string>
     <string name="install_simplex_chat_for_terminal">Terminal için SimpleX Chat\'i yükleyin</string>
     <string name="icon_descr_call_connecting">Aramaya bağlanılıyor</string>
@@ -780,10 +758,7 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Kişinizin cihazı çevrimiçi olduğunda bağlanacaksınız, lütfen bekleyin veya daha sonra kontrol edin!</string>
     <string name="learn_more">Daha fazla bilgi edinin</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Eğer sonradan bağlantınızı silseniz bile kişilerinizi kaybetmeyeceksiniz.</string>
-    <string name="smp_servers_your_server">Sunucunuz</string>
     <string name="smp_servers_your_server_address">Sunucu adresiniz</string>
-    <string name="your_SMP_servers">SMP sunucularınız</string>
-    <string name="your_XFTP_servers">XFTP sunucularınız</string>
     <string name="configure_ICE_servers">ICE sunucularını yapılandır</string>
     <string name="email_invite_subject">Hadi SimpleX Chat\'te konuşalım</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Profiliniz cihazınızda saklanır ve sadece kişilerinizle paylaşılır. SimpleX sunucuları profilinizi göremez.</string>
@@ -793,8 +768,6 @@
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Bu gruptan artık mesaj almayacaksınız. Sohbet geçmişi korunacaktır.</string>
     <string name="leave_group_question">Gruptan ayrıl\?</string>
     <string name="rcv_group_event_member_left">ayrıldı</string>
-    <string name="available_in_v51">"
-\nv5.1\'de mevcut"</string>
     <string name="v4_5_transport_isolation_descr">Sohbet profili ile (varsayılan) veya bağlantı ile (BETA).</string>
     <string name="image_descr_link_preview">bağlantı önizleme resmi</string>
     <string name="your_profile_is_stored_on_your_device">Profiliniz, kişileriniz ve gönderilmiş mesajlar cihazınızda saklanır.</string>
@@ -852,12 +825,10 @@
     <string name="observer_cant_send_message_title">sen gözlemcisin</string>
     <string name="view_security_code">Güvenlik kodunu görüntüle</string>
     <string name="you_need_to_allow_to_send_voice">Sesli mesaj gönderebilmeniz için kişinizin de sesli mesaj göndermesine izin vermeniz gerekir.</string>
-    <string name="xftp_servers">XFTP sunucuları</string>
     <string name="your_ICE_servers">ICE sunucularınız</string>
     <string name="how_to">Nasıl</string>
     <string name="your_current_profile">Mevcut profiliniz</string>
     <string name="video_call_no_encryption">video arama (uçtan uca şifreli değil)</string>
-    <string name="your_ice_servers">ICE sunucularınız</string>
     <string name="icon_descr_video_off">Video kapalı</string>
     <string name="icon_descr_video_on">Video açık</string>
     <string name="you_have_to_enter_passphrase_every_time">Uygulama her başladığında parola girmeniz gerekir - parola cihazınızda saklanmaz.</string>
@@ -866,7 +837,6 @@
     <string name="incognito_info_share">Biriyle gizli bir profil paylaştığınızda, bu profil sizi davet ettikleri gruplar için kullanılacaktır.</string>
     <string name="v4_2_auto_accept_contact_requests_desc">İsteğe bağlı karşılama mesajı ile.</string>
     <string name="your_contacts_will_remain_connected">Kişileriniz bağlı kalacaktır.</string>
-    <string name="you_can_create_it_later">Daha sonra oluşturabilirsiniz</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Mesajları biçimlendirmek için markdown kullanabilirsiniz:</string>
     <string name="your_chat_database">Sohbet veritabanınız</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Mevcut sohbet veritabanınız SİLİNECEK ve içe aktarılan veritabanıyla DEĞİŞTİRİLECEKTİR.
@@ -884,7 +854,6 @@
     <string name="voice_message">Sesli mesaj</string>
     <string name="voice_message_with_duration">Sesli mesaj (%1$s)</string>
     <string name="voice_message_send_text">Sesli mesaj…</string>
-    <string name="you_can_share_your_address">Adresinizi bir bağlantı veya QR kodu olarak paylaşabilirsiniz - herkes size bağlanabilir.</string>
     <string name="snd_conn_event_switch_queue_phase_completed">bağlantı değiştirdiniz</string>
     <string name="you_can_enable_delivery_receipts_later">Daha sonra Ayarlardan etkinleştirebilirsin</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Bunları daha sonra uygulamanın Gizlilik ayarlarından etkinleştirebilirsiniz.</string>
@@ -892,7 +861,6 @@
 \nBu bağlantıyı iptal edebilir ve kişiyi kaldırabilirsiniz (ve daha sonra yeni bir bağlantıyla deneyebilirsiniz).</string>
     <string name="contact_sent_large_file">Kişiniz desteklenen maksimum boyuttan (%1$s) daha büyük bir dosya gönderdi.</string>
     <string name="video_will_be_received_when_contact_completes_uploading">Kişiniz yüklemeyi tamamladığında video alınacaktır.</string>
-    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Ayrıca bağlantıya tıklayarak da bağlanabilirsiniz. Eğer bağlantı tarayıcda açılırsa, <b>mobil uygulamada aç</b> seçeneğine tıklayın.]]></string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Soru sormak ve güncellemeleri almak için <font color="#0088ff">SimpleX Chat geliştiricilerine bağlanabilirsiniz</font>.]]></string>
     <string name="you_can_hide_or_mute_user_profile">Bir kullanıcının profilini gizleyebilir veya sessize alabilirsiniz - menü için basılı tutun.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Sohbet veritabanınızın en son sürümünü SADECE bir cihazda kullanmalısınız, aksi takdirde bazı kişilerden daha fazla mesaj alamayabilirsiniz.</string>
@@ -937,7 +905,6 @@
     <string name="v5_2_more_things_descr">- daha stabil mesaj iletimi.
 \n- biraz daha iyi gruplar.
 \n- ve daha fazlası!</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Sadece istemci cihazlar kullanıcı profillerini, kişileri, grupları ve gönderilen mesajları depolar.</string>
     <string name="only_group_owners_can_change_prefs">Grup tercihlerini sadece grup sahipleri değiştirebilir.</string>
     <string name="item_info_no_text">metin yok</string>
     <string name="network_status">Ağ durumu</string>
@@ -956,17 +923,13 @@
     <string name="la_please_remember_to_store_password">Hatırlayın veya güvenli bir şekilde saklayın - kaybolan bir parolayı kurtarmanın bir yolu yoktur!</string>
     <string name="auth_open_chat_console">Sohbet konsolunu aç</string>
     <string name="auth_open_chat_profiles">Sohbet profillerini değiştir.</string>
-    <string name="this_text_is_available_in_settings">Bu metin ayarlarda mevcut</string>
     <string name="no_filtered_chats">Filtrelenmiş sohbet yok</string>
     <string name="images_limit_title">Çok fazla görsel!</string>
     <string name="videos_limit_title">Çok fazla video!</string>
     <string name="observer_cant_send_message_desc">Lütfen grup yöneticisiyle iletişime geçin</string>
-    <string name="icon_descr_server_status_pending">Bekleniyor</string>
     <string name="ask_your_contact_to_enable_voice">Lütfen irtibat kişinizden sesli mesaj göndermeyi etkinleştirmesini isteyin.</string>
     <string name="live_message">Canlı mesaj!</string>
     <string name="to_connect_via_link_title">Link ile bağlanmak için</string>
-    <string name="this_link_is_not_a_valid_connection_link">Bu geçerli bir bağlantı linki değil</string>
-    <string name="this_QR_code_is_not_a_link">Bu QR kodu bir bağlantı değil!</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Daha fazla bilgi için <font color="#0088ff">Kullanıcı Kılavuzu</font>.]]></string>
     <string name="paste_button">Yapıştır</string>
     <string name="this_string_is_not_a_connection_link">Bu dize bir bağlantı linki değil!</string>
@@ -987,8 +950,6 @@
     <string name="v4_5_private_filenames_descr">Zaman dilimi, görsel/ses korumak için UTC kullan.</string>
     <string name="v4_5_private_filenames">Özel dosya adları</string>
     <string name="to_start_a_new_chat_help_header">Yeni bir sohbet başlatmak için</string>
-    <string name="people_can_connect_only_via_links_you_share">Kimin bağlanabileceğine siz karar verirsiniz.</string>
-    <string name="privacy_redefined">Gizlilik yeniden tanımlanıyor</string>
     <string name="onboarding_notifications_mode_periodic">Periyodik</string>
     <string name="onboarding_notifications_mode_title">Gizli bildirimler</string>
     <string name="paste_the_link_you_received">Aldığın bağlantıyı yapıştır</string>
@@ -1010,14 +971,12 @@
     <string name="unfavorite_chat">Favorilerden çıkar</string>
     <string name="make_profile_private">Sohbeti gizli yap!</string>
     <string name="profile_update_will_be_sent_to_contacts">Profil güncellemesi SimpleX kişilerinize gönderilecektir.</string>
-    <string name="read_more_in_github_with_link"><![CDATA[<font color="#0088ff">GitHub repomuzda</font> daha fazlasını okuyun.]]></string>
     <string name="alert_text_fragment_please_report_to_developers">Lütfen geliştiricilere bildirin.</string>
     <string name="users_delete_with_connections">Profil ve sunucu bağlantıları</string>
     <string name="user_unhide">gizlemeyi kaldır</string>
     <string name="v4_3_voice_messages_desc">Maksimum 40 saniye, anında alınır.</string>
     <string name="icon_descr_record_voice_message">Sesli mesaj kaydet</string>
     <string name="toast_permission_denied">İzin Reddedildi!</string>
-    <string name="to_share_with_your_contact">(irtibat kişinizle paylaşmak için)</string>
     <string name="image_descr_profile_image">profil resmi</string>
     <string name="icon_descr_profile_image_placeholder">profil fotoğrafı yer tutucusu</string>
     <string name="to_verify_compare">Kişinizle uçtan uca şifrelemeyi doğrulamak için cihazlarınızdaki kodu karşılaştırın (veya tarayın).</string>
@@ -1028,7 +987,6 @@
     <string name="v4_5_message_draft">Mesaj taslağı</string>
     <string name="v4_6_hidden_chat_profiles_descr">Sohbet profillerini parola ile koru!</string>
     <string name="v4_5_reduced_battery_usage">Daha az pil kullanımı</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Gizliliği korumak için, SimpleX her bir konuşma için farklı bir ID kullanır.</string>
     <string name="error_connecting_to_server_to_receive_messages">Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor (hata: %1$s).</string>
     <string name="v4_4_live_messages_desc">Alıcılar güncellemeleri siz yazdıkça görürler.</string>
     <string name="auth_log_in_using_credential">Bilgilerinizi kullanarak giriş yapın</string>
@@ -1062,7 +1020,6 @@
     <string name="connect_plan_repeat_connection_request">Bağlantı isteğini tekrarla?</string>
     <string name="no_details">detay yok</string>
     <string name="database_initialization_error_desc">Veri tabanı düzgün çalışmıyor. Daha fazla bilgi için dokunun</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Açık kaynaklı protokol ve kod - sunucuları herkes çalıştırabilir.</string>
     <string name="rcv_group_event_open_chat">Aç</string>
     <string name="settings_notification_preview_mode_title">Önizlemeyi göster</string>
     <string name="v5_3_encrypt_local_files">Depolanan dosyaları ve medyayı şifrele</string>
@@ -1076,7 +1033,6 @@
     <string name="custom_time_picker_select">Seç</string>
     <string name="only_you_can_make_calls">Sadece sen arama yapabilirsin.</string>
     <string name="new_mobile_device">Yeni mobil cihaz</string>
-    <string name="use_chat">Sohbeti kullan</string>
     <string name="multicast_connect_automatically">Otomatik olarak bağlan</string>
     <string name="share_verb">Paylaş</string>
     <string name="rcv_group_event_n_members_connected">%s, %s ve %d diğer üye bağlandı</string>
@@ -1141,9 +1097,7 @@
     <string name="share_link">Bağlantı paylaş</string>
     <string name="icon_descr_simplex_team">SimpleX Ekibi</string>
     <string name="rcv_group_event_3_members_connected">%s, %s ve %s bağlandı</string>
-    <string name="settings_section_title_socks">SOCKS vekili</string>
     <string name="desktop_devices">Masaüstür cihazlar</string>
-    <string name="smp_servers">SMP sunucuları</string>
     <string name="not_compatible">Uyumlu değil!</string>
     <string name="v4_4_verify_connection_security">Bağlantı güvenliğini onayla</string>
     <string name="connect_with_contact_name_question">%1$s ile bağlan?</string>
@@ -1171,7 +1125,6 @@
     <string name="verify_code_on_mobile">Kodu mobilde onayla</string>
     <string name="share_image">Medya paylaş…</string>
     <string name="passphrase_will_be_saved_in_settings">Parola, siz onu değiştirdikten veya uygulamayı yeniden başlattıktan sonra ayarlarda düz metin olarak depolanacak.</string>
-    <string name="paste_the_link_you_received_to_connect_with_your_contact">Kişinizle bağlantı kurmak için aldığınız bağlantıyı yapıştırın…</string>
     <string name="settings_shutdown">Kapat</string>
     <string name="icon_descr_sent_msg_status_sent">gönderildi</string>
     <string name="send_live_message">Canlı mesaj gönder</string>
@@ -1184,7 +1137,6 @@
     <string name="la_lock_mode">SimpleX Kilit modu</string>
     <string name="share_file">Dosya paylaş…</string>
     <string name="periodic_notifications_desc">Uygulama yeni mesajları periyodik olarak alır - günde pilin yüzde birkaçını kullanır. Uygulama anlık bildirimleri kullanmaz - cihazınızdan gelen veriler sunuculara gönderilmez.</string>
-    <string name="first_platform_without_user_ids">Herhangi bir kullanıcı tanımlayıcısı yok.</string>
     <string name="icon_descr_speaker_off">Hoparlör kapalı</string>
     <string name="sync_connection_force_desc">Şifreleme çalışıyor ve yeni bir şifreleme anlaşması gerekli değil. Yoksa bağlantı hataları ortaya çıkabilir!</string>
     <string name="show_call_on_lock_screen">Göster</string>
@@ -1218,8 +1170,6 @@
     <string name="connect__your_profile_will_be_shared">Profiliniz %1$s paylaşılacaktır.</string>
     <string name="v5_4_incognito_groups_descr">Rastgele bir profil kullanarak grup oluştur.</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Gruba zaten bu bağlantı üzerinden katılıyorsunuz.</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">Sohbet profiliniz kişinize
-\ngönderilecek</string>
     <string name="invite_prohibited_description">Gizli bir profil paylaştığınız kişiyi ana profilinizi kullandığınız gruba davet etmeye çalışıyorsunuz</string>
     <string name="rcv_conn_event_verification_code_reset">güvenlik kodu değiştirildi</string>
     <string name="v4_6_audio_video_calls_descr">Bluetooth desteği ve diğer iyileştirmeler.</string>
@@ -1270,13 +1220,11 @@
     <string name="feature_received_prohibited">alınmış, yasaklanmış</string>
     <string name="error_xftp_test_server_auth">Sunucu yükleme için yetki gerektiriyor, şifreyi kontrol edin.</string>
     <string name="encryption_renegotiation_error">Şifreleme yeniden aşma hatası</string>
-    <string name="smp_servers_preset_server">Ön ayarlı sunucu</string>
     <string name="feature_cancelled_item">%s iptal edildi</string>
     <string name="rcv_direct_event_contact_deleted">silinmiş kişi</string>
     <string name="network_option_tcp_connection_timeout">TCP bağlantısı zaman aşımına uğradı</string>
     <string name="mtr_error_different">uygulama/veritabanı içinde farklı değişim: %s / %s</string>
     <string name="using_simplex_chat_servers">SimpleX Chat serverları kullanılıyor.</string>
-    <string name="smp_servers_preset_add">Ön ayarlı sunucular ekle</string>
     <string name="secret_text">gizli</string>
     <string name="receipts_groups_disable_for_all">Bütün gruplar için devre dışı bırak</string>
     <string name="v4_6_group_welcome_message_descr">Yeni üyeler için gösterilecek mesajı seç!</string>
@@ -1284,7 +1232,6 @@
     <string name="moderated_description">yönetildi</string>
     <string name="error_creating_member_contact">Üye bağlantısı oluşturulurken hata</string>
     <string name="sending_delivery_receipts_will_be_enabled">Tüm kişiler için iletim bilgisi gönderme özelliği etkinleştirilecek</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">XFTP sunucu adreslerinin doğru formatta olduğundan, satırın ayrılmış ve kopyalanmamış olduğundan emin olun.</string>
     <string name="refresh_qr_code">Yenile</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Lütfen dikkat</b>: Mesaj ve dosya aktarımları SOCKS proxy üzerinden bağlanır. Aramalar doğrudan bağlantı kullanır.]]></string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱mobil: <b>Telefon uygulamasında aç</b> seçeneğine tıkla, sonra uygulama içinden <b>Bağlan</b> seçeneğine tıkla.]]></string>
@@ -1293,7 +1240,6 @@
     <string name="group_members_2">%s ve %s</string>
     <string name="v5_2_fix_encryption">Bağlantılarını koru</string>
     <string name="received_message">Alınmış mesaj</string>
-    <string name="you_can_make_address_visible_via_settings">Ayarlardan SimpleX kişilerinize görünür yapabilirsiniz.</string>
     <string name="connect_plan_join_your_group">Grubuna bağlanılsın mı?</string>
     <string name="v5_4_link_mobile_desktop">Telefon veya bilgisayar uygulamalarını bağla! 🔗</string>
     <string name="connect__a_new_random_profile_will_be_shared">Yeni bir rasgele profil paylaşılacaktır.</string>
@@ -1325,7 +1271,6 @@
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[<i> .onion ana bilgisayarlarını kullan</i> seçeneğini eğer SOCKS vekili destek vermiyorsa devre dışı bırak]]></string>
     <string name="you_can_change_it_later">Rasgele şifreler düz metin olarak ayarlarda saklanacaktır.
 \nBunu sonra değiştirebilirsin.</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">SMP sunucu adreslerinin doğru formatta olduğundan, satırın ayrılmış ve kopyalanmamış olduğundan emin olun.</string>
     <string name="group_invitation_tap_to_join_incognito">Sahte İsimle katılmak için tıkla</string>
     <string name="network_use_onion_hosts_no_desc">Onion ana bilgisayarları kullanılmayacaktır.</string>
     <string name="set_password_to_export">Dışarıya çıkarmak için parola belirle</string>
@@ -1338,7 +1283,6 @@
     <string name="linked_desktop_options">Bağlanmış bilgisayar ayarları</string>
     <string name="developer_options">Veritabanı kimlikleri ve Taşıma izolasyonu seçeneği.</string>
     <string name="network_option_ping_count">PING sayısı</string>
-    <string name="update_network_session_mode_question">Ulaşım izolasyonu modu güncellensin mi?</string>
     <string name="random_port">Rasgele</string>
     <string name="linked_desktops">Bağlanmış bilgisayarlar</string>
     <string name="discover_on_network">Yerel ağ aracılığıyla keşfet</string>
@@ -1354,7 +1298,6 @@
     <string name="moderated_items_description">%1$d mesaj %2$s tarafından yönetildi</string>
     <string name="remove_passphrase_from_settings">Ayarlardaki parola silinsin mi?</string>
     <string name="receipts_contacts_title_enable">Alıcılar etkinleştirilsin mi?</string>
-    <string name="tap_to_start_new_chat">Yeni bir sohbet başlatmak için tıkla</string>
     <string name="unblock_member_button">Kişinin engelini kaldır</string>
     <string name="relay_server_if_necessary">Yönlendirici sunucusu sadece lazım ise kullanılacak. Diğer taraf IP adresini görebilir.</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Telefon bağlantılı <b>%s</b> ın bağlantısı kesildi]]></string>
@@ -1454,7 +1397,6 @@
     <string name="send_live_message_desc">Bir canlı mesaj gönder - bu yazdıklarını anlık olarak alıcıya(lara) güncelleyen bir mesajdır</string>
     <string name="remove_passphrase_from_keychain">Şifre Yöneticisindeki parola silinsin mi?</string>
     <string name="settings_section_title_delivery_receipts">Lere gönder</string>
-    <string name="connect_via_link_incognito">Takma adla bağlan</string>
     <string name="always_use_relay">Her zaman yönlendirici kullan.</string>
     <string name="auth_unlock">Kilidini aç</string>
     <string name="unblock_member_desc">%s ten gelen mesajlar gösterilecek!</string>
@@ -1874,7 +1816,6 @@
     <string name="info_view_search_button">ara</string>
     <string name="switching_profile_error_title">Profil değiştirme sırasında hata oluştu.</string>
     <string name="select_chat_profile">Sohbet profili seç</string>
-    <string name="xftp_servers_configured">XFTP sunucuları yapılandırıldı</string>
     <string name="media_and_file_servers">Medya ve dosya sunucuları</string>
     <string name="network_proxy_auth_mode_no_auth">Kimlik bilgilerini proxy ile kullanmayın.</string>
     <string name="network_proxy_incorrect_config_title">Proxy kayıt edilirken hata oluştu.</string>
@@ -1953,10 +1894,8 @@
     <string name="completed">Tamamlandı</string>
     <string name="deleted">Silindi</string>
     <string name="deletion_errors">Silme hatası</string>
-    <string name="open_server_settings_button">Sunucu ayarlarını aç</string>
     <string name="share_text_file_status">Dosya durumu: %s</string>
     <string name="new_message">Yeni mesaj</string>
-    <string name="smp_servers_other">Diğer SMP sunucuları</string>
     <string name="reconnect">Yeniden bağlan</string>
     <string name="sent_directly">Direkt gönderildi.</string>
     <string name="all_users">Tüm Profiller</string>
@@ -1985,8 +1924,6 @@
     <string name="member_inactive_title">Üye inaktif</string>
     <string name="message_forwarded_desc">Henüz direkt bağlantı yok mesaj admin tarafından yönlendirildi.</string>
     <string name="message_servers">Mesaj sunucuları</string>
-    <string name="smp_servers_configured">SMP sunucları yapılandırıldı</string>
-    <string name="xftp_servers_other">Diğer XFTP sunucuları</string>
     <string name="privacy_media_blur_radius">Medyayı bulanıklaştır.</string>
     <string name="delete_contact_cannot_undo_warning">Kişiler silinecek - bu geri alınamaz !</string>
     <string name="keep_conversation">Sohbeti sakla.</string>
@@ -2156,7 +2093,6 @@
     <string name="report_archive_alert_title_nth">%d raporu arşivleyelim mi?</string>
     <string name="archive_verb">Arşiv</string>
     <string name="report_archive_alert_title">Raporu arşivleyelim mi?</string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Tüm mesajlar ve dosyalar <b>uçtan uca şifreli</b> olarak gönderilir ve doğrudan mesajlarda kuantum sonrası güvenlik sağlanır.]]></string>
     <string name="error_reading_passphrase">Veritabanı şifresini okurken hata oluştu</string>
     <string name="button_delete_chat">Sohbeti sil</string>
     <string name="delete_chat_question">Sohbet silinsin mi?</string>
