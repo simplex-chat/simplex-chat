@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import ctypes
 import json
+from concurrent.futures import Executor
 from enum import StrEnum
 from typing import Any, TypedDict
 
@@ -102,7 +103,9 @@ async def chat_send_cmd(ctrl: int, cmd: str) -> CR.ChatResponse:
     raise ChatAPIError(f"invalid chat command result: {raw[:200]}")
 
 
-async def chat_recv_msg_wait(ctrl: int, wait_us: int = 500_000) -> CEvt.ChatEvent | None:
+async def chat_recv_msg_wait(
+    ctrl: int, wait_us: int = 500_000, executor: Executor | None = None
+) -> CEvt.ChatEvent | None:
     def _call() -> str:
         # On timeout, the C side returns a non-NULL pointer to a single NUL byte
         # (see Mobile.hs `fromMaybe ""`), so `_read_and_free` returns "" — no
@@ -110,7 +113,10 @@ async def chat_recv_msg_wait(ctrl: int, wait_us: int = 500_000) -> CEvt.ChatEven
         ptr = _native.lib().chat_recv_msg_wait(ctrl, wait_us)
         return _read_and_free(ptr)
 
-    raw = await asyncio.to_thread(_call)
+    if executor is None:
+        raw = await asyncio.to_thread(_call)
+    else:
+        raw = await asyncio.get_running_loop().run_in_executor(executor, _call)
     if not raw:
         return None
     parsed = json.loads(raw)
