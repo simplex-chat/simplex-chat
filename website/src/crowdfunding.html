@@ -64,7 +64,7 @@ templateEngineOverride: njk
             --cf-area-off: calc((var(--sec-h) - 100svh) / 2);
         }
 
-        @media screen and (max-width: 959px) {
+        @media screen and (max-width: 959px) and (orientation: portrait) {
             :root {
                 --cf-grad-light: linear-gradient(30deg, #e8f3ff 0%, #c0e2ff 40%, #e9ffff 80%, #ffefd6 90%);
                 --cf-grad-dark: linear-gradient(30deg, #000000 0%, #131d49 52%, #3f5598 65%, #c3faff 85%, #fff6e0 90%);
@@ -432,7 +432,7 @@ templateEngineOverride: njk
 
         .cf-pill svg { height: 30px; width: auto; display: block; transform: translateY(-3.5px); }
 
-        @media screen and (min-width: 960px) {
+        @media screen and (min-width: 960px), screen and (max-width: 959px) and (orientation: landscape) {
             .cf-pill { width: 252px; justify-content: center; }
         }
 
@@ -442,7 +442,7 @@ templateEngineOverride: njk
         .cf-cta-link:hover,
         .cf .text-container a.gradient-text:hover { filter: brightness(1.12); }
 
-        @media screen and (min-width: 960px) {
+        @media screen and (min-width: 960px), screen and (max-width: 959px) and (orientation: landscape) {
             .cf-network .text-container h2 { max-width: calc(var(--sec-vwu) * 23.5) !important; }
             .cf-network .text-container p { max-width: calc(var(--sec-vwu) * 31) !important; }
             .cf-network .text-container a { max-width: calc(var(--sec-vwu) * 31) !important; }
@@ -482,7 +482,7 @@ templateEngineOverride: njk
         #navbar.on-light > a.logo.logo-light { display: flex; }
         #navbar.on-light > a.logo.logo-dark { display: none; }
 
-        @media screen and (min-width: 960px) {
+        @media screen and (min-width: 960px), screen and (max-width: 959px) and (orientation: landscape) {
             header#navbar { height: 74px; }
             header#navbar > a.logo {
                 top: 0;
@@ -502,15 +502,17 @@ templateEngineOverride: njk
                 opacity: 1 !important;
                 transform: none !important;
                 background: transparent !important;
-                height: 54px !important;
             }
+        }
+        @media screen and (max-width: 959px) and (orientation: portrait) {
+            header#navbar { height: 54px !important; }
             header#navbar > a.logo { top: 0 !important; height: 100% !important; align-items: center; transform: translateY(var(--cf-nav-shift)); }
             [dir="ltr"] header#navbar > a.logo { padding-left: var(--cf-text-pad); }
             header#navbar > a.logo img { height: 31.5px; }
         }
 
         /* ---- mobile: portrait art on top, text at the bottom (home page system) ---- */
-        @media screen and (max-width: 959px) {
+        @media screen and (max-width: 959px) and (orientation: portrait) {
             .cf .text-container h2 { font-size: calc(var(--sec-vwu) * 9.4); }
             .cf .text-container {
                 margin-left: 0 !important;
@@ -814,21 +816,21 @@ templateEngineOverride: njk
         .cf-tag .n { font-weight: 700; font-size: calc(var(--sec-vwu) * 1.5); line-height: 1.35; }
         .cf-tag .v { font-weight: 500; font-size: calc(var(--sec-vwu) * 1.2); line-height: 1.45; }
         .cf-tag .v b { font-weight: 700; }
-        @media screen and (min-width: 960px) {
+        @media screen and (min-width: 960px), screen and (max-width: 959px) and (orientation: landscape) {
             .cf-tags-art,
             .cf-art { display: none; }
         }
-        @media screen and (max-width: 959px) {
+        @media screen and (max-width: 959px) and (orientation: portrait) {
             .cf-tag .n { font-size: 3.54cqh; line-height: 1.3; }
         }
 
         /* 320pt phones: keep the headline at three lines */
-        @media screen and (max-width: 330px) {
+        @media screen and (max-width: 330px) and (orientation: portrait) {
             .cf-hero h1 { font-size: calc(var(--sec-vwu) * 8.18); }
         }
 
         /* narrow phones: keep the corner link clear of the logo */
-        @media screen and (max-width: 389px) {
+        @media screen and (max-width: 389px) and (orientation: portrait) {
             header#navbar > a.logo img { height: 24px; }
             .cf-hero-corner { height: 40px; }
             .cf-tag .v { font-size: 2.96cqh; line-height: 1.4; }
@@ -858,7 +860,7 @@ templateEngineOverride: njk
         .cf-fine-links a { color: #9fb2d8; text-decoration: none; }
         .cf-fine-links a:hover { color: #ffffff; }
 
-        @media screen and (max-width: 959px) {
+        @media screen and (max-width: 959px) and (orientation: portrait) {
             /* padding-bottom comes from .safari-ios section.page, which a
                fit-content footer does not need */
             section.page.cf.cf-footer { height: fit-content; min-height: fit-content; padding-bottom: 0; }
@@ -988,10 +990,72 @@ templateEngineOverride: njk
             .cf-modal-panel h2 { font-size: 1.4rem; }
         }
         /* 320pt phones: the card's text column is narrower than the submit label */
-        @media screen and (max-width: 389px) {
+        @media screen and (max-width: 389px) and (orientation: portrait) {
             .cf-modal { padding: 24px 12px; }
             .cf-modal-panel { padding: 28px 20px; }
             .cf-form-submit { padding: 0 12px; font-size: 15px; }
+        }
+        @media screen and (max-width: 959px) and (orientation: landscape) {
+            :root {
+                --cover-bg-w: calc(min((3200 / 1920) * 100vw, (3200 / 1080) * 100svh));
+                --cover-bg-h: calc(min((1800 / 1920) * 100vw, (1800 / 1080) * 100svh));
+                --sec-w: calc(min((1920 / 1920) * 100vw, (1920 / 1080) * 100svh));
+                --sec-h: calc(min((1080 / 1920) * 100vw, (1080 / 1080) * 100svh));
+                --sec-vwu: calc(var(--sec-w) / 100);
+                --sec-vhu: calc(var(--sec-h) / 100);
+            }
+            html { scroll-snap-type: none; }
+            section.page.cf:not(.cf-footer),
+            html.safari-ios section.page.cf:not(.cf-footer),
+            html.chrome-ios section.page.cf:not(.cf-footer),
+            html.chrome-android section.page.cf:not(.cf-footer),
+            html.safari-ios section.page.cf.cf-current:not(.cf-footer),
+            html.chrome-ios section.page.cf.cf-current:not(.cf-footer) {
+                height: auto;
+                min-height: 100dvh;
+                margin-top: 0;
+                padding: 74px 0 0;
+                align-items: flex-start;
+            }
+            section.page.cf .area {
+                height: auto;
+                min-height: calc(100dvh - 74px);
+            }
+            .page .text-container {
+                height: auto;
+                min-height: calc(100dvh - 74px);
+                padding-top: calc(var(--sec-vhu) * 3);
+                padding-bottom: calc(var(--sec-vhu) * 3);
+            }
+            .page .text-container {
+                justify-content: center;
+                gap: calc(var(--sec-vhu) * 3.25);
+                margin-right: calc(var(--sec-vwu) * 7.5) !important;
+                margin-left: calc(var(--sec-vwu) * 7.5) !important;
+                padding-bottom: 0;
+                max-width: none !important;
+            }
+            .cf-right .text-container { margin-left: auto !important; }
+            .cf-left .text-container { margin-right: auto !important; }
+            .page .text-container h2 { font-size: calc(var(--sec-vwu) * 4.94); line-height: 1.05; }
+            .page .text-container p { font-weight: 200; font-size: calc(var(--sec-vwu) * 1.62); }
+            .page .text-container p span { font-weight: 500; }
+            .page .text-container a { font-weight: 200; font-size: calc(var(--sec-vwu) * 1.62); }
+            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 4.4); }
+            .cf-hero .lead:not(.lead-short) { display: none; }
+            .cf-hero .lead-short { display: block; margin-top: calc(var(--sec-vhu) * 2); }
+            .cf-hero .cf-hero-cta { margin-top: calc(var(--sec-vhu) * 3); }
+            .cf-hero .cf-stats { margin-top: calc(var(--sec-vhu) * 3); }
+            .cf-hero .area {
+                align-items: center;
+                padding: calc(var(--sec-vhu) * 2) 0 calc(var(--sec-vhu) * 6);
+            }
+            .cf-phone { top: calc(var(--sec-vhu) * 27.1); bottom: auto; }
+            section.page.cf.cf-hero,
+            section.page.cf.cf-close {
+                background-position: calc(50% + var(--sec-vwu) * 40.3) calc(74px + var(--sec-h) / 2 + var(--sec-vhu) * 2.2 - var(--cover-bg-h) / 2);
+            }
+            .cf-close .area { padding-bottom: calc(var(--sec-vhu) * 8); }
         }
     </style>
 </head>
@@ -1451,7 +1515,7 @@ templateEngineOverride: njk
                 fitLine(lead);
                 if (leadShort) fitLine(leadShort);
             }
-            var narrow = window.matchMedia('(max-width: 959px)');
+            var narrow = window.matchMedia('(max-width: 959px) and (orientation: portrait)');
             function left(ms) {
                 var total = Math.floor(ms / 1000);
                 var days = Math.floor(total / 86400);
@@ -1486,6 +1550,36 @@ templateEngineOverride: njk
             place();
             window.addEventListener('resize', function () { shown = -1; tick(); fit(); place(); });
             if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fit(); place(); });
+        })();
+    </script>
+    <script>
+        (function cfDebug() {
+            if (location.hash !== '#debug') return;
+            var box = document.createElement('pre');
+            box.style.cssText = 'position:fixed;left:0;top:0;z-index:99999;margin:0;padding:6px 8px;background:rgba(0,0,0,.85);color:#7f7;font:11px/1.35 monospace;white-space:pre-wrap;max-width:100vw;pointer-events:none';
+            document.body.appendChild(box);
+            function px(v) { return Math.round(v * 10) / 10; }
+            function rect(q) { var e = document.querySelector(q); if (!e) return 'none'; var r = e.getBoundingClientRect(); return [px(r.left), px(r.top), px(r.width), px(r.height)].join(' '); }
+            function read() {
+                var vv = window.visualViewport;
+                var probe = document.querySelector('.cf-hero .area');
+                var cs = probe ? getComputedStyle(probe) : null;
+                box.textContent = [
+                    navigator.userAgent.replace(/^.*\(([^)]*)\).*$/, '$1'),
+                    'inner ' + innerWidth + 'x' + innerHeight + '  outer ' + outerWidth + 'x' + outerHeight + '  dpr ' + devicePixelRatio,
+                    'visual ' + (vv ? px(vv.width) + 'x' + px(vv.height) + ' scale ' + px(vv.scale) : 'n/a'),
+                    'doc ' + document.documentElement.clientWidth + 'x' + document.documentElement.clientHeight + '  screen ' + screen.width + 'x' + screen.height,
+                    'orientation ' + (screen.orientation ? screen.orientation.type : 'n/a') + '  landscape mq ' + matchMedia('(orientation: landscape)').matches + '  narrow mq ' + matchMedia('(max-width: 959px) and (orientation: portrait)').matches,
+                    'html class ' + document.documentElement.className,
+                    'hero .area ' + rect('.cf-hero .area') + '  hero-text ' + rect('.cf-hero-text'),
+                    'h1 ' + rect('.cf-hero h1') + '  lead ' + rect('.cf-hero .lead:not(.lead-short)') + '  lead-short ' + rect('.cf-hero .lead-short'),
+                    'stats ' + rect('.cf-stats') + '  offer ' + rect('#cf-offer') + '  cta ' + rect('.cf-hero .cf-pill'),
+                    'phone ' + rect('.cf-phone') + '  section ' + rect('section.page.cf.cf-hero'),
+                    'h1 font ' + (document.querySelector('.cf-hero h1') ? getComputedStyle(document.querySelector('.cf-hero h1')).fontSize : '') + '  area padding ' + (cs ? cs.padding : '')
+                ].join('\n');
+            }
+            read();
+            setInterval(read, 1000);
         })();
     </script>
     <script>
