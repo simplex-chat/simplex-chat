@@ -211,7 +211,7 @@ function tierName(badgeType: string): string {
 
 function tierFeatures(badgeType: string): readonly string[] {
   const limits = TIER_LIMITS[badgeType];
-  return limits === undefined ? [] : [`Files up to ${limits.gb} GB`, `Available for ${limits.days} days`];
+  return limits === undefined ? [] : [`Files up to ${limits.gb} GB`, `Stored for ${limits.days} days`];
 }
 
 // The line under the duration screen's heading: what the chosen badge gives, since the tier cards are a screen back.

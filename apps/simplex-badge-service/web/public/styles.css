@@ -783,11 +783,12 @@ p.row-line { margin: 16px 0 0; }
 
 /* ---------------------------------------------------------- the summary card */
 
-/* the order summary: one bordered card, two label/value rows, a hairline, and
-   the total. */
+/* the order summary: one bordered card of label/value rows, a hairline, and the total. The
+   card's padding and a row's own are 12 and 8, top and bottom alike, so the first label and
+   the total stand the same 20 from the card's edges. */
 .rows {
   margin: 37px 0 0;
-  padding: 15px 27px 4px;
+  padding: 12px 24px;
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   background: var(--surface);
@@ -798,15 +799,17 @@ p.row-line { margin: 16px 0 0; }
   justify-content: space-between;
   gap: 12px;
   font-size: 1rem;
-  padding: 7px 0;
+  padding: 8px 0;
 }
 .row span:first-child { color: var(--ink-soft); font-weight: 500; }
 .row span:last-child { font-weight: 600; color: var(--ink); }
+/* the hairline sits 16 under the last row's text and 14 over the total's taller line, which
+   is the same clearance to the glyphs on both sides */
 .row.total {
   font-size: 1.25rem;
   border-top: 1px solid var(--line);
-  margin-top: 13px;
-  padding-top: 7px;
+  margin-top: 8px;
+  padding-top: 14px;
 }
 .row.total span:first-child { color: var(--ink); font-weight: 600; }
 /* the checkout summary's saving: the reduction is a credit, so its figure takes the settled
@@ -841,11 +844,10 @@ p.row-line { margin: 16px 0 0; }
   margin-bottom: 4px;
 }
 /* the order summary's PAY WITH stands alone above the row rather than inside a card. It is the
-   same label, and only its place changes, so it restates no type. */
-.label.standalone { margin: 13px 0 0; text-align: left; }
-/* the order summary's row sits closer to its label, and its Pay button closer to the row, than
-   the tier list's and the duration list's do to their headings. */
-.label.standalone + .methods { margin-top: 18px; }
+   same label, and only its place changes, so it restates no type. It is the row's title, so it
+   stands 28 clear of the summary card and 10 over the row it names. */
+.label.standalone { margin: 28px 0 0; text-align: left; }
+.label.standalone + .methods { margin-top: 10px; }
 .methods + .primary { margin-top: 16px; }
 
 /* --------------------------------------------------------------- the notices */

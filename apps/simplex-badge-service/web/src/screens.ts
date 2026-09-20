@@ -371,7 +371,7 @@ export function durations(o: DurationsOptions): HTMLElement {
         : el("div", { class: "price" }, d.price));
     }
     if (d.savingPercent !== undefined && d.savingPercent > 0) {
-      card.append(el("div", {}, el("span", { class: "pill" }, `save ${d.savingPercent}%`)));
+      card.append(el("div", {}, el("span", { class: "pill" }, `${d.savingPercent}% off`)));
     }
     if (!d.disabled) card.addEventListener("click", () => o.onSelect(d.key));
     choices.append(card);

@@ -84,12 +84,12 @@ domTest("screens: the landing screen carries the copy the mockups fix", () => {
 
 domTest("screens: the tier list carries the level copy, and Continue is disabled until one is chosen", () => {
   const tiers = [
-    { priceId: "price_supporter", badgeType: "supporter", name: "Supporter", price: "$7 / month", features: ["Files up to 2 GB", "Available for 7 days"], disabled: false },
-    { priceId: "price_legend", badgeType: "legend", name: "Legend", price: "$70 / month", features: ["Files up to 5 GB", "Available for 21 days"], disabled: false },
+    { priceId: "price_supporter", badgeType: "supporter", name: "Supporter", price: "$7 / month", features: ["Files up to 2 GB", "Stored for 7 days"], disabled: false },
+    { priceId: "price_legend", badgeType: "legend", name: "Legend", price: "$70 / month", features: ["Files up to 5 GB", "Stored for 21 days"], disabled: false },
   ];
   const blank = render(screens.tiers({ tiers, selected: undefined, onSelect: noop, onContinue: noop, onBack: noop }));
   for (const line of ["Choose your badge", "Larger files that stay available longer.",
-    "Supporter", "$7 / month", "Files up to 2 GB", "Available for 7 days", "Legend", "$70 / month", "Files up to 5 GB", "Available for 21 days", "Back",
+    "Supporter", "$7 / month", "Files up to 2 GB", "Stored for 7 days", "Legend", "$70 / month", "Files up to 5 GB", "Stored for 21 days", "Back",
     "Invest $100+ in SimpleX Chat and get a free supporter badge."]) {
     assert.ok(blank.textContent.includes(line), `the tier list is missing: ${line}`);
   }
@@ -130,7 +130,7 @@ domTest("screens: the duration list prints the durations and their savings, unpr
     selected: "offer_12m", onSelect: noop, onContinue: noop, onBack: noop,
   }));
   for (const line of ["How long?", "Paid once, for the months you choose. No subscription.",
-    "1 month", "$70", "3 months", "$140", "save 33%", "12 months", "$420", "save 50%"]) {
+    "1 month", "$70", "3 months", "$140", "33% off", "12 months", "$420", "50% off"]) {
     assert.ok(p.textContent.includes(line), `the duration list is missing: ${line}`);
   }
   assert.equal(p.all("p.lede").length, 1, "with no tier named, the one line is the payment terms");
@@ -346,7 +346,7 @@ domTest("screens: a discounted duration strikes the price it is a discount from"
   const cards = p.all("button.choice");
   assert.equal(cards[1]!.all("s.was")[0]?.textContent, "$210", "the gross is struck through");
   assert.ok(cards[1]!.textContent.includes("$140"), "beside the amount actually charged");
-  assert.ok(cards[1]!.textContent.includes("save 33%"));
+  assert.ok(cards[1]!.textContent.includes("33% off"));
   assert.equal(cards[0]!.all("s.was").length, 0, "one month is not a discount off itself");
 });
 

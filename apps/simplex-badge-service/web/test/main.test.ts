@@ -98,7 +98,7 @@ mainTest("main: the wizard walks the landing screen to the order summary, with t
   assert.equal(heading(inView()), "How long?");
   const twelve = inView().all("button.choice").find((c) => c.textContent.startsWith("12 months"))!;
   assert.ok(twelve.textContent.includes("$420"), "12 legend months are $420");
-  assert.ok(twelve.textContent.includes("save 50%"), "the saving is the only figure the browser computes");
+  assert.ok(twelve.textContent.includes("50% off"), "the saving is the only figure the browser computes");
   twelve.click();
   primary(inView())!.click();
   assert.equal(heading(inView()), "Check your order");
