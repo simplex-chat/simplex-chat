@@ -155,12 +155,18 @@
    column sideways, which `#app`'s overflow-x then clips. */
 html { scrollbar-gutter: stable; }
 
+/* The page is one column of the viewport's height: the header, then the screen, which is at least
+   the rest of the viewport tall (see `.panel`), then the footer below the fold, where a scroll
+   reaches it. `100vh` is the fallback for a browser without dynamic viewport units. */
 body {
   margin: 0;
+  display: flex;
+  flex-direction: column;
   /* The gutter is here, so `#app` is exactly the 640px content column and
      nothing inside it has to subtract padding to reach that width. */
   padding: 0 20px;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
   /* Fixed, so the wash does not tile or scroll away on a long screen. */
   background-image: var(--page);
@@ -173,7 +179,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-#app { max-width: 640px; margin: 0 auto; overflow-x: hidden; }
+#app { width: 100%; max-width: 640px; margin: 0 auto; overflow-x: hidden; flex: 1 0 auto; }
+/* The header's height, which every screen's minimum height is the viewport less: `.chrome-bar`'s
+   56px box, its paddings inside it. */
+:root { --chrome-h: 56px; }
 
 /* The shell ships a static copy of the first screen (see index.html), so the first paint is the real
    landing, not an empty page, and `main.ts` swaps in its own identical markup with no flash. Embedded,
@@ -196,7 +205,8 @@ body {
    the frame to the body, so a `100vh` floor would make the body's height depend on the frame height
    the host derived from it — a loop that ratchets the frame taller and drops the site's footer as the
    zoom shifts. Drop the floor so the body is exactly its content. */
-.embedded body { padding-top: 54px; background-image: none; min-height: 0; }
+.embedded body { padding-top: 54px; background-image: none; min-height: 0; display: block; }
+.embedded .panel { min-height: 0; }
 .embedded footer { display: none; }
 
 /* Embedded in the site's dark theme, the standalone grey surfaces read as off against the navy the
@@ -345,6 +355,8 @@ body {
 /* the footer, on every screen: a hairline across the column, then the
    contact link centred under it in the accent. */
 footer {
+  flex: none;
+  width: 100%;
   max-width: 640px;
   margin: 0 auto;
   text-align: center;
@@ -352,7 +364,7 @@ footer {
 footer a {
   display: block;
   border-top: 1px solid var(--line);
-  padding: 16px 0 34px;
+  padding: 22px 0 34px;
   color: var(--accent);
   font-size: .875rem;
   text-decoration: none;
@@ -399,7 +411,25 @@ footer a:hover { text-decoration: underline; }
   min-width: 0;
   padding: 12px 0 22px;
   text-align: center;
+  /* A screen is a column at least as tall as the viewport under the header, so that its button
+     stands at the same place on every screen - near the bottom, where a thumb reaches it - and the
+     content between the heading and the button is spread over the height rather than stacked at
+     the top. A screen taller than the viewport grows and scrolls, as the payment screens do. */
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--chrome-h));
+  min-height: calc(100dvh - var(--chrome-h));
 }
+/* What each screen spreads: the hero, the choice cards, the summary. `auto` above and nothing
+   below, so the free height is shared between the space over the block and the space under it,
+   which the button's own `auto` margin takes. */
+.panel > .hero, .panel > .choices, .panel > .rows { margin-top: auto; }
+/* The button is the last thing before the invest block, and sinks to the foot of the screen. Where
+   a screen keeps notes above its button, the notes sink with it and the button follows them. */
+.panel > .primary { margin-top: auto; }
+.panel > .notes { margin-top: auto; }
+.notes + .primary { margin-top: 20px; }
+.notes .muted { margin: 4px auto 0; max-width: 480px; }
 @media (prefers-reduced-motion: reduce) {
   .track, .rail { transition: none; }
 }
@@ -802,8 +832,15 @@ p.row-line { margin: 16px 0 0; }
 /* the crowdfunding, under the main button of the first three screens while the round is open.
    No frame and no second button: a sentence, and under it one link in the accent - "Invest on"
    and the Wefunder wordmark - the way the site's secondary links are drawn. */
+/* One height for the block under the button, whatever the sentence: one line and the link where
+   the column is wide, two lines below 700px, three on a narrow phone, where the longest sentence
+   takes three. The checkout's single line takes the same height, so the button under which either
+   sits stands at one place on every screen. */
+.invest, .invest-line { min-height: 58px; }
+@media (max-width: 700px) { .invest, .invest-line { min-height: 82px; } }
+@media (max-width: 420px) { .invest, .invest-line { min-height: 106px; } }
 .invest {
-  margin: 28px 0 0;
+  margin: 22px 0 0;
   text-align: center;
 }
 /* One line where the column holds it. Where it does not, the two halves are inline blocks, so the
@@ -827,10 +864,10 @@ p.row-line { margin: 16px 0 0; }
 .invest-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
 /* the wordmark, a touch taller than the text and lifted so its baseline sits with the text's */
 .invest-link .wefunder { height: 22px; width: auto; display: block; transform: translateY(-2px); }
-/* the landing's code card follows with the same air the block has above it */
-.invest + .info { margin-top: 28px; }
 /* the checkout's one line under Pay: the amount and the link, never wrapped */
-.invest-line { text-align: center; white-space: nowrap; }
+.invest-line { text-align: center; white-space: nowrap; margin-top: 22px; }
+/* `.panel > button:last-child` adds 20px under a trailing button; the invest block is what
+   follows a button here, and the panel's own padding is the space under it. */
 
 /* --------------------------------------------------------------- the landing screen's hero */
 
@@ -838,7 +875,10 @@ p.row-line { margin: 16px 0 0; }
    resolves inside /assets/<buildHash>/ beside this file and the worker precaches it
    under the same hash as everything else. */
 .hero {
-  width: 268px;
+  /* Sized by the viewport's height rather than a fixed width, so on a short screen the picture
+     gives way before anything else does; the width follows from the ratio. */
+  height: min(337px, 36vh);
+  width: auto;
   aspect-ratio: 460 / 578;
   margin: 27px auto 0;
   background-image: var(--hero);
@@ -846,9 +886,13 @@ p.row-line { margin: 16px 0 0; }
   background-position: center;
   background-repeat: no-repeat;
 }
-.hero + .primary { margin-top: 30px; }
 @media (max-width: 560px) {
-  .hero { max-width: 168px; margin-top: 20px; }
+  .hero { height: min(211px, 28vh); margin-top: 20px; }
+}
+/* On a short phone the landing does not fit under its button with the picture; the picture is the
+   one thing on that screen that is decoration. */
+@media (max-width: 560px) and (max-height: 700px) {
+  .hero { display: none; }
 }
 
 /* ------------------------------------------------------------------ the code */

@@ -59,12 +59,11 @@ domTest("screens: the landing screen carries the copy the mockups fix", () => {
   const text = p.textContent;
   for (const line of [
     "Support SimpleX",
-    "Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile.",
+    "Get a badge to send larger files (2‑5GB) that stay available longer (7‑21 days), and to show it on your profile.",
     "Choose your level",
     "Invest $100+ in SimpleX Chat and get a free supporter badge.",
     "Invest on ",
-    "Already have a code?",
-    "Redeem it in the app: Settings, Supporter perks.",
+    "Already have a code? Redeem it in the app: Settings, Supporter perks.",
     "You pay once for the months you choose. No subscription, no account.",
   ]) assert.ok(text.includes(line), `the landing screen is missing: ${line}`);
   assert.equal(p.all("button.link").length, 0, "the history is the menu's, not the landing page's");
@@ -78,8 +77,9 @@ domTest("screens: the landing screen carries the copy the mockups fix", () => {
   assert.equal(links[0]!.all("svg.wefunder").length, 1, "the link carries the Wefunder wordmark");
   assert.equal(links[0]!.getAttribute("aria-label"), "Invest on Wefunder", "and reads as the words the wordmark stands for");
   const kids = p.children.map((c) => (c as { getAttribute?: (n: string) => string | null }).getAttribute?.("class") ?? "");
-  assert.ok(kids.indexOf("primary") < kids.indexOf("invest") && kids.indexOf("invest") < kids.indexOf("info"),
-    "the invest panel sits under the button and above the code card");
+  assert.ok(kids.indexOf("notes") < kids.indexOf("primary") && kids.indexOf("primary") < kids.indexOf("invest"),
+    "the notes sit above the button, the invest block under it, and nothing after");
+  assert.equal(kids[kids.length - 1], "invest", "the invest block is the last thing on the screen");
 });
 
 domTest("screens: the tier list carries the level copy, and Continue is disabled until one is chosen", () => {
@@ -151,7 +151,7 @@ domTest("screens: the order summary is the summary and the method row, with the 
   }));
   for (const line of ["Check your order", "Level", "Legend", "Duration", "12 months", "Total", "$420.00",
     "Pay with", "Bitcoin", "Monero", "Card", "Pay $420.00 with Monero",
-    "Card is handled by Stripe. Bitcoin and Monero are on-chain, through BTCPay.", "← Back"]) {
+    "Card is handled by Stripe. Bitcoin and Monero are on‑chain, through BTCPay.", "← Back"]) {
     assert.ok(p.textContent.includes(line), `the order summary is missing: ${line}`);
   }
   assert.equal(p.all("div.invest").length, 0, "no panel on the checkout, and no line without a perk");
@@ -170,7 +170,8 @@ domTest("screens: the order summary offers the investment as one line under Pay,
   assert.equal(line[0]!.all("a.link")[0]!.getAttribute("href"), WEFUNDER_URL);
   assert.equal(p.all("div.invest").length, 0);
   const kids = p.children.map((c) => (c as { getAttribute?: (n: string) => string | null }).getAttribute?.("class") ?? "");
-  assert.ok(kids.indexOf("primary") < kids.indexOf("muted invest-line"), "the line is under Pay");
+  assert.ok(kids.indexOf("notes") < kids.indexOf("primary") && kids.indexOf("primary") < kids.indexOf("muted invest-line"),
+    "the provider note sits above Pay, and the line under it");
 });
 
 domTest("screens: a discounted order shows the gross price and the reduction above the total", () => {

@@ -207,7 +207,8 @@ designTest("design: the hero is a CSS background, relative to the stylesheet's o
   assert.ok(hero !== undefined, "--hero must be a token, so the theme can swap it");
   assert.match(hero, /^url\([^/][^)]*\.png\)$/, `the URL must be relative, and got "${hero}"`);
   assert.equal(decl(".hero", "background-image"), "var(--hero)");
-  assert.equal(decl(".hero", "width"), "268px", "the mockup draws it 268 wide");
+  assert.equal(decl(".hero", "height"), "min(337px, 36vh)", "the mockup's 337 tall, giving way on a short screen");
+  assert.equal(decl(".hero", "width"), "auto", "the width follows from the ratio");
   assert.equal(decl(".hero", "aspect-ratio"), "460 / 578", "at the source image's own proportions");
 });
 

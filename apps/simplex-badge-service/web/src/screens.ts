@@ -274,19 +274,15 @@ export interface LandingOptions {
 export function landing(o: LandingOptions): HTMLElement {
   const p = panel(
     el("h1", {}, "Support SimpleX"),
-    el("p", { class: "lede" }, "Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile."),
+    el("p", { class: "lede" }, "Get a badge to send larger files (2‑5GB) that stay available longer (7‑21 days), and to show it on your profile."),
     el("div", { class: "hero", role: "presentation" }),
+    el("div", { class: "notes" },
+      el("p", { class: "muted" }, "You pay once for the months you choose. No subscription, no account."),
+      el("p", { class: "muted" }, "Already have a code? Redeem it in the app: Settings, Supporter perks."),
+    ),
     button("Choose your level", o.onStart),
   );
-  withInvest(p, investPanel(o.perk));
-  p.append(
-    el("div", { class: "info" },
-      el("span", { class: "title" }, "Already have a code?"),
-      el("p", {}, "Redeem it in the app: Settings, Supporter perks."),
-    ),
-    el("p", { class: "muted" }, "You pay once for the months you choose. No subscription, no account."),
-  );
-  return p;
+  return withInvest(p, investPanel(o.perk));
 }
 
 export interface TierOption {
@@ -488,10 +484,10 @@ export function orderSummary(o: OrderSummaryOptions): HTMLElement {
     choices.append(card);
   }
   p.append(choices);
+  p.append(el("div", { class: "notes" },
+    el("p", { class: "muted" }, "Card is handled by Stripe. Bitcoin and Monero are on‑chain, through BTCPay.")));
   p.append(button(`Pay ${o.total} with ${METHOD_NAMES[o.selected]}`, o.onPay));
-  withInvest(p, investLine(o.perk));
-  p.append(el("p", { class: "muted" }, "Card is handled by Stripe. Bitcoin and Monero are on-chain, through BTCPay."));
-  return p;
+  return withInvest(p, investLine(o.perk));
 }
 
 export function catalogChanged(onStartAgain: () => void): HTMLElement {
