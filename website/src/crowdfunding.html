@@ -197,7 +197,7 @@ templateEngineOverride: njk
         .cf-stats {
             display: flex;
             gap: calc(var(--sec-vwu) * 5);
-            margin-top: calc(var(--sec-vhu) * 6);
+            margin-top: calc(var(--sec-vhu) * 4.67);
             position: relative;
             top: calc(var(--sec-vhu) * 2);
         }
@@ -217,6 +217,38 @@ templateEngineOverride: njk
             font-size: calc(var(--sec-vwu) * 1.6);
             color: #dfeaff;
         }
+
+        .cf-hero-offer {
+            position: relative;
+            margin-top: calc(var(--sec-vhu) * 6.3);
+            width: calc(var(--sec-vwu) * 56);
+        }
+        .cf-hero-offer p { font-family: "Manrope", sans-serif; }
+        .cf-hero-offer .cf-offer-lead {
+            font-weight: 600;
+            font-size: calc(var(--sec-vwu) * 2.1);
+            line-height: 1.4;
+            color: #ffffff;
+            font-variant-numeric: tabular-nums;
+        }
+        .cf-hero-offer .cf-offer-lead b {
+            font-weight: 700;
+            background: linear-gradient(90deg, #019bfe 0%, #64fdff 58%, #c8feff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+        }
+        .cf-hero-offer .cf-offer-lead span { white-space: nowrap; }
+        .cf-hero-offer .cf-offer-terms {
+            font-weight: 300;
+            font-size: calc(var(--sec-vwu) * 1.55);
+            line-height: 1.55;
+            color: #dfeaff;
+            margin-top: calc(var(--sec-vhu) * 0.4);
+        }
+        .cf-hero-offer .cf-offer-terms a { color: inherit; text-decoration: none; }
+        .cf-hero-offer .cf-offer-terms abbr { text-decoration: underline dotted; text-underline-offset: 3px; cursor: help; }
 
 
         /* ---- close: same left-aligned layout as the hero ---- */
@@ -596,7 +628,7 @@ templateEngineOverride: njk
                 --cf-phone-h: calc(var(--cf-phone-w) / 0.4914);
                 --cf-phone-part: 0.55;
                 /* bottom of the hero text block, measured from the section top */
-                --cf-hero-text-b: calc(var(--cf-top-base) + max(0px, calc(-1 * var(--cf-area-off))) + 78.5vw);
+                --cf-hero-text-b: calc(var(--cf-top-base) + max(0px, calc(-1 * var(--cf-area-off))) + 89.5vw);
                 /* the arc crest starts 0.2678 down the cover image, which is
                    2.349 phone widths tall and sits 0.4034 phone heights above
                    the phone top: the phone may rise no higher than this */
@@ -652,6 +684,17 @@ templateEngineOverride: njk
             }
             .cf-close-offer p { font-size: calc(var(--sec-vwu) * 3.6); }
             .cf-stats { top: 0; gap: calc(var(--sec-vwu) * 8); margin-top: calc(var(--sec-vhu) * 3); }
+            .cf-hero .cf-hero-offer {
+                position: relative;
+                top: 0;
+                width: auto;
+                z-index: 4;
+                margin-top: calc(var(--sec-vhu) * 3);
+                padding-left: var(--cf-text-inset);
+                padding-right: var(--cf-text-inset);
+            }
+            .cf-hero-offer .cf-offer-lead { font-size: calc(var(--sec-vwu) * 4.2); line-height: 1.3; white-space: nowrap; }
+            .cf-hero-offer .cf-offer-terms { font-size: calc(var(--sec-vwu) * 3.55); margin-top: calc(var(--sec-vhu) * 0.8); }
             .cf-stat img { width: calc(var(--sec-vwu) * 8); }
             .cf-stat b { font-size: calc(var(--sec-vwu) * 6.5); }
             .cf-stat span { font-size: calc(var(--sec-vwu) * 3.4); }
@@ -961,6 +1004,10 @@ templateEngineOverride: njk
                             <div><b>480K</b><span>Monthly users</span></div>
                         </div>
                     </div>
+                    <div class="cf-hero-offer" id="cf-offer">
+                        <p class="cf-offer-lead"><span id="cf-offer-what">SimpleX name for 7 years</span><span id="cf-offer-clock"></span></p>
+                        <p class="cf-offer-terms" id="cf-offer-terms">Invest $500+ by the end of September 22, <a href="https://en.wikipedia.org/wiki/Anywhere_on_Earth" target="_blank" rel="noopener"><abbr title="Anywhere on Earth: the day ends when it ends in UTC−12, the last time zone">AoE</abbr></a>.</p>
+                    </div>
                 </div>
                 <img class="cf-phone" src="/img/crowdfunding/phone.png" alt="">
                 <img class="cf-mask" src="/img/crowdfunding/phone-mask.png" alt="">
@@ -1238,6 +1285,163 @@ templateEngineOverride: njk
         </div>
     </div>
 
+    <script>
+        (function cfOffer() {
+            var offer = document.getElementById('cf-offer');
+            var what = document.getElementById('cf-offer-what');
+            var clock = document.getElementById('cf-offer-clock');
+            var terms = document.getElementById('cf-offer-terms');
+            if (!offer || !what || !clock || !terms) return;
+            var PHASES = [
+                { until: Date.UTC(2026, 8, 23, 12, 0, 0), what: 'SimpleX name for 7 years', terms: null },
+                { until: Date.UTC(2026, 10, 23, 12, 0, 0), what: 'SimpleX name for 5 years',
+                  terms: 'Invest $500+ while early bird terms last.' },
+                { until: Infinity, what: 'SimpleX name for 5 years',
+                  terms: 'Invest $500+ while early bird terms last.' }
+            ];
+            var shown = -1;
+            var digits = null;
+            var lead = what.parentNode;
+            var block = offer.parentNode;
+            var hero = block.closest('section');
+            var logos = document.querySelectorAll('#navbar .logo img');
+            function logoBottom() {
+                var bottom = 0;
+                for (var i = 0; i < logos.length; i++) { var r = logos[i].getBoundingClientRect(); if (r.height > 0) bottom = Math.max(bottom, r.bottom); }
+                return bottom;
+            }
+            var canvas = document.createElement('canvas').getContext('2d');
+            function metrics(el, text) {
+                var cs = getComputedStyle(el);
+                canvas.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+                var m = canvas.measureText(text);
+                if (m.fontBoundingBoxAscent === undefined) return null;
+                return { asc: m.fontBoundingBoxAscent, desc: m.fontBoundingBoxDescent, inkUp: m.actualBoundingBoxAscent, inkDown: m.actualBoundingBoxDescent, lineHeight: parseFloat(cs.lineHeight) };
+            }
+            var probe = document.createElement('span');
+            probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline;overflow:hidden';
+            function baselineOf(el) {
+                el.insertBefore(probe, el.firstChild);
+                var y = probe.getBoundingClientRect().bottom;
+                el.removeChild(probe);
+                return y;
+            }
+            function blockBaseline(el) { return baselineOf(el); }
+            function inlineBaseline(el) { return baselineOf(el); }
+            var raster = document.createElement('canvas');
+            function inkRows(el, text, baseline) {
+                var cs = getComputedStyle(el);
+                var size = parseFloat(cs.fontSize);
+                var top = Math.floor(baseline - size * 1.5), height = Math.ceil(size * 2.5), width = Math.ceil(size * text.length) + 8;
+                if (raster.width !== width || raster.height !== height) { raster.width = width; raster.height = height; }
+                var g = raster.getContext('2d');
+                g.clearRect(0, 0, width, height);
+                g.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+                g.fillStyle = '#fff';
+                g.textBaseline = 'alphabetic';
+                g.fillText(text, 4, baseline - top);
+                var px = g.getImageData(0, 0, width, height).data, first = -1, last = -1, y, x;
+                for (y = 0; y < height; y++) {
+                    for (x = 0; x < width; x++) { if (px[(y * width + x) * 4 + 3] > 150) { if (first < 0) first = y; last = y; break; } }
+                }
+                return first < 0 ? null : { top: top + first, bottom: top + last };
+            }
+            function statsInk(figures, labels) {
+                var top = Infinity, bottom = -Infinity, i, rows;
+                for (i = 0; i < figures.length; i++) {
+                    var mf = metrics(figures[i], figures[i].textContent);
+                    rows = mf && inkRows(figures[i], figures[i].textContent, blockBaseline(figures[i]));
+                    if (rows) top = Math.min(top, rows.top);
+                }
+                for (i = 0; i < labels.length; i++) {
+                    var body = labels[i].textContent.replace(/[gjpqy]/g, 'n');
+                    var ml = metrics(labels[i], body);
+                    rows = ml && inkRows(labels[i], body, inlineBaseline(labels[i]));
+                    if (rows) bottom = Math.max(bottom, rows.bottom);
+                }
+                return isFinite(top) && isFinite(bottom) ? { top: top, bottom: bottom } : null;
+            }
+            function place() {
+                offer.style.marginTop = '';
+                block.style.transform = '';
+                if (narrow.matches) return;
+                var pill = block.querySelector('.cf-hero-cta .cf-pill');
+                var figures = block.querySelectorAll('.cf-stats .cf-stat b');
+                var labels = block.querySelectorAll('.cf-stats .cf-stat span');
+                var mo = metrics(lead, lead.textContent);
+                var ink = pill && figures.length && labels.length && mo ? statsInk(figures, labels) : null;
+                if (!ink) return;
+                var above = ink.top - Math.round(pill.getBoundingClientRect().bottom);
+                var text = lead.textContent;
+                var leadInkTop = blockBaseline(lead) - mo.inkUp;
+                var base = Math.round(parseFloat(getComputedStyle(offer).marginTop) + (ink.bottom + 1 + above) - leadInkTop);
+                var best = null;
+                for (var d = -3; d <= 3; d++) {
+                    offer.style.marginTop = (base + d) + 'px';
+                    var now = statsInk(figures, labels);
+                    var lit = inkRows(lead, text, blockBaseline(lead));
+                    if (!now || !lit) break;
+                    var below = lit.top - now.bottom - 1;
+                    if (best === null || Math.abs(below - above) < Math.abs(best.below - above)) best = { d: d, below: below };
+                    if (below === above) break;
+                }
+                if (best) offer.style.marginTop = (base + best.d) + 'px';
+                if (!hero) return;
+                var unit = Math.min(window.innerWidth * 1080 / 1920, window.innerHeight) / 100;
+                var top = block.getBoundingClientRect().top;
+                var minTop = logoBottom() + unit * 2;
+                var spare = hero.getBoundingClientRect().bottom - unit * 2 - block.getBoundingClientRect().bottom;
+                var down = Math.min(Math.max(0, minTop - top), Math.max(0, spare));
+                if (down > 0) block.style.transform = 'translateY(' + Math.round(down) + 'px)';
+            }
+            function two(n) { return (n < 10 ? '0' : '') + n; }
+            function fit() {
+                lead.style.fontSize = '';
+                if (!narrow.matches) return;
+                var base = parseFloat(getComputedStyle(lead).fontSize);
+                var box = lead.clientWidth;
+                var range = document.createRange();
+                range.selectNodeContents(lead);
+                var line = range.getBoundingClientRect().width;
+                if (base > 0 && box > 0 && line > 0) lead.style.fontSize = (base * box / line).toFixed(2) + 'px';
+            }
+            var narrow = window.matchMedia('(max-width: 959px)');
+            function left(ms) {
+                var total = Math.floor(ms / 1000);
+                var days = Math.floor(total / 86400);
+                var rest = total - days * 86400;
+                var hms = two(Math.floor(rest / 3600)) + ':' + two(Math.floor(rest / 60) % 60) + ':' + two(rest % 60);
+                return days > 0 ? days + (days === 1 ? ' day ' : ' days ') + hms : hms;
+            }
+            function tick() {
+                var now = Date.now();
+                var i = 0;
+                while (i < PHASES.length && now >= PHASES[i].until) i++;
+                var timed = PHASES[i].until !== Infinity;
+                var changed = i !== shown;
+                if (changed) {
+                    shown = i;
+                    what.textContent = PHASES[i].what + (timed ? ':' : '');
+                    if (PHASES[i].terms !== null) terms.textContent = PHASES[i].terms;
+                    if (!timed) { clock.textContent = ''; clearInterval(timer); fit(); return; }
+                }
+                if (!digits) {
+                    digits = document.createElement('b');
+                    clock.append(' ', digits, ' left');
+                    changed = true;
+                }
+                var text = left(PHASES[i].until - now);
+                if (text.length !== digits.textContent.length) changed = true;
+                digits.textContent = text;
+                if (changed) fit();
+            }
+            var timer = setInterval(tick, 1000);
+            tick();
+            place();
+            window.addEventListener('resize', function () { shown = -1; tick(); fit(); place(); });
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fit(); place(); });
+        })();
+    </script>
     <script>
         // Invert the navbar (logo + button) depending on whether the
         // section under it is dark or light. Same idea as the home page.
