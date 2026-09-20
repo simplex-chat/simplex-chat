@@ -193,6 +193,7 @@ templateEngineOverride: njk
             margin-top: calc(var(--sec-vhu) * 3);
             max-width: calc(var(--sec-vwu) * 40);
         }
+        .cf-hero .lead-short { display: none; }
 
         .cf-stats {
             display: flex;
@@ -651,12 +652,12 @@ templateEngineOverride: njk
                 --cf-phone-h: calc(var(--cf-phone-w) / 0.4914);
                 --cf-phone-part: 0.55;
                 /* bottom of the hero text block, measured from the section top */
-                --cf-hero-text-b: calc(var(--cf-top-base) + max(0px, calc(-1 * var(--cf-area-off))) + 89.5vw);
+                --cf-hero-text-b: calc(var(--cf-top-base) + max(0px, calc(-1 * var(--cf-area-off))) + 76.7vw);
                 /* the arc crest starts 0.2678 down the cover image, which is
                    2.349 phone widths tall and sits 0.4034 phone heights above
                    the phone top: the phone may rise no higher than this */
                 --cf-phone-ceiling: calc(var(--cf-hero-text-b) + var(--cf-phone-w) * 0.1917);
-                --cf-phone-show: max(calc(var(--cf-phone-h) * 0.15), min(calc(var(--cf-phone-h) * var(--cf-phone-part)), calc(100svh - var(--cf-phone-ceiling))));
+                --cf-phone-show: max(52vw, min(calc(var(--cf-phone-h) * var(--cf-phone-part)), calc(100svh - var(--cf-phone-ceiling))));
                 --cf-phone-top: calc(100svh - var(--cf-phone-show) + var(--cf-area-off));
                 --cf-fade-ext: max(0px, calc(110lvh - 100svh));
                 /* dvh so the fade rides with the button as the chrome moves */
@@ -678,8 +679,10 @@ templateEngineOverride: njk
             .cf-hero h1,
             .cf-hero .lead,
             .cf-hero .cf-stats { position: relative; z-index: 4; }
-            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 9.7); }
+            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 8.54); }
             .cf-hero .lead { font-size: calc(var(--sec-vwu) * 3.55); max-width: none; margin-top: calc(var(--sec-vhu) * 2); }
+            .cf-hero .lead:not(.lead-short) { display: none; }
+            .cf-hero .lead-short { display: block; font-size: calc(var(--sec-vwu) * 4.5); white-space: nowrap; }
             .cf-close .area { padding: calc(var(--cf-top) + var(--sec-vhu) * 14) var(--cf-gutter) 0; }
             /* crest a fixed 78px from the section top */
             section.page.cf.cf-close {
@@ -712,12 +715,14 @@ templateEngineOverride: njk
                 top: 0;
                 width: auto;
                 z-index: 4;
-                margin-top: calc(var(--sec-vhu) * 3);
-                padding-left: var(--cf-text-inset);
-                padding-right: var(--cf-text-inset);
+                margin-top: calc(var(--sec-vhu) * 2);
+                padding: 10px var(--cf-text-pad) 12px;
+                margin-left: calc(-1 * var(--cf-gutter));
+                margin-right: calc(-1 * var(--cf-gutter));
+                background: linear-gradient(to bottom, rgba(2, 7, 29, 0) 0%, rgba(2, 7, 29, var(--cf-offer-veil, 0)) 22%, rgba(2, 7, 29, var(--cf-offer-veil, 0)) 78%, rgba(2, 7, 29, 0) 100%);
             }
             .cf-hero-offer .cf-offer-lead { font-size: calc(var(--sec-vwu) * 4.2); line-height: 1.3; white-space: nowrap; }
-            .cf-hero-offer .cf-offer-terms { font-size: calc(var(--sec-vwu) * 3.55); margin-top: calc(var(--sec-vhu) * 0.8); }
+            .cf-hero-offer .cf-offer-terms { font-size: calc(var(--sec-vwu) * 4); margin-top: calc(var(--sec-vhu) * 0.8); }
             .cf-stat img { width: calc(var(--sec-vwu) * 8); }
             .cf-stat b { font-size: calc(var(--sec-vwu) * 6.5); }
             .cf-stat span { font-size: calc(var(--sec-vwu) * 3.4); }
@@ -819,7 +824,7 @@ templateEngineOverride: njk
 
         /* 320pt phones: keep the headline at three lines */
         @media screen and (max-width: 330px) {
-            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 9.3); }
+            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 8.18); }
         }
 
         /* narrow phones: keep the corner link clear of the logo */
@@ -1011,6 +1016,7 @@ templateEngineOverride: njk
                 <div class="cf-hero-text">
                     <h1>The first and the only messaging network without any user IDs</h1>
                     <p class="lead">SimpleX Chat is building a messaging network unlike every major platform &mdash; without phone numbers, usernames, emails, or any user identifiers.</p>
+                    <p class="lead lead-short">No phone numbers, emails, or accounts.</p>
                     <div class="cf-hero-cta">
                         <a class="cf-pill cf-primary" id="cf-hero-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
                             Invest on {{ wfLogo() }}
@@ -1384,9 +1390,20 @@ templateEngineOverride: njk
                 }
                 return isFinite(top) && isFinite(bottom) ? { top: top, bottom: bottom } : null;
             }
+            var phoneImg = document.querySelector('.cf-phone');
+            function veil() {
+                offer.style.removeProperty('--cf-offer-veil');
+                if (!narrow.matches || !phoneImg) return;
+                var phone = phoneImg.getBoundingClientRect();
+                var arcTop = phone.top - phone.height * 0.4034 + phone.width * 2.349 * 0.2678;
+                var need = offer.getBoundingClientRect().bottom + 8 - arcTop;
+                var alpha = Math.max(0, Math.min(1, need / 40)) * 0.82;
+                if (alpha > 0) offer.style.setProperty('--cf-offer-veil', alpha.toFixed(2));
+            }
             function place() {
                 offer.style.marginTop = '';
                 block.style.transform = '';
+                veil();
                 if (narrow.matches) return;
                 var pill = block.querySelector('.cf-hero-cta .cf-pill');
                 var figures = block.querySelectorAll('.cf-stats .cf-stat b');
@@ -1418,15 +1435,21 @@ templateEngineOverride: njk
                 if (down > 0) block.style.transform = 'translateY(' + Math.round(down) + 'px)';
             }
             function two(n) { return (n < 10 ? '0' : '') + n; }
-            function fit() {
-                lead.style.fontSize = '';
+            var leadShort = document.querySelector('.cf-hero .lead-short');
+            function fitLine(el) {
+                el.style.fontSize = '';
                 if (!narrow.matches) return;
-                var base = parseFloat(getComputedStyle(lead).fontSize);
-                var box = lead.clientWidth;
+                var cs = getComputedStyle(el);
+                var base = parseFloat(cs.fontSize);
+                var box = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
                 var range = document.createRange();
-                range.selectNodeContents(lead);
+                range.selectNodeContents(el);
                 var line = range.getBoundingClientRect().width;
-                if (base > 0 && box > 0 && line > 0) lead.style.fontSize = (base * box / line).toFixed(2) + 'px';
+                if (base > 0 && box > 0 && line > 0) el.style.fontSize = (base * box / line).toFixed(2) + 'px';
+            }
+            function fit() {
+                fitLine(lead);
+                if (leadShort) fitLine(leadShort);
             }
             var narrow = window.matchMedia('(max-width: 959px)');
             function left(ms) {
