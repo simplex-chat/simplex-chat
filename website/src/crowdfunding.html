@@ -1578,6 +1578,14 @@ templateEngineOverride: njk
         })
         var bar = document.querySelector('#cf-cta-invest')
         if (bar) bar.addEventListener('click', function () { track('Invest', { props: { place: 'bar', section: current } }) })
+        var exits = [['#navbar .logo', 'home', 'logo'], ['.cf-fine-links a[href="/"]', 'home', 'footer'], ['.cf-fine-links a[href="/privacy"]', 'privacy', 'footer'],
+            ['.cf-simplex-link', 'chat', 'request'], ['.cf-deck-link', 'deck', 'request'], ['.cf-modal-footnote a', 'source', 'ai-threat']]
+        exits.forEach(function (x) {
+            document.querySelectorAll(x[0]).forEach(function (el) {
+                el.addEventListener('click', function () { track('Exit', { props: { to: x[1], place: x[2] } }) })
+            })
+        })
+        document.addEventListener('mc:result', function (e) { track('Subscribed', { props: { status: e.detail.status } }) })
         window.addEventListener('hashchange', function () {
             var id = location.hash.slice(1)
             if (id && document.querySelector('.cf-modal#' + CSS.escape(id))) track('Popup', { props: { name: id } })
