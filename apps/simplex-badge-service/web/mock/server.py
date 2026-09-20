@@ -6,6 +6,12 @@ Standard library only. Threaded, because the wait endpoint holds a connection.
 
 Environment:
   MOCK_HOLD_SECONDS         how long GET /api/invoice/:id?wait= holds (default 30)
+  MOCK_API                  a real service's origin, e.g. https://badges.simplex.chat. Set, every
+                            /api request is forwarded there as it came, with the answer relayed:
+                            the local build then drives real invoices from its own origin, which
+                            is what the service expects — it sets no CORS headers, so a page
+                            cannot call it from another origin. Nothing is invented and
+                            /control/* is refused. --api <origin> on the command line is the same.
   STRIPE_PUBLISHABLE_KEY    substituted into the
                             served index.html. Public by design, but still not
                             committed: unset, the page has NO card form and
@@ -19,10 +25,16 @@ import json, os, re, secrets, sys, threading
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse, parse_qs
+from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parent.parent
 HOLD_SECONDS = float(os.environ.get("MOCK_HOLD_SECONDS", "30"))
+API_UPSTREAM = os.environ.get("MOCK_API", "").strip().rstrip("/")
+# The service holds a wait for 30 seconds; the forwarded request must outlast it.
+UPSTREAM_TIMEOUT_SECONDS = HOLD_SECONDS + 15
+UPSTREAM_HEADERS = ("content-type", "retry-after", "cache-control")
 STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "").strip()
 KEY_META = re.compile(r'(<meta id="stripe-publishable-key"[^>]*content=")[^"]*(")')
 
@@ -148,8 +160,47 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             return None
 
+    def _forward(self):
+        """Relays this /api request to API_UPSTREAM: the same method, path, query and JSON body,
+        and the service's status and body back, so the page cannot tell it is not talking to the
+        service at its own origin."""
+        length = int(self.headers.get("content-length") or 0)
+        body = self.rfile.read(length) if length else None
+        headers = {"accept": "application/json"}
+        if body is not None:
+            headers["content-type"] = self.headers.get("content-type") or "application/json"
+        req = Request(API_UPSTREAM + self.path, data=body, method=self.command, headers=headers)
+        try:
+            with urlopen(req, timeout=UPSTREAM_TIMEOUT_SECONDS) as res:
+                return self._relay(res.status, res.headers, res.read())
+        except HTTPError as e:
+            # A refusal is an answer: the page reads the code from the body and Retry-After from the headers.
+            return self._relay(e.code, e.headers, e.read())
+        except (URLError, TimeoutError, OSError) as e:
+            print(f"mock: {self.command} {self.path} -> {API_UPSTREAM}: {e}", flush=True)
+            return self._send(502, {"error": "internal"})
+
+    def _relay(self, status, headers, body):
+        try:
+            self.send_response(status)
+            for name in UPSTREAM_HEADERS:
+                value = headers.get(name)
+                if value:
+                    self.send_header(name, value)
+            self.send_header("content-length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            self.close_connection = True
+
     def do_POST(self):
         path = urlparse(self.path).path
+
+        if API_UPSTREAM:
+            if path.startswith("/api/"):
+                return self._forward()
+            if path.startswith("/control/"):
+                return self._send(404, {"error": "not_found"})
 
         if path.startswith("/control/"):
             parts = path.strip("/").split("/")
@@ -249,6 +300,9 @@ class Handler(BaseHTTPRequestHandler):
         # being absent, so blank values are kept.
         path, query = parsed.path, parse_qs(parsed.query, keep_blank_values=True)
 
+        if API_UPSTREAM and path.startswith("/api/"):
+            return self._forward()
+
         if path.startswith("/api/invoice/"):
             invoice_id = path[len("/api/invoice/"):]
             with LOCK:
@@ -303,15 +357,22 @@ class Server(ThreadingHTTPServer):
 
 
 def main():
+    global API_UPSTREAM
     port = 8099
     if "--port" in sys.argv:
         port = int(sys.argv[sys.argv.index("--port") + 1])
+    if "--api" in sys.argv:
+        API_UPSTREAM = sys.argv[sys.argv.index("--api") + 1].strip().rstrip("/")
+    if API_UPSTREAM and urlparse(API_UPSTREAM).scheme not in ("http", "https"):
+        sys.exit("mock: --api / MOCK_API must be an origin such as https://badges.simplex.chat")
     if STRIPE_PUBLISHABLE_KEY and not STRIPE_PUBLISHABLE_KEY.startswith("pk_"):
         # A secret or restricted key (sk_, rk_) would be written into the page for anyone to read,
         # so only a publishable key (pk_) is allowed.
         sys.exit("mock: STRIPE_PUBLISHABLE_KEY must be a publishable key (pk_...)")
     server = Server(("127.0.0.1", port), Handler)
     print(f"mock badge service on http://localhost:{port}", flush=True)
+    if API_UPSTREAM:
+        print(f"api: every /api request is forwarded to {API_UPSTREAM} — real invoices, no /control", flush=True)
     print("stripe: " + (f"publishable key {STRIPE_PUBLISHABLE_KEY[:11]}… — the real card form"
                         if STRIPE_PUBLISHABLE_KEY
                         else "no STRIPE_PUBLISHABLE_KEY — the card path renders the development stand-in"),

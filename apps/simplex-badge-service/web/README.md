@@ -183,6 +183,27 @@ which is what the page's own wait loop relies on — no polling on a timer.
 Card invoices (`"method":"card"`) get a `clientSecret` in the response
 instead of an address; BTC and XMR get `address` and `cryptoAmount`.
 
+### The local build against the real service
+
+The page calls `/api/...` on its own origin, and the service sets no CORS
+headers: a page served from `localhost` cannot call `https://badges.simplex.chat`
+directly (the browser's preflight `OPTIONS` is answered `405`). So the mock
+forwards instead. With `--api <origin>` (or `MOCK_API`), every `/api` request
+is relayed to that origin as it came — method, path, query and body — and the
+service's status, body and `Retry-After` relayed back; the page runs from the
+local build and cannot tell the difference. Nothing is invented, and the
+`/control` routes answer `404`: the invoices are real, at the real provider.
+
+```
+python3 mock/server.py --port 8099 --api https://badges.simplex.chat
+```
+
+Card payments need the service's publishable key in the page, which the
+deployed shell carries and the local one does not: set
+`STRIPE_PUBLISHABLE_KEY` to the same key (below), or the card lane renders the
+development stand-in, whose settle call goes to a `/control` route that is
+now refused.
+
 ### The Stripe key
 
 The publishable key lives in a `<meta id="stripe-publishable-key">` element
