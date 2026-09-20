@@ -1110,7 +1110,7 @@ templateEngineOverride: njk
         </section>
 
         <!-- 1 · TRACTION -->
-        <section class="page cf cf-light cf-left cf-growth">
+        <section class="page cf cf-light cf-left cf-growth" data-section="growth">
             <div class="area">
                 <div class="text-container">
                     <h2>520,000<br>monthly users</h2>
@@ -1121,7 +1121,7 @@ templateEngineOverride: njk
         </section>
 
         <!-- 2 · MARKET -->
-        <section class="page cf cf-dark cf-right cf-problem" id="identifiers">
+        <section class="page cf cf-dark cf-right cf-problem" id="identifiers" data-section="identifiers">
             <div class="area">
                 <div class="text-container">
                     <h2>Every other network can identify you</h2>
@@ -1133,7 +1133,7 @@ templateEngineOverride: njk
         </section>
 
         <!-- 3 · NETWORK, NOT AN APP -->
-        <section class="page cf cf-light cf-right cf-network" id="network">
+        <section class="page cf cf-light cf-right cf-network" id="network" data-section="network">
             <div class="area">
             <div class="cf-tags" aria-hidden="true">
                 <img class="cf-tags-art" src="/img/design_3/section-3-mobile-light.webp" alt="">
@@ -1174,7 +1174,7 @@ templateEngineOverride: njk
         </section>
 
         <!-- 4 · REVENUE -->
-        <section class="page cf cf-light cf-right cf-revenue">
+        <section class="page cf cf-light cf-right cf-revenue" data-section="revenue">
             <div class="area">
                 <div class="cf-art" aria-hidden="true"><img src="/img/design_3/section-4-mobile-light.webp" alt=""></div>
                 <div class="text-container">
@@ -1186,7 +1186,7 @@ templateEngineOverride: njk
         </section>
 
         <!-- 5 · CAN'T BE COPIED -->
-        <section class="page cf cf-light cf-left cf-moat">
+        <section class="page cf cf-light cf-left cf-moat" data-section="moat">
             <div class="area">
                 <div class="text-container">
                     <h2>Design advantage that can't be copied</h2>
@@ -1197,7 +1197,7 @@ templateEngineOverride: njk
         </section>
 
         <!-- 6 · BUILD ON -->
-        <section class="page cf cf-light cf-left cf-build" id="build">
+        <section class="page cf cf-light cf-left cf-build" id="build" data-section="build">
             <div class="area">
                 <div class="text-container">
                     <h2>A network others build on</h2>
@@ -1209,7 +1209,7 @@ templateEngineOverride: njk
         </section>
 
         <!-- 7 · CLOSE -->
-        <section class="page cf cf-dark cf-close" id="invest">
+        <section class="page cf cf-dark cf-close" id="invest" data-section="invest">
             <div class="area">
                 <div class="cf-hero-text">
                     <h1><span class="cf-close-l1">Get a stake</span><br><span class="cf-close-l2">in SimpleX Chat</span></h1>
@@ -1228,7 +1228,7 @@ templateEngineOverride: njk
         </section>
 
         <!-- 8 · FOOTER -->
-        <section class="page cf cf-footer">
+        <section class="page cf cf-footer" data-section="footer">
             <div class="cf-footer-inner">
                 <p class="cf-fine">This Regulation Crowdfunding offering is made available through Wefunder Portal LLC. This investment involves a high degree of risk, including the possible loss of your investment.</p>
                 <p class="cf-fine cf-fine-links">
@@ -1552,35 +1552,36 @@ templateEngineOverride: njk
             if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fit(); place(); });
         })();
     </script>
-    <script>
-        (function cfDebug() {
-            if (location.hash !== '#debug') return;
-            var box = document.createElement('pre');
-            box.style.cssText = 'position:fixed;left:0;top:0;z-index:99999;margin:0;padding:6px 8px;background:rgba(0,0,0,.85);color:#7f7;font:11px/1.35 monospace;white-space:pre-wrap;max-width:100vw;pointer-events:none';
-            document.body.appendChild(box);
-            function px(v) { return Math.round(v * 10) / 10; }
-            function rect(q) { var e = document.querySelector(q); if (!e) return 'none'; var r = e.getBoundingClientRect(); return [px(r.left), px(r.top), px(r.width), px(r.height)].join(' '); }
-            function read() {
-                var vv = window.visualViewport;
-                var probe = document.querySelector('.cf-hero .area');
-                var cs = probe ? getComputedStyle(probe) : null;
-                box.textContent = [
-                    navigator.userAgent.replace(/^.*\(([^)]*)\).*$/, '$1'),
-                    'inner ' + innerWidth + 'x' + innerHeight + '  outer ' + outerWidth + 'x' + outerHeight + '  dpr ' + devicePixelRatio,
-                    'visual ' + (vv ? px(vv.width) + 'x' + px(vv.height) + ' scale ' + px(vv.scale) : 'n/a'),
-                    'doc ' + document.documentElement.clientWidth + 'x' + document.documentElement.clientHeight + '  screen ' + screen.width + 'x' + screen.height,
-                    'orientation ' + (screen.orientation ? screen.orientation.type : 'n/a') + '  landscape mq ' + matchMedia('(orientation: landscape)').matches + '  narrow mq ' + matchMedia('(max-width: 959px) and (orientation: portrait)').matches,
-                    'html class ' + document.documentElement.className,
-                    'hero .area ' + rect('.cf-hero .area') + '  hero-text ' + rect('.cf-hero-text'),
-                    'h1 ' + rect('.cf-hero h1') + '  lead ' + rect('.cf-hero .lead:not(.lead-short)') + '  lead-short ' + rect('.cf-hero .lead-short'),
-                    'stats ' + rect('.cf-stats') + '  offer ' + rect('#cf-offer') + '  cta ' + rect('.cf-hero .cf-pill'),
-                    'phone ' + rect('.cf-phone') + '  section ' + rect('section.page.cf.cf-hero'),
-                    'h1 font ' + (document.querySelector('.cf-hero h1') ? getComputedStyle(document.querySelector('.cf-hero h1')).fontSize : '') + '  area padding ' + (cs ? cs.padding : '')
-                ].join('\n');
-            }
-            read();
-            setInterval(read, 1000);
-        })();
+    <script type="module">
+        import { init, track } from '/js/page.js'
+        init({ domain: 'simplex.chat', endpoint: 'https://api.simplex.chat/api/event', logging: false })
+        var sections = Array.prototype.slice.call(document.querySelectorAll('section.page.cf[data-section]'))
+        var seen = {}
+        var current = 'hero'
+        var watch = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return
+                var name = entry.target.dataset.section
+                current = name
+                if (seen[name]) return
+                seen[name] = true
+                track('Section', { props: { n: sections.indexOf(entry.target) + 1, name: name } })
+            })
+        }, { threshold: 0.4 })
+        sections.forEach(function (s) { watch.observe(s) })
+        var places = [['#cf-hero-invest', 'Invest', 'hero'], ['.cf-close .cf-primary', 'Invest', 'close'], ['.cf-fine-links a[href*="wefunder"]', 'Invest', 'footer'],
+            ['#cf-hero-subscribe', 'Subscribe', 'hero'], ['.cf-hero-corner', 'Subscribe', 'corner'], ['.cf-close .cf-cta-link', 'Subscribe', 'close'],
+            ['#cf-offer-terms a', 'AoE', 'hero']]
+        places.forEach(function (p) {
+            var el = document.querySelector(p[0])
+            if (el) el.addEventListener('click', function () { track(p[1], { props: { place: p[2] } }) })
+        })
+        var bar = document.querySelector('#cf-cta-invest')
+        if (bar) bar.addEventListener('click', function () { track('Invest', { props: { place: 'bar', section: current } }) })
+        window.addEventListener('hashchange', function () {
+            var id = location.hash.slice(1)
+            if (id && document.querySelector('.cf-modal#' + CSS.escape(id))) track('Popup', { props: { name: id } })
+        })
     </script>
     <script>
         // Invert the navbar (logo + button) depending on whether the
