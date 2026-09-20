@@ -247,8 +247,31 @@ templateEngineOverride: njk
             color: #dfeaff;
             margin-top: calc(var(--sec-vhu) * 0.4);
         }
-        .cf-hero-offer .cf-offer-terms a { color: inherit; text-decoration: none; }
-        .cf-hero-offer .cf-offer-terms abbr { text-decoration: underline dotted; text-underline-offset: 3px; cursor: help; }
+        .cf-hero-offer .cf-offer-terms a { position: relative; color: inherit; text-decoration: none; }
+        .cf-hero-offer .cf-offer-terms abbr { text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; }
+        .cf-hero-offer .cf-offer-terms a::after {
+            content: attr(data-tip);
+            position: absolute;
+            left: calc(100% + 12px);
+            top: 50%;
+            transform: translateY(-50%);
+            white-space: nowrap;
+            padding: 7px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, .18);
+            background: rgba(5, 9, 32, .96);
+            color: #dfeaff;
+            font-family: "Manrope", sans-serif;
+            font-weight: 400;
+            font-size: calc(var(--sec-vwu) * 1.1);
+            line-height: 1.4;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .12s ease;
+            pointer-events: none;
+        }
+        .cf-hero-offer .cf-offer-terms a:hover::after,
+        .cf-hero-offer .cf-offer-terms a:focus-visible::after { opacity: 1; visibility: visible; }
 
 
         /* ---- close: same left-aligned layout as the hero ---- */
@@ -1006,7 +1029,7 @@ templateEngineOverride: njk
                     </div>
                     <div class="cf-hero-offer" id="cf-offer">
                         <p class="cf-offer-lead"><span id="cf-offer-what">SimpleX name for 7 years</span><span id="cf-offer-clock"></span></p>
-                        <p class="cf-offer-terms" id="cf-offer-terms">Invest $500+ by the end of September 22, <a href="https://en.wikipedia.org/wiki/Anywhere_on_Earth" target="_blank" rel="noopener"><abbr title="Anywhere on Earth: the day ends when it ends in UTC−12, the last time zone">AoE</abbr></a>.</p>
+                        <p class="cf-offer-terms" id="cf-offer-terms">Invest $500+ by the end of September 22, <a href="https://en.wikipedia.org/wiki/Anywhere_on_Earth" target="_blank" rel="noopener" data-tip="Anywhere on Earth: UTC−12, the last time zone" aria-label="Anywhere on Earth: UTC−12, the last time zone"><abbr>AoE</abbr></a>.</p>
                     </div>
                 </div>
                 <img class="cf-phone" src="/img/crowdfunding/phone.png" alt="">
