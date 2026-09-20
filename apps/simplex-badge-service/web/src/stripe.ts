@@ -83,7 +83,7 @@ export interface StripeInstance {
 // Stripe.js runs in its own iframe and cannot read the page's CSS variables, so the palette is
 // duplicated here and kept in sync with public/styles.css by hand.
 const CARD_FONT =
-  'Satoshi, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif';
+  'Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif';
 
 interface Palette {
   accent: string;
@@ -97,10 +97,10 @@ interface Palette {
 }
 
 const LIGHT_PALETTE: Palette = {
-  accent: "#3889FF", onAccent: "#FFFFFF", ink: "#1E2122", bg: "#F7F7F7", surface: "#FFFFFF", line: "#E8E8E8", muted: "rgba(30, 33, 34, .56)", danger: "#b3261e",
+  accent: "#0053D0", onAccent: "#FFFFFF", ink: "#0D1B3A", bg: "#F3FAFF", surface: "#FFFFFF", line: "rgba(0, 83, 208, .14)", muted: "rgba(13, 27, 58, .651)", danger: "#b3261e",
 };
 const DARK_PALETTE: Palette = {
-  accent: "#3889FF", onAccent: "#FFFFFF", ink: "#FFFFFF", bg: "#141416", surface: "#1E2122", line: "#424347", muted: "rgba(255, 255, 255, .56)", danger: "#FF9F98",
+  accent: "#70F0F9", onAccent: "#000832", ink: "#EAF2FF", bg: "#000832", surface: "#0B2A59", line: "rgba(112, 240, 249, .18)", muted: "rgba(234, 242, 255, .735)", danger: "#FF9F98",
 };
 
 // The flat theme is light-oriented, so dark mode must supply every colour down to the icons and

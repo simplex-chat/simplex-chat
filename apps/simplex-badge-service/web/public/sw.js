@@ -2,7 +2,7 @@
 // runs this exact file in a Node `vm` with a fake Cache API and reads `self.sw`.
 
 /** Rewritten by `build.js` from the bytes of the compiled modules, the stylesheet and the images. */
-const BUILD = "a67e3de5d51a627d";
+const BUILD = "e9b1475d03fd9c0c";
 const ASSETS = `/assets/${BUILD}/`;
 /** One cache per build, so eviction is "everything that is not this one". */
 const CACHE = `sb-${BUILD}`;
@@ -14,8 +14,8 @@ const ENTRY = `${ASSETS}main.js`;
 
 // Explicit URLs under one build hash, so a shell and the modules it imports can never skew.
 // `/` is not here: it is fetched and checked separately, being the one response an
-// interstitial can substitute. The images are precached because the stylesheet asks for them
-// by relative URL, which puts them under this hash too.
+// interstitial can substitute. The images and fonts are precached because the stylesheet asks
+// for them by relative URL, which puts them under this hash too.
 const PRECACHE = [
   `${ASSETS}styles.css`,
   `${ASSETS}init.js`,
@@ -25,6 +25,11 @@ const PRECACHE = [
   `${ASSETS}wordmark-light.svg`,
   `${ASSETS}symbol-dark.svg`,
   `${ASSETS}symbol-light.svg`,
+  `${ASSETS}GT-Walsheim-LC-Bold.woff2`,
+  `${ASSETS}Manrope-Regular.woff2`,
+  `${ASSETS}Manrope-Medium.woff2`,
+  `${ASSETS}Manrope-SemiBold.woff2`,
+  `${ASSETS}Manrope-Bold.woff2`,
   `${ASSETS}api.js`,
   `${ASSETS}order.js`,
   `${ASSETS}format.js`,

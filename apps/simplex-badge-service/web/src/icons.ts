@@ -16,6 +16,15 @@ function shape(tag: string, attrs: Record<string, string>): SVGElement {
   return node;
 }
 
+/** The chevron of a Back control, drawn as a stroke so it takes the control's colour. */
+export function chevronLeft(): SVGElement {
+  return svg({ class: "chevron", viewBox: MARK_VIEWBOX, "aria-hidden": "true", focusable: "false" },
+    shape("path", {
+      d: "M15 5.5 L8.5 12 L15 18.5", fill: "none",
+      stroke: "currentColor", "stroke-width": "2.5", "stroke-linecap": "round", "stroke-linejoin": "round",
+    }));
+}
+
 export function hamburger(): SVGElement {
   const box = { class: "bars", viewBox: MARK_VIEWBOX, "aria-hidden": "true", focusable: "false" };
   const bar = (y: string): SVGElement => shape("line", {

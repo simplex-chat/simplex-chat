@@ -154,10 +154,10 @@ cardTest("stripe: mounting follows Stripe's script rule — init the SDK, create
 
 cardTest("stripe: the appearance follows the site theme, resolving system by the OS", () => {
   for (const [label, t, osDark, ink] of [
-    ["forced light ignores a dark OS", "light", true, "#1E2122"],
-    ["forced dark ignores a light OS", "dark", false, "#FFFFFF"],
-    ["system follows a dark OS", "system", true, "#FFFFFF"],
-    ["system follows a light OS", "system", false, "#1E2122"],
+    ["forced light ignores a dark OS", "light", true, "#0D1B3A"],
+    ["forced dark ignores a light OS", "dark", false, "#EAF2FF"],
+    ["system follows a dark OS", "system", true, "#EAF2FF"],
+    ["system follows a light OS", "system", false, "#0D1B3A"],
   ] as const) {
     const a = stripe.appearanceFor(t, osDark);
     assert.equal(a.theme, "flat", label);
@@ -347,7 +347,7 @@ cardTest("main: nothing of Stripe's is fetched at page load", () => {
 function walkToCard(): void {
   const primary = (): StubElement => primaryOf(screen())!;
   if (heading() === "Support SimpleX") primary().click();
-  if (heading() === "Choose your level") {
+  if (heading() === "Choose your badge") {
     screen().all("button.choice").find((c) => c.textContent.startsWith("Legend"))!.click();
     primary().click();
   }

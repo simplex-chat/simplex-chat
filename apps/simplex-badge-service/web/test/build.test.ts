@@ -56,15 +56,17 @@ buildTest("build: a rebuild of unchanged sources produces the same hash and the 
   assert.equal(build.hashOf(first), build.hashOf(second), "idempotent: nothing changed, nothing moves");
 });
 
-buildTest("build: what is hashed is what is served — every module, the stylesheet, the images, no maps", () => {
+buildTest("build: what is hashed is what is served — every module, the stylesheet, the images, the fonts, no maps", () => {
   const names = build.assets().map(([name]) => name).sort();
   const modules = readdirSync(new URL("../../src", import.meta.url))
     .filter((f) => f.endsWith(".ts")).map((f) => f.replace(/\.ts$/, ".js"));
   const images = readdirSync(new URL("../../public/img", import.meta.url))
     .filter((f) => f.endsWith(".png") || f.endsWith(".svg"));
+  const fonts = readdirSync(new URL("../../public/fonts", import.meta.url)).filter((f) => f.endsWith(".woff2"));
   assert.ok(images.some((f) => f.endsWith(".png")), "the hero has to be somewhere for the stylesheet to point at");
   assert.ok(images.some((f) => f.endsWith(".svg")), "and so does the wordmark");
-  assert.deepEqual(names, [...modules, "styles.css", "init.js", ...images].sort());
+  assert.ok(fonts.length > 0, "and the faces the stylesheet declares");
+  assert.deepEqual(names, [...modules, "styles.css", "init.js", ...images, ...fonts].sort());
   assert.ok(!names.some((n) => n.endsWith(".map")),
     "a source map under the hash would 404 on its sources, which are not served");
 });

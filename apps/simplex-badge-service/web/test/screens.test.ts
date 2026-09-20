@@ -60,10 +60,9 @@ domTest("screens: the landing screen carries the copy the mockups fix", () => {
   for (const line of [
     "Support SimpleX",
     "Get a badge to send larger files (2‑5GB) that stay available longer (7‑21 days), and to show it on your profile.",
-    "Choose your level",
+    "Choose your badge",
     "Invest $100+ in SimpleX Chat and get a free supporter badge.",
-    "Invest on ",
-    "Already have a code? Redeem it in the app: Settings, Supporter perks.",
+    "Learn more on ",
     "You pay once for the months you choose. No subscription, no account.",
   ]) assert.ok(text.includes(line), `the landing screen is missing: ${line}`);
   assert.equal(p.all("button.link").length, 0, "the history is the menu's, not the landing page's");
@@ -75,7 +74,8 @@ domTest("screens: the landing screen carries the copy the mockups fix", () => {
   assert.equal(links[0]!.getAttribute("href"), WEFUNDER_URL);
   assert.equal(links[0]!.getAttribute("target"), "_blank", "the checkout stays open behind it");
   assert.equal(links[0]!.all("svg.wefunder").length, 1, "the link carries the Wefunder wordmark");
-  assert.equal(links[0]!.getAttribute("aria-label"), "Invest on Wefunder", "and reads as the words the wordmark stands for");
+  assert.equal(links[0]!.getAttribute("aria-label"), "Learn more on Wefunder", "and reads as the words the wordmark stands for");
+  assert.equal(invest[0]!.all("a").length, 1, "the Wefunder link is the block's only link");
   const kids = p.children.map((c) => (c as { getAttribute?: (n: string) => string | null }).getAttribute?.("class") ?? "");
   assert.ok(kids.indexOf("notes") < kids.indexOf("primary") && kids.indexOf("primary") < kids.indexOf("invest"),
     "the notes sit above the button, the invest block under it, and nothing after");
@@ -84,12 +84,12 @@ domTest("screens: the landing screen carries the copy the mockups fix", () => {
 
 domTest("screens: the tier list carries the level copy, and Continue is disabled until one is chosen", () => {
   const tiers = [
-    { priceId: "price_supporter", badgeType: "supporter", name: "Supporter", price: "$7 / month", features: ["Files up to 2 GB", "Stored for 7 days"], disabled: false },
-    { priceId: "price_legend", badgeType: "legend", name: "Legend", price: "$70 / month", features: ["Files up to 5 GB", "Stored for 21 days"], disabled: false },
+    { priceId: "price_supporter", badgeType: "supporter", name: "Supporter", price: "$7 / month", features: ["Files up to 2 GB", "Available for 7 days"], disabled: false },
+    { priceId: "price_legend", badgeType: "legend", name: "Legend", price: "$70 / month", features: ["Files up to 5 GB", "Available for 21 days"], disabled: false },
   ];
   const blank = render(screens.tiers({ tiers, selected: undefined, onSelect: noop, onContinue: noop, onBack: noop }));
-  for (const line of ["Choose your level", "Larger files that stay available longer.",
-    "Supporter", "$7 / month", "Files up to 2 GB", "Stored for 7 days", "Legend", "$70 / month", "Files up to 5 GB", "Stored for 21 days", "← Back",
+  for (const line of ["Choose your badge", "Larger files that stay available longer.",
+    "Supporter", "$7 / month", "Files up to 2 GB", "Available for 7 days", "Legend", "$70 / month", "Files up to 5 GB", "Available for 21 days", "Back",
     "Invest $100+ in SimpleX Chat and get a free supporter badge."]) {
     assert.ok(blank.textContent.includes(line), `the tier list is missing: ${line}`);
   }
@@ -133,12 +133,18 @@ domTest("screens: the duration list prints the durations and their savings, unpr
     "1 month", "$70", "3 months", "$140", "save 33%", "12 months", "$420", "save 50%"]) {
     assert.ok(p.textContent.includes(line), `the duration list is missing: ${line}`);
   }
+  assert.equal(p.all("p.lede").length, 1, "with no tier named, the one line is the payment terms");
   const priced = render(screens.durations({
     durations: [{ key: "offer_12m", name: "12 months", price: "$420", disabled: false }],
-    selected: "offer_12m", perk: { badgeType: "legend", amount: 10000, months: 12 }, onSelect: noop, onContinue: noop, onBack: noop,
+    selected: "offer_12m", tier: { badge: "Legend:", gives: "5 GB files available for 21 days." },
+    perk: { badgeType: "legend", amount: 10000, months: 12 }, onSelect: noop, onContinue: noop, onBack: noop,
   }));
   assert.ok(priced.textContent.includes("Invest $10,000+ in SimpleX Chat and get a free legend badge for 12 months."),
     "with a term chosen, the panel names the amount and the term");
+  const ledes = priced.all("p.lede");
+  assert.equal(ledes.length, 2, "the chosen badge and what it gives, then the payment terms");
+  assert.equal(ledes[0]!.textContent, "Legend: 5 GB files available for 21 days.");
+  assert.equal(ledes[1]!.textContent, "Paid once, for the months you choose. No subscription.");
   const bad = p.all("button.choice")[3]!;
   assert.ok(bad.hasAttribute("disabled"));
   assert.equal(bad.textContent, "24 months", "a duration with no total renders unpriced");
@@ -149,29 +155,39 @@ domTest("screens: the order summary is the summary and the method row, with the 
     badgeType: "legend", months: 12, total: "$420.00", selected: "xmr",
     onSelect: noop, onPay: noop, onBack: noop,
   }));
-  for (const line of ["Check your order", "Level", "Legend", "Duration", "12 months", "Total", "$420.00",
+  for (const line of ["Check your order", "Your badge", "Legend", "Duration", "12 months", "Total", "$420.00",
     "Pay with", "Bitcoin", "Monero", "Card", "Pay $420.00 with Monero",
-    "Card is handled by Stripe. Bitcoin and Monero are on‑chain, through BTCPay.", "← Back"]) {
+    "Back"]) {
     assert.ok(p.textContent.includes(line), `the order summary is missing: ${line}`);
   }
-  assert.equal(p.all("div.invest").length, 0, "no panel on the checkout, and no line without a perk");
-  assert.equal(p.all("p.invest-line").length, 0);
+  assert.ok(!p.textContent.includes("Stripe"), "with a coin chosen, the processor note is not shown");
+  const card = render(screens.orderSummary({ canKeepTheCode: true,
+    badgeType: "legend", months: 12, total: "$420.00", selected: "card",
+    onSelect: noop, onPay: noop, onBack: noop,
+  }));
+  assert.ok(card.textContent.includes("Card payments are processed by Stripe."), "with card chosen, the note names the processor");
+  const kids = card.children.map((c) => (c as { getAttribute?: (n: string) => string | null }).getAttribute?.("class") ?? "");
+  assert.ok(kids.indexOf("notes") < kids.indexOf("primary"), "above the Pay button");
+  assert.ok(p.textContent.includes("Or invest $100+ and get a free supporter badge."),
+    "without a perk the block opens on the round's minimum");
 });
 
-domTest("screens: the order summary offers the investment as one line under Pay, never as a panel", () => {
+domTest("screens: the order summary offers the investment under Pay as the same block, as the alternative to paying for this badge", () => {
   const p = render(screens.orderSummary({ canKeepTheCode: true,
     badgeType: "legend", months: 12, total: "$420.00", selected: "xmr",
     perk: { badgeType: "legend", amount: 10000, months: 12 },
     onSelect: noop, onPay: noop, onBack: noop,
   }));
-  const line = p.all("p.invest-line");
-  assert.equal(line.length, 1);
-  assert.equal(line[0]!.textContent, "Or invest $10,000+ on Wefunder.", "the amount and the link, short enough never to wrap");
-  assert.equal(line[0]!.all("a.link")[0]!.getAttribute("href"), WEFUNDER_URL);
-  assert.equal(p.all("div.invest").length, 0);
+  const invest = p.all("div.invest");
+  assert.equal(invest.length, 1);
+  assert.ok(invest[0]!.textContent.includes("Or invest $10,000+ and get this badge free."),
+    "the amount for the badge in the summary above, which the sentence does not name again");
+  assert.equal(invest[0]!.all("a").length, 1, "the Wefunder link is the block's only link");
+  assert.equal(invest[0]!.all("a.invest-link")[0]!.getAttribute("href"), WEFUNDER_URL);
+  assert.equal(invest[0]!.all("button").length, 0);
   const kids = p.children.map((c) => (c as { getAttribute?: (n: string) => string | null }).getAttribute?.("class") ?? "");
-  assert.ok(kids.indexOf("notes") < kids.indexOf("primary") && kids.indexOf("primary") < kids.indexOf("muted invest-line"),
-    "the provider note sits above Pay, and the line under it");
+  assert.ok(kids.indexOf("notes") < kids.indexOf("primary") && kids.indexOf("primary") < kids.indexOf("invest"),
+    "the provider note sits above Pay, and the block under it");
 });
 
 domTest("screens: a discounted order shows the gross price and the reduction above the total", () => {
@@ -180,7 +196,7 @@ domTest("screens: a discounted order shows the gross price and the reduction abo
     discount: { price: "$840.00", off: "$420.00", percent: 50 },
     onSelect: noop, onPay: noop, onBack: noop,
   }));
-  for (const line of ["Price", "$840.00", "Discount (50% off)", "−$420.00", "Total", "$420.00"]) {
+  for (const line of ["Price", "$840.00", "Launch discount: 50% off", "−$420.00", "Total", "$420.00"]) {
     assert.ok(p.textContent.includes(line), `the discounted summary is missing: ${line}`);
   }
   const discountRow = p.all("div.discount")[0]!;
@@ -192,7 +208,7 @@ domTest("screens: an order at full price shows no Price or Discount row, only th
     badgeType: "supporter", months: 1, total: "$7.00", selected: "xmr",
     onSelect: noop, onPay: noop, onBack: noop,
   }));
-  assert.ok(!p.textContent.includes("Discount"), "no discount row without a saving");
+  assert.ok(!p.textContent.includes("discount"), "no discount row without a saving");
   assert.equal(p.all("div.discount").length, 0);
   assert.ok(p.textContent.includes("Total"));
 });
@@ -837,21 +853,37 @@ domTest("screens: the history list's Copy is offered only on a paid entry, and c
   assert.deepEqual(copied, [HELD_CODE]);
 });
 
-domTest("screens: an empty store reads 'Nothing bought on this device'", () => {
+domTest("screens: an empty store reads 'Nothing bought on this device', with the picture and the invest block", () => {
   const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true, rows: [], onOpen: noop, onStart: noop }));
   assert.ok(p.textContent.includes("Nothing bought on this device"));
-  assert.ok(p.textContent.includes("Choose your level"));
+  assert.ok(p.textContent.includes("Choose your badge"));
+  assert.equal(p.all("div.hero").length, 1, "the landing's picture, so the screen is not a heading over a button");
+  assert.equal(p.all("div.invest").length, 1, "and the crowdfunding under the button, as on every screen with one");
 });
 
-domTest("screens: the invoice failure says nothing was charged, and offers [ Try again ]", () => {
+domTest("screens: the codes list carries the invest block under its wipe control", () => {
+  const p = render(screens.purchaseHistory({ onForget: () => {}, keepsNewCodes: true,
+    rows: historyRows([record({ orderId: "a", status: "paid", code: HELD_CODE })]), onOpen: noop, onStart: noop }));
+  assert.equal(p.all("div.invest").length, 1);
+});
+
+domTest("screens: the invoice failure says nothing was charged, and offers [ Try again ] in the checkout's own shape", () => {
   let retried = false;
-  const p = render(screens.invoiceFailure(() => { retried = true; }));
-  for (const line of ["That did not go through", "The order was not created, and nothing was charged.",
-    "If this happens again, get in touch.", "Try again"]) {
+  let back = false;
+  const p = render(screens.invoiceFailure({
+    perk: { badgeType: "legend", amount: 2500, months: 3 }, onBack: () => { back = true; }, onRetry: () => { retried = true; },
+  }));
+  for (const line of ["Back", "That did not go through", "The order was not created, and nothing was charged.",
+    "If this happens again, get in touch.", "Try again", "Or invest $2,500+ and get this badge free."]) {
     assert.ok(p.textContent.includes(line), `the failure screen is missing: ${line}`);
   }
+  assert.equal(p.all("h1.tight").length, 0, "the heading is the wizard's size, not the payment screens' step down");
+  const kids = p.children.map((c) => (c as { getAttribute?: (n: string) => string | null }).getAttribute?.("class") ?? "");
+  assert.ok(kids.indexOf("primary") < kids.indexOf("invest"), "the invest block sits under the button, as on the checkout");
   p.all("button.primary")[0]!.click();
   assert.equal(retried, true);
+  p.all("button.back")[0]!.click();
+  assert.equal(back, true);
 });
 
 domTest("screens: the unknown order distinguishes nothing, as the unknown-order screen requires", () => {

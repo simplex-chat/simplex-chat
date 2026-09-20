@@ -1,5 +1,5 @@
 import { money, countdown, outstanding, startedAgo, type Outstanding } from "./format.js";
-import { badgeIcon, hamburger, hasBadgeArt, methodMark, wefunderMark } from "./icons.js";
+import { badgeIcon, chevronLeft, hamburger, hasBadgeArt, methodMark, wefunderMark } from "./icons.js";
 import { paymentUri, qrSvg } from "./qr.js";
 import type { HistoryRow, UnpaidOrder } from "./order.js";
 import type { InvoiceView } from "./api.js";
@@ -33,7 +33,9 @@ export function button(label: string, onClick: () => void, cls = "primary"): HTM
 }
 
 function backButton(onBack: () => void): HTMLButtonElement {
-  return button("← Back", onBack, "back");
+  const b = el("button", { class: "back", type: "button" }, chevronLeft(), "Back");
+  b.addEventListener("click", onBack);
+  return b;
 }
 
 function panel(...kids: Array<Node | string>): HTMLElement {
@@ -221,7 +223,7 @@ function qrFigure(payload: string, label: string, caption?: string): HTMLElement
   return figure;
 }
 
-export const INVEST_LABEL = "Invest on Wefunder";
+export const INVEST_LABEL = "Learn more on Wefunder";
 
 /** The investment that earns a badge as a perk: the minimum for a tier, or the amount for a chosen term. */
 export interface InvestPerk {
@@ -230,35 +232,30 @@ export interface InvestPerk {
   months?: number;
 }
 
-/** "Invest on" and the Wefunder wordmark, as one link in the accent. */
+/** "Learn more on" and the Wefunder wordmark, as one link in the accent. */
 function investLink(): HTMLAnchorElement {
   return el("a", { class: "invest-link", href: WEFUNDER_URL, target: "_blank", rel: "noopener", "aria-label": INVEST_LABEL },
-    "Invest on ", wefunderMark());
+    "Learn more on ", wefunderMark());
 }
 
-/** The sentence in its two halves, so that where it wraps it wraps before "and". */
-export function investSentence(perk: InvestPerk | undefined): [string, string] {
+/** The sentence in its two halves, so that where it wraps it wraps before "and". Under a Pay
+ * button the investment is the alternative to paying, so the sentence opens with "Or", and the
+ * badge is the one in the order's summary above, so it is "this badge" rather than named again,
+ * and the company is not named either. */
+export function investSentence(perk: InvestPerk | undefined, alternative = false): [string, string] {
+  if (alternative) return [`Or invest ${dollars(perk?.amount ?? 100)}+`, perk === undefined ? "and get a free supporter badge." : "and get this badge free."];
   if (perk === undefined) return ["Invest $100+ in SimpleX Chat", "and get a free supporter badge."];
   const term = perk.months === undefined ? "" : ` for ${perk.months === 1 ? "1 month" : `${perk.months} months`}`;
   return [`Invest ${dollars(perk.amount)}+ in SimpleX Chat`, `and get a free ${perk.badgeType} badge${term}.`];
 }
 
 /** The block under the main button of a screen: one sentence and the link. Absent once the round has closed. */
-export function investPanel(perk: InvestPerk | undefined): HTMLElement | undefined {
+export function investPanel(perk: InvestPerk | undefined, alternative = false): HTMLElement | undefined {
   if (!CROWDFUNDING_ACTIVE) return undefined;
-  const [lead, rest] = investSentence(perk);
+  const [lead, rest] = investSentence(perk, alternative);
   return el("div", { class: "invest" },
     el("p", {}, el("span", { class: "half" }, lead), " ", el("span", { class: "half" }, rest)),
     investLink());
-}
-
-/** The one line under Pay. It does not wrap, so it says the amount and no more. */
-export function investLine(perk: InvestPerk | undefined): HTMLElement | undefined {
-  if (!CROWDFUNDING_ACTIVE || perk === undefined) return undefined;
-  return el("p", { class: "muted invest-line" },
-    `Or invest ${dollars(perk.amount)}+ `,
-    el("a", { class: "link", href: WEFUNDER_URL, target: "_blank", rel: "noopener" }, "on Wefunder"),
-    ".");
 }
 
 function withInvest(p: HTMLElement, node: HTMLElement | undefined): HTMLElement {
@@ -274,13 +271,19 @@ export interface LandingOptions {
 export function landing(o: LandingOptions): HTMLElement {
   const p = panel(
     el("h1", {}, "Support SimpleX"),
-    el("p", { class: "lede" }, "Get a badge to send larger files (2‑5GB) that stay available longer (7‑21 days), and to show it on your profile."),
+    el("p", { class: "lede" },
+      el("span", { class: "line" }, "Get a badge to send larger files (2‑5GB)"), " ",
+      el("span", { class: "line" }, "that stay available longer (7‑21 days),"), " ",
+      el("span", { class: "line" }, "and to show it on your profile."),
+    ),
     el("div", { class: "hero", role: "presentation" }),
     el("div", { class: "notes" },
-      el("p", { class: "muted" }, "You pay once for the months you choose. No subscription, no account."),
-      el("p", { class: "muted" }, "Already have a code? Redeem it in the app: Settings, Supporter perks."),
+      el("p", { class: "muted" },
+        el("span", { class: "half" }, "You pay once for the months you choose."), " ",
+        el("span", { class: "half" }, "No subscription, no account."),
+      ),
     ),
-    button("Choose your level", o.onStart),
+    button("Choose your badge", o.onStart),
   );
   return withInvest(p, investPanel(o.perk));
 }
@@ -323,7 +326,7 @@ export function tiers(o: TiersOptions): HTMLElement {
   if (o.selected === undefined) go.setAttribute("disabled", "");
   return withInvest(panel(
     backButton(o.onBack),
-    el("h1", {}, "Choose your level"),
+    el("h1", {}, "Choose your badge"),
     el("p", { class: "lede" }, "Larger files that stay available longer."),
     choices,
     go,
@@ -339,9 +342,16 @@ export interface DurationOption {
   disabled: boolean;
 }
 
+/** The chosen badge, named, and what it gives, as the two halves of the line under "How long?". */
+export interface ChosenTier {
+  badge: string;
+  gives: string;
+}
+
 export interface DurationsOptions {
   durations: readonly DurationOption[];
   selected: string | undefined;
+  tier?: ChosenTier;
   perk?: InvestPerk;
   onSelect: (key: string) => void;
   onContinue: () => void;
@@ -368,13 +378,22 @@ export function durations(o: DurationsOptions): HTMLElement {
   }
   const go = button("Continue", o.onContinue);
   if (o.selected === undefined) go.setAttribute("disabled", "");
-  return withInvest(panel(
-    backButton(o.onBack),
-    el("h1", {}, "How long?"),
-    el("p", { class: "lede" }, "Paid once, for the months you choose. No subscription."),
+  const p = panel(backButton(o.onBack), el("h1", {}, "How long?"));
+  if (o.tier !== undefined) {
+    p.append(el("p", { class: "lede" },
+      el("span", { class: "half" }, o.tier.badge), " ",
+      el("span", { class: "half" }, o.tier.gives),
+    ));
+  }
+  p.append(
+    el("p", { class: "lede" },
+      el("span", { class: "half" }, "Paid once, for the months you choose."), " ",
+      el("span", { class: "half" }, "No subscription."),
+    ),
     choices,
     go,
-  ), investPanel(o.perk));
+  );
+  return withInvest(p, investPanel(o.perk));
 }
 
 const METHOD_NAMES: Readonly<Record<Method, string>> = { btc: "Bitcoin", xmr: "Monero", card: "Card" };
@@ -428,13 +447,13 @@ export interface Discount {
 function summaryRows(badgeType: string, months: number, total: string, discount?: Discount): HTMLElement {
   const level = badgeType.charAt(0).toUpperCase() + badgeType.slice(1);
   const rows: HTMLElement[] = [
-    el("div", { class: "row" }, el("span", {}, "Level"), el("span", {}, level)),
+    el("div", { class: "row" }, el("span", {}, "Your badge"), el("span", {}, level)),
     el("div", { class: "row" }, el("span", {}, "Duration"), el("span", {}, months === 1 ? "1 month" : `${months} months`)),
   ];
   if (discount !== undefined) {
     rows.push(el("div", { class: "row" }, el("span", {}, "Price"), el("span", {}, discount.price)));
     rows.push(el("div", { class: "row discount" },
-      el("span", {}, discount.percent !== undefined ? `Discount (${discount.percent}% off)` : "Discount"),
+      el("span", {}, discount.percent !== undefined ? `Launch discount: ${discount.percent}% off` : "Launch discount"),
       // This is a U+2212 minus rather than a hyphen, so it lines up with the tabular figures.
       el("span", {}, `−${discount.off}`)));
   }
@@ -484,10 +503,11 @@ export function orderSummary(o: OrderSummaryOptions): HTMLElement {
     choices.append(card);
   }
   p.append(choices);
-  p.append(el("div", { class: "notes" },
-    el("p", { class: "muted" }, "Card is handled by Stripe. Bitcoin and Monero are on‑chain, through BTCPay.")));
+  if (o.selected === "card") {
+    p.append(el("div", { class: "notes" }, el("p", { class: "muted" }, "Card payments are processed by Stripe.")));
+  }
   p.append(button(`Pay ${o.total} with ${METHOD_NAMES[o.selected]}`, o.onPay));
-  return withInvest(p, investLine(o.perk));
+  return withInvest(p, investPanel(o.perk, true));
 }
 
 export function catalogChanged(onStartAgain: () => void): HTMLElement {
@@ -905,33 +925,45 @@ function entryLine(row: HistoryRow, onOpen: (orderId: string) => void): HTMLElem
 
 export function purchaseHistory(o: PurchaseHistoryOptions): HTMLElement {
   if (o.rows.length === 0) {
-    return panel(
+    return withInvest(panel(
       el("h1", {}, "Your codes"),
       el("p", { class: "lede" }, "Nothing bought on this device"),
-      button("Choose your level", o.onStart),
-    );
+      el("div", { class: "hero", role: "presentation" }),
+      button("Choose your badge", o.onStart),
+    ), investPanel(undefined));
   }
   const list = el("ul", { class: "entries" });
   for (const row of o.rows) list.append(entryLine(row, o.onOpen));
   const forget = el("p", { class: "forget-line" },
     button(FORGET_EVERYTHING, o.onForget, "link danger"));
-  return panel(
+  return withInvest(panel(
     el("h1", {}, "Your codes"),
     el("p", { class: "lede" }, o.keepsNewCodes
       ? "Every code you bought is in this browser, and nowhere else."
       : "This browser cannot save anything new right now. Copy any code you have not kept elsewhere."),
     list,
     forget,
-  );
+  ), investPanel(undefined));
 }
 
-export function invoiceFailure(onRetry: () => void): HTMLElement {
-  return panel(
-    el("h1", { class: "tight" }, "That did not go through"),
-    el("p", { class: "lede" }, "The order was not created, and nothing was charged."),
+export interface InvoiceFailureOptions {
+  perk?: InvestPerk;
+  onBack: () => void;
+  onRetry: () => void;
+}
+
+/** In the checkout's place on the track, with its Back and its invest block: the same screen shape as the step it replaces. */
+export function invoiceFailure(o: InvoiceFailureOptions): HTMLElement {
+  return withInvest(panel(
+    backButton(o.onBack),
+    el("h1", {}, "That did not go through"),
+    el("p", { class: "lede" },
+      el("span", { class: "half" }, "The order was not created,"), " ",
+      el("span", { class: "half" }, "and nothing was charged."),
+    ),
     el("p", { class: "lede" }, "If this happens again, get in touch."),
-    button("Try again", onRetry),
-  );
+    button("Try again", o.onRetry),
+  ), investPanel(o.perk, true));
 }
 
 export function unknownOrder(onStartAgain: () => void): HTMLElement {

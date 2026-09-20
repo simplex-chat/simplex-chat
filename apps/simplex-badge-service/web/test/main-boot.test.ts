@@ -32,7 +32,7 @@ bootTest("main: the URL is rewritten too, so Back still leaves the site", () => 
 
 bootTest("main: the wizard still works from there — the tier list answers, and the order summary is reachable", async () => {
   inView().all("button.primary")[0]!.click();
-  assert.equal(heading(), "Choose your level");
+  assert.equal(heading(), "Choose your badge");
   inView().all("button.choice").find((c) => c.textContent.startsWith("Legend"))!.click();
   primaryOf(inView())!.click();
   assert.equal(heading(), "How long?");

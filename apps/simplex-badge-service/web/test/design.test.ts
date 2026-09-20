@@ -14,22 +14,36 @@ const screens = await import("../src/screens.js");
 
 function render(node: unknown): StubElement { return node as unknown as StubElement; }
 
+// The website's palette, as its blog pages use it: website/tailwind.config.js (primary-light,
+// primary-hover-light, primary-pressed-light, secondary-bg-light; primary-dark and its steps,
+// primary-bg-dark, card-bg-dark, secondary-bg-dark) and website/src/css/blog.css (the heading
+// gradients and the table rules); the two text colours are simplex.domains' ink and ink-soft.
 const REFERENCE_LIGHT: ReadonlyArray<readonly [string, string]> = [
-  ["--accent", "#3889FF"],
-  ["--on-accent", "#ffffff"],
-  ["--ink", "#1E2122"],
-  ["--bg", "#F7F7F7"],
+  ["--accent", "#0053D0"],
+  ["--accent-hover", "#1661D1"],
+  ["--accent-pressed", "#004ABB"],
+  ["--on-accent", "#FFFFFF"],
+  ["--ink", "#0D1B3A"],
+  ["--bg", "#F3FAFF"],
   ["--surface", "#FFFFFF"],
   ["--menu", "#FFFFFF"],
-  ["--line", "#E8E8E8"],
+  ["--line", "rgba(0, 83, 208, .14)"],
+  ["--ink-soft", "rgba(13, 27, 58, .651)"],
+  ["--title", "linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%)"],
 ];
 
 const REFERENCE_DARK: ReadonlyArray<readonly [string, string]> = [
-  ["--ink", "#FFFFFF"],
-  ["--bg", "#141416"],
-  ["--surface", "#1E2122"],
-  ["--menu", "#242427"],
-  ["--line", "#424347"],
+  ["--accent", "#70F0F9"],
+  ["--accent-hover", "#66D9E2"],
+  ["--accent-pressed", "#5CD3DC"],
+  ["--on-accent", "#000832"],
+  ["--ink", "#EAF2FF"],
+  ["--bg", "#000832"],
+  ["--surface", "#0B2A59"],
+  ["--menu", "#0B2A59"],
+  ["--line", "rgba(112, 240, 249, .18)"],
+  ["--ink-soft", "rgba(234, 242, 255, .735)"],
+  ["--title", "linear-gradient(to bottom, #70F0F9 0%, #70F0F9 33%, #50D8F1 100%)"],
 ];
 
 const SEMANTIC: ReadonlyArray<readonly [string, string]> = [
@@ -83,7 +97,7 @@ designTest("design: the Stripe card form's palette is the site's own tokens, not
     assert.equal(norm(v.colorPrimary), tok(rule, "--accent"), `${label} colorPrimary is --accent`);
     assert.equal(norm(v.colorBackground), tok(rule, "--surface"), `${label} colorBackground is --surface`);
     assert.equal(norm(v.colorText), tok(rule, "--ink"), `${label} colorText is --ink`);
-    assert.equal(norm(v.colorTextSecondary), tok(rule, "--muted"), `${label} colorTextSecondary is --muted`);
+    assert.equal(norm(v.colorTextSecondary), tok(rule, "--ink-soft"), `${label} colorTextSecondary is --ink-soft`);
     assert.equal(norm(v.colorDanger), tok(rule, "--danger-fg"), `${label} colorDanger is --danger-fg`);
     assert.equal(norm(r[".Input"]?.backgroundColor), tok(rule, "--bg"), `${label} .Input fill is --bg`);
     assert.ok(norm(r[".Input"]?.border).includes(tok(rule, "--line")), `${label} .Input border is --line`);
@@ -91,19 +105,19 @@ designTest("design: the Stripe card form's palette is the site's own tokens, not
   }
 });
 
-designTest("design: the dark theme is the reference's own, and the accent does not move", () => {
+designTest("design: the dark theme is the website's own, down to the ground the dark button's label takes", () => {
   const light = ruleFor(sheet.rules, ":root")!;
   const dark = darkQuery();
   for (const [token, value] of REFERENCE_DARK) {
     assert.equal(dark.decls.get(token)?.toLowerCase(), value.toLowerCase(), `${token} must be ${value} under dark`);
   }
-  for (const token of ["--accent", "--on-accent"]) {
-    assert.equal(dark.decls.get(token), undefined,
-      `${token} must not be redefined under dark — it is one value for the whole page`);
+  assert.equal(dark.decls.get("--on-accent")?.toLowerCase(), dark.decls.get("--bg")?.toLowerCase(),
+    "the label on the dark accent is the page's ground, as the site's dark buttons are drawn");
+  for (const [label, rule] of [["light", light], ["dark", dark]] as const) {
+    assert.match(rule.decls.get("--page") ?? "", /^radial-gradient\(50% 50% at 50% 50%,/,
+      `${label} has one faint centred wash of its accent over the ground`);
   }
-  assert.equal(dark.decls.get("--surface")?.toLowerCase(), light.decls.get("--ink")?.toLowerCase());
-  assert.match(light.decls.get("--page") ?? "", /^radial-gradient\(50% 50% at 50% 50%,/);
-  assert.equal(dark.decls.get("--page"), "none", "a wash on #141416 is a blue smear");
+  assert.notEqual(dark.decls.get("--page"), light.decls.get("--page"), "each wash is in its own theme's accent");
   assert.equal(decl("body", "background-image"), "var(--page)");
 });
 
@@ -118,7 +132,6 @@ designTest("design: dark restates every token, and none of them by the light val
   const light = ruleFor(sheet.rules, ":root")!;
   const dark = darkQuery();
   for (const [token] of PALETTE) {
-    if (token === "--accent" || token === "--on-accent") continue;
     const value = dark.decls.get(token);
     assert.ok(value !== undefined, `${token} is not redefined under dark`);
     assert.notEqual(value.toLowerCase(), light.decls.get(token)!.toLowerCase(),
@@ -292,8 +305,8 @@ designTest("type: every heading size is declared with the line-height the refere
     assert.equal(decl(selector, "line-height"), height, `${selector} takes the ${size} step's own line-height`);
   }
   const PHONE: ReadonlyArray<readonly [string, string, string]> = [
-    ["h1", "1.625rem", "2.125rem"],
-    ["h1.tight", "1.375rem", "1.875rem"],
+    ["h1", "1.875rem", "2.5rem"],
+    ["h1.tight", "1.625rem", "2.125rem"],
   ];
   for (const [selector, size, height] of PHONE) {
     assert.equal(phoneDecl(selector, "font-size"), size, `@phone ${selector} takes the ${size} step`);
@@ -373,7 +386,7 @@ designTest("type: a tier leads with its name and a duration with its price — n
 
 designTest("type: the struck total is a step of the scale, and stacks at every width", () => {
   assert.equal(decl(".choice .price .was", "font-size"), ".875rem");
-  assert.equal(decl(".choice .price .was", "color"), "var(--muted)");
+  assert.equal(decl(".choice .price .was", "color"), "var(--ink-soft)");
   assert.equal(decl(".choice .price .was", "display"), "block");
   assert.equal(phoneDecl(".choice .price .was", "display"), undefined,
     "the stack is the layout, not a phone variant of it");
@@ -407,7 +420,7 @@ designTest("type: figures that tick or line up are set in tabular numerals", () 
 
 designTest("type: the uppercase micro-labels are one rule, tracked in em", () => {
   assert.equal(decl(".label", "text-transform"), "uppercase");
-  assert.equal(decl(".label", "font-size"), ".75rem");
+  assert.equal(decl(".label", "font-size"), ".875rem", "the floor for text: 14px, as simplex.domains keeps it");
   assert.equal(decl(".label", "font-weight"), "700");
   assert.match(decl(".label", "letter-spacing") ?? "", /em$/, "tracking follows the size, so it survives a step down");
   for (const property of ["font-size", "font-weight", "letter-spacing", "text-transform"]) {
@@ -645,7 +658,7 @@ designTest("design: no screen repeats the mark — the header carries it, and th
     ["windowClosed", screens.windowClosed({ onNewInvoice: () => {}, order, invoice: { status: "expired" } })],
     ["paidNoCode", screens.paidNoCode({ order, settledAt: undefined })],
     ["unknownOrder", screens.unknownOrder(() => {})],
-    ["invoiceFailure", screens.invoiceFailure(() => {})],
+    ["invoiceFailure", screens.invoiceFailure({ onBack: () => {}, onRetry: () => {} })],
   ];
   for (const [name, node] of everyScreen) {
     assert.equal(render(node).all("svg.logo").length, 0, `${name} must not draw a second mark`);
