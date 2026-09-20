@@ -23,7 +23,7 @@ payTest("main: a checkout answered after a re-choice keeps the buyer's tier", as
 
   history.back();
   history.back();
-  assert.equal(headingOf(inView()), "Choose your level", `at the tier screen: ${headingOf(inView())}`);
+  assert.equal(headingOf(inView()), "Choose your badge", `at the tier screen: ${headingOf(inView())}`);
   inView().all("button.choice").find((c) => c.textContent.startsWith("Supporter"))!.click();
 
   assert.ok(page.answerHeld({
@@ -41,5 +41,5 @@ payTest("main: a checkout answered after a re-choice keeps the buyer's tier", as
   assert.equal(session?.priceId, "price_supporter",
     `the buyer chose Supporter and it has to survive: ${JSON.stringify(session)}`);
 
-  assert.equal(headingOf(inView()), "Choose your level", `not taken to the bought order: ${headingOf(inView())}`);
+  assert.equal(headingOf(inView()), "Choose your badge", `not taken to the bought order: ${headingOf(inView())}`);
 });

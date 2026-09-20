@@ -1,4 +1,5 @@
 import { CATALOG, SINGLE_MONTH, offerTotal, savingPercent, type Offer, type Price, type Total } from "./catalog.js";
+import { minimumFor, perkAmount } from "./crowdfunding.js";
 import { generate, hash } from "./codes.js";
 import { Flow, type CheckoutOutcome, type Selection } from "./flow.js";
 import { applyView, historyRows, selectionFromOrder, type PaymentView, withoutDestination } from "./order.js";
@@ -199,10 +200,40 @@ document.addEventListener("click", (event) => {
   if (chromeUi.isOpen() && !chromeUi.holds(target)) chromeUi.close();
 });
 
-const TIER_FEATURES: Readonly<Record<string, readonly string[]>> = {
-  supporter: ["2 GB files", "7 days storage"],
-  legend: ["5 GB files", "21 days storage"],
+const TIER_LIMITS: Readonly<Record<string, { gb: number; days: number }>> = {
+  supporter: { gb: 2, days: 7 },
+  legend: { gb: 5, days: 21 },
 };
+
+function tierName(badgeType: string): string {
+  return badgeType.charAt(0).toUpperCase() + badgeType.slice(1);
+}
+
+function tierFeatures(badgeType: string): readonly string[] {
+  const limits = TIER_LIMITS[badgeType];
+  return limits === undefined ? [] : [`Files up to ${limits.gb} GB`, `Stored for ${limits.days} days`];
+}
+
+// The line under the duration screen's heading: what the chosen badge gives, since the tier cards are a screen back.
+function tierSummary(badgeType: string): screens.ChosenTier | undefined {
+  const limits = TIER_LIMITS[badgeType];
+  return limits === undefined ? undefined
+    : { badge: `${tierName(badgeType)}:`, gives: `${limits.gb} GB files available for ${limits.days} days.` };
+}
+
+// The investment that earns the chosen badge as a perk: the tier's minimum until a term is chosen,
+// then the exact amount for that term.
+function investPerk(price: Price | undefined, months: number | undefined): screens.InvestPerk | undefined {
+  if (price === undefined) return undefined;
+  const exact = months === undefined ? undefined : perkAmount(price.badgeType, months);
+  return exact === undefined || months === undefined
+    ? { badgeType: price.badgeType, amount: minimumFor(price.badgeType) }
+    : { badgeType: price.badgeType, amount: exact, months };
+}
+
+function withPerk<T extends object>(o: T, perk: screens.InvestPerk | undefined): T & { perk?: screens.InvestPerk } {
+  return perk === undefined ? o : { ...o, perk };
+}
 
 function priceOf(priceId: string | undefined): Price | undefined {
   return CATALOG.prices.find((p) => p.priceId === priceId);
@@ -296,12 +327,13 @@ function buildPanel(at: number): HTMLElement {
         tiers: CATALOG.prices.map((p) => ({
           priceId: p.priceId,
           badgeType: p.badgeType,
-          name: p.badgeType.charAt(0).toUpperCase() + p.badgeType.slice(1),
+          name: tierName(p.badgeType),
           price: `${moneyCompact(p.monthPrice, p.currency)} / month`,
-          features: TIER_FEATURES[p.badgeType] ?? [],
+          features: tierFeatures(p.badgeType),
           disabled: totalFor(p, undefined) === undefined,
         })),
         ...(session.priceId !== undefined ? { selected: session.priceId } : { selected: undefined }),
+        ...withPerk({}, investPerk(priceOf(session.priceId), undefined)),
         onSelect: (priceId) => {
           unavailableMethod = undefined;
           store.saveSession({ step: "tier", priceId, offerId: undefined });
@@ -328,9 +360,14 @@ function buildPanel(at: number): HTMLElement {
           disabled: total === undefined,
         };
       });
+      const chosenKey = chosenDuration(session);
+      const chosen = chosenKey === undefined ? undefined : totalFor(price, offerOf(chosenKey));
+      const tier = price === undefined ? undefined : tierSummary(price.badgeType);
       return screens.durations({
         durations,
-        selected: chosenDuration(session),
+        selected: chosenKey,
+        ...(tier !== undefined ? { tier } : {}),
+        ...withPerk({}, investPerk(price, chosen?.months)),
         onSelect: (key) => { store.saveSession({ step: "months", offerId: key }); rebuild(2); rebuild(CHECKOUT_INDEX); },
         onContinue: () => goToIndex(CHECKOUT_INDEX),
         onBack: () => history.back(),
@@ -355,6 +392,7 @@ function buildPanel(at: number): HTMLElement {
             } }
           : {}),
         selected: method,
+        ...withPerk({}, investPerk(price, total?.months)),
         ...(unavailableMethod !== undefined ? { unavailable: unavailableMethod } : {}),
         ...(open !== undefined
           ? { openOrder: {
@@ -488,13 +526,13 @@ async function pay(): Promise<void> {
       rebuild(CHECKOUT_INDEX);
       return;
     case "failed":
-      root.replaceChildren(screens.invoiceFailure(() => {
-        rebuild(CHECKOUT_INDEX);
-        root.replaceChildren(track);
-        applyInert();
-        moveTrack(false);
-        void pay();
+      replacePanel(CHECKOUT_INDEX, screens.invoiceFailure({
+        ...withPerk({}, investPerk(price, totalFor(price, offerOf(duration))?.months)),
+        onBack: () => { rebuild(CHECKOUT_INDEX); },
+        onRetry: () => { rebuild(CHECKOUT_INDEX); void pay(); },
       }));
+      applyInert();
+      moveTrack(false);
       return;
   }
 }
@@ -506,8 +544,10 @@ function payTotal(): string {
   return total === undefined ? "" : money(total.amount, price?.currency ?? "usd");
 }
 
+// A coin that is down falls back to the other coin, and the card to the first coin: a buyer who
+// chose a coin is not moved to a card.
 function firstAvailable(down: Method): Method {
-  return screens.METHOD_ORDER.find((m) => m !== down) ?? "btc";
+  return screens.METHOD_ORDER.find((m) => m !== "card" && m !== down) ?? "card";
 }
 
 let cancelNotice: { orderId: string; epoch: number; message: string } | undefined;
@@ -799,7 +839,7 @@ function renderCodes(entries: readonly OrderRecord[]): void {
     rows: historyRows(entries),
     keepsNewCodes: store.durable,
     onOpen: goToOrder,
-    onStart: () => { resetToLanding("push"); },
+    onStart: startPurchase,
     onForget: () => {
       if (!window.confirm("Remove every code stored in this browser? This cannot be undone.")) return;
       store.forgetEverything();

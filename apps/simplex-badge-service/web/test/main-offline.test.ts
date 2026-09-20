@@ -116,9 +116,9 @@ offlineTest("main: pressing Pay offline lands on the unknown-order screen, whose
 
   const before = fetches.length;
   inView().all("button.primary")[0]!.click();
-  await until(() => heading() === "That did not go through", "the invoice failure");
+  await until(() => headingOf(inView()) === "That did not go through", "the invoice failure");
   assert.equal(fetches.length, before + 1, "it did try: the provider must create the invoice");
-  assert.ok(screenOf(app).textContent.includes("The order was not created, and nothing was charged."),
+  assert.ok(inView().textContent.includes("The order was not created, and nothing was charged."),
     "which is exactly true with no network — the request never reached the service");
   assert.equal(noteCount(), 0, "the unknown-order screen is not a waiting screen: nothing here is going to keep checking");
 });
@@ -137,7 +137,7 @@ offlineTest("main: the history list is not replaced by the payment screen behind
     amount: 42000, currency: "usd", expiresAt: "2026-08-28T13:00:00Z",
     address: "8BdXsecondAddressExample", cryptoAmount: "1.500", cryptoCurrency: "xmr",
   } });
-  screenOf(app).all("button.primary")[0]!.click();
+  inViewOf(app).all("button.primary")[0]!.click();
   await until(() => heading().startsWith("Send"), "the payment screen for the second invoice");
 
   page.history.pushState(null, "", "/#/codes");

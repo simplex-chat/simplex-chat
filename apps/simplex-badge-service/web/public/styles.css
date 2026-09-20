@@ -1,32 +1,35 @@
-/* Every colour, radius, face and type step below is the published SimpleX design's own
-   value. Where one is not, the line says why. */
+/* The colours are the website's, as its blog pages use them (website/tailwind.config.js,
+   website/src/css/blog.css and website/src/_includes/layouts/article.html): the page's ground,
+   the article's card, the heading gradient, and the link and button colours, in both themes.
+   Every other value below is the published SimpleX design's own; where one is not, the line says why. */
 :root {
   /* Tell the UA which ground to paint before the first message and on a reload's blank frame, and
      which form controls and scrollbars to render; the dark blocks flip it with the palette. */
   color-scheme: light;
-  /* One accent in both themes, with white on it in both: #3889FF on white is
-     3.6:1 for the 16/700 label it carries. */
-  --accent: #3889FF;
-  --accent-hover: #2F7BEC;            /* the accent, one step down in value */
-  --accent-pressed: #2A6ED6;
-  --on-accent: #ffffff;
-  --ink: #1E2122;
-  --bg: #F7F7F7;
-  --surface: #FFFFFF;
-  --menu: #FFFFFF;                    /* the popup, one step off the page */
-  --line: #E8E8E8;
-  /* one faint blue wash over the flat ground, and nothing else */
-  --page: radial-gradient(50% 50% at 50% 50%, rgba(82, 152, 255, .063) 0%, rgba(255, 255, 255, 0) 100%);
+  /* primary-light and its hover step; white on it, as on the site's buttons. Pressed is the
+     accent one small step darker rather than the site's lighter, greyer #407AD2: a press should
+     read as the same button under the finger, not a paler one. */
+  --accent: #0053D0;
+  --accent-hover: #1661D1;
+  --accent-pressed: #004ABB;
+  --on-accent: #FFFFFF;
+  --ink: #0D1B3A;                     /* simplex.domains' ink: the navy the page's blues are built on */
+  --bg: #F3FAFF;                      /* secondary-bg-light: the blog page's ground */
+  --surface: #FFFFFF;                 /* the article's card */
+  --menu: #FFFFFF;
+  --line: rgba(0, 83, 208, .14);      /* simplex.domains' card line: the accent, faint, so it sits in the page's blue */
+  /* one faint wash of the accent over the flat ground, and nothing else */
+  --page: radial-gradient(50% 50% at 50% 50%, rgba(0, 83, 208, .06) 0%, rgba(243, 250, 255, 0) 100%);
 
-  /* Secondary text is the ink at two lower emphases, so the page stays one hue
-     and composites correctly over the wash. 8.9:1 and 6.2:1 on #F7F7F7. */
-  --body: rgba(30, 33, 34, .72);
-  --muted: rgba(30, 33, 34, .56);
+  /* The one secondary text colour, simplex.domains' own: the ink at 65%, so it stays in the
+     page's hue. 5.3:1 on #F3FAFF, and set at 500 wherever it is used. */
+  --ink-soft: rgba(13, 27, 58, .651);
   /* The ink at 4%: the menu's hover, the landing screen's info panel, and a card the catalog
      cannot price. */
-  --tint: rgba(30, 33, 34, .04);
+  --tint: rgba(13, 27, 58, .04);
 
-  --title: linear-gradient(330.4deg, #44BCF0 4.54%, #7298F8 59.2%, #A099FF 148.85%);
+  /* the blog's heading gradient, top to bottom */
+  --title: linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%);
 
   /* Settled, waiting and failed, each a foreground on its own ground. */
   --ok-fg: #1c7c3f;
@@ -39,14 +42,14 @@
   --danger-bg: #fdecec;
   --danger-line: #f3c9c6;
 
-  /* the code screen's code frame, in the one accent both themes share. */
-  --code-bg: rgba(56, 137, 255, .06);
-  --code-line: rgba(56, 137, 255, .35);
+  /* the code screen's code frame, in the accent */
+  --code-bg: rgba(0, 83, 208, .06);
+  --code-line: rgba(0, 83, 208, .35);
 
   /* A primary button with nothing to do: a flat bar with a washed label, legible
      at 4.0:1. See `.primary[disabled]` for why it is not the accent faded. */
-  --disabled: rgba(30, 33, 34, .07);
-  --on-disabled: rgba(30, 33, 34, .50);
+  --disabled: rgba(13, 27, 58, .07);
+  --on-disabled: rgba(13, 27, 58, .50);
 
   /* Switched with the theme rather than tinted by it. The dark wordmark is the
      same file with its `#030749` set to white. */
@@ -54,16 +57,29 @@
   --wordmark: url(wordmark-light.svg);
 
   /* a card is a 1px border at radius 20 with no shadow, and every button a pill; the
-     only shadow on the page is the menu's */
+     shadows on the page are the menu's and the primary button's */
   --r-card: 20px;
   --r-pill: 9999px;
   --shadow-pop: 0 2px 6px rgba(0, 0, 0, .06), 0 16px 40px rgba(0, 0, 0, .12);
+  /* the primary button: a touch of light across its top and a soft shadow in the accent */
+  --sheen: linear-gradient(to bottom, rgba(255, 255, 255, .16), rgba(255, 255, 255, 0) 60%);
+  --shadow-button: 0 4px 12px rgba(0, 83, 208, .18);
+  --shadow-button-hover: 0 6px 16px rgba(0, 83, 208, .24);
 
-  /* Satoshi is not vendored and may not be fetched, so the system face is what
-     actually renders. */
-  --font: Satoshi, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  /* The faces simplex.domains sets: GT Walsheim for the heading, Manrope for everything else.
+     Both are served under the build hash (see the @font-face rules below) and precached. */
+  --display: "GT Walsheim", Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font: Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
+
+/* The four Manrope weights the sheet uses and the one GT Walsheim weight, relative to this file,
+   so they sit under the build hash with it. `swap`, so text is never invisible while a face loads. */
+@font-face { font-family: Manrope; src: url(Manrope-Regular.woff2) format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: Manrope; src: url(Manrope-Medium.woff2) format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: Manrope; src: url(Manrope-SemiBold.woff2) format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: Manrope; src: url(Manrope-Bold.woff2) format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "GT Walsheim"; src: url(GT-Walsheim-LC-Bold.woff2) format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
 
 /* The dark palette is written twice on purpose: the media query claims
    everything that is not an explicit light, and the attribute rule claims an
@@ -73,21 +89,25 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    /* The accent does not move between themes, and the dark surface #1E2122 is the
-       light theme's ink, to the byte. */
-    --ink: #FFFFFF;
-    --bg: #141416;
-    --surface: #1E2122;
-    --menu: #242427;
-    --line: #424347;
-    /* the dark ground is flat: the light theme's wash would be a smear */
-    --page: none;
+    /* primary-dark, with its hover and pressed steps, and the page's ground on it, as on the
+       site's dark buttons */
+    --accent: #70F0F9;
+    --accent-hover: #66D9E2;
+    --accent-pressed: #5CD3DC;
+    --on-accent: #000832;
+    --ink: #EAF2FF;                   /* simplex.domains' dark ink */
+    --bg: #000832;                    /* primary-bg-dark: the blog page's ground */
+    --surface: #0B2A59;               /* secondary-bg-dark: the blog list's card, a clear step off the ground */
+    --menu: #0B2A59;
+    --line: rgba(112, 240, 249, .18); /* simplex.domains' dark card line: the accent, faint */
+    --page: radial-gradient(50% 50% at 50% 50%, rgba(112, 240, 249, .05) 0%, rgba(0, 8, 50, 0) 100%);
 
-    --body: rgba(255, 255, 255, .72);
-    --muted: rgba(255, 255, 255, .56);
+    --ink-soft: rgba(234, 242, 255, .735);
     --tint: rgba(255, 255, 255, .06);
 
-    /* The light theme's three hues, lightened to sit on #141416, each with its
+    --title: linear-gradient(to bottom, #70F0F9 0%, #70F0F9 33%, #50D8F1 100%);
+
+    /* The light theme's three hues, lightened to sit on #000832, each with its
        own ground at a low alpha of itself. */
     --ok-fg: #7FE3A6;
     --ok-bg: rgba(127, 227, 166, .12);
@@ -99,8 +119,8 @@
     --danger-bg: rgba(255, 159, 152, .12);
     --danger-line: rgba(255, 159, 152, .28);
 
-    --code-bg: rgba(56, 137, 255, .12);
-    --code-line: rgba(56, 137, 255, .45);
+    --code-bg: rgba(112, 240, 249, .12);
+    --code-line: rgba(112, 240, 249, .45);
 
     --disabled: rgba(255, 255, 255, .09);
     --on-disabled: rgba(255, 255, 255, .45);
@@ -109,23 +129,36 @@
     --wordmark: url(wordmark-dark.svg);
 
     --shadow-pop: 0 2px 8px rgba(0, 0, 0, .50), 0 16px 40px rgba(0, 0, 0, .55);
+    /* White barely shows on the light cyan, so the dark sheen also deepens the pill's foot. */
+    --sheen: linear-gradient(to bottom, rgba(255, 255, 255, .30), rgba(255, 255, 255, 0) 50%, rgba(0, 8, 50, .16) 100%);
+    --shadow-button: 0 6px 16px rgba(112, 240, 249, .16);
+    --shadow-button-hover: 0 8px 20px rgba(112, 240, 249, .22);
   }
 }
 
 /* The same palette again, for the menu's explicit Dark. */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --ink: #FFFFFF;
-  --bg: #141416;
-  --surface: #1E2122;
-  --menu: #242427;
-  --line: #424347;
-  --page: none;
+  /* primary-dark, with its hover and pressed steps, and the page's ground on it, as on the
+     site's dark buttons */
+  --accent: #70F0F9;
+  --accent-hover: #66D9E2;
+  --accent-pressed: #5CD3DC;
+  --on-accent: #000832;
+  --ink: #EAF2FF;                   /* simplex.domains' dark ink */
+  --bg: #000832;                    /* primary-bg-dark: the blog page's ground */
+  --surface: #0B2A59;               /* secondary-bg-dark: the blog list's card, a clear step off the ground */
+  --menu: #0B2A59;
+  --line: rgba(112, 240, 249, .18); /* simplex.domains' dark card line: the accent, faint */
+  --page: radial-gradient(50% 50% at 50% 50%, rgba(112, 240, 249, .05) 0%, rgba(0, 8, 50, 0) 100%);
 
-  --body: rgba(255, 255, 255, .72);
-  --muted: rgba(255, 255, 255, .56);
+  --ink-soft: rgba(234, 242, 255, .735);
   --tint: rgba(255, 255, 255, .06);
 
+  --title: linear-gradient(to bottom, #70F0F9 0%, #70F0F9 33%, #50D8F1 100%);
+
+  /* The light theme's three hues, lightened to sit on #000832, each with its
+     own ground at a low alpha of itself. */
   --ok-fg: #7FE3A6;
   --ok-bg: rgba(127, 227, 166, .12);
   --ok-line: rgba(127, 227, 166, .28);
@@ -136,8 +169,8 @@
   --danger-bg: rgba(255, 159, 152, .12);
   --danger-line: rgba(255, 159, 152, .28);
 
-  --code-bg: rgba(56, 137, 255, .12);
-  --code-line: rgba(56, 137, 255, .45);
+  --code-bg: rgba(112, 240, 249, .12);
+  --code-line: rgba(112, 240, 249, .45);
 
   --disabled: rgba(255, 255, 255, .09);
   --on-disabled: rgba(255, 255, 255, .45);
@@ -146,6 +179,10 @@
   --wordmark: url(wordmark-dark.svg);
 
   --shadow-pop: 0 2px 8px rgba(0, 0, 0, .50), 0 16px 40px rgba(0, 0, 0, .55);
+  /* White barely shows on the light cyan, so the dark sheen also deepens the pill's foot. */
+  --sheen: linear-gradient(to bottom, rgba(255, 255, 255, .30), rgba(255, 255, 255, 0) 50%, rgba(0, 8, 50, .16) 100%);
+  --shadow-button: 0 6px 16px rgba(112, 240, 249, .16);
+  --shadow-button-hover: 0 8px 20px rgba(112, 240, 249, .22);
 }
 
 * { box-sizing: border-box; }
@@ -155,12 +192,18 @@
    column sideways, which `#app`'s overflow-x then clips. */
 html { scrollbar-gutter: stable; }
 
+/* The page is one column of the viewport's height: the header, then the screen, which is at least
+   the rest of the viewport tall (see `.panel`), then the footer below the fold, where a scroll
+   reaches it. `100vh` is the fallback for a browser without dynamic viewport units. */
 body {
   margin: 0;
-  /* The gutter is here, so `#app` is exactly the 560px content column and
+  display: flex;
+  flex-direction: column;
+  /* The gutter is here, so `#app` is exactly the 640px content column and
      nothing inside it has to subtract padding to reach that width. */
   padding: 0 20px;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
   /* Fixed, so the wash does not tile or scroll away on a long screen. */
   background-image: var(--page);
@@ -173,7 +216,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-#app { max-width: 560px; margin: 0 auto; overflow-x: hidden; }
+#app { width: 100%; max-width: 640px; margin: 0 auto; overflow-x: hidden; flex: 1 0 auto; }
+/* The header's height, which every screen's minimum height is the viewport less: `.chrome-bar`'s
+   56px box, its paddings inside it. */
+:root { --chrome-h: 56px; }
 
 /* The shell ships a static copy of the first screen (see index.html), so the first paint is the real
    landing, not an empty page, and `main.ts` swaps in its own identical markup with no flash. Embedded,
@@ -196,7 +242,8 @@ body {
    the frame to the body, so a `100vh` floor would make the body's height depend on the frame height
    the host derived from it — a loop that ratchets the frame taller and drops the site's footer as the
    zoom shifts. Drop the floor so the body is exactly its content. */
-.embedded body { padding-top: 54px; background-image: none; min-height: 0; }
+.embedded body { padding-top: 54px; background-image: none; min-height: 0; display: block; }
+.embedded .panel { min-height: 0; }
 .embedded footer { display: none; }
 
 /* Embedded in the site's dark theme, the standalone grey surfaces read as off against the navy the
@@ -219,7 +266,7 @@ body {
 /* ------------------------------------------------------------------- chrome */
 
 /* The wordmark on the left, and on the right a circular icon button holding the
-   hamburger. It spans the page rather than the 560 column, so the column reads
+   hamburger. It spans the page rather than the 640 column, so the column reads
    as content inside a site rather than as the whole site. */
 .chrome-bar {
   display: flex;
@@ -314,9 +361,9 @@ body {
   border: 0;
   border-radius: var(--r-pill);
   background: none;
-  color: var(--muted);
+  color: var(--ink-soft);
   font: inherit;
-  font-size: .75rem;
+  font-size: .875rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -345,14 +392,16 @@ body {
 /* the footer, on every screen: a hairline across the column, then the
    contact link centred under it in the accent. */
 footer {
-  max-width: 560px;
+  flex: none;
+  width: 100%;
+  max-width: 640px;
   margin: 0 auto;
   text-align: center;
 }
 footer a {
   display: block;
   border-top: 1px solid var(--line);
-  padding: 16px 0 34px;
+  padding: 22px 0 34px;
   color: var(--accent);
   font-size: .875rem;
   text-decoration: none;
@@ -395,11 +444,44 @@ footer a:hover { text-decoration: underline; }
 /* Below the column width each panel is the viewport width: the same track is
    the phone flow, with only the padding and the type scale changing. */
 .panel {
+  position: relative;
   flex: 0 0 100%;
   min-width: 0;
   padding: 12px 0 22px;
   text-align: center;
+  /* A screen is a column at least as tall as the viewport under the header, so that its button
+     stands at the same place on every screen - near the bottom, where a thumb reaches it - and the
+     content between the heading and the button is spread over the height rather than stacked at
+     the top. A screen taller than the viewport grows and scrolls, as the payment screens do. */
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--chrome-h));
+  min-height: calc(100dvh - var(--chrome-h));
 }
+/* On a wide screen the button needs no thumb, so it stands higher off the foot of the viewport and
+   the page reads as balanced rather than bottom-heavy. Up to a 1080px-tall viewport the space under
+   it grows with the height; beyond that the content stops descending - its foot stays 927px under
+   the header, where a 1080px viewport puts it - and the whole surplus goes under it. */
+@media (min-width: 700px) {
+  .panel {
+    padding-bottom: max(clamp(40px, 9vh, 110px), calc(100vh - var(--chrome-h) - 927px));
+    padding-bottom: max(clamp(40px, 9vh, 110px), calc(100dvh - var(--chrome-h) - 927px));
+  }
+}
+/* What each screen spreads: the hero, the choice cards, the summary. `auto` above and nothing
+   below, so the free height is shared between the space over the block and the space under it,
+   which the button's own `auto` margin takes. */
+.panel > .hero, .panel > .choices, .panel > .rows { margin-top: auto; }
+/* The button is the last thing before the invest block, and sinks to the foot of the screen. Where
+   a screen keeps notes above its button, the notes sink with it and the button follows them. */
+.panel > .primary { margin-top: auto; }
+.panel > .notes { margin-top: auto; }
+.notes + .primary { margin-top: 20px; }
+.notes .muted { margin: 4px auto 0; max-width: 480px; }
+/* The checkout's note slot holds one line's height whether or not the line is shown, so choosing a
+   method moves nothing above or below it. */
+.notes.slot { min-height: calc(4px + .875rem * 1.5); }
+.notes .half { display: inline-block; }
 @media (prefers-reduced-motion: reduce) {
   .track, .rail { transition: none; }
 }
@@ -412,9 +494,11 @@ footer a:hover { text-decoration: underline; }
 /* ------------------------------------------------------------------ headings */
 
 h1 {
+  font-family: var(--display);
   font-size: 2.25rem;
   line-height: 3rem;
-  font-weight: 800;
+  font-weight: 700;
+  letter-spacing: -.02em;
   color: var(--ink);
   margin: 12px 0 0;
 }
@@ -435,7 +519,8 @@ h1.tight { font-size: 1.875rem; line-height: 2.5rem; margin-top: 15px; }
 .lede {
   font-size: 1.125rem;
   line-height: 1.5;
-  color: var(--body);
+  font-weight: 500;
+  color: var(--ink-soft);
   margin: 10px 0 0;
 }
 h1 + .lede { margin-top: 10px; }
@@ -443,8 +528,10 @@ h1.tight + .lede { margin-top: 6px; }
 /* Two ledes are two sentences of one paragraph, a line height apart rather than
    a paragraph gap. */
 .lede + .lede { margin-top: 0; }
+.lede .line { display: block; }
+.lede .half { display: inline-block; }
 
-.muted { color: var(--muted); font-size: .875rem; margin: 14px 0 0; }
+.muted { color: var(--ink-soft); font-size: .875rem; font-weight: 500; margin: 14px 0 0; }
 /* A narrower measure than the column, so the closing footnote breaks in two rather than
    reading as a caption that ran on. Scoped to a direct child, so it cannot reach the same
    class inside a left-aligned field and indent the line it holds. */
@@ -463,9 +550,18 @@ h1.tight + .lede { margin-top: 6px; }
   font-variant-numeric: tabular-nums;
 }
 
-/* ← Back is the first thing in the panel, on the left of the column. */
+/* Back is out of the flow, so the heading is the first thing in every panel and stands at one
+   height whether or not there is a Back. On a desktop `top` centres it on the heading's first
+   line, at the left of the column, as a navigation bar draws it. On a phone the heading is nearly
+   as wide as the column, so Back is above it and the heading's margin holds that line open on
+   every screen. The chevron hangs a little into the gutter so the word aligns with the column's edge. */
 .back {
-  display: block;
+  position: absolute;
+  left: -5px;
+  top: 36px;
+  display: flex;
+  align-items: center;
+  gap: 1px;
   color: var(--accent);
   background: none;
   border: 0;
@@ -475,8 +571,8 @@ h1.tight + .lede { margin-top: 6px; }
   text-align: left;
   cursor: pointer;
   padding: 0;
-  margin: 0;
 }
+.back .chevron { width: 22px; height: 22px; display: block; }
 
 /* -------------------------------------------------------------------- buttons */
 
@@ -489,6 +585,8 @@ h1.tight + .lede { margin-top: 6px; }
   border: 0;
   border-radius: var(--r-pill);
   background: var(--accent);
+  background-image: var(--sheen);
+  box-shadow: var(--shadow-button);
   color: var(--on-accent);
   font: inherit;
   font-size: 1rem;
@@ -496,15 +594,16 @@ h1.tight + .lede { margin-top: 6px; }
   line-height: 1.25;
   cursor: pointer;
   margin: 24px 0 0;
-  transition: background-color 120ms linear;
+  transition: background-color 120ms linear, box-shadow 120ms linear;
 }
-.primary:not([disabled]):not(.copied):hover { background: var(--accent-hover); }
-.primary:not([disabled]):not(.copied):active { background: var(--accent-pressed); }
+.primary:not([disabled]):not(.copied):hover { background-color: var(--accent-hover); box-shadow: var(--shadow-button-hover); }
+.primary:not([disabled]):not(.copied):active { background-color: var(--accent-pressed); box-shadow: none; }
 /* A different shape, not a faded one: the accent at reduced opacity still reads
    as the live button, so a Continue that cannot continue looks broken rather
    than not-yet-answered. */
 .primary[disabled] {
   background: var(--disabled);
+  box-shadow: none;
   color: var(--on-disabled);
   cursor: default;
 }
@@ -513,6 +612,7 @@ h1.tight + .lede { margin-top: 6px; }
    [ Copy code ] are. */
 .primary.outline {
   background: none;
+  box-shadow: none;
   color: var(--accent);
   border: 1.5px solid var(--accent);
 }
@@ -561,7 +661,7 @@ h1.tight + .lede { margin-top: 6px; }
    Every hover rule above excludes it: the pointer is still on the button that
    was just pressed, and a hover colour would overwrite the confirmation. */
 .copied { color: var(--ok-fg); border-color: var(--ok-line); }
-.primary.copied { background: none; color: var(--ok-fg); border-color: var(--ok-fg); }
+.primary.copied { background: none; box-shadow: none; color: var(--ok-fg); border-color: var(--ok-fg); }
 .secondary.inline.copied { text-decoration: none; }
 /* The failure line only: a success never lands here, so this is empty until
    something goes wrong, and empty it takes up no room. */
@@ -579,7 +679,7 @@ h1.tight + .lede { margin-top: 6px; }
 }
 .link:hover { text-decoration: underline; }
 .link.danger { color: var(--danger-fg); }
-.link[disabled] { color: var(--muted); cursor: default; text-decoration: none; }
+.link[disabled] { color: var(--ink-soft); cursor: default; text-decoration: none; }
 p.row-line { margin: 16px 0 0; }
 
 /* --------------------------------------------------------------- the choices */
@@ -615,7 +715,7 @@ p.row-line { margin: 16px 0 0; }
 /* the provider-unavailable screen's unavailable method, and any tier or duration the catalog cannot price:
    the outline stays and what is inside it greys, so the word "unavailable"
    stays readable, the card being shown precisely so it can be read. */
-.choice[disabled] { cursor: default; color: var(--muted); background: var(--tint); }
+.choice[disabled] { cursor: default; color: var(--ink-soft); background: var(--tint); }
 .choice[disabled] .mark, .choice[disabled] .badge-art { opacity: .4; }
 /* A tier leads with its name and states its price plainly under it; a duration leads with
    the price and lets the term step back. The design's 19/17 is not a pair of steps on this
@@ -636,11 +736,11 @@ p.row-line { margin: 16px 0 0; }
    computed to 17.6px and moved with whatever `.price` it landed in. */
 .choice .price .was {
   display: block;
-  color: var(--muted);
-  font-weight: 400;
+  color: var(--ink-soft);
+  font-weight: 500;
   font-size: .875rem;
 }
-.choice .feature { color: var(--muted); font-size: .875rem; }
+.choice .feature { color: var(--ink-soft); font-size: .875rem; font-weight: 500; }
 
 /* the tier list's cards carry the badge itself, 300×399 in its own box, drawn at 65×86. */
 .badge-art { display: block; width: 65px; aspect-ratio: 300 / 399; margin: 0 auto 8px; }
@@ -679,15 +779,16 @@ p.row-line { margin: 16px 0 0; }
    what `.choice .name` above already says. The rule that restated 1.125rem here
    was a second copy of one number, and the phone band still steps it down. */
 .choice.method[aria-pressed="true"] .name { color: var(--accent); }
-.choice.method .feature { font-size: .75rem; margin-top: 2px; }
+.choice.method .feature { margin-top: 2px; }
 
 /* ---------------------------------------------------------- the summary card */
 
-/* the order summary: one bordered card, two label/value rows, a hairline, and
-   the total. */
+/* the order summary: one bordered card of label/value rows, a hairline, and the total. The
+   card's padding and a row's own are 12 and 8, top and bottom alike, so the first label and
+   the total stand the same 20 from the card's edges. */
 .rows {
   margin: 37px 0 0;
-  padding: 15px 27px 4px;
+  padding: 12px 24px;
   border: 1px solid var(--line);
   border-radius: var(--r-card);
   background: var(--surface);
@@ -698,15 +799,17 @@ p.row-line { margin: 16px 0 0; }
   justify-content: space-between;
   gap: 12px;
   font-size: 1rem;
-  padding: 7px 0;
+  padding: 8px 0;
 }
-.row span:first-child { color: var(--muted); }
+.row span:first-child { color: var(--ink-soft); font-weight: 500; }
 .row span:last-child { font-weight: 600; color: var(--ink); }
+/* the hairline sits 16 under the last row's text and 14 over the total's taller line, which
+   is the same clearance to the glyphs on both sides */
 .row.total {
   font-size: 1.25rem;
   border-top: 1px solid var(--line);
-  margin-top: 13px;
-  padding-top: 7px;
+  margin-top: 8px;
+  padding-top: 14px;
 }
 .row.total span:first-child { color: var(--ink); font-weight: 600; }
 /* the checkout summary's saving: the reduction is a credit, so its figure takes the settled
@@ -733,19 +836,18 @@ p.row-line { margin: 16px 0 0; }
 
 .label {
   display: block;
-  font-size: .75rem;
+  font-size: .875rem;
   font-weight: 700;
   letter-spacing: .07em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink-soft);
   margin-bottom: 4px;
 }
 /* the order summary's PAY WITH stands alone above the row rather than inside a card. It is the
-   same label, and only its place changes, so it restates no type. */
-.label.standalone { margin: 13px 0 0; text-align: left; }
-/* the order summary's row sits closer to its label, and its Pay button closer to the row, than
-   the tier list's and the duration list's do to their headings. */
-.label.standalone + .methods { margin-top: 18px; }
+   same label, and only its place changes, so it restates no type. It is the row's title, so it
+   stands 28 clear of the summary card and 10 over the row it names. */
+.label.standalone { margin: 28px 0 0; text-align: left; }
+.label.standalone + .methods { margin-top: 10px; }
 .methods + .primary { margin-top: 16px; }
 
 /* --------------------------------------------------------------- the notices */
@@ -797,7 +899,44 @@ p.row-line { margin: 16px 0 0; }
 /* Only what the ground changes: the type is the block rules above, so this card
    cannot drift a step away from the notice it sits beside. */
 .info .title { color: var(--ink); }
-.info p { color: var(--muted); }
+.info p { color: var(--ink-soft); font-weight: 500; }
+
+/* the crowdfunding, under the main button of a screen while the round is open. No frame and no
+   second button: a sentence, and under it one link in the accent - "Learn more on" and the
+   Wefunder wordmark - the way the site's secondary links are drawn. */
+/* One height for the block under the button, whatever the sentence: one line and the link where
+   the column is wide, two lines below 700px, three on a narrow phone, where the longest sentence
+   takes three, so the button above it stands at one place on every screen. */
+.invest { min-height: 58px; }
+@media (max-width: 700px) { .invest { min-height: 82px; } }
+@media (max-width: 420px) { .invest { min-height: 106px; } }
+.invest {
+  margin: 22px 0 0;
+  text-align: center;
+}
+/* One line where the column holds it. Where it does not, the two halves are inline blocks, so the
+   line breaks between them - before "and" - and never inside the first; a half too wide for a
+   narrow phone wraps within itself, as every lede does. */
+.invest p { font-size: 1rem; margin: 0; color: var(--ink); }
+.invest .half { display: inline-block; }
+.invest-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px auto 0;
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.invest-link:hover { color: var(--accent-hover); }
+.invest-link:active { color: var(--accent-pressed); }
+.invest-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+/* the wordmark, a touch taller than the text and lifted so its baseline sits with the text's */
+.invest-link .wefunder { height: 22px; width: auto; display: block; transform: translateY(-2px); }
+/* `.panel > button:last-child` adds 20px under a trailing button; the invest block is what
+   follows a button here, and the panel's own padding is the space under it. */
 
 /* --------------------------------------------------------------- the landing screen's hero */
 
@@ -805,7 +944,10 @@ p.row-line { margin: 16px 0 0; }
    resolves inside /assets/<buildHash>/ beside this file and the worker precaches it
    under the same hash as everything else. */
 .hero {
-  width: 268px;
+  /* Sized by the viewport's height rather than a fixed width, so on a short screen the picture
+     gives way before anything else does; the width follows from the ratio. */
+  height: min(337px, 36vh);
+  width: auto;
   aspect-ratio: 460 / 578;
   margin: 27px auto 0;
   background-image: var(--hero);
@@ -813,9 +955,13 @@ p.row-line { margin: 16px 0 0; }
   background-position: center;
   background-repeat: no-repeat;
 }
-.hero + .primary { margin-top: 30px; }
 @media (max-width: 560px) {
-  .hero { max-width: 168px; margin-top: 20px; }
+  .hero { height: min(211px, 28vh); margin-top: 20px; }
+}
+/* On a short phone the landing does not fit under its button with the picture; the picture is the
+   one thing on that screen that is decoration. */
+@media (max-width: 560px) and (max-height: 700px) {
+  .hero { display: none; }
 }
 
 /* ------------------------------------------------------------------ the code */
@@ -958,7 +1104,7 @@ p.row-line { margin: 16px 0 0; }
   border-radius: 12px;
   background: #ffffff;
 }
-.qr-wrap .muted { font-size: .75rem; margin-top: 8px; }
+.qr-wrap .muted { margin-top: 8px; }
 /* Under the symbol, in the flow: the QR is what most people use, and this is for
    the wallet on the same device. */
 .qr-wrap .wallet-line { margin: 10px 0 0; }
@@ -999,11 +1145,12 @@ p.row-line { margin: 16px 0 0; }
   align-items: center;
   gap: 3px 14px;
   margin: 5px 0 0;
-  color: var(--muted);
-  font-size: .75rem;
+  color: var(--ink-soft);
+  font-size: .875rem;
+  font-weight: 500;
 }
 .entry .meta .method { display: inline-flex; align-items: center; gap: 6px; }
-/* the order summary draws the mark at 30 above its name; here it stands beside 12px text. */
+/* the order summary draws the mark at 30 above its name; here it stands beside 14px text. */
 .entry .meta .mark { width: 16px; height: 16px; margin: 0; }
 
 /* The state, and the way out of the row. It wraps rather than squeezes: the
@@ -1070,12 +1217,12 @@ p.row-line { margin: 16px 0 0; }
     width: auto;
   }
   .panel { padding-top: 8px; }
-  .back { font-size: .875rem; }
-  h1 { font-size: 1.625rem; line-height: 2.125rem; margin-top: 10px; }
-  h1.tight { font-size: 1.375rem; line-height: 1.875rem; margin-top: 12px; }
+  .back { font-size: .875rem; top: 8px; }
+  h1 { font-size: 1.875rem; line-height: 2.5rem; margin-top: 32px; }
+  h1.tight { font-size: 1.625rem; line-height: 2.125rem; margin-top: 34px; }
   .lede { font-size: 1rem; }
   h1 + .lede { margin-top: 9px; }
-  .muted { font-size: .75rem; }
+  .notes .half { display: block; }
   /* 16 keeps all 27 characters of the code on one line in a 350 column. */
   .code { font-size: 1rem; padding: 18px 12px; }
   .tick { width: 44px; height: 44px; line-height: 44px; font-size: 1.25rem; }
@@ -1084,7 +1231,6 @@ p.row-line { margin: 16px 0 0; }
   .choices { gap: 10px; margin-top: 24px; }
   .choice { padding: 14px 6px 16px; }
   .choice .name { font-size: .875rem; }
-  .choice .feature { font-size: .75rem; }
   .choice .badge-art + .name { font-size: 1rem; }
   .choice .badge-art ~ .price { font-size: .875rem; }
 
@@ -1098,8 +1244,6 @@ p.row-line { margin: 16px 0 0; }
 
   .row { font-size: .875rem; }
   .row.total { font-size: 1.125rem; }
-
-  .rows.plain > div { font-size: .75rem; }
 
   /* the history list's rows: the type scale steps down, and the art keeps the 44 it has at
      every width. The paid-no-code screen's summary carries the same title and steps with it. */

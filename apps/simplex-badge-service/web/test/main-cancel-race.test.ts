@@ -39,7 +39,7 @@ raceTest("main: a cancel that raced a payment leaves the buyer on the order", as
 
   assert.ok(!screenOf(app).textContent.includes(ADDRESS),
     `no dead address is drawn: ${screenOf(app).textContent.slice(0, 160)}`);
-  assert.ok(!screenOf(app).textContent.includes("Choose your level"),
+  assert.ok(!screenOf(app).textContent.includes("Choose your badge"),
     "and not the landing screen either");
 
   assert.ok(screenOf(app).textContent.includes(ORDER_ID), "the reference support reconciles against");

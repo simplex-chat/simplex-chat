@@ -10,6 +10,7 @@ export const paths = {
   compiled: `${root}build/src`,
   stylesheet: `${root}public/styles.css`,
   images: `${root}public/img`,
+  fonts: `${root}public/fonts`,
   indexHtml: `${root}public/index.html`,
   worker: `${root}public/sw.js`,
   site: `${root}dist`,
@@ -36,8 +37,9 @@ export function hashOf(files) {
 }
 
 const IMAGE_TYPES = [".png", ".svg"];
+const FONT_TYPES = [".woff2"];
 
-/** Images sit flat beside styles.css so that a url(hero-light.png) reference in the stylesheet resolves. */
+/** Images and fonts sit flat beside styles.css so that a url(hero-light.png) or url(Manrope-Regular.woff2) reference in the stylesheet resolves. */
 /**
  * This runs as a classic non-module script so that it executes before the first paint.
  * The CSP allows script-src 'self' but not inline, so it must be served as a file rather than inlined.
@@ -59,15 +61,17 @@ const INIT_JS = `(function () {
 })();
 `;
 
-export function assets(compiled = paths.compiled, stylesheet = paths.stylesheet, images = paths.images) {
+export function assets(compiled = paths.compiled, stylesheet = paths.stylesheet, images = paths.images, fonts = paths.fonts) {
   const modules = readdirSync(compiled).filter((f) => f.endsWith(".js")).sort();
   if (modules.length === 0) throw new Error("build: build/src holds no modules — run tsc first");
   const pictures = readdirSync(images).filter((f) => IMAGE_TYPES.some((t) => f.endsWith(t))).sort();
+  const faces = readdirSync(fonts).filter((f) => FONT_TYPES.some((t) => f.endsWith(t))).sort();
   return [
     ...modules.map((name) => [name, served(readFileSync(`${compiled}/${name}`, "utf8"))]),
     ["styles.css", readFileSync(stylesheet, "utf8")],
     ["init.js", INIT_JS],
     ...pictures.map((name) => [name, readFileSync(`${images}/${name}`)]),
+    ...faces.map((name) => [name, readFileSync(`${fonts}/${name}`)]),
   ];
 }
 

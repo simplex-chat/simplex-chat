@@ -16,6 +16,15 @@ function shape(tag: string, attrs: Record<string, string>): SVGElement {
   return node;
 }
 
+/** The chevron of a Back control, drawn as a stroke so it takes the control's colour. */
+export function chevronLeft(): SVGElement {
+  return svg({ class: "chevron", viewBox: MARK_VIEWBOX, "aria-hidden": "true", focusable: "false" },
+    shape("path", {
+      d: "M15 5.5 L8.5 12 L15 18.5", fill: "none",
+      stroke: "currentColor", "stroke-width": "2.5", "stroke-linecap": "round", "stroke-linejoin": "round",
+    }));
+}
+
 export function hamburger(): SVGElement {
   const box = { class: "bars", viewBox: MARK_VIEWBOX, "aria-hidden": "true", focusable: "false" };
   const bar = (y: string): SVGElement => shape("line", {
@@ -86,17 +95,36 @@ export function badgeIcon(tier: BadgeTier): SVGElement {
 const MARK_VIEWBOX = "0 0 24 24";
 
 const BITCOIN = "M23.638 14.904c-1.602 6.43-8.113 10.34-14.542 8.736C2.67 22.05-1.244 15.525.362 9.105 1.962 2.67 8.475-1.243 14.9.358c6.43 1.605 10.342 8.115 8.738 14.548v-.002zm-6.35-4.613c.24-1.59-.974-2.45-2.64-3.03l.54-2.153-1.315-.33-.525 2.107c-.345-.087-.705-.167-1.064-.25l.526-2.127-1.32-.33-.54 2.165c-.285-.067-.565-.132-.84-.2l-1.815-.45-.35 1.407s.975.225.955.236c.535.136.63.486.615.766l-1.477 5.92c-.075.166-.24.406-.614.314.015.02-.96-.24-.96-.24l-.66 1.51 1.71.426.93.242-.54 2.19 1.32.327.54-2.17c.36.1.705.19 1.05.273l-.51 2.154 1.32.33.545-2.19c2.24.427 3.93.257 4.64-1.774.57-1.637-.03-2.58-1.217-3.196.854-.193 1.5-.76 1.68-1.93h.01zm-3.01 4.22c-.404 1.64-3.157.75-4.05.53l.72-2.9c.896.23 3.757.67 3.33 2.37zm.41-4.24c-.37 1.49-2.662.735-3.405.55l.654-2.64c.744.18 3.137.524 2.75 2.084v.006z";
-const MONERO = "M12 0C5.365 0 0 5.373 0 12.015c0 1.335.228 2.607.618 3.81h3.577V5.729L12 13.545l7.805-7.815v10.095h3.577c.389-1.203.618-2.475.618-3.81C24 5.375 18.635 0 12 0zm-1.788 15.307l-3.417-3.421v6.351H1.758C3.87 21.689 7.678 24 12 24s8.162-2.311 10.245-5.764h-5.04v-6.351l-3.386 3.421-1.788 1.79-1.814-1.79h-.005z";
+// The Monero mark as simplex.domains draws it: the official two-colour glyph in its own 256 box,
+// scaled into the 24 box the other marks share.
+const MONERO_TOP = "M127.998 0C57.318 0 0 57.317 0 127.999c0 14.127 2.29 27.716 6.518 40.43H44.8V60.733l83.2 83.2 83.198-83.2v107.695h38.282c4.231-12.714 6.521-26.303 6.521-40.43C256 57.314 198.681 0 127.998 0";
+const MONERO_BASE = "M108.867 163.062l-36.31-36.311v67.765H18.623c22.47 36.863 63.051 61.48 109.373 61.48s86.907-24.617 109.374-61.48h-53.933V126.75l-36.31 36.31-19.13 19.129-19.128-19.128h-.002z";
+const MONERO_SCALE = "scale(0.09375)";
 
 const CARD_STROKE = "currentColor";
+
+// The Wefunder wordmark, as simplex.chat/crowdfunding draws it: the W is a stroke, the letters a fill,
+// both in currentColor so the pill sets the colour.
+const WEFUNDER_LETTERS = "M44.0386 38.5332H56.7241V35.3848H47.5317V31.6849H55.5291V28.5365H47.5317V24.9515H56.6092V21.8031H44.0386V38.5332ZM60.242 38.5332H63.7581V31.9836H71.8474V28.7663H63.7581V25.0204H72.9045V21.8031H60.242V38.5332ZM83.049 38.786C87.5302 38.786 90.3569 36.3041 90.3569 31.2482V21.8031H86.8408V31.4091C86.8408 34.1438 85.416 35.5457 83.0949 35.5457C80.7738 35.5457 79.372 34.0749 79.372 31.2712V21.8031H75.8329V31.3861C75.8329 36.2811 78.5906 38.786 83.049 38.786ZM94.3543 38.5332H97.8245V27.6402L106.144 38.5332H109.154V21.8031H105.661V32.3513L97.5946 21.8031H94.3543V38.5332ZM113.43 38.5332H119.888C125.151 38.5332 128.782 34.8792 128.782 30.1681V30.1222C128.782 25.4111 125.151 21.8031 119.888 21.8031H113.43V38.5332ZM119.888 24.9974C122.99 24.9974 125.082 27.1346 125.082 30.1681V30.2141C125.082 33.2476 122.99 35.3388 119.888 35.3388H116.946V24.9974H119.888ZM132.304 38.5332H144.99V35.3848H135.797V31.6849H143.795V28.5365H135.797V24.9515H144.875V21.8031H132.304V38.5332ZM152.024 29.9613V24.9974H155.816C157.677 24.9974 158.826 25.8477 158.826 27.4564V27.5023C158.826 28.9731 157.723 29.9613 155.885 29.9613H152.024ZM148.508 38.5332H152.024V33.0867H155.08L158.78 38.5332H162.917L158.734 32.4892C160.894 31.7308 162.388 30.0302 162.388 27.3185V27.2725C162.388 25.7328 161.906 24.4229 160.986 23.5037C159.883 22.4006 158.229 21.8031 156.114 21.8031H148.508V38.5332Z";
+const WEFUNDER_W = "M3 29.4853L6.36524 22.194C6.60628 21.6717 7.35366 21.6867 7.57359 22.2182L14.3487 38.5913C14.5779 39.1453 15.3677 39.1308 15.5764 38.5687L23.1127 18.279C23.315 17.7341 24.0721 17.6984 24.3249 18.2217L32.5064 35.1596C32.7713 35.7081 33.5744 35.6351 33.7362 35.048L43.1168 1";
+
+export function wefunderMark(): SVGElement {
+  return svg({ class: "wefunder", viewBox: "0 0 165 45", "aria-hidden": "true", focusable: "false" },
+    shape("path", { fill: "currentColor", d: WEFUNDER_LETTERS }),
+    shape("path", { fill: "none", stroke: "currentColor", "stroke-width": "4.86264", d: WEFUNDER_W }),
+  );
+}
 
 export function methodMark(method: Method): SVGElement {
   const box = { class: "mark", viewBox: MARK_VIEWBOX, "aria-hidden": "true", focusable: "false" };
   switch (method) {
     case "btc":
       return svg(box, shape("path", { fill: "#F7931A", d: BITCOIN }));
-    case "xmr":
-      return svg(box, shape("path", { fill: "#FF6600", d: MONERO }));
+    case "xmr": {
+      const glyph = shape("g", { transform: MONERO_SCALE });
+      glyph.append(shape("path", { fill: "#F60", d: MONERO_TOP }), shape("path", { fill: "#4C4C4C", d: MONERO_BASE }));
+      return svg(box, glyph);
+    }
     case "card":
       return svg(box,
         shape("rect", {

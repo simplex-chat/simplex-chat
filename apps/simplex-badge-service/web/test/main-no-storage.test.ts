@@ -17,7 +17,7 @@ const inView = (): ReturnType<typeof inViewOf> => inViewOf(app);
 
 noStorageTest("main: the wizard still walks when every write is refused", () => {
   primaryOf(inView())!.click();
-  assert.equal(headingOf(inView()), "Choose your level");
+  assert.equal(headingOf(inView()), "Choose your badge");
   inView().all("button.choice").find((c) => c.textContent.startsWith("Legend"))!.click();
   // The click rebuilds the panel, so the node clicked above is detached and must be re-queried.
   const chosen = inView().all("button.choice").find((c) => c.textContent.startsWith("Legend"))!;

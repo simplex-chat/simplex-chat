@@ -29,7 +29,7 @@ function session(): Record<string, unknown> {
 function walkToDurations(level: string): StubElement {
   while (heading(inView()) !== "Support SimpleX") inView().all("button.back")[0]!.click();
   continueButton(inView()).click();
-  assert.equal(heading(inView()), "Choose your level");
+  assert.equal(heading(inView()), "Choose your badge");
   choice(inView(), level).click();
   continueButton(inView()).click();
   assert.equal(heading(inView()), "How long?");
@@ -70,7 +70,7 @@ monthTest("main: changing the level clears the duration and disables Continue ag
   assert.equal(continueButton(inView()).hasAttribute("disabled"), false);
   assert.equal(session().offerId, "offer_12m");
 
-  while (heading(inView()) !== "Choose your level") inView().all("button.back")[0]!.click();
+  while (heading(inView()) !== "Choose your badge") inView().all("button.back")[0]!.click();
   choice(inView(), "Supporter").click();
   assert.equal("offerId" in session(), false,
     `the stored session must have no offerId at all: ${JSON.stringify(session())}`);

@@ -38,7 +38,7 @@ mainTest("main: a first load renders the landing screen, with the other three pa
 });
 
 mainTest("main: the four panels are the landing screen, the tier list, the duration list and the order summary in order, built once", () => {
-  assert.deepEqual(panels().map(heading), ["Support SimpleX", "Choose your level", "How long?", "Check your order"]);
+  assert.deepEqual(panels().map(heading), ["Support SimpleX", "Choose your badge", "How long?", "Check your order"]);
 });
 
 mainTest("main: prefers-reduced-motion: reduce JUMPS instead of scrolling", () => {
@@ -46,7 +46,7 @@ mainTest("main: prefers-reduced-motion: reduce JUMPS instead of scrolling", () =
   page.reducedMotion(true);
   try {
     primary(inView())!.click();
-    assert.equal(heading(inView()), "Choose your level");
+    assert.equal(heading(inView()), "Choose your badge");
     assert.ok(railStyle().includes("translateX(-100%)"), `it still moves: ${railStyle()}`);
     assert.ok(railStyle().includes("--slide:0ms"), `but it does not animate: ${railStyle()}`);
     inView().all("button.back")[0]!.click();
@@ -59,7 +59,7 @@ mainTest("main: prefers-reduced-motion: reduce JUMPS instead of scrolling", () =
 
 mainTest("main: Continue scrolls right by one panel and pushes a history entry", () => {
   primary(inView())!.click();
-  assert.equal(heading(inView()), "Choose your level");
+  assert.equal(heading(inView()), "Choose your badge");
   assert.deepEqual(inertFlags(), [true, false, true, true]);
   assert.ok(railStyle().includes("translateX(-100%)"), railStyle());
   assert.ok(railStyle().includes(`--slide:320ms`), railStyle());
@@ -67,9 +67,10 @@ mainTest("main: Continue scrolls right by one panel and pushes a history entry",
   assert.equal(history.stack.length, 2);
 });
 
-mainTest("main: [ ← Back ] is history.back(), and scrolls the track left again", () => {
+mainTest("main: [ Back ] is history.back(), and scrolls the track left again", () => {
   const back = inView().all("button.back")[0]!;
-  assert.equal(back.textContent, "← Back");
+  assert.equal(back.textContent, "Back");
+  assert.equal(back.all("svg.chevron").length, 1, "with the chevron before the word");
   back.click();
   assert.equal(heading(inView()), "Support SimpleX");
   assert.deepEqual(inertFlags(), [false, true, true, true]);
@@ -89,7 +90,7 @@ mainTest("main: browser Back on the landing screen leaves the site rather than m
 
 mainTest("main: the wizard walks the landing screen to the order summary, with the catalog's own figures", () => {
   primary(inView())!.click();
-  assert.equal(heading(inView()), "Choose your level");
+  assert.equal(heading(inView()), "Choose your badge");
   const legend = inView().all("button.choice").find((c) => c.textContent.startsWith("Legend"))!;
   assert.ok(legend.textContent.includes("$70 / month"), "the tier list's price comes from the compiled-in catalog");
   legend.click();
@@ -97,7 +98,7 @@ mainTest("main: the wizard walks the landing screen to the order summary, with t
   assert.equal(heading(inView()), "How long?");
   const twelve = inView().all("button.choice").find((c) => c.textContent.startsWith("12 months"))!;
   assert.ok(twelve.textContent.includes("$420"), "12 legend months are $420");
-  assert.ok(twelve.textContent.includes("save 50%"), "the saving is the only figure the browser computes");
+  assert.ok(twelve.textContent.includes("50% off"), "the saving is the only figure the browser computes");
   twelve.click();
   primary(inView())!.click();
   assert.equal(heading(inView()), "Check your order");
@@ -155,16 +156,24 @@ mainTest("main: a second press of Pay creates no second invoice", async () => {
   pay.click();
   pay.click();
   pay.click();
-  await until(() => heading(screenOf(app)) === "That did not go through", "the failure screen");
+  await until(() => heading(inView()) === "That did not go through", "the failure screen");
   assert.equal(fetches.length, before + 1, "exactly one POST");
   assert.ok(pay.hasAttribute("disabled"), "the guard is the disabled attribute, as screens.ts uses");
-  assert.equal(heading(screenOf(app)), "That did not go through", "a 500 is the failure screen");
+  assert.equal(heading(inView()), "That did not go through", "a 500 is the failure screen, in the checkout's place on the track");
+  assert.equal(panels().length, 4, "the track keeps its four panels");
 
   page.respondWith({ status: 500, body: { error: "internal" } });
-  screenOf(app).all("button.primary")[0]!.click();
+  inView().all("button.primary")[0]!.click();
   await until(() => fetches.length === before + 2, "the retry's POST");
   await settle();
-  assert.equal(heading(screenOf(app)), "That did not go through");
+  assert.equal(heading(inView()), "That did not go through");
+
+  inView().all("button.back")[0]!.click();
+  assert.equal(heading(inView()), "Check your order", "Back on the failure screen is the order summary again, in place");
+  assert.ok(primary(inView()), "with an enabled Pay button");
+  page.respondWith({ status: 500, body: { error: "internal" } });
+  primary(inView())!.click();
+  await until(() => heading(inView()) === "That did not go through", "the failure screen again");
 
   // Back out of the failure screen so the next test starts on a fresh order summary.
   history.back();
@@ -262,7 +271,7 @@ mainTest("main: Back after a purchase reaches a usable duration list, not an emp
   assert.ok(primary(durations), "and Continue must not be permanently disabled");
 
   history.back();
-  assert.equal(heading(inView()), "Choose your level");
+  assert.equal(heading(inView()), "Choose your badge");
   const legend = inView().all("button.choice").find((c) => c.textContent.startsWith("Legend"))!;
   assert.equal(legend.getAttribute("aria-pressed"), "true");
   history.back();
@@ -328,7 +337,7 @@ mainTest("main: [ Forget everything ] removes the key and returns to the landing
   assert.equal(history.url, "/", "the URL names the landing page, not the wiped order");
   const landing = screenOf(app);
   assert.ok(landing.textContent.includes("Support SimpleX"), landing.textContent);
-  assert.ok(landing.textContent.includes("Choose your level"));
+  assert.ok(landing.textContent.includes("Choose your badge"));
   assert.ok(!landing.textContent.includes("Nothing bought on this device"));
 });
 
@@ -352,7 +361,7 @@ mainTest("main: the provider-unavailable screen notice does not outlive the chec
 
   history.back();
   history.back();
-  assert.equal(heading(inView()), "Choose your level");
+  assert.equal(heading(inView()), "Choose your badge");
   inView().all("button.choice").find((c) => c.textContent.startsWith("Supporter"))!.click();
   primary(inView())!.click();
   inView().all("button.choice").find((c) => c.textContent.startsWith("12 months"))!.click();
@@ -389,19 +398,19 @@ mainTest("main: nothing is left running when the page has been navigated away fr
 mainTest("styles: colour tokens are on bare :root, by value, and redefined under dark", () => {
   const bare = ruleFor(sheet.rules, ":root");
   assert.ok(bare, "the palette must be defined on bare :root, not only inside a media query");
-  for (const token of ["--bg", "--ink", "--muted", "--line", "--accent"]) {
+  for (const token of ["--bg", "--ink", "--ink-soft", "--line", "--accent"]) {
     const value = bare.decls.get(token);
     assert.ok(value !== undefined && value.length > 0, `${token} must be defined on bare :root`);
   }
-  assert.equal(bare.decls.get("--accent")!.toUpperCase(), "#3889FF",
-    "the accent is the reference's #3889FF, and the same one in both themes");
+  assert.equal(bare.decls.get("--accent")!.toUpperCase(), "#0053D0",
+    "the accent is the website's primary-light");
 
   const dark = mediaFor("(prefers-color-scheme: dark)");
   assert.ok(dark, "the dark query must exist");
   // The dark rule is guarded so the menu's explicit Light beats an operating system set to dark.
   const darkRoot = ruleFor(dark.rules, ':root:not([data-theme="light"])');
   assert.ok(darkRoot, "and must redefine :root for everything but an explicit light");
-  for (const token of ["--bg", "--ink", "--muted", "--line"]) {
+  for (const token of ["--bg", "--ink", "--ink-soft", "--line"]) {
     const value = darkRoot.decls.get(token);
     assert.ok(value !== undefined, `${token} must be redefined under dark`);
     assert.notEqual(value, bare.decls.get(token), `${token} must actually differ in dark`);
@@ -437,7 +446,7 @@ mainTest("styles: the track clips, the rail travels, and each panel is one whole
   const panel = ruleFor(sheet.rules, ".panel");
   assert.ok(panel, ".panel must exist");
   assert.equal(panel.decls.get("flex")?.replace(/\s+/g, " "), "0 0 100%", "each panel is exactly the column's width");
-  assert.equal(ruleFor(sheet.rules, "#app")!.decls.get("max-width"), "560px");
+  assert.equal(ruleFor(sheet.rules, "#app")!.decls.get("max-width"), "640px");
   assert.equal(ruleFor(sheet.rules, ".panel[inert]"), undefined,
     "an inert panel keeps its height, or the two screens are never on stage together");
 });

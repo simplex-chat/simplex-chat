@@ -17,14 +17,14 @@ const inView = (): StubElement => inViewOf(app);
 const heading = (): string => headingOf(inView());
 const back = (): void => { inView().all("button.back")[0]!.click(); };
 
-test("main: loading straight at a deep step rebuilds the stack, so [ ← Back ] walks it, never off the page", () => {
+test("main: loading straight at a deep step rebuilds the stack, so [ Back ] walks it, never off the page", () => {
   assert.equal(heading(), "How long?", "the duration step, resolved from the URL and the stored tier");
   assert.equal(history.url, "/#/months");
   // The two steps before this one are rebuilt beneath it, or history.back() would leave the wizard, and when embedded, the badges page.
   assert.equal(history.stack.length, 3, `rebuilt beneath: ${JSON.stringify(history.stack)}`);
 
   back();
-  assert.equal(heading(), "Choose your level", "Back reaches the tier list, one step, not the landing");
+  assert.equal(heading(), "Choose your badge", "Back reaches the tier list, one step, not the landing");
   assert.equal(history.url, "/#/tier");
   assert.equal(history.left, false, "and it stayed in the wizard, it did not leave the site");
 
