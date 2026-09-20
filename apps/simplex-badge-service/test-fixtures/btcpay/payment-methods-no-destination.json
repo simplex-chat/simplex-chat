@@ -1,0 +1,18 @@
+{
+  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- a BTC-CHAIN method with no `destination` yet -- the shape a payment method has before it is activated and given an address. Hand-written from the documented schema; a real BTCPay will not produce it on demand. A create that cannot learn where to pay must be a ProviderError naming the missing field, and write nothing -- the invoice exists at the provider and is abandoned there.",
+  "response": [
+    {
+      "paymentMethodId": "BTC-CHAIN",
+      "currency": "BTC",
+      "rate": "108000.12",
+      "paymentMethodPaid": "0.00000000",
+      "totalPaid": "0.00000000",
+      "due": "0.00050000",
+      "amount": "0.00050000",
+      "networkFee": "0.00000500",
+      "activated": false,
+      "payments": [],
+      "additionalData": {}
+    }
+  ]
+}
