@@ -544,8 +544,10 @@ function payTotal(): string {
   return total === undefined ? "" : money(total.amount, price?.currency ?? "usd");
 }
 
+// A coin that is down falls back to the other coin, and the card to the first coin: a buyer who
+// chose a coin is not moved to a card.
 function firstAvailable(down: Method): Method {
-  return screens.METHOD_ORDER.find((m) => m !== down) ?? "btc";
+  return screens.METHOD_ORDER.find((m) => m !== "card" && m !== down) ?? "card";
 }
 
 let cancelNotice: { orderId: string; epoch: number; message: string } | undefined;

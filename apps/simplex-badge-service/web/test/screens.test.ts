@@ -161,13 +161,15 @@ domTest("screens: the order summary is the summary and the method row, with the 
     assert.ok(p.textContent.includes(line), `the order summary is missing: ${line}`);
   }
   assert.ok(!p.textContent.includes("Stripe"), "with a coin chosen, the processor note is not shown");
+  assert.equal(p.all("div.notes.slot").length, 1, "but its slot is, so the line's absence moves nothing");
+  assert.deepEqual(p.all("button.choice").map((c) => c.textContent), ["Card", "Bitcoin", "Monero"]);
   const card = render(screens.orderSummary({ canKeepTheCode: true,
     badgeType: "legend", months: 12, total: "$420.00", selected: "card",
     onSelect: noop, onPay: noop, onBack: noop,
   }));
   assert.ok(card.textContent.includes("Card payments are processed by Stripe."), "with card chosen, the note names the processor");
   const kids = card.children.map((c) => (c as { getAttribute?: (n: string) => string | null }).getAttribute?.("class") ?? "");
-  assert.ok(kids.indexOf("notes") < kids.indexOf("primary"), "above the Pay button");
+  assert.ok(kids.indexOf("notes slot") < kids.indexOf("primary"), "above the Pay button");
   assert.ok(p.textContent.includes("Or invest $100+ and get a free supporter badge."),
     "without a perk the block opens on the round's minimum");
 });
@@ -792,7 +794,7 @@ domTest("screens: a history list row is a receipt — badge, level, price, metho
   assert.equal(art[0]!.getAttribute("aria-hidden"), "true");
   const mark = row.all("svg.mark");
   assert.equal(mark.length, 1);
-  assert.equal(mark[0]!.all("path")[0]!.getAttribute("fill"), "#FF6600", "Monero's orange");
+  assert.equal(mark[0]!.all("path")[0]!.getAttribute("fill"), "#F60", "Monero's orange");
   for (const line of ["Legend, 12 months", "Monero", "$420.00", "28 August 2026, 11:46", "paid"]) {
     assert.ok(row.textContent.includes(line), `the row is missing: ${line}`);
   }

@@ -638,12 +638,13 @@ designTest("design: the order summary's method row carries all three payment mar
     assert.equal(m[0]!.getAttribute("viewBox"), "0 0 24 24", "every mark is drawn in the same 24×24 box");
     assert.equal(m[0]!.getAttribute("aria-hidden"), "true");
   }
-  assert.equal(marks[0]![0]!.all("path")[0]!.getAttribute("fill"), "#F7931A");
-  assert.equal(marks[1]![0]!.all("path")[0]!.getAttribute("fill"), "#FF6600");
-  assert.equal(marks[2]![0]!.all("path").length, 0, "the card is a rect and a line, not a filled glyph");
-  assert.equal(marks[2]![0]!.all("rect")[0]!.getAttribute("stroke"), "currentColor");
-  assert.equal(marks[2]![0]!.all("line")[0]!.getAttribute("stroke"), "currentColor");
-  assert.ok(cards[1]!.textContent.startsWith("Monero"), cards[1]!.textContent);
+  assert.equal(marks[0]![0]!.all("path").length, 0, "the card is a rect and a line, not a filled glyph");
+  assert.equal(marks[0]![0]!.all("rect")[0]!.getAttribute("stroke"), "currentColor");
+  assert.equal(marks[0]![0]!.all("line")[0]!.getAttribute("stroke"), "currentColor");
+  assert.equal(marks[1]![0]!.all("path")[0]!.getAttribute("fill"), "#F7931A");
+  assert.deepEqual(marks[2]![0]!.all("path").map((p) => p.getAttribute("fill")), ["#F60", "#4C4C4C"],
+    "the Monero glyph is the official two-colour mark, as simplex.domains draws it");
+  assert.deepEqual(cards.map((c) => c.textContent), ["Card", "Bitcoin", "Monero"], "the card first, then the two coins");
 });
 
 designTest("design: no screen repeats the mark — the header carries it, and the code screen has its tick", () => {

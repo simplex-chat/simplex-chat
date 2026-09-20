@@ -478,6 +478,9 @@ footer a:hover { text-decoration: underline; }
 .panel > .notes { margin-top: auto; }
 .notes + .primary { margin-top: 20px; }
 .notes .muted { margin: 4px auto 0; max-width: 480px; }
+/* The checkout's note slot holds one line's height whether or not the line is shown, so choosing a
+   method moves nothing above or below it. */
+.notes.slot { min-height: calc(4px + .875rem * 1.5); }
 .notes .half { display: inline-block; }
 @media (prefers-reduced-motion: reduce) {
   .track, .rail { transition: none; }

@@ -397,7 +397,7 @@ export function durations(o: DurationsOptions): HTMLElement {
 }
 
 const METHOD_NAMES: Readonly<Record<Method, string>> = { btc: "Bitcoin", xmr: "Monero", card: "Card" };
-export const METHOD_ORDER: readonly Method[] = ["btc", "xmr", "card"];
+export const METHOD_ORDER: readonly Method[] = ["card", "btc", "xmr"];
 
 export const NOT_KEPT_TITLE = "This browser will not keep your code";
 
@@ -503,9 +503,8 @@ export function orderSummary(o: OrderSummaryOptions): HTMLElement {
     choices.append(card);
   }
   p.append(choices);
-  if (o.selected === "card") {
-    p.append(el("div", { class: "notes" }, el("p", { class: "muted" }, "Card payments are processed by Stripe.")));
-  }
+  p.append(el("div", { class: "notes slot" },
+    ...(o.selected === "card" ? [el("p", { class: "muted" }, "Card payments are processed by Stripe.")] : [])));
   p.append(button(`Pay ${o.total} with ${METHOD_NAMES[o.selected]}`, o.onPay));
   return withInvest(p, investPanel(o.perk, true));
 }
