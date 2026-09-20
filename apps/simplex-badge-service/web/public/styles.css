@@ -157,7 +157,7 @@ html { scrollbar-gutter: stable; }
 
 body {
   margin: 0;
-  /* The gutter is here, so `#app` is exactly the 560px content column and
+  /* The gutter is here, so `#app` is exactly the 640px content column and
      nothing inside it has to subtract padding to reach that width. */
   padding: 0 20px;
   min-height: 100vh;
@@ -173,7 +173,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-#app { max-width: 560px; margin: 0 auto; overflow-x: hidden; }
+#app { max-width: 640px; margin: 0 auto; overflow-x: hidden; }
 
 /* The shell ships a static copy of the first screen (see index.html), so the first paint is the real
    landing, not an empty page, and `main.ts` swaps in its own identical markup with no flash. Embedded,
@@ -219,7 +219,7 @@ body {
 /* ------------------------------------------------------------------- chrome */
 
 /* The wordmark on the left, and on the right a circular icon button holding the
-   hamburger. It spans the page rather than the 560 column, so the column reads
+   hamburger. It spans the page rather than the 640 column, so the column reads
    as content inside a site rather than as the whole site. */
 .chrome-bar {
   display: flex;
@@ -345,7 +345,7 @@ body {
 /* the footer, on every screen: a hairline across the column, then the
    contact link centred under it in the accent. */
 footer {
-  max-width: 560px;
+  max-width: 640px;
   margin: 0 auto;
   text-align: center;
 }
@@ -798,6 +798,39 @@ p.row-line { margin: 16px 0 0; }
    cannot drift a step away from the notice it sits beside. */
 .info .title { color: var(--ink); }
 .info p { color: var(--muted); }
+
+/* the crowdfunding, under the main button of the first three screens while the round is open.
+   No frame and no second button: a sentence, and under it one link in the accent - "Invest on"
+   and the Wefunder wordmark - the way the site's secondary links are drawn. */
+.invest {
+  margin: 28px 0 0;
+  text-align: center;
+}
+/* One line where the column holds it. Where it does not, the two halves are inline blocks, so the
+   line breaks between them - before "and" - and never inside the first; a half too wide for a
+   narrow phone wraps within itself, as every lede does. */
+.invest p { font-size: 1rem; margin: 0; color: var(--ink); }
+.invest .half { display: inline-block; }
+.invest-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px auto 0;
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.invest-link:hover { color: var(--accent-hover); }
+.invest-link:active { color: var(--accent-pressed); }
+.invest-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+/* the wordmark, a touch taller than the text and lifted so its baseline sits with the text's */
+.invest-link .wefunder { height: 22px; width: auto; display: block; transform: translateY(-2px); }
+/* the landing's code card follows with the same air the block has above it */
+.invest + .info { margin-top: 28px; }
+/* the checkout's one line under Pay: the amount and the link, never wrapped */
+.invest-line { text-align: center; white-space: nowrap; }
 
 /* --------------------------------------------------------------- the landing screen's hero */
 

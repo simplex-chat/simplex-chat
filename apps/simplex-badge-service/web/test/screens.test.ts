@@ -13,6 +13,7 @@ const copied = clipboard.writes;
 
 // The stub must be installed before screens.ts is imported, since el reaches for document at call time.
 const screens = await import("../src/screens.js");
+const { WEFUNDER_URL } = await import("../src/crowdfunding.js");
 type Rec = import("../src/domain.js").OrderRecord;
 type View = import("../src/api.js").InvoiceView;
 
@@ -58,26 +59,44 @@ domTest("screens: the landing screen carries the copy the mockups fix", () => {
   const text = p.textContent;
   for (const line of [
     "Support SimpleX",
-    "SimpleX has no ads, no user accounts and nothing to sell.",
-    "A supporter badge helps pay for the people who build it.",
+    "Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile.",
     "Choose your level",
-    "Already bought a code?",
+    "Invest $100+ in SimpleX Chat and get a free supporter badge.",
+    "Invest on ",
+    "Already have a code?",
     "Redeem it in the app: Settings, Supporter perks.",
-    "The badge shows on your profile. Nothing renews by itself, and no account is created.",
+    "You pay once for the months you choose. No subscription, no account.",
   ]) assert.ok(text.includes(line), `the landing screen is missing: ${line}`);
   assert.equal(p.all("button.link").length, 0, "the history is the menu's, not the landing page's");
+  const invest = p.all("div.invest");
+  assert.equal(invest.length, 1, "one invest panel, under the main button");
+  const links = invest[0]!.all("a.invest-link");
+  assert.equal(links.length, 1, "the block's one action is the link to Wefunder, and it is a link, not a second button");
+  assert.equal(invest[0]!.all("button").length, 0);
+  assert.equal(links[0]!.getAttribute("href"), WEFUNDER_URL);
+  assert.equal(links[0]!.getAttribute("target"), "_blank", "the checkout stays open behind it");
+  assert.equal(links[0]!.all("svg.wefunder").length, 1, "the link carries the Wefunder wordmark");
+  assert.equal(links[0]!.getAttribute("aria-label"), "Invest on Wefunder", "and reads as the words the wordmark stands for");
+  const kids = p.children.map((c) => (c as { getAttribute?: (n: string) => string | null }).getAttribute?.("class") ?? "");
+  assert.ok(kids.indexOf("primary") < kids.indexOf("invest") && kids.indexOf("invest") < kids.indexOf("info"),
+    "the invest panel sits under the button and above the code card");
 });
 
 domTest("screens: the tier list carries the level copy, and Continue is disabled until one is chosen", () => {
   const tiers = [
-    { priceId: "price_supporter", badgeType: "supporter", name: "Supporter", price: "$7 / month", features: ["2 GB files", "7 days storage"], disabled: false },
-    { priceId: "price_legend", badgeType: "legend", name: "Legend", price: "$70 / month", features: ["5 GB files", "21 days storage"], disabled: false },
+    { priceId: "price_supporter", badgeType: "supporter", name: "Supporter", price: "$7 / month", features: ["Files up to 2 GB", "Stored for 7 days"], disabled: false },
+    { priceId: "price_legend", badgeType: "legend", name: "Legend", price: "$70 / month", features: ["Files up to 5 GB", "Stored for 21 days"], disabled: false },
   ];
   const blank = render(screens.tiers({ tiers, selected: undefined, onSelect: noop, onContinue: noop, onBack: noop }));
-  for (const line of ["Choose your level", "Bigger files, and longer for people to collect them.",
-    "Supporter", "$7 / month", "2 GB files", "7 days storage", "Legend", "$70 / month", "5 GB files", "21 days storage", "← Back"]) {
+  for (const line of ["Choose your level", "Larger files that stay available longer.",
+    "Supporter", "$7 / month", "Files up to 2 GB", "Stored for 7 days", "Legend", "$70 / month", "Files up to 5 GB", "Stored for 21 days", "← Back",
+    "Invest $100+ in SimpleX Chat and get a free supporter badge."]) {
     assert.ok(blank.textContent.includes(line), `the tier list is missing: ${line}`);
   }
+  const legend = render(screens.tiers({ tiers, selected: "price_legend", perk: { badgeType: "legend", amount: 1000 },
+    onSelect: noop, onContinue: noop, onBack: noop }));
+  assert.ok(legend.textContent.includes("Invest $1,000+ in SimpleX Chat and get a free legend badge."),
+    "with a tier chosen, the panel names that tier's minimum");
   assert.ok(blank.all("button.primary")[0]!.hasAttribute("disabled"), "Continue must wait for an answer");
 
   let chosen = "";
@@ -110,10 +129,16 @@ domTest("screens: the duration list prints the durations and their savings, unpr
     ],
     selected: "offer_12m", onSelect: noop, onContinue: noop, onBack: noop,
   }));
-  for (const line of ["How long?", "Prepaid months. Nothing renews by itself.",
+  for (const line of ["How long?", "Paid once, for the months you choose. No subscription.",
     "1 month", "$70", "3 months", "$140", "save 33%", "12 months", "$420", "save 50%"]) {
     assert.ok(p.textContent.includes(line), `the duration list is missing: ${line}`);
   }
+  const priced = render(screens.durations({
+    durations: [{ key: "offer_12m", name: "12 months", price: "$420", disabled: false }],
+    selected: "offer_12m", perk: { badgeType: "legend", amount: 10000, months: 12 }, onSelect: noop, onContinue: noop, onBack: noop,
+  }));
+  assert.ok(priced.textContent.includes("Invest $10,000+ in SimpleX Chat and get a free legend badge for 12 months."),
+    "with a term chosen, the panel names the amount and the term");
   const bad = p.all("button.choice")[3]!;
   assert.ok(bad.hasAttribute("disabled"));
   assert.equal(bad.textContent, "24 months", "a duration with no total renders unpriced");
@@ -129,6 +154,23 @@ domTest("screens: the order summary is the summary and the method row, with the 
     "Card is handled by Stripe. Bitcoin and Monero are on-chain, through BTCPay.", "← Back"]) {
     assert.ok(p.textContent.includes(line), `the order summary is missing: ${line}`);
   }
+  assert.equal(p.all("div.invest").length, 0, "no panel on the checkout, and no line without a perk");
+  assert.equal(p.all("p.invest-line").length, 0);
+});
+
+domTest("screens: the order summary offers the investment as one line under Pay, never as a panel", () => {
+  const p = render(screens.orderSummary({ canKeepTheCode: true,
+    badgeType: "legend", months: 12, total: "$420.00", selected: "xmr",
+    perk: { badgeType: "legend", amount: 10000, months: 12 },
+    onSelect: noop, onPay: noop, onBack: noop,
+  }));
+  const line = p.all("p.invest-line");
+  assert.equal(line.length, 1);
+  assert.equal(line[0]!.textContent, "Or invest $10,000+ on Wefunder.", "the amount and the link, short enough never to wrap");
+  assert.equal(line[0]!.all("a.link")[0]!.getAttribute("href"), WEFUNDER_URL);
+  assert.equal(p.all("div.invest").length, 0);
+  const kids = p.children.map((c) => (c as { getAttribute?: (n: string) => string | null }).getAttribute?.("class") ?? "");
+  assert.ok(kids.indexOf("primary") < kids.indexOf("muted invest-line"), "the line is under Pay");
 });
 
 domTest("screens: a discounted order shows the gross price and the reduction above the total", () => {

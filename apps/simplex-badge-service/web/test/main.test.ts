@@ -437,7 +437,7 @@ mainTest("styles: the track clips, the rail travels, and each panel is one whole
   const panel = ruleFor(sheet.rules, ".panel");
   assert.ok(panel, ".panel must exist");
   assert.equal(panel.decls.get("flex")?.replace(/\s+/g, " "), "0 0 100%", "each panel is exactly the column's width");
-  assert.equal(ruleFor(sheet.rules, "#app")!.decls.get("max-width"), "560px");
+  assert.equal(ruleFor(sheet.rules, "#app")!.decls.get("max-width"), "640px");
   assert.equal(ruleFor(sheet.rules, ".panel[inert]"), undefined,
     "an inert panel keeps its height, or the two screens are never on stage together");
 });

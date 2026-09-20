@@ -130,10 +130,10 @@ designTest("design: dark restates every token, and none of them by the light val
   }
 });
 
-designTest("design: the content column is the mockups' 560px, and the gutter is outside it", () => {
-  assert.equal(decl("#app", "max-width"), "560px");
+designTest("design: the content column is 640px, and the gutter is outside it", () => {
+  assert.equal(decl("#app", "max-width"), "640px");
   assert.equal(decl("#app", "margin"), "0 auto", "and it is centred");
-  assert.equal(decl("footer", "max-width"), "560px", "the footer rule spans the same column");
+  assert.equal(decl("footer", "max-width"), "640px", "the footer rule spans the same column");
   assert.match(decl("body", "padding") ?? "", /^0 \d+px$/, "the gutter is the sides, and nothing on top");
   const panelPadding = decl(".panel", "padding") ?? "";
   assert.ok(/^\d+px 0( \d+px)?$/.test(panelPadding),

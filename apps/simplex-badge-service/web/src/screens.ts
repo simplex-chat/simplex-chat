@@ -1,10 +1,11 @@
 import { money, countdown, outstanding, startedAgo, type Outstanding } from "./format.js";
-import { badgeIcon, hamburger, hasBadgeArt, methodMark } from "./icons.js";
+import { badgeIcon, hamburger, hasBadgeArt, methodMark, wefunderMark } from "./icons.js";
 import { paymentUri, qrSvg } from "./qr.js";
 import type { HistoryRow, UnpaidOrder } from "./order.js";
 import type { InvoiceView } from "./api.js";
 import { THEMES, type Method, type Theme } from "./domain.js";
 import type { CardFailure } from "./stripe.js";
+import { CROWDFUNDING_ACTIVE, WEFUNDER_URL, dollars } from "./crowdfunding.js";
 
 /** Under the test runner the timer is an object whose unref must be called, or a screen that was
  * built and never stopped holds the process open until the suite is killed. */
@@ -220,22 +221,70 @@ function qrFigure(payload: string, label: string, caption?: string): HTMLElement
   return figure;
 }
 
+export const INVEST_LABEL = "Invest on Wefunder";
+
+/** The investment that earns a badge as a perk: the minimum for a tier, or the amount for a chosen term. */
+export interface InvestPerk {
+  badgeType: string;
+  amount: number;
+  months?: number;
+}
+
+/** "Invest on" and the Wefunder wordmark, as one link in the accent. */
+function investLink(): HTMLAnchorElement {
+  return el("a", { class: "invest-link", href: WEFUNDER_URL, target: "_blank", rel: "noopener", "aria-label": INVEST_LABEL },
+    "Invest on ", wefunderMark());
+}
+
+/** The sentence in its two halves, so that where it wraps it wraps before "and". */
+export function investSentence(perk: InvestPerk | undefined): [string, string] {
+  if (perk === undefined) return ["Invest $100+ in SimpleX Chat", "and get a free supporter badge."];
+  const term = perk.months === undefined ? "" : ` for ${perk.months === 1 ? "1 month" : `${perk.months} months`}`;
+  return [`Invest ${dollars(perk.amount)}+ in SimpleX Chat`, `and get a free ${perk.badgeType} badge${term}.`];
+}
+
+/** The block under the main button of a screen: one sentence and the link. Absent once the round has closed. */
+export function investPanel(perk: InvestPerk | undefined): HTMLElement | undefined {
+  if (!CROWDFUNDING_ACTIVE) return undefined;
+  const [lead, rest] = investSentence(perk);
+  return el("div", { class: "invest" },
+    el("p", {}, el("span", { class: "half" }, lead), " ", el("span", { class: "half" }, rest)),
+    investLink());
+}
+
+/** The one line under Pay. It does not wrap, so it says the amount and no more. */
+export function investLine(perk: InvestPerk | undefined): HTMLElement | undefined {
+  if (!CROWDFUNDING_ACTIVE || perk === undefined) return undefined;
+  return el("p", { class: "muted invest-line" },
+    `Or invest ${dollars(perk.amount)}+ `,
+    el("a", { class: "link", href: WEFUNDER_URL, target: "_blank", rel: "noopener" }, "on Wefunder"),
+    ".");
+}
+
+function withInvest(p: HTMLElement, node: HTMLElement | undefined): HTMLElement {
+  if (node !== undefined) p.append(node);
+  return p;
+}
+
 export interface LandingOptions {
   onStart: () => void;
+  perk?: InvestPerk;
 }
 
 export function landing(o: LandingOptions): HTMLElement {
   const p = panel(
     el("h1", {}, "Support SimpleX"),
-    el("p", { class: "lede" }, "SimpleX has no ads, no user accounts and nothing to sell."),
-    el("p", { class: "lede" }, "A supporter badge helps pay for the people who build it."),
+    el("p", { class: "lede" }, "Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile."),
     el("div", { class: "hero", role: "presentation" }),
     button("Choose your level", o.onStart),
+  );
+  withInvest(p, investPanel(o.perk));
+  p.append(
     el("div", { class: "info" },
-      el("span", { class: "title" }, "Already bought a code?"),
+      el("span", { class: "title" }, "Already have a code?"),
       el("p", {}, "Redeem it in the app: Settings, Supporter perks."),
     ),
-    el("p", { class: "muted" }, "The badge shows on your profile. Nothing renews by itself, and no account is created."),
+    el("p", { class: "muted" }, "You pay once for the months you choose. No subscription, no account."),
   );
   return p;
 }
@@ -252,6 +301,7 @@ export interface TierOption {
 export interface TiersOptions {
   tiers: readonly TierOption[];
   selected: string | undefined;
+  perk?: InvestPerk;
   onSelect: (priceId: string) => void;
   onContinue: () => void;
   onBack: () => void;
@@ -275,13 +325,13 @@ export function tiers(o: TiersOptions): HTMLElement {
   }
   const go = button("Continue", o.onContinue);
   if (o.selected === undefined) go.setAttribute("disabled", "");
-  return panel(
+  return withInvest(panel(
     backButton(o.onBack),
     el("h1", {}, "Choose your level"),
-    el("p", { class: "lede" }, "Bigger files, and longer for people to collect them."),
+    el("p", { class: "lede" }, "Larger files that stay available longer."),
     choices,
     go,
-  );
+  ), investPanel(o.perk));
 }
 
 export interface DurationOption {
@@ -296,6 +346,7 @@ export interface DurationOption {
 export interface DurationsOptions {
   durations: readonly DurationOption[];
   selected: string | undefined;
+  perk?: InvestPerk;
   onSelect: (key: string) => void;
   onContinue: () => void;
   onBack: () => void;
@@ -321,13 +372,13 @@ export function durations(o: DurationsOptions): HTMLElement {
   }
   const go = button("Continue", o.onContinue);
   if (o.selected === undefined) go.setAttribute("disabled", "");
-  return panel(
+  return withInvest(panel(
     backButton(o.onBack),
     el("h1", {}, "How long?"),
-    el("p", { class: "lede" }, "Prepaid months. Nothing renews by itself."),
+    el("p", { class: "lede" }, "Paid once, for the months you choose. No subscription."),
     choices,
     go,
-  );
+  ), investPanel(o.perk));
 }
 
 const METHOD_NAMES: Readonly<Record<Method, string>> = { btc: "Bitcoin", xmr: "Monero", card: "Card" };
@@ -344,6 +395,7 @@ export interface OrderSummaryOptions {
   selected: Method;
   unavailable?: Method;
   openOrder?: OpenOrderLine;
+  perk?: InvestPerk;
   onSelect: (m: Method) => void;
   onPay: () => void;
   onBack: () => void;
@@ -437,6 +489,7 @@ export function orderSummary(o: OrderSummaryOptions): HTMLElement {
   }
   p.append(choices);
   p.append(button(`Pay ${o.total} with ${METHOD_NAMES[o.selected]}`, o.onPay));
+  withInvest(p, investLine(o.perk));
   p.append(el("p", { class: "muted" }, "Card is handled by Stripe. Bitcoin and Monero are on-chain, through BTCPay."));
   return p;
 }
