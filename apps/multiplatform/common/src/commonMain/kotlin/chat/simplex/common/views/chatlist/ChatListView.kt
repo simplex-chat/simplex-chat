@@ -433,23 +433,9 @@ private fun AndroidOnboardingCards() {
   } else {
     WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
   }
-  val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
-  val crowdfunding = crowdfundingAvailable()
-  Column(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad)) {
-    Box(Modifier.weight(1f).fillMaxWidth()) {
-      ConnectOnboardingView()
-    }
-    if (crowdfunding && !getStakeBannerDismissed.value) {
-      Box(Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = 8.dp)) {
-        GetStakeBanner(showDismiss = false, onTap = ::openGetStake, onDismiss = {})
-      }
-    }
+  Box(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad)) {
+    ConnectOnboardingView()
   }
-}
-
-private fun openGetStake() {
-  appPrefs.getStakeBannerTapped.set(true)
-  ModalManager.start.showModalCloseable(cardScreen = true) { close -> GetStakeView(showFirstImage = true, close = close) }
 }
 
 @Composable
@@ -1023,7 +1009,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           GetStakeBanner(
             showDismiss = getStakeBannerTapped.value && chatModel.chats.value.isNotEmpty(),
-            onTap = ::openGetStake,
+            onTap = { openGetStake(ModalManager.start) },
             onDismiss = { appPrefs.getStakeBannerDismissed.set(true) }
           )
         }

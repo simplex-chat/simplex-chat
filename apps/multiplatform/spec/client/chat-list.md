@@ -334,7 +334,7 @@ Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfun
 | Where | Condition | Layout |
 |-------|-----------|--------|
 | Chat list | in `ChatList`'s `LazyColumn`, after `ToggleChatListCard` and before the chats | `Box(Modifier.zIndex(1f).padding(16.dp))` |
-| Onboarding | below `ConnectOnboardingView` in `AndroidOnboardingCards` | `padding(start/end = DEFAULT_PADDING, bottom = 8.dp)`, in a `Column` where the onboarding pages take `weight(1f)` |
+| Onboarding | inside `ConnectOnboardingView` (`views/newchat/OnboardingCards.kt`), below the pager, so it shares the pages' width limit on desktop and their dimming while a start modal is open; opens the page in `ModalManager.center` on desktop, `ModalManager.start` on Android | `padding(start/end = DEFAULT_PADDING, bottom = 8.dp)`, in a `Column` where the pager takes `weight(1f)` |
 
 `crowdfundingAvailable()` launches an effect to load the store country, so both call sites read it in the composable body rather than inside the `LazyColumn` builder.
 

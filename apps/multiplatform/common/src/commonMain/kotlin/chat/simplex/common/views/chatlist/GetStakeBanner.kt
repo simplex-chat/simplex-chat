@@ -19,11 +19,14 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.isInDarkTheme
+import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.views.helpers.fontSizeMultiplier
 import chat.simplex.common.views.newchat.darkStops
 import chat.simplex.common.views.newchat.gradientPoints
 import chat.simplex.common.views.newchat.lightStops
+import chat.simplex.common.views.onboarding.GetStakeView
 import chat.simplex.res.MR
 
 // Spec: spec/client/chat-list.md#GetStakeBanner
@@ -59,6 +62,13 @@ fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Uni
     if (showDismiss) {
       BannerDismissButton(Modifier.align(Alignment.TopEnd), onDismiss)
     }
+  }
+}
+
+fun openGetStake(modalManager: ModalManager) {
+  appPrefs.getStakeBannerTapped.set(true)
+  modalManager.showModalCloseable(cardScreen = true) { close ->
+    GetStakeView(showFirstImage = true, inCenterOfWindow = modalManager === ModalManager.center, close = close)
   }
 }
 
