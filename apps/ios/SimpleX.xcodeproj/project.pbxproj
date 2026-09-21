@@ -250,6 +250,7 @@
 		D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = D77B92DB2952372200A5A1CC /* SwiftyGif */; };
 		D7F0E33929964E7E0068AF69 /* LZString in Frameworks */ = {isa = PBXBuildFile; productRef = D7F0E33829964E7E0068AF69 /* LZString */; };
 		E51CC1E62C62085600DB91FE /* OneHandUICard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51CC1E52C62085600DB91FE /* OneHandUICard.swift */; };
+		562A95F0DA85F5139C5404CA /* GetStakeBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AA6C86A28098FD06DBE3C05 /* GetStakeBanner.swift */; };
 		E559A0A12E3F77EE00B26F74 /* CommandsMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E559A0A02E3F77EE00B26F74 /* CommandsMenuView.swift */; };
 		E5A0B0012F960000AAAA0001 /* YourNetwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5A0B0022F960000AAAA0001 /* YourNetwork.swift */; };
 		E5AEC0AB2F91A6EB00270665 /* CIChatLinkHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */; };
@@ -626,6 +627,7 @@
 		D741547929AF90B00022400A /* PushKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PushKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/PushKit.framework; sourceTree = DEVELOPER_DIR; };
 		D7AA2C3429A936B400737B40 /* MediaEncryption.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = MediaEncryption.playground; path = Shared/MediaEncryption.playground; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		E51CC1E52C62085600DB91FE /* OneHandUICard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneHandUICard.swift; sourceTree = "<group>"; };
+		2AA6C86A28098FD06DBE3C05 /* GetStakeBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetStakeBanner.swift; sourceTree = "<group>"; };
 		E559A0A02E3F77EE00B26F74 /* CommandsMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandsMenuView.swift; sourceTree = "<group>"; };
 		E5A0B0022F960000AAAA0001 /* YourNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YourNetwork.swift; sourceTree = "<group>"; };
 		E5AEC0AA2F91A6EA00270665 /* CIChatLinkHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIChatLinkHeader.swift; sourceTree = "<group>"; };
@@ -1037,6 +1039,7 @@
 				18415835CBD939A9ABDC108A /* UserPicker.swift */,
 				64EEB0F62C353F1C00972D62 /* ServersSummaryView.swift */,
 				E51CC1E52C62085600DB91FE /* OneHandUICard.swift */,
+				2AA6C86A28098FD06DBE3C05 /* GetStakeBanner.swift */,
 				B70A39722D24090D00E80A5F /* TagListView.swift */,
 			);
 			path = ChatList;
@@ -1531,6 +1534,7 @@
 				5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */,
 				5CEACCE327DE9246000BD591 /* ComposeView.swift in Sources */,
 				E51CC1E62C62085600DB91FE /* OneHandUICard.swift in Sources */,
+				562A95F0DA85F5139C5404CA /* GetStakeBanner.swift in Sources */,
 				5C65DAF929D0CC20003CEE45 /* DeveloperView.swift in Sources */,
 				5C36027327F47AD5009F19D9 /* AppDelegate.swift in Sources */,
 				5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */,
