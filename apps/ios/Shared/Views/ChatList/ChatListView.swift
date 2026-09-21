@@ -215,7 +215,7 @@ struct ChatListView: View {
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
         }
         .appSheet(isPresented: $showGetStakeSheet) {
-            GetStakeView(fromSettings: false)
+            GetStakeView(fromSettings: false, showFirstImage: true)
         }
         .onChange(of: activeUserPickerSheet) {
             if $0 != nil {
