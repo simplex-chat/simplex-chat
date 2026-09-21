@@ -1888,7 +1888,7 @@
     <string name="decryption_errors">errores de descifrado</string>
     <string name="deleted">Eliminadas</string>
     <string name="deletion_errors">Errores de eliminación</string>
-    <string name="member_info_member_disabled">inactivo</string>
+    <string name="member_info_member_disabled">desactivado</string>
     <string name="message_forwarded_title">Mensaje reenviado</string>
     <string name="member_inactive_desc">El mensaje puede ser entregado más tarde si el miembro vuelve a estar activo.</string>
     <string name="member_inactive_title">Miembro inactivo</string>
