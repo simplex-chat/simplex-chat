@@ -30,8 +30,13 @@ struct GetStakeBanner: View {
                             .foregroundColor(theme.colors.onBackground)
                             .lineLimit(2)
                     }
-                    // keeps the text clear of the dismiss X: its 4 leading + 12 wide + 16 trailing
-                    Spacer(minLength: 32)
+                    Spacer(minLength: 6)
+                    Image("wefunder_logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 48, height: 48)
+                        // roughly where the phone of the badge banner's hero is: 40pt from the card edge, less its 8pt inset
+                        .padding(.trailing, 32)
                 }
                 .modifier(BannerCard())
             }
