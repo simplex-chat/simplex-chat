@@ -950,6 +950,10 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
   val supporterBannerShown = remember { appPrefs.supporterBannerShown.state }
+  val getStakeBannerTapped = remember { appPrefs.getStakeBannerTapped.state }
+  val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
+  // read here rather than in the LazyColumn: it launches an effect, so it needs a composable scope
+  val crowdfunding = crowdfundingAvailable()
   val activeFilter = remember { chatModel.activeChatTagFilter }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
@@ -1042,6 +1046,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     val alert = BadgeModel.alert.value
     if (supportEnded() && alert != null) {
       item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeExpired }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           SupportSimpleXBanner(
             title = stringResource(MR.strings.badges_support_ended),
@@ -1053,6 +1058,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
       }
     } else if (badgeIssueFailed()) {
       item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeIssueFailed }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           SupportSimpleXBanner(
             title = stringResource(MR.strings.badges_renewal_failed),
@@ -1063,12 +1069,24 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           )
         }
       }
-    } else if (!supporterBannerShown.value && !hasShownBadge() && chatModel.chats.value.size > 3) {
+    } else if (chatModel.bannerSlotFree(ChatListBanner.BadgePitch) && !supporterBannerShown.value && noShownBadge() && chatModel.chats.value.size > 3) {
       item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgePitch }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           SupportSimpleXBanner(
             onTap = { ModalManager.start.showCustomModal { close -> BadgesView(close) } },
             onDismiss = ::showSupportSimpleXDismissAlert
+          )
+        }
+      }
+    } else if (chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfunding && !getStakeBannerDismissed.value) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.GetStake }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          GetStakeBanner(
+            showDismiss = getStakeBannerTapped.value && chatModel.chats.value.isNotEmpty(),
+            onTap = { openGetStake(ModalManager.start) },
+            onDismiss = { appPrefs.getStakeBannerDismissed.set(true) }
           )
         }
       }

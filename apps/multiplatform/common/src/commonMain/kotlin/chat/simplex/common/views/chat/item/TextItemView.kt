@@ -622,7 +622,7 @@ fun stripFormattedTextLink(ft: List<FormattedText>?, link: String): List<Formatt
   val i = result.lastIndex
   if (i >= 0 && result[i].format == null && result[i].text.endsWith("\n")) {
     result[i] = FormattedText(result[i].text.dropLast(1), null)
-    if (result[i].text.isEmpty()) result.removeLast()
+    if (result[i].text.isEmpty()) result.removeAt(result.lastIndex)
   }
   return result.ifEmpty { null }
 }

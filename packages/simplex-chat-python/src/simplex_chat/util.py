@@ -101,7 +101,7 @@ def ci_content_text(chat_item: T.ChatItem) -> str | None:
     return None
 
 
-_BOT_COMMAND_RE = re.compile(r"^/([^\s]+)(.*)$")
+_BOT_COMMAND_RE = re.compile(r"^/([^\s]+)(.*)$", re.DOTALL)
 
 
 def ci_bot_command(chat_item: T.ChatItem) -> tuple[str, str] | None:

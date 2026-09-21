@@ -20,6 +20,7 @@
 7. [Swipe Actions](#7-swipe-actions)
 8. [UserPicker](#8-userpicker)
 9. [Floating Action Button](#9-floating-action-button)
+10. [Crowdfunding Banner](#10-crowdfunding-banner)
 
 ---
 
@@ -53,7 +54,7 @@ ChatListView
 
 ---
 
-## 2. [`ChatListView`](../../Shared/Views/ChatList/ChatListView.swift#L142) {#2-chatlistview}
+## 2. [`ChatListView`](../../Shared/Views/ChatList/ChatListView.swift#L154) {#2-chatlistview}
 
 **File**: `Shared/Views/ChatList/ChatListView.swift`
 
@@ -62,7 +63,7 @@ The root list view. Key responsibilities:
 ### Data Source
 - Reads `ChatModel.shared.chats` (all conversations)
 - Applies active filter from `ChatTagsModel.shared.activeFilter`
-- Applies search query filtering via [`filteredChats()`](../../Shared/Views/ChatList/ChatListView.swift#L480)
+- Applies search query filtering via [`filteredChats()`](../../Shared/Views/ChatList/ChatListView.swift#L555)
 - Sorts by last activity (most recent first), with pinned chats at top
 
 ### Layout
@@ -79,11 +80,11 @@ The root list view. Key responsibilities:
 
 | Function | Line | Description |
 |----------|------|-------------|
-| [`body`](../../Shared/Views/ChatList/ChatListView.swift#L168) | 163 | Main view body |
-| [`filteredChats()`](../../Shared/Views/ChatList/ChatListView.swift#L480) | 472 | Applies active filter and search to chat list |
-| [`searchString()`](../../Shared/Views/ChatList/ChatListView.swift#L523) | 514 | Normalizes search text for comparison |
-| [`unreadBadge()`](../../Shared/Views/ChatList/ChatListView.swift#L454) | 448 | Renders unread count circle badge |
-| [`stopAudioPlayer()`](../../Shared/Views/ChatList/ChatListView.swift#L474) | 467 | Stops any playing voice message |
+| [`body`](../../Shared/Views/ChatList/ChatListView.swift#L183) | 183 | Main view body |
+| [`filteredChats()`](../../Shared/Views/ChatList/ChatListView.swift#L555) | 555 | Applies active filter and search to chat list |
+| [`searchString()`](../../Shared/Views/ChatList/ChatListView.swift#L598) | 598 | Normalizes search text for comparison |
+| [`unreadBadge()`](../../Shared/Views/ChatList/ChatListView.swift#L529) | 529 | Renders unread count circle badge |
+| [`stopAudioPlayer()`](../../Shared/Views/ChatList/ChatListView.swift#L549) | 549 | Stops any playing voice message |
 
 ---
 
@@ -171,7 +172,7 @@ Horizontal scrolling tab bar below the navigation bar. Tabs:
 | Group Reports | `.presetTag(.groupReports)` | Groups with pending reports |
 | User tags | `.userTag(ChatTag)` | User-defined custom tags |
 
-Filter matching is handled by [`presetTagMatchesChat()`](../../Shared/Views/ChatList/ChatListView.swift#L910) (L910) and the in-view [`TagsView`](../../Shared/Views/ChatList/ChatListView.swift#L705) struct (L705).
+Filter matching is handled by [`presetTagMatchesChat()`](../../Shared/Views/ChatList/ChatListView.swift#L1134) and the in-view [`TagsView`](../../Shared/Views/ChatList/ChatListView.swift#L928) struct.
 
 ### ChatTagsModel State
 
@@ -194,9 +195,9 @@ class ChatTagsModel: ObservableObject {
 
 | Type | File | Line | Description |
 |------|------|------|-------------|
-| [`PresetTag`](../../Shared/Views/ChatList/ChatListView.swift#L36) | ChatListView.swift | 34 | Enum of built-in filter categories |
-| [`ActiveFilter`](../../Shared/Views/ChatList/ChatListView.swift#L52) | ChatListView.swift | 49 | Enum wrapping preset, user-tag, or unread filter |
-| [`setActiveFilter()`](../../Shared/Views/ChatList/ChatListView.swift#L889) | ChatListView.swift | 878 | Applies a filter and persists selection |
+| [`PresetTag`](../../Shared/Views/ChatList/ChatListView.swift#L36) | ChatListView.swift | 36 | Enum of built-in filter categories |
+| [`ActiveFilter`](../../Shared/Views/ChatList/ChatListView.swift#L53) | ChatListView.swift | 53 | Enum wrapping preset, user-tag, or unread filter |
+| [`setActiveFilter()`](../../Shared/Views/ChatList/ChatListView.swift#L1113) | ChatListView.swift | 1113 | Applies a filter and persists selection |
 
 ### Tag Management Commands
 - `apiCreateChatTag(tag: ChatTagData)` -- create tag
@@ -211,7 +212,7 @@ class ChatTagsModel: ObservableObject {
 
 Search is available via pull-down gesture or search button in the navigation bar.
 
-**Search bar UI:** [`ChatListSearchBar`](../../Shared/Views/ChatList/ChatListView.swift#L587) (ChatListView.swift L578)
+**Search bar UI:** [`ChatListSearchBar`](../../Shared/Views/ChatList/ChatListView.swift#L662)
 
 ### Filtering Logic
 - Filters `ChatModel.chats` by matching search text against:
@@ -219,7 +220,7 @@ Search is available via pull-down gesture or search button in the navigation bar
   - `chatInfo.localAlias` (local alias)
   - `chatInfo.fullName` (full name)
 - For deeper message content search, uses `apiGetChat(chatId:, search:)` parameter
-- Core logic in [`filteredChats()`](../../Shared/Views/ChatList/ChatListView.swift#L480) (L480) and [`searchString()`](../../Shared/Views/ChatList/ChatListView.swift#L523) (L523)
+- Core logic in [`filteredChats()`](../../Shared/Views/ChatList/ChatListView.swift#L555) and [`searchString()`](../../Shared/Views/ChatList/ChatListView.swift#L598)
 
 ### Search Results
 - Matching chats are displayed in the same list format
@@ -279,11 +280,45 @@ The FAB (floating action button) in the bottom-right corner opens the new chat f
 
 ---
 
+## 10. [`GetStakeBanner`](../../Shared/Views/ChatList/GetStakeBanner.swift#L13) {#10-crowdfunding-banner}
+
+**File**: `Shared/Views/ChatList/GetStakeBanner.swift`
+
+Gradient card inviting the user to invest on Wefunder. Shown only when [`isInUS`](../../Shared/Views/Onboarding/WhatsNewView.swift#L45) — the same condition that gates the Wefunder row in settings — and only while `DEFAULT_GET_STAKE_BANNER_DISMISSED` is false.
+
+### Placement
+
+| Where | Condition | Layout |
+|-------|-----------|--------|
+| Chat list | rendered whenever [`chatListContent`](../../Shared/Views/ChatList/ChatListView.swift#L413) is, in the `List` after `OneHandUICard` and before the chats | `.padding(.vertical, 3)`, flipped for one-hand UI, `.zIndex(1)` |
+| Onboarding | below [`ConnectOnboardingView`](../../Shared/Views/NewChat/OnboardingCards.swift#L135) when `shouldShowOnboarding` | `.padding(.horizontal, 20)` (the onboarding cards' margin), `.padding(.bottom, 8)` |
+
+The list has a single banner slot, filled by an `if`/`else if` chain in priority order: the support-ended alert (`supportEnded`), the renewal-failure alert (`badgeIssueFailed`), the pitch, then the Wefunder banner. Each banner records itself in `ChatModel.chatListBanner` (`.badgeExpired`, `.badgeIssueFailed`, `.badgePitch`, `.getStake`) in its `onAppear`, and the pitch and Wefunder conditions start with `chatModel.bannerSlotFree(for:)` — true only while nothing else was shown this app session — so dismissing a banner never puts another in its place until restart. The alerts have no such check: an alert takes the slot whenever present, and once shown it holds it. The pitch also requires `noShownBadge`, false until `BadgeModel` holds the current user's state, so it cannot take the slot from a supporter whose badge loads a moment later. The onboarding placement applies the same `bannerSlotFree` check and records `.getStake`.
+
+In the onboarding branch the `.scaleEffect` and `ThemedBackground` are applied to the enclosing `VStack` rather than to each child, so the banner stays below the pages in both toolbar modes.
+
+### Dismissal
+
+| Default | Set by | Effect |
+|---------|--------|--------|
+| `DEFAULT_GET_STAKE_BANNER_TAPPED` | [`openGetStake()`](../../Shared/Views/ChatList/ChatListView.swift#L408) | the dismiss X appears from then on, while there are chats |
+| `DEFAULT_GET_STAKE_BANNER_DISMISSED` | the dismiss X | hides the banner in both placements |
+
+Both are in `hintDefaults`, so "Reset all hints" in the developer settings restores the banner. The X is never offered in the onboarding branch, so the banner cannot be dismissed before the user has a chat.
+
+Tapping the card opens [`GetStakeView`](../../Shared/Views/Onboarding/WhatsNewView.swift#L834) as an `appSheet`.
+
+### Shared card chrome
+
+`BannerCard` (a `ViewModifier`: paddings, minimum height scaled by Dynamic Type, gradient background, rounded corners) and `BannerDismissButton` are declared separately from `GetStakeBanner` so other banners can adopt the same chrome. The gradient reuses `OnboardingCardView.gradientPoints`, `lightStops` and `darkStops`.
+
+---
+
 ## Source Files
 
 | File | Path | Key struct | Line |
 |------|------|------------|------|
-| Chat list view | [`ChatListView.swift`](../../Shared/Views/ChatList/ChatListView.swift) | `ChatListView` | [138](../../Shared/Views/ChatList/ChatListView.swift#L142) |
+| Chat list view | [`ChatListView.swift`](../../Shared/Views/ChatList/ChatListView.swift) | `ChatListView` | [154](../../Shared/Views/ChatList/ChatListView.swift#L154) |
 | Chat preview row | [`ChatPreviewView.swift`](../../Shared/Views/ChatList/ChatPreviewView.swift) | `ChatPreviewView` | [12](../../Shared/Views/ChatList/ChatPreviewView.swift#L13) |
 | Navigation link wrapper | [`ChatListNavLink.swift`](../../Shared/Views/ChatList/ChatListNavLink.swift) | `ChatListNavLink` | [43](../../Shared/Views/ChatList/ChatListNavLink.swift#L44) |
 | Tag filter tabs | [`TagListView.swift`](../../Shared/Views/ChatList/TagListView.swift) | `TagListView` | [19](../../Shared/Views/ChatList/TagListView.swift#L20) |
@@ -294,3 +329,4 @@ The FAB (floating action button) in the bottom-right corner opens the new chat f
 | Contact connection view | [`ContactConnectionView.swift`](../../Shared/Views/ChatList/ContactConnectionView.swift) | | |
 | Server summary | [`ServersSummaryView.swift`](../../Shared/Views/ChatList/ServersSummaryView.swift) | | |
 | One-hand UI card | [`OneHandUICard.swift`](../../Shared/Views/ChatList/OneHandUICard.swift) | | |
+| Crowdfunding banner | [`GetStakeBanner.swift`](../../Shared/Views/ChatList/GetStakeBanner.swift) | `GetStakeBanner` | [13](../../Shared/Views/ChatList/GetStakeBanner.swift#L13) |

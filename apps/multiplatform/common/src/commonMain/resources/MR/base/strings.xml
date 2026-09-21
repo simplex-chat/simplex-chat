@@ -2678,6 +2678,8 @@
   <string name="v7_0_invest_descr" translatable="false">Crowdfunding on Wefunder.</string>
   <string name="v7_0_crowdfunding" translatable="false">Crowdfunding on Wefunder</string>
   <string name="v7_0_invest_learn_more" translatable="false">Learn more on Wefunder</string>
+  <string name="invest_banner_title" translatable="false">Get a stake in SimpleX Chat!</string>
+  <string name="invest_banner_subtitle" translatable="false">Invest on Wefunder from $100</string>
   <string name="v7_0_simplex_names">SimpleX public names (BETA)</string>
   <string name="v7_0_simplex_names_descr">Public names for your channel or business.</string>
   <string name="v7_0_channels">Better channels 📢</string>
@@ -3159,19 +3161,20 @@
   <string name="badges_billing_footer_one_month">Ends on %1$s.</string>
   <string name="badges_your_level_title">Your level</string>
   <string name="badges_support_simplex_title">Support SimpleX</string>
-  <string name="badges_support_simplex_body">SimpleX doesn\'t sell ads or data. It\'s funded by its users and by investors who share the mission. You can support the project and show a badge on your profile.</string>
+  <string name="badges_support_simplex_body">Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile.</string>
   <string name="badges_why_simplex_is_built">Why SimpleX is built.</string>
   <string name="badges_choose_your_level">Choose your level</string>
   <string name="badges_redeem_code_button">Redeem badge code</string>
   <string name="badges_continue">Continue</string>
-  <string name="badges_how_it_works_button">How private badges work</string>
-  <string name="badges_how_it_works_title">How private badges work</string>
-  <string name="badges_how_it_works_p1">A badge is not an account. It is a signed credential stored on your device. It does not identify you, and no one keeps a record of who holds which badge.</string>
-  <string name="badges_how_it_works_p2">Your contacts see the badge and its expiry date, and nothing else. The badge carries no identifier, so it cannot be used to find out who you are or to match you across chats.</string>
-  <string name="badges_how_it_works_p3">Payment and badge are kept apart. Paying is one step; the badge is issued in another, under a key that exists only for that badge. Whoever handles the payment cannot see where the badge ends up.</string>
+  <string name="badges_how_it_works_button">How badges protect your privacy</string>
+  <string name="badges_how_it_works_title">How badges protect your privacy</string>
+  <string name="badges_how_it_works_p1">A badge is an anonymous credential stored in your profile on your device. This credential is never sent to anyone.</string>
+  <string name="badges_how_it_works_p2">To prove to a contact or a server that you have a badge, the app generates a new proof that reveals only the badge type and the expiry date, rounded to a week.</string>
+  <string name="badges_how_it_works_p3">Nobody can link two different proofs to each other or to the purchase.</string>
+  <string name="badges_how_it_works_read_more_with_link"><![CDATA[Read more in <font color="#0088ff">our blog</font>.]]></string>
   <string name="badges_preview_my_nickname">My nickname</string>
   <string name="badges_banner_title">Support SimpleX</string>
-  <string name="badges_banner_subtitle">Get badge + files up to 5GB</string>
+  <string name="badges_banner_subtitle">Get badge + better files</string>
   <string name="badges_banner_dismiss_message">You can support SimpleX later in Settings.</string>
   <string name="badges_purchase_successful">Purchase successful</string>
   <string name="badges_purchase_pending">Purchase pending</string>
@@ -3179,7 +3182,7 @@
   <string name="badges_purchase_error">Purchase error</string>
   <string name="badges_get_your_code">Get your code</string>
   <string name="badges_redeem_code_title">Redeem code</string>
-  <string name="badges_redeem_code_body">Paste the code from your receipt.</string>
+  <string name="badges_redeem_code_body">Paste the code you received.</string>
   <string name="badges_redeem_code_placeholder" translatable="false">SB-XXXXX-XXXXX-XXXXX-XXXXX</string>
   <string name="badges_redeem">Redeem</string>
   <string name="badges_error_title">Cannot redeem code</string>
@@ -3199,12 +3202,12 @@
   <string name="badges_error_unknown">The code could not be redeemed.</string>
   <string name="badges_code_you_scanned_is_not_badge_code">The code you scanned is not a badge code.</string>
   <string name="badges_your_badge">Your badge</string>
-  <string name="badges_support_ended">Support ended</string>
+  <string name="badges_support_ended">Your badge expired</string>
   <string name="badges_shown_on_your_profile">shown on your profile</string>
   <string name="badges_ends">Ends</string>
   <string name="badges_prepaid_footer">Prepaid months have no billing date. The badge is reissued each month from the balance you already paid for, and ends when it runs out.</string>
   <string name="badges_type_investor">Investor</string>
-  <string name="badges_support_ended_on">Your support ended on %1$s.</string>
+  <string name="badges_support_ended_on">Your badge expired on %1$s.</string>
   <string name="badges_remind_me_later">Remind me later</string>
   <string name="badges_dismiss">Dismiss</string>
   <string name="badges_credential">Credential</string>

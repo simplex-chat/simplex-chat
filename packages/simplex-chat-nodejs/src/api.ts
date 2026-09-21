@@ -106,13 +106,15 @@ export class ChatApi {
    * Initializes the ChatApi.
    * @param {DbConfig} db - Database configuration (sqlite or postgres).
    * @param {core.MigrationConfirmation} [confirm=core.MigrationConfirmation.YesUp] - Migration confirmation mode.
+   * @param {number} [queueSize] - Size of internal queues, the core default is used when omitted.
    */
   static async init(
     db: DbConfig,
-    confirm = core.MigrationConfirmation.YesUp
+    confirm = core.MigrationConfirmation.YesUp,
+    queueSize?: number
   ): Promise<ChatApi> {
     const [path, key] = dbConfigToMigrateArgs(db)
-    const ctrl = await core.chatMigrateInit(path, key, confirm)
+    const ctrl = await core.chatMigrateInit(path, key, confirm, queueSize)
     return new ChatApi(ctrl)
   }
 
@@ -120,39 +122,52 @@ export class ChatApi {
    * Start chat controller. Must be called with the existing user profile.
    */
   async startChat(): Promise<void> {
+    if (this.eventsLoop) throw new Error("chat already started")
+    const ctrl = this.ctrl
     this.receiveEvents = true
     this.eventsLoop = this.runEventsLoop()
-    const r = await this.sendChatCmd(CC.StartChat.cmdString({mainApp: true, enableSndFiles: true}))
+    let r: ChatResponse
+    try {
+      r = await core.chatSendCmd(ctrl, CC.StartChat.cmdString({mainApp: true, enableSndFiles: true, serviceRequests: false}))
+    } catch (e) {
+      await this.stopEventsLoop()
+      throw e
+    }
     if (r.type !== "chatStarted" && r.type !== "chatRunning") {
+      await this.stopEventsLoop()
       throw new ChatCommandError("error starting chat", r)
     }
   }
-  
+
   /**
    * Stop chat controller.
-   * Must be called before closing the database.
+   * `close` calls it before closing the database.
    * Usually doesn't need to be called in chat bots.
    */
   async stopChat(): Promise<void> {
     const r = await this.sendChatCmd("/_stop")
-    if (r.type !== "chatStopped") throw new ChatCommandError("error starting chat", r)
-    this.receiveEvents = false
-    if (this.eventsLoop) await this.eventsLoop
-    this.eventsLoop = undefined    
+    if (r.type !== "chatStopped") throw new ChatCommandError("error stopping chat", r)
+    await this.stopEventsLoop()
   }
 
   /**
-   * Close chat database.
+   * Stop chat controller and close chat database.
+   * The database is not closed if stopping fails.
    * Usually doesn't need to be called in chat bots.
    */
   async close(): Promise<void> {
-    this.receiveEvents = false
-    if (this.eventsLoop) await this.eventsLoop
-    this.eventsLoop = undefined    
+    // a running controller keeps using the database connections that closing frees
+    await this.stopChat()
     await core.chatCloseStore(this.ctrl)
     this.ctrl_ = undefined
   }
-  
+
+  private async stopEventsLoop(): Promise<void> {
+    this.receiveEvents = false
+    if (this.eventsLoop) await this.eventsLoop
+    this.eventsLoop = undefined
+  }
+
   private async runEventsLoop(): Promise<void> {
     while (this.receiveEvents) {
       try {
@@ -335,7 +350,7 @@ export class ChatApi {
     return await core.chatSendCmd(this.ctrl, cmd)
   }
   
-  async recvChatEvent(wait: number = 5_000_000): Promise<ChatEvent | undefined> {
+  async recvChatEvent(wait: number = 500_000): Promise<ChatEvent | undefined> {
     return await core.chatRecvMsgWait(this.ctrl, wait)
   }
   
@@ -386,8 +401,10 @@ export class ChatApi {
     switch (r.type) {
       case "userProfileUpdated":
         return r.updateSummary
+      case "userProfileNoChange":
+        return {updateSuccesses: 0, updateFailures: 0, changedContacts: []}
       default:
-        throw new ChatCommandError("error loading user address", r)
+        throw new ChatCommandError("error setting profile address", r)
     }
   }
 
@@ -460,7 +477,7 @@ export class ChatApi {
         updatedMessage: {msgContent, mentions: {}},
       })
     )
-    if (r.type === "chatItemUpdated") return r.chatItem.chatItem
+    if (r.type === "chatItemUpdated" || r.type === "chatItemNotChanged") return r.chatItem.chatItem
     throw new ChatCommandError("error updating chat item", r)
   }
 
@@ -499,10 +516,10 @@ export class ChatApi {
     chatItemId: number,
     add: boolean,
     reaction: T.MsgReaction
-  ) {
+  ): Promise<T.ACIReaction> {
     const r = await this.sendChatCmd(CC.APIChatItemReaction.cmdString({chatRef: {chatType, chatId}, chatItemId, add, reaction}))
-    if (r.type === "chatItemsDeleted") return r.chatItemDeletions
-    throw new ChatCommandError("error setting item reaction", r)  
+    if (r.type === "chatItemReaction") return r.reaction
+    throw new ChatCommandError("error setting item reaction", r)
   }
 
   /**
@@ -512,6 +529,7 @@ export class ChatApi {
   async apiReceiveFile(fileId: number): Promise<T.AChatItem> {
     const r = await this.sendChatCmd(CC.ReceiveFile.cmdString({fileId, userApprovedRelays: true}))
     if (r.type === "rcvFileAccepted") return r.chatItem
+    if (r.type === "rcvFileAcceptedSndCancelled") throw new ChatCommandError("file cancelled by sender", r)
     throw new ChatCommandError("error receiving file", r)
   }
 
@@ -698,7 +716,7 @@ export class ChatApi {
    * Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
    * Network usage: interactive.
    */
-  async apiConnect(userId: number, incognito: boolean, preparedLink?: T.CreatedConnLink): Promise<ConnReqType> {
+  async apiConnect(userId: number, incognito: boolean, preparedLink: T.CreatedConnLink): Promise<ConnReqType> {
     const r = await this.sendChatCmd(CC.APIConnect.cmdString({userId, incognito, preparedLink_: preparedLink}))
     return this.handleConnectResult(r)
   }
@@ -740,7 +758,7 @@ export class ChatApi {
    * Network usage: no.
    */
   async apiRejectContactRequest(contactReqId: number): Promise<void> {
-    const r = await this.sendChatCmd(CC.APIRejectContact.cmdString({contactReqId}))
+    const r = await this.sendChatCmd(CC.APIRejectContact.cmdString({contactReqId, notify: false}))
     if (r.type === "contactRequestRejected") return
     throw new ChatCommandError("error rejecting contact request", r)
   }
