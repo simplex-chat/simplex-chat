@@ -61,6 +61,29 @@ fun supportEnded(): Boolean =
 fun hasShownBadge(): Boolean =
   BadgeModel.badgeState.value?.shown == true && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
 
+// The chat list has one banner slot. The badge alert is time-sensitive and takes it whenever present; otherwise the
+// first of these kinds that applies keeps it until the app restarts, so dismissing it never puts another in its place.
+enum class ChatListBanner { BadgePitch, GetStake }
+
+private var shownChatListBanner: ChatListBanner? = null
+
+@Composable
+private fun bannerConditions(banner: ChatListBanner): Boolean = when (banner) {
+  ChatListBanner.BadgePitch -> !appPrefs.supporterBannerShown.state.value && !hasShownBadge() && chatModel.chats.value.size > 3
+  ChatListBanner.GetStake -> crowdfundingAvailable() && !appPrefs.getStakeBannerDismissed.state.value
+}
+
+// the choice waits for the badge state: made before it loads, the pitch could be locked in for a supporter and then hidden
+@Composable
+fun chatListBanner(): ChatListBanner? {
+  val shown = shownChatListBanner
+  if (shown != null) return if (bannerConditions(shown)) shown else null
+  if (!BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)) return null
+  val banner = ChatListBanner.values().firstOrNull { bannerConditions(it) }
+  shownChatListBanner = banner
+  return banner
+}
+
 fun hasConversations(chats: List<Chat>): Boolean =
   chats.any { chat ->
     when (val c = chat.chatInfo) {
@@ -419,8 +442,7 @@ fun ConnectOnboardingView() {
     }
   }
 
-  val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
-  val showGetStakeBanner = crowdfundingAvailable() && !getStakeBannerDismissed.value
+  val showGetStakeBanner = chatListBanner() == ChatListBanner.GetStake
   // on desktop the pages span the window, but the banner keeps the width it has in the chat list
   val bannerMaxWidth = if (appPlatform.isDesktop) DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier else Dp.Unspecified
   val content = @Composable {

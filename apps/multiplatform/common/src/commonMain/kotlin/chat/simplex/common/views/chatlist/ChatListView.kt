@@ -949,11 +949,9 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
-  val supporterBannerShown = remember { appPrefs.supporterBannerShown.state }
   val getStakeBannerTapped = remember { appPrefs.getStakeBannerTapped.state }
-  val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
-  // read here rather than in the LazyColumn: it launches an effect, so it needs a composable scope
-  val crowdfunding = crowdfundingAvailable()
+  // chosen here rather than in the LazyColumn: it reads composable state, so it needs a composable scope
+  val banner = chatListBanner()
   val activeFilter = remember { chatModel.activeChatTagFilter }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
@@ -1055,8 +1053,8 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           )
         }
       }
-    } else if (!supporterBannerShown.value && !hasShownBadge() && chatModel.chats.value.size > 3) {
-      item {
+    } else when (banner) {
+      ChatListBanner.BadgePitch -> item {
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           SupportSimpleXBanner(
             onTap = { ModalManager.start.showCustomModal { close -> BadgesView(close) } },
@@ -1064,8 +1062,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           )
         }
       }
-    } else if (crowdfunding && !getStakeBannerDismissed.value) {
-      item {
+      ChatListBanner.GetStake -> item {
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           GetStakeBanner(
             showDismiss = getStakeBannerTapped.value && chatModel.chats.value.isNotEmpty(),
@@ -1074,6 +1071,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           )
         }
       }
+      null -> {}
     }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
       val nextChatSelected = remember(chat.id, chats) { derivedStateOf {
