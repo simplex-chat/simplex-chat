@@ -150,16 +150,6 @@ struct UserPickerSheetView: View {
     }
 }
 
-// The chat list has one banner slot, filled in this order of priority. The kind that takes the slot keeps it until
-// the app restarts, so dismissing it never puts another in its place; only a badge alert takes it over from another kind.
-enum ChatListBanner: CaseIterable {
-    case badgeExpired
-    case badgePitch
-    case getStake
-
-    static var shownThisSession: ChatListBanner? = nil
-}
-
 // Spec: spec/client/chat-list.md#ChatListView
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -398,28 +388,9 @@ struct ChatListView: View {
         badgeModel.alert?.kind == .supportEnded && badgeModel.userId == chatModel.currentUser?.userId
     }
 
-    private var hasShownBadge: Bool {
-        badgeModel.badgeState?.shown == true && badgeModel.userId == chatModel.currentUser?.userId
-    }
-
-    private func bannerConditions(_ banner: ChatListBanner) -> Bool {
-        switch banner {
-        case .badgeExpired: supportEnded
-        case .badgePitch: !supporterBannerShown && !hasShownBadge && chatModel.chats.count > 3
-        case .getStake: isInUS && !getStakeBannerDismissed
-        }
-    }
-
-    // the choice waits for the badge state: made before it loads, the pitch could be locked in for a supporter and then hidden
-    private var chatListBanner: ChatListBanner? {
-        if supportEnded { ChatListBanner.shownThisSession = .badgeExpired }
-        if let shown = ChatListBanner.shownThisSession {
-            return bannerConditions(shown) ? shown : nil
-        }
-        guard badgeModel.userId == chatModel.currentUser?.userId else { return nil }
-        let banner = ChatListBanner.allCases.first(where: bannerConditions)
-        ChatListBanner.shownThisSession = banner
-        return banner
+    // false until the badge state is loaded, so the pitch cannot take the slot from a supporter whose badge arrives a moment later
+    private var noShownBadge: Bool {
+        badgeModel.badgeState?.shown != true && badgeModel.userId == chatModel.currentUser?.userId
     }
 
     private func showSupportEndedDismissAlert() {
@@ -463,10 +434,11 @@ struct ChatListView: View {
         if shouldShowOnboarding {
             VStack(spacing: 0) {
                 ConnectOnboardingView()
-                if chatListBanner == .getStake {
+                if chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
                     GetStakeBanner(showDismiss: false, onTap: openGetStake, onDismiss: {})
                         .padding(.horizontal, 20)
                         .padding(.bottom, 8)
+                        .onAppear { chatModel.chatListBanner = .getStake }
                 }
             }
             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -509,22 +481,21 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    switch chatListBanner {
-                    case .badgeExpired:
-                        if let alert = badgeModel.alert {
-                            SupportSimpleXBanner(
-                                title: "Your badge expired",
-                                subtitle: "Your badge expired on \(alert.dateText).",
-                                onTap: { showBadgesSheet = true },
-                                onDismiss: showSupportEndedDismissAlert
-                            )
-                                .padding(.vertical, 3)
-                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                                .listRowSeparator(.hidden)
-                                .listRowBackground(Color.clear)
-                                .zIndex(1)
-                        }
-                    case .badgePitch:
+                    // one slot: a badge the user paid for ending outranks the pitch to get one
+                    if supportEnded, let alert = badgeModel.alert {
+                        SupportSimpleXBanner(
+                            title: "Your badge expired",
+                            subtitle: "Your badge expired on \(alert.dateText).",
+                            onTap: { showBadgesSheet = true },
+                            onDismiss: showSupportEndedDismissAlert
+                        )
+                            .padding(.vertical, 3)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .zIndex(1)
+                            .onAppear { chatModel.chatListBanner = .badgeExpired }
+                    } else if chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge && chatModel.chats.count > 3 {
                         SupportSimpleXBanner(
                             onTap: { showBadgesSheet = true },
                             onDismiss: showSupportSimpleXDismissAlert
@@ -534,7 +505,8 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                             .zIndex(1)
-                    case .getStake:
+                            .onAppear { chatModel.chatListBanner = .badgePitch }
+                    } else if chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
                         GetStakeBanner(
                             showDismiss: getStakeBannerTapped && !chatModel.chats.isEmpty,
                             onTap: openGetStake,
@@ -545,8 +517,7 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                             .zIndex(1)
-                    case nil:
-                        EmptyView()
+                            .onAppear { chatModel.chatListBanner = .getStake }
                     }
                     if #available(iOS 16.0, *) {
                         ForEach(cs, id: \.viewId) { chat in
