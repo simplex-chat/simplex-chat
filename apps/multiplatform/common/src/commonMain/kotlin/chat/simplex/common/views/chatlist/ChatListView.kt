@@ -950,6 +950,10 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
   val supporterBannerShown = remember { appPrefs.supporterBannerShown.state }
+  val getStakeBannerTapped = remember { appPrefs.getStakeBannerTapped.state }
+  val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
+  // read here rather than in the LazyColumn: it launches an effect, so it needs a composable scope
+  val crowdfunding = crowdfundingAvailable()
   val activeFilter = remember { chatModel.activeChatTagFilter }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
@@ -1057,6 +1061,16 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           SupportSimpleXBanner(
             onTap = { ModalManager.start.showCustomModal { close -> BadgesView(close) } },
             onDismiss = ::showSupportSimpleXDismissAlert
+          )
+        }
+      }
+    } else if (crowdfunding && !getStakeBannerDismissed.value) {
+      item {
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          GetStakeBanner(
+            showDismiss = getStakeBannerTapped.value && chatModel.chats.value.isNotEmpty(),
+            onTap = { openGetStake(ModalManager.start) },
+            onDismiss = { appPrefs.getStakeBannerDismissed.set(true) }
           )
         }
       }

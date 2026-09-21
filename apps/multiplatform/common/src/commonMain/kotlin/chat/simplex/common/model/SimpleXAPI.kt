@@ -193,6 +193,8 @@ class AppPreferences {
   val oneHandUICardShown = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN, false)
   val addressCreationCardShown = mkBoolPreference(SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN, false)
   val supporterBannerShown = mkBoolPreference(SHARED_PREFS_SUPPORTER_BANNER_SHOWN, false)
+  val getStakeBannerTapped = mkBoolPreference(SHARED_PREFS_GET_STAKE_BANNER_TAPPED, false)
+  val getStakeBannerDismissed = mkBoolPreference(SHARED_PREFS_GET_STAKE_BANNER_DISMISSED, false)
   val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
   val showReportsInSupportChatAlert = mkBoolPreference(SHARED_PREFS_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT, true)
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
@@ -275,6 +277,8 @@ class AppPreferences {
     hintPref(oneHandUICardShown, false),
     hintPref(addressCreationCardShown, false),
     hintPref(supporterBannerShown, false),
+    hintPref(getStakeBannerTapped, false),
+    hintPref(getStakeBannerDismissed, false),
     hintPref(liveMessageAlertShown, false),
     hintPref(signMessageAlertShown, false),
     hintPref(showHiddenProfilesNotice, true),
@@ -467,6 +471,8 @@ class AppPreferences {
     private const val SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN = "OneHandUICardShown"
     private const val SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN = "AddressCreationCardShown"
     private const val SHARED_PREFS_SUPPORTER_BANNER_SHOWN = "SupporterBannerShown"
+    private const val SHARED_PREFS_GET_STAKE_BANNER_TAPPED = "GetStakeBannerTapped"
+    private const val SHARED_PREFS_GET_STAKE_BANNER_DISMISSED = "GetStakeBannerDismissed"
     private const val SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT = "ShowMuteProfileAlert"
     private const val SHARED_PREFS_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT = "ShowReportsInSupportChatAlert"
     private const val SHARED_PREFS_STORE_DB_PASSPHRASE = "StoreDBPassphrase"
