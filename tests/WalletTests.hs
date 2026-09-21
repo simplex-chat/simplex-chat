@@ -22,14 +22,11 @@ import Simplex.Messaging.Util (safeDecodeUtf8)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
 
--- | The standard BIP-39 test vector, 12 words, so the addresses below can be
--- checked against any other wallet. Importing takes 24 words, so this phrase is
--- only used for derivation, never through a command.
+-- | The standard BIP-39 test vector, 12 words, to check the addresses against another wallet.
 testPhrase12 :: ByteString
 testPhrase12 = B.unwords $ replicate 11 "abandon" <> ["about"]
 
--- | The 24 word all-zero-entropy vector, the length the commands take. It is a
--- different seed from the 12 word one, so it reaches different addresses.
+-- | The 24 word all-zero-entropy vector, the length the commands take.
 testPhrase24 :: ByteString
 testPhrase24 = B.unwords $ replicate 23 "abandon" <> ["art"]
 
@@ -217,8 +214,7 @@ testWalletExport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   (idx, path, address, secret) <- exportRow <$> getTermLine alice
   idx `shouldBe` "0"
   path `shouldBe` "m/44'/60'/0'/0/0"
-  -- m/44'/60'/0'/0/0 of the 24 word vector, pinned outside this implementation,
-  -- so a change of path fails here rather than shipping
+  -- m/44'/60'/0'/0/0 of the 24 word vector, pinned so a change of path fails here
   address `shouldBe` "0xF278cF59F82eDcf871d630F28EcC8056f25C1cdb"
   addressFromSecret secret `shouldBe` address
   -- the index reaches the key, not only the path printed beside it

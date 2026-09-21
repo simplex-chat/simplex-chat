@@ -1,14 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
--- | The device wallet: one BIP-39 seed, and the accounts derived from it.
---
--- An account is a hardened BIP-44 account, @m\/44'\/60'\/n'\/0\/0@, which is how
--- Ledger Live lays out an Ethereum wallet. The account level is hardened, so an
--- exported account key hands over that account and reaches no other.
---
--- Nothing here knows about chat profiles. Which profile an account belongs to is
--- a mapping in "Simplex.Chat.Store.Wallets".
+-- | The device wallet: one BIP-39 seed, and the hardened BIP-44 accounts @m\/44'\/60'\/n'\/0\/0@ under it.
 module Simplex.Chat.Wallet
   ( AccountIndex,
     AccountKey,
@@ -40,15 +33,12 @@ import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Eth.Address (ethereumPath)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 
--- | BIP-44 account index. One account owns one thing on chain, one name to
--- begin with.
+-- | BIP-44 account index, one per thing the device owns on chain.
 type AccountIndex = Word32
 
--- | The key at an account index. It owns whatever that account owns.
 type AccountKey = S.Secp256k1PrivateKey
 
--- | One derived address, with the index it came from, so a caller that left the
--- index out knows what it got.
+-- | One derived address, with the index it came from.
 data WalletAddress = WalletAddress
   { accountIndex :: AccountIndex,
     keyPath :: Text,
@@ -67,14 +57,11 @@ data WalletError
   | WEDerivation {derivationError :: String} -- BIP-32 or BIP-39 said no
   deriving (Eq, Show)
 
--- | BIP-32 hardens an index by adding 2^31, so an index at or above it is
--- already a hardened component and derives the same key as the index it wraps
--- onto. Refusing it is what keeps one account index to one key.
+-- | Refuse an index at or above 2^31: BIP-32 would harden it onto another index's key.
 checkAccountIndex :: AccountIndex -> Either WalletError ()
 checkAccountIndex n = if n >= B32.hardenedOffset then Left WEIndexTooLarge else Right ()
 
--- | 24 words. No 25th-word passphrase: it would be a second secret to back up,
--- and losing it would look exactly like losing the phrase.
+-- | 24 words. No 25th-word passphrase, which would be a second secret to back up.
 masterStrength :: B39.MnemonicStrength
 masterStrength = B39.MS256
 
@@ -114,10 +101,7 @@ accountSecret k = "0x" <> decodeLatin1 (BAE.convertToBase BAE.Base16 $ S.unPriva
 entropyBytes :: BA.ScrubbedBytes -> ByteString
 entropyBytes = BA.convert
 
--- | The BIP-32 and BIP-39 functions report failure as a string. For entropy
--- this module produced only 'B32.masterKey' and 'B32.derivePath' can fail at
--- all, with a negligible probability, and nothing here retries, so the whole
--- family shares one constructor.
+-- | BIP-32 and BIP-39 report failure as a string, and nothing here retries, so one constructor covers them.
 bipError :: Either String a -> Either WalletError a
 bipError = either (Left . WEDerivation) Right
 

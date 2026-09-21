@@ -1503,8 +1503,7 @@ processChatCommand cxt nm = \case
   APIGetWallet -> withUser $ \user@User {userId} ->
     CRWallet user <$> withFastStore' (\db -> getWalletSeed db $>>= \WalletSeed {wsId} -> Just <$> getUserAccounts db wsId userId)
   APICreateWallet mnemonic_ -> withUser $ \_ -> do
-    -- a generated seed has taken no accounts; an imported one does not say how
-    -- many it has taken, and only a scan of the chain can tell
+    -- a generated seed has taken no accounts, an imported one does not say how many it has taken
     (entropy, nextAccount) <- case mnemonic_ of
       Nothing -> (,Just 0) <$> (asks random >>= atomically . newSeedEntropy)
       Just phrase -> (,Nothing) <$> liftWallet (entropyFromMnemonic $ encodeUtf8 phrase)
@@ -6644,10 +6643,7 @@ chatCommandP =
     quotedP = safeDecodeUtf8 <$> (A.char '"' *> A.takeTill (== '"') <* A.char '"')
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
-    -- The digits are counted before they are read, as reading a very long
-    -- number is not free. Ten of them fit an Int with room to spare, and the
-    -- hardening bound is a typed error when the command runs, so that a caller
-    -- is told which index was refused and why.
+    -- ten digits fit an Int, and the hardening bound is a typed error when the command runs
     accountIndexP = do
       ds <- A.takeWhile1 isDigit
       case if B.length ds <= 10 then B.readInt ds else Nothing of

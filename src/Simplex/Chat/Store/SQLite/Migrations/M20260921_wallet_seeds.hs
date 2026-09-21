@@ -27,7 +27,4 @@ CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_a
 CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 |]
 
--- There is no reverse step. Reversing this would drop the only copy of the
--- master entropy, and a downgrade that takes every key on the device with it is
--- worse than one that refuses: without a reverse step the older app reports that
--- the database is newer than it is and changes nothing.
+-- No reverse step: it would drop the only copy of the master entropy.
