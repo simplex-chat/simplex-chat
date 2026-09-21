@@ -58,8 +58,8 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Store.Wallets (accountHeldByOther, bindAccount, createWalletSeed, deleteWalletSeed, getNextAccountIndex, getUserAccounts, getWalletSeed)
-import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), WalletSeed (..), accountSecret, checkAccountIndex, deriveAccountKey, entropyFromMnemonic, newSeedEntropy, renderAccountPath, seedMaster, seedMnemonic)
+import Simplex.Chat.Store.Wallets (WalletSeed (..), accountHeldByOther, bindAccount, createWalletSeed, deleteWalletSeed, getUserAccounts, getWalletSeed, resolveAccount)
+import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), accountSecret, checkAccountIndex, deriveAccountKey, entropyFromMnemonic, newSeedEntropy, renderAccountPath, seedMaster, seedMnemonic)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -1503,27 +1503,25 @@ processChatCommand cxt nm = \case
     unless created $ throwWalletError WEMasterExists
     processChatCommand cxt nm APIGetWallet
   APIBindWalletAccount accountIdx_ -> withUser $ \User {userId, viewPwdHash} -> do
-    seed <- walletSeed
     when (isJust viewPwdHash) $ throwWalletError WEHiddenProfile
-    _ <- liftWallet =<< withFastStore' (\db -> bindAccount db (wsId seed) userId accountIdx_)
+    liftWallet =<< withFastStore' (\db -> bindAccount db userId accountIdx_)
     processChatCommand cxt nm APIGetWallet
   APIGetWalletAddress accountIdx_ -> withUser $ \user -> do
-    seed <- walletSeed
-    n <- resolveAccount seed accountIdx_
+    (seed, n) <- liftWallet =<< withFastStore' (`resolveAccount` accountIdx_)
     CRWalletAddress user . accountAddress n <$> accountKey seed n
   APIExportWalletMnemonic -> withUser $ \user ->
-    CRWalletMnemonic user <$> (liftWallet . seedMnemonic =<< walletSeed)
-  APIExportWalletAccount accountIdx -> withUser $ \user@User {userId} -> do
+    CRWalletMnemonic user <$> (liftWallet . seedMnemonic . wsEntropy =<< walletSeed)
+  APIExportWalletAccount n -> withUser $ \user@User {userId} -> do
     seed <- walletSeed
-    n <- resolveAccount seed (Just accountIdx)
+    liftWallet $ checkAccountIndex n
     -- a key another profile holds is not this profile's to hand out
     heldByOther <- withFastStore' $ \db -> accountHeldByOther db (wsId seed) userId n
     when heldByOther $ throwWalletError WEAccountBound
     k <- accountKey seed n
     pure $ CRWalletAccountSecret user (accountAddress n k) (accountSecret k)
   APIDeleteWallet -> withUser $ \_ -> do
-    seed <- walletSeed
-    withFastStore' $ \db -> deleteWalletSeed db (wsId seed)
+    deleted <- withFastStore' deleteWalletSeed
+    unless deleted $ throwWalletError WENoMaster
     ok_
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
@@ -5470,19 +5468,8 @@ throwWalletError = throwChatError . CEWallet
 liftWallet :: Either WalletError a -> CM a
 liftWallet = either throwWalletError pure
 
--- | The account a command names, or the next free one when it names none.
--- Refuses any index BIP-32 cannot harden, the counter's included.
-resolveAccount :: WalletSeed -> Maybe AccountIndex -> CM AccountIndex
-resolveAccount seed accountIdx_ = do
-  n <- maybe nextFreeAccount pure accountIdx_
-  n <$ liftWallet (checkAccountIndex n)
-  where
-    nextFreeAccount =
-      withFastStore' (\db -> getNextAccountIndex db (wsId seed))
-        >>= maybe (throwWalletError WECounterUnknown) pure
-
 accountKey :: WalletSeed -> AccountIndex -> CM AccountKey
-accountKey seed n = liftWallet $ seedMaster seed >>= (`deriveAccountKey` n)
+accountKey seed n = liftWallet $ seedMaster (wsEntropy seed) >>= (`deriveAccountKey` n)
 
 accountAddress :: AccountIndex -> AccountKey -> WalletAddress
 accountAddress n k =
@@ -6156,12 +6143,15 @@ chatCommandP =
     quotedP = safeDecodeUtf8 <$> (A.char '"' *> A.takeTill (== '"') <* A.char '"')
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
-    -- Digits are counted before they are read, as reading a very long number is
-    -- not free. The hardening bound is a typed error when the command runs.
+    -- The digits are counted before they are read, as reading a very long
+    -- number is not free. Ten of them fit an Int with room to spare, and the
+    -- hardening bound is a typed error when the command runs, so that a caller
+    -- is told which index was refused and why.
     accountIndexP = do
       ds <- A.takeWhile1 isDigit
-      let i = read (B.unpack ds) :: Integer
-      if B.length ds <= 10 && i <= toInteger (maxBound :: AccountIndex) then pure (fromIntegral i) else fail "account index too large"
+      case if B.length ds <= 10 then B.readInt ds else Nothing of
+        Just (i, _) | i <= fromIntegral (maxBound :: AccountIndex) -> pure $ fromIntegral i
+        _ -> fail "account index too large"
 
 displayNameP :: Parser Text
 displayNameP = safeDecodeUtf8 <$> displayNameP_

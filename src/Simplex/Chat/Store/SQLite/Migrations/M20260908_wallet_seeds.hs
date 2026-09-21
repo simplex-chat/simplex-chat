@@ -23,20 +23,11 @@ CREATE TABLE wallet_accounts (
 ) STRICT;
 
 CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON wallet_seeds(single_seed);
-CREATE UNIQUE INDEX idx_wallet_accounts_index ON wallet_accounts(wallet_seed_id, account_index);
-CREATE INDEX idx_wallet_accounts_user ON wallet_accounts(user_id);
+CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_accounts(wallet_seed_id, account_index);
+CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 |]
 
-down_m20260908_wallet_seeds :: Query
-down_m20260908_wallet_seeds =
-  [sql|
-DROP INDEX idx_wallet_accounts_user;
-
-DROP INDEX idx_wallet_accounts_index;
-
-DROP INDEX idx_wallet_seeds_single_seed;
-
-DROP TABLE wallet_accounts;
-
-DROP TABLE wallet_seeds;
-|]
+-- There is no reverse step. Reversing this would drop the only copy of the
+-- master entropy, and a downgrade that takes every key on the device with it is
+-- worse than one that refuses: without a reverse step the older app reports that
+-- the database is newer than it is and changes nothing.

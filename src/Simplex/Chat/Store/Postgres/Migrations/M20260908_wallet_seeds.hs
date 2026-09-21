@@ -9,10 +9,10 @@ import Text.RawString.QQ (r)
 m20260908_wallet_seeds :: Text
 m20260908_wallet_seeds =
   [r|
+-- the columns are commented in the SQLite migration
 CREATE TABLE wallet_seeds (
   wallet_seed_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   entropy BYTEA NOT NULL CHECK (length(entropy) = 32),
-  -- see the SQLite migration
   next_account_index BIGINT CHECK (next_account_index BETWEEN 0 AND 2147483648),
   single_seed SMALLINT NOT NULL DEFAULT 1
 );
@@ -25,20 +25,8 @@ CREATE TABLE wallet_accounts (
 );
 
 CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON wallet_seeds(single_seed);
-CREATE UNIQUE INDEX idx_wallet_accounts_index ON wallet_accounts(wallet_seed_id, account_index);
-CREATE INDEX idx_wallet_accounts_user ON wallet_accounts(user_id);
+CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_accounts(wallet_seed_id, account_index);
+CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 |]
 
-down_m20260908_wallet_seeds :: Text
-down_m20260908_wallet_seeds =
-  [r|
-DROP INDEX idx_wallet_accounts_user;
-
-DROP INDEX idx_wallet_accounts_index;
-
-DROP INDEX idx_wallet_seeds_single_seed;
-
-DROP TABLE wallet_accounts;
-
-DROP TABLE wallet_seeds;
-|]
+-- no reverse step, see the SQLite migration

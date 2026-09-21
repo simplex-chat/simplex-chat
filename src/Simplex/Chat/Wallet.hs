@@ -10,10 +10,8 @@
 -- Nothing here knows about chat profiles. Which profile an account belongs to is
 -- a mapping in "Simplex.Chat.Store.Wallets".
 module Simplex.Chat.Wallet
-  ( SeedId,
-    AccountIndex,
+  ( AccountIndex,
     AccountKey,
-    WalletSeed (..),
     WalletAddress (..),
     WalletError (..),
     newSeedEntropy,
@@ -33,7 +31,6 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteArray as BA
 import qualified Data.ByteArray.Encoding as BAE
 import Data.ByteString (ByteString)
-import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
 import Data.Word (Word32)
@@ -43,23 +40,12 @@ import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Eth.Address (ethereumPath)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 
-type SeedId = Int64
-
 -- | BIP-44 account index. One account owns one thing on chain, one name to
 -- begin with.
 type AccountIndex = Word32
 
 -- | The key at an account index. It owns whatever that account owns.
 type AccountKey = S.PrivateKey
-
--- | The device seed. The entropy is 'BA.ScrubbedBytes', so a derived 'Show'
--- does not print it. Copies made for BIP-39 are plain 'ByteString' and are not
--- wiped.
-data WalletSeed = WalletSeed
-  { wsId :: SeedId,
-    wsEntropy :: BA.ScrubbedBytes
-  }
-  deriving (Eq, Show)
 
 -- | One derived address, with the index it came from, so a caller that left the
 -- index out knows what it got.
@@ -101,14 +87,14 @@ entropyFromMnemonic phrase = case B39.parseMnemonic phrase of
     Right . BA.convert $ B39.mnemonicToEntropy m
   _ -> Left WEBadMnemonic
 
-seedMnemonic :: WalletSeed -> Either WalletError Text
-seedMnemonic s =
-  bipError . fmap (decodeLatin1 . B39.mnemonicPhrase) . B39.entropyToMnemonic $ entropyBytes s
+seedMnemonic :: BA.ScrubbedBytes -> Either WalletError Text
+seedMnemonic entropy =
+  bipError . fmap (decodeLatin1 . B39.mnemonicPhrase) . B39.entropyToMnemonic $ entropyBytes entropy
 
 -- | Deriving this runs PBKDF2, so it is done once per command.
-seedMaster :: WalletSeed -> Either WalletError B32.ExtendedKey
-seedMaster s = do
-  m <- bipError . B39.entropyToMnemonic $ entropyBytes s
+seedMaster :: BA.ScrubbedBytes -> Either WalletError B32.ExtendedKey
+seedMaster entropy = do
+  m <- bipError . B39.entropyToMnemonic $ entropyBytes entropy
   bipError . B32.masterKey $ B39.mnemonicToSeed m ""
 
 accountPath :: AccountIndex -> [Word32]
@@ -124,8 +110,9 @@ deriveAccountKey master n = B32.xkKey <$> bipError (B32.derivePath master $ acco
 accountSecret :: AccountKey -> Text
 accountSecret k = "0x" <> decodeLatin1 (BAE.convertToBase BAE.Base16 $ S.unPrivateKey k)
 
-entropyBytes :: WalletSeed -> ByteString
-entropyBytes = BA.convert . wsEntropy
+-- | The copy BIP-39 takes is a plain 'ByteString' and is not wiped.
+entropyBytes :: BA.ScrubbedBytes -> ByteString
+entropyBytes = BA.convert
 
 -- | The BIP-32 and BIP-39 functions report failure as a string. For entropy
 -- this module produced only 'B32.masterKey' and 'B32.derivePath' can fail at

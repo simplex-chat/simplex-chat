@@ -10,10 +10,11 @@ import qualified Data.ByteArray as BA
 import qualified Data.ByteArray.Encoding as BAE
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.Char (toUpper)
 import Data.Either (isRight)
 import Data.List (nub)
 import qualified Data.Text as T
-import Simplex.Chat.Wallet (AccountIndex, WalletError (..), WalletSeed (..), accountSecret, deriveAccountKey, entropyFromMnemonic, renderAccountPath, seedMaster, seedMnemonic)
+import Simplex.Chat.Wallet (AccountIndex, WalletError (..), accountSecret, deriveAccountKey, entropyFromMnemonic, renderAccountPath, seedMaster, seedMnemonic)
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
@@ -32,27 +33,38 @@ testPhrase12 = B.unwords $ replicate 11 "abandon" <> ["about"]
 testPhrase24 :: ByteString
 testPhrase24 = B.unwords $ replicate 23 "abandon" <> ["art"]
 
-seedFromPhrase :: ByteString -> WalletSeed
-seedFromPhrase phrase =
-  WalletSeed {wsId = 1, wsEntropy = BA.convert . B39.mnemonicToEntropy . either error id $ B39.parseMnemonic phrase}
+seedEntropy :: ByteString -> BA.ScrubbedBytes
+seedEntropy phrase = BA.convert . B39.mnemonicToEntropy . either error id $ B39.parseMnemonic phrase
 
-accountKey :: WalletSeed -> AccountIndex -> S.PrivateKey
-accountKey seed n = either (error . show) id $ seedMaster seed >>= \m -> deriveAccountKey m n
+accountKey :: BA.ScrubbedBytes -> AccountIndex -> S.PrivateKey
+accountKey entropy n = either (error . show) id $ seedMaster entropy >>= \m -> deriveAccountKey m n
+
+-- | The address a wallet reaches when the secret is imported as a private key.
+addressFromSecret :: String -> String
+addressFromSecret secret =
+  show . addressFromPrivateKey . either error id . S.mkPrivateKey . either error id $
+    BAE.convertFromBase BAE.Base16 (B.drop 2 $ B.pack secret)
+
+-- | An @export account@ row: the index, the path, the address, the secret.
+exportRow :: HasCallStack => String -> (String, String, String, String)
+exportRow row = case words row of
+  [idx, path, address, secret] -> (idx, path, address, secret)
+  _ -> error $ "unexpected export row: " <> row
 
 walletDerivationTests :: Spec
 walletDerivationTests = do
   Hspec.it "accounts are the accounts another wallet derives for the same phrase" $ do
-    let addrOf = show . addressFromPrivateKey . accountKey (seedFromPhrase testPhrase12)
+    let addrOf = show . addressFromPrivateKey . accountKey (seedEntropy testPhrase12)
     -- Ledger Live accounts 1 and 2 for this phrase, the published values for it
     addrOf 0 `shouldBe` "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
     addrOf 1 `shouldBe` "0x78839F6054d7ed13918bAe0473BA31b1Ca9D7265"
   Hspec.it "the exported secret is the one another wallet shows for that account" $ do
-    let k = accountKey (seedFromPhrase testPhrase12) 0
+    let k = accountKey (seedEntropy testPhrase12) 0
     -- as a wallet shows it for m/44'/60'/0'/0/0 of this phrase
     accountSecret k `shouldBe` "0x1ab42cc412b618bdea3a599e3c9bae199ebf030895b039e9db1e30dafb12b727"
   Hspec.it "every account has its own address" $ do
-    let seed = seedFromPhrase testPhrase12
-        addrs = map (show . addressFromPrivateKey . accountKey seed) [0 .. 9]
+    let entropy = seedEntropy testPhrase12
+        addrs = map (show . addressFromPrivateKey . accountKey entropy) [0 .. 9]
     length (nub addrs) `shouldBe` 10
   Hspec.it "a secret whose first byte is zero keeps its 64 hex digits" $ do
     let k = either error id . S.mkPrivateKey $ B.pack ('\0' : replicate 31 '\1')
@@ -63,63 +75,11 @@ walletDerivationTests = do
     renderAccountPath 0 `shouldBe` "m/44'/60'/0'/0/0"
     renderAccountPath 7 `shouldBe` "m/44'/60'/7'/0/0"
   Hspec.it "round-trips the phrase it was imported from" $
-    seedMnemonic (seedFromPhrase testPhrase24) `shouldBe` Right (safeDecodeUtf8 testPhrase24)
+    seedMnemonic (seedEntropy testPhrase24) `shouldBe` Right (safeDecodeUtf8 testPhrase24)
   Hspec.it "takes 24 words only, with a valid checksum" $ do
     entropyFromMnemonic testPhrase24 `shouldSatisfy` isRight
     entropyFromMnemonic testPhrase12 `shouldBe` Left WEBadMnemonic
     entropyFromMnemonic (B.unwords $ replicate 24 "abandon") `shouldBe` Left WEBadMnemonic
-
-testWalletHiddenProfile :: HasCallStack => TestParams -> IO ()
-testWalletHiddenProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
-  alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
-  alice ##> "/create user alisa"
-  showActiveUser alice "alisa"
-  alice ##> "/hide user my_password"
-  alice <## "current user alisa:"
-  alice <## "messages are hidden (use /tail to view)"
-  alice <## "profile is hidden"
-  alice ##> "/_wallet bind"
-  alice <## "wallet: a hidden profile cannot own an account"
-
-testWalletExportNotMine :: HasCallStack => TestParams -> IO ()
-testWalletExportNotMine ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
-  alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
-  alice ##> "/_wallet bind"
-  alice <## "accounts: 0"
-  alice ##> "/create user alisa"
-  showActiveUser alice "alisa"
-  -- account 0 is the other profile's, and its key is not this profile's to take
-  alice ##> "/_wallet export account 0"
-  alice <## "wallet: another profile holds this account"
-  -- an account nobody holds is still derivable, which is what a scan needs
-  alice ##> "/_wallet export account 7"
-  row <- getTermLine alice
-  words row !! 1 `shouldBe` "m/44'/60'/7'/0/0"
-
-testWalletIndexTooLarge :: HasCallStack => TestParams -> IO ()
-testWalletIndexTooLarge ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
-  alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
-  -- 2^31 is already a hardened component, so it would derive account 0's key
-  alice ##> "/_wallet address account=2147483648"
-  alice <## "wallet: account index is too large to harden"
-  alice ##> "/_wallet bind account=2147483648"
-  alice <## "wallet: account index is too large to harden"
-  alice ##> "/_wallet export account 2147483648"
-  alice <## "wallet: account index is too large to harden"
-  -- the largest index that can be hardened is usable, and the counter follows it
-  alice ##> "/_wallet bind account=2147483647"
-  alice <## "accounts: 2147483647"
-  alice ##> "/_wallet bind"
-  alice <## "wallet: account index is too large to harden"
-
--- | The address a wallet reaches when the secret is imported as a private key.
-addressFromSecret :: String -> String
-addressFromSecret secret =
-  show . addressFromPrivateKey . either error id . S.mkPrivateKey . either error id $
-    BAE.convertFromBase BAE.Base16 (B.drop 2 $ B.pack secret)
 
 walletTests :: SpecWith TestParams
 walletTests = do
@@ -127,10 +87,11 @@ walletTests = do
   it "binds the next free account, and re-binding one it holds changes nothing" testWalletBind
   it "keeps each profile's accounts apart" testWalletAccountsPerProfile
   it "taking the next account skips one already bound by index" testWalletBindByIndexThenNext
+  it "leaves a deleted profile's account for another profile to take" testWalletDeletedProfileAccount
   it "derives an address without taking it" testWalletAddress
   it "exports the master phrase and one account's secret" testWalletExport
   it "will not take a new account on an imported phrase" testWalletImport
-  it "the wallet and the accounts come back after a restart" testWalletPersists
+  it "the wallet, the accounts and the counter come back after a restart" testWalletPersists
   it "deletes the wallet, and one can be made again" testWalletDelete
   it "a hidden profile is bound no account" testWalletHiddenProfile
   it "will not export an account another profile holds" testWalletExportNotMine
@@ -145,6 +106,10 @@ testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice <## "no wallet on this device"
   alice ##> "/_wallet export master"
   alice <## "wallet: this device has no wallet"
+  alice ##> "/_wallet bind"
+  alice <## "wallet: this device has no wallet"
+  alice ##> "/_wallet delete"
+  alice <## "wallet: this device has no wallet"
   alice ##> "/_wallet create new"
   alice <## "wallet, no accounts for this profile"
   alice ##> "/_wallet create new"
@@ -154,6 +119,11 @@ testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   -- a mistyped phrase says nothing about which word was wrong
   alice ##> ("/_wallet create mnemonic=" <> B.unpack (B.unwords $ replicate 24 "abandon"))
   alice <## "wallet: not a valid 24 word recovery phrase"
+  -- a phrase is taken as a backup card writes it, case and all
+  alice ##> ("/_wallet create mnemonic=" <> map toUpper (B.unpack testPhrase24))
+  alice <## "wallet, no accounts for this profile"
+  alice ##> "/_wallet export master"
+  alice <## B.unpack testPhrase24
 
 testWalletBind :: HasCallStack => TestParams -> IO ()
 testWalletBind ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -200,6 +170,23 @@ testWalletBindByIndexThenNext ps = withNewTestChat ps "alice" aliceProfile $ \al
   alice ##> "/_wallet bind"
   alice <## "accounts: 1, 2, 3, 4"
 
+testWalletDeletedProfileAccount :: HasCallStack => TestParams -> IO ()
+testWalletDeletedProfileAccount ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  alice ##> "/_wallet create new"
+  alice <## "wallet, no accounts for this profile"
+  alice ##> "/_wallet bind"
+  alice <## "accounts: 0"
+  alice ##> "/create user alisa"
+  showActiveUser alice "alisa"
+  -- deleting a profile does not take its account with it
+  alice ##> "/delete user alice"
+  alice <### ["ok", "completed deleting user"]
+  alice ##> "/_wallet"
+  alice <## "wallet, no accounts for this profile"
+  -- and another profile can take it, which is how a name outlives its profile
+  alice ##> "/_wallet bind account=0"
+  alice <## "accounts: 0"
+
 testWalletAddress :: HasCallStack => TestParams -> IO ()
 testWalletAddress ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create new"
@@ -219,9 +206,6 @@ testWalletAddress ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice <## "bad chat command: Failed reading: empty"
   alice ##> "/_wallet"
   alice <## "wallet, no accounts for this profile"
-  -- an index BIP-32 cannot harden is refused rather than folded onto a low one
-  alice ##> "/_wallet address account=2147483648"
-  alice <## "wallet: account index is too large to harden"
 
 testWalletExport :: HasCallStack => TestParams -> IO ()
 testWalletExport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -230,16 +214,23 @@ testWalletExport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet export master"
   alice <## B.unpack testPhrase24
   alice ##> "/_wallet export account 0"
-  row <- getTermLine alice
-  case words row of
-    [idx, path, address, secret] -> do
-      idx `shouldBe` "0"
-      path `shouldBe` "m/44'/60'/0'/0/0"
-      -- m/44'/60'/0'/0/0 of the 24 word vector, pinned outside this
-      -- implementation, so a change of path fails here rather than shipping
-      address `shouldBe` "0xF278cF59F82eDcf871d630F28EcC8056f25C1cdb"
-      addressFromSecret secret `shouldBe` address
-    _ -> expectationFailure $ "unexpected export row: " <> row
+  (idx, path, address, secret) <- exportRow <$> getTermLine alice
+  idx `shouldBe` "0"
+  path `shouldBe` "m/44'/60'/0'/0/0"
+  -- m/44'/60'/0'/0/0 of the 24 word vector, pinned outside this implementation,
+  -- so a change of path fails here rather than shipping
+  address `shouldBe` "0xF278cF59F82eDcf871d630F28EcC8056f25C1cdb"
+  addressFromSecret secret `shouldBe` address
+  -- the index reaches the key, not only the path printed beside it
+  alice ##> "/_wallet export account 1"
+  (idx', path', address', _) <- exportRow <$> getTermLine alice
+  idx' `shouldBe` "1"
+  path' `shouldBe` "m/44'/60'/1'/0/0"
+  address' `shouldBe` show (addressFromPrivateKey $ accountKey (seedEntropy testPhrase24) 1)
+  -- and an address is read from the account the command names, not the counter
+  alice ##> "/_wallet address account=1"
+  addressRow <- words <$> getTermLine alice
+  addressRow `shouldBe` ["1", "m/44'/60'/1'/0/0", address']
 
 testWalletImport :: HasCallStack => TestParams -> IO ()
 testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -272,6 +263,9 @@ testWalletPersists ps = do
     alice <## "accounts: 2"
     alice ##> "/_wallet export master"
     alice <## phrase
+    -- the counter came back too, so no account is handed out a second time
+    alice ##> "/_wallet bind"
+    alice <## "accounts: 2, 3"
 
 testWalletDelete :: HasCallStack => TestParams -> IO ()
 testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -283,6 +277,58 @@ testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice <## "ok"
   alice ##> "/_wallet"
   alice <## "no wallet on this device"
-  -- the accounts went with the entropy they were counted against
   alice ##> "/_wallet create new"
   alice <## "wallet, no accounts for this profile"
+  -- the new wallet holds no account and its counter starts over
+  alice ##> "/_wallet bind"
+  alice <## "accounts: 0"
+
+testWalletHiddenProfile :: HasCallStack => TestParams -> IO ()
+testWalletHiddenProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  alice ##> "/_wallet create new"
+  alice <## "wallet, no accounts for this profile"
+  alice ##> "/create user alisa"
+  showActiveUser alice "alisa"
+  alice ##> "/hide user my_password"
+  alice <## "current user alisa:"
+  alice <## "messages are hidden (use /tail to view)"
+  alice <## "profile is hidden"
+  alice ##> "/_wallet bind"
+  alice <## "wallet: a hidden profile cannot own an account"
+
+testWalletExportNotMine :: HasCallStack => TestParams -> IO ()
+testWalletExportNotMine ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  alice ##> "/_wallet create new"
+  alice <## "wallet, no accounts for this profile"
+  alice ##> "/_wallet bind"
+  alice <## "accounts: 0"
+  -- the profile's own account is its to export
+  alice ##> "/_wallet export account 0"
+  (_, path, _, _) <- exportRow <$> getTermLine alice
+  path `shouldBe` "m/44'/60'/0'/0/0"
+  alice ##> "/create user alisa"
+  showActiveUser alice "alisa"
+  -- account 0 is the other profile's, and its key is not this profile's to take
+  alice ##> "/_wallet export account 0"
+  alice <## "wallet: another profile holds this account"
+  -- an account nobody holds is still derivable, which is what a scan needs
+  alice ##> "/_wallet export account 7"
+  (_, path', _, _) <- exportRow <$> getTermLine alice
+  path' `shouldBe` "m/44'/60'/7'/0/0"
+
+testWalletIndexTooLarge :: HasCallStack => TestParams -> IO ()
+testWalletIndexTooLarge ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  alice ##> "/_wallet create new"
+  alice <## "wallet, no accounts for this profile"
+  -- 2^31 is already a hardened component, so it would derive account 0's key
+  alice ##> "/_wallet address account=2147483648"
+  alice <## "wallet: account index is too large to harden"
+  alice ##> "/_wallet bind account=2147483648"
+  alice <## "wallet: account index is too large to harden"
+  alice ##> "/_wallet export account 2147483648"
+  alice <## "wallet: account index is too large to harden"
+  -- the largest index that can be hardened is usable, and the counter follows it
+  alice ##> "/_wallet bind account=2147483647"
+  alice <## "accounts: 2147483647"
+  alice ##> "/_wallet bind"
+  alice <## "wallet: account index is too large to harden"

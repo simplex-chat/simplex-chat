@@ -110,7 +110,7 @@ Three cases, by how much of the database came back.
 
 What the scan finds is unbound, and the user attaches each account to a profile with `bind account=<n>`. The names those accounts own are what identify them, which is what makes the question answerable at all: the user is choosing between names they recognise, not between numbers. Binding moves no key and signs nothing, because ownership does not change, only which profile the app shows the account under. Pointing a name at that profile's address is a separate signed edit of the name's record.
 
-**The database is older than the master.** It has the accounts as of the backup and nothing written after it, so its counter is behind. A counter that is behind is worse than one that is unknown, because it looks usable, so such a database is treated as having an unknown counter until the same scan fills the gap.
+**The database is older than the master.** It has the accounts as of the backup and nothing written after it, so its counter is behind. A counter that is behind is worse than one that is unknown, because it looks usable and hands out an account the master has already used. Nothing here can tell a restored database from a current one, so clearing the counter belongs to whatever restores one, along with the scan that fills it in again.
 
 **The database is current.** It records which profile holds which account, so nothing is asked of the user.
 
@@ -132,13 +132,13 @@ CREATE TABLE wallet_accounts (
 );
 
 CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON wallet_seeds(single_seed);
-CREATE UNIQUE INDEX idx_wallet_accounts_index ON wallet_accounts(wallet_seed_id, account_index);
-CREATE INDEX idx_wallet_accounts_user ON wallet_accounts(user_id);
+CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_accounts(wallet_seed_id, account_index);
+CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 ```
 
 Only entropy that nothing can derive is stored: the master, always 32 bytes, since it is made and imported as 24 words. An account key is never stored, because the master entropy and an account index derive it whenever one is needed. So `wallet_accounts` holds what derivation cannot produce, which account indexes the device knows about and which profile each belongs to. A row with no `user_id` is an account no profile holds, which is what a deleted chat profile leaves behind and what a scan writes.
 
-`users` is not touched: the mapping lives on the account row, and the index on `user_id` is not unique, because a profile owns as many accounts as it owns names. One seed per device is `single_seed` and the unique index on it, which a later change lifts with a `DROP INDEX` and a `DROP COLUMN`; it is a named index rather than an inline `UNIQUE` because SQLite cannot drop one of those without rebuilding the table. Deleting the master takes its account rows, because an account index with no entropy behind it derives nothing. The migration does have a reverse step, which the schema test exercises, and running it destroys the only copy of the master entropy, so it is for development and never for a device holding anything.
+`users` is not touched: the mapping lives on the account row, and the index on `user_id` is not unique, because a profile owns as many accounts as it owns names. One seed per device is `single_seed` and the unique index on it, which a later change lifts with a `DROP INDEX` and a `DROP COLUMN`; it is a named index rather than an inline `UNIQUE` because SQLite cannot drop one of those without rebuilding the table. Deleting the master takes its account rows, because an account index with no entropy behind it derives nothing. The migration has no reverse step, because reversing it would drop the only copy of the master entropy. What runs a reverse step is an older app installed over a newer database, which on mobile happens without asking and leaves one backup file that the next upgrade overwrites; with no reverse step that older app reports instead that the database is newer than it is, and changes nothing.
 
 A null `account_index` marks an account whose key was imported rather than derived, which the master phrase does not recover and the schema must not suggest it does. Importing one is not implemented here; the column is nullable now so that a row written later reads correctly, rather than leaving an unmarked row to be guessed at.
 
@@ -149,7 +149,8 @@ A null `account_index` marks an account whose key was imported rather than deriv
 - **A wallet the master phrase is imported into.** Enumerating BIP-44 accounts computes account extended public keys, and some wallets send them to a vendor, which hands that vendor every account on the device at once, across every profile. That is what an account for each name otherwise prevents.
 - **Whoever answers the recovery scan.** Sees every address the phrase could hold a name on, in one burst, so it links every account on the device, across profiles, and recognises addresses that hold nothing yet, which is where future accounts will be. `address` derives for any index straight from the master, so a caller can enumerate hidden profiles' addresses too. This is the sharpest cost in the design.
 - **A paired device.** Can run any of these commands, because they are not blocked from one: `export master` reads the whole wallet, `create` on a device that has none plants a seed the pairing controls, and `delete` destroys the only copy. Blocking `ExecChatStoreSQL` while allowing `export master` is not a coherent line, and the wallet commands need their own decision rather than the catch-all.
-- **Someone reading the logs.** A remote session logs a command's verb and nothing else, so a phrase typed into `create` stays out of the log, and an answer is never logged at all. The websocket server in `apps/simplex-chat/Server.hs` prints every command it receives, that phrase included, which is a change to that server rather than to the wallet.
+- **Someone reading the logs.** A remote session logs a command's verb and nothing else, so a phrase typed into `create` stays out of the log, and an answer is never logged at all.
+- **A page open in the user's browser.** The websocket server in `apps/simplex-chat/Server.hs` accepts any local connection, asks for no token and checks no `Origin`, and websockets are not bound by the same origin policy, so any page loaded while that server runs can send `export master` and read the answer. It also prints every command it receives, that phrase included. Both are properties of that server, which this change gives something worth taking, and closing them is work there rather than in the wallet.
 
 ## Known limits
 
@@ -161,7 +162,8 @@ A null `account_index` marks an account whose key was imported rather than deriv
 6. **Account indexes are not dense.** An account can be taken and never used, and a run of empty accounts is how the scan stops, so one far above a gap can be missed.
 7. **Gas and discovery pull against each other.** If an account ever pays for anything, whatever funds it links accounts on chain. If it never pays, no wallet finds it past account 0.
 8. **Nothing records which layout a seed was used under.** A phrase used in another wallet may hold accounts at paths this doc does not describe.
-9. **Purpose `5564'` is ours.** Reserved for stealth keys, taken from an [ERC-5564](https://eips.ethereum.org/EIPS/eip-5564) number rather than registered as a BIP-43 purpose, and nothing here derives at it.
+9. **A restored database hands out an account that is already used.** Its counter is behind what the master has reached, and nothing detects that, so a name can be bought with an account that already owns one until the scan resets the counter.
+10. **Purpose `5564'` is ours.** Reserved for stealth keys, taken from an [ERC-5564](https://eips.ethereum.org/EIPS/eip-5564) number rather than registered as a BIP-43 purpose, and nothing here derives at it.
 
 ## Files
 
@@ -169,14 +171,15 @@ A null `account_index` marks an account whose key was imported rather than deriv
 - `src/Simplex/Chat/Store/Wallets.hs`, the two tables.
 - `src/Simplex/Chat/Store/SQLite/Migrations/M20260908_wallet_seeds.hs` and the Postgres twin.
 - `tests/WalletTests.hs`.
+- `tests/SchemaDump.hs` and `tests/PostgresSchemaDump.hs`, which selected what to test by taking every migration after the last one without a reverse step, and now take every migration from the first one that has a reverse step, applying any that has none.
 - Derivation uses the `BIP32` and `BIP39` modules already in simplexmq and adds no dependency.
 
 ## What is verified
 
 **File:** `tests/WalletTests.hs`. Each of these is a test, not a claim.
 
-1. **Vectors.** The two addresses above reproduce from `abandon ... about`, as does account 0's secret, pinned to the value another wallet shows for it. A 24 word phrase imported through the command reaches a pinned address end to end, so a change of path fails here rather than shipping.
+1. **Vectors.** The two addresses above reproduce from `abandon ... about`, as does account 0's secret, pinned to the value another wallet shows for it. A 24 word phrase imported through the command reaches a pinned address end to end, so a change of path fails here rather than shipping, and the account a command names is the account whose key comes back.
 2. **Isolation.** Ten accounts' addresses are all different, and an account path hardens its account component.
-3. **Refusals.** A second generate; a phrase that is not 24 valid words; `bind` on a hidden profile, on an account another profile holds, and on an imported master whose counter is unknown; `export account` for an account another profile holds; every index at or above 2^31, on `address`, `bind` and `export account` alike.
-4. **Binding and reads.** A profile binds several accounts, an account bound by index moves the counter past it so the next one does not collide, `bind account=<n>` attaches a scanned one, and `address` returns the counter twice running without moving it and derives for an account with no row.
-5. **Encoding and persistence.** An account secret whose first byte is zero keeps its 64 hex digits, and the wallet, its accounts and the phrase survive a restart.
+3. **Refusals.** A second generate; a phrase that is not 24 valid words; `bind`, `delete` and `export master` on a device with no wallet; `bind` on a hidden profile, on an account another profile holds, and on an imported master whose counter is unknown; `export account` for an account another profile holds; every index at or above 2^31, on `address`, `bind` and `export account` alike.
+4. **Binding and reads.** A profile binds several accounts and exports its own, an account bound by index moves the counter past it so the next one does not collide and never moves it back, `bind account=<n>` attaches a scanned one, an account a deleted profile leaves behind is taken by another profile, and `address` returns the counter twice running without moving it and derives for an account with no row.
+5. **Encoding and persistence.** An account secret whose first byte is zero keeps its 64 hex digits; the wallet, its accounts, the counter and the phrase survive a restart; and deleting the wallet takes its accounts and starts the counter over.

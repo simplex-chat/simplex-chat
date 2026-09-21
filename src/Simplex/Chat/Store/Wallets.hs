@@ -1,28 +1,31 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeApplications #-}
 
 -- | The device seed, and which chat profile each account belongs to.
 module Simplex.Chat.Store.Wallets
-  ( getWalletSeed,
+  ( SeedId,
+    WalletSeed (..),
+    getWalletSeed,
     createWalletSeed,
     deleteWalletSeed,
-    getNextAccountIndex,
+    resolveAccount,
     getUserAccounts,
     accountHeldByOther,
     bindAccount,
   )
 where
 
-import Control.Monad (join, when)
+import Control.Monad (join, unless, when)
 import Control.Monad.Except
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
-import Simplex.Chat.Wallet (AccountIndex, SeedId, WalletError (..), WalletSeed (..), checkAccountIndex)
+import Simplex.Chat.Wallet (AccountIndex, WalletError (..), checkAccountIndex)
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -34,6 +37,17 @@ import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
+
+type SeedId = Int64
+
+-- | The device seed, as a row: the id the account rows are counted against, and
+-- the entropy every key is derived from. The entropy is 'BA.ScrubbedBytes', so
+-- a derived 'Show' does not print it.
+data WalletSeed = WalletSeed
+  { wsId :: SeedId,
+    wsEntropy :: BA.ScrubbedBytes
+  }
+  deriving (Show)
 
 toSeed :: (Int64, ByteString) -> WalletSeed
 toSeed (sId, entropy) = WalletSeed {wsId = sId, wsEntropy = BA.convert entropy}
@@ -56,8 +70,26 @@ createWalletSeed db entropy nextAccount =
           "INSERT INTO wallet_seeds (entropy, next_account_index) VALUES (?, ?)"
           (DB.Binary (BA.convert entropy :: ByteString), accountIndexCol <$> nextAccount)
 
-deleteWalletSeed :: DB.Connection -> SeedId -> IO ()
-deleteWalletSeed db sId = DB.execute db "DELETE FROM wallet_seeds WHERE wallet_seed_id = ?" (Only sId)
+-- | False if the device had no seed to delete. The account rows go with it.
+deleteWalletSeed :: DB.Connection -> IO Bool
+deleteWalletSeed db =
+  getWalletSeed db >>= \case
+    Nothing -> pure False
+    Just WalletSeed {wsId} ->
+      True <$ DB.execute db "DELETE FROM wallet_seeds WHERE wallet_seed_id = ?" (Only wsId)
+
+-- | The seed, and the account an argument names or the next free one from the
+-- counter when it names none. Refuses an index BIP-32 cannot harden, the
+-- counter's included. The seed comes back with it so that a caller derives from
+-- the one the index was resolved against.
+resolveAccount :: DB.Connection -> Maybe AccountIndex -> IO (Either WalletError (WalletSeed, AccountIndex))
+resolveAccount db accountIdx_ = runExceptT $ do
+  seed <- ExceptT $ maybe (Left WENoMaster) Right <$> getWalletSeed db
+  n <- maybe (nextFreeAccount $ wsId seed) pure accountIdx_
+  liftEither $ checkAccountIndex n
+  pure (seed, n)
+  where
+    nextFreeAccount sId = ExceptT $ maybe (Left WECounterUnknown) Right <$> getNextAccountIndex db sId
 
 -- | The index the next account takes. Nothing after an import, where the phrase
 -- does not say how many accounts it has been used for.
@@ -87,9 +119,10 @@ accountUser db sId n =
   maybeFirstRow (fromOnly @(Maybe Int64)) $
     DB.query db "SELECT user_id FROM wallet_accounts WHERE wallet_seed_id = ? AND account_index = ?" (sId, accountIndexCol n)
 
--- | True when a profile other than this one holds the account, which is what
--- keeps one profile from exporting another profile's key. An account no profile
--- holds is not another profile's.
+-- | True when a profile other than this one holds the account, which keeps one
+-- profile from handing out another's account key. It is a guard, not a
+-- boundary: @export master@ reaches every account from any profile. An account
+-- no profile holds is not another profile's.
 heldByOther :: UserId -> Maybe (Maybe Int64) -> Bool
 heldByOther userId = \case
   Just (Just heldBy) -> heldBy /= userId
@@ -99,31 +132,36 @@ accountHeldByOther :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO Bo
 accountHeldByOther db sId userId n = heldByOther userId <$> accountUser db sId n
 
 -- | Bind an account to a profile: one the device already knows about, one a
--- scan found, or the next free one when no index is given. Reading the counter
--- and taking the account happen in one transaction, so two binds racing cannot
--- both take it.
-bindAccount :: DB.Connection -> SeedId -> UserId -> Maybe AccountIndex -> IO (Either WalletError AccountIndex)
-bindAccount db sId userId accountIdx_ = runExceptT $ do
-  n <- maybe nextFreeAccount pure accountIdx_
-  liftEither $ checkAccountIndex n
+-- scan found, or the next free one when no index is given. The whole command is
+-- one transaction, so nothing between reading the counter and taking the
+-- account can hand the same one out twice.
+bindAccount :: DB.Connection -> UserId -> Maybe AccountIndex -> IO (Either WalletError ())
+bindAccount db userId accountIdx_ = runExceptT $ do
+  (WalletSeed {wsId = sId}, n) <- ExceptT $ resolveAccount db accountIdx_
   held <- liftIO $ accountUser db sId n
   when (heldByOther userId held) $ throwError WEAccountBound
-  liftIO $ do
-    case held of
-      Just (Just _) -> pure () -- already this profile's
-      Just Nothing -> setAccountUser db sId userId n
-      Nothing -> insertAccount db sId userId n
-    raiseNextAccount db sId n
-  pure n
-  where
-    nextFreeAccount = ExceptT $ maybe (Left WECounterUnknown) Right <$> getNextAccountIndex db sId
+  taken <- liftIO $ case held of
+    Just (Just _) -> pure True -- already this profile's
+    -- the update takes the account only while no profile holds it, and the read
+    -- after it says whether this one got it: where transactions are not
+    -- serialised, two of them can both read the account as free
+    Just Nothing -> setAccountUser db sId userId n >> accountHeldBy db sId userId n
+    Nothing -> True <$ insertAccount db sId userId n
+  unless taken $ throwError WEAccountBound
+  liftIO $ raiseNextAccount db sId n
 
 setAccountUser :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO ()
 setAccountUser db sId userId n =
   DB.execute
     db
-    [sql| UPDATE wallet_accounts SET user_id = ? WHERE wallet_seed_id = ? AND account_index = ? |]
+    [sql|
+      UPDATE wallet_accounts SET user_id = ?
+      WHERE wallet_seed_id = ? AND account_index = ? AND user_id IS NULL
+    |]
     (userId, sId, accountIndexCol n)
+
+accountHeldBy :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO Bool
+accountHeldBy db sId userId n = (== Just (Just userId)) <$> accountUser db sId n
 
 -- | Keep the counter a high-water mark, so an account taken by index is not
 -- handed out again as the next free one. Never lowers it, and never gives a

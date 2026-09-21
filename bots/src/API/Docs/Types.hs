@@ -628,9 +628,7 @@ deriving instance Generic UserContactRequest
 deriving instance Generic UserInfo
 deriving instance Generic UserProfileUpdateSummary
 deriving instance Generic UserPwdHash
-
 deriving instance Generic WalletError
-
 deriving instance Generic XFTPErrorType
 deriving instance Generic XFTPRcvFile
 deriving instance Generic XFTPSndFile

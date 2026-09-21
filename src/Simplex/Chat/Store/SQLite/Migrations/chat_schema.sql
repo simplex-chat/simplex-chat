@@ -1399,11 +1399,11 @@ CREATE INDEX idx_chat_items_item_signed_by_group_member_id ON chat_items(
   item_signed_by_group_member_id
 );
 CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON wallet_seeds(single_seed);
-CREATE UNIQUE INDEX idx_wallet_accounts_index ON wallet_accounts(
+CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_accounts(
   wallet_seed_id,
   account_index
 );
-CREATE INDEX idx_wallet_accounts_user ON wallet_accounts(user_id);
+CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW
