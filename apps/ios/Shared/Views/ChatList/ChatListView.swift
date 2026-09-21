@@ -150,8 +150,8 @@ struct UserPickerSheetView: View {
     }
 }
 
-// The chat list has one banner slot. The badge alert is time-sensitive and takes it whenever present; otherwise the
-// first of these kinds that applies keeps it until the app restarts, so dismissing it never puts another in its place.
+// The chat list has one banner slot. A badge alert always takes it; otherwise the first of these kinds that applies
+// keeps it until the app restarts, so dismissing it never puts another in its place.
 enum ChatListBanner: CaseIterable {
     case badgePitch
     case getStake

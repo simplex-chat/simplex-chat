@@ -61,8 +61,8 @@ fun supportEnded(): Boolean =
 fun hasShownBadge(): Boolean =
   BadgeModel.badgeState.value?.shown == true && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
 
-// The chat list has one banner slot. The badge alert is time-sensitive and takes it whenever present; otherwise the
-// first of these kinds that applies keeps it until the app restarts, so dismissing it never puts another in its place.
+// The chat list has one banner slot. A badge alert always takes it; otherwise the first of these kinds that applies
+// keeps it until the app restarts, so dismissing it never puts another in its place.
 enum class ChatListBanner { BadgePitch, GetStake }
 
 private var shownChatListBanner: ChatListBanner? = null
