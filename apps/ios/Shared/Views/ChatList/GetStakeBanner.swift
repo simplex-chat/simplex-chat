@@ -12,6 +12,7 @@ import SimpleXChat
 // Spec: spec/client/chat-list.md#GetStakeBanner
 struct GetStakeBanner: View {
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
     var showDismiss: Bool
     let onTap: () -> Void
     let onDismiss: () -> Void
@@ -31,12 +32,11 @@ struct GetStakeBanner: View {
                             .lineLimit(2)
                     }
                     Spacer(minLength: 6)
-                    Image("wefunder_logo")
+                    Image(colorScheme == .light ? "decentralized" : "decentralized-light")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 48, height: 48)
-                        // roughly where the phone of the badge banner's hero is: 40pt from the card edge, less its 8pt inset
-                        .padding(.trailing, 32)
+                        .frame(width: 34, height: 34)
+                        .padding(.trailing, 20)
                 }
                 .modifier(BannerCard())
             }

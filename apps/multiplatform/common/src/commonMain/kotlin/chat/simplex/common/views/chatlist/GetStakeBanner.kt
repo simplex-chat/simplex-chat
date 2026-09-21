@@ -37,8 +37,7 @@ fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Uni
     Row(
       Modifier
         .bannerCard(onTap)
-        // the logo sits roughly where the phone of the badge banner's hero is, 40dp from the card edge
-        .padding(start = 16.dp, end = 40.dp, top = 12.dp, bottom = 12.dp),
+        .padding(start = 16.dp, end = 28.dp, top = 12.dp, bottom = 12.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -59,7 +58,11 @@ fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Uni
           overflow = TextOverflow.Ellipsis
         )
       }
-      Image(painterResource(MR.images.wefunder_logo), contentDescription = null, modifier = Modifier.size(48.dp))
+      Image(
+        painterResource(if (isInDarkTheme()) MR.images.decentralized_light else MR.images.decentralized),
+        contentDescription = null,
+        modifier = Modifier.size(34.dp)
+      )
     }
 
     if (showDismiss) {
