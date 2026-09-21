@@ -469,8 +469,8 @@ final class ChatModel: ObservableObject {
 
     var filesToDelete: Set<URL> = []
 
-    // the banner kind the chat list showed this app session: it keeps the slot until restart, so dismissing it never
-    // puts another in its place, and only the badge alert takes it over. Set while rendering, so not published.
+    // the banner kind the chat list showed this app session: it keeps the slot until restart, so dismissing it never puts
+    // another in its place; only the badge alert shows regardless. Set while rendering, so not published.
     var chatListBanner: ChatListBanner?
 
     func bannerSlotFree(for banner: ChatListBanner) -> Bool {

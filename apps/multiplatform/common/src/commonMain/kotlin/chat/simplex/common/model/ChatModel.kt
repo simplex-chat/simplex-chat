@@ -201,8 +201,8 @@ object ChatModel {
   // Needed to apply black color to left/right cutout area on Android
   val fullscreenGalleryVisible = mutableStateOf(false)
 
-  // the banner kind the chat list showed this app session: it keeps the slot until restart, so dismissing it never
-  // puts another in its place, and only the badge alert takes it over. Set while rendering, so not a state.
+  // the banner kind the chat list showed this app session: it keeps the slot until restart, so dismissing it never puts
+  // another in its place; only the badge alert shows regardless. Set while rendering, so not a state.
   var chatListBanner: ChatListBanner? = null
 
   fun bannerSlotFree(banner: ChatListBanner): Boolean = chatListBanner == null || chatListBanner == banner
