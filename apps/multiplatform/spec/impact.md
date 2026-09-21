@@ -92,6 +92,7 @@ Path prefix: `common/src/commonMain/kotlin/chat/simplex/common/`
 | Source File | Product Concepts Affected | Risk Level | Notes |
 |-------------|--------------------------|------------|-------|
 | `views/chatlist/ChatListView.kt` | PC1, PC28 | High | Main screen — chat list rendering and search |
+| `views/chatlist/GetStakeBanner.kt` | PC1 | Low | Crowdfunding banner and shared banner card chrome |
 | `views/chatlist/ChatListNavLinkView.kt` | PC1, PC2, PC3 | Medium | Navigation from chat list item to chat |
 | `views/chatlist/ChatPreviewView.kt` | PC1, PC2, PC3, PC11 | Medium | Chat row preview rendering |
 | `views/chatlist/TagListView.kt` | PC28 | Medium | Chat tag filter UI |
