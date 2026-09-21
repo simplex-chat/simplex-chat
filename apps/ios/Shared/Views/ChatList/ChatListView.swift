@@ -388,7 +388,8 @@ struct ChatListView: View {
         badgeModel.alert?.kind == .supportEnded && badgeModel.userId == chatModel.currentUser?.userId
     }
 
-    // false until the badge state is loaded, so the pitch cannot take the slot from a supporter whose badge arrives a moment later
+    // false until the badge state loads: if the pitch rendered before that, it would lock the slot, and a supporter's badge
+    // arriving a moment later would hide it, leaving the slot empty for the session
     private var noShownBadge: Bool {
         badgeModel.badgeState?.shown != true && badgeModel.userId == chatModel.currentUser?.userId
     }

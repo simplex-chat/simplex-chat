@@ -58,7 +58,8 @@ fun shouldShowOnboarding(): Boolean {
 fun supportEnded(): Boolean =
   BadgeModel.alert.value?.kind == BadgeAlertKind.SupportEnded && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
 
-// false until the badge state is loaded, so the pitch cannot take the slot from a supporter whose badge arrives a moment later
+// false until the badge state loads: if the pitch rendered before that, it would lock the slot, and a supporter's badge
+// arriving a moment later would hide it, leaving the slot empty for the session
 fun noShownBadge(): Boolean =
   BadgeModel.badgeState.value?.shown != true && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
 
