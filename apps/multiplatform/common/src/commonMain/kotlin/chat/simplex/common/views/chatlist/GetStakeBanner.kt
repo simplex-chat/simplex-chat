@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chatlist
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -36,11 +37,12 @@ fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Uni
     Row(
       Modifier
         .bannerCard(onTap)
-        // the end padding is the 8dp trailing inset plus the X's 36dp hit region
-        .padding(start = 16.dp, end = 44.dp, top = 12.dp, bottom = 12.dp),
-      verticalAlignment = Alignment.CenterVertically
+        // the logo sits roughly where the phone of the badge banner's hero is, 40dp from the card edge
+        .padding(start = 16.dp, end = 40.dp, top = 12.dp, bottom = 12.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-      Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+      Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
           stringResource(MR.strings.invest_banner_title),
           style = MaterialTheme.typography.body1,
@@ -57,6 +59,7 @@ fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Uni
           overflow = TextOverflow.Ellipsis
         )
       }
+      Image(painterResource(MR.images.wefunder_logo), contentDescription = null, modifier = Modifier.size(48.dp))
     }
 
     if (showDismiss) {
