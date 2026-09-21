@@ -388,8 +388,10 @@ struct ChatListView: View {
         badgeModel.alert?.kind == .supportEnded && badgeModel.userId == chatModel.currentUser?.userId
     }
 
-    private var hasShownBadge: Bool {
-        badgeModel.badgeState?.shown == true && badgeModel.userId == chatModel.currentUser?.userId
+    // false until the badge state loads: if the pitch rendered before that, it would lock the slot, and a supporter's badge
+    // arriving a moment later would hide it, leaving the slot empty for the session
+    private var noShownBadge: Bool {
+        badgeModel.badgeState?.shown != true && badgeModel.userId == chatModel.currentUser?.userId
     }
 
     private func showSupportEndedDismissAlert() {
@@ -433,10 +435,11 @@ struct ChatListView: View {
         if shouldShowOnboarding {
             VStack(spacing: 0) {
                 ConnectOnboardingView()
-                if isInUS && !getStakeBannerDismissed {
+                if chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
                     GetStakeBanner(showDismiss: false, onTap: openGetStake, onDismiss: {})
                         .padding(.horizontal, 20)
                         .padding(.bottom, 8)
+                        .onAppear { chatModel.chatListBanner = .getStake }
                 }
             }
             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -492,7 +495,8 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                             .zIndex(1)
-                    } else if !supporterBannerShown && !hasShownBadge && chatModel.chats.count > 3 {
+                            .onAppear { chatModel.chatListBanner = .badgeExpired }
+                    } else if chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge && chatModel.chats.count > 3 {
                         SupportSimpleXBanner(
                             onTap: { showBadgesSheet = true },
                             onDismiss: showSupportSimpleXDismissAlert
@@ -502,7 +506,8 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                             .zIndex(1)
-                    } else if isInUS && !getStakeBannerDismissed {
+                            .onAppear { chatModel.chatListBanner = .badgePitch }
+                    } else if chatModel.bannerSlotFree(for: .getStake) && isInUS && !getStakeBannerDismissed {
                         GetStakeBanner(
                             showDismiss: getStakeBannerTapped && !chatModel.chats.isEmpty,
                             onTap: openGetStake,
@@ -513,6 +518,7 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                             .zIndex(1)
+                            .onAppear { chatModel.chatListBanner = .getStake }
                     }
                     if #available(iOS 16.0, *) {
                         ForEach(cs, id: \.viewId) { chat in

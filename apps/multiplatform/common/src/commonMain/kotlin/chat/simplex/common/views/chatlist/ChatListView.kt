@@ -1046,6 +1046,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     val alert = BadgeModel.alert.value
     if (supportEnded() && alert != null) {
       item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeExpired }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           SupportSimpleXBanner(
             title = stringResource(MR.strings.badges_support_ended),
@@ -1055,8 +1056,9 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           )
         }
       }
-    } else if (!supporterBannerShown.value && !hasShownBadge() && chatModel.chats.value.size > 3) {
+    } else if (chatModel.bannerSlotFree(ChatListBanner.BadgePitch) && !supporterBannerShown.value && noShownBadge() && chatModel.chats.value.size > 3) {
       item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgePitch }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           SupportSimpleXBanner(
             onTap = { ModalManager.start.showCustomModal { close -> BadgesView(close) } },
@@ -1064,8 +1066,9 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           )
         }
       }
-    } else if (crowdfunding && !getStakeBannerDismissed.value) {
+    } else if (chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfunding && !getStakeBannerDismissed.value) {
       item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.GetStake }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           GetStakeBanner(
             showDismiss = getStakeBannerTapped.value && chatModel.chats.value.isNotEmpty(),

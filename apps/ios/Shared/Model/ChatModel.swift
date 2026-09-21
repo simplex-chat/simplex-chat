@@ -383,6 +383,12 @@ class BadgeModel: ObservableObject {
     }
 }
 
+enum ChatListBanner {
+    case badgeExpired
+    case badgePitch
+    case getStake
+}
+
 // Spec: spec/state.md#ChatModel
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
@@ -462,6 +468,14 @@ final class ChatModel: ObservableObject {
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
     var filesToDelete: Set<URL> = []
+
+    // the banner kind the chat list showed this app session: it keeps the slot until restart, so dismissing it never puts
+    // another in its place; only the badge alert shows regardless. Set while rendering, so not published.
+    var chatListBanner: ChatListBanner?
+
+    func bannerSlotFree(for banner: ChatListBanner) -> Bool {
+        chatListBanner == nil || chatListBanner == banner
+    }
 
     static let shared = ChatModel()
 

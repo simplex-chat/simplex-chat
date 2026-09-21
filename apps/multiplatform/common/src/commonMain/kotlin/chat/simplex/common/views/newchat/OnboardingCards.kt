@@ -58,8 +58,10 @@ fun shouldShowOnboarding(): Boolean {
 fun supportEnded(): Boolean =
   BadgeModel.alert.value?.kind == BadgeAlertKind.SupportEnded && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
 
-fun hasShownBadge(): Boolean =
-  BadgeModel.badgeState.value?.shown == true && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
+// false until the badge state loads: if the pitch rendered before that, it would lock the slot, and a supporter's badge
+// arriving a moment later would hide it, leaving the slot empty for the session
+fun noShownBadge(): Boolean =
+  BadgeModel.badgeState.value?.shown != true && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
 
 fun hasConversations(chats: List<Chat>): Boolean =
   chats.any { chat ->
@@ -420,7 +422,7 @@ fun ConnectOnboardingView() {
   }
 
   val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
-  val showGetStakeBanner = crowdfundingAvailable() && !getStakeBannerDismissed.value
+  val showGetStakeBanner = chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfundingAvailable() && !getStakeBannerDismissed.value
   // on desktop the pages span the window, but the banner keeps the width it has in the chat list
   val bannerMaxWidth = if (appPlatform.isDesktop) DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier else Dp.Unspecified
   val content = @Composable {
@@ -429,6 +431,7 @@ fun ConnectOnboardingView() {
         pager()
       }
       if (showGetStakeBanner) {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.GetStake }
         Box(Modifier.align(Alignment.CenterHorizontally).widthIn(max = bannerMaxWidth).padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = 8.dp)) {
           GetStakeBanner(
             showDismiss = false,
