@@ -223,6 +223,12 @@ export namespace AgentServiceError {
     type: "badSignature"
   }
 }
+// Remote controller app version range (min and max as version strings).
+
+export interface AppVersionRange {
+  minVersion: string
+  maxVersion: string
+}
 
 export interface AutoAccept {
   acceptIncognito: boolean
@@ -239,6 +245,80 @@ export interface BadgeProof {
   presHeader: string
   proof: string
   badgeInfo: BadgeInfo
+}
+
+export type BadgeRedeemError = 
+  | BadgeRedeemError.InvalidCode
+  | BadgeRedeemError.ServiceNotConfigured
+  | BadgeRedeemError.BadgeActive
+  | BadgeRedeemError.ServiceError
+  | BadgeRedeemError.InvalidResponse
+  | BadgeRedeemError.UnknownKeyIndex
+  | BadgeRedeemError.CredentialNotVerified
+
+export namespace BadgeRedeemError {
+  export type Tag = 
+    | "invalidCode"
+    | "serviceNotConfigured"
+    | "badgeActive"
+    | "serviceError"
+    | "invalidResponse"
+    | "unknownKeyIndex"
+    | "credentialNotVerified"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface InvalidCode extends Interface {
+    type: "invalidCode"
+  }
+
+  export interface ServiceNotConfigured extends Interface {
+    type: "serviceNotConfigured"
+  }
+
+  export interface BadgeActive extends Interface {
+    type: "badgeActive"
+  }
+
+  export interface ServiceError extends Interface {
+    type: "serviceError"
+    serviceError: BadgeServiceErrorCode
+  }
+
+  export interface InvalidResponse extends Interface {
+    type: "invalidResponse"
+    message: string
+  }
+
+  export interface UnknownKeyIndex extends Interface {
+    type: "unknownKeyIndex"
+  }
+
+  export interface CredentialNotVerified extends Interface {
+    type: "credentialNotVerified"
+  }
+}
+
+export enum BadgeServiceErrorCode {
+  Bad_request = "bad_request",
+  Unsupported_version = "unsupported_version",
+  Unknown_purchase_key = "unknown_purchase_key",
+  Unknown_offer_id = "unknown_offer_id",
+  Offer_disabled = "offer_disabled",
+  Offer_mismatch = "offer_mismatch",
+  Product_unavailable = "product_unavailable",
+  Payment_not_entitled = "payment_not_entitled",
+  Payment_pending = "payment_pending",
+  Provider_unavailable = "provider_unavailable",
+  Rate_limited = "rate_limited",
+  Code_invalid = "code_invalid",
+  Code_used = "code_used",
+  Code_expired = "code_expired",
+  Receipt_invalid = "receipt_invalid",
+  Receipt_used = "receipt_used",
+  Internal = "internal",
 }
 
 export enum BadgeStatus {
@@ -693,6 +773,7 @@ export interface CIFile {
   fileStatus: CIFileStatus
   fileProtocol: FileProtocol
   fileExpires?: string // ISO-8601 timestamp
+  fileProhibited?: FileProhibited
 }
 
 export type CIFileStatus = 
@@ -1099,7 +1180,6 @@ export type ChatErrorType =
   | ChatErrorType.ChatStoreChanged
   | ChatErrorType.InvalidConnReq
   | ChatErrorType.SimplexDomainNotReady
-  | ChatErrorType.Wallet
   | ChatErrorType.NotResolvedLocally
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
@@ -1147,6 +1227,7 @@ export type ChatErrorType =
   | ChatErrorType.AgentVersion
   | ChatErrorType.AgentNoSubResult
   | ChatErrorType.CommandError
+  | ChatErrorType.BadgeRedeemError
   | ChatErrorType.AgentCommandError
   | ChatErrorType.InvalidFileDescription
   | ChatErrorType.ConnectionIncognitoChangeProhibited
@@ -1179,7 +1260,6 @@ export namespace ChatErrorType {
     | "chatStoreChanged"
     | "invalidConnReq"
     | "simplexDomainNotReady"
-    | "wallet"
     | "notResolvedLocally"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
@@ -1227,6 +1307,7 @@ export namespace ChatErrorType {
     | "agentVersion"
     | "agentNoSubResult"
     | "commandError"
+    | "badgeRedeemError"
     | "agentCommandError"
     | "invalidFileDescription"
     | "connectionIncognitoChangeProhibited"
@@ -1339,11 +1420,6 @@ export namespace ChatErrorType {
     type: "simplexDomainNotReady"
     simplexDomain: SimplexDomain
     simplexDomainError: SimplexDomainError
-  }
-
-  export interface Wallet extends Interface {
-    type: "wallet"
-    walletError: WalletError
   }
 
   export interface NotResolvedLocally extends Interface {
@@ -1574,6 +1650,11 @@ export namespace ChatErrorType {
   export interface CommandError extends Interface {
     type: "commandError"
     message: string
+  }
+
+  export interface BadgeRedeemError extends Interface {
+    type: "badgeRedeemError"
+    badgeRedeemError: BadgeRedeemError
   }
 
   export interface AgentCommandError extends Interface {
@@ -2217,6 +2298,13 @@ export interface CryptoFileArgs {
   fileKey: string
   fileNonce: string
 }
+// Remote controller application info.
+
+export interface CtrlAppInfo {
+  appVersionRange: AppVersionRange
+  deviceName: string
+  compression: boolean
+}
 
 export interface DroppedMsg {
   brokerTs: string // ISO-8601 timestamp
@@ -2434,6 +2522,12 @@ export interface FileInvitation {
   fileConnReq?: string
   fileInline?: InlineFileMode
   fileDescr?: FileDescr
+  fileBadge?: BadgeProof
+}
+
+export interface FileProhibited {
+  maxSize: number // int64
+  badgeStatus?: BadgeStatus
 }
 
 export enum FileProtocol {
@@ -2702,14 +2796,7 @@ export interface GroupInfo {
   rosterVersion?: number // int64
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
-  groupKeys?: GroupKeys
   groupDomainVerified?: boolean
-}
-
-export interface GroupKeys {
-  publicGroupId: string
-  groupRootKey: GroupRootKey
-  memberPrivKey: string
 }
 
 export interface GroupLink {
@@ -2903,26 +2990,6 @@ export interface GroupRelay {
   relayStatus: RelayStatus
   relayLink?: string
   relayCap: RelayCapabilities
-}
-
-export type GroupRootKey = GroupRootKey.Private | GroupRootKey.Public
-
-export namespace GroupRootKey {
-  export type Tag = "private" | "public"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface Private extends Interface {
-    type: "private"
-    rootPrivKey: string
-  }
-
-  export interface Public extends Interface {
-    type: "public"
-    rootPubKey: string
-  }
 }
 
 export interface GroupShortLinkData {
@@ -3791,6 +3858,7 @@ export interface RcvFileTransfer {
   fileId: number // int64
   xftpRcvFile?: XFTPRcvFile
   fileInvitation: FileInvitation
+  fileProhibited?: FileProhibited
   fileStatus: RcvFileStatus
   fileType: FileType
   rcvFileInline?: InlineFileMode
@@ -3953,6 +4021,11 @@ export interface RelayCapabilities {
   webDomain?: string
 }
 
+export interface RelayConnectionResult {
+  relayMember: GroupMember
+  relayError?: ChatError
+}
+
 export interface RelayProfile {
   displayName: string
   fullName: string
@@ -3968,6 +4041,87 @@ export enum RelayStatus {
   Active = "active",
   Inactive = "inactive",
   Rejected = "rejected",
+}
+
+export interface RemoteCtrlInfo {
+  remoteCtrlId: number // int64
+  ctrlDeviceName: string
+  sessionState?: RemoteCtrlSessionState
+}
+
+export type RemoteCtrlSessionState = 
+  | RemoteCtrlSessionState.Starting
+  | RemoteCtrlSessionState.Searching
+  | RemoteCtrlSessionState.Connecting
+  | RemoteCtrlSessionState.PendingConfirmation
+  | RemoteCtrlSessionState.Connected
+
+export namespace RemoteCtrlSessionState {
+  export type Tag = 
+    | "starting"
+    | "searching"
+    | "connecting"
+    | "pendingConfirmation"
+    | "connected"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Starting extends Interface {
+    type: "starting"
+  }
+
+  export interface Searching extends Interface {
+    type: "searching"
+  }
+
+  export interface Connecting extends Interface {
+    type: "connecting"
+  }
+
+  export interface PendingConfirmation extends Interface {
+    type: "pendingConfirmation"
+    sessionCode: string
+  }
+
+  export interface Connected extends Interface {
+    type: "connected"
+    sessionCode: string
+  }
+}
+
+export type RemoteCtrlStopReason = 
+  | RemoteCtrlStopReason.DiscoveryFailed
+  | RemoteCtrlStopReason.ConnectionFailed
+  | RemoteCtrlStopReason.SetupFailed
+  | RemoteCtrlStopReason.Disconnected
+
+export namespace RemoteCtrlStopReason {
+  export type Tag = "discoveryFailed" | "connectionFailed" | "setupFailed" | "disconnected"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface DiscoveryFailed extends Interface {
+    type: "discoveryFailed"
+    chatError: ChatError
+  }
+
+  export interface ConnectionFailed extends Interface {
+    type: "connectionFailed"
+    chatError: ChatError
+  }
+
+  export interface SetupFailed extends Interface {
+    type: "setupFailed"
+    chatError: ChatError
+  }
+
+  export interface Disconnected extends Interface {
+    type: "disconnected"
+  }
 }
 
 export enum ReportReason {
@@ -5144,65 +5298,6 @@ export interface UserPwdHash {
 export interface VersionRange {
   minVersion: number // int
   maxVersion: number // int
-}
-
-export type WalletError = 
-  | WalletError.NoMaster
-  | WalletError.MasterExists
-  | WalletError.BadMnemonic
-  | WalletError.HiddenProfile
-  | WalletError.AccountBound
-  | WalletError.CounterUnknown
-  | WalletError.IndexTooLarge
-  | WalletError.Derivation
-
-export namespace WalletError {
-  export type Tag = 
-    | "noMaster"
-    | "masterExists"
-    | "badMnemonic"
-    | "hiddenProfile"
-    | "accountBound"
-    | "counterUnknown"
-    | "indexTooLarge"
-    | "derivation"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface NoMaster extends Interface {
-    type: "noMaster"
-  }
-
-  export interface MasterExists extends Interface {
-    type: "masterExists"
-  }
-
-  export interface BadMnemonic extends Interface {
-    type: "badMnemonic"
-  }
-
-  export interface HiddenProfile extends Interface {
-    type: "hiddenProfile"
-  }
-
-  export interface AccountBound extends Interface {
-    type: "accountBound"
-  }
-
-  export interface CounterUnknown extends Interface {
-    type: "counterUnknown"
-  }
-
-  export interface IndexTooLarge extends Interface {
-    type: "indexTooLarge"
-  }
-
-  export interface Derivation extends Interface {
-    type: "derivation"
-    derivationError: string
-  }
 }
 
 export type XFTPErrorType = 

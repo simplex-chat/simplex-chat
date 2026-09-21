@@ -79,6 +79,10 @@ This file is generated automatically.
 - [StartChat](#startchat)
 - [APIStopChat](#apistopchat)
 
+[Remote control commands](#remote-control-commands)
+- [ConnectRemoteCtrl](#connectremotectrl)
+- [VerifyRemoteCtrlSession](#verifyremotectrlsession)
+
 ---
 
 
@@ -230,6 +234,10 @@ UserProfileUpdated: User profile updated.
 - fromProfile: [Profile](./TYPES.md#profile)
 - toProfile: [Profile](./TYPES.md#profile)
 - updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
+
+UserProfileNoChange: User profile was not changed.
+- type: "userProfileNoChange"
+- user: [User](./TYPES.md#user)
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -505,15 +513,15 @@ Share user address card
 **Syntax**:
 
 ```
-/_share address<str(toSendRef)>
+/_share address <str(toSendRef)>
 ```
 
 ```javascript
-'/_share address' + ChatRef.cmdString(toSendRef) // JavaScript
+'/_share address ' + ChatRef.cmdString(toSendRef) // JavaScript
 ```
 
 ```python
-'/_share address' + ChatRef_cmd_string(toSendRef) # Python
+'/_share address ' + ChatRef_cmd_string(toSendRef) # Python
 ```
 
 **Response**:
@@ -1529,15 +1537,15 @@ Connect via prepared SimpleX link. The link can be 1-time invitation link, conta
 **Syntax**:
 
 ```
-/_connect <userId>[ <str(preparedLink_)>]
+/_connect <userId>[ incognito=on][ <str(preparedLink_)>]
 ```
 
 ```javascript
-'/_connect ' + userId + (preparedLink_ ? ' ' + CreatedConnLink.cmdString(preparedLink_) : '') // JavaScript
+'/_connect ' + userId + (incognito ? ' incognito=on' : '') + (preparedLink_ ? ' ' + CreatedConnLink.cmdString(preparedLink_) : '') // JavaScript
 ```
 
 ```python
-'/_connect ' + str(userId) + ((' ' + CreatedConnLink_cmd_string(preparedLink_)) if preparedLink_ is not None else '') # Python
+'/_connect ' + str(userId) + (' incognito=on' if incognito else '') + ((' ' + CreatedConnLink_cmd_string(preparedLink_)) if preparedLink_ is not None else '') # Python
 ```
 
 **Responses**:
@@ -1608,6 +1616,33 @@ SentInvitation: Invitation sent to contact address.
 - user: [User](./TYPES.md#user)
 - connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
 - customUserProfile: [Profile](./TYPES.md#profile)?
+
+ConnectionPlan: Connection link information.
+- type: "connectionPlan"
+- user: [User](./TYPES.md#user)
+- connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
+- planSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
+- otherSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
+- connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
+
+SentInvitationToContact: Invitation sent to contact (when connecting via SimpleX name to a known contact address)..
+- type: "sentInvitationToContact"
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+- customUserProfile: [Profile](./TYPES.md#profile)?
+
+StartedConnectionToContact: Connection to contact started (when connecting via prepared contact)..
+- type: "startedConnectionToContact"
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+- customUserProfile: [Profile](./TYPES.md#profile)?
+
+StartedConnectionToGroup: Connection to channel started (when connecting via channel link)..
+- type: "startedConnectionToGroup"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- customUserProfile: [Profile](./TYPES.md#profile)?
+- relayResults: [[RelayConnectionResult](./TYPES.md#relayconnectionresult)]
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -1782,21 +1817,21 @@ Get chat previews. Supports time-based pagination — use this instead of APILis
 **Parameters**:
 - userId: int64
 - pendingConnections: bool
-- pagination: [PaginationByTime](./TYPES.md#paginationbytime)
+- pagination: [PaginationByTime](./TYPES.md#paginationbytime)?
 - query: [ChatListQuery](./TYPES.md#chatlistquery)
 
 **Syntax**:
 
 ```
-/_get chats <userId>[ pcc=on] <str(pagination)> <json(query)>
+/_get chats <userId>[ pcc=on][ <str(pagination)>] <json(query)>
 ```
 
 ```javascript
-'/_get chats ' + userId + (pendingConnections ? ' pcc=on' : '') + ' ' + PaginationByTime.cmdString(pagination) + ' ' + JSON.stringify(query) // JavaScript
+'/_get chats ' + userId + (pendingConnections ? ' pcc=on' : '') + (pagination ? ' ' + PaginationByTime.cmdString(pagination) : '') + ' ' + JSON.stringify(query) // JavaScript
 ```
 
 ```python
-'/_get chats ' + str(userId) + (' pcc=on' if pendingConnections else '') + ' ' + PaginationByTime_cmd_string(pagination) + ' ' + json.dumps(query) # Python
+'/_get chats ' + str(userId) + (' pcc=on' if pendingConnections else '') + ((' ' + PaginationByTime_cmd_string(pagination)) if pagination is not None else '') + ' ' + json.dumps(query) # Python
 ```
 
 **Responses**:
@@ -1854,6 +1889,7 @@ GroupDeletedUser: User deleted group.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - msgSigned: bool
+- localDeletion: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -2367,5 +2403,85 @@ Stop chat controller.
 
 ChatStopped: Chat stopped.
 - type: "chatStopped"
+
+---
+
+
+## Remote control commands
+
+Allows a bot to accept an incoming remote control session from a SimpleX Desktop client, giving the desktop live access to the bot's SimpleX instance.
+
+
+### ConnectRemoteCtrl
+
+Connect to a remote controller using an OOB invitation link.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- remoteInvitation: string
+
+**Syntax**:
+
+```
+/crc <remoteInvitation>
+```
+
+```javascript
+'/crc ' + remoteInvitation // JavaScript
+```
+
+```python
+'/crc ' + remoteInvitation # Python
+```
+
+**Responses**:
+
+RemoteCtrlConnecting: Remote controller is connecting..
+- type: "remoteCtrlConnecting"
+- remoteCtrl_: [RemoteCtrlInfo](./TYPES.md#remotectrlinfo)?
+- ctrlAppInfo: [CtrlAppInfo](./TYPES.md#ctrlappinfo)
+- appVersion: string
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### VerifyRemoteCtrlSession
+
+Verify the remote controller session code to complete the connection.
+
+*Network usage*: no.
+
+**Parameters**:
+- sessionCode: string
+
+**Syntax**:
+
+```
+/verify remote ctrl <sessionCode>
+```
+
+```javascript
+'/verify remote ctrl ' + sessionCode // JavaScript
+```
+
+```python
+'/verify remote ctrl ' + sessionCode # Python
+```
+
+**Responses**:
+
+RemoteCtrlConnected: Remote controller session connected..
+- type: "remoteCtrlConnected"
+- remoteCtrl: [RemoteCtrlInfo](./TYPES.md#remotectrlinfo)
+- compression: bool
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---

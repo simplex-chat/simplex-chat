@@ -59,7 +59,7 @@ export interface APISetProfileAddress {
 }
 
 export namespace APISetProfileAddress {
-  export type Response = CR.UserProfileUpdated | CR.ChatCmdError
+  export type Response = CR.UserProfileUpdated | CR.UserProfileNoChange | CR.ChatCmdError
 
   export function cmdString(self: APISetProfileAddress): string {
     return '/_profile_address ' + self.userId + ' ' + (self.enable ? 'on' : 'off')
@@ -178,7 +178,7 @@ export namespace APIShareMyAddress {
   export type Response = CR.ChatMsgContent
 
   export function cmdString(self: APIShareMyAddress): string {
-    return '/_share address' + T.ChatRef.cmdString(self.toSendRef)
+    return '/_share address ' + T.ChatRef.cmdString(self.toSendRef)
   }
 }
 
@@ -570,7 +570,7 @@ export namespace APIConnect {
   export type Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 
   export function cmdString(self: APIConnect): string {
-    return '/_connect ' + self.userId + (self.preparedLink_ ? ' ' + T.CreatedConnLink.cmdString(self.preparedLink_) : '')
+    return '/_connect ' + self.userId + (self.incognito ? ' incognito=on' : '') + (self.preparedLink_ ? ' ' + T.CreatedConnLink.cmdString(self.preparedLink_) : '')
   }
 }
 
@@ -582,7 +582,15 @@ export interface Connect {
 }
 
 export namespace Connect {
-  export type Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
+  export type Response = 
+    | CR.SentConfirmation
+    | CR.ContactAlreadyExists
+    | CR.SentInvitation
+    | CR.ConnectionPlan
+    | CR.SentInvitationToContact
+    | CR.StartedConnectionToContact
+    | CR.StartedConnectionToGroup
+    | CR.ChatCmdError
 
   export function cmdString(self: Connect): string {
     return '/connect' + (self.connTarget_ ? ' ' + self.connTarget_ : '')
@@ -656,7 +664,7 @@ export namespace APIListGroups {
 export interface APIGetChats {
   userId: number // int64
   pendingConnections: boolean
-  pagination: T.PaginationByTime
+  pagination?: T.PaginationByTime
   query: T.ChatListQuery
 }
 
@@ -664,7 +672,7 @@ export namespace APIGetChats {
   export type Response = CR.ApiChats | CR.ChatCmdError
 
   export function cmdString(self: APIGetChats): string {
-    return '/_get chats ' + self.userId + (self.pendingConnections ? ' pcc=on' : '') + ' ' + T.PaginationByTime.cmdString(self.pagination) + ' ' + JSON.stringify(self.query)
+    return '/_get chats ' + self.userId + (self.pendingConnections ? ' pcc=on' : '') + (self.pagination ? ' ' + T.PaginationByTime.cmdString(self.pagination) : '') + ' ' + JSON.stringify(self.query)
   }
 }
 
@@ -895,5 +903,36 @@ export namespace APIStopChat {
 
   export function cmdString(_self: APIStopChat): string {
     return '/_stop'
+  }
+}
+
+// Remote control commands
+// Allows a bot to accept an incoming remote control session from a SimpleX Desktop client, giving the desktop live access to the bot's SimpleX instance.
+
+// Connect to a remote controller using an OOB invitation link.
+// Network usage: interactive.
+export interface ConnectRemoteCtrl {
+  remoteInvitation: string
+}
+
+export namespace ConnectRemoteCtrl {
+  export type Response = CR.RemoteCtrlConnecting | CR.ChatCmdError
+
+  export function cmdString(self: ConnectRemoteCtrl): string {
+    return '/crc ' + self.remoteInvitation
+  }
+}
+
+// Verify the remote controller session code to complete the connection.
+// Network usage: no.
+export interface VerifyRemoteCtrlSession {
+  sessionCode: string
+}
+
+export namespace VerifyRemoteCtrlSession {
+  export type Response = CR.RemoteCtrlConnected | CR.ChatCmdError
+
+  export function cmdString(self: VerifyRemoteCtrlSession): string {
+    return '/verify remote ctrl ' + self.sessionCode
   }
 }

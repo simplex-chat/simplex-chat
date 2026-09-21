@@ -49,7 +49,9 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260723_contact_request_rejectio
 import Simplex.Chat.Store.Postgres.Migrations.M20260813_auto_accept_group_invitations
 import Simplex.Chat.Store.Postgres.Migrations.M20260822_forward_link
 import Simplex.Chat.Store.Postgres.Migrations.M20260828_file_expiry
-import Simplex.Chat.Store.Postgres.Migrations.M20260908_wallet_seeds
+import Simplex.Chat.Store.Postgres.Migrations.M20260904_file_badges
+import Simplex.Chat.Store.Postgres.Migrations.M20260915_user_badges
+import Simplex.Chat.Store.Postgres.Migrations.M20260921_wallet_seeds
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -99,7 +101,9 @@ schemaMigrations =
     ("20260813_auto_accept_group_invitations", m20260813_auto_accept_group_invitations, Just down_m20260813_auto_accept_group_invitations),
     ("20260822_forward_link", m20260822_forward_link, Just down_m20260822_forward_link),
     ("20260828_file_expiry", m20260828_file_expiry, Just down_m20260828_file_expiry),
-    ("20260908_wallet_seeds", m20260908_wallet_seeds, Nothing)
+    ("20260904_file_badges", m20260904_file_badges, Just down_m20260904_file_badges),
+    ("20260915_user_badges", m20260915_user_badges, Just down_m20260915_user_badges),
+    ("20260921_wallet_seeds", m20260921_wallet_seeds, Nothing)
   ]
 
 -- | The list of migrations in ascending order by date

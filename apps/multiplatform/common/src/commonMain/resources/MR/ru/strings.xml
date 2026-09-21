@@ -8,7 +8,6 @@
     <string name="connect_via_group_link">Вступить в группу?</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Ваш профиль будет отправлен контакту, от которого Вы получили эту ссылку.</string>
     <string name="you_will_join_group">Вы соединитесь со всеми членами группы.</string>
-    <string name="connect_via_link_verb">Соединиться</string>
     <!-- Server info - ChatModel.kt -->
     <string name="server_connected">соединен(а)</string>
     <string name="server_error">ошибка</string>
@@ -48,8 +47,6 @@
     <string name="simplex_link_mode_browser">В браузере</string>
     <string name="simplex_link_mode_browser_warning">Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестные сайты будут красными.</string>
     <!-- SimpleXAPI.kt -->
-    <string name="error_saving_smp_servers">Ошибка при сохранении SMP-серверов</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса SMP-серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
     <string name="error_setting_network_config">Ошибка при сохранении настроек сети</string>
     <!-- API Error Responses - SimpleXAPI.kt -->
     <string name="connection_timeout">Превышено время соединения</string>
@@ -169,14 +166,11 @@
     <string name="icon_descr_received_msg_status_unread">не прочитано</string>
     <!-- ChatListView.kt -->
     <string name="personal_welcome">Здравствуйте %1$s!</string>
-    <string name="welcome">Здравствуйте!</string>
-    <string name="this_text_is_available_in_settings">Этот текст можно найти в Настройках</string>
     <string name="your_chats">Чаты</string>
     <string name="contact_connection_pending">соединяется…</string>
     <string name="group_preview_you_are_invited">Вы приглашены в группу</string>
     <string name="group_preview_join_as">Вступить как %s</string>
     <string name="group_connection_pending">соединяется…</string>
-    <string name="tap_to_start_new_chat">Нажмите, чтобы начать чат</string>
     <string name="chat_with_developers">Соединиться с разработчиками</string>
     <string name="you_have_no_chats">У Вас нет чатов</string>
     <!-- ShareListView.kt -->
@@ -224,7 +218,6 @@
     <string name="icon_descr_server_status_connected">Соединено</string>
     <string name="icon_descr_server_status_disconnected">Соединение с сервером не установлено</string>
     <string name="icon_descr_server_status_error">Ошибка</string>
-    <string name="icon_descr_server_status_pending">Ожидает</string>
     <string name="switch_receiving_address_question">Поменять адрес получения?</string>
     <string name="switch_receiving_address_desc">Адрес получения сообщений будет перемещён на другой сервер. Изменение адреса завершится после того как отправитель будет онлайн.</string>
     <!-- Message Actions - SendMsgView.kt -->
@@ -246,12 +239,8 @@
     <string name="copied">Скопировано в буфер обмена</string>
     <!-- NewChatSheet -->
     <string name="add_contact_or_create_group">Начать новый разговор</string>
-    <string name="share_one_time_link">Создать ссылку-приглашение</string>
-    <string name="connect_via_link_or_qr">Соединиться через ссылку или QR-код</string>
     <string name="scan_QR_code">Сканировать QR-код</string>
     <string name="create_group">Создать секретную группу</string>
-    <string name="to_share_with_your_contact">(чтобы отправить Вашему контакту)</string>
-    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(сканировать или вставить из буфера)</string>
     <string name="only_stored_on_members_devices">(хранится только у членов группы)</string>
     <!-- GetImageView -->
     <string name="toast_permission_denied">Разрешение не получено!</string>
@@ -320,18 +309,11 @@
     <!-- Connection info - ContactConnectionInfoView.kt -->
     <string name="show_QR_code">Показать QR-код</string>
     <!-- Add Contact - AddContactView.kt -->
-    <string name="invalid_QR_code">Ошибка QR-кода</string>
-    <string name="this_QR_code_is_not_a_link">Этот QR-код не является ссылкой!</string>
     <string name="invalid_contact_link">Неверная ссылка!</string>
-    <string name="this_link_is_not_a_valid_connection_link">Эта ссылка не является ссылкой-приглашением!</string>
     <string name="connection_request_sent">Запрос на соединение отправлен!</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Соединение с группой будет установлено, когда хост группы будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Соединение будет установлено, когда Ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Соединение будет установлено, когда Ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Если Вы не можете встретиться лично, Вы можете <b>показать QR-код во время видеозвонка</b> или поделиться ссылкой.]]></string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профиль будет отправлен
-\nВашему контакту</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Если Вы не можете встретиться лично, Вы можете <b>сосканировать QR-код во время видеозвонка</b>, или Ваш контакт может отправить Вам ссылку.]]></string>
     <string name="share_invitation_link">Поделиться одноразовой ссылкой</string>
     <!-- PasteToConnect.kt -->
     <string name="connect_button">Соединиться</string>
@@ -350,9 +332,7 @@
     <string name="send_us_an_email">Написать нам письмо</string>
     <string name="chat_lock">Блокировка SimpleX</string>
     <string name="chat_console">Консоль</string>
-    <string name="smp_servers">SMP-серверы</string>
     <string name="smp_servers_preset_address">Адрес сервера по умолчанию</string>
-    <string name="smp_servers_preset_add">Добавить серверы по умолчанию</string>
     <string name="smp_servers_add">Добавить сервер</string>
     <string name="smp_servers_test_server">Тестировать сервер</string>
     <string name="smp_servers_test_servers">Тестировать серверы</string>
@@ -361,8 +341,6 @@
     <string name="smp_servers_test_some_failed">Серверы не прошли тест:</string>
     <string name="smp_servers_scan_qr">Сканировать QR-код сервера</string>
     <string name="smp_servers_enter_manually">Ввести сервер вручную</string>
-    <string name="smp_servers_preset_server">Сервер по умолчанию</string>
-    <string name="smp_servers_your_server">Ваш сервер</string>
     <string name="smp_servers_your_server_address">Адрес Вашего сервера</string>
     <string name="smp_servers_use_server">Использовать сервер</string>
     <string name="smp_servers_use_server_for_new_conn">Использовать для новых соединений</string>
@@ -375,7 +353,6 @@
     <string name="contribute">Внести свой вклад</string>
     <string name="rate_the_app">Оценить приложение</string>
     <string name="use_simplex_chat_servers__question">Использовать серверы, предоставленные SimpleX Chat?</string>
-    <string name="your_SMP_servers">Ваши SMP-серверы</string>
     <string name="using_simplex_chat_servers">Используются серверы, предоставленные SimpleX Chat.</string>
     <string name="how_to">Инфо</string>
     <string name="how_to_use_your_servers">Как использовать серверы</string>
@@ -421,15 +398,11 @@
     <string name="save_and_notify_group_members">Сохранить и уведомить членов группы</string>
     <string name="exit_without_saving">Выйти без сохранения</string>
     <!-- Welcome Prompts - WelcomeView.kt -->
-    <string name="you_control_your_chat">Вы контролируете Ваш чат!</string>
-    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Платформа для сообщений и приложений, которая защищает Вашу личную информацию и безопасность.</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">Мы не храним Ваши контакты и сообщения (после доставки) на серверах.</string>
     <string name="create_profile">Создать профиль</string>
     <string name="your_profile_is_stored_on_your_device">Ваш профиль, контакты и доставленные сообщения хранятся на Вашем устройстве.</string>
     <string name="profile_is_only_shared_with_your_contacts">Профиль отправляется только Вашим контактам.</string>
     <string name="display_name_cannot_contain_whitespace">Имя профиля не может содержать пробелы.</string>
     <string name="display_name">Имя:</string>
-    <string name="create_profile_button">Создать</string>
     <string name="about_simplex">О SimpleX</string>
     <!-- markdown demo - MarkdownHelpView.kt -->
     <string name="how_to_use_markdown">Как форматировать</string>
@@ -442,7 +415,6 @@
     <string name="secret_text">секрет</string>
     <string name="connect_via_link">Соединиться через ссылку</string>
     <string name="this_string_is_not_a_connection_link">Эта строка не является ссылкой-приглашением!</string>
-    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Вы также можете соединиться, открыв ссылку там, где Вы её получили. Если ссылка откроется в браузере, нажмите кнопку <b>Открыть в приложении</b>.]]></string>
     <!-- CICallStatus -->
     <string name="callstatus_calling">входящий звонок…</string>
     <string name="callstatus_missed">пропущенный звонок</string>
@@ -462,22 +434,11 @@
     <string name="callstate_connected">соединен(а)</string>
     <string name="callstate_ended">завершён</string>
     <!-- SimpleXInfo -->
-    <string name="next_generation_of_private_messaging">Будущее коммуникаций</string>
-    <string name="privacy_redefined">Более конфиденциальный</string>
-    <string name="first_platform_without_user_ids">Без идентификаторов пользователей.</string>
-    <string name="immune_to_spam_and_abuse">Защищён от спама</string>
-    <string name="people_can_connect_only_via_links_you_share">Вы определяете, кто может соединиться.</string>
-    <string name="decentralized">Децентрализованный</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Кто угодно может запустить сервер.</string>
     <string name="create_your_profile">Создать профиль</string>
     <string name="make_private_connection">Добавьте контакт</string>
     <string name="how_it_works">Как это работает</string>
     <!-- How SimpleX Works -->
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Чтобы защитить Вашу конфиденциальность, SimpleX использует разные ID для каждого Вашего контакта.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Только пользовательские устройства хранят контакты, группы и сообщения.</string>
-    <string name="read_more_in_github_with_link"><![CDATA[Узнайте больше из нашего <font color="#0088ff">GitHub репозитория</font>.]]></string>
     <!-- SetNotificationsMode.kt -->
-    <string name="use_chat">Использовать чат</string>
     <!-- MakeConnection -->
     <string name="paste_the_link_you_received">Вставьте полученную ссылку</string>
     <!-- Call -->
@@ -502,7 +463,6 @@
     <string name="accept_call_on_lock_screen">Принять</string>
     <string name="show_call_on_lock_screen">Показывать</string>
     <string name="no_call_on_lock_screen">Выключить</string>
-    <string name="your_ice_servers">Ваши ICE-серверы</string>
     <string name="webrtc_ice_servers">WebRTC ICE-серверы</string>
     <string name="relay_server_protects_ip">Релей-сервер защищает Ваш IP-адрес, но может отслеживать продолжительность звонка.</string>
     <string name="relay_server_if_necessary">Релей-сервер используется только при необходимости. Другая сторона может видеть Ваш IP-адрес.</string>
@@ -556,7 +516,6 @@
     <string name="settings_section_title_chats">Чаты</string>
     <string name="settings_developer_tools">Инструменты разработчика</string>
     <string name="settings_experimental_features">Экспериментальные функции</string>
-    <string name="settings_section_title_socks">SOCKS-прокси</string>
     <string name="settings_section_title_icon">Значок</string>
     <string name="settings_section_title_themes">Темы</string>
     <string name="settings_section_title_messages">Сообщения и файлы</string>
@@ -988,7 +947,6 @@
     <string name="users_delete_profile_for">Удалить профиль чата для</string>
     <string name="messages_section_description">Эта настройка применяется к сообщениям в Вашем текущем профиле чата</string>
     <string name="network_session_mode_transport_isolation">Отдельные транспортные сессии</string>
-    <string name="update_network_session_mode_question">Обновить режим отдельных сессий\?</string>
     <string name="failed_to_create_user_duplicate_title">Имя профиля уже используется!</string>
     <string name="failed_to_create_user_title">Ошибка создания профиля!</string>
     <string name="failed_to_create_user_duplicate_desc">У Вас уже есть профиль с таким именем. Пожалуйста, выберите другое имя.</string>
@@ -1089,17 +1047,11 @@
     <string name="unhide_profile">Раскрыть профиль</string>
     <string name="video_will_be_received_when_contact_is_online">Видео будет получено, когда Ваш контакт будет онлайн, пожалуйста, подождите или проверьте позже!</string>
     <string name="unhide_chat_profile">Раскрыть профиль чата</string>
-    <string name="error_loading_smp_servers">Ошибка при загрузке SMP-серверов</string>
-    <string name="error_loading_xftp_servers">Ошибка при загрузке XFTP-серверов</string>
-    <string name="error_saving_xftp_servers">Ошибка при сохранении XFTP-серверов</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Проверьте, что адреса XFTP-серверов указаны в правильном формате и не дублируются.</string>
     <string name="error_xftp_test_server_auth">Сервер требует авторизации для загрузки, проверьте пароль.</string>
     <string name="smp_server_test_compare_file">Сравнение файла</string>
     <string name="smp_server_test_delete_file">Удалить файл</string>
     <string name="smp_server_test_download_file">Загрузка файла</string>
     <string name="smp_server_test_upload_file">Загрузка файла</string>
-    <string name="xftp_servers">XFTP-серверы</string>
-    <string name="your_XFTP_servers">Ваши XFTP-серверы</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[Установите <i>Использовать .onion хосты</i> в Нет если SOCKS-прокси их не поддерживает.]]></string>
     <string name="la_auth_failed">Ошибка аутентификации</string>
     <string name="la_no_app_password">Нет кода доступа</string>
@@ -1154,8 +1106,6 @@
     <string name="allow_your_contacts_to_call">Разрешить Вашим контактам звонить Вам.</string>
     <string name="audio_video_calls">Аудио/видео звонки</string>
     <string name="calls_prohibited_with_this_contact">Аудио/видео звонки запрещены.</string>
-    <string name="available_in_v51">"
-\nДоступно в v5.1"</string>
     <string name="both_you_and_your_contact_can_make_calls">Вы и Ваш контакт можете совершать звонки.</string>
     <string name="only_you_can_make_calls">Только Вы можете совершать звонки.</string>
     <string name="only_your_contact_can_make_calls">Только Ваш контакт может совершать звонки.</string>
@@ -1177,7 +1127,6 @@
     <string name="both_you_and_your_contact_can_add_message_reactions">И Вы, и Ваш контакт можете добавлять реакции на сообщения.</string>
     <string name="one_time_link_short">Одноразовая ссылка</string>
     <string name="simplex_address">Адрес SimpleX</string>
-    <string name="you_can_accept_or_reject_connection">Когда Вы получите запрос на соединение, Вы можете принять или отклонить его.</string>
     <string name="enabled_self_destruct_passcode">Включить код самоуничтожения</string>
     <string name="all_app_data_will_be_cleared">Все данные приложения будут удалены.</string>
     <string name="if_you_enter_self_destruct_code">Если Вы введёте код самоуничтожения при открытии приложения:</string>
@@ -1234,11 +1183,9 @@
     <string name="if_you_cant_meet_in_person">Если Вы не можете встретиться лично, покажите QR-код во время видеозвонка или поделитесь ссылкой.</string>
     <string name="scan_qr_to_connect_to_contact">Чтобы соединиться с Вами, Ваш контакт может отсканировать QR-код или использовать ссылку в приложении.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Вы не потеряете контакты, если позже удалите Ваш адрес.</string>
-    <string name="you_can_share_your_address">Вы можете поделиться своим адресом в виде ссылки или QR-кода - любой может соединиться с Вами.</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Узнать больше в <font color="#0088ff">Руководстве пользователя</font>.]]></string>
     <string name="your_contacts_will_remain_connected">Ваши контакты сохранятся.</string>
     <string name="customize_theme_title">Настроить тему</string>
-    <string name="create_address_and_let_people_connect">Создайте адрес, чтобы можно было соединиться с Вами.</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Все Ваши контакты сохранятся. Обновлённый профиль будет отправлен Вашим контактам.</string>
     <string name="add_address_to_your_profile">Добавьте адрес в свой профиль, чтобы Ваши SimpleX контакты могли поделиться им. Профиль будет отправлен Вашим SimpleX контактам.</string>
     <string name="create_simplex_address">Создать адрес SimpleX</string>
@@ -1249,9 +1196,6 @@
     <string name="save_settings_question">Сохранить настройки\?</string>
     <string name="stop_sharing">Прекратить делиться</string>
     <string name="continue_to_next_step">Продолжить</string>
-    <string name="dont_create_address">Не создавать адрес</string>
-    <string name="you_can_create_it_later">Вы можете создать его позже</string>
-    <string name="you_can_make_address_visible_via_settings">Вы можете сделать его видимым для ваших контактов в SimpleX через Настройки.</string>
     <string name="address_section_title">Адрес</string>
     <string name="enter_welcome_message">Введите приветственное сообщение…</string>
     <string name="group_welcome_preview">Просмотр</string>
@@ -1328,7 +1272,6 @@
     <string name="no_history">Нет истории</string>
     <string name="receipts_contacts_override_enabled">Отправка отчётов о доставке включена для %d контактов</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Отправка отчётов о доставке будет включена для всех контактов во всех видимых профилях чата.</string>
-    <string name="this_setting_is_for_your_current_profile">Установка для Вашего активного профиля</string>
     <string name="these_settings_are_for_your_current_profile">Установки для Вашего активного профиля</string>
     <string name="receipts_contacts_override_disabled">Отправка отчётов о доставке выключена для %d контактов</string>
     <string name="sync_connection_force_desc">Шифрование работает, и новое соглашение не требуется. Это может привести к ошибкам соединения!</string>
@@ -1389,7 +1332,6 @@
     <string name="sync_connection_force_confirm">Пересогласовать</string>
     <string name="sync_connection_force_question">Пересогласовать шифрование\?</string>
     <string name="prohibit_sending_files">Запретить отправлять файлы и медиа.</string>
-    <string name="connect_via_link_incognito">Соединиться Инкогнито </string>
     <string name="turn_off_battery_optimization_button">Разрешить</string>
     <string name="turn_off_system_restriction_button">Открыть настройки приложения</string>
     <string name="disable_notifications_button">Выключить уведомления</string>
@@ -1397,7 +1339,6 @@
     <string name="system_restricted_background_in_call_title">Звонки в фоне невозможны</string>
     <string name="system_restricted_background_in_call_desc">Приложение может быть выключено после 1 минуты в фоне.</string>
     <string name="no_info_on_delivery">Нет информации от доставке</string>
-    <string name="paste_the_link_you_received_to_connect_with_your_contact">Вставьте полученную ссылку, чтобы соединиться с Вашим контактом…</string>
     <string name="connect__a_new_random_profile_will_be_shared">Будет отправлен новый случайный профиль.</string>
     <string name="connect__your_profile_will_be_shared">Ваш профиль %1$s будет отправлен.</string>
     <string name="receipts_groups_title_disable">Выключить отчёты о доставке для групп\?</string>
@@ -1853,7 +1794,6 @@
     <string name="message_queue_info_server_info">информация сервера об очереди: %1$s
 \n
 \nпоследнее полученное сообщение: %2$s</string>
-    <string name="chat_list_always_visible">Показать список чатов в новом окне</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Приложение будет запрашивать подтверждение загрузки с неизвестных серверов (за исключением .onion адресов или когда SOCKS-прокси включен).</string>
     <string name="network_smp_proxy_mode_unprotected">Незащищённый</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Без Tor или VPN, Ваш IP-адрес будет доступен серверам файлов.</string>
@@ -1895,8 +1835,6 @@
     <string name="network_smp_proxy_mode_unknown">Неизвестные серверы</string>
     <string name="network_smp_proxy_fallback_prohibit">Нет</string>
     <string name="private_routing_show_message_status">Показать статус сообщения</string>
-    <string name="update_network_smp_proxy_fallback_question">Прямая доставка сообщений</string>
-    <string name="update_network_smp_proxy_mode_question">Режим доставки сообщений</string>
     <string name="settings_section_title_private_message_routing">Конфиденциальная доставка сообщений</string>
     <string name="settings_section_title_chat_colors">Цвета чата</string>
     <string name="settings_section_title_chat_theme">Тема чата</string>
@@ -1934,7 +1872,6 @@
     <string name="cant_call_contact_alert_title">Не удаётся позвонить контакту</string>
     <string name="cant_send_message_to_member_alert_title">Не удаётся написать члену группы</string>
     <string name="app_check_for_updates">Проверять обновления</string>
-    <string name="info_view_connect_button">соединиться</string>
     <string name="proxy_destination_error_broker_host">Адрес сервера назначения %1$s несовместим с настройками пересылающего сервера %2$s.</string>
     <string name="smp_proxy_error_connecting">Ошибка подключения к пересылающему серверу %1$s. Попробуйте позже.</string>
     <string name="proxy_destination_error_failed_to_connect">Пересылающий сервер %1$s не смог подключиться к серверу назначения %2$s. Попробуйте позже.</string>
@@ -1944,8 +1881,6 @@
     <string name="cannot_share_message_alert_text">Выбранные настройки чата запрещают это сообщение.</string>
     <string name="file_error">Ошибка файла</string>
     <string name="scan_paste_link">Вставить ссылку / Сканировать</string>
-    <string name="xftp_servers_other">Другие XFTP-серверы</string>
-    <string name="xftp_servers_configured">Настроенные XFTP-серверы</string>
     <string name="app_check_for_updates_button_download">Загрузка %s (%s)</string>
     <string name="app_check_for_updates_update_available">Доступно обновление: %s</string>
     <string name="app_check_for_updates_notice_disable">Выключить</string>
@@ -2006,7 +1941,6 @@
     <string name="no_filtered_contacts">Нет отфильтрованных контактов</string>
     <string name="contact_list_header_title">Ваши контакты</string>
     <string name="deleted_chats">Архивированные контакты</string>
-    <string name="smp_servers_configured">Настроенные SMP-серверы</string>
     <string name="subscription_percentage">Показать процент</string>
     <string name="privacy_media_blur_radius_soft">Слабое</string>
     <string name="privacy_media_blur_radius_medium">Среднее</string>
@@ -2045,12 +1979,10 @@
     <string name="member_inactive_title">Член группы неактивен</string>
     <string name="message_forwarded_desc">Прямого соединения пока нет, сообщение переслано или будет переслано админом.</string>
     <string name="selected_chat_items_nothing_selected">Ничего не выбрано</string>
-    <string name="info_view_open_button">открыть</string>
     <string name="info_view_search_button">поиск</string>
     <string name="selected_chat_items_selected_n">Выбрано %d</string>
     <string name="toolbar_settings">Настройки</string>
     <string name="you_can_still_view_conversation_with_contact">Вы по-прежнему можете просмотреть разговор с %1$s в списке чатов.</string>
-    <string name="smp_servers_other">Другие SMP-серверы</string>
     <string name="app_check_for_updates_disabled">Выключено</string>
     <string name="app_check_for_updates_installed_successfully_title">Установлено успешно</string>
     <string name="app_check_for_updates_button_install">Установить обновление</string>
@@ -2094,7 +2026,6 @@
     <string name="v6_0_connect_faster_descr">Соединяйтесь с друзьями быстрее.</string>
     <string name="v6_0_connection_servers_status">Управляйте своей сетью</string>
     <string name="v6_0_private_routing_descr">Защищает ваш IP-адрес и соединения.</string>
-    <string name="open_server_settings_button">Открыть настройки серверов</string>
     <string name="servers_info_detailed_statistics_received_messages_header">Полученные сообщения</string>
     <string name="servers_info_detailed_statistics_receive_errors">Ошибки приёма</string>
     <string name="v6_0_your_contacts_descr">Архивируйте контакты чтобы продолжить переписку.</string>
@@ -2197,7 +2128,6 @@
     <string name="no_media_servers_configured_for_private_routing">Нет серверов для приёма файлов.</string>
     <string name="no_media_servers_configured_for_sending">Нет серверов для отправки файлов.</string>
     <string name="connection_error_quota">Недоставленные сообщения</string>
-    <string name="address_creation_instruction">Нажмите Создать адрес SimpleX в меню, чтобы создать его позже.</string>
     <string name="address_or_1_time_link">Адрес или одноразовая ссылка?</string>
     <string name="connection_security">Безопасность соединения</string>
     <string name="onboarding_choose_server_operators">Операторы серверов</string>
@@ -2207,7 +2137,6 @@
     <string name="operators_conditions_accepted_for"><![CDATA[Условия приняты для оператора(ов): <b>%s</b>.]]></string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">Условия будут автоматически приняты для включенных операторов: %s.</string>
     <string name="operator_conditions_accepted_on">Условия приняты: %s</string>
-    <string name="operator_website">Вебсайт</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Условия уже приняты для следующих операторов: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_applied"><![CDATA[Эти условия также будут применены к: <b>%s</b>.]]></string>
     <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Чтобы использовать серверы оператора <b>%s</b>, примите условия использования.]]></string>
@@ -2223,7 +2152,6 @@
     <string name="v6_2_network_decentralization">Децентрализация сети</string>
     <string name="v6_2_network_decentralization_descr">Второй оператор серверов в приложении!</string>
     <string name="v6_2_network_decentralization_enable_flux">Включите Flux в настройках Сеть и серверы для лучшей конфиденциальности метаданных.</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">для лучшей конфиденциальности метаданных.</string>
     <string name="v6_2_improved_chat_navigation">Улучшенная навигация в разговоре</string>
     <string name="view_updated_conditions">Посмотреть измененные условия</string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Устройства Xiaomi</b>: пожалуйста, включите опцию Autostart в системных настройках для работы нотификаций.]]></string>
@@ -2246,19 +2174,13 @@
     <string name="address_settings">Настройки адреса</string>
     <string name="add_your_team_members_to_conversations">Добавьте сотрудников в разговор.</string>
     <string name="business_address">Бизнес-адрес</string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Все сообщения и файлы отправляются с <b>сквозным шифрованием</b>, с пост-квантовой безопасностью в прямых разговорах.]]></string>
     <string name="onboarding_notifications_mode_service_desc_short">Приложение всегда выполняется в фоне</string>
     <string name="onboarding_notifications_mode_periodic_desc_short">Проверять сообщения каждые 10 минут</string>
     <string name="onboarding_notifications_mode_off_desc_short">Без фонового сервиса</string>
     <string name="onboarding_notifications_mode_battery">Нотификации и батарейка</string>
     <string name="how_it_helps_privacy">Как это улучшает конфиденциальность</string>
     <string name="onboarding_network_operators">Операторы серверов</string>
-    <string name="onboarding_select_network_operators_to_use">Выберите операторов сети.</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Вы можете настроить операторов в настройках Сети и серверов.</string>
     <string name="onboarding_network_operators_continue">Продолжить</string>
-    <string name="onboarding_network_operators_review_later">Посмотреть позже</string>
-    <string name="onboarding_network_operators_update">Обновить</string>
-    <string name="remote_hosts_section">Связанные мобильные устройства</string>
     <string name="leave_chat_question">Покинуть разговор?</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Вы прекратите получать сообщения в этом разговоре. История будет сохранена.</string>
     <string name="button_add_friends">Добавить друзей</string>
@@ -2313,7 +2235,6 @@
     <string name="onboarding_network_operators_app_will_use_different_operators">Приложение улучшает конфиденциальность, используя разных операторов в каждом разговоре.</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Когда больше чем один оператор включен, ни один из них не видит метаданные, чтобы определить, кто соединен с кем.</string>
     <string name="failed_to_save_servers">Ошибка сохранения серверов</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Условия будут приняты для включенных операторов через 30 дней.</string>
     <string name="error_accepting_operator_conditions">Ошибка приёма условий</string>
     <string name="connection_error_quota_desc">Соединение достигло предела недоставленных сообщений. Возможно, Ваш контакт не в сети.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Чтобы защитить Вашу ссылку от замены, Вы можете сравнить код безопасности.</string>
@@ -2368,7 +2289,6 @@
     <string name="v6_3_private_media_file_names">Конфиденциальные названия медиафайлов.</string>
     <string name="blocking_reason_spam">Спам</string>
     <string name="chat_list_group_reports">Сообщения о нарушениях</string>
-    <string name="unread_mentions">Непрочитанные упоминания</string>
     <string name="privacy_chat_list_open_links_yes">Да</string>
     <string name="v6_3_mentions">Упоминайте членов группы 👋</string>
     <string name="v6_3_better_privacy_and_security">Улучшенная конфиденциальность и безопасность</string>
@@ -2380,7 +2300,6 @@
     <string name="v6_3_set_message_expiration_in_chats">Установите срок хранения сообщений в чатах.</string>
     <string name="max_group_mentions_per_message_reached">Вы можете упомянуть до %1$s пользователей в одном сообщении!</string>
     <string name="report_reason_alert_title">Причина сообщения?</string>
-    <string name="report_archive_alert_desc">Эта жалоба будет архивирована для вас.</string>
     <string name="enable_sending_member_reports">Разрешить отправлять сообщения о нарушениях модераторам.</string>
     <string name="blocking_reason_content">Содержание нарушает условия использования</string>
     <string name="error_reading_passphrase">Ошибка чтения пароля базы данных</string>
@@ -2549,7 +2468,6 @@
     <string name="compose_view_send_request">Отправить запрос</string>
     <string name="compose_view_send_request_without_message">Отправить запрос без сообщения</string>
     <string name="v6_4_support_chat_descr">Отправляйте Ваши конфиденциальные предложения группе.</string>
-    <string name="sent_to_your_contact_after_connection">Отправляется Вашему контакту после соединения.</string>
     <string name="share_group_profile_via_link">Обновить ссылку группы?</string>
     <string name="share_profile_via_link_alert_confirm">Обновить</string>
     <string name="share_profile_via_link">Обновить адрес?</string>
@@ -2617,7 +2535,6 @@
     <string name="remove_member_delete_messages_confirmation">Удалить вместе с сообщениями</string>
     <string name="content_filter_all_messages">Все сообщения</string>
     <string name="content_filter_files">Файлы</string>
-    <string name="content_filter_menu_item">Фильтр</string>
     <string name="content_filter_images">Изображения</string>
     <string name="content_filter_links">Ссылки</string>
     <string name="placeholder_search_files">Поиск файлов</string>
@@ -2636,7 +2553,6 @@
     <string name="info_row_channel">Канал</string>
     <string name="channel_full_name_field">Полное имя канала:</string>
     <string name="channel_link">Ссылка канала</string>
-    <string name="button_channel_members">Участники канала</string>
     <string name="channel_display_name_field">Имя канала</string>
     <string name="snd_channel_event_channel_profile_updated">профиль канала обновлён</string>
     <string name="delete_channel_for_all_subscribers_cannot_undo_warning">Канал будет удалён для всех подписчиков - это нельзя отменить!</string>
@@ -2656,7 +2572,6 @@
     <string name="enter_relay_name">Введите имя релея…</string>
     <string name="error_adding_relay">Ошибка добавления релея</string>
     <string name="error_creating_channel">Ошибка при создании канала</string>
-    <string name="error_opening_channel">Ошибка при открытии канала</string>
     <string name="rcv_msg_error_parse">ошибка: %s</string>
     <string name="error_saving_channel_profile">Ошибка при сохранении профиля канала</string>
     <string name="invalid_relay_address">Неверный адрес релея!</string>
@@ -2715,7 +2630,6 @@
     <string name="relay_status_inactive">неактивен</string>
     <string name="owner_verification_passed">Подпись ссылки проверена.</string>
     <string name="connect_plan_open_channel">Открыть канал</string>
-    <string name="connect_plan_open_new_channel">Открыть новый канал</string>
     <string name="channel_members_section_owners">Владельцы</string>
     <string name="member_info_section_title_owner">Владелец</string>
     <string name="group_member_role_relay">релей</string>
@@ -2878,7 +2792,6 @@
     <string name="one_hand_ui_bottom_bar">Нижнее меню</string>
     <string name="link_previews_alert_desc_socks">Картинка ссылки будет загружена через SOCKS-прокси. DNS-запрос может быть локальным через Ваш резолвер.</string>
     <string name="one_hand_ui_top_bar">Верхнее меню</string>
-    <string name="add_button">Добавить</string>
     <string name="add_relay_button">Добавить релей</string>
     <string name="add_relays_title">Добавить релеи</string>
     <string name="button_cancel_and_delete_channel">Отменить и удалить канал</string>
@@ -2887,7 +2800,6 @@
     <string name="channel_owner_count_plural">%1$d владельцев</string>
     <string name="channel_owners_contributors_count">%1$d владельцев и участников канала</string>
     <string name="badge_supported_simplex">%1$s поддерживал SimpleX Chat. Срок действия бейджа истек %2$s.</string>
-    <string name="settings_section_title_about">О приложении</string>
     <string name="advanced_settings">Продвинутые настройки</string>
     <string name="another_instance_title">Приложение уже запущено</string>
     <string name="app_update_required">Необходимо обновление приложения</string>
@@ -2909,8 +2821,6 @@
     <string name="channel_webpage">Веб-страница канала</string>
     <string name="num_relays_selected">Выбрано %d релеев</string>
     <string name="chat_data">Данные чата</string>
-    <string name="channel_name_requires_newer_app_version">Для подключения по имени канала требуется более новая версия приложения.</string>
-    <string name="contact_name_requires_newer_app_version">Для подключения по имени контакта требуется более новая версия приложения.</string>
     <string name="settings_section_title_contact">Контакт</string>
     <string name="group_member_role_member_channel">соавтор</string>
     <string name="group_member_role_observer_channel">подписчик</string>
@@ -2949,9 +2859,6 @@
     <string name="close_behavior_dialog_text">Если Вы выберете Закрыть, сообщения не будут доставляться.\nВы можете изменить это позже в настройках Интерфейса.</string>
     <string name="webpage_url_footer">Адрес будет показан подписчикам и разрешит загрузку предпросмотра.</string>
     <string name="connect_plan_join_name">Вступить в канал %s</string>
-    <string name="unsupported_channel_name">Неподдерживаемое имя канала</string>
-    <string name="unsupported_contact_name">Неподдерживаемое имя контакта</string>
-    <string name="please_upgrade_the_app">Пожалуйста, обновите приложение.</string>
     <string name="simplex_name_error">Ошибка SimpleX имени</string>
     <string name="simplex_name_no_servers_desc">Ни один из Ваших серверов не настроен для разрешения SimpleX имён. Настройте серверы или используйте ссылку для соединения.</string>
     <string name="simplex_name_server_no_resolver_desc">Сервер %1$s не поддерживает разрешение имён. Настройте серверы или используйте ссылку для соединения.</string>
@@ -2980,7 +2887,6 @@
     <string name="verify_simplex_name_action">Проверить имя</string>
     <string name="verify_simplex_names">Проверять SimpleX имена</string>
     <string name="simplex_name_not_verified">SimpleX имя не проверено</string>
-    <string name="simplex_name">SimpleX имя</string>
     <string name="your_simplex_name">Ваше SimpleX имя</string>
     <string name="set_simplex_name">Установить SimpleX имя</string>
     <string name="simplex_name_owner_no_channel_link">SimpleX имя %1$s зарегистрировано без ссылки канала. Добавьте ссылку канала к имени на странице регистрации.</string>

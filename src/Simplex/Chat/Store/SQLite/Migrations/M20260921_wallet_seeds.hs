@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20260908_wallet_seeds where
+module Simplex.Chat.Store.SQLite.Migrations.M20260921_wallet_seeds where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20260908_wallet_seeds :: Query
-m20260908_wallet_seeds =
+m20260921_wallet_seeds :: Query
+m20260921_wallet_seeds =
   [sql|
 CREATE TABLE wallet_seeds (
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -93,6 +93,7 @@ When a relay address link (`/r` path) is opened via URL deep link, `ContentView.
 
 - **One-hand UI card** (`OneHandUICard`): Dismissible card shown to introduce bottom toolbar mode
 - **Address creation card** (`AddressCreationCard`): Prompts user to create a SimpleX address
+- **Crowdfunding banner** (`GetStakeBanner`): Shown to users in the US only, above the chats and below the onboarding pages. Tapping it opens `GetStakeView` (invest on Wefunder). The dismiss X appears once the banner has been tapped and there is at least one chat; dismissing hides it until hints are reset
 
 ### Pull-to-Refresh
 
@@ -103,7 +104,7 @@ Triggers `reconnectAllServers()` after user confirmation alert ("Reconnect serve
 | State | Behavior |
 |---|---|
 | Chat database not started | Settings row shows exclamation icon; chat running == false disables interactions |
-| No chats | `ChatHelp` view displayed with onboarding guidance |
+| No conversations yet | `ConnectOnboardingView` pages replace the list, with the crowdfunding banner below them where it applies |
 | Connection in progress | `ConnectProgressManager` overlay with connecting text |
 | Search with no results | Empty list with no special empty-state view |
 
@@ -127,4 +128,5 @@ Triggers `reconnectAllServers()` after user confirmation alert ("Reconnect serve
 - `Shared/Views/ChatList/ContactRequestView.swift` -- Contact request row rendering
 - `Shared/Views/ChatList/ContactConnectionView.swift` -- Pending connection row rendering
 - `Shared/Views/ChatList/OneHandUICard.swift` -- One-hand UI introduction card
+- `Shared/Views/ChatList/GetStakeBanner.swift` -- Wefunder crowdfunding banner and shared banner card chrome
 - `Shared/Views/ChatList/ServersSummaryView.swift` -- Server subscription summary

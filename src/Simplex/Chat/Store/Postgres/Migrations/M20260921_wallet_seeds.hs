@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.Postgres.Migrations.M20260908_wallet_seeds where
+module Simplex.Chat.Store.Postgres.Migrations.M20260921_wallet_seeds where
 
 import Data.Text (Text)
 import Text.RawString.QQ (r)
 
-m20260908_wallet_seeds :: Text
-m20260908_wallet_seeds =
+m20260921_wallet_seeds :: Text
+m20260921_wallet_seeds =
   [r|
 -- the columns are commented in the SQLite migration
 CREATE TABLE wallet_seeds (
