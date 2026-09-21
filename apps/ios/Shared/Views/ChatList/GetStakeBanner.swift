@@ -35,8 +35,8 @@ struct GetStakeBanner: View {
                     Image(colorScheme == .light ? "decentralized" : "decentralized-light")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 34, height: 34)
-                        .padding(.trailing, 20)
+                        .frame(width: 37, height: 37)
+                        .padding(.trailing, showDismiss ? 32 : 10)
                 }
                 .modifier(BannerCard())
             }

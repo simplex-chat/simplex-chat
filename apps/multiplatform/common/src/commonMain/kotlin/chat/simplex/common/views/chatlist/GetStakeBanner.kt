@@ -37,7 +37,7 @@ fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Uni
     Row(
       Modifier
         .bannerCard(onTap)
-        .padding(start = 16.dp, end = 28.dp, top = 12.dp, bottom = 12.dp),
+        .padding(start = 16.dp, end = if (showDismiss) 40.dp else 18.dp, top = 12.dp, bottom = 12.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -61,7 +61,7 @@ fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Uni
       Image(
         painterResource(if (isInDarkTheme()) MR.images.decentralized_light else MR.images.decentralized),
         contentDescription = null,
-        modifier = Modifier.size(34.dp)
+        modifier = Modifier.size(37.dp)
       )
     }
 
