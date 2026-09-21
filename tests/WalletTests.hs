@@ -36,7 +36,7 @@ testPhrase24 = B.unwords $ replicate 23 "abandon" <> ["art"]
 seedEntropy :: ByteString -> BA.ScrubbedBytes
 seedEntropy phrase = BA.convert . B39.mnemonicToEntropy . either error id $ B39.parseMnemonic phrase
 
-accountKey :: BA.ScrubbedBytes -> AccountIndex -> S.PrivateKey
+accountKey :: BA.ScrubbedBytes -> AccountIndex -> S.Secp256k1PrivateKey
 accountKey entropy n = either (error . show) id $ seedMaster entropy >>= \m -> deriveAccountKey m n
 
 -- | The address a wallet reaches when the secret is imported as a private key.

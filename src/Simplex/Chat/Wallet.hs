@@ -45,7 +45,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 type AccountIndex = Word32
 
 -- | The key at an account index. It owns whatever that account owns.
-type AccountKey = S.PrivateKey
+type AccountKey = S.Secp256k1PrivateKey
 
 -- | One derived address, with the index it came from, so a caller that left the
 -- index out knows what it got.
