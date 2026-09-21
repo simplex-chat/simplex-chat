@@ -61,14 +61,15 @@ fun supportEnded(): Boolean =
 fun hasShownBadge(): Boolean =
   BadgeModel.badgeState.value?.shown == true && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
 
-// The chat list has one banner slot. A badge alert always takes it; otherwise the first of these kinds that applies
-// keeps it until the app restarts, so dismissing it never puts another in its place.
-enum class ChatListBanner { BadgePitch, GetStake }
+// The chat list has one banner slot, filled in this order of priority. The kind that takes the slot keeps it until
+// the app restarts, so dismissing it never puts another in its place; only a badge alert takes it over from another kind.
+enum class ChatListBanner { BadgeExpired, BadgePitch, GetStake }
 
 private var shownChatListBanner: ChatListBanner? = null
 
 @Composable
 private fun bannerConditions(banner: ChatListBanner): Boolean = when (banner) {
+  ChatListBanner.BadgeExpired -> supportEnded()
   ChatListBanner.BadgePitch -> !appPrefs.supporterBannerShown.state.value && !hasShownBadge() && chatModel.chats.value.size > 3
   ChatListBanner.GetStake -> crowdfundingAvailable() && !appPrefs.getStakeBannerDismissed.state.value
 }
@@ -76,6 +77,7 @@ private fun bannerConditions(banner: ChatListBanner): Boolean = when (banner) {
 // the choice waits for the badge state: made before it loads, the pitch could be locked in for a supporter and then hidden
 @Composable
 fun chatListBanner(): ChatListBanner? {
+  if (supportEnded()) shownChatListBanner = ChatListBanner.BadgeExpired
   val shown = shownChatListBanner
   if (shown != null) return if (bannerConditions(shown)) shown else null
   if (!BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)) return null
