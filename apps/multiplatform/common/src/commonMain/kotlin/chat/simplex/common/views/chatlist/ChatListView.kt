@@ -433,9 +433,23 @@ private fun AndroidOnboardingCards() {
   } else {
     WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
   }
-  Box(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad)) {
-    ConnectOnboardingView()
+  val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
+  val crowdfunding = crowdfundingAvailable()
+  Column(Modifier.fillMaxSize().padding(top = topPad, bottom = bottomPad)) {
+    Box(Modifier.weight(1f).fillMaxWidth()) {
+      ConnectOnboardingView()
+    }
+    if (crowdfunding && !getStakeBannerDismissed.value) {
+      Box(Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = 8.dp)) {
+        GetStakeBanner(showDismiss = false, onTap = ::openGetStake, onDismiss = {})
+      }
+    }
   }
+}
+
+private fun openGetStake() {
+  appPrefs.getStakeBannerTapped.set(true)
+  ModalManager.start.showModalCloseable(cardScreen = true) { close -> GetStakeView(showFirstImage = true, close = close) }
 }
 
 @Composable
@@ -912,6 +926,10 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+  val getStakeBannerTapped = remember { appPrefs.getStakeBannerTapped.state }
+  val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
+  // read here rather than in the LazyColumn: it launches an effect, so it needs a composable scope
+  val crowdfunding = crowdfundingAvailable()
   val activeFilter = remember { chatModel.activeChatTagFilter }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
@@ -998,6 +1016,17 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     if (!oneHandUICardShown.value) {
       item {
         ToggleChatListCard()
+      }
+    }
+    if (crowdfunding && !getStakeBannerDismissed.value) {
+      item {
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          GetStakeBanner(
+            showDismiss = getStakeBannerTapped.value && chatModel.chats.value.isNotEmpty(),
+            onTap = ::openGetStake,
+            onDismiss = { appPrefs.getStakeBannerDismissed.set(true) }
+          )
+        }
       }
     }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
