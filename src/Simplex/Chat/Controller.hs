@@ -43,9 +43,7 @@ import Data.Set (Set)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.String
-import Data.List (foldl')
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
 import Data.Time (NominalDiffTime, UTCTime)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
@@ -70,7 +68,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Chat.Wallet (NameIndex)
+import Simplex.Chat.Wallet (AccountIndex, WalletAddress, WalletError)
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
@@ -419,11 +417,13 @@ data ChatCommand
   | APIRejectContact {contactReqId :: Int64, notify :: Bool}
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
-  | APIWallet
-  | APIWalletCreate {recoveryPhrase :: Maybe Text}
-  | APIWalletExportSeedMnemonic
-  | APIWalletExportNameSecret {nameIndex :: NameIndex}
-  | APIWalletDelete
+  | APIGetWallet
+  | APICreateWallet {mnemonic :: Maybe Text}
+  | APIBindWalletAccount {accountIndex_ :: Maybe AccountIndex}
+  | APIGetWalletAddress {accountIndex_ :: Maybe AccountIndex}
+  | APIExportWalletMnemonic
+  | APIExportWalletAccount {accountIndex :: AccountIndex}
+  | APIDeleteWallet
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
@@ -751,16 +751,6 @@ allowRemoteCommand = \case
   ExecAgentStoreSQL _ -> False
   _ -> True
 
--- | Command text for a log, with any secret blanked. A secret is the last
--- argument and takes the rest of the line, so blanking from its name is enough.
-redactedCommand :: Text -> Text
-redactedCommand s = foldl' blank s ["mnemonic=", "secret="]
-  where
-    blank t p = case T.breakOn p t of
-      (before, after)
-        | T.null after -> t
-        | otherwise -> before <> p <> "<redacted>"
-
 data RelayConnectionResult = RelayConnectionResult
   { relayMember :: GroupMember,
     relayError :: Maybe ChatError
@@ -860,9 +850,10 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
-  | CRWallet {user :: User, walletKeyExists :: Bool, walletKeyPaths :: [(Text, Text)]}
-  | CRWalletSeedMnemonic {user :: User, recoveryPhrase :: Text}
-  | CRWalletDerivedSecret {user :: User, keyPath :: Text, address :: Text, derivedSecret :: Text}
+  | CRWallet {user :: User, accountIndexes_ :: Maybe [AccountIndex]}
+  | CRWalletMnemonic {user :: User, mnemonic :: Text}
+  | CRWalletAddress {user :: User, walletAddress :: WalletAddress}
+  | CRWalletAccountSecret {user :: User, walletAddress :: WalletAddress, secret :: Text}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
@@ -1491,6 +1482,7 @@ data ChatErrorType
   | CEChatStoreChanged
   | CEInvalidConnReq
   | CESimplexDomainNotReady {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError}
+  | CEWallet {walletError :: WalletError}
   | CENotResolvedLocally -- a name or link is not a known chat in the local store and online resolution is off (PRMNever)
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}

@@ -1099,6 +1099,7 @@ export type ChatErrorType =
   | ChatErrorType.ChatStoreChanged
   | ChatErrorType.InvalidConnReq
   | ChatErrorType.SimplexDomainNotReady
+  | ChatErrorType.Wallet
   | ChatErrorType.NotResolvedLocally
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
@@ -1178,6 +1179,7 @@ export namespace ChatErrorType {
     | "chatStoreChanged"
     | "invalidConnReq"
     | "simplexDomainNotReady"
+    | "wallet"
     | "notResolvedLocally"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
@@ -1337,6 +1339,11 @@ export namespace ChatErrorType {
     type: "simplexDomainNotReady"
     simplexDomain: SimplexDomain
     simplexDomainError: SimplexDomainError
+  }
+
+  export interface Wallet extends Interface {
+    type: "wallet"
+    walletError: WalletError
   }
 
   export interface NotResolvedLocally extends Interface {
@@ -5137,6 +5144,65 @@ export interface UserPwdHash {
 export interface VersionRange {
   minVersion: number // int
   maxVersion: number // int
+}
+
+export type WalletError = 
+  | WalletError.NoMaster
+  | WalletError.MasterExists
+  | WalletError.BadMnemonic
+  | WalletError.HiddenProfile
+  | WalletError.AccountBound
+  | WalletError.CounterUnknown
+  | WalletError.IndexTooLarge
+  | WalletError.Derivation
+
+export namespace WalletError {
+  export type Tag = 
+    | "noMaster"
+    | "masterExists"
+    | "badMnemonic"
+    | "hiddenProfile"
+    | "accountBound"
+    | "counterUnknown"
+    | "indexTooLarge"
+    | "derivation"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface NoMaster extends Interface {
+    type: "noMaster"
+  }
+
+  export interface MasterExists extends Interface {
+    type: "masterExists"
+  }
+
+  export interface BadMnemonic extends Interface {
+    type: "badMnemonic"
+  }
+
+  export interface HiddenProfile extends Interface {
+    type: "hiddenProfile"
+  }
+
+  export interface AccountBound extends Interface {
+    type: "accountBound"
+  }
+
+  export interface CounterUnknown extends Interface {
+    type: "counterUnknown"
+  }
+
+  export interface IndexTooLarge extends Interface {
+    type: "indexTooLarge"
+  }
+
+  export interface Derivation extends Interface {
+    type: "derivation"
+    derivationError: string
+  }
 }
 
 export type XFTPErrorType = 

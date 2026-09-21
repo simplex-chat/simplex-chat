@@ -11,20 +11,34 @@ m20260908_wallet_seeds =
   [r|
 CREATE TABLE wallet_seeds (
   wallet_seed_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  entropy BYTEA NOT NULL,
+  entropy BYTEA NOT NULL CHECK (length(entropy) = 32),
   -- see the SQLite migration
-  next_name_index BIGINT NOT NULL DEFAULT 1,
-  -- one seed per device for now
+  next_account_index BIGINT CHECK (next_account_index BETWEEN 0 AND 2147483648),
   single_seed SMALLINT NOT NULL DEFAULT 1
 );
 
+CREATE TABLE wallet_accounts (
+  wallet_account_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  wallet_seed_id BIGINT NOT NULL REFERENCES wallet_seeds ON DELETE CASCADE,
+  account_index BIGINT CHECK (account_index BETWEEN 0 AND 2147483647),
+  user_id BIGINT REFERENCES users ON DELETE SET NULL
+);
+
 CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON wallet_seeds(single_seed);
+CREATE UNIQUE INDEX idx_wallet_accounts_index ON wallet_accounts(wallet_seed_id, account_index);
+CREATE INDEX idx_wallet_accounts_user ON wallet_accounts(user_id);
 |]
 
 down_m20260908_wallet_seeds :: Text
 down_m20260908_wallet_seeds =
   [r|
+DROP INDEX idx_wallet_accounts_user;
+
+DROP INDEX idx_wallet_accounts_index;
+
 DROP INDEX idx_wallet_seeds_single_seed;
+
+DROP TABLE wallet_accounts;
 
 DROP TABLE wallet_seeds;
 |]

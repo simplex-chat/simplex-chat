@@ -212,6 +212,7 @@ This file is generated automatically.
 - [UserProfileUpdateSummary](#userprofileupdatesummary)
 - [UserPwdHash](#userpwdhash)
 - [VersionRange](#versionrange)
+- [WalletError](#walleterror)
 - [XFTPErrorType](#xftperrortype)
 - [XFTPRcvFile](#xftprcvfile)
 - [XFTPSndFile](#xftpsndfile)
@@ -1157,6 +1158,10 @@ SimplexDomainNotReady:
 - type: "simplexDomainNotReady"
 - simplexDomain: [SimplexDomain](#simplexdomain)
 - simplexDomainError: [SimplexDomainError](#simplexdomainerror)
+
+Wallet:
+- type: "wallet"
+- walletError: [WalletError](#walleterror)
 
 NotResolvedLocally:
 - type: "notResolvedLocally"
@@ -4492,6 +4497,38 @@ Handshake:
 **Record type**:
 - minVersion: int
 - maxVersion: int
+
+
+---
+
+## WalletError
+
+**Discriminated union type**:
+
+NoMaster:
+- type: "noMaster"
+
+MasterExists:
+- type: "masterExists"
+
+BadMnemonic:
+- type: "badMnemonic"
+
+HiddenProfile:
+- type: "hiddenProfile"
+
+AccountBound:
+- type: "accountBound"
+
+CounterUnknown:
+- type: "counterUnknown"
+
+IndexTooLarge:
+- type: "indexTooLarge"
+
+Derivation:
+- type: "derivation"
+- derivationError: string
 
 
 ---

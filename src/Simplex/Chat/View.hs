@@ -57,6 +57,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
+import Simplex.Chat.Wallet (WalletAddress (..), WalletError (..))
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent (DatabaseDiff (..))
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
@@ -188,11 +189,13 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRServiceResponse u resp -> ttyUser u ["service response: " <> viewJSON resp]
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
-  CRWallet u exists paths -> ttyUser u $ if exists then map nameRow paths else ["no wallet key"]
-    where
-      nameRow (path, addr) = plain $ path <> "  " <> addr
-  CRWalletSeedMnemonic u phrase -> ttyUser u [plain phrase]
-  CRWalletDerivedSecret u path addr secret -> ttyUser u [plain $ path <> "  " <> addr <> "  " <> secret]
+  CRWallet u accounts_ -> ttyUser u $ case accounts_ of
+    Nothing -> ["no wallet on this device"]
+    Just [] -> ["wallet, no accounts for this profile"]
+    Just accounts -> [plain $ "accounts: " <> T.intercalate ", " (map tshow accounts)]
+  CRWalletMnemonic u mnemonic -> ttyUser u [plain mnemonic]
+  CRWalletAddress u a -> ttyUser u [walletAddressRow a]
+  CRWalletAccountSecret u a secret -> ttyUser u [walletAddressRow a <> "  " <> plain secret]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
@@ -1097,6 +1100,21 @@ viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
   ContactRequest _ -> []
   ContactConnection _ -> []
   CInfoInvalidJSON {} -> []
+
+walletAddressRow :: WalletAddress -> StyledString
+walletAddressRow WalletAddress {accountIndex, keyPath, address} =
+  plain $ tshow accountIndex <> "  " <> keyPath <> "  " <> address
+
+walletErrorText :: WalletError -> Text
+walletErrorText = \case
+  WENoMaster -> "this device has no wallet"
+  WEMasterExists -> "this device already has a wallet"
+  WEBadMnemonic -> "not a valid 24 word recovery phrase"
+  WEHiddenProfile -> "a hidden profile cannot own an account"
+  WEAccountBound -> "another profile holds this account"
+  WECounterUnknown -> "unknown how many accounts this phrase has used, a scan of the chain has to run first"
+  WEIndexTooLarge -> "account index is too large to harden"
+  WEDerivation e -> "derivation failed: " <> T.pack e
 
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
@@ -2740,6 +2758,7 @@ viewChatError isCmd logLevel testView = \case
             SDENoValidLink -> "has no valid connection link"
             SDEUnknownDomain -> "is not included in the connection link's profile"
        in [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
+    CEWallet walletErr -> [plain $ "wallet: " <> walletErrorText walletErr]
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->

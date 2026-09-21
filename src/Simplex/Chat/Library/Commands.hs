@@ -58,8 +58,8 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Simplex.Chat.Badges (BadgeCredential (..), LocalBadge (..), badgeServerCredential, maxXFTPFileSize, mkBadgeStatus, verifyCredential)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Store.Wallets (createSeed, deleteSeed, getDeviceSeed, getNextNameIndex)
-import Simplex.Chat.Wallet (NameIndex, WalletSeed (..), deriveNameKey, importRecoveryKey, nameKeySecret, newSeed, recoveryKeyPhrase, renderNameKeyPath, seedMaster)
+import Simplex.Chat.Store.Wallets (accountHeldByOther, bindAccount, createWalletSeed, deleteWalletSeed, getNextAccountIndex, getUserAccounts, getWalletSeed)
+import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), WalletSeed (..), accountSecret, checkAccountIndex, deriveAccountKey, entropyFromMnemonic, newSeedEntropy, renderAccountPath, seedMaster, seedMnemonic)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -107,7 +107,6 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.BIP39 (MnemonicStrength (..))
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -1492,30 +1491,39 @@ processChatCommand cxt nm = \case
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
-  APIWallet -> withUser $ \user -> do
-    withFastStore' getDeviceSeed >>= \case
-      Nothing -> pure $ CRWallet user False []
-      Just seed -> do
-        next <- withFastStore' $ \db -> getNextNameIndex db (wsId seed)
-        CRWallet user True <$> nameKeyRows seed next
-  APIWalletCreate phrase_ -> withUser $ \_ -> do
-    entropy <- case phrase_ of
-      Nothing -> asks random >>= atomically . newSeed MS256
-      Just phrase -> either (const $ throwCmdError "bad recovery phrase") pure $ importRecoveryKey (encodeUtf8 phrase)
-    created <- withFastStore' $ \db -> createSeed db entropy
-    unless created $ throwCmdError "this device already has a wallet key"
-    processChatCommand cxt nm APIWallet
-  APIWalletExportSeedMnemonic -> withUser $ \user -> do
-    seed <- deviceSeed
-    phrase <- either throwCmdError pure $ recoveryKeyPhrase seed
-    pure $ CRWalletSeedMnemonic user (safeDecodeUtf8 phrase)
-  APIWalletExportNameSecret nameIdx -> withUser $ \user -> do
-    seed <- deviceSeed
-    k <- either throwCmdError pure $ seedMaster seed >>= \m -> deriveNameKey m nameIdx
-    pure $ CRWalletDerivedSecret user (renderNameKeyPath nameIdx) (decodeLatin1 . strEncode $ addressFromPrivateKey k) (safeDecodeUtf8 $ nameKeySecret k)
-  APIWalletDelete -> withUser $ \_ -> do
-    seed <- deviceSeed
-    withFastStore' $ \db -> deleteSeed db (wsId seed)
+  APIGetWallet -> withUser $ \user@User {userId} ->
+    CRWallet user <$> withFastStore' (\db -> getWalletSeed db $>>= \WalletSeed {wsId} -> Just <$> getUserAccounts db wsId userId)
+  APICreateWallet mnemonic_ -> withUser $ \_ -> do
+    -- a generated seed has taken no accounts; an imported one does not say how
+    -- many it has taken, and only a scan of the chain can tell
+    (entropy, nextAccount) <- case mnemonic_ of
+      Nothing -> (,Just 0) <$> (asks random >>= atomically . newSeedEntropy)
+      Just phrase -> (,Nothing) <$> liftWallet (entropyFromMnemonic $ encodeUtf8 phrase)
+    created <- withFastStore' $ \db -> createWalletSeed db entropy nextAccount
+    unless created $ throwWalletError WEMasterExists
+    processChatCommand cxt nm APIGetWallet
+  APIBindWalletAccount accountIdx_ -> withUser $ \User {userId, viewPwdHash} -> do
+    seed <- walletSeed
+    when (isJust viewPwdHash) $ throwWalletError WEHiddenProfile
+    _ <- liftWallet =<< withFastStore' (\db -> bindAccount db (wsId seed) userId accountIdx_)
+    processChatCommand cxt nm APIGetWallet
+  APIGetWalletAddress accountIdx_ -> withUser $ \user -> do
+    seed <- walletSeed
+    n <- resolveAccount seed accountIdx_
+    CRWalletAddress user . accountAddress n <$> accountKey seed n
+  APIExportWalletMnemonic -> withUser $ \user ->
+    CRWalletMnemonic user <$> (liftWallet . seedMnemonic =<< walletSeed)
+  APIExportWalletAccount accountIdx -> withUser $ \user@User {userId} -> do
+    seed <- walletSeed
+    n <- resolveAccount seed (Just accountIdx)
+    -- a key another profile holds is not this profile's to hand out
+    heldByOther <- withFastStore' $ \db -> accountHeldByOther db (wsId seed) userId n
+    when heldByOther $ throwWalletError WEAccountBound
+    k <- accountKey seed n
+    pure $ CRWalletAccountSecret user (accountAddress n k) (accountSecret k)
+  APIDeleteWallet -> withUser $ \_ -> do
+    seed <- walletSeed
+    withFastStore' $ \db -> deleteWalletSeed db (wsId seed)
     ok_
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
@@ -5453,17 +5461,32 @@ withExpirationDate globalTTL chatItemTTL action = do
   let ttl = fromMaybe globalTTL chatItemTTL
   when (ttl > 0) $ action $ addUTCTime (-1 * fromIntegral ttl) currentTs
 
-walletNamesShown :: Int
-walletNamesShown = 2
+walletSeed :: CM WalletSeed
+walletSeed = withFastStore' getWalletSeed >>= maybe (throwWalletError WENoMaster) pure
 
-deviceSeed :: CM WalletSeed
-deviceSeed = withFastStore' getDeviceSeed >>= maybe (throwCmdError "no wallet key on this device") pure
+throwWalletError :: WalletError -> CM a
+throwWalletError = throwChatError . CEWallet
 
-nameKeyRows :: WalletSeed -> NameIndex -> CM [(Text, Text)]
-nameKeyRows seed next = either throwCmdError pure $ do
-  master <- seedMaster seed
-  forM (take walletNamesShown [next ..]) $ \nm ->
-    (renderNameKeyPath nm,) . decodeLatin1 . strEncode . addressFromPrivateKey <$> deriveNameKey master nm
+liftWallet :: Either WalletError a -> CM a
+liftWallet = either throwWalletError pure
+
+-- | The account a command names, or the next free one when it names none.
+-- Refuses any index BIP-32 cannot harden, the counter's included.
+resolveAccount :: WalletSeed -> Maybe AccountIndex -> CM AccountIndex
+resolveAccount seed accountIdx_ = do
+  n <- maybe nextFreeAccount pure accountIdx_
+  n <$ liftWallet (checkAccountIndex n)
+  where
+    nextFreeAccount =
+      withFastStore' (\db -> getNextAccountIndex db (wsId seed))
+        >>= maybe (throwWalletError WECounterUnknown) pure
+
+accountKey :: WalletSeed -> AccountIndex -> CM AccountKey
+accountKey seed n = liftWallet $ seedMaster seed >>= (`deriveAccountKey` n)
+
+accountAddress :: AccountIndex -> AccountKey -> WalletAddress
+accountAddress n k =
+  WalletAddress {accountIndex = n, keyPath = renderAccountPath n, address = decodeLatin1 . strEncode $ addressFromPrivateKey k}
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
@@ -5583,12 +5606,16 @@ chatCommandP =
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
-      "/_wallet create new" $> APIWalletCreate Nothing,
-      "/_wallet create mnemonic=" *> (APIWalletCreate . Just <$> textP),
-      "/_wallet export name " *> (APIWalletExportNameSecret <$> keyIndexP),
-      "/_wallet export" $> APIWalletExportSeedMnemonic,
-      "/_wallet delete" $> APIWalletDelete,
-      "/_wallet" $> APIWallet,
+      "/_wallet create new" $> APICreateWallet Nothing,
+      "/_wallet create mnemonic=" *> (APICreateWallet . Just <$> textP),
+      "/_wallet bind account=" *> (APIBindWalletAccount . Just <$> accountIndexP),
+      "/_wallet bind" $> APIBindWalletAccount Nothing,
+      "/_wallet address account=" *> (APIGetWalletAddress . Just <$> accountIndexP),
+      "/_wallet address" $> APIGetWalletAddress Nothing,
+      "/_wallet export master" $> APIExportWalletMnemonic,
+      "/_wallet export account " *> (APIExportWalletAccount <$> accountIndexP),
+      "/_wallet delete" $> APIDeleteWallet,
+      "/_wallet" $> APIGetWallet,
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),
@@ -6129,12 +6156,12 @@ chatCommandP =
     quotedP = safeDecodeUtf8 <$> (A.char '"' *> A.takeTill (== '"') <* A.char '"')
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
-    -- BIP-32 hardens at 2^31, and Word32 would wrap. Digits are counted before
-    -- they are read, as reading a very long number is not free.
-    keyIndexP = do
+    -- Digits are counted before they are read, as reading a very long number is
+    -- not free. The hardening bound is a typed error when the command runs.
+    accountIndexP = do
       ds <- A.takeWhile1 isDigit
       let i = read (B.unpack ds) :: Integer
-      if B.length ds <= 10 && i < 0x80000000 then pure (fromIntegral i) else fail "key index too large"
+      if B.length ds <= 10 && i <= toInteger (maxBound :: AccountIndex) then pure (fromIntegral i) else fail "account index too large"
 
 displayNameP :: Parser Text
 displayNameP = safeDecodeUtf8 <$> displayNameP_

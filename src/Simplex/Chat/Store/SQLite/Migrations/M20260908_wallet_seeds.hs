@@ -10,21 +10,33 @@ m20260908_wallet_seeds =
   [sql|
 CREATE TABLE wallet_seeds (
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  entropy BLOB NOT NULL,
-  -- known issue: after an import this starts at 1, so it can hand out a name
-  -- key at a path that already owns a name
-  next_name_index INTEGER NOT NULL DEFAULT 1,
-  -- one seed per device for now
+  entropy BLOB NOT NULL CHECK (length(entropy) = 32), -- BIP-39 entropy, 24 words
+  next_account_index INTEGER CHECK (next_account_index BETWEEN 0 AND 2147483648),
   single_seed INTEGER NOT NULL DEFAULT 1
 ) STRICT;
 
+CREATE TABLE wallet_accounts (
+  wallet_account_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  wallet_seed_id INTEGER NOT NULL REFERENCES wallet_seeds ON DELETE CASCADE,
+  account_index INTEGER CHECK (account_index BETWEEN 0 AND 2147483647),
+  user_id INTEGER REFERENCES users ON DELETE SET NULL
+) STRICT;
+
 CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON wallet_seeds(single_seed);
+CREATE UNIQUE INDEX idx_wallet_accounts_index ON wallet_accounts(wallet_seed_id, account_index);
+CREATE INDEX idx_wallet_accounts_user ON wallet_accounts(user_id);
 |]
 
 down_m20260908_wallet_seeds :: Query
 down_m20260908_wallet_seeds =
   [sql|
+DROP INDEX idx_wallet_accounts_user;
+
+DROP INDEX idx_wallet_accounts_index;
+
 DROP INDEX idx_wallet_seeds_single_seed;
+
+DROP TABLE wallet_accounts;
 
 DROP TABLE wallet_seeds;
 |]

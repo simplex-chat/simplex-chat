@@ -854,12 +854,15 @@ CREATE TABLE rcv_roster_transfers(
 ) STRICT;
 CREATE TABLE wallet_seeds(
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  entropy BLOB NOT NULL,
-  -- known issue: after an import this starts at 1, so it can hand out a name
-  -- key at a path that already owns a name
-  next_name_index INTEGER NOT NULL DEFAULT 1,
-  -- one seed per device for now
+  entropy BLOB NOT NULL CHECK(length(entropy) = 32), -- BIP-39 entropy, 24 words
+  next_account_index INTEGER CHECK(next_account_index BETWEEN 0 AND 2147483648),
   single_seed INTEGER NOT NULL DEFAULT 1
+) STRICT;
+CREATE TABLE wallet_accounts(
+  wallet_account_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  wallet_seed_id INTEGER NOT NULL REFERENCES wallet_seeds ON DELETE CASCADE,
+  account_index INTEGER CHECK(account_index BETWEEN 0 AND 2147483647),
+  user_id INTEGER REFERENCES users ON DELETE SET NULL
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1396,6 +1399,11 @@ CREATE INDEX idx_chat_items_item_signed_by_group_member_id ON chat_items(
   item_signed_by_group_member_id
 );
 CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON wallet_seeds(single_seed);
+CREATE UNIQUE INDEX idx_wallet_accounts_index ON wallet_accounts(
+  wallet_seed_id,
+  account_index
+);
+CREATE INDEX idx_wallet_accounts_user ON wallet_accounts(user_id);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW
