@@ -30,7 +30,7 @@ private struct PrivacySensitive: ViewModifier {
 }
 
 // Presented from the top view controller instead of a .sheet on a parent view, so an alert button or
-// a view that is itself in a sheet can open it - both are places a .sheet cannot be attached to.
+// a view that is itself in a sheet can open it.
 func showAppSheet<Content: View>(@ViewBuilder content: () -> Content) {
     if let topController = getTopViewController() {
         let v = content()
