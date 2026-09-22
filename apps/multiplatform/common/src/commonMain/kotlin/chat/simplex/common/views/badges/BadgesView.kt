@@ -29,7 +29,7 @@ fun BadgesView(close: () -> Unit) {
   }
 }
 
-// opened from the chat rather than from settings, so it goes onto the chat's own modal stack
+// ModalManager.end, not start: every caller is in the chat, which on desktop is the right pane
 fun openBadgesView() {
   ModalManager.end.showCustomModal { close -> BadgesView(close) }
 }
