@@ -23,25 +23,25 @@ No UI work here. This is the contract the Kotlin and Swift apps code against, an
 
 ## Executive summary
 
-#7525 is a declaration-only sketch: it adds `nameRegistration_`, `CPSimplexName` and `PRMAll` to `Controller.hs` and changes two arities, but no producer was written and no consumer was updated, so **the branch does not compile**. `resolveNameRecord` (`Commands.hs:5082-5088`) collapses every non-`NRRegistered` answer into `NAME NOT_FOUND`, so expiry, price and reserved-reason — the substance of nine of the sixteen states — never leave core.
+#7525 is a declaration-only sketch: it adds `nameRegistration_`, `CPNameNotConnectable` and `PRMAll` to `Controller.hs` and changes two arities, but no producer was written and no consumer was updated, so **the branch does not compile**. `resolveNameRecord` (`Commands.hs:5082-5088`) collapses every non-`NRRegistered` answer into `NAME NOT_FOUND`, so expiry, price and reserved-reason — the substance of nine of the sixteen states — never leave core.
 
-The declared types are close to right. Twelve states map onto them as they stand, and of the four that do not, three are settled by wording or by a client-side reading rather than by the API (§4, §7). The work is therefore mostly **producer, not type**: stop discarding the registration, consult the existing by-name store lookups when the registry yields no usable link, and attach the registration to whichever plan comes out. One field is genuinely missing (`addressChanged`, for 3c) and one constructor needs its domain (`CPSimplexName`, so the UI can print the bare name the canvas shows).
+The declared types are close to right. Twelve states map onto them as they stand, and of the four that do not, three are settled by wording or by a client-side reading rather than by the API (§4, §7). The work is therefore mostly **producer, not type**: stop discarding the registration, consult the existing by-name store lookups when the registry yields no usable link, and attach the registration to whichever plan comes out. One field is genuinely missing (`addressChanged`, for 3c) and one constructor needs its domain (`CPNameNotConnectable`, so the UI can print the bare name the canvas shows).
 
-`getContactToConnect` / `getGroupToConnect` (`Direct.hs:802`, `Groups.hs:1090`) and `getUserContactLinkViaTarget` already accept `CTName` and query by domain. The by-name lookup that `CPSimplexName`'s own precondition needs therefore exists — it is simply never reached, because the `CTDomain` branch throws first.
+`getContactToConnect` / `getGroupToConnect` (`Direct.hs:802`, `Groups.hs:1090`) and `getUserContactLinkViaTarget` already accept `CTName` and query by domain. The by-name lookup that `CPNameNotConnectable`'s own precondition needs therefore exists — it is simply never reached, because the `CTDomain` branch throws first.
 
 ---
 
 ## 1. What #7525 declares, and what it does not produce
 
-The diff against `fea9f482c` is eleven added lines in one file. It gives `PlanResolveMode` a `PRMAll` (`Controller.hs:714`, parser `:725`), makes `CRConnectionPlan.connLink` a `Maybe` (`:887`), hangs `nameRegistration_ :: Maybe NameRegistration` off `CPContactAddress` and `CPGroupLink`, adds `CPSimplexName`, and updates `connectionPlanProceed` (`:1212-1233`).
+The diff against `fea9f482c` is eleven added lines in one file. It gives `PlanResolveMode` a `PRMAll` (`Controller.hs:714`, parser `:725`), makes `CRConnectionPlan.connLink` a `Maybe` (`:887`), hangs `nameRegistration_ :: Maybe NameRegistration` off `CPContactAddress` and `CPGroupLink`, adds `CPNameNotConnectable`, and updates `connectionPlanProceed` (`:1212-1233`).
 
 None of it is reachable:
 
-- **`CPSimplexName` is never constructed.** `grep -rn CPSimplexName src/` matches only the declaration, the `connectionPlanProceed` case and a comment.
+- **`CPNameNotConnectable` is never constructed.** `grep -rn CPNameNotConnectable src/` matches only the declaration, the `connectionPlanProceed` case and a comment.
 - **`nameRegistration_` is never populated.** All 26 `CPContactAddress` / `CPGroupLink` occurrences in `Commands.hs` — constructions and patterns alike — still use the old arity.
 - **`PRMAll` is parsed and never read.** `Commands.hs` tests only `== PRMNever` and `== PRMAllGroups`, so `resolve=all` silently behaves as `unknown`.
 - **`connLink :: Maybe` has no producer** — `Commands.hs:2178` and `:4586` still pass a bare `ACreatedConnLink`.
-- **It does not compile.** `View.hs:2234` and `:2252` pattern-match `CPContactAddress cap` / `CPGroupLink glp` at the old arity, `viewConnectionPlan` (`View.hs:2214`) takes a non-`Maybe` link and has no `CPSimplexName` case, and `Commands.hs:2178`/`:4586` type-error on the response field.
+- **It does not compile.** `View.hs:2234` and `:2252` pattern-match `CPContactAddress cap` / `CPGroupLink glp` at the old arity, `viewConnectionPlan` (`View.hs:2214`) takes a non-`Maybe` link and has no `CPNameNotConnectable` case, and `Commands.hs:2178`/`:4586` type-error on the response field.
 
 **Scope.** Core only: types, producer, CLI rendering, generated client types, tests. No Kotlin, no Swift, no migration, no new chat command.
 
@@ -53,10 +53,10 @@ None of it is reachable:
 
 Four changes: two to the types in `Controller.hs`, two to `connectPlan` in `Commands.hs`.
 
-**`CPSimplexName` carries its domain.**
+**`CPNameNotConnectable` carries its domain.**
 
 ```haskell
-| CPSimplexName {simplexDomain :: SimplexDomain, nameRegistration :: NameRegistration}
+| CPNameNotConnectable {simplexDomain :: SimplexDomain, nameRegistration :: NameRegistration}
 ```
 
 `planSimplexName` cannot serve here. It is a `SimplexNameInfo`, which needs a `nameType`, and an unregistered name has none — today's code invents one by trying `NTPublicGroup` then `NTContact` (`Commands.hs:4432-4434`), which is arbitrary and becomes visible the moment the UI renders it. The canvas writes every band-2 body as a bare name (`sunflower.simplex is available…`, `bakery.simplex expired on…`), never `@`/`#`, so the UI wants `fullDomainName`, not `shortStr`.
@@ -107,7 +107,7 @@ resolveNameRecord user nm domain =
 1. `PRMNever` — unchanged, `CENotResolvedLocally`.
 2. Otherwise `resolveNameRegistration`. On a network or protocol failure, unchanged: the error becomes `CPError` (2h).
 3. If the answer is `NRRegistered`, **not past `expires`**, and has a usable channel or contact link — today's path: pick the type, recurse as `CTName`, attach the registration to the plan that comes back.
-4. Otherwise — `NRAvailable`, `NRReserved`, past `expires`, or no usable link — recurse as `CTName` anyway but **only as far as `knownLinkPlans`**. If it returns an own link or a known chat, that plan is the answer, with the registration attached and `connLink` carrying the stored link. If it returns nothing, the answer is `CPSimplexName d registration` with `connLink = Nothing`.
+4. Otherwise — `NRAvailable`, `NRReserved`, past `expires`, or no usable link — recurse as `CTName` anyway but **only as far as `knownLinkPlans`**. If it returns an own link or a known chat, that plan is the answer, with the registration attached and `connLink` carrying the stored link. If it returns nothing, the answer is `CPNameNotConnectable d registration` with `connLink = Nothing`.
 
 Step 4 is the whole of 2b–2f, 3d, 4c and 4d, and it is why `connLink` had to become optional. It needs no new store query: `knownLinkPlans` (`:4482`, `:4553`) already resolves a `CTName` through `getUserContactLinkViaTarget`, `getContactToConnect` and `getGroupToConnect`, all of which match on `cp.contact_domain` / `gp.group_domain` with `*_verified = 1`.
 
@@ -126,11 +126,11 @@ Step 4 is the whole of 2b–2f, 3d, 4c and 4d, and it is why `connLink` had to b
 | state | registry answer | local | plan | `connLink` |
 |---|---|---|---|---|
 | 2a | `NRRegistered`, live, link usable | none | `CPContactAddress (CAPOk … False) (Just nr)` or `CPGroupLink (GLPOk … False) (Just nr)` | `Just` resolved |
-| 2b | `NRRegistered`, `expires` past | none | `CPSimplexName d nr` | `Nothing` |
-| 2c | `NRAvailable {pricing}` | none | `CPSimplexName d nr` | `Nothing` |
-| 2d | `NRReserved NRRCommunity` | none | `CPSimplexName d nr` | `Nothing` |
-| 2e | `NRReserved` other, or `NRAvailable` with `minLabelLength` > label | none | `CPSimplexName d nr` | `Nothing` |
-| 2f | `NRRegistered`, live, no usable link | none | `CPSimplexName d nr` | `Nothing` |
+| 2b | `NRRegistered`, `expires` past | none | `CPNameNotConnectable d nr` | `Nothing` |
+| 2c | `NRAvailable {pricing}` | none | `CPNameNotConnectable d nr` | `Nothing` |
+| 2d | `NRReserved NRRCommunity` | none | `CPNameNotConnectable d nr` | `Nothing` |
+| 2e | `NRReserved` other, or `NRAvailable` with `minLabelLength` > label | none | `CPNameNotConnectable d nr` | `Nothing` |
+| 2f | `NRRegistered`, live, no usable link | none | `CPNameNotConnectable d nr` | `Nothing` |
 | 2g | link resolved, its profile claims another name or none | — | `CPError (… SDEUnknownDomain)` | unchanged |
 | 2h | network or protocol failure | — | `CPError` | unchanged |
 | 3a | any | known chat | `CPContactAddress (CAPKnown ct) (Just nr)` / `CPGroupLink (GLPKnown …) (Just nr)` | `Just` stored |
@@ -174,7 +174,7 @@ Core therefore stays stateless and needs no change for the rule at all. **Where 
 
 `SDEUnknownDomain` stays, for 2g and 4b. It is a mismatch between a resolved link's profile and the name asked for, not a property of the registry answer, so it cannot become a `NameRegistration`. Per the review thread it stays nullary — which name was claimed is not carried, because it is not shown.
 
-`SDENoValidLink` stays. It becomes unreachable from the plan path, since 2f is now `CPSimplexName` and its band-3 twin is `CAPKnown`, but `resolveNameLink`, `verifyEntityDomain` (`:5094`) and `/_set domain` (`:1607`) still raise it.
+`SDENoValidLink` stays. It becomes unreachable from the plan path, since 2f is now `CPNameNotConnectable` and its band-3 twin is `CAPKnown`, but `resolveNameLink`, `verifyEntityDomain` (`:5094`) and `/_set domain` (`:1607`) still raise it.
 
 Registry and network failures stay `CPError` (2h). The canvas shows the resolver's own text, which `chatErrorAgent` already carries.
 
@@ -188,12 +188,13 @@ Registry and network failures stay `CPError` (2h). The canvas shows the resolver
 4. **Registration does not go through `ConnectionPlan`.** On the sibling canvas, 5a and 5b are the only registration states that would need one — 5a is `CPContactAddress (CAPKnown ct) (Just NRRegistered)`, 5b is `CPContactAddress (CAPOk …) (Just NRRegistered)` — and both are proposed for dropping (`b898b991d`, "suggest to drop 5a & 5b"). With them gone the registration check is a plain name-status call, this API keeps one consumer, and the two surfaces stop competing. Nothing here becomes removable as a result: every field 5a and 5b would have used is independently required by 3b and 3d.
 5. **Consequently the lookup canvas's footer line "registration will always resolve" is obsolete** and should come off the sketch with this change.
 6. **No cache in core.** §5 shows the rule is expressible with existing modes; a TTL column would be a migration bought for nothing.
+7. **The constructor is `CPNameNotConnectable`, renamed from `CPSimplexName`.** All five states it carries share one invariant — you cannot connect — and the attached `NameRegistration` says why. Rejected, with reasons, so they are not re-litigated: *`CPUnregisteredSimplexName`* is false for 2b and 2f, which are registered; *`CPNonResolvingName`* is false for 2b, where both `resolveNameRecord` and `resolveNameLink` succeed and the refusal is policy, and it collides with `CENotResolvedLocally` and with 2h, the cases that genuinely do not resolve; *`CPSimplexName`* reads as a sibling of `CPContactAddress` / `CPGroupLink` naming the target kind, but a name that resolves produces those instead. `CPSimplexDomain`, asked for in review on `ea721d33f`, is vague rather than wrong and remains the fallback if the thread is reopened. The ordering follows the file's dominant negation pattern — `<Noun>Not<Predicate>`, 20 constructors including the close sibling `CESimplexDomainNotReady`; a `Non` prefix appears nowhere in `src/`.
 
 ---
 
 ## 8. Compile fixes and regeneration
 
-- `View.hs:2234`, `:2252` — match the new arities; `viewConnectionPlan` (`:2214`) takes `Maybe ACreatedConnLink` and gains a `CPSimplexName` case rendering domain, kind, and expiry or price under `testView`.
+- `View.hs:2234`, `:2252` — match the new arities; `viewConnectionPlan` (`:2214`) takes `Maybe ACreatedConnLink` and gains a `CPNameNotConnectable` case rendering domain, kind, and expiry or price under `testView`.
 - `View.hs:217` — pass the now-optional `connLink` through.
 - `Commands.hs` — the 26 `CPContactAddress` / `CPGroupLink` occurrences take the second argument; `:2178` and `:4586` build `CRConnectionPlan` with `Maybe`.
 - `CAPOk` / `GLPOk` construction sites take `addressChanged`.
@@ -221,7 +222,7 @@ Registry and network failures stay `CPError` (2h). The canvas shows the resolver
 
 - `tests/NameResolver.hs` can answer expired, reserved and available, not only registered-without-dates
 - every row of §4 is produced by core and asserted by a test
-- `CPSimplexName` carries a domain and is returned only when no local chat claims the name
+- `CPNameNotConnectable` carries a domain and is returned only when no local chat claims the name
 - `nameRegistration_` is `Just` for every name target and `Nothing` for every link target
 - `PRMAll` re-resolves a known contact, `PRMAllGroups` is unchanged, `PRMNever` is unchanged
 - an expired name never yields a connectable plan, and an absent `expires` is treated as live

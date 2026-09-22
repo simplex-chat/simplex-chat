@@ -1153,7 +1153,7 @@ data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
   | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameRegistration_ :: Maybe NameRegistration} -- nameRegistration_ is set when the target was a name
   | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameRegistration_ :: Maybe NameRegistration}
-  | CPSimplexName {simplexDomain :: SimplexDomain, nameRegistration :: NameRegistration} -- the name is not registered, expired or has no usable link, and no local chat has it; the domain is here because an unregistered name has no type, so planSimplexName cannot carry it
+  | CPNameNotConnectable {simplexDomain :: SimplexDomain, nameRegistration :: NameRegistration} -- the name is not registered, expired or has no usable link, and no local chat has it
   | CPError {chatError :: ChatError}
   deriving (Show)
 
@@ -1165,7 +1165,7 @@ data InvitationLinkPlan
   deriving (Show)
 
 data ContactAddressPlan
-  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool} -- addressChanged: the name resolved to another address than the one the local chat claiming it holds
+  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool}
   | CAPOwnLink
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
@@ -1228,7 +1228,7 @@ connectionPlanProceed = \case
     GLPNoRelays _ -> False
     GLPUpdateRequired _ -> False
     _ -> False
-  CPSimplexName {} -> False
+  CPNameNotConnectable {} -> False
   CPError _ -> True
 
 data ForwardConfirmation
@@ -1475,7 +1475,7 @@ data ChatError
   | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
--- why a resolved SimpleX name could not be used (the name itself resolved; in a connection plan, a name with nothing to connect is CPSimplexName)
+-- why a resolved SimpleX name could not be used (the name itself resolved; in a connection plan, a name with nothing to connect is CPNameNotConnectable)
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
