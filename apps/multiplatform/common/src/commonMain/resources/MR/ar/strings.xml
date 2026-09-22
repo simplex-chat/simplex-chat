@@ -2762,7 +2762,6 @@
     <string name="badge_unverified_title">شارة غير متحقق منها</string>
     <string name="relays_no_web_support">لا تدعم خوادم ترحيل الدردشة المستعملة صفحات الويب.</string>
     <string name="webpage_code">رمز صفحة الويب</string>
-    <string name="badge_support_from_v7">يمكنك دعم SimpleX بدءًا من الإصدار 7 من التطبيق.</string>
     <string name="error_saving_simplex_name">خطأ في حفظ الاسم</string>
     <string name="set_user_simplex_name_footer">اسمح للناس بالتواصل معك عبر الاسم المسجَّل في عنوان SimpleX الخاص بك.</string>
     <string name="set_channel_simplex_name_footer">اسمح للأشخاص بالانضمام باستخدام الاسم المسجَّل عبر رابط هذه القناة.</string>

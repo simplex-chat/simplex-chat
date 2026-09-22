@@ -168,7 +168,7 @@ func showBadgeInfoAlert(_ name: String, _ badge: LocalBadge) {
                 }
             if noShownBadge() {
                 showAlert(title, message: supports) {
-                    [ supportSimpleXAlertAction, cancelAlertAction ]
+                    [ supportSimpleXAlertAction, okAlertAction ]
                 }
             } else {
                 showAlert(title, message: supports)

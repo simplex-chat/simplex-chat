@@ -250,8 +250,9 @@ fun showBadgeInfoAlert(name: String, badge: LocalBadge, uriHandler: UriHandler) 
         AlertManager.shared.showAlertDialog(
           title = title,
           text = supports,
-          confirmText = generalGetString(MR.strings.badges_support_simplex_title),
-          onConfirm = ::openBadgesView
+          confirmText = generalGetString(MR.strings.ok),
+          dismissText = generalGetString(MR.strings.badges_support_simplex_title),
+          onDismiss = ::openBadgesView
         )
       } else {
         AlertManager.shared.showAlertMsg(title = title, text = supports)

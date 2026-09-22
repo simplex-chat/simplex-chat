@@ -250,8 +250,9 @@ fun showLargeFileAlert(fileSize: Long, incognito: Boolean, senderProfile: LocalP
     AlertManager.shared.showAlertDialog(
       title = title,
       text = text,
-      confirmText = generalGetString(MR.strings.badges_support_simplex_title),
-      onConfirm = ::openBadgesView
+      confirmText = generalGetString(MR.strings.ok),
+      dismissText = generalGetString(MR.strings.badges_support_simplex_title),
+      onDismiss = ::openBadgesView
     )
   } else {
     AlertManager.shared.showAlertMsg(title, text)

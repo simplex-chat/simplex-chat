@@ -2789,7 +2789,6 @@
     <string name="badge_unverified_title">Targhetta non verificata</string>
     <string name="relays_no_web_support">I relay di chat usati non supportano le pagine web.</string>
     <string name="webpage_code">Codice pagina web</string>
-    <string name="badge_support_from_v7">Puoi sostenere SimpleX dalla versione 7 dell\'app.</string>
     <string name="error_saving_simplex_name">Errore di salvataggio del nome</string>
     <string name="set_user_simplex_name_footer">Consenti alle persone di collegarsi tramite il nome registrato con il tuo indirizzo SimpleX.</string>
     <string name="set_channel_simplex_name_footer">Consenti alle persone di entrare attraverso il nome registrato con questo link del canale.</string>

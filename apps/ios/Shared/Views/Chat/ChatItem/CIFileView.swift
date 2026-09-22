@@ -244,7 +244,7 @@ func showLargeFileAlert(_ fileSize: Int64, incognito: Bool, senderProfile: Local
     let title = NSLocalizedString("Large file!", comment: "file alert title")
     let message = largeFileMessage(fileSize, incognito: incognito, badgeIssue: expiredBadgeReason(fileSize, senderProfile))
     if !incognito && fileSize <= MAX_FILE_SIZE_XFTP_LEGEND && noShownBadge() {
-        showAlert(title, message: message) { [supportSimpleXAlertAction, cancelAlertAction] }
+        showAlert(title, message: message) { [supportSimpleXAlertAction, okAlertAction] }
     } else {
         showAlert(title, message: message)
     }
