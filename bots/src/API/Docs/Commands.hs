@@ -370,6 +370,7 @@ undocumentedCommands =
     "APICreateWallet",
     "APIDeleteChatTag",
     "APIDeleteWallet",
+    "APIScanWallet",
     "APIDeleteMemberSupportChat",
     "APIDeleteReceivedReports",
     "APIDeleteStorage",

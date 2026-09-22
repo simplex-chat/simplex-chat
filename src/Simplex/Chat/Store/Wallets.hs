@@ -16,6 +16,7 @@ module Simplex.Chat.Store.Wallets
     getUserAccounts,
     accountHeldByOther,
     bindAccount,
+    recordScan,
   )
 where
 
@@ -143,6 +144,28 @@ setAccountUser db sId userId n =
 
 accountHeldBy :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO Bool
 accountHeldBy db sId userId n = (== Just (Just userId)) <$> accountUser db sId n
+
+-- | What a scan found: the accounts in use, bound to the first profile because the chain does not say whose they are, and the counter past them.
+recordScan :: DB.Connection -> SeedId -> [AccountIndex] -> AccountIndex -> IO ()
+recordScan db sId inUse next = do
+  mapM_ insertScanned inUse
+  DB.execute
+    db
+    [sql|
+      UPDATE wallet_seeds SET next_account_index = ?
+      WHERE wallet_seed_id = ? AND (next_account_index IS NULL OR next_account_index < ?)
+    |]
+    (accountIndexCol next, sId, accountIndexCol next)
+  where
+    insertScanned n =
+      DB.execute
+        db
+        [sql|
+          INSERT INTO wallet_accounts (wallet_seed_id, account_index, user_id)
+          VALUES (?, ?, (SELECT min(user_id) FROM users))
+          ON CONFLICT (wallet_seed_id, account_index) DO NOTHING
+        |]
+        (sId, accountIndexCol n)
 
 -- | Keep the counter a high-water mark. Never lowers it, never gives one to an imported phrase that has none.
 raiseNextAccount :: DB.Connection -> SeedId -> AccountIndex -> IO ()

@@ -15,6 +15,7 @@ module Simplex.Chat.Wallet
     deriveAccountKey,
     accountSecret,
     checkAccountIndex,
+    scanGapLimit,
   )
 where
 
@@ -56,6 +57,11 @@ data WalletError
   | WEIndexTooLarge -- at or above 2^31
   | WEDerivation {derivationError :: String} -- BIP-32 or BIP-39 said no
   deriving (Eq, Show)
+
+-- | BIP-44's gap limit: a scan of a recovered seed stops after this many
+-- accounts in a row that nothing on chain has used.
+scanGapLimit :: Int
+scanGapLimit = 20
 
 -- | Refuse an index at or above 2^31: BIP-32 would harden it onto another index's key.
 checkAccountIndex :: AccountIndex -> Either WalletError ()

@@ -9,6 +9,7 @@ module NameResolver
   ( NameRegistry,
     withNameResolver,
     registerName,
+    ownedName,
     contactNameRecord,
     channelNameRecord,
     contactAndChannelNameRecord,
@@ -26,9 +27,10 @@ import Network.HTTP.Types (hContentType, notFound404, ok200)
 import Network.Wai (Application, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord (..), NameRegistration (..), NameResponse (..), USDCents (..))
+import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord (..), NameRegistration (..), NameResponse (..), OwnedName (..), OwnedNames (..), USDCents (..))
 import Simplex.Messaging.Server.Names (NamesConfig (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), labelHash)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 
 type NameRegistry = TVar (Map Text NameRecord)
 
@@ -44,15 +46,24 @@ withNameResolver action = do
       (st, body) <- case pathInfo req of
         ["health"] -> pure (ok200, "{}")
         ["v2", "resolve", q] -> (\r -> (ok200, J.encode $ nameResponse r)) . M.lookup q <$> readTVarIO reg
+        ["v2", "owned-by", addr] -> (\rs -> (ok200, J.encode $ ownedNames addr rs)) . M.elems <$> readTVarIO reg
         _ -> pure (notFound404, "{}")
       send $ responseLBS st [(hContentType, "application/json")] body
     nameResponse (Just nameRecord) = NameResponse {lastBlockTs = Nothing, registration = NRRegistered {expires = Nothing, graceUntil = Nothing, reservedReason_ = Nothing, nameRecord}}
     nameResponse Nothing = NameResponse {lastBlockTs = Nothing, registration = NRAvailable {pricing = NamePricing {registrationPrices = M.empty, basePrice = USDCents 1000, minLabelLength = 1}}}
+    -- an account is in use when it owns a name, the only thing this resolver knows about
+    ownedNames addr rs =
+      let ns = [OwnedName {onName = Just nrName, onLabelhash = "", onExpires = RoundedSystemTime 0, onStatus = "registered"} | NameRecord {nrName, nrOwner} <- rs, nrOwner == addr]
+       in OwnedNames {ownNames = ns, ownInUse = not (null ns), ownNextOffset = Nothing}
 
 -- | Register a name's domain to resolve to the given record.
 registerName :: TVar (Map Text NameRecord) -> SimplexNameInfo -> NameRecord -> IO ()
 registerName reg SimplexNameInfo {nameDomain = SimplexDomain {nameTLD, domain}} r =
   atomically $ modifyTVar' reg $ M.insert (decodeLatin1 $ strEncode (labelHash domain) <> strEncode nameTLD) r
+
+-- | Register a name an address owns, for a wallet scan to find.
+ownedName :: NameRegistry -> Text -> Text -> IO ()
+ownedName reg name owner = atomically $ modifyTVar' reg $ M.insert name (emptyRecord name) {nrOwner = owner}
 
 contactNameRecord :: Text -> Text -> NameRecord
 contactNameRecord name link = (emptyRecord name) {nrSimplexContact = [link]}
