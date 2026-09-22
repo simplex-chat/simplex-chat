@@ -443,6 +443,7 @@ data ChatCommand
   | APIGetWalletAddress {accountIndex_ :: Maybe AccountIndex}
   | APIExportWalletMnemonic
   | APIExportWalletAccount {accountIndex :: AccountIndex}
+  | APIScanWallet
   | APIDeleteWallet
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType

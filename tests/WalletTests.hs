@@ -13,7 +13,9 @@ import qualified Data.ByteString.Char8 as B
 import Data.Char (toUpper)
 import Data.Either (isRight)
 import Data.List (nub)
+import Data.Text (Text)
 import qualified Data.Text as T
+import NameResolver (ownedName)
 import Simplex.Chat.Wallet (AccountIndex, WalletError (..), accountSecret, deriveAccountKey, entropyFromMnemonic, renderAccountPath, seedMaster, seedMnemonic)
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
@@ -41,6 +43,10 @@ addressFromSecret :: String -> String
 addressFromSecret secret =
   show . addressFromPrivateKey . either error id . S.mkPrivateKey . either error id $
     BAE.convertFromBase BAE.Base16 (B.drop 2 $ B.pack secret)
+
+-- | The address of an account of the imported phrase, as the chain would hold it.
+accountAddress :: AccountIndex -> Text
+accountAddress = T.pack . show . addressFromPrivateKey . accountKey (seedEntropy testPhrase24)
 
 -- | An @export account@ row: the index, the path, the address, the secret.
 exportRow :: HasCallStack => String -> (String, String, String, String)
@@ -93,6 +99,23 @@ walletTests = do
   it "a hidden profile is bound no account" testWalletHiddenProfile
   it "will not export an account another profile holds" testWalletExportNotMine
   it "refuses an index BIP-32 cannot harden, on every command" testWalletIndexTooLarge
+
+-- | Its own group: the scan needs a names resolver, so it runs without the SMP server the other wallet tests share.
+walletScanTests :: SpecWith TestParams
+walletScanTests =
+  it "a scan of a recovered phrase finds the accounts in use" testWalletScan
+
+testWalletScan :: HasCallStack => TestParams -> IO ()
+testWalletScan ps = withSmpServerAndNames $ \reg -> withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  enableNamesRole alice
+  alice ##> ("/_wallet create mnemonic=" <> B.unpack testPhrase24)
+  alice <## "wallet, no accounts for this profile"
+  ownedName reg "alice.simplex" (accountAddress 1)
+  alice ##> "/_wallet scan"
+  alice <## "accounts: 1"
+  -- the scan gives the imported phrase the counter it had none of
+  alice ##> "/_wallet bind"
+  alice <## "accounts: 1, 2"
 
 testWalletCreate :: HasCallStack => TestParams -> IO ()
 testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do

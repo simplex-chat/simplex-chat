@@ -35,7 +35,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, partitionEithers, rights)
+import Data.Either (fromRight, isLeft, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Functor.Identity (Identity (..), runIdentity)
@@ -65,9 +65,10 @@ import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeSta
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Store.Wallets (WalletSeed (..), accountHeldByOther, bindAccount, createWalletSeed, deleteWalletSeed, getUserAccounts, getWalletSeed, resolveAccount)
-import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccountKey, entropyFromMnemonic, newSeedEntropy, renderAccountPath, seedMaster, seedMnemonic)
+import Simplex.Chat.Store.Wallets (WalletSeed (..), accountHeldByOther, bindAccount, createWalletSeed, deleteWalletSeed, getUserAccounts, getWalletSeed, recordScan, resolveAccount)
+import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), accountSecret, checkAccountIndex, deriveAccountKey, entropyFromMnemonic, newSeedEntropy, renderAccountPath, scanGapLimit, seedMaster, seedMnemonic)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
+import Simplex.Messaging.Names.Record (OwnedNames (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -1526,6 +1527,11 @@ processChatCommand cxt nm = \case
     when heldByOther $ throwWalletError WEAccountBound
     k <- accountKey seed n
     pure $ CRWalletAccountSecret user (accountAddress n k) (accountSecret k)
+  APIScanWallet -> withUser $ \user -> do
+    seed <- walletSeed
+    (inUse, next) <- scanAccounts nm user seed
+    withFastStore' $ \db -> recordScan db (wsId seed) inUse next
+    processChatCommand cxt nm APIGetWallet
   APIDeleteWallet -> withUser $ \_ -> do
     deleted <- withFastStore' deleteWalletSeed
     unless deleted $ throwWalletError WENoMaster
@@ -5963,6 +5969,26 @@ liftWallet = either throwWalletError pure
 accountKey :: WalletSeed -> AccountIndex -> CM AccountKey
 accountKey seed n = liftWallet $ seedMaster (wsEntropy seed) >>= (`deriveAccountKey` n)
 
+-- | Walk the seed's accounts until 'scanGapLimit' in a row are untouched,
+-- asking each account on a relay the scan has not used yet: one relay seeing
+-- every address would learn they are one wallet. The counter lands past the
+-- last account in use, so the next name takes a free one.
+scanAccounts :: NetworkRequestMode -> User -> WalletSeed -> CM ([AccountIndex], AccountIndex)
+scanAccounts nm user seed = go 0 [] [] 0
+  where
+    go n used found gap
+      | gap >= scanGapLimit || isLeft (checkAccountIndex n) = pure (reverse found, next)
+      | otherwise = do
+          addr <- addressFromPrivateKey <$> accountKey seed n
+          (srv, owned) <- withAgent $ \a -> ownedSimplexNames a nm (aUserId user) used addr 0
+          if ownInUse owned
+            then go (n + 1) (srv : used) (n : found) 0
+            else go (n + 1) (srv : used) found (gap + 1)
+      where
+        next = case found of
+          latest : _ -> latest + 1
+          [] -> 0
+
 accountAddress :: AccountIndex -> AccountKey -> WalletAddress
 accountAddress n k =
   WalletAddress {accountIndex = n, keyPath = renderAccountPath n, address = decodeLatin1 . strEncode $ addressFromPrivateKey k}
@@ -6097,6 +6123,7 @@ chatCommandP =
       "/_wallet address" $> APIGetWalletAddress Nothing,
       "/_wallet export master" $> APIExportWalletMnemonic,
       "/_wallet export account " *> (APIExportWalletAccount <$> accountIndexP),
+      "/_wallet scan" $> APIScanWallet,
       "/_wallet delete" $> APIDeleteWallet,
       "/_wallet" $> APIGetWallet,
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
