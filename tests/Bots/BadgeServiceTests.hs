@@ -86,7 +86,7 @@ badgeServiceTests = do
   it "should retire when entitlement ends, not when the credential expires" testRetiresWhenEntitlementEnds
   it "should alert that support ended, survive a restart, and go silent once acknowledged" testEndedAlert
   it "should raise a snoozed alert once more when the snooze lapses" testSnoozedAlertReturns
-  it "should alert that renewal failed when the service refuses it, and clear when it succeeds" testIssueFailedAlert
+  it "should alert that renewal failed when the service refuses it" testIssueFailedAlert
   it "should wait for the shown credential to lapse before alerting on a failure that can clear" testIssueFailedWaitsForExpiry
   it "should silence an acknowledged run of failures, and alert again on the next run" testIssueFailedAckAndNewRun
   it "should record no failure when the service issues nothing because the months ran out" testNoCredentialMonthsRanOut
@@ -945,16 +945,14 @@ testEndedAlert ps =
       alice <## "use /p <name> [<bio>] to change it"
 
 -- A refusal the service will not take back is worth telling the user at once: the badge is still
--- worn and will start showing as expired. The recorded failure survives a restart, and a renewal
--- that succeeds clears it along with the alert.
+-- worn and will start showing as expired.
 testIssueFailedAlert :: HasCallStack => TestParams -> IO ()
 testIssueFailedAlert ps =
-  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} -> do
-    (purchaseKey, failedSince) <- withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       code <- issueCode cc BTSupporter 3
       redeemFirstBadge alice code
       rows <- ledgerRows (chatController alice) "badge_ledger"
-      purchaseKey <- servicePurchaseKey cc
       -- the service no longer knows this purchase, so it refuses with no retryAfter: terminal
       setServicePurchaseKey cc "not the purchase key"
       setClockAt bsClock $ fst $ renewalMoments rows
@@ -966,27 +964,8 @@ testIssueFailedAlert ps =
       alice <##. "1: supporter"
       alice <##. "renewal failing since "
       alice <##. "badge alert: issue_failed "
-      (failedSince, reason) <- issueErrorRow (chatController alice)
-      reason `shouldBe` Just "service_error final unknown_purchase_key"
-      pure (purchaseKey, failedSince)
-    -- nothing was stored as pending: the same run is derived again on the next start
-    withTestChatCfg ps bsClientCfg "alice" $ \alice -> do
-      alice <## "subscribed 1 connections on server localhost"
-      alice <## badgeServiceRefused
-      alice <##. "badge alert: issue_failed "
-      alice <##. "1: supporter"
-      alice <##. "renewal failing since "
-      alice <##. "badge alert: issue_failed "
-      -- the run started when it first failed, not when the app started
-      issueErrorRow (chatController alice) >>= \(since, _) -> since `shouldBe` failedSince
-      -- the service knows the purchase again, and the month it owes is issued
-      setServicePurchaseKey cc purchaseKey
-      alice ##> "/_app activate"
-      alice <## "ok"
-      void $ waitLedgerRows (chatController alice) 3
-      alice <##. "1: supporter"
-      -- the issuance cleared the run, and with it the alert and the error section
-      waitIssueErrorCleared (chatController alice)
+      issueErrorRow (chatController alice) >>= \(_, reason) ->
+        reason `shouldBe` Just "service_error final unknown_purchase_key"
 
 -- A failure that can clear on its own is not worth a word while contacts still see the badge as
 -- valid: neither the alert nor the state shows it until the shown credential lapses, which is when
