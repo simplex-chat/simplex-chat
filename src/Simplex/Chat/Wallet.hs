@@ -58,8 +58,7 @@ data WalletError
   | WEDerivation {derivationError :: String} -- BIP-32 or BIP-39 said no
   deriving (Eq, Show)
 
--- | BIP-44's gap limit: a scan of a recovered seed stops after this many
--- accounts in a row that nothing on chain has used.
+-- | BIP-44's gap limit: a scan stops after this many accounts in a row that nothing on chain has used.
 scanGapLimit :: Int
 scanGapLimit = 20
 

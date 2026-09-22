@@ -5969,10 +5969,7 @@ liftWallet = either throwWalletError pure
 accountKey :: WalletSeed -> AccountIndex -> CM AccountKey
 accountKey seed n = liftWallet $ seedMaster (wsEntropy seed) >>= (`deriveAccountKey` n)
 
--- | Walk the seed's accounts until 'scanGapLimit' in a row are untouched,
--- asking each account on a relay the scan has not used yet: one relay seeing
--- every address would learn they are one wallet. The counter lands past the
--- last account in use, so the next name takes a free one.
+-- | Walk the accounts until 'scanGapLimit' in a row are untouched, each on a relay the scan has not used, so no relay sees the whole wallet.
 scanAccounts :: NetworkRequestMode -> User -> WalletSeed -> CM ([AccountIndex], AccountIndex)
 scanAccounts nm user seed = go 0 [] [] 0
   where
