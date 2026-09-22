@@ -1153,7 +1153,7 @@ data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
   | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameRegistration_ :: Maybe NameRegistration} -- nameRegistration_ is set when the target was a name
   | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameRegistration_ :: Maybe NameRegistration}
-  | CPSimplexName {nameRegistration :: NameRegistration} -- the name is not registered, expired or has no usable link, and no local chat has it
+  | CPSimplexName {simplexDomain :: SimplexDomain, nameRegistration :: NameRegistration} -- the name is not registered, expired or has no usable link, and no local chat has it; the domain is here because an unregistered name has no type, so planSimplexName cannot carry it
   | CPError {chatError :: ChatError}
   deriving (Show)
 
@@ -1165,7 +1165,7 @@ data InvitationLinkPlan
   deriving (Show)
 
 data ContactAddressPlan
-  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification}
+  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool} -- addressChanged: the name resolved to another address than the one the local chat claiming it holds
   | CAPOwnLink
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
@@ -1174,7 +1174,7 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification}
+  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
@@ -1228,7 +1228,7 @@ connectionPlanProceed = \case
     GLPNoRelays _ -> False
     GLPUpdateRequired _ -> False
     _ -> False
-  CPSimplexName _ -> False
+  CPSimplexName {} -> False
   CPError _ -> True
 
 data ForwardConfirmation
