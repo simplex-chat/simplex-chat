@@ -27,6 +27,7 @@ fun SupportSimpleXBanner(
   title: String = generalGetString(MR.strings.badges_banner_title),
   subtitle: String = generalGetString(MR.strings.badges_banner_subtitle),
   warning: Boolean = false,
+  showDismiss: Boolean = true,
   onTap: () -> Unit,
   onDismiss: () -> Unit
 ) {
@@ -75,7 +76,9 @@ fun SupportSimpleXBanner(
         }
       }
 
-      BannerDismissButton(Modifier.align(Alignment.TopEnd), onDismiss)
+      if (showDismiss) {
+        BannerDismissButton(Modifier.align(Alignment.TopEnd), onDismiss)
+      }
     }
 
     HeroThumbnail(

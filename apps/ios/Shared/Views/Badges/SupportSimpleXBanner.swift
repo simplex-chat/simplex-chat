@@ -15,6 +15,7 @@ struct SupportSimpleXBanner: View {
     var title: LocalizedStringKey = "Support SimpleX"
     var subtitle: LocalizedStringKey = "Get badge + better files"
     var warning: Bool = false
+    var showDismiss: Bool = true
     let onTap: () -> Void
     let onDismiss: () -> Void
 
@@ -56,7 +57,9 @@ struct SupportSimpleXBanner: View {
                     .allowsHitTesting(false)
             }
 
-            BannerDismissButton(onDismiss: onDismiss)
+            if showDismiss {
+                BannerDismissButton(onDismiss: onDismiss)
+            }
         }
     }
 

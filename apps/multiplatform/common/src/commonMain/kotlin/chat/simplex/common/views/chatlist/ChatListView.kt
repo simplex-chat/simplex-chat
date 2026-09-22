@@ -950,6 +950,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
   val supporterBannerShown = remember { appPrefs.supporterBannerShown.state }
+  val supporterBannerTapped = remember { appPrefs.supporterBannerTapped.state }
   val getStakeBannerTapped = remember { appPrefs.getStakeBannerTapped.state }
   val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
   // read here rather than in the LazyColumn: it launches an effect, so it needs a composable scope
@@ -1074,7 +1075,11 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         SideEffect { chatModel.chatListBanner = ChatListBanner.BadgePitch }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           SupportSimpleXBanner(
-            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(close) } },
+            showDismiss = supporterBannerTapped.value,
+            onTap = {
+              appPrefs.supporterBannerTapped.set(true)
+              ModalManager.start.showCustomModal { close -> BadgesView(close) }
+            },
             onDismiss = ::showSupportSimpleXDismissAlert
           )
         }

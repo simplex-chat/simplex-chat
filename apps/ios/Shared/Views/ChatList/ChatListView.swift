@@ -177,6 +177,7 @@ struct ChatListView: View {
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
     @AppStorage(DEFAULT_ADDRESS_CREATION_CARD_SHOWN) private var addressCreationCardShown = false
     @AppStorage(DEFAULT_SUPPORTER_BANNER_SHOWN) private var supporterBannerShown = false
+    @AppStorage(DEFAULT_SUPPORTER_BANNER_TAPPED) private var supporterBannerTapped = false
     @AppStorage(DEFAULT_GET_STAKE_BANNER_TAPPED) private var getStakeBannerTapped = false
     @AppStorage(DEFAULT_GET_STAKE_BANNER_DISMISSED) private var getStakeBannerDismissed = false
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
@@ -516,7 +517,11 @@ struct ChatListView: View {
                             .onAppear { chatModel.chatListBanner = .badgeIssueFailed }
                     } else if chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge && chatModel.chats.count > 3 {
                         SupportSimpleXBanner(
-                            onTap: { showBadgesSheet = true },
+                            showDismiss: supporterBannerTapped,
+                            onTap: {
+                                supporterBannerTapped = true
+                                showBadgesSheet = true
+                            },
                             onDismiss: showSupportSimpleXDismissAlert
                         )
                             .padding(.vertical, 3)
