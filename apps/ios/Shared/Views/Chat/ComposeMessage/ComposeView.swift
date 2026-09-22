@@ -668,10 +668,7 @@ struct ComposeView: View {
                         fileSize <= maxFileSize {
                         composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent, file: fileURL))
                     } else {
-                        showAlert(
-                            NSLocalizedString("Large file!", comment: "file alert title"),
-                            message: largeFileMessage(Int64(fileSize ?? 0), incognito: sendIncognito, badgeIssue: expiredBadgeReason(Int64(fileSize ?? 0), sendProfile))
-                        )
+                        showLargeFileAlert(Int64(fileSize ?? 0), incognito: sendIncognito, senderProfile: sendProfile)
                     }
                 } catch {
                     logger.error("ComposeView fileImporter error \(error.localizedDescription)")

@@ -330,10 +330,7 @@ fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
         value = value.copy(message = if (text != null) ComposeMessage(text) else value.message, preview = ComposePreview.FilePreview(fileName, uri))
       }
     } else if (fileSize != null) {
-      AlertManager.shared.showAlertMsg(
-        generalGetString(MR.strings.large_file),
-        largeFileMessage(fileSize, value.sendIncognito, expiredBadgeReason(fileSize, chatModel.currentUser.value?.profile))
-      )
+      showLargeFileAlert(fileSize, value.sendIncognito, chatModel.currentUser.value?.profile)
     } else {
       showWrongUriAlert()
     }
@@ -359,10 +356,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
             UploadContent.AnimatedImage(uri)
           } else {
             bitmap = null
-            AlertManager.shared.showAlertMsg(
-              generalGetString(MR.strings.large_file),
-              largeFileMessage(fileSize ?: 0, value.sendIncognito, expiredBadgeReason(fileSize ?: 0, chatModel.currentUser.value?.profile))
-            )
+            showLargeFileAlert(fileSize ?: 0, value.sendIncognito, chatModel.currentUser.value?.profile)
             null
           }
         } else if (bitmap != null) {

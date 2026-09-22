@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import chat.simplex.common.model.BadgeModel
 import chat.simplex.common.model.BadgeState
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.views.helpers.ModalView
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -26,4 +27,9 @@ fun BadgesView(close: () -> Unit) {
       }
     }
   }
+}
+
+// opened from the chat rather than from settings, so it goes onto the chat's own modal stack
+fun openBadgesView() {
+  ModalManager.end.showCustomModal { close -> BadgesView(close) }
 }

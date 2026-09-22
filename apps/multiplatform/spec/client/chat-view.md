@@ -271,7 +271,7 @@ Key sections: group profile, group link, member list with roles, group preferenc
 |---|---|
 | `ChatView.kt` | Main chat view, ChatLayout, ChatItemsList, ChatInfoToolbar |
 | `ChatInfoView.kt` | Contact info modal |
-| `ChatItemInfoView.kt` | Individual message delivery/read info |
+| `ChatItemInfoView.kt` | Individual message delivery/read info; below a file's expiry, for a user without a badge, a button opening the badges view |
 | `ChatItemsLoader.kt` | Pagination and message loading logic |
 | `ChatItemsMerger.kt` | MergedItems grouping of consecutive events |
 | `CommandsMenuView.kt` | Bot `/command` menu popup |

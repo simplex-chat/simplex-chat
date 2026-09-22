@@ -29,6 +29,18 @@ private struct PrivacySensitive: ViewModifier {
     }
 }
 
+// Presented from the top view controller instead of a .sheet on a parent view, so an alert button or
+// a view that is itself in a sheet can open it - both are places a .sheet cannot be attached to.
+func showAppSheet<Content: View>(@ViewBuilder content: () -> Content) {
+    if let topController = getTopViewController() {
+        let v = content()
+            .modifier(PrivacySensitive())
+            .environmentObject(ChatModel.shared)
+            .environmentObject(AppTheme.shared)
+        topController.present(UIHostingController(rootView: v), animated: true)
+    }
+}
+
 extension View {
     func appSheet<Content>(
         isPresented: Binding<Bool>,

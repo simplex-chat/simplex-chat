@@ -36,6 +36,8 @@ import chat.simplex.common.model.LocalBadge
 import chat.simplex.common.model.localDate
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.openBadgesView
+import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import kotlin.math.max
@@ -244,10 +246,16 @@ fun showBadgeInfoAlert(name: String, badge: LocalBadge, uriHandler: UriHandler) 
           String.format(generalGetString(MR.strings.badge_supported_simplex), name, localDate(badge.badge.badgeExpiry))
         else
           String.format(generalGetString(MR.strings.badge_supports_simplex), name)
-      AlertManager.shared.showAlertMsg(
-        title = title,
-        text = supports + "\n\n" + generalGetString(MR.strings.badge_support_from_v7)
-      )
+      if (noShownBadge()) {
+        AlertManager.shared.showAlertDialog(
+          title = title,
+          text = supports,
+          confirmText = generalGetString(MR.strings.badges_support_simplex_title),
+          onConfirm = ::openBadgesView
+        )
+      } else {
+        AlertManager.shared.showAlertMsg(title = title, text = supports)
+      }
     }
   }
 }
