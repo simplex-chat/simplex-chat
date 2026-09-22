@@ -5312,15 +5312,16 @@ runBadgeWorker userId badgeWork = do
     at_ <- withRetryInterval ri $ \delay loop -> do
       lift waitChatStartedAndActivated
       now <- badgeNow
-      updateUserBadge userId emitted now `catchAllErrors` retryBadgeError userId now delay loop
+      updateUserBadge userId emitted now `catchAllErrors` retryBadgeError userId delay loop
     now <- badgeNow
     liftIO $ waitBadgeWake badgeWork now at_
 
 -- | Records the wake before waiting it out, so the state the apps hold carries the next attempt
 -- however the pass ended.
-retryBadgeError :: UserId -> UTCTime -> Int64 -> CM (Maybe UTCTime) -> ChatError -> CM (Maybe UTCTime)
-retryBadgeError userId now delay loop e = do
+retryBadgeError :: UserId -> Int64 -> CM (Maybe UTCTime) -> ChatError -> CM (Maybe UTCTime)
+retryBadgeError userId delay loop e = do
   eToView e
+  now <- badgeNow
   let retrying = badgeErrorRetry e
       at = (if retrying then fromIntegral delay / 1000000 else badgeStalledInterval) `addUTCTime` now
   badgeNextWakeChanged userId at
@@ -5524,15 +5525,19 @@ earliestTime ts = case catMaybes ts of
 badgeIssueFailure :: ChatError -> BadgeIssueFailure
 badgeIssueFailure e = case e of
   ChatErrorAgent {agentError = AGENT (A_SERVICE ASETimeout)} -> BIFServiceTimeout
-  ChatErrorAgent {agentError} | temporaryOrHostError agentError -> BIFNetwork {agentError = tshow agentError}
+  ChatErrorAgent {agentError}
+    | temporaryOrHostError agentError -> BIFNetwork {agentError = tshow agentError}
+    | otherwise -> BIFUnexpected {message = tshow agentError}
   ChatError (CECommandError m) -> BIFUnexpected {message = T.pack m}
   ChatError (CEInternalError m) -> BIFUnexpected {message = T.pack m}
   _ -> BIFUnexpected {message = tshow e}
 
--- | Whether a failure can clear on its own, which decides both the retry and whether the alert
--- waits for the shown credential to lapse.
+-- | Whether a failure can clear on its own, which decides whether the alert waits for the shown
+-- credential to lapse - and, for a thrown error, whether the pass retries it.
 badgeFailureTransient :: BadgeIssueFailure -> Bool
 badgeFailureTransient = \case
+  -- the service withholds retryAfter from internal to avoid being pressed while failing, not because it is final
+  BIFServiceError {code = BSEInternal} -> True
   BIFServiceError {retryable} -> retryable
   BIFServiceTimeout -> True
   BIFNetwork {} -> True
@@ -5547,7 +5552,8 @@ badgeErrorRetry = badgeFailureTransient . badgeIssueFailure
 -- | Ask the service for the month that is due and apply the response. A timeout stores no ledger row,
 -- so the same request is sent again on the next pass. 'Left' is a service error, already reported, and
 -- carries when to try again, since a service error is answered rather than thrown. Any request that
--- ends without a credential is recorded on the purchase as a failed renewal; nothing else records one.
+-- ends without a credential the ledger still owes is recorded on the purchase as a failed renewal;
+-- nothing else records one.
 requestBadgeIssue :: UserId -> UserBadgePurchase -> UTCTime -> CM (Either UTCTime StatementEntry)
 requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchaseKey, purchasePrivKey, masterKey} now = do
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwCmdError "badge service not configured") pure
@@ -5564,21 +5570,23 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchase
       sendServiceRequestTo NRMBackground user sendTarget Nothing (Just purchasePrivKey) req
         `catchAllErrors` \e -> recordFailure (badgeIssueFailure e) >> throwError e
     case J.fromJSON (J.Object respData) of
-      J.Success BSPBadgeCredential {credential, statement} -> do
-        cred_ <- verifyIssuedCredential masterKey credential
+      J.Success BSPBadgeCredential {credential = sentCred_, statement} -> do
+        verifiedCred_ <- verifyIssuedCredential masterKey sentCred_
         g <- asks random
         -- read again: now was taken before a lock wait and an untimed request, and the check reads
         -- it as the client's clock against the timestamps the service put on the rows
         storedAt <- badgeNow
-        applied <- withStore' $ \db -> applyBadgeStatement db g badgePurchaseId badgeType statement cred_ storedAt
+        (applied, balance_) <- withStore' $ \db -> do
+          applied <- applyBadgeStatement db g badgePurchaseId badgeType statement verifiedCred_ storedAt
+          (applied,) <$> getBadgeLedgerLastEntry db badgePurchaseId
         -- the statement is applied either way, so a month can be spent with nothing to show for it
-        case (cred_, applied) of
-          (Nothing, _) -> recordFailure BIFInvalidCredential
-          (_, False) -> do
-            eToView $ ChatError $ CEInternalError $ T.unpack noLedgerRow
-            recordFailure BIFUnexpected {message = noLedgerRow}
+        case (sentCred_, verifiedCred_, applied) of
+          (Just _, Nothing, _) -> recordFailure BIFInvalidCredential
+          (_, _, False) -> recordUnexpected "issued badge credential has no ledger row to store it against"
+          -- no credential is the service saying the months ran out, which its statement then shows
+          (Nothing, _, _) | maybe False ((> 0) . balanceMonths) balance_ -> recordUnexpected "badge service issued no credential"
           _ -> pure ()
-        Right <$> (withStore' (`getBadgeLedgerLastEntry` badgePurchaseId) >>= maybe (throwCmdError "badge ledger has no balance") pure)
+        maybe (throwCmdError "badge ledger has no balance") (pure . Right) balance_
       J.Success BSPError {code, retryAfter} -> do
         eToView $ ChatError $ CECommandError $ "badge service error: " <> T.unpack (badgeServiceErrorText code)
         recordFailure BIFServiceError {code = boundedServiceErrorCode code, retryable = isJust retryAfter}
@@ -5588,8 +5596,10 @@ requestBadgeIssue userId UserBadgePurchase {badgePurchaseId, badgeType, purchase
         recordFailure BIFUnexpected {message = unexpectedResponse}
         throwCmdError $ T.unpack unexpectedResponse
   where
-    noLedgerRow = "issued badge credential has no ledger row to store it against"
     unexpectedResponse = "unexpected badge service response"
+    recordUnexpected message = do
+      eToView $ ChatError $ CEInternalError $ T.unpack message
+      recordFailure BIFUnexpected {message}
     recordFailure failure = do
       failedAt <- badgeNow
       withStore' $ \db -> setBadgeIssueError db badgePurchaseId failedAt failure

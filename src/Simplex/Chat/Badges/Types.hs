@@ -32,6 +32,7 @@ module Simplex.Chat.Badges.Types
     BadgeState (..),
   ) where
 
+import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
@@ -366,17 +367,18 @@ instance StrEncoding BadgeIssueFailure where
     BIFNetwork {agentError} -> "network " <> encodeUtf8 agentError
     BIFInvalidCredential -> "invalid_credential"
     BIFUnexpected {message} -> "unexpected " <> encodeUtf8 message
-  strP =
-    A.takeWhile1 (/= ' ') >>= \case
-      "service_error" -> serviceErrorP
-      "service_timeout" -> pure BIFServiceTimeout
-      "network" -> BIFNetwork <$> restP
-      "invalid_credential" -> pure BIFInvalidCredential
-      "unexpected" -> BIFUnexpected <$> restP
-      _ -> fail "bad BadgeIssueFailure"
+  -- a row this version cannot read is reported as it stands rather than failing every read of the purchase
+  strP = (knownP <* A.endOfInput) <|> (BIFUnexpected . safeDecodeUtf8 <$> A.takeByteString)
     where
-      -- the code is encoded last because a code this version does not know keeps the service's own
-      -- text, which may contain a space
+      knownP =
+        A.takeWhile1 (/= ' ') >>= \case
+          "service_error" -> serviceErrorP
+          "service_timeout" -> pure BIFServiceTimeout
+          "network" -> BIFNetwork <$> restP
+          "invalid_credential" -> pure BIFInvalidCredential
+          "unexpected" -> BIFUnexpected <$> restP
+          _ -> fail "bad BadgeIssueFailure"
+      -- the code is encoded last and read to the end, so a code this version does not know reads back whole
       serviceErrorP = do
         retryable_ <- A.space *> retryableP
         code_ <- A.space *> codeP

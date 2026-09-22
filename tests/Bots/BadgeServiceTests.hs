@@ -89,6 +89,8 @@ badgeServiceTests = do
   it "should alert that renewal failed when the service refuses it, and clear when it succeeds" testIssueFailedAlert
   it "should wait for the shown credential to lapse before alerting on a failure that can clear" testIssueFailedWaitsForExpiry
   it "should silence an acknowledged run of failures, and alert again on the next run" testIssueFailedAckAndNewRun
+  it "should record no failure when the service issues nothing because the months ran out" testNoCredentialMonthsRanOut
+  it "should record a failure when the service issues nothing though months are left" testNoCredentialMonthsLeft
   it "should renew a badge on a profile that is not active, without switching to it" testRenewalKeepsActiveProfile
   it "should broadcast the current profile when a renewal presents a badge" testRenewalKeepsProfileEdits
   it "should present the month already issued when a previous pass did not" testPresentationCatchesUp
@@ -1074,6 +1076,73 @@ testIssueFailedAckAndNewRun ps =
       -- a new run, so acknowledging the first one does not silence this one
       newEpisode <- episodeOf . fst <$> issueErrorRow (chatController alice)
       newEpisode `shouldNotBe` episode
+
+-- The service issues nothing when the months it holds have run out - here through a debit the
+-- client had not seen. That is support ending, not a failed renewal: the statement brings the
+-- balance to nothing and the usual alert follows, where a recorded failure would name a
+-- credential that was never issued.
+testNoCredentialMonthsRanOut :: HasCallStack => TestParams -> IO ()
+testNoCredentialMonthsRanOut ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 3
+      redeemFirstBadge alice code
+      rows <- ledgerRows (chatController alice) "badge_ledger"
+      insertServiceSupportDebit cc
+      -- at the credential's expiry the issued period has ended, so the service holds no current credential either
+      setClockAt bsClock $ snd $ renewalMoments rows
+      alice ##> "/_app activate"
+      alice <## "ok"
+      alice <##. "badge alert: support_ended "
+      issueErrorRow (chatController alice) `shouldReturn` (Nothing, Nothing)
+      -- the debit is the client's now, and the next pass retires the badge on it
+      rows' <- ledgerRows (chatController alice) "badge_ledger"
+      map (\(_, ch, m, _, _, t) -> (ch, m, t)) rows' `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-2, 0, Just "support")]
+      alice ##> "/_app activate"
+      alice <## "ok"
+      alice <##. "1: supporter"
+      alice <##. "badge alert: support_ended "
+      waitShownBadge (chatController alice) Nothing
+
+-- The service issuing nothing while the ledger still owes a month is a fault the client cannot
+-- resolve, so it is recorded and told at once.
+testNoCredentialMonthsLeft :: HasCallStack => TestParams -> IO ()
+testNoCredentialMonthsLeft ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 3
+      redeemFirstBadge alice code
+      rows <- ledgerRows (chatController alice) "badge_ledger"
+      zeroServiceLedgerTip cc
+      setClockAt bsClock $ snd $ renewalMoments rows
+      alice ##> "/_app activate"
+      alice <## "ok"
+      alice <## "internal chat error: badge service issued no credential"
+      alice <##. "badge alert: issue_failed "
+      alice <##. "1: supporter"
+      alice <##. "renewal failing since "
+      alice <##. "badge alert: issue_failed "
+      (_, reason) <- issueErrorRow (chatController alice)
+      reason `shouldBe` Just "unexpected badge service issued no credential"
+
+-- | A debit the service wrote on its own, taking back the months the purchase had: copied from
+-- the tip so that it follows it in every column the client checks.
+insertServiceSupportDebit :: ChatController -> IO ()
+insertServiceSupportDebit ChatController {chatStore} =
+  withTransaction chatStore $ \db ->
+    DB.execute_ db . fromString $
+      "INSERT INTO sx_badge_service_badge_ledger"
+        <> " (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts,"
+        <> "  balance_badge_type, service_created_at, created_at, entry_type, entry_debit_type)"
+        <> " SELECT 'support-debit', badge_purchase_id, -balance_months, 0, balance_start_ts, balance_anchor_ts,"
+        <> "  balance_badge_type, service_created_at, created_at, 'debit', 'support'"
+        <> " FROM sx_badge_service_badge_ledger ORDER BY entry_id DESC LIMIT 1"
+
+-- | The service's tip with its months struck out: nothing to issue, and no row restating the ledger.
+zeroServiceLedgerTip :: ChatController -> IO ()
+zeroServiceLedgerTip ChatController {chatStore} =
+  withTransaction chatStore $ \db ->
+    DB.execute_ db "UPDATE sx_badge_service_badge_ledger SET balance_months = 0 WHERE entry_id = (SELECT MAX(entry_id) FROM sx_badge_service_badge_ledger)"
 
 badgeServiceRefused :: String
 badgeServiceRefused = "bad chat command: badge service error: unknown_purchase_key"

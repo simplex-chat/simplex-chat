@@ -88,9 +88,9 @@ fun BadgesYourBadgeView(badgeState: BadgeState) {
         }
         InfoRow(stringResource(MR.strings.badges_credential_months_left), badgeState.monthsLeft.toString())
         InfoRow(stringResource(MR.strings.badges_credential_purchase_id), badgeState.badgePurchaseId.toString())
-        val nextCheckAt = badgeState.nextWakeAt
-        if (nextCheckAt != null) {
-          InfoRow(stringResource(MR.strings.badges_credential_next_check), localTimestamp(nextCheckAt))
+        val nextWakeAt = badgeState.nextWakeAt
+        if (nextWakeAt != null) {
+          InfoRow(stringResource(MR.strings.badges_credential_next_check), localTimestamp(nextWakeAt))
         }
         if (issueError != null) {
           InfoRow(stringResource(MR.strings.error), issueError.reason.tag)
