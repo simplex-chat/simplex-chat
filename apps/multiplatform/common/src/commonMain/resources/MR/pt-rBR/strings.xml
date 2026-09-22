@@ -2890,4 +2890,8 @@
     <string name="badge_unverified_desc">Não foi possível verificar este selo, que pode não ser legítimo.</string>
     <string name="badge_unknown_key_desc">O selo é assinado com uma chave que esta versão do aplicativo não reconhece. Atualize o aplicativo para verificar este selo.</string>
     <string name="group_invitations">Convites em grupo</string>
+    <string name="countdown_hrs_min_sec">%1$02d hrs %2$02d min %3$02d seg</string>
+    <string name="badges_price_monthly">%1$s/mês</string>
+    <string name="badges_price_annual">%1$s/ano</string>
+    <string name="badges_period_one_month">1 mês</string>
 </resources>
