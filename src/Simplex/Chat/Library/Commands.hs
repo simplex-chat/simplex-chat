@@ -5290,7 +5290,7 @@ getBadgeWorker User {userId} = do
   withGetSessVar' seq' userId ws now startWorker signalWorker
   where
     startWorker v = do
-      badgeWork <- newTMVarIO ()
+      badgeWork <- newEmptyTMVarIO
       badgeWorkerAsync <- async $ void $ runExceptT $ runBadgeWorker userId badgeWork
       let w = BadgeWorker {badgeWorkerAsync, badgeWork}
       w <$ atomically (putTMVar (sessionVar v) w)
