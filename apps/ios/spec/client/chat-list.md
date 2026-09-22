@@ -303,6 +303,10 @@ In the onboarding branch the `.scaleEffect` and `ThemedBackground` are applied t
 |---------|--------|--------|
 | `DEFAULT_GET_STAKE_BANNER_TAPPED` | [`openGetStake()`](../../Shared/Views/ChatList/ChatListView.swift#L408) | the dismiss X appears from then on, while there are chats |
 | `DEFAULT_GET_STAKE_BANNER_DISMISSED` | the dismiss X | hides the banner in both placements |
+| `DEFAULT_SUPPORTER_BANNER_TAPPED` | tapping the supporter pitch | the pitch's dismiss X appears from then on |
+| `DEFAULT_SUPPORTER_BANNER_SHOWN` | the pitch's dismiss X, through its "You can support SimpleX later in Settings." alert, and a successful code redemption | hides the pitch |
+
+The two badge alert banners always offer the X; only the pitch waits to be tapped once, so a user who has not looked at it cannot dismiss it unseen.
 
 Both are in `hintDefaults`, so "Reset all hints" in the developer settings restores the banner. The X is never offered in the onboarding branch, so the banner cannot be dismissed before the user has a chat.
 

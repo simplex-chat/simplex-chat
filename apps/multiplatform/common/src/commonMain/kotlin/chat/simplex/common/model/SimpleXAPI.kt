@@ -193,6 +193,7 @@ class AppPreferences {
   val oneHandUICardShown = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN, false)
   val addressCreationCardShown = mkBoolPreference(SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN, false)
   val supporterBannerShown = mkBoolPreference(SHARED_PREFS_SUPPORTER_BANNER_SHOWN, false)
+  val supporterBannerTapped = mkBoolPreference(SHARED_PREFS_SUPPORTER_BANNER_TAPPED, false)
   val getStakeBannerTapped = mkBoolPreference(SHARED_PREFS_GET_STAKE_BANNER_TAPPED, false)
   val getStakeBannerDismissed = mkBoolPreference(SHARED_PREFS_GET_STAKE_BANNER_DISMISSED, false)
   val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
@@ -277,6 +278,7 @@ class AppPreferences {
     hintPref(oneHandUICardShown, false),
     hintPref(addressCreationCardShown, false),
     hintPref(supporterBannerShown, false),
+    hintPref(supporterBannerTapped, false),
     hintPref(getStakeBannerTapped, false),
     hintPref(getStakeBannerDismissed, false),
     hintPref(liveMessageAlertShown, false),
@@ -471,6 +473,7 @@ class AppPreferences {
     private const val SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN = "OneHandUICardShown"
     private const val SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN = "AddressCreationCardShown"
     private const val SHARED_PREFS_SUPPORTER_BANNER_SHOWN = "SupporterBannerShown"
+    private const val SHARED_PREFS_SUPPORTER_BANNER_TAPPED = "SupporterBannerTapped"
     private const val SHARED_PREFS_GET_STAKE_BANNER_TAPPED = "GetStakeBannerTapped"
     private const val SHARED_PREFS_GET_STAKE_BANNER_DISMISSED = "GetStakeBannerDismissed"
     private const val SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT = "ShowMuteProfileAlert"

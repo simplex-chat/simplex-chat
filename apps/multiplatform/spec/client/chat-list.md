@@ -346,6 +346,10 @@ The list has a single banner slot, filled by an `if`/`else if` chain in priority
 |------------|--------|--------|
 | `getStakeBannerTapped` | `openGetStake()` | the dismiss X appears from then on, while there are chats |
 | `getStakeBannerDismissed` | the dismiss X | hides the banner in both placements |
+| `supporterBannerTapped` | tapping the supporter pitch | the pitch's dismiss X appears from then on |
+| `supporterBannerShown` | the pitch's dismiss X, through its "You can support SimpleX later in Settings." alert, and a successful code redemption | hides the pitch |
+
+The two badge alert banners always offer the X; only the pitch waits to be tapped once, so a user who has not looked at it cannot dismiss it unseen.
 
 Both are in `AppPreferences.hintPreferences`, so "Reset all hints" restores the banner. The X is never offered below the onboarding cards, so the banner cannot be dismissed before the user has a chat.
 
