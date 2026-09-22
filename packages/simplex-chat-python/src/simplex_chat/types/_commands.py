@@ -498,7 +498,7 @@ class APIConnect(TypedDict):
 
 
 def APIConnect_cmd_string(self: APIConnect) -> str:
-    return '/_connect ' + str(self['userId']) + ((' ' + T.CreatedConnLink_cmd_string(self.get('preparedLink_'))) if self.get('preparedLink_') is not None else '')
+    return '/_connect ' + str(self['userId']) + (' incognito=on' if self['incognito'] else '') + ((' ' + T.CreatedConnLink_cmd_string(self.get('preparedLink_'))) if self.get('preparedLink_') is not None else '')
 
 APIConnect_Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 

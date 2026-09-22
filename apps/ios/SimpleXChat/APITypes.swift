@@ -946,6 +946,20 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
     }
 }
 
+public func badgeServiceErrorText(_ code: BadgeServiceErrorCode) -> String? {
+    switch code {
+    case .codeInvalid: NSLocalizedString("This code was not recognized.", comment: "alert message")
+    case .codeUsed: NSLocalizedString("This code has already been used.", comment: "alert message")
+    case .codeExpired: NSLocalizedString("This code has expired.", comment: "alert message")
+    case .rateLimited: NSLocalizedString("Too many attempts. Please try again later.", comment: "alert message")
+    case .unsupportedVersion: NSLocalizedString("This app version is too old for the badge service. Please update the app.", comment: "alert message")
+    case .unknownPurchaseKey: NSLocalizedString("The badge service does not recognize this badge.", comment: "alert message")
+    case .internalError: NSLocalizedString("The badge service reported an internal error.", comment: "alert message")
+    case .badRequest, .unknownOfferId, .offerDisabled, .offerMismatch, .productUnavailable,
+         .paymentNotEntitled, .paymentPending, .providerUnavailable, .receiptInvalid, .receiptUsed, .unknown: nil
+    }
+}
+
 public enum StoreError: Decodable, Hashable {
     case duplicateName
     case userNotFound(userId: Int64)

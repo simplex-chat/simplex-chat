@@ -1872,6 +1872,15 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           UPDATE groups
+          SET member_priv_key = COALESCE(member_priv_key, ?), updated_at = ?
+          WHERE group_id = ?
+          RETURNING member_priv_key
+        
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+          UPDATE groups
           SET relay_request_inv_id = ?,
               relay_request_group_link = ?,
               relay_request_peer_chat_min_version = ?,
@@ -4025,6 +4034,18 @@ Plan:
 SCAN group_members
 
 Query: 
+        SELECT l.entry_uuid, l.change_months, l.balance_months, l.balance_start_ts, l.balance_anchor_ts, l.balance_badge_type,
+               l.was_paused_since, l.service_created_at, l.entry_type, l.entry_credit_type, l.entry_debit_type, l.entry_type_value
+        FROM badge_ledger l
+        JOIN badge_purchases p ON p.badge_purchase_id = l.badge_purchase_id
+        WHERE l.badge_purchase_id = ? AND p.user_id = ?
+        ORDER BY l.entry_id
+      
+Plan:
+SEARCH p USING COVERING INDEX idx_badge_purchases_user (user_id=? AND rowid=?)
+SEARCH l USING INDEX idx_badge_ledger_purchase (badge_purchase_id=?)
+
+Query: 
         SELECT m.group_member_id
         FROM group_members m
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
@@ -4040,7 +4061,8 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
         SELECT p.badge_purchase_id, p.purchase_key, p.purchase_priv_key, p.master_key, p.current_badge_type,
                (CASE WHEN u.shown_badge_id = p.badge_purchase_id THEN 1 ELSE 0 END),
-               p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until
+               p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until,
+               p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
@@ -5130,6 +5152,14 @@ Plan:
 SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH s USING COVERING INDEX idx_snd_files_file_id (file_id=?) LEFT-JOIN
 SEARCH r USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
+      UPDATE badge_purchases
+      SET issue_failed_since = COALESCE(issue_failed_since, ?), issue_error_at = ?, issue_error = ?
+      WHERE badge_purchase_id = ?
+    
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE chat_items
@@ -7555,6 +7585,10 @@ Query: SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1
 Plan:
 SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
 
+Query: SELECT issue_failed_since, issue_error FROM badge_purchases
+Plan:
+SCAN badge_purchases
+
 Query: SELECT last_insert_rowid()
 Plan:
 SCAN CONSTANT ROW
@@ -7575,7 +7609,19 @@ Query: SELECT member_id FROM group_members WHERE member_role = ? LIMIT 1
 Plan:
 SCAN group_members
 
+Query: SELECT member_priv_key FROM groups
+Plan:
+SCAN groups
+
 Query: SELECT member_pub_key FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
+
+Query: SELECT member_pub_key FROM group_members WHERE member_category = 'host'
+Plan:
+SCAN group_members
+
+Query: SELECT member_pub_key FROM group_members WHERE member_category = 'user'
 Plan:
 SCAN group_members
 
@@ -7679,6 +7725,10 @@ Query: SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? A
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT service_created_at, balance_start_ts FROM badge_ledger ORDER BY entry_id
+Plan:
+SCAN badge_ledger
+
 Query: SELECT shared_msg_id FROM chat_items WHERE shared_msg_id IS NOT NULL ORDER BY chat_item_id DESC LIMIT 1
 Plan:
 SCAN chat_items
@@ -7724,6 +7774,14 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE badge_purchases SET alert_acked_kind = ?, alert_acked_episode = ?, alert_snooze_until = ? WHERE badge_purchase_id = ? AND user_id = ?
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_purchases SET issue_failed_since = NULL, issue_error_at = NULL, issue_error = NULL WHERE badge_purchase_id = ?
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -7951,6 +8009,14 @@ Query: UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_m
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE group_members SET member_pub_key = NULL WHERE member_category = 'host'
+Plan:
+SCAN group_members
+
+Query: UPDATE group_members SET member_pub_key = NULL WHERE member_category = 'user'
+Plan:
+SCAN group_members
+
 Query: UPDATE group_members SET member_relations_vector = set_member_vector_new_relation(member_relations_vector, ?, ?, ?), updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -8043,6 +8109,10 @@ Query: UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = 
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE groups SET member_priv_key = NULL
+Plan:
+SCAN groups
+
 Query: UPDATE groups SET members_require_attention=1 WHERE group_id=?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
@@ -8063,7 +8133,7 @@ Query: UPDATE groups SET request_shared_msg_id = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE groups SET root_pub_key = ?, member_priv_key = ?, updated_at = ? WHERE group_id = ?
+Query: UPDATE groups SET root_pub_key = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 

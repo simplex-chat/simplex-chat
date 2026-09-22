@@ -11,6 +11,9 @@ import SimpleXChat
 
 struct BadgesYourBadgeView: View {
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var chatModel: ChatModel
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     let badgeState: BadgeState
     var showsAsSheet: Bool = false
 
@@ -46,7 +49,56 @@ struct BadgesYourBadgeView: View {
                             .modifier(ThemedBackground())
                     } label: {
                         settingsRow("info.circle", color: theme.colors.secondary) {
-                            Text("How private badges work")
+                            Text("How badges protect your privacy")
+                        }
+                    }
+                }
+                if let issueError = badgeState.issueError {
+                    Section {
+                        Text(issueError.reason.text)
+                            .foregroundColor(theme.colors.secondary)
+                        infoRow("Since", badgeTimestamp(issueError.failedSince))
+                        if issueError.lastAttemptAt != issueError.failedSince {
+                            infoRow("Last attempt", badgeTimestamp(issueError.lastAttemptAt))
+                        }
+                        settingsRow("number", color: theme.colors.secondary) {
+                            Button("Contact SimpleX team") {
+                                dismiss()
+                                DispatchQueue.main.async {
+                                    // simplexTeamURL targets this same app; route to the in-app connect flow
+                                    ChatModel.shared.appOpenUrl = simplexTeamURL
+                                }
+                            }
+                        }
+                    } header: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundColor(.red)
+                            Text("Error")
+                        }
+                    }
+                }
+                if developerTools {
+                    Section(header: Text("Credential").foregroundColor(theme.colors.secondary)) {
+                        if let badge = chatModel.currentUser?.profile.localBadge {
+                            infoRow("Status", badge.status.rawValue)
+                            infoRow("Expires", badgeTimestamp(badge.badge.badgeExpiry))
+                        }
+                        infoRow("Months left", "\(badgeState.monthsLeft)")
+                        infoRow("Purchase ID", "\(badgeState.badgePurchaseId)")
+                        if let nextWakeAt = badgeState.nextWakeAt {
+                            infoRow("Next check", badgeTimestamp(nextWakeAt))
+                        }
+                        if let issueError = badgeState.issueError {
+                            infoRow("Error", issueError.reason.tag)
+                        }
+                        Button("Copy purchase key") {
+                            UIPasteboard.general.string = badgeState.purchaseKey
+                        }
+                        NavigationLink {
+                            BadgesLedgerView(badgeState: badgeState)
+                        } label: {
+                            Text("Badge ledger")
                         }
                     }
                 }
@@ -56,6 +108,10 @@ struct BadgesYourBadgeView: View {
         .navigationTitle(showsAsSheet ? "" : "Your badge")
         .navigationBarTitleDisplayMode(showsAsSheet ? .inline : .large)
         .modifier(ThemedBackground(grouped: true))
+    }
+
+    private func badgeTimestamp(_ date: Date) -> String {
+        DateFormatter.localizedString(from: date, dateStyle: .medium, timeStyle: .short)
     }
 }
 

@@ -1538,15 +1538,15 @@ Connect via prepared SimpleX link. The link can be 1-time invitation link, conta
 **Syntax**:
 
 ```
-/_connect <userId>[ <str(preparedLink_)>]
+/_connect <userId>[ incognito=on][ <str(preparedLink_)>]
 ```
 
 ```javascript
-'/_connect ' + userId + (preparedLink_ ? ' ' + CreatedConnLink.cmdString(preparedLink_) : '') // JavaScript
+'/_connect ' + userId + (incognito ? ' incognito=on' : '') + (preparedLink_ ? ' ' + CreatedConnLink.cmdString(preparedLink_) : '') // JavaScript
 ```
 
 ```python
-'/_connect ' + str(userId) + ((' ' + CreatedConnLink_cmd_string(preparedLink_)) if preparedLink_ is not None else '') # Python
+'/_connect ' + str(userId) + (' incognito=on' if incognito else '') + ((' ' + CreatedConnLink_cmd_string(preparedLink_)) if preparedLink_ is not None else '') # Python
 ```
 
 **Responses**:

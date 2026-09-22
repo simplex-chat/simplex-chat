@@ -64,7 +64,7 @@ templateEngineOverride: njk
             --cf-area-off: calc((var(--sec-h) - 100svh) / 2);
         }
 
-        @media screen and (max-width: 959px) {
+        @media screen and (max-width: 959px) and (orientation: portrait) {
             :root {
                 --cf-grad-light: linear-gradient(30deg, #e8f3ff 0%, #c0e2ff 40%, #e9ffff 80%, #ffefd6 90%);
                 --cf-grad-dark: linear-gradient(30deg, #000000 0%, #131d49 52%, #3f5598 65%, #c3faff 85%, #fff6e0 90%);
@@ -193,11 +193,12 @@ templateEngineOverride: njk
             margin-top: calc(var(--sec-vhu) * 3);
             max-width: calc(var(--sec-vwu) * 40);
         }
+        .cf-hero .lead-short { display: none; }
 
         .cf-stats {
             display: flex;
             gap: calc(var(--sec-vwu) * 5);
-            margin-top: calc(var(--sec-vhu) * 6);
+            margin-top: calc(var(--sec-vhu) * 4.67);
             position: relative;
             top: calc(var(--sec-vhu) * 2);
         }
@@ -218,7 +219,61 @@ templateEngineOverride: njk
             color: #dfeaff;
         }
 
-        .cf-hero .cf-live-link { display: inline-block; margin-top: calc(var(--sec-vhu) * 5); font-size: calc(var(--sec-vwu) * 2.2); position: relative; top: calc(var(--sec-vhu) * 1.5); }
+        .cf-hero-offer {
+            position: relative;
+            margin-top: calc(var(--sec-vhu) * 6.3);
+            width: calc(var(--sec-vwu) * 56);
+        }
+        .cf-hero-offer p { font-family: "Manrope", sans-serif; }
+        .cf-hero-offer .cf-offer-lead {
+            font-weight: 600;
+            font-size: calc(var(--sec-vwu) * 2.1);
+            line-height: 1.4;
+            color: #ffffff;
+            font-variant-numeric: tabular-nums;
+        }
+        .cf-hero-offer .cf-offer-lead b {
+            font-weight: 700;
+            background: linear-gradient(90deg, #019bfe 0%, #64fdff 58%, #c8feff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+        }
+        .cf-hero-offer .cf-offer-lead span { white-space: nowrap; }
+        .cf-hero-offer .cf-offer-terms {
+            font-weight: 300;
+            font-size: calc(var(--sec-vwu) * 1.55);
+            line-height: 1.55;
+            color: #dfeaff;
+            margin-top: calc(var(--sec-vhu) * 0.4);
+        }
+        .cf-hero-offer .cf-offer-terms a { position: relative; color: inherit; text-decoration: none; }
+        .cf-hero-offer .cf-offer-terms abbr { text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; }
+        .cf-hero-offer .cf-offer-terms a::after {
+            content: attr(data-tip);
+            position: absolute;
+            left: calc(100% + 12px);
+            top: 50%;
+            transform: translateY(-50%);
+            white-space: nowrap;
+            padding: 7px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, .18);
+            background: rgba(5, 9, 32, .96);
+            color: #dfeaff;
+            font-family: "Manrope", sans-serif;
+            font-weight: 400;
+            font-size: calc(var(--sec-vwu) * 1.1);
+            line-height: 1.4;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .12s ease;
+            pointer-events: none;
+        }
+        .cf-hero-offer .cf-offer-terms a:hover::after,
+        .cf-hero-offer .cf-offer-terms a:focus-visible::after { opacity: 1; visibility: visible; }
+
 
         /* ---- close: same left-aligned layout as the hero ---- */
         .cf-close .area { position: relative; display: flex; align-items: flex-end; padding: 0 calc(var(--sec-vwu) * 7.5) calc(var(--sec-vhu) * 22) 0; }
@@ -261,7 +316,6 @@ templateEngineOverride: njk
             width: fit-content;
         }
         .cf-close .cf-hero-cta { margin-top: calc(var(--sec-vhu) * 7); }
-        .cf-close .cf-live-link { display: inline-block; margin-top: calc(var(--sec-vhu) * 4.5); font-size: calc(var(--sec-vwu) * 2.2); position: relative; top: 0; }
 
         .cf-phone {
             position: absolute;
@@ -315,10 +369,9 @@ templateEngineOverride: njk
             background: linear-gradient(180deg, #00F0FF 0%, #00C7FF 38%, #008FFF 100%);
             color: #ffffff;
         }
-        .cf-hero-invest-link {
+        .cf-cta-link {
             display: flex;
             align-items: center;
-            gap: calc(var(--sec-vwu) * 0.7);
             font-family: "Manrope", sans-serif;
             font-weight: 400;
             font-size: calc(var(--sec-vwu) * 1.5);
@@ -329,10 +382,8 @@ templateEngineOverride: njk
             -webkit-text-fill-color: transparent;
             background-clip: text;
             color: transparent;
-            --wf-capital-nav-logo-fill: #64fdff;
         }
-        .cf-hero-invest-link svg { height: calc(var(--sec-vwu) * 2.1); width: auto; display: block; transform: translateY(calc(var(--sec-vwu) * -0.25)); }
-        .cf-hero-invest-link:focus-visible { outline: 2px solid #ffffff; outline-offset: 4px; border-radius: 4px; }
+        .cf-cta-link:focus-visible { outline: 2px solid #ffffff; outline-offset: 4px; border-radius: 4px; }
         /* the same link twice: beside the button (desktop), in the hero's top
            right corner (mobile). Only one of the two is ever displayed. */
         .cf-hero-corner { display: none; }
@@ -370,7 +421,6 @@ templateEngineOverride: njk
         .cf-pill:active { transform: translateY(1px); }
 
         .cf-top { top: 30px; }
-        .cf-bottom { bottom: 30px; }
 
         .cf-primary {
             background: linear-gradient(90deg, #019bfe 0%, #2e3fa0 100%);
@@ -380,42 +430,19 @@ templateEngineOverride: njk
         .cf-primary:hover { filter: brightness(1.07); }
         .cf-primary:focus-visible { outline-color: #ffffff; }
 
-        .cf-secondary {
-            background: #ffffff;
-            color: #006cd7;
-            border: 1px solid rgba(2, 55, 137, .15);
-            --wf-capital-nav-logo-fill: #006cd7;
-        }
-        .cf-secondary:hover { box-shadow: 0 0 0 1px #80b6eb; }
-
         .cf-pill svg { height: 30px; width: auto; display: block; transform: translateY(-3.5px); }
 
-        @media screen and (min-width: 960px) {
+        @media screen and (min-width: 960px), screen and (max-width: 959px) and (orientation: landscape) {
             .cf-pill { width: 252px; justify-content: center; }
         }
 
-        .cf-live-link {
-            font-family: "Manrope", sans-serif;
-            font-weight: 300;
-            font-size: calc(var(--sec-vwu) * 1.9);
-            background: linear-gradient(90deg, #019bfe 0%, #64fdff 58%, #c8feff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            color: transparent;
-            text-decoration: none;
-        }
-        .cf-live-link:focus-visible { outline: 2px solid #019bfe; outline-offset: 2px; }
-
         .cf-pill,
-        .cf-live-link,
-        .cf-hero-invest-link,
+        .cf-cta-link,
         .cf .text-container a.gradient-text { transition: none; }
-        .cf-live-link:hover,
-        .cf-hero-invest-link:hover,
+        .cf-cta-link:hover,
         .cf .text-container a.gradient-text:hover { filter: brightness(1.12); }
 
-        @media screen and (min-width: 960px) {
+        @media screen and (min-width: 960px), screen and (max-width: 959px) and (orientation: landscape) {
             .cf-network .text-container h2 { max-width: calc(var(--sec-vwu) * 23.5) !important; }
             .cf-network .text-container p { max-width: calc(var(--sec-vwu) * 31) !important; }
             .cf-network .text-container a { max-width: calc(var(--sec-vwu) * 31) !important; }
@@ -455,7 +482,7 @@ templateEngineOverride: njk
         #navbar.on-light > a.logo.logo-light { display: flex; }
         #navbar.on-light > a.logo.logo-dark { display: none; }
 
-        @media screen and (min-width: 960px) {
+        @media screen and (min-width: 960px), screen and (max-width: 959px) and (orientation: landscape) {
             header#navbar { height: 74px; }
             header#navbar > a.logo {
                 top: 0;
@@ -475,15 +502,17 @@ templateEngineOverride: njk
                 opacity: 1 !important;
                 transform: none !important;
                 background: transparent !important;
-                height: 54px !important;
             }
+        }
+        @media screen and (max-width: 959px) and (orientation: portrait) {
+            header#navbar { height: 54px !important; }
             header#navbar > a.logo { top: 0 !important; height: 100% !important; align-items: center; transform: translateY(var(--cf-nav-shift)); }
             [dir="ltr"] header#navbar > a.logo { padding-left: var(--cf-text-pad); }
             header#navbar > a.logo img { height: 31.5px; }
         }
 
         /* ---- mobile: portrait art on top, text at the bottom (home page system) ---- */
-        @media screen and (max-width: 959px) {
+        @media screen and (max-width: 959px) and (orientation: portrait) {
             .cf .text-container h2 { font-size: calc(var(--sec-vwu) * 9.4); }
             .cf .text-container {
                 margin-left: 0 !important;
@@ -599,10 +628,8 @@ templateEngineOverride: njk
             .cf-hero h1,
             .cf-hero .lead,
             .cf-hero .cf-stats,
-            .cf-hero .cf-live-link,
             .cf-close h1,
-            .cf-close .cf-close-call,
-            .cf-close .cf-live-link {
+            .cf-close .cf-close-call {
                 padding-left: var(--cf-text-inset);
                 padding-right: var(--cf-text-inset);
             }
@@ -627,12 +654,12 @@ templateEngineOverride: njk
                 --cf-phone-h: calc(var(--cf-phone-w) / 0.4914);
                 --cf-phone-part: 0.55;
                 /* bottom of the hero text block, measured from the section top */
-                --cf-hero-text-b: calc(var(--cf-top-base) + max(0px, calc(-1 * var(--cf-area-off))) + 78.5vw);
+                --cf-hero-text-b: calc(var(--cf-top-base) + max(0px, calc(-1 * var(--cf-area-off))) + 76.7vw);
                 /* the arc crest starts 0.2678 down the cover image, which is
                    2.349 phone widths tall and sits 0.4034 phone heights above
                    the phone top: the phone may rise no higher than this */
                 --cf-phone-ceiling: calc(var(--cf-hero-text-b) + var(--cf-phone-w) * 0.1917);
-                --cf-phone-show: max(calc(var(--cf-phone-h) * 0.15), min(calc(var(--cf-phone-h) * var(--cf-phone-part)), calc(100svh - var(--cf-phone-ceiling))));
+                --cf-phone-show: max(52vw, min(calc(var(--cf-phone-h) * var(--cf-phone-part)), calc(100svh - var(--cf-phone-ceiling))));
                 --cf-phone-top: calc(100svh - var(--cf-phone-show) + var(--cf-area-off));
                 --cf-fade-ext: max(0px, calc(110lvh - 100svh));
                 /* dvh so the fade rides with the button as the chrome moves */
@@ -653,10 +680,11 @@ templateEngineOverride: njk
             .cf-close .cf-hero-text { display: contents; }
             .cf-hero h1,
             .cf-hero .lead,
-            .cf-hero .cf-stats,
-            .cf-hero .cf-live-link { position: relative; z-index: 4; }
-            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 9.7); }
+            .cf-hero .cf-stats { position: relative; z-index: 4; }
+            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 8.54); }
             .cf-hero .lead { font-size: calc(var(--sec-vwu) * 3.55); max-width: none; margin-top: calc(var(--sec-vhu) * 2); }
+            .cf-hero .lead:not(.lead-short) { display: none; }
+            .cf-hero .lead-short { display: block; font-size: calc(var(--sec-vwu) * 4.5); white-space: nowrap; }
             .cf-close .area { padding: calc(var(--cf-top) + var(--sec-vhu) * 14) var(--cf-gutter) 0; }
             /* crest a fixed 78px from the section top */
             section.page.cf.cf-close {
@@ -664,8 +692,7 @@ templateEngineOverride: njk
             }
             /* centred like the home page, the two heading lines set apart */
             .cf-close h1,
-            .cf-close .cf-close-call,
-            .cf-close .cf-live-link { text-align: center; }
+            .cf-close .cf-close-call { text-align: center; }
             /* the heading rides up with the arc; nothing below it moves */
             .cf-close h1 { font-size: calc(var(--sec-vwu) * 8.7); font-weight: 700; position: relative; top: -32px; }
             .cf-close-l1 { font-size: calc(var(--sec-vwu) * 11.745); }
@@ -684,12 +711,23 @@ templateEngineOverride: njk
                 padding: calc(var(--sec-vhu) * 2.5) calc(var(--sec-vwu) * 5);
             }
             .cf-close-offer p { font-size: calc(var(--sec-vwu) * 3.6); }
-            .cf-close .cf-live-link { display: block; font-size: calc(var(--sec-vwu) * 5); margin-top: calc(var(--sec-vhu) * 2.5); top: 0; }
             .cf-stats { top: 0; gap: calc(var(--sec-vwu) * 8); margin-top: calc(var(--sec-vhu) * 3); }
+            .cf-hero .cf-hero-offer {
+                position: relative;
+                top: 0;
+                width: auto;
+                z-index: 4;
+                margin-top: calc(var(--sec-vhu) * 2);
+                padding: 10px var(--cf-text-pad) 12px;
+                margin-left: calc(-1 * var(--cf-gutter));
+                margin-right: calc(-1 * var(--cf-gutter));
+                background: linear-gradient(to bottom, rgba(2, 7, 29, 0) 0%, rgba(2, 7, 29, var(--cf-offer-veil, 0)) 22%, rgba(2, 7, 29, var(--cf-offer-veil, 0)) 78%, rgba(2, 7, 29, 0) 100%);
+            }
+            .cf-hero-offer .cf-offer-lead { font-size: calc(var(--sec-vwu) * 4.2); line-height: 1.3; white-space: nowrap; }
+            .cf-hero-offer .cf-offer-terms { font-size: calc(var(--sec-vwu) * 4); margin-top: calc(var(--sec-vhu) * 0.8); }
             .cf-stat img { width: calc(var(--sec-vwu) * 8); }
             .cf-stat b { font-size: calc(var(--sec-vwu) * 6.5); }
             .cf-stat span { font-size: calc(var(--sec-vwu) * 3.4); }
-            .cf-hero .cf-live-link { margin-top: calc(var(--sec-vhu) * 2); top: 0; font-size: calc(var(--sec-vwu) * 5); }
             /* the pill sits on the bottom edge and rides with the chrome:
                dvh tracks the visible bottom, svh the box the area is sized from */
             .cf-hero .cf-hero-cta,
@@ -702,17 +740,16 @@ templateEngineOverride: njk
             }
             /* over the phone and the gradient covering it */
             .cf-hero .cf-hero-cta { z-index: 5; }
-            .cf-hero-cta .cf-pill { width: 100%; height: 48px; font-size: 16px; }
+            .cf-hero-cta .cf-pill { width: 100%; height: 48px; font-size: 16px; gap: 9px; }
+            .cf-hero-cta .cf-pill svg { height: 30px; transform: translateY(-3.5px); }
             /* one link, two placements: the top right corner of the hero, and
                its own button-sized target above the pill on the closing section */
-            .cf-hero-invest-link {
+            .cf-cta-link {
                 height: 48px;
                 font-size: calc(var(--sec-vwu) * 4.6);
-                gap: calc(var(--sec-vwu) * 1.9);
             }
-            .cf-hero-invest-link svg { height: calc(var(--sec-vwu) * 6.5); transform: translateY(calc(var(--sec-vwu) * -0.7)); }
-            .cf-close .cf-hero-invest-link { justify-content: center; }
-            .cf-hero .cf-hero-cta .cf-hero-invest-link { display: none; }
+            .cf-close .cf-cta-link { justify-content: center; }
+            .cf-hero .cf-hero-cta .cf-cta-link { display: none; }
             /* a child of the section, so its reference is the section's top
                edge, which the band raises by --cf-band-shift, as with the arc.
                z-index clears .area, which is 11 and covers this corner. */
@@ -752,9 +789,7 @@ templateEngineOverride: njk
             }
 
             .cf-pill { font-size: 16px; }
-            .cf-bottom { top: calc(5px + var(--cf-nav-shift)); right: 16px; bottom: auto; padding: 0 18px; }
             .cf-top { top: auto; left: 16px; right: 16px; bottom: var(--cf-cta-bottom); height: 48px; justify-content: center; }
-            .cf-live-link { font-size: calc(var(--sec-vwu) * 4.2); }
             .cf .text-container a.gradient-text { font-weight: 400; }
         }
 
@@ -781,24 +816,22 @@ templateEngineOverride: njk
         .cf-tag .n { font-weight: 700; font-size: calc(var(--sec-vwu) * 1.5); line-height: 1.35; }
         .cf-tag .v { font-weight: 500; font-size: calc(var(--sec-vwu) * 1.2); line-height: 1.45; }
         .cf-tag .v b { font-weight: 700; }
-        @media screen and (min-width: 960px) {
+        @media screen and (min-width: 960px), screen and (max-width: 959px) and (orientation: landscape) {
             .cf-tags-art,
             .cf-art { display: none; }
         }
-        @media screen and (max-width: 959px) {
+        @media screen and (max-width: 959px) and (orientation: portrait) {
             .cf-tag .n { font-size: 3.54cqh; line-height: 1.3; }
         }
 
         /* 320pt phones: keep the headline at three lines */
-        @media screen and (max-width: 330px) {
-            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 9.3); }
+        @media screen and (max-width: 330px) and (orientation: portrait) {
+            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 8.18); }
         }
 
-        /* narrow phones: keep the corner link and the pill clear of the logo */
-        @media screen and (max-width: 389px) {
+        /* narrow phones: keep the corner link clear of the logo */
+        @media screen and (max-width: 389px) and (orientation: portrait) {
             header#navbar > a.logo img { height: 24px; }
-            .cf-bottom { font-size: 12px; padding: 0 12px; height: 40px; }
-            .cf-bottom svg { height: 22px; transform: translateY(-2.5px); }
             .cf-hero-corner { height: 40px; }
             .cf-tag .v { font-size: 2.96cqh; line-height: 1.4; }
         }
@@ -827,7 +860,7 @@ templateEngineOverride: njk
         .cf-fine-links a { color: #9fb2d8; text-decoration: none; }
         .cf-fine-links a:hover { color: #ffffff; }
 
-        @media screen and (max-width: 959px) {
+        @media screen and (max-width: 959px) and (orientation: portrait) {
             /* padding-bottom comes from .safari-ios section.page, which a
                fit-content footer does not need */
             section.page.cf.cf-footer { height: fit-content; min-height: fit-content; padding-bottom: 0; }
@@ -957,10 +990,72 @@ templateEngineOverride: njk
             .cf-modal-panel h2 { font-size: 1.4rem; }
         }
         /* 320pt phones: the card's text column is narrower than the submit label */
-        @media screen and (max-width: 389px) {
+        @media screen and (max-width: 389px) and (orientation: portrait) {
             .cf-modal { padding: 24px 12px; }
             .cf-modal-panel { padding: 28px 20px; }
             .cf-form-submit { padding: 0 12px; font-size: 15px; }
+        }
+        @media screen and (max-width: 959px) and (orientation: landscape) {
+            :root {
+                --cover-bg-w: calc(min((3200 / 1920) * 100vw, (3200 / 1080) * 100svh));
+                --cover-bg-h: calc(min((1800 / 1920) * 100vw, (1800 / 1080) * 100svh));
+                --sec-w: calc(min((1920 / 1920) * 100vw, (1920 / 1080) * 100svh));
+                --sec-h: calc(min((1080 / 1920) * 100vw, (1080 / 1080) * 100svh));
+                --sec-vwu: calc(var(--sec-w) / 100);
+                --sec-vhu: calc(var(--sec-h) / 100);
+            }
+            html { scroll-snap-type: none; }
+            section.page.cf:not(.cf-footer),
+            html.safari-ios section.page.cf:not(.cf-footer),
+            html.chrome-ios section.page.cf:not(.cf-footer),
+            html.chrome-android section.page.cf:not(.cf-footer),
+            html.safari-ios section.page.cf.cf-current:not(.cf-footer),
+            html.chrome-ios section.page.cf.cf-current:not(.cf-footer) {
+                height: auto;
+                min-height: 100dvh;
+                margin-top: 0;
+                padding: 74px 0 0;
+                align-items: flex-start;
+            }
+            section.page.cf .area {
+                height: auto;
+                min-height: calc(100dvh - 74px);
+            }
+            .page .text-container {
+                height: auto;
+                min-height: calc(100dvh - 74px);
+                padding-top: calc(var(--sec-vhu) * 3);
+                padding-bottom: calc(var(--sec-vhu) * 3);
+            }
+            .page .text-container {
+                justify-content: center;
+                gap: calc(var(--sec-vhu) * 3.25);
+                margin-right: calc(var(--sec-vwu) * 7.5) !important;
+                margin-left: calc(var(--sec-vwu) * 7.5) !important;
+                padding-bottom: 0;
+                max-width: none !important;
+            }
+            .cf-right .text-container { margin-left: auto !important; }
+            .cf-left .text-container { margin-right: auto !important; }
+            .page .text-container h2 { font-size: calc(var(--sec-vwu) * 4.94); line-height: 1.05; }
+            .page .text-container p { font-weight: 200; font-size: calc(var(--sec-vwu) * 1.62); }
+            .page .text-container p span { font-weight: 500; }
+            .page .text-container a { font-weight: 200; font-size: calc(var(--sec-vwu) * 1.62); }
+            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 4.4); }
+            .cf-hero .lead:not(.lead-short) { display: none; }
+            .cf-hero .lead-short { display: block; margin-top: calc(var(--sec-vhu) * 2); }
+            .cf-hero .cf-hero-cta { margin-top: calc(var(--sec-vhu) * 3); }
+            .cf-hero .cf-stats { margin-top: calc(var(--sec-vhu) * 3); }
+            .cf-hero .area {
+                align-items: center;
+                padding: calc(var(--sec-vhu) * 2) 0 calc(var(--sec-vhu) * 6);
+            }
+            .cf-phone { top: calc(var(--sec-vhu) * 27.1); bottom: auto; }
+            section.page.cf.cf-hero,
+            section.page.cf.cf-close {
+                background-position: calc(50% + var(--sec-vwu) * 40.3) calc(74px + var(--sec-h) / 2 + var(--sec-vhu) * 2.2 - var(--cover-bg-h) / 2);
+            }
+            .cf-close .area { padding-bottom: calc(var(--sec-vhu) * 8); }
         }
     </style>
 </head>
@@ -985,11 +1080,12 @@ templateEngineOverride: njk
                 <div class="cf-hero-text">
                     <h1>The first and the only messaging network without any user IDs</h1>
                     <p class="lead">SimpleX Chat is building a messaging network unlike every major platform &mdash; without phone numbers, usernames, emails, or any user identifiers.</p>
+                    <p class="lead lead-short">No phone numbers, emails, or accounts.</p>
                     <div class="cf-hero-cta">
-                        <a class="cf-pill cf-primary" id="cf-hero-request" href="#request">Request our Pitch deck</a>
-                        <a class="cf-hero-invest-link" id="cf-hero-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
+                        <a class="cf-pill cf-primary" id="cf-hero-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
                             Invest on {{ wfLogo() }}
                         </a>
+                        <a class="cf-cta-link" id="cf-hero-subscribe" href="#request">Subscribe for updates</a>
                     </div>
                     <div class="cf-stats">
                         <div class="cf-stat">
@@ -998,33 +1094,34 @@ templateEngineOverride: njk
                         </div>
                         <div class="cf-stat">
                             <img src="/img/crowdfunding/p2p.png" alt="">
-                            <div><b>480K</b><span>Monthly users</span></div>
+                            <div><b>520K</b><span>Monthly users</span></div>
                         </div>
                     </div>
-                    <a class="cf-live-link" href="/livestream/">Join the livestream and Q&amp;A on Sep 15</a>
+                    <div class="cf-hero-offer" id="cf-offer">
+                        <p class="cf-offer-lead"><span id="cf-offer-what">SimpleX name for 7 years</span><span id="cf-offer-clock"></span></p>
+                        <p class="cf-offer-terms" id="cf-offer-terms">Invest $500+ by the end of September 22, <a href="https://en.wikipedia.org/wiki/Anywhere_on_Earth" target="_blank" rel="noopener" data-tip="Anywhere on Earth: UTC−12, the last time zone" aria-label="Anywhere on Earth: UTC−12, the last time zone"><abbr>AoE</abbr></a>.</p>
+                    </div>
                 </div>
                 <img class="cf-phone" src="/img/crowdfunding/phone.png" alt="">
                 <img class="cf-mask" src="/img/crowdfunding/phone-mask.png" alt="">
                 <div class="cf-hero-fade"></div>
             </div>
-            <a class="cf-hero-invest-link cf-hero-corner" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
-                Invest on {{ wfLogo() }}
-            </a>
+            <a class="cf-cta-link cf-hero-corner" href="#request">Subscribe for updates</a>
         </section>
 
         <!-- 1 · TRACTION -->
-        <section class="page cf cf-light cf-left cf-growth">
+        <section class="page cf cf-light cf-left cf-growth" data-section="growth">
             <div class="area">
                 <div class="text-container">
-                    <h2>480,000+ users with zero marketing spend</h2>
-                    <p>Hundreds of user posts, podcasts and videos and <span>$650,000 in user donations</span>, before any paid features.</p>
+                    <h2>520,000<br>monthly users</h2>
+                    <p>Grown with <span>zero marketing spend</span>: hundreds of user posts, podcasts and videos, and <span>$650,000 in user donations</span>, before any paid features.</p>
                     <p>Only <span>$1.7M investment over 4 years</span> &mdash; more capital efficient than most startups.</p>
                 </div>
             </div>
         </section>
 
         <!-- 2 · MARKET -->
-        <section class="page cf cf-dark cf-right cf-problem" id="identifiers">
+        <section class="page cf cf-dark cf-right cf-problem" id="identifiers" data-section="identifiers">
             <div class="area">
                 <div class="text-container">
                     <h2>Every other network can identify you</h2>
@@ -1036,13 +1133,13 @@ templateEngineOverride: njk
         </section>
 
         <!-- 3 · NETWORK, NOT AN APP -->
-        <section class="page cf cf-light cf-right cf-network" id="network">
+        <section class="page cf cf-light cf-right cf-network" id="network" data-section="network">
             <div class="area">
             <div class="cf-tags" aria-hidden="true">
                 <img class="cf-tags-art" src="/img/design_3/section-3-mobile-light.webp" alt="">
                 <div class="cf-tag" style="left: 40.8%; top: 70.1%;">
                     <div class="n">Users</div>
-                    <div class="v"><b>480,000</b> active monthly,</div>
+                    <div class="v"><b>520,000</b> active monthly,</div>
                     <div class="v">organic growth</div>
                 </div>
                 <div class="cf-tag" style="left: 45.8%; top: 47.6%;">
@@ -1077,7 +1174,7 @@ templateEngineOverride: njk
         </section>
 
         <!-- 4 · REVENUE -->
-        <section class="page cf cf-light cf-right cf-revenue">
+        <section class="page cf cf-light cf-right cf-revenue" data-section="revenue">
             <div class="area">
                 <div class="cf-art" aria-hidden="true"><img src="/img/design_3/section-4-mobile-light.webp" alt=""></div>
                 <div class="text-container">
@@ -1089,7 +1186,7 @@ templateEngineOverride: njk
         </section>
 
         <!-- 5 · CAN'T BE COPIED -->
-        <section class="page cf cf-light cf-left cf-moat">
+        <section class="page cf cf-light cf-left cf-moat" data-section="moat">
             <div class="area">
                 <div class="text-container">
                     <h2>Design advantage that can't be copied</h2>
@@ -1100,7 +1197,7 @@ templateEngineOverride: njk
         </section>
 
         <!-- 6 · BUILD ON -->
-        <section class="page cf cf-light cf-left cf-build" id="build">
+        <section class="page cf cf-light cf-left cf-build" id="build" data-section="build">
             <div class="area">
                 <div class="text-container">
                     <h2>A network others build on</h2>
@@ -1112,18 +1209,17 @@ templateEngineOverride: njk
         </section>
 
         <!-- 7 · CLOSE -->
-        <section class="page cf cf-dark cf-close" id="invest">
+        <section class="page cf cf-dark cf-close" id="invest" data-section="invest">
             <div class="area">
                 <div class="cf-hero-text">
                     <h1><span class="cf-close-l1">Get a stake</span><br><span class="cf-close-l2">in SimpleX Chat</span></h1>
                     <p class="cf-close-call">We are building a network that people own.<br>We invite you to invest and become part of it.</p>
                     <div class="cf-hero-cta">
-                        <a class="cf-pill cf-primary" href="#request">Request our Pitch deck</a>
-                        <a class="cf-hero-invest-link" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
+                        <a class="cf-pill cf-primary" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
                             Invest on {{ wfLogo() }}
                         </a>
+                        <a class="cf-cta-link" href="#request">Subscribe for updates</a>
                     </div>
-                    <a class="cf-live-link" href="/livestream/">Join the livestream and Q&amp;A on Sep 15</a>
                 </div>
                 <div class="cf-close-offer">
                     <p>Invest $500+ by September 22 and get a SimpleX public name for your channel or business for 7 years, ahead of public launch.</p>
@@ -1132,7 +1228,7 @@ templateEngineOverride: njk
         </section>
 
         <!-- 8 · FOOTER -->
-        <section class="page cf cf-footer">
+        <section class="page cf cf-footer" data-section="footer">
             <div class="cf-footer-inner">
                 <p class="cf-fine">This Regulation Crowdfunding offering is made available through Wefunder Portal LLC. This investment involves a high degree of risk, including the possible loss of your investment.</p>
                 <p class="cf-fine cf-fine-links">
@@ -1146,8 +1242,7 @@ templateEngineOverride: njk
     </div>
 
     <div class="cf-ctas">
-    <a class="cf-pill cf-top cf-primary" id="cf-cta-request" href="#request">Request our Pitch deck</a>
-    <a class="cf-pill cf-bottom cf-secondary" id="cf-cta-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
+    <a class="cf-pill cf-top cf-primary" id="cf-cta-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
         Invest on {{ wfLogo() }}
     </a>
     </div>
@@ -1195,16 +1290,6 @@ templateEngineOverride: njk
             window.addEventListener('resize', update);
             update();
         })();
-
-        (function cfFlip() {
-            if (new URLSearchParams(location.search).get('action') !== 'invest') return;
-            var req = document.getElementById('cf-cta-request');
-            var inv = document.getElementById('cf-cta-invest');
-            req.classList.remove('cf-top', 'cf-primary');
-            req.classList.add('cf-bottom', 'cf-secondary');
-            inv.classList.remove('cf-bottom', 'cf-secondary');
-            inv.classList.add('cf-top', 'cf-primary');
-        })();
     </script>
 
     <div class="cf-modal" id="ai-privacy">
@@ -1242,7 +1327,7 @@ templateEngineOverride: njk
         <div class="cf-modal-panel" role="dialog" aria-modal="true" aria-labelledby="request-title">
             <a class="cf-modal-close" href="#!" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 2 L22 22 M22 2 L2 22"/></svg></a>
             <div class="cf-modal-text">
-                <h2 id="request-title">Where to send the deck</h2>
+                <h2 id="request-title">Subscribe for SimpleX Chat updates</h2>
                 <p>We will send the deck and updates about the crowdfunding.</p>
                 <form class="cf-form" action="https://chat.us2.list-manage.com/subscribe/post?u=ddd892b258ae36e5438e6d4e1&amp;id=de405d59d2&amp;f_id=001ef8e3f0&amp;legacy_form=1" method="post" target="_blank">
                     <input type="text" name="FNAME" placeholder="Name (optional)" aria-label="Name, optional">
@@ -1293,6 +1378,219 @@ templateEngineOverride: njk
         </div>
     </div>
 
+    <script>
+        (function cfOffer() {
+            var offer = document.getElementById('cf-offer');
+            var what = document.getElementById('cf-offer-what');
+            var clock = document.getElementById('cf-offer-clock');
+            var terms = document.getElementById('cf-offer-terms');
+            if (!offer || !what || !clock || !terms) return;
+            var PHASES = [
+                { until: Date.UTC(2026, 8, 23, 12, 0, 0), what: 'SimpleX name for 7 years', terms: null },
+                { until: Date.UTC(2026, 10, 23, 12, 0, 0), what: 'SimpleX name for 5 years',
+                  terms: 'Invest $500+ while early bird terms last.' },
+                { until: Infinity, what: 'SimpleX name for 5 years',
+                  terms: 'Invest $500+ while early bird terms last.' }
+            ];
+            var shown = -1;
+            var digits = null;
+            var lead = what.parentNode;
+            var block = offer.parentNode;
+            var hero = block.closest('section');
+            var logos = document.querySelectorAll('#navbar .logo img');
+            function logoBottom() {
+                var bottom = 0;
+                for (var i = 0; i < logos.length; i++) { var r = logos[i].getBoundingClientRect(); if (r.height > 0) bottom = Math.max(bottom, r.bottom); }
+                return bottom;
+            }
+            var canvas = document.createElement('canvas').getContext('2d');
+            function metrics(el, text) {
+                var cs = getComputedStyle(el);
+                canvas.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+                var m = canvas.measureText(text);
+                if (m.fontBoundingBoxAscent === undefined) return null;
+                return { asc: m.fontBoundingBoxAscent, desc: m.fontBoundingBoxDescent, inkUp: m.actualBoundingBoxAscent, inkDown: m.actualBoundingBoxDescent, lineHeight: parseFloat(cs.lineHeight) };
+            }
+            var probe = document.createElement('span');
+            probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline;overflow:hidden';
+            function baselineOf(el) {
+                el.insertBefore(probe, el.firstChild);
+                var y = probe.getBoundingClientRect().bottom;
+                el.removeChild(probe);
+                return y;
+            }
+            function blockBaseline(el) { return baselineOf(el); }
+            function inlineBaseline(el) { return baselineOf(el); }
+            var raster = document.createElement('canvas');
+            function inkRows(el, text, baseline) {
+                var cs = getComputedStyle(el);
+                var size = parseFloat(cs.fontSize);
+                var top = Math.floor(baseline - size * 1.5), height = Math.ceil(size * 2.5), width = Math.ceil(size * text.length) + 8;
+                if (raster.width !== width || raster.height !== height) { raster.width = width; raster.height = height; }
+                var g = raster.getContext('2d');
+                g.clearRect(0, 0, width, height);
+                g.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+                g.fillStyle = '#fff';
+                g.textBaseline = 'alphabetic';
+                g.fillText(text, 4, baseline - top);
+                var px = g.getImageData(0, 0, width, height).data, first = -1, last = -1, y, x;
+                for (y = 0; y < height; y++) {
+                    for (x = 0; x < width; x++) { if (px[(y * width + x) * 4 + 3] > 150) { if (first < 0) first = y; last = y; break; } }
+                }
+                return first < 0 ? null : { top: top + first, bottom: top + last };
+            }
+            function statsInk(figures, labels) {
+                var top = Infinity, bottom = -Infinity, i, rows;
+                for (i = 0; i < figures.length; i++) {
+                    var mf = metrics(figures[i], figures[i].textContent);
+                    rows = mf && inkRows(figures[i], figures[i].textContent, blockBaseline(figures[i]));
+                    if (rows) top = Math.min(top, rows.top);
+                }
+                for (i = 0; i < labels.length; i++) {
+                    var body = labels[i].textContent.replace(/[gjpqy]/g, 'n');
+                    var ml = metrics(labels[i], body);
+                    rows = ml && inkRows(labels[i], body, inlineBaseline(labels[i]));
+                    if (rows) bottom = Math.max(bottom, rows.bottom);
+                }
+                return isFinite(top) && isFinite(bottom) ? { top: top, bottom: bottom } : null;
+            }
+            var phoneImg = document.querySelector('.cf-phone');
+            function veil() {
+                offer.style.removeProperty('--cf-offer-veil');
+                if (!narrow.matches || !phoneImg) return;
+                var phone = phoneImg.getBoundingClientRect();
+                var arcTop = phone.top - phone.height * 0.4034 + phone.width * 2.349 * 0.2678;
+                var need = offer.getBoundingClientRect().bottom + 8 - arcTop;
+                var alpha = Math.max(0, Math.min(1, need / 40)) * 0.82;
+                if (alpha > 0) offer.style.setProperty('--cf-offer-veil', alpha.toFixed(2));
+            }
+            function place() {
+                offer.style.marginTop = '';
+                block.style.transform = '';
+                veil();
+                if (narrow.matches) return;
+                var pill = block.querySelector('.cf-hero-cta .cf-pill');
+                var figures = block.querySelectorAll('.cf-stats .cf-stat b');
+                var labels = block.querySelectorAll('.cf-stats .cf-stat span');
+                var mo = metrics(lead, lead.textContent);
+                var ink = pill && figures.length && labels.length && mo ? statsInk(figures, labels) : null;
+                if (!ink) return;
+                var above = ink.top - Math.round(pill.getBoundingClientRect().bottom);
+                var text = lead.textContent;
+                var leadInkTop = blockBaseline(lead) - mo.inkUp;
+                var base = Math.round(parseFloat(getComputedStyle(offer).marginTop) + (ink.bottom + 1 + above) - leadInkTop);
+                var best = null;
+                for (var d = -3; d <= 3; d++) {
+                    offer.style.marginTop = (base + d) + 'px';
+                    var now = statsInk(figures, labels);
+                    var lit = inkRows(lead, text, blockBaseline(lead));
+                    if (!now || !lit) break;
+                    var below = lit.top - now.bottom - 1;
+                    if (best === null || Math.abs(below - above) < Math.abs(best.below - above)) best = { d: d, below: below };
+                    if (below === above) break;
+                }
+                if (best) offer.style.marginTop = (base + best.d) + 'px';
+                if (!hero) return;
+                var unit = Math.min(window.innerWidth * 1080 / 1920, window.innerHeight) / 100;
+                var top = block.getBoundingClientRect().top;
+                var minTop = logoBottom() + unit * 2;
+                var spare = hero.getBoundingClientRect().bottom - unit * 2 - block.getBoundingClientRect().bottom;
+                var down = Math.min(Math.max(0, minTop - top), Math.max(0, spare));
+                if (down > 0) block.style.transform = 'translateY(' + Math.round(down) + 'px)';
+            }
+            function two(n) { return (n < 10 ? '0' : '') + n; }
+            var leadShort = document.querySelector('.cf-hero .lead-short');
+            function fitLine(el) {
+                el.style.fontSize = '';
+                if (!narrow.matches) return;
+                var cs = getComputedStyle(el);
+                var base = parseFloat(cs.fontSize);
+                var box = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+                var range = document.createRange();
+                range.selectNodeContents(el);
+                var line = range.getBoundingClientRect().width;
+                if (base > 0 && box > 0 && line > 0) el.style.fontSize = (base * box / line).toFixed(2) + 'px';
+            }
+            function fit() {
+                fitLine(lead);
+                if (leadShort) fitLine(leadShort);
+            }
+            var narrow = window.matchMedia('(max-width: 959px) and (orientation: portrait)');
+            function left(ms) {
+                var total = Math.floor(ms / 1000);
+                var days = Math.floor(total / 86400);
+                var rest = total - days * 86400;
+                var hms = two(Math.floor(rest / 3600)) + ':' + two(Math.floor(rest / 60) % 60) + ':' + two(rest % 60);
+                return days > 0 ? days + (days === 1 ? ' day ' : ' days ') + hms : hms;
+            }
+            function tick() {
+                var now = Date.now();
+                var i = 0;
+                while (i < PHASES.length && now >= PHASES[i].until) i++;
+                var timed = PHASES[i].until !== Infinity;
+                var changed = i !== shown;
+                if (changed) {
+                    shown = i;
+                    what.textContent = PHASES[i].what + (timed ? ':' : '');
+                    if (PHASES[i].terms !== null) terms.textContent = PHASES[i].terms;
+                    if (!timed) { clock.textContent = ''; clearInterval(timer); fit(); return; }
+                }
+                if (!digits) {
+                    digits = document.createElement('b');
+                    clock.append(' ', digits, ' left');
+                    changed = true;
+                }
+                var text = left(PHASES[i].until - now);
+                if (text.length !== digits.textContent.length) changed = true;
+                digits.textContent = text;
+                if (changed) fit();
+            }
+            var timer = setInterval(tick, 1000);
+            tick();
+            place();
+            window.addEventListener('resize', function () { shown = -1; tick(); fit(); place(); });
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fit(); place(); });
+        })();
+    </script>
+    <script type="module">
+        import { init, track } from '/js/page.js'
+        init({ domain: 'simplex.chat', endpoint: 'https://api.simplex.chat/api/event', logging: false })
+        var sections = Array.prototype.slice.call(document.querySelectorAll('section.page.cf[data-section]'))
+        var seen = {}
+        var current = 'hero'
+        var watch = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return
+                var name = entry.target.dataset.section
+                current = name
+                if (seen[name]) return
+                seen[name] = true
+                track('Section', { props: { n: sections.indexOf(entry.target) + 1, name: name } })
+            })
+        }, { threshold: 0.4 })
+        sections.forEach(function (s) { watch.observe(s) })
+        var places = [['#cf-hero-invest', 'Invest', 'hero'], ['.cf-close .cf-primary', 'Invest', 'close'], ['.cf-fine-links a[href*="wefunder"]', 'Invest', 'footer'],
+            ['#cf-hero-subscribe', 'Subscribe', 'hero'], ['.cf-hero-corner', 'Subscribe', 'corner'], ['.cf-close .cf-cta-link', 'Subscribe', 'close'],
+            ['#cf-offer-terms a', 'AoE', 'hero']]
+        places.forEach(function (p) {
+            var el = document.querySelector(p[0])
+            if (el) el.addEventListener('click', function () { track(p[1], { props: { place: p[2] } }) })
+        })
+        var bar = document.querySelector('#cf-cta-invest')
+        if (bar) bar.addEventListener('click', function () { track('Invest', { props: { place: 'bar', section: current } }) })
+        var exits = [['#navbar .logo', 'home', 'logo'], ['.cf-fine-links a[href="/"]', 'home', 'footer'], ['.cf-fine-links a[href="/privacy"]', 'privacy', 'footer'],
+            ['.cf-simplex-link', 'chat', 'request'], ['.cf-deck-link', 'deck', 'request'], ['.cf-modal-footnote a', 'source', 'ai-threat']]
+        exits.forEach(function (x) {
+            document.querySelectorAll(x[0]).forEach(function (el) {
+                el.addEventListener('click', function () { track('Exit', { props: { to: x[1], place: x[2] } }) })
+            })
+        })
+        document.addEventListener('mc:result', function (e) { track('Subscribed', { props: { status: e.detail.status } }) })
+        window.addEventListener('hashchange', function () {
+            var id = location.hash.slice(1)
+            if (id && document.querySelector('.cf-modal#' + CSS.escape(id))) track('Popup', { props: { name: id } })
+        })
+    </script>
     <script>
         // Invert the navbar (logo + button) depending on whether the
         // section under it is dark or light. Same idea as the home page.

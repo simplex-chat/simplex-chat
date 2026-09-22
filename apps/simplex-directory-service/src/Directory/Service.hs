@@ -614,14 +614,12 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
             notifyAdminUsers $ "The group " <> groupReference toGroup <> " is updated" <> byMember <> "."
             checkRolesSendToApprove gr' n'
         processProfileChange gr byMember n' =
-          withDB' "getGroupLink" cc (\db -> runExceptT $ getGroupLink db user toGroup) >>= \case
+          getGroupAndRegLink cc user groupId >>= \case
             Left e -> linkReadError $ T.pack e
-            Right (Left SEGroupLinkNotFound {}) -> profileChange Nothing
-            Right (Left e) -> linkReadError $ tshow e
-            Right (Right gLink) -> profileChange $ Just gLink
+            Right (g, _, gLink_) -> profileChange g gLink_
           where
             linkReadError e = logError $ "Error reading group link for " <> groupReference toGroup <> ": " <> e
-            profileChange gLink_
+            profileChange g gLink_
               | not (linkOnlyChange gLink_) = sendForApproval byMember n'
               | groupRegStatus gr == GRSActive = do
                   notifyOwner gr $
@@ -629,7 +627,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
                       <> "!\nThe group is listed in directory."
                   notifyAdminUsers $ "The group " <> groupReference toGroup <> " is updated" <> byMember <> " - only link or whitespace changes.\nThe group remained listed in directory."
                   forM_ gLink_ $ \gLink ->
-                    updateGroupLinkData cc user toGroup gLink >>= \case
+                    updateGroupLinkData cc user g gLink >>= \case
                       Right _ -> pure ()
                       Left e -> logError $ "Error updating group link data for " <> groupReference toGroup <> ": " <> tshow e
               | otherwise = pure ()
@@ -1332,7 +1330,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
     deAdminCommand ct ciId cmd
       | knownCt `elem` adminUsers || knownCt `elem` superUsers = case cmd of
           DCApproveGroup {groupId, displayName = n, groupApprovalId, promote} ->
-            withGroupRegLink sendReply groupId n $ \g gr@GroupReg {userGroupRegId = ugrId, promoted} curLink_ ->
+            withGroupRegLink sendReply groupId n $ \gik@(GIK g _) gr@GroupReg {userGroupRegId = ugrId, promoted} curLink_ ->
               case groupRegStatus gr of
                 GRSPendingApproval gaId
                   | gaId == groupApprovalId -> do
@@ -1349,7 +1347,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
                               let grPromoted'
                                     | promoted || knownCt `elem` superUsers = fromMaybe promoted promote
                                     | otherwise = False
-                              gLink_ <- if isPublicGroup_ then pure (Right Nothing) else approvedGroupLink g curLink_
+                              gLink_ <- if isPublicGroup_ then pure (Right Nothing) else approvedGroupLink gik curLink_
                               case gLink_ of
                                 Left e -> sendReply e
                                 Right gLink' ->
@@ -1513,14 +1511,14 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
     mkSendReply :: Contact -> ChatItemId -> Text -> IO ()
     mkSendReply ct ciId = sendComposedMessage cc ct (Just ciId) . MCText
 
-    withGroupRegLink :: (Text -> IO ()) -> GroupId -> GroupName -> (GroupInfo -> GroupReg -> Maybe GroupLink -> IO ()) -> IO ()
+    withGroupRegLink :: (Text -> IO ()) -> GroupId -> GroupName -> (GroupInfoKeys -> GroupReg -> Maybe GroupLink -> IO ()) -> IO ()
     withGroupRegLink sendReply gId = withGroupRegLink_ sendReply gId . Just
 
-    withGroupRegLink_ :: (Text -> IO ()) -> GroupId -> Maybe GroupName -> (GroupInfo -> GroupReg -> Maybe GroupLink -> IO ()) -> IO ()
+    withGroupRegLink_ :: (Text -> IO ()) -> GroupId -> Maybe GroupName -> (GroupInfoKeys -> GroupReg -> Maybe GroupLink -> IO ()) -> IO ()
     withGroupRegLink_ sendReply gId gName_ action =
       getGroupAndRegLink cc user gId >>= \case
         Left e -> sendReply $ "Group " <> tshow gId <> " error (getGroup): " <> T.pack e
-        Right (g@GroupInfo {groupProfile = GroupProfile {displayName}}, gr, gLink_)
+        Right (g@(GIK GroupInfo {groupProfile = GroupProfile {displayName}} _), gr, gLink_)
           | maybe False (displayName ==) gName_ ->
               action g gr gLink_
           | otherwise ->
@@ -1531,7 +1529,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
 
     withGroupAndReg_ :: (Text -> IO ()) -> GroupId -> Maybe GroupName -> (GroupInfo -> GroupReg -> IO ()) -> IO ()
     withGroupAndReg_ sendReply gId gName_ action =
-      withGroupRegLink_ sendReply gId gName_ $ \g gr _ -> action g gr
+      withGroupRegLink_ sendReply gId gName_ $ \(GIK g _) gr _ -> action g gr
 
     getOwnersInfo :: [(GroupInfo, GroupReg)] -> IO [((GroupInfo, GroupReg), Maybe (Either String Contact))]
     getOwnersInfo gs =
@@ -1609,7 +1607,7 @@ getGroupLink' :: ChatController -> User -> GroupInfo -> IO (Either String GroupL
 getGroupLink' cc user gInfo =
   withDB "getGroupLink" cc $ \db -> withExceptT groupDBError $ getGroupLink db user gInfo
 
-updateGroupLinkData :: ChatController -> User -> GroupInfo -> GroupLink -> IO (Either ChatError GroupLink)
+updateGroupLinkData :: ChatController -> User -> GroupInfoKeys -> GroupLink -> IO (Either ChatError GroupLink)
 updateGroupLinkData cc user gInfo gLink = runReaderT (runExceptT $ setGroupLinkData NRMBackground user gInfo gLink) cc
 
 setGroupLinkRole :: ChatController -> GroupInfo -> GroupMemberRole -> IO (Maybe CreatedLinkContact)

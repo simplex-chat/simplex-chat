@@ -74,7 +74,7 @@ import Simplex.Chat.Names (claimDomain)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Groups
-import Simplex.Chat.Store.Shared (groupInfoQueryFields, groupInfoQueryFrom)
+import Simplex.Chat.Store.Shared (GroupKeysRow, groupInfoQueryFields, groupInfoQueryFrom, mkGroupKeys, toGroupInfo_)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), SimplexDomain)
@@ -309,12 +309,17 @@ getGroupReg_ db gId =
       |]
       (Only gId)
 
-getGroupAndRegLink :: ChatController -> User -> GroupId -> IO (Either String (GroupInfo, GroupReg, Maybe GroupLink))
+getGroupAndRegLink :: ChatController -> User -> GroupId -> IO (Either String (GroupInfoKeys, GroupReg, Maybe GroupLink))
 getGroupAndRegLink cc user@User {userId, userContactId} gId =
   withDB "getGroupAndRegLink" cc $ \db -> do
     currentTs <- liftIO getCurrentTime
-    ExceptT $ firstRow (toGroupInfoRegLink currentTs (storeCxt cc) user) ("group " ++ show gId ++ " not found") $
-      DB.query db (groupReqQuery <> " AND g.group_id = ?") (userId, userContactId, gId)
+    (g, gksData, gr, gLink_) <-
+      ExceptT $ firstRow (toGroupInfoKeysRegLink currentTs cxt user) ("group " ++ show gId ++ " not found") $
+        DB.query db (groupReqQuery <> " AND g.group_id = ?") (userId, userContactId, gId)
+    gks <- withExceptT groupDBError $ mkGroupKeys db cxt g gksData
+    pure (GIK g gks, gr, gLink_)
+  where
+    cxt = storeCxt cc
 
 getUserGroupReg :: ChatController -> User -> ContactId -> UserGroupRegId -> IO (Either String (GroupInfo, GroupReg))
 getUserGroupReg cc user@User {userId, userContactId} ctId ugrId =
@@ -445,7 +450,12 @@ toGroupInfoReg currentTs cxt user row = let (g, gr, _) = toGroupInfoRegLink curr
 
 toGroupInfoRegLink :: UTCTime -> StoreCxt -> User -> (GroupInfoRow :. GroupRegRow :. GroupLinkRow) -> (GroupInfo, GroupReg, Maybe GroupLink)
 toGroupInfoRegLink currentTs cxt User {userContactId} (groupRow :. grRow :. linkRow) =
-  (toGroupInfo currentTs cxt userContactId [] groupRow, rowToGroupReg grRow, toMaybeGroupLink linkRow)
+  (toGroupInfo_ currentTs cxt userContactId [] groupRow, rowToGroupReg grRow, toMaybeGroupLink linkRow)
+
+toGroupInfoKeysRegLink :: UTCTime -> StoreCxt -> User -> (GroupInfoRow :. GroupRegRow :. GroupLinkRow) -> (GroupInfo, GroupKeysRow, GroupReg, Maybe GroupLink)
+toGroupInfoKeysRegLink currentTs cxt User {userContactId} (groupRow :. grRow :. linkRow) =
+  let (g, gksData) = toGroupInfo currentTs cxt userContactId [] groupRow
+   in (g, gksData, rowToGroupReg grRow, toMaybeGroupLink linkRow)
 
 type GroupRegRow = (GroupId, UserGroupRegId, ContactId, Maybe GroupMemberId, GroupRegStatus, BoolInt, UTCTime)
 
