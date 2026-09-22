@@ -9,7 +9,7 @@ import Control.Concurrent (threadDelay)
 import Control.DeepSeq
 import Control.Monad (unless, void)
 import qualified Data.ByteString.Char8 as B
-import Data.Maybe (isNothing)
+import Data.Maybe (fromJust, isJust, isNothing)
 import Simplex.Messaging.Agent.Store.Postgres (closeDBStore, createDBStore)
 import Simplex.Messaging.Agent.Store.Postgres.Common (DBOpts (..))
 import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
@@ -39,26 +39,24 @@ postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSch
       st <- createDBStore testDBOpts noDownMigrations (MigrationConfig MCYesUpDown Nothing) >>= \case
         Right st -> pure st
         Left e -> error $ show e
-      mapM_ (testDownMigration st) $ drop (length noDownMigrations) migrations
+      mapM_ (testDownMigration st) $ filter (isJust . down) $ drop (length noDownMigrations) migrations
       closeDBStore st
       whenM (doesFileExist testSchemaPath) $ removeFile testSchemaPath
       where
-        testDownMigration st m = case toDownMigration m of
-          -- a migration with no reverse step is applied, there is nothing to test
-          Nothing -> Migrations.run st Nothing $ MTRUp [m]
-          Just downMigr -> do
-            putStrLn $ "down migration " <> name m
-            schema <- getSchema testSchemaPath
-            Migrations.run st Nothing $ MTRUp [m]
-            schema' <- getSchema testSchemaPath
-            schema' `shouldNotBe` schema
-            Migrations.run st Nothing $ MTRDown [downMigr]
-            unless (name m `elem` skipComparisonForDownMigrations) $ do
-              schema'' <- getSchema testSchemaPath
-              schema'' `shouldBe` schema
-            Migrations.run st Nothing $ MTRUp [m]
-            schema''' <- getSchema testSchemaPath
-            schema''' `shouldBe` schema'
+        testDownMigration st m = do
+          putStrLn $ "down migration " <> name m
+          let downMigr = fromJust $ toDownMigration m
+          schema <- getSchema testSchemaPath
+          Migrations.run st Nothing $ MTRUp [m]
+          schema' <- getSchema testSchemaPath
+          schema' `shouldNotBe` schema
+          Migrations.run st Nothing $ MTRDown [downMigr]
+          unless (name m `elem` skipComparisonForDownMigrations) $ do
+            schema'' <- getSchema testSchemaPath
+            schema'' `shouldBe` schema
+          Migrations.run st Nothing $ MTRUp [m]
+          schema''' <- getSchema testSchemaPath
+          schema''' `shouldBe` schema'
 
     getSchema :: FilePath -> IO String
     getSchema schemaPath = do
