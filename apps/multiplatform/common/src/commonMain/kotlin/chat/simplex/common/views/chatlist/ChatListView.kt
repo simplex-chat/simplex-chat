@@ -64,9 +64,9 @@ sealed class ActiveFilter {
   data object Unread: ActiveFilter()
 }
 
-private fun showSupportEndedDismissAlert() {
+private fun showBadgeAlertDismissAlert(title: String) {
   AlertManager.shared.showAlertDialogButtonsColumn(
-    title = generalGetString(MR.strings.badges_support_ended),
+    title = title,
     buttons = {
       Column {
         SectionItemView({
@@ -1052,7 +1052,20 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
             title = stringResource(MR.strings.badges_support_ended),
             subtitle = String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText),
             onTap = { ModalManager.start.showCustomModal { close -> BadgesView(close) } },
-            onDismiss = ::showSupportEndedDismissAlert
+            onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_support_ended)) }
+          )
+        }
+      }
+    } else if (badgeIssueFailed()) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeIssueFailed }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          SupportSimpleXBanner(
+            title = stringResource(MR.strings.badges_renewal_failed),
+            subtitle = stringResource(MR.strings.badges_tap_for_details),
+            warning = true,
+            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(close) } },
+            onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_renewal_failed)) }
           )
         }
       }

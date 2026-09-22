@@ -385,6 +385,7 @@ class BadgeModel: ObservableObject {
 
 enum ChatListBanner {
     case badgeExpired
+    case badgeIssueFailed
     case badgePitch
     case getStake
 }

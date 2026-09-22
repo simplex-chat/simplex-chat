@@ -14,6 +14,7 @@ struct SupportSimpleXBanner: View {
     @Environment(\.colorScheme) var colorScheme: ColorScheme
     var title: LocalizedStringKey = "Support SimpleX"
     var subtitle: LocalizedStringKey = "Get badge + better files"
+    var warning: Bool = false
     let onTap: () -> Void
     let onDismiss: () -> Void
 
@@ -37,7 +38,7 @@ struct SupportSimpleXBanner: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(title)
                             .font(.headline)
-                            .foregroundColor(theme.colors.primary)
+                            .foregroundColor(warning ? .red : theme.colors.primary)
                             .lineLimit(2)
                         Text(subtitle)
                             .font(.subheadline)

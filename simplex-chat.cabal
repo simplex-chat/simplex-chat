@@ -166,6 +166,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260828_file_expiry
           Simplex.Chat.Store.Postgres.Migrations.M20260904_file_badges
           Simplex.Chat.Store.Postgres.Migrations.M20260915_user_badges
+          Simplex.Chat.Store.Postgres.Migrations.M20260918_badge_issue_errors
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -341,6 +342,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260828_file_expiry
           Simplex.Chat.Store.SQLite.Migrations.M20260904_file_badges
           Simplex.Chat.Store.SQLite.Migrations.M20260915_user_badges
+          Simplex.Chat.Store.SQLite.Migrations.M20260918_badge_issue_errors
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
