@@ -165,10 +165,13 @@ struct ChatItemInfoView: View {
             if let file = ci.file, let fileExpires = file.fileExpires {
                 infoRow(file.expired ? "File was available until" : "File available until", localTimestamp(fileExpires))
                 if noShownBadge() {
-                    Button("Support SimpleX to send larger files that stay available longer") {
+                    Button {
                         openBadgesView()
+                    } label: {
+                        Text("Support SimpleX to send larger files that stay available longer")
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .font(.callout)
                 }
             }
             if meta.msgVerified?.verified == true {
