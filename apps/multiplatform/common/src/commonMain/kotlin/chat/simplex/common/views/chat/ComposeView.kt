@@ -33,12 +33,14 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.openBadgesView
 import chat.simplex.common.views.chat.group.hostFromRelayLink
 import chat.simplex.common.views.chat.group.relayConnStatus
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.RelayProgressIndicator
 import chat.simplex.common.views.newchat.RelayStatusIndicator
+import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.common.views.newchat.relayDisplayName
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -319,6 +321,24 @@ private fun isVideoUri(uri: URI): Boolean {
 }
 
 private fun isWebmUri(uri: URI): Boolean = getFileName(uri)?.lowercase()?.endsWith(".webm") == true
+
+// A badge only helps below the largest badge's limit, and not in incognito chats, so outside that
+// the alert is informational as before.
+fun showLargeFileAlert(fileSize: Long, incognito: Boolean, senderProfile: LocalProfile?) {
+  val title = generalGetString(MR.strings.large_file)
+  val text = largeFileMessage(fileSize, incognito, expiredBadgeReason(fileSize, senderProfile))
+  if (!incognito && fileSize <= MAX_FILE_SIZE_XFTP_LEGEND && noShownBadge()) {
+    AlertManager.shared.showAlertDialog(
+      title = title,
+      text = text,
+      confirmText = generalGetString(MR.strings.ok),
+      dismissText = generalGetString(MR.strings.badges_support_simplex_title),
+      onDismiss = ::openBadgesView
+    )
+  } else {
+    AlertManager.shared.showAlertMsg(title, text)
+  }
+}
 
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
   if (uri != null) {

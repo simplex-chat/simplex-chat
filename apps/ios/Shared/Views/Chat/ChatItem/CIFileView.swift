@@ -238,18 +238,6 @@ func fileSizeValid(_ file: CIFile?) -> Bool {
     return false
 }
 
-// the alert when the file being sent is over the limit. A badge only helps below the largest badge's
-// limit, and not in incognito chats, so outside that the alert is informational as before.
-func showLargeFileAlert(_ fileSize: Int64, incognito: Bool, senderProfile: LocalProfile?) {
-    let title = NSLocalizedString("Large file!", comment: "file alert title")
-    let message = largeFileMessage(fileSize, incognito: incognito, badgeIssue: expiredBadgeReason(fileSize, senderProfile))
-    if !incognito && fileSize <= MAX_FILE_SIZE_XFTP_LEGEND && noShownBadge() {
-        showAlert(title, message: message) { [supportSimpleXAlertAction, okAlertAction] }
-    } else {
-        showAlert(title, message: message)
-    }
-}
-
 func showProhibitedFileAlert(_ file: CIFile, _ prohibited: FileProhibited) {
     let badgeIssue = switch prohibited.badgeStatus {
     case .none, .some(.active): ""

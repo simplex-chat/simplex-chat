@@ -24,9 +24,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.badges.openBadgesView
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.res.MR
 import java.io.File
 import java.net.URI
@@ -240,24 +238,6 @@ fun CIFileView(
 
 // the core decides whether a received file is above the size the sender's badge allows
 fun fileSizeValid(file: CIFile): Boolean = file.fileProhibited == null
-
-// the alert when the file being sent is over the limit. A badge only helps below the largest badge's
-// limit, and not in incognito chats, so outside that the alert is informational as before.
-fun showLargeFileAlert(fileSize: Long, incognito: Boolean, senderProfile: LocalProfile?) {
-  val title = generalGetString(MR.strings.large_file)
-  val text = largeFileMessage(fileSize, incognito, expiredBadgeReason(fileSize, senderProfile))
-  if (!incognito && fileSize <= MAX_FILE_SIZE_XFTP_LEGEND && noShownBadge()) {
-    AlertManager.shared.showAlertDialog(
-      title = title,
-      text = text,
-      confirmText = generalGetString(MR.strings.ok),
-      dismissText = generalGetString(MR.strings.badges_support_simplex_title),
-      onDismiss = ::openBadgesView
-    )
-  } else {
-    AlertManager.shared.showAlertMsg(title, text)
-  }
-}
 
 fun showProhibitedFileAlert(file: CIFile, prohibited: FileProhibited) {
   val badgeIssue = when (prohibited.badgeStatus) {

@@ -338,6 +338,18 @@ enum UploadContent: Equatable {
     }
 }
 
+// A badge only helps below the largest badge's limit, and not in incognito chats, so outside that
+// the alert is informational as before.
+func showLargeFileAlert(_ fileSize: Int64, incognito: Bool, senderProfile: LocalProfile?) {
+    let title = NSLocalizedString("Large file!", comment: "file alert title")
+    let message = largeFileMessage(fileSize, incognito: incognito, badgeIssue: expiredBadgeReason(fileSize, senderProfile))
+    if !incognito && fileSize <= MAX_FILE_SIZE_XFTP_LEGEND && noShownBadge() {
+        showAlert(title, message: message) { [supportSimpleXAlertAction, okAlertAction] }
+    } else {
+        showAlert(title, message: message)
+    }
+}
+
 // Spec: spec/client/compose.md#ComposeView
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
