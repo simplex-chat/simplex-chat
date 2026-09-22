@@ -19,7 +19,7 @@ module Simplex.Chat.Store.Wallets
   )
 where
 
-import Control.Monad (join, unless, when)
+import Control.Monad (join, unless)
 import Control.Monad.Except
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteArray as BA
@@ -123,10 +123,8 @@ accountHeldByOther db sId userId n = heldByOther userId <$> accountUser db sId n
 bindAccount :: DB.Connection -> UserId -> Maybe AccountIndex -> IO (Either WalletError ())
 bindAccount db userId accountIdx_ = runExceptT $ do
   (WalletSeed {wsId = sId}, n) <- ExceptT $ resolveAccount db accountIdx_
-  held <- liftIO $ accountUser db sId n
-  when (heldByOther userId held) $ throwError WEAccountBound
-  taken <- liftIO $ case held of
-    Just (Just _) -> pure True -- already this profile's
+  taken <- liftIO $ accountUser db sId n >>= \case
+    Just (Just heldBy) -> pure $ heldBy == userId
     -- the update takes the account only while no profile holds it, the read after says whether this one got it
     Just Nothing -> setAccountUser db sId userId n >> accountHeldBy db sId userId n
     Nothing -> True <$ insertAccount db sId userId n

@@ -198,6 +198,9 @@ testWalletAddress ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet address account=3"
   at3 <- getTermLine alice
   words at3 !! 1 `shouldBe` "m/44'/60'/3'/0/0"
+  -- a zero-padded index is the same index
+  alice ##> "/_wallet address account=0000000003"
+  getTermLine alice `shouldReturn` at3
   -- a malformed index is a parse error, never a silent bind of the next account
   alice ##> "/_wallet bind account=abc"
   alice <## "bad chat command: Failed reading: empty"

@@ -66,7 +66,7 @@ import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Store.Wallets (WalletSeed (..), accountHeldByOther, bindAccount, createWalletSeed, deleteWalletSeed, getUserAccounts, getWalletSeed, resolveAccount)
-import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), accountSecret, checkAccountIndex, deriveAccountKey, entropyFromMnemonic, newSeedEntropy, renderAccountPath, seedMaster, seedMnemonic)
+import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccountKey, entropyFromMnemonic, newSeedEntropy, renderAccountPath, seedMaster, seedMnemonic)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -1520,8 +1520,7 @@ processChatCommand cxt nm = \case
   APIExportWalletMnemonic -> withUser $ \user ->
     CRWalletMnemonic user <$> (liftWallet . seedMnemonic . wsEntropy =<< walletSeed)
   APIExportWalletAccount n -> withUser $ \user@User {userId} -> do
-    seed <- walletSeed
-    liftWallet $ checkAccountIndex n
+    (seed, _) <- liftWallet =<< withFastStore' (`resolveAccount` Just n)
     -- a key another profile holds is not this profile's to hand out
     heldByOther <- withFastStore' $ \db -> accountHeldByOther db (wsId seed) userId n
     when heldByOther $ throwWalletError WEAccountBound
@@ -6643,11 +6642,11 @@ chatCommandP =
     quotedP = safeDecodeUtf8 <$> (A.char '"' *> A.takeTill (== '"') <* A.char '"')
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
-    -- ten digits fit an Int, and the hardening bound is a typed error when the command runs
+    -- a long digit run is not free to convert; the hardening bound is checked when the command runs
     accountIndexP = do
       ds <- A.takeWhile1 isDigit
-      case if B.length ds <= 10 then B.readInt ds else Nothing of
-        Just (i, _) | i <= fromIntegral (maxBound :: AccountIndex) -> pure $ fromIntegral i
+      case if B.length ds <= 10 then B.readInteger ds else Nothing of
+        Just (i, _) | i <= toInteger (maxBound :: AccountIndex) -> pure (fromInteger i)
         _ -> fail "account index too large"
 
 displayNameP :: Parser Text

@@ -975,6 +975,18 @@ CREATE TABLE badge_code_redemptions(
   created_at TEXT NOT NULL,
   UNIQUE(user_id, code)
 ) STRICT;
+CREATE TABLE wallet_seeds(
+  wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  entropy BLOB NOT NULL CHECK(length(entropy) = 32), -- BIP-39 entropy, 24 words
+  next_account_index INTEGER CHECK(next_account_index BETWEEN 0 AND 2147483648),
+  single_seed INTEGER NOT NULL DEFAULT 1
+) STRICT;
+CREATE TABLE wallet_accounts(
+  wallet_account_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  wallet_seed_id INTEGER NOT NULL REFERENCES wallet_seeds ON DELETE CASCADE,
+  account_index INTEGER CHECK(account_index BETWEEN 0 AND 2147483647),
+  user_id INTEGER REFERENCES users ON DELETE SET NULL
+) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -1538,6 +1550,12 @@ CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(
 CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON badge_purchases(
   badge_code_redemption_id
 );
+CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON wallet_seeds(single_seed);
+CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_accounts(
+  wallet_seed_id,
+  account_index
+);
+CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW
