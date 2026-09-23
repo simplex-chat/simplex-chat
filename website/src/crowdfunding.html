@@ -170,7 +170,7 @@ templateEngineOverride: njk
 
         .cf-hero-text {
             margin-left: calc(var(--sec-vwu) * 7.5);
-            width: calc(var(--sec-vwu) * 45);
+            width: calc(var(--sec-vwu) * 53);
             position: relative;
             z-index: 4;
         }
@@ -178,7 +178,7 @@ templateEngineOverride: njk
         .cf-hero h1 {
             font-family: "GT-Walsheim", sans-serif;
             font-weight: 400;
-            font-size: calc(var(--sec-vwu) * 4.94);
+            font-size: calc(var(--sec-vwu) * 4.45);
             line-height: 1.05;
             letter-spacing: -0.025em;
             color: #ffffff;
@@ -194,6 +194,7 @@ templateEngineOverride: njk
             max-width: calc(var(--sec-vwu) * 40);
         }
         .cf-hero .lead-short { display: none; }
+        .cf-hero h1 .cf-br-narrow { display: none; }
 
         .cf-stats {
             display: flex;
@@ -654,7 +655,7 @@ templateEngineOverride: njk
                 --cf-phone-h: calc(var(--cf-phone-w) / 0.4914);
                 --cf-phone-part: 0.55;
                 /* bottom of the hero text block, measured from the section top */
-                --cf-hero-text-b: calc(var(--cf-top-base) + max(0px, calc(-1 * var(--cf-area-off))) + 76.7vw);
+                --cf-hero-text-b: calc(var(--cf-top-base) + max(0px, calc(-1 * var(--cf-area-off))) + 92.5vw);
                 /* the arc crest starts 0.2678 down the cover image, which is
                    2.349 phone widths tall and sits 0.4034 phone heights above
                    the phone top: the phone may rise no higher than this */
@@ -681,7 +682,8 @@ templateEngineOverride: njk
             .cf-hero h1,
             .cf-hero .lead,
             .cf-hero .cf-stats { position: relative; z-index: 4; }
-            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 8.54); }
+            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 9); }
+            .cf-hero h1 .cf-br-narrow { display: inline; }
             .cf-hero .lead { font-size: calc(var(--sec-vwu) * 3.55); max-width: none; margin-top: calc(var(--sec-vhu) * 2); }
             .cf-hero .lead:not(.lead-short) { display: none; }
             .cf-hero .lead-short { display: block; font-size: calc(var(--sec-vwu) * 4.5); white-space: nowrap; }
@@ -824,9 +826,16 @@ templateEngineOverride: njk
             .cf-tag .n { font-size: 3.54cqh; line-height: 1.3; }
         }
 
+        /* tall phones (modern ratios, with or without the browser bars): the headline takes the
+           room the screen has; short ones keep the smaller size. */
+        @media screen and (max-width: 959px) and (orientation: portrait) and (max-aspect-ratio: 62/100) {
+            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 9.6); }
+            :root { --cf-hero-text-b: calc(var(--cf-top-base) + max(0px, calc(-1 * var(--cf-area-off))) + 91vw); }
+        }
+
         /* 320pt phones: keep the headline at three lines */
         @media screen and (max-width: 330px) and (orientation: portrait) {
-            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 8.18); }
+            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 8.6); }
         }
 
         /* narrow phones: keep the corner link clear of the logo */
@@ -1041,7 +1050,7 @@ templateEngineOverride: njk
             .page .text-container p { font-weight: 200; font-size: calc(var(--sec-vwu) * 1.62); }
             .page .text-container p span { font-weight: 500; }
             .page .text-container a { font-weight: 200; font-size: calc(var(--sec-vwu) * 1.62); }
-            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 4.4); }
+            .cf-hero h1 { font-size: calc(var(--sec-vwu) * 4.3); }
             .cf-hero .lead:not(.lead-short) { display: none; }
             .cf-hero .lead-short { display: block; margin-top: calc(var(--sec-vhu) * 2); }
             .cf-hero .cf-hero-cta { margin-top: calc(var(--sec-vhu) * 3); }
@@ -1078,8 +1087,8 @@ templateEngineOverride: njk
         <section class="page cf cf-dark cf-hero">
             <div class="area">
                 <div class="cf-hero-text">
-                    <h1>The first and the only messaging network without any user IDs</h1>
-                    <p class="lead">SimpleX Chat is building a messaging network unlike every major platform &mdash; without phone numbers, usernames, emails, or any user identifiers.</p>
+                    <h1>The only<br>messaging network<br>without any <br class="cf-br-narrow">user identifiers</h1>
+                    <p class="lead">SimpleX Chat is building a messaging network unlike every major platform &mdash; without phone numbers, usernames, emails, or user accounts.</p>
                     <p class="lead lead-short">No phone numbers, emails, or accounts.</p>
                     <div class="cf-hero-cta">
                         <a class="cf-pill cf-primary" id="cf-hero-invest" href="https://wefunder.com/simplex.chat?utm_source=landing" target="_blank" rel="noopener" aria-label="Invest on Wefunder">
