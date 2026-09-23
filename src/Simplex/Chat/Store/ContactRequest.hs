@@ -24,7 +24,7 @@ import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Int (Int64)
 import Data.Time.Clock (getCurrentTime)
-import Simplex.Chat.Badges (badgeToRow, verifyBadge_)
+import Simplex.Chat.Badges (badgeToRow, unboundProof, verifyBadge_)
 import Simplex.Chat.Protocol (MsgContent, businessChatsVersion)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Groups
@@ -167,7 +167,7 @@ createOrUpdateContactRequest
       createContactRequest :: ExceptT StoreError IO RequestStage
       createContactRequest = do
         currentTs <- liftIO $ getCurrentTime
-        badgeVerified <- liftIO $ verifyBadge_ (badgeKeys cxt) badge
+        badgeVerified <- liftIO $ verifyBadge_ unboundProof (badgeKeys cxt) badge
         ExceptT $ withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
           liftIO $
             DB.execute
@@ -234,7 +234,7 @@ createOrUpdateContactRequest
         pure $ RSCurrentRequest (Just ucr) ucr' re_
         where
           updateProfile currentTs = do
-            badgeVerified <- liftIO $ verifyBadge_ (badgeKeys cxt) badge
+            badgeVerified <- liftIO $ verifyBadge_ unboundProof (badgeKeys cxt) badge
             DB.execute
               db
               [sql|

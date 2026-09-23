@@ -108,7 +108,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Type.Equality
-import Simplex.Chat.Badges (badgeToRow)
+import Simplex.Chat.Badges (badgeToRow, unboundProof)
 import Simplex.Chat.Messages
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Names (SimplexDomainClaim (..))
@@ -565,7 +565,7 @@ deleteUnusedProfile_ db userId profileId =
 updateContactProfile :: DB.Connection -> StoreCxt -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
 updateContactProfile db cxt user@User {userId} c p' = do
   currentTs <- liftIO getCurrentTime
-  badgeVerified <- liftIO $ profileBadgeVerified (badgeKeys cxt) lp p'
+  badgeVerified <- liftIO $ profileBadgeVerified unboundProof (badgeKeys cxt) lp p'
   let nameVerified = if claimChanged then Nothing else prevVerification
       profile = toLocalProfile profileId p'' localAlias currentTs badgeVerified nameVerified
   updateContactProfile' currentTs badgeVerified profile

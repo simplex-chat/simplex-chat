@@ -58,6 +58,8 @@ chatProfileTests = do
     it "present supporter badge to contacts" testUserBadgeBroadcast
     it "supporter badge sent to contact connecting after attach" testUserBadgeOnConnect
     it "supporter badge sent to member joining via group link" testUserBadgeGroupLink
+    it "supporter badge sent to member connecting in group" testUserBadgeGroupHandshake
+    it "supporter badge sent to group members with profile update" testUserBadgeGroupUpdate
     it "expired supporter badge shows as expired" testUserBadgeExpired
     it "long-expired supporter badge is not presented" testUserBadgeExpiredOld
     it "incognito connection does not carry supporter badge" testUserBadgeIncognito
@@ -375,6 +377,59 @@ testUserBadgeGroupLink ps = do
       bob <## "sending messages via: localhost"
       bob <## "connection not verified, use /code command to see security code"
       bob <## currentChatVRangeInfo
+
+testUserBadgeGroupHandshake :: HasCallStack => TestParams -> IO ()
+testUserBadgeGroupHandshake ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg3 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile cathProfile (test sk) ps
+  where
+    test sk alice bob cath = do
+      createGroup2 "team" alice bob
+      addTestBadge bob =<< issueTestBadge sk futureDate
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          do
+            cath <## "#team: you joined the group"
+            cath <## "#team: member bob (Bob) is connected",
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      -- bob sent nothing to the group, so the badge reached cath in the member connection handshake
+      cath ##> "/i #team bob"
+      cath <## "group ID: 1"
+      cath <##. "member ID: "
+      cath <## "supporter badge - active"
+      cath <## "expires 2100-01-01"
+      cath <## "receiving messages via: localhost"
+      cath <## "sending messages via: localhost"
+      cath <## "connection not verified, use /code command to see security code"
+      cath <## currentChatVRangeInfo
+
+testUserBadgeGroupUpdate :: HasCallStack => TestParams -> IO ()
+testUserBadgeGroupUpdate ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg3 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile cathProfile (test sk) ps
+  where
+    test sk alice bob cath = do
+      createGroup3 "team" alice bob cath
+      addTestBadge bob =<< issueTestBadge sk futureDate
+      -- the profile with the badge is sent to the group with the next message
+      bob #> "#team hello"
+      alice <# "#team bob> hello"
+      cath <# "#team bob> hello"
+      cath ##> "/i #team bob"
+      cath <## "group ID: 1"
+      cath <##. "member ID: "
+      cath <## "supporter badge - active"
+      cath <## "expires 2100-01-01"
+      cath <## "receiving messages via: localhost"
+      cath <## "sending messages via: localhost"
+      cath <## "connection not verified, use /code command to see security code"
+      cath <## currentChatVRangeInfo
 
 testUserBadgeContactAddress :: HasCallStack => TestParams -> IO ()
 testUserBadgeContactAddress ps = do

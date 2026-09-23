@@ -50,6 +50,7 @@ badgeTests = do
   it "credential serializes to a paste-able token and back" testCredentialSerialization
   it "presentation headers encode and decode" testPresHeaderEncoding
   it "should reject a proof presented under another chat binding" testOtherChatBinding
+  it "should accept a profile proof only with the header of its chat" testProfileProofHeader
   describe "redemption codes" $ do
     it "a generated code reads back" testCodeRoundTrip
     it "reads a code as typed - any case, separators, ambiguous characters" testCodeNormalisation
@@ -209,6 +210,22 @@ testOtherChatBinding = do
   (pk, BadgeProof idx _ p info) <- issueBadgeProofHeader BTSupporter futureTime ph
   verifyBadge (keysFor pk) (BadgeProof idx (BBSPresHeader $ strEncode ph) p info) >>= (`shouldBe` Just True)
   verifyBadge (keysFor pk) (BadgeProof idx (BBSPresHeader $ strEncode otherPh) p info) >>= (`shouldBe` Just False)
+
+testProfileProofHeader :: IO ()
+testProfileProofHeader = do
+  (pk, unbound) <- issueBadgeProof BTSupporter futureTime
+  (pk', bound) <- issueBadgeProofHeader BTSupporter futureTime (PHChat aliceBinding)
+  unboundProof unbound `shouldBe` True
+  unboundProof bound `shouldBe` False
+  boundProof (Just aliceBinding) bound `shouldBe` True
+  boundProof (Just bobBinding) bound `shouldBe` False
+  boundProof Nothing bound `shouldBe` False
+  boundProof (Just aliceBinding) unbound `shouldBe` False
+  verifyBadge_ unboundProof (keysFor pk) (Just unbound) >>= (`shouldBe` Just True)
+  verifyBadge_ unboundProof (keysFor pk') (Just bound) >>= (`shouldBe` Just False)
+  verifyBadge_ (boundProof (Just aliceBinding)) (keysFor pk') (Just bound) >>= (`shouldBe` Just True)
+  verifyBadge_ (boundProof (Just aliceBinding)) (keysFor pk) (Just unbound) >>= (`shouldBe` Just False)
+  verifyBadge_ (boundProof (Just aliceBinding)) (keysFor pk') Nothing >>= (`shouldBe` Just False)
 
 aliceBinding :: ByteString
 aliceBinding = "Galice-member-id"

@@ -848,10 +848,11 @@ fromLocalProfile LocalProfile {displayName, fullName, shortDescr, description, i
       OwnBadge _ _ -> Nothing -- the own credential is not sent, proof is generated on send
       ShownBadge _ _ -> Nothing -- a display-only badge is not sent
 
-profileBadgeVerified :: Map Int BBSPublicKey -> LocalProfile -> Profile -> IO (Maybe Bool)
-profileBadgeVerified keys LocalProfile {localBadge} Profile {badge = newBadge} =
+profileBadgeVerified :: (BadgeProof -> Bool) -> Map Int BBSPublicKey -> LocalProfile -> Profile -> IO (Maybe Bool)
+profileBadgeVerified accepted keys LocalProfile {localBadge} Profile {badge = newBadge} =
   case (localBadge, newBadge) of
     (_, Nothing) -> pure (Just False)
+    (_, Just newB) | not (accepted newB) -> pure (Just False)
     -- an unchanged badge that verified before stays verified; failed or unknown-key badges
     -- are re-verified, so an unknown key heals once an app update adds it
     (Just lb, Just (BadgeProof _ _ _ newInfo))

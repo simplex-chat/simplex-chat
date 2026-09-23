@@ -53,7 +53,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), ProofPresHeader (..), BadgeProof (..), BadgeProofKind (..), BadgeStatus (..), FileSizeLimits (..), LocalBadge (..), badgeProof, badgeSndGraceInterval, generateBadgeProof, localBadgeStatus, maxXFTPFileSize, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), ProofPresHeader (..), BadgeProof (..), BadgeProofKind (..), BadgeStatus (..), FileSizeLimits (..), LocalBadge (..), badgeSndGraceInterval, generateBadgeProof, localBadgeStatus, maxXFTPFileSize, mkBadgeStatus, unboundProof, verifyBadge, verifyBadge_)
 import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -995,7 +995,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
         Just conn@Connection {customUserProfileId} -> do
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
-  profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
+  profileToSend <- presentUserBadge user incognitoProfile Nothing $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
   dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend Nothing
   (ct,conn,) <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
 
@@ -1007,7 +1007,7 @@ acceptContactRequestAsync
   UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId, pqSupport = cReqPQSup}
   incognitoProfile = do
     subMode <- chatReadVar subscriptionMode
-    profileToSend <- presentUserBadge user incognitoProfile $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
+    profileToSend <- presentUserBadge user incognitoProfile Nothing $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
     cxt <- chatStoreCxt
     let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
     (cmdId, acId) <- prepareAgentAccept user True cReqInvId cReqPQSup
@@ -1041,15 +1041,16 @@ acceptGroupJoinRequestAsync
     -- a roster-established privileged member attaches a connection to its existing record (keeping
     -- owner-authoritative role + key); everyone else is created fresh with the group-link role
     cxt <- chatStoreCxt
+    let binding_ = (\mId -> memberChatBinding gInfo mId Nothing) =<< cReqMemberId_
     (groupMemberId, memberId) <- case existingMem_ of
       Just m -> do
         -- refresh the hash placeholder name from the authenticated join profile; role + key stay roster-authoritative
         withStore $ \db -> do
           liftIO $ updateGroupMemberStatus db userId m initialStatus
-          void $ updateMemberProfile db cxt user m cReqProfile
+          void $ updateMemberProfile db cxt user m binding_ cReqProfile
         pure (groupMemberId' m, memberId' m)
       Nothing -> withStore $ \db ->
-        createJoiningMember db cxt gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus memberKey_
+        createJoiningMember db cxt gVar user gInfo cReqChatVRange cReqProfile binding_ cReqXContactId_ cReqMemberId_ welcomeMsgId_ gLinkMemRole initialStatus memberKey_
     let currentMemCount = fromIntegral $ currentMembers $ groupSummary gInfo
     let Profile {displayName} = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -1087,7 +1088,7 @@ acceptGroupJoinSendRejectAsync
     gVar <- asks random
     cxt <- chatStoreCxt
     (groupMemberId, memberId) <- withStore $ \db ->
-      createJoiningMember db cxt gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ Nothing Nothing GRObserver GSMemRejected Nothing
+      createJoiningMember db cxt gVar user gInfo cReqChatVRange cReqProfile Nothing cReqXContactId_ Nothing Nothing GRObserver GSMemRejected Nothing
     let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg =
           XGrpLinkReject $
@@ -2234,17 +2235,14 @@ sendDirectContactMessages user ct events = do
 -- present the user's own badge on an outgoing profile: a fresh, single-use proof from the stored credential.
 -- the send's incognito profile (when set) suppresses it - an incognito identity must never carry the badge.
 -- a long-expired badge is not presented at all (receivers would hide it anyway).
-presentUserBadge :: User -> Maybe i -> Profile -> CM Profile
-presentUserBadge User {profile = LocalProfile {localBadge}} incognitoProfile p = case (incognitoProfile, localBadge) of
-  (Nothing, Just (OwnBadge cred@(BadgeCredential keyIdx _ _ _) st)) | st == BSActive || st == BSExpired -> do
-    keys <- asks $ badgePublicKeys . config
-    case M.lookup keyIdx keys of
-      Nothing -> p <$ logError "presentUserBadge: badge key index not in config"
-      Just key -> do
-        nonce <- drgRandomBytes 16
-        liftIO (badgeProof key cred (PHTest nonce)) >>= \case
-          Right proof -> pure p {badge = Just proof}
-          Left e -> p <$ logError ("presentUserBadge: proof generation failed: " <> T.pack e)
+presentUserBadge :: User -> Maybe i -> Maybe GroupInfo -> Profile -> CM Profile
+presentUserBadge user@User {profile = LocalProfile {localBadge}} incognitoProfile gInfo_ p = case (incognitoProfile, localBadge) of
+  (Nothing, Just (OwnBadge _ st)) | st == BSActive || st == BSExpired -> do
+    ph_ <- case gInfo_ of
+      Nothing -> Just . PHTest <$> drgRandomBytes 16
+      Just gInfo -> pure $ PHChat <$> sndGroupChatBinding gInfo False
+    badge <- join <$> mapM (sndBadgeProof user) ph_
+    pure p {badge}
   _ -> pure p
 
 
@@ -2255,7 +2253,7 @@ linkDataBadge cld@ContactShortLinkData {profile = Profile {badge}} = case badge 
   Nothing -> pure cld
   Just b@(BadgeProof _ _ _ info) -> do
     keys <- asks $ badgePublicKeys . config
-    verified <- liftIO $ verifyBadge keys b
+    verified <- liftIO $ verifyBadge_ unboundProof keys badge
     now <- liftIO getCurrentTime
     pure (cld :: ContactShortLinkData) {localBadge = Just $ ShownBadge info (mkBadgeStatus now verified info)}
 
@@ -2315,7 +2313,10 @@ groupMsgSigning sign (GIK gInfo@GroupInfo {membership = GroupMember {memberId}} 
   where
     memberPrivKey' = memberPrivKey gks
     tag = toCMEventTag evt
-    shouldSign = requiresSignature tag || (sign && signableContent tag)
+    shouldSign = requiresSignature tag || (sign && signableContent tag) || badgePresented
+    badgePresented = case evt of
+      XGrpMemInfo _ Profile {badge} -> isJust badge
+      _ -> False
     bindingData = groupBindingData gInfo memberId (C.publicKey memberPrivKey')
 
 groupBindingData :: GroupInfo -> MemberId -> C.PublicKeyEd25519 -> ByteString
@@ -2335,11 +2336,14 @@ rcvGroupChatBinding gInfo m_ asGroup badge_ =
   case (publicGroup' gInfo, asGroup, m_) of
     (Just PublicGroupProfile {publicGroupId}, True, _) ->
       Just $ encodeChatBinding CBChannel $ smpEncode publicGroupId
-    (Just PublicGroupProfile {publicGroupId}, False, Just GroupMember {memberId}) ->
-      Just $ encodeChatBinding CBGroup $ smpEncode (publicGroupId, memberId)
-    (Nothing, False, Just GroupMember {memberId, memberPubKey}) ->
-      (\k -> encodeChatBinding CBGroup $ smpEncode (memberId, k)) <$> (memberPubKey <|> proofMemberKey memberId badge_)
+    (_, False, Just GroupMember {memberId, memberPubKey}) ->
+      memberChatBinding gInfo memberId (memberPubKey <|> proofMemberKey memberId badge_)
     _ -> Nothing
+
+memberChatBinding :: GroupInfo -> MemberId -> Maybe C.PublicKeyEd25519 -> Maybe ByteString
+memberChatBinding gInfo memberId key_ = case publicGroup' gInfo of
+  Just PublicGroupProfile {publicGroupId} -> Just $ encodeChatBinding CBGroup $ smpEncode (publicGroupId, memberId)
+  Nothing -> (\k -> encodeChatBinding CBGroup $ smpEncode (memberId, k)) <$> key_
 
 proofMemberKey :: MemberId -> Maybe BadgeProof -> Maybe C.PublicKeyEd25519
 proofMemberKey memberId badge_ = do
@@ -2649,7 +2653,7 @@ sendGroupProfileUpdate user g@(GIK gInfo gks) scope asGroup members =
             _ -> False
     sendProfileUpdate = do
       -- shouldSendProfileUpdate excludes incognito membership, so the badge is presented
-      profileUpdate <- presentUserBadge user Nothing $ redactedMemberProfile gInfo (membership gInfo) $ fromLocalProfile p
+      profileUpdate <- presentUserBadge user Nothing (Just gInfo) $ redactedMemberProfile gInfo (membership gInfo) $ fromLocalProfile p
       void $ sendGroupMessage' user g members $ XInfo profileUpdate (Just $ groupMemberKey gks)
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs

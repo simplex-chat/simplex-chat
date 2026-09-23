@@ -48,6 +48,8 @@ module Simplex.Chat.Badges
     badgeProof,
     verifyBadge,
     verifyBadge_,
+    unboundProof,
+    boundProof,
     mkBadgeStatus,
     BadgeRow,
     BadgeProofKind (..),
@@ -318,14 +320,13 @@ instance StrEncoding ProofPresHeader where
         pure PHFileDescr {chatBinding, fileSize, descrHash, fileExpires = systemToUTCTime <$> expires_}
       PHUnknownTag c -> PHUnknown c <$> A.takeByteString
 
--- v6.5.x accepts both; v7 will reject PHTest/PHUnknown
-proofPresHeaderAccepted :: ProofPresHeader -> Bool
-proofPresHeaderAccepted = \case
-  PHTest _ -> True
-  PHChat _ -> True
-  PHFileInv {} -> True
-  PHFileDescr {} -> True
-  PHUnknown _ _ -> True
+unboundProof :: BadgeProof -> Bool
+unboundProof BadgeProof {presHeader = BBSPresHeader ph} = case strDecode ph of
+  Right (PHTest _) -> True
+  _ -> False
+
+boundProof :: Maybe ByteString -> BadgeProof -> Bool
+boundProof binding_ BadgeProof {presHeader} = maybe False (\b -> presHeader == BBSPresHeader (strEncode (PHChat b))) binding_
 
 -- Payment proof
 
@@ -419,13 +420,13 @@ verifyBadge keys b@(BadgeProof keyIdx _ _ _) = case M.lookup keyIdx keys of
   Just pk -> Just <$> verifyBadgeWith pk b
 
 verifyBadgeWith :: BBSPublicKey -> BadgeProof -> IO Bool
-verifyBadgeWith pk (BadgeProof _ ph@(BBSPresHeader phBytes) proof badgeInfo)
-  | either (const False) proofPresHeaderAccepted (strDecode phBytes) =
-      bbsProofVerify pk proof bbsBadgeHeader ph bbsBadgeDisclosedIndexes bbsBadgeMessageCount (badgeInfoMessages badgeInfo)
-  | otherwise = pure False
+verifyBadgeWith pk (BadgeProof _ ph proof badgeInfo) =
+  bbsProofVerify pk proof bbsBadgeHeader ph bbsBadgeDisclosedIndexes bbsBadgeMessageCount (badgeInfoMessages badgeInfo)
 
-verifyBadge_ :: Map Int BBSPublicKey -> Maybe BadgeProof -> IO (Maybe Bool)
-verifyBadge_ keys = maybe (pure (Just False)) (verifyBadge keys)
+verifyBadge_ :: (BadgeProof -> Bool) -> Map Int BBSPublicKey -> Maybe BadgeProof -> IO (Maybe Bool)
+verifyBadge_ accepted keys = \case
+  Just b | accepted b -> verifyBadge keys b
+  _ -> pure (Just False)
 
 -- DB
 
