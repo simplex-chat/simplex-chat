@@ -71,7 +71,9 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NameRegistration (..), NamePricing (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), USDCents (..), UserProtocol)
+import Simplex.Messaging.SimplexName (fullDomainName)
+import Simplex.Messaging.SystemTime (roundedSeconds)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
@@ -214,7 +216,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation showFullLinks ccLink
   CRConnectionIncognitoUpdated u c customUserProfile -> ttyUser u $ viewConnectionIncognitoUpdated c customUserProfile testView
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged showFullLinks u c nu c'
-  CRConnectionPlan u connLink _ otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan <> otherSimplexNameNote otherSimplexName
+  CRConnectionPlan u connLink _ otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan <> otherSimplexNameNote otherSimplexName <> viewNameRegistration connectionPlan
   CRNewPreparedChat u (AChat _ (Chat cInfo _ _)) -> ttyUser u $ case cInfo of
     DirectChat ct -> [ttyContact' ct <> ": contact is prepared"]
     GroupChat g _ -> [ttyGroup' g <> ": group is prepared"]
@@ -2211,7 +2213,29 @@ otherSimplexNameNote = \case
   Just ni@(SimplexNameInfo NTContact _) -> [plain $ "You can also connect to " <> shortNameInfoStr ni <> " in direct chat"]
   Nothing -> []
 
-viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
+-- what the registry said about the name, shown where it changes what the plan means:
+-- a chat you already have, your own name, or a name with nothing to connect to
+viewNameRegistration :: ConnectionPlan -> [StyledString]
+viewNameRegistration = \case
+  CPContactAddress CAPKnown {} nr_ -> regLine nr_
+  CPContactAddress CAPOwnLink nr_ -> regLine nr_
+  CPGroupLink GLPKnown {} nr_ -> regLine nr_
+  CPGroupLink GLPOwnLink {} nr_ -> regLine nr_
+  CPNameNotConnectable _ reg -> regLine (Just reg)
+  _ -> []
+  where
+    regLine = \case
+      Just NRRegistered {expires, graceUntil, reservedReason_} ->
+        ["registered" <> expiryNote expires graceUntil <> maybe "" ((", reserved: " <>) . plain . textEncode) reservedReason_]
+      Just NRAvailable {pricing = NamePricing {basePrice = USDCents c, minLabelLength}} ->
+        ["available: " <> plain (show c) <> " cents/year, min length " <> plain (show minLabelLength)]
+      Just NRReserved {reservedReason} -> ["reserved: " <> plain (textEncode reservedReason :: Text)]
+      Nothing -> []
+    expiryNote expires graceUntil = case expires of
+      Nothing -> ""
+      Just e -> ", expires " <> plain (show (roundedSeconds e)) <> maybe "" (\g -> ", grace until " <> plain (show (roundedSeconds g))) graceUntil
+
+viewConnectionPlan :: ChatConfig -> Maybe ACreatedConnLink -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk contactSLinkData ov -> [invOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
@@ -2231,8 +2255,11 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
-  CPContactAddress cap -> case cap of
-    CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
+  CPContactAddress cap _ -> case cap of
+    CAPOk contactSLinkData ov addressChanged ->
+      [addrOrBiz contactSLinkData (if addressChanged then "ok to connect, address changed" else "ok to connect")]
+        <> viewSigVerification ov
+        <> [viewJSON contactSLinkData | testView]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
@@ -2249,10 +2276,10 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
-  CPGroupLink glp -> case glp of
-    GLPOk groupSLinkInfo_ groupSLinkData ov ->
+  CPGroupLink glp _ -> case glp of
+    GLPOk groupSLinkInfo_ groupSLinkData ov addressChanged ->
       let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
-       in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
+       in [grpLink $ (if direct then "ok to connect directly" else "ok to connect via relays") <> (if addressChanged then ", address changed" else "")]
             <> viewSigVerification ov
             <> [viewJSON groupSLinkData | testView]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
@@ -2286,6 +2313,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       grpOrBiz GroupInfo {businessChat} = case businessChat of
         Just _ -> "business"
         Nothing -> "group"
+  CPNameNotConnectable d _ -> ["SimpleX name " <> plain (fullDomainName d) <> ": nothing to connect to"]
   CPError e -> viewChatError False logLevel testView e
   where
     nextConnectPrepared Contact {preparedContact, activeConn} = case preparedContact of
