@@ -145,8 +145,7 @@ setAccountUser db sId userId n =
 accountHeldBy :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO Bool
 accountHeldBy db sId userId n = (== Just (Just userId)) <$> accountUser db sId n
 
--- | What a scan found: the accounts in use, bound to the profile that ran it because the chain does not say whose they are, and the counter past them.
--- The counter is taken from the recorded accounts, not from the scan alone, so it never lands on one another profile already holds, and it only ever rises.
+-- | The accounts a scan found, bound to the profile that ran it, and the counter raised past every account recorded, not just those found.
 recordScan :: DB.Connection -> SeedId -> UserId -> [AccountIndex] -> IO ()
 recordScan db sId userId inUse = do
   mapM_ insertScanned inUse
