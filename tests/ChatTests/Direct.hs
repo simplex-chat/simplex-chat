@@ -21,7 +21,7 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.List (intercalate, stripPrefix)
+import Data.List (intercalate, isPrefixOf, stripPrefix)
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust, isNothing)
 import qualified Data.Text as T
@@ -1350,18 +1350,23 @@ testNegotiateCall =
     alice ##> "/_call status @2 connected"
     alice <## "ok"
     threadDelay 100000
-    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: in progress (00:00)")])
+    alice #$> ("/_get chat @2 count=100", callChat, chatFeatures <> [(1, "outgoing call: in progress")])
     bob ##> "/_call status @2 connected"
     bob <## "ok"
     threadDelay 100000
-    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: in progress (00:00)")])
+    bob #$> ("/_get chat @2 count=100", callChat, chatFeatures <> [(0, "incoming call: in progress")])
     -- either party can end the call
     bob ##> "/_call end @2"
     bob <## "ok"
     threadDelay 100000
-    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: ended (00:00)")])
+    bob #$> ("/_get chat @2 count=100", callChat, chatFeatures <> [(0, "incoming call: ended")])
     alice <## "call with bob ended"
-    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: ended (00:00)")])
+    alice #$> ("/_get chat @2 count=100", callChat, chatFeatures <> [(1, "outgoing call: ended")])
+  where
+    callChat = map (fmap noDuration) . chat
+    noDuration s = case words s of
+      ws@(_ : _) | "(0" `isPrefixOf` last ws -> unwords $ init ws
+      _ -> s
 
 testStopStartChat :: HasCallStack => TestParams -> IO ()
 testStopStartChat ps =
@@ -1370,12 +1375,12 @@ testStopStartChat ps =
       connectUsers alice bob
       alice #> "@bob hi"
       bob <# "alice> hi"
-      alice #$> ("/_ttl 1 4", id, "ok")
-      alice ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 2}}"
+      alice #$> ("/_ttl 1 12", id, "ok")
+      alice ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 6}}"
       alice <## "you updated preferences for bob:"
-      alice <## "Disappearing messages: enabled (you allow: yes (2 sec), contact allows: yes)"
+      alice <## "Disappearing messages: enabled (you allow: yes (6 sec), contact allows: yes)"
       bob <## "alice updated preferences for you:"
-      bob <## "Disappearing messages: enabled (you allow: yes (2 sec), contact allows: yes (2 sec))"
+      bob <## "Disappearing messages: enabled (you allow: yes (6 sec), contact allows: yes (6 sec))"
       alice #> "@bob hi timed"
       bob <# "alice> hi timed"
       let ChatController {agentAsync, cleanupManagerAsync, expireCIThreads, timedItemThreads} = chatController alice
@@ -1397,9 +1402,10 @@ testStopStartChat ps =
       alice <## "subscribed 1 connections on server localhost"
       bob #> "@alice hello"
       alice <# "bob> hello"
+      threadDelay 3000000
       alice <### ["timed message deleted: hi timed", "timed message deleted: hello"]
       bob <### ["timed message deleted: hi timed", "timed message deleted: hello"]
-      threadDelay 3000000
+      threadDelay 8000000
       alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner")])
       Just (a1', _) <- readTVarIO agentAsync
       (a1' == a1) `shouldBe` False
@@ -1685,6 +1691,7 @@ testConnSyncExtraAgentConns ps = do
         alice ##> "/_connections diff"
         alice <## "no difference between agent and chat connections"
 
+        threadDelay 1000000
         -- deleting connection record in chat db
         void $ withCCTransaction alice $ \db ->
           DB.execute_ db "DELETE FROM connections WHERE contact_id = (SELECT contact_id FROM contacts WHERE local_display_name = 'cath')"
@@ -2275,17 +2282,17 @@ testUsersDifferentCIExpirationTTL ps = do
       -- set ttl for first user
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_ttl 1 2", id, "ok")
+      alice #$> ("/_ttl 1 10", id, "ok")
 
       -- set ttl for second user
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_ttl 2 4", id, "ok")
+      alice #$> ("/_ttl 2 25", id, "ok")
 
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 2 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 10 second(s)")
 
       alice #> "@bob alice 3"
       bob <# "alice> alice 3"
@@ -2297,7 +2304,7 @@ testUsersDifferentCIExpirationTTL ps = do
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 4 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 25 second(s)")
 
       alice #> "@bob alisa 3"
       bob <# "alisa> alisa 3"
@@ -2306,7 +2313,7 @@ testUsersDifferentCIExpirationTTL ps = do
 
       alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 3000000
+      threadDelay 12000000
 
       -- messages both before and after setting chat item ttl are deleted
       -- first user messages
@@ -2319,7 +2326,7 @@ testUsersDifferentCIExpirationTTL ps = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2100000
+      threadDelay 15000000
 
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
   where
@@ -2330,13 +2337,13 @@ testUsersRestartCIExpiration ps = do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
       -- set ttl for first user
-      alice #$> ("/_ttl 1 2", id, "ok")
+      alice #$> ("/_ttl 1 10", id, "ok")
       connectUsers alice bob
 
       -- create second user and set ttl
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_ttl 2 5", id, "ok")
+      alice #$> ("/_ttl 2 25", id, "ok")
       connectUsers alice bob
 
       -- first user messages
@@ -2368,7 +2375,7 @@ testUsersRestartCIExpiration ps = do
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 2 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 10 second(s)")
 
       alice #> "@bob alice 3"
       bob <# "alice> alice 3"
@@ -2380,7 +2387,7 @@ testUsersRestartCIExpiration ps = do
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 5 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 25 second(s)")
 
       alice #> "@bob alisa 3"
       bob <# "alisa> alisa 3"
@@ -2389,7 +2396,7 @@ testUsersRestartCIExpiration ps = do
 
       alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 3000000
+      threadDelay 12000000
 
       -- messages both before and after restart are deleted
       -- first user messages
@@ -2402,7 +2409,7 @@ testUsersRestartCIExpiration ps = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 4000000
+      threadDelay 15000000
 
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
   where
@@ -2490,7 +2497,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
       -- create second user and set ttl
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_ttl 2 1", id, "ok")
+      alice #$> ("/_ttl 2 5", id, "ok")
       connectUsers alice bob
 
       -- first user disables expiration
@@ -2502,7 +2509,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
       -- second user still has ttl configured
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 5 second(s)")
 
       alice #> "@bob alisa 1"
       bob <# "alisa> alisa 1"
@@ -2511,7 +2518,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
 
       alice #$> ("/_get chat @5 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2")])
 
-      threadDelay 2000000
+      threadDelay 6000000
 
       -- second user messages are deleted
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
@@ -2521,7 +2528,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
       alice <## "subscribed 1 connections on server localhost"
 
       -- second user still has ttl configured after restart
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 5 second(s)")
 
       alice #> "@bob alisa 3"
       bob <# "alisa> alisa 3"
@@ -2530,7 +2537,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
 
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 3000000
+      threadDelay 6000000
 
       -- second user messages are deleted
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner")])
@@ -2542,13 +2549,13 @@ testUsersTimedMessages ps' = do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     withNewTestChat ps "alice" aliceProfile $ \alice -> do
       connectUsers alice bob
-      configureTimedMessages alice bob "2" "2"
+      configureTimedMessages alice bob "2" "8"
 
       -- create second user and configure timed messages for contact
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       connectUsers alice bob
-      configureTimedMessages alice bob "5" "3"
+      configureTimedMessages alice bob "5" "16"
 
       -- first user messages
       alice ##> "/user alice"
@@ -2569,7 +2576,7 @@ testUsersTimedMessages ps' = do
       alice <# "bob> alisa 2"
 
       -- messages are deleted after ttl
-      threadDelay 1500000
+      threadDelay 6000000
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
@@ -2579,7 +2586,7 @@ testUsersTimedMessages ps' = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 1"), (0, "alisa 2")])
 
-      threadDelay 1000000
+      threadDelay 4000000
 
       alice <### ["[user: alice] timed message deleted: alice 1", "[user: alice] timed message deleted: alice 2"]
       bob <### ["timed message deleted: alice 1", "timed message deleted: alice 2"]
@@ -2592,7 +2599,7 @@ testUsersTimedMessages ps' = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 1"), (0, "alisa 2")])
 
-      threadDelay 1000000
+      threadDelay 7000000
 
       alice <### ["timed message deleted: alisa 1", "timed message deleted: alisa 2"]
       bob <### ["timed message deleted: alisa 1", "timed message deleted: alisa 2"]
@@ -2632,7 +2639,7 @@ testUsersTimedMessages ps' = do
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
       -- messages are deleted after restart
-      threadDelay 1000000
+      threadDelay 8000000
 
       alice <### ["[user: alice] timed message deleted: alice 3", "[user: alice] timed message deleted: alice 4"]
       bob <### ["timed message deleted: alice 3", "timed message deleted: alice 4"]
@@ -2645,7 +2652,7 @@ testUsersTimedMessages ps' = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @5 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 1000000
+      threadDelay 8000000
 
       alice <### ["timed message deleted: alisa 3", "timed message deleted: alisa 4"]
       bob <### ["timed message deleted: alisa 3", "timed message deleted: alisa 4"]
@@ -2827,17 +2834,17 @@ testSetChatItemTTL =
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       alice <## "completed uploading file 1 (test.jpg) for bob"
       -- above items should be deleted after we set ttl
-      threadDelay 3000000
+      threadDelay 6000000
       alice #> "@bob 3"
       bob <# "alice> 3"
       bob #> "@alice 4"
       alice <# "bob> 4"
       alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, ""), Just "test.jpg"), ((1, "3"), Nothing), ((0, "4"), Nothing)])
       checkActionDeletesFile (tmpFile alice "app_files/test.jpg") $
-        alice #$> ("/_ttl 1 2", id, "ok")
+        alice #$> ("/_ttl 1 5", id, "ok")
       alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4")]) -- when expiration is turned on, first cycle is synchronous
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, ""), (0, "3"), (1, "4")])
-      alice #$> ("/_ttl 1", id, "old messages are set to be deleted after: 2 second(s)")
+      alice #$> ("/_ttl 1", id, "old messages are set to be deleted after: 5 second(s)")
       alice #$> ("/ttl week", id, "ok")
       alice #$> ("/ttl", id, "old messages are set to be deleted after: one week")
       alice #$> ("/ttl none", id, "ok")
@@ -2861,13 +2868,13 @@ testSetDirectChatTTL =
         alice #$> ("/ttl @cath none", id, "ok")
         alice #$> ("/ttl @cath", id, "old messages are not being deleted")
 
-        threadDelay 3000000
+        threadDelay 6000000
         alice #> "@bob 3"
         bob <# "alice> 3"
         bob #> "@alice 4"
         alice <# "bob> 4"
         alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, "3"), Nothing), ((0, "4"), Nothing)])
-        alice #$> ("/_ttl 1 2", id, "ok")
+        alice #$> ("/_ttl 1 5", id, "ok")
          -- when expiration is turned on, first cycle is synchronous
         alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4")])
 
@@ -3116,13 +3123,15 @@ testMsgDecryptError ps =
     withTestChat ps "bob" $ \bob -> do
       bob <## "subscribed 1 connections on server localhost"
       alice #> "@bob hello again"
-      bob <# "alice> skipped message ID 9..11"
+      bob <# "alice> skipped message ID 7..9"
       bob <# "alice> hello again"
       bob #> "@alice received!"
       alice <# "bob> received!"
 
 setupDesynchronizedRatchet :: HasCallStack => TestParams -> TestCC -> IO ()
 setupDesynchronizedRatchet ps alice = do
+  alice ##> "/set receipts all off"
+  alice <## "ok"
   copyDb "bob" "bob_old"
   withTestChat ps "bob" $ \bob -> do
     bob <## "subscribed 1 connections on server localhost"

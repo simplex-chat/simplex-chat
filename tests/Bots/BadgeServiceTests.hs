@@ -38,7 +38,7 @@ import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag, endOf
 import Simplex.Chat.Badges.Service
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
-import Simplex.Chat.Options (CoreChatOpts (..))
+import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
@@ -96,16 +96,16 @@ testIssuerKeyIdx :: Int
 testIssuerKeyIdx = 1
 
 mkBadgeServiceOpts :: TestParams -> BBSSecretKey -> BadgeServiceOpts
-mkBadgeServiceOpts TestParams {tmpPath = ps} secretKey =
+mkBadgeServiceOpts ps secretKey =
   BadgeServiceOpts
     { coreOptions =
-        testCoreOpts
+        coreOpts
           { dbOptions =
               (dbOptions testCoreOpts)
 #if defined(dbPostgres)
-                {dbSchemaPrefix = "client_" <> serviceDbPrefix}
+                {dbSchemaPrefix = testSchemaPrefix ps serviceDbPrefix}
 #else
-                {dbFilePrefix = ps </> serviceDbPrefix}
+                {dbFilePrefix = tmpPath ps </> serviceDbPrefix}
 #endif
           },
       serviceName = "SimpleX Badges",
@@ -115,6 +115,8 @@ mkBadgeServiceOpts TestParams {tmpPath = ps} secretKey =
       issuerKey = Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey},
       testing = True
     }
+  where
+    (_, ChatOpts {coreOptions = coreOpts}) = testPortsCfg ps testCfg testOpts
 
 -- | A clock the service and the client both read: real time plus an offset the test moves. It
 -- tracks real time rather than freezing it, so a sleeper still sleeps the right real duration.
@@ -157,7 +159,7 @@ withBadgeServiceEnv ps test = do
       svcCfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk, badgeCurrentTime = testClockTime clock}
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
   -- First start: badge service takes the CreateMyAddress branch.
-  runBadgeService svcCfg opts $ \_ -> pure ()
+  runBadgeService ps svcCfg opts $ \_ -> pure ()
   -- Reopen the DB to read the link the service created.
   bsLink <- withTestChat ps serviceDbPrefix $ \bs -> do
     bs <## "subscribed 1 connections on server localhost"
@@ -168,7 +170,7 @@ withBadgeServiceEnv ps test = do
   let clientCfg =
         svcCfg {badgeServiceAddress = Just $ either (error . ("bad badge service address: " <>)) id $ strDecode (B.pack bsLink)}
   -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
-  runBadgeService svcCfg opts $ \env -> do
+  runBadgeService ps svcCfg opts $ \env -> do
     cc <- atomically $ readTMVar $ serviceCC env
     test BadgeServiceEnv {bsIssuerKey = BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk}, bsClock = clock, bsClientCfg = clientCfg, bsAddress = bsLink, bsController = cc}
 
@@ -184,10 +186,10 @@ issueCode cc badgeType months =
 -- | The post-start hook fills serviceCC once the address exists, so waiting on it is the service
 -- being ready. A fixed delay here raced with startup and left the address output of one start
 -- arriving during the next test.
-runBadgeService :: ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
-runBadgeService cfg opts action = do
+runBadgeService :: TestParams -> ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
+runBadgeService ps cfg opts action = do
   env <- newServiceState
-  t <- forkIO $ badgeService opts cfg env
+  t <- forkIO $ badgeService opts (fst $ testPortsCfg ps cfg testOpts) env
   ready <- timeout 30000000 $ atomically $ readTMVar $ serviceCC env
   when (isNothing ready) $ killThread t >> error "badge service did not start"
   action env `finally` killThread t

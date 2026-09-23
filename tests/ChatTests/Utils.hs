@@ -94,7 +94,7 @@ it :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expe
 it name test =
   Hspec.it name $ \tmp -> timeout t (test tmp) >>= maybe (error "test timed out") pure
   where
-    t = 90 * 1000000
+    t = 180 * 1000000
 
 xit' :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 xit' = if os == "linux" then xit else it
@@ -350,7 +350,7 @@ itemId i = show $ length chatFeatures + i
 
 (@@@) :: HasCallStack => TestCC -> [(String, String)] -> Expectation
 (@@@) cc res = do
-  threadDelay 100000
+  threadDelay 500000
   getChats mapChats cc res
 
 mapChats :: [(String, String, Maybe ConnStatus)] -> [(String, String)]

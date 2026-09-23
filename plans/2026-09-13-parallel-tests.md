@@ -32,6 +32,16 @@ concurrently in one process with `parallel` and `--jobs`.
   "Save query plans" (last item, reads the maps after every test).
 - Postgres: the database is created once (`beforeAll_`/`afterAll_`); the
   client schema prefix includes the test directory name.
+- Bots started through `directoryService`, `badgeService` and
+  `simplexChatCore` take `coreOptions` and the config from `testPortsCfg`.
+- `TestTerminal` wraps the virtual terminal and writes the cursor row to
+  `termQ` on `PutLn`.
+- The "no output left" check runs in the bracket body; `stopTestChat` stops
+  the client in a separate thread with a 60 s limit and keeps the store open
+  after the limit.
+- Per-test limit 180 s; the "channels" group is `sequential`; `@@@` waits
+  500 ms. TTL and timed-message tests use multi-second TTLs; ratchet
+  desynchronization helpers turn receipts off.
 
 ## Status
 

@@ -262,7 +262,7 @@ chatGroupTests = do
   -- TODO   - cancellation on failure to create relay group (for owner)
   -- TODO   - async retry connecting to relay (for members)
   -- TODO   - test relay privileges
-  describe "channels" $ do
+  sequential $ describe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
@@ -3501,7 +3501,7 @@ testGLinkRejectBlockedName =
       bob <## "#team: joining the group..."
       bob <## "#team: join rejected, reason: GRRBlockedName"
 
-      threadDelay 100000
+      threadDelay 1000000
 
       alice `hasContactProfiles` ["alice"]
       memCount <- withCCTransaction alice $ \db ->
@@ -4097,13 +4097,15 @@ testGroupMsgDecryptError ps =
     withTestChat ps "bob" $ \bob -> do
       bob <## "subscribed 2 connections on server localhost"
       alice #> "#team hello again"
-      bob <# "#team alice> skipped message ID 8..10"
+      bob <# "#team alice> skipped message ID 6..8"
       bob <# "#team alice> hello again"
       bob #> "#team received!"
       alice <# "#team bob> received!"
 
 setupDesynchronizedRatchet :: HasCallStack => TestParams -> TestCC -> IO ()
 setupDesynchronizedRatchet ps alice = do
+  alice ##> "/set receipts all off"
+  alice <## "ok"
   copyDb "bob" "bob_old"
   withTestChat ps "bob" $ \bob -> do
     bob <## "subscribed 2 connections on server localhost"
@@ -6482,12 +6484,12 @@ testGroupHistoryDisappearingMessage =
       threadDelay 1000000
 
       -- 3 seconds so that messages 2 and 3 are not deleted for alice before sending history to cath
-      alice ##> "/set disappear #team on 4"
+      alice ##> "/set disappear #team on 15"
       alice <## "updated group preferences:"
-      alice <## "Disappearing messages: on (4 sec)"
+      alice <## "Disappearing messages: on (15 sec)"
       bob <## "alice updated group #team: (signed)"
       bob <## "updated group preferences:"
-      bob <## "Disappearing messages: on (4 sec)"
+      bob <## "Disappearing messages: on (15 sec)"
 
       bob #> "#team 2"
       alice <# "#team bob> 2"
@@ -6531,6 +6533,7 @@ testGroupHistoryDisappearingMessage =
       r1 <- chat <$> getTermLine cath
       r1 `shouldContain` [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
 
+      threadDelay 11000000
       concurrentlyN_
         [ alice
             <### [ "timed message deleted: 2",
@@ -7614,6 +7617,7 @@ testGroupMemberInactive ps = do
         bob <# "#team alice> hi"
         bob #> "#team hey"
         alice <# "#team bob> hey"
+        threadDelay 1000000
 
       -- bob is offline
       alice #> "#team 1"

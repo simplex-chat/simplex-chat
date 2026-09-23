@@ -40,7 +40,7 @@ import Simplex.Chat.Options.DB
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
-import Simplex.Chat.Terminal.Output (newChatTerminal)
+import Simplex.Chat.Terminal.Output (WithTerminal (..), newChatTerminal)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.FileTransfer.Description (kb, mb)
@@ -70,7 +70,7 @@ import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
 import System.FilePath ((</>))
 import qualified System.Terminal as C
-import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
+import System.Terminal.Internal (Command (..), Terminal (..), VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
 import Test.Hspec (Expectation, HasCallStack, shouldReturn)
 #if defined(dbPostgres)
@@ -260,13 +260,32 @@ termSettings =
 
 data TestCC = TestCC
   { chatController :: ChatController,
-    virtualTerminal :: VirtualTerminal,
     chatAsync :: Async (),
-    termAsync :: Async (),
     termQ :: TQueue String,
     printOutput :: Bool,
     ccParams :: TestParams
   }
+
+data TestTerminal = TestTerminal VirtualTerminal (TQueue String)
+
+instance Terminal TestTerminal where
+  termType (TestTerminal t _) = termType t
+  termEvent (TestTerminal t _) = termEvent t
+  termInterrupt (TestTerminal t _) = termInterrupt t
+  termCommand (TestTerminal t q) c = do
+    case c of
+      PutLn -> atomically $ do
+        C.Position {row} <- readTVar $ virtualCursor t
+        rows <- readTVar $ virtualWindow t
+        writeTQueue q $ dropWhileEnd (== ' ') $ rows !! row
+      _ -> pure ()
+    termCommand t c
+  termFlush (TestTerminal t _) = termFlush t
+  termGetWindowSize (TestTerminal t _) = termGetWindowSize t
+  termGetCursorPosition (TestTerminal t _) = termGetCursorPosition t
+
+instance WithTerminal TestTerminal where
+  withTerm t = ($ t)
 
 aCfg :: AgentConfig
 aCfg = (agentConfig defaultChatConfig) {tbqSize = 16}
@@ -380,29 +399,31 @@ insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users (user_id) V
 startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> String -> User -> IO TestCC
 startTestChat_ ps@TestParams {tmpPath, printOutput} db cfg_ opts_ dbPrefix user = do
   let (cfg, opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}}) = testPortsCfg ps cfg_ opts_
-  t <- withVirtualTerminal termSettings pure
+  termQ <- newTQueueIO
+  t <- withVirtualTerminal termSettings $ pure . (`TestTerminal` termQ)
   ct <- newChatTerminal t opts
   Right cc <- newChatController db (Just user) cfg opts False
   void $ execChatCommand' (SetTempFolder (tmpPath </> dbPrefix)) 0 `runReaderT` cc
   chatAsync <- async $ runSimplexChat cfg opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
-  termQ <- newTQueueIO
-  termAsync <- async $ readTerminalOutput t termQ
-  pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ, printOutput, ccParams = ps}
+  pure TestCC {chatController = cc, chatAsync, termQ, printOutput, ccParams = ps}
 
 stopTestChat :: TestParams -> TestCC -> IO ()
-stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}, chatAsync, termAsync} = do
-  stopChatController cc
-  uninterruptibleCancel termAsync
-  uninterruptibleCancel chatAsync
-  liftIO $ disposeAgentClient smpAgent
+stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}, chatAsync} = do
+  stopped <- async $ do
+    stopChatController cc
+    cancel chatAsync
+    disposeAgentClient smpAgent
+  r <- timeout 60000000 $ wait stopped
 #if !defined(dbPostgres)
   chatStats <- withConnection chatStore $ readTVarIO . DB.slow
   atomically $ modifyTVar' (chatQueryStats ps) $ M.unionWith combineStats chatStats
   agentStats <- withConnection (agentClientStore smpAgent) $ readTVarIO . DB.slow
   atomically $ modifyTVar' (agentQueryStats ps) $ M.unionWith combineStats agentStats
 #endif
-  closeDBStore chatStore
+  case r of
+    Just () -> closeDBStore chatStore
+    Nothing -> putStrLn "stopTestChat: chat did not stop in 60 seconds"
   threadDelay 200000
 #if !defined(dbPostgres)
   where
@@ -455,7 +476,8 @@ withTestChatOpts :: HasCallStack => TestParams -> ChatOpts -> String -> (HasCall
 withTestChatOpts ps = withTestChatCfgOpts ps testCfg
 
 withTestChatCfgOpts :: HasCallStack => TestParams -> ChatConfig -> ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatCfgOpts ps cfg opts dbPrefix = bracket (startTestChat ps cfg opts dbPrefix) (\cc -> cc <// 100000 >> stopTestChat ps cc)
+withTestChatCfgOpts ps cfg opts dbPrefix runTest =
+  bracket (startTestChat ps cfg opts dbPrefix) (stopTestChat ps) (\cc -> runTest cc >>= ((cc <// 100000) $>))
 
 -- enable output for specific test.
 -- usage: withTestOutput $ testChat2 aliceProfile bobProfile $ \alice bob -> do ...
@@ -482,29 +504,6 @@ enableNamesRole TestCC {chatController = cc} = do
         }
     enableNames srv@UserServer {roles} = (srv :: UserServer 'PSMP) {roles = (roles :: ServerRolesOverride) {names = Just True}}
 
-readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
-readTerminalOutput t termQ = do
-  let w = virtualWindow t
-  winVar <- atomically $ newTVar . init =<< readTVar w
-  forever . atomically $ do
-    win <- readTVar winVar
-    win' <- init <$> readTVar w
-    if win' == win
-      then retry
-      else do
-        let diff = getDiff win' win
-        forM_ diff $ writeTQueue termQ
-        writeTVar winVar win'
-  where
-    getDiff :: [String] -> [String] -> [String]
-    getDiff win win' = getDiff_ 1 (length win) win win'
-    getDiff_ :: Int -> Int -> [String] -> [String] -> [String]
-    getDiff_ n len win' win =
-      let diff = drop (len - n) win'
-       in if drop n win <> diff == win'
-            then map (dropWhileEnd (== ' ')) diff
-            else getDiff_ (n + 1) len win' win
-
 withTmpFiles :: IO () -> IO ()
 withTmpFiles =
   bracket_
@@ -523,16 +522,15 @@ withPortBase bases = bracket takeBase (\b -> atomically $ modifyTVar' bases (b :
 
 testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> TestParams -> IO ()
 testChatN cfg opts ps test params =
-  bracket (getTestCCs $ zip ps [1 ..]) endTests test
+  bracket (getTestCCs $ zip ps [1 ..]) (mapConcurrently_ $ stopTestChat params) $ \tcs -> do
+    test tcs
+    mapConcurrently_ (<// 100000) tcs
   where
     useClientServices = False
     -- useClientServices = True
     getTestCCs :: [(Profile, Int)] -> IO [TestCC]
     getTestCCs [] = pure []
     getTestCCs ((p, db) : envs') = (:) <$> createTestChat params cfg opts (show db) useClientServices p <*> getTestCCs envs'
-    endTests tcs = do
-      mapConcurrently_ (<// 100000) tcs
-      mapConcurrently_ (stopTestChat params) tcs
 
 (<//) :: HasCallStack => TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
