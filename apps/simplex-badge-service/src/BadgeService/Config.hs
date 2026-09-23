@@ -117,11 +117,10 @@ defaultStripeHost = "https://api.stripe.com"
 defaultSessionMinutes :: Int
 defaultSessionMinutes = 60
 
--- | Stripe bounds session expiry to 30 minutes through 24 hours; these sit a minute inside,
--- so request latency or a service clock ahead of Stripe's cannot 400 an at-bound create.
+-- | At most one day, so a card order expires long before the poller stops checking it at 72 hours.
 minSessionMinutes, maxSessionMinutes :: Int
-minSessionMinutes = 31
-maxSessionMinutes = 1439
+minSessionMinutes = 1
+maxSessionMinutes = 1440
 
 -- | An http host would carry the API key in the clear on every call.
 requireHttps :: Text -> Either String Text

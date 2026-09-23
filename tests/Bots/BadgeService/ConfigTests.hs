@@ -26,7 +26,7 @@ badgeConfigTests = describe "badge service config" $ do
   it "applies every documented stripe default" testStripeDefaults
   it "disables stripe when the section is absent" testStripeAbsent
   it "refuses an incomplete stripe section, naming the key" testStripeIncomplete
-  it "bounds stripe session_minutes to 31-1439" testStripeSessionMinutesRange
+  it "bounds stripe session_minutes to 1-1440" testStripeSessionMinutesRange
   it "accepts HighSpeed" (testSpeedPolicyAccepted "HighSpeed" HighSpeed)
   it "accepts LowMediumSpeed" (testSpeedPolicyAccepted "LowMediumSpeed" LowMediumSpeed)
   it "accepts LowSpeed" (testSpeedPolicyAccepted "LowSpeed" LowSpeed)
@@ -157,25 +157,25 @@ testStripeIncomplete =
 
 testStripeSessionMinutesRange :: IO ()
 testStripeSessionMinutesRange = do
-  refuses "session_minutes = 5\n"
-  refuses "session_minutes = 30\n"
-  refuses "session_minutes = 1440\n"
+  refuses "session_minutes = -5\n"
+  refuses "session_minutes = 0\n"
+  refuses "session_minutes = 1441\n"
   refuses "session_minutes = 2000\n"
-  accepts "session_minutes = 31\n" 31
-  accepts "session_minutes = 1439\n" 1439
+  accepts "session_minutes = 1\n" 1
+  accepts "session_minutes = 1440\n" 1440
   where
     refuses value =
       withIni (fullStripeIni <> value) $ \p -> do
         r <- readServiceConfig p
         case r of
           Left e -> e `shouldContain` "session_minutes"
-          Right _ -> expectationFailure ("stripe." <> T.unpack (T.strip value) <> " is outside 31-1439 and must fail")
+          Right _ -> expectationFailure ("stripe." <> T.unpack (T.strip value) <> " is outside 1-1440 and must fail")
     accepts value expected =
       withIni (fullStripeIni <> value) $ \p -> do
         r <- readServiceConfig p
         case r of
           Right cfg -> fmap sSessionMinutes (stripe cfg) `shouldBe` Just expected
-          Left e -> expectationFailure ("stripe." <> T.unpack (T.strip value) <> " is inside 31-1439 and must parse, but: " <> e)
+          Left e -> expectationFailure ("stripe." <> T.unpack (T.strip value) <> " is inside 1-1440 and must parse, but: " <> e)
 
 testSpeedPolicyAccepted :: T.Text -> SpeedPolicy -> IO ()
 testSpeedPolicyAccepted name expected =
