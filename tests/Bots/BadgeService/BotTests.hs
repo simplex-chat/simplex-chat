@@ -1267,7 +1267,7 @@ testRedeemUnpaidCode ps =
     withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
       unpaid <- issueCodeAs cc BTSupporter 1 "unpaid"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg unpaid)
-      alice <## "bad chat command: badge service error: payment_pending"
+      alice <## "cannot redeem badge code: badge service error: payment_pending"
       paid <- issueCodeAs cc BTSupporter 1 "paid"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
       alice <## "badge redeemed"
@@ -1284,7 +1284,7 @@ testExpiredCode ps =
       withDB' "markCodePaid" cc (\db -> markCodePaid db (badgeCodeHash code) (addUTCTime (-60) now))
         `shouldReturn` Right ()
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
-      alice <## "bad chat command: badge service error: code_expired"
+      alice <## "cannot redeem badge code: badge service error: code_expired"
 
 testRedeemedBeforeTheDeadline :: HasCallStack => TestParams -> IO ()
 testRedeemedBeforeTheDeadline ps =
@@ -1316,6 +1316,6 @@ testRevokedCode ps =
       paid <- issueCodeAs cc BTSupporter 1 "paid"
       revokeCodeAs cc paid `shouldReturn` "revoked"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
-      alice <## "bad chat command: badge service error: code_invalid"
+      alice <## "cannot redeem badge code: badge service error: code_invalid"
       second <- revokeCodeAs cc paid
       second `shouldSatisfy` T.isInfixOf "revoked already"
