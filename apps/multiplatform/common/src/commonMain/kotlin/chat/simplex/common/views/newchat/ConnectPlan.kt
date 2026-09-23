@@ -82,6 +82,7 @@ private fun showNameRegistrationAlert(
   domain: SimplexDomain,
   reg: NameRegistration,
   isOwn: Boolean,
+  notConnectable: Boolean,
   hasLocalChat: Boolean,
   openExistingChat: (() -> Unit)?,
   cleanup: (() -> Unit)?
@@ -175,8 +176,9 @@ private fun showNameRegistrationAlert(
         true
       }
     }
-    // 2f: registered and live, but the record has no usable link
-    reg is NameRegistration.Registered && !hasLocalChat && !isOwn -> {
+    // 2f: registered and live, but the record has no usable link. Only the plan knows that:
+    // a live registration the plan can connect to has nothing to say.
+    reg is NameRegistration.Registered && notConnectable && !hasLocalChat && !isOwn -> {
       alert(
         generalGetString(MR.strings.simplex_name_no_valid_link),
         String.format(generalGetString(MR.strings.simplex_name_no_valid_link_desc), nameStr)
@@ -268,6 +270,7 @@ private suspend fun planAndConnectTask(
         domain = nameDomain,
         reg = nameReg,
         isOwn = isOwnName,
+        notConnectable = connectionPlan is ConnectionPlan.NameNotConnectable,
         hasLocalChat = knownContact != null || knownGroup != null,
         openExistingChat = openExisting,
         cleanup = cleanup
