@@ -8,7 +8,6 @@
     <string name="network_socks_toggle_use_socks_proxy">Usar proxy SOCKS</string>
     <string name="network_enable_socks">Usar proxy SOCKS\?</string>
     <string name="port_verb">Porto</string>
-    <string name="network_proxy_port">porto %d</string>
     <string name="appearance_settings">Aparência</string>
     <string name="app_version_title">Versão da aplicação</string>
     <string name="all_your_contacts_will_remain_connected">Todos os seus contatos permanecerão conectados.</string>
@@ -25,10 +24,8 @@
     <string name="alert_title_msg_bad_hash">Hash de mensagem incorreto</string>
     <string name="alert_title_msg_bad_id">ID da mensagem incorreto</string>
     <string name="lock_after">Bloquear após</string>
-    <string name="full_backup">Backup de dados da aplicação</string>
     <string name="auto_accept_images">Aceitar imagens automaticamente</string>
     <string name="passcode_set">Código de acesso definido!</string>
-    <string name="settings_section_title_you">Você</string>
     <string name="settings_section_title_messages">Mensagens e ficheiros</string>
     <string name="settings_section_title_icon">Ícone da aplicação</string>
     <string name="chat_item_ttl_month">1 mês</string>
@@ -43,8 +40,6 @@
     <string name="chat_preferences_no">não</string>
     <string name="set_group_preferences">Definir preferências de grupo</string>
     <string name="voice_messages">Mensagens de voz</string>
-    <string name="available_in_v51">"
-\nDisponível na v5.1"</string>
     <string name="accept_feature">Aceitar</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Permitir que seus contatos enviem mensagens que desaparecem.</string>
     <string name="accept_feature_set_1_day">Definir 1 dia</string>
@@ -71,10 +66,8 @@
     <string name="v4_4_disappearing_messages_desc">As mensagens enviadas serão eliminadas após o tempo definido.</string>
     <string name="v4_5_message_draft">Mensagem de rascunho</string>
     <string name="v5_0_app_passcode_descr">Defina-o em vez de autenticação do sistema.</string>
-    <string name="connect_via_link_verb">Conectar</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Você está conectado ao servidor usado para receber mensagens deste contacto.</string>
     <string name="sender_you_pronoun">você</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Certifique-se de que os endereços do servidor XFTP estão no formato correto, separados por linhas e não estão duplicados.</string>
     <string name="smp_server_test_disconnect">Desconectar</string>
     <string name="error_smp_test_certificate">Possivelmente, a impressão digital do certificado no endereço do servidor está incorreta</string>
     <string name="enter_passphrase_notification_title">A senha é necessária</string>
@@ -85,9 +78,7 @@
     <string name="la_auth_failed">Falha na autenticação</string>
     <string name="auth_log_in_using_credential">Inicie sessão usando a sua credencial</string>
     <string name="delete_message_mark_deleted_warning">A mensagem será marcada para eliminação. O(s) destinatário(s) poderá(ão) revelar esta mensagem.</string>
-    <string name="icon_descr_sent_msg_status_sent">enviada</string>
     <string name="group_preview_you_are_invited">você está convidado para o grupo</string>
-    <string name="you_are_observer">você é observador</string>
     <string name="connect_plan_you_are_observer">Você é observador</string>
     <string name="connect_plan_you_are_member">Você é membro</string>
     <string name="connect_plan_you_are_admin">Você é administrador</string>
@@ -99,7 +90,6 @@
     <string name="back">Voltar</string>
     <string name="set_contact_name">Definir nome do contato</string>
     <string name="you_accepted_connection">Você aceitou a conexão</string>
-    <string name="about_simplex">Sobre o SimpleX</string>
     <string name="network_settings">Definições de rede avançadas</string>
     <string name="about_simplex_chat">Sobre o SimpleX Chat</string>
     <string name="above_then_preposition_continuation">acima, então:</string>
@@ -128,7 +118,6 @@
     <string name="accept">Aceitar</string>
     <string name="accept_connection_request__question">Aceitar pedido de ligação\?</string>
     <string name="accept_contact_incognito_button">Aceitar modo anónimo</string>
-    <string name="smp_servers_preset_add">Adicionar servidores pré-definidos</string>
     <string name="network_enable_socks_info">Aceder aos servidores via proxy SOCKS no porto %d\? O proxy tem de iniciar antes de ativar esta opção.</string>
     <string name="smp_servers_add_to_another_device">Adicionar a outro dispositivo</string>
     <string name="group_member_role_admin">administrador</string>
@@ -147,7 +136,6 @@
     <string name="deleted_description">eliminado</string>
     <string name="rcv_group_event_group_deleted">grupo eliminado</string>
     <string name="group_display_name_field">Nome do grupo:</string>
-    <string name="display_name_cannot_contain_whitespace">O nome de exibição não pode conter espaços em branco.</string>
     <string name="ttl_m">%dm</string>
     <string name="dont_show_again">Não mostrar novamente</string>
     <string name="show_developer_options">Mostrar opções de desenvolvedor</string>
@@ -157,14 +145,12 @@
     <string name="display_name__field">Nome para Exibição:</string>
     <string name="show_QR_code">Mostrar código QR</string>
     <string name="disappearing_messages_are_prohibited">Mensagens temporárias são proibidas neste grupo.</string>
-    <string name="connect_via_link_or_qr">Conectar via link / código QR</string>
     <string name="disappearing_prohibited_in_this_chat">Mensagens temporárias são proibidas nesta conversa.</string>
     <string name="send_verb">Enviar</string>
     <string name="live">AO VIVO</string>
     <string name="send_live_message_desc">Enviar uma mensagem ao vivo - ela será atualizada para o(s) destinatário(s) à medida que você a digita</string>
     <string name="info_row_local_name">Nome local</string>
     <string name="lock_mode">Modo de bloqueio</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Certifique-se de que os endereços do servidor SMP estão no formato correto, separados por linhas e não estão duplicados.</string>
     <string name="make_private_connection">Fazer uma conexão privada</string>
     <string name="make_profile_private">Tornar o perfil privado!</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Certifique-se de que os endereços do servidor WebRTC ICE estão no formato correto, separados por linhas e não estão duplicados.</string>
@@ -204,7 +190,6 @@
     <string name="both_you_and_your_contacts_can_delete">Você e o seu contato podem eliminar irreversivelmente as mensagens enviadas.</string>
     <string name="failed_to_create_user_duplicate_desc">Você já tem um perfil de chat com o mesmo nome para exibição. Por favor, escolha outro nome.</string>
     <string name="you_are_invited_to_group">Você está convidado para o grupo</string>
-    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Você também se pode conectar clicando na ligação. Se ele abrir no navegador, clique no botão <b>Abrir na aplicação móvel</b>.]]></string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Você está convidado para o grupo. Junte-se para se conectar com os membros do grupo.</string>
     <string name="info_row_group">Grupo</string>
     <string name="icon_descr_audio_on">Áudio ligado</string>
@@ -289,7 +274,6 @@
     <string name="error_deleting_user">Erro ao eliminar perfil de utilizador</string>
     <string name="database_initialization_error_title">Não é possível inicializar a base de dados</string>
     <string name="la_change_app_passcode">Alterar código de acesso</string>
-    <string name="chat_with_developers">Converse com os desenvolvedores</string>
     <string name="icon_descr_server_status_error">Erro</string>
     <string name="clear_chat_button">Limpar conversa</string>
     <string name="clear_chat_question">Limpar conversa\?</string>
@@ -324,8 +308,6 @@
     <string name="la_please_remember_to_store_password">Por favor, lembre-se ou armazene-a com segurança - não há nenhuma maneira de recuperar uma senha perdida!</string>
     <string name="set_password_to_export">Definir senha para exportar</string>
     <string name="connection_request_sent">Pedido de conexão enviado!</string>
-    <string name="create_address">Criar endereço</string>
-    <string name="create_profile_button">Criar</string>
     <string name="colored_text">colorido</string>
     <string name="callstate_connecting">conectando…</string>
     <string name="icon_descr_call_connecting">Conectando chamada</string>
@@ -334,7 +316,6 @@
     <string name="group_member_status_connecting">conectando</string>
     <string name="icon_descr_contact_checked">Contacto verificado</string>
     <string name="group_link">Ligação de grupo</string>
-    <string name="display_name_connecting">conectando…</string>
     <string name="display_name_connection_established">conexão estabelecida</string>
     <string name="connection_error_auth">Erro de conexão</string>
     <string name="smp_server_test_create_file">Criar ficheiro</string>
@@ -374,7 +355,6 @@
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Se você recebeu convite de ligação do SimpleX Chat, você pode abri-lo no seu navegador:</string>
     <string name="group_invitation_tap_to_join_incognito">Toque para entrar no modo anônimo</string>
     <string name="save_passphrase_in_keychain">Salvar senha na Keystore</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Se não se poderem encontrar pessoalmente, <b>mostre o código QR na chamada de vídeo </b> ou partilhe a ligação.]]></string>
     <string name="save_auto_accept_settings">Salvar definições de aceitação automática</string>
     <string name="auto_accept_contact">Aceitar automaticamente</string>
     <string name="save_and_update_group_profile">Salvar e atualizar o perfil do grupo</string>
@@ -393,25 +373,20 @@
     <string name="simplex_link_mode_description">Descrição</string>
     <string name="simplex_link_mode_full">Ligação completa</string>
     <string name="description_via_contact_address_link_incognito">anónimo via ligação de endereço de contato</string>
-    <string name="simplex_link_mode_browser_warning">Abrir a ligação no browser poderá reduzir a privacidade e a segurança da ligação. As ligações Simplex não confiáveis serão vermelhas.</string>
     <string name="auth_confirm_credential">Confirmar credenciais</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">O contacto e todas as mensagens serão eliminadas - esta ação é irreversível!</string>
     <string name="image_descr_link_preview">ligação de visualização de imagem</string>
     <string name="invalid_contact_link">Ligação inválida!</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Leia mais em <font color="#0088ff">Guia de Utilizador</font>.]]></string>
     <string name="network_session_mode_entity">Conexão</string>
-    <string name="create_address_and_let_people_connect">Crie um endereço para permitir que as pessoas se conectem consigo.</string>
     <string name="save_and_notify_contact">Salvar e notificar contato</string>
     <string name="save_and_notify_contacts">Salvar e notificar contatos</string>
     <string name="save_and_notify_group_members">Salvar e notificar membros do grupo</string>
     <string name="save_preferences_question">Salvar preferências\?</string>
     <string name="continue_to_next_step">Continuar</string>
-    <string name="learn_more_about_address">Sobre o endereço SimpleX</string>
     <string name="add_contact">Convite de ligação de utilização única</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Todos os seus contatos permanecerão conectados. A atualização do perfil será enviada aos seus contatos.</string>
     <string name="add_address_to_your_profile">Adicione endereço ao seu perfil, para que os seus contatos possam partilhá-lo com outras pessoas. A atualização do perfil será enviada aos seus contatos.</string>
     <string name="contacts_can_mark_messages_for_deletion">Os contactos podem marcar mensagens para eliminar; você será capaz de as ver.</string>
-    <string name="share_one_time_link">Criar convite de ligação de utilização única</string>
     <string name="description_via_one_time_link_incognito">anónimo via ligação de utilização única</string>
     <string name="description_via_group_link_incognito">anónimo via ligação de grupo</string>
     <string name="description_via_one_time_link">via ligação de utilização única</string>
@@ -419,15 +394,11 @@
     <string name="one_time_link_short">Ligação para 1 utilização</string>
     <string name="button_create_group_link">Criar ligação</string>
     <string name="delete_link_question">Apagar ligação\?</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Se não puderem encontrar-se pessoalmente, você pode <b>ler o código QR na chamada de vídeo </b>, ou o seu contato pode partilhar um convite de ligação.]]></string>
     <string name="if_you_cant_meet_in_person">Se não se poderem encontrar pessoalmente, mostre o código QR numa chamada de vídeo ou partilhe a ligação.</string>
-    <string name="people_can_connect_only_via_links_you_share">As pessoas podem se conectar a si apenas por meio das ligações que você partilhe.</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Verifique se você usou a ligação correta ou peça ao seu contato para enviar outra.</string>
     <string name="share_link">Partilhar ligação</string>
     <string name="send_link_previews">Enviar pré-visualizações de ligações</string>
-    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(ler ou colar da área de transferência)</string>
     <string name="share_invitation_link">Partilhar ligação de utilização única</string>
-    <string name="read_more_in_github_with_link"><![CDATA[Leia mais no nosso repositório <font color="#0088ff">GitHub</font>.]]></string>
     <string name="create_profile">Criar perfil</string>
     <string name="create_your_profile">Criar o seu perfil</string>
     <string name="num_contacts_selected">%d contacto(s) selecionado(s)</string>
@@ -463,11 +434,9 @@
     <string name="auth_disable_simplex_lock">Desativar o bloqueio do SimpleX</string>
     <string name="maximum_supported_file_size">Atualmente o tamanho máximo de ficheiro suportado é %1$s.</string>
     <string name="button_delete_contact">Eliminar contacto</string>
-    <string name="create_group">Criar grupo secreto</string>
     <string name="smp_servers_delete_server">Eliminar servidor</string>
     <string name="customize_theme_title">Personalizar tema</string>
     <string name="delete_image">Eliminar imagem</string>
-    <string name="dont_create_address">Não criar endereço</string>
     <string name="no_call_on_lock_screen">Desativar</string>
     <string name="database_passphrase">Palavra-passe da base de dados</string>
     <string name="create_simplex_address">Criar endereço SimpleX</string>
@@ -476,7 +445,6 @@
     <string name="delete_contact_question">Eliminar contacto?</string>
     <string name="settings_section_title_device">Dispositivo</string>
     <string name="direct_messages">Mensagens diretas</string>
-    <string name="decentralized">Descentralizado</string>
     <string name="integrity_msg_duplicate">mensagem duplicada</string>
     <string name="file_with_path">Ficheiro: %s</string>
     <string name="group_info_member_you">você: %1$s</string>
@@ -498,8 +466,6 @@
     <string name="you_wont_lose_your_contacts_if_delete_address">Você não irá perder os seus contatos se eliminar o seu endereço mais tarde.</string>
     <string name="you_can_hide_or_mute_user_profile">Você pode esconder ou silenciar um perfil de utilizador - pressione-o para o menu.</string>
     <string name="icon_descr_video_on">Vídeo ligado</string>
-    <string name="xftp_servers">Servidores XFTP</string>
-    <string name="contact_wants_to_connect_via_call"> %1$s  quer conectar-se consigo via</string>
     <string name="join_group_button">Junte-se</string>
     <string name="leave_group_button">Sair</string>
     <string name="leave_group_question">Deixar o grupo\?</string>
@@ -532,11 +498,7 @@
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Você pode <font color="#0088ff">conectar-se com os desenvolvedores do SimpleX Chat para fazer quaisquer perguntas e receber atualizações</font>.]]></string>
     <string name="gallery_image_button">Imagem</string>
     <string name="gallery_video_button">Vídeo</string>
-    <string name="icon_descr_address">Endereço SimpleX</string>
-    <string name="icon_descr_simplex_team">Equipa SimpleX</string>
     <string name="learn_more">Saiba mais</string>
-    <string name="you_can_accept_or_reject_connection">Quando as pessoas solicitam conexão, você pode aceitá-la ou rejeitá-la.</string>
-    <string name="you_can_create_it_later">Você pode criá-lo mais tarde</string>
     <string name="email_invite_subject">Vamos conversar no SimpleX Chat</string>
     <string name="icon_descr_video_off">Vídeo desligado</string>
     <string name="integrity_msg_skipped">%1$d mensagem(s) ignoradas</string>
@@ -562,7 +524,6 @@
     <string name="icon_descr_more_button">Mais</string>
     <string name="network_and_servers">Rede e servidores</string>
     <string name="network_settings_title">Configurações avançadas</string>
-    <string name="settings_section_title_experimenta">Experimental</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Você pode iniciar a conversa através das Definições da aplicação / Base de Dados ou reiniciando a aplicação.</string>
     <string name="update_network_settings_confirmation">Atualizar</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">A atualização das definições reconectará o cliente a todos os servidores.</string>
@@ -573,19 +534,14 @@
     <string name="v4_6_reduced_battery_usage_descr">Mais melhorias chegam brevemente!</string>
     <string name="settings_notification_preview_title">Pré-visualização de notificação</string>
     <string name="message_delivery_error_desc">Muito provavelmente este contato eliminou a conexão consigo.</string>
-    <string name="this_text_is_available_in_settings">Este texto está disponível nas definições</string>
     <string name="onboarding_notifications_mode_subtitle">Pode ser alterado mais tarde através das definições.</string>
     <string name="settings_section_title_help">Ajuda</string>
-    <string name="settings_section_title_support">Suporte SimpleX Chat</string>
-    <string name="settings_experimental_features">Funcionalidades experimentais</string>
     <string name="settings_section_title_themes">Temas</string>
     <string name="theme_dark">Escuro</string>
-    <string name="dark_theme">Tema escuro</string>
     <string name="chat_item_ttl_none">nunca</string>
     <string name="self_destruct_new_display_name">Novo nome para exibição:</string>
     <string name="new_in_version">Novidades %s</string>
     <string name="notification_new_contact_request">Novo pedido de contato</string>
-    <string name="new_database_archive">Novo arquivo de base de dados</string>
     <string name="encrypted_with_random_passphrase">A base de dados está encriptada com uma palavra-passe aleatória, você pode alterá-la.</string>
     <string name="enter_correct_passphrase">Insira a senha correta.</string>
     <string name="database_backup_can_be_restored">A tentativa de alterar a senha da base de dados não foi concluída.</string>
@@ -615,7 +571,6 @@
     <string name="group_member_role_observer">observador</string>
     <string name="ok">OK</string>
     <string name="feature_offered_item">oferecido %s</string>
-    <string name="old_database_archive">Arquivo de base de dados antigo</string>
     <string name="network_use_onion_hosts_required_desc">Hosts Onion serão necessários para a conexão.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Pode acontecer quando você ou sua conexão usaram o backup de base de dados antigo.</string>
     <string name="status_e2e_encrypted">encriptado ponta a ponta</string>
@@ -637,7 +592,6 @@
     <string name="to_verify_compare">Para verificar a encriptação de ponta a ponta com o seu contato, compare (ou leia) o código nos seus dispositivos.</string>
     <string name="scan_code_from_contacts_app">Ler o código de segurança a partir da aplicação do seu contacto.</string>
     <string name="smp_servers_scan_qr">Ler o código QR do servidor</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Apenas dispositivos pessoais armazenam perfis de utilizador, contatos, grupos e mensagens.</string>
     <string name="status_contact_has_e2e_encryption">o contacto tem encriptação ponta a ponta</string>
     <string name="status_no_e2e_encryption">sem encriptação ponta a ponta</string>
     <string name="group_member_status_creator">criador</string>
@@ -674,7 +628,6 @@
     <string name="encrypted_database">Base de dados encriptada</string>
     <string name="group_member_status_introduced">conectando (introduzido)</string>
     <string name="v5_1_better_messages">Melhores mensagens</string>
-    <string name="icon_descr_email">Email</string>
     <string name="network_session_mode_transport_isolation">Isolamento do Transporte</string>
     <string name="callstate_ended">terminado</string>
     <string name="settings_developer_tools">Ferramentos de programador</string>
@@ -725,11 +678,9 @@
     <string name="search_verb">Pesquisar</string>
     <string name="la_mode_off">Desativado</string>
     <string name="error_smp_test_failed_at_step">O teste falhou na etapa %s.</string>
-    <string name="smp_servers">Servidor SMP</string>
     <string name="smp_servers_test_server">Servidor de teste</string>
     <string name="chat_item_ttl_seconds">%s segundo(s)</string>
     <string name="stop_chat_question">Parar conversa?</string>
-    <string name="theme_system">Sistema</string>
     <string name="v4_6_audio_video_calls_descr">Suporte a bluetooth e outras melhorias.</string>
     <string name="migrate_from_device_stopping_chat">Parando a conversa</string>
     <string name="migrate_from_device_bytes_uploaded">%s enviado</string>
@@ -741,7 +692,6 @@
     <string name="rcv_group_event_n_members_connected">%s, %s e %d outros membros conectados</string>
     <string name="start_chat_question">Iniciar conversa?</string>
     <string name="notifications_mode_periodic">Começa periodicamente</string>
-    <string name="tap_to_start_new_chat">Toque para iniciar uma nova conversa</string>
     <string name="la_lock_mode_system">Sistema de autenticação</string>
     <string name="stop_rcv_file__title">Parar de receber o arquivo?</string>
     <string name="smp_servers_test_servers">Servidores de teste</string>
@@ -798,9 +748,6 @@
     <string name="migrate_to_device_downloading_details">A transferir detalhes de ligação</string>
     <string name="migrate_from_device_creating_archive_link">A criar ligação de arquivo</string>
     <string name="duplicates_label">duplicados(as)</string>
-    <string name="open_server_settings_button">Abrir definições do servidor</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">O seu perfil de conversa será enviado
-\npara o seu contacto</string>
     <string name="connect_with_contact_name_question">Conectar com %1$s?</string>
     <string name="audio_device_earpiece">Auricular</string>
     <string name="devices">Dispositivos</string>
@@ -817,8 +764,6 @@
     <string name="developer_options_section">Opções de programador</string>
     <string name="enable_receipts_all">Ativar</string>
     <string name="desktop_device">Computador</string>
-    <string name="contact_sent_large_file">O seu contacto enviou um ficheiro que é maior que o tamanho máximo suportado atualmente (%1$s).</string>
-    <string name="smp_servers_your_server">O seu servidor</string>
     <string name="smp_servers_your_server_address">O endereço do seu servidor</string>
     <string name="your_calls">As tuas chamadas</string>
     <string name="disable_sending_recent_history">Não enviar histórico a novos membros.</string>
@@ -834,9 +779,7 @@
     <string name="info_row_created_at">Criado em</string>
     <string name="feature_enabled_for">Ativo para</string>
     <string name="v4_3_irreversible_message_deletion_desc">Os seus contactos podem permitir eliminação total de mensagens.</string>
-    <string name="remote_ctrl_disconnected_with_reason">Desconectado com a razão: %s</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Você já solicitou ligação através deste endereço!</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Código e protocolo open-source - qualquer indivíduo pode ser anfitrião dos servidores.</string>
     <string name="blocked_items_description">%d mensagens bloqueadas</string>
     <string name="marked_deleted_items_description">%d mensagens marcadas como eliminadas</string>
     <string name="la_could_not_be_verified">Você não pode ser verificado; por favor tente novamente.</string>
@@ -885,7 +828,6 @@
     <string name="app_check_for_updates_button_download">Transferir %s (%s)</string>
     <string name="your_ICE_servers">Os seus servidores ICE</string>
     <string name="your_profile_is_stored_on_your_device">O seu perfil, contactos e mensagens entregues são armazenados no seu dispositivo.</string>
-    <string name="your_ice_servers">Os seus servidores ICE</string>
     <string name="receipts_groups_disable_keep_overrides">Desativar (manter as sobreposições de grupo)</string>
     <string name="receipts_contacts_disable_keep_overrides">Desativar (manter sobreposições)</string>
     <string name="receipts_contacts_title_disable">Desativar recibos?</string>
@@ -897,7 +839,6 @@
     <string name="you_joined_this_group">Você juntou-se a este grupo</string>
     <string name="rcv_group_events_count">%d eventos de grupo</string>
     <string name="snd_conn_event_ratchet_sync_ok">encriptação ok para %s</string>
-    <string name="connect_via_member_address_alert_desc">O pedido de ligação vai ser enviado para este membro do grupo.</string>
     <string name="cant_call_contact_deleted_alert_text">O contacto foi eliminado.</string>
     <string name="you_need_to_allow_calls">Você precisa de permitir que o seu contacto inicie chamada de voz para poder iniciar uma chamada de voz.</string>
     <string name="color_mode_dark">Escuro</string>
@@ -926,10 +867,7 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Você será conectado quando o dispositivo do seu contacto estiver online, por favor aguarde ou volte mais tarde!</string>
     <string name="disconnect_remote_host">Desconectar</string>
     <string name="app_check_for_updates_disabled">Desativado</string>
-    <string name="your_XFTP_servers">Os seus servidores XFTP</string>
-    <string name="you_control_your_chat">Você controla a conversa!</string>
     <string name="you_can_still_view_conversation_with_contact">Você poderá ver a conversa com %1$s na lista de conversas.</string>
-    <string name="your_SMP_servers">Os seus servidores SMP</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Você pode usar markdown para formatar mensagens:</string>
     <string name="you_can_still_send_messages_to_contact">Você poderá enviar mensagens para %1$s através das conversas Eliminadas.</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">O seu contacto precisa de estar online para a ligação ser completada.
@@ -940,17 +878,14 @@
     <string name="you_need_to_allow_to_send_voice">Você precisa de permitir que o seu contacto envie mensagens de aúdio para poder enviá-las.</string>
     <string name="app_check_for_updates_notice_disable">Desativar</string>
     <string name="receipts_groups_disable_for_all">Desativar para todos os grupos</string>
-    <string name="your_chat_database">A tua base de dados de conversas</string>
     <string name="servers_info_details">Detalhes</string>
     <string name="you_can_share_this_address_with_your_contacts">Você pode partilhar o seu endereço com os seus contactos para permitir que se conectem com %s.</string>
-    <string name="you_can_share_your_address">Você pode partilhar o seu endereço como uma ligação ou código QR - qualquer pessoa pode conectar-se a si.</string>
     <string name="turn_off_battery_optimization_button">Permitir</string>
     <string name="block_member_desc">Todas as novas mensagens de %s serão ocultadas!</string>
     <string name="only_you_can_make_calls">Somente você pode fazer ligações.</string>
     <string name="chat_theme_apply_to_all_modes">Todos os modos de cores</string>
     <string name="feature_roles_admins">administradores</string>
     <string name="snd_conn_event_ratchet_sync_started">"aceitando criptografia para  %s…"</string>
-    <string name="add_contact_tab">Adicionar contato</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Permitir downgrade</string>
     <string name="clear_note_folder_warning">Todas as mensagens serão deletadas - isso não poderá ser desfeito!</string>
     <string name="v5_2_more_things">Mais algumas coisas</string>

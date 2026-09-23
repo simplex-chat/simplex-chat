@@ -5075,6 +5075,100 @@ enum class SimplexTLD {
   @SerialName("web") web
 }
 
+// How recently each SimpleX name was resolved from the registry.
+//
+// The lookup canvas asks that a name you already have a chat for is resolved at most once a day,
+// or once its registration has expired, while any other name resolves on every tap. Core stays
+// stateless for this: PRMNever answers from the store without a network round trip and reports a
+// miss, and PRMAll always resolves. So a fresh name is tried locally first and only falls through
+// to the registry when no chat claims it - which is exactly "every tap" for a name you do not have.
+object NameResolution {
+  private const val DAY_SECONDS = 24 * 60 * 60L
+  private val prefs: AppPreferences get() = ChatController.appPrefs
+
+  @Serializable
+  private data class Resolved(val at: Long, val expires: Long? = null)
+
+  private fun load(): MutableMap<String, Resolved> =
+    try {
+      val s = prefs.simplexNamesResolvedAt.get() ?: return mutableMapOf()
+      json.decodeFromString<Map<String, Resolved>>(s).toMutableMap()
+    } catch (e: Exception) {
+      mutableMapOf()
+    }
+
+  private fun save(m: Map<String, Resolved>) {
+    // only names looked up in the last week are worth remembering
+    val now = nowSeconds()
+    val kept = m.filterValues { now - it.at < 7 * DAY_SECONDS }
+    try {
+      prefs.simplexNamesResolvedAt.set(json.encodeToString<Map<String, Resolved>>(kept))
+    } catch (e: Exception) {
+      Log.e(TAG, "NameResolution.save: ${e.stackTraceToString()}")
+    }
+  }
+
+  private fun nowSeconds(): Long = Clock.System.now().epochSeconds
+
+  // a cached answer is stale a day after it was taken, or as soon as the name it described expired
+  fun isFresh(domain: SimplexDomain): Boolean {
+    val r = load()[domain.fullDomainName] ?: return false
+    val now = nowSeconds()
+    if (now - r.at >= DAY_SECONDS) return false
+    return r.expires == null || now < r.expires
+  }
+
+  fun record(domain: SimplexDomain, reg: NameRegistration?) {
+    val m = load()
+    m[domain.fullDomainName] = Resolved(nowSeconds(), (reg as? NameRegistration.Registered)?.expires)
+    save(m)
+  }
+
+  // a name registered, claimed or dropped on this device must not keep reading as it did before
+  fun forget(fullDomainName: String) {
+    val m = load()
+    if (m.remove(fullDomainName) != null) save(m)
+  }
+}
+
+// What the registry holds for a name. This JSON is the RNAME payload, so it is "type"-tagged on
+// every platform, and the unset text fields of the record are not read here.
+@Serializable
+sealed class NameRegistration {
+  // held by someone; expires/graceUntil are absent from an older router, which means "not known", not "live forever"
+  @Serializable @SerialName("registered") class Registered(
+    val expires: Long? = null,
+    val graceUntil: Long? = null,
+    val reservedReason_: String? = null
+  ): NameRegistration()
+  @Serializable @SerialName("available") class Available(val pricing: NamePricing): NameRegistration()
+  @Serializable @SerialName("reserved") class Reserved(val reservedReason: String): NameRegistration()
+
+  // a name past its expiry does not connect: only its owner can renew it until the grace ends
+  fun expired(now: Long): Boolean = this is Registered && expires != null && expires < now
+
+  val reservedForCommunity: Boolean get() = when (this) {
+    is Reserved -> reservedReason == RESERVED_COMMUNITY
+    is Registered -> reservedReason_ == RESERVED_COMMUNITY
+    is Available -> false
+  }
+
+  companion object {
+    // the registry may add reasons after this version, so any other value is just "not registrable"
+    const val RESERVED_COMMUNITY = "community"
+  }
+}
+
+// enough to price a name locally: US cents per year, and the shortest label the registry accepts
+@Serializable
+data class NamePricing(
+  val registrationPrices: Map<String, Long> = emptyMap(),
+  val basePrice: Long,
+  val minLabelLength: Int
+) {
+  fun centsPerYear(labelLength: Int): Long = registrationPrices[labelLength.toString()] ?: basePrice
+}
+
 @Serializable
 enum class SimplexNameType {
   @SerialName("publicGroup") publicGroup,

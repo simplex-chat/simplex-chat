@@ -256,6 +256,7 @@ testConnectByNameChannelAndContact ps = withSmpServerAndNames $ \reg ->
         bob <## "SimpleX name: #team (verified)"
         bob <## "use #team <message> to send messages"
         bob <## "You can also connect to @team.simplex in direct chat"
+        bob <## "registered"
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
@@ -494,9 +495,12 @@ testPlanKnownNameAddressChanged ps = withSmpServerAndNames $ \reg ->
       -- resolve=all re-resolves it and reports the new address
       bob ##> "/_connect plan 1 @alice.simplex resolve=all"
       bob <## "contact address: ok to connect, address changed"
+      _ <- getTermLine bob -- the new address's short link data (JSON, printed in test view)
       -- the chat bob already has is still what a local-only lookup returns
       bob ##> "/_connect plan 1 @alice.simplex resolve=never"
       bob <## "contact address: known contact alice"
+      bob <## "SimpleX name: @alice.simplex (verified)"
+      bob <## "use @alice <message> to send messages"
 
 -- 2h: the registry could not be asked. As today, this stays an error rather than a plan.
 testPlanNameResolverFailed :: HasCallStack => TestParams -> IO ()
