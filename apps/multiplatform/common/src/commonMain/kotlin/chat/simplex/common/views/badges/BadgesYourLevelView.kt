@@ -54,7 +54,7 @@ enum class BadgeLevel {
 }
 
 @Composable
-fun BadgesYourLevelView() {
+fun BadgesYourLevelView(modalManager: ModalManager) {
   var selectedLevel by remember { mutableStateOf(BadgeLevel.Supporter) }
 
   LaunchedEffect(Unit) { BadgeStore.load() }
@@ -99,11 +99,11 @@ fun BadgesYourLevelView() {
     // Nested Column with no spacing so the TextButtonBelowOnboardingButton sits directly under
     // the action button (matches onboarding pattern where its own 7.5dp top padding is the gap).
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      ContinueButton(selectedLevel)
+      ContinueButton(selectedLevel, modalManager)
       TextButtonBelowOnboardingButton(
         text = stringResource(MR.strings.badges_how_it_works_button),
         icon = painterResource(MR.images.ic_info),
-        onClick = { ModalManager.start.showModal { BadgesHowItWorksView() } }
+        onClick = { modalManager.showModal { BadgesHowItWorksView() } }
       )
     }
   }
@@ -140,13 +140,13 @@ private fun LevelCard(level: BadgeLevel, selectedLevel: BadgeLevel, modifier: Mo
 }
 
 @Composable
-private fun ContinueButton(selectedLevel: BadgeLevel) {
+private fun ContinueButton(selectedLevel: BadgeLevel, modalManager: ModalManager) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.badges_continue,
     onboarding = null,
     onclick = {
-      ModalManager.start.showModal { BadgesPayView(selectedLevel) }
+      modalManager.showModal { BadgesPayView(selectedLevel) }
     }
   )
 }

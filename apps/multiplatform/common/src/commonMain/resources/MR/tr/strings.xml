@@ -2788,7 +2788,6 @@
     <string name="channel_member_you">sen</string>
     <string name="you_are_subscriber">Abonesiniz</string>
     <string name="you_can_share_channel_link_anybody_will_be_able_to_connect">Bir bağlantı veya QR kodu paylaşabilirsiniz; böylece kanala herkes katılabilir.</string>
-    <string name="badge_support_from_v7">Uygulamanın v7 sürümünden itibaren SimpleX\'i destekleyebilirsiniz.</string>
     <string name="relay_section_footer_subscriber">Bu aktarım bağlantısı (relay link) üzerinden kanala bağlandınız.</string>
     <string name="chat_banner_your_channel">Kanalınız</string>
     <string name="connect_plan_this_is_your_link_for_channel">Kanalınız</string>

@@ -37,7 +37,7 @@ import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.res.MR
 
 @Composable
-fun BadgesYourBadgeView(badgeState: BadgeState) {
+fun BadgesYourBadgeView(badgeState: BadgeState, modalManager: ModalManager) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.badges_your_badge))
 
@@ -54,7 +54,7 @@ fun BadgesYourBadgeView(badgeState: BadgeState) {
       SettingsActionItem(
         painterResource(MR.images.ic_info),
         stringResource(MR.strings.badges_how_it_works_button),
-        { ModalManager.start.showModal { BadgesHowItWorksView() } },
+        { modalManager.showModal { BadgesHowItWorksView() } },
       )
     }
     SectionSpacer()
@@ -98,7 +98,7 @@ fun BadgesYourBadgeView(badgeState: BadgeState) {
         SectionItemView({ clipboard.setText(AnnotatedString(badgeState.purchaseKey)) }) {
           Text(stringResource(MR.strings.badges_copy_purchase_key), color = MaterialTheme.colors.primary)
         }
-        SectionItemView({ ModalManager.start.showCustomModal { close -> BadgesLedgerView(badgeState, close) } }) {
+        SectionItemView({ modalManager.showCustomModal { close -> BadgesLedgerView(badgeState, close) } }) {
           Text(stringResource(MR.strings.badges_ledger))
         }
       }
