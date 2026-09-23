@@ -987,6 +987,13 @@ CREATE TABLE wallet_accounts(
   account_index INTEGER CHECK(account_index BETWEEN 0 AND 2147483647),
   user_id INTEGER REFERENCES users ON DELETE SET NULL
 ) STRICT;
+CREATE TABLE wallet_names(
+  wallet_name_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  wallet_seed_id INTEGER NOT NULL REFERENCES wallet_seeds ON DELETE CASCADE,
+  account_index INTEGER NOT NULL CHECK(account_index BETWEEN 0 AND 2147483647),
+  name TEXT NOT NULL,
+  name_response TEXT NOT NULL -- the NameResponse a scan last read for this name
+) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -1556,6 +1563,10 @@ CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_a
   account_index
 );
 CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
+CREATE UNIQUE INDEX idx_wallet_names_wallet_seed_id_name ON wallet_names(
+  wallet_seed_id,
+  name
+);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

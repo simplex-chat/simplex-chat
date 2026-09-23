@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
@@ -12,6 +13,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (toUpper)
 import Data.Either (isRight)
+import Data.Int (Int64)
 import Data.List (nub)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -19,8 +21,11 @@ import NameResolver (ownedName)
 import Simplex.Chat.Wallet (AccountIndex, WalletError (..), accountSecret, deriveAccountKey, entropyFromMnemonic, renderAccountPath, seedMaster, seedMnemonic)
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
+import Simplex.Messaging.Agent.Store.AgentStore (withTransaction)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Names.Record (NameRecord (..), NameRegistration (..), NameResponse (..))
+import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
 
@@ -115,6 +120,10 @@ testWalletScan ps = withSmpServerAndNames $ \reg -> withNewTestChat ps "alice" a
   ownedName reg "alice.simplex" (accountAddress 1)
   alice ##> "/_wallet scan"
   alice <## "accounts: 1"
+  -- the names the scan saw are recorded against the account that holds them
+  names <- withCCTransaction alice $ \db -> DB.query_ db "SELECT account_index, name, name_response FROM wallet_names"
+  map (\(n, nm, _) -> (n, nm)) names `shouldBe` [(1 :: Int64, "alice.simplex" :: Text)]
+  map (\(_, _, r) -> registeredName <$> decodeJSON r) names `shouldBe` [Just (Just "alice.simplex")]
   -- the scan gives the imported phrase the counter it had none of
   alice ##> "/_wallet bind"
   alice <## "accounts: 1, 2"
@@ -298,6 +307,12 @@ testWalletScanHiddenProfile ps = withSmpServerAndNames $ \_reg -> withNewTestCha
   alice <## "profile is hidden"
   alice ##> "/_wallet scan"
   alice <## "wallet: a hidden profile cannot own an account"
+
+-- | The name a stored NameResponse carries, which is what makes the row findable again.
+registeredName :: NameResponse -> Maybe Text
+registeredName NameResponse {registration} = case registration of
+  NRRegistered {nameRecord} -> Just $ nrName nameRecord
+  _ -> Nothing
 
 testWalletPersists :: HasCallStack => TestParams -> IO ()
 testWalletPersists ps = do

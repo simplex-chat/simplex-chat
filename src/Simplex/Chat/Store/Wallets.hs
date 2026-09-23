@@ -20,7 +20,7 @@ module Simplex.Chat.Store.Wallets
   )
 where
 
-import Control.Monad (join, unless)
+import Control.Monad (forM_, join, unless)
 import Control.Monad.Except
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteArray as BA
@@ -28,8 +28,10 @@ import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Simplex.Chat.Wallet (AccountIndex, WalletError (..), checkAccountIndex)
 import Simplex.Messaging.Agent.Protocol (UserId)
+import Simplex.Messaging.Names.Record (NameRecord (..), NameRegistration (..), NameResponse (..))
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Util (encodeJSON)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
@@ -145,8 +147,8 @@ setAccountUser db sId userId n =
 accountHeldBy :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO Bool
 accountHeldBy db sId userId n = (== Just (Just userId)) <$> accountUser db sId n
 
--- | The accounts a scan found, bound to the profile that ran it, and the counter raised past every account recorded, not just those found.
-recordScan :: DB.Connection -> SeedId -> UserId -> [AccountIndex] -> IO ()
+-- | The accounts a scan found with the names each holds, bound to the profile that ran it, and the counter raised past every account recorded, not just those found.
+recordScan :: DB.Connection -> SeedId -> UserId -> [(AccountIndex, [NameResponse])] -> IO ()
 recordScan db sId userId inUse = do
   mapM_ insertScanned inUse
   DB.execute
@@ -158,7 +160,7 @@ recordScan db sId userId inUse = do
     |]
     (sId, sId, sId)
   where
-    insertScanned n =
+    insertScanned (n, names) = do
       DB.execute
         db
         [sql|
@@ -166,6 +168,20 @@ recordScan db sId userId inUse = do
           ON CONFLICT (wallet_seed_id, account_index) DO NOTHING
         |]
         (sId, accountIndexCol n, userId)
+      mapM_ (insertName n) names
+    -- a name the scan no longer sees is left alone: it reads one page per account, so unseen is not unowned
+    insertName n r = forM_ (registeredName r) $ \nm ->
+      DB.execute
+        db
+        [sql|
+          INSERT INTO wallet_names (wallet_seed_id, account_index, name, name_response) VALUES (?, ?, ?, ?)
+          ON CONFLICT (wallet_seed_id, name)
+          DO UPDATE SET account_index = EXCLUDED.account_index, name_response = EXCLUDED.name_response
+        |]
+        (sId, accountIndexCol n, nm, encodeJSON r)
+    registeredName NameResponse {registration} = case registration of
+      NRRegistered {nameRecord} -> Just $ nrName nameRecord
+      _ -> Nothing
 
 -- | Keep the counter a high-water mark. Never lowers it, never gives one to an imported phrase that has none.
 raiseNextAccount :: DB.Connection -> SeedId -> AccountIndex -> IO ()

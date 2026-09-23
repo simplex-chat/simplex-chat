@@ -68,7 +68,7 @@ import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), cla
 import Simplex.Chat.Store.Wallets (WalletSeed (..), accountHeldByOther, bindAccount, createWalletSeed, deleteWalletSeed, getUserAccounts, getWalletSeed, recordScan, resolveAccount)
 import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccountKey, entropyFromMnemonic, newSeedEntropy, renderAccountPath, scanGapLimit, scanMaxAccounts, seedMaster, seedMnemonic)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
-import Simplex.Messaging.Names.Record (OwnedNames (..))
+import Simplex.Messaging.Names.Record (NameResponse, OwnedNames (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -5971,17 +5971,17 @@ accountKey :: WalletSeed -> AccountIndex -> CM AccountKey
 accountKey seed n = liftWallet $ seedMaster (wsEntropy seed) >>= (`deriveAccountKey` n)
 
 -- | Walk the accounts until 'scanGapLimit' in a row are untouched, or 'scanMaxAccounts' is reached, asking each on a relay the scan has not used where the configured set allows.
-scanAccounts :: NetworkRequestMode -> User -> WalletSeed -> CM [AccountIndex]
+scanAccounts :: NetworkRequestMode -> User -> WalletSeed -> CM [(AccountIndex, [NameResponse])]
 scanAccounts nm user seed = do
   master <- liftWallet $ seedMaster (wsEntropy seed)
-  let go :: AccountIndex -> [SMPServer] -> [AccountIndex] -> Int -> CM [AccountIndex]
+  let go :: AccountIndex -> [SMPServer] -> [(AccountIndex, [NameResponse])] -> Int -> CM [(AccountIndex, [NameResponse])]
       go n used found gap
         | gap >= scanGapLimit || n >= scanMaxAccounts = pure (reverse found)
         | otherwise = do
             addr <- addressFromPrivateKey <$> liftWallet (deriveAccountKey master n)
             (srv, owned) <- withAgent $ \a -> ownedSimplexNames a nm (aUserId user) used addr 0
             if ownInUse owned
-              then go (n + 1) (srv : used) (n : found) 0
+              then go (n + 1) (srv : used) ((n, ownNames owned) : found) 0
               else go (n + 1) (srv : used) found (gap + 1)
   go 0 [] [] 0
 

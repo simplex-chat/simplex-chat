@@ -1745,6 +1745,28 @@ ALTER TABLE test_chat_schema.wallet_accounts ALTER COLUMN wallet_account_id ADD 
 
 
 
+CREATE TABLE test_chat_schema.wallet_names (
+    wallet_name_id bigint NOT NULL,
+    wallet_seed_id bigint NOT NULL,
+    account_index bigint NOT NULL,
+    name text NOT NULL,
+    name_response text NOT NULL,
+    CONSTRAINT wallet_names_account_index_check CHECK (((account_index >= 0) AND (account_index <= 2147483647)))
+);
+
+
+
+ALTER TABLE test_chat_schema.wallet_names ALTER COLUMN wallet_name_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.wallet_names_wallet_name_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
 CREATE TABLE test_chat_schema.wallet_seeds (
     wallet_seed_id bigint NOT NULL,
     entropy bytea NOT NULL,
@@ -2182,6 +2204,11 @@ ALTER TABLE ONLY test_chat_schema.users
 
 ALTER TABLE ONLY test_chat_schema.wallet_accounts
     ADD CONSTRAINT wallet_accounts_pkey PRIMARY KEY (wallet_account_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.wallet_names
+    ADD CONSTRAINT wallet_names_pkey PRIMARY KEY (wallet_name_id);
 
 
 
@@ -2999,6 +3026,10 @@ CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON test_cha
 
 
 
+CREATE UNIQUE INDEX idx_wallet_names_wallet_seed_id_name ON test_chat_schema.wallet_names USING btree (wallet_seed_id, name);
+
+
+
 CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON test_chat_schema.wallet_seeds USING btree (single_seed);
 
 
@@ -3735,6 +3766,11 @@ ALTER TABLE ONLY test_chat_schema.wallet_accounts
 
 ALTER TABLE ONLY test_chat_schema.wallet_accounts
     ADD CONSTRAINT wallet_accounts_wallet_seed_id_fkey FOREIGN KEY (wallet_seed_id) REFERENCES test_chat_schema.wallet_seeds(wallet_seed_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.wallet_names
+    ADD CONSTRAINT wallet_names_wallet_seed_id_fkey FOREIGN KEY (wallet_seed_id) REFERENCES test_chat_schema.wallet_seeds(wallet_seed_id) ON DELETE CASCADE;
 
 
 
