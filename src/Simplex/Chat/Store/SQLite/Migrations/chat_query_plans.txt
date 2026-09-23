@@ -7765,6 +7765,10 @@ Query: SELECT user_id FROM users WHERE local_display_name = ?
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_2 (local_display_name=?)
 
+Query: SELECT via_contact_uri FROM connections WHERE connection_id = ?
+Plan:
+SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT via_contact_uri, via_contact_uri_hash FROM connections WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
