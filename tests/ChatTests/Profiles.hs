@@ -67,6 +67,7 @@ chatProfileTests = do
     it "rotate address ratchet keys" testRotateAddressRatchetKeys
     it "create address on specified server" testCreateAddressOnServer
     it "retry connecting via contact link" testRetryConnectingViaContactLink
+    it "retry connecting via address in contact profile" testRetryConnectingContactViaAddress
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
@@ -806,6 +807,66 @@ testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile 
           serverStoreCfg = persistentServerStoreCfg tmp
         }
     fastRetryInterval = defaultReconnectInterval {initialInterval = 50000} -- same as in agent tests
+    cfg' =
+      testCfg
+        { agentConfig =
+            testAgentCfg
+              { quotaExceededTimeout = 1,
+                messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
+              }
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testRetryConnectingContactViaAddress :: HasCallStack => TestParams -> IO ()
+testRetryConnectingContactViaAddress ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test ps
+  where
+    tmp = tmpPath ps
+    test alice bob = do
+      cLink <- withSmpServer' serverCfg' $ do
+        alice ##> "/ad"
+        (_sLink, cLink) <- getContactLinks alice True
+        alice ##> "/pa on"
+        alice <## "new contact address set"
+        pure cLink
+      alice <## "disconnected 1 connections on server localhost"
+      case A.parseOnly strP (B.pack cLink) of
+        Left _ -> error "error parsing contact link"
+        Right cReq -> do
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (storeCxt $ chatController bob) user aliceProfile {contactLink = Just cReq}
+          bob ##> "/_connect contact 1 2"
+          bob <##. "smp agent error: BROKER"
+          withSmpServer' serverCfg' $ do
+            alice <## "subscribed 1 connections on server localhost"
+            threadDelay 250000
+            bob ##> "/_connect contact 1 2"
+            bob <## "connection request sent!"
+            alice <## "bob (Bob) wants to connect to you!"
+            alice <## "to accept: /ac bob"
+            alice <## "to reject: /rc bob (the sender will NOT be notified)"
+            alice ##> "/ac bob"
+            alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+            concurrentlyN_
+              [ do
+                  bob <## "alice set new contact address, use /info alice to view"
+                  bob <## "alice (Alice): contact is connected",
+                alice <## "bob (Bob): contact is connected"
+              ]
+            alice <##> bob
+          alice <## "disconnected 2 connections on server localhost"
+          bob <## "disconnected 1 connections on server localhost"
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS, False)],
+          msgQueueQuota = 2,
+          serverStoreCfg = persistentServerStoreCfg tmp
+        }
+    fastRetryInterval = defaultReconnectInterval {initialInterval = 50000}
     cfg' =
       testCfg
         { agentConfig =

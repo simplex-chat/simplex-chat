@@ -2426,14 +2426,8 @@ processChatCommand cxt nm = \case
     g' <- withFastStore' $ \db -> setGroupDomainVerified db user g verified
     pure $ CRGroupDomainVerified user g' reason
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
-    ct@Contact {profile = LocalProfile {contactLink}} <- withFastStore $ \db -> getContact db cxt user contactId
-    ccLink <- case contactLink of
-      Just (CLFull cReq) -> pure $ CCLink cReq Nothing
-      Just (CLShort sLnk) -> do
-        (_, _, cReq) <- getShortLinkConnReq nm user sLnk
-        pure $ CCLink cReq $ Just sLnk
-      Nothing -> throwCmdError "no address in contact profile"
-    connectContactViaAddress user incognito ct ccLink `catchAllErrors` \e -> do
+    ct <- withFastStore $ \db -> getContact db cxt user contactId
+    connectContactViaAddress user incognito ct `catchAllErrors` \e -> do
       -- get updated contact, in case connection was started - in UI it would lock ability to change incognito choice
       -- on next connection attempt, in case server received request while client got network error
       ct' <- withFastStore $ \db -> getContact db cxt user contactId
@@ -3896,11 +3890,18 @@ processChatCommand cxt nm = \case
           conn <- withFastStore' $ \db -> createConnReqConnection db userId connId preparedEntity_ cReq cReqHash1 sLnk' xContactId incognitoProfile_ groupLinkId subMode chatV pqSup
           conn' <- joinContact user conn cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup
           pure $ CVRSentInvitation conn' incognitoProfile
-    connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> CreatedLinkContact -> CM ChatResponse
-    connectContactViaAddress user@User {userId} incognito ct@Contact {contactId, activeConn} (CCLink cReq shortLink) =
-      withInvitationLock "connectContactViaAddress" (strEncode cReq) $
-        case activeConn of
-          Nothing -> do
+    connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> CM ChatResponse
+    connectContactViaAddress user@User {userId} incognito ct@Contact {contactId, activeConn, groupDirectInv, profile = LocalProfile {contactLink}} = do
+      when (isJust groupDirectInv) $ throwCmdError "contact is a member contact request"
+      case activeConn of
+        Nothing -> do
+          CCLink cReq shortLink <- case contactLink of
+            Just (CLFull cReq) -> pure $ CCLink cReq Nothing
+            Just (CLShort sLnk) -> do
+              (_, _, cReq) <- getShortLinkConnReq nm user sLnk
+              pure $ CCLink cReq $ Just sLnk
+            Nothing -> throwCmdError "no address in contact profile"
+          withInvitationLock "connectContactViaAddress" (strEncode cReq) $ do
             let pqSup = PQSupportOn
             (connId, chatV) <- prepareContact user cReq pqSup
             newXContactId <- XContactId <$> drgRandomBytes 16
@@ -3912,8 +3913,10 @@ processChatCommand cxt nm = \case
             void $ joinContact user conn cReq incognitoProfile newXContactId Nothing Nothing Nothing Nothing pqSup
             ct' <- withStore $ \db -> getContact db cxt user contactId
             pure $ CRSentInvitationToContact user ct' incognitoProfile
-          Just conn@Connection {connStatus, xContactId = xContactId_, customUserProfileId} -> case connStatus of
-            ConnPrepared -> do
+        Just conn@Connection {connId, connStatus, xContactId = xContactId_, customUserProfileId} -> case connStatus of
+          ConnPrepared -> do
+            cReq <- withFastStore $ \db -> getConnReqContact db connId
+            withInvitationLock "connectContactViaAddress" (strEncode cReq) $ do
               when (incognito /= isJust customUserProfileId) $ throwCmdError "incognito mode is different from prepared connection"
               xContactId <- mkXContactId xContactId_
               localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
@@ -3921,20 +3924,23 @@ processChatCommand cxt nm = \case
               void $ joinContact user conn cReq incognitoProfile xContactId Nothing Nothing Nothing Nothing PQSupportOn
               ct' <- withStore $ \db -> getContact db cxt user contactId
               pure $ CRSentInvitationToContact user ct' incognitoProfile
-            _ -> throwCmdError "contact already has connection"
+          _ -> throwCmdError "contact already has connection"
     connectToRelay :: User -> GroupInfoKeys -> ShortLinkContact -> CM (ShortLinkContact, GroupMember, Either ChatError ())
     connectToRelay user g@(GIK gInfo _) relayLink = do
       gVar <- asks random
       -- Save relayLink to re-use relay member record on retry (check by relayLink)
-      relayMember <- withFastStore $ \db -> getCreateRelayForMember db cxt gVar user gInfo relayLink
+      relayMember@GroupMember {activeConn} <- withFastStore $ \db -> getCreateRelayForMember db cxt gVar user gInfo relayLink
       r <- tryAllErrors $ do
-        (FixedLinkData {rootKey = relayKey, linkEntityId}, cData, cReq) <- getShortLinkConnReq nm user relayLink
-        relayLinkData_ <- liftIO $ decodeLinkUserData cData
-        relayMemberId <- case (relayLinkData_, linkEntityId) of
-          (Just RelayShortLinkData {relayProfile = p}, Just entityId) -> do
-            withFastStore $ \db -> updateRelayMemberData db cxt user relayMember (MemberId entityId) (MemberKey relayKey) p
-            pure $ MemberId entityId
-          _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
+        (relayMemberId, cReq) <- case activeConn of
+          Just Connection {connId, connStatus = ConnPrepared} -> (memberId' relayMember,) <$> withFastStore (\db -> getConnReqContact db connId)
+          _ -> do
+            (FixedLinkData {rootKey = relayKey, linkEntityId}, cData, cReq) <- getShortLinkConnReq nm user relayLink
+            relayLinkData_ <- liftIO $ decodeLinkUserData cData
+            case (relayLinkData_, linkEntityId) of
+              (Just RelayShortLinkData {relayProfile = p}, Just entityId) -> do
+                withFastStore $ \db -> updateRelayMemberData db cxt user relayMember (MemberId entityId) (MemberKey relayKey) p
+                pure (MemberId entityId, cReq)
+              _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
         let relayLinkToConnect = CCLink cReq (Just relayLink)
         void $ connectViaContact user (Just $ PCEGroup g (relayMember {memberId = relayMemberId})) (incognitoMembership gInfo) relayLinkToConnect Nothing Nothing
       relayMember' <- withFastStore $ \db -> getGroupMember db cxt user (groupId' gInfo) (groupMemberId' relayMember)
