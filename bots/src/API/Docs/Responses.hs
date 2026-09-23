@@ -219,5 +219,6 @@ undocumentedResponses =
     "CRWalletAccountSecret",
     "CRWalletAddress",
     "CRWalletMnemonic",
+    "CRWalletNames",
     "CRWelcome"
   ]

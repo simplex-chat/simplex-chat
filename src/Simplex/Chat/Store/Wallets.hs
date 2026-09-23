@@ -14,6 +14,7 @@ module Simplex.Chat.Store.Wallets
     deleteWalletSeed,
     resolveAccount,
     getUserAccounts,
+    getUserNames,
     accountHeldByOther,
     bindAccount,
     recordScan,
@@ -26,7 +27,7 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
-import Simplex.Chat.Wallet (AccountIndex, WalletError (..), checkAccountIndex)
+import Simplex.Chat.Wallet (AccountIndex, WalletError (..), WalletName (..), checkAccountIndex)
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Names.Record (NameRecord (..), NameRegistration (..), NameResponse (..))
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow)
@@ -106,6 +107,22 @@ getUserAccounts db sId userId =
         ORDER BY account_index
       |]
       (sId, userId)
+
+-- | The names the profile's accounts hold, as the last scan saw them.
+getUserNames :: DB.Connection -> SeedId -> UserId -> IO [WalletName]
+getUserNames db sId userId =
+  map toName
+    <$> DB.query
+      db
+      [sql|
+        SELECT n.account_index, n.name FROM wallet_owned_names n
+        JOIN wallet_accounts a ON a.wallet_seed_id = n.wallet_seed_id AND a.account_index = n.account_index
+        WHERE n.wallet_seed_id = ? AND a.user_id = ?
+        ORDER BY n.name
+      |]
+      (sId, userId)
+  where
+    toName (n, name) = WalletName {accountIndex = fromIntegral @Int64 n, name}
 
 -- | Which profile holds an account: 'Nothing' when it is unknown, @Just Nothing@ when no profile holds it.
 accountUser :: DB.Connection -> SeedId -> AccountIndex -> IO (Maybe (Maybe Int64))

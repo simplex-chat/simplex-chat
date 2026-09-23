@@ -7,13 +7,13 @@ module WalletTests where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
+import Database.SQLite.Simple (Only (..))
 import qualified Data.ByteArray as BA
 import qualified Data.ByteArray.Encoding as BAE
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (toUpper)
 import Data.Either (isRight)
-import Data.Int (Int64)
 import Data.List (nub)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -111,6 +111,7 @@ walletScanTests = do
   it "a scan of a recovered phrase finds the accounts in use" testWalletScan
   it "the counter a scan sets clears the accounts already bound" testWalletScanCounterPastBound
   it "a hidden profile cannot scan" testWalletScanHiddenProfile
+  it "a profile with no names says so" testWalletNamesEmpty
 
 testWalletScan :: HasCallStack => TestParams -> IO ()
 testWalletScan ps = withSmpServerAndNames $ \reg -> withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -121,9 +122,10 @@ testWalletScan ps = withSmpServerAndNames $ \reg -> withNewTestChat ps "alice" a
   alice ##> "/_wallet scan"
   alice <## "accounts: 1"
   -- the names the scan saw are recorded against the account that holds them
-  names <- withCCTransaction alice $ \db -> DB.query_ db "SELECT account_index, name, name_response FROM wallet_owned_names"
-  map (\(n, nm, _) -> (n, nm)) names `shouldBe` [(1 :: Int64, "alice.simplex" :: Text)]
-  map (\(_, _, r) -> registeredName <$> decodeJSON r) names `shouldBe` [Just (Just "alice.simplex")]
+  alice ##> "/_wallet names"
+  alice <## "1  alice.simplex"
+  names <- withCCTransaction alice $ \db -> DB.query_ db "SELECT name_response FROM wallet_owned_names"
+  map (\(Only r) -> registeredName <$> decodeJSON r) names `shouldBe` [Just (Just "alice.simplex")]
   -- the scan gives the imported phrase the counter it had none of
   alice ##> "/_wallet bind"
   alice <## "accounts: 1, 2"
@@ -293,6 +295,14 @@ testWalletScanCounterPastBound ps = withSmpServerAndNames $ \_reg -> withNewTest
   alice <## "accounts: 5"
   alice ##> "/_wallet bind"
   alice <## "accounts: 5, 6"
+
+-- | Names come from a scan, so a profile that has not scanned has none to list.
+testWalletNamesEmpty :: HasCallStack => TestParams -> IO ()
+testWalletNamesEmpty ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  alice ##> "/_wallet create new"
+  alice <## "wallet, no accounts for this profile"
+  alice ##> "/_wallet names"
+  alice <## "wallet, no names for this profile"
 
 -- | A scan binds what it finds, so it is refused where a bind is.
 testWalletScanHiddenProfile :: HasCallStack => TestParams -> IO ()

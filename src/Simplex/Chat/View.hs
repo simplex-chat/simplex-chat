@@ -60,7 +60,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Chat.Wallet (WalletAddress (..), WalletError (..))
+import Simplex.Chat.Wallet (WalletAddress (..), WalletError (..), WalletName (..))
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent (DatabaseDiff (..))
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
@@ -202,6 +202,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
     Just accounts -> [plain $ "accounts: " <> T.intercalate ", " (map tshow accounts)]
   CRWalletMnemonic u mnemonic -> ttyUser u [plain mnemonic]
   CRWalletAddress u a -> ttyUser u [walletAddressRow a]
+  CRWalletNames u names -> ttyUser u $ if null names then ["wallet, no names for this profile"] else map walletNameRow names
   CRWalletAccountSecret u a secret -> ttyUser u [walletAddressRow a <> "  " <> plain secret]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
@@ -1113,6 +1114,9 @@ viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
 walletAddressRow :: WalletAddress -> StyledString
 walletAddressRow WalletAddress {accountIndex, keyPath, address} =
   plain $ tshow accountIndex <> "  " <> keyPath <> "  " <> address
+
+walletNameRow :: WalletName -> StyledString
+walletNameRow WalletName {accountIndex, name} = plain $ tshow accountIndex <> "  " <> name
 
 walletErrorText :: WalletError -> Text
 walletErrorText = \case

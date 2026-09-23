@@ -68,7 +68,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Chat.Wallet (AccountIndex, WalletAddress, WalletError)
+import Simplex.Chat.Wallet (AccountIndex, WalletAddress, WalletError, WalletName)
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
@@ -444,6 +444,7 @@ data ChatCommand
   | APIExportWalletMnemonic
   | APIExportWalletAccount {accountIndex :: AccountIndex}
   | APIScanWallet
+  | APIGetWalletNames
   | APIDeleteWallet
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
@@ -883,6 +884,7 @@ data ChatResponse
   | CRWallet {user :: User, accountIndexes_ :: Maybe [AccountIndex]}
   | CRWalletMnemonic {user :: User, mnemonic :: Text}
   | CRWalletAddress {user :: User, walletAddress :: WalletAddress}
+  | CRWalletNames {user :: User, walletNames :: [WalletName]}
   | CRWalletAccountSecret {user :: User, walletAddress :: WalletAddress, secret :: Text}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}

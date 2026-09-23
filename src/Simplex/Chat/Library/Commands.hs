@@ -65,7 +65,7 @@ import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeSta
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Store.Wallets (WalletSeed (..), accountHeldByOther, bindAccount, createWalletSeed, deleteWalletSeed, getUserAccounts, getWalletSeed, recordScan, resolveAccount)
+import Simplex.Chat.Store.Wallets (WalletSeed (..), accountHeldByOther, bindAccount, createWalletSeed, deleteWalletSeed, getUserAccounts, getUserNames, getWalletSeed, recordScan, resolveAccount)
 import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccountKey, entropyFromMnemonic, newSeedEntropy, renderAccountPath, scanGapLimit, scanMaxAccounts, seedMaster, seedMnemonic)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
 import Simplex.Messaging.Names.Record (NameResponse, OwnedNames (..))
@@ -1527,6 +1527,8 @@ processChatCommand cxt nm = \case
     when heldByOther $ throwWalletError WEAccountBound
     k <- accountKey seed n
     pure $ CRWalletAccountSecret user (accountAddress n k) (accountSecret k)
+  APIGetWalletNames -> withUser $ \user@User {userId} ->
+    CRWalletNames user <$> withFastStore' (\db -> getWalletSeed db >>= maybe (pure []) (\WalletSeed {wsId} -> getUserNames db wsId userId))
   APIScanWallet -> withUser $ \user@User {userId, viewPwdHash} -> do
     when (isJust viewPwdHash) $ throwWalletError WEHiddenProfile
     seed <- walletSeed
@@ -6119,6 +6121,7 @@ chatCommandP =
       "/_wallet address" $> APIGetWalletAddress Nothing,
       "/_wallet export master" $> APIExportWalletMnemonic,
       "/_wallet export account " *> (APIExportWalletAccount <$> accountIndexP),
+      "/_wallet names" $> APIGetWalletNames,
       "/_wallet scan" $> APIScanWallet,
       "/_wallet delete" $> APIDeleteWallet,
       "/_wallet" $> APIGetWallet,

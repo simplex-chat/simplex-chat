@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -6,6 +7,7 @@ module Simplex.Chat.Wallet
   ( AccountIndex,
     AccountKey,
     WalletAddress (..),
+    WalletName (..),
     WalletError (..),
     newSeedEntropy,
     entropyFromMnemonic,
@@ -45,6 +47,13 @@ data WalletAddress = WalletAddress
   { accountIndex :: AccountIndex,
     keyPath :: Text,
     address :: Text
+  }
+  deriving (Show)
+
+-- | A name one of the seed's accounts holds, as the last scan saw it.
+data WalletName = WalletName
+  { accountIndex :: AccountIndex,
+    name :: Text
   }
   deriving (Show)
 
@@ -116,5 +125,7 @@ bipError :: Either String a -> Either WalletError a
 bipError = either (Left . WEDerivation) Right
 
 $(JQ.deriveJSON defaultJSON ''WalletAddress)
+
+$(JQ.deriveJSON defaultJSON ''WalletName)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "WE") ''WalletError)
