@@ -19,6 +19,7 @@ module BadgeService.Poller
     skipOwner,
     dueToWarn,
     expiryGrace,
+    cancelGiveUpDelay,
     readsPerPass,
     skipWarnInterval,
     maxSkipReasons,
@@ -27,17 +28,18 @@ where
 
 import BadgeService.Config (PollConfig (..))
 import BadgeService.Orders (decide, settleOrder)
-import BadgeService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Received (..), settleWindow)
-import BadgeService.Store.Invoices (InvoiceRow (..), expireOverdue, getInvoiceByProviderRef, providerText, unpaidRefs)
+import BadgeService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Received (..), expiresItself, settleWindow)
+import BadgeService.Store.Invoices (InvoiceRow (..), OverdueInvoice (..), expireOverdue, getInvoiceByProviderRef, overdueInvoices, providerText, unpaidRefs)
 import BadgeService.Waiters (Waiters, publish, waitingCount, waitingCountSTM)
 import Control.Concurrent.STM
 import Control.Exception (SomeAsyncException, SomeException, fromException, throwIO, try)
 import BadgeService.Log (logError, logInfo, logWarn)
-import Control.Monad (forever, unless, void, when)
-import Data.List (find, sortOn)
+import Control.Monad (filterM, forever, unless, void, when)
+import Data.List (find, partition, sortOn)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
+import qualified Data.Set as S
 import Data.Text (Text)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Numeric.Natural (Natural)
@@ -48,6 +50,10 @@ import Simplex.Messaging.Util (tshow)
 -- | Allows for our clock running ahead of the provider's; an expired invoice can still be marked paid.
 expiryGrace :: NominalDiffTime
 expiryGrace = 600
+
+-- | Give up on a failing cancel only after an hour, not on the first failure.
+cancelGiveUpDelay :: NominalDiffTime
+cancelGiveUpDelay = 3600
 
 skipWarnInterval :: NominalDiffTime
 skipWarnInterval = 3600
@@ -80,14 +86,17 @@ data PollerEnv = PollerEnv
     pePoll :: PollConfig,
     peSkipped :: TVar (Map Text UTCTime),
     peListedAt :: TVar (Maybe UTCTime),
-    peStrayEvery :: NominalDiffTime
+    peStrayEvery :: NominalDiffTime,
+    -- When the cancel first failed, for orders older than 72 hours.
+    peCancelFailed :: TVar (Map Text UTCTime)
   }
 
 newPollerEnv :: DBStore -> Waiters -> ReadHints -> [Provider] -> PollConfig -> IO PollerEnv
 newPollerEnv peStore peWaiters peHints peProviders pePoll = do
   peSkipped <- newTVarIO M.empty
   peListedAt <- newTVarIO Nothing
-  pure PollerEnv {peStore, peWaiters, peHints, peProviders, pePoll, peSkipped, peListedAt, peStrayEvery = strayListInterval}
+  peCancelFailed <- newTVarIO M.empty
+  pure PollerEnv {peStore, peWaiters, peHints, peProviders, pePoll, peSkipped, peListedAt, peStrayEvery = strayListInterval, peCancelFailed}
 
 -- | Read providers before the sweep, and skip the sweep entirely when a read failed, so an
 -- invoice with money in it is never expired.
@@ -207,12 +216,51 @@ readHint env@PollerEnv {peStore, peProviders} now ref =
           Right (Just signal) -> settleMoved env irProvider now (ref, signal)
 
 sweepExpired :: PollerEnv -> UTCTime -> IO ()
-sweepExpired PollerEnv {peStore, peWaiters} now = do
-  expired <- expireOverdue peStore (addUTCTime (negate expiryGrace) now)
+sweepExpired env@PollerEnv {peStore, peWaiters, peCancelFailed} now = do
+  let cutoff = addUTCTime (negate expiryGrace) now
+  (selfExpiring, payable) <- partition (expiresItself . oiProvider) <$> overdueInvoices peStore cutoff
+  atomically $ modifyTVar' peCancelFailed (`M.restrictKeys` S.fromList (map oiProviderRef payable))
+  -- Cancel only a few orders per pass, so a long list does not block other work.
+  cancelled <- filterM (closedAtProvider env now) (take readsPerPass payable)
+  expired <- expireOverdue peStore cutoff (map oiInvoiceId (selfExpiring <> cancelled))
   -- publish only after the write commits, or a woken reader will not see it
   unless (null expired) $ do
     atomically $ mapM_ (\invId -> publish peWaiters invId ISExpired) expired
     logInfo ("badge poller: expired " <> tshow (length expired) <> " invoice(s) past their window")
+
+-- | Cancel the order at the provider first, so the buyer can no longer pay it.
+closedAtProvider :: PollerEnv -> UTCTime -> OverdueInvoice -> IO Bool
+closedAtProvider env@PollerEnv {peProviders} now oi@OverdueInvoice {oiProvider, oiProviderRef = ref} =
+  safelyWith ("cancelling " <> tshow oiProvider <> " invoice " <> ref) False $
+    case find ((== oiProvider) . pProvider) peProviders of
+      Nothing -> uncancelled env now oi "no provider is configured for it"
+      Just p ->
+        pCancelInvoice p ref >>= \case
+          Right () -> pure True
+          -- The provider won't cancel an order that is already paid or closed. Reading it shows which.
+          Left (ProviderError cancelError) ->
+            pReadInvoice p ref >>= \case
+              Right (Just signal) -> False <$ settleMoved env oiProvider now (ref, signal)
+              Right Nothing -> uncancelled env now oi cancelError
+              Left (ProviderError readError) -> uncancelled env now oi (cancelError <> "; reading it failed too: " <> readError)
+
+-- | After 72 hours the poller only reads an order when a webhook asks. If an older order still
+-- can't be cancelled after an hour of trying, mark it expired here and log an error.
+uncancelled :: PollerEnv -> UTCTime -> OverdueInvoice -> Text -> IO Bool
+uncancelled env@PollerEnv {peCancelFailed} now OverdueInvoice {oiProvider, oiProviderRef = ref, oiCreatedAt} e
+  | diffUTCTime now oiCreatedAt <= settleWindow = keepOpen "it stays open until a cancel succeeds or it settles"
+  | otherwise = do
+      firstFailed <- atomically $ stateTVar peCancelFailed $ \failed -> (M.lookup ref failed, M.insertWith (\_ first -> first) ref now failed)
+      case firstFailed of
+        Just at | diffUTCTime now at >= cancelGiveUpDelay -> do
+          logError ("badge poller: overdue " <> tshow oiProvider <> " invoice " <> ref <> " could not be cancelled at the provider, so it was expired here only; check it in the provider's dashboard: " <> e)
+          pure True
+        _ -> keepOpen "it is expired here if the cancel still fails an hour after its first failure"
+  where
+    keepOpen outcome = do
+      due <- dueToWarn env now ("cancel failed: " <> tshow oiProvider <> " invoice " <> ref)
+      when due $ logWarn ("badge poller: cancelling overdue " <> tshow oiProvider <> " invoice " <> ref <> " failed; " <> outcome <> ": " <> e)
+      pure False
 
 data SkipOwner
   = SkipOurs

@@ -24,7 +24,7 @@ import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.Async (async, wait)
 import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Concurrent.STM (atomically, readTVarIO)
+import Control.Concurrent.STM (atomically, modifyTVar', readTVarIO)
 import qualified Control.Exception as E
 import Control.Monad (join, replicateM, replicateM_, void, when)
 import Data.Aeson ((.=))
@@ -50,6 +50,7 @@ import Data.Time.Calendar (fromGregorian)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, picosecondsToDiffTime, secondsToDiffTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word32, Word8)
+import GHC.IO.Handle (hDuplicate, hDuplicateTo)
 import Network.HTTP.Client (Manager, Request (..), RequestBody (..), Response, defaultManagerSettings, httpLbs, newManager, parseRequest, responseBody, responseHeaders, responseStatus, responseTimeoutMicro)
 import Network.HTTP.Types (Header, HeaderName, hCacheControl, hContentType)
 import Network.HTTP.Types.Status (statusCode)
@@ -67,6 +68,7 @@ import Simplex.Messaging.Encoding.String (textDecode, textEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import System.Directory (createDirectoryIfMissing, createFileLink, doesFileExist, listDirectory)
 import System.FilePath ((</>))
+import System.IO (IOMode (..), hClose, hGetBuffering, hSetBuffering, stderr, withFile)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Timeout (timeout)
 import Test.Hspec
@@ -135,6 +137,7 @@ badgeWebTests = do
     it "newInvoiceId is 128 CSPRNG bits, base64url, and two calls differ" testNewInvoiceIdRandom
     it "codeHashExists is true for a hash already written" testCodeHashExists
     it "expireOverdue moves only open, past-expiry rows, and names them" testExpireOverdueMovesOnlyQualifying
+    it "expireOverdue moves only the overdue invoices it is given" testExpireOverdueMovesOnlyTheNamed
     it "expireOverdue never sweeps an invoice that has been paid into" testExpireOverdueSparesAFundedInvoice
     it "expireOverdue spares an invoice funded by dust, or by the verdict alone" testExpireOverdueSparesAZeroAmount
     it "readCatalogRows drops every disabled row" testReadCatalogRowsDropsDisabled
@@ -219,6 +222,15 @@ badgeWebTests = do
     it "expires an open invoice past the ten-minute grace, and reads before it does" testSweepExpiresPastTheGrace
     it "writes status alone, so a later SigClosed still records what arrived" testSweepWritesStatusAlone
     it "wakes a request held on an invoice it expires" testSweepWakesAHeldRequest
+    it "cancels at a provider that keeps its invoice payable, then expires it" testSweepCancelsBeforeExpiring
+    it "keeps an invoice open while its provider refuses the cancel" testSweepKeepsOpenWhenCancelFails
+    it "settles an invoice past the settle window whose cancel is refused" testSweepSettlesWhatItCannotCancel
+    it "expires an invoice whose cancel answer was lost, from the read that follows" testSweepExpiresWhatAReadShowsCancelled
+    it "expires an invoice past the settle window once its cancel has failed for an hour, and reports it" testSweepGivesUpPastTheWindow
+    it "cancels overdue invoices oldest first, keeping the failures of those left for later" testSweepKeepsFailuresBeyondTheCap
+    it "expires an old invoice whose provider is gone, without a call" testSweepExpiresWithoutItsProvider
+    it "warns once per order while a cancel keeps failing" testSweepWarnsOncePerOrder
+    it "cancels at most a pass-sized batch, leaving the rest for the next pass" testSweepCapsCancelsPerPass
     it "reports a skipped invoice once, and again only after the interval" testSkipWarningsAreRateLimited
     it "warns once for a provider that stays down, not once a pass" testOutageWarnsOnceNotEveryPass
     it "holds the skip log under its cap when every reason is fresh" testSkipReasonsStayBounded
@@ -416,7 +428,8 @@ testExpireOverdueMovesOnlyQualifying = withServiceStore $ \st -> do
   createInvoiceRows st notYet `shouldReturn` Right ()
   createInvoiceRows st alreadyPaid `shouldReturn` Right ()
   markPaid st (niInvoiceId alreadyPaid)
-  moved <- expireOverdue st now
+  map (\OverdueInvoice {oiInvoiceId, oiProviderRef} -> (oiInvoiceId, oiProviderRef)) <$> overdueInvoices st now `shouldReturn` [(niInvoiceId overdue, niProviderRef overdue)]
+  moved <- expireAllOverdue st now
   moved `shouldBe` [niInvoiceId overdue]
   Just overdueRow <- getInvoice st (niInvoiceId overdue)
   irStatus overdueRow `shouldBe` ISExpired
@@ -424,6 +437,23 @@ testExpireOverdueMovesOnlyQualifying = withServiceStore $ \st -> do
   irStatus notYetRow `shouldBe` ISOpen
   Just paidRow <- getInvoice st (niInvoiceId alreadyPaid)
   irStatus paidRow `shouldBe` ISPaid
+
+testExpireOverdueMovesOnlyTheNamed :: IO ()
+testExpireOverdueMovesOnlyTheNamed = withServiceStore $ \st -> do
+  seedBadgePrice st "price1"
+  now <- getCurrentTime
+  let pastExpiry = addUTCTime (-3600) now
+      named = sampleInvoice {niExpiresAt = pastExpiry}
+      unnamed = sampleInvoice {niInvoiceId = InvoiceId "inv-unnamed", niProviderRef = "p-unnamed", niCodeHash = digestFixture 13, niExpiresAt = pastExpiry}
+  createInvoiceRows st named `shouldReturn` Right ()
+  createInvoiceRows st unnamed `shouldReturn` Right ()
+  expireOverdue st now [niInvoiceId named] `shouldReturn` [niInvoiceId named]
+  invoiceStatus st (niInvoiceId named) `shouldReturn` ISExpired
+  invoiceStatus st (niInvoiceId unnamed) `shouldReturn` ISOpen
+  expireOverdue st now [niInvoiceId named] `shouldReturn` []
+
+expireAllOverdue :: DBStore -> UTCTime -> IO [InvoiceId]
+expireAllOverdue st now = overdueInvoices st now >>= expireOverdue st now . map oiInvoiceId
 
 testReadCatalogRowsDropsDisabled :: IO ()
 testReadCatalogRowsDropsDisabled = withServiceStore $ \st -> do
@@ -570,6 +600,8 @@ data StubState = StubState
     ssCreateResult :: Either ProviderError ProviderInvoice,
     ssInvoices :: Map.Map Text PaymentSignal,
     ssCancelError :: Maybe ProviderError,
+    -- The cancel reaches the provider, but its answer is lost.
+    ssCancelLost :: Bool,
     ssListError :: Maybe ProviderError,
     ssReadError :: Maybe ProviderError,
     ssSkipped :: [(Maybe Text, Text)],
@@ -586,6 +618,7 @@ newStubState ssCreateResult =
       ssCreateResult,
       ssInvoices = Map.empty,
       ssCancelError = Nothing,
+      ssCancelLost = False,
       ssListError = Nothing,
       ssReadError = Nothing,
       ssSkipped = [],
@@ -612,7 +645,12 @@ stubProvider ref =
         pure $ maybe (Right (Map.lookup providerRef (ssInvoices stub))) Left (ssReadError stub),
       pCancelInvoice = \providerRef -> do
         record ref (StubCancel providerRef)
-        maybe (Right ()) Left . ssCancelError <$> readIORef ref,
+        lost <- ssCancelLost <$> readIORef ref
+        if lost
+          then do
+            atomicModifyIORef' ref $ \s -> (s {ssInvoices = Map.insert providerRef (SigClosed (rcv 0 Nothing)) (ssInvoices s)}, ())
+            pure (Left (ProviderError "the response was lost"))
+          else maybe (Right ()) Left . ssCancelError <$> readIORef ref,
       pListOpen = do
         record ref StubListOpen
         stub <- readIORef ref
@@ -2033,14 +2071,17 @@ pollerFor WebEnv {weStore, weConfig, weWaiters, weHints, weProviders} =
   newPollerEnv weStore weWaiters weHints weProviders (poll weConfig)
 
 withStubPoller :: Int -> (IORef StubState -> PollerEnv -> WebEnv -> WebClient -> IO a) -> IO a
-withStubPoller hold action =
+withStubPoller = withStubPollerOf stubProvider
+
+withStubPollerOf :: (IORef StubState -> Provider) -> Int -> (IORef StubState -> PollerEnv -> WebEnv -> WebClient -> IO a) -> IO a
+withStubPollerOf mkProvider hold action =
   withServiceStore $ \st -> do
     createDirectoryIfMissing True "tests/tmp"
     withTempDirectory "tests/tmp" "badge-poller" $ \root -> do
       staticDir <- prepareStaticDir root
       ref <- newIORef (newStubState (Right sampleProviderInvoice))
       let cfg = (testServiceConfig staticDir True) {btcpay = Just testBTCPayConfig}
-      withListener [stubProvider ref] True hold st cfg $ \env client -> do
+      withListener [mkProvider ref] True hold st cfg $ \env client -> do
         poller <- pollerFor env
         action ref poller env client
 
@@ -2080,7 +2121,10 @@ failRead :: IORef StubState -> Maybe ProviderError -> IO ()
 failRead ref e = atomicModifyIORef' ref $ \s -> (s {ssReadError = e}, ())
 
 seedOpenRef :: HasCallStack => DBStore -> Int -> Text -> UTCTime -> IO InvoiceId
-seedOpenRef st i providerRef expiresAt = do
+seedOpenRef = seedOpenRefOf PPCrypto
+
+seedOpenRefOf :: HasCallStack => PaymentProvider -> DBStore -> Int -> Text -> UTCTime -> IO InvoiceId
+seedOpenRefOf provider st i providerRef expiresAt = do
   -- The row is created at the current time because the poller reads only invoices inside its
   -- recent settle window and sweeps anything older.
   createdAt <- truncateToSecond <$> getCurrentTime
@@ -2092,7 +2136,8 @@ seedOpenRef st i providerRef expiresAt = do
             niProviderRef = providerRef,
             niCodeHash = digestFixture (fromIntegral i + 20),
             niExpiresAt = expiresAt,
-            niCreatedAt = createdAt
+            niCreatedAt = createdAt,
+            niProvider = provider
           }
   createInvoiceRows st ni `shouldReturn` Right ()
   pure iid
@@ -2380,6 +2425,168 @@ testSweepWakesAHeldRequest = bounded "sweep wakes a hold" $ withStubPoller raceH
   iid <- seedOpenRef (weStore env) 1 "p-overdue" (addUTCTime (negate (expiryGrace + 60)) now)
   _ <- wokenBy client iid (runOnePass poller) "expired"
   pure ()
+
+withPayableStubPoller :: Int -> (IORef StubState -> PollerEnv -> WebEnv -> WebClient -> IO a) -> IO a
+withPayableStubPoller = withStubPollerOf (\ref -> (stubProvider ref) {pProvider = PPStripe})
+
+-- | Creates an order older than 72 hours, which only the expiry sweep still looks at. A higher i is newer.
+seedPastWindow :: HasCallStack => DBStore -> Int -> Text -> PaymentProvider -> IO InvoiceId
+seedPastWindow st i providerRef provider = do
+  now <- truncateToSecond <$> getCurrentTime
+  let createdAt = addUTCTime (negate (settleWindow + 3600) + fromIntegral i) now
+      iid = InvoiceId ("inv-old-" <> T.pack (show i))
+      ni = sampleInvoice {niInvoiceId = iid, niProviderRef = providerRef, niProvider = provider, niCodeHash = digestFixture (fromIntegral i + 60), niCreatedAt = createdAt, niExpiresAt = addUTCTime 3600 createdAt}
+  createInvoiceRows st ni `shouldReturn` Right ()
+  pure iid
+
+-- | Runs one pass to get the list call out of the way, so the next pass only does the expiry sweep.
+passListing :: IORef StubState -> PollerEnv -> IO ()
+passListing ref poller = runOnePass poller >> clearCalls ref
+
+-- hDuplicateTo changes stderr's buffering, so put the original setting back.
+capturingStderr :: IO () -> IO Text
+capturingStderr action = do
+  createDirectoryIfMissing True "tests/tmp"
+  withTempDirectory "tests/tmp" "badge-stderr" $ \dir -> do
+    let path = dir </> "stderr.log"
+    withFile path WriteMode $ \h -> do
+      buffering <- hGetBuffering stderr
+      saved <- hDuplicate stderr
+      (hDuplicateTo h stderr >> action) `E.finally` (hDuplicateTo saved stderr >> hClose saved >> hSetBuffering stderr buffering)
+    T.readFile path
+
+loggedError :: Text -> Text -> Bool
+loggedError message = any (\l -> "[ERROR " `T.isPrefixOf` l && message `T.isInfixOf` l) . T.lines
+
+failCancels :: IORef StubState -> IO ()
+failCancels ref = atomicModifyIORef' ref $ \s -> (s {ssCancelError = Just (ProviderError "refused")}, ())
+
+testSweepCancelsBeforeExpiring :: IO ()
+testSweepCancelsBeforeExpiring = bounded "sweep cancels" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
+  now <- getCurrentTime
+  seedBadgePrice (weStore env) "price1"
+  overdue <- seedOpenRefOf PPStripe (weStore env) 1 "p-overdue" (addUTCTime (negate (expiryGrace + 60)) now)
+  ahead <- seedOpenRefOf PPStripe (weStore env) 2 "p-ahead" (addUTCTime 3600 now)
+  runOnePass poller
+  invoiceStatus (weStore env) overdue `shouldReturn` ISExpired
+  invoiceStatus (weStore env) ahead `shouldReturn` ISOpen
+  stubCalls ref `shouldReturn` [StubRead "p-overdue", StubRead "p-ahead", StubListOpen, StubCancel "p-overdue"]
+
+testSweepKeepsOpenWhenCancelFails :: IO ()
+testSweepKeepsOpenWhenCancelFails = bounded "sweep cancel fails" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
+  now <- getCurrentTime
+  seedBadgePrice (weStore env) "price1"
+  iid <- seedOpenRefOf PPStripe (weStore env) 1 "p-overdue" (addUTCTime (negate (expiryGrace + 60)) now)
+  failCancels ref
+  runOnePass poller
+  invoiceStatus (weStore env) iid `shouldReturn` ISOpen
+  atomicModifyIORef' ref $ \s -> (s {ssCancelError = Nothing}, ())
+  runOnePass poller
+  invoiceStatus (weStore env) iid `shouldReturn` ISExpired
+  filter (== StubCancel "p-overdue") <$> stubCalls ref `shouldReturn` [StubCancel "p-overdue", StubCancel "p-overdue"]
+
+testSweepSettlesWhatItCannotCancel :: IO ()
+testSweepSettlesWhatItCannotCancel = bounded "sweep settles uncancelled" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  iid <- seedPastWindow (weStore env) 1 "p-old" PPStripe
+  failCancels ref
+  setSignals ref [("p-old", settledSignal)]
+  runOnePass poller
+  invoiceStatus (weStore env) iid `shouldReturn` ISPaid
+  stubCalls ref `shouldReturn` [StubCancel "p-old", StubRead "p-old"]
+
+testSweepExpiresWhatAReadShowsCancelled :: IO ()
+testSweepExpiresWhatAReadShowsCancelled = bounded "sweep reads a cancel" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
+  now <- getCurrentTime
+  seedBadgePrice (weStore env) "price1"
+  iid <- seedOpenRefOf PPStripe (weStore env) 1 "p-overdue" (addUTCTime (negate (expiryGrace + 60)) now)
+  atomicModifyIORef' ref $ \s -> (s {ssCancelLost = True}, ())
+  runOnePass poller
+  invoiceStatus (weStore env) iid `shouldReturn` ISExpired
+  stubCalls ref `shouldReturn` [StubRead "p-overdue", StubListOpen, StubCancel "p-overdue", StubRead "p-overdue"]
+
+testSweepGivesUpPastTheWindow :: IO ()
+testSweepGivesUpPastTheWindow = bounded "sweep gives up" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  iid <- seedPastWindow (weStore env) 1 "p-old" PPStripe
+  failCancels ref
+  firstLog <- capturingStderr (runOnePass poller >> runOnePass poller)
+  invoiceStatus (weStore env) iid `shouldReturn` ISOpen
+  firstLog `shouldNotSatisfy` T.isInfixOf "expired here only"
+  failedAnHourAgo poller "p-old"
+  lastLog <- capturingStderr (runOnePass poller)
+  invoiceStatus (weStore env) iid `shouldReturn` ISExpired
+  loggedError "invoice p-old could not be cancelled at the provider, so it was expired here only" lastLog `shouldBe` True
+  let attempt = [StubCancel "p-old", StubRead "p-old"]
+  stubCalls ref `shouldReturn` concat (replicate 3 attempt)
+  runOnePass poller
+  stubCalls ref `shouldReturn` concat (replicate 3 attempt)
+
+testSweepExpiresWithoutItsProvider :: IO ()
+testSweepExpiresWithoutItsProvider = bounded "sweep without provider" $ withStubPoller raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  iid <- seedPastWindow (weStore env) 1 "p-old" PPStripe
+  runOnePass poller
+  invoiceStatus (weStore env) iid `shouldReturn` ISOpen
+  failedAnHourAgo poller "p-old"
+  logged <- capturingStderr (runOnePass poller)
+  invoiceStatus (weStore env) iid `shouldReturn` ISExpired
+  loggedError "no provider is configured for it" logged `shouldBe` True
+  stubCalls ref `shouldReturn` []
+
+testSweepKeepsFailuresBeyondTheCap :: IO ()
+testSweepKeepsFailuresBeyondTheCap = bounded "sweep keeps failures past the cap" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
+  passListing ref poller
+  seedBadgePrice (weStore env) "price1"
+  let count = readsPerPass + 1
+      newest = "p-" <> T.pack (show count)
+  mapM_ (\i -> seedPastWindow (weStore env) i ("p-" <> T.pack (show i)) PPStripe) [1 .. count]
+  failCancels ref
+  failedAnHourAgo poller newest
+  runOnePass poller
+  stubCalls ref >>= (`shouldNotSatisfy` elem (StubCancel newest))
+  Map.member newest <$> readTVarIO (peCancelFailed poller) `shouldReturn` True
+
+-- | Pretends the first cancel failure was an hour ago, so the test doesn't have to wait.
+failedAnHourAgo :: PollerEnv -> Text -> IO ()
+failedAnHourAgo PollerEnv {peCancelFailed} ref = do
+  now <- getCurrentTime
+  atomically $ modifyTVar' peCancelFailed (Map.insert ref (addUTCTime (negate cancelGiveUpDelay) now))
+
+testSweepWarnsOncePerOrder :: IO ()
+testSweepWarnsOncePerOrder = bounded "sweep warns once" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
+  now <- getCurrentTime
+  seedBadgePrice (weStore env) "price1"
+  iid <- seedOpenRefOf PPStripe (weStore env) 1 "p-overdue" (addUTCTime (negate (expiryGrace + 60)) now)
+  failCancels ref
+  let warnings = Map.filterWithKey (\k _ -> "p-overdue" `T.isInfixOf` k) <$> readTVarIO (peSkipped poller)
+  runOnePass poller
+  first <- warnings
+  Map.size first `shouldBe` 1
+  runOnePass poller
+  warnings `shouldReturn` first
+  invoiceStatus (weStore env) iid `shouldReturn` ISOpen
+
+testSweepCapsCancelsPerPass :: IO ()
+testSweepCapsCancelsPerPass = bounded "sweep caps cancels" $ withPayableStubPoller raceHold $ \ref poller env _ -> do
+  now <- getCurrentTime
+  seedBadgePrice (weStore env) "price1"
+  let count = readsPerPass + 1
+  iids <- mapM (\i -> seedOpenRefOf PPStripe (weStore env) i ("p-" <> T.pack (show i)) (addUTCTime (negate (expiryGrace + 60)) now)) [1 .. count]
+  let cancels = length . filter isCancel <$> stubCalls ref
+      isCancel = \case
+        StubCancel _ -> True
+        _ -> False
+      expiredCount = length . filter (== ISExpired) <$> mapM (invoiceStatus (weStore env)) iids
+  runOnePass poller
+  cancels `shouldReturn` readsPerPass
+  expiredCount `shouldReturn` readsPerPass
+  runOnePass poller
+  cancels `shouldReturn` count
+  expiredCount `shouldReturn` count
 
 testSkipWarningsAreRateLimited :: IO ()
 testSkipWarningsAreRateLimited = bounded "skip warnings" $ withStubPoller raceHold $ \ref poller env _ -> do
@@ -2976,7 +3183,7 @@ testExpireOverdueSparesAFundedInvoice = withServiceStore $ \st -> do
   createInvoiceRows st funded `shouldReturn` Right ()
   createInvoiceRows st empty' `shouldReturn` Right ()
   settle st (niInvoiceId funded) (SigFunded (rcv 500 (Just "0.00050000")) PaidInPart) now `shouldReturn` Right ISOpen
-  moved <- expireOverdue st now
+  moved <- expireAllOverdue st now
   moved `shouldBe` [niInvoiceId empty']
   Just fundedRow <- getInvoice st (niInvoiceId funded)
   irStatus fundedRow `shouldBe` ISOpen
@@ -3097,7 +3304,7 @@ testExpireOverdueSparesAZeroAmount = withServiceStore $ \st -> do
   createInvoiceRows st verdict `shouldReturn` Right ()
   settle st (niInvoiceId dust) (SigFunded (rcv 0 (Just "0.00000001")) PaidInPart) now `shouldReturn` Right ISOpen
   settle st (niInvoiceId verdict) (SigFunded (rcv 0 Nothing) PaidInFull) now `shouldReturn` Right ISOpen
-  expireOverdue st now `shouldReturn` []
+  expireAllOverdue st now `shouldReturn` []
   mapM_ (\iid ->
     getInvoice st iid >>= \case
       Just InvoiceRow {irStatus, irPayment} -> do
