@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store.Badges
   ( BadgeCodeRedemption (..),
@@ -12,6 +13,8 @@ module Simplex.Chat.Store.Badges
     getBadgePurchase,
     userHasBadge,
     setBadgeAlertAcked,
+    setBadgeIssueError,
+    setBadgeNextWake,
     clearShownBadge,
     getBadgeCodeRedemption,
     createBadgeCodeRedemption,
@@ -22,6 +25,7 @@ module Simplex.Chat.Store.Badges
     getLatestIssuedCredential,
     storeBadgeStatement,
     getBadgeLedgerLastEntry,
+    getBadgeLedger,
     getBadgeLedgerEntryId,
   )
 where
@@ -31,13 +35,13 @@ import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgePurchaseStatus (..))
+import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
@@ -144,6 +148,11 @@ storeBadgeIssuance db g badgePurchaseId entryId credential now =
           ON CONFLICT (badge_purchase_id, entry_id) DO NOTHING
         |]
         ((issuanceId, badgePurchaseId, entryId, badgeType) :. (periodStart, periodEnd, badgeExpiry, Binary (LB.toStrict $ J.encode credential), now))
+      -- a month stored ends the run of failures
+      DB.execute
+        db
+        "UPDATE badge_purchases SET issue_failed_since = NULL, issue_error_at = NULL, issue_error = NULL WHERE badge_purchase_id = ?"
+        (Only badgePurchaseId)
       pure True
   where
     BadgeCredential {badgeInfo = BadgeInfo {badgeType, badgeExpiry}} = credential
@@ -198,7 +207,9 @@ data UserBadgePurchase = UserBadgePurchase
     badgeType :: BadgeType,
     shown :: Bool,
     alertAcked :: Maybe (BadgeAlertKind, Text),
-    alertSnoozeUntil :: Maybe UTCTime
+    alertSnoozeUntil :: Maybe UTCTime,
+    issueError :: Maybe BadgeIssueError,
+    nextWakeAt :: Maybe UTCTime
   }
 
 -- | Newest, not the one shown_badge_id points at - retirement clears that, and the support ended
@@ -227,14 +238,15 @@ getBadgePurchase db purchaseId =
       [sql|
         SELECT p.badge_purchase_id, p.purchase_key, p.purchase_priv_key, p.master_key, p.current_badge_type,
                (CASE WHEN u.shown_badge_id = p.badge_purchase_id THEN 1 ELSE 0 END),
-               p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until
+               p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until,
+               p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
       |]
       (Only purchaseId)
   where
-    toPurchase (badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) =
+    toPurchase ((badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) :. (failedSince_, lastAttemptAt_, reason_, nextWakeAt)) =
       UserBadgePurchase
         { badgePurchaseId,
           purchaseKey,
@@ -243,7 +255,9 @@ getBadgePurchase db purchaseId =
           badgeType,
           shown = unBI shown_,
           alertAcked = (,) <$> ackedKind_ <*> ackedEpisode_,
-          alertSnoozeUntil
+          alertSnoozeUntil,
+          issueError = BadgeIssueError <$> failedSince_ <*> lastAttemptAt_ <*> reason_,
+          nextWakeAt
         }
 
 -- | Whether a badge is on the profile now: set when a redemption stores one, cleared when it is
@@ -264,6 +278,24 @@ setBadgeAlertAcked db User {userId} badgePurchaseId kind episode snoozeUntil =
     db
     "UPDATE badge_purchases SET alert_acked_kind = ?, alert_acked_episode = ?, alert_snooze_until = ? WHERE badge_purchase_id = ? AND user_id = ?"
     (kind, episode, snoozeUntil, badgePurchaseId, userId)
+
+-- | Record a renewal that ended without a credential. The COALESCE keeps the start of the current
+-- run of failures, which is the alert's episode and must survive a restart.
+setBadgeIssueError :: DB.Connection -> Int64 -> UTCTime -> BadgeIssueFailure -> IO ()
+setBadgeIssueError db badgePurchaseId now failure =
+  DB.execute
+    db
+    [sql|
+      UPDATE badge_purchases
+      SET issue_failed_since = COALESCE(issue_failed_since, ?), issue_error_at = ?, issue_error = ?
+      WHERE badge_purchase_id = ?
+    |]
+    (now, now, failure, badgePurchaseId)
+
+-- | The wake the worker is about to wait for, so the state the apps hold says when it will try again.
+setBadgeNextWake :: DB.Connection -> Int64 -> Maybe UTCTime -> IO ()
+setBadgeNextWake db badgePurchaseId at_ =
+  DB.execute db "UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?" (at_, badgePurchaseId)
 
 -- | Stop showing a badge that has expired unrenewed; the profile update is broadcast by the caller.
 clearShownBadge :: DB.Connection -> User -> Int64 -> IO ()
@@ -306,7 +338,7 @@ storeBadgeStatement db badgePurchaseId badgeType tip entries now =
 -- | The balance is the last row; nothing derives it by summing the history.
 getBadgeLedgerLastEntry :: DB.Connection -> Int64 -> IO (Maybe StatementEntry)
 getBadgeLedgerLastEntry db badgePurchaseId =
-  maybeFirstRow' Nothing toEntry $
+  maybeFirstRow' Nothing toStatementEntry $
     DB.query
       db
       [sql|
@@ -318,10 +350,27 @@ getBadgeLedgerLastEntry db badgePurchaseId =
         LIMIT 1
       |]
       (Only badgePurchaseId)
-  where
-    toEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) :. (wasPausedSince, createdAt, entryType_, credit_, debit_, value_)) =
-      (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType})
-        <$> maybe (entryTypeFromColumns entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
+
+-- | Oldest first. A row whose type this version cannot rebuild is left out, as it is from the tip.
+getBadgeLedger :: DB.Connection -> User -> Int64 -> IO [StatementEntry]
+getBadgeLedger db User {userId} badgePurchaseId =
+  mapMaybe toStatementEntry
+    <$> DB.query
+      db
+      [sql|
+        SELECT l.entry_uuid, l.change_months, l.balance_months, l.balance_start_ts, l.balance_anchor_ts, l.balance_badge_type,
+               l.was_paused_since, l.service_created_at, l.entry_type, l.entry_credit_type, l.entry_debit_type, l.entry_type_value
+        FROM badge_ledger l
+        JOIN badge_purchases p ON p.badge_purchase_id = l.badge_purchase_id
+        WHERE l.badge_purchase_id = ? AND p.user_id = ?
+        ORDER BY l.entry_id
+      |]
+      (badgePurchaseId, userId)
+
+toStatementEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType) :. (Maybe UTCTime, UTCTime, Text, Maybe Text, Maybe Text, Maybe Text) -> Maybe StatementEntry
+toStatementEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) :. (wasPausedSince, createdAt, entryType_, credit_, debit_, value_)) =
+  (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType})
+    <$> maybe (entryTypeFromColumns entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
 
 -- | Decodes the stored JSON rather than rebuilding from the tag, so a version that has since
 -- learnt the type reads it with its fields, and one that has not still gets it back verbatim.

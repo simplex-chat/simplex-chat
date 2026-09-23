@@ -32,7 +32,7 @@ import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
 import chat.simplex.res.MR
 
 @Composable
-fun BadgesSupportSimplexView() {
+fun BadgesSupportSimplexView(modalManager: ModalManager) {
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -57,7 +57,7 @@ fun BadgesSupportSimplexView() {
 
     // TODO [badges] restore WhyBuiltButton() when in-app purchase lands: the level screen
     // returns to the flow and HowItWorksButton() moves there, leaving this one alone here.
-    HowItWorksButton()
+    HowItWorksButton(modalManager)
 
     Spacer(Modifier.weight(1f))
 
@@ -66,7 +66,7 @@ fun BadgesSupportSimplexView() {
     Spacer(Modifier.weight(1f))
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      RedeemCodeButton()
+      RedeemCodeButton(modalManager)
       GetCodeButton()
     }
   }
@@ -74,22 +74,22 @@ fun BadgesSupportSimplexView() {
 
 // the in-app purchase path, kept compiling and uncalled until payments return after the MVP
 @Composable
-private fun ChooseLevelButton() {
+private fun ChooseLevelButton(modalManager: ModalManager) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.badges_choose_your_level,
     onboarding = null,
     onclick = {
-      ModalManager.start.showModal { BadgesYourLevelView() }
+      modalManager.showModal { BadgesYourLevelView(modalManager) }
     }
   )
 }
 
 @Composable
-private fun WhyBuiltButton() {
+private fun WhyBuiltButton(modalManager: ModalManager) {
   val primary = MaterialTheme.colors.primary
   TextButton({
-    ModalManager.start.showModal { HowItWorks(user = chatModel.currentUser.value, onboardingStage = null, titleColor = primary) }
+    modalManager.showModal { HowItWorks(user = chatModel.currentUser.value, onboardingStage = null, titleColor = primary) }
   }) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
       Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.primary)
@@ -99,9 +99,9 @@ private fun WhyBuiltButton() {
 }
 
 @Composable
-private fun HowItWorksButton() {
+private fun HowItWorksButton(modalManager: ModalManager) {
   TextButton({
-    ModalManager.start.showModal { BadgesHowItWorksView() }
+    modalManager.showModal { BadgesHowItWorksView() }
   }) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
       Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.primary)
@@ -111,13 +111,13 @@ private fun HowItWorksButton() {
 }
 
 @Composable
-private fun RedeemCodeButton() {
+private fun RedeemCodeButton(modalManager: ModalManager) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.badges_redeem_code_button,
     onboarding = null,
     onclick = {
-      ModalManager.start.showModal { BadgesRedeemCodeView() }
+      modalManager.showModal { BadgesRedeemCodeView(modalManager) }
     }
   )
 }

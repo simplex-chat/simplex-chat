@@ -114,6 +114,7 @@ chatGroupTests = do
     it "shared batch body reference across binary and json members" testGroupSharedBatchBodyMixedModes
     it "shared batch body reused across binary and json members" testSharedBatchBodyMixed
     it "all old members group upgrades to current version" testGroupAllOldThenUpgrade
+    it "member key is generated at the first read of a group created without one" testGroupMemberKeyGenerated
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -2596,6 +2597,60 @@ testGroupAllOldThenUpgrade ps =
         rc `shouldContain` [(0, "updated profile (signed)")]
   where
     oldCfg = testCfg {chatVRange = mkVersionRange (VersionChat 9) (VersionChat 17)}
+
+testGroupMemberKeyGenerated :: HasCallStack => TestParams -> IO ()
+testGroupMemberKeyGenerated =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/create link #team"
+    gLink <- getGroupLink alice "team" GRMember True
+    bob ##> ("/c " <> gLink)
+    bob <## "connection request sent!"
+    alice <## "bob (Bob): accepting request to join group #team..."
+    concurrentlyN_
+      [ alice <## "#team: bob joined the group",
+        do
+          bob <## "#team: joining the group..."
+          bob <## "#team: you joined the group"
+      ]
+    alice #> "#team hi0"
+    bob <# "#team alice> hi0"
+    void $ withCCTransaction alice $ \db -> do
+      DB.execute_ db "UPDATE groups SET member_priv_key = NULL"
+      DB.execute_ db "UPDATE group_members SET member_pub_key = NULL WHERE member_category = 'user'"
+    void $ withCCTransaction bob $ \db ->
+      DB.execute_ db "UPDATE group_members SET member_pub_key = NULL WHERE member_category = 'host'"
+    alice ##> "/p alisa"
+    alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+    alice #> "#team hi1"
+    bob <# "#team alisa> hi1"
+    bob ##> "/_get chat #1 count=100"
+    r <- chat <$> getTermLine bob
+    r `shouldContain` [(0, "updated profile (signed, no key to verify)")]
+    privKey1 <- alicePrivKey alice
+    pubKey1 <- alicePubKey alice
+    bobKnownKey <- withCCTransaction bob $ \db ->
+      DB.query_ db "SELECT member_pub_key FROM group_members WHERE member_category = 'host'" :: IO [Only (Maybe C.PublicKeyEd25519)]
+    (C.publicKey <$> privKey1) `shouldBe` pubKey1
+    bobKnownKey `shouldBe` [Only pubKey1]
+    alice ##> "/p alisa2"
+    alice <## "user profile is changed to alisa2 (your 0 contacts are notified)"
+    alice #> "#team hi2"
+    bob <# "#team alisa2> hi2"
+    bob ##> "/_get chat #1 count=100"
+    r' <- chat <$> getTermLine bob
+    r' `shouldContain` [(0, "updated profile (signed)")]
+    privKey2 <- alicePrivKey alice
+    privKey2 `shouldBe` privKey1
+  where
+    alicePrivKey alice = do
+      [Only k] <- withCCTransaction alice $ \db -> DB.query_ db "SELECT member_priv_key FROM groups" :: IO [Only (Maybe C.PrivateKeyEd25519)]
+      pure k
+    alicePubKey alice = do
+      [Only k] <- withCCTransaction alice $ \db -> DB.query_ db "SELECT member_pub_key FROM group_members WHERE member_category = 'user'" :: IO [Only (Maybe C.PublicKeyEd25519)]
+      pure k
 
 testGroupAsync :: HasCallStack => TestParams -> IO ()
 testGroupAsync ps = do

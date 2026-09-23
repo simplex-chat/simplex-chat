@@ -42,7 +42,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Simplex.Chat.Controller (ChatController (..), CorsOrigin (..), PublishableGroup (..), WebPreviewConfig (..), WebPreviewState (..), mkStoreCxt)
+import Simplex.Chat.Controller (ChatController (..), CorsOrigin (..), PublishableGroup (..), WebPreviewConfig (..), WebPreviewState (..), storeCxt)
 import Simplex.Chat.Markdown (FormattedText (..), MarkdownList, parseMaybeMarkdownList)
 import Simplex.Chat.Messages
   ( CChatItem (..),
@@ -137,7 +137,7 @@ webPreviewWorker cfg@WebPreviewConfig {webJsonDir, webCorsFile, webUpdateInterva
     seedRoutinePending wps
     forever $ workerLoop wps `catchOwn` \e -> logError ("web preview worker error: " <> tshow e)
   where
-    cxt = mkStoreCxt (config cc)
+    cxt = storeCxt cc
 
     workerLoop wps@WebPreviewState {priorityRender, filesToRemove, corsNeeded, routinePending, wakeSignal} = do
       drainRemovals
@@ -262,7 +262,7 @@ renderGroupPreview WebPreviewConfig {webJsonDir, webPreviewItemCount} cc user gI
       pure $ corsEntry publicGroupId <$> publicGroupAccess
     Nothing -> pure Nothing
   where
-    cxt = mkStoreCxt (config cc)
+    cxt = storeCxt cc
 
 channelContentChanged :: ChatController -> Int64 -> STM ()
 channelContentChanged cc gId =

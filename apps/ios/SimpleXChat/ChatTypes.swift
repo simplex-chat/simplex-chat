@@ -324,8 +324,10 @@ public struct LocalBadge: Codable, Hashable {
 
 // paidThrough is the only date to show the user: BadgeInfo.badgeExpiry is the credential's expiry,
 // which outlives entitlement so the credential's window can cover a renewal.
-public struct BadgeState: Codable, Hashable {
+// Decodable only: BadgeIssueFailure below is, and nothing encodes badge state.
+public struct BadgeState: Decodable, Hashable {
     public var badgePurchaseId: Int64
+    public var purchaseKey: String
     public var badgeType: BadgeType
     public var shown: Bool
     public var monthsLeft: Int
@@ -333,8 +335,206 @@ public struct BadgeState: Codable, Hashable {
     public var renewsAt: Date?
     public var willRenew: Bool
     public var alert: BadgeAlert?
+    public var issueError: BadgeIssueError?
+    public var nextWakeAt: Date?
 
     public var paidThroughText: String { badgeDateText(paidThrough) }
+}
+
+public struct BadgeIssueError: Decodable, Hashable {
+    public var failedSince: Date
+    public var lastAttemptAt: Date
+    public var reason: BadgeIssueFailure
+}
+
+public enum BadgeIssueFailure: Decodable, Hashable {
+    // retryable is the service's own view of transience: it gave retryAfter
+    case serviceError(code: BadgeServiceErrorCode, retryable: Bool)
+    case serviceTimeout
+    case network(agentError: String)
+    case invalidCredential
+    case unexpected(message: String)
+
+    public var text: String {
+        switch self {
+        case let .serviceError(code, _):
+            badgeServiceErrorText(code)
+                ?? String.localizedStringWithFormat(NSLocalizedString("The badge service refused the renewal: %@", comment: "badge renewal error"), code.text)
+        case .serviceTimeout: NSLocalizedString("The badge service did not respond.", comment: "badge renewal error")
+        case .network: NSLocalizedString("The badge service could not be reached.", comment: "badge renewal error")
+        case .invalidCredential: NSLocalizedString("The badge issued by the service cannot be verified.", comment: "badge renewal error")
+        case let .unexpected(message):
+            String.localizedStringWithFormat(NSLocalizedString("Unexpected error: %@", comment: "badge renewal error"), message)
+        }
+    }
+
+    // the stored form, for support
+    public var tag: String {
+        switch self {
+        case let .serviceError(code, retryable): "serviceError \(retryable ? "retry" : "final") \(code.text)"
+        case .serviceTimeout: "serviceTimeout"
+        case let .network(agentError): "network \(agentError)"
+        case .invalidCredential: "invalidCredential"
+        case let .unexpected(message): "unexpected \(message)"
+        }
+    }
+}
+
+public struct StatementEntry: Codable, Hashable {
+    public var entryId: String
+    public var changeMonths: Int
+    public var balanceMonths: Int
+    public var balanceStartTs: Date
+    public var balanceAnchorTs: Date
+    public var balanceBadgeType: BadgeType
+    public var wasPausedSince: Date?
+    public var createdAt: Date
+    public var entryType: StatementEntryType
+}
+
+public enum StatementEntryType: Codable, Hashable {
+    case credit(StatementCreditType)
+    case debit(StatementDebitType)
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case credit
+        case debit
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        switch type {
+        case "credit": self = .credit(try container.decode(StatementCreditType.self, forKey: .credit))
+        case "debit": self = .debit(try container.decode(StatementDebitType.self, forKey: .debit))
+        default: throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "unknown entry type \(type)")
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .credit(c):
+            try container.encode("credit", forKey: .type)
+            try container.encode(c, forKey: .credit)
+        case let .debit(d):
+            try container.encode("debit", forKey: .type)
+            try container.encode(d, forKey: .debit)
+        }
+    }
+
+    public var text: String {
+        switch self {
+        case let .credit(c): c.text
+        case let .debit(d): d.text
+        }
+    }
+}
+
+// the service is deployed ahead of clients, so a type this version does not know keeps its tag
+public enum StatementCreditType: Codable, Hashable {
+    case payment(invoiceId: String?)
+    case code
+    case charge(chargeId: String)
+    case support
+    case transferIn(fromPurchaseKey: String)
+    case opening
+    case unknown(type: String)
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case invoiceId
+        case chargeId
+        case fromPurchaseKey
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        switch type {
+        case "payment": self = .payment(invoiceId: try container.decodeIfPresent(String.self, forKey: .invoiceId))
+        case "code": self = .code
+        case "charge": self = .charge(chargeId: try container.decode(String.self, forKey: .chargeId))
+        case "support": self = .support
+        case "transferIn": self = .transferIn(fromPurchaseKey: try container.decode(String.self, forKey: .fromPurchaseKey))
+        case "opening": self = .opening
+        default: self = .unknown(type: type)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(text, forKey: .type)
+        switch self {
+        case let .payment(invoiceId): try container.encodeIfPresent(invoiceId, forKey: .invoiceId)
+        case let .charge(chargeId): try container.encode(chargeId, forKey: .chargeId)
+        case let .transferIn(fromPurchaseKey): try container.encode(fromPurchaseKey, forKey: .fromPurchaseKey)
+        case .code, .support, .opening, .unknown: ()
+        }
+    }
+
+    public var text: String {
+        switch self {
+        case .payment: "payment"
+        case .code: "code"
+        case .charge: "charge"
+        case .support: "support"
+        case .transferIn: "transferIn"
+        case .opening: "opening"
+        case let .unknown(type): type
+        }
+    }
+}
+
+public enum StatementDebitType: Codable, Hashable {
+    case refund
+    case upgrade(toPurchaseKey: String)
+    case transferOut(toPurchaseKey: String)
+    case support
+    case badge
+    case lapse
+    case unknown(type: String)
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case toPurchaseKey
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        switch type {
+        case "refund": self = .refund
+        case "upgrade": self = .upgrade(toPurchaseKey: try container.decode(String.self, forKey: .toPurchaseKey))
+        case "transferOut": self = .transferOut(toPurchaseKey: try container.decode(String.self, forKey: .toPurchaseKey))
+        case "support": self = .support
+        case "badge": self = .badge
+        case "lapse": self = .lapse
+        default: self = .unknown(type: type)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(text, forKey: .type)
+        switch self {
+        case let .upgrade(toPurchaseKey), let .transferOut(toPurchaseKey): try container.encode(toPurchaseKey, forKey: .toPurchaseKey)
+        case .refund, .support, .badge, .lapse, .unknown: ()
+        }
+    }
+
+    public var text: String {
+        switch self {
+        case .refund: "refund"
+        case .upgrade: "upgrade"
+        case .transferOut: "transferOut"
+        case .support: "support"
+        case .badge: "badge"
+        case .lapse: "lapse"
+        case let .unknown(type): type
+        }
+    }
 }
 
 public struct BadgeAlert: Codable, Hashable {
@@ -361,6 +561,7 @@ public enum BadgeAlertKind: String, Codable, Hashable {
     case subscriptionEnded
     case prepaidEnding
     case supportEnded
+    case issueFailed
 }
 
 // the wire proof carried on a profile - opaque to the UI, only round-tripped back to the core (apiPrepareContact)

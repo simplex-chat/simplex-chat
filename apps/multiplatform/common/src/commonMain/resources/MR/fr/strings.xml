@@ -5,7 +5,6 @@
     <string name="app_name">SimpleX</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Votre profil va être envoyé au contact qui vous a envoyé ce lien.</string>
     <string name="you_will_join_group">Vous vous connecterez à tous les membres du groupe.</string>
-    <string name="connect_via_link_verb">Se connecter</string>
     <string name="connect_via_group_link">Rejoindre le groupe ?</string>
     <string name="connect_via_invitation_link">Se connecter via un lien unique ?</string>
     <string name="server_error">erreur</string>
@@ -45,7 +44,6 @@
     <string name="description_you_shared_one_time_link">vous avez partagé un lien unique</string>
     <string name="description_via_one_time_link">via un lien unique</string>
     <string name="description_via_one_time_link_incognito">mode incognito via un lien unique</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Assurez-vous que les adresses des serveurs SMP sont au bon format, séparées par des lignes et ne sont pas dupliquées.</string>
     <string name="error_setting_network_config">Erreur lors de la mise à jour de la configuration réseau</string>
     <string name="error_creating_address">Erreur lors de la création de l\'adresse</string>
     <string name="contact_already_exists">Contact déjà existant</string>
@@ -55,7 +53,6 @@
     <string name="error_connecting_to_server_to_receive_messages">Tentative de connexion au serveur utilisé pour recevoir les messages de ce contact (erreur : %1$s).</string>
     <string name="invalid_message_format">format de message invalide</string>
     <string name="simplex_link_mode_full">Lien entier</string>
-    <string name="error_saving_smp_servers">Erreur lors de la sauvegarde des serveurs SMP</string>
     <string name="cannot_receive_file">Impossible de recevoir le fichier</string>
     <string name="invalid_connection_link">Lien de connection invalide</string>
     <string name="connection_timeout">Délai de connexion</string>
@@ -137,11 +134,9 @@
     <string name="database_initialization_error_title">Échec d’initialisation de la base de données</string>
     <string name="enter_passphrase_notification_desc">Pour recevoir des notifications, veuillez entrer la phrase secrète de la base de données</string>
     <string name="simplex_service_notification_title">service SimpleX Chat</string>
-    <string name="this_text_is_available_in_settings">Ce texte est disponible dans les paramètres</string>
     <string name="group_preview_join_as">Rejoindre en tant que %s</string>
     <string name="group_preview_you_are_invited">Vous êtes invité·e au groupe</string>
     <string name="chat_with_developers">Discuter avec les développeurs</string>
-    <string name="tap_to_start_new_chat">Appuyez ici pour démarrer une nouvelle conversation</string>
     <string name="you_have_no_chats">Vous n\'avez aucune conversation</string>
     <string name="images_limit_title">Trop d’images !</string>
     <string name="share_file">Partager le fichier…</string>
@@ -150,7 +145,6 @@
     <string name="icon_descr_cancel_file_preview">Annuler l’aperçu du fichier</string>
     <string name="icon_descr_sent_msg_status_send_failed">échec d’envoi</string>
     <string name="icon_descr_received_msg_status_unread">non lu</string>
-    <string name="welcome">Bienvenue !</string>
     <string name="contact_connection_pending">connexion…</string>
     <string name="group_connection_pending">connexion…</string>
     <string name="share_message">Partager le message…</string>
@@ -192,11 +186,8 @@
     <string name="no_details">aucun détail</string>
     <string name="add_contact">Lien d\'invitation unique</string>
     <string name="copied">Copié dans le presse-papiers</string>
-    <string name="share_one_time_link">Créer un lien d\'invitation unique</string>
     <string name="add_contact_or_create_group">Commencer une nouvelle conversation</string>
-    <string name="connect_via_link_or_qr">Se connecter via un lien / code QR</string>
     <string name="scan_QR_code">Scanner un QR code</string>
-    <string name="to_share_with_your_contact">(à partager avec votre contact)</string>
     <string name="create_group">Créer un groupe secret</string>
     <string name="from_gallery_button">Depuis la Phototèque</string>
     <string name="choose_file">Fichier</string>
@@ -233,19 +224,14 @@
     <string name="icon_descr_simplex_team">Équipe SimpleX</string>
     <string name="icon_descr_more_button">Plus</string>
     <string name="show_QR_code">Afficher le code QR</string>
-    <string name="invalid_QR_code">Code QR invalide</string>
-    <string name="this_QR_code_is_not_a_link">Ce code QR n\'est pas un lien !</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Vous serez connecté·e lorsque votre demande de connexion sera acceptée, veuillez attendre ou vérifier plus tard !</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Vous serez connecté·e lorsque l\'appareil de votre contact sera en ligne, veuillez attendre ou vérifier plus tard !</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">Votre profil de messagerie sera envoyé\nà votre contact</string>
     <string name="share_invitation_link">Partager un lien unique</string>
     <string name="paste_button">Coller</string>
     <string name="this_string_is_not_a_connection_link">Cette chaîne n\'est pas un lien de connexion !</string>
-    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Vous pouvez aussi vous connecter en cliquant sur le lien. Si il s\'ouvre dans le navigateur, cliquez sur <b>Ouvrir dans l\'app mobile</b>.]]></string>
     <string name="text_field_set_contact_placeholder">Définir le nom du contact…</string>
     <string name="icon_descr_server_status_disconnected">Déconnecté</string>
     <string name="icon_descr_server_status_error">Erreur</string>
-    <string name="icon_descr_server_status_pending">En attente</string>
     <string name="accept_connection_request__question">Accepter la demande de connexion \?</string>
     <string name="clear_verb">Effacer</string>
     <string name="clear_chat_button">Effacer la conversation</string>
@@ -261,7 +247,6 @@
     <string name="confirm_verb">Confirmer</string>
     <string name="reset_verb">Réinitialisation</string>
     <string name="ok">OK</string>
-    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scanner ou coller depuis le presse-papiers)</string>
     <string name="only_stored_on_members_devices">(uniquement stocké par les membres du groupe)</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Votre contact a besoin d\'être en ligne pour completer la connexion.
 \nVous pouvez annuler la connexion et supprimer le contact (et réessayer plus tard avec un autre lien).</string>
@@ -297,7 +282,6 @@
     <string name="unmute_chat">Réactiver le son</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Le contact avec lequel vous avez partagé ce lien NE pourra PAS se connecter !</string>
     <string name="invalid_contact_link">Lien invalide !</string>
-    <string name="this_link_is_not_a_valid_connection_link">Ce lien n\'est pas un lien de connexion valide !</string>
     <string name="connection_request_sent">Demande de connexion envoyée !</string>
     <string name="file_will_be_received_when_contact_is_online">Le fichier sera reçu lorsque votre contact sera en ligne, veuillez patienter ou vérifier plus tard !</string>
     <string name="voice_message_send_text">Message vocal…</string>
@@ -306,13 +290,10 @@
     <string name="notifications">Notifications</string>
     <string name="switch_receiving_address_desc">L\'adresse de réception sera changée pour un autre serveur. Le changement d\'adresse sera terminé lorsque l\'expéditeur sera en ligne.</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Vous serez connecté·e au groupe lorsque l\'appareil de l\'hôte sera en ligne, veuillez attendre ou vérifier plus tard !</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Si vous ne pouvez pas vous rencontrer en personne, <b>montrez le code QR lors d\'un appel vidéo</b>, ou partagez le lien.]]></string>
     <string name="scan_code_from_contacts_app">Scannez le code de sécurité depuis l\'application de votre contact.</string>
     <string name="to_verify_compare">Pour vérifier le chiffrement de bout en bout avec votre contact, comparez (ou scannez) le code sur vos appareils.</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Si vous ne pouvez pas vous rencontrer en personne, vous pouvez <b>scanner un QR code lors d\'un appel vidéo</b>, ou votre contact peut partager un lien d\'invitation.]]></string>
     <string name="smp_servers_add">Ajouter un serveur</string>
     <string name="markdown_in_messages">Markdown dans les messages</string>
-    <string name="smp_servers_preset_add">Ajouter des serveurs prédéfinis</string>
     <string name="use_simplex_chat_servers__question">Utiliser les serveurs SimpleX Chat \?</string>
     <string name="smp_servers_delete_server">Supprimer le serveur</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Assurez-vous que les adresses des serveurs WebRTC ICE sont au bon format et ne sont pas dupliquées, un par ligne.</string>
@@ -321,7 +302,6 @@
     <string name="your_settings">Vos paramètres</string>
     <string name="chat_lock">Verrouillage SimpleX</string>
     <string name="chat_console">Console de la messagerie</string>
-    <string name="smp_servers">Serveurs SMP</string>
     <string name="smp_servers_test_servers">Tester les serveurs</string>
     <string name="smp_servers_save">Enregistrer les serveurs</string>
     <string name="smp_servers_scan_qr">Scanner un QR code de serveur</string>
@@ -332,7 +312,6 @@
     <string name="star_on_github">Star sur GitHub</string>
     <string name="contribute">Contribuer</string>
     <string name="rate_the_app">Évaluer l\'app</string>
-    <string name="your_SMP_servers">Vos serveurs SMP</string>
     <string name="how_to_use_your_servers">Comment utiliser vos serveurs</string>
     <string name="saved_ICE_servers_will_be_removed">Les serveurs WebRTC ICE sauvegardés seront supprimés.</string>
     <string name="your_ICE_servers">Vos serveurs ICE</string>
@@ -354,7 +333,6 @@
     <string name="your_profile_is_stored_on_your_device">Votre profil, vos contacts et les messages reçus sont stockés sur votre appareil.</string>
     <string name="profile_is_only_shared_with_your_contacts">Le profil n\'est partagé qu\'avec vos contacts.</string>
     <string name="display_name_cannot_contain_whitespace">Le nom d\'affichage ne peut pas contenir d\'espace.</string>
-    <string name="create_profile_button">Créer</string>
     <string name="about_simplex">À propos de SimpleX</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Vous pouvez utiliser le format markdown pour mettre en forme les messages :</string>
     <string name="bold_text">gras</string>
@@ -366,10 +344,7 @@
     <string name="callstate_received_answer">réponse reçu…</string>
     <string name="callstate_received_confirmation">confimation reçu…</string>
     <string name="callstate_connecting">connexion…</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">N\'importe qui peut heberger un serveur.</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Pour protéger votre vie privée, SimpleX utilise des identifiants distincts pour chacun de vos contacts.</string>
     <string name="paste_the_link_you_received">Collez le lien que vous avez reçu</string>
-    <string name="use_chat">Utiliser la messagerie</string>
     <string name="onboarding_notifications_mode_title">Notifications privées</string>
     <string name="onboarding_notifications_mode_subtitle">Comment il affecte la batterie</string>
     <string name="onboarding_notifications_mode_off">Quand l\'application fonctionne</string>
@@ -398,8 +373,6 @@
     <string name="smp_servers_test_failed">Échec du test du serveur !</string>
     <string name="smp_servers_test_some_failed">Certains serveurs n\'ont pas réussi le test :</string>
     <string name="smp_servers_enter_manually">Entrer un serveur manuellement</string>
-    <string name="smp_servers_preset_server">Serveur prédéfini</string>
-    <string name="smp_servers_your_server">Votre serveur</string>
     <string name="smp_servers_your_server_address">Votre adresse de serveur</string>
     <string name="smp_servers_invalid_address">Adresse de serveur invalide !</string>
     <string name="smp_servers_check_address">Vérifiez l\'adresse du serveur et réessayez.</string>
@@ -420,9 +393,6 @@
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Votre profil est stocké sur votre appareil et partagé uniquement avec vos contacts. Les serveurs SimpleX ne peuvent pas voir votre profil.</string>
     <string name="delete_image">Supprimer l\'image</string>
     <string name="save_preferences_question">Enregistrer les préférences ?</string>
-    <string name="you_control_your_chat">Vous contrôlez votre messagerie !</string>
-    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">La plateforme de messagerie et d\'applications qui protège votre vie privée et votre sécurité.</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">Nous ne stockons aucun de vos contacts ou messages (une fois délivrés) sur les serveurs.</string>
     <string name="create_profile">Créer le profil</string>
     <string name="display_name">Saisissez votre nom :</string>
     <string name="how_to_use_markdown">Comment utiliser markdown</string>
@@ -435,17 +405,9 @@
     <string name="callstate_waiting_for_confirmation">en attente de confirmation…</string>
     <string name="callstate_connected">connecté</string>
     <string name="callstate_ended">terminé</string>
-    <string name="next_generation_of_private_messaging">L\'avenir de la messagerie</string>
-    <string name="privacy_redefined">La vie privée redéfinie</string>
-    <string name="first_platform_without_user_ids">Aucun identifiant d\'utilisateur.</string>
-    <string name="immune_to_spam_and_abuse">Protégé du spam</string>
-    <string name="people_can_connect_only_via_links_you_share">Vous choisissez qui peut se connecter.</string>
-    <string name="decentralized">Décentralisé</string>
     <string name="create_your_profile">Créez votre profil</string>
     <string name="make_private_connection">Établir une connexion privée</string>
     <string name="how_it_works">Comment ça fonctionne</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Seuls les appareils clients stockent les profils des utilisateurs, les contacts, les groupes et les messages.</string>
-    <string name="read_more_in_github_with_link"><![CDATA[Pour en savoir plus, consultez notre <font color="#0088ff">GitHub repository</font>.]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Batterie peu utilisée</b>. L\'app vérifie les messages toutes les 10 minutes. Vous risquez de manquer des appels ou des messages urgents.]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consomme davantage de batterie</b> ! L’application fonctionne toujours en arrière-plan — les notifications sont affichées instantanément.]]></string>
     <string name="integrity_msg_skipped">%1$d message(s) manqué(s)</string>
@@ -516,7 +478,6 @@
     <string name="settings_audio_video_calls">Appels audio et vidéo</string>
     <string name="status_e2e_encrypted">chiffré de bout en bout</string>
     <string name="settings_experimental_features">Fonctionnalités expérimentales</string>
-    <string name="settings_section_title_socks">SOCKS proxy</string>
     <string name="settings_section_title_themes">Thèmes</string>
     <string name="settings_section_title_messages">Messages et fichiers</string>
     <string name="settings_section_title_calls">Appels</string>
@@ -570,7 +531,6 @@
     <string name="call_on_lock_screen">Appels sur l\'écran de verrouillage :</string>
     <string name="show_call_on_lock_screen">Afficher</string>
     <string name="no_call_on_lock_screen">Désactiver</string>
-    <string name="your_ice_servers">Vos serveurs ICE</string>
     <string name="webrtc_ice_servers">Serveurs WebRTC ICE</string>
     <string name="relay_server_protects_ip">Le serveur relais protège votre adresse IP, mais il peut observer la durée de l\'appel.</string>
     <string name="relay_server_if_necessary">Le serveur relais n\'est utilisé que si nécessaire. Un tiers peut observer votre adresse IP.</string>
@@ -896,7 +856,6 @@
     <string name="delete_files_and_media_for_all_users">Effacer les fichiers de tous les profils de messagerie</string>
     <string name="users_delete_with_connections">Profil et connexions au serveur</string>
     <string name="network_session_mode_transport_isolation">Transport isolé</string>
-    <string name="update_network_session_mode_question">Mettre à jour le mode d\'isolement du transport \?</string>
     <string name="network_session_mode_entity_description"><![CDATA[Une connexion TCP distincte (et identifiant SOCKS) sera utilisée <b>pour chaque contact et membre de groupe</b>. \n<b>Veuillez noter</b> : si vous avez de nombreuses connexions, votre consommation de batterie et de réseau peut être nettement plus élevée et certaines liaisons peuvent échouer.]]></string>
     <string name="network_session_mode_user">Profil de messagerie</string>
     <string name="users_add">Ajouter un profil</string>
@@ -1014,16 +973,10 @@
     <string name="videos_limit_desc">Seulement 10 vidéos peuvent être envoyées en même temps</string>
     <string name="smp_server_test_create_file">Créer un fichier</string>
     <string name="smp_server_test_delete_file">Supprimer le fichier</string>
-    <string name="error_saving_xftp_servers">Erreur lors de la sauvegarde des serveurs XFTP</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Assurez-vous que les adresses des serveurs XFTP sont au bon format, séparées par des lignes et qu\'elles ne sont pas dupliquées.</string>
     <string name="error_xftp_test_server_auth">Le serveur requiert une autorisation pour téléverser, vérifiez le mot de passe.</string>
     <string name="smp_server_test_upload_file">Téléverser le fichier</string>
-    <string name="xftp_servers">Serveurs XFTP</string>
-    <string name="your_XFTP_servers">Vos serveurs XFTP</string>
     <string name="smp_server_test_compare_file">Comparer le fichier</string>
     <string name="smp_server_test_download_file">Télécharger le fichier</string>
-    <string name="error_loading_smp_servers">Erreur lors du chargement des serveurs SMP</string>
-    <string name="error_loading_xftp_servers">Erreur lors du chargement des serveurs XFTP</string>
     <string name="host_verb">Héberger</string>
     <string name="port_verb">Port</string>
     <string name="network_proxy_port">port %d</string>
@@ -1064,7 +1017,6 @@
     <string name="allow_calls_only_if">Autoriser les appels que si votre contact les autorise.</string>
     <string name="allow_your_contacts_to_call">Autorise vos contacts à vous appeler.</string>
     <string name="audio_video_calls">Appels audio/vidéo</string>
-    <string name="available_in_v51">\nDisponible dans la v5.1</string>
     <string name="prohibit_calls">Interdire les appels audio/vidéo.</string>
     <string name="revoke_file__message">Le fichier sera supprimé des serveurs.</string>
     <string name="revoke_file__confirm">Révoquer</string>
@@ -1098,10 +1050,8 @@
     <string name="opening_database">Ouverture de la base de données…</string>
     <string name="learn_more_about_address">À propos de l\'adresse SimpleX</string>
     <string name="learn_more">En savoir plus</string>
-    <string name="you_can_share_your_address">Vous pouvez partager votre adresse sous la forme d\'un lien ou d\'un code QR - tout le monde peut l\'utiliser pour vous contacter.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Vous ne perdrez pas vos contacts si vous supprimez votre adresse ultérieurement.</string>
     <string name="simplex_address">Adresse SimpleX</string>
-    <string name="you_can_accept_or_reject_connection">Vous pouvez accepter ou refuser les demandes de contacts.</string>
     <string name="theme_colors_section_title">Couleurs de l\'interface</string>
     <string name="your_contacts_will_remain_connected">Vos contacts resteront connectés.</string>
     <string name="share_address_with_contacts_question">Partager l\'adresse avec les contacts SimpleX ?</string>
@@ -1112,7 +1062,6 @@
     <string name="invite_friends">Inviter des amis</string>
     <string name="email_invite_subject">Discutons sur SimpleX Chat</string>
     <string name="save_settings_question">Enregistrer les paramètres ?</string>
-    <string name="dont_create_address">Ne pas créer d\'adresse</string>
     <string name="address_section_title">Adresse</string>
     <string name="share_address">Partager l\'adresse…</string>
     <string name="you_can_share_this_address_with_your_contacts">Vous pouvez partager cette adresse avec vos contacts pour leur permettre de se connecter avec %s.</string>
@@ -1136,9 +1085,7 @@
     <string name="customize_theme_title">Personnaliser le thème</string>
     <string name="continue_to_next_step">Continuer</string>
     <string name="error_setting_address">Erreur lors du réglage de l\'adresse</string>
-    <string name="create_address_and_let_people_connect">Vous pouvez créer une adresse pour permettre aux autres utilisateurs de vous contacter.</string>
     <string name="enter_welcome_message">Entrez un message de bienvenue…</string>
-    <string name="you_can_create_it_later">Vous pouvez la créer plus tard</string>
     <string name="email_invite_body">Salut !\nConnectez-vous avec moi via SimpleX Chat : %s</string>
     <string name="if_you_cant_meet_in_person">Si vous ne pouvez pas vous rencontrer en personne, montrez le code QR lors d\'un appel vidéo ou partagez le lien.</string>
     <string name="auth_open_chat_profiles">Modifier les profils de messagerie</string>
@@ -1333,10 +1280,8 @@
     <string name="disable_notifications_button">Désactiver les notifications</string>
     <string name="system_restricted_background_warn"><![CDATA[Pour activer les notifications, veuillez choisir <b>Utilisation de la batterie de l\'app</b> / <b>Sans restriction</b> dans les paramètres de l\'app.]]></string>
     <string name="connect__your_profile_will_be_shared">Votre profil %1$s sera partagé.</string>
-    <string name="connect_via_link_incognito">Se connecter incognito</string>
     <string name="system_restricted_background_in_call_title">Pas d\'appels en arrière-plan</string>
     <string name="turn_off_system_restriction_button">Ouvrir les paramètres de l\'app</string>
-    <string name="paste_the_link_you_received_to_connect_with_your_contact">Collez le lien que vous avez reçu pour vous connecter à votre contact…</string>
     <string name="system_restricted_background_desc">SimpleX ne peut pas fonctionner en arrière-plan. Vous ne recevrez les notifications que lorsque l\'application sera en cours d\'exécution.</string>
     <string name="system_restricted_background_in_call_desc">L\'application peut se fermer après 1 minute en arrière-plan.</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Pour faire des appels en arrière-plan, veuillez choisir <b>Utilisation de la batterie de l\'app</b> / <b>Sans restriction</b> dans les paramètres de l\'app.]]></string>
@@ -1504,7 +1449,6 @@
     <string name="open_port_in_firewall_title">Ouvrir le port de votre pare-feu</string>
     <string name="error_showing_content">erreur d\'affichage de contenu</string>
     <string name="error_showing_message">erreur d\'affichage de message</string>
-    <string name="you_can_make_address_visible_via_settings">Vous pouvez le rendre visible à vos contacts SimpleX via les Paramètres.</string>
     <string name="recent_history_is_not_sent_to_new_members">L\'historique n\'est pas envoyé aux nouveaux membres.</string>
     <string name="retry_verb">Réessayer</string>
     <string name="camera_not_available">Caméra non disponible</string>
@@ -1897,14 +1841,10 @@
     <string name="app_check_for_updates_beta">Bêta</string>
     <string name="app_check_for_updates">Vérifier les mises à jour</string>
     <string name="app_check_for_updates_notice_title">Vérifier les mises à jour</string>
-    <string name="smp_servers_configured">Serveurs SMP configurés</string>
-    <string name="xftp_servers_configured">Serveurs XFTP configurés</string>
     <string name="app_check_for_updates_disabled">Désactivé</string>
     <string name="app_check_for_updates_installed_successfully_title">Installé avec succès</string>
     <string name="app_check_for_updates_button_install">Installer la mise à jour</string>
     <string name="app_check_for_updates_button_open">Ouvrir l\'emplacement du fichier</string>
-    <string name="smp_servers_other">Autres serveurs SMP</string>
-    <string name="xftp_servers_other">Autres serveurs XFTP</string>
     <string name="app_check_for_updates_installed_successfully_desc">Veuillez redémarrer l\'application.</string>
     <string name="app_check_for_updates_button_remind_later">Rappeler plus tard</string>
     <string name="subscription_percentage">Afficher le pourcentage</string>
@@ -1954,7 +1894,6 @@
     <string name="deletion_errors">Erreurs de suppression</string>
     <string name="duplicates_label">doublons</string>
     <string name="expired_label">expiré</string>
-    <string name="open_server_settings_button">Ouvrir les paramètres du serveur</string>
     <string name="other_label">autre</string>
     <string name="other_errors">autres erreurs</string>
     <string name="secured">Sécurisées</string>
@@ -2134,7 +2073,6 @@
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Les conditions seront acceptées pour le(s) opérateur(s) : <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_accepted_on">Les conditions seront acceptées le : %s.</string>
     <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Pour utiliser les serveurs de <b>%s</b>, acceptez les conditions d\'utilisation.]]></string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Tous les messages et fichiers sont envoyés <b> chiffrés de bout en bout</b>, avec une sécurité post-quantique dans les messages directs.]]></string>
     <string name="onboarding_notifications_mode_periodic_desc_short">Réception des messages toutes les 10 minutes</string>
     <string name="operators_conditions_accepted_for"><![CDATA[Les conditions sont acceptées pour le(s) opérateur(s) : <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Les mêmes conditions s\'appliquent aux opérateurs : <b>%s</b>.]]></string>
@@ -2895,7 +2833,6 @@
     <string name="appearance_minimize_to_tray_desc">Fonctionne en arrière-plan pour recevoir les messages</string>
     <string name="badge_supports_simplex">%s soutient SimpleX Chat.</string>
     <string name="badge_supported_simplex">%1$s a soutenu SimpleX Chat. Le badge a expiré le %2$s.</string>
-    <string name="badge_support_from_v7">Vous pouvez soutenir SimpleX à partir de la version 7 de l’application.</string>
     <string name="badge_invested">%s a investi dans le financement participatif de SimpleX Chat.</string>
     <string name="badge_unverified_title">Badge non vérifié</string>
     <string name="badge_unverified_desc">Ce badge n’a pas pu être vérifié et peut ne pas être authentique.</string>

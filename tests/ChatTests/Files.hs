@@ -938,8 +938,8 @@ testFileBadgeProofStatus ps = do
   withNewTestChatCfg ps (badgeFileCfg pk) "alice" aliceProfile $ \alice -> do
     now <- getCurrentTime
     let ph = PHFileInv {chatBinding = "Dalice-binding", fileSize = 272376}
-        otherBinding = (ph :: ProofPresHeader) {chatBinding = "Dbob-binding"}
-        otherSize = (ph :: ProofPresHeader) {fileSize = 1}
+        otherBinding = PHFileInv {chatBinding = "Dbob-binding", fileSize = 272376}
+        otherSize = PHFileInv {chatBinding = "Dalice-binding", fileSize = 1}
         proofFor expiry = do
           cred <- issueTestBadge sk expiry
           Right badge <- badgeProof pk cred ph
