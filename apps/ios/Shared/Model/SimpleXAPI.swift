@@ -1051,7 +1051,7 @@ func apiConnectPlan(connLink: String, resolveMode: PlanResolveMode = .unknown, l
     }
     // a .never (typing) search that matches nothing locally is not an error to surface
     if case .error(.error(.notResolvedLocally)) = r { return nil }
-    if let r { await apiConnectResponseAlert(r) }
+    if let r, inProgress.boxedValue { await apiConnectResponseAlert(r) }
     return nil
 }
 
@@ -1390,6 +1390,8 @@ func showSetSimplexNameError<R>(_ r: APIResult<R>, isChannel: Bool) async {
 func apiSetUserDomain(_ simplexDomain: String?) async throws -> User {
     let userId = try currentUserId("apiSetUserDomain")
     let r: APIResult<ChatResponse1> = await chatApiSendCmd(.apiSetUserDomain(userId: userId, simplexDomain: simplexDomain))
+    // a name claimed or dropped here must not keep reading from the answer taken before
+    if let d = ChatModel.shared.currentUser?.profile.contactDomain?.domain { NameResolution.forget(d) }
     switch r {
     case let .result(.userProfileUpdated(user, _, _, _)): return user
     case let .result(.userProfileNoChange(user)): return user

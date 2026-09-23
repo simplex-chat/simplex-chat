@@ -33,6 +33,7 @@ let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews" // deprecated, moved t
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
 let DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS = "privacyShowChatPreviews"
 let DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES = "privacyVerifySimplexNames"
+let DEFAULT_SIMPLEX_NAMES_RESOLVED_AT = "simplexNamesResolvedAt"
 let DEFAULT_PRIVACY_SHOW_SIGNATURE = "privacyShowSignature"
 let DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION = "privacyShowEncryption"
 let DEFAULT_PRIVACY_SAVE_LAST_DRAFT = "privacySaveLastDraft"

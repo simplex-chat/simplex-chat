@@ -849,7 +849,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case invitation(user: UserRef, connLinkInvitation: CreatedConnLink, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
-    case connectionPlan(user: UserRef, connLink: CreatedConnLink, planSimplexName: SimplexNameInfo?, otherSimplexName: SimplexNameInfo?, connectionPlan: ConnectionPlan)
+    case connectionPlan(user: UserRef, connLink: CreatedConnLink?, planSimplexName: SimplexNameInfo?, otherSimplexName: SimplexNameInfo?, connectionPlan: ConnectionPlan)
     case newPreparedChat(user: UserRef, chat: ChatData)
     case contactUserChanged(user: UserRef, fromContact: Contact, newUser: UserRef, toContact: Contact)
     case groupUserChanged(user: UserRef, fromGroup: GroupInfo, newUser: UserRef, toGroup: GroupInfo)
@@ -1437,7 +1437,7 @@ enum OwnerVerification: Decodable, Hashable {
 }
 
 struct ConnectionPlanResult {
-    var connLink: CreatedConnLink
+    var connLink: CreatedConnLink?
     var planSimplexName: SimplexNameInfo?
     var otherSimplexName: SimplexNameInfo?
     var connectionPlan: ConnectionPlan
@@ -1448,13 +1448,93 @@ enum PlanResolveMode: String {
     case allGroups
     case unknown
     case never
+    case all
 }
 
 enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
-    case contactAddress(contactAddressPlan: ContactAddressPlan)
-    case groupLink(groupLinkPlan: GroupLinkPlan)
+    case contactAddress(contactAddressPlan: ContactAddressPlan, nameRegistration_: NameRegistration?)
+    case groupLink(groupLinkPlan: GroupLinkPlan, nameRegistration_: NameRegistration?)
+    // the name resolved but there is nothing to connect to, and no local chat claims it
+    case nameNotConnectable(simplexDomain: SimplexDomain, nameRegistration: NameRegistration)
     case error(chatError: ChatError)
+
+    // the registry answer this plan was built from, when the target was a name
+    var nameRegistration: NameRegistration? {
+        switch self {
+        case let .contactAddress(_, reg): reg
+        case let .groupLink(_, reg): reg
+        case let .nameNotConnectable(_, reg): reg
+        default: nil
+        }
+    }
+}
+
+// What the registry holds for a name. This JSON is the RNAME payload, so it is "type"-tagged on
+// every platform, and the unset text fields of the record are not read here.
+enum NameRegistration: Hashable {
+    // held by someone; expires/graceUntil are absent from an older router, which means "not known", not "live forever"
+    case registered(expires: Int64?, graceUntil: Int64?, reservedReason_: String?)
+    case available(pricing: NamePricing)
+    case reserved(reservedReason: String)
+
+    // the registry may add reasons after this version, so any other value is just "not registrable"
+    static let reservedCommunity = "community"
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case expires
+        case graceUntil
+        case reservedReason_
+        case pricing
+        case reservedReason
+    }
+
+    // a name past its expiry does not connect: only its owner can renew it until the grace ends
+    func expired(_ now: Int64) -> Bool {
+        if case let .registered(expires, _, _) = self, let expires { expires < now } else { false }
+    }
+
+    var reservedForCommunity: Bool {
+        switch self {
+        case let .reserved(reason): reason == NameRegistration.reservedCommunity
+        case let .registered(_, _, reason): reason == NameRegistration.reservedCommunity
+        case .available: false
+        }
+    }
+}
+
+extension NameRegistration: Decodable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try c.decode(String.self, forKey: CodingKeys.type)
+        switch type {
+        case "registered":
+            let expires = try c.decodeIfPresent(Int64.self, forKey: CodingKeys.expires)
+            let graceUntil = try c.decodeIfPresent(Int64.self, forKey: CodingKeys.graceUntil)
+            let reservedReason_ = try c.decodeIfPresent(String.self, forKey: CodingKeys.reservedReason_)
+            self = .registered(expires: expires, graceUntil: graceUntil, reservedReason_: reservedReason_)
+        case "available":
+            let pricing = try c.decode(NamePricing.self, forKey: CodingKeys.pricing)
+            self = .available(pricing: pricing)
+        case "reserved":
+            let reservedReason = try c.decode(String.self, forKey: CodingKeys.reservedReason)
+            self = .reserved(reservedReason: reservedReason)
+        default:
+            throw DecodingError.dataCorruptedError(forKey: CodingKeys.type, in: c, debugDescription: "Unsupported name registration type: \(type)")
+        }
+    }
+}
+
+// enough to price a name locally: US cents per year, and the shortest label the registry accepts
+struct NamePricing: Decodable, Hashable {
+    var registrationPrices: [String: Int64]
+    var basePrice: Int64
+    var minLabelLength: Int
+
+    func centsPerYear(_ labelLength: Int) -> Int64 {
+        registrationPrices[String(labelLength)] ?? basePrice
+    }
 }
 
 enum InvitationLinkPlan: Decodable, Hashable {
@@ -1465,7 +1545,7 @@ enum InvitationLinkPlan: Decodable, Hashable {
 }
 
 enum ContactAddressPlan: Decodable, Hashable {
-    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?)
+    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?, addressChanged: Bool)
     case ownLink
     case connectingConfirmReconnect
     case connectingProhibit(contact: Contact)
@@ -1480,7 +1560,7 @@ public struct GroupShortLinkInfo: Decodable, Hashable {
 }
 
 enum GroupLinkPlan: Decodable, Hashable {
-    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?)
+    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?, addressChanged: Bool)
     case ownLink(groupInfo: GroupInfo)
     case connectingConfirmReconnect
     case connectingProhibit(groupInfo_: GroupInfo?)
