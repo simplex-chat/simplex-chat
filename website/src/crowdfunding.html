@@ -1231,7 +1231,7 @@ templateEngineOverride: njk
                     </div>
                 </div>
                 <div class="cf-close-offer">
-                    <p>Invest $500+ by September 22 and get a SimpleX public name for your channel or business for 7 years, ahead of public launch.</p>
+                    <p>Invest $500+ by November 22 during early bird terms and get a SimpleX public name for your channel or business for 5 years, ahead of public launch.</p>
                 </div>
             </div>
         </section>
@@ -1397,9 +1397,10 @@ templateEngineOverride: njk
             var PHASES = [
                 { until: Date.UTC(2026, 8, 23, 12, 0, 0), what: 'SimpleX name for 7 years', terms: null },
                 { until: Date.UTC(2026, 10, 23, 12, 0, 0), what: 'SimpleX name for 5 years',
-                  terms: 'Invest $500+ while early bird terms last.' },
+                  terms: 'Invest $500+ during early bird terms.',
+                  wide: 'Invest $500+ during early bird terms, and get the name ahead of public launch.' },
                 { until: Infinity, what: 'SimpleX name for 5 years',
-                  terms: 'Invest $500+ while early bird terms last.' }
+                  terms: 'Invest $500+ during early bird terms.' }
             ];
             var shown = -1;
             var digits = null;
@@ -1525,6 +1526,7 @@ templateEngineOverride: njk
                 if (leadShort) fitLine(leadShort);
             }
             var narrow = window.matchMedia('(max-width: 959px) and (orientation: portrait)');
+            var desktop = window.matchMedia('(min-width: 960px)');
             function left(ms) {
                 var total = Math.floor(ms / 1000);
                 var days = Math.floor(total / 86400);
@@ -1541,7 +1543,8 @@ templateEngineOverride: njk
                 if (changed) {
                     shown = i;
                     what.textContent = PHASES[i].what + (timed ? ':' : '');
-                    if (PHASES[i].terms !== null) terms.textContent = PHASES[i].terms;
+                    var line = desktop.matches && PHASES[i].wide ? PHASES[i].wide : PHASES[i].terms;
+                    if (line !== null) terms.textContent = line;
                     if (!timed) { clock.textContent = ''; clearInterval(timer); fit(); return; }
                 }
                 if (!digits) {
