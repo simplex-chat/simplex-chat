@@ -1627,7 +1627,7 @@ testPlanAddressContactViaAddress =
           bob ##> ("/c " <> cLink)
           connecting alice bob
 
-          bob ##> "/delete @alice"
+          bob ##> "/delete @alice notify=off"
           bob <## "alice: contact is deleted"
           alice ##> "/delete @bob"
           alice <## "bob: contact is deleted"
@@ -1689,7 +1689,7 @@ testPlanAddressContactViaShortAddress =
           bob ##> ("/c " <> sLink)
           connecting alice bob
 
-          bob ##> "/delete @alice"
+          bob ##> "/delete @alice notify=off"
           bob <## "alice: contact is deleted"
           alice ##> "/delete @bob"
           alice <## "bob: contact is deleted"
