@@ -61,7 +61,7 @@ registerName :: TVar (Map Text NameRecord) -> SimplexNameInfo -> NameRecord -> I
 registerName reg SimplexNameInfo {nameDomain = SimplexDomain {nameTLD, domain}} r =
   atomically $ modifyTVar' reg $ M.insert (decodeLatin1 $ strEncode (labelHash domain) <> strEncode nameTLD) r
 
--- | Register a name an address owns, for a wallet scan to find.
+-- | Register a name an address owns, for a wallet scan to find. Keyed by the name, not the resolver's lookup key, because owned-by reads the values.
 ownedName :: TVar (Map Text NameRecord) -> Text -> Text -> IO ()
 ownedName reg name owner = atomically $ modifyTVar' reg $ M.insert name (emptyRecord name) {nrOwner = owner}
 

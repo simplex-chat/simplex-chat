@@ -35,7 +35,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, isLeft, partitionEithers, rights)
+import Data.Either (fromRight, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Functor.Identity (Identity (..), runIdentity)
@@ -66,7 +66,7 @@ import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
 import Simplex.Chat.Store.Wallets (WalletSeed (..), accountHeldByOther, bindAccount, createWalletSeed, deleteWalletSeed, getUserAccounts, getWalletSeed, recordScan, resolveAccount)
-import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), accountSecret, checkAccountIndex, deriveAccountKey, entropyFromMnemonic, newSeedEntropy, renderAccountPath, scanGapLimit, seedMaster, seedMnemonic)
+import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccountKey, entropyFromMnemonic, newSeedEntropy, renderAccountPath, scanGapLimit, scanMaxAccounts, seedMaster, seedMnemonic)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
 import Simplex.Messaging.Names.Record (OwnedNames (..))
 import Simplex.Chat.Call
@@ -1527,10 +1527,11 @@ processChatCommand cxt nm = \case
     when heldByOther $ throwWalletError WEAccountBound
     k <- accountKey seed n
     pure $ CRWalletAccountSecret user (accountAddress n k) (accountSecret k)
-  APIScanWallet -> withUser $ \user -> do
+  APIScanWallet -> withUser $ \user@User {userId, viewPwdHash} -> do
+    when (isJust viewPwdHash) $ throwWalletError WEHiddenProfile
     seed <- walletSeed
-    (inUse, next) <- scanAccounts nm user seed
-    withFastStore' $ \db -> recordScan db (wsId seed) inUse next
+    inUse <- scanAccounts nm user seed
+    withFastStore' $ \db -> recordScan db (wsId seed) userId inUse
     processChatCommand cxt nm APIGetWallet
   APIDeleteWallet -> withUser $ \_ -> do
     deleted <- withFastStore' deleteWalletSeed
@@ -5969,22 +5970,20 @@ liftWallet = either throwWalletError pure
 accountKey :: WalletSeed -> AccountIndex -> CM AccountKey
 accountKey seed n = liftWallet $ seedMaster (wsEntropy seed) >>= (`deriveAccountKey` n)
 
--- | Walk the accounts until 'scanGapLimit' in a row are untouched, each on a relay the scan has not used, so no relay sees the whole wallet.
-scanAccounts :: NetworkRequestMode -> User -> WalletSeed -> CM ([AccountIndex], AccountIndex)
-scanAccounts nm user seed = go 0 [] [] 0
-  where
-    go n used found gap
-      | gap >= scanGapLimit || isLeft (checkAccountIndex n) = pure (reverse found, next)
-      | otherwise = do
-          addr <- addressFromPrivateKey <$> accountKey seed n
-          (srv, owned) <- withAgent $ \a -> ownedSimplexNames a nm (aUserId user) used addr 0
-          if ownInUse owned
-            then go (n + 1) (srv : used) (n : found) 0
-            else go (n + 1) (srv : used) found (gap + 1)
-      where
-        next = case found of
-          latest : _ -> latest + 1
-          [] -> 0
+-- | Walk the accounts until 'scanGapLimit' in a row are untouched, or 'scanMaxAccounts' is reached, asking each on a relay the scan has not used where the configured set allows.
+scanAccounts :: NetworkRequestMode -> User -> WalletSeed -> CM [AccountIndex]
+scanAccounts nm user seed = do
+  master <- liftWallet $ seedMaster (wsEntropy seed)
+  let go :: AccountIndex -> [SMPServer] -> [AccountIndex] -> Int -> CM [AccountIndex]
+      go n used found gap
+        | gap >= scanGapLimit || n >= scanMaxAccounts = pure (reverse found)
+        | otherwise = do
+            addr <- addressFromPrivateKey <$> liftWallet (deriveAccountKey master n)
+            (srv, owned) <- withAgent $ \a -> ownedSimplexNames a nm (aUserId user) used addr 0
+            if ownInUse owned
+              then go (n + 1) (srv : used) (n : found) 0
+              else go (n + 1) (srv : used) found (gap + 1)
+  go 0 [] [] 0
 
 accountAddress :: AccountIndex -> AccountKey -> WalletAddress
 accountAddress n k =

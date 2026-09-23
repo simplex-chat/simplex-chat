@@ -145,27 +145,28 @@ setAccountUser db sId userId n =
 accountHeldBy :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO Bool
 accountHeldBy db sId userId n = (== Just (Just userId)) <$> accountUser db sId n
 
--- | What a scan found: the accounts in use, bound to the first profile because the chain does not say whose they are, and the counter past them.
-recordScan :: DB.Connection -> SeedId -> [AccountIndex] -> AccountIndex -> IO ()
-recordScan db sId inUse next = do
+-- | What a scan found: the accounts in use, bound to the profile that ran it because the chain does not say whose they are, and the counter past them.
+-- The counter is taken from the recorded accounts, not from the scan alone, so it never lands on one another profile already holds, and it only ever rises.
+recordScan :: DB.Connection -> SeedId -> UserId -> [AccountIndex] -> IO ()
+recordScan db sId userId inUse = do
   mapM_ insertScanned inUse
   DB.execute
     db
     [sql|
-      UPDATE wallet_seeds SET next_account_index = ?
-      WHERE wallet_seed_id = ? AND (next_account_index IS NULL OR next_account_index < ?)
+      UPDATE wallet_seeds SET next_account_index = COALESCE((SELECT max(account_index) + 1 FROM wallet_accounts WHERE wallet_seed_id = ?), 0)
+      WHERE wallet_seed_id = ?
+        AND (next_account_index IS NULL OR next_account_index < COALESCE((SELECT max(account_index) + 1 FROM wallet_accounts WHERE wallet_seed_id = ?), 0))
     |]
-    (accountIndexCol next, sId, accountIndexCol next)
+    (sId, sId, sId)
   where
     insertScanned n =
       DB.execute
         db
         [sql|
-          INSERT INTO wallet_accounts (wallet_seed_id, account_index, user_id)
-          VALUES (?, ?, (SELECT min(user_id) FROM users))
+          INSERT INTO wallet_accounts (wallet_seed_id, account_index, user_id) VALUES (?, ?, ?)
           ON CONFLICT (wallet_seed_id, account_index) DO NOTHING
         |]
-        (sId, accountIndexCol n)
+        (sId, accountIndexCol n, userId)
 
 -- | Keep the counter a high-water mark. Never lowers it, never gives one to an imported phrase that has none.
 raiseNextAccount :: DB.Connection -> SeedId -> AccountIndex -> IO ()

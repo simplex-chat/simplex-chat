@@ -16,6 +16,7 @@ module Simplex.Chat.Wallet
     accountSecret,
     checkAccountIndex,
     scanGapLimit,
+    scanMaxAccounts,
   )
 where
 
@@ -58,9 +59,13 @@ data WalletError
   | WEDerivation {derivationError :: String} -- BIP-32 or BIP-39 said no
   deriving (Eq, Show)
 
--- | BIP-44's gap limit: a scan stops after this many accounts in a row that nothing on chain has used.
+-- | The gap limit BIP-44 uses for addresses, applied to accounts: a scan stops after this many in a row that nothing on chain has used.
 scanGapLimit :: Int
 scanGapLimit = 20
+
+-- | A scan walks no further, so a relay answering "in use" to every account cannot run it to the end of the index space.
+scanMaxAccounts :: AccountIndex
+scanMaxAccounts = 200
 
 -- | Refuse an index at or above 2^31: BIP-32 would harden it onto another index's key.
 checkAccountIndex :: AccountIndex -> Either WalletError ()

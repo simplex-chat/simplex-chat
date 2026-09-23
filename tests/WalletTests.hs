@@ -102,8 +102,10 @@ walletTests = do
 
 -- | Its own group: the scan needs a names resolver, so it runs without the SMP server the other wallet tests share.
 walletScanTests :: SpecWith TestParams
-walletScanTests =
+walletScanTests = do
   it "a scan of a recovered phrase finds the accounts in use" testWalletScan
+  it "the counter a scan sets clears the accounts already bound" testWalletScanCounterPastBound
+  it "a hidden profile cannot scan" testWalletScanHiddenProfile
 
 testWalletScan :: HasCallStack => TestParams -> IO ()
 testWalletScan ps = withSmpServerAndNames $ \reg -> withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -269,6 +271,33 @@ testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   -- and the counter stays unknown, because the phrase still does not say
   alice ##> "/_wallet bind"
   alice <## "wallet: unknown how many accounts this phrase has used, a scan of the chain has to run first"
+
+-- | A scan that finds nothing must not point the counter at an account a profile already holds, or the next bind can never take one.
+testWalletScanCounterPastBound :: HasCallStack => TestParams -> IO ()
+testWalletScanCounterPastBound ps = withSmpServerAndNames $ \_reg -> withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  enableNamesRole alice
+  alice ##> ("/_wallet create mnemonic=" <> B.unpack testPhrase24)
+  alice <## "wallet, no accounts for this profile"
+  alice ##> "/_wallet bind account=5"
+  alice <## "accounts: 5"
+  alice ##> "/_wallet scan"
+  alice <## "accounts: 5"
+  alice ##> "/_wallet bind"
+  alice <## "accounts: 5, 6"
+
+-- | A scan binds what it finds, so it is refused where a bind is.
+testWalletScanHiddenProfile :: HasCallStack => TestParams -> IO ()
+testWalletScanHiddenProfile ps = withSmpServerAndNames $ \_reg -> withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  alice ##> ("/_wallet create mnemonic=" <> B.unpack testPhrase24)
+  alice <## "wallet, no accounts for this profile"
+  alice ##> "/create user alisa"
+  showActiveUser alice "alisa"
+  alice ##> "/hide user my_password"
+  alice <## "current user alisa:"
+  alice <## "messages are hidden (use /tail to view)"
+  alice <## "profile is hidden"
+  alice ##> "/_wallet scan"
+  alice <## "wallet: a hidden profile cannot own an account"
 
 testWalletPersists :: HasCallStack => TestParams -> IO ()
 testWalletPersists ps = do
