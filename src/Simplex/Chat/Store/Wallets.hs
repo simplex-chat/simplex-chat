@@ -174,7 +174,7 @@ recordScan db sId userId inUse = do
       DB.execute
         db
         [sql|
-          INSERT INTO wallet_names (wallet_seed_id, account_index, name, name_response) VALUES (?, ?, ?, ?)
+          INSERT INTO wallet_owned_names (wallet_seed_id, account_index, name, name_response) VALUES (?, ?, ?, ?)
           ON CONFLICT (wallet_seed_id, name)
           DO UPDATE SET account_index = EXCLUDED.account_index, name_response = EXCLUDED.name_response
         |]

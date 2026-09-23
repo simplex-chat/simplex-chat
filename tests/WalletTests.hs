@@ -121,7 +121,7 @@ testWalletScan ps = withSmpServerAndNames $ \reg -> withNewTestChat ps "alice" a
   alice ##> "/_wallet scan"
   alice <## "accounts: 1"
   -- the names the scan saw are recorded against the account that holds them
-  names <- withCCTransaction alice $ \db -> DB.query_ db "SELECT account_index, name, name_response FROM wallet_names"
+  names <- withCCTransaction alice $ \db -> DB.query_ db "SELECT account_index, name, name_response FROM wallet_owned_names"
   map (\(n, nm, _) -> (n, nm)) names `shouldBe` [(1 :: Int64, "alice.simplex" :: Text)]
   map (\(_, _, r) -> registeredName <$> decodeJSON r) names `shouldBe` [Just (Just "alice.simplex")]
   -- the scan gives the imported phrase the counter it had none of

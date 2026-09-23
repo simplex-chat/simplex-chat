@@ -987,8 +987,8 @@ CREATE TABLE wallet_accounts(
   account_index INTEGER CHECK(account_index BETWEEN 0 AND 2147483647),
   user_id INTEGER REFERENCES users ON DELETE SET NULL
 ) STRICT;
-CREATE TABLE wallet_names(
-  wallet_name_id INTEGER PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE wallet_owned_names(
+  wallet_owned_name_id INTEGER PRIMARY KEY AUTOINCREMENT,
   wallet_seed_id INTEGER NOT NULL REFERENCES wallet_seeds ON DELETE CASCADE,
   account_index INTEGER NOT NULL CHECK(account_index BETWEEN 0 AND 2147483647),
   name TEXT NOT NULL,
@@ -1563,7 +1563,7 @@ CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_a
   account_index
 );
 CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
-CREATE UNIQUE INDEX idx_wallet_names_wallet_seed_id_name ON wallet_names(
+CREATE UNIQUE INDEX idx_wallet_owned_names_wallet_seed_id_name ON wallet_owned_names(
   wallet_seed_id,
   name
 );

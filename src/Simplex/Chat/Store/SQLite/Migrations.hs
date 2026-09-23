@@ -175,7 +175,7 @@ import Simplex.Chat.Store.SQLite.Migrations.M20260828_file_expiry
 import Simplex.Chat.Store.SQLite.Migrations.M20260904_file_badges
 import Simplex.Chat.Store.SQLite.Migrations.M20260915_user_badges
 import Simplex.Chat.Store.SQLite.Migrations.M20260921_wallet_seeds
-import Simplex.Chat.Store.SQLite.Migrations.M20260923_wallet_names
+import Simplex.Chat.Store.SQLite.Migrations.M20260923_wallet_owned_names
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -351,7 +351,7 @@ schemaMigrations =
     ("20260904_file_badges", m20260904_file_badges, Just down_m20260904_file_badges),
     ("20260915_user_badges", m20260915_user_badges, Just down_m20260915_user_badges),
     ("20260921_wallet_seeds", m20260921_wallet_seeds, Nothing),
-    ("20260923_wallet_names", m20260923_wallet_names, Nothing)
+    ("20260923_wallet_owned_names", m20260923_wallet_owned_names, Nothing)
   ]
 
 -- | The list of migrations in ascending order by date
