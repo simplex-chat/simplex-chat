@@ -2812,7 +2812,6 @@
     <string name="badge_unverified_desc">Не удалось проверить подлинность этого значка. Возможно, он не является подлинным.</string>
     <string name="badge_unverified_title">Неподтвержденный значок</string>
     <string name="badge_invested">%s инвестировал(а) в краудфандинг SimpleX Chat.</string>
-    <string name="badge_support_from_v7">Вы можете поддержать SimpleX начиная с версии приложения v7.</string>
     <string name="badge_supports_simplex">%s поддерживает SimpleX Chat.</string>
     <string name="appearance_minimize_to_tray_desc">Работает в фоновом режиме для получения сообщений</string>
     <string name="no_names_servers_enabled">Нет серверов для разрешения имён.</string>
