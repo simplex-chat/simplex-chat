@@ -5075,13 +5075,7 @@ enum class SimplexTLD {
   @SerialName("web") web
 }
 
-// How recently each SimpleX name was resolved from the registry.
-//
-// The lookup canvas asks that a name you already have a chat for is resolved at most once a day,
-// or once its registration has expired, while any other name resolves on every tap. Core stays
-// stateless for this: PRMNever answers from the store without a network round trip and reports a
-// miss, and PRMAll always resolves. So a fresh name is tried locally first and only falls through
-// to the registry when no chat claims it - which is exactly "every tap" for a name you do not have.
+// How recently each SimpleX name was resolved: one with a local chat resolves once a day, any other on every tap.
 object NameResolution {
   private const val DAY_SECONDS = 24 * 60 * 60L
   private val prefs: AppPreferences get() = ChatController.appPrefs
@@ -5131,8 +5125,7 @@ object NameResolution {
   }
 }
 
-// What the registry holds for a name. This JSON is the RNAME payload, so it is "type"-tagged on
-// every platform, and the unset text fields of the record are not read here.
+// What the registry holds for a name - the RNAME payload, "type"-tagged on every platform.
 @Serializable
 sealed class NameRegistration {
   // held by someone; expires/graceUntil are absent from an older router, which means "not known", not "live forever"

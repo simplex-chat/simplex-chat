@@ -10,13 +10,11 @@ module NameResolver
   ( NameRegistry,
     withNameResolver,
     registerName,
-    registerRegistration,
     registerExpiredName,
     registerReservedName,
     registerAvailableName,
     unregisterName,
     failNameResolution,
-    testPricing,
     emptyNameRecord,
     contactNameRecord,
     channelNameRecord,
@@ -40,7 +38,7 @@ import Simplex.Messaging.Server.Names (NamesConfig (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), labelHash)
 import Simplex.Messaging.SystemTime (RoundedSystemTime (..), getSystemSeconds)
 
--- what the test resolver answers for a name: a registration, or a failed request (2h)
+-- what the test resolver answers for a name: a registration, or a failed request
 data TestNameAnswer = AnswerRegistration NameRegistration | AnswerFails
 
 type NameRegistry = TVar (Map Text TestNameAnswer)

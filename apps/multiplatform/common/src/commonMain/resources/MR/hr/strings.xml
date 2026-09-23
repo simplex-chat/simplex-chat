@@ -11,6 +11,7 @@
     <string name="forward_files_missing_desc">%1$d odstranjene datoteke.</string>
     <string name="forward_files_not_accepted_desc">%1$d datoteka nije preuzeta.</string>
     <string name="callstate_ended">završen</string>
+    <string name="contact_wants_to_connect_via_call">%1$s želi da se poveže sa tobom putem</string>
     <string name="accept">Prihvatiti</string>
     <string name="group_invitation_expired">Pozivnica za grupu je istekla</string>
     <string name="group_link">Grupni link</string>
@@ -33,14 +34,17 @@
     <string name="color_primary">Akcenat</string>
     <string name="v4_2_group_links">Grupni linkovi</string>
     <string name="v5_5_new_interface_languages">Madjarski i Turski UI</string>
+    <string name="how_to_use_markdown">Kako koristiti markdown</string>
     <string name="from_gallery_button">Iz Galerije</string>
     <string name="group_reports_active_one">1 izveštaj</string>
+    <string name="learn_more_about_address">O SimpleX adresama</string>
     <string name="above_then_preposition_continuation">iznad, onda:</string>
     <string name="accept_connection_request__question">Prihvati zahtev za vezu?</string>
     <string name="email_invite_body">Zdravo!\nPoveži se sa mnom pomoću SimpleX Razgovora: %s</string>
     <string name="icon_descr_group_inactive">Grupa neaktivna</string>
     <string name="group_is_decentralized">U potpunosti decentralizovan - vidljivo samo za članove grupe.</string>
     <string name="group_full_name_field">Celo ime grupe:</string>
+    <string name="icon_descr_help">pomoć</string>
     <string name="full_name__field">Celo Ime:</string>
     <string name="icon_descr_hang_up">Prekini poziv</string>
     <string name="accept_feature">Prihvatiti</string>
@@ -95,6 +99,7 @@
     <string name="accept_contact_button">Prihvatiti</string>
     <string name="wallpaper_preview_hello_bob">Dobro jutro!</string>
     <string name="v4_6_reduced_battery_usage">Dodatno smanjena potrošnja baterije.</string>
+    <string name="about_simplex">O SimpleX</string>
     <string name="display_name_accepted_invitation">prihvaćena pozivnica</string>
     <string name="info_view_message_button">poruka</string>
     <string name="delete_and_notify_contact">Odstraniti i obavestiti kontakte</string>
@@ -105,6 +110,7 @@
     <string name="info_row_deleted_at">Odstranjeno u</string>
     <string name="network_proxy_password">Šifra</string>
     <string name="app_check_for_updates_update_available">Ažuriranje dostupno: %s</string>
+    <string name="create_address">Napravi adresu</string>
     <string name="rcv_direct_event_contact_deleted">odstranjen kontakt</string>
     <string name="button_add_welcome_message">Dodaj poruku dobrodošlice</string>
     <string name="share_text_sent_at">Poslano u: %s</string>
@@ -119,6 +125,7 @@
     <string name="acknowledged">Razumeo</string>
     <string name="deleted">Odstranjeno</string>
     <string name="deleted_description">odstranjeno</string>
+    <string name="create_profile_button">Napraviti</string>
     <string name="settings_section_title_messages">Poruke i datoteke</string>
     <string name="compose_message_placeholder">Poruka</string>
     <string name="conn_stats_section_title_servers">Serveri</string>
@@ -129,6 +136,7 @@
     <string name="ci_status_other_error">Greška: %1$s</string>
     <string name="delete_messages__question">Odstraniti %d poruke?</string>
     <string name="delete_verb">Odstraniti</string>
+    <string name="toolbar_settings">Podešavanje</string>
     <string name="delete_files_and_media_all">Odstraniti sve datoteke</string>
     <string name="delete_chat_profile_question">Odstraniti profil razgovora?</string>
     <string name="messages_section_title">Poruke</string>
@@ -141,10 +149,12 @@
     <string name="error_alert_title">Greška</string>
     <string name="address_section_title">Adresa</string>
     <string name="acknowledgement_errors">Greške pri potvrdi</string>
+    <string name="list_menu">Lista</string>
     <string name="list_name_field_placeholder">Ime liste...</string>
     <string name="delete_chat_list_menu_action">Odstraniti</string>
     <string name="delete_after">Odstraniti nakon</string>
     <string name="add_address_to_your_profile">Dodaj adresu na svoj profil da bi tvoji kontakti mogli da dele sa ostalima. Ažuriranje profila biće poslano tvojim kontaktima.</string>
+    <string name="add_contact_tab">Dodaj kontakt</string>
     <string name="chat_list_add_list">Dodaj listu</string>
     <string name="password_to_show">Prikazati šifru</string>
     <string name="delete_contact_menu_action">Odstraniti</string>
@@ -152,6 +162,7 @@
     <string name="sent_directly">Poslano direktno</string>
     <string name="chat_list_all">Sve</string>
     <string name="info_row_sent_at">Poslano u</string>
+    <string name="icon_descr_sent_msg_status_sent">poslano</string>
     <string name="users_delete_profile_for">Odstraniti profil razgovora za</string>
     <string name="accept_contact_incognito_button">Prihvati anonimno</string>
     <string name="share_verb">Podeliti</string>
@@ -159,10 +170,12 @@
     <string name="network_enable_socks_info">Pristup na servere pomoću SOCKS proxy na portu %d? Proxy mora da bude uključen pre omogućavanja ove opcije.</string>
     <string name="operator_conditions_accepted">Prihvaćeni uslovi</string>
     <string name="smp_servers_add">Dodaj server</string>
+    <string name="smp_servers_preset_add">Dodaj unapred postavljene servere</string>
     <string name="delete_address__question">Odstraniti adresu?</string>
     <string name="rcv_group_event_group_deleted">odstranjena grupa</string>
     <string name="users_add">Dodaj nalog</string>
     <string name="users_delete_question">Odstraniti profil razgovora?</string>
+    <string name="create_address_button">Napraviti</string>
     <string name="delete_chat_question">Odstraniti razgovor?</string>
     <string name="delete_address">Odstranjena adresa</string>
     <string name="delete_database">Odstranjena baza podataka</string>
@@ -235,6 +248,7 @@
     <string name="blocked_items_description">%d poruka blokirano</string>
     <string name="server_connecting">povezivanje</string>
     <string name="connected_mobile">Povezan telefon</string>
+    <string name="settings_section_title_you">Vi</string>
     <string name="v6_0_privacy_blur">Zamućeno za bolju privatnost.</string>
     <string name="ttl_months">%d meseca(i)</string>
     <string name="icon_descr_call_ended">Poziv završen</string>
@@ -245,11 +259,13 @@
     <string name="group_member_status_connected">povezano</string>
     <string name="icon_descr_server_status_connected">Povezano</string>
     <string name="download_file">Preuzimanje</string>
+    <string name="connect_via_member_address_alert_title">Povezati direktno?</string>
     <string name="ttl_day">%d dan</string>
     <string name="ttl_h">%dh</string>
     <string name="ttl_m">%dm</string>
     <string name="ttl_mth">%dmon</string>
     <string name="group_connection_pending">povezivanje…</string>
+    <string name="icon_descr_received_msg_status_unread">nepročitano</string>
     <string name="callstatus_ended">poziv završen %1$s</string>
     <string name="callstatus_in_progress">poziv u toku</string>
     <string name="rcv_group_event_member_created_contact">povezano direktno</string>
@@ -291,6 +307,7 @@
     <string name="scan_QR_code">Skenirati QR kod</string>
     <string name="network_session_mode_server">Server</string>
     <string name="no_call_on_lock_screen">Onemogućiti</string>
+    <string name="settings_section_title_chat_database">Baza podataka chata</string>
     <string name="send_receipts_disabled">onemogućeno</string>
     <string name="import_theme_error">Greška pri uvoženju teme</string>
     <string name="files_are_prohibited_in_group">Datoteke i medijski sadržaji su zabranjeni.</string>
@@ -305,6 +322,7 @@
     <string name="la_seconds">%d sekunde(i)</string>
     <string name="or_scan_qr_code">Ili skenirati QR kod</string>
     <string name="app_check_for_updates_disabled">Onemogućeno</string>
+    <string name="settings_section_title_app">Aplikacija</string>
     <string name="settings_section_title_chats">Razgovori</string>
     <string name="files_and_media_prohibited">Datoteke i medijski sadržaji su zabranjeni!</string>
     <string name="disappearing_prohibited_in_this_chat">Poruke koje nestaju su zabranjene u ovom razgovoru.</string>
@@ -322,6 +340,7 @@
     <string name="server_address">Adresa servera</string>
     <string name="files_and_media_not_allowed">Datoteke i medijski sadržaji nisu dozvoljeni</string>
     <string name="allow_verb">Dozvoliti</string>
+    <string name="chat_with_developers">Razgovor sa kreatorima</string>
     <string name="your_chats">Razgovori</string>
     <string name="ttl_weeks">%d nedelja(e)</string>
     <string name="desktop_device">Računar</string>
@@ -357,6 +376,7 @@
     <string name="share_text_disappears_at">Nestaje u: %s</string>
     <string name="import_database_confirmation">Uvesti</string>
     <string name="settings_section_title_chat_colors">Boje Chata</string>
+    <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="chat_archive">Ili uvesti arhiviranu datoteku</string>
     <string name="delete_chat_for_all_members_cannot_undo_warning">Razgovor će biti odstranjen za sve članove - ovo se ne može vratiti!</string>
     <string name="direct_messages_are_prohibited_in_chat">Direktne poruke između članova su zabranjene u ovim porukama.</string>
@@ -393,6 +413,7 @@
     <string name="secured">Obezbeđeno</string>
     <string name="connections">Veze</string>
     <string name="notification_preview_new_message">nova poruka</string>
+    <string name="icon_descr_email">Email</string>
     <string name="network_enable_socks">Koristi SOCKS proxy?</string>
     <string name="connection_error_blocked">Veza blokirana</string>
     <string name="notifications">Obaveštenja</string>
@@ -403,6 +424,7 @@
     <string name="image_descr_simplex_logo">SimpleX Logo</string>
     <string name="show_dev_options">Prikazati:</string>
     <string name="settings_section_title_device">Uređaj</string>
+    <string name="new_message">Nova poruka</string>
     <string name="color_secondary">Sekundarni</string>
     <string name="receipts_section_contacts">Kontakti</string>
     <string name="privacy_media_blur_radius_off">Isključeno</string>
@@ -417,6 +439,8 @@
     <string name="call_service_notification_video_call">Video poziv</string>
     <string name="smp_servers_use_server">Koristi server</string>
     <string name="smp_servers_your_server_address">Adresa vašeg servera</string>
+    <string name="your_SMP_servers">Vaši SMP serveri</string>
+    <string name="your_XFTP_servers">Vaši XFTP serveri</string>
     <string name="onboarding_notifications_mode_battery">Obaveštenja i baterija</string>
     <string name="show_call_on_lock_screen">Prikazati</string>
     <string name="status_e2e_encrypted">e2e šifrovano</string>
@@ -425,6 +449,7 @@
     <string name="snd_conn_event_ratchet_sync_ok">šifrovanje ok za %s</string>
     <string name="user_mute">Isključiti zvuk</string>
     <string name="theme_simplex">SimpleX</string>
+    <string name="theme">Teme</string>
     <string name="voice_messages">Glasovne poruke</string>
     <string name="calls_prohibited_with_this_contact">Audio/video pozivi su zabranjeni.</string>
     <string name="connect_plan_open_group">Otvoriti grupu</string>
@@ -432,6 +457,7 @@
     <string name="add_contact_or_create_group">Započeti novi razgovor</string>
     <string name="clear_chat_menu_action">Očistiti</string>
     <string name="clear_chat_button">Očistiti razgovor</string>
+    <string name="smp_servers_your_server">Tvoj server</string>
     <string name="snd_conn_event_ratchet_sync_agreed">šifrovanje prihvaćeno za %s</string>
     <string name="voice_messages_are_prohibited">Glasovne poruke su zabranjene.</string>
     <string name="connection_local_display_name">veza %1$d</string>
@@ -454,10 +480,13 @@
     <string name="save_and_notify_contacts">Sačuvati i obavestiti kontakte</string>
     <string name="v4_4_french_interface_descr">Zahvaljujući korisnicima – doprinesi pomoću Weblate!</string>
     <string name="icon_descr_edited">uređeno</string>
+    <string name="privacy_chat_list_open_links_no">Ne</string>
     <string name="network_smp_proxy_fallback_prohibit">Ne</string>
     <string name="keep_conversation">Zadržite konverzaciju</string>
+    <string name="icon_descr_address">SimpleX Adresa</string>
     <string name="save_servers_button">Sačuvati</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
+    <string name="settings_section_title_experimenta">Eksperimentalno</string>
     <string name="chat_item_ttl_none">nikada</string>
     <string name="clear_contacts_selection_button">Očistiti</string>
     <string name="v4_6_chinese_spanish_interface_descr">Zahvaljujući korisnicima – doprinesi pomoću Weblate!</string>
@@ -504,6 +533,7 @@
     <string name="network_proxy_random_credentials">Koristi nasumične pristupne podatke</string>
     <string name="port_verb">Port</string>
     <string name="network_proxy_username">Korisničko ime</string>
+    <string name="network_proxy_port">port %d</string>
     <string name="save_settings_question">Sačuvati podešavanja?</string>
     <string name="onboarding_notifications_mode_title">Privatna obaveštenja</string>
     <string name="incoming_audio_call">Dolazni audio poziv</string>
@@ -529,6 +559,7 @@
     <string name="sent_message">Poslana poruka</string>
     <string name="v5_4_incognito_groups">Anonimne grupe</string>
     <string name="custom_time_picker_select">Izabrati</string>
+    <string name="invite_friends_short">Pozvati</string>
     <string name="report_item_archived_by">arhivirani izveštaj od %s</string>
     <string name="invalid_chat">nevažeći razgovor</string>
     <string name="simplex_link_mode_description">Opis</string>
@@ -583,8 +614,11 @@
     <string name="color_mode_dark">Tamno</string>
     <string name="linked_mobiles">Povezani telefoni</string>
     <string name="subscribed">Pretplaćen</string>
+    <string name="privacy_chat_list_open_links_ask">Pitati</string>
     <string name="invite_to_group_button">Pozvati u grupu</string>
     <string name="color_mode_system">Sistem</string>
+    <string name="theme_system">Sistem</string>
+    <string name="theme_light">Svetlo</string>
     <string name="reset_single_color">Obnoviti boju</string>
     <string name="chat_theme_apply_to_light_mode">Svetlosni režim</string>
     <string name="chat_theme_apply_to_dark_mode">Tamni režim</string>
@@ -609,6 +643,7 @@
     <string name="view_conditions">Pogledati uslove</string>
     <string name="language_system">Sistem</string>
     <string name="theme_dark">Tamno</string>
+    <string name="dark_theme">Tamna tema</string>
     <string name="v6_0_increase_font_size">Povećati veličinu slova.</string>
     <string name="servers_info_details">Detalji</string>
     <string name="servers_info_reset_stats_alert_confirm">Obnoviti</string>
@@ -616,6 +651,8 @@
     <string name="la_mode_system">Sistem</string>
     <string name="compose_send_direct_message_to_connect">Poslati direktnu poruku za povezivanje</string>
     <string name="image_descr">Slika</string>
+    <string name="icon_descr_server_status_pending">Na čekanju</string>
+    <string name="smp_servers">SMP serveri</string>
     <string name="display_name">Upišite Vaše ime:</string>
     <string name="open_chat">Otvoriti razgovor</string>
     <string name="rcv_group_event_member_added">pozvan %1$s</string>
@@ -627,6 +664,7 @@
     <string name="stop_chat_confirmation">Zaustaviti</string>
     <string name="fix_connection">Popraviti vezu</string>
     <string name="stop_file__confirm">Zaustaviti</string>
+    <string name="member_contact_send_direct_message">poslati direktnu poruku</string>
     <string name="attach">Priložiti</string>
     <string name="save_list">Sačuvati listu</string>
     <string name="self_destruct">Samouništenje</string>
@@ -642,6 +680,7 @@
     <string name="open_with_app">Otvoriti pomoću %s</string>
     <string name="migrate_from_device_remove_archive_question">Ukloniti arhivu?</string>
     <string name="selected_chat_items_selected_n">Izabrano %d</string>
+    <string name="welcome">Dobrodošli!</string>
     <string name="videos_limit_title">Previše video snimaka!</string>
     <string name="send_disappearing_message_send">Poslati</string>
     <string name="reset_verb">Obnoviti</string>
@@ -649,6 +688,7 @@
     <string name="select_chat_profile">Izabrati profil razgovora</string>
     <string name="smp_servers_scan_qr">Skenirati QR kod servera</string>
     <string name="network_settings">Napredna mrežna podešavanja</string>
+    <string name="settings_section_title_socks">SOCKS proxy</string>
     <string name="settings_section_title_incognito">Anonimni režim</string>
     <string name="network_option_ping_count">broj PING</string>
     <string name="servers_info_reset_stats_alert_title">Obnoviti statistiku?</string>
@@ -695,6 +735,7 @@
     <string name="leave_group_button">Napustiti</string>
     <string name="button_leave_chat">Napustiti razgovor</string>
     <string name="select_contacts">Izabrati kontakte</string>
+    <string name="button_send_direct_message">Poslati direktnu poruku</string>
     <string name="button_remove_member_question">Ukloniti člana?</string>
     <string name="wallpaper_scale_repeat">Ponoviti</string>
     <string name="appearance_font_size">Veličina teksta</string>
@@ -715,6 +756,7 @@
     <string name="group_member_role_owner">vlasnik</string>
     <string name="copy_verb">Kopirati</string>
     <string name="submit_passcode">Predati</string>
+    <string name="xftp_servers_other">Ostali XFTP serveri</string>
     <string name="create_simplex_address">Napraviti SimpleX adresu</string>
     <string name="encrypt_database">Šifrovati</string>
     <string name="info_row_created_at">Kreirano u</string>
@@ -724,6 +766,7 @@
     <string name="message_too_large">Poruka je prevelika</string>
     <string name="smp_server_test_upload_file">Otpremiti datoteku</string>
     <string name="smp_server_test_create_file">Napraviti datoteku</string>
+    <string name="create_group">Napraviti tajnu grupu</string>
     <string name="group_member_status_creator">kreator</string>
     <string name="reveal_verb">Otkriti</string>
     <string name="create_list">Napraviti listu</string>
@@ -735,6 +778,7 @@
     <string name="migrate_from_device_finalize_migration">Dovršiti migraciju</string>
     <string name="selected_chat_items_nothing_selected">Ništa nije izabrano</string>
     <string name="conversation_deleted">Konverzacija odstranjena!</string>
+    <string name="smp_servers_other">Ostali SMP serveri</string>
     <string name="core_version">Verzija jezgra: v%s</string>
     <string name="encrypted_database">Šifrovati bazu podataka</string>
     <string name="delete_link_question">Odstraniti vezu?</string>
@@ -747,8 +791,10 @@
     <string name="operator_use_for_messages_receiving">Za primanje</string>
     <string name="other_label">drugo</string>
     <string name="create_profile">Napraviti profil</string>
+    <string name="people_can_connect_only_via_links_you_share">Vi odlučujete ko se može povezati.</string>
     <string name="delete_group_question">Odstraniti grupu?</string>
     <string name="restore_database_alert_confirm">Obnoviti</string>
+    <string name="switch_verb">Prebaciti</string>
     <string name="app_check_for_updates_beta">Beta</string>
     <string name="edit_image">Urediti sliku</string>
     <string name="receipts_section_groups">Mala grupa (max 20)</string>
@@ -794,6 +840,7 @@
     <string name="business_address">Biznis adresa</string>
     <string name="color_received_message">Primljena poruka</string>
     <string name="group_member_status_complete">završiti</string>
+    <string name="icon_descr_expand_role">Proširiti selekciju uloga</string>
     <string name="opening_database">Otvaranje baze podataka…</string>
     <string name="refresh_qr_code">Obnoviti</string>
     <string name="icon_descr_speaker_off">Zvučnik isključen</string>
@@ -854,6 +901,7 @@
     <string name="voice_message_with_duration">Glasovna poruka (%1$s)</string>
     <string name="learn_more">Naučiti više</string>
     <string name="mark_code_verified">Označiti da je verifikovano</string>
+    <string name="use_chat">Koristiti razgovor</string>
     <string name="mark_unread">Označiti da nije pročitano</string>
     <string name="verify_connection">Verifikovati vezu</string>
     <string name="display_name_requested_to_connect">zahtev za povezivanje</string>
@@ -883,14 +931,17 @@
     <string name="settings_shutdown">Isključiti</string>
     <string name="info_row_moderated_at">Moderirano u</string>
     <string name="recent_history">Vidljiva istorija</string>
+    <string name="remote_ctrl_disconnected_with_reason">Prekinuta veza iz razloga: %s</string>
     <string name="network_type_cellular">Mobilna</string>
     <string name="servers_info_messages_sent">Poruke poslane</string>
     <string name="for_everybody">Za sve</string>
     <string name="debug_logs">Omogući evidenciju</string>
     <string name="la_immediately">Odmah</string>
+    <string name="icon_descr_sent_msg_status_send_failed">greška u slanju</string>
     <string name="smp_servers_delete_server">Odstraniti server</string>
     <string name="snd_group_event_member_blocked">blokirali ste %s</string>
     <string name="v5_6_quantum_resistant_encryption">Kvantno otporno šifrovanje</string>
+    <string name="dont_create_address">Ne praviti adresu</string>
     <string name="receipts_groups_enable_for_all">Omogućiti svim grupama</string>
     <string name="dont_show_again">Ne prikazivati ponovo</string>
     <string name="custom_time_unit_minutes">minuti</string>
@@ -952,10 +1003,12 @@
     <string name="rcv_group_event_changed_member_role">uloga promenjena iz %s u %s</string>
     <string name="change_member_role_question">Promeniti ulogu grupe?</string>
     <string name="smp_server_test_delete_file">Odstraniti datoteku</string>
+    <string name="icon_descr_simplex_team">SimpleX Tim</string>
     <string name="moderated_description">moderirano</string>
     <string name="connection_error_blocked_desc">Operator servera blokira vezu:\n%1$s.</string>
     <string name="change_role">Promeniti ulogu</string>
     <string name="this_device_name">Ime ovog uređaja</string>
+    <string name="tap_to_start_new_chat">Dodirnuti za početak novog razgovora</string>
     <string name="group_preview_you_are_invited">pozvani ste u grupu</string>
     <string name="image_saved">Slika sačuvana u Galeriji</string>
     <string name="rcv_group_event_changed_your_role">vaša uloga je promenjena u %s</string>
@@ -980,6 +1033,7 @@
     <string name="dont_enable_receipts">Ne dozvoliti</string>
     <string name="feature_enabled">omogućeno</string>
     <string name="incognito_random_profile">Vaš nasumičan profil</string>
+    <string name="please_try_later">Molimo pokušajte kasnije.</string>
     <string name="send_us_an_email">Pošaljite nam email</string>
     <string name="share_text_moderated_at">Moderirano u: %s</string>
     <string name="migrate_from_device_confirm_upload">Potvrditi otpremanje</string>
@@ -990,7 +1044,9 @@
     <string name="you_are_invited_to_group">Pozvani ste u grupu</string>
     <string name="snd_group_event_changed_role_for_yourself">promenili ste vašu ulogu na %s</string>
     <string name="send_receipts_disabled_alert_title">Potvrda je onemogućena</string>
+    <string name="immune_to_spam_and_abuse">Imunitet na spam</string>
     <string name="integrity_msg_duplicate">duplikat poruke</string>
+    <string name="privacy_chat_list_open_links_yes">Da</string>
     <string name="database_error">Greška u bazi podataka</string>
     <string name="chat_item_ttl_default">podrazumevano (%s)</string>
     <string name="chat_item_ttl_year">1 godina</string>
@@ -1019,6 +1075,7 @@
     <string name="forward_message">Proslediti poruku…</string>
     <string name="address_or_1_time_link">Adresa ili jednokratna veza?</string>
     <string name="enable_camera_access">Omogućiti pristup kameri</string>
+    <string name="invalid_QR_code">Nevažeći QR kod</string>
     <string name="one_time_link">Jednokratna pozivnica</string>
     <string name="enter_welcome_message">Uneti poruku dobrodošlice…</string>
     <string name="compose_save_messages_n">Čuvanje %1$s poruka</string>
@@ -1033,6 +1090,7 @@
     <string name="invalid_qr_code">Nevažeći QR kod</string>
     <string name="v4_2_security_assessment">Procena bezbednosti</string>
     <string name="smp_server_test_compare_file">Uporediti datoteku</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Kontakt i sve poruke biće odstranjene - ovo ne može biti vraćeno!</string>
     <string name="revoke_file__message">Datoteka će biti odstranjena sa servera.</string>
     <string name="revoke_file__confirm">Opozvati</string>
     <string name="icon_descr_cancel_image_preview">Poništiti pregled slike</string>
@@ -1147,6 +1205,7 @@
     <string name="failed_to_create_user_title">Greška pri kreiranju profila!</string>
     <string name="error_loading_details">Greška pri učitavanju detalja</string>
     <string name="uploaded_files">Otpremljene datoteke</string>
+    <string name="open_server_settings_button">Otvoriti podešavanja servera</string>
     <string name="error_deleting_note_folder">Greška pri odstranjivanju privatnih beleški</string>
     <string name="error_forwarding_messages">Greška pri prosleđivanju poruka</string>
     <string name="forward_files_messages_deleted_after_selection_desc">Poruke su odstranjene nakon što ste ih odabrali.</string>
@@ -1161,6 +1220,7 @@
     <string name="receipts_contacts_title_disable">Onemogućiti potvrde?</string>
     <string name="group_member_status_introduced">povezivanje (uvedeno)</string>
     <string name="enter_password_to_show">Uneti šifru u pretragu</string>
+    <string name="error_loading_xftp_servers">Greška pri učitavanju XFTP servera</string>
     <string name="error_deleting_group">Greška pri odstranjivanju grupe</string>
     <string name="cannot_share_message_alert_title">Nije moguće poslati poruku</string>
     <string name="send_disappearing_message">Poslati poruku koja nestaje</string>
@@ -1168,6 +1228,7 @@
     <string name="whats_new_read_more">Pročitati više</string>
     <string name="xftp_server">XFTP server</string>
     <string name="error_creating_address">Greška pri pravljenju adrese</string>
+    <string name="icon_descr_sent_msg_status_unauthorized_send">neovlašćeno slanje</string>
     <string name="verify_security_code">Verifikovati bezbednostni kod</string>
     <string name="icon_descr_close_button">Dugme zatvoriti</string>
     <string name="error_joining_group">Greška pri pristupanju grupi</string>
@@ -1189,6 +1250,7 @@
     <string name="passcode_set">Pin kod postavljen!</string>
     <string name="all_app_data_will_be_cleared">Svi podaci u aplikaciji su odstranjeni.</string>
     <string name="app_passcode_replaced_with_self_destruct">Pin kod aplikacije je zamenjen pin kodom za samouništenje.</string>
+    <string name="settings_section_title_support">Potpori SimpleX Chat</string>
     <string name="settings_section_title_message_shape">Oblik poruke</string>
     <string name="settings_section_title_icon">Ikona aplikacije</string>
     <string name="database_passphrase">Pristupna fraza baze podataka</string>
@@ -1228,6 +1290,7 @@
     <string name="sent_via_proxy">Poslano putem proxy</string>
     <string name="display_name_invited_to_connect">pozvan za povezivanje</string>
     <string name="simplex_link_connection">pomoću %1$s</string>
+    <string name="error_loading_smp_servers">Greška pri učitavanju SMP servera</string>
     <string name="error_changing_address">Greška pri promeni adrese</string>
     <string name="enter_passphrase_notification_title">Pristupnu frazu je potrebna</string>
     <string name="v6_3_mentions">Spomenuti članove 👋</string>
@@ -1240,6 +1303,7 @@
     <string name="servers_info_missing">Bez Informacija, pokušajte ponovo da učitate</string>
     <string name="chunks_deleted">Komadi su odstranjeni</string>
     <string name="ntf_channel_calls">SimpleX Chat pozivi</string>
+    <string name="xftp_servers">XFTP serveri</string>
     <string name="network_and_servers">Mreža i serveri</string>
     <string name="configure_ICE_servers">Podesite ICE servere</string>
     <string name="network_disable_socks">Koristiti direktnu internet vezu?</string>
@@ -1256,6 +1320,8 @@
     <string name="network_option_protocol_timeout">Vremensko ograničenje protokola</string>
     <string name="error_sending_message">Greška pri slanju poruke</string>
     <string name="error_deleting_contact">Greška pri odstranjivanju kontakta</string>
+    <string name="share_one_time_link">Napraviti jednokratnu pozivnicu</string>
+    <string name="markdown_help">Markdown pomoć</string>
     <string name="allow_to_send_files">Dozvoliti slanje datoteka i medijskog sadržaji.</string>
     <string name="passcode_changed">Pin kod promenjen!</string>
     <string name="share_text_database_id">ID Baze podataka: %d</string>
@@ -1273,6 +1339,7 @@
     <string name="network_smp_proxy_mode_unknown_description">Koristite privatno usmeravanje sa nepoznatim serverima.</string>
     <string name="privacy_media_blur_radius_strong">Intenzivno</string>
     <string name="delete_message_mark_deleted_warning">Poruka će biti označena za ostranjivanje. Primaoci će moći da otkriju ovu poruku.</string>
+    <string name="privacy_and_security">Privatnost i bezbednost</string>
     <string name="ntf_channel_messages">SimpleX Chat poruke</string>
     <string name="migrate_from_device_try_again">Možete pokušati ponovo.</string>
     <string name="migrate_from_device_error_saving_settings">Greška pri čuvanju podešavanja</string>
@@ -1308,6 +1375,7 @@
     <string name="share_text_updated_at">Zapis ažuriran u: %s</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Član će biti uklonjen iz grupe – ovo se ne može poništiti!</string>
     <string name="calls_prohibited_alert_title">Pozivi zabranjeni!</string>
+    <string name="available_in_v51">\nDostupno u v5.1</string>
     <string name="simplex_links">SimpleX veze</string>
     <string name="full_deletion">Odstraniti za sve</string>
     <string name="allow_to_send_disappearing">Dozvoliti slanje poruka koje nestaju.</string>
@@ -1323,11 +1391,13 @@
     <string name="allow_your_contacts_to_call">Dozvoliti vašim kontaktima da vas zovu.</string>
     <string name="servers_info_subscriptions_section_header">Prijem poruke</string>
     <string name="migrate_from_device_error_exporting_archive">Greška pri izvoženju baze podataka razgovora</string>
+    <string name="you_can_make_address_visible_via_settings">Možete učiniti vidljivim vašim SimpleX kontaktima putem Podešavanja.</string>
     <string name="error_sending_message_contact_invitation">Greška pri slanju pozivnice</string>
     <string name="skip_inviting_button">Preskočiti pozivanje članova</string>
     <string name="operator_use_for_messages_private_routing">Za privatno usmeravanje</string>
     <string name="color_secondary_variant">Dodatni sekundarni</string>
     <string name="servers_info_starting_from">Pokretanje iz %s.</string>
+    <string name="your_ice_servers">Vaši ICE serveri</string>
     <string name="use_random_passphrase">Koristiti nasumičnu pristupnu frazu</string>
     <string name="auth_disable_simplex_lock">Onemogućiti SimpleX Zaključavanje</string>
     <string name="servers_info_reconnect_server_title">Ponovo povezati server?</string>
@@ -1340,16 +1410,20 @@
     <string name="alert_title_msg_bad_hash">Neispravan hash poruke</string>
     <string name="servers_info_reconnect_server_message">Ponovo povezati server kako biste prisilili dostavu poruke. To koristi dodatni saobraćaj.</string>
     <string name="integrity_msg_bad_id">neispravan ID poruke</string>
+    <string name="xftp_servers_configured">Konfigurisani XFTP serveri</string>
     <string name="message_delivery_warning_title">Upozorenje pri isporuci poruke</string>
+    <string name="connect_via_link_or_qr">Povezati se pomoću linka / QR koda</string>
     <string name="failed_to_create_user_duplicate_desc">Već imate chat profil sa istim prikaznim imenom. Molimo vas da odaberete drugo ime.</string>
     <string name="la_auth_failed">Greška u autentifikaciji</string>
     <string name="v4_3_improved_server_configuration">Unapređena konfiguracija servera</string>
     <string name="n_other_file_errors">%1$d ostale greška datoteke(a).</string>
     <string name="auth_unavailable">Autentifikacija nije dostupna</string>
+    <string name="smp_servers_configured">Konfigurisani SMP serveri</string>
     <string name="auto_accept_contact">Automatsko prihvatanje</string>
     <string name="save_preferences_question">Sačuvati preference?</string>
     <string name="unable_to_open_browser_desc">Za pozive je potreban podrazumevani veb pretraživač. Molimo vas da konfigurišete podrazumevani pretraživač u sistemu i podelite više informacija sa programerima.</string>
     <string name="snd_group_event_member_unblocked">odblokirali ste %s</string>
+    <string name="you_are_observer">Vi ste posmatrač.</string>
     <string name="connect_plan_you_are_observer">Vi ste posmatrač</string>
     <string name="connect_plan_you_are_member">Vi ste član</string>
     <string name="connect_plan_you_are_moderator">Vi ste moderator</string>
@@ -1366,6 +1440,7 @@
     <string name="open_database_folder">Otvoriti fasciklu baze podataka</string>
     <string name="save_and_update_group_profile">Sačuvati i ažurirati grupni profil</string>
     <string name="v5_8_message_delivery_descr">Uz smanjenu potrošnju baterije.</string>
+    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(skenirati ili nalepiti iz memorije)</string>
     <string name="connection_error_auth">Greška u vezi</string>
     <string name="contact_developers">Ažurirajte aplikaciju i kontaktirajte programere.</string>
     <string name="non_fatal_errors_occured_during_import">Tokom uvoza došlo je do nekih nefatalnih grešaka:</string>
@@ -1378,9 +1453,11 @@
     <string name="v5_5_message_delivery_descr">Uz smanjenu potrošnju baterije.</string>
     <string name="migrate_to_device_error_downloading_archive">Greška pri preuzimanju arhive</string>
     <string name="delete_chat_list_warning">Svi razgovori biće uklonjeni sa liste %s, a lista odstranjena</string>
+    <string name="this_QR_code_is_not_a_link">Ovaj QR kod nije link!</string>
     <string name="connect_plan_already_connecting">Već se povezujete!</string>
     <string name="migrate_from_device_to_another_device">Migriraj na drugi uređaj</string>
     <string name="operator_open_changes">Otvoriti promene</string>
+    <string name="decentralized">Decentralizovano</string>
     <string name="no_info_on_delivery">Nema informacija o prijem</string>
     <string name="connect_via_link">Povezati se pomoću linka</string>
     <string name="v5_2_fix_encryption">Zadržati Vaše konekcije</string>

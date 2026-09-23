@@ -60,8 +60,7 @@ suspend fun planAndConnect(
   return planAndConnectTask(rhId, shortOrFullLink, linkOwnerSig, close, cleanup, filterKnownContact, filterKnownGroup, inProgress)
 }
 
-// The name-lookup answers the registry can give for a name, as the lookup canvas draws them.
-// Only an actionable answer becomes an alert; everything else leaves the plan to speak for itself.
+// The registry's answers for a name; only an actionable one becomes an alert.
 
 private fun nameDate(seconds: Long): String =
   Instant.fromEpochSeconds(seconds).toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
@@ -75,8 +74,7 @@ private fun openNameHowTo(uriHandler: UriHandler) = openBrowserAlert(SIMPLEX_NAM
 
 private const val SIMPLEX_NAMES_HOWTO_URL = "https://simplex.domains/#testing"
 
-// bands 2, 3 and 4 of the lookup canvas: what the registry said, when the user can act on it.
-// Returns false when the answer is not actionable, and the caller shows its usual plan UI.
+// what the registry said, when the user can act on it; false leaves the caller to show its usual plan UI.
 private fun showNameRegistrationAlert(
   rhId: Long?,
   domain: SimplexDomain,
@@ -118,7 +116,7 @@ private fun showNameRegistrationAlert(
   }
   val expired = reg.expired(now)
   return when {
-    // 2b / 3b / 4c: expired, and only its owner can renew it until the grace ends
+    // expired, and only its owner can renew it until the grace ends
     expired && reg is NameRegistration.Registered -> {
       val until = reg.graceUntil
       if (isOwn) {
@@ -134,7 +132,7 @@ private fun showNameRegistrationAlert(
       }
       true
     }
-    // 2c / 3d / 4d: free to register, unless it is shorter than the registry accepts (then 2e)
+    // free to register, unless it is shorter than the registry accepts
     reg is NameRegistration.Available && domain.domain.length >= reg.pricing.minLabelLength -> {
       val price = nameCentsPerYear(reg.pricing, domain)
       when {
@@ -158,7 +156,7 @@ private fun showNameRegistrationAlert(
       }
       true
     }
-    // 2d: the only reserved reason that says so; every other one reads as "not registered"
+    // the only reserved reason that says so; every other one reads as "not registered"
     reg.reservedForCommunity -> {
       alert(
         generalGetString(MR.strings.simplex_name_not_registered),
@@ -169,15 +167,14 @@ private fun showNameRegistrationAlert(
       )
       true
     }
-    // 2e: too short, reserved for another reason, or otherwise not registrable
+    // too short, reserved for another reason, or otherwise not registrable
     reg is NameRegistration.Reserved || reg is NameRegistration.Available -> {
       if (hasLocalChat || isOwn) false else {
         alert(generalGetString(MR.strings.simplex_name_not_registered), generalGetString(MR.strings.simplex_name_not_found_desc))
         true
       }
     }
-    // 2f: registered and live, but the record has no usable link. Only the plan knows that:
-    // a live registration the plan can connect to has nothing to say.
+    // registered and live, but no usable link - only the plan knows, a connectable one has nothing to say.
     reg is NameRegistration.Registered && notConnectable && !hasLocalChat && !isOwn -> {
       alert(
         generalGetString(MR.strings.simplex_name_no_valid_link),
@@ -185,7 +182,7 @@ private fun showNameRegistrationAlert(
       )
       true
     }
-    // 3a: still leads to the chat you have, nothing to say
+    // still leads to the chat you have, nothing to say
     else -> false
   }
 }
@@ -210,9 +207,7 @@ private suspend fun planAndConnectTask(
     cleanup?.invoke()
     completable.complete(!completable.isActive)
   }
-  // A name whose cached answer is still fresh is tried against the store first, so a chat the user
-  // already has does not cost a lookup; a miss falls through to a full resolution, which is what a
-  // name with no chat gets on every tap. Anything that is not a name resolves as it always did.
+  // A fresh name is tried against the store first; a miss falls through to a full resolution.
   val nameTarget = (strConnectTarget(shortOrFullLink.trim()) as? ConnectTarget.Name)?.nameInfo
   val freshName = nameTarget != null && NameResolution.isFresh(nameTarget.nameDomain)
   var result = if (freshName) {
@@ -240,7 +235,6 @@ private suspend fun planAndConnectTask(
       generalGetString(label).format(it.shortStr)
     }
     // One actionable answer from the registry is one alert, shown over whatever the plan would have.
-    // With a list to filter the chats found stay behind it; from a message the alert opens them instead.
     val nameReg = when (connectionPlan) {
       is ConnectionPlan.NameNotConnectable -> connectionPlan.nameRegistration
       is ConnectionPlan.ContactAddress -> connectionPlan.nameRegistration_

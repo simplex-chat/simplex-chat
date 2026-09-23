@@ -14,6 +14,8 @@
     <string name="abort_switch_receiving_address">Avbryt adresseendring</string>
     <string name="abort_switch_receiving_address_question">Avbryt adresseendring?</string>
     <string name="onboarding_network_about_operators">Om operatører</string>
+    <string name="about_simplex">Om SimpleX</string>
+    <string name="learn_more_about_address">Om SimpleX-adressen</string>
     <string name="about_simplex_chat">Om SimpleX Chat</string>
     <string name="color_primary">Aksentfarge</string>
     <string name="accept_contact_button">Aksepter</string>
@@ -39,11 +41,13 @@
     <string name="acknowledgement_errors">Bekreftelsesfeil</string>
     <string name="servers_info_subscriptions_connections_subscribed">Aktive tilkoblinger</string>
     <string name="add_address_to_your_profile">Legg til en adresse i profilen din slik at kontaktene dine kan dele denne med andre. Profiloppdateringen vil bli sendt til dine kontakter.</string>
+    <string name="add_contact_tab">Legg til kontakt</string>
     <string name="operator_added_xftp_servers">Lagt til medie- og filservere</string>
     <string name="operator_added_message_servers">Meldingsservere er lagt til</string>
     <string name="button_add_friends">Legg til venner</string>
     <string name="chat_list_add_list">Legg til en liste</string>
     <string name="compose_view_add_message">Legg til en melding</string>
+    <string name="smp_servers_preset_add">Legg til forhåndsvalgte servere</string>
     <string name="users_add">Legg til en profil</string>
     <string name="address_section_title">Adresse</string>
     <string name="abort_switch_receiving_address_desc">Adresseendringen vil bli avbrutt. Den gamle mottakeradressen vil bli brukt.</string>
@@ -120,9 +124,12 @@
     <string name="connect__a_new_random_profile_will_be_shared">En ny tilfeldig profil vil bli delt.</string>
     <string name="report_reason_other">En annen grunn</string>
     <string name="answer_call">Svar anrop</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Hvem som helst kan være vert for servere.</string>
+    <string name="settings_section_title_app">App</string>
     <string name="onboarding_notifications_mode_service_desc_short">Appen kjører alltid i bakgrunnen</string>
     <string name="app_version_code">App build: %s</string>
     <string name="notifications_mode_off_desc">Appen kan bare motta varsler når den er åpen, ingen bakgrunnstjeneste vil bli startet.</string>
+    <string name="full_backup">Backup av appdata</string>
     <string name="v5_6_app_data_migration">Migrering av appdata</string>
     <string name="appearance_settings">Utseende</string>
     <string name="v5_3_encrypt_local_files_descr">Appen krypterer nye lokale filer (unntatt videoer).</string>
@@ -151,6 +158,7 @@
     <string name="report_archive_alert_title">Arkiver rapport?</string>
     <string name="archive_reports">Arkiver rapporter</string>
     <string name="migrate_from_device_archiving_database">Arkiverer database</string>
+    <string name="privacy_chat_list_open_links_ask">Spør</string>
     <string name="icon_descr_asked_to_receive">Bedt om å motta bildet</string>
     <string name="icon_descr_video_asked_to_receive">Bedt om å motta videoen</string>
     <string name="attach">Legg ved</string>
@@ -171,6 +179,7 @@
     <string name="auto_accept_contact">Godta automatisk</string>
     <string name="v4_2_auto_accept_contact_requests">Godta kontaktforespørsler automatisk</string>
     <string name="auto_accept_images">Godta bilder automatisk</string>
+    <string name="available_in_v51">\nTilgjengelig i v5.1</string>
     <string name="back">Tilbake</string>
     <string name="color_background">Bakgrunn</string>
     <string name="notifications_mode_service_desc">Bakgrunnstjenesten kjører alltid - varsler vises så snart meldingene er tilgjengelige.</string>

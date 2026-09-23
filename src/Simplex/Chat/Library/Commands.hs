@@ -4428,8 +4428,7 @@ processChatCommand cxt nm = \case
                           (withReg reg . addOther nr <$> connectPlanName NTContact (Right reg) `catchAllErrors` \_ -> throwError e)
                     | not expired && isJust (firstNameLink CCTContact (nrSimplexContact nr)) ->
                         withReg reg . addOther nr <$> connectPlanName NTContact (Right reg)
-                  -- expired, available, reserved, or registered with no usable link: nothing to connect
-                  -- to, so the answer is whichever local chat claims the name, or the registration alone
+                  -- nothing to connect to: the answer is whichever local chat claims the name, or the registration alone
                   _ -> connectPlanLocal reg
               Left e -> connectPlanNoName e
         where
@@ -4458,8 +4457,7 @@ processChatCommand cxt nm = \case
         plan <- contactOrGroupRequestPlan user cReq `catchAllErrors` (pure . CPError)
         pure (Just (ACCL SCMContact $ CCLink cReq Nothing), Nothing, Nothing, plan)
       CTShortContact nl
-        -- a name given with its type (@name / #name): the registry decides connectability first,
-        -- exactly as it does for a bare domain, so band 2 does not depend on the sigil
+        -- a name given with its type (@name / #name): the registry decides connectability, as for a bare domain
         | CTName ni <- nl, isNothing nameRec, resolveMode /= PRMNever -> do
             reg <- resolveNameRegistration user nm (nameDomain ni)
             expired <- nameExpired reg
@@ -4477,7 +4475,7 @@ processChatCommand cxt nm = \case
                 when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
                 l' <- resolveSLink
                 case known_ of
-                  -- the name still leads to the chat that claims it: 3a, nothing actionable
+                  -- the name still leads to the chat that claims it, nothing actionable
                   Just r | knownLinkOf r == Just l' -> pure r
                   _ -> (if isJust known_ then second setAddressChanged else id) <$> resolvedPlan l'
             where
@@ -4531,7 +4529,7 @@ processChatCommand cxt nm = \case
             CTLink l' -> pure l'
             CTName n -> serverShortLink <$> resolveNameLink n
           con l' cReq = ACCL SCMContact $ CCLink cReq (Just l')
-          -- a name whose chat is known is re-resolved only on PRMAll, to see whether it still leads there (3a/3c)
+          -- a name whose chat is known is re-resolved only on PRMAll, to see whether it still leads there
           reResolveKnown (_, p) = resolveMode == PRMAll && isJust simplexName_ && case p of
             CPContactAddress (CAPKnown _) _ -> True
             CPGroupLink GLPKnown {} _ -> True
@@ -4551,7 +4549,7 @@ processChatCommand cxt nm = \case
                 when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
                 l' <- resolveSLink
                 case known_ of
-                  -- the name still leads to the channel that claims it: 3a, refreshed as PRMAllGroups does
+                  -- the name still leads to the channel that claims it, refreshed as PRMAllGroups does
                   Just r@(_, CPGroupLink (GLPKnown g _ _ _) _) | knownLinkOf r == Just l' -> resolveKnownGroup l' g
                   _ -> (if isJust known_ then second setAddressChanged else id) <$> resolvedGroupPlan l'
             where
@@ -5135,8 +5133,7 @@ resolveNameRecord user nm domain =
     NRRegistered {nameRecord} -> pure nameRecord
     _ -> throwError $ chatErrorAgent $ SMP "" (NAME SMP.NOT_FOUND)
 
--- a name past its expiry does not connect: only its owner can renew it until the grace ends.
--- an absent expiry (a v20/v21 router sent the record alone) is unknown, so the name is treated as live
+-- past its expiry does not connect; an absent expiry (a v20/v21 router sent the record alone) reads as live
 nameExpired :: NameRegistration -> CM Bool
 nameExpired = \case
   NRRegistered {expires = Just expires} -> (expires <) <$> liftIO getSystemSeconds
@@ -5160,7 +5157,7 @@ withNameRegistration nr = \case
   CPGroupLink p _ -> CPGroupLink p (Just nr)
   p -> p
 
--- 3c: the name resolved to another address than the one the local chat claiming it holds
+-- the name resolved to another address than the one the local chat claiming it holds
 setAddressChanged :: ConnectionPlan -> ConnectionPlan
 setAddressChanged = \case
   CPContactAddress (CAPOk cld ov _) nr -> CPContactAddress (CAPOk cld ov True) nr

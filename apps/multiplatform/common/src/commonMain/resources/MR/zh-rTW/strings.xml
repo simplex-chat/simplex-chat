@@ -2,6 +2,7 @@
 <resources>
     <string name="chat_item_ttl_week">1 個星期</string>
     <string name="a_plus_b">a + b</string>
+    <string name="about_simplex">關於 SimpleX</string>
     <string name="accept_call_on_lock_screen">接受</string>
     <string name="accept_feature">接受</string>
     <string name="chat_item_ttl_day">1 天</string>
@@ -13,6 +14,7 @@
     <string name="network_enable_socks_info">要在端口啟用 SOCKS 代理伺服器嗎 %d？在啟用這個選項之前，必須先啟用代理伺服器。</string>
     <string name="group_member_role_admin">管理員</string>
     <string name="above_then_preposition_continuation">然後，選按：</string>
+    <string name="smp_servers_preset_add">新增預設伺服器</string>
     <string name="smp_servers_add">新增伺服器</string>
     <string name="accept">接受</string>
     <string name="auth_unavailable">認證無效</string>
@@ -37,6 +39,7 @@
     <string name="reply_verb">回覆</string>
     <string name="share_verb">分享</string>
     <string name="attach">附加</string>
+    <string name="chat_with_developers">和開發人員對話</string>
     <string name="your_chats">聊天</string>
     <string name="share_file">分享檔案…</string>
     <string name="share_message">分享訊息…</string>
@@ -64,6 +67,7 @@
     <string name="app_version_name">應用程式版本：v%s</string>
     <string name="share_link">分享連結</string>
     <string name="your_current_profile">你目前的個人檔案</string>
+    <string name="display_name_cannot_contain_whitespace">顯示的名稱中不能有空白。</string>
     <string name="save_preferences_question">儲存設定？</string>
     <string name="display_name">輸入你的名稱：</string>
     <string name="callstatus_error">通話出錯</string>
@@ -88,6 +92,7 @@
     <string name="icon_descr_video_call">視訊通話</string>
     <string name="bold_text">粗體</string>
     <string name="auto_accept_images">自動接收圖片</string>
+    <string name="full_backup">備份應用程式資料</string>
     <string name="settings_section_title_icon">應用程式圖示</string>
     <string name="chat_database_imported">已匯入對話資料庫</string>
     <string name="keychain_is_storing_securely">Android 金鑰庫是用於安全地儲存密碼 - 確保通知推送服務的運作。</string>
@@ -160,6 +165,9 @@
     <string name="snd_conn_event_switch_queue_phase_changing">修改聯絡地址中…</string>
     <string name="v4_4_disappearing_messages">自動銷毀訊息</string>
     <string name="add_contact_or_create_group">開啟新的對話</string>
+    <string name="create_group">建立私密群組</string>
+    <string name="share_one_time_link">建立一次性邀請連結</string>
+    <string name="to_share_with_your_contact">（分享給你的聯絡人）</string>
     <string name="chat_help_tap_button">點擊按鈕</string>
     <string name="thank_you_for_installing_simplex">感謝你安裝 SimpleX Chat！</string>
     <string name="mute_chat">靜音</string>
@@ -274,11 +282,17 @@
     <string name="for_me_only">只為我刪除</string>
     <string name="for_everybody">為所有人</string>
     <string name="icon_descr_edited">已編輯</string>
+    <string name="icon_descr_sent_msg_status_sent">已傳送</string>
+    <string name="icon_descr_sent_msg_status_unauthorized_send">未經授權傳送</string>
+    <string name="icon_descr_sent_msg_status_send_failed">傳送失敗</string>
     <string name="personal_welcome">歡迎 %1$s！</string>
+    <string name="welcome">歡迎！</string>
+    <string name="this_text_is_available_in_settings">在設定中可用這文字</string>
     <string name="contact_connection_pending">連接中…</string>
     <string name="group_preview_you_are_invited">你被邀請加入至群組</string>
     <string name="group_preview_join_as">以 %s 身份加入</string>
     <string name="group_connection_pending">連接中…</string>
+    <string name="tap_to_start_new_chat">點擊以開啟新的對話</string>
     <string name="file_not_found">找不到檔案</string>
     <string name="voice_message_with_duration">語音訊息 (%1$s)</string>
     <string name="voice_message_send_text">語音訊息…</string>
@@ -324,8 +338,10 @@
     <string name="delete_message__question">刪除訊息？</string>
     <string name="delete_message_cannot_be_undone_warning">訊息會刪除 - 並且不能還原！</string>
     <string name="delete_message_mark_deleted_warning">訊息將被標記為刪除。 接收訊息的人(多個) 能夠展露此訊息。</string>
+    <string name="icon_descr_received_msg_status_unread">未讀</string>
     <string name="you_have_no_chats">你沒有對話記錄</string>
     <string name="image_decoding_exception_title">解碼錯誤</string>
+    <string name="contact_sent_large_file">你的聯絡人傳送的檔案大於目前支援的最大上限 (%1$s)。</string>
     <string name="images_limit_desc">只能同一時間傳送十張圖片</string>
     <string name="maximum_supported_file_size">目前支援的最大檔案大小為 %1$s。</string>
     <string name="file_will_be_received_when_contact_is_online">下載檔案需要傳送者上線的時候才能下載檔案，請等待對方上線！</string>
@@ -333,6 +349,7 @@
     <string name="send_live_message">傳送實況的訊息</string>
     <string name="live_message">直播訊息！</string>
     <string name="send_live_message_desc">傳送實況訊息 - 這會即時顯示你在輸入中的文字</string>
+    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">（掃描或使用剪貼薄貼上）</string>
     <string name="toast_permission_denied">權限被拒絕！</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[為了保護隱私，<b>SimpleX 在背景運作</b>而不是使用推送通知。]]></string>
     <string name="periodic_notifications">定期通知</string>
@@ -348,11 +365,13 @@
     <string name="image_saved">圖片已儲存至圖片庫</string>
     <string name="notifications">通知</string>
     <string name="delete_contact_question">刪除聯絡人？</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">此聯絡人和此聯絡人的訊息會全部刪除 - 這不能還原！</string>
     <string name="button_delete_contact">刪除聯絡人</string>
     <string name="text_field_set_contact_placeholder">設定聯絡人名稱…</string>
     <string name="icon_descr_server_status_connected">已連接</string>
     <string name="icon_descr_server_status_disconnected">已斷開連接</string>
     <string name="icon_descr_server_status_error">錯誤</string>
+    <string name="icon_descr_server_status_pending">待處理</string>
     <string name="switch_receiving_address_question">切換接收的聯絡地址？</string>
     <string name="switch_receiving_address_desc">此功能目前還是實驗階段！對方需要使用 4.2 版本或更高的版本才能成功生效。地址修改後，你會在對話中看到新的訊息 - 請你於修改聯絡地址後，測試是否仍然能夠接收來自這聯絡人（或群組內的成員）的訊息。</string>
     <string name="view_security_code">查看安全碼</string>
@@ -370,10 +389,13 @@
     <string name="no_details">沒有詳細資料</string>
     <string name="add_contact">一次性邀請連結</string>
     <string name="copied">已複製至你的剪貼薄</string>
+    <string name="connect_via_link_or_qr">透過連結／QR 圖碼連接</string>
     <string name="scan_QR_code">掃描二維碼</string>
+    <string name="only_stored_on_members_devices">(僅由群組成員儲存)</string>
     <string name="contact_wants_to_connect_with_you">想和你對話！</string>
     <string name="image_descr_simplex_logo">SimpleX 徽標</string>
     <string name="connect_via_link">透過連結連接</string>
+    <string name="smp_servers_preset_server">預設伺服器</string>
     <string name="smp_servers_your_server_address">你的伺服器地址</string>
     <string name="smp_servers_delete_server">刪除伺服器</string>
     <string name="your_ICE_servers">你的 ICE 伺服器</string>
@@ -387,9 +409,11 @@
     <string name="to_connect_via_link_title">使用連結連接</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 桌面版：在應用程式內掃描一個已存在的二維碼，透過 <b>掃描二維碼</b>。]]></string>
     <string name="icon_descr_settings">設定</string>
+    <string name="this_QR_code_is_not_a_link">這個二維碼不是一個連結！</string>
     <string name="network_use_onion_hosts_prefer">當可用時</string>
     <string name="core_version">核心版本：v%s</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
+    <string name="create_address">建立地址</string>
     <string name="edit_image">編輯圖片</string>
     <string name="italic_text">斜體</string>
     <string name="callstatus_rejected">已拒絕通話</string>
@@ -417,20 +441,32 @@
     <string name="image_descr_qr_code">QR 圖碼</string>
     <string name="image_descr_profile_image">個人檔案頭像</string>
     <string name="image_descr_link_preview">預覧連結圖片</string>
+    <string name="icon_descr_address">SimpleX 地址</string>
+    <string name="icon_descr_help">幫助</string>
+    <string name="icon_descr_simplex_team">SimpleX 團隊</string>
+    <string name="icon_descr_email">電郵</string>
     <string name="icon_descr_more_button">更多</string>
     <string name="show_QR_code">顯示二維碼</string>
+    <string name="invalid_QR_code">無效的 QR 圖碼</string>
     <string name="invalid_contact_link">無效的連結！</string>
+    <string name="this_link_is_not_a_valid_connection_link">這個連結不是一個有效的連接連結！</string>
     <string name="connection_request_sent">已傳送連接請求</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">當群組的建立人上線，你便會成功連接至群組，請耐心等待！</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">當你的連接請求已被接受，你便會連接成功，請耐心等待！</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">當你的聯絡人上線，你便會連接成功，請耐心等待！</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[如果你不能面對面接觸此聯絡人，<b>可於視訊通話中出示你的二維碼</b>，或者分享連結。]]></string>
+    <string name="your_chat_profile_will_be_sent_to_your_contact">你的個人檔案會傳送給
+\n你的聯絡人</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[如果你不能面對面接觸此聯絡人，你可以於 <b>視訊通話中掃描二維碼</b> ，或者你可以分享一個邀請連結給此聯絡人。]]></string>
     <string name="paste_button">貼上</string>
     <string name="this_string_is_not_a_connection_link">這些字串不是連接連結！</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[你也可以點擊連結連接。如果在瀏覧器中開啟，點擊 <b>在電話應用程式內的開啟</b> 按鈕。]]></string>
     <string name="one_time_link">一次性邀請連結</string>
     <string name="scan_code">掃描二維碼</string>
     <string name="incorrect_code">錯誤的安全碼！</string>
     <string name="scan_code_from_contacts_app">在你聯絡人的應用程式內掃描安全碼。</string>
     <string name="security_code">安全碼</string>
+    <string name="markdown_help">Markdown 幫助</string>
     <string name="markdown_in_messages">在訊息中使用 Markdown 語法</string>
     <string name="smp_servers_enter_manually">手動輸入伺服器</string>
     <string name="smp_servers_use_server">使用伺服器</string>
@@ -438,6 +474,7 @@
     <string name="smp_servers_invalid_address">無效的伺服器地址！</string>
     <string name="smp_servers_per_user">此伺服器用於你目前的個人檔案</string>
     <string name="use_simplex_chat_servers__question">使用 SimpleX Chat 伺服器？</string>
+    <string name="your_SMP_servers">你的 SMP 伺服器</string>
     <string name="using_simplex_chat_servers">目前使用 SimpleX Chat 伺服器。</string>
     <string name="how_to">如何</string>
     <string name="configure_ICE_servers">配置 ICE 伺服器</string>
@@ -452,6 +489,8 @@
     <string name="save_and_notify_contacts">儲存並通知你的多個聯絡人</string>
     <string name="your_profile_is_stored_on_your_device">你的個人檔案，聯絡人和傳送的訊息只會儲存於你的個人裝置內。</string>
     <string name="profile_is_only_shared_with_your_contacts">你的個人檔案只會和你的聯絡人分享。</string>
+    <string name="create_profile_button">建立</string>
+    <string name="how_to_use_markdown">如何使用 Markdown 語法</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">你可以使用 Markdown 語法以更清楚標明訊息：</string>
     <string name="strikethrough_text">刪除線</string>
     <string name="callstatus_missed">已錯過通話</string>
@@ -464,6 +503,9 @@
     <string name="network_enable_socks">使用 SOCKS 代理伺服器</string>
     <string name="save_and_notify_group_members">儲存並通知群組內的聯絡人</string>
     <string name="exit_without_saving">退出並且不儲存記錄</string>
+    <string name="you_control_your_chat">你的對話由你控制！</string>
+    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">一個保護你的隱私和傳送安全通訊的應用程式平台。</string>
+    <string name="we_do_not_store_contacts_or_messages_on_servers">我們不會在伺服器內儲存你的任何聯絡人和訊息（一旦傳送）。</string>
     <string name="create_profile">建立個人檔案</string>
     <string name="callstate_received_confirmation">已確認回應…</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[你可以透過 <font color="#0088ff">連接到 SimpleX Chat 開發人員提出任何問題並同意更新</font>。]]></string>
@@ -486,6 +528,7 @@
     <string name="database_passphrase_and_export">資料庫密碼和匯出</string>
     <string name="send_us_an_email">傳送電郵</string>
     <string name="chat_lock">SimpleX 鎖定</string>
+    <string name="smp_servers">SMP 伺服器</string>
     <string name="smp_servers_preset_address">預設伺服器地址</string>
     <string name="smp_servers_test_server">測試伺服器</string>
     <string name="smp_servers_test_servers">測試多個伺服器</string>
@@ -493,6 +536,7 @@
     <string name="smp_servers_test_failed">伺服器測試失敗！</string>
     <string name="smp_servers_test_some_failed">有一些伺服器測試失敗：</string>
     <string name="smp_servers_scan_qr">掃描伺服器的二維碼</string>
+    <string name="smp_servers_your_server">你的伺服器</string>
     <string name="network_use_onion_hosts_required_desc">連接時需要使用 Onion 主機。 \n請注意：如果沒有 .onion 地址，你將無法連接到伺服器。</string>
     <string name="network_session_mode_user">聊天個人檔案</string>
     <string name="description_via_group_link">透過群組連結</string>
@@ -587,10 +631,16 @@
     <string name="save_group_profile">儲存群組檔案</string>
     <string name="voice_prohibited_in_this_chat">語音訊息於這個聊天室是禁用的。</string>
     <string name="v4_3_irreversible_message_deletion_desc">允許你的聯絡人可以完全刪除訊息。</string>
+    <string name="first_platform_without_user_ids">沒有用戶識別符。</string>
+    <string name="next_generation_of_private_messaging">未來的訊息平台</string>
+    <string name="decentralized">去中心化的</string>
+    <string name="people_can_connect_only_via_links_you_share">你決定誰可以連接。</string>
+    <string name="privacy_redefined">重新定義隱私</string>
     <string name="create_your_profile">建立你的個人檔案</string>
     <string name="how_it_works">這是如何運作</string>
     <string name="onboarding_notifications_mode_subtitle">它如何影響電池</string>
     <string name="make_private_connection">私下連接</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">任何人都可以託管伺服器。</string>
     <string name="ignore">忽略</string>
     <string name="incoming_audio_call">語音通話來電</string>
     <string name="paste_the_link_you_received">貼上你收到的連結</string>
@@ -598,6 +648,7 @@
     <string name="status_no_e2e_encryption">沒有端對端加密</string>
     <string name="icon_descr_speaker_off">關閉喇叭</string>
     <string name="settings_section_title_messages">訊息和檔案</string>
+    <string name="privacy_and_security">隱私和安全性</string>
     <string name="settings_section_title_themes">主題</string>
     <string name="v4_4_french_interface">法語介面</string>
     <string name="encrypted_audio_call">端對端加密的語音通話</string>
@@ -609,8 +660,10 @@
     <string name="settings_section_title_device">裝置</string>
     <string name="settings_section_title_help">幫助</string>
     <string name="settings_section_title_settings">設定</string>
+    <string name="settings_section_title_support">幫助 SimpleX Chat</string>
     <string name="settings_section_title_chats">聊天</string>
     <string name="settings_developer_tools">開發者工具</string>
+    <string name="settings_section_title_socks">SOCKS 代理伺服器</string>
     <string name="restart_the_app_to_use_imported_chat_database">重新啟動應用程式以匯入對話資料庫。</string>
     <string name="delete_files_and_media_all">刪除所有檔案</string>
     <string name="enable_automatic_deletion_question">啟用自動銷毀訊息？</string>
@@ -653,10 +706,12 @@
     <string name="info_row_local_name">本機名稱</string>
     <string name="info_row_database_id">資料庫 ID</string>
     <string name="role_in_group">身份</string>
+    <string name="button_send_direct_message">傳送私人訊息</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">成員將被移除於此群組 - 這不能還原！</string>
     <string name="remove_member_confirmation">移除</string>
     <string name="member_info_section_title_member">成員</string>
     <string name="change_role">修改身份</string>
+    <string name="switch_verb">切換</string>
     <string name="change_member_role_question">修改這位成員的身份？</string>
     <string name="switch_receiving_address">切換接收訊息的伺服器</string>
     <string name="group_profile_is_stored_on_members_devices">群組的檔案只會儲存於成員內的本機裝置，不會儲存於伺服器內。</string>
@@ -675,6 +730,8 @@
     <string name="users_delete_with_connections">檔案和伺服器連接</string>
     <string name="users_delete_data_only">只有本機檔案</string>
     <string name="incognito_random_profile">你的隨機個人檔案</string>
+    <string name="theme_system">系統</string>
+    <string name="theme_light">淺色</string>
     <string name="reset_color">重設顏色</string>
     <string name="feature_off">關閉</string>
     <string name="feature_received_prohibited">已接收，已禁用</string>
@@ -694,6 +751,8 @@
     <string name="database_passphrase">資料庫密碼</string>
     <string name="export_database">匯出資料庫</string>
     <string name="import_database">匯入資料庫</string>
+    <string name="new_database_archive">新的資料庫封存</string>
+    <string name="old_database_archive">舊的資料庫封存</string>
     <string name="delete_database">刪除資料庫</string>
     <string name="error_starting_chat">開啟對話時出錯</string>
     <string name="stop_chat_question">停止對話？</string>
@@ -715,6 +774,7 @@
     <string name="chat_preferences_contact_allows">聯絡人允許</string>
     <string name="ttl_s">%ds</string>
     <string name="onboarding_notifications_mode_title">私人通知</string>
+    <string name="read_more_in_github_with_link"><![CDATA[可在 <font color="#0088ff">GitHub</font>內查看更多。]]></string>
     <string name="incoming_video_call">視訊通話來電</string>
     <string name="icon_descr_hang_up">掛斷</string>
     <string name="call_connection_peer_to_peer">點對點</string>
@@ -743,6 +803,7 @@
     <string name="disappearing_messages_are_prohibited">自動銷毀訊息已停用。</string>
     <string name="feature_offered_item">已提供 %s</string>
     <string name="error_saving_group_profile">儲存群組檔案時出錯</string>
+    <string name="theme">主題</string>
     <string name="chat_preferences_you_allow">你允許</string>
     <string name="set_group_preferences">修改群組內的設定</string>
     <string name="direct_messages">私訊</string>
@@ -779,6 +840,7 @@
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">正在修改聯絡地址為 %s …</string>
     <string name="database_encryption_will_be_updated">受加密的資料庫密碼會再次更新和儲存於金鑰庫。</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">當發生： \n1. 訊息將在傳送至客戶端後兩天或在伺服器內三十天時過時。 \n2. 訊息解密失敗，因為你或你的聯絡人用了舊的資料庫備份 \n3. 連接被破壞。</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">只有客戶端裝置儲存個人檔案、聯絡人、群組，和訊息。</string>
     <string name="store_passphrase_securely">請放置你的密碼於安全的地方，如果你遺失了密碼，將不可能修改你的密碼。</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">停止聊天室以匯出對話，匯入或刪除對話資料庫。當聊天室停止後你將不能接收或傳送訊息。</string>
     <string name="alert_title_cant_invite_contacts_descr">你正在使用匿名聊天模式進入此群組 - 為了避免分享你的真實個人檔案，邀請聯絡人是不允許的。</string>
@@ -791,6 +853,8 @@
     <string name="description_via_contact_address_link">透過聯絡人的邀請連結連接</string>
     <string name="description_via_one_time_link">透過一次性連結連接</string>
     <string name="network_session_mode_transport_isolation">傳輸隔離</string>
+    <string name="update_network_session_mode_question">更新傳輸隔離模式？</string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">為了保護你的隱私，SimpleX 對你的每個聯絡人使用不同的 ID。</string>
     <string name="onboarding_notifications_mode_off">當應用程式是運行中</string>
     <string name="allow_accepting_calls_from_lock_screen">透過設定啟用於上鎖畫面顯示來電通知。</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">這操作不能還原 - 你目前的個人檔案，聯絡人，訊息和檔案將不可逆地遺失。</string>
@@ -805,10 +869,14 @@
     <string name="you_rejected_group_invitation">你已拒絕加入群組</string>
     <string name="group_member_status_announced">連接中（宣布階段）</string>
     <string name="num_contacts_selected">已選擇%d 個聯絡人</string>
+    <string name="your_ice_servers">你的 ICE 伺服器</string>
     <string name="webrtc_ice_servers">WebRTC ICE 伺服器</string>
     <string name="update_database">更新</string>
+    <string name="icon_descr_expand_role">添加更多身份選項</string>
     <string name="icon_descr_context">聯絡人頭像</string>
     <string name="icon_descr_profile_image_placeholder">個人檔案頭像占位符</string>
+    <string name="immune_to_spam_and_abuse">不受垃圾和騷擾訊息影響</string>
+    <string name="contact_wants_to_connect_via_call">%1$s 希望透過以下方式聯絡你</string>
     <string name="icon_descr_video_on">開啟視訊</string>
     <string name="icon_descr_flip_camera">翻轉相機</string>
     <string name="icon_descr_call_pending_sent">待確認通話</string>
@@ -819,6 +887,8 @@
     <string name="integrity_msg_skipped">%1$d 條訊息已跳過</string>
     <string name="integrity_msg_bad_hash">錯誤的訊息雜湊值</string>
     <string name="alert_title_skipped_messages">你錯過了多個訊息</string>
+    <string name="settings_section_title_you">你</string>
+    <string name="settings_experimental_features">實驗性功能</string>
     <string name="database_is_not_encrypted">你的對話資料庫並未加密 - 設置密碼保護它。</string>
     <string name="passphrase_is_different">資料庫密碼與儲存在金鑰庫中的密碼不同。</string>
     <string name="unknown_error">未知的錯誤</string>
@@ -827,6 +897,7 @@
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">你已經被邀请加入至群組。加入後可與群組內的成員對話。</string>
     <string name="you_joined_this_group">你已加入至群組</string>
     <string name="icon_descr_contact_checked">已確認聯絡人</string>
+    <string name="your_chat_database">你的對話資料庫</string>
     <string name="delete_chat_profile_question">刪除聊天個人檔案？</string>
     <string name="wrong_passphrase">錯誤的資料庫密碼</string>
     <string name="unknown_database_error_with_info">未知的資料庫錯誤：%s</string>
@@ -836,6 +907,7 @@
     <string name="rcv_group_event_updated_group_profile">更新群組檔案</string>
     <string name="snd_group_event_changed_member_role">你修改了 %s 的身份為 %s</string>
     <string name="group_member_status_introduced">連接中（介紹階段）</string>
+    <string name="use_chat">使用聊天</string>
     <string name="call_connection_via_relay">透過轉送</string>
     <string name="icon_descr_video_off">關閉視訊</string>
     <string name="snd_group_event_changed_role_for_yourself">你修改了自己的身份為 %s</string>
@@ -846,6 +918,7 @@
     <string name="moderate_verb">審查</string>
     <string name="moderate_message_will_be_marked_warning">該訊息將對所有成員標記為已移除。</string>
     <string name="observer_cant_send_message_title">你是觀察員</string>
+    <string name="you_are_observer">你是觀察員</string>
     <string name="connect_plan_you_are_observer">你是觀察員</string>
     <string name="connect_plan_you_are_member">你是成員</string>
     <string name="connect_plan_you_are_moderator">你是審核員</string>
@@ -911,6 +984,7 @@
     <string name="database_downgrade_warning">警告：你可能會遺失一些數據！</string>
     <string name="image_will_be_received_when_contact_completes_uploading">圖片將在你的聯絡人完成上載後接收。</string>
     <string name="file_will_be_received_when_contact_completes_uploading">檔案將在你的聯絡人完成上載後接收。</string>
+    <string name="settings_section_title_experimenta">實驗性</string>
     <string name="upgrade_and_open_chat">升級和開啟對話</string>
     <string name="show_developer_options">顯示開發者選項</string>
     <string name="delete_profile">刪除個人檔案</string>
@@ -930,6 +1004,8 @@
     <string name="developer_options">資料庫 IDs 和傳輸隔離選項。</string>
     <string name="downgrade_and_open_chat">降級和開啟對話</string>
     <string name="profile_password">個人檔案密碼</string>
+    <string name="error_loading_smp_servers">加載 SMP 伺服器時出錯</string>
+    <string name="error_loading_xftp_servers">加載 XFTP 伺服器時出錯</string>
     <string name="smp_server_test_create_file">建立檔案</string>
     <string name="error_xftp_test_server_auth">伺服器需要認證後才能上載，檢查密碼</string>
     <string name="smp_server_test_compare_file">對比檔案</string>
@@ -959,6 +1035,7 @@
     <string name="la_change_app_passcode">修改密碼</string>
     <string name="la_immediately">立刻</string>
     <string name="la_please_remember_to_store_password">請銘記或將密碼私密地儲存 - 無法復原已遺失的密碼！</string>
+    <string name="network_proxy_port">端口 %d</string>
     <string name="network_socks_proxy_settings">SOCKS 代理伺服器設定</string>
     <string name="alert_title_msg_bad_hash">錯誤的訊息雜湊值</string>
     <string name="lock_after">在此之後鎖定</string>
@@ -993,8 +1070,11 @@
     <string name="change_lock_mode">修改鎖定模式</string>
     <string name="passcode_not_changed">未修改密碼！</string>
     <string name="audio_video_calls">語言/視訊通話</string>
+    <string name="available_in_v51">"
+\n在 v5.1中可用"</string>
     <string name="allow_your_contacts_to_call">允許你的聯絡人與你進行通話。</string>
     <string name="smp_server_test_upload_file">上載檔案</string>
+    <string name="xftp_servers">XFTP 伺服器</string>
     <string name="la_lock_mode_system">系統認證</string>
     <string name="la_could_not_be_verified">你未能通過認證；請再試一次。</string>
     <string name="you_can_turn_on_lock">你可以透過設定啟用 SimpleX 鎖定。</string>
@@ -1003,6 +1083,7 @@
 \n當一些錯誤出現或你的連結被破壞時會發生。</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d 條訊息解密失敗。</string>
     <string name="network_socks_toggle_use_socks_proxy">使用SOCKS 代理伺服器</string>
+    <string name="your_XFTP_servers">你的 XFTP 伺服器</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d 條訊息已跳過。</string>
     <string name="v5_0_large_files_support">影片和檔案和最大上限為1gb</string>
     <string name="gallery_video_button">影片</string>
@@ -1020,6 +1101,7 @@
     <string name="stop_sharing_address">停止分享聯絡地址？</string>
     <string name="auto_accept_contact">自動接受</string>
     <string name="continue_to_next_step">繼續</string>
+    <string name="dont_create_address">不用建立聯絡地址</string>
     <string name="enter_welcome_message_optional">輸入歡迎訊息… （可選擇的）</string>
     <string name="email_invite_body">你好！ 
 \n透過 SimpleX Chat 來和我連接吧：%s</string>
@@ -1038,11 +1120,15 @@
     <string name="color_received_message">已接收訊息</string>
     <string name="color_sent_message">已傳送訊息</string>
     <string name="color_title">標題</string>
+    <string name="learn_more_about_address">關於 SimpleX 的聯絡地址</string>
     <string name="color_primary_variant">額外的輔色</string>
     <string name="color_secondary_variant">外加的輔助</string>
     <string name="address_section_title">地址</string>
     <string name="color_background">背景</string>
+    <string name="create_address_and_let_people_connect">建立一個聯絡地址讓其他用戶與你連接。</string>
     <string name="customize_theme_title">自定義主題</string>
+    <string name="dark_theme">黑暗主題</string>
+    <string name="error_setting_address">設定聯絡地址時出錯</string>
     <string name="auth_open_chat_profiles">變更聊天個人檔案</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[可在 <font color="#0088ff"> 內查看更多關於用戶指南的資料</font>。]]></string>
     <string name="self_destruct">自毁</string>
@@ -1061,9 +1147,12 @@
     <string name="all_app_data_will_be_cleared">已刪除所有的應用程式數據。</string>
     <string name="set_passcode">設定密碼</string>
     <string name="you_can_share_this_address_with_your_contacts">你可以與聯絡人分享此地址，讓他們使用 %s 進行連接。</string>
+    <string name="you_can_create_it_later">你可以在稍後建立它</string>
     <string name="scan_qr_to_connect_to_contact">為了連接，你的聯絡人可以掃描二維碼或使用此應用程式的連結。</string>
     <string name="if_you_cant_meet_in_person">如果你不能面對面接觸此聯絡人，可於視訊通話中出示你的二維碼，或者分享連結。</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">當你在稍後刪除你的聯絡地址時，你並不會遺失你的聯絡人。</string>
+    <string name="you_can_share_your_address">你可以將你的地址作為連接或二維碼以分享 - 任何人都可以連接到你。</string>
+    <string name="you_can_accept_or_reject_connection">當有人向你發出連接請求，你可以接受或拒絕請求。</string>
     <string name="your_contacts_will_remain_connected">你的聯絡人會保持連接。</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">你的所有聯絡人會保持連接。更新了的個人檔案將傳送給你的聯絡人。</string>
     <string name="add_address_to_your_profile">新增地址至你的個人檔案，以便你的聯絡人可以與其他人分享。更新了的個人檔案將傳送給你的聯絡人。</string>
@@ -1167,6 +1256,7 @@
     <string name="chat_theme_apply_to_all_modes">所有顏色模式</string>
     <string name="chat_theme_apply_to_mode">應用到</string>
     <string name="la_app_passcode">應用程式密碼</string>
+    <string name="settings_section_title_app">應用程式</string>
     <string name="settings_section_title_chat_colors">聊天顏色</string>
     <string name="chat_is_stopped_you_should_transfer_database">聊天已停止。如果你已經在另一台設備使用過此資料庫，你應該在啟動聊天前將資料庫傳輸回來。</string>
     <string name="in_developing_title">即將推出！</string>
@@ -1190,6 +1280,7 @@
     <string name="block_member_button">封鎖成員</string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>警告</b>：此封存將被刪除。]]></string>
     <string name="clear_note_folder_question">清除私密筆記？</string>
+    <string name="add_contact_tab">新增聯絡人</string>
     <string name="network_smp_proxy_mode_always">總是</string>
     <string name="conn_event_ratchet_sync_started">協調加密中…</string>
     <string name="allow_to_send_files">允許傳送檔案和媒體</string>
@@ -1228,11 +1319,13 @@
     <string name="v5_3_encrypt_local_files_descr">應用程式將為新的本機檔案（影片除外）加密。</string>
     <string name="migrate_from_device_check_connection_and_try_again">檢查你的網路連接並重試</string>
     <string name="all_users">所有個人檔案</string>
+    <string name="smp_servers_configured">已設定的 SMP 伺服器</string>
     <string name="settings_section_title_chat_theme">聊天主題</string>
     <string name="info_view_call_button">通話</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">允許降級</string>
     <string name="network_smp_proxy_mode_always_description">始終使用私密路由。</string>
     <string name="chat_database_exported_title">以導出聊天資料庫</string>
+    <string name="xftp_servers_configured">已設定的 XFTP 伺服器</string>
     <string name="color_mode">色彩模式</string>
     <string name="deleted_chats">已儲存的聯絡人</string>
     <string name="privacy_media_blur_radius">模糊媒體</string>
@@ -1292,6 +1385,7 @@
     <string name="network_smp_proxy_fallback_prohibit">否</string>
     <string name="app_check_for_updates_disabled">已停用</string>
     <string name="app_check_for_updates_installed_successfully_title">安裝成功</string>
+    <string name="create_address_button">建立</string>
     <string name="unable_to_open_browser_title">打開瀏覽器出錯</string>
     <string name="receipts_contacts_enable_keep_overrides">啟用（保留覆蓋）</string>
     <string name="receipts_groups_disable_keep_overrides">禁用（保留組覆蓋）</string>
@@ -1340,6 +1434,7 @@
     <string name="profile_update_event_member_name_changed">成員姓名從 %1$s 改為了 %2$s</string>
     <string name="conn_event_ratchet_sync_agreed">同意加密</string>
     <string name="info_row_message_status">訊息狀態</string>
+    <string name="connect_via_member_address_alert_desc">連接請求將傳送給該組成員。</string>
     <string name="v5_2_more_things_descr">- 更穩定的消息傳送。
 \n- 更好的群組。
 \n- 還有更多！</string>
@@ -1356,6 +1451,8 @@
     <string name="creating_link">建立連結中…</string>
     <string name="keep_invitation_link">保留</string>
     <string name="profile_update_event_contact_name_changed">聯絡人名稱從 %1$s 變更為 %2$s</string>
+    <string name="new_message">新訊息</string>
+    <string name="invite_friends_short">邀請</string>
     <string name="receipts_contacts_disable_keep_overrides">停用（保留覆蓋）</string>
     <string name="share_text_message_status">訊息狀態：%s</string>
     <string name="message_queue_info">訊息隊列資訊</string>
@@ -1481,6 +1578,7 @@
     <string name="servers_info_detailed_statistics">詳細統計數據</string>
     <string name="member_info_member_disabled">已停用</string>
     <string name="member_info_member_inactive">不活躍</string>
+    <string name="connect_via_member_address_alert_title">直接連接？</string>
     <string name="wallpaper_preview_hello_alice">午安！</string>
     <string name="wallpaper_preview_hello_bob">早安！</string>
     <string name="disable_sending_recent_history">不向新成員傳送歷史訊息</string>
@@ -1491,6 +1589,7 @@
     <string name="error">錯誤</string>
     <string name="remote_host_was_disconnected_title">連線停止</string>
     <string name="remote_host_disconnected_from"><![CDATA[和移動裝置<b>%s</b>的連結斷開，原因是：%s]]></string>
+    <string name="remote_ctrl_disconnected_with_reason">斷線原因：%s</string>
     <string name="disconnect_remote_hosts">斷開行動裝置連接</string>
     <string name="desktop_address">桌面地址</string>
     <string name="discover_on_network">通過局域網發現</string>
@@ -1579,6 +1678,7 @@
     <string name="servers_info_subscriptions_connections_pending">待連接</string>
     <string name="error_parsing_uri_desc">請檢查 Simple X 鏈接是否正確。</string>
     <string name="note_folder_local_display_name">私密筆記</string>
+    <string name="please_try_later">請稍後再試。</string>
     <string name="no_filtered_contacts">沒有過濾的聯絡人</string>
     <string name="app_check_for_updates_button_open">打開檔案位置</string>
     <string name="rcv_group_event_open_chat">開啟</string>
@@ -1613,6 +1713,7 @@
     <string name="prohibit_sending_files">禁止傳送檔案和媒體。</string>
     <string name="connect_plan_open_group">打開群組</string>
     <string name="only_owners_can_enable_files_and_media">只有群組所有者才能啟用檔案和媒體。</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">貼上你收到的連結以與你的聯絡人聯絡…</string>
     <string name="servers_info_previously_connected_servers_section_header">先前連接的伺服器</string>
     <string name="other_label">其他</string>
     <string name="message_queue_info_none">無</string>
@@ -1630,10 +1731,13 @@
     <string name="migrate_to_device_database_init">正在準備下載</string>
     <string name="only_delete_conversation">只刪除對話</string>
     <string name="paste_link">貼上連結</string>
+    <string name="smp_servers_other">其他 SMP 伺服器</string>
+    <string name="xftp_servers_other">其他 XFTP 伺服器</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">請讓你的聯絡人啟用通話。</string>
     <string name="v5_6_picture_in_picture_calls">畫中畫通話</string>
     <string name="migrate_from_device_or_share_this_file_link">或安全分享此文件連結</string>
     <string name="servers_info_missing">無資訊，試試重新加載</string>
+    <string name="open_server_settings_button">打開伺服器設定</string>
     <string name="private_routing_error">私密路由出錯</string>
     <string name="message_forwarded_desc">尚無直接連接，訊息由管理員轉發。</string>
     <string name="selected_chat_items_nothing_selected">什麼也沒選中</string>
@@ -1682,12 +1786,16 @@
     <string name="text_field_set_chat_placeholder">設定聊天名稱…</string>
     <string name="mute_all_chat">靜音全部</string>
     <string name="delete_chat_list_menu_action">刪除</string>
+    <string name="privacy_chat_list_open_links_yes">是</string>
+    <string name="privacy_chat_list_open_links_no">否</string>
     <string name="settings_shutdown">關閉</string>
     <string name="this_device_name">此裝置名稱</string>
     <string name="onboarding_network_about_operators">關於營運者</string>
     <string name="chat_item_ttl_default">預設（%s）</string>
     <string name="chat_list_contacts">聯絡人</string>
     <string name="contact_list_header_title">你的聯絡人</string>
+    <string name="settings_section_title_chat_database">聊天資料庫</string>
+    <string name="privacy_chat_list_open_links_ask">詢問</string>
     <string name="privacy_media_blur_radius_strong">強</string>
     <string name="reset_single_color">重設顏色</string>
     <string name="color_sent_quote">已傳送回覆</string>
@@ -1695,6 +1803,8 @@
     <string name="reject_pending_member_button">拒絕</string>
     <string name="servers_info_reset_stats_alert_confirm">重設</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">已傳送總數</string>
+    <string name="list_menu">清單</string>
+    <string name="toolbar_settings">設定</string>
     <string name="list_name_field_placeholder">清單名稱…</string>
     <string name="chat_bottom_bar">單手模式的聊天工具列</string>
     <string name="forward_files_in_progress_desc">%1$d 個檔案仍然正在下載。</string>
@@ -1712,6 +1822,7 @@
     <string name="network_session_mode_server">伺服器</string>
     <string name="onboarding_conditions_accept">接受</string>
     <string name="privacy_media_blur_radius_soft">弱</string>
+    <string name="recipient_colon_delivery_status">%s：%s</string>
     <string name="info_row_chat">聊天</string>
     <string name="your_servers">你的伺服器</string>
     <string name="appearance_zoom">縮放</string>
@@ -1845,6 +1956,7 @@
     <string name="setup_database_passphrase">設定資料庫密碼</string>
     <string name="migrate_from_device_bytes_uploaded">%s 已上載</string>
     <string name="profile_update_event_updated_profile">已更新個人檔案</string>
+    <string name="privacy_chat_list_open_web_link">開啟連結</string>
     <string name="set_database_passphrase">設定資料庫密碼</string>
     <string name="session_code">工作階段代碼</string>
     <string name="servers_info_detailed_statistics_sent_messages_header">已傳送訊息</string>
@@ -1896,6 +2008,7 @@
     <string name="button_remove_member_question">移除成員？</string>
     <string name="remove_member_button">移除成員</string>
     <string name="theme_remove_image">移除圖片</string>
+    <string name="member_contact_send_direct_message">傳送私人訊息</string>
     <string name="cant_send_message_contact_deleted">聯絡人已刪除</string>
     <string name="cant_send_message_contact_not_synchronized">未同步</string>
     <string name="cant_send_message_contact_disabled">聯絡人已停用</string>
@@ -2253,6 +2366,7 @@
     <string name="share_group_profile_via_link_alert_text">連結將會變短，且群組檔案會透過此連結分享。</string>
     <string name="share_old_address_alert_button">分享舊地址</string>
     <string name="share_old_link_alert_button">分享舊連結</string>
+    <string name="you_can_make_address_visible_via_settings">你可以透過設定，讓你的 SimpleX 聯絡人看見它。</string>
     <string name="short_descr__field">簡介：</string>
     <string name="bio_too_large">簡介太長</string>
     <string name="save_admission_question">要儲存加入審批設定嗎？</string>
@@ -2278,6 +2392,7 @@
     <string name="why_built_p6">人類最古老的自由——不被監視地與另一個人交談——建立在不會背叛它的基礎設施之上。</string>
     <string name="why_built_p7">因為我們摧毀了識別你身份的能力，讓你的自主權永遠不會被奪走。</string>
     <string name="why_built_tagline">在你的網路中自由交流。</string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[所有訊息和檔案都以<b>端對端加密</b>傳送，直接訊息具備後量子安全性。]]></string>
     <string name="onboarding_conditions_private_chats_not_accessible">營運商承諾：\n- 保持獨立\n- 盡量減少中繼資料使用\n- 執行已驗證的開源程式碼</string>
     <string name="onboarding_conditions_by_using_you_agree">你承諾：\n- 只在公開群組中發佈合法內容\n- 尊重其他使用者——不發送垃圾訊息</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">私隱政策與使用條件。</string>
@@ -2310,6 +2425,7 @@
     <string name="receipts_section_groups">小型群組（最多 20 人）</string>
     <string name="receipts_groups_override_enabled">已為 %d 個群組啟用送達回條</string>
     <string name="receipts_groups_override_disabled">已為 %d 個群組停用送達回條</string>
+    <string name="privacy_chat_list_open_links">從聊天列表開啟連結</string>
     <string name="privacy_chat_list_open_web_link_question">要開啟網頁連結嗎？</string>
     <string name="privacy_chat_list_open_full_web_link">開啟完整連結</string>
     <string name="privacy_chat_list_open_clean_web_link">開啟乾淨連結</string>
@@ -2421,7 +2537,10 @@
     <string name="operator_conditions_failed_to_load">無法載入目前的條件文字，你可以透過此連結查看條件：</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[以下營運商的條件已接受：<b>%s</b>。]]></string>
     <string name="operator_same_conditions_will_be_applied"><![CDATA[相同條件將套用於營運商 <b>%s</b>。]]></string>
+    <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[相同條件將套用於以下營運商：<b>%s</b>。]]></string>
     <string name="operator_conditions_will_be_applied"><![CDATA[這些條件也將套用於：<b>%s</b>。]]></string>
+    <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[將接受以下營運商的條件：<b>%s</b>。]]></string>
+    <string name="operators_conditions_will_also_apply"><![CDATA[這些條件也將套用於：<b>%s</b>。]]></string>
     <string name="operator_in_order_to_use_accept_conditions"><![CDATA[若要使用 <b>%s</b> 的伺服器，請接受使用條件。]]></string>
     <string name="xftp_servers_per_user">你目前聊天個人檔案的新檔案伺服器</string>
     <string name="error_server_protocol_changed">伺服器協議已變更。</string>
@@ -2564,6 +2683,8 @@
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[這是你用於群組 <b>%1$s</b> 的連結！]]></string>
     <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[你已在加入群組 <b>%1$s</b>。]]></string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">你已在透過此連結加入群組。</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[你已在群組 <b>%1$s</b> 中。]]></string>
+    <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[你已與 <b>%1$s</b> 連接。]]></string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">已上載的數據庫封存將從伺服器永久移除。</string>
     <string name="servers_info_target">顯示資訊：</string>
     <string name="servers_info_private_data_disclaimer">從 %s 開始。\n所有資料都會在你的裝置上保持私密。</string>

@@ -29,19 +29,19 @@ chatNamesTests = do
   it "connect by name resolving to direct contact (primary) and channel" testConnectByNameContactAndChannel
   it "connect by name resolving to business (primary) and channel" testConnectByNameBusinessAndChannel
   describe "connection plan: the name lookup answers" $ do
-    it "2b. expired, no local chat" testPlanNameExpired
-    it "2c. available, no local chat" testPlanNameAvailable
-    it "2d. reserved for community" testPlanNameReservedCommunity
-    it "2e. reserved for another reason" testPlanNameReservedOther
-    it "2f. registered with no usable link" testPlanNameNoValidLink
-    it "3a. known chat, nothing actionable" testPlanKnownNameLive
-    it "3b. known chat, name expired" testPlanKnownNameExpired
-    it "3c. known chat, name moved to a new address" testPlanKnownNameAddressChanged
-    it "3d. known chat, name now available" testPlanKnownNameAvailable
-    it "4a. own name, live" testPlanOwnNameLive
-    it "4c. own name, expired" testPlanOwnNameExpired
-    it "4d. own name, now available" testPlanOwnNameAvailable
-    it "2h. the request failed" testPlanNameResolverFailed
+    it "expired, no local chat" testPlanNameExpired
+    it "available, no local chat" testPlanNameAvailable
+    it "reserved for community" testPlanNameReservedCommunity
+    it "reserved for another reason" testPlanNameReservedOther
+    it "registered with no usable link" testPlanNameNoValidLink
+    it "known chat, nothing actionable" testPlanKnownNameLive
+    it "known chat, name expired" testPlanKnownNameExpired
+    it "known chat, name moved to a new address" testPlanKnownNameAddressChanged
+    it "known chat, name now available" testPlanKnownNameAvailable
+    it "own name, live" testPlanOwnNameLive
+    it "own name, expired" testPlanOwnNameExpired
+    it "own name, now available" testPlanOwnNameAvailable
+    it "the request failed" testPlanNameResolverFailed
     it "resolve=never: local hit and miss" testPlanNameResolveNever
 
 testConnectByName :: HasCallStack => TestParams -> IO ()
@@ -328,8 +328,7 @@ testConnectByNameBusinessAndChannel ps = withSmpServerAndNames $ \reg ->
   where
     bizName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "biz" [])
 
--- The states the name-lookup canvas draws, one test per row. Each sets up the registry answer and
--- asserts the plan the CLI renders for it; the row numbers are the canvas's.
+-- One test per name-lookup answer: each sets up the registry answer and asserts the plan the CLI renders.
 aliceSimplexName :: SimplexNameInfo
 aliceSimplexName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
 
@@ -465,9 +464,7 @@ testPlanNameResolveNever = withAliceName $ \_reg _l alice bob -> do
   bob ##> "/_connect plan 1 @nobody.simplex resolve=never"
   bob <## "no matching chat found, name resolution is disabled"
 
--- 3c: bob has a chat found by alice.simplex, then the name is re-pointed at cath's address, which
--- claims it in turn. Only resolve=all re-resolves a name whose chat is known, and the plan that
--- comes back is the new address, marked as changed; bob's existing chat is what resolve=never returns.
+-- the name is re-pointed at cath's address; only resolve=all re-resolves a name whose chat is known.
 testPlanKnownNameAddressChanged :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameAddressChanged ps = withSmpServerAndNames $ \reg ->
   testChat3 aliceProfile bobProfile cathProfile (test reg) ps
@@ -502,7 +499,7 @@ testPlanKnownNameAddressChanged ps = withSmpServerAndNames $ \reg ->
       bob <## "SimpleX name: @alice.simplex (verified)"
       bob <## "use @alice <message> to send messages"
 
--- 2h: the registry could not be asked. As today, this stays an error rather than a plan.
+-- the registry could not be asked. As today, this stays an error rather than a plan.
 testPlanNameResolverFailed :: HasCallStack => TestParams -> IO ()
 testPlanNameResolverFailed = withAliceName $ \reg _l _alice bob -> do
   failNameResolution reg broken
