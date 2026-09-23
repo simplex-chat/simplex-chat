@@ -27,10 +27,9 @@ import Network.HTTP.Types (hContentType, notFound404, ok200)
 import Network.Wai (Application, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord (..), NameRegistration (..), NameResponse (..), OwnedName (..), OwnedNames (..), USDCents (..))
+import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord (..), NameRegistration (..), NameResponse (..), OwnedNames (..), USDCents (..))
 import Simplex.Messaging.Server.Names (NamesConfig (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), labelHash)
-import Simplex.Messaging.SystemTime (RoundedSystemTime (..))
 
 type NameRegistry = TVar (Map Text NameRecord)
 
@@ -53,7 +52,7 @@ withNameResolver action = do
     nameResponse Nothing = NameResponse {lastBlockTs = Nothing, registration = NRAvailable {pricing = NamePricing {registrationPrices = M.empty, basePrice = USDCents 1000, minLabelLength = 1}}}
     -- an account is in use when it owns a name, the only thing this resolver knows about
     ownedNames addr rs =
-      let ns = [OwnedName {onName = Just nrName, onLabelhash = "", onExpires = RoundedSystemTime 0, onStatus = "registered"} | NameRecord {nrName, nrOwner} <- rs, nrOwner == addr]
+      let ns = [nameResponse (Just r) | r@NameRecord {nrOwner} <- rs, nrOwner == addr]
        in OwnedNames {ownNames = ns, ownInUse = not (null ns), ownNextOffset = Nothing}
 
 -- | Register a name's domain to resolve to the given record.
