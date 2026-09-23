@@ -36,9 +36,11 @@ session_minutes = 60
 waiting_seconds = 3
 idle_seconds = 60
 
+; index is the one clients verify against; private_key is from `simplex-chat badge keygen`.
+; To rotate, change both together, once clients trust the new index.
 [issuer]
-default = key_1
-key_1 = replace-me
+index = 1
+private_key = replace-me
 
 [dev]
 chat_redeem = on

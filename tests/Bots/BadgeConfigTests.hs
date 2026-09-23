@@ -4,11 +4,12 @@
 module Bots.BadgeConfigTests where
 
 import BadgeService.Config
+import qualified Data.ByteString.Char8 as B
 import Data.Either (isLeft)
 import Data.Ini (readIniFile)
-import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Simplex.Messaging.Encoding.String (strDecode)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))
 import Test.Hspec
@@ -38,14 +39,13 @@ badgeConfigTests = describe "badge service config" $ do
   it "refuses a file one malformed line would silently truncate" testMalformedLineRefused
   it "accepts a comment or blank line after the last setting" testTrailingCommentIsAccepted
   it "reports a missing file rather than throwing" testMissingFileIsReported
-  it "has no issuer keys when the section is absent" testIssuerAbsent
-  it "reads every key_<n> and the default that names one" testIssuerKeys
-  it "refuses a default that names no listed key" testIssuerDefaultMissing
-  it "refuses a key that is not named key_<n>" testIssuerKeyName
-  it "refuses a padded index, which would collapse onto another key" testIssuerKeyPadded
-  it "refuses a setting the section does not define" testIssuerUnknownSetting
-  it "refuses a secret that is not a valid issuer key" testIssuerBadSecret
-  it "refuses a section with a default and no keys" testIssuerNoKeys
+  it "has no issuer key when the section is absent" testIssuerAbsent
+  it "reads the index and the private key it signs with" testIssuerKey
+  it "refuses a section without an index" testIssuerIndexMissing
+  it "refuses a section without a private key" testIssuerSecretMissing
+  it "refuses an index that is not a positive whole number" testIssuerIndexInvalid
+  it "refuses a private key that is not a valid issuer secret" testIssuerBadSecret
+  it "names the old default and key_<n> settings, then refuses the boot" testIssuerOldFormat
   it "leaves chat redemption off when the dev section is absent" testDevRedeemAbsent
   it "reads chat_redeem = on" testDevRedeemOn
   it "reads chat_redeem = off" testDevRedeemOff
@@ -293,75 +293,57 @@ testHostMustBeHttps =
       Left e -> e `shouldContain` "https"
       Right _ -> expectationFailure "an http host carries the api key in the clear"
 
--- These are real 32-byte base64url secrets, as `simplex-chat badge keygen` prints them.
-issuerSecret1, issuerSecret2 :: T.Text
-issuerSecret1 = "Ea5wG-J2mQjPBu9YfSJRKPnGnzoIdEE-8VaMh_wY2Bg="
-issuerSecret2 = "Zm9vYmFyYmF6cXV1eDEyMzQ1Njc4OTBhYmNkZWZnaGk="
+-- A real 32-byte base64url secret, as `simplex-chat badge keygen` prints it.
+issuerSecret :: T.Text
+issuerSecret = "Ea5wG-J2mQjPBu9YfSJRKPnGnzoIdEE-8VaMh_wY2Bg="
 
 withIssuer :: [T.Text] -> (FilePath -> IO a) -> IO a
 withIssuer ls = withIni (fullIni <> T.unlines ("[issuer]" : ls))
+
+issuerRefusal :: [T.Text] -> IO String
+issuerRefusal ls =
+  withIssuer ls readServiceConfig >>= \r -> case r of
+    Left e -> pure e
+    Right cfg -> expectationFailure ("[issuer] " <> show ls <> " must not boot, it read " <> show (issuer cfg)) >> pure ""
 
 testIssuerAbsent :: IO ()
 testIssuerAbsent = withIni fullIni $ \p -> do
   Right cfg <- readServiceConfig p
   issuer cfg `shouldBe` Nothing
 
-testIssuerKeys :: IO ()
-testIssuerKeys =
-  withIssuer ["default = key_3", "key_1 = " <> issuerSecret1, "key_3 = " <> issuerSecret2] $ \p -> do
+testIssuerKey :: IO ()
+testIssuerKey =
+  withIssuer ["index = 3", "private_key = " <> issuerSecret] $ \p -> do
     Right cfg <- readServiceConfig p
-    case issuer cfg of
-      Nothing -> expectationFailure "the issuer section was present"
-      Just IssuerConfig {iKeys, iDefaultIdx} -> do
-        M.keys iKeys `shouldBe` [1, 3]
-        iDefaultIdx `shouldBe` 3
+    Right sk <- pure (strDecode (B.pack (T.unpack issuerSecret)))
+    issuer cfg `shouldBe` Just BadgeIssuerKey {keyIdx = 3, secretKey = sk}
 
-testIssuerDefaultMissing :: IO ()
-testIssuerDefaultMissing =
-  withIssuer ["default = key_2", "key_1 = " <> issuerSecret1] $ \p -> do
-    r <- readServiceConfig p
-    case r of
-      Left e -> e `shouldContain` "key_2"
-      Right _ -> expectationFailure "a default naming no listed key must fail at boot"
+testIssuerIndexMissing :: IO ()
+testIssuerIndexMissing =
+  issuerRefusal ["private_key = " <> issuerSecret] `shouldReturn` "issuer.index is required"
 
--- `key_01` reads as 1, so it would land on `key_1` in the map and one of the two secrets would be
--- dropped without ever being checked.
-testIssuerKeyPadded :: IO ()
-testIssuerKeyPadded =
-  withIssuer ["default = key_1", "key_1 = " <> issuerSecret1, "key_01 = " <> issuerSecret2] $ \p -> do
-    r <- readServiceConfig p
-    case r of
-      Left e -> e `shouldContain` "key_01"
-      Right _ -> expectationFailure "two spellings of one index must fail at boot"
+testIssuerSecretMissing :: IO ()
+testIssuerSecretMissing =
+  issuerRefusal ["index = 1"] `shouldReturn` "issuer.private_key is required"
 
-testIssuerKeyName :: IO ()
-testIssuerKeyName =
-  withIssuer ["default = key_1", "key_1 = " <> issuerSecret1, "key_x = " <> issuerSecret2] $ \p -> do
-    r <- readServiceConfig p
-    case r of
-      Left e -> e `shouldContain` "key_x"
-      Right _ -> expectationFailure "a key that is not key_<n> must fail at boot"
-
-testIssuerUnknownSetting :: IO ()
-testIssuerUnknownSetting =
-  withIssuer ["default = key_1", "key_1 = " <> issuerSecret1, "rotate = yes"] $ \p -> do
-    r <- readServiceConfig p
-    case r of
-      Left e -> e `shouldContain` "rotate"
-      Right _ -> expectationFailure "an unknown setting must fail rather than be ignored"
+testIssuerIndexInvalid :: IO ()
+testIssuerIndexInvalid =
+  mapM_
+    (\v -> issuerRefusal ["index = " <> v, "private_key = " <> issuerSecret] `shouldReturn` "issuer.index must be a positive whole number")
+    ["0", "-1", "one", "1.5", "key_1", "18446744073709551617"]
 
 testIssuerBadSecret :: IO ()
 testIssuerBadSecret =
-  withIssuer ["default = key_1", "key_1 = not-a-key"] $ \p ->
-    readServiceConfig p >>= (`shouldSatisfy` isLeft)
+  issuerRefusal ["index = 1", "private_key = not-a-key"]
+    `shouldReturn` "issuer.private_key is not a valid issuer secret; use the value from `simplex-chat badge keygen`"
 
-testIssuerNoKeys :: IO ()
-testIssuerNoKeys =
-  withIssuer ["default = key_1"] $ \p -> do
-    r <- readServiceConfig p
-    case r of
-      Left e -> e `shouldContain` "key_<n>"
-      Right _ -> expectationFailure "a section with no keys must fail at boot"
+testIssuerOldFormat :: IO ()
+testIssuerOldFormat = do
+  let old = ["default = key_1", "key_1 = " <> issuerSecret]
+  withIssuer old $ \p -> do
+    Right ini <- readIniFile p
+    unknownKeys ini `shouldMatchList` ["issuer.default", "issuer.key_1"]
+  issuerRefusal old `shouldReturn` "issuer.index is required"
 
 testDevRedeemAbsent :: IO ()
 testDevRedeemAbsent = withIni fullIni $ \p -> do

@@ -87,10 +87,10 @@ cd ../..
 #   static_dir = ./apps/simplex-badge-service/web/dist   <- the build above
 #   [btcpay]   = a real store's host, api_key, store_id and webhook_secret,
 #                or delete the whole section to disable BTC and XMR (the provider-unavailable screen)
-#   [issuer]   = uncomment the section and put a real issuer secret in key_1, with
-#                default = key_1. It has to be a key whose public half already ships in
-#                the apps: startup checks the secret against `badgePublicKeys` at that
-#                index, so a fresh `simplex-chat badge keygen` pair is refused.
+#   [issuer]   = uncomment the section and put a real issuer secret in private_key,
+#                with its index in index. It has to be a key whose public half already
+#                ships in the apps: startup checks the secret against `badgePublicKeys`
+#                at that index, so a fresh `simplex-chat badge keygen` pair is refused.
 
 # 3. run it. Without --service-config the web listener does not start at all.
 #    An issuer key is required even though nothing in the checkout path uses it:

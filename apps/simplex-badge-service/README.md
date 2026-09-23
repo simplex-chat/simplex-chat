@@ -59,20 +59,17 @@ The service checks the secret against the configured public key at that index an
 if they disagree: credentials signed with the wrong key cannot be verified by any client, and the
 codes redeemed against them would be spent for nothing.
 
-The keys can come from `badge_service.ini` instead, which is where more than one can be listed:
+The key can come from `badge_service.ini` instead:
 
 ```ini
 [issuer]
-default = key_1
-key_1 = <secret from `simplex-chat badge keygen`>
-key_3 = <secret>
+index = 1
+private_key = <secret from `simplex-chat badge keygen`>
 ```
 
-`key_<n>` is the index clients verify against (`badgePublicKeys` in `ChatConfig`), and `default`
-names the one that signs. Only that key signs; the others are listed so that rotating is a change
-to `default` and a restart, with the old key still present to roll back to. Every key in the
-section is checked at startup, not just the default, so a key that clients could not verify fails
-before anyone rotates onto it.
+`index` is the index clients verify against (`badgePublicKeys` in `ChatConfig`), and `private_key`
+is the secret that signs. Both are required, and the key is checked at startup like the flags.
+Rotating is a change to both and a restart, once clients trust the new index.
 
 The command line wins over the file when both `--issuer-key-idx` and `--issuer-secret` are given.
 Note that a secret passed as a flag is visible to every user on the machine through `ps`, where one

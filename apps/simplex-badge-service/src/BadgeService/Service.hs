@@ -21,7 +21,7 @@ module BadgeService.Service
 where
 
 import BadgeService.Catalog (defaultCatalog)
-import BadgeService.Config (IssuerConfig (..), ServiceConfig (..), readServiceConfig)
+import BadgeService.Config (BadgeIssuerKey (..), ServiceConfig (..), readServiceConfig)
 import BadgeService.Options
 import BadgeService.Poller (newPollerEnv, newReadHints, runPoller)
 import BadgeService.Providers.BTCPay (btcpayProvider)
@@ -96,19 +96,13 @@ welcomeGetOpts = do
     putStrLn $ "Service name: " ++ T.unpack serviceName
   pure opts
 
--- Every key in [issuer] is verified, not only the signing one, so a key clients cannot verify fails at boot.
 checkIssuerKey :: BadgeServiceOpts -> Maybe ServiceConfig -> ChatConfig -> IO (Either String BadgeIssuerKey)
 checkIssuerKey BadgeServiceOpts {issuerKey} serviceCfg cfg = case issuerKey of
   Left e -> pure (Left e)
   Right (Just k) -> checkOne cfg k
   Right Nothing -> case serviceCfg >>= issuer of
     Nothing -> pure $ Left "an issuer key is required - pass --issuer-key-idx and --issuer-secret, or add an [issuer] section to badge_service.ini (see `simplex-chat badge keygen`)"
-    Just IssuerConfig {iKeys, iDefaultIdx} -> do
-      checked <- mapM (checkOne cfg . uncurry BadgeIssuerKey) (M.toList iKeys)
-      pure $ case [e | Left e <- checked] of
-        e : _ -> Left e
-        [] -> maybe (Left $ "no issuer key at index " <> show iDefaultIdx) Right $
-          BadgeIssuerKey iDefaultIdx <$> M.lookup iDefaultIdx iKeys
+    Just k -> checkOne cfg k
 
 checkOne :: ChatConfig -> BadgeIssuerKey -> IO (Either String BadgeIssuerKey)
 checkOne ChatConfig {badgePublicKeys} k@BadgeIssuerKey {keyIdx, secretKey} =

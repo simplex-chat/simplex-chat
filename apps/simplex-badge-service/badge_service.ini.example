@@ -40,15 +40,15 @@ session_minutes = 60
 waiting_seconds = 3
 idle_seconds = 60
 
-; the keys this service may sign credentials with. key_<n> is the index clients verify against,
-; and default names the one that signs, so a key here has to be one whose public half already
-; ships in the apps: a fresh `simplex-chat badge keygen` pair is refused until it does.
+; the key this service signs credentials with. index is the index clients verify against, so
+; private_key has to be one whose public half already ships in the apps at that index: a fresh
+; `simplex-chat badge keygen` pair is refused until it does.
 ; --issuer-key-idx and --issuer-secret override this section if both are given.
-; list a key before rotating onto it: every key here is checked at startup, so this section
-; stays commented out until it holds a real key. An unusable one here refuses the boot.
+; to rotate, change index and private_key together, once clients trust the new index.
+; the key is checked at startup, so this section stays commented out until it holds a real key.
 ;[issuer]
-;default = key_1
-;key_1 = replace-me
+;index = 1
+;private_key = replace-me
 
 ; local testing only: signs a credential for anyone who sends /redeem <code> over chat,
 ; with a master key this service generates and can therefore link

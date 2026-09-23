@@ -5,19 +5,18 @@
 
 module BadgeService.Options
   ( BadgeServiceOpts (..),
-    BadgeIssuerKey (..),
     getBadgeServiceOpts,
     badgeServiceOpts,
     mkChatOpts,
   )
 where
 
+import BadgeService.Config (BadgeIssuerKey (..))
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
 import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
-import Simplex.Messaging.Crypto.BBS (BBSSecretKey)
 import Simplex.Messaging.Encoding.String (strDecode)
 
 data BadgeServiceOpts = BadgeServiceOpts
@@ -30,15 +29,6 @@ data BadgeServiceOpts = BadgeServiceOpts
     issuerKey :: Either String (Maybe BadgeIssuerKey),
     testing :: Bool
   }
-
-data BadgeIssuerKey = BadgeIssuerKey
-  { keyIdx :: Int,
-    secretKey :: BBSSecretKey
-  }
-
--- BBSSecretKey derives Show, so this is written out to keep the secret out of logs and errors
-instance Show BadgeIssuerKey where
-  show BadgeIssuerKey {keyIdx} = "issuer key " <> show keyIdx
 
 badgeServiceOpts :: FilePath -> FilePath -> Parser BadgeServiceOpts
 badgeServiceOpts appDir defaultDbName = do

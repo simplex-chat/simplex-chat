@@ -10,7 +10,7 @@ module BadgeService.Config
     SpeedPolicy (..),
     speedPolicyName,
     PollConfig (..),
-    IssuerConfig (..),
+    BadgeIssuerKey (..),
     ServiceConfig (..),
     defaultExpiryMinutes,
     defaultSessionMinutes,
@@ -24,9 +24,6 @@ import BadgeService.Log (logWarn)
 import Data.Attoparsec.Text (Parser, endOfInput, isEndOfLine, parseOnly, satisfy, skipMany, skipSpace, skipWhile)
 import qualified Data.ByteString.Char8 as B
 import Data.Ini (Ini, iniGlobals, iniParser, keys, lookupValue, sections)
-import Data.List (sort)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
@@ -90,24 +87,22 @@ instance Show StripeConfig where
 data PollConfig = PollConfig {pWaitingSeconds :: Int, pIdleSeconds :: Int}
   deriving (Eq, Show)
 
--- | Only iDefaultIdx signs; the rest are listed so rotation is a config change.
-data IssuerConfig = IssuerConfig
-  { iKeys :: Map Int BBSSecretKey,
-    iDefaultIdx :: Int
+data BadgeIssuerKey = BadgeIssuerKey
+  { keyIdx :: Int,
+    secretKey :: BBSSecretKey
   }
   deriving (Eq)
 
--- Hand-written, since BBSSecretKey's derived Show would print the secrets.
-instance Show IssuerConfig where
-  show IssuerConfig {iKeys, iDefaultIdx} =
-    "issuer keys " <> show (M.keys iKeys) <> ", signing with " <> show iDefaultIdx
+-- BBSSecretKey derives Show, so this is written out to keep the secret out of logs and errors
+instance Show BadgeIssuerKey where
+  show BadgeIssuerKey {keyIdx} = "issuer key " <> show keyIdx
 
 data ServiceConfig = ServiceConfig
   { listener :: ListenerConfig,
     btcpay :: Maybe BTCPayConfig,
     stripe :: Maybe StripeConfig,
     poll :: PollConfig,
-    issuer :: Maybe IssuerConfig,
+    issuer :: Maybe BadgeIssuerKey,
     -- Local testing only; signs credentials with a master key this service can link.
     devChatRedeem :: Bool
   }
@@ -155,22 +150,21 @@ trailingNoise = skipSpace *> skipMany (comment *> skipSpace)
   where
     comment = satisfy (\c -> c == ';' || c == '#') *> skipWhile (not . isEndOfLine)
 
--- | [issuer] is absent because its keys are key_<n> and it does its own stricter check.
 knownSettings :: [(Text, [Text])]
 knownSettings =
   [ ("listener", ["host", "port", "static_dir", "serve_webapp", "webapp_export_dir", "trust_forwarded_for"]),
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
-    ("dev", ["chat_redeem"])
+    ("dev", ["chat_redeem"]),
+    ("issuer", ["index", "private_key"])
   ]
 
 unknownKeys :: Ini -> [Text]
 unknownKeys ini = beforeAnySection <> unknownSections <> settings
   where
     beforeAnySection = [k <> ", written above the first section header" | (k, _) <- iniGlobals ini]
-    ours = map fst knownSettings <> ["issuer"]
-    unknownSections = ["[" <> s <> "]" | s <- sections ini, T.strip s `notElem` ours]
+    unknownSections = ["[" <> s <> "]" | s <- sections ini, T.strip s `notElem` map fst knownSettings]
     settings =
       [ section <> "." <> key
         | (section, known) <- knownSettings,
@@ -232,39 +226,18 @@ parseConfig ini = do
     issuerSection
       | not (hasSection "issuer") = Right Nothing
       | otherwise = do
-          entries <- either (const (Left "[issuer] could not be read")) Right (keys "issuer" ini)
-          let named = sort [T.strip e | e <- entries]
-          mapM_ knownEntry named
-          ks <- M.fromList <$> mapM issuerKey [e | e <- named, e /= "default"]
-          if M.null ks
-            then Left "[issuer] lists no key_<n>, so the service has nothing to sign with"
-            else do
-              d <- required "issuer" "default"
-              idx <- keyIndex d
-              if M.member idx ks
-                then Right (Just IssuerConfig {iKeys = ks, iDefaultIdx = idx})
-                else Left ("issuer.default names " <> T.unpack d <> ", which is not listed in [issuer]")
-    -- Refuse anything else, so a mistyped key_1 fails at boot instead of signing with an unintended key.
-    knownEntry e
-      | e == "default" = Right ()
-      | "key_" `T.isPrefixOf` e = () <$ keyIndex e
-      | otherwise = Left ("[issuer] has no setting " <> T.unpack e <> "; expected default or key_<n>")
-    -- key_01 and key_1 would otherwise both read as 1 and collapse in the map, dropping a secret.
-    keyIndex :: Text -> Either String Int
-    keyIndex e = case T.stripPrefix "key_" e of
-      Just written
-        | Just n <- readMaybe (T.unpack written),
-          n > 0,
-          n <= toInteger (maxBound :: Int),
-          T.pack (show n) == written ->
-            Right (fromInteger n)
-      _ -> Left ("[issuer] " <> T.unpack e <> " must be named key_<n>, with n a positive whole number")
-    issuerKey e = do
-      idx <- keyIndex e
-      raw <- required "issuer" e
-      case strDecode (B.pack (T.unpack raw)) of
-        Right sk -> Right (idx, sk)
-        Left _ -> Left ("issuer." <> T.unpack e <> " is not a valid issuer secret; use the value from `simplex-chat badge keygen`")
+          keyIdx <- issuerIndex
+          secretKey <- issuerSecret
+          pure (Just BadgeIssuerKey {keyIdx, secretKey})
+    issuerIndex = do
+      v <- required "issuer" "index"
+      case readMaybe (T.unpack v) of
+        Just n | n >= 1, n <= toInteger (maxBound :: Int) -> Right (fromInteger n)
+        _ -> Left "issuer.index must be a positive whole number"
+    issuerSecret = do
+      v <- required "issuer" "private_key"
+      either (const (Left "issuer.private_key is not a valid issuer secret; use the value from `simplex-chat badge keygen`")) Right $
+        strDecode (B.pack (T.unpack v))
     btcpaySection
       | not (hasSection "btcpay") = Right Nothing
       | otherwise = do

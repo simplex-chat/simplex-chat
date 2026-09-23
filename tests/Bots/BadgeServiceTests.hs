@@ -10,7 +10,7 @@
 
 module Bots.BadgeServiceTests where
 
-import BadgeService.Config (readServiceConfig)
+import BadgeService.Config (BadgeIssuerKey (..), readServiceConfig)
 import Bots.BadgeConfigTests (withIssuer)
 import BadgeService.Options
 import BadgeService.Service
@@ -82,7 +82,7 @@ badgeServiceTests = do
   it "should refuse to issue a code with an unknown badge type or a nonsense month count" testIssueRejectsBadArguments
   it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
   it "should refuse to start unless the issuer secret is the key trusted at its index" testIssuerKeyMustMatchConfig
-  it "should refuse to start when any key in [issuer] is one no client trusts" testIssuerIniKeysAreAllChecked
+  it "should refuse to start when the [issuer] key is not one clients trust" testIssuerIniKeyMustBeTrusted
   it "should credit a code's months and issue one credential per month" testCodeMonthsRenew
   it "should return the stored credential for a repeat inside an issued period" testRepeatInsideIssuedPeriod
   it "should lapse only the months that elapsed while the client was away" testLapseWhileAway
@@ -1242,24 +1242,24 @@ testIssuerKeyMustMatchConfig ps = do
   let halfGiven = (optsFor sk) {issuerKey = Left "--issuer-key-idx and --issuer-secret are given together or not at all"}
   checkIssuerKey halfGiven Nothing cfg >>= (`shouldSatisfy` isLeft)
 
-testIssuerIniKeysAreAllChecked :: HasCallStack => TestParams -> IO ()
-testIssuerIniKeysAreAllChecked ps = do
+testIssuerIniKeyMustBeTrusted :: HasCallStack => TestParams -> IO ()
+testIssuerIniKeyMustBeTrusted ps = do
   Right (pk, sk) <- bbsKeyGen
   Right (_, untrusted) <- bbsKeyGen
   let cfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk}
-      -- No key is given on the command line, so the ini section is what is read.
-      fromIni = (mkBadgeServiceOpts ps sk) {issuerKey = Right Nothing}
-      secretText k = safeDecodeUtf8 (strEncode k)
-      iniWith keys = withIssuer (("default = key_" <> tshow testIssuerKeyIdx) : keys) readServiceConfig
-  Right onlyTheSigner <- iniWith ["key_" <> tshow testIssuerKeyIdx <> " = " <> secretText sk]
-  checkIssuerKey fromIni (Just onlyTheSigner) cfg >>= (`shouldSatisfy` isRight)
+      fromCli = mkBadgeServiceOpts ps sk
+      fromIni = fromCli {issuerKey = Right Nothing}
+      iniWith idx k = withIssuer ["index = " <> tshow idx, "private_key = " <> safeDecodeUtf8 (strEncode k)] readServiceConfig
+  Right trusted <- iniWith testIssuerKeyIdx sk
+  checkIssuerKey fromIni (Just trusted) cfg `shouldReturn` Right (BadgeIssuerKey testIssuerKeyIdx sk)
 
-  Right alsoARotation <-
-    iniWith
-      [ "key_" <> tshow testIssuerKeyIdx <> " = " <> secretText sk,
-        "key_9 = " <> secretText untrusted
-      ]
-  checkIssuerKey fromIni (Just alsoARotation) cfg >>= (`shouldSatisfy` isLeft)
+  Right wrongSecret <- iniWith testIssuerKeyIdx untrusted
+  checkIssuerKey fromIni (Just wrongSecret) cfg >>= (`shouldSatisfy` isLeft)
+  checkIssuerKey fromCli (Just wrongSecret) cfg `shouldReturn` Right (BadgeIssuerKey testIssuerKeyIdx sk)
+
+  Right unknownIndex <- iniWith (testIssuerKeyIdx + 8) sk
+  checkIssuerKey fromIni (Just unknownIndex) cfg
+    `shouldReturn` Left ("no configured badge key at index " <> show (testIssuerKeyIdx + 8) <> ", clients could not verify what this service signs")
 
 testRedeemUnpaidCode :: HasCallStack => TestParams -> IO ()
 testRedeemUnpaidCode ps =
