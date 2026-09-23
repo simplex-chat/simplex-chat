@@ -13,6 +13,8 @@ module Simplex.Chat.Store.Badges
     getBadgePurchase,
     userHasBadge,
     setBadgeAlertAcked,
+    setBadgeIssueError,
+    setBadgeNextWake,
     clearShownBadge,
     getBadgeCodeRedemption,
     createBadgeCodeRedemption,
@@ -39,7 +41,7 @@ import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgePurchaseStatus (..))
+import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
@@ -146,6 +148,11 @@ storeBadgeIssuance db g badgePurchaseId entryId credential now =
           ON CONFLICT (badge_purchase_id, entry_id) DO NOTHING
         |]
         ((issuanceId, badgePurchaseId, entryId, badgeType) :. (periodStart, periodEnd, badgeExpiry, Binary (LB.toStrict $ J.encode credential), now))
+      -- a month stored ends the run of failures
+      DB.execute
+        db
+        "UPDATE badge_purchases SET issue_failed_since = NULL, issue_error_at = NULL, issue_error = NULL WHERE badge_purchase_id = ?"
+        (Only badgePurchaseId)
       pure True
   where
     BadgeCredential {badgeInfo = BadgeInfo {badgeType, badgeExpiry}} = credential
@@ -200,7 +207,9 @@ data UserBadgePurchase = UserBadgePurchase
     badgeType :: BadgeType,
     shown :: Bool,
     alertAcked :: Maybe (BadgeAlertKind, Text),
-    alertSnoozeUntil :: Maybe UTCTime
+    alertSnoozeUntil :: Maybe UTCTime,
+    issueError :: Maybe BadgeIssueError,
+    nextWakeAt :: Maybe UTCTime
   }
 
 -- | Newest, not the one shown_badge_id points at - retirement clears that, and the support ended
@@ -229,14 +238,15 @@ getBadgePurchase db purchaseId =
       [sql|
         SELECT p.badge_purchase_id, p.purchase_key, p.purchase_priv_key, p.master_key, p.current_badge_type,
                (CASE WHEN u.shown_badge_id = p.badge_purchase_id THEN 1 ELSE 0 END),
-               p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until
+               p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until,
+               p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at
         FROM badge_purchases p
         JOIN users u ON u.user_id = p.user_id
         WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
       |]
       (Only purchaseId)
   where
-    toPurchase (badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) =
+    toPurchase ((badgePurchaseId, purchaseKey, purchasePrivKey, Binary mk, badgeType, shown_, ackedKind_, ackedEpisode_, alertSnoozeUntil) :. (failedSince_, lastAttemptAt_, reason_, nextWakeAt)) =
       UserBadgePurchase
         { badgePurchaseId,
           purchaseKey,
@@ -245,7 +255,9 @@ getBadgePurchase db purchaseId =
           badgeType,
           shown = unBI shown_,
           alertAcked = (,) <$> ackedKind_ <*> ackedEpisode_,
-          alertSnoozeUntil
+          alertSnoozeUntil,
+          issueError = BadgeIssueError <$> failedSince_ <*> lastAttemptAt_ <*> reason_,
+          nextWakeAt
         }
 
 -- | Whether a badge is on the profile now: set when a redemption stores one, cleared when it is
@@ -266,6 +278,24 @@ setBadgeAlertAcked db User {userId} badgePurchaseId kind episode snoozeUntil =
     db
     "UPDATE badge_purchases SET alert_acked_kind = ?, alert_acked_episode = ?, alert_snooze_until = ? WHERE badge_purchase_id = ? AND user_id = ?"
     (kind, episode, snoozeUntil, badgePurchaseId, userId)
+
+-- | Record a renewal that ended without a credential. The COALESCE keeps the start of the current
+-- run of failures, which is the alert's episode and must survive a restart.
+setBadgeIssueError :: DB.Connection -> Int64 -> UTCTime -> BadgeIssueFailure -> IO ()
+setBadgeIssueError db badgePurchaseId now failure =
+  DB.execute
+    db
+    [sql|
+      UPDATE badge_purchases
+      SET issue_failed_since = COALESCE(issue_failed_since, ?), issue_error_at = ?, issue_error = ?
+      WHERE badge_purchase_id = ?
+    |]
+    (now, now, failure, badgePurchaseId)
+
+-- | The wake the worker is about to wait for, so the state the apps hold says when it will try again.
+setBadgeNextWake :: DB.Connection -> Int64 -> Maybe UTCTime -> IO ()
+setBadgeNextWake db badgePurchaseId at_ =
+  DB.execute db "UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?" (at_, badgePurchaseId)
 
 -- | Stop showing a badge that has expired unrenewed; the profile update is broadcast by the caller.
 clearShownBadge :: DB.Connection -> User -> Int64 -> IO ()
