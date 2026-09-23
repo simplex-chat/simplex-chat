@@ -240,7 +240,8 @@ A code that leaked, or that was refunded, is withdrawn the same way:
 ```
 
 A revoked code answers redemption with `code_invalid`, as if it had never existed, so its holder
-learns nothing from trying. Revoking is not repeatable: the second attempt says so.
+learns nothing from trying. Revoking is not repeatable: the second attempt says so. A code that
+was already redeemed cannot be revoked: its badge was issued, and the command answers with an error.
 
 Core parses `//...` into `CustomChatCommand` and leaves it to the service's `preCmdHook`, which is
 why issuing codes lives in the service rather than in core.

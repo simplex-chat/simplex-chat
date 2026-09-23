@@ -21,6 +21,7 @@ module BadgeService.Store
     appendLedgerPlan,
     createCodePurchase,
     insertBadgeCode,
+    RevokeResult (..),
     revokeCode,
   )
 where
@@ -222,27 +223,47 @@ appendLedgerPlan db purchaseId rows issuance_ = do
       insertedRowId db
 
 -- redeemed_at is stamped here, so this must run in the same transaction as the credential rows.
-createCodePurchase :: DB.Connection -> NewCodePurchase -> UTCTime -> IO Int64
+-- Mark the code as redeemed before adding the purchase. On Postgres, a revoke or redemption running
+-- at the same time then waits, sees the code is taken, and fails.
+createCodePurchase :: DB.Connection -> NewCodePurchase -> UTCTime -> IO (Maybe Int64)
 createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do
-  DB.execute
-    db
-    [sql|
-      INSERT INTO sx_badge_service_badge_purchases
-        (purchase_key, master_key, initial_badge_type, current_badge_type, status, badge_code_id, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?)
-    |]
-    (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, badgeCodeId, now, now)
-  purchaseId <- insertedRowId db
-  DB.execute db "UPDATE sx_badge_service_badge_codes SET redeemed_at = ? WHERE badge_code_id = ?" (now, badgeCodeId)
-  pure purchaseId
-
-revokeCode :: DB.Connection -> ByteString -> UTCTime -> IO Bool
-revokeCode db codeHash now =
-  (> 0)
-    <$> executeChanging
+  claimed <-
+    executeChanging
       db
-      "UPDATE sx_badge_service_badge_codes SET revoked_at = ? WHERE code_hash = ? AND revoked_at IS NULL"
+      "UPDATE sx_badge_service_badge_codes SET redeemed_at = ? WHERE badge_code_id = ? AND redeemed_at IS NULL AND revoked_at IS NULL"
+      (now, badgeCodeId)
+  if claimed == 0
+    then pure Nothing
+    else do
+      DB.execute
+        db
+        [sql|
+          INSERT INTO sx_badge_service_badge_purchases
+            (purchase_key, master_key, initial_badge_type, current_badge_type, status, badge_code_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?)
+        |]
+        (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, badgeCodeId, now, now)
+      Just <$> insertedRowId db
+
+data RevokeResult = Revoked | AlreadyRevoked | AlreadyRedeemed | NoSuchCode
+  deriving (Eq, Show)
+
+-- | A code that was already redeemed can't be revoked, because its badge was already given out.
+revokeCode :: DB.Connection -> ByteString -> UTCTime -> IO RevokeResult
+revokeCode db codeHash now = do
+  revoked <-
+    executeChanging
+      db
+      "UPDATE sx_badge_service_badge_codes SET revoked_at = ? WHERE code_hash = ? AND revoked_at IS NULL AND redeemed_at IS NULL"
       (now, Binary codeHash)
+  if revoked > 0
+    then pure Revoked
+    else
+      maybeFirstRow' NoSuchCode refusal $
+        DB.query db "SELECT revoked_at FROM sx_badge_service_badge_codes WHERE code_hash = ?" (Only (Binary codeHash))
+  where
+    refusal :: Only (Maybe UTCTime) -> RevokeResult
+    refusal (Only revokedAt) = maybe AlreadyRedeemed (const AlreadyRevoked) revokedAt
 
 insertBadgeCode :: DB.Connection -> ByteString -> BadgeType -> Int -> BadgeCodePaymentStatus -> UTCTime -> IO ()
 insertBadgeCode db codeHash badgeType months paymentStatus now =

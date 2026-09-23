@@ -210,8 +210,10 @@ runBadgeCmd cc cmd
         Left e -> pure $ chatCmdError $ "issuing code: " <> e
   | Right code <- A.parseOnly revokeCmdP cmd =
       revokeBadgeCode cc code >>= \case
-        Right True -> pure $ Right CRCustomChatResponse {user_ = Nothing, response = "revoked"}
-        Right False -> pure $ chatCmdError "no such code, or it was revoked already"
+        Right Revoked -> pure $ Right CRCustomChatResponse {user_ = Nothing, response = "revoked"}
+        Right AlreadyRevoked -> pure $ chatCmdError "code was revoked already"
+        Right AlreadyRedeemed -> pure $ chatCmdError "code was redeemed already, so it cannot be revoked"
+        Right NoSuchCode -> pure $ chatCmdError "no such code"
         Left e -> pure $ chatCmdError $ "revoking code: " <> e
   | otherwise = pure $ chatCmdError "use: //issue supporter|legend|investor [months 1-255] [paid|unpaid|free], or //revoke <code>"
 
@@ -220,7 +222,7 @@ revokeCmdP =
   "revoke " *> (A.takeWhile1 (not . isSpace) >>= maybe (fail "not a badge code") pure . parseBadgeCode . safeDecodeUtf8)
     <* (A.skipSpace *> A.endOfInput)
 
-revokeBadgeCode :: ChatController -> BadgeCode -> IO (Either String Bool)
+revokeBadgeCode :: ChatController -> BadgeCode -> IO (Either String RevokeResult)
 revokeBadgeCode cc code = do
   now <- truncateToSecond <$> getCurrentTime
   withDB' "revokeBadgeCode" cc $ \db -> revokeCode db (badgeCodeHash code) now
@@ -393,18 +395,19 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
           Just issued -> credentialForEntry key masterKey issued >>= \case
             Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
             Right signed -> do
-              -- Re-read, since a redemption or revoke may have landed while this one was signing.
+              -- If the code was revoked or redeemed while signing, the claim fails. Read the code again to tell the client why.
               r <- withDB "writeCodeRedemption" cc $ \db ->
-                readCode now code db >>= \case
-                  Left resp -> pure resp
-                  Right _ -> liftIO $ do
-                    purchaseId <- createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType} now
+                liftIO (createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType} now) >>= \case
+                  Nothing ->
+                    readCode now code db >>= \case
+                      Left resp -> pure resp
+                      Right _ -> logError "badge service: redeeming a code failed, but the code is neither redeemed nor revoked" $> errorResponse BSEInternal
+                  Just purchaseId -> liftIO $ do
                     appendLedgerPlan db purchaseId [granted] $ Just $ issuanceAfter granted signed
                     entries_ <- getLedgerEntries db purchaseId 0
                     pure $ maybe (errorResponse BSEInternal) (credentialResponse (Just $ snd signed) Nothing) entries_
               pure $ fromRight (errorResponse BSEInternal) r
   where
-    -- Re-run before signing and again inside the write transaction, since a revoke may land between the two reads.
     readCode now code db = liftIO $
       getBadgeCode db (badgeCodeHash code) >>= \case
         Nothing -> pure $ Left $ errorResponse BSECodeInvalid

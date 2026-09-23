@@ -14,9 +14,11 @@ import BadgeService.Poller
 import BadgeService.Providers
 import BadgeService.Providers.BTCPay (btcpayProvider, listPageSize, maxListPages)
 import BadgeService.Providers.Stripe (stripeProvider)
+import BadgeService.Store (CodeRedemption (..), IssuedCode (..), NewCodePurchase (..), RevokeResult (..), createCodePurchase, getBadgeCode, insertBadgeCode, revokeCode)
 import BadgeService.Store.Invoices
 import BadgeService.Waiters (awaitStatus, newWaiters, publish, waitingCount)
 import BadgeService.Web.Server
+import Bots.BadgeService.BotTests (newPurchaseKeys)
 import Bots.BadgeService.CatalogTests (WebOffer (..), WebPrice (..), parseCatalogSource)
 import Bots.BadgeService.FakeBTCPay
 import Bots.BadgeService.FakeStripe (FakeStripe (..), setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
@@ -141,6 +143,7 @@ badgeWebTests = do
     it "expireOverdue never sweeps an invoice that has been paid into" testExpireOverdueSparesAFundedInvoice
     it "expireOverdue spares an invoice funded by dust, or by the verdict alone" testExpireOverdueSparesAZeroAmount
     it "readCatalogRows drops every disabled row" testReadCatalogRowsDropsDisabled
+    it "a revoked code cannot be redeemed, and a redeemed code cannot be revoked" testRevokeAndRedeemExcludeEachOther
     it "every timestamp round-trips to the second" testTimestampRoundTrip
   describe "badge service catalog seed" $ do
     it "writes the compiled-in catalog into an empty database" testSeedWritesTheCatalog
@@ -454,6 +457,28 @@ testExpireOverdueMovesOnlyTheNamed = withServiceStore $ \st -> do
 
 expireAllOverdue :: DBStore -> UTCTime -> IO [InvoiceId]
 expireAllOverdue st now = overdueInvoices st now >>= expireOverdue st now . map oiInvoiceId
+
+testRevokeAndRedeemExcludeEachOther :: IO ()
+testRevokeAndRedeemExcludeEachOther = withServiceStore $ \st -> do
+  now <- truncateToSecond <$> getCurrentTime
+  (purchaseKey, masterKey) <- newPurchaseKeys
+  let newCode codeHash = withTransaction st $ \db -> do
+        insertBadgeCode db codeHash BTSupporter 1 CPSPaid now
+        maybe (error "the code was not written") (\IssuedCode {badgeCodeId} -> badgeCodeId) <$> getBadgeCode db codeHash
+      redeem badgeCodeId = withTransaction st $ \db -> createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType = BTSupporter} now
+      revoke codeHash = withTransaction st $ \db -> revokeCode db codeHash now
+      unredeemed codeHash =
+        withTransaction st (`getBadgeCode` codeHash) >>= \case
+          Just IssuedCode {redemption = CodeUnredeemed} -> pure True
+          _ -> pure False
+  revokedFirst <- newCode "revoked-first"
+  revoke "revoked-first" `shouldReturn` Revoked
+  redeem revokedFirst `shouldReturn` Nothing
+  unredeemed "revoked-first" `shouldReturn` True
+  redeemedFirst <- newCode "redeemed-first"
+  isJust <$> redeem redeemedFirst `shouldReturn` True
+  revoke "redeemed-first" `shouldReturn` AlreadyRedeemed
+  redeem redeemedFirst `shouldReturn` Nothing
 
 testReadCatalogRowsDropsDisabled :: IO ()
 testReadCatalogRowsDropsDisabled = withServiceStore $ \st -> do
