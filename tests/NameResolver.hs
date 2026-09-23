@@ -53,7 +53,7 @@ withNameResolver action = do
     -- an account is in use when it owns a name, the only thing this resolver knows about
     ownedNames addr rs =
       let ns = [nameResponse (Just r) | r@NameRecord {nrOwner} <- rs, nrOwner == addr]
-       in OwnedNames {ownNames = ns, ownInUse = not (null ns), ownNextOffset = Nothing}
+       in OwnedNames {ownLastBlockTs = Nothing, ownNames = ns, ownInUse = not (null ns), ownNextOffset = Nothing}
 
 -- | Register a name's domain to resolve to the given record.
 registerName :: TVar (Map Text NameRecord) -> SimplexNameInfo -> NameRecord -> IO ()
