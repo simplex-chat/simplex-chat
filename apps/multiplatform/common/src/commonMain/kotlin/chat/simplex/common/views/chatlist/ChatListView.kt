@@ -36,11 +36,13 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
+import SectionItemView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.chat.topPaddingToContent
+import chat.simplex.common.views.badges.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
@@ -60,6 +62,41 @@ sealed class ActiveFilter {
   data class PresetTag(val tag: PresetTagKind) : ActiveFilter()
   data class UserTag(val tag: ChatTag) : ActiveFilter()
   data object Unread: ActiveFilter()
+}
+
+private fun showBadgeAlertDismissAlert(title: String) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = title,
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          withBGApi { chatModel.controller.ackBadgeAlert(snooze = true) }
+        }) {
+          Text(stringResource(MR.strings.badges_remind_me_later), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          withBGApi { chatModel.controller.ackBadgeAlert(snooze = false) }
+        }) {
+          Text(stringResource(MR.strings.badges_dismiss), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    }
+  )
+}
+
+private fun showSupportSimpleXDismissAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.badges_banner_title),
+    text = generalGetString(MR.strings.badges_banner_dismiss_message),
+    onConfirm = { appPrefs.supporterBannerShown.set(true) }
+  )
 }
 
 private fun showNewChatSheet(oneHandUI: State<Boolean>) {
@@ -912,6 +949,12 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
+  val supporterBannerShown = remember { appPrefs.supporterBannerShown.state }
+  val supporterBannerTapped = remember { appPrefs.supporterBannerTapped.state }
+  val getStakeBannerTapped = remember { appPrefs.getStakeBannerTapped.state }
+  val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
+  // read here rather than in the LazyColumn: it launches an effect, so it needs a composable scope
+  val crowdfunding = crowdfundingAvailable()
   val activeFilter = remember { chatModel.activeChatTagFilter }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
@@ -998,6 +1041,59 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
     if (!oneHandUICardShown.value) {
       item {
         ToggleChatListCard()
+      }
+    }
+    // one slot: a badge the user paid for ending outranks the pitch to get one
+    val alert = BadgeModel.alert.value
+    if (supportEnded() && alert != null) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeExpired }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          SupportSimpleXBanner(
+            title = stringResource(MR.strings.badges_support_ended),
+            subtitle = String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText),
+            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) } },
+            onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_support_ended)) }
+          )
+        }
+      }
+    } else if (badgeIssueFailed()) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeIssueFailed }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          SupportSimpleXBanner(
+            title = stringResource(MR.strings.badges_renewal_failed),
+            subtitle = stringResource(MR.strings.badges_tap_for_details),
+            warning = true,
+            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) } },
+            onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_renewal_failed)) }
+          )
+        }
+      }
+    } else if (chatModel.bannerSlotFree(ChatListBanner.BadgePitch) && !supporterBannerShown.value && noShownBadge() && chatModel.chats.value.size > 3) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgePitch }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          SupportSimpleXBanner(
+            showDismiss = supporterBannerTapped.value,
+            onTap = {
+              appPrefs.supporterBannerTapped.set(true)
+              ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) }
+            },
+            onDismiss = ::showSupportSimpleXDismissAlert
+          )
+        }
+      }
+    } else if (chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfunding && !getStakeBannerDismissed.value) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.GetStake }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          GetStakeBanner(
+            showDismiss = getStakeBannerTapped.value && chatModel.chats.value.isNotEmpty(),
+            onTap = { openGetStake(ModalManager.start) },
+            onDismiss = { appPrefs.getStakeBannerDismissed.set(true) }
+          )
+        }
       }
     }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->

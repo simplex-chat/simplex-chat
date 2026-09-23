@@ -95,7 +95,7 @@ struct NameBadge: View {
     }
 }
 
-private func badgeImageName(_ t: BadgeType) -> String {
+func badgeImageName(_ t: BadgeType) -> String {
     switch t {
     case .legend: "badge-legend"
     case .investor: "badge-investor"
@@ -147,8 +147,7 @@ func showBadgeInfoAlert(_ name: String, _ badge: LocalBadge) {
         )
     default:
         // a verified badge's type is signed and can't be faked, so the real (possibly unknown) type name is the title
-        let t = badge.badge.badgeType.text
-        let title = t.prefix(1).uppercased() + t.dropFirst()
+        let title = badgeTypeName(badge.badge.badgeType)
         if case .investor = badge.badge.badgeType {
             let message = String.localizedStringWithFormat(NSLocalizedString("%@ invested in SimpleX Chat crowdfunding.", comment: "badge alert"), name)
             showAlert(title, message: message) {
@@ -167,8 +166,23 @@ func showBadgeInfoAlert(_ name: String, _ badge: LocalBadge) {
                 } else {
                     String.localizedStringWithFormat(NSLocalizedString("%@ supports SimpleX Chat.", comment: "badge alert"), name)
                 }
-            let v7 = NSLocalizedString("You can support SimpleX starting from v7 of the app.", comment: "badge alert")
-            showAlert(title, message: supports + "\n\n" + v7)
+            if noShownBadge() {
+                showAlert(title, message: supports) {
+                    [ supportSimpleXAlertAction, okAlertAction ]
+                }
+            } else {
+                showAlert(title, message: supports)
+            }
         }
+    }
+}
+
+// verbatim for an unknown type: it is the service's string, and must not be looked up as a localised key
+func badgeTypeName(_ t: BadgeType) -> String {
+    switch t {
+    case .supporter: NSLocalizedString("Supporter", comment: "badge type")
+    case .legend: NSLocalizedString("Legend", comment: "badge type")
+    case .investor: NSLocalizedString("Investor", comment: "badge type")
+    case let .unknown(s): s
     }
 }

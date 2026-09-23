@@ -26,6 +26,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.BadgesView
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrateFromDeviceView
@@ -103,6 +104,18 @@ fun SettingsLayout(
     }
     SectionDividerSpaced()
 
+    SectionView {
+      // Direct showModal (no settings / cardScreen flags) — settings-style card chrome would render
+      // a gray top bar / back button that badges views don't want (they have their own inline titles).
+      SectionItemView(click = { ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) } }) {
+        val badgeType = chatModel.currentUser.value?.profile?.localBadge?.badge?.badgeType ?: BadgeType.Supporter
+        Image(painterResource(badgeImage(badgeType)), stringResource(MR.strings.supporter_perks), Modifier.size(24.dp))
+        TextIconSpaced()
+        Text(stringResource(MR.strings.supporter_perks))
+      }
+    }
+    SectionDividerSpaced()
+
     SectionView(stringResource(MR.strings.advanced_settings)) {
       SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showCustomModal { _, close -> NetworkAndServersView(close) }, disabled = stopped)
       if (appPlatform == AppPlatform.ANDROID) {
@@ -119,7 +132,7 @@ fun SettingsLayout(
         SettingsActionItem(
           painterResource(MR.images.ic_redeem),
           stringResource(MR.strings.v7_0_crowdfunding),
-          { ModalManager.start.showModalCloseable(cardScreen = true) { close -> GetStakeView(fromSettings = true, close = close) } }
+          { ModalManager.start.showModalCloseable(cardScreen = true) { close -> GetStakeView(showFirstImage = true, close = close) } }
         )
       }
     }

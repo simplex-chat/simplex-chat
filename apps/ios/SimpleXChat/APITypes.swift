@@ -812,6 +812,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case agentVersion
     case agentNoSubResult(agentConnId: String)
     case commandError(message: String)
+    case badgeRedeemError(badgeRedeemError: BadgeRedeemError)
     case serverProtocol
     case agentCommandError(message: String)
     case invalidFileDescription(message: String)
@@ -821,6 +822,98 @@ public enum ChatErrorType: Decodable, Hashable {
     case relayTestError(message: String)
     case internalError(message: String)
     case exception(message: String)
+}
+
+public enum BadgeRedeemError: Decodable, Hashable {
+    case invalidCode
+    case serviceNotConfigured
+    case badgeActive
+    case serviceError(serviceError: BadgeServiceErrorCode)
+    case invalidResponse(message: String)
+    case unknownKeyIndex
+    case credentialNotVerified
+}
+
+// the service is deployed ahead of clients, so a code this version does not know keeps its tag
+public enum BadgeServiceErrorCode: Decodable, Hashable {
+    case badRequest
+    case unsupportedVersion
+    case unknownPurchaseKey
+    case unknownOfferId
+    case offerDisabled
+    case offerMismatch
+    case productUnavailable
+    case paymentNotEntitled
+    case paymentPending
+    case providerUnavailable
+    case rateLimited
+    case codeInvalid
+    case codeUsed
+    case codeExpired
+    case receiptInvalid
+    case receiptUsed
+    case internalError
+    case unknown(String)
+
+    public var text: String {
+        switch self {
+        case .badRequest: "bad_request"
+        case .unsupportedVersion: "unsupported_version"
+        case .unknownPurchaseKey: "unknown_purchase_key"
+        case .unknownOfferId: "unknown_offer_id"
+        case .offerDisabled: "offer_disabled"
+        case .offerMismatch: "offer_mismatch"
+        case .productUnavailable: "product_unavailable"
+        case .paymentNotEntitled: "payment_not_entitled"
+        case .paymentPending: "payment_pending"
+        case .providerUnavailable: "provider_unavailable"
+        case .rateLimited: "rate_limited"
+        case .codeInvalid: "code_invalid"
+        case .codeUsed: "code_used"
+        case .codeExpired: "code_expired"
+        case .receiptInvalid: "receipt_invalid"
+        case .receiptUsed: "receipt_used"
+        case .internalError: "internal"
+        case let .unknown(s): s
+        }
+    }
+
+    public init(from decoder: Decoder) throws {
+        switch try decoder.singleValueContainer().decode(String.self) {
+        case "bad_request": self = .badRequest
+        case "unsupported_version": self = .unsupportedVersion
+        case "unknown_purchase_key": self = .unknownPurchaseKey
+        case "unknown_offer_id": self = .unknownOfferId
+        case "offer_disabled": self = .offerDisabled
+        case "offer_mismatch": self = .offerMismatch
+        case "product_unavailable": self = .productUnavailable
+        case "payment_not_entitled": self = .paymentNotEntitled
+        case "payment_pending": self = .paymentPending
+        case "provider_unavailable": self = .providerUnavailable
+        case "rate_limited": self = .rateLimited
+        case "code_invalid": self = .codeInvalid
+        case "code_used": self = .codeUsed
+        case "code_expired": self = .codeExpired
+        case "receipt_invalid": self = .receiptInvalid
+        case "receipt_used": self = .receiptUsed
+        case "internal": self = .internalError
+        case let s: self = .unknown(s)
+        }
+    }
+}
+
+public func badgeServiceErrorText(_ code: BadgeServiceErrorCode) -> String? {
+    switch code {
+    case .codeInvalid: NSLocalizedString("This code was not recognized.", comment: "alert message")
+    case .codeUsed: NSLocalizedString("This code has already been used.", comment: "alert message")
+    case .codeExpired: NSLocalizedString("This code has expired.", comment: "alert message")
+    case .rateLimited: NSLocalizedString("Too many attempts. Please try again later.", comment: "alert message")
+    case .unsupportedVersion: NSLocalizedString("This app version is too old for the badge service. Please update the app.", comment: "alert message")
+    case .unknownPurchaseKey: NSLocalizedString("The badge service does not recognize this badge.", comment: "alert message")
+    case .internalError: NSLocalizedString("The badge service reported an internal error.", comment: "alert message")
+    case .badRequest, .unknownOfferId, .offerDisabled, .offerMismatch, .productUnavailable,
+         .paymentNotEntitled, .paymentPending, .providerUnavailable, .receiptInvalid, .receiptUsed, .unknown: nil
+    }
 }
 
 public enum StoreError: Decodable, Hashable {
@@ -1077,6 +1170,15 @@ public enum SMPAgentError: Decodable, Hashable {
     case A_CRYPTO
     case A_DUPLICATE
     case A_QUEUE(queueErr: String)
+    case A_SERVICE(serviceError: AgentServiceError)
+}
+
+public enum AgentServiceError: Decodable, Hashable {
+    case rejected
+    case timeout
+    case noPendingRequest
+    case notDRAddress
+    case badSignature
 }
 
 public enum ArchiveError: Decodable, Hashable {

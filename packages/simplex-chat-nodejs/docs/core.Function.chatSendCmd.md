@@ -8,7 +8,7 @@
 
 > **chatSendCmd**(`ctrl`, `cmd`): `Promise`\<`ChatResponse`\>
 
-Defined in: [src/core.ts:25](../src/core.ts#L25)
+Defined in: [src/core.ts:28](../src/core.ts#L28)
 
 Send chat command as string
 

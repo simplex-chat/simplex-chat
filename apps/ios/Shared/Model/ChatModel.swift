@@ -359,6 +359,37 @@ class ChannelRelaysModel: ObservableObject {
     }
 }
 
+// The badge of whichever profile it was last loaded for, kept current by the badgeChanged event so
+// that a screen already open shows what the renewal worker did with no command behind it.
+class BadgeModel: ObservableObject {
+    static let shared = BadgeModel()
+    @Published private(set) var userId: Int64?
+    @Published private(set) var badgeState: BadgeState?
+    @Published private(set) var alert: BadgeAlert?
+
+    // alert follows the state: getUserBadgeState derives it on every read, so a badgeChanged is
+    // never staler than the alert it carries - the invariant a new alert kind must keep
+    func set(userId: Int64, badgeState: BadgeState?) {
+        self.userId = userId
+        self.badgeState = badgeState
+        alert = badgeState?.alert
+    }
+
+    func setAlert(userId: Int64, alert: BadgeAlert) {
+        if self.userId == userId {
+            self.alert = alert
+            badgeState?.alert = alert
+        }
+    }
+}
+
+enum ChatListBanner {
+    case badgeExpired
+    case badgeIssueFailed
+    case badgePitch
+    case getStake
+}
+
 // Spec: spec/state.md#ChatModel
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
@@ -438,6 +469,14 @@ final class ChatModel: ObservableObject {
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
     var filesToDelete: Set<URL> = []
+
+    // the banner kind the chat list showed this app session: it keeps the slot until restart, so dismissing it never puts
+    // another in its place; only the badge alert shows regardless. Set while rendering, so not published.
+    var chatListBanner: ChatListBanner?
+
+    func bannerSlotFree(for banner: ChatListBanner) -> Bool {
+        chatListBanner == nil || chatListBanner == banner
+    }
 
     static let shared = ChatModel()
 
