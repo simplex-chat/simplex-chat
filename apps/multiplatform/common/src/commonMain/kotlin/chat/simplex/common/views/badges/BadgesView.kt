@@ -10,7 +10,7 @@ import chat.simplex.common.views.helpers.ModalView
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun BadgesView(close: () -> Unit) {
+fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
   val shownBadge: BadgeState? = run {
     if (!BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)) return@run null
     val badgeState = BadgeModel.badgeState.value
@@ -21,9 +21,9 @@ fun BadgesView(close: () -> Unit) {
   ModalView(close, cardScreen = shownBadge != null) {
     AnimatedContent(targetState = shownBadge, transitionSpec = { fadeIn() with fadeOut() }, contentKey = { it != null }) { badgeState ->
       if (badgeState != null) {
-        BadgesYourBadgeView(badgeState)
+        BadgesYourBadgeView(badgeState, modalManager)
       } else {
-        BadgesSupportSimplexView()
+        BadgesSupportSimplexView(modalManager)
       }
     }
   }
@@ -31,5 +31,5 @@ fun BadgesView(close: () -> Unit) {
 
 // ModalManager.end, not start: every caller is in the chat, which on desktop is the right pane
 fun openBadgesView() {
-  ModalManager.end.showCustomModal { close -> BadgesView(close) }
+  ModalManager.end.showCustomModal { close -> BadgesView(ModalManager.end, close) }
 }
