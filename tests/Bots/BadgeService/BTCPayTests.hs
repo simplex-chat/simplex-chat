@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Bots.BadgeBTCPayTests (badgeBTCPayTests) where
+module Bots.BadgeService.BTCPayTests (badgeBTCPayTests) where
 
 import BadgeService.Config (BTCPayConfig (..))
 import BadgeService.Providers
@@ -19,7 +19,7 @@ import BadgeService.Providers
     settleWindow,
   )
 import BadgeService.Providers.BTCPay (btcMethodId, btcpayProvider, listSignals, minorToDecimal, paymentMethodsSignal, verifyBTCPaySig, xmrMethodId)
-import Bots.FakeBTCPay
+import Bots.BadgeService.FakeBTCPay
 import Control.Exception (evaluate)
 import Control.Monad (join)
 import Data.Aeson ((.=))

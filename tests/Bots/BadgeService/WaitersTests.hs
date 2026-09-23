@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Bots.BadgeWaitersTests (badgeWaitersTests) where
+module Bots.BadgeService.WaitersTests (badgeWaitersTests) where
 
 import BadgeService.Waiters
 import Control.Concurrent.Async (wait, withAsync)

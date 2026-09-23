@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Bots.FakeStripe
+module Bots.BadgeService.FakeStripe
   ( FakeStripe (..),
     FakeRequest (..),
     withFakeStripe,

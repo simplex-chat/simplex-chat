@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.BadgeStripeTests (badgeStripeTests) where
+module Bots.BadgeService.StripeTests (badgeStripeTests) where
 
 import BadgeService.Config (StripeConfig (..))
 import BadgeService.Providers
@@ -17,7 +17,7 @@ import BadgeService.Providers
     WebhookError (..),
   )
 import BadgeService.Providers.Stripe (IntentRead (..), signalOf, stripeProvider)
-import Bots.FakeStripe
+import Bots.BadgeService.FakeStripe
 import Control.Monad (join)
 import Data.Aeson ((.=))
 import qualified Data.ByteString.Char8 as B8

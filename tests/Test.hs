@@ -3,13 +3,13 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
-import Bots.BadgeBTCPayTests
-import Bots.BadgeCatalogTests
-import Bots.BadgeConfigTests
-import Bots.BadgeServiceTests
-import Bots.BadgeStripeTests
-import Bots.BadgeWaitersTests
-import Bots.BadgeWebTests
+import Bots.BadgeService.BTCPayTests
+import Bots.BadgeService.BotTests
+import Bots.BadgeService.CatalogTests
+import Bots.BadgeService.ConfigTests
+import Bots.BadgeService.StripeTests
+import Bots.BadgeService.WaitersTests
+import Bots.BadgeService.WebTests
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -70,12 +70,13 @@ main = do
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
       describe "Supporter badges" badgeTests
-      describe "Supporter badges config" badgeConfigTests
-      describe "Supporter badges web" badgeWebTests
-      describe "Supporter badges catalog" badgeCatalogTests
-      describe "Supporter badges waiters" badgeWaitersTests
-      describe "Supporter badges BTCPay" badgeBTCPayTests
-      describe "Supporter badges Stripe" badgeStripeTests
+      describe "SimpleX badge service" $ do
+        badgeConfigTests
+        badgeWebTests
+        badgeCatalogTests
+        badgeWaitersTests
+        badgeBTCPayTests
+        badgeStripeTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
@@ -101,7 +102,7 @@ main = do
           describe "SimpleX chat client" chatTests
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           xdescribe'' "SimpleX Directory service bot" directoryServiceTests
-          xdescribe'' "SimpleX badge service bot" badgeServiceTests
+          xdescribe'' "SimpleX badge service e2e" badgeServiceTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           xdescribe'' "Save query plans" saveQueryPlans

@@ -5,7 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Bots.BadgeWebTests (badgeWebTests) where
+module Bots.BadgeService.WebTests (badgeWebTests) where
 
 import BadgeService.Catalog (catalogCurrency, defaultCatalog)
 import BadgeService.Config (BTCPayConfig (..), ListenerConfig (..), PollConfig (..), ServiceConfig (..), SpeedPolicy (..), StripeConfig (..))
@@ -17,9 +17,9 @@ import BadgeService.Providers.Stripe (stripeProvider)
 import BadgeService.Store.Invoices
 import BadgeService.Waiters (awaitStatus, newWaiters, publish, waitingCount)
 import BadgeService.Web.Server
-import Bots.BadgeCatalogTests (WebOffer (..), WebPrice (..), parseCatalogSource)
-import Bots.FakeBTCPay
-import Bots.FakeStripe (FakeStripe (..), setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
+import Bots.BadgeService.CatalogTests (WebOffer (..), WebPrice (..), parseCatalogSource)
+import Bots.BadgeService.FakeBTCPay
+import Bots.BadgeService.FakeStripe (FakeStripe (..), setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.Async (async, wait)
 import qualified Control.Concurrent.Async as Async

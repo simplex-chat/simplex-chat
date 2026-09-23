@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Bots.FakeBTCPay
+module Bots.BadgeService.FakeBTCPay
   ( FakeBTCPay (..),
     FakeRequest (..),
     withFakeBTCPay,

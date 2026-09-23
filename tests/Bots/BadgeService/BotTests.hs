@@ -8,10 +8,10 @@
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
-module Bots.BadgeServiceTests where
+module Bots.BadgeService.BotTests where
 
 import BadgeService.Config (BadgeIssuerKey (..), readServiceConfig)
-import Bots.BadgeConfigTests (withIssuer)
+import Bots.BadgeService.ConfigTests (withIssuer)
 import BadgeService.Options
 import BadgeService.Service
 import BadgeService.Store (CodeRedemption (..), IssuedCode (..), RedeemedCode (..), getBadgeCode)

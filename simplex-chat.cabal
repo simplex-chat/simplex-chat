@@ -729,15 +729,15 @@ test-suite simplex-chat-test
       BadgeService.Store.Migrate
       BadgeService.Waiters
       BadgeService.Web.Server
-      Bots.BadgeBTCPayTests
-      Bots.BadgeCatalogTests
-      Bots.BadgeConfigTests
-      Bots.BadgeServiceTests
-      Bots.BadgeStripeTests
-      Bots.BadgeWaitersTests
-      Bots.BadgeWebTests
-      Bots.FakeBTCPay
-      Bots.FakeStripe
+      Bots.BadgeService.BTCPayTests
+      Bots.BadgeService.BotTests
+      Bots.BadgeService.CatalogTests
+      Bots.BadgeService.ConfigTests
+      Bots.BadgeService.FakeBTCPay
+      Bots.BadgeService.FakeStripe
+      Bots.BadgeService.StripeTests
+      Bots.BadgeService.WaitersTests
+      Bots.BadgeService.WebTests
       Broadcast.Bot
       Broadcast.Options
       Directory.BlockedWords

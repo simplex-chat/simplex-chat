@@ -129,10 +129,10 @@ What the mock cannot stand in for:
 
 The Haskell side's own end-to-end coverage of that lane — checkout, payment,
 polling, partial payment, expiry, late settlement and replay, all against a
-fake Greenfield — is `tests/Bots/BadgeWebTests.hs`:
+fake Greenfield — is `tests/Bots/BadgeService/WebTests.hs`:
 
 ```
-cabal test --test-options='-m "Supporter badges"'
+cabal test --test-options='-m "/SimpleX badge service/"'
 ```
 
 ## Running the mock

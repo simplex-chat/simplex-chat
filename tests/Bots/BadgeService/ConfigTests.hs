@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.BadgeConfigTests where
+module Bots.BadgeService.ConfigTests where
 
 import BadgeService.Config
 import qualified Data.ByteString.Char8 as B

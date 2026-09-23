@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Bots.BadgeCatalogTests where
+module Bots.BadgeService.CatalogTests where
 
 import BadgeService.Catalog
 import Control.Monad (when)
