@@ -275,7 +275,11 @@ CREATE TABLE test_chat_schema.badge_purchases (
     alert_acked_kind text,
     alert_acked_episode text,
     alert_snooze_until timestamp with time zone,
-    badge_code_redemption_id bigint
+    badge_code_redemption_id bigint,
+    issue_failed_since timestamp with time zone,
+    issue_error_at timestamp with time zone,
+    issue_error text,
+    next_wake_at timestamp with time zone
 );
 
 

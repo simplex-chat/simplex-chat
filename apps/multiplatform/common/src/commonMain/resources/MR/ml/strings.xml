@@ -59,11 +59,9 @@
     <string name="whats_new_thanks_to_users_contribute_weblate">ഉപയോക്താക്കൾക്ക് നന്ദി - Weblate വഴി സംഭാവന ചെയ്യുക!</string>
     <string name="privacy_and_security">സ്വകാര്യതയും സുരക്ഷയും</string>
     <string name="notification_contact_connected">ബന്ധിപ്പിച്ചിരിക്കുന്നു</string>
-    <string name="privacy_redefined">സ്വകാര്യത പുനർ നിർവചിച്ചു</string>
     <string name="group_member_status_announced">ബന്ധിപ്പിക്കുന്നു (പ്രഖ്യാപിച്ചു)</string>
     <string name="create_address">വിലാസം സൃഷ്ടിക്കുക</string>
     <string name="unknown_error">അജ്ഞാത പിശക്</string>
-    <string name="create_address_and_let_people_connect">നിങ്ങളുമായി ബന്ധപ്പെടാൻ ആളുകളെ അനുവദിക്കുന്നതിന് ഒരു വിലാസം സൃഷ്‌ടിക്കുക.</string>
     <string name="group_member_status_connecting">ബന്ധിപ്പിക്കുന്നു</string>
     <string name="restore_database_alert_confirm">പുനഃസ്ഥാപിക്കുക</string>
     <string name="smp_server_test_connect">ബന്ധിപ്പിക്കുക</string>
@@ -74,6 +72,7 @@
     <string name="group_member_status_connected">ബന്ധിപ്പിച്ചിരിക്കുന്നു</string>
     <string name="contact_connection_pending">ബന്ധിപ്പിക്കുന്നു…</string>
     <string name="group_connection_pending">ബന്ധിപ്പിക്കുന്നു…</string>
+    <string name="display_name_connecting">ബന്ധിപ്പിക്കുന്നു…</string>
     <string name="button_add_members">അംഗങ്ങളെ ക്ഷണിക്കുക</string>
     <string name="v4_3_irreversible_message_deletion">മാറ്റാനാവാത്ത സന്ദേശം ഇല്ലാതാക്കൽ</string>
     <string name="message_deletion_prohibited_in_chat">ഈ ഗ്രൂപ്പിൽ മാറ്റാനാവാത്ത സന്ദേശം ഇല്ലാതാക്കുന്നത് നിരോധിച്ചിരിക്കുന്നു.</string>
@@ -128,8 +127,6 @@
     <string name="color_background">പശ്ചാത്തലം</string>
     <string name="chat_preferences_no">ഇല്ല</string>
     <string name="direct_messages">നേരിട്ടുള്ള സന്ദേശങ്ങൾ</string>
-    <string name="available_in_v51">"
-\nപ5.1-ൽ ലഭ്യമാണ്"</string>
     <string name="chat_preferences_always">എപ്പോഴും</string>
     <string name="only_you_can_send_voice">നിങ്ങൾക്ക് മാത്രമേ ശബ്ദ സന്ദേശങ്ങൾ അയയ്ക്കാൻ കഴിയൂ.</string>
     <string name="allow_to_delete_messages">അയച്ച സന്ദേശങ്ങൾ മാറ്റാനാവാത്തവിധം ഇല്ലാതാക്കാൻ അനുവദിക്കുക.</string>
@@ -152,7 +149,6 @@
     <string name="share_message">സന്ദേശം പങ്കിടുക…</string>
     <string name="hide_dev_options">മറയ്ക്കുക:</string>
     <string name="show_dev_options">കാണിക്കുക:</string>
-    <string name="decentralized">വികേന്ദ്രീകൃതം</string>
     <string name="voice_message">ശബ്ദ സന്ദേശം</string>
     <string name="voice_messages">ശബ്ദ സന്ദേശങ്ങൾ</string>
     <string name="voice_message_send_text">ശബ്ദ സന്ദേശം…</string>
@@ -212,12 +208,10 @@
     <string name="learn_more">കൂടുതലറിയുക</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[<font color="#0088ff">ഉപയോക്തൃ മാര്‍ഗ്ഗദര്‍ശിയിൽ</font> കൂടുതൽ വായിക്കുക.]]></string>
     <string name="smp_servers_check_address">സെർവർ വിലാസം പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.</string>
-    <string name="your_SMP_servers">നിങ്ങളുടെ SMP സെർവറുകൾ</string>
     <string name="network_session_mode_entity">ബന്ധം</string>
     <string name="stop_sharing_address">വിലാസം പങ്കിടുന്നത് നിർത്തണോ\?</string>
     <string name="continue_to_next_step">തുടരുക</string>
     <string name="create_simplex_address">SimpleX വിലാസം സൃഷ്ടിക്കുക</string>
-    <string name="create_profile_button">സൃഷ്ടിക്കുക</string>
     <string name="colored_text">നിറമുള്ള</string>
     <string name="callstate_ended">അവസാനിച്ചു</string>
     <string name="your_calls">നിങ്ങളുടെ വിളികൾ</string>
@@ -259,18 +253,15 @@
     <string name="rcv_group_event_member_deleted">%1$s നീക്കം ചെയ്തു</string>
     <string name="send_disappearing_message">അപ്രത്യക്ഷമാകുന്ന സന്ദേശം അയയ്ക്കുക</string>
     <string name="notifications_mode_periodic_desc">ഓരോ 10 നിമിഷവും ഒരു നിമിഷം വരെ പുതിയ സന്ദേശങ്ങൾ പരിശോധിക്കുന്നു</string>
-    <string name="you_can_create_it_later">നിങ്ങൾക്ക് ഇത് പിന്നീട് സൃഷ്ടിക്കാൻ കഴിയും</string>
     <string name="snd_group_event_changed_role_for_yourself">നിങ്ങൾ സ്വയം %s എന്ന കര്‍ത്തവ്യം മാറ്റി</string>
     <string name="icon_descr_video_asked_to_receive">വീഡിയോ സ്വീകരിക്കാൻ ആവശ്യപ്പെട്ടു</string>
     <string name="icon_descr_cancel_live_message">തത്സമയ സന്ദേശം റദ്ദാക്കുക</string>
     <string name="callstatus_calling">വിളിക്കുന്നു…</string>
     <string name="live_message">തത്സമയ സന്ദേശം!</string>
     <string name="send_us_an_email">ഞങ്ങൾക്ക് ഇമെയിൽ അയയ്ക്കുക</string>
-    <string name="smp_servers_your_server">നിങ്ങളുടെ സെർവർ</string>
     <string name="icon_descr_sent_msg_status_sent">അയച്ചു</string>
     <string name="smp_servers_your_server_address">നിങ്ങളുടെ സെർവർ വിലാസം</string>
     <string name="info_row_sent_at">എന്ന വിലാസത്തിൽ അയച്ചു</string>
-    <string name="your_XFTP_servers">നിങ്ങളുടെ XFTP സെർവറുകൾ</string>
     <string name="about_simplex_chat">കുറിച്ച് SimpleX Chat</string>
     <string name="users_delete_all_chats_deleted">എല്ലാ സംഭാഷണങ്ങളും സന്ദേശങ്ങളും ഇല്ലാതാക്കപ്പെടും - ഇത് പഴയപടിയാക്കാനാകില്ല!</string>
     <string name="all_group_members_will_remain_connected">സംഘത്തിലെ എല്ലാ അംഗങ്ങളുടെ ബന്ധം നിലനിർത്തും.</string>
@@ -290,13 +281,10 @@
     <string name="moderate_message_will_be_deleted_warning">എല്ലാ അംഗങ്ങൾക്കും സന്ദേശം ഇല്ലാതാക്കപ്പെടും.</string>
     <string name="reveal_verb">വെളിപ്പെടുത്തുക</string>
     <string name="stop_file__confirm">നിർത്തുക</string>
-    <string name="welcome">സ്വാഗതം!</string>
-    <string name="this_text_is_available_in_settings">ഈ വാചകം ക്രമീകരണങ്ങളിൽ ലഭ്യമാണ്</string>
     <string name="you_are_observer">നിങ്ങൾ നിരീക്ഷകനാണ്</string>
     <string name="connect_plan_you_are_observer">നിങ്ങൾ നിരീക്ഷകനാണ്</string>
     <string name="connect_plan_you_are_member">നിങ്ങൾ അംഗമാണ്</string>
     <string name="connect_plan_you_are_owner">നിങ്ങൾ ഉടമയാണ്</string>
-    <string name="icon_descr_server_status_pending">തീർപ്പാക്കാത്തത്</string>
     <string name="icon_descr_send_message">സന്ദേശം അയയ്ക്കുക</string>
     <string name="send_live_message">തത്സമയ സന്ദേശം അയയ്ക്കുക</string>
     <string name="is_not_verified">%s സ്ഥിരീകരിച്ചിട്ടില്ല</string>
@@ -309,7 +297,6 @@
     <string name="save_preferences_question">മുൻഗണനകൾ സംരക്ഷിക്കണോ\?</string>
     <string name="callstate_starting">ആരംഭിക്കുന്നു</string>
     <string name="callstate_received_answer">ഉത്തരം ലഭിച്ചു…</string>
-    <string name="next_generation_of_private_messaging">സ്വകാര്യ സന്ദേശമയയ്ക്കലിന്റെ അടുത്ത തലമുറ</string>
     <string name="alert_title_skipped_messages">ഒഴിവാക്കിയ സന്ദേശങ്ങൾ</string>
     <string name="la_mode_system">സംവിധാനം</string>
     <string name="self_destruct">സ്വയം നശിപ്പിക്കുക</string>
@@ -378,7 +365,6 @@
     <string name="ttl_hour">%d മണിക്കൂർ</string>
     <string name="ttl_months">%d മാസങ്ങള്‍</string>
     <string name="custom_time_unit_hours">മണിക്കൂറുകൾ</string>
-    <string name="dont_create_address">വിലാസം സൃഷ്ടിക്കരുത്</string>
     <string name="edit_image">ചിത്രം തിരുത്തുക</string>
     <string name="settings_experimental_features">പരീക്ഷണാത്മക സവിശേഷതകൾ</string>
     <string name="abort_switch_receiving_address">വിലാസം മാറ്റുന്നത് നിർത്തുക</string>

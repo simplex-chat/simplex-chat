@@ -66,7 +66,6 @@
     <string name="color_secondary_variant">Yderligere sekundær</string>
     <string name="chat_list_add_list">Tilføj liste</string>
     <string name="compose_view_add_message">Tilføj besked</string>
-    <string name="smp_servers_preset_add">Tilføj forudindstillede servere</string>
     <string name="users_add">Tilføj profil</string>
     <string name="address_section_title">Adresse</string>
     <string name="abort_switch_receiving_address_desc">Adresseændringen bliver annulleret. Den gamle modtageradresse bliver brugt.</string>
@@ -154,7 +153,6 @@
     <string name="connect__a_new_random_profile_will_be_shared">En ny tilfældig profil deles.</string>
     <string name="report_reason_other">En anden grund</string>
     <string name="answer_call">Svaropkald</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Alle kan være vært for servere.</string>
     <string name="settings_section_title_app">App</string>
     <string name="onboarding_notifications_mode_service_desc_short">App løber altid i baggrunden</string>
     <string name="app_version_code">App Build: %s</string>
@@ -164,6 +162,7 @@
     <string name="connect_plan_open_chat">Åbn chat</string>
     <string name="connect_plan_open_new_chat">Åbn ny chat</string>
     <string name="connect_plan_open_group">Åben gruppe</string>
+    <string name="connect_plan_open_new_group">Åbn ny gruppe</string>
     <string name="error_parsing_uri_title">Ugyldigt link</string>
     <string name="error_parsing_uri_desc">Kontroller, at SimpleX-linket er korrekt.</string>
     <string name="opening_database">Åbner databasen…</string>
@@ -189,6 +188,8 @@
     <string name="blocked_by_admin_item_description">blokeret af administrator</string>
     <string name="blocked_items_description">%d beskeder blokeret</string>
     <string name="blocked_by_admin_items_description">%d beskeder blokeret af administrator</string>
+    <string name="sending_files_not_yet_supported">afsendelse af filer understøttes endnu ikke</string>
+    <string name="receiving_files_not_yet_supported">Modtagelse af filer understøttes endnu ikke</string>
     <string name="sender_you_pronoun">du</string>
     <string name="unknown_message_format">ukendt beskedformat</string>
     <string name="invalid_message_format">ugyldigt beskedformat</string>
@@ -213,6 +214,7 @@
     <string name="display_name_connection_established">forbindelse etableret</string>
     <string name="display_name_invited_to_connect">inviteret til at oprette forbindelse</string>
     <string name="display_name_requested_to_connect">bedt om at oprette forbindelse</string>
+    <string name="display_name_connecting">forbinder…</string>
     <string name="description_you_shared_one_time_link">du delte et engangslink</string>
     <string name="description_you_shared_one_time_link_incognito">Du delte et engangslink inkognito</string>
     <string name="description_via_group_link">via gruppelink</string>
@@ -230,12 +232,11 @@
     <string name="simplex_link_mode_description">Beskrivelse</string>
     <string name="simplex_link_mode_full">Fuldt link</string>
     <string name="simplex_link_mode_browser">Via browseren</string>
+    <string name="simplex_link_mode_browser_warning">Åbning af linket i browseren kan reducere forbindelsens privatliv og sikkerhed. Upålidelige SimpleX-links vil være røde.</string>
     <string name="report_reason_spam">Spam</string>
     <string name="report_reason_illegal">Upassende indhold</string>
     <string name="report_reason_community">Overtrædelse af retningslinjer for fællesskabet</string>
     <string name="report_reason_profile">Upassende profil</string>
-    <string name="error_loading_smp_servers">Fejl ved indlæsning af SMP-servere</string>
-    <string name="error_loading_xftp_servers">Fejl ved indlæsning af XFTP-servere</string>
     <string name="error_setting_network_config">Fejl ved opdatering af netværkskonfigurationen</string>
     <string name="failed_to_parse_chat_title">Chatten kunne ikke indlæses</string>
     <string name="failed_to_parse_chats_title">Kunne ikke indlæse chats</string>
@@ -509,8 +510,6 @@
     <string name="icon_descr_sent_msg_status_send_failed">afsendelse mislykkedes</string>
     <string name="icon_descr_received_msg_status_unread">ulæst</string>
     <string name="personal_welcome">Velkommen %1$s!</string>
-    <string name="welcome">Velkomst!</string>
-    <string name="this_text_is_available_in_settings">Denne tekst er tilgængelig i indstillinger</string>
     <string name="your_chats">Chats</string>
     <string name="toolbar_settings">Indstillinger</string>
     <string name="contact_connection_pending">forbinder…</string>
@@ -520,7 +519,6 @@
     <string name="group_preview_join_as">Deltag som %s</string>
     <string name="group_preview_rejected">afvist</string>
     <string name="group_connection_pending">forbinder…</string>
-    <string name="tap_to_start_new_chat">Tryk for at starte en ny chat</string>
     <string name="chat_with_developers">Chat med udviklerne</string>
     <string name="you_have_no_chats">Du har ingen chats</string>
     <string name="loading_chats">Indlæser chats…</string>
@@ -688,7 +686,6 @@
     <string name="icon_descr_server_status_connected">Forbundet</string>
     <string name="icon_descr_server_status_disconnected">Afbrudt</string>
     <string name="icon_descr_server_status_error">Fejl</string>
-    <string name="icon_descr_server_status_pending">Indtil</string>
     <string name="switch_receiving_address_question">Ændre modtageradresse?</string>
     <string name="switch_receiving_address_desc">Modtageradressen vil blive ændret til en anden server. Adresseændringen vil blive gennemført, når afsenderen er online.</string>
     <string name="sync_connection_force_question">Genforhandle kryptering?</string>
@@ -739,7 +736,6 @@
     <string name="auto_accept_contact">Auto-accept</string>
     <string name="v4_2_auto_accept_contact_requests">Auto-accept-kontaktanmodninger</string>
     <string name="auto_accept_images">Auto-accept-billeder</string>
-    <string name="available_in_v51">\nFås i v5.1</string>
     <string name="back">Tilbage</string>
     <string name="color_background">Baggrund</string>
     <string name="bad_desktop_address">Dårlig skrivebordsadresse</string>
@@ -813,7 +809,6 @@
     <string name="cant_send_message_to_member_alert_title">Kan ikke sende besked til gruppemedlem</string>
     <string name="v6_4_1_new_interface_languages_descr">Katalansk, indonesisk, rumænsk og vietnamesisk - takket være vores brugere!</string>
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[1-gang link kan bruges <i>med kun en kontakt</i> - Del personligt eller via enhver messenger.]]></string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Alle meddelelser og filer sendes <b>ende-til-ende krypteret</b> med sikkerhed efter kvantet i direkte meddelelser.]]></string>
     <string name="network_session_mode_user_description"><![CDATA[En separat TCP -forbindelse (og SOCKS -legitimationsoplysning) vil blive brugt <b>for hver chatprofil, du har i appen</b>.]]></string>
     <string name="network_session_mode_entity_description"><![CDATA[En separat TCP -forbindelse (og SOCKS -legitimationsoplysninger) vil blive brugt <b>til hvert kontakt- og gruppemedlem</b>.\n<b> Bemærk </b>: Hvis du har mange forbindelser, kan dit batteri og trafikforbrug være væsentligt højere, og nogle forbindelser kan mislykkes.]]></string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Tilføj kontakt</b>: Sådan opretter du et nyt invitationslink eller opretter forbindelse via et link, du har modtaget.]]></string>

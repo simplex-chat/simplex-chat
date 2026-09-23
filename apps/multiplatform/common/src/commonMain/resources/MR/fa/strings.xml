@@ -17,6 +17,7 @@
     <string name="opening_database">در حال باز کردن پایگاه داده…</string>
     <string name="profile_will_be_sent_to_contact_sending_link">پروفایل شما به مخاطبی که این لینک را از او دریافت کردید، فرستاده خواهد شد.</string>
     <string name="non_content_uri_alert_text">شما یک مسیر نامعتبر فایل به اشتراک گذاشتید. موضوع را به توسعه‌دهندگان برنامه گزارش دهید.</string>
+    <string name="receiving_files_not_yet_supported">هنوز از دریافت فایل پشتیبانی نمی‌شود</string>
     <string name="invalid_message_format">قالب پیام نامعتبر</string>
     <string name="moderated_description">حذف شده</string>
     <string name="error_showing_message">خطا در نمایش پیام</string>
@@ -38,6 +39,7 @@
     <string name="moderated_item_description">توسط %s حذف شد</string>
     <string name="blocked_item_description">مسدود</string>
     <string name="blocked_items_description">%d پیام مسدود شده</string>
+    <string name="sending_files_not_yet_supported">هنوز از ارسال فایل پشتیبانی نمی‌شود</string>
     <string name="sender_you_pronoun">شما</string>
     <string name="unknown_message_format">قالب پیام ناشناخته</string>
     <string name="live">زنده</string>
@@ -74,7 +76,8 @@
     <string name="simplex_link_mode_browser">به وسیله مرورگر</string>
     <string name="simplex_link_contact">آدرس مخاطب SimpleX</string>
     <string name="simplex_link_invitation">دعوت یک بار مصرف SimpleX</string>
-    <string name="error_loading_xftp_servers">خطا در بارگیری سرورهای XFTP</string>
+    <string name="display_name_connecting">در حال اتصال…</string>
+    <string name="simplex_link_mode_browser_warning">باز کردن لینک در مرورگر ممکن است حریم خصوصی و امنیت اتصال را کاهش دهد. لینک‌های SimpleX غیر قابل اعتماد به رنگ قرمز خواهند بود.</string>
     <string name="failed_to_create_user_title">خطا در ایجاد پروفایل!</string>
     <string name="failed_to_active_user_title">خطا در تعویض پروفایل!</string>
     <string name="connection_timeout">توقف اتصال</string>
@@ -86,7 +89,6 @@
     <string name="sender_cancelled_file_transfer">فرستنده انتقال فایل را لغو کرد.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">شما از قبل به %1$s متصل هستید.</string>
     <string name="connection_error_auth">خطا در اتصال (تصدیق)</string>
-    <string name="error_loading_smp_servers">خطا در بارگیری سرورهای SMP</string>
     <string name="failed_to_parse_chats_title">عدم موفقیت در بارگیری چت‌ها</string>
     <string name="contact_developers">لطفا برنامه را به‌روزرسانی کنید و با توسعه‌دهندگان تماس بگیرید.</string>
     <string name="failed_to_create_user_duplicate_title">نام نمایشی همسان!</string>
@@ -217,7 +219,6 @@
     <string name="moderate_message_will_be_marked_warning">پیام برای تمام اعضا به عنوان حذف شده علامت‌گذاری خواهد شد.</string>
     <string name="stop_file__confirm">توقف</string>
     <string name="stop_rcv_file__message">دریافت فایل متوقف خواهد شد.</string>
-    <string name="welcome">خوش آمدید!</string>
     <string name="image_decoding_exception_title">خطا در کدبرداری</string>
     <string name="compose_send_direct_message_to_connect">ارسال پیام مستقیم برای اتصال</string>
     <string name="loading_remote_file_desc">لطفا تا زمانی که فایل در حال بارگیری از موبایل متصل است، منتظر باشید.</string>
@@ -227,7 +228,6 @@
     <string name="send_disappearing_message">ارسال پیام ناپدید شونده</string>
     <string name="add_contact">لینک دعوت یک‌بارمصرف</string>
     <string name="create_group">ایجاد گروه محرمانه</string>
-    <string name="to_share_with_your_contact">(برای اشتراک‌گذاری با مخاطبتان)</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">اگر لینک دعوت SimpleX Chat دریافت کردید، می‌توانید آن را در مرورگر خود باز کنید:</string>
     <string name="la_lock_mode_passcode">ورود کد عبور</string>
     <string name="la_seconds">%d ثانیه</string>
@@ -287,7 +287,6 @@
     <string name="icon_descr_sent_msg_status_unauthorized_send">ارسال غیرمجاز</string>
     <string name="icon_descr_received_msg_status_unread">خوانده نشده</string>
     <string name="personal_welcome">خوش آمدید، %1$s!</string>
-    <string name="this_text_is_available_in_settings">این متن در تنظیمات دردسترس است</string>
     <string name="chat_with_developers">چت با توسعه‌دهندگان</string>
     <string name="no_filtered_chats">چت فیلتر شده‌ای نیست</string>
     <string name="connect_with_contact_name_question">به %1$s متصل شوید؟</string>
@@ -360,13 +359,11 @@
     <string name="group_preview_you_are_invited">شما به گروه دعوت شده‌اید</string>
     <string name="group_preview_join_as">پیوستن به عنوان %s</string>
     <string name="search_or_paste_simplex_link">جستجو یا الصاق لینک SimpleX</string>
-    <string name="tap_to_start_new_chat">برای شروع چت جدید ضربه بزنید</string>
     <string name="share_message">اشتراک‌گذاری پیام…</string>
     <string name="icon_descr_waiting_for_image">در انتظار تصویر</string>
     <string name="voice_message_send_text">پیام صوتی…</string>
     <string name="text_field_set_contact_placeholder">تعیین نام مخاطب…</string>
     <string name="icon_descr_server_status_disconnected">قطع شد</string>
-    <string name="icon_descr_server_status_pending">در حال انتظار</string>
     <string name="switch_receiving_address_question">نشانی‌ دریافت تغییر کند؟</string>
     <string name="abort_switch_receiving_address_desc">تغییر نشانی‌ لغو خواهد شد. نشانی‌ دریافت پیشین استفاده خواهد شد.</string>
     <string name="sync_connection_force_confirm">مذاکره مجدد</string>
@@ -374,7 +371,6 @@
     <string name="confirm_verb">تایید</string>
     <string name="reset_verb">بازنشاندن</string>
     <string name="scan_QR_code">اسکن کد QR</string>
-    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(اسکن یا الصاق از کلیپ بورد)</string>
     <string name="only_stored_on_members_devices">(تنها ذخیره شده توسط اعضای گروه)</string>
     <string name="enable_camera_access">فعال کردن دسترسی دوربین</string>
     <string name="toast_permission_denied">اجازه داده نشد!</string>
@@ -393,10 +389,8 @@
     <string name="icon_descr_record_voice_message">ضبط پیام صوتی</string>
     <string name="icon_descr_send_message">ارسال پیام</string>
     <string name="no_details">بدون جزئیات</string>
-    <string name="connect_via_link_or_qr">اتصال به وسیله لینک / کد QR</string>
     <string name="camera_not_available">دوربین موجود نیست</string>
     <string name="gallery_image_button">تصویر</string>
-    <string name="share_one_time_link">ایجاد لینک دعوت یک‌بارمصرف</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[می‌توانید <font color="#0088ff">برای پرسش هر سوال و دریافت اطلاعات به توسعه‌دهندگان SimpleX Chat متصل شوید</font>.]]></string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>افزودن مخاطب</b>: برای ایجاد لینک دعوت جدید، یا اتصال از طریق لینکی که دریافت کردید.]]></string>
     <string name="to_connect_via_link_title">اتصال از طریق لینک</string>
@@ -467,13 +461,11 @@
     <string name="or_scan_qr_code">یا کد QR را اسکن کنید</string>
     <string name="retry_verb">تلاش مجدد</string>
     <string name="database_passphrase_and_export">عبارت عبور و اکسپورت پایگاه داده</string>
-    <string name="smp_servers_preset_add">افزودن سرورهای از پیش تنظیم شده</string>
     <string name="smp_servers_add_to_another_device">افزودن به دستگاه دیگر</string>
     <string name="smp_servers_delete_server">حذف سرور</string>
     <string name="how_to_use_your_servers">چگونه از سرورهای خود استفاده کنید</string>
     <string name="image_descr_link_preview">تصویر پیش‌نمایش لینک</string>
     <string name="your_chat_profiles">پروفایل‌های چت شما</string>
-    <string name="smp_servers">سرورهای SMP</string>
     <string name="install_simplex_chat_for_terminal">SimpleX Chat را برای ترمینال نصب کنید</string>
     <string name="star_on_github">در GitHub ستاره بدهید</string>
     <string name="contribute">همکاری کنید</string>
@@ -495,23 +487,17 @@
     <string name="icon_descr_help">کمک</string>
     <string name="image_descr_simplex_logo">لوگوی SimpleX</string>
     <string name="icon_descr_email">ایمیل</string>
-    <string name="this_link_is_not_a_valid_connection_link">این لینک، یک لینک اتصال معتبر نیست!</string>
     <string name="connection_request_sent">درخواست اتصال ارسال شد!</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">وقتی دستگاه میزبان گروه آنلاین شد، به گروه متصل خواهید شد، لطفا صبر کنید یا بعدا بررسی کنید!</string>
-    <string name="paste_the_link_you_received_to_connect_with_your_contact">لینکی که دریافت کردید را الصاق کنید تا به مخاطبتان متصل شوید…</string>
     <string name="connect__your_profile_will_be_shared">پروفایل شما %1$s به اشتراک گذاشته خواهد شد.</string>
     <string name="scan_qr_to_connect_to_contact">برای اتصال، مخاطبتان می‌تواند کد QR را اسکن یا از لینک در برنامه استفاده کند.</string>
     <string name="if_you_cant_meet_in_person">اگر نمی‌توانید ملاقات حضوری داشته باشید، کد QR را در یک تماس تصویری نمایش دهید، یا لینک را به اشتراک بگذارید.</string>
-    <string name="you_can_share_your_address">می‌توانید نشانی خود را به صورت لینک یا کد QR به اشتراک بگذارید - هر کسی می‌تواند به شما متصل شود.</string>
-    <string name="you_can_accept_or_reject_connection">وقتی اشخاص درخواست اتصال کنند، شما می‌توانید آن را بپذیرید یا رد کنید.</string>
     <string name="or_show_this_qr_code">یا این کد را نشان دهید</string>
     <string name="you_can_view_invitation_link_again">می‌توانید دوباره لینک دعوت را در جزئیات اتصال مشاهده کنید.</string>
     <string name="keep_invitation_link">نگه‌داشتن</string>
     <string name="creating_link">در حال ایجاد لینک…</string>
     <string name="paste_the_link_you_received">لینکی که دریافت کردید را الصاق کنید</string>
     <string name="the_text_you_pasted_is_not_a_link">متن الصاقی شما یک لینک SimpleX نیست.</string>
-    <string name="smp_servers_your_server">سرور شما</string>
-    <string name="smp_servers_preset_server">سرور از پیش تنظیم شده</string>
     <string name="smp_servers_invalid_address">نشانی‌ سرور نامعتبر!</string>
     <string name="smp_servers_use_server_for_new_conn">به‌کارگیری برای اتصال‌های جدید</string>
     <string name="invalid_qr_code">کد QR نامعتبر</string>
@@ -520,13 +506,11 @@
     <string name="mark_code_verified">علامت‌گذاری به عنوان تایید شده</string>
     <string name="is_not_verified">%s تایید نشده است</string>
     <string name="to_verify_compare">برای تایید رمزنگاری انتها به انتها، روی دستگاه‌های خود، کد را با مخاطبتان مقایسه(یا اسکن) کنید.</string>
-    <string name="your_XFTP_servers">سرورهای XFTP شما</string>
     <string name="how_to">روش استفاده</string>
     <string name="using_simplex_chat_servers">در حال استفاده از سرورهای SimpleX Chat.</string>
     <string name="configure_ICE_servers">تنظیم سرورهای ICE</string>
     <string name="contact_wants_to_connect_with_you">می‌خواهد به شما متصل شود!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">وقتی دستگاه مخاطبتان آنلاین شد، متصل خواهید شد، لطفا صبر کنید یا بعدا بررسی کنید!</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[اگر نمی‌توانید ملاقات حضوری داشته باشید، <b>کد QR را در تماس تصویری اسکن کنید</b>، یا مخاطبتان می‌تواند یک لینک دعوت به اشتراک بگذارد.]]></string>
     <string name="keep_unused_invitation_question">دعوت استعمال نشده نگه داشته شود؟</string>
     <string name="your_simplex_contact_address">نشانی‌ SimpleX شما</string>
     <string name="markdown_in_messages">مارکداون در پیام‌ها</string>
@@ -539,14 +523,11 @@
     <string name="smp_servers_test_failed">عدم موفقیت آزمایش سرور!</string>
     <string name="smp_servers_test_some_failed">برخی از سرورها در تست ناموفق بودند:</string>
     <string name="smp_servers_scan_qr">اسکن کد QR سرور</string>
-    <string name="your_SMP_servers">سرورهای SMP شما</string>
-    <string name="xftp_servers">سرورهای XFTP</string>
     <string name="use_simplex_chat_servers__question">از سرورهای SimpleX Chat استفاده شود؟</string>
     <string name="saved_ICE_servers_will_be_removed">سرورهای WebRTC ICE ذخیره شده حذف خواهند شد.</string>
     <string name="your_ICE_servers">سرورهای ICE شما</string>
     <string name="connect_button">اتصال</string>
     <string name="paste_button">الصاق</string>
-    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[شما همچنین می‌توانید با کلیک روی لینک متصل شوید. اگر در مرورگر باز شد، روی دکمه <b>باز کردن در برنامه موبایل</b> کلیک کنید.]]></string>
     <string name="add_contact_tab">افزودن مخاطب</string>
     <string name="simplex_address">نشانی‌ SimpleX</string>
     <string name="clear_verification">پاک‌سازی تایید</string>
@@ -561,7 +542,6 @@
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">لازم است مخاطبتان آنلاین باشد تا اتصال کامل شود.
 \nمی‌توانید این اتصال را لغو و مخاطب را حذف کنید (و بعدا با یک لینک جدید امتحان کنید).</string>
     <string name="icon_descr_address">نشانی‌ SimpleX</string>
-    <string name="this_QR_code_is_not_a_link">این کد QR یک لینک نیست!</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[مطالعه بیشتر در <font color="#0088ff">راهنمای کاربر</font>.]]></string>
     <string name="this_string_is_not_a_connection_link">این رشته متن، یک لینک اتصال نیست!</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">کدی که اسکن کردید یک کد QR لینک SimpleX نیست.</string>
@@ -569,10 +549,7 @@
     <string name="image_descr_profile_image">تصویر پروفایل</string>
     <string name="icon_descr_more_button">بیشتر</string>
     <string name="show_QR_code">نمایش کد QR</string>
-    <string name="invalid_QR_code">کد QR نامعتبر</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">وقتی درخواست اتصال شما پذیرفته شد، متصل خواهید شد، لطفا صبر کنید یا بعدا بررسی کنید!</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[اگر نمی‌توانید ملاقات حضوری داشته باشید، <b>کد QR را در تماس تصویری نمایش دهید</b>، یا لینک را به اشتراک بگذارید.]]></string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">پروفایل چت شما ارسال خواهد شد \nبه مخاطبتان</string>
     <string name="learn_more">اطلاعات بیشتر</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">اگر بعدا نشانی‌ خود را حذف کنید، مخاطبان خود را از دست نخواهید داد.</string>
     <string name="share_this_1_time_link">این لینک دعوت یک‌بارمصرف را به اشتراک بگذارید</string>
@@ -630,7 +607,6 @@
     <string name="network_disable_socks_info">اگر تایید کنید، سرورهای پیام‌رسانی خواهند توانست نشانی‌ IP، و فراهم‌کننده شما را ببینند - و این که به چه سرورهایی متصل می‌شوید.</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">مطمئن شوید قالب نشانی‌های سرور WebRTC ICE صحیح است، در خط‌های جدا نوشته شده و تکرار نشده‌اند.</string>
     <string name="network_session_mode_entity_description"><![CDATA[یک اتصال جدای TCP (و اطلاعات ورود SOCKS) <b>برای هر مخاطب و عضو گروه</b> استفاده خواهد شد. \n<b>لطفا توجه داشته باشید</b>: اگر اتصال‌های زیادی داشته باشید، مصرف باتری و ترافیک شما می‌تواند به شکل قابل توجه بالاتر باشد و بعضی اتصال‌ها ممکن است با موفقیت انجام نشوند.]]></string>
-    <string name="update_network_session_mode_question">حالت انزوای ترابری به روز شود؟</string>
     <string name="edit_image">ویرایش تصویر</string>
     <string name="create_simplex_address">ایجاد نشانی‌ SimpleX</string>
     <string name="share_with_contacts">اشتراک‌گذاری با مخاطبان</string>
@@ -642,7 +618,6 @@
     <string name="delete_address">حذف نشانی</string>
     <string name="email_invite_body">سلام!
 \nبه وسیله SimpleX Chat به من متصل شوید: %s</string>
-    <string name="dont_create_address">نشانی ایجاد نشود</string>
     <string name="continue_to_next_step">ادامه</string>
     <string name="your_current_profile">پروفایل فعلی شما</string>
     <string name="full_name__field">نام کامل:</string>
@@ -654,8 +629,6 @@
     <string name="save_profile_password">ذخیره کلمه عبور پروفایل</string>
     <string name="stop_sharing_address">اشتراک‌گذاری نشانی متوقف شود؟</string>
     <string name="stop_sharing">توقف اشتراک‌گذاری</string>
-    <string name="you_can_create_it_later">می‌توانید بعدا آن را ایجاد کنید</string>
-    <string name="you_can_make_address_visible_via_settings">می‌توانید آن را از طریق تنظیمات برای مخاطبان SimpleX خود قابل رویت کنید.</string>
     <string name="display_name__field">نام پروفایل:</string>
     <string name="delete_image">حذف تصویر</string>
     <string name="save_and_notify_group_members">ذخیره کردن و اطلاع به اعضای گروه</string>
@@ -667,7 +640,6 @@
     <string name="hidden_profile_password">کلمه عبور پروفایل پنهان</string>
     <string name="add_address_to_your_profile">به پروفایل خود نشانی اضافه کنید، تا مخاطبانتان بتوانند آن را با اشخاص دیگر به اشتراک بگذارند. به‌روزرسانی پروفایل به مخاطبانتان ارسال خواهد شد.</string>
     <string name="share_address_with_contacts_question">نشانی با مخاطبان به اشتراک گذاشته شود؟</string>
-    <string name="create_address_and_let_people_connect">یک نشانی ایجاد کنید تا اشخاص بتوانند به شما متصل شوند.</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">پروفایل شما روی دستگاهتان ذخیره شده و فقط با مخاطبانتان به اشتراک گذاشته می‌شود. سرورهای SimpleX قادر به دیدن پروفایل شما نیستند.</string>
     <string name="error_saving_user_password">خطا در ذخیره کردن کلمه عبور کاربر</string>
     <string name="settings_audio_video_calls">تماس‌های صوتی و تصویری</string>
@@ -717,15 +689,11 @@
     <string name="export_database">اکسپورت پایگاه داده</string>
     <string name="delete_chat_profile_question">پروفایل چت حذف شود؟</string>
     <string name="display_name">نام خود را وارد کنید:</string>
-    <string name="create_profile_button">ایجاد</string>
     <string name="how_to_use_markdown">روش استفاده از مارکداون</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">می‌توانید از مارکداون برای آرایش پیام‌ها استفاده کنید:</string>
     <string name="callstatus_rejected">تماس رد شده</string>
     <string name="callstatus_accepted">تماس پذیرفته</string>
-    <string name="decentralized">نامتمرکز</string>
     <string name="create_your_profile">پروفایل خود را ایجاد کنید</string>
-    <string name="read_more_in_github_with_link"><![CDATA[مطالعه بیشتر در <font color="#0088ff">مخزن GitHub</font> ما.]]></string>
-    <string name="use_chat">استفاده از چت</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>بهترین گزینه برای باتری</b>. شما اعلان‌ها را فقط وقتی دریافت می‌کنید که برنامه در حال اجراست (بدون سرویس پس‌زمینه).]]></string>
     <string name="call_on_lock_screen">تماس‌ها روی صفحه قفل:</string>
     <string name="accept_call_on_lock_screen">پذیرفتن</string>
@@ -761,11 +729,9 @@
     <string name="delete_database">حذف پایگاه داده</string>
     <string name="chat_database_imported">پایگاه داده چت ایمپورت شد</string>
     <string name="total_files_count_and_size">%d فایل با اندازه کل %s</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">فقط دستگاه‌های کلاینت پروفایل‌های کاربری، مخاطبان، گروه‌ها و پیام‌ها را ذخیره می‌کنند.</string>
     <string name="ignore">نادیده گرفتن</string>
     <string name="audio_device_bluetooth">بلوتوث</string>
     <string name="import_database">وارد کردن پایگاه داده</string>
-    <string name="people_can_connect_only_via_links_you_share">شما تصمیم می‌گیرید که چه کسی می‌تواند متصل شود.</string>
     <string name="call_already_ended">تماس از پیش پایان یافته!</string>
     <string name="integrity_msg_bad_hash">هش پیام ناصحیح</string>
     <string name="auto_accept_images">پذیرفتن خودکار تصاویر</string>
@@ -776,18 +742,15 @@
     <string name="receipts_groups_override_enabled">ارسال رسید برای %d گروه فعال است</string>
     <string name="receipts_groups_override_disabled">ارسال رسید برای %d گروه غیرفعال است</string>
     <string name="settings_section_title_support">حمایت از SimpleX Chat</string>
-    <string name="settings_section_title_socks">پروکسی SOCKS</string>
     <string name="settings_section_title_use_from_desktop">استفاده از کامپیوتر</string>
     <string name="new_database_archive">آرشیو پایگاه داده جدید</string>
     <string name="old_database_archive">آرشیو پایگاه داده قدیمی</string>
     <string name="error_starting_chat">خطا در شروع چت</string>
-    <string name="immune_to_spam_and_abuse">مصونیت در برابر هرزنامه</string>
     <string name="how_it_works">چگونه کار می‌کند</string>
     <string name="icon_descr_video_call">تماس تصویری</string>
     <string name="audio_device_earpiece">گوشی</string>
     <string name="audio_device_speaker">بلندگو</string>
     <string name="audio_device_wired_headphones">هدفون‌ها</string>
-    <string name="next_generation_of_private_messaging">آینده پیام‌رسانی</string>
     <string name="callstate_ended">پایان یافت</string>
     <string name="unable_to_open_browser_title">خطا در باز کردن مرورگر</string>
     <string name="set_password_to_export">عبارت عبور برای اکسپورت را تعیین کنید</string>
@@ -798,7 +761,6 @@
     <string name="chat_is_stopped">چت متوقف شده است</string>
     <string name="error_deleting_database">خطا در حذف پایگاه داده چت</string>
     <string name="error_importing_database">خطا در ایمپورت کردن پایگاه داده چت</string>
-    <string name="you_control_your_chat">شما چت خود را کنترل می‌کنید!</string>
     <string name="your_profile_is_stored_on_your_device">پروفایل، مخاطبان و پیام‌های تحویل داده شده شما روی دستگاهتان ذخیره می‌شوند.</string>
     <string name="profile_is_only_shared_with_your_contacts">پروفایل فقط با مخاطبانتان به اشتراک گذاشته می‌شود.</string>
     <string name="display_name_cannot_contain_whitespace">نام نمایشی نمی‌تواند شامل نویسه‌های فاصله باشد.</string>
@@ -813,7 +775,6 @@
     <string name="setup_database_passphrase">تعیین عبارت عبور پایگاه داده</string>
     <string name="use_random_passphrase">استفاده از عبارت عبور تصادفی</string>
     <string name="icon_descr_audio_call">تماس صوتی</string>
-    <string name="your_ice_servers">سرورهای ICE شما</string>
     <string name="icon_descr_call_progress">تماس در جریان است</string>
     <string name="integrity_msg_bad_id">شناسه پیام ناصحیح</string>
     <string name="privacy_and_security">حریم خصوصی و امنیت</string>
@@ -829,7 +790,6 @@
     <string name="receipts_section_description_1">آن‌ها در تنظیمات مخاطب و گروه قابل جایگزینی هستند.</string>
     <string name="receipts_section_groups">گروه‌های کوچک (حداکثر ۲۰)</string>
     <string name="settings_section_title_settings">تنظیمات</string>
-    <string name="first_platform_without_user_ids">هیچ شناسه کاربری وجود ندارد</string>
     <string name="onboarding_notifications_mode_title">اعلان‌های خصوصی</string>
     <string name="you_can_change_it_later">عبارت عبور تصادفی در تنظیمات به صورت متن آشکار ذخیره می‌شود.
 \nمی‌توانید بعدا آن را تغییر دهید.</string>
@@ -848,7 +808,6 @@
     <string name="passcode_not_changed">کد عبور تغییر نکرد!</string>
     <string name="create_profile">ایجاد پروفایل</string>
     <string name="italic_text">مورب</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">ما هیچکدام از مخاطبان و پیام‌های(وقتی تحویل داده شدند) شما را روی سرورها ذخیره نمی‌کنیم.</string>
     <string name="colored_text">رنگی</string>
     <string name="secret_text">محرمانه</string>
     <string name="callstatus_calling">در حال تماس…</string>
@@ -872,7 +831,6 @@
     <string name="settings_section_title_network_connection">اتصال شبکه</string>
     <string name="settings_section_title_icon">آیکون برنامه</string>
     <string name="chat_database_section">پایگاه داده چت</string>
-    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">بن‌سازه پیام‌رسانی و کاربردی که از حریم خصوصی و امنیت شما محافظت می‌کند.</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>گزینه خوب برای باتری</b>. سرویس پس‌زمینه هر ۱۰ دقیقه پیام‌ها را بررسی می‌کند. ممکن است تماس‌ها یا پیام‌های ضروری را از دست دهید.]]></string>
     <string name="alert_title_skipped_messages">پیام‌های نادیده گرفته شده</string>
     <string name="unable_to_open_browser_desc">مرورگر وب پیش‌فرض برای تماس‌ها لازم است. لطفا مرورگر پیش‌فرض را در سیستم تنظیم کنید، و اطلاعات بیشتر را با توسعه‌دهندگان به اشتراک بگذارید.</string>
@@ -909,7 +867,6 @@
     <string name="permissions_grant_in_settings">اعطای اجازه‌ها در تنظیمات</string>
     <string name="permissions_find_in_settings_and_grant">این مجوز را در تنظیمات اندروید پیدا و به صورت دستی آن را اعطا کنید.</string>
     <string name="permissions_open_settings">باز کردن تنظیمات</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">هر کسی می‌تواند سرویس‌دهنده میزبانی کند.</string>
     <string name="receipts_contacts_title_disable">رسیدها غیرفعال شوند؟</string>
     <string name="receipts_contacts_enable_keep_overrides">فعال کردن (نگه‌داشتن مقدارهای جایگزین شده)</string>
     <string name="permissions_required">اعطای اجازه‌ها</string>
@@ -917,8 +874,6 @@
     <string name="permissions_camera">دوربین</string>
     <string name="permissions_camera_and_record_audio">دوربین و میکروفون</string>
     <string name="permissions_grant">اعطای اجازه‌ها برای برقراری تماس‌ها</string>
-    <string name="privacy_redefined">تعریف مجدد حریم خصوصی</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">برای حفظ حریم خصوصی شما، SimpleX از شناسه‌های جداگانه برای هر یک از مخاطبان شما استفاده می‌کند.</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>از باتری بیشتر استفاده می‌کند</b>! سرویس پس‌زمینه همیشه در حال اجراست - اعلان‌ها به محض موجود شدن، نمایش داده می‌شوند.]]></string>
     <string name="alert_text_skipped_messages_it_can_happen_when">وقتی می‌تواند اتفاق بیفتد که:
 \n۱. پیام‌ها در کلاینت فرستنده بعد از ۲ روز یا روی سرور بعد از ۳۰ روز منقضی شده باشند.
@@ -1329,8 +1284,6 @@
     <string name="chat_preferences">تنظیمات گفت‌و‌گو</string>
     <string name="files_and_media">فایل‌ها و رسانه</string>
     <string name="audio_video_calls">تماس‌های صوتی/تصویری</string>
-    <string name="available_in_v51">"
-\nموجود در نسخه 5.1"</string>
     <string name="allow_your_contacts_to_send_voice_messages">به مخاطبان خود اجازه ارسال پیام‌های صوتی می‌دهید.</string>
     <string name="allow_irreversible_message_deletion_only_if">فقط زمانی اجازه حذف پیام‌ها به صورت غیرقابل برگشت را می‌دهید که مخاطب شما این اجازه را به شما بدهد. (۲۴ ساعت)</string>
     <string name="disappearing_messages_are_prohibited">پیام‌های ناپدید شونده ممنوع است.</string>
@@ -1970,8 +1923,8 @@
     <string name="chat_list_contacts">مخاطبین</string>
     <string name="connect_plan_open_chat">باز کردن چت</string>
     <string name="connect_plan_open_new_chat">باز کردن چت جدید</string>
+    <string name="connect_plan_open_new_group">باز کردن گروه جدید</string>
     <string name="call_desktop_permission_denied_safari">به منوی تنظیمات سافاری / وب‌سایت‌ها / و سپس میکروفن رفته و گزینه \"اجازه دادن برای localhost\" را انتخاب کنید.</string>
-    <string name="open_server_settings_button">باز کردن تنظیمات سرور</string>
     <string name="privacy_chat_list_open_web_link">باز کردن لینک</string>
     <string name="privacy_chat_list_open_links">باز کردن لینک‌ها از لیست چت‌ها</string>
     <string name="open_to_accept">باز کردن برای پذیرش</string>
@@ -1986,8 +1939,6 @@
     <string name="or_to_share_privately">یا به‌طور خصوصی به اشتراک بگذارید</string>
     <string name="other_label">سایر</string>
     <string name="other_errors">سایر خطاها</string>
-    <string name="smp_servers_other">سایر سرورهای SMP</string>
-    <string name="xftp_servers_other">سایر سرورهای XFTP</string>
     <string name="restore_passphrase_can_not_be_read_enter_manually_desc">عبارت عبور در کی‌استور قابل خواندن نیست، لطفاً آن را به‌صورت دستی وارد کنید. این ممکن است پس از یک به‌روزرسانی سیستم که با برنامه سازگار نیست، اتفاق افتاده باشد. اگر این مورد نیست، لطفاً با توسعه‌دهندگان تماس بگیرید.</string>
     <string name="restore_passphrase_can_not_be_read_desc">عبارت عبور در مخزن کلید قابل خواندن نیست. این ممکن است پس از به‌روزرسانی سیستم که با برنامه سازگار نیست، اتفاق افتاده باشد. اگر این طور نیست، لطفا با توسعه دهندگان تماس بگیرید.</string>
     <string name="network_proxy_password">کلمه عبور</string>
@@ -2141,7 +2092,6 @@
     <string name="onboarding_conditions_by_using_you_agree">با استفاده از SimpleX Chat شما موافقت می‌کنید که:\n- فقط محتوای قانونی را در گروه‌های عمومی ارسال کنید.\n- به سایر کاربران احترام بگذارید - از ارسال هرزنامه خودداری کنید.</string>
     <string name="info_view_call_button">تماس</string>
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[لینک یک‌بار مصرف فقط می‌تواند <i> با یک مخاطب استفاده شود</i> - آن را به صورت حضوری یا از طریق هر پیام‌رسانی به اشتراک بگذارید.]]></string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[تمام پیام‌ها و فایل‌ها <b>به صورت رمزنگاری انتها به انتها</b>و با امنیت پساکوانتومی در پیام‌های مستقیم ارسال می‌شوند.]]></string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[شرایط برای اپراتور(ها) پذیرفته خواهد شد: <b>%s</b>.]]></string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[شرایط برای اپراتور(ها) پذیرفته خواهد شد: <b>%s</b>.]]></string>
     <string name="e2ee_info_e2ee"><![CDATA[پیام‌ها توسط <b>رمزنگاری انتها به انتها</b> محافظت می‌شوند.]]></string>
@@ -2164,8 +2114,6 @@
     <string name="operator_conditions_of_use">شرایط استفاده</string>
     <string name="operator_conditions_will_be_accepted_on">شرایط در: %s پذیرفته خواهد شد.</string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">شرایط به‌طور خودکار برای اپراتورهای فعال در: %s پذیرفته خواهد شد.</string>
-    <string name="smp_servers_configured">سرورهای SMP پیکربندی‌شده</string>
-    <string name="xftp_servers_configured">سرورهای XFTP پیکربندی‌شده</string>
     <string name="servers_info_connected_servers_section_header">سرورهای متصل شده</string>
     <string name="sync_connection_desc">اتصال نیاز به تجدید مذاکره رمزنگاری دارد.</string>
     <string name="connections">اتصالات</string>

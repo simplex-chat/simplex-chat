@@ -167,6 +167,11 @@ def test_ci_bot_command_no_text():
     assert util.ci_bot_command(ci) is None
 
 
+def test_ci_bot_command_multiline_params():
+    ci = {"content": {"type": "rcvMsgContent", "msgContent": {"type": "text", "text": "/review line1\nline2"}}}
+    assert util.ci_bot_command(ci) == ("review", "line1\nline2")
+
+
 def test_reaction_text_emoji():
     r = {"chatReaction": {"reaction": {"type": "emoji", "emoji": "🎉"}}}
     assert util.reaction_text(r) == "🎉"

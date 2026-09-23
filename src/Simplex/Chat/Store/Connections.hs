@@ -12,6 +12,7 @@
 module Simplex.Chat.Store.Connections
   ( getChatLockEntity,
     getConnectionEntity,
+    getConnectionEntityKeys,
     getConnectionEntityByConnReq,
     getConnectionEntityViaShortLink,
     getContactConnEntityByConnReqHash,
@@ -76,18 +77,23 @@ getChatLockEntity db agentConnId = do
 -- - from receiving: getConnectionEntity, getContactConnEntityByConnReqHash
 -- - from subscribing: getContactConnsToSub, getUCLConnsToSub, getMemberConnsToSub, getPendingConnsToSub
 getConnectionEntity :: DB.Connection -> StoreCxt -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
-getConnectionEntity db cxt user@User {userId, userContactId} agentConnId = do
+getConnectionEntity db cxt user agentConnId = fst <$> getConnectionEntityKeys db cxt user agentConnId
+
+getConnectionEntityKeys :: DB.Connection -> StoreCxt -> User -> AgentConnId -> ExceptT StoreError IO (ConnectionEntity, Maybe GroupKeysRow)
+getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = do
   c@Connection {connType, entityId} <- getConnection_
   case entityId of
     Nothing ->
       if connType == ConnContact
-        then pure $ RcvDirectMsgConnection c Nothing
+        then pure (RcvDirectMsgConnection c Nothing, Nothing)
         else throwError $ SEInternalError $ "connection " <> show connType <> " without entity"
     Just entId ->
       case connType of
-        ConnMember -> uncurry (RcvGroupMsgConnection c) <$> getGroupAndMember_ entId c
-        ConnContact -> RcvDirectMsgConnection c . Just <$> getContactRec_ entId c
-        ConnUserContact -> UserContactConnection c <$> getUserContact_ entId
+        ConnMember -> do
+          ((gInfo, keysData), m) <- getGroupAndMember_ entId c
+          pure (RcvGroupMsgConnection c gInfo m, Just keysData)
+        ConnContact -> (,Nothing) . RcvDirectMsgConnection c . Just <$> getContactRec_ entId c
+        ConnUserContact -> (,Nothing) . UserContactConnection c <$> getUserContact_ entId
   where
     getConnection_ :: ExceptT StoreError IO Connection
     getConnection_ = ExceptT $ do
@@ -134,7 +140,7 @@ getConnectionEntity db cxt user@User {userId, userContactId} agentConnId = do
           contactRequest = UserContactRequestRef <$> contactRequestId <*> (unBI <$> rejectionSupported_)
           groupDirectInv = toGroupDirectInvitation groupDirectInvRow
        in Contact {contactId, localDisplayName, profile, activeConn, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactRequest, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
-    getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
+    getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO ((GroupInfo, GroupKeysRow), GroupMember)
     getGroupAndMember_ groupMemberId c = do
       currentTs <- liftIO getCurrentTime
       gm <-
@@ -178,8 +184,8 @@ getConnectionEntity db cxt user@User {userId, userContactId} agentConnId = do
                   AND mu.member_status NOT IN (?,?,?)
               |]
               (groupMemberId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
-      liftIO $ bitraverse (addGroupChatTags db) pure gm
-    toGroupAndMember :: UTCTime -> Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
+      liftIO $ bitraverse (\(g, keysData) -> (,keysData) <$> addGroupChatTags db g) pure gm
+    toGroupAndMember :: UTCTime -> Connection -> GroupInfoRow :. GroupMemberRow -> ((GroupInfo, GroupKeysRow), GroupMember)
     toGroupAndMember currentTs c (groupInfoRow :. memberRow) =
       let groupInfo = toGroupInfo currentTs cxt userContactId [] groupInfoRow
           member = toGroupMember currentTs userContactId memberRow

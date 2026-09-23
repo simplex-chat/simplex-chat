@@ -2,6 +2,7 @@
 <resources>
     <string name="connect_use_current_profile">Profîla niha bişuxulîne</string>
     <string name="connect_plan_open_group">Komê veke</string>
+    <string name="connect_plan_open_new_group">Komeke nû veke</string>
     <string name="error_parsing_uri_title">Lînka xelet</string>
     <string name="opening_database">Databas tê vekirin…</string>
     <string name="server_error">xeletî</string>
@@ -49,8 +50,6 @@
     <string name="icon_descr_sent_msg_status_send_failed">şandin bi ser neket</string>
     <string name="icon_descr_received_msg_status_unread">nexwendî</string>
     <string name="personal_welcome">Bi xêr hatî %1$s!</string>
-    <string name="welcome">Bi xêr hatî!</string>
-    <string name="this_text_is_available_in_settings">Ev nivîs di eyaran de heye</string>
     <string name="toolbar_settings">Eyar</string>
     <string name="group_preview_join_as">Bi navê %s bikeviyê</string>
     <string name="group_preview_rejected">redkirî</string>
@@ -269,6 +268,7 @@
     <string name="smp_server_test_secure_queue">Dora emîn</string>
     <string name="rcv_conn_event_verification_code_reset">koda emniyetê hat guhertin</string>
     <string name="send_errors">Xeletiyên şandinê</string>
+    <string name="sending_files_not_yet_supported">şandina dosyayan hê ne mimkun e</string>
     <string name="sending_via">Tê şandin bi riya</string>
     <string name="send_link_previews">Pêşdîtinên lînkan bişîne</string>
     <string name="v6_3_reports">Gilîkirinên şexsî bişîne</string>
@@ -316,7 +316,6 @@
     <string name="possible_slow_function_title">Funksiyona hêdî</string>
     <string name="receipts_section_groups">Komên piçûk (herî zêde 20)</string>
     <string name="smp_server">Servera SMPyê</string>
-    <string name="smp_servers">Serverên SMPyê</string>
     <string name="privacy_media_blur_radius_soft">Nerm</string>
     <string name="icon_descr_sound_muted">Bêdeng</string>
     <string name="report_reason_spam">Spam</string>
@@ -435,8 +434,6 @@
     <string name="operator_conditions_accepted_on">Şert di %s de hatin qebûlkirin.</string>
     <string name="operator_conditions_of_use">Şertên şuxulandinê</string>
     <string name="operator_conditions_will_be_accepted_on">Şert wê di %s de bên qebûlkirin.</string>
-    <string name="smp_servers_configured">Serverên SMPyê ên eyarkirî</string>
-    <string name="xftp_servers_configured">Serverên XFTPyê ên eyarkirî</string>
     <string name="configure_ICE_servers">Serverên ICEyê eyar bike</string>
     <string name="v5_8_safe_files_descr">Dosyayên ji serverên nenas qebûl bike.</string>
     <string name="migrate_to_device_confirm_network_settings">Eyarên torê tesdîq bike.</string>
@@ -444,7 +441,6 @@
     <string name="connect_plan_connect_to_yourself">Bi xwe re bikeve danûstandinê?</string>
     <string name="connect_via_link">Bi riya lînkê bikeve danûstandinê</string>
     <string name="connect_plan_connect_via_link">Bi riya lînkê bikeve danûstandinê?</string>
-    <string name="connect_via_link_or_qr">Bi riya lînkê / koda QRyê bikeve danûstandinê</string>
     <string name="connect_via_invitation_link">Bi riya lînka yek carê bikeve danûstandinê?</string>
     <string name="connect_with_contact_name_question">Bi %1$s re bikeve danûstandinê?</string>
     <string name="blocking_reason_content">Muhtewa ne li gora şertên şuxulandinê ye</string>
@@ -453,10 +449,8 @@
     <string name="contribute">Beşdar bibe</string>
     <string name="v6_0_connection_servers_status">Tora xwe kontrol bike</string>
     <string name="copy_error">Xeletiyê kopî bike</string>
-    <string name="create_profile_button">Çêke</string>
     <string name="create_address_button">Çêke</string>
     <string name="create_address">Adres çêke</string>
-    <string name="create_address_and_let_people_connect">Adresekê çêke ji bo ko xelk karibin bi te re bikevin danûstandinê.</string>
     <string name="created">Hat çêkirin</string>
     <string name="info_row_created_at">Wextê çêkirinê</string>
     <string name="share_text_created_at">Wextê çêkirinê: %s</string>
@@ -464,7 +458,6 @@
     <string name="create_group_button">Kom çêke</string>
     <string name="create_group_link">Lînka komê çêke</string>
     <string name="button_create_group_link">Lînk çêke</string>
-    <string name="share_one_time_link">Lînkeke dewetiyê ya yek carî çêke</string>
     <string name="create_profile">Profîl çêke</string>
     <string name="create_another_profile_button">Profîl çêke</string>
     <string name="smp_server_test_create_queue">Dor çêke</string>
@@ -524,7 +517,6 @@
     <string name="ttl_month">%d heyv</string>
     <string name="ttl_months">%d heyv</string>
     <string name="ttl_mth">%d heyv</string>
-    <string name="dont_create_address">Adres çêneke</string>
     <string name="dont_show_again">Dîsa nîşan nede</string>
     <string name="forward_files_not_accepted_receive_files">Daxe</string>
     <string name="servers_info_downloaded">Daxistî</string>
@@ -562,21 +554,16 @@
     <string name="error_changing_user">Xeletî di guhertina profîlê de</string>
     <string name="error_changing_role">Xeletî di guhertina rolê de</string>
     <string name="error_creating_address">Xeletî di çêkirina adresê de</string>
-    <string name="your_XFTP_servers">Serverên te yên XFTPyê</string>
     <string name="you_sent_group_invitation">Te dewetîke komê şand</string>
-    <string name="your_SMP_servers">Serverên te yên SMPyê</string>
     <string name="your_servers">Serverên te</string>
     <string name="smp_servers_your_server_address">Adresa servera te</string>
-    <string name="smp_servers_your_server">Servera te</string>
     <string name="connect__your_profile_will_be_shared">Profîla te yî %1$s wê bê parvekirin.</string>
     <string name="your_preferences">Tercihên te</string>
-    <string name="your_ice_servers">Serverên te yên ICEyê</string>
     <string name="your_ICE_servers">Serverên te yên ICEyê</string>
     <string name="chat_banner_your_group">Koma te</string>
     <string name="snd_group_event_member_deleted">te %1$s derxist</string>
     <string name="you_rejected_group_invitation">Te dewetiya komê red kir</string>
     <string name="your_current_profile">Profîla te yî niha</string>
-    <string name="you_can_create_it_later">Tu karî dûvre wê çêkî</string>
     <string name="one_hand_ui_change_instruction">Tu dikarî wê di Eyarên xuyakirinê de biguherî.</string>
     <string name="snd_group_event_member_blocked">te %s blok kir</string>
     <string name="you_are_invited_to_group">Tu hatiye dewetkirinî komê</string>
@@ -588,7 +575,6 @@
     <string name="sender_you_pronoun">tu</string>
     <string name="privacy_chat_list_open_links_yes">Erê</string>
     <string name="chat_preferences_yes">erê</string>
-    <string name="xftp_servers">Serverên XFTPyê</string>
     <string name="xftp_server">Servera XFTPyê</string>
     <string name="wrong_passphrase_title">Şîfra xelet!</string>
     <string name="wrong_passphrase">Şîfra xelet ya databasê</string>
@@ -632,7 +618,6 @@
     <string name="settings_section_title_app">Aplîkasyon</string>
     <string name="settings_section_title_files">Dosya</string>
     <string name="settings_restart_app">Ji nû ve veke</string>
-    <string name="settings_section_title_socks">Proksiya SOCKSê</string>
     <string name="settings_section_title_profile_images">Sûretên profîlan</string>
     <string name="settings_section_title_network_connection">Girêdana torê</string>
     <string name="settings_section_title_use_from_desktop">Ji kompîterê bişuxulîne</string>
@@ -778,8 +763,6 @@
     <string name="create_chat_profile">Profîla siḧbetê çêke</string>
     <string name="use_simplex_chat_servers__question">Ber serverên SimpleX Chatê werin şuxulandin?</string>
     <string name="network_session_mode_user">Profîla siḧbetê</string>
-    <string name="you_control_your_chat">Tu siḧbeta xwe qontrol dikî!</string>
-    <string name="use_chat">Siḧbetê bişuxulîne</string>
     <string name="settings_section_title_chats">Siḧbet</string>
     <string name="settings_section_title_chat_colors">Rengên siḧbetê</string>
     <string name="chat_is_stopped">Siḧbet sekinandî ye</string>

@@ -33,7 +33,6 @@
     <string name="accept_contact_button">Приеми</string>
     <string name="accept_contact_incognito_button">Приеми инкогнито</string>
     <string name="about_simplex_chat">За SimpleX Chat</string>
-    <string name="smp_servers_preset_add">Добави предварително зададени сървъри</string>
     <string name="smp_servers_add_to_another_device">Добави към друго устройство</string>
     <string name="network_settings">Разширени мрежови настройки</string>
     <string name="about_simplex">За SimpleX</string>
@@ -48,7 +47,6 @@
     <string name="accept_feature">Приеми</string>
     <string name="color_primary_variant">Допълнителен акцент</string>
     <string name="v4_2_group_links_desc">Админите могат да създадат линкове за присъединяване към групи.</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Ако не можете да се срещнете лично, <b>покажете QR кода във видеоразговора</b> или споделете линка.]]></string>
     <string name="open_simplex_chat_to_accept_call">Отворете SimpleX Chat, за да приемете повикването</string>
     <string name="v4_6_audio_video_calls_descr">Поддръжка на bluetooth и други подобрения.</string>
     <string name="relay_server_protects_ip">Relay сървърът защитава вашия IP адрес, но може да наблюдава продължителността на разговора.</string>
@@ -103,7 +101,6 @@
     <string name="alert_title_msg_bad_hash">Лош хеш на съобщението</string>
     <string name="no_call_on_lock_screen">Деактивиране</string>
     <string name="callstatus_calling">повикване…</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Ако не можете да се срещнете лично, можете <b>да сканирате QR код във видеоразговора</b> или вашият контакт може да сподели линк за покана.]]></string>
     <string name="notifications_mode_service_desc">Услугата във фонов режим винаги работи – известията ще се показват веднага щом съобщенията са налични.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Може да бъде деактивирано през настройките</b> – известията ще продължат да се показват, докато приложението работи.]]></string>
     <string name="ntf_channel_calls">SimpleX Chat разговори</string>
@@ -189,8 +186,6 @@
     <string name="allow_your_contacts_to_send_disappearing_messages">Позволи на вашите контакти да изпращат изчезващи съобщения.</string>
     <string name="chat_preferences_always">винаги</string>
     <string name="audio_video_calls">Аудио/видео разговори</string>
-    <string name="available_in_v51">"
-\nДостъпно в v5.1"</string>
     <string name="color_background">Фон</string>
     <string name="allow_message_reactions">Позволи реакции на съобщения.</string>
     <string name="allow_direct_messages">Позволи изпращането на лични съобщения до членовете.</string>
@@ -218,6 +213,7 @@
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Идентификацията на устройството не е активирана. Можете да включите SimpleX заключване през Настройки, след като активирате идентификацията на устройството.</string>
     <string name="auth_simplex_lock_turned_on">SimpleX заключване е включено</string>
     <string name="connection_error_auth">Грешка при свързване</string>
+    <string name="display_name_connecting">свързване…</string>
     <string name="switch_receiving_address">Промени адреса за получаване</string>
     <string name="chat_database_deleted">Базата данни е изтрита</string>
     <string name="chat_is_running">Чатът работи</string>
@@ -383,12 +379,9 @@
     <string name="image_decoding_exception_title">Грешка при декодиране</string>
     <string name="button_delete_contact">Изтрий контакт</string>
     <string name="delete_contact_question">Изтрий контакт\?</string>
-    <string name="connect_via_link_or_qr">Свърване чрез линк/QR код</string>
     <string name="copied">Копирано в клипборда</string>
-    <string name="share_one_time_link">Създай линк за еднократна покана</string>
     <string name="create_group">Създай тайна група</string>
     <string name="send_disappearing_message_custom_time">Персонализирано време</string>
-    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(сканирай или постави от клипборда)</string>
     <string name="alert_title_contact_connection_pending">Контактът все още не е свързан!</string>
     <string name="delete_contact_menu_action">Изтрий</string>
     <string name="delete_group_menu_action">Изтрий</string>
@@ -398,18 +391,15 @@
     <string name="continue_to_next_step">Продължи</string>
     <string name="core_version">Версия на ядрото: v%s</string>
     <string name="create_address">Създай адрес</string>
-    <string name="create_address_and_let_people_connect">Създайте адрес, за да позволите на хората да се свързват с вас.</string>
     <string name="create_simplex_address">Създай SimpleX адрес</string>
     <string name="customize_theme_title">Персонализирай темата</string>
     <string name="developer_options">Идентификатори в базата данни и опция за изолация на транспорта.</string>
     <string name="delete_address">Изтрий адрес</string>
     <string name="delete_address__question">Изтрий адрес\?</string>
     <string name="theme_colors_section_title">Цветове на интерфейса</string>
-    <string name="create_profile_button">Създай</string>
     <string name="create_profile">Създай профил</string>
     <string name="delete_image">Изтрий изображение</string>
     <string name="create_your_profile">Създай профил</string>
-    <string name="decentralized">Децентрализиран</string>
     <string name="status_contact_has_e2e_encryption">контактът има e2e криптиране</string>
     <string name="status_contact_has_no_e2e_encryption">контактът няма e2e криптиране</string>
     <string name="delete_files_and_media_all">Изтрий всички файлове</string>
@@ -436,9 +426,7 @@
     <string name="smp_servers_scan_qr">Сканирай QR кода на сървъра</string>
     <string name="smp_servers_enter_manually">Въведи сървъра ръчно</string>
     <string name="smp_servers_delete_server">Изтрий сървър</string>
-    <string name="dont_create_address">Не създавай адрес</string>
     <string name="display_name__field">Име на профила:</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Само потребителските устройства съхраняват потребителски профили, контакти, групи и съобщения.</string>
     <string name="receipts_contacts_title_disable">Деактивирай потвърждениeто\?</string>
     <string name="receipts_contacts_enable_keep_overrides">Активиране (запазване на промените)</string>
     <string name="receipts_contacts_title_enable">Активирай потвърждениeто\?</string>
@@ -592,7 +580,6 @@
     <string name="error_deleting_group">Грешка при изтриване на група</string>
     <string name="error_deleting_pending_contact_connection">Грешка при изтриване на чакащата контактна връзка</string>
     <string name="error_saving_ICE_servers">Грешка при запазване на ICE сървърите</string>
-    <string name="icon_descr_server_status_pending">Чакаща връзка със сървъра</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Вашият контакт трябва да бъде онлайн, за да осъществите връзката.
 \nМожете да откажете тази връзка и да премахнете контакта (и да опитате по -късно с нов линк).</string>
     <string name="error_exporting_chat_database">Грешка при експортиране на базата данни</string>
@@ -601,8 +588,6 @@
     <string name="error_importing_database">Грешка при импортиране на базата данни</string>
     <string name="error_removing_member">Грешка при отстраняване на член</string>
     <string name="error_saving_group_profile">Грешка при запазване на профила на групата</string>
-    <string name="error_loading_smp_servers">Грешка при зареждане на SMP сървъри</string>
-    <string name="error_loading_xftp_servers">Грешка при зареждане на XFTP сървъри</string>
     <string name="error_joining_group">Грешка при присъединяване към група</string>
     <string name="error_loading_details">Грешка при зареждане на подробности</string>
     <string name="error_receiving_file">Грешка при получаване на файл</string>
@@ -690,7 +675,6 @@
     <string name="only_your_contact_can_send_disappearing">Само вашият контакт може да изпраща изчезващи съобщения.</string>
     <string name="prohibit_sending_disappearing">Забрани изпращането на изчезващи съобщения.</string>
     <string name="group_members_can_send_disappearing">Членовете могат да изпращат изчезващи съобщения.</string>
-    <string name="invalid_QR_code">Невалиден QR код</string>
     <string name="invalid_contact_link">Невалиден линк!</string>
     <string name="incorrect_code">Неправилен код за сигурност!</string>
     <string name="smp_servers_invalid_address">Невалиден адрес на сървъра!</string>
@@ -760,7 +744,6 @@
     <string name="how_to">Информация</string>
     <string name="install_simplex_chat_for_terminal">Инсталирай SimpleX Chat за терминал</string>
     <string name="how_it_works">Как работи</string>
-    <string name="immune_to_spam_and_abuse">Защитен от спам</string>
     <string name="ignore">Игнорирай</string>
     <string name="button_add_members">Покани членове</string>
     <string name="message_deletion_prohibited">Необратимото изтриване на съобщения е забранено в този чат.</string>
@@ -797,7 +780,6 @@
     <string name="network_use_onion_hosts_no_desc">Няма се използват Onion хостове.</string>
     <string name="email_invite_subject">Нека да поговорим в SimpleX Chat</string>
     <string name="password_to_show">Парола за показване</string>
-    <string name="read_more_in_github_with_link"><![CDATA[Прочетете повече в нашето <font color="#0088ff">GitHub хранилище</font>.]]></string>
     <string name="onboarding_notifications_mode_off">Когато приложението работи</string>
     <string name="onboarding_notifications_mode_periodic">Периодично</string>
     <string name="paste_the_link_you_received">Постави получения линк</string>
@@ -838,7 +820,6 @@
     <string name="info_row_updated_at">Записът е актуализиран на</string>
     <string name="learn_more">Научете повече</string>
     <string name="paste_button">Постави</string>
-    <string name="smp_servers_preset_server">Предварително зададен сървър</string>
     <string name="smp_servers_preset_address">Предварително зададен адрес на сървъра</string>
     <string name="onboarding_notifications_mode_title">Поверителени известия</string>
     <string name="la_mode_off">Изключено</string>
@@ -871,10 +852,10 @@
     <string name="only_stored_on_members_devices">(съхранено само на устройствата на членовете на групата)</string>
     <string name="restore_passphrase_not_found_desc">Паролата не е намерена в KeyStore, моля, въведете я ръчно. Това може да се е случило, ако възстановите данните на приложението с помощта на инструмент за резервни копия. Ако не е така, моля, свържете се с разработчиците.</string>
     <string name="observer_cant_send_message_desc">Моля, свържете се с груповия администартор.</string>
-    <string name="you_can_accept_or_reject_connection">Когато хората искат да се свържат с вас, можете да ги приемете или отхвърлите.</string>
     <string name="profile_update_will_be_sent_to_contacts">Актуализацията на профила ще бъде изпратена до вашите контакти.</string>
     <string name="prohibit_message_deletion">Забрани необратимото изтриване на съобщения.</string>
     <string name="prohibit_direct_messages">Забрани изпращането на лични съобщения до членовете.</string>
+    <string name="receiving_files_not_yet_supported">получаването на файлове все още не се поддържа</string>
     <string name="switch_receiving_address_desc">Получаващият адрес ще бъде променен към друг сървър. Промяната на адреса ще завърши, след като подателят е онлайн.</string>
     <string name="new_database_archive">Нов архив на база данни</string>
     <string name="old_database_archive">Стар архив на база данни</string>
@@ -935,6 +916,7 @@
     <string name="marked_deleted_description">маркирано като изтрито</string>
     <string name="moderated_description">модерирано</string>
     <string name="moderated_item_description">модерирано от %s</string>
+    <string name="simplex_link_mode_browser_warning">Отварянето на линка в браузъра може да намали поверителността и сигурността на връзката. Несигурните SimpleX линкове ще бъдат червени.</string>
     <string name="contact_developers">Моля, актуализирайте приложението и се свържете с разработчиците.</string>
     <string name="network_error_desc">Моля, проверете мрежовата си връзка с %1$s и опитайте отново.</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Моля, проверете дали сте използвали правилния линк или поискайте вашия контакт, за да ви изпрати друг.</string>
@@ -969,9 +951,6 @@
     <string name="toast_permission_denied">Разрешение е отказано!</string>
     <string name="image_descr_profile_image">профилно изображение</string>
     <string name="icon_descr_profile_image_placeholder">запазено място за профилно изображение</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Всеки може да оперира сървъри.</string>
-    <string name="people_can_connect_only_via_links_you_share">Вие решавате кой може да се свърже с вас.</string>
-    <string name="privacy_redefined">Поверителността преосмислена</string>
     <string name="make_private_connection">Добави поверителна връзка</string>
     <string name="open_verb">Отвори</string>
     <string name="relay_server_if_necessary">Реле сървър се използва само ако е необходимо. Друга страна може да наблюдава вашия IP адрес.</string>
@@ -1028,7 +1007,6 @@
     <string name="icon_descr_address">SimpleX Адрес</string>
     <string name="image_descr_simplex_logo">SimpleX Лого</string>
     <string name="icon_descr_simplex_team">SimpleX Екип</string>
-    <string name="smp_servers">SMP сървъри</string>
     <string name="share_address_with_contacts_question">Сподели адреса с контактите?</string>
     <string name="share_link">Сподели линк</string>
     <string name="share_with_contacts">Сподели с контактите</string>
@@ -1085,7 +1063,6 @@
     <string name="share_image">Сподели медия…</string>
     <string name="simplex_address">SimpleX адрес</string>
     <string name="v4_2_security_assessment_desc">Сигурността на SimpleX Chat беше одитирана от Trail of Bits.</string>
-    <string name="settings_section_title_socks">SOCKS прокси</string>
     <string name="settings_restart_app">Рестартиране</string>
     <string name="settings_shutdown">Изключване</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Рестартирайте приложението, за да създадете нов чат профил.</string>
@@ -1097,6 +1074,7 @@
     <string name="save_and_update_group_profile">Запази и актуализирай профила на групата</string>
     <string name="save_group_profile">Запази профила на групата</string>
     <string name="accept_feature_set_1_day">Задай 1 ден</string>
+    <string name="sending_files_not_yet_supported">изпращането на файлове все още не се поддържа</string>
     <string name="simplex_link_contact">SimpleX адрес за контакт</string>
     <string name="simplex_link_group">SimpleX групов линк</string>
     <string name="simplex_link_mode">SimpleX линкове</string>
@@ -1132,7 +1110,6 @@
     <string name="to_connect_via_link_title">За свързване чрез линк</string>
     <string name="connection_you_accepted_will_be_cancelled">Връзката, която приехте, ще бъде отказана!</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Контактът, с когото споделихте този линк, НЯМА да може да се свърже!</string>
-    <string name="this_link_is_not_a_valid_connection_link">Този линк не е валиден линк за връзка!</string>
     <string name="your_chat_profiles">Вашите чат профили</string>
     <string name="smp_servers_per_user">Сървърите за нови връзки на текущия ви чат профил</string>
     <string name="to_reveal_profile_enter_password">За да покажете скрития профил, въведете пълната парола в полето за търсене на страницата "Вашите чат профили".</string>
@@ -1141,18 +1118,13 @@
     <string name="tap_to_activate_profile">Докосни за активиране на профил.</string>
     <string name="language_system">Системен</string>
     <string name="color_title">Заглавие</string>
-    <string name="to_share_with_your_contact">(за споделяне с вашия контакт)</string>
     <string name="alert_message_no_group">Тази група вече не съществува.</string>
     <string name="settings_section_title_support">Подкрепете SimpleX Chat</string>
     <string name="contact_sent_large_file">Вашият контакт изпрати файл, който е по-голям от поддържания в момента максимален размер (%1$s).</string>
     <string name="in_developing_desc">Тази функция все още не се поддържа. Опитайте следващата версия.</string>
-    <string name="tap_to_start_new_chat">Докосни за започване на нов чат</string>
-    <string name="this_text_is_available_in_settings">Този текст е достъпен в настройките</string>
     <string name="images_limit_title">Твърде много изображения!</string>
-    <string name="this_QR_code_is_not_a_link">Този QR код не е линк!</string>
     <string name="smp_servers_test_server">Тествай сървър</string>
     <string name="network_session_mode_transport_isolation">Транспортна изолация</string>
-    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Платформата за съобщения и приложения, защитаваща вашата поверителност и сигурност.</string>
     <string name="switch_verb">Смени</string>
     <string name="v4_4_french_interface_descr">Благодарение на потребителите – допринесете през Weblate!</string>
     <string name="v5_0_large_files_support">Видео и файлове до 1gb</string>
@@ -1170,7 +1142,6 @@
     <string name="this_string_is_not_a_connection_link">Този текст не е линк за връзка!</string>
     <string name="videos_limit_title">Твърде много видеоклипове!</string>
     <string name="messages_section_description">Тази настройка се прилага за съобщения в текущия ви профил</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">За да се защити поверителността, SimpleX използва идентификатори за опашки от съобщения, отделни за всеки от вашите контакти.</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Опит за свързване със сървъра, използван за получаване на съобщения от този контакт.</string>
     <string name="error_connecting_to_server_to_receive_messages">Опит за свързване със сървъра, използван за получаване на съобщения от този контакт (грешка: %1$s).</string>
     <string name="error_smp_test_failed_at_step">Тестът е неуспешен на стъпка %s.</string>
@@ -1179,8 +1150,6 @@
     <string name="chat_help_tap_button">Докосни бутона</string>
     <string name="thank_you_for_installing_simplex">Благодарим Ви, че инсталирахте SimpleX Chat!</string>
     <string name="save_and_notify_contacts">Запази и уведоми контактите</string>
-    <string name="next_generation_of_private_messaging">Бъдещето на комуникацията</string>
-    <string name="first_platform_without_user_ids">Няма потребителски идентификатори.</string>
     <string name="la_mode_system">Системна</string>
     <string name="alert_text_msg_bad_id">Неправилно ID на следващото съобщение (по-малко или еднакво с предишното).
 \nТова може да се случи поради някаква грешка или когато връзката е компрометирана.</string>
@@ -1194,11 +1163,9 @@
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">SimpleX адрес</string>
     <string name="smp_servers_use_server_for_new_conn">Използвай за нови връзки</string>
-    <string name="your_XFTP_servers">Вашите XFTP сървъри</string>
     <string name="use_simplex_chat_servers__question">Използвай сървърите на SimpleX Chat\?</string>
     <string name="using_simplex_chat_servers">Използват се сървърите на SimpleX Chat.</string>
     <string name="your_ICE_servers">Вашите ICE сървъри</string>
-    <string name="your_SMP_servers">Вашите SMP сървъри</string>
     <string name="network_socks_toggle_use_socks_proxy">Използвай SOCKS прокси</string>
     <string name="network_enable_socks">Използвай SOCKS прокси\?</string>
     <string name="network_disable_socks">Използване на директна интернет връзка\?</string>
@@ -1206,7 +1173,6 @@
     <string name="network_use_onion_hosts_prefer">Когато са налични</string>
     <string name="your_profile_is_stored_on_your_device">Вашият профил, контакти и доставени съобщения се съхраняват на вашето устройство.</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Можете да използвате markdown за форматиране на съобщенията:</string>
-    <string name="use_chat">Използвай чата</string>
     <string name="update_database">Актуализация</string>
     <string name="you_have_to_enter_passphrase_every_time">Трябва да въвеждате парола при всяко стартиране на приложението - тя не се съхранява на устройството.</string>
     <string name="unknown_database_error_with_info">Неизвестна грешка в базата данни: %s</string>
@@ -1237,17 +1203,12 @@
     <string name="voice_message_send_text">Гласово съобщение…</string>
     <string name="voice_messages_are_prohibited">Гласовите съобщения са забранени.</string>
     <string name="icon_descr_received_msg_status_unread">непрочетено</string>
-    <string name="welcome">Добре дошли!</string>
     <string name="personal_welcome">Добре дошли %1$s!</string>
     <string name="you_have_no_chats">Нямате чатове</string>
     <string name="observer_cant_send_message_title">вие сте наблюдател</string>
-    <string name="smp_servers_your_server">Вашият сървър</string>
     <string name="smp_servers_use_server">Използвай сървър</string>
     <string name="smp_servers_your_server_address">Вашият адрес на сървъра</string>
-    <string name="you_can_create_it_later">Можете да го създадете по-късно</string>
     <string name="your_contacts_will_remain_connected">Вашите контакти ще останат свързани.</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">Ние не съхраняваме вашите контакти или съобщения (веднъж доставени) на сървърите.</string>
-    <string name="you_control_your_chat">Вие контролирате своя чат!</string>
     <string name="wrong_passphrase_title">Грешна парола!</string>
     <string name="voice_messages">Гласови съобщения</string>
     <string name="your_preferences">Настройки</string>
@@ -1260,11 +1221,8 @@
     <string name="snd_group_event_member_deleted">премахнахте %1$s</string>
     <string name="incognito_random_profile">Вашият автоматично генериран профил</string>
     <string name="user_unmute">Уведомявай</string>
-    <string name="you_can_share_your_address">Можете да споделите адреса си като линк или QR код - всеки може да се свърже с вас.</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">променихте адреса получаване за %s</string>
     <string name="group_main_profile_sent">Вашият чат профил ще бъде изпратен на членовете на групата</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">Вашият чат профил ще бъде изпратен
-\nдо вашия контакт</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Вашата текуща база данни ще бъде ИЗТРИТА и ЗАМЕНЕНА с импортираната. \nТова действие не може да бъде отменено - вашият профил, контакти, съобщения и файлове ще бъдат безвъзвратно загубени.</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Актуализирането на настройките ще свърже отново клиента към всички сървъри.</string>
     <string name="rcv_group_event_updated_group_profile">актуализиран профил на групата</string>
@@ -1300,15 +1258,11 @@
     <string name="gallery_video_button">Видео</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Можете да <font color="#0088ff">се свържете с разработчиците на SimpleX Chat, за да задавате въпроси и да получавате актуализации</font>;.]]></string>
     <string name="contact_wants_to_connect_with_you">иска да се свърже с вас!</string>
-    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Можете също да се свържете, като натиснете върху линка. Ако се отвори в браузъра, натиснете върху бутона <b>Отваряне в мобилно приложение</b>.]]></string>
-    <string name="xftp_servers">XFTP сървъри</string>
-    <string name="update_network_session_mode_question">Актуализиране на режима на изолация на транспорта\?</string>
     <string name="your_current_profile">Вашият текущ профил</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Вашият профил се съхранява на вашето устройство и се споделя само с вашите контакти. SimpleX сървърите не могат да видят вашия профил.</string>
     <string name="icon_descr_video_off">Видеото е изключено</string>
     <string name="icon_descr_video_on">Видеото е включено</string>
     <string name="webrtc_ice_servers">WebRTC ICE сървъри</string>
-    <string name="your_ice_servers">Вашите ICE сървъри</string>
     <string name="your_privacy">Вашата поверителност</string>
     <string name="you_must_use_the_most_recent_version_of_database">Трябва да използвате най-новата версия на вашата чат база данни САМО на едно устройство, в противен случай може да спрете да получавате съобщения от някои контакти.</string>
     <string name="group_info_member_you">вие: %1$s</string>
@@ -1325,7 +1279,6 @@
     <string name="system_restricted_background_in_call_title">Без фонови разговори</string>
     <string name="connect_via_member_address_alert_title">Свързване директно\?</string>
     <string name="connect_use_current_profile">Използвай текущия профил</string>
-    <string name="paste_the_link_you_received_to_connect_with_your_contact">Поставете линка, който сте получили, за да се свържете с вашия контакт…</string>
     <string name="connect__your_profile_will_be_shared">Вашият профил %1$s ще бъде споделен.</string>
     <string name="system_restricted_background_desc">SimpleX не може да работи във фонов режим. Ще получавате известията само когато приложението работи.</string>
     <string name="system_restricted_background_in_call_desc">Приложението може да се затвори след 1 минута във фонов режим.</string>
@@ -1496,7 +1449,6 @@
     <string name="verify_connection">Потвърди връзка</string>
     <string name="no_connected_mobile">Няма свързано мобилно устройство</string>
     <string name="blocked_item_description">блокиран</string>
-    <string name="you_can_make_address_visible_via_settings">Можете да го направите видим за вашите контакти в SimpleX чрез Настройки.</string>
     <string name="recent_history_is_not_sent_to_new_members">Историята не се изпраща на нови членове.</string>
     <string name="retry_verb">Опитай отново</string>
     <string name="camera_not_available">Камерата е неодстъпна</string>
@@ -1846,14 +1798,12 @@
     <string name="servers_info_reconnect_server_message">Свържете отново сървъра, за да принудите доставката на съобщенията. Това използва допълнителен трафик.</string>
     <string name="servers_info_reset_stats_alert_error_title">Грешка при нулиране на статистиката</string>
     <string name="scan_paste_link">Сканирай / Постави линк</string>
-    <string name="xftp_servers_configured">Конфигурирани XFTP сървъри</string>
     <string name="appearance_font_size">Размер на шрифта</string>
     <string name="share_text_message_status">Статус на съобщението: %s</string>
     <string name="chat_theme_set_default_theme">Задай тема по подразбиране</string>
     <string name="v5_8_safe_files_descr">Потвърди файлове от неизвестни сървъри.</string>
     <string name="servers_info_detailed_statistics_sent_messages_header">Изпратени съобщения</string>
     <string name="error_initializing_web_view">Грешка при стартиране на WebView. Актуализирайте системата си до новата версия. Моля, свържете се с разработчиците.\nГрешка: %s</string>
-    <string name="xftp_servers_other">Други XFTP сървъри</string>
     <string name="appearance_zoom">Мащабиране</string>
     <string name="chat_theme_apply_to_all_modes">Всички цветови режими</string>
     <string name="chat_theme_apply_to_light_mode">Светъл режим</string>
@@ -1927,8 +1877,6 @@
     <string name="servers_info_detailed_statistics_receive_errors">Получени грешки</string>
     <string name="remote_ctrl_connection_stopped_desc">Моля, проверете дали мобилното и настолното устройство са свързани към една и съща локална мрежа и дали защитната стена на настолното устройство позволява връзката.\nМоля, споделете всички други проблеми с разработчиците.</string>
     <string name="temporary_file_error">Временна файлова грешка</string>
-    <string name="smp_servers_configured">Конфигурирани SMP сървъри</string>
-    <string name="smp_servers_other">Други SMP сървъри</string>
     <string name="v5_8_message_delivery">Подобрена доставка на съобщения</string>
     <string name="attempts_label">опити</string>
     <string name="expired_label">изтекли</string>
@@ -2059,7 +2007,6 @@
     <string name="contact_deleted">Контактът е изтрит!</string>
     <string name="deleted_chats">Архивирани контакти</string>
     <string name="one_hand_ui">Достъпни панели</string>
-    <string name="open_server_settings_button">Отвори настройките на сървъра</string>
     <string name="chat_database_exported_continue">Продължи</string>
     <string name="app_check_for_updates_button_open">Отвори местоположението на файла</string>
     <string name="app_check_for_updates_button_install">Инсталиране на актуализация</string>
@@ -2154,7 +2101,6 @@
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi устройства </b>: моля, активирайте Autostart в системните настройки, за да работят известията.]]></string>
     <string name="message_deleted_or_not_received_error_title">Няма съобщение</string>
     <string name="or_to_share_privately">Или сподели лично</string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Всички съобщения и файлове се изпращат <b>криптирани от край до край</b>, с постквантова сигурност в директните съобщения.]]></string>
     <string name="onboarding_notifications_mode_off_desc_short">Без фонова услуга</string>
     <string name="onboarding_notifications_mode_periodic_desc_short">Проверявай за съобщения на всеки 10 минути</string>
     <string name="onboarding_notifications_mode_service_desc_short">Приложението винаги работи във фонов режим</string>
@@ -2251,6 +2197,7 @@
     <string name="connect_use_incognito_profile">Използвай инкогнито профил</string>
     <string name="connect_plan_open_chat">Отвори чат</string>
     <string name="connect_plan_open_new_chat">Отвори нов чат</string>
+    <string name="connect_plan_open_new_group">Отвори нова група</string>
     <string name="report_item_visibility_submitter">Само вие и модераторите го виждат</string>
     <string name="report_item_visibility_moderators">Само подателят и модераторите го виждат</string>
     <string name="report_item_archived">архивиран доклад</string>
