@@ -14,6 +14,7 @@ module Bots.BadgeService.FakeStripe
     useListFixture,
     apiRequests,
     fakeIntentIds,
+    fakeIntentStatus,
     stripeSigHeader,
     stripeHexSig,
     stripeEvent,
@@ -282,7 +283,7 @@ fakeApp stv req respond = do
       [] | isPost -> createIntent b
       [] | isGet -> listIntents
       [pid] | isGet -> withIntent pid $ \s -> serve (intentFixture s) (patchIntent pid s)
-      [pid, "cancel"] | isPost -> withIntent pid $ \_ -> respond (jsonResponse ok200 (J.object ["id" J..= pid, "status" J..= ("canceled" :: Text)]))
+      [pid, "cancel"] | isPost -> cancelIntent pid
       _ -> refuse notFound404 "no such payment_intents path on the fake stripe"
 
     createIntent b = do
@@ -296,6 +297,25 @@ fakeApp stv req respond = do
         writeTVar stv st {fsNextId = fsNextId st + 1, fsIntents = M.insert pid s (fsIntents st)}
         pure (pid, s)
       serve (intentFixture s) (patchIntent pid s)
+
+    -- Real Stripe can't cancel a card payment that is processing, paid or already cancelled.
+    cancelIntent pid = do
+      cancelled <- atomically $ do
+        st <- readTVar stv
+        case M.lookup pid (fsIntents st) of
+          Nothing -> pure Nothing
+          Just s
+            | isStatus s `elem` ["processing", "succeeded", "canceled"] -> pure (Just (Left s))
+            | otherwise -> do
+                let s' = s {isStatus = "canceled"}
+                writeTVar stv st {fsIntents = M.insert pid s' (fsIntents st)}
+                pure (Just (Right s'))
+      case cancelled of
+        Nothing -> refuse notFound404 ("no intent " <> pid <> " on the fake stripe")
+        Just (Left s) ->
+          respond . stripeError badRequest400 "payment_intent_unexpected_state" $
+            "You cannot cancel this PaymentIntent because it has a status of " <> isStatus s <> "."
+        Just (Right s') -> serve (intentFixture s') (patchIntent pid s')
 
     listIntents = do
       st <- readTVarIO stv
@@ -346,7 +366,10 @@ jsonResponse :: Status -> J.Value -> Response
 jsonResponse st v = responseLBS st [(hContentType, "application/json")] (J.encode v)
 
 errorResponse :: Status -> Text -> Response
-errorResponse st message = jsonResponse st (J.object ["error" J..= J.object ["message" J..= message, "code" J..= TE.decodeUtf8 (statusMessage st)]])
+errorResponse st = stripeError st (TE.decodeUtf8 (statusMessage st))
+
+stripeError :: Status -> Text -> Text -> Response
+stripeError st code message = jsonResponse st (J.object ["error" J..= J.object ["message" J..= message, "code" J..= code]])
 
 stateKeys :: [Key]
 stateKeys = ["status"]
@@ -393,6 +416,9 @@ fakeRequests FakeStripe {fsState} = reverse . fsRequests <$> readTVarIO fsState
 
 fakeIntentIds :: FakeStripe -> IO [Text]
 fakeIntentIds FakeStripe {fsState} = M.keys . fsIntents <$> readTVarIO fsState
+
+fakeIntentStatus :: FakeStripe -> Text -> IO (Maybe Text)
+fakeIntentStatus FakeStripe {fsState} pid = fmap isStatus . M.lookup pid . fsIntents <$> readTVarIO fsState
 
 apiRequests :: FakeStripe -> ByteString -> [Text] -> IO [FakeRequest]
 apiRequests fake verb segments = filter matching <$> fakeRequests fake

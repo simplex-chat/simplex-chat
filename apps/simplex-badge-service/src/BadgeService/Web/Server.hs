@@ -679,10 +679,12 @@ webhookHandler env@WebEnv {weStore, weHints} provider route req respond =
       Just p ->
         readBoundedBody maxWebhookBytes req >>= \case
           Nothing -> logInfo (route <> ": body over the " <> tshow maxWebhookBytes <> "-byte cap") >> respond webhookTooLarge
-          Just body ->
+          Just body -> do
+            now <- getCurrentTime
             -- a provider signs the exact bytes it sent, so parsing and re-encoding here would fail the signature on every event
-            case pVerifyWebhook p (requestHeaders req) (LB.toStrict body) of
+            case pVerifyWebhook p now (requestHeaders req) (LB.toStrict body) of
               Left (WebhookError e) -> refuse e
+              Left (WebhookStale e) -> logWarn (route <> " refused: " <> e) >> respond webhookRefused
               Right Nothing -> ignore body "nothing this service acts on"
               Right (Just ref) -> resolve body ref
     refuse :: Text -> IO ResponseReceived

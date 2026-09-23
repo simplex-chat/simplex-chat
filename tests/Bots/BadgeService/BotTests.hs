@@ -14,7 +14,6 @@ import BadgeService.Config (BadgeIssuerKey (..), readServiceConfig)
 import Bots.BadgeService.ConfigTests (withIssuer)
 import BadgeService.Options
 import BadgeService.Service
-import BadgeService.Store (CodeRedemption (..), IssuedCode (..), RedeemedCode (..), getBadgeCode)
 import BadgeService.Store.Invoices (markCodePaid)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -53,7 +52,6 @@ import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey, bbsKeyGen)
@@ -79,6 +77,8 @@ badgeServiceTests = do
   it "should refuse a badge code past its redemption deadline" testExpiredCode
   it "should keep answering a code redeemed before its deadline" testRedeemedBeforeTheDeadline
   it "should refuse a revoked badge code, and refuse to revoke it twice" testRevokedCode
+  it "should refuse to revoke a code that was redeemed, and keep its badge" testRevokeRedeemedCode
+  it "should answer revoking an unknown code as no such code" testRevokeUnknownCode
   it "should refuse to issue a code with an unknown badge type or a nonsense month count" testIssueRejectsBadArguments
   it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
   it "should refuse to start unless the issuer secret is the key trusted at its index" testIssuerKeyMustMatchConfig
@@ -1267,7 +1267,7 @@ testRedeemUnpaidCode ps =
     withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
       unpaid <- issueCodeAs cc BTSupporter 1 "unpaid"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg unpaid)
-      alice <## "bad chat command: badge service error: payment_pending"
+      alice <## "cannot redeem badge code: badge service error: payment_pending"
       paid <- issueCodeAs cc BTSupporter 1 "paid"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
       alice <## "badge redeemed"
@@ -1284,7 +1284,7 @@ testExpiredCode ps =
       withDB' "markCodePaid" cc (\db -> markCodePaid db (badgeCodeHash code) (addUTCTime (-60) now))
         `shouldReturn` Right ()
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
-      alice <## "bad chat command: badge service error: code_expired"
+      alice <## "cannot redeem badge code: badge service error: code_expired"
 
 testRedeemedBeforeTheDeadline :: HasCallStack => TestParams -> IO ()
 testRedeemedBeforeTheDeadline ps =
@@ -1309,6 +1309,28 @@ testRedeemedBeforeTheDeadline ps =
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
       alice <## "badge already redeemed"
 
+testRevokeRedeemedCode :: HasCallStack => TestParams -> IO ()
+testRevokeRedeemedCode ps =
+  withBadgeService ps $ \clientCfg _ cc ->
+    withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCodeAs cc BTSupporter 1 "paid"
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      refused <- revokeCodeAs cc code
+      refused `shouldSatisfy` T.isInfixOf "redeemed already, so it cannot be revoked"
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      alice <## "badge already redeemed"
+
+testRevokeUnknownCode :: HasCallStack => TestParams -> IO ()
+testRevokeUnknownCode ps =
+  withBadgeService ps $ \_ _ cc -> do
+    g <- C.newRandom
+    code <- randomBadgeCode g
+    unknown <- revokeCodeAs cc code
+    unknown `shouldSatisfy` T.isInfixOf "no such code"
+
 testRevokedCode :: HasCallStack => TestParams -> IO ()
 testRevokedCode ps =
   withBadgeService ps $ \clientCfg _ cc ->
@@ -1316,6 +1338,6 @@ testRevokedCode ps =
       paid <- issueCodeAs cc BTSupporter 1 "paid"
       revokeCodeAs cc paid `shouldReturn` "revoked"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
-      alice <## "bad chat command: badge service error: code_invalid"
+      alice <## "cannot redeem badge code: badge service error: code_invalid"
       second <- revokeCodeAs cc paid
       second `shouldSatisfy` T.isInfixOf "revoked already"

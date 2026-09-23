@@ -19,6 +19,8 @@ module BadgeService.Store.Invoices
     unpaidRefs,
     providerText,
     codeHashExists,
+    OverdueInvoice (..),
+    overdueInvoices,
     expireOverdue,
     cancelOpenInvoice,
     newInvoiceId,
@@ -39,7 +41,7 @@ where
 
 import Control.Exception (Exception)
 import qualified Control.Exception as E
-import Control.Monad (unless)
+import Control.Monad (filterM)
 import Crypto.Random (getRandomBytes)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
@@ -196,19 +198,20 @@ unfundedOnly =
     <> "WHERE p.invoice_id = @invoices.invoice_id AND ("
     <> "COALESCE(p.amount, 0) > 0 OR p.crypto_paid IS NOT NULL OR p.paid_in_full = 1)) "
 
-qOverdueInvoiceIds :: Query
-qOverdueInvoiceIds =
+qOverdueInvoices :: Query
+qOverdueInvoices =
   mkQuery $
-    "SELECT invoice_id FROM @invoices "
+    "SELECT @invoices.invoice_id, @invoices.provider, ci.provider_ref, @invoices.created_at FROM @invoices "
+      <> "JOIN @badge_code_invoices ci ON ci.invoice_id = @invoices.invoice_id "
       <> "WHERE status = 'open' AND expires_at < ? "
       <> unfundedOnly
-      <> "AND EXISTS (SELECT 1 FROM @badge_code_invoices ci WHERE ci.invoice_id = @invoices.invoice_id)"
+      <> "ORDER BY @invoices.created_at"
 
 qExpireOverdue :: Query
 qExpireOverdue =
   mkQuery $
     "UPDATE @invoices SET status = 'expired', updated_at = ? "
-      <> "WHERE status = 'open' AND expires_at < ? "
+      <> "WHERE status = 'open' AND expires_at < ? AND invoice_id = ? "
       <> unfundedOnly
       <> "AND EXISTS (SELECT 1 FROM @badge_code_invoices ci WHERE ci.invoice_id = @invoices.invoice_id)"
 
@@ -510,12 +513,28 @@ codeHashExists :: DBStore -> ByteString -> IO Bool
 codeHashExists st codeHash = withConnection st $ \db ->
   not . null <$> (DB.query db qCodeHashExists (Only (DB.Binary codeHash)) :: IO [Only Int])
 
-expireOverdue :: DBStore -> UTCTime -> IO [InvoiceId]
-expireOverdue st cutoff' = withTransaction st $ \db -> do
+data OverdueInvoice = OverdueInvoice
+  { oiInvoiceId :: InvoiceId,
+    oiProvider :: PaymentProvider,
+    oiProviderRef :: Text,
+    oiCreatedAt :: UTCTime
+  }
+  deriving (Eq, Show)
+
+overdueInvoices :: DBStore -> UTCTime -> IO [OverdueInvoice]
+overdueInvoices st cutoff = withConnection st $ \db -> do
+  rows <- DB.query db qOverdueInvoices (Only (truncateToSecond cutoff))
+  either (E.throwIO . StoreDecodeError) pure (traverse toOverdue rows)
+  where
+    toOverdue (i, providerTxt, oiProviderRef, oiCreatedAt) = case textToProvider providerTxt of
+      Just oiProvider -> Right OverdueInvoice {oiInvoiceId = InvoiceId i, oiProvider, oiProviderRef, oiCreatedAt}
+      Nothing -> Left ("invoices.provider: " <> providerTxt)
+
+-- | Of the given invoices, expire those that are still open, have received no money, and are past their deadline.
+expireOverdue :: DBStore -> UTCTime -> [InvoiceId] -> IO [InvoiceId]
+expireOverdue st cutoff' invIds = withTransaction st $ \db -> do
   let cutoff = truncateToSecond cutoff'
-  ids <- DB.query db qOverdueInvoiceIds (Only cutoff) :: IO [Only Text]
-  unless (null ids) $ DB.execute db qExpireOverdue (cutoff, cutoff)
-  pure (map (\(Only i) -> InvoiceId i) ids)
+  filterM (\(InvoiceId i) -> (> 0) <$> executeChanging db qExpireOverdue (cutoff, cutoff, i)) invIds
 
 cancelOpenInvoice :: DBStore -> InvoiceId -> UTCTime -> IO Bool
 cancelOpenInvoice st invId at = withTransaction st $ \db -> updateInvoiceStatus db invId ISOpen ISExpired at

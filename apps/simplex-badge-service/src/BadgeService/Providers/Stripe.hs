@@ -23,6 +23,7 @@ import BadgeService.Providers
     WebhookError (..),
   )
 import Control.Exception (try)
+import Control.Monad (unless)
 import Crypto.Hash (Digest, SHA256)
 import Crypto.MAC.HMAC (HMAC, hmac, hmacGetDigest)
 import qualified Data.Aeson as J
@@ -40,7 +41,7 @@ import Data.Scientific (floatingOrInteger)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (POSIXTime, posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Word (Word32)
 import Network.HTTP.Client
@@ -178,19 +179,28 @@ instance J.FromJSON IntentList where
   parseJSON = J.withObject "intent list" $ \o ->
     IntentList <$> o J..: "data" <*> o J..:? "has_more" J..!= False
 
+-- | Stripe signs each retry again with the current time, so an old timestamp means a replayed request.
+webhookTolerance :: NominalDiffTime
+webhookTolerance = 15 * 60
+
 -- Constant-time over the raw bytes. Stripe signs "{t}.{body}", so hash the timestamp, a dot, then the body as it arrived.
-verifyStripeSig :: Text -> [Header] -> ByteString -> Either WebhookError (Maybe Text)
-verifyStripeSig secret hdrs body = do
+verifyStripeSig :: Text -> UTCTime -> [Header] -> ByteString -> Either WebhookError (Maybe Text)
+verifyStripeSig secret now hdrs body = do
   raw <- note "missing Stripe-Signature header" (lookup sigHeaderName hdrs)
   (t, v1hexes) <- note "Stripe-Signature is not t=..,v1=.." (parseStripeSig raw)
   givens <- mapM decodeHex v1hexes
   let expected :: Digest SHA256
       expected = hmacGetDigest (hmac (TE.encodeUtf8 secret) (t <> "." <> body) :: HMAC SHA256)
   -- during signing-secret rotation Stripe sends one v1 per active secret; any match verifies
-  if any (constEq expected) givens
+  unless (any (constEq expected) givens) $ Left (WebhookError "Stripe-Signature does not verify")
+  signedAt <- note "Stripe-Signature t is not a whole number of seconds" (fullInt t)
+  if abs (diffUTCTime now (posixSecondsToUTCTime (fromIntegral signedAt))) <= webhookTolerance
     then Right actedOn
-    else Left (WebhookError "Stripe-Signature does not verify")
+    else Left (WebhookStale ("Stripe-Signature t is more than " <> tshow (round webhookTolerance `div` 60 :: Int) <> " minutes from now; check the server clock"))
   where
+    fullInt s = case B8.readInt s of
+      Just (n, rest) | B8.null rest -> Just n
+      _ -> Nothing
     note e = maybe (Left (WebhookError e)) Right
     decodeHex v1hex = case convertFromBase Base16 (B8.map toLower v1hex) of
       Right (bs :: ByteString) -> Right bs

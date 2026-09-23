@@ -129,19 +129,17 @@ and `POST /api/invoice` answers `provider_unavailable` for a card order, the sam
 absent `[btcpay]` does for Bitcoin and Monero. Its keys:
 
 - `secret_key` — a **restricted** key (`rk_...`), never a full secret key (`sk_...`). Grant it
-  **Checkout Sessions: write**, plus **PaymentIntents: read** and **Charges: read** — the poller
-  reads a session with `expand[]=payment_intent.latest_charge`, and Stripe rejects the whole read
-  if the key lacks read on an expanded object (settlement then falls back to the slower list pass).
+  **PaymentIntents: write**, to create and cancel intents, plus **Charges: read** — the poller
+  reads an intent with `expand[]=latest_charge`, and Stripe rejects the whole read if the key
+  lacks read on an expanded object (settlement then falls back to the slower list pass).
 - `publishable_key` (`pk_...`) — the public key the browser mounts the Payment Element with.
 - `webhook_secret` (`whsec_...`) — the signing secret of the `/webhooks/stripe` endpoint,
   configured in the Stripe Dashboard alongside it.
-- `receipt_email` — a fixed address sent as the session's `customer_email`. The Checkout Sessions
-  API requires an email to confirm, so this is prefilled and the buyer never enters one. Use an
-  address you own (turn receipts off in the Dashboard to keep it quiet); never derive it from the
-  order id, which is a bearer capability the service never sends Stripe.
-- `session_minutes` — minutes until an unpaid checkout session expires; must be between
-  31 and 1439, default 60. The bounds sit a minute inside Stripe's own 30-minute-to-24-hour
-  window, so request latency or clock skew cannot push an at-bound value outside it.
+- `session_minutes` — how many minutes an unpaid card order stays open (1 to 1440, default 60).
+  Ten minutes after that, the service cancels the payment at Stripe, and retries if that fails.
+  If the order is over 72 hours old and the cancel has kept failing for an hour, the service marks
+  it expired and logs an error. Check such orders in the Stripe Dashboard. After a restart, the
+  hour starts again.
 
 The service fills `publishable_key` into the shell at boot: the built `index.html` ships
 with an empty `<meta id="stripe-publishable-key" name="stripe-publishable-key" content="">`
@@ -153,7 +151,8 @@ since it runs without an ini.
 
 `POST /webhooks/stripe` verifies `Stripe-Signature` against `webhook_secret` and queues a
 read, the same hint-only role as `POST /webhooks/btcpay`: the poller carries authority, so
-an unverified or unreadable delivery costs nothing but a log line.
+an unverified or unreadable delivery costs nothing but a log line. A delivery signed more than
+15 minutes away from the server's clock is refused with a warning, so keep the clock synced (NTP).
 
 The reverse proxy in front of this service must send a Content-Security-Policy that
 allows Stripe.js and its iframes, since Stripe forbids bundling or self-hosting its
@@ -242,7 +241,8 @@ A code that leaked, or that was refunded, is withdrawn the same way:
 ```
 
 A revoked code answers redemption with `code_invalid`, as if it had never existed, so its holder
-learns nothing from trying. Revoking is not repeatable: the second attempt says so.
+learns nothing from trying. Revoking is not repeatable: the second attempt says so. A code that
+was already redeemed cannot be revoked: its badge was issued, and the command answers with an error.
 
 Core parses `//...` into `CustomChatCommand` and leaves it to the service's `preCmdHook`, which is
 why issuing codes lives in the service rather than in core.

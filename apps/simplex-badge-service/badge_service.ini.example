@@ -33,7 +33,7 @@ secret_key = rk_test_replace-me
 publishable_key = pk_test_replace-me
 ; the signing secret of the /webhooks/stripe endpoint configured in the Dashboard
 webhook_secret = whsec_replace-me
-; minutes the service holds an unpaid card invoice open before it expires it; 31-1439
+; minutes the service holds an unpaid card invoice open before it expires it; 1-1440
 session_minutes = 60
 
 [poll]
