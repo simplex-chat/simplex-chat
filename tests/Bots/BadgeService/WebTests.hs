@@ -21,7 +21,7 @@ import BadgeService.Web.Server
 import Bots.BadgeService.BotTests (newPurchaseKeys)
 import Bots.BadgeService.CatalogTests (WebOffer (..), WebPrice (..), parseCatalogSource)
 import Bots.BadgeService.FakeBTCPay
-import Bots.BadgeService.FakeStripe (FakeStripe (..), setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
+import Bots.BadgeService.FakeStripe (FakeStripe (..), fakeIntentStatus, setIntentState, stripeEvent, stripeSigHeader, withFakeStripe)
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.Async (async, wait)
 import qualified Control.Concurrent.Async as Async
@@ -269,6 +269,7 @@ badgeWebTests = do
     it "refuses the sixth create in a minute, without reaching the provider" testCreateRateLimit
   describe "badge service card" $ do
     it "creates a Stripe PaymentIntent, carrying its clientSecret and a stripe invoice row" testCardCreatesSession
+    it "cancels an overdue card order's intent at Stripe before expiring it" testCardSweepCancelsTheIntent
     it "derives the shown expiry from stripe.session_minutes, not the btcpay window" testCardExpiryFollowsSessionMinutes
     it "settles a card invoice from a signed payment_intent.succeeded and a pass" testCardWebhookSettles
   describe "badge service cancel" $ do
@@ -1661,6 +1662,20 @@ testCardCreatesSession = bounded "card creates a session" $ withFakeStripePoller
   irProvider row `shouldBe` PPStripe
   irStatus row `shouldBe` ISOpen
   bcPaymentStatus <$> settledCode (weStore env) invId `shouldReturn` CPSUnpaid
+
+testCardSweepCancelsTheIntent :: IO ()
+testCardSweepCancelsTheIntent = bounded "card sweep cancels" $ withFakeStripePoller $ \fake poller env client -> do
+  r <- postCreateAs client 1 (createBody supporterPriceId Nothing "card" (codeHashText sampleCode))
+  statusOf r `shouldBe` 200
+  o <- jsonObject r
+  invId@(InvoiceId iid) <- InvoiceId <$> stringField o "invoiceId"
+  Just InvoiceRow {irProviderRef = pid} <- getInvoice (weStore env) invId
+  past <- addUTCTime (negate (expiryGrace + 60)) <$> getCurrentTime
+  withConnection (weStore env) $ \db ->
+    DB.execute db "UPDATE sx_badge_service_invoices SET expires_at = ? WHERE invoice_id = ?" (truncateToSecond past, iid)
+  runOnePass poller
+  fakeIntentStatus fake pid `shouldReturn` Just "canceled"
+  invoiceStatus (weStore env) invId `shouldReturn` ISExpired
 
 -- | This value differs from the default 60 and the btcpay window 45, so a card expiry read from
 -- the wrong key would show up as one of those instead.

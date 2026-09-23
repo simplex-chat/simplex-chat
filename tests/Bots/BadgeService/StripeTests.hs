@@ -45,7 +45,9 @@ badgeStripeTests = describe "badge stripe adapter" $ do
     it "creates a PaymentIntent and reads back the client secret" testFakeCreatesCard
     it "sends the create form Stripe documents, over HTTP Basic" testFakeCreateBody
     it "is refused when the secret key is wrong, rather than passing silently" testFakeWrongSecretKey
-    it "walks requires_payment_method through processing to succeeded, then cancels" testFakeLifecycle
+    it "walks requires_payment_method through processing to succeeded, then refuses a cancel" testFakeLifecycle
+    it "cancels an open intent once, then refuses a second cancel" testFakeCancel
+    it "refuses to cancel an intent while it is processing" testFakeCancelRefusedWhileProcessing
     it "reads the expand query on every read" testFakeReadExpands
     it "closes on a canceled intent" testFakeCanceled
     it "makes a 500 at checkout a ProviderError, creating nothing" testFakeCreate500
@@ -139,9 +141,25 @@ testFakeLifecycle = withProvider $ \fake p -> do
   pReadInvoice p pid `shouldReturn` Right Nothing
   setIntentState fake pid ["status" .= ("succeeded" :: Text)]
   pReadInvoice p pid `shouldReturn` Right (Just (SigSettled fiftyFourDollarsReceived fixtureChargeAt))
-  pCancelInvoice p pid `shouldReturn` Right ()
+  pCancelInvoice p pid >>= (`shouldSatisfy` namesInError "payment_intent_unexpected_state")
+  fakeIntentStatus fake pid `shouldReturn` Just "succeeded"
   cancels <- apiRequests fake "POST" [pid, "cancel"]
   length cancels `shouldBe` 1
+
+testFakeCancelRefusedWhileProcessing :: IO ()
+testFakeCancelRefusedWhileProcessing = withProvider $ \fake p -> do
+  ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
+  setIntentState fake pid ["status" .= ("processing" :: Text)]
+  pCancelInvoice p pid >>= (`shouldSatisfy` namesInError "payment_intent_unexpected_state")
+  fakeIntentStatus fake pid `shouldReturn` Just "processing"
+
+testFakeCancel :: IO ()
+testFakeCancel = withProvider $ \fake p -> do
+  ProviderInvoice {piProviderRef = pid} <- createdInvoice p (SPMCard CPStripe)
+  pCancelInvoice p pid `shouldReturn` Right ()
+  fakeIntentStatus fake pid `shouldReturn` Just "canceled"
+  pReadInvoice p pid `shouldReturn` Right (Just (SigClosed nothingReceived))
+  pCancelInvoice p pid >>= (`shouldSatisfy` namesInError "payment_intent_unexpected_state")
 
 testFakeReadExpands :: IO ()
 testFakeReadExpands = withProvider $ \fake p -> do
