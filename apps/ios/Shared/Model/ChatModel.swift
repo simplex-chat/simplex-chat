@@ -720,6 +720,9 @@ final class ChatModel: ObservableObject {
         } else {
             if cInfo.groupChatScope() == nil {
                 addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
+                if case .rcvNew = cItem.meta.itemStatus {
+                    unreadCollector.changeUnreadCounter(cInfo.id, by: 1, unreadMentions: cItem.meta.userMention ? 1 : 0)
+                }
             } else {
                 addChat(Chat(chatInfo: cInfo, chatItems: []))
             }
