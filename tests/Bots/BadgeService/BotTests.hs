@@ -14,7 +14,6 @@ import BadgeService.Config (BadgeIssuerKey (..), readServiceConfig)
 import Bots.BadgeService.ConfigTests (withIssuer)
 import BadgeService.Options
 import BadgeService.Service
-import BadgeService.Store (CodeRedemption (..), IssuedCode (..), RedeemedCode (..), getBadgeCode)
 import BadgeService.Store.Invoices (markCodePaid)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -53,7 +52,6 @@ import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSSecretKey, bbsKeyGen)
