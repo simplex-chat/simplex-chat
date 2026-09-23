@@ -251,6 +251,7 @@ badgeWebTests = do
     it "answers 400 empty, with no detail, for a signature that does not verify" testWebhookRefusesASignature
     it "answers 200 for an unhandled type, an unknown ref and the other lane's ref" testWebhookIgnoresWhatItCannotActOn
     it "refuses a body over the 64 KB cap before parsing or verifying it" testWebhookRefusesAnOversizedBody
+    it "queues a read of an order once, however often it is hinted before being served" testReadHintQueuedOnce
     it "drops a hint rather than blocking when the queue is full" testWebhookDropsAHintWhenFull
     it "answers 200 rather than any 5xx when the adapter or the store throws" testWebhookNeverAnswers5xx
   describe "badge service checkout" $ do
@@ -683,7 +684,7 @@ stubProvider ref =
         pure $ case ssListError stub of
           Just e -> Left e
           Nothing -> Right ListPass {lpMoved = Map.toList (ssInvoices stub), lpSkipped = ssSkipped stub},
-      pVerifyWebhook = verifyRecording ref
+      pVerifyWebhook = const (verifyRecording ref)
     }
 
 -- | 'pVerifyWebhook' is pure by design, so recording its arguments needs 'unsafePerformIO',
@@ -2915,14 +2916,25 @@ testWebhookRefusesAnOversizedBody = bounded "webhook body cap" $ withStubPoller 
   responseBody over `shouldBe` ""
   length <$> stubWebhooks ref `shouldReturn` 1
 
+testReadHintQueuedOnce :: IO ()
+testReadHintQueuedOnce = bounded "hint queued once" $ withStubPoller raceHold $ \ref poller env _ -> do
+  seedBadgePrice (weStore env) "price1"
+  _ <- seedOpenRef (weStore env) 1 hookRef someExpiry
+  replicateM_ 5 (queueReadHint (weHints env) hookRef `shouldReturn` True)
+  drainHints poller
+  stubCalls ref `shouldReturn` [StubRead hookRef]
+  queueReadHint (weHints env) hookRef `shouldReturn` True
+  drainHints poller
+  stubCalls ref `shouldReturn` [StubRead hookRef, StubRead hookRef]
+
 testWebhookDropsAHintWhenFull :: IO ()
 testWebhookDropsAHintWhenFull = bounded "full hint queue" $ withStubPoller raceHold $ \ref poller env client -> do
   seedBadgePrice (weStore env) "price1"
   iid <- seedOpenRef (weStore env) 1 hookRef someExpiry
   setSignals ref [(hookRef, settledSignal)]
-  filled <- replicateM (fromIntegral hintQueueSize) (queueReadHint (weHints env) "p-filler")
-  filled `shouldBe` replicate (fromIntegral hintQueueSize) True
-  queueReadHint (weHints env) "p-filler" `shouldReturn` False
+  let fillers = ["p-filler-" <> T.pack (show i) | i <- [1 .. hintQueueSize]]
+  mapM (queueReadHint (weHints env)) fillers `shouldReturn` map (const True) fillers
+  queueReadHint (weHints env) "p-one-more" `shouldReturn` False
   setVerifyResult ref (Right (Just hookRef))
   r <- postWebhook client someSig hookedEvent
   statusOf r `shouldBe` 200

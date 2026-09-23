@@ -225,7 +225,7 @@ btcpayProvider cfg = do
         pReadInvoice = readInvoice env,
         pCancelInvoice = cancelInvoice env,
         pListOpen = listOpen env,
-        pVerifyWebhook = verifyBTCPaySig (bWebhookSecret cfg)
+        pVerifyWebhook = const (verifyBTCPaySig (bWebhookSecret cfg))
       }
 
 -- enabledOnly returns only enabled methods, so the boot log shows what the store can actually use.

@@ -24,7 +24,8 @@ import Simplex.Chat.PaymentService.Types (CurrencyAmount, PaymentProvider (..), 
 
 newtype ProviderError = ProviderError Text deriving (Eq, Show)
 
-newtype WebhookError = WebhookError Text deriving (Eq, Show)
+-- | WebhookStale is a valid signature with a timestamp too far from our clock.
+data WebhookError = WebhookError Text | WebhookStale Text deriving (Eq, Show)
 
 -- rcvAmount is the total received on the invoice so far, not the amount of one payment.
 -- rcvDue is the provider's figure for what is still owed.
@@ -76,5 +77,5 @@ data Provider = Provider
     -- Stops the provider from accepting payment for this order.
     pCancelInvoice :: Text -> IO (Either ProviderError ()),
     pListOpen :: IO (Either ProviderError ListPass),
-    pVerifyWebhook :: [Header] -> ByteString -> Either WebhookError (Maybe Text)
+    pVerifyWebhook :: UTCTime -> [Header] -> ByteString -> Either WebhookError (Maybe Text)
   }

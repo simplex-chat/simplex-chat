@@ -151,7 +151,8 @@ since it runs without an ini.
 
 `POST /webhooks/stripe` verifies `Stripe-Signature` against `webhook_secret` and queues a
 read, the same hint-only role as `POST /webhooks/btcpay`: the poller carries authority, so
-an unverified or unreadable delivery costs nothing but a log line.
+an unverified or unreadable delivery costs nothing but a log line. A delivery signed more than
+15 minutes away from the server's clock is refused with a warning, so keep the clock synced (NTP).
 
 The reverse proxy in front of this service must send a Content-Security-Policy that
 allows Stripe.js and its iframes, since Stripe forbids bundling or self-hosting its

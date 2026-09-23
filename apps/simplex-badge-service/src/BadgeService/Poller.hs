@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -39,6 +40,7 @@ import Data.List (find, partition, sortOn)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
+import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
@@ -61,19 +63,27 @@ skipWarnInterval = 3600
 maxSkipReasons :: Int
 maxSkipReasons = 4096
 
--- | A queue, not a call, so settlement stays on this one thread.
-newtype ReadHints = ReadHints (TBQueue Text)
+-- | Webhooks queue reads here, so all settling happens on the poller thread.
+-- An order already waiting in the queue is not added again, so repeated webhooks don't pile up reads.
+data ReadHints = ReadHints (TBQueue Text) (TVar (Set Text))
 
 hintQueueSize :: Natural
 hintQueueSize = 256
 
 newReadHints :: IO ReadHints
-newReadHints = ReadHints <$> newTBQueueIO hintQueueSize
+newReadHints = ReadHints <$> newTBQueueIO hintQueueSize <*> newTVarIO S.empty
 
 queueReadHint :: ReadHints -> Text -> IO Bool
-queueReadHint (ReadHints q) ref = atomically $ do
+queueReadHint (ReadHints q queued) ref = atomically $ do
+  already <- S.member ref <$> readTVar queued
   full <- isFullTBQueue q
-  if full then pure False else True <$ writeTBQueue q ref
+  if
+    | already -> pure True
+    | full -> pure False
+    | otherwise -> do
+        writeTBQueue q ref
+        modifyTVar' queued (S.insert ref)
+        pure True
 
 minCadenceSeconds :: Int
 minCadenceSeconds = 1
@@ -333,14 +343,19 @@ runPoller env = forever $ do
 
 -- | The deadline is checked per hint, not per batch, so a redelivery backlog cannot block the pass for the sum of their timeouts.
 serveHints :: PollerEnv -> STM () -> IO ()
-serveHints env@PollerEnv {peHints = ReadHints q} due = do
-  next <- atomically ((Nothing <$ due) `orElse` (Just <$> readTBQueue q))
+serveHints env@PollerEnv {peHints = ReadHints q queued} due = do
+  next <- atomically ((Nothing <$ due) `orElse` (Just <$> takeHint))
   case next of
     Nothing -> pure ()
     Just ref -> serveHint env ref >> serveHints env due
+  where
+    takeHint = do
+      ref <- readTBQueue q
+      modifyTVar' queued (S.delete ref)
+      pure ref
 
 drainHints :: PollerEnv -> IO ()
-drainHints env@PollerEnv {peHints = ReadHints q} = serveHints env (isEmptyTBQueue q >>= check)
+drainHints env@PollerEnv {peHints = ReadHints q _} = serveHints env (isEmptyTBQueue q >>= check)
 
 passSafely :: PollerEnv -> IO ()
 passSafely env = void $ safely "the pass" (runOnePass env)

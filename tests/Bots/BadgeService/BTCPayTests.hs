@@ -482,7 +482,7 @@ testWebhookMalformed = do
 isRefused :: Either WebhookError (Maybe Text) -> Bool
 isRefused = \case
   Left (WebhookError _) -> True
-  Right _ -> False
+  _ -> False
 
 btcAddress, xmrAddress :: Text
 btcAddress = "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq"
@@ -690,8 +690,8 @@ testFakeWebhookSecretWiring :: IO ()
 testFakeWebhookSecretWiring = withProvider $ \fake p -> do
   let configured = bWebhookSecret (fbConfig fake)
       b = webhookEvent "InvoiceSettled" ref
-  pVerifyWebhook p (webhookSigHeader configured b) (LB.toStrict b) `shouldBe` Right (Just ref)
-  pVerifyWebhook p (webhookSigHeader (configured <> "0") b) (LB.toStrict b) `shouldSatisfy` isRefused
+  pVerifyWebhook p readTime (webhookSigHeader configured b) (LB.toStrict b) `shouldBe` Right (Just ref)
+  pVerifyWebhook p readTime (webhookSigHeader (configured <> "0") b) (LB.toStrict b) `shouldSatisfy` isRefused
 
 -- | An amount assertion only proves the adapter reads paymentMethodPaid rather than totalPaid while
 -- the two differ in the fixture, so this checks that directly.
