@@ -57,6 +57,9 @@ let DEFAULT_CHAT_ITEM_TAIL = "chatItemTail"
 let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
 let DEFAULT_ADDRESS_CREATION_CARD_SHOWN = "addressCreationCardShown"
 let DEFAULT_SUPPORTER_BANNER_SHOWN = "supporterBannerShown"
+let DEFAULT_SUPPORTER_BANNER_TAPPED = "supporterBannerTapped"
+let DEFAULT_GET_STAKE_BANNER_TAPPED = "getStakeBannerTapped"
+let DEFAULT_GET_STAKE_BANNER_DISMISSED = "getStakeBannerDismissed"
 let DEFAULT_TOOLBAR_MATERIAL = "toolbarMaterial"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
@@ -119,6 +122,9 @@ let appDefaults: [String: Any] = [
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
     DEFAULT_ADDRESS_CREATION_CARD_SHOWN: false,
     DEFAULT_SUPPORTER_BANNER_SHOWN: false,
+    DEFAULT_SUPPORTER_BANNER_TAPPED: false,
+    DEFAULT_GET_STAKE_BANNER_TAPPED: false,
+    DEFAULT_GET_STAKE_BANNER_DISMISSED: false,
     DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.defaultMaterial,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
@@ -151,6 +157,9 @@ let hintDefaults = [
     DEFAULT_ONE_HAND_UI_CARD_SHOWN,
     DEFAULT_ADDRESS_CREATION_CARD_SHOWN,
     DEFAULT_SUPPORTER_BANNER_SHOWN,
+    DEFAULT_SUPPORTER_BANNER_TAPPED,
+    DEFAULT_GET_STAKE_BANNER_TAPPED,
+    DEFAULT_GET_STAKE_BANNER_DISMISSED,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN,
     DEFAULT_SIGN_MESSAGE_ALERT_SHOWN,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE,
@@ -403,7 +412,7 @@ struct SettingsView: View {
             if isInUS {
                 Section(header: Text("You can now invest in SimpleX Chat").foregroundColor(theme.colors.secondary)) {
                     NavigationLink {
-                        GetStakeView(fromSettings: true)
+                        GetStakeView(fromSettings: true, showFirstImage: true)
                             .navigationBarTitle("", displayMode: .inline)
                     } label: {
                         settingsRow("dollarsign.circle", color: theme.colors.secondary) { Text("Crowdfunding on Wefunder") }

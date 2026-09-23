@@ -6,9 +6,9 @@
 
 # Function: chatMigrateInit()
 
-> **chatMigrateInit**(`dbPath`, `dbKey`, `confirm`): `Promise`\<`bigint`\>
+> **chatMigrateInit**(`dbPath`, `dbKey`, `confirm`, `queueSize?`): `Promise`\<`bigint`\>
 
-Defined in: [src/core.ts:7](../src/core.ts#L7)
+Defined in: [src/core.ts:8](../src/core.ts#L8)
 
 Initialize chat controller
 
@@ -25,6 +25,12 @@ Initialize chat controller
 ### confirm
 
 [`MigrationConfirmation`](core.Enumeration.MigrationConfirmation.md)
+
+### queueSize?
+
+`number`
+
+Size of internal queues, the core default is used when omitted.
 
 ## Returns
 

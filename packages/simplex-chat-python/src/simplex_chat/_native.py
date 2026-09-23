@@ -16,7 +16,7 @@ import urllib.request
 import zipfile
 from ctypes import POINTER, c_char_p, c_int, c_uint8, c_void_p
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from ._version import LIBS_VERSION
 
@@ -166,7 +166,8 @@ _backend: Backend | None = None
 
 def _load_libc() -> ctypes.CDLL:
     if sys.platform == "win32":
-        return ctypes.CDLL("msvcrt")
+        # libsimplex.dll allocates results with UCRT malloc; msvcrt free would corrupt the heap.
+        return ctypes.CDLL("ucrtbase")
     return ctypes.CDLL(None)  # libc on POSIX is the process's own symbol table
 
 
@@ -255,3 +256,19 @@ def lib() -> ctypes.CDLL:
     if _lib is None:
         raise RuntimeError("lib_for() must be called before lib()")
     return _lib
+
+
+QUEUE_SIZE_UNSUPPORTED = (
+    "loaded libsimplex does not export chat_migrate_init_queue; queue size needs a newer libsimplex"
+)
+
+
+def migrate_init_queue() -> Any:
+    """`chat_migrate_init_queue`, which older libsimplex releases do not export."""
+    try:
+        fn = lib().chat_migrate_init_queue
+    except AttributeError as e:
+        raise RuntimeError(QUEUE_SIZE_UNSUPPORTED) from e
+    fn.argtypes = [c_char_p, c_char_p, c_char_p, c_int, POINTER(c_void_p)]
+    fn.restype = c_void_p
+    return fn

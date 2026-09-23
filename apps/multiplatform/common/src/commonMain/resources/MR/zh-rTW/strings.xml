@@ -2772,7 +2772,6 @@
     <string name="appearance_minimize_to_tray_desc">在背景執行以接收訊息</string>
     <string name="badge_supports_simplex">%s 支持 SimpleX Chat。</string>
     <string name="badge_supported_simplex">%1$s 曾支持 SimpleX Chat。此徽章已於 %2$s 過期。</string>
-    <string name="badge_support_from_v7">你可以從應用程式 v7 開始支持 SimpleX。</string>
     <string name="badge_invested">%s 投資了 SimpleX Chat 眾籌。</string>
     <string name="badge_unverified_title">未驗證徽章</string>
     <string name="badge_unverified_desc">無法驗證此徽章，可能並非真實。</string>

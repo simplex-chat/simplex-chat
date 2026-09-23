@@ -15,12 +15,13 @@ Source: `common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatLis
 7. [Tag System](#7-tag-system)
 8. [UserPicker](#8-userpicker)
 9. [Source Files](#9-source-files)
+10. [Crowdfunding Banner](#10-crowdfunding-banner)
 
 ---
 
 ## Executive Summary
 
-The Chat List is the landing screen of SimpleX Chat, rendering all conversations for the active user. Built around `ChatListView` (line 126 in `ChatListView.kt`), it provides a searchable, filterable `LazyColumn` of chat previews with a toolbar, tag-based filtering, and a user-switching side panel. The view adapts between one-hand UI mode (toolbar at bottom, reversed list) and standard mode (toolbar at top). Search also accepts SimpleX links for direct connection.
+The Chat List is the landing screen of SimpleX Chat, rendering all conversations for the active user. Built around `ChatListView` (line 179 in `ChatListView.kt`), it provides a searchable, filterable `LazyColumn` of chat previews with a toolbar, tag-based filtering, and a user-switching side panel. The view adapts between one-hand UI mode (toolbar at bottom, reversed list) and standard mode (toolbar at top). Search also accepts SimpleX links for direct connection.
 
 ---
 
@@ -53,7 +54,7 @@ ChatListView
 
 ## 2. ChatListView Composable
 
-**Location:** [`ChatListView.kt#L127`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L127)
+**Location:** [`ChatListView.kt#L179`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L179)
 
 ```kotlin
 fun ChatListView(
@@ -66,8 +67,8 @@ fun ChatListView(
 
 ### Initialization
 
-- Shows "What's New" modal on first launch after update (line ~130), with a 1-second delay.
-- On desktop, closing a chat resets audio/video players (line ~138).
+- Shows "What's New" modal on first launch after update (line ~185), with a 1-second delay.
+- On desktop, closing a chat resets audio/video players (line ~193).
 
 ### Layout Modes
 
@@ -88,8 +89,8 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 
 ### Android-specific
 
-- `SetNotificationsModeAdditions`: Notification permission setup (line ~184).
-- `UserPicker`: Overlay side panel for user switching (line ~192).
+- `SetNotificationsModeAdditions`: Notification permission setup (line ~243).
+- `UserPicker`: Overlay side panel for user switching (line ~247).
 
 ---
 
@@ -113,7 +114,7 @@ The `oneHandUI` preference (`appPrefs.oneHandUI.state`) controls the layout:
 
 ### Active Filter Types
 
-Defined as sealed class `ActiveFilter` (line ~51):
+Defined as sealed class `ActiveFilter` (line ~59):
 
 ```kotlin
 sealed class ActiveFilter {
@@ -136,7 +137,7 @@ sealed class ActiveFilter {
 
 ### Search Filtering
 
-The `filteredChats` function (line ~1188) applies filters in this order:
+The `filteredChats` function (line ~1474) applies filters in this order:
 
 1. **SimpleX link match:** If a pasted link resolved to a known contact/group, show only that chat.
 2. **Text search:** Case-insensitive match against `chat.chatInfo.chatViewName`, `chat.chatInfo.fullName`, and `chat.chatInfo.localAlias`.
@@ -147,7 +148,7 @@ The `filteredChats` function (line ~1188) applies filters in this order:
 
 ### Search Bar
 
-`ChatListSearchBar` (line ~611) provides:
+`ChatListSearchBar` (line ~765) provides:
 - Text input with search icon.
 - SimpleX link detection: When a pasted string contains a single SimpleX link, it triggers `planAndConnect` for connection, suppressing normal search.
 - Unread filter toggle button (right side, when search is empty).
@@ -158,7 +159,7 @@ The `filteredChats` function (line ~1188) applies filters in this order:
 
 ## 5. Chat Preview
 
-**Location:** [`ChatPreviewView.kt#L40`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatPreviewView.kt#L40)
+**Location:** [`ChatPreviewView.kt#L41`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatPreviewView.kt#L41)
 
 ```kotlin
 fun ChatPreviewView(
@@ -224,7 +225,7 @@ On desktop, the currently selected chat (`chatModel.chatId.value == chat.id`) re
 
 ### TagsView
 
-**Location:** [`ChatListView.kt#L929`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L929)
+**Location:** [`ChatListView.kt#L1214`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/ChatListView.kt#L1214)
 
 Renders a horizontally scrollable row of tag chips (via `TagsRow`, which is a platform-specific `expect` composable).
 
@@ -244,7 +245,7 @@ Layout logic:
 
 ### TagListView
 
-**Location:** [`TagListView.kt#L48`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/TagListView.kt#L48)
+**Location:** [`TagListView.kt#L47`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/TagListView.kt#L47)
 
 Full-screen tag management view opened from the "+" button or long-press menu.
 
@@ -312,3 +313,48 @@ Uses `AnimatedViewState` (`GONE`, `VISIBLE`, `HIDING`) with a `MutableStateFlow`
 | `ShareListView.kt` | Share target list (forwarding flow) |
 | `TagListView.kt` | Tag management and assignment view |
 | `UserPicker.kt` | User switching side panel |
+| `GetStakeBanner.kt` | Crowdfunding banner and the shared banner card chrome |
+
+---
+
+<a id="GetStakeBanner"></a>
+
+## 10. Crowdfunding Banner
+
+**Location:** [`GetStakeBanner.kt#L31`](../../common/src/commonMain/kotlin/chat/simplex/common/views/chatlist/GetStakeBanner.kt#L31)
+
+```kotlin
+fun GetStakeBanner(showDismiss: Boolean, onTap: () -> Unit, onDismiss: () -> Unit)
+```
+
+Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfundingAvailable()` — always outside Play Store builds, and in Play builds only while the store country is the US or not yet known — and only while `getStakeBannerDismissed` is false.
+
+### Placement
+
+| Where | Condition | Layout |
+|-------|-----------|--------|
+| Chat list | in `ChatList`'s `LazyColumn`, after `ToggleChatListCard` and before the chats | `Box(Modifier.zIndex(1f).padding(16.dp))` |
+| Onboarding | inside `ConnectOnboardingView` (`views/newchat/OnboardingCards.kt`), below the pager, so it shares the pages' width limit on desktop and their dimming while a start modal is open; opens the page in `ModalManager.center` on desktop, `ModalManager.start` on Android | `padding(start/end = DEFAULT_PADDING, bottom = 8.dp)`, in a `Column` where the pager takes `weight(1f)` |
+
+The list has a single banner slot, filled by an `if`/`else if` chain in priority order: the support-ended alert (`supportEnded()`), the renewal-failure alert (`badgeIssueFailed()`), the pitch, then the Wefunder banner. Each banner's `item` records itself in `ChatModel.chatListBanner` (`BadgeExpired`, `BadgeIssueFailed`, `BadgePitch`, `GetStake`) in a `SideEffect`, and the pitch and Wefunder conditions start with `chatModel.bannerSlotFree(banner)` — true only while nothing else was shown this app session — so dismissing a banner never puts another in its place until restart. The alerts have no such check: an alert takes the slot whenever present, and once shown it holds it. The pitch also requires `noShownBadge()` (`views/newchat/OnboardingCards.kt`), false until `BadgeModel.isCurrent` for the current user, so it cannot take the slot from a supporter whose badge loads a moment later. `ConnectOnboardingView` applies the same `bannerSlotFree` check and records `GetStake`.
+
+`crowdfundingAvailable()` launches an effect to load the store country, so both call sites read it in the composable body rather than inside the `LazyColumn` builder.
+
+### Dismissal
+
+| Preference | Set by | Effect |
+|------------|--------|--------|
+| `getStakeBannerTapped` | `openGetStake()` | the dismiss X appears from then on, while there are chats |
+| `getStakeBannerDismissed` | the dismiss X | hides the banner in both placements |
+| `supporterBannerTapped` | tapping the supporter pitch | the pitch's dismiss X appears from then on |
+| `supporterBannerShown` | the pitch's dismiss X, through its "You can support SimpleX later in Settings." alert, and a successful code redemption | hides the pitch |
+
+The two badge alert banners always offer the X; only the pitch waits to be tapped once, so a user who has not looked at it cannot dismiss it unseen.
+
+Both are in `AppPreferences.hintPreferences`, so "Reset all hints" restores the banner. The X is never offered below the onboarding cards, so the banner cannot be dismissed before the user has a chat.
+
+Tapping the card runs `openGetStake()`, which opens `GetStakeView(showFirstImage = true)` as a card modal — `showFirstImage` decides whether the page repeats the first slide's image, which only What's New shows above its own link.
+
+### Shared card chrome
+
+`Modifier.bannerCard(onTap)` (size state, gradient brush, `heightIn`, `clip`, `background`, `clickable`) and `BannerDismissButton` are declared separately from `GetStakeBanner` so other banners can adopt the same chrome; the paddings stay with the caller. The gradient reuses `gradientPoints`, `lightStops` and `darkStops` from `views/newchat/OnboardingCards.kt`.

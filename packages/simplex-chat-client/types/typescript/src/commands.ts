@@ -570,7 +570,7 @@ export namespace APIConnect {
   export type Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 
   export function cmdString(self: APIConnect): string {
-    return '/_connect ' + self.userId + (self.preparedLink_ ? ' ' + T.CreatedConnLink.cmdString(self.preparedLink_) : '')
+    return '/_connect ' + self.userId + (self.incognito ? ' incognito=on' : '') + (self.preparedLink_ ? ' ' + T.CreatedConnLink.cmdString(self.preparedLink_) : '')
   }
 }
 
