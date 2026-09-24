@@ -1039,16 +1039,20 @@ markCompressedBatch :: ByteString -> ByteString
 markCompressedBatch = B.cons 'X'
 {-# INLINE markCompressedBatch #-}
 
+-- Compress a body that is over the bound, and fail when it is still over it compressed.
+compressBodyTo :: Int -> ByteString -> Maybe ByteString
+compressBodyTo maxLen body
+  | B.length body <= maxLen = Just body
+  | B.length body' > maxLen = Nothing
+  | otherwise = Just body'
+  where
+    body' = compressedBatchMsgBody_ body
+
 -- Service payloads are padded to e2eEncConnInfoLength, the same budget as connection info,
 -- so they use the compression, marker and size bound of encodeConnInfoPQ. A JSON payload
 -- never starts with 'X', so the marker is unambiguous.
 compressServiceBody :: ByteString -> Either String ByteString
-compressServiceBody body
-  | B.length body <= maxCompressedInfoLength = Right body
-  | B.length body' > maxCompressedInfoLength = Left "service payload is too large"
-  | otherwise = Right body'
-  where
-    body' = compressedBatchMsgBody_ body
+compressServiceBody = maybe (Left "service payload is too large") Right . compressBodyTo maxCompressedInfoLength
 
 decompressServiceBody :: ByteString -> Either String ByteString
 decompressServiceBody body = case B.uncons body of

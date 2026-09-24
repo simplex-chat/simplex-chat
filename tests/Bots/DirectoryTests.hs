@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Bots.DirectoryTests where
 
@@ -11,13 +12,20 @@ import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
-import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM (atomically, readTVarIO)
 import Control.Exception (finally)
 import Control.Monad (forM_, when, void)
+import Control.Monad.Except (runExceptT)
 import Data.Aeson ((.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Types as JT
+import Data.Bifunctor (first)
+import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Int (Int64)
+import Data.List (sort)
+import Data.Maybe (isJust, isNothing)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Directory.Captcha
@@ -28,21 +36,26 @@ import Directory.Search (SearchCursor (..))
 import Directory.Service
 import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable, setOwnerWritable, setPermissions)
 import Simplex.Chat.Bot.KnownContacts
-import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (..), storeCxt)
+import Simplex.Chat.Core (sendChatCmdStr)
+import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import qualified Simplex.Chat.Markdown as MD
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (memberSupportVoiceVersion)
-import Simplex.Chat.Types (ChatPeerType (..), GroupSummary (..), ImageData (..), Profile (..))
+import qualified Simplex.Chat.Store.Groups as Store
+import Simplex.Chat.Types (ChatPeerType (..), GroupInfo (..), GroupLink, GroupProfile (..), GroupSummary (..), GroupType (..), ImageData (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Messaging.Agent.Store.Common (withTransaction)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 import Simplex.Messaging.Version
 import NameResolver
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
+import Text.Read (readMaybe)
 
 directoryServiceTests :: SpecWith TestParams
 directoryServiceTests = do
@@ -60,6 +73,11 @@ directoryServiceTests = do
   it "should page search over service RPC by the echoed cursor" testDirectorySearchRpcPaging
   it "should match LIKE wildcards in search text literally" testDirectorySearchRpcLiteral
   it "should reject service requests over the cap" testDirectorySearchRpcBusy
+  it "should send every entry field the apps render" testDirectorySearchEntryFields
+  it "should send a channel entry with its published link" testDirectorySearchChannelEntry
+  it "should drop an oversize image and keep the entry" testSearchEntryImageBound
+  it "should page image-bearing entries over the envelope" testDirectorySearchImagePaging
+  it "should join a group found over the service RPC" testDirectorySearchJoinGroup
   it "should fit the search page to the envelope" testSearchResultsPage
   it "should invite to owners' group if specified" testInviteToOwnersGroup
   it "should re-invite owner who left owners' group" testInviteOwnerAfterLeavingOwnersGroup
@@ -124,6 +142,7 @@ directoryNameTests :: SpecWith TestParams
 directoryNameTests = do
   it "should verify and show a channel's SimpleX name" testDirectoryChannelName
   it "should mark an inconsistent SimpleX name as not verified" testDirectoryChannelNameNotVerified
+  it "should send the verified SimpleX name in a search entry" testDirectorySearchVerifiedName
 
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -695,9 +714,9 @@ testDirectorySearchRpcPaging ps =
       bob `connectVia` dsShortLink
       forM_ [1 .. 4 :: Int] $ \i -> registerGroupId superUser bob ("group" <> show i) "" i i
       withNewTestChat ps "cath" cathProfile $ \cath -> do
-        (page1, cursor) <- searchDirectory cath dsShortLink "group" Nothing
+        (page1, cursor) <- searchNames cath dsShortLink "group" Nothing
         page1 `shouldBe` ["group1", "group2", "group3"]
-        (page2, cursor') <- searchDirectory cath dsShortLink "group" cursor
+        (page2, cursor') <- searchNames cath dsShortLink "group" cursor
         page2 `shouldBe` ["group4"]
         cursor' `shouldBe` Nothing
 
@@ -716,13 +735,13 @@ testDirectorySearchRpcLiteral ps =
       notifySuperUser_ superUser bob "PrivacyGroup" "" (Just descr) 1 1
       void $ approveRegistrationId superUser bob "PrivacyGroup" 1 1
       withNewTestChat ps "cath" cathProfile $ \cath -> do
-        (found, _) <- searchDirectory cath dsShortLink "privacy" Nothing
+        (found, _) <- searchNames cath dsShortLink "privacy" Nothing
         found `shouldBe` ["PrivacyGroup"]
         -- ten wildcard pairs against two hundred e's, then a character the description lacks
-        (none, _) <- searchDirectory cath dsShortLink (concat (replicate 10 "%e") <> "%q") Nothing
+        (none, _) <- searchNames cath dsShortLink (concat (replicate 10 "%e") <> "%q") Nothing
         none `shouldBe` []
         -- as a wildcard, '_' would match the 'g'
-        (none', _) <- searchDirectory cath dsShortLink "privacy_roup" Nothing
+        (none', _) <- searchNames cath dsShortLink "privacy_roup" Nothing
         none' `shouldBe` []
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"" <> replicate 101 'a' <> "\"}")
         cath <## "service response: {\"errorMessage\":\"search text is too long\",\"type\":\"error\"}"
@@ -735,18 +754,222 @@ testDirectorySearchRpcBusy ps =
       cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"privacy\"}")
       cath <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASERejected {rejectReason = \"service is busy\"}}}"
 
-searchDirectory :: HasCallStack => TestCC -> String -> String -> Maybe J.Value -> IO ([String], Maybe J.Value)
-searchDirectory u dsLink text cursor_ = do
+-- The response is read from the controller, not the terminal: an entry with a profile image is
+-- longer than a terminal row, and a wrapped line reaches the test queue as its last row only.
+-- The cursor stays a raw J.Value: echoing back what was received is the contract the apps follow.
+searchDirectory :: TestCC -> String -> String -> Maybe J.Value -> IO ([DirectorySearchEntry], Maybe J.Value)
+searchDirectory TestCC {chatController = cc} dsLink text cursor_ = do
   let req = J.object $ ["type" .= ("search" :: String), "searchText" .= text] <> maybe [] (\c -> ["searchCursor" .= c]) cursor_
-  u ##> ("/_service_request 1 " <> dsLink <> " " <> LB.unpack (J.encode req))
-  resp <- dropStrPrefix "service response: " <$> getTermLine u
-  maybe (fail $ "unexpected response: " <> resp) pure $ JT.parseMaybe searchResults =<< J.decode (LB.pack resp)
+  r <- sendChatCmdStr cc ("/_service_request 1 " <> dsLink <> " " <> LB.unpack (J.encode req))
+  case r of
+    Right CRServiceResponse {responseData} ->
+      maybe (fail $ "unexpected response: " <> LB.unpack (J.encode responseData)) pure $ JT.parseMaybe searchResults responseData
+    _ -> fail $ "service request failed: " <> show r
   where
-    searchResults = J.withObject "searchResults" $ \o -> do
-      entries <- o .: "entries" :: JT.Parser [J.Object]
-      names <- mapM (.: "displayName") entries
-      cursor <- o .:? "searchCursor"
-      pure (names, cursor)
+    searchResults o = (,) <$> o .: "entries" <*> o .:? "searchCursor"
+
+searchNames :: HasCallStack => TestCC -> String -> String -> Maybe J.Value -> IO ([Text], Maybe J.Value)
+searchNames u dsLink text cursor_ = first (map entryName) <$> searchDirectory u dsLink text cursor_
+
+entryName :: DirectorySearchEntry -> Text
+entryName DirectorySearchEntry {displayName} = displayName
+
+searchEntryOnly :: HasCallStack => TestCC -> String -> String -> IO DirectorySearchEntry
+searchEntryOnly u dsLink text = do
+  r <- searchDirectory u dsLink text Nothing
+  case r of
+    ([e], Nothing) -> pure e
+    _ -> fail $ "expected one entry and no cursor, got: " <> show (first (map entryName) r)
+
+-- every field the app renders or connects with, for a group registered the ordinary way
+testDirectorySearchEntryFields :: HasCallStack => TestParams -> IO ()
+testDirectorySearchEntryFields ps =
+  withDirectoryService ps $ \superUser (dsShortLink, dsLink) ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      registerGroupWithImage superUser bob "PrivacyGroup" "Private chats" 1
+      -- the chat path reports the same member count the entry carries
+      groupFound bob "PrivacyGroup"
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        DirectorySearchEntry {displayName, simplexName, groupLink, shortDescr, image, entryType} <-
+          searchEntryOnly cath dsShortLink "privacy"
+        displayName `shouldBe` "PrivacyGroup"
+        shortDescr `shouldBe` Just "Private chats"
+        isJust image `shouldBe` True
+        simplexName `shouldBe` Nothing
+        let PublicLink {connFullLink, connShortLink} = groupLink
+        isJust connShortLink `shouldBe` True
+        -- the app connects through the short link, so the full link is not worth its bytes
+        isNothing connFullLink `shouldBe` True
+        let DETGroup {groupType, summary = GroupSummary {currentMembers}} = entryType
+        groupType `shouldBe` Nothing
+        currentMembers `shouldBe` 2
+
+-- a channel publishes its own link in the profile, so groupPublicLink takes the other branch
+testDirectorySearchChannelEntry :: HasCallStack => TestParams -> IO ()
+testDirectorySearchChannelEntry ps =
+  withDirectoryServiceCfg ps testCfg $ \superUser (dsShortLink, dsLink) ->
+    withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
+      withRelay ps $ \relay -> do
+        bob `connectVia` dsLink
+        (shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
+        registerChannel superUser bob relay "news" Nothing
+        subscribers <- channelFoundSubscribers bob "news"
+        withNewTestChatCfg ps testCfg "cath" cathProfile $ \cath -> do
+          DirectorySearchEntry {displayName, groupLink, entryType} <- searchEntryOnly cath dsShortLink "news"
+          displayName `shouldBe` "news"
+          let DETGroup {groupType, summary = GroupSummary {publicMemberCount}} = entryType
+          groupType `shouldBe` Just GTChannel
+          -- the iOS row shows this as the subscriber count, not currentMembers
+          publicMemberCount `shouldBe` Just subscribers
+          let PublicLink {connFullLink, connShortLink} = groupLink
+          (B.unpack . strEncode <$> connShortLink) `shouldBe` Just shortLink
+          isNothing connFullLink `shouldBe` True
+
+-- searchEntry drops an image over maxProfileImageSize and relays the rest of the entry. No client
+-- can send such a profile - group creation and profile update both check the size - and only the
+-- receiving side stores one unchecked, so the bound is exercised on a real GroupInfo from the store.
+testSearchEntryImageBound :: HasCallStack => TestParams -> IO ()
+testSearchEntryImageBound ps =
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    bob ##> "/g privacy Private chats"
+    bob <## "group #privacy (Private chats) is created"
+    bob <## "to add members use /a privacy <name> or /create link #privacy"
+    bob ##> "/create link #privacy"
+    void $ getGroupLinks bob "privacy" GRMember True
+    (g@GroupInfo {groupProfile = p}, gLink_) <- ownerGroup bob "privacy"
+    now <- getCurrentTime
+    let entryWithImage t = searchEntry now (g {groupProfile = (p :: GroupProfile) {image = Just (ImageData t)}}) gLink_
+        atBound = T.replicate maxProfileImageSize "a"
+    case entryWithImage atBound of
+      Just DirectorySearchEntry {image} -> image `shouldBe` Just (ImageData atBound)
+      Nothing -> expectationFailure "entry at the image bound was dropped"
+    case entryWithImage (T.replicate (maxProfileImageSize + 1) "a") of
+      Just DirectorySearchEntry {image, displayName, shortDescr, groupLink = PublicLink {connShortLink}} -> do
+        image `shouldBe` Nothing
+        displayName `shouldBe` "privacy"
+        shortDescr `shouldBe` Just "Private chats"
+        isJust connShortLink `shouldBe` True
+      Nothing -> expectationFailure "entry over the image bound was dropped"
+
+-- an entry with a near-cap image nearly fills the envelope, so a page holds one and the cursor
+-- must come from the last row included, not the last row read
+testDirectorySearchImagePaging :: HasCallStack => TestParams -> IO ()
+testDirectorySearchImagePaging ps =
+  withDirectoryService ps $ \superUser (dsShortLink, dsLink) ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      registerGroupWithImage superUser bob "photos1" "Photo group" 1
+      registerGroupWithImage superUser bob "photos2" "Photo group" 2
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (page1, cursor) <- searchNames cath dsShortLink "photo" Nothing
+        length page1 `shouldBe` 1
+        isJust cursor `shouldBe` True
+        (page2, _) <- searchNames cath dsShortLink "photo" cursor
+        page2 `shouldSatisfy` notElem (head page1)
+        sort (page1 <> page2) `shouldBe` ["photos1", "photos2"]
+
+-- the link behind a tap in the app is usable: cath joins with the short link from the entry
+testDirectorySearchJoinGroup :: HasCallStack => TestParams -> IO ()
+testDirectorySearchJoinGroup ps =
+  withDirectoryService ps $ \superUser (dsShortLink, dsLink) ->
+    withNewTestChat ps "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        registerGroup superUser bob "privacy" "Privacy"
+        DirectorySearchEntry {groupLink = PublicLink {connShortLink}} <- searchEntryOnly cath dsShortLink "privacy"
+        groupLink <- maybe (fail "no short link in the entry") (pure . B.unpack . strEncode) connShortLink
+        cath ##> ("/c " <> groupLink)
+        cath <## "connection request sent!"
+        cath <## "#privacy: joining the group..."
+        cath <## "#privacy: you joined the group, pending approval"
+        cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
+        cath <## ""
+        cath <## "Send captcha text to join the group privacy."
+        captcha <- dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
+        cath #> ("#privacy (support) " <> captcha)
+        cath <# ("#privacy (support) 'SimpleX Directory'!> > cath " <> captcha)
+        cath <## "      Correct, you joined the group privacy"
+        cath <## "#privacy: you joined the group"
+        cath <## "#privacy: member bob (Bob) is connected"
+        bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
+        bob <## "#privacy: new member cath is connected"
+
+-- a real GroupInfo and its link from the owner's store, so a pure-function test does not
+-- hand-build a 24-field record
+ownerGroup :: TestCC -> String -> IO (GroupInfo, Maybe GroupLink)
+ownerGroup TestCC {chatController = cc@ChatController {chatStore, currentUser}} gName = do
+  u_ <- readTVarIO currentUser
+  user <- maybe (fail "no current user") pure u_
+  withTransaction chatStore $ \db -> do
+    g <- either (fail . show) pure =<< runExceptT (Store.getGroupInfoByName db (storeCxt cc) user (T.pack gName))
+    gLink_ <- eitherToMaybe <$> runExceptT (Store.getGroupLink db user g)
+    pure (g, gLink_)
+
+registerGroupWithImage :: HasCallStack => TestCC -> TestCC -> String -> String -> Int -> IO ()
+registerGroupWithImage su u n descr gId = do
+  u ##> ("/g " <> n <> " " <> descr)
+  u <## ("group #" <> n <> " (" <> descr <> ") is created")
+  u <## ("to add members use /a " <> n <> " <name> or /create link #" <> n)
+  img <- genProfileImg
+  u
+    `send` ( "/_group_profile #" <> show gId <> " {\"displayName\": \"" <> n <> "\", \"fullName\": \"\", \"shortDescr\": \"" <> descr
+               <> "\", \"image\": \"data:image/png;base64,"
+               <> B.unpack img
+               <> "\", \"groupPreferences\": {\"directMessages\": {\"enable\": \"on\"}, \"history\": {\"enable\": \"on\"}}}"
+           )
+  void $ getTermLine u
+  u <## "profile image updated"
+  u ##> ("/a " <> n <> " 'SimpleX Directory' admin")
+  u <## ("invitation to join the group #" <> n <> " sent to 'SimpleX Directory'")
+  groupAccepted u n gId
+  void $ completeRegistrationId su u n descr gId gId
+
+-- share the channel card with the directory, wait for it to join via the relay, and approve;
+-- simplexName_ is the name line the admin sees when the channel has a verified domain
+registerChannel :: HasCallStack => TestCC -> TestCC -> TestCC -> String -> Maybe String -> IO ()
+registerChannel su u relay n simplexName_ = do
+  uName <- userName u
+  u ##> ("/share chat #" <> n <> " @'SimpleX Directory'")
+  u <# ("@'SimpleX Directory' link to join channel #" <> n <> " (signed):")
+  void $ getTermLine u -- short link
+  void $ getTermLine u -- ownerSig JSON
+  u <# ("'SimpleX Directory'> Joining the channel " <> n <> "…")
+  concurrentlyN_
+    [ do
+        relay <## ("'SimpleX Directory': accepting request to join group #" <> n <> "...")
+        relay <## ("#" <> n <> ": 'SimpleX Directory' joined the group"),
+      u <## ("#" <> n <> ": relay introduced 'SimpleX Directory_1' in the channel")
+    ]
+  u <# ("'SimpleX Directory'> Joined the channel " <> n <> ". Registration is pending approval — it may take up to 48 hours.")
+  u <# "'SimpleX Directory'> We recommend allowing direct messages, media, voice, and SimpleX links only for group moderators and admins. Use group preferences to set them."
+  u <## "Captcha verification is enabled. Use /'filter 1' to change it."
+  su <# ("'SimpleX Directory'> " <> uName <> " submitted the channel ID 1:")
+  su <## n
+  forM_ simplexName_ $ \sn -> su <## ("SimpleX name: " <> sn)
+  su <##. "Link to join channel: "
+  su <## "You need SimpleX Chat app v6.5 to join."
+  su <### [EndsWith "subscribers"]
+  su <## ""
+  su <## "To approve send:"
+  let approve = "/approve 1:" <> n <> " 1"
+  su <# ("'SimpleX Directory'> " <> approve)
+  su #> ("@'SimpleX Directory' " <> approve)
+  su <# ("'SimpleX Directory'> > " <> approve)
+  su <## "      Channel approved!"
+  u <# ("'SimpleX Directory'> The channel ID 1 (" <> n <> ") is approved and listed in directory - please moderate it!")
+  u <## "Please note: if you change the channel profile it will be hidden from directory until it is re-approved."
+
+channelFoundSubscribers :: HasCallStack => TestCC -> String -> IO Int64
+channelFoundSubscribers u name = do
+  u #> ("@'SimpleX Directory' " <> name)
+  u <# ("'SimpleX Directory'> > " <> name)
+  u <## "      Found 1 group(s)."
+  u <#. ("'SimpleX Directory'> " <> name)
+  u <##. "Link to join channel: "
+  u <## "You need SimpleX Chat app v6.5 to join."
+  line <- getTermLine u
+  maybe (fail $ "unexpected subscribers line: " <> line) pure $ readMaybe (takeWhile (/= ' ') line)
 
 -- the page is bounded by the envelope, not by searchResults: entries are cut from the end, the cursor
 -- follows the last row consumed, and a lone oversize entry loses its image or is skipped
@@ -2412,6 +2635,27 @@ testDirectoryChannelName ps = withSmpServerAndNames $ \reg ->
         superUser <## ""
         superUser <## "To approve send:"
         superUser <# "'SimpleX Directory'> /approve 1:news 1"
+  where
+    newsName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "news" [])
+
+-- the app renders simplexName as the directory's claim, so it has to reach the entry
+testDirectorySearchVerifiedName :: HasCallStack => TestParams -> IO ()
+testDirectorySearchVerifiedName ps = withSmpServerAndNames $ \reg ->
+  withDirectoryServiceCfg ps testCfg $ \superUser (dsShortLink, dsLink) ->
+    withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
+      withRelay ps $ \relay -> do
+        enableNamesRole bob
+        bob `connectVia` dsLink
+        (shortLink, _fullLink) <- prepareChannel1Relay "news" bob relay
+        registerName reg newsName (channelNameRecord "news.simplex" (T.pack shortLink))
+        bob ##> "/public group access #news domain=news.simplex"
+        bob <## "updated public group access: domain=news.simplex"
+        relay <## "bob updated group #news: (signed)"
+        relay <## "updated public group access: domain=news.simplex"
+        registerChannel superUser bob relay "news" (Just "#news")
+        withNewTestChatCfg ps testCfg "cath" cathProfile $ \cath -> do
+          DirectorySearchEntry {simplexName} <- searchEntryOnly cath dsShortLink "news"
+          simplexName `shouldBe` Just "#news"
   where
     newsName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "news" [])
 

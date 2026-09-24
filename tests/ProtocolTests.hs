@@ -94,6 +94,12 @@ serviceBodyTests = describe "service payload compression" $ do
     let bomb = compressedBatchMsgBody_ $ B.replicate (maxDecompressedMsgLength + 1) 'a'
     B.length bomb `shouldSatisfy` (< maxCompressedInfoLength)
     decompressServiceBody bomb `shouldBe` Left "decompressed size exceeds limit"
+  it "compresses to the bound it is given" $ do
+    g <- C.newRandom
+    -- random bytes do not compress, so this is over the info bound and under the message bound
+    payload <- atomically $ C.randomBytes (maxCompressedInfoLength + 1000) g
+    compressBodyTo maxCompressedInfoLength payload `shouldBe` Nothing
+    compressBodyTo maxCompressedMsgLength payload `shouldBe` Just payload
   it "rejects a payload nested deeper than the bound" $ do
     let nested n = "{\"a\":" <> B.replicate n '[' <> B.replicate n ']' <> "}"
     parseServiceBody (nested 10) `shouldBe` J.eitherDecodeStrict' (nested 10)
