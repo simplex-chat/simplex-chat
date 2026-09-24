@@ -33,6 +33,7 @@ CREATE TABLE contact_profiles(
   contact_domain_proof TEXT,
   contact_domain_verified INTEGER,
   description TEXT,
+  preferences_json TEXT,
   contact_domain_resolved_at TEXT,
   contact_domain_expires_at TEXT
 ) STRICT;
@@ -148,7 +149,8 @@ CREATE TABLE group_profiles(
   group_domain TEXT,
   domain_web_page INTEGER,
   allow_embedding INTEGER,
-  group_domain_proof TEXT
+  group_domain_proof TEXT,
+  preferences_json TEXT
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
