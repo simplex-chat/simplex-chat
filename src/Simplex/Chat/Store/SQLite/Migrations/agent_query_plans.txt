@@ -637,9 +637,11 @@ SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_co
 
 Query: 
       INSERT INTO ratchets
-        (conn_id, ratchet_state, x3dh_pub_key_1, x3dh_pub_key_2, pq_pub_kem) VALUES (?, ?, ?, ?, ?)
+        (conn_id, ratchet_state, rc_verify_code_ad, rc_verify_code_pq, x3dh_pub_key_1, x3dh_pub_key_2, pq_pub_kem) VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (conn_id) DO UPDATE SET
         ratchet_state = EXCLUDED.ratchet_state,
+        rc_verify_code_ad = EXCLUDED.rc_verify_code_ad,
+        rc_verify_code_pq = EXCLUDED.rc_verify_code_pq,
         x3dh_priv_key_1 = NULL,
         x3dh_priv_key_2 = NULL,
         x3dh_pub_key_1 = EXCLUDED.x3dh_pub_key_1,
@@ -650,10 +652,12 @@ Query:
 Plan:
 
 Query: 
-      INSERT INTO ratchets (conn_id, ratchet_state)
-      VALUES (?, ?)
+      INSERT INTO ratchets (conn_id, ratchet_state, rc_verify_code_ad, rc_verify_code_pq)
+      VALUES (?, ?, ?, ?)
       ON CONFLICT (conn_id) DO UPDATE SET
-        ratchet_state = ?,
+        ratchet_state = EXCLUDED.ratchet_state,
+        rc_verify_code_ad = EXCLUDED.rc_verify_code_ad,
+        rc_verify_code_pq = EXCLUDED.rc_verify_code_pq,
         x3dh_priv_key_1 = NULL,
         x3dh_priv_key_2 = NULL,
         x3dh_pub_key_1 = NULL,
@@ -1221,6 +1225,10 @@ SEARCH connections USING COVERING INDEX idx_connections_deleted (deleted=?)
 Query: SELECT conn_id FROM connections WHERE user_id = ?
 Plan:
 SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
+
+Query: SELECT conn_id, rc_verify_code_ad, rc_verify_code_pq, CASE WHEN rc_verify_code_ad IS NULL THEN ratchet_state END FROM ratchets WHERE conn_id = ?
+Plan:
+SEARCH ratchets USING PRIMARY KEY (conn_id=?)
 
 Query: SELECT count(1) FROM connections
 Plan:

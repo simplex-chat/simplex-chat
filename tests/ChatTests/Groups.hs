@@ -5234,6 +5234,9 @@ testMemberContactAccept =
 
       cath #$> ("/_get chat @3 count=1", chat, [(0, "requested connection from group team")])
 
+      cath ##> "/_connect contact 1 3"
+      cath <## "bad chat command: contact is a member contact request"
+
       cath ##> "/accept_member_contact @bob"
       cath <## "contact bob is accepted, starting connection"
       concurrently_

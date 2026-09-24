@@ -169,7 +169,7 @@ A null `account_index` marks an account whose key was imported rather than deriv
 
 - `src/Simplex/Chat/Wallet.hs`, derivation, pure.
 - `src/Simplex/Chat/Store/Wallets.hs`, the two tables.
-- `src/Simplex/Chat/Store/SQLite/Migrations/M20260921_wallet_seeds.hs` and the Postgres twin.
+- `src/Simplex/Chat/Store/SQLite/Migrations/M20260924_wallet_seeds.hs` and the Postgres twin.
 - `tests/WalletTests.hs`.
 - `tests/SchemaDump.hs` and `tests/PostgresSchemaDump.hs`, which selected what to test by taking every migration after the last one without a reverse step, and now take every migration from the first one that has a reverse step, applying any that has none.
 - Derivation uses the `BIP32` and `BIP39` modules already in simplexmq and adds no dependency.

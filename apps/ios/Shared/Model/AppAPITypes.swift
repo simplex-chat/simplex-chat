@@ -704,6 +704,7 @@ enum ChatCommand: ChatCmdProtocol {
         case .subscriptionEnded: "subscription_ended"
         case .prepaidEnding: "prepaid_ending"
         case .supportEnded: "support_ended"
+        case .issueFailed: "issue_failed"
         }
     }
 

@@ -2751,7 +2751,6 @@
     <string name="relay_status_acknowledged_roster">visszaigazolt névsor</string>
     <string name="badge_supports_simplex">%s támogatja a SimpleX Chatet.</string>
     <string name="badge_supported_simplex">%1$s támogatta a SimpleX Chatet. A kitűző lejárt ekkor: %2$s.</string>
-    <string name="badge_support_from_v7">A SimpleXet az alkalmazás v7-es verziójától kezdve támogathatja.</string>
     <string name="badge_invested">%s befektetett a SimpleX Chat közösségi finanszírozásába.</string>
     <string name="badge_unverified_title">Ellenőrizetlen kitűző</string>
     <string name="badge_unverified_desc">Nem sikerült ellenőrizni ezt a kitűzőt, és lehet, hogy nem eredeti.</string>
