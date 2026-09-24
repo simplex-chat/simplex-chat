@@ -301,123 +301,24 @@ export namespace BadgeRedeemError {
   }
 }
 
-export type BadgeServiceErrorCode = 
-  | BadgeServiceErrorCode.BadRequest
-  | BadgeServiceErrorCode.UnsupportedVersion
-  | BadgeServiceErrorCode.UnknownPurchaseKey
-  | BadgeServiceErrorCode.UnknownOfferId
-  | BadgeServiceErrorCode.OfferDisabled
-  | BadgeServiceErrorCode.OfferMismatch
-  | BadgeServiceErrorCode.ProductUnavailable
-  | BadgeServiceErrorCode.PaymentNotEntitled
-  | BadgeServiceErrorCode.PaymentPending
-  | BadgeServiceErrorCode.ProviderUnavailable
-  | BadgeServiceErrorCode.RateLimited
-  | BadgeServiceErrorCode.CodeInvalid
-  | BadgeServiceErrorCode.CodeUsed
-  | BadgeServiceErrorCode.CodeExpired
-  | BadgeServiceErrorCode.ReceiptInvalid
-  | BadgeServiceErrorCode.ReceiptUsed
-  | BadgeServiceErrorCode.Internal
-  | BadgeServiceErrorCode.Unknown
-
-export namespace BadgeServiceErrorCode {
-  export type Tag = 
-    | "badRequest"
-    | "unsupportedVersion"
-    | "unknownPurchaseKey"
-    | "unknownOfferId"
-    | "offerDisabled"
-    | "offerMismatch"
-    | "productUnavailable"
-    | "paymentNotEntitled"
-    | "paymentPending"
-    | "providerUnavailable"
-    | "rateLimited"
-    | "codeInvalid"
-    | "codeUsed"
-    | "codeExpired"
-    | "receiptInvalid"
-    | "receiptUsed"
-    | "internal"
-    | "unknown"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface BadRequest extends Interface {
-    type: "badRequest"
-  }
-
-  export interface UnsupportedVersion extends Interface {
-    type: "unsupportedVersion"
-  }
-
-  export interface UnknownPurchaseKey extends Interface {
-    type: "unknownPurchaseKey"
-  }
-
-  export interface UnknownOfferId extends Interface {
-    type: "unknownOfferId"
-  }
-
-  export interface OfferDisabled extends Interface {
-    type: "offerDisabled"
-  }
-
-  export interface OfferMismatch extends Interface {
-    type: "offerMismatch"
-  }
-
-  export interface ProductUnavailable extends Interface {
-    type: "productUnavailable"
-  }
-
-  export interface PaymentNotEntitled extends Interface {
-    type: "paymentNotEntitled"
-  }
-
-  export interface PaymentPending extends Interface {
-    type: "paymentPending"
-  }
-
-  export interface ProviderUnavailable extends Interface {
-    type: "providerUnavailable"
-  }
-
-  export interface RateLimited extends Interface {
-    type: "rateLimited"
-  }
-
-  export interface CodeInvalid extends Interface {
-    type: "codeInvalid"
-  }
-
-  export interface CodeUsed extends Interface {
-    type: "codeUsed"
-  }
-
-  export interface CodeExpired extends Interface {
-    type: "codeExpired"
-  }
-
-  export interface ReceiptInvalid extends Interface {
-    type: "receiptInvalid"
-  }
-
-  export interface ReceiptUsed extends Interface {
-    type: "receiptUsed"
-  }
-
-  export interface Internal extends Interface {
-    type: "internal"
-  }
-
-  export interface Unknown extends Interface {
-    type: "unknown"
-    : string
-  }
+export enum BadgeServiceErrorCode {
+  Bad_request = "bad_request",
+  Unsupported_version = "unsupported_version",
+  Unknown_purchase_key = "unknown_purchase_key",
+  Unknown_offer_id = "unknown_offer_id",
+  Offer_disabled = "offer_disabled",
+  Offer_mismatch = "offer_mismatch",
+  Product_unavailable = "product_unavailable",
+  Payment_not_entitled = "payment_not_entitled",
+  Payment_pending = "payment_pending",
+  Provider_unavailable = "provider_unavailable",
+  Rate_limited = "rate_limited",
+  Code_invalid = "code_invalid",
+  Code_used = "code_used",
+  Code_expired = "code_expired",
+  Receipt_invalid = "receipt_invalid",
+  Receipt_used = "receipt_used",
+  Internal = "internal",
 }
 
 export enum BadgeStatus {
@@ -2219,10 +2120,11 @@ export type ConnectionPlan =
   | ConnectionPlan.InvitationLink
   | ConnectionPlan.ContactAddress
   | ConnectionPlan.GroupLink
+  | ConnectionPlan.NameNotConnectable
   | ConnectionPlan.Error
 
 export namespace ConnectionPlan {
-  export type Tag = "invitationLink" | "contactAddress" | "groupLink" | "error"
+  export type Tag = "invitationLink" | "contactAddress" | "groupLink" | "nameNotConnectable" | "error"
 
   interface Interface {
     type: Tag
@@ -2236,11 +2138,19 @@ export namespace ConnectionPlan {
   export interface ContactAddress extends Interface {
     type: "contactAddress"
     contactAddressPlan: ContactAddressPlan
+    nameRegistration_?: NameRegistration
   }
 
   export interface GroupLink extends Interface {
     type: "groupLink"
     groupLinkPlan: GroupLinkPlan
+    nameRegistration_?: NameRegistration
+  }
+
+  export interface NameNotConnectable extends Interface {
+    type: "nameNotConnectable"
+    simplexDomain: SimplexDomain
+    nameRegistration: NameRegistration
   }
 
   export interface Error extends Interface {
@@ -2300,6 +2210,7 @@ export namespace ContactAddressPlan {
     type: "ok"
     contactSLinkData_?: ContactShortLinkData
     ownerVerification?: OwnerVerification
+    addressChanged: boolean
   }
 
   export interface OwnLink extends Interface {
@@ -2895,13 +2806,7 @@ export interface GroupInfo {
   rosterVersion?: number // int64
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
-  groupKeys?: GroupKeys
   groupDomainVerified?: boolean
-}
-
-export interface GroupKeys {
-  publicGroupKeys?: PublicGroupKeys
-  memberPrivKey: string
 }
 
 export interface GroupLink {
@@ -2946,6 +2851,7 @@ export namespace GroupLinkPlan {
     groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
     ownerVerification?: OwnerVerification
+    addressChanged: boolean
   }
 
   export interface OwnLink extends Interface {
@@ -3095,26 +3001,6 @@ export interface GroupRelay {
   relayStatus: RelayStatus
   relayLink?: string
   relayCap: RelayCapabilities
-}
-
-export type GroupRootKey = GroupRootKey.Private | GroupRootKey.Public
-
-export namespace GroupRootKey {
-  export type Tag = "private" | "public"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface Private extends Interface {
-    type: "private"
-    rootPrivKey: string
-  }
-
-  export interface Public extends Interface {
-    type: "public"
-    rootPubKey: string
-  }
 }
 
 export interface GroupShortLinkData {
@@ -3512,6 +3398,64 @@ export namespace NameErrorType {
   }
 }
 
+export interface NamePricing {
+  registrationPrices: {[key: number]: number} // int : int64
+  basePrice: number // int64
+  minLabelLength: number // int
+}
+
+export interface NameRecord {
+  name: string
+  nickname: string
+  website: string
+  location: string
+  simplexContact: string[]
+  simplexChannel: string[]
+  eth?: string
+  btc?: string
+  xmr?: string
+  dot?: string
+  owner: string
+  resolver: string
+}
+
+export type NameRegistration = 
+  | NameRegistration.Registered
+  | NameRegistration.Available
+  | NameRegistration.Reserved
+
+export namespace NameRegistration {
+  export type Tag = "registered" | "available" | "reserved"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Registered extends Interface {
+    type: "registered"
+    expires?: number // int64
+    graceUntil?: number // int64
+    reservedReason_?: NameReservedReason
+    nameRecord: NameRecord
+  }
+
+  export interface Available extends Interface {
+    type: "available"
+    pricing: NamePricing
+  }
+
+  export interface Reserved extends Interface {
+    type: "reserved"
+    reservedReason: NameReservedReason
+  }
+}
+
+export enum NameReservedReason {
+  Internal = "internal",
+  Trademark = "trademark",
+  Community = "community",
+}
+
 export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
@@ -3631,9 +3575,9 @@ export interface PendingContactConnection {
 }
 
 export enum PlanResolveMode {
-  AllGroups = "allGroups",
   Unknown = "unknown",
   Never = "never",
+  All = "all",
 }
 
 export interface PrefEnabled {
@@ -3745,11 +3689,6 @@ export interface PublicGroupAccess {
 
 export interface PublicGroupData {
   publicMemberCount: number // int64
-}
-
-export interface PublicGroupKeys {
-  publicGroupId: string
-  groupRootKey: GroupRootKey
 }
 
 export interface PublicGroupProfile {

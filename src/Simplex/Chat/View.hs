@@ -44,7 +44,9 @@ import Simplex.Chat.Help
 import Simplex.Chat.Library.Commands (badgeServiceErrorText, maxImageSize)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Badges (BadgeInfo (..), BadgeStatus (..), BadgeType (..), LocalBadge, localBadgeInfo, localBadgeStatus)
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeState (..))
+import Simplex.Chat.Badges.Ledger (creditTypeTag, debitTypeTag)
+import Simplex.Chat.Badges.Service (StatementEntry (..), StatementEntryType (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeIssueError (..), BadgeState (..))
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
@@ -71,8 +73,9 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NamePricing (..), NameRegistration (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), USDCents (..), UserProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
+import Simplex.Messaging.SystemTime (roundedSeconds)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version hiding (version)
@@ -192,6 +195,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   -- the badge is only shown when it is the one now on the profile; a replayed code's badge may not be
   CRBadgeRedeemed u badge newBadge _ -> ttyUser u $ if newBadge then "badge redeemed" : viewContactBadge (Just badge) else ["badge already redeemed"]
   CRBadgeState u st -> ttyUser u $ viewUserBadgeState st
+  CRBadgeLedger u entries -> ttyUser u $ viewBadgeLedger entries
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
@@ -214,7 +218,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation showFullLinks ccLink
   CRConnectionIncognitoUpdated u c customUserProfile -> ttyUser u $ viewConnectionIncognitoUpdated c customUserProfile testView
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged showFullLinks u c nu c'
-  CRConnectionPlan u connLink _ otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan <> otherSimplexNameNote otherSimplexName
+  CRConnectionPlan u connLink _ otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan <> otherSimplexNameNote otherSimplexName <> viewNameRegistration connectionPlan
   CRNewPreparedChat u (AChat _ (Chat cInfo _ _)) -> ttyUser u $ case cInfo of
     DirectChat ct -> [ttyContact' ct <> ": contact is prepared"]
     GroupChat g _ -> [ttyGroup' g <> ": group is prepared"]
@@ -1839,7 +1843,7 @@ viewContactBadge = maybe [] $ \lb ->
 viewUserBadgeState :: Maybe BadgeState -> [StyledString]
 viewUserBadgeState = maybe [] viewBadge
   where
-    viewBadge BadgeState {badgePurchaseId, badgeType, monthsLeft, paidThrough, alert} =
+    viewBadge BadgeState {badgePurchaseId, badgeType, monthsLeft, paidThrough, alert, issueError, nextWakeAt} =
       plain
         ( tshow badgePurchaseId
             <> ": "
@@ -1848,14 +1852,34 @@ viewUserBadgeState = maybe [] viewBadge
             <> tshow monthsLeft
             <> " months left, paid through "
             <> day paidThrough
+            <> maybe "" ((", next check " <>) . dayTime) nextWakeAt
         )
-        : maybe [] viewBadgeAlert alert
+        : maybe [] viewBadgeIssueError issueError
+          <> maybe [] viewBadgeAlert alert
+
+viewBadgeIssueError :: BadgeIssueError -> [StyledString]
+viewBadgeIssueError BadgeIssueError {failedSince, lastAttemptAt, reason} =
+  [plain $ "renewal failing since " <> day failedSince <> ", last " <> dayTime lastAttemptAt <> ": " <> safeDecodeUtf8 (strEncode reason)]
 
 viewBadgeAlert :: BadgeAlert -> [StyledString]
 viewBadgeAlert BadgeAlert {kind, date} = [plain $ "badge alert: " <> textEncode kind <> " " <> day date]
 
+viewBadgeLedger :: [StatementEntry] -> [StyledString]
+viewBadgeLedger [] = ["no ledger entries"]
+viewBadgeLedger entries = map viewEntry entries
+  where
+    viewEntry StatementEntry {createdAt, entryType, changeMonths, balanceMonths, balanceStartTs} =
+      plain $ day createdAt <> " " <> entryKind entryType <> " " <> withSign changeMonths <> " -> " <> tshow balanceMonths <> ", from " <> day balanceStartTs
+    entryKind = \case
+      SECredit c -> creditTypeTag c
+      SEDebit d -> debitTypeTag d
+    withSign n = (if n >= 0 then "+" else "") <> tshow n
+
 day :: UTCTime -> Text
 day = T.pack . formatTime defaultTimeLocale "%Y-%m-%d"
+
+dayTime :: UTCTime -> Text
+dayTime = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"
 
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
 viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, customData} stats incognitoProfile =
@@ -2211,7 +2235,26 @@ otherSimplexNameNote = \case
   Just ni@(SimplexNameInfo NTContact _) -> [plain $ "You can also connect to " <> shortNameInfoStr ni <> " in direct chat"]
   Nothing -> []
 
-viewConnectionPlan :: ChatConfig -> ACreatedConnLink -> ConnectionPlan -> [StyledString]
+viewNameRegistration :: ConnectionPlan -> [StyledString]
+viewNameRegistration = \case
+  CPContactAddress CAPKnown {} nr_ -> regLine nr_
+  CPContactAddress CAPOwnLink nr_ -> regLine nr_
+  CPGroupLink GLPKnown {} nr_ -> regLine nr_
+  CPGroupLink GLPOwnLink {} nr_ -> regLine nr_
+  CPNameNotConnectable _ reg -> regLine (Just reg)
+  _ -> []
+  where
+    regLine = \case
+      Just NRRegistered {expires, graceUntil, reservedReason_} ->
+        ["registered" <> expiryNote expires graceUntil <> maybe "" ((", reserved: " <>) . plain . textEncode) reservedReason_]
+      Just NRAvailable {pricing = NamePricing {basePrice = USDCents c, minLabelLength}} ->
+        ["available: " <> plain (show c) <> " cents/year, min length " <> plain (show minLabelLength)]
+      Just NRReserved {reservedReason} -> ["reserved: " <> plain (textEncode reservedReason)]
+      Nothing -> []
+    expiryNote expires graceUntil = maybe "" (\e -> ", expires " <> showTime e <> maybe "" ((", grace until " <>) . showTime) graceUntil) expires
+    showTime = plain . show . roundedSeconds
+
+viewConnectionPlan :: ChatConfig -> Maybe ACreatedConnLink -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk contactSLinkData ov -> [invOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
@@ -2231,8 +2274,8 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
-  CPContactAddress cap -> case cap of
-    CAPOk contactSLinkData ov -> [addrOrBiz contactSLinkData "ok to connect"] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
+  CPContactAddress cap _ -> case cap of
+    CAPOk contactSLinkData ov addressChanged -> [addrOrBiz contactSLinkData ("ok to connect" <> (if addressChanged then ", address changed" else ""))] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
@@ -2249,10 +2292,10 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
         Just ContactShortLinkData {business}
           | business -> ("business address: " <>)
         _ -> ("contact address: " <>)
-  CPGroupLink glp -> case glp of
-    GLPOk groupSLinkInfo_ groupSLinkData ov ->
+  CPGroupLink glp _ -> case glp of
+    GLPOk groupSLinkInfo_ groupSLinkData ov addressChanged ->
       let direct = maybe True (\(GroupShortLinkInfo {direct = d}) -> d) groupSLinkInfo_
-       in [grpLink $ if direct then "ok to connect directly" else "ok to connect via relays"]
+       in [grpLink $ (if direct then "ok to connect directly" else "ok to connect via relays") <> (if addressChanged then ", address changed" else "")]
             <> viewSigVerification ov
             <> [viewJSON groupSLinkData | testView]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
@@ -2286,6 +2329,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
       grpOrBiz GroupInfo {businessChat} = case businessChat of
         Just _ -> "business"
         Nothing -> "group"
+  CPNameNotConnectable d _ -> ["SimpleX name " <> plain (fullDomainName d) <> ": nothing to connect to"]
   CPError e -> viewChatError False logLevel testView e
   where
     nextConnectPrepared Contact {preparedContact, activeConn} = case preparedContact of

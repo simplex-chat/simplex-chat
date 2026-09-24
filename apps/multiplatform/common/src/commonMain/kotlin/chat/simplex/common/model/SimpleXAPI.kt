@@ -193,6 +193,9 @@ class AppPreferences {
   val oneHandUICardShown = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN, false)
   val addressCreationCardShown = mkBoolPreference(SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN, false)
   val supporterBannerShown = mkBoolPreference(SHARED_PREFS_SUPPORTER_BANNER_SHOWN, false)
+  val supporterBannerTapped = mkBoolPreference(SHARED_PREFS_SUPPORTER_BANNER_TAPPED, false)
+  val getStakeBannerTapped = mkBoolPreference(SHARED_PREFS_GET_STAKE_BANNER_TAPPED, false)
+  val getStakeBannerDismissed = mkBoolPreference(SHARED_PREFS_GET_STAKE_BANNER_DISMISSED, false)
   val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
   val showReportsInSupportChatAlert = mkBoolPreference(SHARED_PREFS_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT, true)
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
@@ -275,6 +278,9 @@ class AppPreferences {
     hintPref(oneHandUICardShown, false),
     hintPref(addressCreationCardShown, false),
     hintPref(supporterBannerShown, false),
+    hintPref(supporterBannerTapped, false),
+    hintPref(getStakeBannerTapped, false),
+    hintPref(getStakeBannerDismissed, false),
     hintPref(liveMessageAlertShown, false),
     hintPref(signMessageAlertShown, false),
     hintPref(showHiddenProfilesNotice, true),
@@ -467,6 +473,9 @@ class AppPreferences {
     private const val SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN = "OneHandUICardShown"
     private const val SHARED_PREFS_ADDRESS_CREATION_CARD_SHOWN = "AddressCreationCardShown"
     private const val SHARED_PREFS_SUPPORTER_BANNER_SHOWN = "SupporterBannerShown"
+    private const val SHARED_PREFS_SUPPORTER_BANNER_TAPPED = "SupporterBannerTapped"
+    private const val SHARED_PREFS_GET_STAKE_BANNER_TAPPED = "GetStakeBannerTapped"
+    private const val SHARED_PREFS_GET_STAKE_BANNER_DISMISSED = "GetStakeBannerDismissed"
     private const val SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT = "ShowMuteProfileAlert"
     private const val SHARED_PREFS_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT = "ShowReportsInSupportChatAlert"
     private const val SHARED_PREFS_STORE_DB_PASSPHRASE = "StoreDBPassphrase"
@@ -585,14 +594,7 @@ object ChatController {
         is BadgeRedeemError.InvalidCode -> return generalGetString(MR.strings.badges_error_invalid_code)
         is BadgeRedeemError.ServiceNotConfigured -> return generalGetString(MR.strings.badges_error_service_not_configured)
         is BadgeRedeemError.BadgeActive -> return generalGetString(MR.strings.badges_error_already_active)
-        is BadgeRedeemError.ServiceError -> when (e.serviceError) {
-          is BadgeServiceErrorCode.CodeInvalid -> return generalGetString(MR.strings.badges_error_code_invalid)
-          is BadgeServiceErrorCode.CodeUsed -> return generalGetString(MR.strings.badges_error_code_used)
-          is BadgeServiceErrorCode.CodeExpired -> return generalGetString(MR.strings.badges_error_code_expired)
-          is BadgeServiceErrorCode.RateLimited -> return generalGetString(MR.strings.badges_error_rate_limited)
-          is BadgeServiceErrorCode.UnsupportedVersion -> return generalGetString(MR.strings.badges_error_unsupported_version)
-          else -> {}
-        }
+        is BadgeRedeemError.ServiceError -> badgeServiceErrorText(e.serviceError)?.let { return it }
         is BadgeRedeemError.InvalidResponse -> return String.format(generalGetString(MR.strings.badges_error_bad_service_response), e.message)
         is BadgeRedeemError.UnknownKeyIndex, is BadgeRedeemError.CredentialNotVerified -> return generalGetString(MR.strings.badges_error_credential_not_verified)
       }
@@ -604,6 +606,12 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiGetBadgeState(userId))
     if (r is API.Result && r.res is CR.BadgeStateR) return r.res.badgeState
     throw Exception("apiGetBadgeState: unexpected ${r.responseType}")
+  }
+
+  suspend fun apiGetBadgeLedger(rh: Long?, userId: Long, badgePurchaseId: Long): List<StatementEntry> {
+    val r = sendCmd(rh, CC.ApiGetBadgeLedger(userId, badgePurchaseId))
+    if (r is API.Result && r.res is CR.BadgeLedger) return r.res.badgeLedger
+    throw Exception("apiGetBadgeLedger: unexpected ${r.responseType}")
   }
 
   suspend fun apiAckBadgeAlert(rh: Long?, userId: Long, badgePurchaseId: Long, alertKind: BadgeAlertKind, snooze: Boolean, episode: String): BadgeState? {
@@ -4057,6 +4065,7 @@ sealed class CC {
   // badges
   class ApiRedeemBadgeCode(val userId: Long, val code: String): CC()
   class ApiGetBadgeState(val userId: Long): CC()
+  class ApiGetBadgeLedger(val userId: Long, val badgePurchaseId: Long): CC()
   class ApiAckBadgeAlert(val userId: Long, val badgePurchaseId: Long, val alertKind: BadgeAlertKind, val snooze: Boolean, val episode: String): CC()
   // misc
   class ShowVersion(): CC()
@@ -4281,6 +4290,7 @@ sealed class CC {
     is ApiStandaloneFileInfo -> "/_download info $url"
     is ApiRedeemBadgeCode -> "/_redeem_badge_code $userId $code"
     is ApiGetBadgeState -> "/_badge state $userId"
+    is ApiGetBadgeLedger -> "/_badge ledger $userId $badgePurchaseId"
     is ApiAckBadgeAlert -> "/_badge ack $userId $badgePurchaseId ${badgeAlertKindParam(alertKind)} ${onOff(snooze)} $episode"
     is ShowVersion -> "/version"
     is ResetAgentServersStats -> "/reset servers stats"
@@ -4464,6 +4474,7 @@ sealed class CC {
     is ApiStandaloneFileInfo -> "apiStandaloneFileInfo"
     is ApiRedeemBadgeCode -> "apiRedeemBadgeCode"
     is ApiGetBadgeState -> "apiGetBadgeState"
+    is ApiGetBadgeLedger -> "apiGetBadgeLedger"
     is ApiAckBadgeAlert -> "apiAckBadgeAlert"
     is ShowVersion -> "showVersion"
     is ResetAgentServersStats -> "resetAgentServersStats"
@@ -4530,6 +4541,7 @@ private fun badgeAlertKindParam(kind: BadgeAlertKind): String = when (kind) {
   BadgeAlertKind.SubscriptionEnded -> "subscription_ended"
   BadgeAlertKind.PrepaidEnding -> "prepaid_ending"
   BadgeAlertKind.SupportEnded -> "support_ended"
+  BadgeAlertKind.IssueFailed -> "issue_failed"
 }
 
 @Serializable
@@ -6700,7 +6712,7 @@ sealed class CR {
   @Serializable @SerialName("invitation") class Invitation(val user: UserRef, val connLinkInvitation: CreatedConnLink, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionUserChanged") class ConnectionUserChanged(val user: UserRef, val fromConnection: PendingContactConnection, val toConnection: PendingContactConnection, val newUser: UserRef): CR()
-  @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connLink: CreatedConnLink, val planSimplexName: SimplexNameInfo? = null, val otherSimplexName: SimplexNameInfo? = null, val connectionPlan: ConnectionPlan): CR()
+  @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connLink: CreatedConnLink? = null, val planSimplexName: SimplexNameInfo? = null, val otherSimplexName: SimplexNameInfo? = null, val connectionPlan: ConnectionPlan): CR()
   @Serializable @SerialName("newPreparedChat") class NewPreparedChat(val user: UserRef, val chat: Chat): CR()
   @Serializable @SerialName("contactUserChanged") class ContactUserChanged(val user: UserRef, val fromContact: Contact, val newUser: UserRef, val toContact: Contact): CR()
   @Serializable @SerialName("groupUserChanged") class GroupUserChanged(val user: UserRef, val fromGroup: GroupInfo, val newUser: UserRef, val toGroup: GroupInfo): CR()
@@ -6854,6 +6866,7 @@ sealed class CR {
   // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
   @Serializable @SerialName("badgeRedeemed") class BadgeRedeemed(val user: User, val redeemedBadge: LocalBadge, val newBadge: Boolean, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeState") class BadgeStateR(val user: UserRef, val badgeState: BadgeState?): CR()
+  @Serializable @SerialName("badgeLedger") class BadgeLedger(val user: UserRef, val badgeLedger: List<StatementEntry>): CR()
   @Serializable @SerialName("badgeChanged") class BadgeChanged(val user: User, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeAlert") class BadgeAlertR(val user: UserRef, val badgeAlert: BadgeAlert): CR()
   // general
@@ -7044,6 +7057,7 @@ sealed class CR {
     is AppSettingsR -> "appSettings"
     is BadgeRedeemed -> "badgeRedeemed"
     is BadgeStateR -> "badgeState"
+    is BadgeLedger -> "badgeLedger"
     is BadgeChanged -> "badgeChanged"
     is BadgeAlertR -> "badgeAlert"
     is Response -> "* $type"
@@ -7251,6 +7265,7 @@ sealed class CR {
     is AppSettingsR -> json.encodeToString(appSettings)
     is BadgeRedeemed -> withUser(user, "redeemedBadge: ${json.encodeToString(redeemedBadge)}\nnewBadge: $newBadge\nbadgeState: ${json.encodeToString(badgeState)}")
     is BadgeStateR -> withUser(user, json.encodeToString(badgeState))
+    is BadgeLedger -> withUser(user, json.encodeToString(badgeLedger))
     is BadgeChanged -> withUser(user, json.encodeToString(badgeState))
     is BadgeAlertR -> withUser(user, json.encodeToString(badgeAlert))
     is Response -> json
@@ -7369,6 +7384,17 @@ sealed class BadgeServiceErrorCode {
     }
 }
 
+fun badgeServiceErrorText(code: BadgeServiceErrorCode): String? = when (code) {
+  is BadgeServiceErrorCode.CodeInvalid -> generalGetString(MR.strings.badges_error_code_invalid)
+  is BadgeServiceErrorCode.CodeUsed -> generalGetString(MR.strings.badges_error_code_used)
+  is BadgeServiceErrorCode.CodeExpired -> generalGetString(MR.strings.badges_error_code_expired)
+  is BadgeServiceErrorCode.RateLimited -> generalGetString(MR.strings.badges_error_rate_limited)
+  is BadgeServiceErrorCode.UnsupportedVersion -> generalGetString(MR.strings.badges_error_unsupported_version)
+  is BadgeServiceErrorCode.UnknownPurchaseKey -> generalGetString(MR.strings.badges_error_unknown_purchase)
+  is BadgeServiceErrorCode.Internal -> generalGetString(MR.strings.badges_error_service_internal)
+  else -> null
+}
+
 object BadgeServiceErrorCodeSerializer : KSerializer<BadgeServiceErrorCode> {
   override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("BadgeServiceErrorCode", PrimitiveKind.STRING)
   override fun deserialize(decoder: Decoder): BadgeServiceErrorCode =
@@ -7396,7 +7422,7 @@ object BadgeServiceErrorCodeSerializer : KSerializer<BadgeServiceErrorCode> {
 }
 
 data class ConnectionPlanResult(
-  val connLink: CreatedConnLink,
+  val connLink: CreatedConnLink?,
   val planSimplexName: SimplexNameInfo?,
   val otherSimplexName: SimplexNameInfo?,
   val connectionPlan: ConnectionPlan,
@@ -7404,20 +7430,28 @@ data class ConnectionPlanResult(
 
 // APIConnectPlan resolution scope; PRMNever is local-store-only (no network), used for per-keystroke name search
 enum class PlanResolveMode {
-  PRMAllGroups, PRMUnknown, PRMNever;
+  PRMUnknown, PRMNever, PRMAll;
   val cmdString: String get() = when (this) {
-    PRMAllGroups -> "allGroups"
     PRMUnknown -> "unknown"
     PRMNever -> "never"
+    PRMAll -> "all"
   }
 }
 
 @Serializable
 sealed class ConnectionPlan {
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
-  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan): ConnectionPlan()
-  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan): ConnectionPlan()
+  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameRegistration_: NameRegistration? = null): ConnectionPlan()
+  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameRegistration_: NameRegistration? = null): ConnectionPlan()
+  @Serializable @SerialName("nameNotConnectable") class NameNotConnectable(val simplexDomain: SimplexDomain, val nameRegistration: NameRegistration): ConnectionPlan()
   @Serializable @SerialName("error") class Error(val chatError: ChatError): ConnectionPlan()
+
+  fun nameRegistration(): NameRegistration? = when (this) {
+    is ContactAddress -> nameRegistration_
+    is GroupLink -> nameRegistration_
+    is NameNotConnectable -> nameRegistration
+    else -> null
+  }
 }
 
 @Serializable
@@ -7430,7 +7464,7 @@ sealed class InvitationLinkPlan {
 
 @Serializable
 sealed class ContactAddressPlan {
-  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null, val ownerVerification: OwnerVerification? = null): ContactAddressPlan()
+  @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null, val ownerVerification: OwnerVerification? = null, val addressChanged: Boolean = false): ContactAddressPlan()
   @Serializable @SerialName("ownLink") object OwnLink: ContactAddressPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: ContactAddressPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val contact: Contact): ContactAddressPlan()
@@ -7440,7 +7474,7 @@ sealed class ContactAddressPlan {
 
 @Serializable
 sealed class GroupLinkPlan {
-  @Serializable @SerialName("ok") class Ok(val groupSLinkInfo_: GroupShortLinkInfo? = null, val groupSLinkData_: GroupShortLinkData? = null, val ownerVerification: OwnerVerification? = null): GroupLinkPlan()
+  @Serializable @SerialName("ok") class Ok(val groupSLinkInfo_: GroupShortLinkInfo? = null, val groupSLinkData_: GroupShortLinkData? = null, val ownerVerification: OwnerVerification? = null, val addressChanged: Boolean = false): GroupLinkPlan()
   @Serializable @SerialName("ownLink") class OwnLink(val groupInfo: GroupInfo): GroupLinkPlan()
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: GroupLinkPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val groupInfo_: GroupInfo? = null): GroupLinkPlan()

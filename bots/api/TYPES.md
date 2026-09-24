@@ -105,7 +105,6 @@ This file is generated automatically.
 - [GroupFeature](#groupfeature)
 - [GroupFeatureEnabled](#groupfeatureenabled)
 - [GroupInfo](#groupinfo)
-- [GroupKeys](#groupkeys)
 - [GroupLink](#grouplink)
 - [GroupLinkOwner](#grouplinkowner)
 - [GroupLinkPlan](#grouplinkplan)
@@ -120,7 +119,6 @@ This file is generated automatically.
 - [GroupPreferences](#grouppreferences)
 - [GroupProfile](#groupprofile)
 - [GroupRelay](#grouprelay)
-- [GroupRootKey](#grouprootkey)
 - [GroupShortLinkData](#groupshortlinkdata)
 - [GroupShortLinkInfo](#groupshortlinkinfo)
 - [GroupSummary](#groupsummary)
@@ -147,6 +145,10 @@ This file is generated automatically.
 - [MsgSigStatus](#msgsigstatus)
 - [MsgVerified](#msgverified)
 - [NameErrorType](#nameerrortype)
+- [NamePricing](#namepricing)
+- [NameRecord](#namerecord)
+- [NameRegistration](#nameregistration)
+- [NameReservedReason](#namereservedreason)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
@@ -163,7 +165,6 @@ This file is generated automatically.
 - [ProxyError](#proxyerror)
 - [PublicGroupAccess](#publicgroupaccess)
 - [PublicGroupData](#publicgroupdata)
-- [PublicGroupKeys](#publicgroupkeys)
 - [PublicGroupProfile](#publicgroupprofile)
 - [RCErrorType](#rcerrortype)
 - [RatchetSyncState](#ratchetsyncstate)
@@ -469,62 +470,24 @@ CredentialNotVerified:
 
 ## BadgeServiceErrorCode
 
-**Discriminated union type**:
-
-BadRequest:
-- type: "badRequest"
-
-UnsupportedVersion:
-- type: "unsupportedVersion"
-
-UnknownPurchaseKey:
-- type: "unknownPurchaseKey"
-
-UnknownOfferId:
-- type: "unknownOfferId"
-
-OfferDisabled:
-- type: "offerDisabled"
-
-OfferMismatch:
-- type: "offerMismatch"
-
-ProductUnavailable:
-- type: "productUnavailable"
-
-PaymentNotEntitled:
-- type: "paymentNotEntitled"
-
-PaymentPending:
-- type: "paymentPending"
-
-ProviderUnavailable:
-- type: "providerUnavailable"
-
-RateLimited:
-- type: "rateLimited"
-
-CodeInvalid:
-- type: "codeInvalid"
-
-CodeUsed:
-- type: "codeUsed"
-
-CodeExpired:
-- type: "codeExpired"
-
-ReceiptInvalid:
-- type: "receiptInvalid"
-
-ReceiptUsed:
-- type: "receiptUsed"
-
-Internal:
-- type: "internal"
-
-Unknown:
-- type: "unknown"
-- : string
+**Enum type**:
+- "bad_request"
+- "unsupported_version"
+- "unknown_purchase_key"
+- "unknown_offer_id"
+- "offer_disabled"
+- "offer_mismatch"
+- "product_unavailable"
+- "payment_not_entitled"
+- "payment_pending"
+- "provider_unavailable"
+- "rate_limited"
+- "code_invalid"
+- "code_used"
+- "code_expired"
+- "receipt_invalid"
+- "receipt_used"
+- "internal"
 
 
 ---
@@ -1911,10 +1874,17 @@ InvitationLink:
 ContactAddress:
 - type: "contactAddress"
 - contactAddressPlan: [ContactAddressPlan](#contactaddressplan)
+- nameRegistration_: [NameRegistration](#nameregistration)?
 
 GroupLink:
 - type: "groupLink"
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
+- nameRegistration_: [NameRegistration](#nameregistration)?
+
+NameNotConnectable:
+- type: "nameNotConnectable"
+- simplexDomain: [SimplexDomain](#simplexdomain)
+- nameRegistration: [NameRegistration](#nameregistration)
 
 Error:
 - type: "error"
@@ -1961,6 +1931,7 @@ Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
+- addressChanged: bool
 
 OwnLink:
 - type: "ownLink"
@@ -2535,17 +2506,7 @@ MemberSupport:
 - rosterVersion: int64?
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
-- groupKeys: [GroupKeys](#groupkeys)?
 - groupDomainVerified: bool?
-
-
----
-
-## GroupKeys
-
-**Record type**:
-- publicGroupKeys: [PublicGroupKeys](#publicgroupkeys)?
-- memberPrivKey: string
 
 
 ---
@@ -2581,6 +2542,7 @@ Ok:
 - groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
+- addressChanged: bool
 
 OwnLink:
 - type: "ownLink"
@@ -2767,21 +2729,6 @@ UpdateRequired:
 - relayStatus: [RelayStatus](#relaystatus)
 - relayLink: string?
 - relayCap: [RelayCapabilities](#relaycapabilities)
-
-
----
-
-## GroupRootKey
-
-**Discriminated union type**:
-
-Private:
-- type: "private"
-- rootPrivKey: string
-
-Public:
-- type: "public"
-- rootPubKey: string
 
 
 ---
@@ -3172,6 +3119,67 @@ RESOLVER:
 
 ---
 
+## NamePricing
+
+**Record type**:
+- registrationPrices: {int : int64}
+- basePrice: int64
+- minLabelLength: int
+
+
+---
+
+## NameRecord
+
+**Record type**:
+- name: string
+- nickname: string
+- website: string
+- location: string
+- simplexContact: [string]
+- simplexChannel: [string]
+- eth: string?
+- btc: string?
+- xmr: string?
+- dot: string?
+- owner: string
+- resolver: string
+
+
+---
+
+## NameRegistration
+
+**Discriminated union type**:
+
+Registered:
+- type: "registered"
+- expires: int64?
+- graceUntil: int64?
+- reservedReason_: [NameReservedReason](#namereservedreason)?
+- nameRecord: [NameRecord](#namerecord)
+
+Available:
+- type: "available"
+- pricing: [NamePricing](#namepricing)
+
+Reserved:
+- type: "reserved"
+- reservedReason: [NameReservedReason](#namereservedreason)
+
+
+---
+
+## NameReservedReason
+
+**Enum type**:
+- "internal"
+- "trademark"
+- "community"
+
+
+---
+
 ## NetworkError
 
 **Discriminated union type**:
@@ -3285,9 +3293,9 @@ count=<count>
 ## PlanResolveMode
 
 **Enum type**:
-- "allGroups"
 - "unknown"
 - "never"
+- "all"
 
 
 ---
@@ -3411,15 +3419,6 @@ NO_SESSION:
 
 **Record type**:
 - publicMemberCount: int64
-
-
----
-
-## PublicGroupKeys
-
-**Record type**:
-- publicGroupId: string
-- groupRootKey: [GroupRootKey](#grouprootkey)
 
 
 ---

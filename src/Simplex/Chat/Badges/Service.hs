@@ -45,7 +45,6 @@ import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Types
 import Simplex.Chat.PaymentService
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Protocol (NameResponse)
 import Simplex.Messaging.SimplexName (SimplexDomain)
@@ -240,29 +239,6 @@ data StatementDebitType
   | SDUnknown {tag :: Text, json :: J.Object}
   deriving (Show)
 
-data BadgeServiceErrorCode
-  = BSEBadRequest
-  | BSEUnsupportedVersion
-  | BSEUnknownPurchaseKey
-  | BSEUnknownOfferId
-  | BSEOfferDisabled
-  | BSEOfferMismatch
-  | BSEProductUnavailable
-  | BSEPaymentNotEntitled
-  | BSEPaymentPending
-  | BSEProviderUnavailable
-  | BSERateLimited
-  | BSECodeInvalid
-  | BSECodeUsed
-  | BSECodeExpired
-  | BSEReceiptInvalid
-  | BSEReceiptUsed
-  | BSEInternal
-  | BSENameTaken
-  | BSENameNotCovered -- the credit covers longer names only
-  | BSEUnknown Text -- forwards-compatible: service is deployed ahead of clients
-  deriving (Eq, Show)
-
 -- what one name purchase covers
 data NameCredit = NameCredit
   { minLength :: Int,
@@ -290,57 +266,6 @@ data SignedNameLinks = SignedNameLinks
     signature :: Text -- 0x
   }
   deriving (Show)
-
-instance TextEncoding BadgeServiceErrorCode where
-  textEncode = \case
-    BSEBadRequest -> "bad_request"
-    BSEUnsupportedVersion -> "unsupported_version"
-    BSEUnknownPurchaseKey -> "unknown_purchase_key"
-    BSEUnknownOfferId -> "unknown_offer_id"
-    BSEOfferDisabled -> "offer_disabled"
-    BSEOfferMismatch -> "offer_mismatch"
-    BSEProductUnavailable -> "product_unavailable"
-    BSEPaymentNotEntitled -> "payment_not_entitled"
-    BSEPaymentPending -> "payment_pending"
-    BSEProviderUnavailable -> "provider_unavailable"
-    BSERateLimited -> "rate_limited"
-    BSECodeInvalid -> "code_invalid"
-    BSECodeUsed -> "code_used"
-    BSECodeExpired -> "code_expired"
-    BSEReceiptInvalid -> "receipt_invalid"
-    BSEReceiptUsed -> "receipt_used"
-    BSEInternal -> "internal"
-    BSENameTaken -> "name_taken"
-    BSENameNotCovered -> "name_not_covered"
-    BSEUnknown t -> t
-  textDecode s = Just $ case s of
-    "bad_request" -> BSEBadRequest
-    "unsupported_version" -> BSEUnsupportedVersion
-    "unknown_purchase_key" -> BSEUnknownPurchaseKey
-    "unknown_offer_id" -> BSEUnknownOfferId
-    "offer_disabled" -> BSEOfferDisabled
-    "offer_mismatch" -> BSEOfferMismatch
-    "product_unavailable" -> BSEProductUnavailable
-    "payment_not_entitled" -> BSEPaymentNotEntitled
-    "payment_pending" -> BSEPaymentPending
-    "provider_unavailable" -> BSEProviderUnavailable
-    "rate_limited" -> BSERateLimited
-    "code_invalid" -> BSECodeInvalid
-    "code_used" -> BSECodeUsed
-    "code_expired" -> BSECodeExpired
-    "receipt_invalid" -> BSEReceiptInvalid
-    "receipt_used" -> BSEReceiptUsed
-    "internal" -> BSEInternal
-    "name_taken" -> BSENameTaken
-    "name_not_covered" -> BSENameNotCovered
-    t -> BSEUnknown t
-
-instance ToJSON BadgeServiceErrorCode where
-  toJSON = textToJSON
-  toEncoding = textToEncoding
-
-instance FromJSON BadgeServiceErrorCode where
-  parseJSON = textParseJSON "BadgeServiceErrorCode"
 
 $(pure [])
 

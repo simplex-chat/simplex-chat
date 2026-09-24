@@ -32,7 +32,10 @@ CREATE TABLE contact_profiles(
   contact_domain TEXT,
   contact_domain_proof TEXT,
   contact_domain_verified INTEGER,
-  description TEXT
+  description TEXT,
+  preferences_json TEXT,
+  contact_domain_resolved_at TEXT,
+  contact_domain_expires_at TEXT
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -146,7 +149,8 @@ CREATE TABLE group_profiles(
   group_domain TEXT,
   domain_web_page INTEGER,
   allow_embedding INTEGER,
-  group_domain_proof TEXT
+  group_domain_proof TEXT,
+  preferences_json TEXT
 ) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -209,7 +213,9 @@ CREATE TABLE groups(
   roster_blob BLOB,
   group_domain_verified INTEGER,
   stored_roster_version INTEGER,
-  applied_complete_roster_version INTEGER, -- received
+  applied_complete_roster_version INTEGER,
+  group_domain_resolved_at TEXT,
+  group_domain_expires_at TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -932,6 +938,10 @@ CREATE TABLE badge_purchases(
   alert_acked_episode TEXT,
   alert_snooze_until TEXT,
   badge_code_redemption_id INTEGER REFERENCES badge_code_redemptions,
+  issue_failed_since TEXT,
+  issue_error_at TEXT,
+  issue_error TEXT,
+  next_wake_at TEXT,
   UNIQUE(purchase_key)
 ) STRICT;
 CREATE TABLE badge_ledger(

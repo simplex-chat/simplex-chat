@@ -162,7 +162,7 @@ struct BadgesYourLevelView: View {
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "info.circle")
-                    Text("How private badges work").fontWeight(.medium)
+                    Text("How badges protect your privacy").fontWeight(.medium)
                 }
                 .font(.body)
             }

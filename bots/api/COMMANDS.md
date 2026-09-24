@@ -1511,7 +1511,7 @@ Determine SimpleX link type and if the bot is already connected via this link or
 ConnectionPlan: Connection link information.
 - type: "connectionPlan"
 - user: [User](./TYPES.md#user)
-- connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
+- connLink: [CreatedConnLink](./TYPES.md#createdconnlink)?
 - planSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - otherSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
@@ -1537,15 +1537,15 @@ Connect via prepared SimpleX link. The link can be 1-time invitation link, conta
 **Syntax**:
 
 ```
-/_connect <userId>[ <str(preparedLink_)>]
+/_connect <userId>[ incognito=on][ <str(preparedLink_)>]
 ```
 
 ```javascript
-'/_connect ' + userId + (preparedLink_ ? ' ' + CreatedConnLink.cmdString(preparedLink_) : '') // JavaScript
+'/_connect ' + userId + (incognito ? ' incognito=on' : '') + (preparedLink_ ? ' ' + CreatedConnLink.cmdString(preparedLink_) : '') // JavaScript
 ```
 
 ```python
-'/_connect ' + str(userId) + ((' ' + CreatedConnLink_cmd_string(preparedLink_)) if preparedLink_ is not None else '') # Python
+'/_connect ' + str(userId) + (' incognito=on' if incognito else '') + ((' ' + CreatedConnLink_cmd_string(preparedLink_)) if preparedLink_ is not None else '') # Python
 ```
 
 **Responses**:
@@ -1620,7 +1620,7 @@ SentInvitation: Invitation sent to contact address.
 ConnectionPlan: Connection link information.
 - type: "connectionPlan"
 - user: [User](./TYPES.md#user)
-- connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
+- connLink: [CreatedConnLink](./TYPES.md#createdconnlink)?
 - planSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - otherSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)

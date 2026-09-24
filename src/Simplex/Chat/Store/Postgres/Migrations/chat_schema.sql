@@ -275,7 +275,11 @@ CREATE TABLE test_chat_schema.badge_purchases (
     alert_acked_kind text,
     alert_acked_episode text,
     alert_snooze_until timestamp with time zone,
-    badge_code_redemption_id bigint
+    badge_code_redemption_id bigint,
+    issue_failed_since timestamp with time zone,
+    issue_error_at timestamp with time zone,
+    issue_error text,
+    next_wake_at timestamp with time zone
 );
 
 
@@ -676,7 +680,10 @@ CREATE TABLE test_chat_schema.contact_profiles (
     contact_domain text,
     contact_domain_proof text,
     contact_domain_verified smallint,
-    description text
+    description text,
+    preferences_json text,
+    contact_domain_resolved_at timestamp with time zone,
+    contact_domain_expires_at timestamp with time zone
 );
 
 
@@ -1038,7 +1045,8 @@ CREATE TABLE test_chat_schema.group_profiles (
     group_domain text,
     domain_web_page bigint,
     allow_embedding bigint,
-    group_domain_proof text
+    group_domain_proof text,
+    preferences_json text
 );
 
 
@@ -1164,7 +1172,9 @@ CREATE TABLE test_chat_schema.groups (
     roster_blob bytea,
     group_domain_verified smallint,
     stored_roster_version bigint,
-    applied_complete_roster_version bigint
+    applied_complete_roster_version bigint,
+    group_domain_resolved_at timestamp with time zone,
+    group_domain_expires_at timestamp with time zone
 );
 
 

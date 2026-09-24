@@ -84,7 +84,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits, LocalBadge)
-import Simplex.Chat.Badges.Service (BadgeServiceErrorCode, NameCredit)
+import Simplex.Chat.Badges.Service (BadgeServiceErrorCode, NameCredit, StatementEntry)
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeState (..))
 import Simplex.Chat.PaymentService (ServicePayment)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
@@ -229,9 +229,9 @@ newWebPreviewState = do
 
 -- | Builds the read-only context threaded through store functions from chat config.
 -- The single construction point, so new store-wide config (e.g. server keys) is added in one place.
-mkStoreCxt :: ChatConfig -> StoreCxt
-mkStoreCxt ChatConfig {chatVRange, badgePublicKeys} = StoreCxt chatVRange badgePublicKeys
-{-# INLINE mkStoreCxt #-}
+storeCxt :: ChatController -> StoreCxt
+storeCxt ChatController {config = ChatConfig {chatVRange, badgePublicKeys}, random} = StoreCxt chatVRange badgePublicKeys random
+{-# INLINE storeCxt #-}
 
 data RandomAgentServers = RandomAgentServers
   { smpServers :: NonEmpty (ServerCfg 'PSMP),
@@ -661,6 +661,7 @@ data ChatCommand
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
   | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
   | APIGetBadgeState {userId :: UserId} -- the user's badges, their balances and any current alert
+  | APIGetBadgeLedger {userId :: UserId, badgePurchaseId :: Int64} -- the purchase's ledger, oldest first
   -- episode is last because it is free text: it is the value that makes one occurrence of an
   -- alert distinct from the next, and the app returns whatever it was given
   | APIAckBadgeAlert {userId :: UserId, badgePurchaseId :: Int64, alertKind :: BadgeAlertKind, snooze :: Bool, episode :: Text}
@@ -718,8 +719,7 @@ data ChatCommand
   deriving (Show)
 
 data PlanResolveMode
-  = PRMAllGroups -- resolve all known groups and all unknown chats
-  | PRMUnknown -- only resolve if chat is unknown (default)
+  = PRMUnknown -- only resolve if chat is unknown (default)
   | PRMNever -- do not resolve links and names, only do local search
   | PRMAll -- always resolve, also known chats
   deriving (Eq, Show)
@@ -727,8 +727,6 @@ data PlanResolveMode
 planResolveModeP :: A.Parser PlanResolveMode
 planResolveModeP =
   A.takeTill (== ' ') >>= \case
-    "allGroups" -> pure PRMAllGroups
-    "on" -> pure PRMAllGroups
     "unknown" -> pure PRMUnknown
     "off" -> pure PRMUnknown
     "never" -> pure PRMNever
@@ -881,6 +879,7 @@ data ChatResponse
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
   | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
   | CRBadgeState {user :: User, badgeState :: Maybe BadgeState}
+  | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
   | CRNameState {user :: User, nameState :: [NameState]}
   | CRNameCode {user :: User, credit :: NameCredit}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
@@ -1164,9 +1163,9 @@ data ChatDeleteMode
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
-  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameRegistration_ :: Maybe NameRegistration} -- nameRegistration_ is set when the target was a name
+  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameRegistration_ :: Maybe NameRegistration}
   | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameRegistration_ :: Maybe NameRegistration}
-  | CPNameNotConnectable {simplexDomain :: SimplexDomain, nameRegistration :: NameRegistration} -- the name is not registered, expired or has no usable link, and no local chat has it
+  | CPNameNotConnectable {simplexDomain :: SimplexDomain, nameRegistration :: NameRegistration}
   | CPError {chatError :: ChatError}
   deriving (Show)
 

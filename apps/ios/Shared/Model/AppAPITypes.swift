@@ -194,6 +194,7 @@ enum ChatCommand: ChatCmdProtocol {
     // badges
     case apiRedeemBadgeCode(userId: Int64, code: String)
     case apiGetBadgeState(userId: Int64)
+    case apiGetBadgeLedger(userId: Int64, badgePurchaseId: Int64)
     case apiAckBadgeAlert(userId: Int64, badgePurchaseId: Int64, alertKind: BadgeAlertKind, snooze: Bool, episode: String)
     // misc
     case showVersion
@@ -419,6 +420,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiStandaloneFileInfo(link): return "/_download info \(link)"
             case let .apiRedeemBadgeCode(userId, code): return "/_redeem_badge_code \(userId) \(code)"
             case let .apiGetBadgeState(userId): return "/_badge state \(userId)"
+            case let .apiGetBadgeLedger(userId, badgePurchaseId): return "/_badge ledger \(userId) \(badgePurchaseId)"
             case let .apiAckBadgeAlert(userId, badgePurchaseId, alertKind, snooze, episode):
                 return "/_badge ack \(userId) \(badgePurchaseId) \(badgeAlertKindParam(alertKind)) \(onOff(snooze)) \(episode)"
             case .showVersion: return "/version"
@@ -610,6 +612,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiStandaloneFileInfo: return "apiStandaloneFileInfo"
             case .apiRedeemBadgeCode: return "apiRedeemBadgeCode"
             case .apiGetBadgeState: return "apiGetBadgeState"
+            case .apiGetBadgeLedger: return "apiGetBadgeLedger"
             case .apiAckBadgeAlert: return "apiAckBadgeAlert"
             case .showVersion: return "showVersion"
             case .getAgentSubsTotal: return "getAgentSubsTotal"
@@ -701,6 +704,7 @@ enum ChatCommand: ChatCmdProtocol {
         case .subscriptionEnded: "subscription_ended"
         case .prepaidEnding: "prepaid_ending"
         case .supportEnded: "support_ended"
+        case .issueFailed: "issue_failed"
         }
     }
 
@@ -849,7 +853,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case invitation(user: UserRef, connLinkInvitation: CreatedConnLink, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
-    case connectionPlan(user: UserRef, connLink: CreatedConnLink, planSimplexName: SimplexNameInfo?, otherSimplexName: SimplexNameInfo?, connectionPlan: ConnectionPlan)
+    case connectionPlan(user: UserRef, connLink: CreatedConnLink?, planSimplexName: SimplexNameInfo?, otherSimplexName: SimplexNameInfo?, connectionPlan: ConnectionPlan)
     case newPreparedChat(user: UserRef, chat: ChatData)
     case contactUserChanged(user: UserRef, fromContact: Contact, newUser: UserRef, toContact: Contact)
     case groupUserChanged(user: UserRef, fromGroup: GroupInfo, newUser: UserRef, toGroup: GroupInfo)
@@ -1048,6 +1052,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
     case badgeRedeemed(user: User, redeemedBadge: LocalBadge, newBadge: Bool, badgeState: BadgeState?)
     case badgeState(user: UserRef, badgeState: BadgeState?)
+    case badgeLedger(user: UserRef, badgeLedger: [StatementEntry])
 
     var responseType: String {
         switch self {
@@ -1101,6 +1106,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case .appSettings: "appSettings"
         case .badgeRedeemed: "badgeRedeemed"
         case .badgeState: "badgeState"
+        case .badgeLedger: "badgeLedger"
         }
     }
 
@@ -1156,6 +1162,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .appSettings(appSettings): return String(describing: appSettings)
         case let .badgeRedeemed(u, redeemedBadge, newBadge, badgeState): return withUser(u, "redeemedBadge: \(String(describing: redeemedBadge))\nnewBadge: \(newBadge)\nbadgeState: \(String(describing: badgeState))")
         case let .badgeState(u, badgeState): return withUser(u, String(describing: badgeState))
+        case let .badgeLedger(u, badgeLedger): return withUser(u, String(describing: badgeLedger))
         }
     }
 }
@@ -1437,7 +1444,7 @@ enum OwnerVerification: Decodable, Hashable {
 }
 
 struct ConnectionPlanResult {
-    var connLink: CreatedConnLink
+    var connLink: CreatedConnLink?
     var planSimplexName: SimplexNameInfo?
     var otherSimplexName: SimplexNameInfo?
     var connectionPlan: ConnectionPlan
@@ -1445,16 +1452,84 @@ struct ConnectionPlanResult {
 
 // APIConnectPlan resolution scope; .never is local-store-only (no network), used for per-keystroke name search
 enum PlanResolveMode: String {
-    case allGroups
     case unknown
     case never
+    case all
 }
 
 enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
-    case contactAddress(contactAddressPlan: ContactAddressPlan)
-    case groupLink(groupLinkPlan: GroupLinkPlan)
+    case contactAddress(contactAddressPlan: ContactAddressPlan, nameRegistration_: NameRegistration?)
+    case groupLink(groupLinkPlan: GroupLinkPlan, nameRegistration_: NameRegistration?)
+    case nameNotConnectable(simplexDomain: SimplexDomain, nameRegistration: NameRegistration)
     case error(chatError: ChatError)
+
+    var nameRegistration: NameRegistration? {
+        switch self {
+        case let .contactAddress(_, reg): reg
+        case let .groupLink(_, reg): reg
+        case let .nameNotConnectable(_, reg): reg
+        default: nil
+        }
+    }
+}
+
+enum NameRegistration: Hashable {
+    // held by someone; expires/graceUntil are absent from an older router, which means "not known", not "live forever"
+    case registered(expires: Int64?, graceUntil: Int64?, reservedReason_: String?)
+    case available(pricing: NamePricing)
+    case reserved(reservedReason: String)
+
+    // the registry may add reasons after this version, so any other value is just "not registrable"
+    static let reservedCommunity = "community"
+
+    func expired(_ now: Int64) -> Bool {
+        if case let .registered(expires, _, _) = self, let expires { expires < now } else { false }
+    }
+
+    var reservedForCommunity: Bool {
+        switch self {
+        case let .reserved(reason): reason == NameRegistration.reservedCommunity
+        case let .registered(_, _, reason): reason == NameRegistration.reservedCommunity
+        case .available: false
+        }
+    }
+}
+
+extension NameRegistration: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case type, expires, graceUntil, reservedReason_, pricing, reservedReason
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        switch type {
+        case "registered":
+            let expires = try container.decodeIfPresent(Int64.self, forKey: .expires)
+            let graceUntil = try container.decodeIfPresent(Int64.self, forKey: .graceUntil)
+            let reservedReason_ = try container.decodeIfPresent(String.self, forKey: .reservedReason_)
+            self = .registered(expires: expires, graceUntil: graceUntil, reservedReason_: reservedReason_)
+        case "available":
+            let pricing = try container.decode(NamePricing.self, forKey: .pricing)
+            self = .available(pricing: pricing)
+        case "reserved":
+            let reservedReason = try container.decode(String.self, forKey: .reservedReason)
+            self = .reserved(reservedReason: reservedReason)
+        default:
+            throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown NameRegistration type: \(type)")
+        }
+    }
+}
+
+struct NamePricing: Decodable, Hashable {
+    var registrationPrices: [String: Int64]
+    var basePrice: Int64
+    var minLabelLength: Int
+
+    func centsPerYear(_ labelLength: Int) -> Int64 {
+        registrationPrices[String(labelLength)] ?? basePrice
+    }
 }
 
 enum InvitationLinkPlan: Decodable, Hashable {
@@ -1465,7 +1540,7 @@ enum InvitationLinkPlan: Decodable, Hashable {
 }
 
 enum ContactAddressPlan: Decodable, Hashable {
-    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?)
+    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?, addressChanged: Bool)
     case ownLink
     case connectingConfirmReconnect
     case connectingProhibit(contact: Contact)
@@ -1480,7 +1555,7 @@ public struct GroupShortLinkInfo: Decodable, Hashable {
 }
 
 enum GroupLinkPlan: Decodable, Hashable {
-    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?)
+    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?, addressChanged: Bool)
     case ownLink(groupInfo: GroupInfo)
     case connectingConfirmReconnect
     case connectingProhibit(groupInfo_: GroupInfo?)
