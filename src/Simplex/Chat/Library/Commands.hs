@@ -2426,7 +2426,8 @@ processChatCommand cxt nm = \case
     g' <- withFastStore' $ \db -> setGroupDomainVerified db user g verified
     pure $ CRGroupDomainVerified user g' reason
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
-    ct@Contact {profile = LocalProfile {contactLink}} <- withFastStore $ \db -> getContact db cxt user contactId
+    ct@Contact {profile = LocalProfile {contactLink}, groupDirectInv} <- withFastStore $ \db -> getContact db cxt user contactId
+    when (isJust groupDirectInv) $ throwCmdError "contact is a member contact request"
     ccLink <- case contactLink of
       Just (CLFull cReq) -> pure $ CCLink cReq Nothing
       Just (CLShort sLnk) -> do
@@ -3873,13 +3874,13 @@ processChatCommand cxt nm = \case
         relayMemberId_ = case preparedEntity_ of
           Just (PCEGroup (GIK gInfo _) m) | useRelays' gInfo -> Just (memberId' m)
           _ -> Nothing
-        joinPreparedConn' xContactId_ conn@Connection {customUserProfileId} gInfo_ = do
+        joinPreparedConn' xContactId_ conn@Connection {connId, customUserProfileId} gInfo_ = do
           when (incognito /= isJust customUserProfileId) $ throwCmdError "incognito mode is different from prepared connection"
           -- TODO [relays] member: refactor joinContact and up avoiding parallel ifs, xContactId is not used
           xContactId <- mkXContactId xContactId_
-          localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
+          (cReq', localIncognitoProfile) <- withFastStore $ \db -> (,) <$> getConnReqContact db connId <*> forM customUserProfileId (getProfileById db userId)
           let incognitoProfile = fromLocalProfile <$> localIncognitoProfile
-          conn' <- joinContact user conn cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ PQSupportOn
+          conn' <- joinContact user conn cReq' incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ PQSupportOn
           pure $ CVRSentInvitation conn' incognitoProfile
         connect' groupLinkId xContactId_ gInfo_ = do
           let inGroup = isJust groupLinkId
@@ -3912,13 +3913,13 @@ processChatCommand cxt nm = \case
             void $ joinContact user conn cReq incognitoProfile newXContactId Nothing Nothing Nothing Nothing pqSup
             ct' <- withStore $ \db -> getContact db cxt user contactId
             pure $ CRSentInvitationToContact user ct' incognitoProfile
-          Just conn@Connection {connStatus, xContactId = xContactId_, customUserProfileId} -> case connStatus of
+          Just conn@Connection {connId, connStatus, xContactId = xContactId_, customUserProfileId} -> case connStatus of
             ConnPrepared -> do
               when (incognito /= isJust customUserProfileId) $ throwCmdError "incognito mode is different from prepared connection"
               xContactId <- mkXContactId xContactId_
-              localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
+              (cReq', localIncognitoProfile) <- withFastStore $ \db -> (,) <$> getConnReqContact db connId <*> forM customUserProfileId (getProfileById db userId)
               let incognitoProfile = fromLocalProfile <$> localIncognitoProfile
-              void $ joinContact user conn cReq incognitoProfile xContactId Nothing Nothing Nothing Nothing PQSupportOn
+              void $ joinContact user conn cReq' incognitoProfile xContactId Nothing Nothing Nothing Nothing PQSupportOn
               ct' <- withStore $ \db -> getContact db cxt user contactId
               pure $ CRSentInvitationToContact user ct' incognitoProfile
             _ -> throwCmdError "contact already has connection"

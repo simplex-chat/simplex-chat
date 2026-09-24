@@ -588,6 +588,14 @@ getConnReqInv db connId =
       "SELECT conn_req_inv FROM connections WHERE connection_id = ?"
       (Only connId)
 
+getConnReqContact :: DB.Connection -> Int64 -> ExceptT StoreError IO ConnReqContact
+getConnReqContact db connId =
+  ExceptT . firstRow fromOnly (SEConnectionNotFoundById connId) $
+    DB.query
+      db
+      "SELECT via_contact_uri FROM connections WHERE connection_id = ?"
+      (Only connId)
+
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
 withLocalDisplayName :: forall a. DB.Connection -> UserId -> Text -> (Text -> IO (Either StoreError a)) -> IO (Either StoreError a)
