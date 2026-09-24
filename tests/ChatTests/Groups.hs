@@ -4172,6 +4172,7 @@ setupDesynchronizedRatchet ps alice = do
     bob <# "#team alice> 3"
     bob #> "#team 4"
     alice <# "#team bob> 4"
+    threadDelay 500000
   withTestChat ps "bob_old" $ \bob -> do
     bob <## "subscribed 2 connections on server localhost"
     bob ##> "/sync #team alice"
@@ -5238,6 +5239,9 @@ testMemberContactAccept =
       cath <## "to reject: /delete @bob (the sender will NOT be notified)"
 
       cath #$> ("/_get chat @3 count=1", chat, [(0, "requested connection from group team")])
+
+      cath ##> "/_connect contact 1 3"
+      cath <## "bad chat command: contact is a member contact request"
 
       cath ##> "/accept_member_contact @bob"
       cath <## "contact bob is accepted, starting connection"

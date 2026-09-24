@@ -67,6 +67,7 @@ chatProfileTests = do
     it "rotate address ratchet keys" testRotateAddressRatchetKeys
     it "create address on specified server" testCreateAddressOnServer
     it "retry connecting via contact link" testRetryConnectingViaContactLink
+    it "retry connecting via address in contact profile after address keys rotation" testRetryConnectingContactViaAddress
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
     it "deduplicate contact requests" testDeduplicateContactRequests
@@ -814,6 +815,50 @@ testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile 
                 messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
               }
         }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }
+
+testRetryConnectingContactViaAddress :: HasCallStack => TestParams -> IO ()
+testRetryConnectingContactViaAddress ps =
+  withNewTestChatOpts ps testOptsNoFullLinks "alice" aliceProfile $ \alice ->
+    withNewTestChatCfgOpts ps cfg' opts' "bob" bobProfile $ \bob -> do
+      alice ##> "/ad"
+      sLink <- getContactLink_ alice True
+      alice ##> "/pa on"
+      alice <## "new contact address set"
+      rotateAddressKeys alice
+      case A.parseOnly strP (B.pack sLink) of
+        Left _ -> error "error parsing contact link"
+        Right shortLink -> do
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db (storeCxt $ chatController bob) user aliceProfile {contactLink = Just shortLink}
+          bob ##> "/_connect contact 1 2"
+          bob <##. "smp agent error: BROKER"
+          rotateAddressKeys alice
+          withSmpServer' serverCfg' $ do
+            bob ##> "/_connect contact 1 2"
+            bob <## "connection request sent!"
+            alice <## "bob (Bob) wants to connect to you!"
+            alice <## "to accept: /ac bob"
+            alice <## "to reject: /rc bob (the sender will NOT be notified)"
+            alice ##> "/ac bob"
+            alice <## "bob (Bob): accepting contact request, you can send messages to contact"
+            concurrently_
+              (bob <## "alice (Alice): contact is connected")
+              (alice <## "bob (Bob): contact is connected")
+            alice <##> bob
+          bob <## "disconnected 1 connections on server localhost"
+  where
+    rotateAddressKeys alice = do
+      alice ##> "/_rotate_address_keys 1"
+      _ <- getContactLink_ alice False
+      alice <## "auto_accept off"
+    serverCfg' = (smpServerCfg ps) {transports = [(smpTestPort2 ps, transport @TLS, False)]}
+    cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
     opts' =
       testOpts
         { coreOptions =
