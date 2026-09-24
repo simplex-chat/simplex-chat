@@ -3,7 +3,7 @@ title: Poradnik wspierania projektu
 revision: 31.01.2023
 ---
 
-| Updated 31.01.2023 | Języki: PL, [EN](/docs/CONTRIBUTING.md) [FR](/docs/lang/fr/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md) |
+| Updated 31.01.2023 | Języki: PL, [EN](/docs/CONTRIBUTING.md), [FR](/docs/lang/fr/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md), [JA](/docs/lang/ja/CONTRIBUTING.md) |
 
 # Poradnik wspierania projektu
 

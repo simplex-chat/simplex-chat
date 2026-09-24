@@ -3,7 +3,7 @@ title: Hostowanie własnego serwera SMP
 revision: 31.07.2023
 ---
 
-| Updated 05.06.2023 | Języki: PL, [EN](/docs/SERVER.md), [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md) |
+| Updated 05.06.2023 | Języki: PL, [EN](/docs/SERVER.md), [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [JA](/docs/lang/ja/SERVER.md) |
 
 # Hostowanie własnego serwera SMP
 
