@@ -164,7 +164,7 @@
         "header"
       ],
       "seed": 1005,
-      "text": "wireframes, fourth pass",
+      "text": "wireframes",
       "fontSize": 11,
       "fontFamily": 2,
       "textAlign": "right",
@@ -186,7 +186,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "wireframes, fourth pass",
+      "originalText": "wireframes",
       "lineHeight": 1.2727272727272727
     },
     {
@@ -743,7 +743,7 @@
         "lane1"
       ],
       "seed": 1111,
-      "text": "Get your code becomes the primary button and loses the\nconfirm-in-browser alert - the tap opens the browser. Redeem\nbadge code drops to the text button. The info button stays as\nit is: the file's TODO plans to swap it for Why SimpleX is built\nonce purchase lands, and that is declined - it leaves the\ndesigns. chooseLevelButton() is never called in this build.",
+      "text": "Get your code becomes the primary button and loses the\nconfirm-in-browser alert - the tap opens the browser. Redeem\nbadge code drops to the text button. The info button stays as\nit is - the file's TODO would swap it for Why SimpleX is built\nonce purchase lands, and it should not.\nchooseLevelButton() is never called in this build.",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -765,7 +765,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "Get your code becomes the primary button and loses the\nconfirm-in-browser alert - the tap opens the browser. Redeem\nbadge code drops to the text button. The info button stays as\nit is: the file's TODO plans to swap it for Why SimpleX is built\nonce purchase lands, and that is declined - it leaves the\ndesigns. chooseLevelButton() is never called in this build.",
+      "originalText": "Get your code becomes the primary button and loses the\nconfirm-in-browser alert - the tap opens the browser. Redeem\nbadge code drops to the text button. The info button stays as\nit is - the file's TODO would swap it for Why SimpleX is built\nonce purchase lands, and it should not.\nchooseLevelButton() is never called in this build.",
       "lineHeight": 1.2222222222222223
     },
     {
@@ -2572,7 +2572,7 @@
         "lane1"
       ],
       "seed": 1417,
-      "text": "The method is picked here and the code is minted here, as\ntoday: the browser generates it and sends only its SHA-256.\nSend 1.482 XMR, the countdown, Payment received - all\nunchanged, and not drawn again. The service needs no new\nAPI for this lane at all.",
+      "text": "The method is picked here and the code is minted here, as\ntoday: the browser generates it and sends only its SHA-256.\nSend 1.482 XMR, the countdown and Payment received follow\nand are unchanged, so they are not drawn. The service needs\nno new API for this lane at all.",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -2594,7 +2594,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "The method is picked here and the code is minted here, as\ntoday: the browser generates it and sends only its SHA-256.\nSend 1.482 XMR, the countdown, Payment received - all\nunchanged, and not drawn again. The service needs no new\nAPI for this lane at all.",
+      "originalText": "The method is picked here and the code is minted here, as\ntoday: the browser generates it and sends only its SHA-256.\nSend 1.482 XMR, the countdown and Payment received follow\nand are unchanged, so they are not drawn. The service needs\nno new API for this lane at all.",
       "lineHeight": 1.4666666666666666
     },
     {
@@ -9151,7 +9151,7 @@
         "lane3"
       ],
       "seed": 3402,
-      "text": "What this plan costs, compared with the last one",
+      "text": "What has to be built, and what it costs",
       "fontSize": 15,
       "fontFamily": 2,
       "textAlign": "left",
@@ -9173,7 +9173,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "What this plan costs, compared with the last one",
+      "originalText": "What has to be built, and what it costs",
       "lineHeight": 1.3333333333333333
     },
     {
@@ -9191,7 +9191,7 @@
         "lane3"
       ],
       "seed": 3403,
-      "text": "The service needs nothing. No getBadgeCatalog, no getBadgeInvoice, no purchase key binding, no reserved invoice, no paymentVia question - the code purchase is used exactly as it\nships, and the only reason the app never shows a code is that the link carries it.\n\nThe page needs three things: read ?app and start at Choose your badge; at the end, try the deep link and offer Return to SimpleX with Show code under it; and for ?app=desktop,\nkeep showing codeIssued as it does now.\n\nThe app needs: Buy in browser without its confirm alert; a handler for the new link; A6, which is a spinner around the existing apiRedeemBadgeCode; and, on desktop, opening Redeem\ncode alongside the browser. Lane B is unchanged from the previous pass apart from the two renames.\n\nWhat is given up: the app can no longer show the price before sending the buyer out, because it has no catalog - Buy in browser is a leap of faith into a page. And the code exists,\nso it can still be intercepted, screenshotted from the backup button, or pasted somewhere else. Hidden is not the same as absent.",
+      "text": "The service needs nothing at all. The code purchase runs exactly as it ships - the browser mints the code and sends only its SHA-256 - and the only reason the buyer never sees one\nis that the link carries it instead of the screen.\n\nThe page needs three things: read ?app and start at Choose your badge; at the end, try the deep link and offer Return to SimpleX with Show code under it; and for ?app=desktop,\nkeep showing codeIssued as it does now.\n\nThe app needs: Buy in browser without its confirm alert; a handler for the new link; A6, a spinner around the existing apiRedeemBadgeCode; on desktop, opening Redeem code alongside\nthe browser; and for the store lane, B4's checkout and the two BadgeState outcomes behind B5.\n\nWhat it costs: the app cannot show a price before sending the buyer out, because it has no catalog - Buy in browser is a leap into a page. And the code still exists, so it can be\nintercepted, screenshotted from the backup button, or pasted somewhere else. Hidden is not the same as absent.",
       "fontSize": 10,
       "fontFamily": 2,
       "textAlign": "left",
@@ -9213,7 +9213,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "The service needs nothing. No getBadgeCatalog, no getBadgeInvoice, no purchase key binding, no reserved invoice, no paymentVia question - the code purchase is used exactly as it\nships, and the only reason the app never shows a code is that the link carries it.\n\nThe page needs three things: read ?app and start at Choose your badge; at the end, try the deep link and offer Return to SimpleX with Show code under it; and for ?app=desktop,\nkeep showing codeIssued as it does now.\n\nThe app needs: Buy in browser without its confirm alert; a handler for the new link; A6, which is a spinner around the existing apiRedeemBadgeCode; and, on desktop, opening Redeem\ncode alongside the browser. Lane B is unchanged from the previous pass apart from the two renames.\n\nWhat is given up: the app can no longer show the price before sending the buyer out, because it has no catalog - Buy in browser is a leap of faith into a page. And the code exists,\nso it can still be intercepted, screenshotted from the backup button, or pasted somewhere else. Hidden is not the same as absent.",
+      "originalText": "The service needs nothing at all. The code purchase runs exactly as it ships - the browser mints the code and sends only its SHA-256 - and the only reason the buyer never sees one\nis that the link carries it instead of the screen.\n\nThe page needs three things: read ?app and start at Choose your badge; at the end, try the deep link and offer Return to SimpleX with Show code under it; and for ?app=desktop,\nkeep showing codeIssued as it does now.\n\nThe app needs: Buy in browser without its confirm alert; a handler for the new link; A6, a spinner around the existing apiRedeemBadgeCode; on desktop, opening Redeem code alongside\nthe browser; and for the store lane, B4's checkout and the two BadgeState outcomes behind B5.\n\nWhat it costs: the app cannot show a price before sending the buyer out, because it has no catalog - Buy in browser is a leap into a page. And the code still exists, so it can be\nintercepted, screenshotted from the backup button, or pasted somewhere else. Hidden is not the same as absent.",
       "lineHeight": 2
     },
     {
@@ -9316,7 +9316,7 @@
         "footer"
       ],
       "seed": 4005,
-      "text": "Copy is quoted from the app and the page. The app's screens take the page's names from this pass on: Your level becomes Choose your badge, the level name becomes How long?, and Check your order was already shared.\nStore prices are illustrative and come from the storefront; the page's prices are the shipped catalog. Not drawn: the page's refusals - no active price, a provider unavailable, too many attempts - which are unchanged and already built.",
+      "text": "Copy is quoted from the app and the page. The app's screens take the page's names: Your level becomes Choose your badge, the level name becomes How long?, and Check your order is shared already.\nStore prices are illustrative and come from the storefront; the page's prices are the shipped catalog. Not drawn: the page's refusals - no active price, a provider unavailable, too many attempts - which are unchanged and already built.",
       "fontSize": 10,
       "fontFamily": 2,
       "textAlign": "left",
@@ -9338,7 +9338,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "Copy is quoted from the app and the page. The app's screens take the page's names from this pass on: Your level becomes Choose your badge, the level name becomes How long?, and Check your order was already shared.\nStore prices are illustrative and come from the storefront; the page's prices are the shipped catalog. Not drawn: the page's refusals - no active price, a provider unavailable, too many attempts - which are unchanged and already built.",
+      "originalText": "Copy is quoted from the app and the page. The app's screens take the page's names: Your level becomes Choose your badge, the level name becomes How long?, and Check your order is shared already.\nStore prices are illustrative and come from the storefront; the page's prices are the shipped catalog. Not drawn: the page's refusals - no active price, a provider unavailable, too many attempts - which are unchanged and already built.",
       "lineHeight": 1.3
     }
   ],
