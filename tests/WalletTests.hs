@@ -8,29 +8,28 @@ import ChatTests.Utils
 import Control.Monad (void)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteArray.Encoding as BAE
-import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (toUpper)
 import Data.Either (isRight)
 import Data.List (nub)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccount, entropyFromMnemonic, seedMnemonic)
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
-import Simplex.Messaging.Util (safeDecodeUtf8)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
 
-testPhrase12 :: ByteString
-testPhrase12 = B.unwords $ replicate 11 "abandon" <> ["about"]
+testPhrase12 :: Text
+testPhrase12 = T.unwords $ replicate 11 "abandon" <> ["about"]
 
-testPhrase24 :: ByteString
-testPhrase24 = B.unwords $ replicate 23 "abandon" <> ["art"]
+testPhrase24 :: Text
+testPhrase24 = T.unwords $ replicate 23 "abandon" <> ["art"]
 
-seedEntropy :: ByteString -> BA.ScrubbedBytes
-seedEntropy phrase = B39.mnemonicToEntropy . either error id $ B39.parseMnemonic (safeDecodeUtf8 phrase)
+seedEntropy :: Text -> BA.ScrubbedBytes
+seedEntropy phrase = B39.mnemonicToEntropy . either error id $ B39.parseMnemonic phrase
 
 walletAccount :: BA.ScrubbedBytes -> AccountIndex -> IO (AccountKey, WalletAddress)
 walletAccount entropy n = either (error . show) id <$> deriveAccount entropy n
@@ -71,10 +70,10 @@ walletDerivationTests = do
   Hspec.it "rejects an account index at or above 2^31" $
     (void <$> deriveAccount (seedEntropy testPhrase12) 2147483648) `shouldReturn` Left WEIndexTooLarge
   Hspec.it "round-trips the phrase it was imported from" $
-    seedMnemonic (seedEntropy testPhrase24) `shouldBe` Right (safeDecodeUtf8 testPhrase24)
+    seedMnemonic (seedEntropy testPhrase24) `shouldBe` Right testPhrase24
   Hspec.it "accepts only 24 words with a valid checksum" $ do
-    entropyFromMnemonic (safeDecodeUtf8 testPhrase24) `shouldSatisfy` isRight
-    entropyFromMnemonic (safeDecodeUtf8 testPhrase12) `shouldBe` Left WEBadMnemonic
+    entropyFromMnemonic testPhrase24 `shouldSatisfy` isRight
+    entropyFromMnemonic testPhrase12 `shouldBe` Left WEBadMnemonic
     entropyFromMnemonic (T.unwords $ replicate 24 "abandon") `shouldBe` Left WEBadMnemonic
 
 walletTests :: SpecWith TestParams
@@ -111,12 +110,12 @@ testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice <## "wallet: this device already has a wallet"
   alice ##> "/_wallet delete"
   alice <## "ok"
-  alice ##> ("/_wallet create mnemonic=" <> B.unpack (B.unwords $ replicate 24 "abandon"))
+  alice ##> ("/_wallet create mnemonic=" <> unwords (replicate 24 "abandon"))
   alice <## "wallet: not a valid 24 word recovery phrase"
-  alice ##> ("/_wallet create mnemonic=" <> map toUpper (B.unpack testPhrase24))
+  alice ##> ("/_wallet create mnemonic=" <> map toUpper (T.unpack testPhrase24))
   alice <## "wallet, no accounts for this profile"
   alice ##> "/_wallet export master"
-  alice <## B.unpack testPhrase24
+  alice <## T.unpack testPhrase24
 
 testWalletBind :: HasCallStack => TestParams -> IO ()
 testWalletBind ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -197,10 +196,10 @@ testWalletAddress ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
 
 testWalletExport :: HasCallStack => TestParams -> IO ()
 testWalletExport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
-  alice ##> ("/_wallet create mnemonic=" <> B.unpack testPhrase24)
+  alice ##> ("/_wallet create mnemonic=" <> T.unpack testPhrase24)
   alice <## "wallet, no accounts for this profile"
   alice ##> "/_wallet export master"
-  alice <## B.unpack testPhrase24
+  alice <## T.unpack testPhrase24
   alice ##> "/_wallet bind 1 account=0"
   alice `accountBound` "0"
   alice ##> "/_wallet bind 1 account=1"
@@ -221,7 +220,7 @@ testWalletExport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
 
 testWalletImport :: HasCallStack => TestParams -> IO ()
 testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
-  alice ##> ("/_wallet create mnemonic=" <> B.unpack testPhrase24)
+  alice ##> ("/_wallet create mnemonic=" <> T.unpack testPhrase24)
   alice <## "wallet, no accounts for this profile"
   alice ##> "/_wallet bind 1"
   alice <## "wallet: the next account is unknown after an import"
@@ -298,12 +297,16 @@ testWalletIndexTooLarge ps = withNewTestChat ps "alice" aliceProfile $ \alice ->
   alice ##> "/_wallet create new"
   alice <## "wallet, no accounts for this profile"
   alice ##> "/_wallet address account=2147483648"
-  alice <## "wallet: account index is too large to harden"
+  alice <## "wallet: account index must be below 2^31"
   alice ##> "/_wallet bind 1 account=2147483648"
-  alice <## "wallet: account index is too large to harden"
+  alice <## "wallet: account index must be below 2^31"
   alice ##> "/_wallet export account 1 2147483648"
-  alice <## "wallet: account index is too large to harden"
+  alice <## "wallet: account index must be below 2^31"
+  alice ##> "/_wallet address account=4294967296"
+  alice <## "bad chat command: Failed reading: empty"
+  alice ##> "/_wallet bind 1 account=4294967296"
+  alice <## "bad chat command: Failed reading: empty"
   alice ##> "/_wallet bind 1 account=2147483647"
   alice `accountBound` "2147483647"
   alice ##> "/_wallet bind 1"
-  alice <## "wallet: account index is too large to harden"
+  alice <## "wallet: account index must be below 2^31"

@@ -1527,7 +1527,7 @@ processChatCommand cxt nm = \case
     unless held $ throwWalletError WEAccountNotHeld
     (k, a) <- seedAccount seed n
     pure $ CRWalletAccountSecret user a (accountSecret k)
-  APIDeleteWallet -> withUser $ \_ -> do
+  APIDeleteWallet -> withUser_ $ do
     deleted <- withFastStore' deleteWalletSeed
     unless deleted $ throwWalletError WENoMaster
     ok_

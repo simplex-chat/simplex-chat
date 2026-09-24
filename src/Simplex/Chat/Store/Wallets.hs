@@ -3,7 +3,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Store.Wallets
   ( SeedId,
@@ -25,7 +24,6 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
-import Data.Maybe (isJust)
 import Simplex.Chat.Wallet (AccountIndex, WalletError (..), checkAccountIndex)
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow)
@@ -57,7 +55,7 @@ getWalletSeed db =
 
 createWalletSeed :: DB.Connection -> BA.ScrubbedBytes -> Maybe AccountIndex -> IO Bool
 createWalletSeed db entropy nextAccount =
-  fmap isJust . maybeFirstRow (fromOnly @SeedId) $
+  rowReturned $
     DB.query
       db
       [sql|
@@ -69,8 +67,7 @@ createWalletSeed db entropy nextAccount =
 
 deleteWalletSeed :: DB.Connection -> IO Bool
 deleteWalletSeed db =
-  fmap isJust . maybeFirstRow (fromOnly @SeedId) $
-    DB.query_ db "DELETE FROM wallet_seeds RETURNING wallet_seed_id"
+  rowReturned $ DB.query_ db "DELETE FROM wallet_seeds RETURNING wallet_seed_id"
 
 resolveAccount :: DB.Connection -> Maybe AccountIndex -> IO (Either WalletError (WalletSeed, AccountIndex))
 resolveAccount db accountIdx_ = runExceptT $ do
@@ -110,7 +107,7 @@ bindAccount db userId accountIdx_ = runExceptT $ do
 
 setAccountUser :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO Bool
 setAccountUser db sId userId n =
-  fmap isJust . maybeFirstRow (fromOnly @Int64) $
+  rowReturned $
     DB.query
       db
       [sql|
@@ -136,3 +133,6 @@ raiseNextAccount db sId n =
 insertAccount :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO ()
 insertAccount db sId userId n =
   DB.execute db "INSERT INTO wallet_accounts (wallet_seed_id, account_index, user_id) VALUES (?, ?, ?)" (sId, n, userId)
+
+rowReturned :: IO [Only Int64] -> IO Bool
+rowReturned = fmap (not . null)

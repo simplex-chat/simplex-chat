@@ -1114,18 +1114,6 @@ walletAddressRow :: WalletAddress -> StyledString
 walletAddressRow WalletAddress {accountIndex, keyPath, address} =
   plain $ tshow accountIndex <> "  " <> keyPath <> "  " <> address
 
-walletErrorText :: WalletError -> Text
-walletErrorText = \case
-  WENoMaster -> "this device has no wallet"
-  WEMasterExists -> "this device already has a wallet"
-  WEBadMnemonic -> "not a valid 24 word recovery phrase"
-  WEHiddenProfile -> "a hidden profile cannot hold an account"
-  WEAccountBound -> "another profile holds this account"
-  WEAccountNotHeld -> "this profile does not hold this account"
-  WECounterUnknown -> "the next account is unknown after an import"
-  WEIndexTooLarge -> "account index is too large to harden"
-  WEDerivation e -> "derivation failed: " <> T.pack e
-
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
   let getLDN :: Contact -> ContactName
@@ -2823,7 +2811,18 @@ viewChatError isCmd logLevel testView = \case
             SDENoValidLink -> "has no valid connection link"
             SDEUnknownDomain -> "is not included in the connection link's profile"
        in [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
-    CEWallet walletErr -> [plain $ "wallet: " <> walletErrorText walletErr]
+    CEWallet walletErr ->
+      let reason = case walletErr of
+            WENoMaster -> "this device has no wallet"
+            WEMasterExists -> "this device already has a wallet"
+            WEBadMnemonic -> "not a valid 24 word recovery phrase"
+            WEHiddenProfile -> "a hidden profile cannot hold an account"
+            WEAccountBound -> "another profile holds this account"
+            WEAccountNotHeld -> "this profile does not hold this account"
+            WECounterUnknown -> "the next account is unknown after an import"
+            WEIndexTooLarge -> "account index must be below 2^31"
+            WEDerivation e -> "derivation failed: " <> T.pack e
+       in [plain $ "wallet: " <> reason]
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->

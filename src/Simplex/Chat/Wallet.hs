@@ -20,7 +20,7 @@ import Control.Monad.Except
 import Control.Monad.IO.Class (liftIO)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as JQ
-import Data.Bifunctor (bimap, first)
+import Data.Bifunctor (bimap)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteArray.Encoding as BAE
 import Data.Text (Text)
@@ -32,6 +32,7 @@ import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey, ethereumPath)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Util (liftEitherWith, liftError')
 
 type AccountIndex = Word32
 
@@ -80,9 +81,9 @@ seedMnemonic = bimap WEDerivation (decodeLatin1 . B39.mnemonicPhrase) . B39.entr
 deriveAccount :: BA.ScrubbedBytes -> AccountIndex -> IO (Either WalletError (AccountKey, WalletAddress))
 deriveAccount entropy n = runExceptT $ do
   path <- liftEither $ accountPath n
-  m <- liftEither . first WEDerivation $ B39.entropyToMnemonic entropy
-  master <- ExceptT $ first WEDerivation <$> B32.masterKey (B39.mnemonicToSeed m "")
-  k <- ExceptT $ fmap B32.xkKey . first WEDerivation <$> B32.derivePath master path
+  m <- liftEitherWith WEDerivation $ B39.entropyToMnemonic entropy
+  master <- liftError' WEDerivation $ B32.masterKey (B39.mnemonicToSeed m "")
+  k <- B32.xkKey <$> liftError' WEDerivation (B32.derivePath master path)
   a <- liftIO $ addressFromPrivateKey k
   pure (k, WalletAddress {accountIndex = n, keyPath = decodeLatin1 $ B32.renderPath path, address = decodeLatin1 $ strEncode a})
 
