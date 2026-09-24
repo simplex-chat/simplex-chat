@@ -858,7 +858,7 @@
         "lane1"
       ],
       "seed": 1203,
-      "text": "badges.simplex.chat/#app=true",
+      "text": "simplex.chat/badges/#app=true",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -880,7 +880,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "badges.simplex.chat/#app=true",
+      "originalText": "simplex.chat/badges/#app=true",
       "lineHeight": 1.3333333333333333
     },
     {
@@ -1423,7 +1423,7 @@
         "lane1"
       ],
       "seed": 1303,
-      "text": "badges.simplex.chat/#app=true",
+      "text": "simplex.chat/badges/#app=true",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -1445,7 +1445,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "badges.simplex.chat/#app=true",
+      "originalText": "simplex.chat/badges/#app=true",
       "lineHeight": 1.3333333333333333
     },
     {
@@ -2035,7 +2035,7 @@
         "lane1"
       ],
       "seed": 1403,
-      "text": "badges.simplex.chat/?order=8f3a...#app=true",
+      "text": "simplex.chat/badges/?order=8f3a...#app=true",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -2057,7 +2057,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "badges.simplex.chat/?order=8f3a...#app=true",
+      "originalText": "simplex.chat/badges/?order=8f3a...#app=true",
       "lineHeight": 1.3333333333333333
     },
     {
@@ -2687,7 +2687,7 @@
         "lane1"
       ],
       "seed": 1503,
-      "text": "badges.simplex.chat/?order=8f3a...#app=true",
+      "text": "simplex.chat/badges/?order=8f3a...#app=true",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -2709,7 +2709,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "badges.simplex.chat/?order=8f3a...#app=true",
+      "originalText": "simplex.chat/badges/?order=8f3a...#app=true",
       "lineHeight": 1.3333333333333333
     },
     {
@@ -8510,7 +8510,7 @@
         "lane3"
       ],
       "seed": 3203,
-      "text": "badges.simplex.chat/#app=desktop",
+      "text": "simplex.chat/badges/#app=desktop",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -8532,7 +8532,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "badges.simplex.chat/#app=desktop",
+      "originalText": "simplex.chat/badges/#app=desktop",
       "lineHeight": 1.3333333333333333
     },
     {
