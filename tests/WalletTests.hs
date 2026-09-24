@@ -31,8 +31,8 @@ testPhrase24 = T.unwords $ replicate 23 "abandon" <> ["art"]
 seedEntropy :: Text -> BA.ScrubbedBytes
 seedEntropy phrase = B39.mnemonicToEntropy . either error id $ B39.parseMnemonic phrase
 
-walletAccount :: BA.ScrubbedBytes -> AccountIndex -> IO (AccountKey, WalletAddress)
-walletAccount entropy n = either (error . show) id <$> deriveAccount entropy n
+walletAccount :: Text -> AccountIndex -> IO (AccountKey, WalletAddress)
+walletAccount phrase n = either (error . show) id <$> deriveAccount (seedEntropy phrase) n
 
 addressFromSecret :: String -> IO String
 addressFromSecret secret = do
@@ -50,14 +50,14 @@ accountBound cc idx = (take 1 . words <$> getTermLine cc) `shouldReturn` [idx]
 walletDerivationTests :: Spec
 walletDerivationTests = do
   Hspec.it "derives the addresses another wallet derives for the same phrase" $ do
-    let addrOf n = address . snd <$> walletAccount (seedEntropy testPhrase12) n
+    let addrOf n = address . snd <$> walletAccount testPhrase12 n
     addrOf 0 `shouldReturn` "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
     addrOf 1 `shouldReturn` "0x78839F6054d7ed13918bAe0473BA31b1Ca9D7265"
   Hspec.it "the exported secret is the one another wallet shows for that account" $ do
-    (k, _) <- walletAccount (seedEntropy testPhrase12) 0
+    (k, _) <- walletAccount testPhrase12 0
     accountSecret k `shouldBe` "0x1ab42cc412b618bdea3a599e3c9bae199ebf030895b039e9db1e30dafb12b727"
   Hspec.it "every account has its own address" $ do
-    addrs <- mapM (fmap (address . snd) . walletAccount (seedEntropy testPhrase12)) [0 .. 9]
+    addrs <- mapM (fmap (address . snd) . walletAccount testPhrase12) [0 .. 9]
     length (nub addrs) `shouldBe` 10
   Hspec.it "renders a secret whose first byte is zero with 64 hex digits" $ do
     k <- either error id <$> S.mkPrivateKey (BA.convert $ B.pack ('\0' : replicate 31 '\1'))
@@ -65,8 +65,8 @@ walletDerivationTests = do
     take 4 secret `shouldBe` "0x00"
     length secret `shouldBe` 66
   Hspec.it "renders the path an account is derived at" $ do
-    (keyPath . snd <$> walletAccount (seedEntropy testPhrase12) 0) `shouldReturn` "m/44'/60'/0'/0/0"
-    (keyPath . snd <$> walletAccount (seedEntropy testPhrase12) 7) `shouldReturn` "m/44'/60'/7'/0/0"
+    (keyPath . snd <$> walletAccount testPhrase12 0) `shouldReturn` "m/44'/60'/0'/0/0"
+    (keyPath . snd <$> walletAccount testPhrase12 7) `shouldReturn` "m/44'/60'/7'/0/0"
   Hspec.it "rejects an account index at or above 2^31" $
     (void <$> deriveAccount (seedEntropy testPhrase12) 2147483648) `shouldReturn` Left WEIndexTooLarge
   Hspec.it "round-trips the phrase it was imported from" $
@@ -214,7 +214,7 @@ testWalletExport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   (idx', path', addr', _) <- exportRow <$> getTermLine alice
   idx' `shouldBe` "1"
   path' `shouldBe` "m/44'/60'/1'/0/0"
-  (T.unpack . address . snd <$> walletAccount (seedEntropy testPhrase24) 1) `shouldReturn` addr'
+  (T.unpack . address . snd <$> walletAccount testPhrase24 1) `shouldReturn` addr'
   alice ##> "/_wallet address account=1"
   (words <$> getTermLine alice) `shouldReturn` ["1", "m/44'/60'/1'/0/0", addr']
 
@@ -274,7 +274,7 @@ testWalletHiddenProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice ->
   alice <## "messages are hidden (use /tail to view)"
   alice <## "profile is hidden"
   alice ##> "/_wallet bind 2"
-  alice <## "wallet: a hidden profile cannot hold an account"
+  alice <## "wallet: an account cannot be bound to a hidden profile"
 
 testWalletExportNotHeld :: HasCallStack => TestParams -> IO ()
 testWalletExportNotHeld ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do

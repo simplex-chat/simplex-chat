@@ -46,7 +46,7 @@ The alternative is one account owning several names. A name's owner address is p
 
 ### Why the account level is hardened
 
-The alternative is BIP-44's ordinary address level, `m/44'/60'/0'/0/n`, which is what MetaMask enumerates and is therefore the friendlier path. It is not hardened, and [BIP-32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) has a known weakness there: the extended public key of a parent, together with one non-hardened child's private key, yields the parent private key and from it every sibling. An exported account key is one half, and any wallet that enumerates accounts produces the other. The two levels below an account are not hardened, so the two halves together reveal that account's key; nothing else is derived under an account and the account level itself is hardened, so they reveal no other account's key. This satisfies objectives 2 and 3, and it is worth the loss of MetaMask's default path.
+The alternative is BIP-44's ordinary address level, `m/44'/60'/0'/0/n`, which is what MetaMask enumerates and is therefore the friendlier path. It is not hardened, and [BIP-32](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki) has a known weakness there: the extended public key of a parent, together with one non-hardened child's private key, yields the parent private key and from it every sibling. An exported account key is one half, and any wallet that enumerates accounts produces the other. The two levels below an account are not hardened, so the two halves together reveal the extended private key at the account level, m/44'/60'/n'; nothing else is derived under an account and the account level itself is hardened, so they reveal no other account's key. This satisfies objectives 2 and 3, and it is worth the loss of MetaMask's default path.
 
 ### Why 24 words
 
@@ -56,7 +56,7 @@ Entropy cannot be added to a seed afterwards and the uses of a seed can grow, so
 
 An account is bound to at most one chat profile, and a profile to any number of accounts, because a profile can own any number of names. Only one of those names points at the profile as its SimpleX domain name, but which one is recorded by the names layer, not by the wallet: the wallet records only which profile an account belongs to.
 
-Accounts are allocated in order and never reused, because an account the device no longer tracks still owns whatever it holds, and an account can remain unbound. Nothing is bound when a profile is created; an account is bound on first use, when the user buys a name for a profile, so a device on which the user never buys anything has never derived a key.
+Accounts are allocated in order and never reused, because an account the device no longer tracks still owns whatever it holds. An account can remain unbound. Nothing is bound when a profile is created; an account is bound on first use, when the user buys a name for a profile, so a device on which the user neither buys anything nor requests an address has never derived a key.
 
 An account cannot be bound to a hidden profile, so no name can be bought for a hidden profile. Two things would leak: the master derives every account, so whoever can use any profile can also derive a hidden profile's account keys; and a name is written into the profile's own database row and listed across the device, while a hidden profile is a filter on what is shown, not encryption. Closing either requires changes in the profiles and in the name record, not in the key layout. Incognito is a property of a connection in this app rather than of a profile, so there is nothing at this level to reject; an incognito connection has no profile of its own to bind an account to.
 
@@ -75,7 +75,7 @@ These commands are an internal API, called by the names commands and by any late
                                       derived at; without account=, the next free one
 /_wallet export master                the master phrase
 /_wallet export account <userId> <n>  the secret of an account the profile holds,
-                                      0x and 64 hex
+                                      0x and 64 hex digits
 /_wallet delete                       delete the master entropy and its accounts
 ```
 

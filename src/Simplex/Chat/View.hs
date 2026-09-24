@@ -2816,7 +2816,7 @@ viewChatError isCmd logLevel testView = \case
             WENoMaster -> "this device has no wallet"
             WEMasterExists -> "this device already has a wallet"
             WEBadMnemonic -> "not a valid 24 word recovery phrase"
-            WEHiddenProfile -> "a hidden profile cannot hold an account"
+            WEHiddenProfile -> "an account cannot be bound to a hidden profile"
             WEAccountBound -> "another profile holds this account"
             WEAccountNotHeld -> "this profile does not hold this account"
             WECounterUnknown -> "the next account is unknown after an import"
