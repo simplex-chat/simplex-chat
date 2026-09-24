@@ -34,6 +34,7 @@ import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.FileTransfer.Description (FileSize (..))
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -42,9 +43,8 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern P
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
-import System.Environment (getExecutablePath, lookupEnv)
+import System.Environment (lookupEnv)
 import System.Info (os)
-import System.Process (readProcess)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
 import UnliftIO (timeout)
@@ -889,9 +889,12 @@ linkAnotherSchema link
   | otherwise = error "link starts with neither https://simplex.chat/ nor simplex:/"
 
 xftpCLI :: [String] -> IO [String]
-xftpCLI params = do
-  exe <- getExecutablePath
-  lines <$> readProcess exe ("xftp-cli" : params) ""
+xftpCLI = \case
+  ["rand", path, size] -> do
+    let FileSize n = fromString size :: FileSize Int
+    B.writeFile path =<< atomically . C.randomBytes n =<< C.newRandom
+    pure ["File created: " <> path]
+  params -> error $ "unsupported xftp CLI command: " <> unwords params
 
 setRelativePaths :: HasCallStack => TestCC -> String -> String -> IO ()
 setRelativePaths cc filesFolder tempFolder = do

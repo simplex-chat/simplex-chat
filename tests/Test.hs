@@ -1,6 +1,5 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -23,8 +22,6 @@ import ProtocolTests
 import OperatorTests
 import RandomServers
 import RemoteTests
-import Simplex.FileTransfer.Client.Main (xftpClientCLI)
-import System.Environment (getArgs, withArgs)
 import Test.Hspec hiding (it)
 import UnliftIO.Temporary (withTempDirectory)
 import ValidNames
@@ -43,13 +40,7 @@ import WebRTCTests
 #endif
 
 main :: IO ()
-main =
-  getArgs >>= \case
-    "xftp-cli" : params -> withArgs params xftpClientCLI
-    _ -> runTests
-
-runTests :: IO ()
-runTests = do
+main = do
   setLogLevel LogError
 #if !defined(dbPostgres)
   chatQueryStats <- TM.emptyIO

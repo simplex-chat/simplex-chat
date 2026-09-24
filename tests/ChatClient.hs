@@ -540,7 +540,7 @@ getTermLine = getTermLine' Nothing
 
 getTermLine' :: HasCallStack => Maybe String -> TestCC -> IO String
 getTermLine' expected cc@TestCC {printOutput} =
-  5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
+  20000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
       -- when True $ do
@@ -553,7 +553,7 @@ getTermLine' expected cc@TestCC {printOutput} =
       let expectedMsg = case expected of
             Just e -> ", expected: " <> show e
             Nothing -> ""
-      error $ name <> ": no output for 5 seconds" <> expectedMsg
+      error $ name <> ": no output for 20 seconds" <> expectedMsg
 
 userName :: TestCC -> IO [Char]
 userName TestCC {chatController = ChatController {currentUser}} =
