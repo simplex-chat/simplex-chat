@@ -4167,6 +4167,7 @@ setupDesynchronizedRatchet ps alice = do
     bob <# "#team alice> 3"
     bob #> "#team 4"
     alice <# "#team bob> 4"
+    threadDelay 500000
   withTestChat ps "bob_old" $ \bob -> do
     bob <## "subscribed 2 connections on server localhost"
     bob ##> "/sync #team alice"
