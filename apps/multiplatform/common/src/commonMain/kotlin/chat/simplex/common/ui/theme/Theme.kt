@@ -603,8 +603,9 @@ data class ThemeModeOverride (
 // cards above. DARK/BLACK: palette bg (cards already raised via founder's
 // formula in Section.kt). SIMPLEX: gradient bottom stop (darker), since the
 // canvas itself is a gradient drawn by themedBackgroundBrush.
+@Composable
 fun canvasColorForCurrentTheme(): Color {
-  val theme = CurrentColors.value
+  val theme = CurrentColors.collectAsState().value
   val c = theme.colors
   return when (theme.base) {
     DefaultTheme.LIGHT -> c.background.mixWith(c.onBackground, 0.94f)
@@ -616,8 +617,9 @@ fun canvasColorForCurrentTheme(): Color {
 // Card background color for SectionView. LIGHT: pure white (raised above the
 // off-white canvas). DARK/BLACK/SIMPLEX: founder's mixWith formula (lifts cards
 // above palette bg using onBackground tint).
+@Composable
 fun sectionCardColor(): Color {
-  val theme = CurrentColors.value
+  val theme = CurrentColors.collectAsState().value
   return if (theme.base == DefaultTheme.LIGHT) Color.White
   else theme.colors.background.mixWith(theme.colors.onBackground, 0.95f)
 }
