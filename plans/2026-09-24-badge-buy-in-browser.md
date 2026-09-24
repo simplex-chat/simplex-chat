@@ -22,6 +22,8 @@ Everything in the app sections below is both platforms unless it says otherwise.
 4. **`purchaseBadge` with store receipts**, which depends on none of the above and can run alongside it.
 5. **The app's store lane**, last, because nothing in it completes without 4.
 
+(*) **Desktop deep links** sit outside this order entirely — any time or never, blocking nothing. Own section below.
+
 ## The page
 
 Three changes, all in `apps/simplex-badge-service/web`.
@@ -62,6 +64,14 @@ Two invariants that are easy to miss. A store transaction must not be finished u
 
 No deep link. *Buy in browser* opens the page with `app=desktop` and the Redeem code screen at the same time, so the code has somewhere to go the moment it appears. This is also the fallback for any platform where the scheme turns out not to work: nothing else in the app depends on the link existing.
 
+## Desktop deep links (*)
+
+Optional, off the critical path, and blocking nothing — D1 works without it. Worth investigating on its own; if it lands, desktop joins lane A and D1 becomes the fallback rather than the design.
+
+Nothing registers a scheme on desktop today. `appOpenUrl` is wired in commonMain with no desktop implementation behind it, and `desktop/build.gradle.kts` declares Deb, Dmg, Msi and Exe with no protocol entry. Registration is per-OS, three separate small jobs: `CFBundleURLTypes` in the bundle plist plus `Desktop.setOpenURIHandler` on macOS, registry keys under `HKCU\Software\Classes` that the installer would have to write on Windows, and a `.desktop` entry with `MimeType=x-scheme-handler/…` on Linux. None of them covers an unpackaged run, so the fallback stays either way.
+
+Getting the URL to an app that is already running is the part that half exists. `SingleInstance.kt` takes a file lock and uses a watched file to bring the running instance forward on a second launch; carrying a URL means giving that channel a payload rather than inventing IPC for it.
+
 ## The service
 
 The browser lane needs nothing. The store lane needs `purchaseBadge` to accept a store receipt and verify it — Apple's JWS offline, Google's token through the Publisher API, per `docs/protocol/badges-rpc.md`. No provider adapter for either exists today.
@@ -87,7 +97,6 @@ Default to none. Add one only where behaviour or a consequence cannot be carried
 ## Open questions
 
 - **Will a browser follow the scheme without a gesture?** Safari and Chrome both block some automatic scheme navigations, and a blocked one can show an error page rather than nothing. *Return to SimpleX* exists for this; the question is only whether the automatic attempt is worth making.
-- **Desktop scheme registration.** Nothing registers one today and `appOpenUrl` has no desktop plumbing, so it is per-OS work — plist plus `setOpenURIHandler`, registry keys the installer would write, a `.desktop` MimeType entry — and it would still miss an unpackaged run. D1 is designed so this can stay unanswered.
 - **Where the browser button is allowed.** Which markets, and whether the same answer governs both builds.
 
 ## Part 2: subscriptions
