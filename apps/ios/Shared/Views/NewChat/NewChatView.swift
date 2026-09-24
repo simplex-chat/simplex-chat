@@ -1324,6 +1324,38 @@ private func showOpenKnownGroupAlert(
 
 private let simplexNamesHowToURL = "https://simplex.domains/#testing"
 
+private let nameResolvedDaySeconds: Int64 = 24 * 60 * 60
+
+private func nameResolvedNow() -> Int64 { Int64(Date.now.timeIntervalSince1970) }
+
+private func saveNamesResolvedAt(_ m: [String: SimplexNameResolved]) {
+    // only names looked up in the last week are worth remembering
+    let now = nameResolvedNow()
+    simplexNamesResolvedAtDefault.set(m.filter { now - $0.value.at < 7 * nameResolvedDaySeconds })
+}
+
+// a cached answer is stale a day after it was taken, or as soon as the name it described expired
+func simplexNameResolvedRecently(_ domain: SimplexDomain) -> Bool {
+    guard let r = simplexNamesResolvedAtDefault.get()[domain.fullDomainName] else { return false }
+    let now = nameResolvedNow()
+    if now - r.at >= nameResolvedDaySeconds { return false }
+    return r.expires.map { now < $0 } ?? true
+}
+
+func recordSimplexNameResolved(_ domain: SimplexDomain, _ reg: NameRegistration?) {
+    var m = simplexNamesResolvedAtDefault.get()
+    let expires: Int64? = if case let .registered(expires, _, _) = reg { expires } else { nil }
+    m[domain.fullDomainName] = SimplexNameResolved(at: nameResolvedNow(), expires: expires)
+    saveNamesResolvedAt(m)
+}
+
+// a name registered, claimed or dropped on this device must not keep reading as it did before
+func forgetSimplexNameResolved(_ fullDomainName: String) {
+    var m = simplexNamesResolvedAtDefault.get()
+    if m.removeValue(forKey: fullDomainName) != nil { saveNamesResolvedAt(m) }
+}
+
+
 private func nameDate(_ seconds: Int64) -> String {
     Date(timeIntervalSince1970: TimeInterval(seconds)).formatted(date: .abbreviated, time: .omitted)
 }
@@ -1475,7 +1507,7 @@ func planAndConnect(
             // name with no chat gets on every tap. Anything that is not a name resolves as it always did.
             let nameTarget: SimplexNameInfo? = if case let .name(_, nameInfo) = strConnectTarget(shortOrFullLink) { nameInfo } else { nil }
             var result: ConnectionPlanResult? = nil
-            if let nameTarget, NameResolution.isFresh(nameTarget.nameDomain) {
+            if let nameTarget, simplexNameResolvedRecently(nameTarget.nameDomain) {
                 // a local probe: no error alerts, so a miss falls through silently
                 result = await apiConnectPlan(connLink: shortOrFullLink, resolveMode: .never, linkOwnerSig: linkOwnerSig, inProgress: BoxedValue(false))
             }
@@ -1483,7 +1515,7 @@ func planAndConnect(
                 result = await apiConnectPlan(connLink: shortOrFullLink, resolveMode: nameTarget != nil ? .all : .unknown, linkOwnerSig: linkOwnerSig, inProgress: inProgress)
                 // remember when this name was last taken from the registry, and when its registration runs out
                 if let nameTarget, let result {
-                    NameResolution.record(nameTarget.nameDomain, result.connectionPlan.nameRegistration)
+                    recordSimplexNameResolved(nameTarget.nameDomain, result.connectionPlan.nameRegistration)
                 }
             }
             await MainActor.run {

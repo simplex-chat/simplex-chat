@@ -5252,55 +5252,9 @@ enum class SimplexTLD {
   @SerialName("web") web
 }
 
-// How recently each SimpleX name was resolved: one with a local chat resolves once a day, any other on every tap.
-object NameResolution {
-  private const val DAY_SECONDS = 24 * 60 * 60L
-  private val prefs: AppPreferences get() = ChatController.appPrefs
-
-  @Serializable
-  private data class Resolved(val at: Long, val expires: Long? = null)
-
-  private fun load(): MutableMap<String, Resolved> =
-    try {
-      val s = prefs.simplexNamesResolvedAt.get() ?: return mutableMapOf()
-      json.decodeFromString<Map<String, Resolved>>(s).toMutableMap()
-    } catch (e: Exception) {
-      mutableMapOf()
-    }
-
-  private fun save(m: Map<String, Resolved>) {
-    // only names looked up in the last week are worth remembering
-    val now = nowSeconds()
-    val kept = m.filterValues { now - it.at < 7 * DAY_SECONDS }
-    try {
-      prefs.simplexNamesResolvedAt.set(json.encodeToString<Map<String, Resolved>>(kept))
-    } catch (e: Exception) {
-      Log.e(TAG, "NameResolution.save: ${e.stackTraceToString()}")
-    }
-  }
-
-  private fun nowSeconds(): Long = Clock.System.now().epochSeconds
-
-  // a cached answer is stale a day after it was taken, or as soon as the name it described expired
-  fun isFresh(domain: SimplexDomain): Boolean {
-    val r = load()[domain.fullDomainName] ?: return false
-    val now = nowSeconds()
-    if (now - r.at >= DAY_SECONDS) return false
-    return r.expires == null || now < r.expires
-  }
-
-  fun record(domain: SimplexDomain, reg: NameRegistration?) {
-    val m = load()
-    m[domain.fullDomainName] = Resolved(nowSeconds(), (reg as? NameRegistration.Registered)?.expires)
-    save(m)
-  }
-
-  // a name registered, claimed or dropped on this device must not keep reading as it did before
-  fun forget(fullDomainName: String) {
-    val m = load()
-    if (m.remove(fullDomainName) != null) save(m)
-  }
-}
+// when a SimpleX name was last resolved from the registry, and when that registration runs out
+@Serializable
+data class SimplexNameResolved(val at: Long, val expires: Long? = null)
 
 // What the registry holds for a name - the RNAME payload, "type"-tagged on every platform.
 @Serializable

@@ -1944,8 +1944,6 @@ object ChatController {
   suspend fun apiSetUserDomain(rh: Long?, simplexDomain: String?): User {
     val userId = currentUserId("apiSetUserDomain")
     val r = sendCmd(rh, CC.ApiSetUserDomain(userId, simplexDomain))
-    // a name claimed or dropped here must not keep reading from the answer taken before
-    chatModel.currentUser.value?.profile?.contactDomain?.let { NameResolution.forget(it.domain) }
     return when {
       r is API.Result && r.res is CR.UserProfileUpdated -> r.res.user.updateRemoteHostId(rh)
       r is API.Result && r.res is CR.UserProfileNoChange -> r.res.user.updateRemoteHostId(rh)
@@ -7435,9 +7433,8 @@ data class ConnectionPlanResult(
 
 // APIConnectPlan resolution scope; PRMNever is local-store-only (no network), used for per-keystroke name search
 enum class PlanResolveMode {
-  PRMAllGroups, PRMUnknown, PRMNever, PRMAll;
+  PRMUnknown, PRMNever, PRMAll;
   val cmdString: String get() = when (this) {
-    PRMAllGroups -> "allGroups"
     PRMUnknown -> "unknown"
     PRMNever -> "never"
     PRMAll -> "all"

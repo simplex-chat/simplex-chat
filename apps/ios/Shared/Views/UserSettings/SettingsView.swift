@@ -291,6 +291,8 @@ public class CodableDefault<T: Codable> {
 
 let networkProxyDefault: CodableDefault<NetworkProxy> = CodableDefault(defaults: UserDefaults.standard, forKey: DEFAULT_NETWORK_PROXY, withDefault: NetworkProxy.def)
 
+let simplexNamesResolvedAtDefault = CodableDefault<[String: SimplexNameResolved]>(defaults: UserDefaults.standard, forKey: DEFAULT_SIMPLEX_NAMES_RESOLVED_AT, withDefault: [:])
+
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss

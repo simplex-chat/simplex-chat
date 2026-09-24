@@ -1500,50 +1500,8 @@ enum UIRemoteCtrlSessionState {
     case connected(remoteCtrl: RemoteCtrlInfo, sessionCode: String)
 }
 
-// How recently each SimpleX name was resolved from the registry.
-//
-// The lookup canvas asks that a name you already have a chat for is resolved at most once a day,
-// or once its registration has expired, while any other name resolves on every tap. Core stays
-// stateless for this: .never answers from the store without a network round trip and reports a
-// miss, and .all always resolves. So a fresh name is tried locally first and only falls through
-// to the registry when no chat claims it - which is exactly "every tap" for a name you do not have.
-enum NameResolution {
-    private static let daySeconds: Int64 = 24 * 60 * 60
-
-    private struct Resolved: Codable {
-        var at: Int64
-        var expires: Int64?
-    }
-
-    // when each SimpleX name was last resolved, so a name with a chat is not re-resolved on every tap
-    private static let resolvedAtDefault = CodableDefault<[String: Resolved]>(defaults: UserDefaults.standard, forKey: DEFAULT_SIMPLEX_NAMES_RESOLVED_AT, withDefault: [:])
-
-    private static func save(_ m: [String: Resolved]) {
-        // only names looked up in the last week are worth remembering
-        let now = nowSeconds()
-        resolvedAtDefault.set(m.filter { now - $0.value.at < 7 * daySeconds })
-    }
-
-    private static func nowSeconds() -> Int64 { Int64(Date.now.timeIntervalSince1970) }
-
-    // a cached answer is stale a day after it was taken, or as soon as the name it described expired
-    static func isFresh(_ domain: SimplexDomain) -> Bool {
-        guard let r = resolvedAtDefault.get()[domain.fullDomainName] else { return false }
-        let now = nowSeconds()
-        if now - r.at >= daySeconds { return false }
-        return r.expires.map { now < $0 } ?? true
-    }
-
-    static func record(_ domain: SimplexDomain, _ reg: NameRegistration?) {
-        var m = resolvedAtDefault.get()
-        let expires: Int64? = if case let .registered(expires, _, _) = reg { expires } else { nil }
-        m[domain.fullDomainName] = Resolved(at: nowSeconds(), expires: expires)
-        save(m)
-    }
-
-    // a name registered, claimed or dropped on this device must not keep reading as it did before
-    static func forget(_ fullDomainName: String) {
-        var m = resolvedAtDefault.get()
-        if m.removeValue(forKey: fullDomainName) != nil { save(m) }
-    }
+// when a SimpleX name was last resolved from the registry, and when that registration runs out
+struct SimplexNameResolved: Codable {
+    var at: Int64
+    var expires: Int64?
 }

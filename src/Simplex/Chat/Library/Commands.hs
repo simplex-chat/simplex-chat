@@ -4528,8 +4528,8 @@ processChatCommand cxt nm = \case
             CTLink l' -> pure l'
             CTName n -> serverShortLink <$> resolveNameLink n
           con l' cReq = ACCL SCMContact $ CCLink cReq (Just l')
-          -- a name whose chat is known is re-resolved only on PRMAll, to see whether it still leads there
-          reResolveKnown (_, p) = resolveMode == PRMAll && isJust simplexName_ && case p of
+          -- a known chat is re-resolved only on PRMAll, to see whether it still leads there
+          reResolveKnown (_, p) = resolveMode == PRMAll && case p of
             CPContactAddress (CAPKnown _) _ -> True
             CPGroupLink GLPKnown {} _ -> True
             _ -> False
@@ -4541,14 +4541,12 @@ processChatCommand cxt nm = \case
           groupShortLinkPlan :: CM (ACreatedConnLink, ConnectionPlan)
           groupShortLinkPlan =
             knownLinkPlans >>= \case
-              Just (_, CPGroupLink (GLPKnown g _ _ _) _)
-                | resolveMode == PRMAllGroups -> resolveSLink >>= \l' -> resolveKnownGroup l' g
               Just r | not (reResolveKnown r) -> pure r
               known_ -> do
                 when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
                 l' <- resolveSLink
                 case known_ of
-                  -- the name still leads to the channel that claims it, refreshed as PRMAllGroups does
+                  -- the name still leads to the channel that claims it, refreshed from the link
                   Just r@(_, CPGroupLink (GLPKnown g _ _ _) _) | knownLinkOf r == Just l' -> resolveKnownGroup l' g
                   _ -> (if isJust known_ then second setAddressChanged else id) <$> resolvedGroupPlan l'
             where

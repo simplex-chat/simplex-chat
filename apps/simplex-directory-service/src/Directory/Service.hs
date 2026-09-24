@@ -543,7 +543,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
                     <> ".\nIt is hidden from the directory until approved."
                 notifyAdminUsers $ "The " <> gt <> " " <> groupRef <> " is updated" <> byMember <> "."
                 verifyAndSendToApprove g' gr' n'
-          sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAllGroups Nothing) >>= \case
+          sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAll Nothing) >>= \case
             Right (CRConnectionPlan _ _ _ _ (CPGroupLink (GLPKnown {groupInfo = g'}) _)) ->
               case dbOwnerMemberId gr of
                 Just ownerGMId ->
@@ -776,7 +776,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         forM_ pg_ $ \pg@PublicGroupProfile {groupLink} ->
           when (groupRegStatus == GRSActive || pendingApproval groupRegStatus) $ do
             let link = ACL SCMContact $ CLShort groupLink
-            sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAllGroups Nothing) >>= \case
+            sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAll Nothing) >>= \case
               Right (CRConnectionPlan _ _ _ _ (CPGroupLink (GLPKnown {groupInfo = g', groupUpdated, linkOwners = ListDef owners}) _)) ->
                 checkValidOwner dbOwnerMemberId owners $ do
                   -- re-verify every cycle: a name that stopped resolving to the link must lose verified status
@@ -914,7 +914,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
           let link = ACL SCMContact $ CLShort connLink
               mId = MemberId oIdBytes
               gt' = groupTypeStr gt
-          sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAllGroups (Just ownerSig)) >>= \case
+          sendChatCmd cc (APIConnectPlan userId (Just (aConnectTarget link)) PRMAll (Just ownerSig)) >>= \case
             Right (CRConnectionPlan _ (Just (ACCL SCMContact ccLink)) _ _ plan) ->
               handleGroupLinkPlan ct ccLink mId ownerSig gt' plan
             _ -> sendMessage cc ct "Error: could not connect. Please report it to directory admins."

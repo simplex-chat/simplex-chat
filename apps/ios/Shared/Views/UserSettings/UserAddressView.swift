@@ -205,6 +205,8 @@ struct UserAddressView: View {
                     save: { simplexDomain in
                         do {
                             let u = try await apiSetUserDomain(simplexDomain)
+                            // a name claimed or dropped here must not keep reading from the answer taken before
+                            if let d = chatModel.currentUser?.profile.contactDomain?.domain { forgetSimplexNameResolved(d) }
                             await MainActor.run { chatModel.updateUser(u) }
                             return true
                         } catch {

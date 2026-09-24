@@ -155,7 +155,7 @@ testChannelDomainLinkJoinUnverified ps = withSmpServerAndNames $ \reg ->
         cath <## "updated public group access: domain=team.simplex"
         memberJoinChannel "team" [cath] [alice] shortLink fullLink bob
         -- a link-data refresh must not mark the self-claimed name verified
-        bob ##> ("/_connect plan 1 " <> shortLink <> " resolve=allGroups")
+        bob ##> ("/_connect plan 1 " <> shortLink <> " resolve=all")
         bob <## "group link: known group #team"
         bob <## "use #team <message> to send messages" -- no "SimpleX name" line: status stays unknown
   where
@@ -184,7 +184,7 @@ testChannelDomainVerify ps = withSmpServerAndNames $ \reg ->
         bob ##> "/_verify domain #1"
         bob <## "SimpleX name #team not verified: the name does not resolve to the link in the group profile"
         -- a link-data refresh keeps the failed status, not overwritten with verified
-        bob ##> ("/_connect plan 1 " <> shortLink <> " resolve=allGroups")
+        bob ##> ("/_connect plan 1 " <> shortLink <> " resolve=all")
         bob <## "group link: known group #team"
         bob <## "SimpleX name: #team (verification failed)"
         bob <## "use #team <message> to send messages"

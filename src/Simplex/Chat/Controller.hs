@@ -709,8 +709,7 @@ data ChatCommand
   deriving (Show)
 
 data PlanResolveMode
-  = PRMAllGroups -- resolve all known groups and all unknown chats
-  | PRMUnknown -- only resolve if chat is unknown (default)
+  = PRMUnknown -- only resolve if chat is unknown (default)
   | PRMNever -- do not resolve links and names, only do local search
   | PRMAll -- always resolve, also known chats
   deriving (Eq, Show)
@@ -718,8 +717,6 @@ data PlanResolveMode
 planResolveModeP :: A.Parser PlanResolveMode
 planResolveModeP =
   A.takeTill (== ' ') >>= \case
-    "allGroups" -> pure PRMAllGroups
-    "on" -> pure PRMAllGroups
     "unknown" -> pure PRMUnknown
     "off" -> pure PRMUnknown
     "never" -> pure PRMNever

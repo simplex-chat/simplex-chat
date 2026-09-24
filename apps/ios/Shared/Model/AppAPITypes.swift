@@ -1452,7 +1452,6 @@ struct ConnectionPlanResult {
 
 // APIConnectPlan resolution scope; .never is local-store-only (no network), used for per-keystroke name search
 enum PlanResolveMode: String {
-    case allGroups
     case unknown
     case never
     case all
@@ -1488,15 +1487,6 @@ enum NameRegistration: Hashable {
     // the registry may add reasons after this version, so any other value is just "not registrable"
     static let reservedCommunity = "community"
 
-    enum CodingKeys: String, CodingKey {
-        case type
-        case expires
-        case graceUntil
-        case reservedReason_
-        case pricing
-        case reservedReason
-    }
-
     // a name past its expiry does not connect: only its owner can renew it until the grace ends
     func expired(_ now: Int64) -> Bool {
         if case let .registered(expires, _, _) = self, let expires { expires < now } else { false }
@@ -1511,7 +1501,12 @@ enum NameRegistration: Hashable {
     }
 }
 
+// stock derivation cannot read this: the core tags it flat as {"type": ...}, not in swift's nested shape
 extension NameRegistration: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case type, expires, graceUntil, reservedReason_, pricing, reservedReason
+    }
+
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let type = try c.decode(String.self, forKey: CodingKeys.type)

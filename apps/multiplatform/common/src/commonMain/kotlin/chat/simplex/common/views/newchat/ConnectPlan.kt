@@ -22,6 +22,7 @@ import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.datetime.*
+import kotlinx.serialization.*
 
 enum class ConnectionLinkType {
   INVITATION, CONTACT, GROUP
@@ -73,6 +74,48 @@ private fun nameCentsPerYear(pricing: NamePricing, domain: SimplexDomain): Strin
 private fun openNameHowTo(uriHandler: UriHandler) = openBrowserAlert(SIMPLEX_NAMES_HOWTO_URL, uriHandler)
 
 private const val SIMPLEX_NAMES_HOWTO_URL = "https://simplex.domains/#testing"
+
+private const val NAME_RESOLVED_DAY_SECONDS = 24 * 60 * 60L
+
+private fun loadNamesResolvedAt(): MutableMap<String, SimplexNameResolved> =
+  try {
+    val s = ChatController.appPrefs.simplexNamesResolvedAt.get() ?: return mutableMapOf()
+    json.decodeFromString<Map<String, SimplexNameResolved>>(s).toMutableMap()
+  } catch (e: Exception) {
+    mutableMapOf()
+  }
+
+private fun saveNamesResolvedAt(m: Map<String, SimplexNameResolved>) {
+  // only names looked up in the last week are worth remembering
+  val now = Clock.System.now().epochSeconds
+  val kept = m.filterValues { now - it.at < 7 * NAME_RESOLVED_DAY_SECONDS }
+  try {
+    ChatController.appPrefs.simplexNamesResolvedAt.set(json.encodeToString<Map<String, SimplexNameResolved>>(kept))
+  } catch (e: Exception) {
+    Log.e(TAG, "saveNamesResolvedAt: ${e.stackTraceToString()}")
+  }
+}
+
+// a cached answer is stale a day after it was taken, or as soon as the name it described expired
+fun simplexNameResolvedRecently(domain: SimplexDomain): Boolean {
+  val r = loadNamesResolvedAt()[domain.fullDomainName] ?: return false
+  val now = Clock.System.now().epochSeconds
+  if (now - r.at >= NAME_RESOLVED_DAY_SECONDS) return false
+  return r.expires == null || now < r.expires
+}
+
+fun recordSimplexNameResolved(domain: SimplexDomain, reg: NameRegistration?) {
+  val m = loadNamesResolvedAt()
+  m[domain.fullDomainName] = SimplexNameResolved(Clock.System.now().epochSeconds, (reg as? NameRegistration.Registered)?.expires)
+  saveNamesResolvedAt(m)
+}
+
+// a name registered, claimed or dropped on this device must not keep reading as it did before
+fun forgetSimplexNameResolved(fullDomainName: String) {
+  val m = loadNamesResolvedAt()
+  if (m.remove(fullDomainName) != null) saveNamesResolvedAt(m)
+}
+
 
 // what the registry said, when the user can act on it; false leaves the caller to show its usual plan UI.
 private fun showNameRegistrationAlert(
@@ -209,7 +252,7 @@ private suspend fun planAndConnectTask(
   }
   // A fresh name is tried against the store first; a miss falls through to a full resolution.
   val nameTarget = (strConnectTarget(shortOrFullLink.trim()) as? ConnectTarget.Name)?.nameInfo
-  val freshName = nameTarget != null && NameResolution.isFresh(nameTarget.nameDomain)
+  val freshName = nameTarget != null && simplexNameResolvedRecently(nameTarget.nameDomain)
   var result = if (freshName) {
     // a local probe: no spinner and no error alerts, so a miss falls through silently
     chatModel.controller.apiConnectPlan(rhId, shortOrFullLink, PlanResolveMode.PRMNever, linkOwnerSig, mutableStateOf(false))
@@ -219,7 +262,7 @@ private suspend fun planAndConnectTask(
     result = chatModel.controller.apiConnectPlan(rhId, shortOrFullLink, mode, linkOwnerSig, inProgress)
     // remember when this name was last taken from the registry, and when its registration runs out
     if (nameTarget != null && result != null) {
-      NameResolution.record(nameTarget.nameDomain, result.connectionPlan.nameRegistration())
+      recordSimplexNameResolved(nameTarget.nameDomain, result.connectionPlan.nameRegistration())
     }
   }
   connectProgressManager.stopConnectProgress()
