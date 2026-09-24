@@ -1,10 +1,29 @@
-import {test, expect} from "vitest"
+import {afterAll, beforeAll, test, expect} from "vitest"
 import {mkdtempSync, rmSync} from "fs"
 import {tmpdir} from "os"
 import {join} from "path"
 import {CEvt, T} from "@simplex-chat/types"
-import {api, util} from "simplex-chat"
+import {api, bot, util} from "simplex-chat"
 import {runCalculatorBot} from "./src/calculatorBot.js"
+import {SmpServer, startSmpServer} from "./test/smpServer.js"
+
+let smpServer: SmpServer
+
+beforeAll(async () => { smpServer = await startSmpServer() }, 120000)
+
+afterAll(() => smpServer?.stop())
+
+async function useSmpServer(chat: api.ChatApi): Promise<void> {
+  expect(await chat.sendChatCmd(`/smp ${smpServer.address}`)).toMatchObject({type: "cmdOk"})
+}
+
+async function prepareBotDatabase(dbOpts: bot.BotDbOpts): Promise<void> {
+  const chat = await api.ChatApi.init(dbOpts)
+  await chat.apiCreateActiveUser({displayName: "SimpleX Calculator", fullName: ""})
+  await chat.startChat()
+  await useSmpServer(chat)
+  await chat.close()
+}
 
 const isCalculator = (display: string) => (ci: T.AChatItem) => ci.chatItem.meta.itemText.startsWith(`*${display}*\n`)
 
@@ -13,12 +32,15 @@ const calculatorShows = (display: string) => ({chatItems}: CEvt.NewChatItems) =>
 const hasText = (text: string) => ({chatItems}: CEvt.NewChatItems) =>
   chatItems.some(ci => ci.chatItem.meta.itemText === text)
 
-test("calculator in business chat (uses preset servers)", async () => {
+test("calculator in business chat", async () => {
   const dir = mkdtempSync(join(tmpdir(), "calculator-bot-"))
-  const [calculator, _botUser, address] = await runCalculatorBot({type: "sqlite", filePrefix: join(dir, "bot")})
+  const botDbOpts: bot.BotDbOpts = {type: "sqlite", filePrefix: join(dir, "bot")}
+  await prepareBotDatabase(botDbOpts)
+  const [calculator, _botUser, address] = await runCalculatorBot(botDbOpts)
   const alice = await api.ChatApi.init({type: "sqlite", filePrefix: join(dir, "alice")})
   const aliceUser = await alice.apiCreateActiveUser({displayName: "alice", fullName: ""})
   await alice.startChat()
+  await useSmpServer(alice)
   try {
     const [_plan, link] = await alice.apiConnectPlan(aliceUser.userId, util.contactAddressStr(address!.connLinkContact))
     const firstCalculator = alice.wait("newChatItems", calculatorShows("0"), 30000)

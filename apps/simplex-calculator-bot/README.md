@@ -45,3 +45,9 @@ The bot prints its address on start. The database is stored in `./data`.
 ```bash
 npm test
 ```
+
+The end-to-end test runs a local SMP server with the TLS certificates from `tests/fixtures/tls`. On Linux, the test downloads `smp-server` from [simplexmq releases](https://github.com/simplex-chat/simplexmq/releases) to `node_modules/.cache` on the first run. To use another build, or on other systems, pass its path in `SMP_SERVER` variable:
+
+```bash
+SMP_SERVER=/path/to/smp-server npm test
+```
