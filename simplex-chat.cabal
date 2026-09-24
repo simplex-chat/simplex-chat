@@ -45,7 +45,6 @@ library
       Simplex.Chat.Badges.Service
       Simplex.Chat.Badges.Types
       Simplex.Chat.Names
-      Simplex.Chat.Wallet
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
@@ -103,6 +102,7 @@ library
       Simplex.Chat.Types.Shared
       Simplex.Chat.Types.UITheme
       Simplex.Chat.Util
+      Simplex.Chat.Wallet
       Simplex.Chat.Web
   if !flag(client_library)
       exposed-modules:

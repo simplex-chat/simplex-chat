@@ -4659,6 +4659,9 @@ HiddenProfile:
 AccountBound:
 - type: "accountBound"
 
+AccountNotHeld:
+- type: "accountNotHeld"
+
 CounterUnknown:
 - type: "counterUnknown"
 

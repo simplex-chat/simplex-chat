@@ -1121,7 +1121,8 @@ walletErrorText = \case
   WEBadMnemonic -> "not a valid 24 word recovery phrase"
   WEHiddenProfile -> "a hidden profile cannot own an account"
   WEAccountBound -> "another profile holds this account"
-  WECounterUnknown -> "unknown how many accounts this phrase has used, a scan of the chain has to run first"
+  WEAccountNotHeld -> "this profile does not hold this account"
+  WECounterUnknown -> "the next account is unknown after an import, scan the chain first"
   WEIndexTooLarge -> "account index is too large to harden"
   WEDerivation e -> "derivation failed: " <> T.pack e
 

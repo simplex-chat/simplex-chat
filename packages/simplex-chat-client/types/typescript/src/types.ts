@@ -5313,6 +5313,7 @@ export type WalletError =
   | WalletError.BadMnemonic
   | WalletError.HiddenProfile
   | WalletError.AccountBound
+  | WalletError.AccountNotHeld
   | WalletError.CounterUnknown
   | WalletError.IndexTooLarge
   | WalletError.Derivation
@@ -5324,6 +5325,7 @@ export namespace WalletError {
     | "badMnemonic"
     | "hiddenProfile"
     | "accountBound"
+    | "accountNotHeld"
     | "counterUnknown"
     | "indexTooLarge"
     | "derivation"
@@ -5350,6 +5352,10 @@ export namespace WalletError {
 
   export interface AccountBound extends Interface {
     type: "accountBound"
+  }
+
+  export interface AccountNotHeld extends Interface {
+    type: "accountNotHeld"
   }
 
   export interface CounterUnknown extends Interface {

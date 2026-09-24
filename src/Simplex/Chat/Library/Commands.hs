@@ -65,9 +65,8 @@ import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIss
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Store.Wallets (WalletSeed (..), accountHeldByOther, bindAccount, createWalletSeed, deleteWalletSeed, getUserAccounts, getWalletSeed, resolveAccount)
-import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccountKey, entropyFromMnemonic, newSeedEntropy, renderAccountPath, seedMaster, seedMnemonic)
-import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
+import Simplex.Chat.Store.Wallets (WalletSeed (..), accountHeldBy, bindAccount, createWalletSeed, deleteWalletSeed, getUserAccounts, getWalletSeed, resolveAccount)
+import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress, WalletError (..), accountSecret, deriveAccount, entropyFromMnemonic, newSeedEntropy, seedMnemonic)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -1500,33 +1499,33 @@ processChatCommand cxt nm = \case
     let AgentInvId invId = requestId
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
-  APIGetWallet -> withUser $ \user@User {userId} ->
-    CRWallet user <$> withFastStore' (\db -> getWalletSeed db $>>= \WalletSeed {wsId} -> Just <$> getUserAccounts db wsId userId)
+  APIGetWallet userId -> withUserId userId $ \user ->
+    CRWallet user <$> withFastStore' (\db -> getWalletSeed db >>= mapM (\WalletSeed {wsId} -> getUserAccounts db wsId userId))
   APICreateWallet mnemonic_ -> withUser $ \user -> do
     seed_ <- withFastStore' getWalletSeed
     when (isJust seed_) $ throwWalletError WEMasterExists
-    -- a generated seed has taken no accounts, an imported one does not say how many it has taken
+    -- the counter starts at 0 for a generated seed and is unknown for an imported one
     (entropy, nextAccount) <- case mnemonic_ of
       Nothing -> (,Just 0) <$> (asks random >>= atomically . newSeedEntropy)
       Just phrase -> (,Nothing) <$> liftWallet (entropyFromMnemonic $ encodeUtf8 phrase)
     created <- withFastStore' $ \db -> createWalletSeed db entropy nextAccount
     unless created $ throwWalletError WEMasterExists
     pure $ CRWallet user (Just [])
-  APIBindWalletAccount accountIdx_ -> withUser $ \user@User {userId, viewPwdHash} -> do
+  APIBindWalletAccount userId accountIdx_ -> withUserId userId $ \user@User {viewPwdHash} -> do
     when (isJust viewPwdHash) $ throwWalletError WEHiddenProfile
-    CRWallet user . Just <$> (liftWallet =<< withFastStore' (\db -> bindAccount db userId accountIdx_))
+    (seed, n) <- withWalletStore $ \db -> bindAccount db userId accountIdx_
+    CRWalletAddress user . snd <$> seedAccount seed n
   APIGetWalletAddress accountIdx_ -> withUser $ \user -> do
-    (seed, n) <- liftWallet =<< withFastStore' (`resolveAccount` accountIdx_)
-    CRWalletAddress user <$> (accountAddress n =<< accountKey seed n)
-  APIExportWalletMnemonic -> withUser $ \user ->
-    CRWalletMnemonic user <$> (liftWallet . seedMnemonic . wsEntropy =<< walletSeed)
-  APIExportWalletAccount n -> withUser $ \user@User {userId} -> do
-    (seed, _) <- liftWallet =<< withFastStore' (`resolveAccount` Just n)
-    -- a key another profile holds is not this profile's to hand out
-    heldByOther <- withFastStore' $ \db -> accountHeldByOther db (wsId seed) userId n
-    when heldByOther $ throwWalletError WEAccountBound
-    k <- accountKey seed n
-    a <- accountAddress n k
+    (seed, n) <- withWalletStore (`resolveAccount` accountIdx_)
+    CRWalletAddress user . snd <$> seedAccount seed n
+  APIExportWalletMnemonic -> withUser $ \user -> do
+    WalletSeed {wsEntropy} <- withFastStore' getWalletSeed >>= maybe (throwWalletError WENoMaster) pure
+    CRWalletMnemonic user <$> liftWallet (seedMnemonic wsEntropy)
+  APIExportWalletAccount userId n -> withUserId userId $ \user -> do
+    (seed@WalletSeed {wsId}, _) <- withWalletStore (`resolveAccount` Just n)
+    held <- withFastStore' $ \db -> accountHeldBy db wsId userId n
+    unless held $ throwWalletError WEAccountNotHeld
+    (k, a) <- seedAccount seed n
     pure $ CRWalletAccountSecret user a (accountSecret k)
   APIDeleteWallet -> withUser $ \_ -> do
     deleted <- withFastStore' deleteWalletSeed
@@ -6026,24 +6025,17 @@ withExpirationDate globalTTL chatItemTTL action = do
   let ttl = fromMaybe globalTTL chatItemTTL
   when (ttl > 0) $ action $ addUTCTime (-1 * fromIntegral ttl) currentTs
 
-walletSeed :: CM WalletSeed
-walletSeed = withFastStore' getWalletSeed >>= maybe (throwWalletError WENoMaster) pure
-
 throwWalletError :: WalletError -> CM a
 throwWalletError = throwChatError . CEWallet
 
 liftWallet :: Either WalletError a -> CM a
 liftWallet = either throwWalletError pure
 
-accountKey :: WalletSeed -> AccountIndex -> CM AccountKey
-accountKey seed n = do
-  master <- liftWallet =<< liftIO (seedMaster $ wsEntropy seed)
-  liftWallet =<< liftIO (deriveAccountKey master n)
+withWalletStore :: (DB.Connection -> IO (Either WalletError a)) -> CM a
+withWalletStore action = liftWallet =<< withFastStore' action
 
-accountAddress :: AccountIndex -> AccountKey -> CM WalletAddress
-accountAddress n k = do
-  a <- liftIO $ addressFromPrivateKey k
-  pure WalletAddress {accountIndex = n, keyPath = renderAccountPath n, address = decodeLatin1 $ strEncode a}
+seedAccount :: WalletSeed -> AccountIndex -> CM (AccountKey, WalletAddress)
+seedAccount WalletSeed {wsEntropy} n = liftWallet =<< liftIO (deriveAccount wsEntropy n)
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
@@ -6169,14 +6161,12 @@ chatCommandP =
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
       "/_wallet create new" $> APICreateWallet Nothing,
       "/_wallet create mnemonic=" *> (APICreateWallet . Just <$> textP),
-      "/_wallet bind account=" *> (APIBindWalletAccount . Just <$> accountIndexP),
-      "/_wallet bind" $> APIBindWalletAccount Nothing,
-      "/_wallet address account=" *> (APIGetWalletAddress . Just <$> accountIndexP),
-      "/_wallet address" $> APIGetWalletAddress Nothing,
+      "/_wallet bind " *> (APIBindWalletAccount <$> A.decimal <*> optional (" account=" *> accountIndexP)),
+      "/_wallet address" *> (APIGetWalletAddress <$> optional (" account=" *> accountIndexP)),
       "/_wallet export master" $> APIExportWalletMnemonic,
-      "/_wallet export account " *> (APIExportWalletAccount <$> accountIndexP),
+      "/_wallet export account " *> (APIExportWalletAccount <$> A.decimal <* A.space <*> accountIndexP),
       "/_wallet delete" $> APIDeleteWallet,
-      "/_wallet" $> APIGetWallet,
+      "/_wallet " *> (APIGetWallet <$> A.decimal),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),
@@ -6720,12 +6710,9 @@ chatCommandP =
     quotedP = safeDecodeUtf8 <$> (A.char '"' *> A.takeTill (== '"') <* A.char '"')
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
-    -- a long digit run is not free to convert; the hardening bound is checked when the command runs
     accountIndexP = do
-      ds <- A.takeWhile1 isDigit
-      case if B.length ds <= 10 then B.readInteger ds else Nothing of
-        Just (i, _) | i <= toInteger (maxBound :: AccountIndex) -> pure (fromInteger i)
-        _ -> fail "account index too large"
+      i <- A.decimal
+      if i <= toInteger (maxBound :: AccountIndex) then pure (fromInteger i) else fail "account index too large"
 
 displayNameP :: Parser Text
 displayNameP = safeDecodeUtf8 <$> displayNameP_

@@ -65,28 +65,31 @@ A hidden profile is bound no account, so it cannot own a name. Two things would 
 An internal API, called by the names commands and by whatever else takes accounts later, rather than typed by users. Nothing here runs at startup or as a side effect of reading.
 
 ```
-/_wallet                           whether the device has a master, and the
-                                   accounts the active profile is bound to
-/_wallet create new                generate the master, 24 words
-/_wallet create mnemonic=<phrase>  take the master entropy from a phrase, 24 words
-/_wallet bind account=<n>          bind an account to the active profile;
-                                   without account=, the next free one
-/_wallet address account=<n>       one address, with the account index it came
-                                   from; without account=, the next free one
-/_wallet export master             the master phrase
-/_wallet export account <n>        one account key's secret, 0x and 64 hex
-/_wallet delete                    delete the master entropy and its accounts
+/_wallet <userId>                     whether the device has a master, and the
+                                      accounts the profile is bound to
+/_wallet create new                   generate the master, 24 words
+/_wallet create mnemonic=<phrase>     take the master entropy from a phrase, 24 words
+/_wallet bind <userId> account=<n>    bind an account to the profile and return its
+                                      address; without account=, the next free one
+/_wallet address account=<n>          one address, with the account index it came
+                                      from; without account=, the next free one
+/_wallet export master                the master phrase
+/_wallet export account <userId> <n>  the secret of an account the profile holds,
+                                      0x and 64 hex
+/_wallet delete                       delete the master entropy and its accounts
 ```
+
+A command that acts on a profile's accounts names the profile and is refused when that profile is not the active one, so switching profiles during a flow cannot bind an account to the wrong profile.
 
 `create` always names its source, so no key material is made by typing a prefix. An imported phrase must be 24 BIP-39 English words with a valid checksum, normalised for case and spacing. There is no BIP-39 passphrase, because it would be a second secret to back up and losing it would look exactly like losing the phrase, so a phrase used with one elsewhere lands on a different tree here and finds nothing.
 
-`bind` without an argument takes the next free account from a counter on the master, which is a high-water mark and not a count of what is held. Named with `account=<n>` it takes that one, which is how an account found by a scan is attached to the profile that should have it, and it is refused for an account another profile holds. After an import the counter is unknown rather than zero, because the phrase does not say how many accounts it has been used for, so taking a new one is refused until a scan sets it, while binding a known account is still allowed.
+`bind` without an argument takes the next free account from a counter on the master, which is a high-water mark and not a count of what is held, and returns the bound account's address, so the caller knows which account it received. Named with `account=<n>` it takes that one, which is how an account found by a scan is attached to the profile that should have it, and it is refused for an account another profile holds. After an import the counter is unknown rather than zero, because the phrase does not say how many accounts it has been used for, so taking a new one is refused until a scan sets it, while binding a known account is still allowed.
 
 BIP-32 hardens an index by adding 2^31, so an index at or above 2^31 is already a hardened component and derives the same key as the index it wraps onto: account 2^31 is account 0. That is a collision, not a loss of hardening, and it would put one key under two account indexes. Every index this API takes is refused there, including one read from the counter, and the columns carry that bound so that whatever writes them later cannot slip past it. The counter's bound is one higher than an account's, because it holds the next index to hand out, and 2^31 there means every account that can be hardened has been handed out.
 
 `address` reads the counter without moving it, so asking twice gives the same answer, and it works for an account the database has no row for, which is what a device that lost its database needs. One address at a time is enough: a caller scanning the tree loops itself.
 
-`export account` is refused for an account another profile holds, because that key is not this profile's to hand out. An export is a copy and not a handover: the device still derives what it exported and can still sign with it, so giving an account key away leaves two parties able to act as its owner until whatever it holds is transferred on chain. Signing is not in this change, and when it lands it is a command here that signs and returns a signature, not `export account` followed by signing elsewhere, which would make the narrow export the ordinary path. `delete` leaves accounts registered to their addresses, reachable only by the phrase.
+`export account` is refused unless the profile holds the account, so every exported key belongs to an account the counter has already passed, and no later `bind` returns it as a new account. An export is a copy and not a handover: the device still derives what it exported and can still sign with it, so giving an account key away leaves two parties able to act as its owner until whatever it holds is transferred on chain. Signing is not in this change, and when it is added it is a command here that signs and returns a signature, not `export account` followed by signing elsewhere, which would make the narrow export the ordinary path. `delete` leaves accounts registered to their addresses, reachable only by the phrase.
 
 ```haskell
 data WalletAddress = WalletAddress {accountIndex :: Word32, keyPath :: Text, address :: Text}
@@ -96,10 +99,11 @@ data WalletError
   | WEMasterExists    -- create, when it already has one
   | WEBadMnemonic     -- wrong word count, wrong word, or bad checksum
   | WEHiddenProfile   -- bind, on a profile the app hides
-  | WEAccountBound    -- bind or export account, on an account another profile holds
+  | WEAccountBound    -- bind, on an account another profile holds
+  | WEAccountNotHeld  -- export account, on an account the profile does not hold
   | WECounterUnknown  -- no counter to read yet, after an import
   | WEIndexTooLarge   -- at or above 2^31
-  | WEDerivation {derivationError :: String} -- BIP-32 or BIP-39 said no
+  | WEDerivation {derivationError :: String} -- BIP-32 or BIP-39 derivation failed
 ```
 
 ## Recovery
@@ -138,9 +142,9 @@ CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 
 Only entropy that nothing can derive is stored: the master, always 32 bytes, since it is made and imported as 24 words. An account key is never stored, because the master entropy and an account index derive it whenever one is needed. So `wallet_accounts` holds what derivation cannot produce, which account indexes the device knows about and which profile each belongs to. A row with no `user_id` is an account no profile holds, which is what a deleted chat profile leaves behind and what a scan writes.
 
-`users` is not touched: the mapping lives on the account row, and the index on `user_id` is not unique, because a profile owns as many accounts as it owns names. One seed per device is `single_seed` and the unique index on it, which a later change lifts with a `DROP INDEX` and a `DROP COLUMN`; it is a named index rather than an inline `UNIQUE` because SQLite cannot drop one of those without rebuilding the table. Deleting the master takes its account rows, because an account index with no entropy behind it derives nothing. The migration has no reverse step, because reversing it would drop the only copy of the master entropy. What runs a reverse step is an older app installed over a newer database, which on mobile happens without asking and leaves one backup file that the next upgrade overwrites; with no reverse step that older app reports instead that the database is newer than it is, and changes nothing.
+`users` is not touched: the mapping lives on the account row, and the index on `user_id` is not unique, because a profile owns as many accounts as it owns names. One seed per device is `single_seed` and the unique index on it, which a later change lifts with a `DROP INDEX` and a `DROP COLUMN`; it is a named index rather than an inline `UNIQUE` because SQLite cannot drop one of those without rebuilding the table. Deleting the master takes its account rows, because an account index with no entropy behind it derives nothing. The migration has no reverse step, because reversing it would drop the only copy of the master entropy. A reverse step runs when an older app opens a newer database and the user confirms "Downgrade and open chat", and the backup made then is overwritten by the next upgrade. With no reverse step the older app reports that the database is newer than it is, and changes nothing.
 
-A null `account_index` marks an account whose key was imported rather than derived, which the master phrase does not recover and the schema must not suggest it does. Importing one is not implemented here; the column is nullable now so that a row written later reads correctly, rather than leaving an unmarked row to be guessed at.
+A null `account_index` marks an account whose key was imported rather than derived, which the master phrase does not recover and the schema must not suggest it does. Importing one is not implemented here; the column is nullable now so that a row written later reads correctly. That feature also requires storage for the imported secret and an optional link to a seed, because such an account belongs to no seed and must not be deleted with one; on SQLite, making `wallet_seed_id` nullable rebuilds the table.
 
 ## Threat model
 
@@ -167,12 +171,12 @@ A null `account_index` marks an account whose key was imported rather than deriv
 
 ## Files
 
-- `src/Simplex/Chat/Wallet.hs`, derivation, pure.
+- `src/Simplex/Chat/Wallet.hs`, derivation.
 - `src/Simplex/Chat/Store/Wallets.hs`, the two tables.
 - `src/Simplex/Chat/Store/SQLite/Migrations/M20260924_wallet_seeds.hs` and the Postgres twin.
 - `tests/WalletTests.hs`.
 - `tests/SchemaDump.hs` and `tests/PostgresSchemaDump.hs`, which selected what to test by taking every migration after the last one without a reverse step, and now take every migration from the first one that has a reverse step, applying any that has none.
-- Derivation uses the `BIP32` and `BIP39` modules already in simplexmq and adds no dependency.
+- Derivation uses the `BIP32`, `BIP39` and `Eth.Address` modules from simplexmq (simplex-chat/simplexmq#1843) and adds no dependency to this package.
 
 ## What is verified
 
@@ -180,6 +184,6 @@ A null `account_index` marks an account whose key was imported rather than deriv
 
 1. **Vectors.** The two addresses above reproduce from `abandon ... about`, as does account 0's secret, pinned to the value another wallet shows for it. A 24 word phrase imported through the command reaches a pinned address end to end, so a change of path fails here rather than shipping, and the account a command names is the account whose key comes back.
 2. **Isolation.** Ten accounts' addresses are all different, and an account path hardens its account component.
-3. **Refusals.** A second generate; a phrase that is not 24 valid words; `bind`, `delete` and `export master` on a device with no wallet; `bind` on a hidden profile, on an account another profile holds, and on an imported master whose counter is unknown; `export account` for an account another profile holds; every index at or above 2^31, on `address`, `bind` and `export account` alike.
-4. **Binding and reads.** A profile binds several accounts and exports its own, an account bound by index moves the counter past it so the next one does not collide and never moves it back, `bind account=<n>` attaches a scanned one, an account a deleted profile leaves behind is taken by another profile, and `address` returns the counter twice running without moving it and derives for an account with no row.
+3. **Refusals.** A second generate; a phrase that is not 24 valid words; `bind`, `delete` and `export master` on a device with no wallet; `bind` on a hidden profile, on an account another profile holds, and on an imported master whose counter is unknown; `export account` for an account the profile does not hold; every index at or above 2^31, on `address`, `bind` and `export account` alike.
+4. **Binding and reads.** A profile binds several accounts, each `bind` returns the account it bound, and the profile exports its own, an account bound by index moves the counter past it so the next one does not collide and never moves it back, `bind account=<n>` attaches a scanned one, an account a deleted profile leaves behind is taken by another profile, and `address` returns the counter twice running without moving it and derives for an account with no row.
 5. **Encoding and persistence.** An account secret whose first byte is zero keeps its 64 hex digits; the wallet, its accounts, the counter and the phrase survive a restart; and deleting the wallet takes its accounts and starts the counter over.

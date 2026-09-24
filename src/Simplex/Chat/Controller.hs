@@ -68,8 +68,8 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Chat.Wallet (AccountIndex, WalletAddress, WalletError)
 import Simplex.Chat.Util (liftIOEither)
+import Simplex.Chat.Wallet (AccountIndex, WalletAddress, WalletError)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
 import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
@@ -437,12 +437,12 @@ data ChatCommand
   | APIRejectContact {contactReqId :: Int64, notify :: Bool}
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
-  | APIGetWallet
+  | APIGetWallet {userId :: UserId}
   | APICreateWallet {mnemonic :: Maybe Text}
-  | APIBindWalletAccount {accountIndex_ :: Maybe AccountIndex}
+  | APIBindWalletAccount {userId :: UserId, accountIndex_ :: Maybe AccountIndex}
   | APIGetWalletAddress {accountIndex_ :: Maybe AccountIndex}
   | APIExportWalletMnemonic
-  | APIExportWalletAccount {accountIndex :: AccountIndex}
+  | APIExportWalletAccount {userId :: UserId, accountIndex :: AccountIndex}
   | APIDeleteWallet
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType

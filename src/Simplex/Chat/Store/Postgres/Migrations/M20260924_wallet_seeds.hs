@@ -9,7 +9,6 @@ import Text.RawString.QQ (r)
 m20260924_wallet_seeds :: Text
 m20260924_wallet_seeds =
   [r|
--- the columns are commented in the SQLite migration
 CREATE TABLE wallet_seeds (
   wallet_seed_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   entropy BYTEA NOT NULL CHECK (length(entropy) = 32),

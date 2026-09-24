@@ -10,10 +10,10 @@ import ChatTests.DBUtils
 import Control.Concurrent.STM
 import Control.DeepSeq
 import qualified Control.Exception as E
-import Control.Monad (unless, void)
+import Control.Monad (forM_, unless, void)
 import Data.List (sort)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromJust, isJust, isNothing)
+import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -81,14 +81,14 @@ testSchemaMigrations :: IO ()
 testSchemaMigrations = withTmpFiles $ do
   let noDownMigrations = takeWhile (\Migration {down} -> isNothing down) Store.migrations
   Right st <- createDBStore (DBOpts testDB chatDBFunctions "" False True TQOff) noDownMigrations (MigrationConfig MCError Nothing)
-  mapM_ (testDownMigration st) $ filter (isJust . down) $ drop (length noDownMigrations) Store.migrations
+  forM_ (drop (length noDownMigrations) Store.migrations) $ \m ->
+    maybe (Migrations.run st Nothing True $ MTRUp [m]) (testDownMigration st m) (toDownMigration m)
   closeDBStore st
   removeFile testDB
   whenM (doesFileExist testSchema) $ removeFile testSchema
   where
-    testDownMigration st m = do
+    testDownMigration st m downMigr = do
       putStrLn $ "down migration " <> name m
-      let downMigr = fromJust $ toDownMigration m
       schema <- getSchema testDB testSchema
       Migrations.run st Nothing True $ MTRUp [m]
       schema' <- getSchema testDB testSchema
