@@ -108,7 +108,7 @@ fun recordSimplexNameResolved(domain: SimplexDomain, reg: NameRegistration?) {
   saveNamesResolvedAt(m)
 }
 
-fun forgetSimplexNameResolved(fullDomainName: String) {
+fun clearSimplexNameResolved(fullDomainName: String) {
   val m = loadNamesResolvedAt()
   if (m.remove(fullDomainName) != null) saveNamesResolvedAt(m)
 }
@@ -254,12 +254,7 @@ private suspend fun planAndConnectTask(
       val label = if (it.nameType == SimplexNameType.publicGroup) MR.strings.connect_plan_join_name else MR.strings.connect_plan_connect_to_name
       generalGetString(label).format(it.shortStr)
     }
-    val nameReg = when (connectionPlan) {
-      is ConnectionPlan.NameNotConnectable -> connectionPlan.nameRegistration
-      is ConnectionPlan.ContactAddress -> connectionPlan.nameRegistration_
-      is ConnectionPlan.GroupLink -> connectionPlan.nameRegistration_
-      else -> null
-    }
+    val nameReg = connectionPlan.nameRegistration()
     val nameDomain = when (connectionPlan) {
       is ConnectionPlan.NameNotConnectable -> connectionPlan.simplexDomain
       else -> planSimplexName?.nameDomain
@@ -290,24 +285,11 @@ private suspend fun planAndConnectTask(
       if (handled) return completable
     }
     val connectionLink = connectionLink_ ?: run {
-      when (connectionPlan) {
-        is ConnectionPlan.NameNotConnectable -> AlertManager.privacySensitive.showAlertMsg(
-          generalGetString(MR.strings.simplex_name_not_registered),
-          generalGetString(MR.strings.simplex_name_not_found_desc)
-        )
-        else -> {}
-      }
       cleanup()
       return completable
     }
     when (connectionPlan) {
-      is ConnectionPlan.NameNotConnectable -> {
-        AlertManager.privacySensitive.showAlertMsg(
-          generalGetString(MR.strings.simplex_name_not_registered),
-          generalGetString(MR.strings.simplex_name_not_found_desc)
-        )
-        cleanup()
-      }
+      is ConnectionPlan.NameNotConnectable -> {}
       is ConnectionPlan.InvitationLink -> when (connectionPlan.invitationLinkPlan) {
         is InvitationLinkPlan.Ok ->
           if (connectionPlan.invitationLinkPlan.contactSLinkData_ != null) {

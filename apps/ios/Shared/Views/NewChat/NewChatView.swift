@@ -1344,7 +1344,7 @@ func recordSimplexNameResolved(_ domain: SimplexDomain, _ reg: NameRegistration?
     saveNamesResolvedAt(m)
 }
 
-func forgetSimplexNameResolved(_ fullDomainName: String) {
+func clearSimplexNameResolved(_ fullDomainName: String) {
     var m = simplexNamesResolvedAtDefault.get()
     if m.removeValue(forKey: fullDomainName) != nil { saveNamesResolvedAt(m) }
 }
@@ -1356,13 +1356,6 @@ private func nameDate(_ seconds: Int64) -> String {
 private func nameCentsPerYear(_ pricing: NamePricing, _ domain: SimplexDomain) -> String {
     let cents = pricing.centsPerYear(domain.domain.count)
     return "$\(cents / 100)" + (cents % 100 == 0 ? "" : String(format: ".%02lld", cents % 100))
-}
-
-private func showNameNotRegisteredAlert() {
-    showAlert(
-        NSLocalizedString("Name not registered", comment: "alert title"),
-        message: NSLocalizedString("This SimpleX name is not registered. Please check the name.", comment: "")
-    )
 }
 
 private func showNameRegistrationAlert(
@@ -1520,6 +1513,7 @@ func planAndConnect(
                     case .contactAddress(.ownLink, _), .groupLink(.ownLink, _): true
                     default: false
                     }
+                    let notConnectable = if case .nameNotConnectable = connectionPlan { true } else { false }
                     let handled = await MainActor.run {
                         var openExisting: (() -> Void)? = nil
                         if let contact = knownContact {
@@ -1545,7 +1539,7 @@ func planAndConnect(
                             domain: nameDomain,
                             reg: nameReg,
                             isOwn: isOwnName,
-                            notConnectable: { if case .nameNotConnectable = connectionPlan { true } else { false } }(),
+                            notConnectable: notConnectable,
                             hasLocalChat: knownContact != nil || knownGroup != nil,
                             openExistingChat: openExisting,
                             cleanup: cleanup
@@ -1554,19 +1548,12 @@ func planAndConnect(
                     if handled { return }
                 }
                 guard let connectionLink = result.connLink else {
-                    await MainActor.run {
-                        if case .nameNotConnectable = connectionPlan { showNameNotRegisteredAlert() }
-                        cleanup?()
-                    }
+                    await MainActor.run { cleanup?() }
                     return
                 }
                 switch connectionPlan {
                 case .nameNotConnectable:
-                    logger.debug("planAndConnect, .nameNotConnectable")
-                    await MainActor.run {
-                        showNameNotRegisteredAlert()
-                        cleanup?()
-                    }
+                    break
                 case let .invitationLink(ilp):
                     switch ilp {
                     case let .ok(contactSLinkData_, ownerVerification):

@@ -2250,11 +2250,10 @@ viewNameRegistration = \case
         ["registered" <> expiryNote expires graceUntil <> maybe "" ((", reserved: " <>) . plain . textEncode) reservedReason_]
       Just NRAvailable {pricing = NamePricing {basePrice = USDCents c, minLabelLength}} ->
         ["available: " <> plain (show c) <> " cents/year, min length " <> plain (show minLabelLength)]
-      Just NRReserved {reservedReason} -> ["reserved: " <> plain (textEncode reservedReason :: Text)]
+      Just NRReserved {reservedReason} -> ["reserved: " <> plain (textEncode reservedReason)]
       Nothing -> []
-    expiryNote expires graceUntil = case expires of
-      Nothing -> ""
-      Just e -> ", expires " <> plain (show (roundedSeconds e)) <> maybe "" (\g -> ", grace until " <> plain (show (roundedSeconds g))) graceUntil
+    expiryNote expires graceUntil = maybe "" (\e -> ", expires " <> showTime e <> maybe "" ((", grace until " <>) . showTime) graceUntil) expires
+    showTime = plain . show . roundedSeconds
 
 viewConnectionPlan :: ChatConfig -> Maybe ACreatedConnLink -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
@@ -2277,10 +2276,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
           | business -> ("business address: " <>)
         _ -> ("invitation link: " <>)
   CPContactAddress cap _ -> case cap of
-    CAPOk contactSLinkData ov addressChanged ->
-      [addrOrBiz contactSLinkData (if addressChanged then "ok to connect, address changed" else "ok to connect")]
-        <> viewSigVerification ov
-        <> [viewJSON contactSLinkData | testView]
+    CAPOk contactSLinkData ov addressChanged -> [addrOrBiz contactSLinkData ("ok to connect" <> (if addressChanged then ", address changed" else ""))] <> viewSigVerification ov <> [viewJSON contactSLinkData | testView]
     CAPOwnLink -> [ctAddr "own address"]
     CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
     CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]

@@ -1496,7 +1496,7 @@ enum NameRegistration: Hashable {
     }
 }
 
-// stock derivation cannot read this: the core tags it flat as {"type": ...}, not in swift's nested shape
+// stock derivation cannot decode this: the core encodes it with a flat "type" tag, not swift's nested shape
 extension NameRegistration: Decodable {
     private enum CodingKeys: String, CodingKey {
         case type, expires, graceUntil, reservedReason_, pricing, reservedReason

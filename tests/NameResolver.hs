@@ -15,7 +15,7 @@ module NameResolver
     registerAvailableName,
     unregisterName,
     failNameResolution,
-    emptyNameRecord,
+    emptyRecord,
     contactNameRecord,
     channelNameRecord,
     contactAndChannelNameRecord,
@@ -61,16 +61,14 @@ withNameResolver action = do
       Just (AnswerRegistration registration) -> (ok200, J.encode NameResponse {lastBlockTs = Nothing, registration})
       Nothing -> (ok200, J.encode NameResponse {lastBlockTs = Nothing, registration = NRAvailable {pricing = testPricing 1}})
 
--- | Register a name's domain to resolve to the given record, as a live registration.
+-- | Register a name's domain to resolve to the given record.
 registerName :: NameRegistry -> SimplexNameInfo -> NameRecord -> IO ()
 registerName reg ni nameRecord =
   registerRegistration reg ni NRRegistered {expires = Nothing, graceUntil = Nothing, reservedReason_ = Nothing, nameRecord}
 
--- | Register any registration the registry could answer with.
 registerRegistration :: NameRegistry -> SimplexNameInfo -> NameRegistration -> IO ()
 registerRegistration reg ni r = atomically $ modifyTVar' reg $ M.insert (registryKey ni) (AnswerRegistration r)
 
--- | A name that expired a day ago, renewable by its owner for another 30 days.
 registerExpiredName :: NameRegistry -> SimplexNameInfo -> NameRecord -> IO ()
 registerExpiredName reg ni nameRecord = do
   RoundedSystemTime now <- getSystemSeconds
@@ -78,19 +76,15 @@ registerExpiredName reg ni nameRecord = do
       graceUntil = Just $ RoundedSystemTime (now + 30 * 86400)
   registerRegistration reg ni NRRegistered {expires, graceUntil, reservedReason_ = Nothing, nameRecord}
 
--- | A name the registry holds back.
 registerReservedName :: NameRegistry -> SimplexNameInfo -> NameReservedReason -> IO ()
 registerReservedName reg ni reservedReason = registerRegistration reg ni NRReserved {reservedReason}
 
--- | A name that is free, priced with the given minimum label length.
 registerAvailableName :: NameRegistry -> SimplexNameInfo -> Int -> IO ()
 registerAvailableName reg ni minLen = registerRegistration reg ni NRAvailable {pricing = testPricing minLen}
 
--- | Make the resolver fail for this name, as a registry that is down or erroring would.
 failNameResolution :: NameRegistry -> SimplexNameInfo -> IO ()
 failNameResolution reg ni = atomically $ modifyTVar' reg $ M.insert (registryKey ni) AnswerFails
 
--- | Drop a name, so it resolves as available again.
 unregisterName :: NameRegistry -> SimplexNameInfo -> IO ()
 unregisterName reg ni = atomically $ modifyTVar' reg $ M.delete (registryKey ni)
 
@@ -111,10 +105,6 @@ channelNameRecord name link = (emptyRecord name) {nrSimplexChannel = [link]}
 contactAndChannelNameRecord :: Text -> Text -> Text -> NameRecord
 contactAndChannelNameRecord name contactLink channelLink =
   (emptyRecord name) {nrSimplexContact = [contactLink], nrSimplexChannel = [channelLink]}
-
--- | A registered name whose record holds no usable link.
-emptyNameRecord :: Text -> NameRecord
-emptyNameRecord = emptyRecord
 
 emptyRecord :: Text -> NameRecord
 emptyRecord name =

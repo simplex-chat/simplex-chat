@@ -4419,14 +4419,13 @@ processChatCommand cxt nm = \case
             tryAllErrors (resolveNameRegistration user nm d) >>= \case
               Right reg -> do
                 expired <- nameExpired reg
-                case reg of
-                  NRRegistered {nameRecord = nr}
-                    | not expired && isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) ->
-                        (setPlanRegistration reg <$> connectPlanName NTPublicGroup (Right reg)) `catchAllErrors` \e ->
-                          (setPlanRegistration reg <$> connectPlanName NTContact (Right reg) `catchAllErrors` \_ -> throwError e)
-                    | not expired && isJust (firstNameLink CCTContact (nrSimplexContact nr)) ->
-                        setPlanRegistration reg <$> connectPlanName NTContact (Right reg)
-                  _ -> connectPlanLocal reg
+                let connectable nameType = not expired && nameHasLink nameType reg
+                if
+                  | connectable NTPublicGroup ->
+                      (setPlanRegistration reg <$> connectPlanName NTPublicGroup (Right reg)) `catchAllErrors` \e ->
+                        (setPlanRegistration reg <$> connectPlanName NTContact (Right reg) `catchAllErrors` \_ -> throwError e)
+                  | connectable NTContact -> setPlanRegistration reg <$> connectPlanName NTContact (Right reg)
+                  | otherwise -> connectPlanLocal reg
               Left e -> connectPlanNoName e
         where
           connectPlanLocal reg =
@@ -4438,10 +4437,9 @@ processChatCommand cxt nm = \case
           connectPlanName nameType nr_ = setOtherName <$> connectPlan user (nameTarget nameType) resolveMode sig_ (Just nr_)
             where
               setOtherName (l, planName, _, p) = (l, planName, otherName, p)
-              otherName = case nr_ of
-                Right NRRegistered {nameRecord = NameRecord {nrSimplexContact, nrSimplexChannel}} -> case nameType of
-                  NTContact -> SimplexNameInfo NTPublicGroup d <$ firstNameLink CCTChannel nrSimplexChannel
-                  NTPublicGroup -> SimplexNameInfo NTContact d <$ firstNameLink CCTContact nrSimplexContact
+              otherName = case (nameType, nr_) of
+                (NTContact, Right reg) | nameHasLink NTPublicGroup reg -> Just $ SimplexNameInfo NTPublicGroup d
+                (NTPublicGroup, Right reg) | nameHasLink NTContact reg -> Just $ SimplexNameInfo NTContact d
                 _ -> Nothing
           nameTarget nameType = ACTarget SCMContact $ CTShortContact $ CTName $ SimplexNameInfo nameType d
           connectPlanNoName e =
@@ -4454,10 +4452,10 @@ processChatCommand cxt nm = \case
         | CTName ni <- nl, isNothing nameRec, resolveMode /= PRMNever -> do
             reg <- resolveNameRegistration user nm (nameDomain ni)
             expired <- nameExpired reg
-            if nameHasLink ni reg && not expired
-              then setPlanRegistration reg <$> connectPlan user (ACTarget SCMContact (CTShortContact nl)) resolveMode sig_ (Just (Right reg))
+            if nameHasLink (nameType ni) reg && not expired
+              then setPlanRegistration reg <$> connectPlan user (ACTarget SCMContact ct) resolveMode sig_ (Just (Right reg))
               else
-                (setPlanRegistration reg <$> connectPlan user (ACTarget SCMContact (CTShortContact nl)) PRMNever sig_ (Just (Right reg)))
+                (setPlanRegistration reg <$> connectPlan user (ACTarget SCMContact ct) PRMNever sig_ (Just (Right reg)))
                   `catchAllErrors` \_ -> pure (Nothing, Nothing, Nothing, CPNameNotConnectable (nameDomain ni) reg)
       CTShortContact nl ->
         (\(l, p) -> (Just l, simplexName_, Nothing, p)) <$> case ctType of
@@ -5124,8 +5122,8 @@ nameExpired = \case
   NRRegistered {expires = Just expires} -> (expires <) <$> liftIO getSystemSeconds
   _ -> pure False
 
-nameHasLink :: SimplexNameInfo -> NameRegistration -> Bool
-nameHasLink SimplexNameInfo {nameType} = \case
+nameHasLink :: SimplexNameType -> NameRegistration -> Bool
+nameHasLink nameType = \case
   NRRegistered {nameRecord = NameRecord {nrSimplexContact, nrSimplexChannel}} -> case nameType of
     NTContact -> isJust (firstNameLink CCTContact nrSimplexContact)
     NTPublicGroup -> isJust (firstNameLink CCTChannel nrSimplexChannel)

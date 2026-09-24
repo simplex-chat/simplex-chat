@@ -48,7 +48,7 @@ testConnectByName :: HasCallStack => TestParams -> IO ()
 testConnectByName ps = withSmpServerAndNames $ \reg ->
   testChat2 aliceProfile bobProfile (test reg) ps
   where
-    aliceName = aliceSimplexName
+    aliceName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
     test reg alice bob = do
       mapM_ enableNamesRole [alice, bob]
       alice ##> "/ad"
@@ -393,7 +393,7 @@ testPlanNameReservedOther = withAliceName $ \reg _l _alice bob -> do
 
 testPlanNameNoValidLink :: HasCallStack => TestParams -> IO ()
 testPlanNameNoValidLink = withAliceName $ \reg _l _alice bob -> do
-  registerName reg boogaloo (emptyNameRecord "boogaloo.simplex")
+  registerName reg boogaloo (emptyRecord "boogaloo.simplex")
   bob ##> "/_connect plan 1 @boogaloo.simplex"
   bob <## "SimpleX name boogaloo.simplex: nothing to connect to"
   bob <## "registered"

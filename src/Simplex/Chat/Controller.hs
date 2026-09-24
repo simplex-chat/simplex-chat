@@ -1150,9 +1150,9 @@ data ChatDeleteMode
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
-  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameRegistration_ :: Maybe NameRegistration} -- nameRegistration_ is set when the target was a name
+  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameRegistration_ :: Maybe NameRegistration}
   | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameRegistration_ :: Maybe NameRegistration}
-  | CPNameNotConnectable {simplexDomain :: SimplexDomain, nameRegistration :: NameRegistration} -- the name is not registered, expired or has no usable link, and no local chat has it
+  | CPNameNotConnectable {simplexDomain :: SimplexDomain, nameRegistration :: NameRegistration}
   | CPError {chatError :: ChatError}
   deriving (Show)
 
