@@ -388,7 +388,6 @@ private fun UserAddressLayout(
                     save = { simplexDomain ->
                       try {
                         val u = chatModel.controller.apiSetUserDomain(user?.remoteHostId, simplexDomain)
-                        domain?.let { clearSimplexNameResolved(it) }
                         withContext(Dispatchers.Main) { chatModel.updateUser(u) }
                         true
                       } catch (e: Exception) {

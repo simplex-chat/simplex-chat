@@ -205,7 +205,6 @@ struct UserAddressView: View {
                     save: { simplexDomain in
                         do {
                             let u = try await apiSetUserDomain(simplexDomain)
-                            if let d = chatModel.currentUser?.profile.contactDomain?.domain { clearSimplexNameResolved(d) }
                             await MainActor.run { chatModel.updateUser(u) }
                             return true
                         } catch {

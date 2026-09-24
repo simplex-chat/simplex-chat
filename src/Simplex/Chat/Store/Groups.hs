@@ -47,6 +47,7 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
     setGroupDomainVerified,
+    getGroupDomainResolution,
     updateGroupPreferences,
     updateGroupProfileFromMember,
     getGroupIdByName,
@@ -669,7 +670,7 @@ createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile b
   -- a business has no domain in its profile, so set it out-of-band; a channel already has it (createGroup_), just verify
   g' <- liftIO $ case verifiedDomain of
     Just d | business -> setPreparedGroupDomain db user g d
-    Just _ -> setGroupDomainVerified db user g True
+    Just _ -> setGroupDomainVerified db user g True Nothing
     Nothing -> pure g
   pure (g', hostMember_)
   where
@@ -2740,13 +2741,22 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
         (ldn, currentTs, userId, groupId)
       safeDeleteLDN db user localDisplayName
 
-setGroupDomainVerified :: DB.Connection -> User -> GroupInfo -> Bool -> IO GroupInfo
-setGroupDomainVerified db User {userId} g@GroupInfo {groupId} verified = do
+setGroupDomainVerified :: DB.Connection -> User -> GroupInfo -> Bool -> Maybe UTCTime -> IO GroupInfo
+setGroupDomainVerified db User {userId} g@GroupInfo {groupId} verified expiresAt = do
+  currentTs <- getCurrentTime
   DB.execute
     db
-    "UPDATE groups SET group_domain_verified = ? WHERE user_id = ? AND group_id = ?"
-    (BI verified, userId, groupId)
+    "UPDATE groups SET group_domain_verified = ?, group_domain_resolved_at = ?, group_domain_expires_at = ? WHERE user_id = ? AND group_id = ?"
+    (BI verified, currentTs, expiresAt, userId, groupId)
   pure g {groupDomainVerified = Just verified}
+
+getGroupDomainResolution :: DB.Connection -> User -> GroupInfo -> IO (Maybe (UTCTime, Maybe UTCTime))
+getGroupDomainResolution db User {userId} GroupInfo {groupId} =
+  maybeFirstRow id $
+    DB.query
+      db
+      "SELECT group_domain_resolved_at, group_domain_expires_at FROM groups WHERE user_id = ? AND group_id = ? AND group_domain_resolved_at IS NOT NULL"
+      (userId, groupId)
 
 -- A business group has no publicGroup claim, so the domain it was connected by (from its address) is written
 -- directly to group_domain and marked verified, so it is found by the local name search (getGroupToConnect).
@@ -2759,7 +2769,7 @@ setPreparedGroupDomain db user@User {userId} g@GroupInfo {groupId} domain = do
       WHERE group_profile_id IN (SELECT group_profile_id FROM groups WHERE user_id = ? AND group_id = ?)
     |]
     (domain, userId, groupId)
-  setGroupDomainVerified db user g True
+  setGroupDomainVerified db user g True Nothing
 
 updateGroupPreferences :: DB.Connection -> User -> GroupInfo -> GroupPreferences -> IO GroupInfo
 updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} ps = do

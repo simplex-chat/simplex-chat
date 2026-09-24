@@ -11,6 +11,7 @@ import Control.Concurrent.Async (concurrently_)
 import Data.Text (Text)
 import qualified Data.Text as T
 import NameResolver
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Names.Record (NameReservedReason (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
 import Test.Hspec hiding (it)
@@ -38,6 +39,8 @@ chatNamesTests = do
     it "known chat, name expired" testPlanKnownNameExpired
     it "known chat, name moved to a new address" testPlanKnownNameAddressChanged
     it "known chat, name now available" testPlanKnownNameAvailable
+    it "known chat, resolved over a day ago or past expiry" testPlanKnownNameStale
+    it "no local chat, resolved on every call" testPlanNameResolvedEveryCall
     it "own name, live" testPlanOwnNameLive
     it "own name, expired" testPlanOwnNameExpired
     it "own name, now available" testPlanOwnNameAvailable
@@ -255,6 +258,11 @@ testConnectByNameChannelAndContact ps = withSmpServerAndNames $ \reg ->
         bob <## "group link: known group #team"
         bob <## "SimpleX name: #team (verified)"
         bob <## "use #team <message> to send messages"
+        withCCTransaction bob $ \db -> DB.execute_ db "UPDATE groups SET group_domain_resolved_at = datetime('now', '-2 days')"
+        bob ##> "/_connect plan 1 team.simplex"
+        bob <## "group link: known group #team"
+        bob <## "SimpleX name: #team (verified)"
+        bob <## "use #team <message> to send messages"
         bob <## "You can also connect to @team.simplex in direct chat"
         bob <## "registered"
   where
@@ -429,6 +437,35 @@ testPlanKnownNameAvailable = withAliceName $ \reg _l alice bob -> do
   bob <## "use @alice <message> to send messages"
   bob <## "available: 1000 cents/year, min length 1"
 
+testPlanKnownNameStale :: HasCallStack => TestParams -> IO ()
+testPlanKnownNameStale = withAliceName $ \_reg _l alice bob -> do
+  connectBobByName alice bob
+  planKnownAlice bob
+  withCCTransaction bob $ \db -> DB.execute_ db "UPDATE contact_profiles SET contact_domain_resolved_at = datetime('now', '-2 days')"
+  planKnownAlice bob
+  bob <## "registered"
+  planKnownAlice bob
+  withCCTransaction bob $ \db -> DB.execute_ db "UPDATE contact_profiles SET contact_domain_expires_at = datetime('now', '-1 hours')"
+  planKnownAlice bob
+  bob <## "registered"
+  planKnownAlice bob
+  where
+    planKnownAlice bob = do
+      bob ##> "/_connect plan 1 @alice.simplex"
+      bob <## "contact address: known contact alice"
+      bob <## "SimpleX name: @alice.simplex (verified)"
+      bob <## "use @alice <message> to send messages"
+
+testPlanNameResolvedEveryCall :: HasCallStack => TestParams -> IO ()
+testPlanNameResolvedEveryCall = withAliceName $ \reg shortLink _alice bob -> do
+  bob ##> "/_connect plan 1 @alice.simplex"
+  bob <## "contact address: ok to connect"
+  _ <- getTermLine bob
+  registerExpiredName reg aliceSimplexName (contactNameRecord "alice.simplex" shortLink)
+  bob ##> "/_connect plan 1 @alice.simplex"
+  bob <## "SimpleX name alice.simplex: nothing to connect to"
+  bob <##. "registered, expires "
+
 testPlanOwnNameLive :: HasCallStack => TestParams -> IO ()
 testPlanOwnNameLive = withAliceName $ \_reg _l alice _bob -> do
   alice ##> "/_connect plan 1 @alice.simplex resolve=all"
@@ -480,10 +517,16 @@ testPlanKnownNameAddressChanged ps = withSmpServerAndNames $ \reg ->
       bob <## "contact address: known contact alice"
       bob <## "SimpleX name: @alice.simplex (verified)"
       bob <## "use @alice <message> to send messages"
-      bob <## "registered"
       bob ##> "/_connect plan 1 @alice.simplex resolve=all"
       bob <## "contact address: ok to connect, address changed"
       _ <- getTermLine bob -- the new address's short link data (JSON, printed in test view)
+      withCCTransaction bob $ \db -> DB.execute_ db "UPDATE contact_profiles SET contact_domain_resolved_at = datetime('now', '-2 days')"
+      bob ##> "/_connect plan 1 @alice.simplex"
+      bob <## "contact address: ok to connect, address changed"
+      _ <- getTermLine bob
+      bob ##> "/_connect plan 1 @alice.simplex"
+      bob <## "contact address: ok to connect, address changed"
+      _ <- getTermLine bob
       bob ##> "/_connect plan 1 @alice.simplex resolve=never"
       bob <## "contact address: known contact alice"
       bob <## "SimpleX name: @alice.simplex (verified)"

@@ -1321,34 +1321,6 @@ private func showOpenKnownGroupAlert(
 
 private let simplexNamesHowToURL = "https://simplex.domains/#testing"
 
-private let nameResolvedDaySeconds: Int64 = 24 * 60 * 60
-
-private func nowSeconds() -> Int64 { Int64(Date.now.timeIntervalSince1970) }
-
-private func saveNamesResolvedAt(_ m: [String: SimplexNameResolved]) {
-    let now = nowSeconds()
-    simplexNamesResolvedAtDefault.set(m.filter { now - $0.value.at < 7 * nameResolvedDaySeconds })
-}
-
-func simplexNameResolvedRecently(_ domain: SimplexDomain) -> Bool {
-    guard let r = simplexNamesResolvedAtDefault.get()[domain.fullDomainName] else { return false }
-    let now = nowSeconds()
-    if now - r.at >= nameResolvedDaySeconds { return false }
-    return r.expires.map { now < $0 } ?? true
-}
-
-func recordSimplexNameResolved(_ domain: SimplexDomain, _ reg: NameRegistration?) {
-    var m = simplexNamesResolvedAtDefault.get()
-    let expires: Int64? = if case let .registered(expires, _, _) = reg { expires } else { nil }
-    m[domain.fullDomainName] = SimplexNameResolved(at: nowSeconds(), expires: expires)
-    saveNamesResolvedAt(m)
-}
-
-func clearSimplexNameResolved(_ fullDomainName: String) {
-    var m = simplexNamesResolvedAtDefault.get()
-    if m.removeValue(forKey: fullDomainName) != nil { saveNamesResolvedAt(m) }
-}
-
 private func nameDate(_ seconds: Int64) -> String {
     Date(timeIntervalSince1970: TimeInterval(seconds)).formatted(date: .abbreviated, time: .omitted)
 }
@@ -1477,17 +1449,7 @@ func planAndConnect(
 
     func connectTask(_ inProgress: BoxedValue<Bool>) {
         Task {
-            let nameTarget: SimplexNameInfo? = if case let .name(_, nameInfo) = strConnectTarget(shortOrFullLink) { nameInfo } else { nil }
-            var result: ConnectionPlanResult? = nil
-            if let nameTarget, simplexNameResolvedRecently(nameTarget.nameDomain) {
-                result = await apiConnectPlan(connLink: shortOrFullLink, resolveMode: .never, linkOwnerSig: linkOwnerSig, inProgress: BoxedValue(false))
-            }
-            if result == nil && inProgress.boxedValue {
-                result = await apiConnectPlan(connLink: shortOrFullLink, resolveMode: nameTarget != nil ? .all : .unknown, linkOwnerSig: linkOwnerSig, inProgress: inProgress)
-                if let nameTarget, let result {
-                    recordSimplexNameResolved(nameTarget.nameDomain, result.connectionPlan.nameRegistration)
-                }
-            }
+            let result = await apiConnectPlan(connLink: shortOrFullLink, linkOwnerSig: linkOwnerSig, inProgress: inProgress)
             await MainActor.run {
                 ConnectProgressManager.shared.stopConnectProgress()
             }

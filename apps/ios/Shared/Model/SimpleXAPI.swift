@@ -1051,7 +1051,7 @@ func apiConnectPlan(connLink: String, resolveMode: PlanResolveMode = .unknown, l
     }
     // a .never (typing) search that matches nothing locally is not an error to surface
     if case .error(.error(.notResolvedLocally)) = r { return nil }
-    if let r, inProgress.boxedValue { await apiConnectResponseAlert(r) }
+    if let r { await apiConnectResponseAlert(r) }
     return nil
 }
 

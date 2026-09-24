@@ -22,7 +22,6 @@ import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.datetime.*
-import kotlinx.serialization.*
 
 enum class ConnectionLinkType {
   INVITATION, CONTACT, GROUP
@@ -73,45 +72,7 @@ private fun openNameHowTo(uriHandler: UriHandler) = openBrowserAlert(SIMPLEX_NAM
 
 private const val SIMPLEX_NAMES_HOWTO_URL = "https://simplex.domains/#testing"
 
-private const val NAME_RESOLVED_DAY_SECONDS = 24 * 60 * 60L
-
 private fun nowSeconds(): Long = Clock.System.now().epochSeconds
-
-private fun loadNamesResolvedAt(): MutableMap<String, SimplexNameResolved> =
-  try {
-    val s = ChatController.appPrefs.simplexNamesResolvedAt.get() ?: return mutableMapOf()
-    json.decodeFromString<Map<String, SimplexNameResolved>>(s).toMutableMap()
-  } catch (e: Exception) {
-    mutableMapOf()
-  }
-
-private fun saveNamesResolvedAt(m: Map<String, SimplexNameResolved>) {
-  val now = nowSeconds()
-  val kept = m.filterValues { now - it.at < 7 * NAME_RESOLVED_DAY_SECONDS }
-  try {
-    ChatController.appPrefs.simplexNamesResolvedAt.set(json.encodeToString<Map<String, SimplexNameResolved>>(kept))
-  } catch (e: Exception) {
-    Log.e(TAG, "saveNamesResolvedAt: ${e.stackTraceToString()}")
-  }
-}
-
-fun simplexNameResolvedRecently(domain: SimplexDomain): Boolean {
-  val r = loadNamesResolvedAt()[domain.fullDomainName] ?: return false
-  val now = nowSeconds()
-  if (now - r.at >= NAME_RESOLVED_DAY_SECONDS) return false
-  return r.expires == null || now < r.expires
-}
-
-fun recordSimplexNameResolved(domain: SimplexDomain, reg: NameRegistration?) {
-  val m = loadNamesResolvedAt()
-  m[domain.fullDomainName] = SimplexNameResolved(nowSeconds(), (reg as? NameRegistration.Registered)?.expires)
-  saveNamesResolvedAt(m)
-}
-
-fun clearSimplexNameResolved(fullDomainName: String) {
-  val m = loadNamesResolvedAt()
-  if (m.remove(fullDomainName) != null) saveNamesResolvedAt(m)
-}
 
 private fun showNameRegistrationAlert(
   rhId: Long?,
@@ -230,18 +191,7 @@ private suspend fun planAndConnectTask(
     cleanup?.invoke()
     completable.complete(!completable.isActive)
   }
-  val nameTarget = (strConnectTarget(shortOrFullLink.trim()) as? ConnectTarget.Name)?.nameInfo
-  val freshName = nameTarget != null && simplexNameResolvedRecently(nameTarget.nameDomain)
-  var result = if (freshName) {
-    chatModel.controller.apiConnectPlan(rhId, shortOrFullLink, PlanResolveMode.PRMNever, linkOwnerSig, mutableStateOf(false))
-  } else null
-  if (result == null && inProgress.value) {
-    val mode = if (nameTarget != null) PlanResolveMode.PRMAll else PlanResolveMode.PRMUnknown
-    result = chatModel.controller.apiConnectPlan(rhId, shortOrFullLink, mode, linkOwnerSig, inProgress)
-    if (nameTarget != null && result != null) {
-      recordSimplexNameResolved(nameTarget.nameDomain, result.connectionPlan.nameRegistration())
-    }
-  }
+  val result = chatModel.controller.apiConnectPlan(rhId, shortOrFullLink, linkOwnerSig = linkOwnerSig, inProgress = inProgress)
   connectProgressManager.stopConnectProgress()
   if (!inProgress.value) { return completable }
   if (result != null) {

@@ -123,7 +123,6 @@ class AppPreferences {
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   val privacyVerifySimplexNames = mkBoolPreference(SHARED_PREFS_PRIVACY_VERIFY_SIMPLEX_NAMES, false)
-  val simplexNamesResolvedAt = mkStrPreference(SHARED_PREFS_SIMPLEX_NAMES_RESOLVED_AT, null)
   val privacyLinkPreviewsShowAlert = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS_SHOW_ALERT, true)
   val privacySanitizeLinks = mkBoolPreference(SHARED_PREFS_PRIVACY_SANITIZE_LINKS, false)
   // TODO remove
@@ -412,7 +411,6 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_PRIVACY_VERIFY_SIMPLEX_NAMES = "PrivacyVerifySimplexNames"
-    private const val SHARED_PREFS_SIMPLEX_NAMES_RESOLVED_AT = "SimplexNamesResolvedAt"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS_SHOW_ALERT = "PrivacyLinkPreviewsShowAlert"
     private const val SHARED_PREFS_PRIVACY_SANITIZE_LINKS = "PrivacySanitizeLinks"
     private const val SHARED_PREFS_PRIVACY_CHAT_LIST_OPEN_LINKS = "ChatListOpenLinks" // TODO remove

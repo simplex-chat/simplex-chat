@@ -1496,29 +1496,28 @@ enum NameRegistration: Hashable {
     }
 }
 
-// stock derivation cannot decode this: the core encodes it with a flat "type" tag, not swift's nested shape
 extension NameRegistration: Decodable {
     private enum CodingKeys: String, CodingKey {
         case type, expires, graceUntil, reservedReason_, pricing, reservedReason
     }
 
     init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        let type = try c.decode(String.self, forKey: CodingKeys.type)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
         switch type {
         case "registered":
-            let expires = try c.decodeIfPresent(Int64.self, forKey: CodingKeys.expires)
-            let graceUntil = try c.decodeIfPresent(Int64.self, forKey: CodingKeys.graceUntil)
-            let reservedReason_ = try c.decodeIfPresent(String.self, forKey: CodingKeys.reservedReason_)
+            let expires = try container.decodeIfPresent(Int64.self, forKey: .expires)
+            let graceUntil = try container.decodeIfPresent(Int64.self, forKey: .graceUntil)
+            let reservedReason_ = try container.decodeIfPresent(String.self, forKey: .reservedReason_)
             self = .registered(expires: expires, graceUntil: graceUntil, reservedReason_: reservedReason_)
         case "available":
-            let pricing = try c.decode(NamePricing.self, forKey: CodingKeys.pricing)
+            let pricing = try container.decode(NamePricing.self, forKey: .pricing)
             self = .available(pricing: pricing)
         case "reserved":
-            let reservedReason = try c.decode(String.self, forKey: CodingKeys.reservedReason)
+            let reservedReason = try container.decode(String.self, forKey: .reservedReason)
             self = .reserved(reservedReason: reservedReason)
         default:
-            throw DecodingError.dataCorruptedError(forKey: CodingKeys.type, in: c, debugDescription: "Unsupported name registration type: \(type)")
+            throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown NameRegistration type: \(type)")
         }
     }
 }

@@ -5392,7 +5392,7 @@ Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-      UPDATE contact_profiles SET contact_domain_verified = ?
+      UPDATE contact_profiles SET contact_domain_verified = ?, contact_domain_resolved_at = ?, contact_domain_expires_at = ?
       WHERE contact_profile_id IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
     
 Plan:
@@ -7451,6 +7451,10 @@ Query: SELECT connection_id FROM connections WHERE user_id = ? AND group_member_
 Plan:
 SEARCH connections USING INDEX idx_connections_group_member_id (group_member_id=?)
 
+Query: SELECT contact_domain_resolved_at, contact_domain_expires_at FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ? AND contact_domain_resolved_at IS NOT NULL
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT contact_id FROM contacts WHERE user_id = ? AND chat_item_ttl > 0 OR chat_item_ttl IS NULL
 Plan:
 SCAN contacts
@@ -7536,6 +7540,10 @@ SEARCH files USING INDEX idx_files_group_id_shared_msg_id (group_id=? AND shared
 Query: SELECT g.inv_queue_info FROM groups g WHERE g.group_id = ? AND g.user_id = ?
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT group_domain_resolved_at, group_domain_expires_at FROM groups WHERE user_id = ? AND group_id = ? AND group_domain_resolved_at IS NOT NULL
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT group_id FROM group_members WHERE group_member_id = ?
 Plan:
@@ -7861,6 +7869,14 @@ Query: UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE contact_profiles SET contact_domain_expires_at = datetime('now', '-1 hours')
+Plan:
+SCAN contact_profiles
+
+Query: UPDATE contact_profiles SET contact_domain_resolved_at = datetime('now', '-2 days')
+Plan:
+SCAN contact_profiles
+
 Query: UPDATE contact_profiles SET image = ? WHERE display_name = ?
 Plan:
 SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
@@ -8093,7 +8109,11 @@ Query: UPDATE groups SET enable_ntfs = ?, send_rcpts = ?, favorite = ? WHERE use
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE groups SET group_domain_verified = ? WHERE user_id = ? AND group_id = ?
+Query: UPDATE groups SET group_domain_resolved_at = datetime('now', '-2 days')
+Plan:
+SCAN groups
+
+Query: UPDATE groups SET group_domain_verified = ?, group_domain_resolved_at = ?, group_domain_expires_at = ? WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 

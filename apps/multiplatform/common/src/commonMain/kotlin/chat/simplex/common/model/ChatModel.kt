@@ -5253,9 +5253,6 @@ enum class SimplexTLD {
 }
 
 @Serializable
-data class SimplexNameResolved(val at: Long, val expires: Long? = null)
-
-@Serializable
 sealed class NameRegistration {
   // held by someone; expires/graceUntil are absent from an older router, which means "not known", not "live forever"
   @Serializable @SerialName("registered") class Registered(

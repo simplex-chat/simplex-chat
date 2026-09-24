@@ -1499,8 +1499,3 @@ enum UIRemoteCtrlSessionState {
     case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case connected(remoteCtrl: RemoteCtrlInfo, sessionCode: String)
 }
-
-struct SimplexNameResolved: Codable {
-    var at: Int64
-    var expires: Int64?
-}

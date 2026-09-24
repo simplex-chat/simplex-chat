@@ -680,7 +680,9 @@ CREATE TABLE test_chat_schema.contact_profiles (
     contact_domain text,
     contact_domain_proof text,
     contact_domain_verified smallint,
-    description text
+    description text,
+    contact_domain_resolved_at timestamp with time zone,
+    contact_domain_expires_at timestamp with time zone
 );
 
 
@@ -1168,7 +1170,9 @@ CREATE TABLE test_chat_schema.groups (
     roster_blob bytea,
     group_domain_verified smallint,
     stored_roster_version bigint,
-    applied_complete_roster_version bigint
+    applied_complete_roster_version bigint,
+    group_domain_resolved_at timestamp with time zone,
+    group_domain_expires_at timestamp with time zone
 );
 
 
