@@ -72,10 +72,7 @@ private fun openNameHowTo(uriHandler: UriHandler) = openBrowserAlert(SIMPLEX_NAM
 
 private const val SIMPLEX_NAMES_HOWTO_URL = "https://simplex.domains/#testing"
 
-private fun nowSeconds(): Long = Clock.System.now().epochSeconds
-
 private fun showNameRegistrationAlert(
-  rhId: Long?,
   domain: SimplexDomain,
   reg: NameRegistration,
   isOwn: Boolean,
@@ -85,7 +82,7 @@ private fun showNameRegistrationAlert(
   cleanup: (() -> Unit)?
 ): Boolean {
   val nameStr = domain.fullDomainName
-  val now = nowSeconds()
+  val now = Clock.System.now().epochSeconds
   val ok = generalGetString(MR.strings.ok)
   fun dismiss() {
     AlertManager.privacySensitive.hideAlert()
@@ -223,7 +220,6 @@ private suspend fun planAndConnectTask(
         else openExisting = { openKnownGroup(chatModel, rhId, close, knownGroup) }
       }
       val handled = showNameRegistrationAlert(
-        rhId = rhId,
         domain = nameDomain,
         reg = nameReg,
         isOwn = isOwnName,
