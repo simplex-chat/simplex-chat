@@ -1,4 +1,4 @@
-import {ChatResponse, T} from "@simplex-chat/types"
+import {ChatEvent, ChatResponse, T} from "@simplex-chat/types"
 import * as api from "../src/api"
 import * as core from "../src/core"
 
@@ -91,6 +91,15 @@ describe("startChat lifecycle", () => {
     await chat.startChat()
     await expect(chat.stopChat()).rejects.toThrow("error stopping chat")
     expect(chat.started).toBe(true)
+    await chat.stopChat()
+  })
+
+  it("passes the chat api to event subscribers", async () => {
+    const chat = await chatWithResponses({type: "chatStarted"}, {type: "chatStopped"})
+    jest.mocked(core.chatRecvMsgWait).mockResolvedValueOnce({type: "hostConnected"} as ChatEvent)
+    const subscriberChat = new Promise(resolve => chat.on("hostConnected", (_event, c) => resolve(c)))
+    await chat.startChat()
+    await expect(subscriberChat).resolves.toBe(chat)
     await chat.stopChat()
   })
 

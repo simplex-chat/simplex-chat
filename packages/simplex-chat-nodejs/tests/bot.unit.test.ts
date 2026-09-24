@@ -40,6 +40,14 @@ describe("subscribeChatItems", () => {
     expect(calls).toEqual(["message:/unknown", "message:hello"])
   })
 
+  it("passes the chat api to handlers", async () => {
+    const {bot, deliver} = fakeBot()
+    const chats: api.ChatApi[] = []
+    subscribeChatItems(bot, async (_ci, _content, chat) => { chats.push(chat) }, {help: async (_ci, _cmd, chat) => { chats.push(chat) }})
+    await deliver([item("rcvMsgContent", "/help"), item("rcvMsgContent", "hello")])
+    expect(chats).toEqual([bot, bot])
+  })
+
   it("ignores sent items", async () => {
     const {bot, deliver} = fakeBot()
     const calls: string[] = []

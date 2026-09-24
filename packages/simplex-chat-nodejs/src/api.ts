@@ -47,7 +47,7 @@ export const defaultBotAddressSettings: BotAddressSettings = {
   businessAddress: false
 }
 
-export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}) => void | Promise<void>
+export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}, chat: ChatApi) => void | Promise<void>
 
 export type EventSubscribers = {[K in CEvt.Tag]?: EventSubscriberFunc<K>}
 
@@ -177,7 +177,7 @@ export class ChatApi {
         if (subs) {
           for (const {subscriber, once} of [...subs]) {
             try {
-              const p = (subscriber as EventSubscriberFunc<typeof event.type>)(event)
+              const p = (subscriber as EventSubscriberFunc<typeof event.type>)(event, this)
               if (p instanceof Promise) await p
             } catch(e) {
               console.log(`${event.type} event processing error`, e)
@@ -187,7 +187,7 @@ export class ChatApi {
         }
         for (const r of [...this.receivers]) {          
           try {
-            const p = r(event)
+            const p = r(event, this)
             if (p instanceof Promise) await p
           } catch(e) {
             console.log(`${event.type} event processing error`, e)

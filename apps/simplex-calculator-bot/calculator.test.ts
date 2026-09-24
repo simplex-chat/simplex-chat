@@ -1,0 +1,120 @@
+import {describe, test, expect} from "vitest"
+import {Calc, Key, calculatorText, evaluate, initialCalc, press, textKeys} from "./src/calculator.js"
+
+function tap(keys: string): {calc: Calc, logLines: string[]} {
+  const logLines: string[] = []
+  const calc = (keys.split(" ") as Key[]).reduce((current, key) => {
+    const [next, logLine] = press(current, key)
+    if (logLine) logLines.push(logLine)
+    return next
+  }, initialCalc)
+  return {calc, logLines}
+}
+
+function display(keys: string): string {
+  return tap(keys).calc.display
+}
+
+describe("keys", () => {
+  test("enter numbers", () => {
+    expect(display("1 2 . 5")).toBe("12.5")
+    expect(display("0 0 7")).toBe("7")
+    expect(display(". 5")).toBe("0.5")
+    expect(display("1 . . 5")).toBe("1.5")
+  })
+
+  test("compute left to right and log after equals", () => {
+    expect(tap("2 + 2 =")).toEqual({calc: expect.objectContaining({display: "4"}), logLines: ["2 + 2 = 4"]})
+    expect(tap("2 + 3 × 4 =").logLines).toEqual(["2 + 3 × 4 = 20"])
+    expect(display("2 + 3 ×")).toBe("5")
+  })
+
+  test("log only after equals", () => {
+    expect(tap("2 + 3 × 4").logLines).toEqual([])
+    expect(tap("5 =").logLines).toEqual([])
+  })
+
+  test("replace operator", () => {
+    expect(tap("2 + × 3 =").logLines).toEqual(["2 × 3 = 6"])
+  })
+
+  test("continue from result", () => {
+    expect(tap("2 + 2 = + 3 =").logLines).toEqual(["2 + 2 = 4", "4 + 3 = 7"])
+    expect(display("2 + 2 = 5")).toBe("5")
+  })
+
+  test("percent", () => {
+    expect(display("1 0 0 + 1 5 %")).toBe("15")
+    expect(tap("1 0 0 + 1 5 % =").logLines).toEqual(["100 + 15% = 115"])
+    expect(display("1 0 0 - 1 5 %")).toBe("15")
+    expect(display("1 0 0 - 1 5 % =")).toBe("85")
+    expect(display("5 0 × 1 0 %")).toBe("0.1")
+    expect(display("5 0 × 1 0 % =")).toBe("5")
+    expect(display("5 0 ÷ 1 0 %")).toBe("0.1")
+    expect(display("5 0 ÷ 1 0 % =")).toBe("500")
+    expect(display("1 5 %")).toBe("0.15")
+  })
+
+  test("square root and sign", () => {
+    expect(display("9 √")).toBe("3")
+    expect(tap("1 + 9 √ =").logLines).toEqual(["1 + √9 = 4"])
+    expect(display("5 ±")).toBe("-5")
+    expect(display("5 ± ±")).toBe("5")
+  })
+
+  test("rounding", () => {
+    expect(display("0 . 1 + 0 . 2 =")).toBe("0.3")
+    expect(display("1 ÷ 3 =")).toBe("0.333333333333")
+  })
+
+  test("errors", () => {
+    expect(display("1 ÷ 0 =")).toBe("Error")
+    expect(display("2 ± √")).toBe("Error")
+    expect(display("1 ÷ 0 = 5")).toBe("5")
+    expect(display("1 ÷ 0 = + 2 =")).toBe("2")
+  })
+
+  test("clear", () => {
+    expect(tap("2 + 3 C").calc).toEqual(initialCalc)
+  })
+})
+
+describe("typed expressions", () => {
+  test("evaluate", () => {
+    const result = (text: string) => evaluate(textKeys(text)!).display
+    expect(result("2 + 2")).toBe("4")
+    expect(result("12 × 3 + 4")).toBe("40")
+    expect(result("12 * 3 + 4 =")).toBe("40")
+    expect(result("8 / 2")).toBe("4")
+    expect(result("3x3")).toBe("9")
+    expect(result("-5")).toBe("-5")
+    expect(result("100 + 15%")).toBe("115")
+    expect(result("42")).toBe("42")
+  })
+
+  test("reject other text", () => {
+    expect(textKeys("hello")).toBeUndefined()
+    expect(textKeys("+")).toBeUndefined()
+    expect(textKeys("2 ^ 3")).toBeUndefined()
+  })
+})
+
+describe("calculator text", () => {
+  test("symbol keys", () => {
+    expect(calculatorText(initialCalc, true)).toBe([
+      "*0*",
+      "/C   /±   /%   /÷",
+      "/7   /8   /9   /×",
+      "/4   /5   /6   /-",
+      "/1   /2   /3   /+",
+      "/√   /0   /.   /=",
+    ].join("\n"))
+  })
+
+  test("word keys padded to equal width", () => {
+    const pad = (n: number) => `\`${" ".repeat(n)}\``
+    const [displayLine, firstRow] = calculatorText(initialCalc, false).split("\n")
+    expect(displayLine).toBe("*0*")
+    expect(firstRow).toBe(`/C ${pad(4)}/neg ${pad(2)}/pct ${pad(2)}/div ${pad(2)}`)
+  })
+})
