@@ -6,6 +6,7 @@ module WalletTests where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
+import Control.Monad ((<=<))
 import qualified Data.ByteArray as BA
 import qualified Data.ByteArray.Encoding as BAE
 import Data.ByteString.Char8 (ByteString)
@@ -17,6 +18,7 @@ import qualified Data.Text as T
 import Simplex.Chat.Wallet (AccountIndex, WalletError (..), accountSecret, deriveAccountKey, entropyFromMnemonic, renderAccountPath, seedMaster, seedMnemonic)
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
+import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Test.Hspec hiding (it)
@@ -33,14 +35,18 @@ testPhrase24 = B.unwords $ replicate 23 "abandon" <> ["art"]
 seedEntropy :: ByteString -> BA.ScrubbedBytes
 seedEntropy phrase = BA.convert . B39.mnemonicToEntropy . either error id $ B39.parseMnemonic phrase
 
-accountKey :: BA.ScrubbedBytes -> AccountIndex -> S.Secp256k1PrivateKey
-accountKey entropy n = either (error . show) id $ seedMaster entropy >>= \m -> deriveAccountKey m n
+accountKey :: BA.ScrubbedBytes -> AccountIndex -> IO S.Secp256k1PrivateKey
+accountKey entropy n = do
+  m <- either (error . show) id <$> seedMaster entropy
+  either (error . show) id <$> deriveAccountKey m n
+
+addressOf :: S.Secp256k1PrivateKey -> IO String
+addressOf k = B.unpack . strEncode <$> addressFromPrivateKey k
 
 -- | The address a wallet reaches when the secret is imported as a private key.
-addressFromSecret :: String -> String
+addressFromSecret :: String -> IO String
 addressFromSecret secret =
-  show . addressFromPrivateKey . either error id . S.mkPrivateKey . either error id $
-    BAE.convertFromBase BAE.Base16 (B.drop 2 $ B.pack secret)
+  addressOf . either error id =<< S.mkPrivateKey (either error id $ BAE.convertFromBase BAE.Base16 (B.drop 2 $ B.pack secret))
 
 -- | An @export account@ row: the index, the path, the address, the secret.
 exportRow :: HasCallStack => String -> (String, String, String, String)
@@ -51,21 +57,21 @@ exportRow row = case words row of
 walletDerivationTests :: Spec
 walletDerivationTests = do
   Hspec.it "accounts are the accounts another wallet derives for the same phrase" $ do
-    let addrOf = show . addressFromPrivateKey . accountKey (seedEntropy testPhrase12)
+    let addrOf n = addressOf =<< accountKey (seedEntropy testPhrase12) n
     -- Ledger Live accounts 1 and 2 for this phrase, the published values for it
-    addrOf 0 `shouldBe` "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
-    addrOf 1 `shouldBe` "0x78839F6054d7ed13918bAe0473BA31b1Ca9D7265"
+    addrOf 0 `shouldReturn` "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
+    addrOf 1 `shouldReturn` "0x78839F6054d7ed13918bAe0473BA31b1Ca9D7265"
   Hspec.it "the exported secret is the one another wallet shows for that account" $ do
-    let k = accountKey (seedEntropy testPhrase12) 0
+    k <- accountKey (seedEntropy testPhrase12) 0
     -- as a wallet shows it for m/44'/60'/0'/0/0 of this phrase
     accountSecret k `shouldBe` "0x1ab42cc412b618bdea3a599e3c9bae199ebf030895b039e9db1e30dafb12b727"
   Hspec.it "every account has its own address" $ do
     let entropy = seedEntropy testPhrase12
-        addrs = map (show . addressFromPrivateKey . accountKey entropy) [0 .. 9]
+    addrs <- mapM (addressOf <=< accountKey entropy) [0 .. 9]
     length (nub addrs) `shouldBe` 10
   Hspec.it "a secret whose first byte is zero keeps its 64 hex digits" $ do
-    let k = either error id . S.mkPrivateKey $ B.pack ('\0' : replicate 31 '\1')
-        secret = T.unpack $ accountSecret k
+    k <- either error id <$> S.mkPrivateKey (BA.convert $ B.pack ('\0' : replicate 31 '\1'))
+    let secret = T.unpack $ accountSecret k
     take 4 secret `shouldBe` "0x00"
     length secret `shouldBe` 66
   Hspec.it "renders the path an account sits at" $ do
@@ -219,13 +225,13 @@ testWalletExport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   path `shouldBe` "m/44'/60'/0'/0/0"
   -- m/44'/60'/0'/0/0 of the 24 word vector, pinned so a change of path fails here
   address `shouldBe` "0xF278cF59F82eDcf871d630F28EcC8056f25C1cdb"
-  addressFromSecret secret `shouldBe` address
+  addressFromSecret secret `shouldReturn` address
   -- the index reaches the key, not only the path printed beside it
   alice ##> "/_wallet export account 1"
   (idx', path', address', _) <- exportRow <$> getTermLine alice
   idx' `shouldBe` "1"
   path' `shouldBe` "m/44'/60'/1'/0/0"
-  address' `shouldBe` show (addressFromPrivateKey $ accountKey (seedEntropy testPhrase24) 1)
+  (addressOf =<< accountKey (seedEntropy testPhrase24) 1) `shouldReturn` address'
   -- and an address is read from the account the command names, not the counter
   alice ##> "/_wallet address account=1"
   addressRow <- words <$> getTermLine alice

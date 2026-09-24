@@ -19,6 +19,7 @@ module Simplex.Chat.Wallet
 where
 
 import Control.Concurrent.STM
+import Control.Monad.Except
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteArray as BA
@@ -79,10 +80,10 @@ seedMnemonic entropy =
   bipError . fmap (decodeLatin1 . B39.mnemonicPhrase) . B39.entropyToMnemonic $ entropyBytes entropy
 
 -- | Deriving this runs PBKDF2, so it is done once per command.
-seedMaster :: BA.ScrubbedBytes -> Either WalletError B32.ExtendedKey
-seedMaster entropy = do
-  m <- bipError . B39.entropyToMnemonic $ entropyBytes entropy
-  bipError . B32.masterKey $ B39.mnemonicToSeed m ""
+seedMaster :: BA.ScrubbedBytes -> IO (Either WalletError B32.ExtendedKey)
+seedMaster entropy = runExceptT $ do
+  m <- liftEither . bipError . B39.entropyToMnemonic $ entropyBytes entropy
+  ExceptT $ bipError <$> B32.masterKey (B39.mnemonicToSeed m "")
 
 accountPath :: AccountIndex -> [Word32]
 accountPath n = ethereumPath n 0
@@ -90,8 +91,8 @@ accountPath n = ethereumPath n 0
 renderAccountPath :: AccountIndex -> Text
 renderAccountPath = decodeLatin1 . B32.renderPath . accountPath
 
-deriveAccountKey :: B32.ExtendedKey -> AccountIndex -> Either WalletError AccountKey
-deriveAccountKey master n = B32.xkKey <$> bipError (B32.derivePath master $ accountPath n)
+deriveAccountKey :: B32.ExtendedKey -> AccountIndex -> IO (Either WalletError AccountKey)
+deriveAccountKey master n = fmap B32.xkKey . bipError <$> B32.derivePath master (accountPath n)
 
 -- | As wallets take it when a key is imported on its own.
 accountSecret :: AccountKey -> Text

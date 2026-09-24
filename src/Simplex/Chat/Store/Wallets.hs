@@ -25,6 +25,7 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
+import Data.Maybe (isJust)
 import Simplex.Chat.Wallet (AccountIndex, WalletError (..), checkAccountIndex)
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow)
@@ -58,14 +59,15 @@ getWalletSeed db =
 -- | False if the device already has a seed. The counter is 'Nothing' for an imported phrase.
 createWalletSeed :: DB.Connection -> BA.ScrubbedBytes -> Maybe AccountIndex -> IO Bool
 createWalletSeed db entropy nextAccount =
-  getWalletSeed db >>= \case
-    Just _ -> pure False
-    Nothing ->
-      True
-        <$ DB.execute
-          db
-          "INSERT INTO wallet_seeds (entropy, next_account_index) VALUES (?, ?)"
-          (DB.Binary (BA.convert entropy :: ByteString), accountIndexCol <$> nextAccount)
+  fmap isJust . maybeFirstRow (fromOnly @Int64) $
+    DB.query
+      db
+      [sql|
+        INSERT INTO wallet_seeds (entropy, next_account_index) VALUES (?, ?)
+        ON CONFLICT (single_seed) DO NOTHING
+        RETURNING wallet_seed_id
+      |]
+      (DB.Binary (BA.convert entropy :: ByteString), accountIndexCol <$> nextAccount)
 
 -- | False if the device had no seed to delete. The account rows go with it.
 deleteWalletSeed :: DB.Connection -> IO Bool
@@ -119,8 +121,8 @@ heldByOther userId = \case
 accountHeldByOther :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO Bool
 accountHeldByOther db sId userId n = heldByOther userId <$> accountUser db sId n
 
--- | Bind an account to a profile, the next free one when no index is given. One transaction, so none is taken twice.
-bindAccount :: DB.Connection -> UserId -> Maybe AccountIndex -> IO (Either WalletError ())
+-- | Bind an account to a profile, the next free one when no index is given, and return the profile's accounts. One transaction, so none is taken twice.
+bindAccount :: DB.Connection -> UserId -> Maybe AccountIndex -> IO (Either WalletError [AccountIndex])
 bindAccount db userId accountIdx_ = runExceptT $ do
   (WalletSeed {wsId = sId}, n) <- ExceptT $ resolveAccount db accountIdx_
   taken <- liftIO $ accountUser db sId n >>= \case
@@ -129,7 +131,7 @@ bindAccount db userId accountIdx_ = runExceptT $ do
     Just Nothing -> setAccountUser db sId userId n >> accountHeldBy db sId userId n
     Nothing -> True <$ insertAccount db sId userId n
   unless taken $ throwError WEAccountBound
-  liftIO $ raiseNextAccount db sId n
+  liftIO $ raiseNextAccount db sId n >> getUserAccounts db sId userId
 
 setAccountUser :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO ()
 setAccountUser db sId userId n =

@@ -1502,21 +1502,22 @@ processChatCommand cxt nm = \case
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
   APIGetWallet -> withUser $ \user@User {userId} ->
     CRWallet user <$> withFastStore' (\db -> getWalletSeed db $>>= \WalletSeed {wsId} -> Just <$> getUserAccounts db wsId userId)
-  APICreateWallet mnemonic_ -> withUser $ \_ -> do
+  APICreateWallet mnemonic_ -> withUser $ \user -> do
+    seed_ <- withFastStore' getWalletSeed
+    when (isJust seed_) $ throwWalletError WEMasterExists
     -- a generated seed has taken no accounts, an imported one does not say how many it has taken
     (entropy, nextAccount) <- case mnemonic_ of
       Nothing -> (,Just 0) <$> (asks random >>= atomically . newSeedEntropy)
       Just phrase -> (,Nothing) <$> liftWallet (entropyFromMnemonic $ encodeUtf8 phrase)
     created <- withFastStore' $ \db -> createWalletSeed db entropy nextAccount
     unless created $ throwWalletError WEMasterExists
-    processChatCommand cxt nm APIGetWallet
-  APIBindWalletAccount accountIdx_ -> withUser $ \User {userId, viewPwdHash} -> do
+    pure $ CRWallet user (Just [])
+  APIBindWalletAccount accountIdx_ -> withUser $ \user@User {userId, viewPwdHash} -> do
     when (isJust viewPwdHash) $ throwWalletError WEHiddenProfile
-    liftWallet =<< withFastStore' (\db -> bindAccount db userId accountIdx_)
-    processChatCommand cxt nm APIGetWallet
+    CRWallet user . Just <$> (liftWallet =<< withFastStore' (\db -> bindAccount db userId accountIdx_))
   APIGetWalletAddress accountIdx_ -> withUser $ \user -> do
     (seed, n) <- liftWallet =<< withFastStore' (`resolveAccount` accountIdx_)
-    CRWalletAddress user . accountAddress n <$> accountKey seed n
+    CRWalletAddress user <$> (accountAddress n =<< accountKey seed n)
   APIExportWalletMnemonic -> withUser $ \user ->
     CRWalletMnemonic user <$> (liftWallet . seedMnemonic . wsEntropy =<< walletSeed)
   APIExportWalletAccount n -> withUser $ \user@User {userId} -> do
@@ -1525,7 +1526,8 @@ processChatCommand cxt nm = \case
     heldByOther <- withFastStore' $ \db -> accountHeldByOther db (wsId seed) userId n
     when heldByOther $ throwWalletError WEAccountBound
     k <- accountKey seed n
-    pure $ CRWalletAccountSecret user (accountAddress n k) (accountSecret k)
+    a <- accountAddress n k
+    pure $ CRWalletAccountSecret user a (accountSecret k)
   APIDeleteWallet -> withUser $ \_ -> do
     deleted <- withFastStore' deleteWalletSeed
     unless deleted $ throwWalletError WENoMaster
@@ -5961,11 +5963,14 @@ liftWallet :: Either WalletError a -> CM a
 liftWallet = either throwWalletError pure
 
 accountKey :: WalletSeed -> AccountIndex -> CM AccountKey
-accountKey seed n = liftWallet $ seedMaster (wsEntropy seed) >>= (`deriveAccountKey` n)
+accountKey seed n = do
+  master <- liftWallet =<< liftIO (seedMaster $ wsEntropy seed)
+  liftWallet =<< liftIO (deriveAccountKey master n)
 
-accountAddress :: AccountIndex -> AccountKey -> WalletAddress
-accountAddress n k =
-  WalletAddress {accountIndex = n, keyPath = renderAccountPath n, address = decodeLatin1 . strEncode $ addressFromPrivateKey k}
+accountAddress :: AccountIndex -> AccountKey -> CM WalletAddress
+accountAddress n k = do
+  a <- liftIO $ addressFromPrivateKey k
+  pure WalletAddress {accountIndex = n, keyPath = renderAccountPath n, address = decodeLatin1 $ strEncode a}
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
