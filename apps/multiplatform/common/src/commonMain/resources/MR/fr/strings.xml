@@ -2985,4 +2985,9 @@
     <string name="badges_prepaid_footer">Les mois prépayés n’ont pas de date de facturation. Le badge est réémis chaque mois à partir du solde que vous avez déjà payé, et se termine lorsque celui-ci est épuisé.</string>
     <string name="badges_type_investor">Investisseur</string>
     <string name="badges_support_ended_on">Votre soutien a pris fin le %1$s.</string>
+    <string name="badges_remind_me_later">Me le rappeler plus tard</string>
+    <string name="badges_dont_show_again">Ne plus afficher</string>
+    <string name="supporter_perks">Avantages du supporter</string>
+    <string name="v7_1_supporter_badge_title">Badge de soutien ❤️</string>
+    <string name="v7_1_supporter_badge_body">Aidez à maintenir le réseau en fonctionnement — envoyez des fichiers jusqu’à 2 Go.</string>
 </resources>
