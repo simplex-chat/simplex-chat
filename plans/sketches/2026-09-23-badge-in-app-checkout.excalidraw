@@ -2958,7 +2958,7 @@
         "lane1"
       ],
       "seed": 1510,
-      "text": "simplex:/badge/paid/SB-4K2M9-...",
+      "text": "simplexchat:/badge/code/SB-4K2M9-...",
       "fontSize": 9,
       "fontFamily": 3,
       "textAlign": "center",
@@ -2980,7 +2980,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "simplex:/badge/paid/SB-4K2M9-...",
+      "originalText": "simplexchat:/badge/code/SB-4K2M9-...",
       "lineHeight": 1.4444444444444444
     },
     {
@@ -3078,7 +3078,7 @@
         "lane1"
       ],
       "seed": 1513,
-      "text": "Replaces codeIssued when #app=true. The code is still\nminted and still saved in the browser, so Show code\nrecovers it if the link fails. QUESTION: a scheme SimpleX\nalready owns, or a new one - and whether a browser will\nfollow it without a user gesture. Safari and Chrome both\nblock some automatic scheme navigations.",
+      "text": "Replaces codeIssued when #app=true. The code is still\nminted and still saved in the browser, so Show code\nrecovers it if the link fails. simplexchat: is a scheme of its\nown, registered everywhere including mobile, so a badge link\ncan never be read as a connection link. Whether a browser\nwill follow it with no tap is the open question.",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -3100,7 +3100,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "Replaces codeIssued when #app=true. The code is still\nminted and still saved in the browser, so Show code\nrecovers it if the link fails. QUESTION: a scheme SimpleX\nalready owns, or a new one - and whether a browser will\nfollow it without a user gesture. Safari and Chrome both\nblock some automatic scheme navigations.",
+      "originalText": "Replaces codeIssued when #app=true. The code is still\nminted and still saved in the browser, so Show code\nrecovers it if the link fails. simplexchat: is a scheme of its\nown, registered everywhere including mobile, so a badge link\ncan never be read as a connection link. Whether a browser\nwill follow it with no tap is the open question.",
       "lineHeight": 1.2222222222222223
     },
     {
@@ -3996,7 +3996,7 @@
       "roughness": 0,
       "groupIds": [],
       "seed": 1710,
-      "text": "simplex: carries the\ncode",
+      "text": "simplexchat: carries\nthe code",
       "fontSize": 10,
       "fontFamily": 2,
       "textAlign": "center",
@@ -4017,7 +4017,7 @@
       "updated": 1790251380246,
       "link": null,
       "locked": false,
-      "originalText": "simplex: carries the code",
+      "originalText": "simplexchat: carries the code",
       "autoResize": true,
       "lineHeight": 1.3
     },
@@ -9078,7 +9078,7 @@
         "lane3"
       ],
       "seed": 3303,
-      "text": "1.  Desktop has no scheme handler today. Nothing in the desktop module registers one and nothing handles it: appOpenUrl is wired in commonMain but has no desktop plumbing, and\n     desktop/build.gradle.kts declares only Deb, Dmg, Msi and Exe with no protocol entry. Adding one is per-OS work - CFBundleURLTypes plus setOpenURIHandler on macOS, registry keys\n     the MSI would have to write on Windows, a .desktop file with x-scheme-handler on Linux - and it would still not cover an unpackaged run. Hence D1: desktop does not wait for it.\n\n2.  Which scheme? simplex: already exists on mobile and could take a /badge/paid/<code> path, or a separate one could be registered. A separate scheme is easier to reason about;\n     reusing simplex: means one registration and one handler to get right.\n\n3.  Will a browser follow it without a tap? Safari and Chrome both refuse some scheme navigations that no user gesture asked for, and a refused one can show an error page rather\n     than nothing. That is what Return to SimpleX is for, and why Show code sits under it - but it decides whether the automatic attempt is worth making at all.",
+      "text": "1.  Desktop has no scheme handler today. Nothing in the desktop module registers one and nothing handles it: appOpenUrl is wired in commonMain but has no desktop plumbing, and\n     desktop/build.gradle.kts declares only Deb, Dmg, Msi and Exe with no protocol entry. Adding one is per-OS work - CFBundleURLTypes plus setOpenURIHandler on macOS, registry keys\n     the MSI would have to write on Windows, a .desktop file with x-scheme-handler/simplexchat on Linux - and it would still not cover an unpackaged run. Hence D1: desktop does not wait for it.\n\n2.  Will a browser follow it without a tap? Safari and Chrome both refuse some scheme navigations that no user gesture asked for, and a refused one can show an error page rather\n     than nothing. That is what Return to SimpleX is for, and why Show code sits under it - but it decides whether the automatic attempt is worth making at all.",
       "fontSize": 10,
       "fontFamily": 2,
       "textAlign": "left",
@@ -9100,7 +9100,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "1.  Desktop has no scheme handler today. Nothing in the desktop module registers one and nothing handles it: appOpenUrl is wired in commonMain but has no desktop plumbing, and\n     desktop/build.gradle.kts declares only Deb, Dmg, Msi and Exe with no protocol entry. Adding one is per-OS work - CFBundleURLTypes plus setOpenURIHandler on macOS, registry keys\n     the MSI would have to write on Windows, a .desktop file with x-scheme-handler on Linux - and it would still not cover an unpackaged run. Hence D1: desktop does not wait for it.\n\n2.  Which scheme? simplex: already exists on mobile and could take a /badge/paid/<code> path, or a separate one could be registered. A separate scheme is easier to reason about;\n     reusing simplex: means one registration and one handler to get right.\n\n3.  Will a browser follow it without a tap? Safari and Chrome both refuse some scheme navigations that no user gesture asked for, and a refused one can show an error page rather\n     than nothing. That is what Return to SimpleX is for, and why Show code sits under it - but it decides whether the automatic attempt is worth making at all.",
+      "originalText": "1.  Desktop has no scheme handler today. Nothing in the desktop module registers one and nothing handles it: appOpenUrl is wired in commonMain but has no desktop plumbing, and\n     desktop/build.gradle.kts declares only Deb, Dmg, Msi and Exe with no protocol entry. Adding one is per-OS work - CFBundleURLTypes plus setOpenURIHandler on macOS, registry keys\n     the MSI would have to write on Windows, a .desktop file with x-scheme-handler/simplexchat on Linux - and it would still not cover an unpackaged run. Hence D1: desktop does not wait for it.\n\n2.  Will a browser follow it without a tap? Safari and Chrome both refuse some scheme navigations that no user gesture asked for, and a refused one can show an error page rather\n     than nothing. That is what Return to SimpleX is for, and why Show code sits under it - but it decides whether the automatic attempt is worth making at all.",
       "lineHeight": 1.4444444444444444
     },
     {
