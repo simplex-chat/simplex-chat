@@ -928,6 +928,16 @@ Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
 Query: 
+            SELECT chat_item_id
+            FROM chat_items
+            WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+            ORDER BY item_ts DESC, chat_item_id DESC
+            LIMIT 1
+          
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
+
+Query: 
             SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
             FROM chat_items
             WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
@@ -4919,6 +4929,13 @@ Query:
 Plan:
 
 Query: 
+      INSERT INTO calls
+        (contact_id, shared_call_id, call_uuid, chat_item_id, call_state, call_ts, user_id, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?)
+    
+Plan:
+
+Query: 
       INSERT INTO chat_item_versions (chat_item_id, msg_content, item_version_ts)
       VALUES (?,?,?)
     
@@ -6637,6 +6654,10 @@ Error: SQLite3 returned ErrorError while attempting to perform prepare "explain 
 Query: DELETE FROM app_settings
 Plan:
 
+Query: DELETE FROM calls WHERE user_id = ? AND contact_id = ?
+Plan:
+SEARCH calls USING INDEX idx_calls_contact_id (contact_id=?)
+
 Query: DELETE FROM chat_item_mentions WHERE chat_item_id = ?
 Plan:
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
@@ -7444,10 +7465,6 @@ Query: SELECT contact_domain_resolved_at, contact_domain_expires_at FROM contact
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT contact_id FROM contacts WHERE user_id = ? AND chat_item_ttl > 0
-Plan:
-SEARCH contacts USING INDEX idx_contacts_chat_ts (user_id=?)
-
 Query: SELECT contact_id FROM contacts WHERE user_id = ? AND chat_item_ttl > 0 OR chat_item_ttl IS NULL
 Plan:
 SCAN contacts
@@ -7487,6 +7504,10 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid>?)
 Query: SELECT count(1) FROM files WHERE file_digest IS NOT NULL
 Plan:
 SCAN files
+
+Query: SELECT count(1) FROM group_members
+Plan:
+SCAN group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id
 
 Query: SELECT count(1) FROM pending_group_messages
 Plan:
@@ -7539,10 +7560,6 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1
-Plan:
-SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
-
-Query: SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0
 Plan:
 SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=?)
 
