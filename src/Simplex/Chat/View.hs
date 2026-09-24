@@ -2236,7 +2236,6 @@ otherSimplexNameNote = \case
   Just ni@(SimplexNameInfo NTContact _) -> [plain $ "You can also connect to " <> shortNameInfoStr ni <> " in direct chat"]
   Nothing -> []
 
--- what the registry said about the name, shown where it changes what the plan means
 viewNameRegistration :: ConnectionPlan -> [StyledString]
 viewNameRegistration = \case
   CPContactAddress CAPKnown {} nr_ -> regLine nr_

@@ -5252,11 +5252,9 @@ enum class SimplexTLD {
   @SerialName("web") web
 }
 
-// when a SimpleX name was last resolved from the registry, and when that registration runs out
 @Serializable
 data class SimplexNameResolved(val at: Long, val expires: Long? = null)
 
-// What the registry holds for a name - the RNAME payload, "type"-tagged on every platform.
 @Serializable
 sealed class NameRegistration {
   // held by someone; expires/graceUntil are absent from an older router, which means "not known", not "live forever"
@@ -5268,7 +5266,6 @@ sealed class NameRegistration {
   @Serializable @SerialName("available") class Available(val pricing: NamePricing): NameRegistration()
   @Serializable @SerialName("reserved") class Reserved(val reservedReason: String): NameRegistration()
 
-  // a name past its expiry does not connect: only its owner can renew it until the grace ends
   fun expired(now: Long): Boolean = this is Registered && expires != null && expires < now
 
   val reservedForCommunity: Boolean get() = when (this) {
@@ -5283,7 +5280,6 @@ sealed class NameRegistration {
   }
 }
 
-// enough to price a name locally: US cents per year, and the shortest label the registry accepts
 @Serializable
 data class NamePricing(
   val registrationPrices: Map<String, Long> = emptyMap(),

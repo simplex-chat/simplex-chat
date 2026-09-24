@@ -4420,50 +4420,44 @@ processChatCommand cxt nm = \case
               Right reg -> do
                 expired <- nameExpired reg
                 case reg of
-                  -- a live registration with a usable link connects, as before
                   NRRegistered {nameRecord = nr}
                     | not expired && isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) ->
-                        (withReg reg . addOther nr <$> connectPlanName NTPublicGroup (Right reg)) `catchAllErrors` \e ->
-                          (withReg reg . addOther nr <$> connectPlanName NTContact (Right reg) `catchAllErrors` \_ -> throwError e)
+                        (setPlanRegistration reg <$> connectPlanName NTPublicGroup (Right reg)) `catchAllErrors` \e ->
+                          (setPlanRegistration reg <$> connectPlanName NTContact (Right reg) `catchAllErrors` \_ -> throwError e)
                     | not expired && isJust (firstNameLink CCTContact (nrSimplexContact nr)) ->
-                        withReg reg . addOther nr <$> connectPlanName NTContact (Right reg)
-                  -- nothing to connect to: the answer is whichever local chat claims the name, or the registration alone
+                        setPlanRegistration reg <$> connectPlanName NTContact (Right reg)
                   _ -> connectPlanLocal reg
               Left e -> connectPlanNoName e
         where
-          withReg = withPlanRegistration
-          -- only the local store is consulted: a name with nothing to connect to must not resolve a link
           connectPlanLocal reg =
-            (withReg reg <$> localPlan NTPublicGroup) `catchAllErrors` \_ ->
-              (withReg reg <$> localPlan NTContact) `catchAllErrors` \_ ->
+            (setPlanRegistration reg <$> localPlan NTPublicGroup) `catchAllErrors` \_ ->
+              (setPlanRegistration reg <$> localPlan NTContact) `catchAllErrors` \_ ->
                 pure (Nothing, Nothing, Nothing, CPNameNotConnectable d reg)
             where
               localPlan nameType = connectPlan user (nameTarget nameType) PRMNever sig_ (Just (Right reg))
-          connectPlanName nameType nr_ = connectPlan user (nameTarget nameType) resolveMode sig_ (Just nr_)
+          connectPlanName nameType nr_ = setOtherName <$> connectPlan user (nameTarget nameType) resolveMode sig_ (Just nr_)
+            where
+              setOtherName (l, planName, _, p) = (l, planName, otherName, p)
+              otherName = case nr_ of
+                Right NRRegistered {nameRecord = NameRecord {nrSimplexContact, nrSimplexChannel}} -> case nameType of
+                  NTContact -> SimplexNameInfo NTPublicGroup d <$ firstNameLink CCTChannel nrSimplexChannel
+                  NTPublicGroup -> SimplexNameInfo NTContact d <$ firstNameLink CCTContact nrSimplexContact
+                _ -> Nothing
           nameTarget nameType = ACTarget SCMContact $ CTShortContact $ CTName $ SimplexNameInfo nameType d
           connectPlanNoName e =
             connectPlanName NTPublicGroup (Left e) `catchAllErrors` \e' ->
               (connectPlanName NTContact (Left e) `catchAllErrors` \_ -> throwError e')
-          -- the same domain can resolve to both an @ name (contact or business) and a # channel;
-          -- keyed off the resolved name's type, so a contact name returning a business group still offers the channel
-          addOther nr (l, planName, _, p) = (l, planName, otherName, p)
-            where
-              otherName = case planName of
-                Just (SimplexNameInfo NTContact _) | isJust (firstNameLink CCTChannel (nrSimplexChannel nr)) -> Just $ SimplexNameInfo NTPublicGroup d
-                Just (SimplexNameInfo NTPublicGroup _) | isJust (firstNameLink CCTContact (nrSimplexContact nr)) -> Just $ SimplexNameInfo NTContact d
-                _ -> Nothing
       CTFullContact cReq -> do
         plan <- contactOrGroupRequestPlan user cReq `catchAllErrors` (pure . CPError)
         pure (Just (ACCL SCMContact $ CCLink cReq Nothing), Nothing, Nothing, plan)
       CTShortContact nl
-        -- a name given with its type (@name / #name): the registry decides connectability, as for a bare domain
         | CTName ni <- nl, isNothing nameRec, resolveMode /= PRMNever -> do
             reg <- resolveNameRegistration user nm (nameDomain ni)
             expired <- nameExpired reg
             if nameHasLink ni reg && not expired
-              then withPlanRegistration reg <$> connectPlan user (ACTarget SCMContact (CTShortContact nl)) resolveMode sig_ (Just (Right reg))
+              then setPlanRegistration reg <$> connectPlan user (ACTarget SCMContact (CTShortContact nl)) resolveMode sig_ (Just (Right reg))
               else
-                (withPlanRegistration reg <$> connectPlan user (ACTarget SCMContact (CTShortContact nl)) PRMNever sig_ (Just (Right reg)))
+                (setPlanRegistration reg <$> connectPlan user (ACTarget SCMContact (CTShortContact nl)) PRMNever sig_ (Just (Right reg)))
                   `catchAllErrors` \_ -> pure (Nothing, Nothing, Nothing, CPNameNotConnectable (nameDomain ni) reg)
       CTShortContact nl ->
         (\(l, p) -> (Just l, simplexName_, Nothing, p)) <$> case ctType of
@@ -4474,7 +4468,6 @@ processChatCommand cxt nm = \case
                 when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
                 l' <- resolveSLink
                 case known_ of
-                  -- the name still leads to the chat that claims it, nothing actionable
                   Just r | knownLinkOf r == Just l' -> pure r
                   _ -> (if isJust known_ then second setAddressChanged else id) <$> resolvedPlan l'
             where
@@ -4528,7 +4521,6 @@ processChatCommand cxt nm = \case
             CTLink l' -> pure l'
             CTName n -> serverShortLink <$> resolveNameLink n
           con l' cReq = ACCL SCMContact $ CCLink cReq (Just l')
-          -- a known chat is re-resolved only on PRMAll, to see whether it still leads there
           reResolveKnown (_, p) = resolveMode == PRMAll && case p of
             CPContactAddress (CAPKnown _) _ -> True
             CPGroupLink GLPKnown {} _ -> True
@@ -4546,7 +4538,6 @@ processChatCommand cxt nm = \case
                 when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
                 l' <- resolveSLink
                 case known_ of
-                  -- the name still leads to the channel that claims it, refreshed from the link
                   Just r@(_, CPGroupLink (GLPKnown g _ _ _) _) | knownLinkOf r == Just l' -> resolveKnownGroup l' g
                   _ -> (if isJust known_ then second setAddressChanged else id) <$> resolvedGroupPlan l'
             where
@@ -5128,13 +5119,11 @@ resolveNameRecord user nm domain =
     NRRegistered {nameRecord} -> pure nameRecord
     _ -> throwError $ chatErrorAgent $ SMP "" (NAME SMP.NOT_FOUND)
 
--- past its expiry does not connect; an absent expiry (a v20/v21 router sent the record alone) reads as live
 nameExpired :: NameRegistration -> CM Bool
 nameExpired = \case
   NRRegistered {expires = Just expires} -> (expires <) <$> liftIO getSystemSeconds
   _ -> pure False
 
--- does the name's record hold a link of the type the name asks for?
 nameHasLink :: SimplexNameInfo -> NameRegistration -> Bool
 nameHasLink SimplexNameInfo {nameType} = \case
   NRRegistered {nameRecord = NameRecord {nrSimplexContact, nrSimplexChannel}} -> case nameType of
@@ -5142,17 +5131,14 @@ nameHasLink SimplexNameInfo {nameType} = \case
     NTPublicGroup -> isJust (firstNameLink CCTChannel nrSimplexChannel)
   _ -> False
 
-withPlanRegistration :: NameRegistration -> (a, b, c, ConnectionPlan) -> (a, b, c, ConnectionPlan)
-withPlanRegistration reg (l, pn, on, p) = (l, pn, on, withNameRegistration reg p)
+setPlanRegistration :: NameRegistration -> (a, b, c, ConnectionPlan) -> (a, b, c, ConnectionPlan)
+setPlanRegistration nr (l, pn, on, p) = (l, pn, on, setRegistration p)
+  where
+    setRegistration = \case
+      CPContactAddress pl _ -> CPContactAddress pl (Just nr)
+      CPGroupLink pl _ -> CPGroupLink pl (Just nr)
+      pl -> pl
 
--- the registration a resolved name answered with, attached to whichever plan was built for it
-withNameRegistration :: NameRegistration -> ConnectionPlan -> ConnectionPlan
-withNameRegistration nr = \case
-  CPContactAddress p _ -> CPContactAddress p (Just nr)
-  CPGroupLink p _ -> CPGroupLink p (Just nr)
-  p -> p
-
--- the name resolved to another address than the one the local chat claiming it holds
 setAddressChanged :: ConnectionPlan -> ConnectionPlan
 setAddressChanged = \case
   CPContactAddress (CAPOk cld ov _) nr -> CPContactAddress (CAPOk cld ov True) nr

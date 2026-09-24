@@ -1500,7 +1500,6 @@ enum UIRemoteCtrlSessionState {
     case connected(remoteCtrl: RemoteCtrlInfo, sessionCode: String)
 }
 
-// when a SimpleX name was last resolved from the registry, and when that registration runs out
 struct SimplexNameResolved: Codable {
     var at: Int64
     var expires: Int64?

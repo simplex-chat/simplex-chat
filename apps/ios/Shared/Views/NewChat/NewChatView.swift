@@ -1319,25 +1319,20 @@ private func showOpenKnownGroupAlert(
     )
 }
 
-// The name-lookup answers the registry can give for a name, as the lookup canvas draws them.
-// Only an actionable answer becomes an alert; everything else leaves the plan to speak for itself.
-
 private let simplexNamesHowToURL = "https://simplex.domains/#testing"
 
 private let nameResolvedDaySeconds: Int64 = 24 * 60 * 60
 
-private func nameResolvedNow() -> Int64 { Int64(Date.now.timeIntervalSince1970) }
+private func nowSeconds() -> Int64 { Int64(Date.now.timeIntervalSince1970) }
 
 private func saveNamesResolvedAt(_ m: [String: SimplexNameResolved]) {
-    // only names looked up in the last week are worth remembering
-    let now = nameResolvedNow()
+    let now = nowSeconds()
     simplexNamesResolvedAtDefault.set(m.filter { now - $0.value.at < 7 * nameResolvedDaySeconds })
 }
 
-// a cached answer is stale a day after it was taken, or as soon as the name it described expired
 func simplexNameResolvedRecently(_ domain: SimplexDomain) -> Bool {
     guard let r = simplexNamesResolvedAtDefault.get()[domain.fullDomainName] else { return false }
-    let now = nameResolvedNow()
+    let now = nowSeconds()
     if now - r.at >= nameResolvedDaySeconds { return false }
     return r.expires.map { now < $0 } ?? true
 }
@@ -1345,16 +1340,14 @@ func simplexNameResolvedRecently(_ domain: SimplexDomain) -> Bool {
 func recordSimplexNameResolved(_ domain: SimplexDomain, _ reg: NameRegistration?) {
     var m = simplexNamesResolvedAtDefault.get()
     let expires: Int64? = if case let .registered(expires, _, _) = reg { expires } else { nil }
-    m[domain.fullDomainName] = SimplexNameResolved(at: nameResolvedNow(), expires: expires)
+    m[domain.fullDomainName] = SimplexNameResolved(at: nowSeconds(), expires: expires)
     saveNamesResolvedAt(m)
 }
 
-// a name registered, claimed or dropped on this device must not keep reading as it did before
 func forgetSimplexNameResolved(_ fullDomainName: String) {
     var m = simplexNamesResolvedAtDefault.get()
     if m.removeValue(forKey: fullDomainName) != nil { saveNamesResolvedAt(m) }
 }
-
 
 private func nameDate(_ seconds: Int64) -> String {
     Date(timeIntervalSince1970: TimeInterval(seconds)).formatted(date: .abbreviated, time: .omitted)
@@ -1372,8 +1365,6 @@ private func showNameNotRegisteredAlert() {
     )
 }
 
-// bands 2, 3 and 4 of the lookup canvas: what the registry said, when the user can act on it.
-// Returns false when the answer is not actionable, and the caller shows its usual plan UI.
 private func showNameRegistrationAlert(
     domain: SimplexDomain,
     reg: NameRegistration,
@@ -1385,7 +1376,6 @@ private func showNameRegistrationAlert(
 ) -> Bool {
     let nameStr = domain.fullDomainName
     let now = Int64(Date.now.timeIntervalSince1970)
-    // an extra way back to the chat the user already has, when there is no filtered list behind the alert
     func alert(_ title: String, _ message: String, action: (title: String, handler: () -> Void)? = nil) {
         showAlert(title, message: message, actions: {
             var actions: [UIAlertAction] = []
@@ -1401,7 +1391,6 @@ private func showNameRegistrationAlert(
     }
     let openHowTo = { openBrowserAlert(uri: simplexNamesHowToURL) }
     switch reg {
-    // 2b / 3b / 4c: expired, and only its owner can renew it until the grace ends
     case let .registered(expires, graceUntil, _) where reg.expired(now):
         if isOwn {
             let message = if let expires, let graceUntil {
@@ -1419,7 +1408,6 @@ private func showNameRegistrationAlert(
             alert(NSLocalizedString("Name expired", comment: "alert title"), message)
         }
         return true
-    // 2c / 3d / 4d: free to register, unless it is shorter than the registry accepts (then 2e)
     case let .available(pricing) where domain.domain.count >= pricing.minLabelLength:
         let price = nameCentsPerYear(pricing, domain)
         if isOwn {
@@ -1438,31 +1426,25 @@ private func showNameRegistrationAlert(
             )
         }
         return true
-    // 2d: the only reserved reason that says so; every other one reads as "not registered"
     case _ where reg.reservedForCommunity:
         alert(
             NSLocalizedString("Name not registered", comment: "alert title"),
             String.localizedStringWithFormat(NSLocalizedString("%@ is reserved for community. Please contact SimpleX Chat if you are interested in using it.", comment: "alert message"), nameStr),
             action: (NSLocalizedString("Connect to SimpleX team", comment: "alert action"), {
-                // simplexTeamURL targets this same app; route to the in-app connect flow
                 ChatModel.shared.appOpenUrl = simplexTeamURL
             })
         )
         return true
-    // 2e: too short, reserved for another reason, or otherwise not registrable
     case .reserved, .available:
         if hasLocalChat || isOwn { return false }
         alert(NSLocalizedString("Name not registered", comment: "alert title"), NSLocalizedString("This SimpleX name is not registered. Please check the name.", comment: ""))
         return true
-    // 2f: registered and live, but the record has no usable link. Only the plan knows that:
-    // a live registration the plan can connect to has nothing to say.
     case .registered where notConnectable && !hasLocalChat && !isOwn:
         alert(
             NSLocalizedString("No valid link", comment: ""),
             String.localizedStringWithFormat(NSLocalizedString("The SimpleX name %@ is registered, but it has no valid link.", comment: ""), nameStr)
         )
         return true
-    // 3a: still leads to the chat you have, nothing to say
     default:
         return false
     }
@@ -1502,18 +1484,13 @@ func planAndConnect(
 
     func connectTask(_ inProgress: BoxedValue<Bool>) {
         Task {
-            // A name whose cached answer is still fresh is tried against the store first, so a chat the user
-            // already has does not cost a lookup; a miss falls through to a full resolution, which is what a
-            // name with no chat gets on every tap. Anything that is not a name resolves as it always did.
             let nameTarget: SimplexNameInfo? = if case let .name(_, nameInfo) = strConnectTarget(shortOrFullLink) { nameInfo } else { nil }
             var result: ConnectionPlanResult? = nil
             if let nameTarget, simplexNameResolvedRecently(nameTarget.nameDomain) {
-                // a local probe: no error alerts, so a miss falls through silently
                 result = await apiConnectPlan(connLink: shortOrFullLink, resolveMode: .never, linkOwnerSig: linkOwnerSig, inProgress: BoxedValue(false))
             }
             if result == nil && inProgress.boxedValue {
                 result = await apiConnectPlan(connLink: shortOrFullLink, resolveMode: nameTarget != nil ? .all : .unknown, linkOwnerSig: linkOwnerSig, inProgress: inProgress)
-                // remember when this name was last taken from the registry, and when its registration runs out
                 if let nameTarget, let result {
                     recordSimplexNameResolved(nameTarget.nameDomain, result.connectionPlan.nameRegistration)
                 }
@@ -1535,8 +1512,6 @@ func planAndConnect(
                         info.shortStr
                     )
                 }
-                // One actionable answer from the registry is one alert, shown over whatever the plan would have.
-                // With a list to filter the chats found stay behind it; from a message the alert opens them instead.
                 let nameDomain: SimplexDomain? = if case let .nameNotConnectable(simplexDomain, _) = connectionPlan { simplexDomain } else { planSimplexName?.nameDomain }
                 if let nameReg = connectionPlan.nameRegistration, let nameDomain {
                     let knownContact: Contact? = if case let .contactAddress(.known(contact), _) = connectionPlan { contact } else { nil }
@@ -1546,7 +1521,6 @@ func planAndConnect(
                     default: false
                     }
                     let handled = await MainActor.run {
-                        // the chat found stays reachable: filtered into the list where there is one, opened from the alert where there is not
                         var openExisting: (() -> Void)? = nil
                         if let contact = knownContact {
                             if ChatModel.shared.getContactChat(contact.contactId) == nil {
@@ -1580,7 +1554,6 @@ func planAndConnect(
                     if handled { return }
                 }
                 guard let connectionLink = result.connLink else {
-                    // a name with nothing to connect to has no link; an actionable answer was already alerted above
                     await MainActor.run {
                         if case .nameNotConnectable = connectionPlan { showNameNotRegisteredAlert() }
                         cleanup?()
@@ -1589,7 +1562,6 @@ func planAndConnect(
                 }
                 switch connectionPlan {
                 case .nameNotConnectable:
-                    // nothing actionable and nothing to connect to: as today, the name simply did not resolve
                     logger.debug("planAndConnect, .nameNotConnectable")
                     await MainActor.run {
                         showNameNotRegisteredAlert()

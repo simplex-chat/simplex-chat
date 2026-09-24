@@ -1461,11 +1461,9 @@ enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
     case contactAddress(contactAddressPlan: ContactAddressPlan, nameRegistration_: NameRegistration?)
     case groupLink(groupLinkPlan: GroupLinkPlan, nameRegistration_: NameRegistration?)
-    // the name resolved but there is nothing to connect to, and no local chat claims it
     case nameNotConnectable(simplexDomain: SimplexDomain, nameRegistration: NameRegistration)
     case error(chatError: ChatError)
 
-    // the registry answer this plan was built from, when the target was a name
     var nameRegistration: NameRegistration? {
         switch self {
         case let .contactAddress(_, reg): reg
@@ -1476,8 +1474,6 @@ enum ConnectionPlan: Decodable, Hashable {
     }
 }
 
-// What the registry holds for a name. This JSON is the RNAME payload, so it is "type"-tagged on
-// every platform, and the unset text fields of the record are not read here.
 enum NameRegistration: Hashable {
     // held by someone; expires/graceUntil are absent from an older router, which means "not known", not "live forever"
     case registered(expires: Int64?, graceUntil: Int64?, reservedReason_: String?)
@@ -1487,7 +1483,6 @@ enum NameRegistration: Hashable {
     // the registry may add reasons after this version, so any other value is just "not registrable"
     static let reservedCommunity = "community"
 
-    // a name past its expiry does not connect: only its owner can renew it until the grace ends
     func expired(_ now: Int64) -> Bool {
         if case let .registered(expires, _, _) = self, let expires { expires < now } else { false }
     }
@@ -1528,7 +1523,6 @@ extension NameRegistration: Decodable {
     }
 }
 
-// enough to price a name locally: US cents per year, and the shortest label the registry accepts
 struct NamePricing: Decodable, Hashable {
     var registrationPrices: [String: Int64]
     var basePrice: Int64

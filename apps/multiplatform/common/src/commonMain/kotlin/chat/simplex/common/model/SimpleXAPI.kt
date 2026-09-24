@@ -123,7 +123,6 @@ class AppPreferences {
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   val privacyVerifySimplexNames = mkBoolPreference(SHARED_PREFS_PRIVACY_VERIFY_SIMPLEX_NAMES, false)
-  // when each SimpleX name was last resolved, so a name with a chat is not re-resolved on every tap
   val simplexNamesResolvedAt = mkStrPreference(SHARED_PREFS_SIMPLEX_NAMES_RESOLVED_AT, null)
   val privacyLinkPreviewsShowAlert = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS_SHOW_ALERT, true)
   val privacySanitizeLinks = mkBoolPreference(SHARED_PREFS_PRIVACY_SANITIZE_LINKS, false)
@@ -7446,11 +7445,9 @@ sealed class ConnectionPlan {
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
   @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameRegistration_: NameRegistration? = null): ConnectionPlan()
   @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameRegistration_: NameRegistration? = null): ConnectionPlan()
-  // the name resolved but there is nothing to connect to, and no local chat claims it
   @Serializable @SerialName("nameNotConnectable") class NameNotConnectable(val simplexDomain: SimplexDomain, val nameRegistration: NameRegistration): ConnectionPlan()
   @Serializable @SerialName("error") class Error(val chatError: ChatError): ConnectionPlan()
 
-  // the registry answer this plan was built from, when the target was a name
   fun nameRegistration(): NameRegistration? = when (this) {
     is ContactAddress -> nameRegistration_
     is GroupLink -> nameRegistration_

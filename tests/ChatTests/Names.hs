@@ -328,11 +328,9 @@ testConnectByNameBusinessAndChannel ps = withSmpServerAndNames $ \reg ->
   where
     bizName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "biz" [])
 
--- One test per name-lookup answer: each sets up the registry answer and asserts the plan the CLI renders.
 aliceSimplexName :: SimplexNameInfo
 aliceSimplexName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "alice" [])
 
--- alice publishes alice.simplex on her address; the registration is left for the caller to change.
 withAliceName :: HasCallStack => (NameRegistry -> Text -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
 withAliceName test ps = withSmpServerAndNames $ \reg ->
   testChat2 aliceProfile bobProfile (setup reg) ps
@@ -346,7 +344,6 @@ withAliceName test ps = withSmpServerAndNames $ \reg ->
       alice <## "new contact address set"
       test reg (T.pack shortLink) alice bob
 
--- bob connects to alice by name, so his contact is found by local name search afterwards.
 connectBobByName :: HasCallStack => TestCC -> TestCC -> IO ()
 connectBobByName alice bob = do
   bob ##> "/c @alice.simplex"
@@ -455,16 +452,13 @@ testPlanOwnNameAvailable = withAliceName $ \reg _l alice _bob -> do
 testPlanNameResolveNever :: HasCallStack => TestParams -> IO ()
 testPlanNameResolveNever = withAliceName $ \_reg _l alice bob -> do
   connectBobByName alice bob
-  -- a hit answers from the store, with no registration attached
   bob ##> "/_connect plan 1 @alice.simplex resolve=never"
   bob <## "contact address: known contact alice"
   bob <## "SimpleX name: @alice.simplex (verified)"
   bob <## "use @alice <message> to send messages"
-  -- a miss is not resolved online, and is reported as such
   bob ##> "/_connect plan 1 @nobody.simplex resolve=never"
   bob <## "no matching chat found, name resolution is disabled"
 
--- the name is re-pointed at cath's address; only resolve=all re-resolves a name whose chat is known.
 testPlanKnownNameAddressChanged :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameAddressChanged ps = withSmpServerAndNames $ \reg ->
   testChat3 aliceProfile bobProfile cathProfile (test reg) ps
@@ -477,29 +471,24 @@ testPlanKnownNameAddressChanged ps = withSmpServerAndNames $ \reg ->
       alice ##> "/_set domain 1 alice.simplex"
       alice <## "new contact address set"
       connectBobByName alice bob
-      -- the name now leads to cath, who claims it
       cath ##> "/ad"
       (cathLink, _) <- getContactLinks cath True
       registerName reg aliceSimplexName (contactNameRecord "alice.simplex" (T.pack cathLink))
       cath ##> "/_set domain 1 alice.simplex"
       cath <## "new contact address set"
-      -- resolve=unknown keeps answering from the store, so the move is not noticed
       bob ##> "/_connect plan 1 @alice.simplex"
       bob <## "contact address: known contact alice"
       bob <## "SimpleX name: @alice.simplex (verified)"
       bob <## "use @alice <message> to send messages"
       bob <## "registered"
-      -- resolve=all re-resolves it and reports the new address
       bob ##> "/_connect plan 1 @alice.simplex resolve=all"
       bob <## "contact address: ok to connect, address changed"
       _ <- getTermLine bob -- the new address's short link data (JSON, printed in test view)
-      -- the chat bob already has is still what a local-only lookup returns
       bob ##> "/_connect plan 1 @alice.simplex resolve=never"
       bob <## "contact address: known contact alice"
       bob <## "SimpleX name: @alice.simplex (verified)"
       bob <## "use @alice <message> to send messages"
 
--- the registry could not be asked. As today, this stays an error rather than a plan.
 testPlanNameResolverFailed :: HasCallStack => TestParams -> IO ()
 testPlanNameResolverFailed = withAliceName $ \reg _l _alice bob -> do
   failNameResolution reg broken

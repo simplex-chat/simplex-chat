@@ -388,7 +388,6 @@ private fun UserAddressLayout(
                     save = { simplexDomain ->
                       try {
                         val u = chatModel.controller.apiSetUserDomain(user?.remoteHostId, simplexDomain)
-                        // a name claimed or dropped here must not keep reading from the answer taken before
                         domain?.let { forgetSimplexNameResolved(it) }
                         withContext(Dispatchers.Main) { chatModel.updateUser(u) }
                         true
