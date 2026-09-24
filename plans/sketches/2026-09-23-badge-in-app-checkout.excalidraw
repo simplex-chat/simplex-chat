@@ -2913,6 +2913,46 @@
       "lineHeight": 1.3
     },
     {
+      "id": "a5-secn",
+      "type": "text",
+      "x": 1760,
+      "y": 806,
+      "width": 260,
+      "height": 12,
+      "strokeColor": "#9aa1ab",
+      "backgroundColor": "transparent",
+      "roughness": 0,
+      "groupIds": [
+        "A5",
+        "lane1"
+      ],
+      "seed": 1512,
+      "text": "refused once a payment has arrived",
+      "fontSize": 9,
+      "fontFamily": 2,
+      "textAlign": "center",
+      "verticalAlign": "top",
+      "autoResize": false,
+      "index": "a068V",
+      "version": 1,
+      "versionNonce": 0,
+      "isDeleted": false,
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "opacity": 100,
+      "angle": 0,
+      "frameId": null,
+      "roundness": null,
+      "boundElements": [],
+      "updated": 1790239746588,
+      "link": null,
+      "locked": false,
+      "containerId": null,
+      "originalText": "refused once a payment has arrived",
+      "lineHeight": 1.3
+    },
+    {
       "id": "a5-capt",
       "type": "text",
       "x": 1740,
@@ -7501,7 +7541,7 @@
         "lane2"
       ],
       "seed": 2616,
-      "text": "not a purchase yet - nothing to hold, nothing to retry",
+      "text": "iOS wording. Play defers a slow payment, not an approval",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "center",
@@ -7523,7 +7563,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "not a purchase yet - nothing to hold, nothing to retry",
+      "originalText": "iOS wording. Play defers a slow payment, not an approval",
       "lineHeight": 1.3333333333333333
     },
     {
@@ -7581,7 +7621,7 @@
         "lane2"
       ],
       "seed": 2618,
-      "text": ".success is confirmation - Apple signs the transaction and the\nmoney is taken. Issuing is the next event, and the gap between\nthem is what BadgeState has to hold: the same state as A5,\na different funding proof. transaction.finish() must wait for the\ncredential, as BadgeStore's comment says - that is what makes\nthis one recoverable, unlike the alert below it.",
+      "text": ".success is confirmation - the store signs the transaction and the\nmoney is taken. Issuing is the next event, and that gap is what\nBadgeState holds and the core worker retries. Pending is not\nretried: no funding proof exists, so core never hears of it.\nDECIDE: Play hands back a token for a pending purchase, Apple\nhands back nothing. Reconcile on Android, or stay symmetric?",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -7603,7 +7643,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": ".success is confirmation - Apple signs the transaction and the\nmoney is taken. Issuing is the next event, and the gap between\nthem is what BadgeState has to hold: the same state as A5,\na different funding proof. transaction.finish() must wait for the\ncredential, as BadgeStore's comment says - that is what makes\nthis one recoverable, unlike the alert below it.",
+      "originalText": ".success is confirmation - the store signs the transaction and the\nmoney is taken. Issuing is the next event, and that gap is what\nBadgeState holds and the core worker retries. Pending is not\nretried: no funding proof exists, so core never hears of it.\nDECIDE: Play hands back a token for a pending purchase, Apple\nhands back nothing. Reconcile on Android, or stay symmetric?",
       "lineHeight": 1.2222222222222223
     },
     {
