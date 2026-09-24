@@ -413,6 +413,10 @@ textWithCommands = describe "text with commands" do
     "/√ /÷" <==> command "√" "/√" <> " " <> command "÷" "/÷"
     "send /+." <==> "send " <> command "+" "/+" <> "."
     "/'+'" <==> command "+" "/'+'"
+  it "calculator keys" do
+    "/C   /±   /%   /÷" <==> command "C" "/C" <> "   " <> command "±" "/±" <> "   " <> command "%" "/%" <> "   " <> command "÷" "/÷"
+    "/√   /0   /.   /=" <==> command "√" "/√" <> "   " <> command "0" "/0" <> "   " <> command "." "/." <> "   " <> command "=" "/="
+    "/C `\160\160\160\160`/neg `\160\160`" <==> command "C" "/C" <> " " <> markdown Snippet "\160\160\160\160" <> command "neg" "/neg" <> " " <> markdown Snippet "\160\160"
   it "ignored as markdown" $ do
     "send /'filter 1" <==> "send /'filter 1"
     "send /help /'filter 1" <==> "send " <> command "help" "/help" <> " /'filter 1"
@@ -477,6 +481,7 @@ multilineMarkdownList = describe "multiline markdown" do
   it "command markdown" do
     "/link 1" <<==>> [command' "link 1" "/link 1"]
     " /link 1" <<==>> [command' "link 1" " /link 1"]
+    "*0*\n/7   /+" <<==>> [FormattedText (Just Bold) "0", "\n", command' "7" "/7", "   ", command' "+" "/+"]
 
 testSanitizeUri :: Spec
 testSanitizeUri = describe "sanitizeUri" $ do
