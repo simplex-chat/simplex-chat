@@ -90,6 +90,10 @@ No type or file is renamed — `BadgesYourLevelView` keeps its name. Kotlin reso
 
 The page has screen and routing tests; extend those rather than starting a parallel suite, and cover all three cases, including no flag at all. No UI tests on the app side — verify those by review.
 
+The store purchase needs end-to-end coverage and `BadgeServiceTests` is already the place: it runs a real client against a real service over SMP and covers redeeming, issuing, renewal and the worker. Everything from `APIPurchaseBadge` rightwards belongs there, with the receipt an opaque blob and verification behind a test provider that accepts one known token — the same seam the crypto and card providers already sit behind. Worth covering: a valid receipt issues a credential; the same receipt twice returns that same credential; an unknown token is refused and the refusal is not retryable; a receipt whose purchase key is not the signer is refused, as the code path is already tested for.
+
+The store SDK call itself cannot be automated. StoreKit needs a configuration file on a device, Play needs a real billing connection, and `.pending` needs a sandbox family account with Ask to Buy. That part is QA, and `useBadgeTestProducts` already exists for walking the Kotlin flow without Play Console products.
+
 ## Comments
 
 Default to none. Add one only where behaviour or a consequence cannot be carried by names and structure — the transaction-finish ordering, the unlogged code, the retryability rule above are the kind of thing that earns one. Do not comment each function, do not restate the code, and do not reference this plan, a panel id or a ticket in the source.
