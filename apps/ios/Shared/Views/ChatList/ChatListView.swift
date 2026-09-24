@@ -394,12 +394,6 @@ struct ChatListView: View {
         badgeModel.alert?.kind == .issueFailed && badgeModel.userId == chatModel.currentUser?.userId
     }
 
-    // false until the badge state loads: if the pitch rendered before that, it would lock the slot, and a supporter's badge
-    // arriving a moment later would hide it, leaving the slot empty for the session
-    private var noShownBadge: Bool {
-        badgeModel.badgeState?.shown != true && badgeModel.userId == chatModel.currentUser?.userId
-    }
-
     private func showBadgeAlertDismissAlert(_ title: String) {
         showAlert(title) {
             [
@@ -559,7 +553,9 @@ struct ChatListView: View {
                             .listRowBackground(Color.clear)
                             .zIndex(1)
                             .onAppear { chatModel.chatListBanner = .badgeIssueFailed }
-                    } else if chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge && chatModel.chats.count > 3 {
+                    // noShownBadge is false until the badge state loads: the pitch must not lock the slot and then
+                    // be hidden by a supporter's badge arriving a moment later, leaving the slot empty for the session
+                    } else if chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge() && chatModel.chats.count > 3 {
                         SupportSimpleXBanner(
                             showDismiss: supporterBannerTapped,
                             onTap: {

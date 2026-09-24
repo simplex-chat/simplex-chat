@@ -1945,7 +1945,7 @@ data class Contact(
     }
 
   val isContactCard: Boolean get() =
-    (activeConn == null || activeConn.connStatus == ConnStatus.Prepared) && profile.contactLink != null && active && preparedContact == null && contactRequestId == null
+    (activeConn == null || activeConn.connStatus == ConnStatus.Prepared) && profile.contactLink != null && active && preparedContact == null && contactRequestId == null && groupDirectInv == null
 
   val isBot: Boolean get() = profile.peerType == ChatPeerType.Bot
 

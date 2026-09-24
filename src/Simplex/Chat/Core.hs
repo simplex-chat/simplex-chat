@@ -42,6 +42,7 @@ import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async
+import UnliftIO.Exception (finally)
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
 simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {dbOptions, logAgent, yesToUpMigrations, migrationBackupPath, maintenance}, createBot, userDisplayName, userImageFile} chat =
@@ -89,7 +90,7 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
 runSimplexChat :: ChatConfig -> ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
 runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay, chatRelayServer, headless, serviceRequests, maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
-  | otherwise = do
+  | otherwise = flip finally (stopChatController cc) $ do
       a1 <- runReaderT (startChatController True True serviceRequests) cc
       when (chatRelay && not testView) $ askCreateRelayAddress cc u chatRelayServer headless
       forM_ (postStartHook chatHooks) ($ cc)

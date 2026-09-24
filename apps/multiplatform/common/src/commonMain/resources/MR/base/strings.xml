@@ -3134,7 +3134,6 @@
   <string name="appearance_minimize_to_tray_desc">Runs in background to receive messages</string>
   <string name="badge_supports_simplex">%s supports SimpleX Chat.</string>
   <string name="badge_supported_simplex">%1$s supported SimpleX Chat. The badge expired on %2$s.</string>
-  <string name="badge_support_from_v7">You can support SimpleX starting from v7 of the app.</string>
   <string name="badge_invested">%s invested in SimpleX Chat crowdfunding.</string>
   <string name="badge_unverified_title">Unverified badge</string>
   <string name="badge_unverified_desc">This badge could not be verified and may not be genuine.</string>
@@ -3176,6 +3175,7 @@
   <string name="badges_banner_title">Support SimpleX</string>
   <string name="badges_banner_subtitle">Get badge + better files</string>
   <string name="badges_banner_dismiss_message">You can support SimpleX later in Settings.</string>
+  <string name="badges_larger_files_longer">Support SimpleX to send larger files that stay available longer</string>
   <string name="badges_purchase_successful">Purchase successful</string>
   <string name="badges_purchase_pending">Purchase pending</string>
   <string name="badges_purchase_pending_desc">The purchase is awaiting approval. This build does not deliver purchases approved later.</string>

@@ -279,6 +279,7 @@ Detailed message information sheet (accessed via long-press menu "Info"):
 - Edit history (all previous versions of edited messages)
 - Forward chain info
 - Message timestamps (created, updated, deleted)
+- When the file expires, and below it, for a user without a badge, a button opening the badges sheet
 
 ---
 
