@@ -73,21 +73,20 @@ struct BadgesPayView: View {
         GeometryReader { g in
             ScrollView {
                 VStack(alignment: .center, spacing: 16) {
-                    Text(level.title)
+                    Text("How long?")
                         .font(.largeTitle)
                         .bold()
                         .foregroundColor(theme.colors.primary)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    BadgeUserPreview(level: level)
-                        .padding(.top, 4)
-
-                    Text(level.tagline)
+                    Text(level.summary)
                         .font(.body)
-                        .foregroundColor(theme.colors.onBackground)
+                        .foregroundColor(theme.colors.secondary)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
+
+                    BadgeUserPreview(level: level)
                         .padding(.top, 4)
 
                     Spacer(minLength: 20)

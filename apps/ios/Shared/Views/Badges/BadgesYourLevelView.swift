@@ -30,10 +30,10 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
         }
     }
 
-    var tagline: LocalizedStringKey {
+    var summary: LocalizedStringKey {
         switch self {
-        case .supporter: "Optional profile badge\nand 2GB files"
-        case .legend: "Optional profile badge\nand 5GB files"
+        case .supporter: "Supporter: 2 GB files available for 7 days."
+        case .legend: "Legend: 5 GB files available for 21 days."
         }
     }
 
@@ -56,10 +56,16 @@ struct BadgesYourLevelView: View {
         GeometryReader { g in
             ScrollView {
                 VStack(alignment: .center, spacing: 16) {
-                    Text("Your level")
+                    Text("Choose your badge")
                         .font(.largeTitle)
                         .bold()
                         .foregroundColor(theme.colors.primary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("Larger files that stay available longer.")
+                        .font(.body)
+                        .foregroundColor(theme.colors.secondary)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
 

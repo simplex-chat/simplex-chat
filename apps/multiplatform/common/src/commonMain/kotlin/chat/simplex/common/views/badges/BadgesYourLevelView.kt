@@ -40,10 +40,10 @@ enum class BadgeLevel {
       Legend -> MR.strings.badges_level_legend_files
     }
 
-  val tagline: StringResource
+  val summary: StringResource
     get() = when (this) {
-      Supporter -> MR.strings.badges_level_supporter_tagline
-      Legend -> MR.strings.badges_level_legend_tagline
+      Supporter -> MR.strings.badges_level_supporter_summary
+      Legend -> MR.strings.badges_level_legend_summary
     }
 
   val badgeType: BadgeType
@@ -66,10 +66,18 @@ fun BadgesYourLevelView(modalManager: ModalManager) {
     maxIntrinsicSize = true,
   ) {
     Text(
-      stringResource(MR.strings.badges_your_level_title),
+      stringResource(MR.strings.badges_choose_your_badge_title),
       style = MaterialTheme.typography.h1,
       fontWeight = FontWeight.Bold,
       color = MaterialTheme.colors.primary,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth()
+    )
+
+    Text(
+      stringResource(MR.strings.badges_choose_your_badge_lede),
+      style = MaterialTheme.typography.body1,
+      color = MaterialTheme.colors.secondary,
       textAlign = TextAlign.Center,
       modifier = Modifier.fillMaxWidth()
     )
