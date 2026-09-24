@@ -23,7 +23,6 @@ import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (bimap, first)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteArray.Encoding as BAE
-import Data.ByteString (ByteString)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
 import Data.Word (Word32)
@@ -69,7 +68,7 @@ masterStrength = B39.MS256
 newSeedEntropy :: TVar ChaChaDRG -> STM BA.ScrubbedBytes
 newSeedEntropy g = B39.mnemonicToEntropy <$> B39.randomMnemonic masterStrength g
 
-entropyFromMnemonic :: ByteString -> Either WalletError BA.ScrubbedBytes
+entropyFromMnemonic :: Text -> Either WalletError BA.ScrubbedBytes
 entropyFromMnemonic phrase = case B39.parseMnemonic phrase of
   Right m | length (B39.mnemonicWords m) == B39.strengthWordCount masterStrength ->
     Right $ B39.mnemonicToEntropy m

@@ -27,4 +27,4 @@ CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_a
 CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 |]
 
--- No reverse step: it would drop the only copy of the master entropy.
+-- No down migration: it would delete the master entropy, which may have no other copy.

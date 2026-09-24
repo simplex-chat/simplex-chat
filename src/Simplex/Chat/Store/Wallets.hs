@@ -91,7 +91,7 @@ getUserAccounts db sId userId =
       |]
       (sId, userId)
 
--- | Which profile holds an account: 'Nothing' when it is unknown, @Just Nothing@ when no profile holds it.
+-- | Which profile holds an account: 'Nothing' when there is no row for it, @Just Nothing@ when no profile holds it.
 accountUser :: DB.Connection -> SeedId -> AccountIndex -> IO (Maybe (Maybe UserId))
 accountUser db sId n =
   maybeFirstRow fromOnly $
@@ -100,24 +100,25 @@ accountUser db sId n =
 bindAccount :: DB.Connection -> UserId -> Maybe AccountIndex -> IO (Either WalletError (WalletSeed, AccountIndex))
 bindAccount db userId accountIdx_ = runExceptT $ do
   r@(WalletSeed {wsId}, n) <- ExceptT $ resolveAccount db accountIdx_
-  taken <- liftIO $ accountUser db wsId n >>= \case
+  held <- liftIO $ accountUser db wsId n >>= \case
     Just (Just heldBy) -> pure $ heldBy == userId
-    -- the update sets user_id only while it is NULL, so the read after it shows which profile holds the account
-    Just Nothing -> setAccountUser db wsId userId n >> accountHeldBy db wsId userId n
+    Just Nothing -> setAccountUser db wsId userId n
     Nothing -> True <$ insertAccount db wsId userId n
-  unless taken $ throwError WEAccountBound
+  unless held $ throwError WEAccountBound
   liftIO $ raiseNextAccount db wsId n
   pure r
 
-setAccountUser :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO ()
+setAccountUser :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO Bool
 setAccountUser db sId userId n =
-  DB.execute
-    db
-    [sql|
-      UPDATE wallet_accounts SET user_id = ?
-      WHERE wallet_seed_id = ? AND account_index = ? AND user_id IS NULL
-    |]
-    (userId, sId, n)
+  fmap isJust . maybeFirstRow (fromOnly @Int64) $
+    DB.query
+      db
+      [sql|
+        UPDATE wallet_accounts SET user_id = ?
+        WHERE wallet_seed_id = ? AND account_index = ? AND user_id IS NULL
+        RETURNING wallet_account_id
+      |]
+      (userId, sId, n)
 
 accountHeldBy :: DB.Connection -> SeedId -> UserId -> AccountIndex -> IO Bool
 accountHeldBy db sId userId n = (== Just (Just userId)) <$> accountUser db sId n

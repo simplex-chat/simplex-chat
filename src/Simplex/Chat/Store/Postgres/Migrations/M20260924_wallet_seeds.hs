@@ -28,4 +28,4 @@ CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_a
 CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 |]
 
--- no reverse step, see the SQLite migration
+-- no down migration, see the SQLite migration

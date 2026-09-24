@@ -30,7 +30,7 @@ testPhrase24 :: ByteString
 testPhrase24 = B.unwords $ replicate 23 "abandon" <> ["art"]
 
 seedEntropy :: ByteString -> BA.ScrubbedBytes
-seedEntropy phrase = B39.mnemonicToEntropy . either error id $ B39.parseMnemonic phrase
+seedEntropy phrase = B39.mnemonicToEntropy . either error id $ B39.parseMnemonic (safeDecodeUtf8 phrase)
 
 walletAccount :: BA.ScrubbedBytes -> AccountIndex -> IO (AccountKey, WalletAddress)
 walletAccount entropy n = either (error . show) id <$> deriveAccount entropy n
@@ -50,7 +50,7 @@ accountBound cc idx = (take 1 . words <$> getTermLine cc) `shouldReturn` [idx]
 
 walletDerivationTests :: Spec
 walletDerivationTests = do
-  Hspec.it "accounts are the accounts another wallet derives for the same phrase" $ do
+  Hspec.it "derives the addresses another wallet derives for the same phrase" $ do
     let addrOf n = address . snd <$> walletAccount (seedEntropy testPhrase12) n
     addrOf 0 `shouldReturn` "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
     addrOf 1 `shouldReturn` "0x78839F6054d7ed13918bAe0473BA31b1Ca9D7265"
@@ -60,7 +60,7 @@ walletDerivationTests = do
   Hspec.it "every account has its own address" $ do
     addrs <- mapM (fmap (address . snd) . walletAccount (seedEntropy testPhrase12)) [0 .. 9]
     length (nub addrs) `shouldBe` 10
-  Hspec.it "a secret whose first byte is zero keeps its 64 hex digits" $ do
+  Hspec.it "renders a secret whose first byte is zero with 64 hex digits" $ do
     k <- either error id <$> S.mkPrivateKey (BA.convert $ B.pack ('\0' : replicate 31 '\1'))
     let secret = T.unpack $ accountSecret k
     take 4 secret `shouldBe` "0x00"
@@ -68,30 +68,30 @@ walletDerivationTests = do
   Hspec.it "renders the path an account is derived at" $ do
     (keyPath . snd <$> walletAccount (seedEntropy testPhrase12) 0) `shouldReturn` "m/44'/60'/0'/0/0"
     (keyPath . snd <$> walletAccount (seedEntropy testPhrase12) 7) `shouldReturn` "m/44'/60'/7'/0/0"
-  Hspec.it "refuses an index BIP-32 cannot harden" $
+  Hspec.it "rejects an account index at or above 2^31" $
     (void <$> deriveAccount (seedEntropy testPhrase12) 2147483648) `shouldReturn` Left WEIndexTooLarge
   Hspec.it "round-trips the phrase it was imported from" $
     seedMnemonic (seedEntropy testPhrase24) `shouldBe` Right (safeDecodeUtf8 testPhrase24)
-  Hspec.it "takes 24 words only, with a valid checksum" $ do
-    entropyFromMnemonic testPhrase24 `shouldSatisfy` isRight
-    entropyFromMnemonic testPhrase12 `shouldBe` Left WEBadMnemonic
-    entropyFromMnemonic (B.unwords $ replicate 24 "abandon") `shouldBe` Left WEBadMnemonic
+  Hspec.it "accepts only 24 words with a valid checksum" $ do
+    entropyFromMnemonic (safeDecodeUtf8 testPhrase24) `shouldSatisfy` isRight
+    entropyFromMnemonic (safeDecodeUtf8 testPhrase12) `shouldBe` Left WEBadMnemonic
+    entropyFromMnemonic (T.unwords $ replicate 24 "abandon") `shouldBe` Left WEBadMnemonic
 
 walletTests :: SpecWith TestParams
 walletTests = do
-  it "creates no wallet until asked, and only one" testWalletCreate
-  it "binds the next free account, and re-binding one it holds changes nothing" testWalletBind
+  it "creates a wallet only on the create command, and at most one" testWalletCreate
+  it "binds the next free account, and re-binding an account the profile holds changes nothing" testWalletBind
   it "keeps each profile's accounts apart" testWalletAccountsPerProfile
-  it "taking the next account skips one already bound by index" testWalletBindByIndexThenNext
-  it "leaves a deleted profile's account for another profile to take" testWalletDeletedProfileAccount
-  it "derives an address without taking it" testWalletAddress
+  it "binding the next account skips one already bound by index" testWalletBindByIndexThenNext
+  it "a deleted profile's account can be bound to another profile" testWalletDeletedProfileAccount
+  it "derives an address without binding it" testWalletAddress
   it "exports the master phrase and one account's secret" testWalletExport
-  it "will not take a new account on an imported phrase" testWalletImport
-  it "the wallet, the accounts and the counter come back after a restart" testWalletPersists
-  it "deletes the wallet, and one can be made again" testWalletDelete
+  it "does not bind the next account after an import" testWalletImport
+  it "the wallet, the accounts and the counter persist across a restart" testWalletPersists
+  it "deletes the wallet, and a new one can be created" testWalletDelete
   it "does not bind an account to a hidden profile" testWalletHiddenProfile
   it "exports only an account the profile holds" testWalletExportNotHeld
-  it "refuses an index BIP-32 cannot harden, on every command" testWalletIndexTooLarge
+  it "rejects an account index at or above 2^31 on every command" testWalletIndexTooLarge
 
 testWalletCreate :: HasCallStack => TestParams -> IO ()
 testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -224,13 +224,13 @@ testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet create mnemonic=" <> B.unpack testPhrase24)
   alice <## "wallet, no accounts for this profile"
   alice ##> "/_wallet bind 1"
-  alice <## "wallet: the next account is unknown after an import, scan the chain first"
+  alice <## "wallet: the next account is unknown after an import"
   alice ##> "/_wallet address"
-  alice <## "wallet: the next account is unknown after an import, scan the chain first"
+  alice <## "wallet: the next account is unknown after an import"
   alice ##> "/_wallet bind 1 account=4"
   alice `accountBound` "4"
   alice ##> "/_wallet bind 1"
-  alice <## "wallet: the next account is unknown after an import, scan the chain first"
+  alice <## "wallet: the next account is unknown after an import"
 
 testWalletPersists :: HasCallStack => TestParams -> IO ()
 testWalletPersists ps = do
@@ -275,7 +275,7 @@ testWalletHiddenProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice ->
   alice <## "messages are hidden (use /tail to view)"
   alice <## "profile is hidden"
   alice ##> "/_wallet bind 2"
-  alice <## "wallet: a hidden profile cannot own an account"
+  alice <## "wallet: a hidden profile cannot hold an account"
 
 testWalletExportNotHeld :: HasCallStack => TestParams -> IO ()
 testWalletExportNotHeld ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do

@@ -65,7 +65,6 @@ import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIss
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Store.Wallets (WalletSeed (..), accountHeldBy, bindAccount, createWalletSeed, deleteWalletSeed, getUserAccounts, getWalletSeed, resolveAccount)
 import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress, WalletError (..), accountSecret, deriveAccount, entropyFromMnemonic, newSeedEntropy, seedMnemonic)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -97,6 +96,7 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
+import Simplex.Chat.Store.Wallets (WalletSeed (..), accountHeldBy, bindAccount, createWalletSeed, deleteWalletSeed, getUserAccounts, getWalletSeed, resolveAccount)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -1507,7 +1507,7 @@ processChatCommand cxt nm = \case
     -- the counter starts at 0 for a generated seed and is unknown for an imported one
     (entropy, nextAccount) <- case mnemonic_ of
       Nothing -> (,Just 0) <$> (asks random >>= atomically . newSeedEntropy)
-      Just phrase -> (,Nothing) <$> liftWallet (entropyFromMnemonic $ encodeUtf8 phrase)
+      Just phrase -> (,Nothing) <$> liftWallet (entropyFromMnemonic phrase)
     created <- withFastStore' $ \db -> createWalletSeed db entropy nextAccount
     unless created $ throwWalletError WEMasterExists
     pure $ CRWallet user (Just [])
@@ -6029,13 +6029,13 @@ throwWalletError :: WalletError -> CM a
 throwWalletError = throwChatError . CEWallet
 
 liftWallet :: Either WalletError a -> CM a
-liftWallet = either throwWalletError pure
+liftWallet = liftEitherWith (ChatError . CEWallet)
 
 withWalletStore :: (DB.Connection -> IO (Either WalletError a)) -> CM a
 withWalletStore action = liftWallet =<< withFastStore' action
 
 seedAccount :: WalletSeed -> AccountIndex -> CM (AccountKey, WalletAddress)
-seedAccount WalletSeed {wsEntropy} n = liftWallet =<< liftIO (deriveAccount wsEntropy n)
+seedAccount WalletSeed {wsEntropy} n = liftError' (ChatError . CEWallet) (deriveAccount wsEntropy n)
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =

@@ -4417,6 +4417,14 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        UPDATE wallet_accounts SET user_id = ?
+        WHERE wallet_seed_id = ? AND account_index = ? AND user_id IS NULL
+        RETURNING wallet_account_id
+      
+Plan:
+SEARCH wallet_accounts USING INDEX idx_wallet_accounts_wallet_seed_id_account_index (wallet_seed_id=? AND account_index=?)
+
+Query: 
         WITH user_groups AS MATERIALIZED (
           SELECT g.group_id
           FROM groups g
@@ -5722,13 +5730,6 @@ Query:
     
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      UPDATE wallet_accounts SET user_id = ?
-      WHERE wallet_seed_id = ? AND account_index = ? AND user_id IS NULL
-    
-Plan:
-SEARCH wallet_accounts USING INDEX idx_wallet_accounts_wallet_seed_id_account_index (wallet_seed_id=? AND account_index=?)
 
 Query: 
       UPDATE wallet_seeds SET next_account_index = ?
