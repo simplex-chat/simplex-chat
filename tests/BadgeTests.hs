@@ -27,14 +27,16 @@ import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service
+import Simplex.Chat.Badges.Types (BadgeIssueFailure (..))
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
-import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeRetryAfter, badgeStalledInterval)
+import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Protocol (BrokerErrorType (..), NetworkError (..))
+import Simplex.Messaging.Protocol (BrokerErrorType (..), ErrorType (AUTH), NetworkError (..))
+import Simplex.Messaging.Util (tshow)
 import Simplex.Messaging.Version.Internal (Version (..))
 import Test.Hspec
 
@@ -84,6 +86,11 @@ badgeTests = do
     it "backs off to the cap" testRetryBackoff
     it "floors the wait a service asks for, and honours anything above it" testServiceRetryFloor
     it "sends retryAfter with the transient service codes and no other" testServiceRetryAfter
+  describe "recording a failed renewal" $ do
+    it "records the agent error a request failed with, not the chat error around it" testIssueFailureClassification
+    it "waits for the credential to lapse on internal, as on a refusal the service marks transient" testServiceErrorTransience
+    it "stores every failure so that it reads back, whatever the service called its code" testIssueFailureEncoding
+    it "bounds and strips a code this version does not know" testServiceErrorCodeBounded
   describe "service protocol JSON" $ do
     it "redeemBadgeCode request matches the schema" testRedeemRequestJSON
     it "badgeCredential response matches the schema" testCredentialResponseJSON
@@ -693,6 +700,66 @@ testServiceRetryAfter = do
   mapM_
     (\code -> badgeErrorRetryAfter code `shouldBe` Nothing)
     [BSEBadRequest, BSEUnsupportedVersion, BSEUnknownPurchaseKey, BSECodeInvalid, BSECodeUsed, BSECodeExpired, BSEUnknown "future_code"]
+
+-- The app shows the recorded failure in a sentence, so an agent error is stored as the agent
+-- error and not as the chat error wrapping it, whether or not it can clear on its own.
+testIssueFailureClassification :: IO ()
+testIssueFailureClassification = do
+  let failureFor = badgeIssueFailure . chatErrorAgent
+      timeout = BROKER "localhost" TIMEOUT
+      auth = SMP "localhost" AUTH
+  failureFor (AGENT (A_SERVICE ASETimeout)) `shouldBe` BIFServiceTimeout
+  failureFor timeout `shouldBe` BIFNetwork {agentError = tshow timeout}
+  failureFor auth `shouldBe` BIFUnexpected {message = tshow auth}
+  badgeIssueFailure (ChatError (CECommandError "unexpected badge service response")) `shouldBe` BIFUnexpected {message = "unexpected badge service response"}
+
+-- A refusal the service marks transient is not worth a word before the credential lapses. Internal
+-- comes without retryAfter so that a failing service is not pressed, not because the fault is
+-- final, so it waits the same way; any other refusal is told at once.
+testServiceErrorTransience :: IO ()
+testServiceErrorTransience = do
+  badgeFailureTransient BIFServiceError {code = BSERateLimited, retryable = True} `shouldBe` True
+  badgeFailureTransient BIFServiceError {code = BSEInternal, retryable = False} `shouldBe` True
+  badgeFailureTransient BIFServiceError {code = BSEUnknownPurchaseKey, retryable = False} `shouldBe` False
+  badgeFailureTransient BIFServiceError {code = BSEUnknown "future_code", retryable = False} `shouldBe` False
+  badgeFailureTransient BIFServiceError {code = BSEUnknown "future_code", retryable = True} `shouldBe` True
+
+-- The failure is stored as text and read back by getBadgePurchase, so every value this version
+-- writes must read back as itself, and any other value must still read: a row it cannot parse
+-- would otherwise fail every read of the purchase.
+testIssueFailureEncoding :: IO ()
+testIssueFailureEncoding = do
+  mapM_
+    (\f -> strDecode (strEncode f) `shouldBe` Right f)
+    [ BIFServiceError {code = BSEUnknownPurchaseKey, retryable = False},
+      BIFServiceError {code = BSERateLimited, retryable = True},
+      BIFServiceError {code = BSEUnknown "future_code", retryable = True},
+      BIFServiceError {code = BSEUnknown "code with spaces", retryable = False},
+      BIFServiceError {code = BSEUnknown "", retryable = False},
+      BIFServiceTimeout,
+      BIFNetwork {agentError = "BROKER \"smp://x\" NETWORK"},
+      BIFInvalidCredential,
+      BIFUnexpected {message = "unexpected badge service response"},
+      BIFUnexpected {message = "several words and : punctuation"}
+    ]
+  -- the row the CLI prints, and what a reader of the database sees
+  strEncode BIFServiceError {code = BSECodeUsed, retryable = False} `shouldBe` "service_error final code_used"
+  strEncode BIFServiceError {code = BSERateLimited, retryable = True} `shouldBe` "service_error retry rate_limited"
+  strEncode BIFServiceTimeout `shouldBe` "service_timeout"
+  -- a row a later version wrote, or one edited by hand, still reads - as the text it holds
+  strDecode "future_failure with text" `shouldBe` Right BIFUnexpected {message = "future_failure with text"}
+  strDecode "service_timeout trailing" `shouldBe` Right BIFUnexpected {message = "service_timeout trailing"}
+  strDecode "service_error maybe code_used" `shouldBe` Right BIFUnexpected {message = "service_error maybe code_used"}
+
+-- The text of a code this version does not know is chosen by the service, and the app shows it in
+-- a sentence of its own - so it is bounded and stripped of anything but a code before it is stored.
+testServiceErrorCodeBounded :: IO ()
+testServiceErrorCodeBounded = do
+  badgeServiceErrorText BSECodeUsed `shouldBe` "code_used"
+  badgeServiceErrorText (BSEUnknown "future_code") `shouldBe` "future_code"
+  badgeServiceErrorText (BSEUnknown "two words") `shouldBe` "twowords"
+  badgeServiceErrorText (BSEUnknown (T.replicate 100 "a")) `shouldBe` T.replicate 32 "a"
+  badgeServiceErrorText (BSEUnknown "Visit evil.example.com!") `shouldBe` "isitevilexamplecom"
 
 -- The client replicates entry_credit_type / entry_debit_type verbatim, so a stored tag that
 -- disagreed with the wire tag would put a different row on each side.

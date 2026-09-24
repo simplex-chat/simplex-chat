@@ -33,3 +33,23 @@ struct BadgesView: View {
         .animation(.default, value: shownBadge != nil)
     }
 }
+
+var supportSimpleXAlertAction: UIAlertAction {
+    UIAlertAction(title: NSLocalizedString("Support SimpleX", comment: "alert button"), style: .default) { _ in
+        openBadgesView()
+    }
+}
+
+func openBadgesView() {
+    showAppSheet {
+        NavigationView {
+            BadgesView(showsAsSheet: true)
+                .modifier(ThemedBackground())
+        }
+    }
+}
+
+// false until the badge state is loaded for the current profile, so a supporter is never pitched to
+func noShownBadge() -> Bool {
+    BadgeModel.shared.badgeState?.shown != true && BadgeModel.shared.userId == ChatModel.shared.currentUser?.userId
+}

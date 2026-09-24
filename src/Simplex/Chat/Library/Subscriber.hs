@@ -1393,7 +1393,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
 
     processContactConnMessage :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
     processContactConnMessage agentMsg connEntity conn UserContact {userContactLinkId = uclId, groupId = ucGroupId_} = case agentMsg of
-      REQ invId pqSupport _ connInfo rejectionSupported -> do
+      REQ invId pqSupport _ connInfo _ rejectionSupported -> do
         (signedMsg_, ChatMessage {chatVRange, chatMsgEvent}) <- parseChatMessage' conn connInfo
         case chatMsgEvent of
           XContact p memberKey_ xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p memberKey_ xContactId_ welcomeMsgId_ requestMsg_ pqSupport rejectionSupported
@@ -1911,7 +1911,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           keepSig <- case contactConn ct of
             Nothing -> pure False
             Just conn -> do
-              adHash <- withAgent (`getConnectionRatchetAdHash` aConnId conn)
+              adHash <- codeAD <$> withAgent (`getConnectionVerifyCodes` aConnId conn)
               pure $ encodeChatBinding CBDirect adHash == binding
           pure $ if keepSig then c else MCChat {text, chatLink, ownerSig = Nothing}
         _ -> pure c
@@ -3898,7 +3898,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               securityCodeChanged mCt'
               createItems mCt' m
           | otherwise = do
-              acId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connReq PQSupportOff
+              (acId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connReq PQSupportOff
               mCt' <- withStore $ \db -> do
                 updateMemberContactInvited db user mCt groupDirectInv
                 void $ liftIO $ createMemberContactConn db user acId Nothing g mConn ConnPrepared mContactId subMode
@@ -3919,7 +3919,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               createInternalChatItem user (CDDirectSnd mCt) CIChatBanner (Just epochStart)
               createItems mCt m'
           | otherwise = do
-              acId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connReq PQSupportOff
+              (acId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connReq PQSupportOff
               (mCt, m') <- withStore $ \db -> do
                 (mContactId, m') <- liftIO $ createMemberContactInvited db user g m groupDirectInv
                 void $ liftIO $ createMemberContactConn db user acId Nothing g mConn ConnPrepared mContactId subMode

@@ -3,6 +3,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -18,6 +19,9 @@ module Simplex.Chat.Badges.Types
     LedgerCreditType (..),
     LedgerDebitType (..),
     BadgeAlertKind (..),
+    BadgeServiceErrorCode (..),
+    BadgeIssueFailure (..),
+    BadgeIssueError (..),
     BadgeFunding (..),
     BadgePurchase (..),
     BadgeLedgerEntry (..),
@@ -28,11 +32,14 @@ module Simplex.Chat.Badges.Types
     BadgeState (..),
   ) where
 
-import Data.Aeson (FromJSON, ToJSON)
+import Control.Applicative ((<|>))
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Int (Int64)
 import Data.Text (Text)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word8)
 import Simplex.Chat.Badges hiding (BadgePurchase (..))
@@ -42,7 +49,8 @@ import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple.FromField (FromField (..))
 import Database.PostgreSQL.Simple.ToField (ToField (..))
@@ -108,7 +116,7 @@ data LedgerDebitType
   deriving (Eq, Show)
 
 -- unconfirmed draft
-data BadgeAlertKind = BARenewalApproaching | BAPaymentIssue | BASubscriptionEnded | BAPrepaidEnding | BASupportEnded
+data BadgeAlertKind = BARenewalApproaching | BAPaymentIssue | BASubscriptionEnded | BAPrepaidEnding | BASupportEnded | BAIssueFailed
   deriving (Eq, Show)
 
 instance TextEncoding BadgeAlertKind where
@@ -118,12 +126,14 @@ instance TextEncoding BadgeAlertKind where
     BASubscriptionEnded -> "subscription_ended"
     BAPrepaidEnding -> "prepaid_ending"
     BASupportEnded -> "support_ended"
+    BAIssueFailed -> "issue_failed"
   textDecode = \case
     "renewal_approaching" -> Just BARenewalApproaching
     "payment_issue" -> Just BAPaymentIssue
     "subscription_ended" -> Just BASubscriptionEnded
     "prepaid_ending" -> Just BAPrepaidEnding
     "support_ended" -> Just BASupportEnded
+    "issue_failed" -> Just BAIssueFailed
     _ -> Nothing
 
 instance FromField BadgeAlertKind where fromField = fromTextField_ textDecode
@@ -215,6 +225,44 @@ data BadgeAlertPrice = BadgeAlertPrice
   }
   deriving (Show)
 
+data BadgeServiceErrorCode
+  = BSEBadRequest
+  | BSEUnsupportedVersion
+  | BSEUnknownPurchaseKey
+  | BSEUnknownOfferId
+  | BSEOfferDisabled
+  | BSEOfferMismatch
+  | BSEProductUnavailable
+  | BSEPaymentNotEntitled
+  | BSEPaymentPending
+  | BSEProviderUnavailable
+  | BSERateLimited
+  | BSECodeInvalid
+  | BSECodeUsed
+  | BSECodeExpired
+  | BSEReceiptInvalid
+  | BSEReceiptUsed
+  | BSEInternal
+  | BSEUnknown Text -- forwards-compatible: service is deployed ahead of clients
+  deriving (Eq, Show)
+
+-- | Why a renewal request ended without a credential stored. retryable is the service's own view of
+-- transience: it gave retryAfter, which holds for codes this version does not know.
+data BadgeIssueFailure
+  = BIFServiceError {code :: BadgeServiceErrorCode, retryable :: Bool}
+  | BIFServiceTimeout
+  | BIFNetwork {agentError :: Text}
+  | BIFInvalidCredential
+  | BIFUnexpected {message :: Text}
+  deriving (Eq, Show)
+
+data BadgeIssueError = BadgeIssueError
+  { failedSince :: UTCTime,
+    lastAttemptAt :: UTCTime,
+    reason :: BadgeIssueFailure
+  }
+  deriving (Eq, Show)
+
 -- | The user's badge as the badge surfaces render it. The private purchase key is deliberately
 -- absent: this travels to the UI and over remote control, and it is a secret that stays in core.
 data BadgeState = BadgeState
@@ -227,7 +275,9 @@ data BadgeState = BadgeState
     -- payments returns here with the payment types, which this slice neither writes nor encodes
     renewsAt :: Maybe UTCTime,
     willRenew :: Bool,
-    alert :: Maybe BadgeAlert
+    alert :: Maybe BadgeAlert,
+    issueError :: Maybe BadgeIssueError,
+    nextWakeAt :: Maybe UTCTime
   }
   deriving (Show)
 
@@ -263,6 +313,88 @@ instance FromField BadgeCodePaymentStatus where fromField = fromTextField_ textD
 
 instance ToField BadgeCodePaymentStatus where toField = toField . textEncode
 
+instance TextEncoding BadgeServiceErrorCode where
+  textEncode = \case
+    BSEBadRequest -> "bad_request"
+    BSEUnsupportedVersion -> "unsupported_version"
+    BSEUnknownPurchaseKey -> "unknown_purchase_key"
+    BSEUnknownOfferId -> "unknown_offer_id"
+    BSEOfferDisabled -> "offer_disabled"
+    BSEOfferMismatch -> "offer_mismatch"
+    BSEProductUnavailable -> "product_unavailable"
+    BSEPaymentNotEntitled -> "payment_not_entitled"
+    BSEPaymentPending -> "payment_pending"
+    BSEProviderUnavailable -> "provider_unavailable"
+    BSERateLimited -> "rate_limited"
+    BSECodeInvalid -> "code_invalid"
+    BSECodeUsed -> "code_used"
+    BSECodeExpired -> "code_expired"
+    BSEReceiptInvalid -> "receipt_invalid"
+    BSEReceiptUsed -> "receipt_used"
+    BSEInternal -> "internal"
+    BSEUnknown t -> t
+  textDecode s = Just $ case s of
+    "bad_request" -> BSEBadRequest
+    "unsupported_version" -> BSEUnsupportedVersion
+    "unknown_purchase_key" -> BSEUnknownPurchaseKey
+    "unknown_offer_id" -> BSEUnknownOfferId
+    "offer_disabled" -> BSEOfferDisabled
+    "offer_mismatch" -> BSEOfferMismatch
+    "product_unavailable" -> BSEProductUnavailable
+    "payment_not_entitled" -> BSEPaymentNotEntitled
+    "payment_pending" -> BSEPaymentPending
+    "provider_unavailable" -> BSEProviderUnavailable
+    "rate_limited" -> BSERateLimited
+    "code_invalid" -> BSECodeInvalid
+    "code_used" -> BSECodeUsed
+    "code_expired" -> BSECodeExpired
+    "receipt_invalid" -> BSEReceiptInvalid
+    "receipt_used" -> BSEReceiptUsed
+    "internal" -> BSEInternal
+    t -> BSEUnknown t
+
+instance ToJSON BadgeServiceErrorCode where
+  toJSON = textToJSON
+  toEncoding = textToEncoding
+
+instance FromJSON BadgeServiceErrorCode where
+  parseJSON = textParseJSON "BadgeServiceErrorCode"
+
+instance StrEncoding BadgeIssueFailure where
+  strEncode = \case
+    BIFServiceError {code, retryable} -> "service_error " <> (if retryable then "retry " else "final ") <> encodeUtf8 (textEncode code)
+    BIFServiceTimeout -> "service_timeout"
+    BIFNetwork {agentError} -> "network " <> encodeUtf8 agentError
+    BIFInvalidCredential -> "invalid_credential"
+    BIFUnexpected {message} -> "unexpected " <> encodeUtf8 message
+  -- a row this version cannot read is reported as it stands rather than failing every read of the purchase
+  strP = (knownP <* A.endOfInput) <|> (BIFUnexpected . safeDecodeUtf8 <$> A.takeByteString)
+    where
+      knownP =
+        A.takeWhile1 (/= ' ') >>= \case
+          "service_error" -> serviceErrorP
+          "service_timeout" -> pure BIFServiceTimeout
+          "network" -> BIFNetwork <$> restP
+          "invalid_credential" -> pure BIFInvalidCredential
+          "unexpected" -> BIFUnexpected <$> restP
+          _ -> fail "bad BadgeIssueFailure"
+      -- the code is encoded last and read to the end, so a code this version does not know reads back whole
+      serviceErrorP = do
+        retryable_ <- A.space *> retryableP
+        code_ <- A.space *> codeP
+        pure BIFServiceError {code = code_, retryable = retryable_}
+      retryableP =
+        A.takeWhile1 (/= ' ') >>= \case
+          "retry" -> pure True
+          "final" -> pure False
+          _ -> fail "bad BadgeIssueFailure retry flag"
+      codeP = A.takeByteString >>= maybe (fail "bad BadgeServiceErrorCode") pure . textDecode . safeDecodeUtf8
+      restP = safeDecodeUtf8 <$> (A.space *> A.takeByteString)
+
+instance ToField BadgeIssueFailure where toField = toField . decodeLatin1 . strEncode
+
+instance FromField BadgeIssueFailure where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
+
 $(JQ.deriveJSON (enumJSON $ dropPrefix "BIS") ''BadgeItemStatus)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "OD") ''OfferDiscount)
@@ -272,5 +404,9 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "BA") ''BadgeAlertKind)
 $(JQ.deriveJSON defaultJSON ''BadgeAlertPrice)
 
 $(JQ.deriveJSON defaultJSON ''BadgeAlert)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BIF") ''BadgeIssueFailure)
+
+$(JQ.deriveJSON defaultJSON ''BadgeIssueError)
 
 $(JQ.deriveJSON defaultJSON ''BadgeState)

@@ -977,7 +977,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
   (ct, conn, incognitoProfile) <- case contactId_ of
     Nothing -> do
       incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
-      connId <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) True invId pqSup'
+      (connId, _) <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) True invId pqSup'
       (ct, conn) <- withStore' $ \db ->
         createContactFromRequest db user userContactLinkId_ connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
       pure (ct, conn, incognitoProfile)
@@ -986,7 +986,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
       case contactConn ct of
         Nothing -> do
           incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
-          connId <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) True invId pqSup'
+          (connId, _) <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) True invId pqSup'
           currentTs <- liftIO getCurrentTime
           conn <- withStore' $ \db -> do
             forM_ xContactId $ \xcId -> setContactAcceptedXContactId db ct xcId
@@ -2329,7 +2329,7 @@ type HistoryFile = (FileInvitation, RcvFileDescrText, Maybe UTCTime, Maybe Badge
 directChatBinding :: Contact -> CM (Maybe ByteString)
 directChatBinding ct =
   forM (contactConn ct) $ \conn ->
-    encodeChatBinding CBDirect <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
+    encodeChatBinding CBDirect . codeAD <$> withAgent (`getConnectionVerifyCodes` aConnId conn)
 
 rcvGroupChatBinding :: GroupInfo -> Maybe GroupMember -> ShowGroupAsSender -> Maybe BadgeProof -> Maybe ByteString
 rcvGroupChatBinding gInfo m_ asGroup badge_ =
@@ -3032,7 +3032,7 @@ prepareAgentJoin user conn_ enableNtfs cReqUri = do
   cmdId <- withStore' $ \db -> createCommand db user (dbConnId <$> conn_) CFJoinConn
   connId <- case conn_ of
     Just conn -> pure $ aConnId conn
-    Nothing -> withAgent $ \a -> prepareConnectionToJoin a (aUserId user) enableNtfs cReqUri PQSupportOff
+    Nothing -> fst <$> withAgent (\a -> prepareConnectionToJoin a (aUserId user) enableNtfs cReqUri PQSupportOff)
   pure (cmdId, connId)
 
 joinAgentConnectionAsync :: CommandId -> Bool -> ConnId -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM ()
@@ -3058,7 +3058,7 @@ allowAgentConnectionInfo user conn@Connection {connId} confId dm = do
 prepareAgentAccept :: User -> Bool -> InvitationId -> PQSupport -> CM (CommandId, ConnId)
 prepareAgentAccept user enableNtfs invId pqSup = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFAcceptContact
-  connId <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) enableNtfs invId pqSup
+  (connId, _) <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) enableNtfs invId pqSup
   pure (cmdId, connId)
 
 agentAcceptContactAsync :: MsgEncodingI e => CommandId -> ConnId -> Bool -> InvitationId -> ChatMsgEvent e -> PQSupport -> SubscriptionMode -> CM ()

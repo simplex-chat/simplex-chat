@@ -64,7 +64,7 @@ fun PasscodeView(
   @Composable
   fun VerticalLayout() {
     Column(
-      Modifier.handleKeyboard().focusRequester(focusRequester),
+      Modifier.systemBarsPadding().handleKeyboard().focusRequester(focusRequester),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
@@ -74,7 +74,7 @@ fun PasscodeView(
           Text(reason, Modifier.padding(top = 5.dp), style = MaterialTheme.typography.subtitle1)
         }
       }
-      PasscodeEntry(passcode, true)
+      PasscodeEntry(passcode, true, Modifier.weight(1f, fill = false))
       Row(Modifier.heightIn(min = 70.dp), verticalAlignment = Alignment.CenterVertically) {
         SimpleButton(generalGetString(MR.strings.cancel_verb), icon = painterResource(MR.images.ic_close), disabled = !buttonsEnabled.value, click = cancel)
         Spacer(Modifier.size(20.dp))
@@ -85,9 +85,9 @@ fun PasscodeView(
 
   @Composable
   fun HorizontalLayout() {
-    Row(Modifier.padding(horizontal = DEFAULT_PADDING).handleKeyboard().focusRequester(focusRequester), horizontalArrangement = Arrangement.Center) {
+    Row(Modifier.systemBarsPadding().padding(horizontal = DEFAULT_PADDING).handleKeyboard().focusRequester(focusRequester), horizontalArrangement = Arrangement.Center) {
       Column(
-        Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING),
+        Modifier.weight(1f, fill = false).padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
       ) {

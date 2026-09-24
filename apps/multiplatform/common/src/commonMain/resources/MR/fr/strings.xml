@@ -2833,7 +2833,6 @@
     <string name="appearance_minimize_to_tray_desc">Fonctionne en arrière-plan pour recevoir les messages</string>
     <string name="badge_supports_simplex">%s soutient SimpleX Chat.</string>
     <string name="badge_supported_simplex">%1$s a soutenu SimpleX Chat. Le badge a expiré le %2$s.</string>
-    <string name="badge_support_from_v7">Vous pouvez soutenir SimpleX à partir de la version 7 de l’application.</string>
     <string name="badge_invested">%s a investi dans le financement participatif de SimpleX Chat.</string>
     <string name="badge_unverified_title">Badge non vérifié</string>
     <string name="badge_unverified_desc">Ce badge n’a pas pu être vérifié et peut ne pas être authentique.</string>
