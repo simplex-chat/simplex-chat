@@ -27,8 +27,8 @@ describe("keys", () => {
 
   test("compute × and ÷ before + and -", () => {
     expect(tap("2 + 2 =")).toEqual({calc: expect.objectContaining({display: "4"}), logLines: ["2 + 2 = 4"]})
-    expect(tap("2 + 3 × 4 =").logLines).toEqual(["2 + 3 × 4 = 14"])
-    expect(tap("2 × 3 + 4 =").logLines).toEqual(["2 × 3 + 4 = 10"])
+    expect(tap("2 + 3 × 4 =").logLines).toEqual(["3 × 4 = 12\n2 + 12 = 14"])
+    expect(tap("2 × 3 + 4 =").logLines).toEqual(["2 × 3 = 6", "6 + 4 = 10"])
     expect(display("1 0 - 2 × 3 =")).toBe("4")
     expect(display("1 0 - 2 - 3 =")).toBe("5")
     expect(display("8 ÷ 4 ÷ 2 =")).toBe("1")
@@ -41,15 +41,17 @@ describe("keys", () => {
     expect(display("2 + 3 × 4 +")).toBe("14")
   })
 
-  test("log only after equals", () => {
+  test("log each computed operation", () => {
+    expect(tap("1 5 + 1 0 + 5 + 1 =").logLines).toEqual(["15 + 10 = 25", "25 + 5 = 30", "30 + 1 = 31"])
+    expect(tap("2 + 3 × 4 × 5 +").logLines).toEqual(["3 × 4 = 12", "12 × 5 = 60\n2 + 60 = 62"])
     expect(tap("2 + 3 × 4").logLines).toEqual([])
     expect(tap("5 =").logLines).toEqual([])
   })
 
   test("replace operator", () => {
     expect(tap("2 + × 3 =").logLines).toEqual(["2 × 3 = 6"])
-    expect(tap("2 + 3 × + 4 =").logLines).toEqual(["2 + 3 + 4 = 9"])
-    expect(tap("2 × 3 + × 4 =").logLines).toEqual(["2 × 3 × 4 = 24"])
+    expect(tap("2 + 3 × + 4 =").logLines).toEqual(["2 + 3 = 5", "5 + 4 = 9"])
+    expect(tap("2 × 3 + × 4 =").logLines).toEqual(["2 × 3 = 6", "6 × 4 = 24"])
   })
 
   test("continue from result", () => {
@@ -68,7 +70,7 @@ describe("keys", () => {
     expect(display("5 0 ÷ 1 0 % =")).toBe("500")
     expect(display("1 5 %")).toBe("0.15")
     expect(display("1 0 0 + 2 × 1 5 %")).toBe("0.15")
-    expect(display("1 0 0 + 2 × 1 5 % =")).toBe("100.3")
+    expect(tap("1 0 0 + 2 × 1 5 % =").logLines).toEqual(["2 × 15% = 0.3\n100 + 0.3 = 100.3"])
     expect(display("2 × 3 + 1 0 %")).toBe("0.6")
   })
 
@@ -113,7 +115,7 @@ describe("typed messages", () => {
     expect(type("25", "+", "25", "=")).toEqual({calc: expect.objectContaining({display: "50"}), logLines: ["25 + 25 = 50"]})
     expect(type("25", "add", "25", "eq").logLines).toEqual(["25 + 25 = 50"])
     expect(type("6", "x", "7", "=").logLines).toEqual(["6 × 7 = 42"])
-    expect(type("5", "*", "5", "/", "2", "=").logLines).toEqual(["5 × 5 ÷ 2 = 12.5"])
+    expect(type("5", "*", "5", "/", "2", "=").logLines).toEqual(["5 × 5 = 25", "25 ÷ 2 = 12.5"])
     expect(type("25", "+", "3", "c", "4", "=").logLines).toEqual(["25 + 4 = 29"])
   })
 

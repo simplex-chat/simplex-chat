@@ -10,9 +10,12 @@ export interface Calc {
   mode: "typing" | "result" | "operator"
 }
 
-interface Term {
-  operand: string
+interface Operand {
+  text: string
   value: number
+}
+
+interface Term extends Operand {
   op: Operator
 }
 
@@ -59,7 +62,7 @@ export function press(calc: Calc, key: Key): [Calc, string?] {
   switch (key) {
     case "C": return [clear(calc)]
     case "=": return equals(calc)
-    case "+": case "-": case "×": case "÷": return [operator(calc, key)]
+    case "+": case "-": case "×": case "÷": return operator(calc, key)
     case "%": return [showNumber(calc, percent(calc), `${calc.operand}%`)]
     case "√": return [showNumber(calc, Math.sqrt(value(calc)), `√${calc.operand}`)]
     case "±": return [negate(calc)]
@@ -92,7 +95,7 @@ function negate(calc: Calc): Calc {
 function percent(calc: Calc): number {
   const last = calc.terms.at(-1)
   const share = value(calc) / 100
-  return last && isAdditive(last.op) ? leftOperand(calc.terms) * share : share
+  return last && isAdditive(last.op) ? last.value * share : share
 }
 
 function showNumber(calc: Calc, n: number, operand?: string): Calc {
@@ -100,35 +103,30 @@ function showNumber(calc: Calc, n: number, operand?: string): Calc {
   return {...calc, display, operand: operand ?? display, mode: "result"}
 }
 
-function operator(calc: Calc, op: Operator): Calc {
-  const terms = calc.mode === "operator"
-    ? [...calc.terms.slice(0, -1), {...calc.terms[calc.terms.length - 1], op}]
-    : [...calc.terms, {operand: calc.operand, value: value(calc), op}]
-  const display = format(leftOperand(terms))
-  return {display, operand: display, terms, mode: "operator"}
+function operator(calc: Calc, op: Operator): [Calc, string?] {
+  const terms = calc.mode === "operator" ? calc.terms.slice(0, -1) : calc.terms
+  const reduced = reduce(terms, {text: calc.operand, value: value(calc)}, precedence(op))
+  const display = format(reduced.right.value)
+  const logLine = reduced.lines.length > 0 ? reduced.lines.join("\n") : undefined
+  return [{display, operand: display, terms: [...reduced.terms, {...reduced.right, op}], mode: "operator"}, logLine]
 }
 
 function equals(calc: Calc): [Calc, string?] {
   if (calc.terms.length === 0) return [calc]
-  const display = format(evaluate(calc.terms, value(calc)).total)
-  const logLine = [...calc.terms.flatMap(term => [term.operand, term.op]), calc.operand, "=", display].join(" ")
-  return [{display, operand: display, terms: [], mode: "result"}, logLine]
+  const {right, lines} = reduce(calc.terms, {text: calc.operand, value: value(calc)}, 0)
+  return [{display: right.text, operand: right.text, terms: [], mode: "result"}, lines.join("\n")]
 }
 
-function leftOperand(terms: Term[]): number {
-  const {value, op} = terms[terms.length - 1]
-  const {total, product} = evaluate(terms.slice(0, -1), value)
-  return isAdditive(op) ? total : product
+function reduce(terms: Term[], right: Operand, minPrecedence: number): {terms: Term[], right: Operand, lines: string[]} {
+  const left = terms.at(-1)
+  if (!left || precedence(left.op) < minPrecedence) return {terms, right, lines: []}
+  const text = format(apply(left.value, left.op, right.value))
+  const reduced = reduce(terms.slice(0, -1), {text, value: Number(text)}, minPrecedence)
+  return {...reduced, lines: [`${left.text} ${left.op} ${right.text} = ${text}`, ...reduced.lines]}
 }
 
-function evaluate(terms: Term[], last: number): {total: number, product: number} {
-  const sumEnd = terms.map(term => isAdditive(term.op)).lastIndexOf(true)
-  const factors = terms.slice(sumEnd + 1)
-  const values = [...factors.map(term => term.value), last]
-  const product = factors.reduce((acc, {op}, i) => apply(acc, op, values[i + 1]), values[0])
-  if (sumEnd < 0) return {total: product, product}
-  const {value, op} = terms[sumEnd]
-  return {total: apply(evaluate(terms.slice(0, sumEnd), value).total, op, product), product}
+function precedence(op: Operator): number {
+  return isAdditive(op) ? 1 : 2
 }
 
 function isAdditive(op: Operator): boolean {

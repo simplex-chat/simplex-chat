@@ -59,7 +59,13 @@ test("calculator in business chat", async () => {
     }
     await send(["/2", "/+", "/2", "/="], receives(hasText("2 + 2 = 4")), receives(calculatorShows("4")), deletes("/+"))
     await send(["2 × (3 + 4) - 1"], receives(repliesTo("2 × (3 + 4) - 1", "13")), receives(calculatorShows("13")))
-    await send(["25", "+", "25", "="], receives(hasText("25 + 25 = 50")), receives(calculatorShows("50")), deletes("+"))
+    await send(
+      ["15", "+", "10", "+", "5", "="],
+      receives(hasText("15 + 10 = 25")),
+      receives(hasText("25 + 5 = 30")),
+      receives(calculatorShows("30")),
+      deletes("+"),
+    )
   } finally {
     await alice.close()
     await calculator.close()
