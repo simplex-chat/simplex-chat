@@ -858,7 +858,7 @@
         "lane1"
       ],
       "seed": 1203,
-      "text": "simplex.chat/badges/#app=true",
+      "text": "badges.simplex.chat/#/tier?app=true",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -880,7 +880,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "simplex.chat/badges/#app=true",
+      "originalText": "badges.simplex.chat/#/tier?app=true",
       "lineHeight": 1.3333333333333333
     },
     {
@@ -1308,7 +1308,7 @@
         "lane1"
       ],
       "seed": 1216,
-      "text": "The page's own second screen, quoted as it is. #app=true\nskips its Support SimpleX, which the app has just shown.\nNEW on the page: read that flag, start here, and remember it\nthrough the flow. The app builds the URL, so it can also say\nwhich kind of app it is - better than the page guessing from\nthe user agent (see lane C).",
+      "text": "The page's own second screen, quoted as it is. The flag\nin #/tier?app=true skips its Support SimpleX, which the\napp has just shown. NEW on the page: read that flag, start\nhere, and carry it: the session to checkout, then the order.\nThe app builds the URL, so it can also say which kind of\napp it is - better than guessing from the user agent.",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -1330,7 +1330,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "The page's own second screen, quoted as it is. #app=true\nskips its Support SimpleX, which the app has just shown.\nNEW on the page: read that flag, start here, and remember it\nthrough the flow. The app builds the URL, so it can also say\nwhich kind of app it is - better than the page guessing from\nthe user agent (see lane C).",
+      "originalText": "The page's own second screen, quoted as it is. The flag\nin #/tier?app=true skips its Support SimpleX, which the\napp has just shown. NEW on the page: read that flag, start\nhere, and carry it: the session to checkout, then the order.\nThe app builds the URL, so it can also say which kind of\napp it is - better than guessing from the user agent.",
       "lineHeight": 1.2222222222222223
     },
     {
@@ -1423,7 +1423,7 @@
         "lane1"
       ],
       "seed": 1303,
-      "text": "simplex.chat/badges/#app=true",
+      "text": "badges.simplex.chat/#/tier?app=true",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -1445,7 +1445,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "simplex.chat/badges/#app=true",
+      "originalText": "badges.simplex.chat/#/tier?app=true",
       "lineHeight": 1.3333333333333333
     },
     {
@@ -2035,7 +2035,7 @@
         "lane1"
       ],
       "seed": 1403,
-      "text": "simplex.chat/badges/?order=8f3a...#app=true",
+      "text": "badges.simplex.chat/?order=8f3a...",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -2057,7 +2057,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "simplex.chat/badges/?order=8f3a...#app=true",
+      "originalText": "badges.simplex.chat/?order=8f3a...",
       "lineHeight": 1.3333333333333333
     },
     {
@@ -2687,7 +2687,7 @@
         "lane1"
       ],
       "seed": 1503,
-      "text": "simplex.chat/badges/?order=8f3a...#app=true",
+      "text": "badges.simplex.chat/?order=8f3a...",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -2709,7 +2709,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "simplex.chat/badges/?order=8f3a...#app=true",
+      "originalText": "badges.simplex.chat/?order=8f3a...",
       "lineHeight": 1.3333333333333333
     },
     {
@@ -3078,7 +3078,7 @@
         "lane1"
       ],
       "seed": 1513,
-      "text": "Replaces codeIssued when #app=true. The code is still\nminted and still saved in the browser, so Show code\nrecovers it if the link fails. simplexchat: is a scheme of its\nown, registered everywhere including mobile, so a badge link\ncan never be read as a connection link. Whether a browser\nwill follow it with no tap is the open question.",
+      "text": "Replaces codeIssued for a mobile app purchase. The flag is\nnot in the URL here - it rode the session to checkout and is\nstamped on the order. The code is still minted and saved, so\nShow code recovers it if the link fails; a code that could\nnot be saved gets the plain screen instead. simplexchat: is a\nscheme of its own, so a badge link can never be read as a\nconnection link. The attempt is silent where it is blocked.",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -3100,7 +3100,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "Replaces codeIssued when #app=true. The code is still\nminted and still saved in the browser, so Show code\nrecovers it if the link fails. simplexchat: is a scheme of its\nown, registered everywhere including mobile, so a badge link\ncan never be read as a connection link. Whether a browser\nwill follow it with no tap is the open question.",
+      "originalText": "Replaces codeIssued for a mobile app purchase. The flag is\nnot in the URL here - it rode the session to checkout and is\nstamped on the order. The code is still minted and saved, so\nShow code recovers it if the link fails; a code that could\nnot be saved gets the plain screen instead. simplexchat: is a\nscheme of its own, so a badge link can never be read as a\nconnection link. The attempt is silent where it is blocked.",
       "lineHeight": 1.2222222222222223
     },
     {
@@ -8510,7 +8510,7 @@
         "lane3"
       ],
       "seed": 3203,
-      "text": "simplex.chat/badges/#app=desktop",
+      "text": "badges.simplex.chat/#/tier?app=desktop",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -8532,7 +8532,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "simplex.chat/badges/#app=desktop",
+      "originalText": "badges.simplex.chat/#/tier?app=desktop",
       "lineHeight": 1.3333333333333333
     },
     {
@@ -8965,7 +8965,7 @@
         "lane3"
       ],
       "seed": 3215,
-      "text": "codeIssued as it ships, with one line changed. The app builds\nthe URL, so #app=desktop is a fact rather than a guess -\nbetter than sniffing the user agent, which cannot tell a\ndesktop browser opened by SimpleX from any other. Mobile\ngets #app=true and the A5 screen instead.",
+      "text": "codeIssued as it ships, with one line changed. The app builds\nthe URL, so ?app=desktop is a fact rather than a guess -\nbetter than sniffing the user agent, which cannot tell a\ndesktop browser opened by SimpleX from any other. Mobile\ngets ?app=true and the A5 screen instead.",
       "fontSize": 9,
       "fontFamily": 2,
       "textAlign": "left",
@@ -8987,7 +8987,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "codeIssued as it ships, with one line changed. The app builds\nthe URL, so #app=desktop is a fact rather than a guess -\nbetter than sniffing the user agent, which cannot tell a\ndesktop browser opened by SimpleX from any other. Mobile\ngets #app=true and the A5 screen instead.",
+      "originalText": "codeIssued as it ships, with one line changed. The app builds\nthe URL, so ?app=desktop is a fact rather than a guess -\nbetter than sniffing the user agent, which cannot tell a\ndesktop browser opened by SimpleX from any other. Mobile\ngets ?app=true and the A5 screen instead.",
       "lineHeight": 1.4666666666666666
     },
     {
@@ -9078,7 +9078,7 @@
         "lane3"
       ],
       "seed": 3303,
-      "text": "1.  Desktop has no scheme handler today. Nothing in the desktop module registers one and nothing handles it: appOpenUrl is wired in commonMain but has no desktop plumbing, and\n     desktop/build.gradle.kts declares only Deb, Dmg, Msi and Exe with no protocol entry. Adding one is per-OS work - CFBundleURLTypes plus setOpenURIHandler on macOS, registry keys\n     the MSI would have to write on Windows, a .desktop file with x-scheme-handler/simplexchat on Linux - and it would still not cover an unpackaged run. Hence D1: desktop does not wait for it.\n\n2.  Will a browser follow it without a tap? Safari and Chrome both refuse some scheme navigations that no user gesture asked for, and a refused one can show an error page rather\n     than nothing. That is what Return to SimpleX is for, and why Show code sits under it - but it decides whether the automatic attempt is worth making at all.",
+      "text": "1.  Desktop has no scheme handler today. Nothing in the desktop module registers one and nothing handles it: appOpenUrl is wired in commonMain but has no desktop plumbing, and\n     desktop/build.gradle.kts declares only Deb, Dmg, Msi and Exe with no protocol entry. Adding one is per-OS work - CFBundleURLTypes plus setOpenURIHandler on macOS, registry keys\n     the MSI would have to write on Windows, a .desktop file with x-scheme-handler/simplexchat on Linux - and it would still not cover an unpackaged run. Hence D1: desktop does not wait for it.\n\n2.  Will a browser follow it without a tap? The attempt is made from a hidden frame, so a refusal stays inside the frame rather than replacing the screen with an error page that would\n     put the code into history. Expect nothing to happen on iOS Safari, which has ignored custom schemes in frames for years, nor on Chrome, which blocks a gestureless external-protocol\n     launch - and a payment settling minutes after the last tap has no gesture. So Return to SimpleX is the real path. What is left is to try it on devices once the app registers the scheme.",
       "fontSize": 10,
       "fontFamily": 2,
       "textAlign": "left",
@@ -9100,7 +9100,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "1.  Desktop has no scheme handler today. Nothing in the desktop module registers one and nothing handles it: appOpenUrl is wired in commonMain but has no desktop plumbing, and\n     desktop/build.gradle.kts declares only Deb, Dmg, Msi and Exe with no protocol entry. Adding one is per-OS work - CFBundleURLTypes plus setOpenURIHandler on macOS, registry keys\n     the MSI would have to write on Windows, a .desktop file with x-scheme-handler/simplexchat on Linux - and it would still not cover an unpackaged run. Hence D1: desktop does not wait for it.\n\n2.  Will a browser follow it without a tap? Safari and Chrome both refuse some scheme navigations that no user gesture asked for, and a refused one can show an error page rather\n     than nothing. That is what Return to SimpleX is for, and why Show code sits under it - but it decides whether the automatic attempt is worth making at all.",
+      "originalText": "1.  Desktop has no scheme handler today. Nothing in the desktop module registers one and nothing handles it: appOpenUrl is wired in commonMain but has no desktop plumbing, and\n     desktop/build.gradle.kts declares only Deb, Dmg, Msi and Exe with no protocol entry. Adding one is per-OS work - CFBundleURLTypes plus setOpenURIHandler on macOS, registry keys\n     the MSI would have to write on Windows, a .desktop file with x-scheme-handler/simplexchat on Linux - and it would still not cover an unpackaged run. Hence D1: desktop does not wait for it.\n\n2.  Will a browser follow it without a tap? The attempt is made from a hidden frame, so a refusal stays inside the frame rather than replacing the screen with an error page that would\n     put the code into history. Expect nothing to happen on iOS Safari, which has ignored custom schemes in frames for years, nor on Chrome, which blocks a gestureless external-protocol\n     launch - and a payment settling minutes after the last tap has no gesture. So Return to SimpleX is the real path. What is left is to try it on devices once the app registers the scheme.",
       "lineHeight": 1.4444444444444444
     },
     {
@@ -9191,7 +9191,7 @@
         "lane3"
       ],
       "seed": 3403,
-      "text": "The browser lane needs nothing from the service: the code purchase runs exactly as it ships, the browser mints the code and sends only its SHA-256, and the only reason the buyer\nnever sees one is that the link carries it instead of the screen. The store lane is the part that does need service work - purchaseBadge has to accept a store receipt and verify it,\nand no provider adapter for that exists today.\n\nThe page needs three things: read ?app and start at Choose your badge; at the end, try the deep link and offer Return to SimpleX with Show code under it; and for #app=desktop,\nkeep showing codeIssued as it does now.\n\nThe app needs: Buy in browser without its confirm alert; a handler for the new link; A6, a spinner around the existing apiRedeemBadgeCode; on desktop, opening Redeem code alongside\nthe browser; and for the store lane, B4's checkout and the two BadgeState outcomes behind B5.\n\nWhat it costs: the app cannot show a price before sending the buyer out, because it has no catalog - Buy in browser is a leap into a page. And the code still exists, so it can be\nintercepted, screenshotted from the backup button, or pasted somewhere else. Hidden is not the same as absent.",
+      "text": "The browser lane needs nothing from the service: the code purchase runs exactly as it ships, the browser mints the code and sends only its SHA-256, and the only reason the buyer\nnever sees one is that the link carries it instead of the screen. The store lane is the part that does need service work - purchaseBadge has to accept a store receipt and verify it,\nand no provider adapter for that exists today.\n\nThe page needs three things: read the app flag from the fragment and start at Choose your badge; at the end, try the deep link and offer Return to SimpleX with Show code under it;\nand for ?app=desktop, keep showing codeIssued as it does now.\n\nThe app needs: Buy in browser without its confirm alert; a handler for the new link; A6, a spinner around the existing apiRedeemBadgeCode; on desktop, opening Redeem code alongside\nthe browser; and for the store lane, B4's checkout and the two BadgeState outcomes behind B5.\n\nWhat it costs: the app cannot show a price before sending the buyer out, because it has no catalog - Buy in browser is a leap into a page. And the code still exists, so it can be\nintercepted, screenshotted from the backup button, or pasted somewhere else. Hidden is not the same as absent.",
       "fontSize": 10,
       "fontFamily": 2,
       "textAlign": "left",
@@ -9213,7 +9213,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "The browser lane needs nothing from the service: the code purchase runs exactly as it ships, the browser mints the code and sends only its SHA-256, and the only reason the buyer\nnever sees one is that the link carries it instead of the screen. The store lane is the part that does need service work - purchaseBadge has to accept a store receipt and verify it,\nand no provider adapter for that exists today.\n\nThe page needs three things: read ?app and start at Choose your badge; at the end, try the deep link and offer Return to SimpleX with Show code under it; and for #app=desktop,\nkeep showing codeIssued as it does now.\n\nThe app needs: Buy in browser without its confirm alert; a handler for the new link; A6, a spinner around the existing apiRedeemBadgeCode; on desktop, opening Redeem code alongside\nthe browser; and for the store lane, B4's checkout and the two BadgeState outcomes behind B5.\n\nWhat it costs: the app cannot show a price before sending the buyer out, because it has no catalog - Buy in browser is a leap into a page. And the code still exists, so it can be\nintercepted, screenshotted from the backup button, or pasted somewhere else. Hidden is not the same as absent.",
+      "originalText": "The browser lane needs nothing from the service: the code purchase runs exactly as it ships, the browser mints the code and sends only its SHA-256, and the only reason the buyer\nnever sees one is that the link carries it instead of the screen. The store lane is the part that does need service work - purchaseBadge has to accept a store receipt and verify it,\nand no provider adapter for that exists today.\n\nThe page needs three things: read the app flag from the fragment and start at Choose your badge; at the end, try the deep link and offer Return to SimpleX with Show code under it;\nand for ?app=desktop, keep showing codeIssued as it does now.\n\nThe app needs: Buy in browser without its confirm alert; a handler for the new link; A6, a spinner around the existing apiRedeemBadgeCode; on desktop, opening Redeem code alongside\nthe browser; and for the store lane, B4's checkout and the two BadgeState outcomes behind B5.\n\nWhat it costs: the app cannot show a price before sending the buyer out, because it has no catalog - Buy in browser is a leap into a page. And the code still exists, so it can be\nintercepted, screenshotted from the backup button, or pasted somewhere else. Hidden is not the same as absent.",
       "lineHeight": 2
     },
     {
