@@ -3,7 +3,7 @@ import { badgeIcon, chevronLeft, hamburger, hasBadgeArt, methodMark, wefunderMar
 import { paymentUri, qrSvg } from "./qr.js";
 import type { HistoryRow, UnpaidOrder } from "./order.js";
 import type { InvoiceView } from "./api.js";
-import { THEMES, type Method, type Theme } from "./domain.js";
+import { THEMES, type App, type Method, type Theme } from "./domain.js";
 import type { CardFailure } from "./stripe.js";
 import { CROWDFUNDING_ACTIVE, WEFUNDER_URL, dollars } from "./crowdfunding.js";
 
@@ -785,7 +785,11 @@ export function windowClosed(o: WindowClosedOptions): HTMLElement {
 export interface CodeIssuedOptions {
   code: string;
   savedLocally: boolean;
+  app?: App | undefined;
 }
+
+export const REDEEM_IN_SETTINGS = "Settings → Supporter perks → Redeem code";
+export const REDEEM_SCREEN_OPEN = "The Redeem code screen is already open.";
 
 export function codeIssued(o: CodeIssuedOptions): HTMLElement {
   const onlyCopy = o.savedLocally
@@ -808,7 +812,7 @@ export function codeIssued(o: CodeIssuedOptions): HTMLElement {
   const details = el("div", { class: "details" },
     el("div", { class: "rows plain" },
       el("span", { class: "label" }, "Redeem it in the app"),
-      el("div", {}, "Settings → Supporter perks → Redeem code"),
+      el("div", {}, o.app === "desktop" ? REDEEM_SCREEN_OPEN : REDEEM_IN_SETTINGS),
     ),
     onlyCopy,
   );
@@ -817,6 +821,32 @@ export function codeIssued(o: CodeIssuedOptions): HTMLElement {
   split.append(details);
   p.append(split);
   return p;
+}
+
+export const RETURN_TO_APP = "Return to SimpleX";
+export const SHOW_CODE = "Show code";
+
+export interface ReturnToAppOptions {
+  onReturn: () => void;
+  onShowCode: () => void;
+}
+
+export function returnToApp(o: ReturnToAppOptions): HTMLElement {
+  return panel(
+    el("h1", { class: "tight" }, "Paid"),
+    el("p", { class: "lede" },
+      el("span", { class: "line" }, "Opening SimpleX to add your badge."), " ",
+      el("span", { class: "line" }, "If nothing happens, use the button."),
+    ),
+    button(RETURN_TO_APP, o.onReturn),
+    el("p", { class: "row-line center" }, button(SHOW_CODE, o.onShowCode, "link")),
+  );
+}
+
+// A refused or unhandled scheme fails inside this frame, so no error page replaces the screen and no entry
+// joins the history; the frame's first navigation replaces its about:blank.
+export function appLauncher(link: string): HTMLIFrameElement {
+  return el("iframe", { src: link, hidden: "", "aria-hidden": "true", tabindex: "-1" });
 }
 
 const MONTHS: readonly string[] = [

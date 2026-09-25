@@ -688,6 +688,42 @@ domTest("screens: the code screen is the one screen that prints a code, with the
   assert.deepEqual(copied, [HELD_CODE]);
 });
 
+domTest("screens: opened from the desktop app, the code screen says the Redeem code screen is already open", () => {
+  const p = render(screens.codeIssued({ code: HELD_CODE, savedLocally: true, app: "desktop" }));
+  assert.ok(p.textContent.includes("Redeem it in the app"));
+  assert.ok(p.textContent.includes(screens.REDEEM_SCREEN_OPEN));
+  assert.ok(!p.textContent.includes(screens.REDEEM_IN_SETTINGS), "one way to redeem, the one already on screen");
+  assert.ok(p.textContent.includes(HELD_CODE), "and the code itself is unchanged");
+});
+
+domTest("screens: opened from the mobile app, the code screen behind Show code is the plain one", () => {
+  const plain = render(screens.codeIssued({ code: HELD_CODE, savedLocally: true }));
+  const mobile = render(screens.codeIssued({ code: HELD_CODE, savedLocally: true, app: "mobile" }));
+  assert.equal(mobile.textContent, plain.textContent);
+});
+
+domTest("screens: the return-to-app ending offers the link and Show code, and prints no code", () => {
+  let returned = 0;
+  let shown = 0;
+  const p = render(screens.returnToApp({ onReturn: () => { returned += 1; }, onShowCode: () => { shown += 1; } }));
+  assert.equal(p.all("h1")[0]!.textContent, "Paid");
+  assert.ok(p.textContent.includes("Opening SimpleX to add your badge."));
+  assert.ok(p.textContent.includes("If nothing happens, use the button."));
+  assertNoCode(p, "the return-to-app ending");
+  p.all("button.primary").find((b) => b.textContent === screens.RETURN_TO_APP)!.click();
+  p.all("button.link").find((b) => b.textContent === screens.SHOW_CODE)!.click();
+  assert.deepEqual([returned, shown], [1, 1]);
+});
+
+domTest("screens: the launcher is a hidden frame out of the tab order, pointed at the link", () => {
+  const f = render(screens.appLauncher("simplexchat:/badge/code/X"));
+  assert.equal(f.tagName, "iframe");
+  assert.equal(f.getAttribute("src"), "simplexchat:/badge/code/X");
+  assert.ok(f.hasAttribute("hidden"));
+  assert.equal(f.getAttribute("aria-hidden"), "true");
+  assert.equal(f.getAttribute("tabindex"), "-1");
+});
+
 domTest("screens: the code screen drops its saved-copy clause where the local write failed", () => {
   const p = render(screens.codeIssued({ code: HELD_CODE, savedLocally: false }));
   assert.ok(p.textContent.includes("This code could not be saved in this browser."));

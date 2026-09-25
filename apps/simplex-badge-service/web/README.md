@@ -56,7 +56,7 @@ is plain TypeScript, tested directly in Node.
 | `format.ts` | Money, countdowns and elapsed time as the words a screen prints |
 | `store.ts` | The three `localStorage` keys — session, orders and the chosen theme |
 | `order.ts` | What an order's state means: what to keep from a response, which screen it selects, and its history row |
-| `routing.ts` | Reading `?order=` and the store into what to render |
+| `routing.ts` | Reading `?order=`, the step hash with its `?app=` flag, and the store into what to render; the `simplexchat:` link that hands a code to the app |
 | `api.ts` | The three routes — create, cancel and read — and the long-poll wait loop, with `fetch`, sleep and the clock injected |
 | `flow.ts` | Payment flow control logic — pure, no DOM, no globals |
 | `stripe.ts` | Loading Stripe.js, mounting the Payment Element, confirming, and the no-key stand-in |

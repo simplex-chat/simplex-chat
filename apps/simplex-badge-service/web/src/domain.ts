@@ -5,18 +5,22 @@ export const THEMES = ["light", "dark", "system"] as const;
 const ORDER_STATUSES = ["open", "paid", "expired"] as const;
 const METHODS = ["card", "btc", "xmr"] as const;
 const CHAINS = ["btc", "xmr"] as const;
+const APPS = ["mobile", "desktop"] as const;
 
 export type Step = (typeof STEPS)[number];
 export type Theme = (typeof THEMES)[number];
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type Method = (typeof METHODS)[number];
 export type Chain = (typeof CHAINS)[number];
+/** The SimpleX app that opened the page, which decides how the code is handed over at the end. */
+export type App = (typeof APPS)[number];
 
 export const readStep = oneOf(STEPS);
 export const readTheme = oneOf(THEMES);
 export const readStatus = oneOf(ORDER_STATUSES);
 export const readMethod = oneOf(METHODS);
 export const readChain = oneOf(CHAINS);
+export const readApp = oneOf(APPS);
 
 /** The optional fields are written `| undefined` so a patch can set one back to undefined to clear it. */
 export interface SessionRecord {
@@ -24,6 +28,7 @@ export interface SessionRecord {
   priceId?: string | undefined;
   offerId?: string | undefined;
   method?: Method | undefined;
+  app?: App | undefined;
 }
 
 export interface OrderIdentity {
@@ -39,6 +44,7 @@ export interface OrderLocalState {
   submitted: boolean | undefined;
   canceled: boolean | undefined;
   method: Method | undefined;
+  app: App | undefined;
 }
 
 /** Every field is a required key even when undefined, so a withdrawn field cannot survive in the stored record. */

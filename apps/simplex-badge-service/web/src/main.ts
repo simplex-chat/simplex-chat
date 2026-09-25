@@ -5,12 +5,12 @@ import { Flow, type CheckoutOutcome, type Selection } from "./flow.js";
 import { applyView, historyRows, selectionFromOrder, type PaymentView, withoutDestination } from "./order.js";
 import { money, moneyCompact } from "./format.js";
 import * as api from "./api.js";
-import { resolveLoad } from "./routing.js";
+import { appCodeLink, readHash, resolveLoad } from "./routing.js";
 import * as screens from "./screens.js";
 import { appearanceFor, cardPlan, loadStripeJs, mountCard, publishableKey, type CardFailure, type ConfirmOutcome } from "./stripe.js";
 import { Store, type StorageLike } from "./store.js";
 import { STEPS } from "./domain.js";
-import type { Method, OrderRecord, SessionRecord, Step, Theme } from "./domain.js";
+import type { App, Method, OrderRecord, SessionRecord, Step, Theme } from "./domain.js";
 import { EMBED_READY, HEIGHT_MESSAGE, NAV_MESSAGE, THEME_MESSAGE, bgFromMessage, isNewPurchaseMessage, returnUrlFromMessage, routeFromMessage, themeFromMessage, trustedHost } from "./embed.js";
 
 const app = document.getElementById("app");
@@ -268,7 +268,8 @@ const panels: HTMLElement[] = [];
 let index = 0;
 
 function landingIndex(): number {
-  const fromHash = STEPS.findIndex((s) => HASHES[s] === location.hash);
+  const { route } = readHash(location.hash);
+  const fromHash = STEPS.findIndex((s) => HASHES[s] === route);
   return fromHash >= 0 ? fromHash + 1 : 0;
 }
 
@@ -486,7 +487,7 @@ async function pay(): Promise<void> {
   const since = flow.epoch;
   let outcome: CheckoutOutcome;
   try {
-    outcome = await flow.checkout(sel);
+    outcome = await flow.checkout(sel, session.app);
   } finally {
     checkoutInFlight = false;
   }
@@ -507,7 +508,7 @@ async function pay(): Promise<void> {
     }
     case "catalogChanged":
       root.replaceChildren(screens.catalogChanged(() => {
-        newInvoice();
+        newInvoice(session.app);
       }));
       return;
     case "rateLimited": {
@@ -606,7 +607,7 @@ async function cancelInvoice(orderId: string): Promise<void> {
     return;
   }
   store.markCanceled(orderId);
-  newInvoice();
+  newInvoice(store.order(orderId)?.app);
 }
 
 // The Cancel button's disabled attribute does not survive a repaint, so this flag allows one cancel at a time.
@@ -631,8 +632,10 @@ function resetToLanding(nav: "push" | "replace"): void {
   announceLocation();
 }
 
-function newInvoice(): void {
+// A purchase started over keeps the app that opened the page, or its order would end by showing the code.
+function newInvoice(openedBy: App | undefined): void {
   store.clearSession();
+  if (openedBy !== undefined) store.saveSession({ app: openedBy });
   resetToLanding("replace");
 }
 
@@ -664,10 +667,10 @@ function paint(view: PaymentView): void {
   syncChrome();
   switch (view.screen) {
     case "unknownOrder":
-      root.replaceChildren(screens.unknownOrder(newInvoice));
+      root.replaceChildren(screens.unknownOrder(() => { newInvoice(store.session().app); }));
       return;
     case "codeIssued":
-      root.replaceChildren(screens.codeIssued({ code: view.code, savedLocally: view.savedLocally }));
+      root.replaceChildren(codeScreen(view));
       return;
     case "paidNoCode":
       root.replaceChildren(screens.paidNoCode({ order: view.order, settledAt: view.invoice?.settledAt }));
@@ -695,7 +698,7 @@ function paint(view: PaymentView): void {
       root.replaceChildren(screens.windowClosed({
         order: view.order, invoice: view.invoice, offline: isOffline(),
         canceled: store.order(view.order.orderId)?.canceled === true,
-        onNewInvoice: newInvoice,
+        onNewInvoice: () => { newInvoice(view.order.app); },
       }));
       return;
     case "cardForm":
@@ -704,10 +707,34 @@ function paint(view: PaymentView): void {
     case "detailsUnavailable":
       root.replaceChildren(screens.detailsUnavailable({
         order: view.order,
-        onCheckAgain: () => checkAgain(view.order.orderId), onNewInvoice: newInvoice,
+        onCheckAgain: () => checkAgain(view.order.orderId), onNewInvoice: () => { newInvoice(view.order.app); },
       }));
       return;
   }
+}
+
+type CodeView = Extract<PaymentView, { screen: "codeIssued" }>;
+
+const codeRevealed = new Set<string>();
+const appLaunched = new Set<string>();
+
+function codeScreen(view: CodeView): HTMLElement {
+  const { orderId } = view.order;
+  // An unsaved code exists only on this screen, so it is never held back behind a link that may fail.
+  if (view.order.app !== "mobile" || !view.savedLocally || codeRevealed.has(orderId)) {
+    return screens.codeIssued({ code: view.code, savedLocally: view.savedLocally, app: view.order.app });
+  }
+  const link = appCodeLink(view.code);
+  const ending = screens.returnToApp({
+    onReturn: () => { location.href = link; },
+    onShowCode: () => { codeRevealed.add(orderId); paint(view); },
+  });
+  // A connectivity event repaints this screen, and each repaint must not fire the scheme again.
+  if (!appLaunched.has(orderId)) {
+    appLaunched.add(orderId);
+    ending.append(screens.appLauncher(link));
+  }
+  return ending;
 }
 
 let cardElementDestroy: (() => void) | null = null;
@@ -783,7 +810,7 @@ function cardFailureScreen(view: CardView, reason: CardFailure): HTMLElement {
   return screens.cardUnavailable({
     order: view.order, reason,
     onRetry: () => { renderCardForm(view); },
-    onNewInvoice: newInvoice,
+    onNewInvoice: () => { newInvoice(view.order.app); },
   });
 }
 
@@ -924,6 +951,10 @@ function registerServiceWorker(): void {
 
 // The shell prerenders the welcome page, so the document is that page until the first render, and a load resolving to a codes or order screen never mounts the wizard for measureWelcome to read.
 if (embedded && welcomeHeight <= 0) welcomeHeight = Math.ceil(document.documentElement.getBoundingClientRect().height);
+
+// Read before the first sync rewrites the hash, which drops the flag from the URL.
+const entryApp = readHash(location.hash).app;
+if (entryApp !== undefined) store.saveSession({ app: entryApp });
 
 syncFromLocation(true);
 document.documentElement.classList.remove("sb-booting");
