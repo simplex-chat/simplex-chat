@@ -84,18 +84,31 @@ appTest("main: with the automatic attempt refused, Return to SimpleX still navig
   assert.equal(heading(), "Paid", "and the screen is still there to fall back on");
 });
 
-appTest("main: Show code reveals the code codeIssued would have shown, and it stays revealed", async () => {
+appTest("main: Show code reveals the stored code in place, keeps Return to SimpleX, and it stays revealed", async () => {
   screenOf(app).all("button.link").find((b) => b.textContent === "Show code")!.click();
-  assert.equal(heading(), "Paid. Here is your code.");
   const code = stored().code as string;
-  assert.equal(screenOf(app).all("div.code")[0]!.textContent, code);
-  assert.ok(screenOf(app).textContent.includes("Settings → Supporter perks → Redeem code"));
+  const revealed = (): void => {
+    assert.equal(heading(), "Paid", "still the ending, not the plain code screen");
+    assert.equal(screenOf(app).all("div.code")[0]!.textContent, code);
+    assert.equal(screenOf(app).all("svg").filter((s) => s.getAttribute("class") === "qr").length, 0, "no QR");
+    assert.ok(screenOf(app).all("button.primary").some((b) => b.textContent === "Return to SimpleX"));
+  };
+  revealed();
+  assert.equal(screenOf(app).all("iframe").length, 0, "revealing does not fire the link again");
+
+  page.clipboard.writes.length = 0;
+  screenOf(app).all("button.primary").find((b) => b.textContent === "Copy code")!.click();
+  await settle();
+  assert.deepEqual(page.clipboard.writes, [code]);
 
   page.setOffline(true);
   await settle();
   page.setOffline(false);
   await settle();
-  assert.equal(heading(), "Paid. Here is your code.", "a repaint does not hide it again");
+  revealed();
+
+  screenOf(app).all("button.primary").find((b) => b.textContent === "Return to SimpleX")!.click();
+  assert.equal((location as { href?: string }).href, `simplexchat:/badge/code/${code}`, "the button still works once the code is out");
 });
 
 appTest("main: nothing the page wrote to history or storage outside the order holds the link", () => {

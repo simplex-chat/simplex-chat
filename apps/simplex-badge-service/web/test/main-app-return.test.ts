@@ -33,6 +33,6 @@ returnTest("main: back from Stripe, the order's own flag picks the return-to-app
 
 returnTest("main: Show code reveals the stored code", () => {
   screenOf(app).all("button.link").find((b) => b.textContent === "Show code")!.click();
-  assert.equal(heading(), "Paid. Here is your code.");
+  assert.equal(heading(), "Paid");
   assert.equal(screenOf(app).all("div.code")[0]!.textContent, CODE);
 });

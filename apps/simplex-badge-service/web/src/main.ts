@@ -721,13 +721,15 @@ const appLaunched = new Set<string>();
 function codeScreen(view: CodeView): HTMLElement {
   const { orderId } = view.order;
   // An unsaved code exists only on this screen, so it is never held back behind a link that may fail.
-  if (view.order.app !== "mobile" || !view.savedLocally || codeRevealed.has(orderId)) {
+  if (view.order.app !== "mobile" || !view.savedLocally) {
     return screens.codeIssued({ code: view.code, savedLocally: view.savedLocally, app: view.order.app });
   }
   const link = appCodeLink(view.code);
   const ending = screens.returnToApp({
     onReturn: () => { location.href = link; },
-    onShowCode: () => { codeRevealed.add(orderId); paint(view); },
+    code: codeRevealed.has(orderId)
+      ? { kind: "shown", code: view.code, savedLocally: view.savedLocally }
+      : { kind: "hidden", onShow: () => { codeRevealed.add(orderId); paint(view); } },
   });
   // A connectivity event repaints this screen, and each repaint must not fire the scheme again.
   if (!appLaunched.has(orderId)) {

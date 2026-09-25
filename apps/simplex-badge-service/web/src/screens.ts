@@ -791,7 +791,12 @@ export interface CodeIssuedOptions {
 export const REDEEM_IN_SETTINGS = "Settings → Supporter perks → Redeem code";
 export const REDEEM_SCREEN_OPEN = "The Redeem code screen is already open.";
 
-export function codeIssued(o: CodeIssuedOptions): HTMLElement {
+function codeWithCopy(code: string): HTMLElement[] {
+  const copy = copyControl("Copy code", code, "primary outline");
+  return [el("div", { class: "code" }, code), copy.control, copy.status];
+}
+
+function codeDetails(o: CodeIssuedOptions): HTMLElement {
   const onlyCopy = o.savedLocally
     ? el("div", { class: "warn" },
         el("span", { class: "title" }, "This is the only copy."),
@@ -800,25 +805,25 @@ export function codeIssued(o: CodeIssuedOptions): HTMLElement {
     : el("div", { class: "warn" },
         el("span", { class: "title" }, "This code could not be saved in this browser."),
         el("p", {}, "Copy it now. It is shown here and nowhere else."));
-  const copy = copyControl("Copy code", o.code, "primary outline");
-  const p = panel(
-    el("div", { class: "tick" }, "✓"),
-    el("h1", { class: "tight center" }, "Paid. Here is your code."),
-    el("div", { class: "code" }, o.code),
-    copy.control,
-    copy.status,
-  );
-  const qr = qrFigure(o.code, "Badge code as a scannable code", "scan to carry it to your phone");
-  const details = el("div", { class: "details" },
+  return el("div", { class: "details" },
     el("div", { class: "rows plain" },
       el("span", { class: "label" }, "Redeem it in the app"),
       el("div", {}, o.app === "desktop" ? REDEEM_SCREEN_OPEN : REDEEM_IN_SETTINGS),
     ),
     onlyCopy,
   );
+}
+
+export function codeIssued(o: CodeIssuedOptions): HTMLElement {
+  const p = panel(
+    el("div", { class: "tick" }, "✓"),
+    el("h1", { class: "tight center" }, "Paid. Here is your code."),
+    ...codeWithCopy(o.code),
+  );
+  const qr = qrFigure(o.code, "Badge code as a scannable code", "scan to carry it to your phone");
   const split = el("div", { class: "split" });
   if (qr !== null) split.append(qr);
-  split.append(details);
+  split.append(codeDetails(o));
   p.append(split);
   return p;
 }
@@ -826,21 +831,34 @@ export function codeIssued(o: CodeIssuedOptions): HTMLElement {
 export const RETURN_TO_APP = "Return to SimpleX";
 export const SHOW_CODE = "Show code";
 
+export type AppCode =
+  | { kind: "hidden"; onShow: () => void }
+  | { kind: "shown"; code: string; savedLocally: boolean };
+
 export interface ReturnToAppOptions {
   onReturn: () => void;
-  onShowCode: () => void;
+  code: AppCode;
 }
 
+// The buyer is on the phone the code is for, so the revealed code comes without the QR that would carry it there.
 export function returnToApp(o: ReturnToAppOptions): HTMLElement {
-  return panel(
+  const p = panel(
+    el("div", { class: "tick" }, "✓"),
     el("h1", { class: "tight" }, "Paid"),
     el("p", { class: "lede" },
       el("span", { class: "line" }, "Opening SimpleX to add your badge."), " ",
       el("span", { class: "line" }, "If nothing happens, use the button."),
     ),
     button(RETURN_TO_APP, o.onReturn),
-    el("p", { class: "row-line center" }, button(SHOW_CODE, o.onShowCode, "link")),
   );
+  switch (o.code.kind) {
+    case "hidden":
+      p.append(el("p", { class: "row-line center" }, button(SHOW_CODE, o.code.onShow, "link")));
+      return p;
+    case "shown":
+      p.append(...codeWithCopy(o.code.code), el("div", { class: "split" }, codeDetails(o.code)));
+      return p;
+  }
 }
 
 // A refused or unhandled scheme fails inside this frame, so no error page replaces the screen and no entry
