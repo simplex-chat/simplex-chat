@@ -32,6 +32,10 @@ These files can be used with LLM prompts, e.g. if you use Claude Code you can cr
 
 For Android/Desktop and iOS apps you can additionally import `apps/multiplatform/README.md` and `apps/ios/README.md`.
 
+## Building the core library
+
+All client apps link against the Haskell core library, which is not in the repo and is not built by the app build systems. ./contributing/CORE-LIBS.md has the commands per target (Android, desktop, iOS) and their prerequisites.
+
 ## Compiling with SQLCipher encryption enabled
 
 Add `cabal.project.local` to project root with the location of OpenSSL headers and libraries and flag setting encryption mode:
