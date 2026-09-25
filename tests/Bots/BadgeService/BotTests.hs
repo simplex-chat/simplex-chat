@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -1679,6 +1680,7 @@ testPurchaseStrandedUnderOtherProfile ps =
       -- presented again under whichever profile is active, the purchase reaches the keys alice stashed
       alice ##> unsettled 2
       alice <## "badge purchase delivered to another profile"
+      (alice </)
       rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 1
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
       alice ##> "/user alice"
@@ -1701,5 +1703,6 @@ testPurchaseDeliveredToHiddenProfile ps =
       -- the answer names only the presenting profile, and nothing printed names the hidden one
       alice ##> unsettled 2
       alice <## "badge purchase delivered to another profile"
+      (alice </)
       alice ##> "/user alice password"
       showActiveUser alice "alice (Alice, * supporter)"
