@@ -1143,6 +1143,10 @@
   <string name="app_check_for_updates_installed_successfully_title">Installed successfully</string>
   <string name="app_check_for_updates_installed_successfully_desc">Please restart the app.</string>
   <string name="app_check_for_updates_canceled">Update download canceled</string>
+  <string name="app_check_for_updates_check_failed_title">Could not check for updates</string>
+  <string name="app_check_for_updates_check_failed_desc">Check your network connection and proxy settings (Settings → Network). You can download updates manually from GitHub Releases.</string>
+  <string name="app_check_for_updates_download_failed_title">Could not download update</string>
+  <string name="app_check_for_updates_download_failed_desc">Check your network connection and proxy settings. You can download the update manually from GitHub Releases.</string>
   <string name="app_check_for_updates_button_remind_later">Remind later</string>
   <string name="app_check_for_updates_notice_title">Check for updates</string>
   <string name="app_check_for_updates_notice_desc">To be notified about the new releases, turn on periodic check for Stable or Beta versions.</string>
