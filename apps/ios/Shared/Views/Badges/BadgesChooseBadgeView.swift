@@ -1,5 +1,5 @@
 //
-//  BadgesYourLevelView.swift
+//  BadgesChooseBadgeView.swift
 //  SimpleX (iOS)
 //
 //  Created by spaced4ndy on 28.07.2026.
@@ -30,10 +30,10 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
         }
     }
 
-    var tagline: LocalizedStringKey {
+    var summary: LocalizedStringKey {
         switch self {
-        case .supporter: "Optional profile badge\nand 2GB files"
-        case .legend: "Optional profile badge\nand 5GB files"
+        case .supporter: "Supporter: 2 GB files available for 7 days."
+        case .legend: "Legend: 5 GB files available for 21 days."
         }
     }
 
@@ -45,7 +45,7 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
     }
 }
 
-struct BadgesYourLevelView: View {
+struct BadgesChooseBadgeView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
     @State private var selectedLevel: BadgeLevel = .supporter
@@ -56,10 +56,16 @@ struct BadgesYourLevelView: View {
         GeometryReader { g in
             ScrollView {
                 VStack(alignment: .center, spacing: 16) {
-                    Text("Your level")
+                    Text("Choose your badge")
                         .font(.largeTitle)
                         .bold()
                         .foregroundColor(theme.colors.primary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("Larger files that stay available longer.")
+                        .font(.body)
+                        .foregroundColor(theme.colors.secondary)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
 
@@ -145,7 +151,7 @@ struct BadgesYourLevelView: View {
             .buttonStyle(OnboardingButtonStyle(isDisabled: false))
 
             NavigationLink(isActive: $continueActive) {
-                BadgesPayView(level: selectedLevel)
+                BadgesHowLongView(level: selectedLevel)
                     .modifier(ThemedBackground())
             } label: {
                 EmptyView()
@@ -179,10 +185,10 @@ struct BadgesYourLevelView: View {
     }
 }
 
-struct BadgesYourLevelView_Previews: PreviewProvider {
+struct BadgesChooseBadgeView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesYourLevelView()
+            BadgesChooseBadgeView()
         }
     }
 }
