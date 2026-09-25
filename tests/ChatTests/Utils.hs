@@ -23,12 +23,14 @@ import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
+import Simplex.Chat.Badges (BadgeProof (..), BadgeStatus, LocalBadge (..), ProofPresHeader (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
-import Simplex.Chat.Store.Direct (getContact)
+import Simplex.Chat.Store.Direct (getContact, getContactIdByName, getContactRequest, getContactRequestIdByName)
+import Simplex.Chat.Store.Groups (getGroupIdByName, getGroupMember, getGroupMemberIdByName)
 import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
@@ -39,6 +41,7 @@ import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BBS (BBSPresHeader (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
@@ -713,6 +716,50 @@ getTestCCContact cc contactId = do
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
       runExceptT (getContact db (storeCxt chatController) user contactId) >>= either (fail . show) pure
+
+contactBadgeHeader :: TestCC -> ContactName -> IO (Maybe (String, BadgeStatus))
+contactBadgeHeader cc cName =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (getContact db (storeCxt $ chatController cc) user =<< getContactIdByName db user cName)
+        >>= either (fail . show) (pure . storedBadgeHeader . profile')
+
+requestBadgeHeader :: TestCC -> ContactName -> IO (Maybe (String, BadgeStatus))
+requestBadgeHeader cc cName =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user@User {userId} ->
+      runExceptT (getContactRequest db user =<< getContactRequestIdByName db userId cName)
+        >>= either (fail . show) (\UserContactRequest {profile} -> pure $ storedBadgeHeader profile)
+
+memberBadgeHeader :: TestCC -> GroupName -> ContactName -> IO (Maybe (String, BadgeStatus))
+memberBadgeHeader cc gName mName =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT
+        ( do
+            gId <- getGroupIdByName db user gName
+            getGroupMember db (storeCxt $ chatController cc) user gId =<< getGroupMemberIdByName db user gId mName
+        )
+        >>= either (fail . show) (\GroupMember {memberProfile} -> pure $ storedBadgeHeader memberProfile)
+
+lastItemContent :: TestCC -> IO String
+lastItemContent cc =
+  withCCTransaction cc $ \db ->
+    DB.query_ db "SELECT item_content FROM chat_items ORDER BY chat_item_id DESC LIMIT 1" >>= \case
+      [Only c] -> pure $ T.unpack c
+      _ -> fail "no chat items"
+
+storedBadgeHeader :: LocalProfile -> Maybe (String, BadgeStatus)
+storedBadgeHeader LocalProfile {localBadge} = case localBadge of
+  Just (PeerBadge (BadgeProof _ (BBSPresHeader ph) _ _) st) -> Just (headerTag $ strDecode ph, st)
+  _ -> Nothing
+  where
+    headerTag = \case
+      Right (PHChat b) -> 'C' : take 1 (B.unpack b)
+      Right (PHRequest _) -> "R"
+      Right (PHLink _) -> "L"
+      Right (PHTest _) -> "T"
+      _ -> "?"
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do

@@ -108,7 +108,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Type.Equality
-import Simplex.Chat.Badges (badgeToRow)
+import Simplex.Chat.Badges (ProofPresHeader, badgeToRow)
 import Simplex.Chat.Messages
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Names (SimplexDomainClaim (..))
@@ -163,8 +163,8 @@ deletePendingContactConnection db userId connId =
     |]
     (userId, connId, ConnContact)
 
-createConnReqConnection :: DB.Connection -> UserId -> ConnId -> Maybe PreparedChatEntity -> ConnReqContact -> ConnReqUriHash -> Maybe ShortLinkContact -> XContactId -> Maybe IncognitoProfile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO Connection
-createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
+createConnReqConnection :: DB.Connection -> UserId -> ConnId -> Maybe PreparedChatEntity -> ConnReqContact -> ProofPresHeader -> ConnReqUriHash -> Maybe ShortLinkContact -> XContactId -> Maybe IncognitoProfile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO Connection
+createConnReqConnection db userId acId preparedEntity_ cReq presHeader cReqHash sLnk xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
   currentTs <- getCurrentTime
   customUserProfileId <- forM incognitoProfile $ \case
     NewIncognito p -> createIncognitoProfile_ db userId currentTs p
@@ -175,13 +175,13 @@ createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xConta
     [sql|
       INSERT INTO connections (
         user_id, agent_conn_id, conn_status, conn_type, contact_conn_initiated,
-        via_contact_uri, via_contact_uri_hash, via_short_link_contact, contact_id, group_member_id,
+        via_contact_uri, pres_header, via_contact_uri_hash, via_short_link_contact, contact_id, group_member_id,
         xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
         created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     ( (userId, acId, connStatus, connType, BI True)
-        :. (cReq, cReqHash, sLnk, contactId_, groupMemberId_)
+        :. (cReq, presHeader, cReqHash, sLnk, contactId_, groupMemberId_)
         :. (xContactId, customUserProfileId, BI (isJust groupLinkId), groupLinkId)
         :. (currentTs, currentTs, BI (subMode == SMOnlyCreate), chatV, pqSup, pqSup)
     )
@@ -404,12 +404,12 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createPreparedContact :: DB.Connection -> StoreCxt -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe Bool -> ExceptT StoreError IO Contact
-createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId verified_ = do
+createPreparedContact :: DB.Connection -> StoreCxt -> User -> Maybe ProofPresHeader -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe Bool -> ExceptT StoreError IO Contact
+createPreparedContact db cxt user presHeader_ p connLinkToConnect welcomeSharedMsgId verified_ = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
-  ct <- getContact db cxt user =<< createContact_ db cxt user p ctUserPreferences prepared "" currentTs
+  ct <- getContact db cxt user =<< createContact_ db cxt user presHeader_ p ctUserPreferences prepared "" currentTs
   liftIO $ maybe (pure ct) (setContactDomainVerified db user ct) verified_
 
 updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO Contact
@@ -450,11 +450,11 @@ updatePreparedContactUser
         safeDeleteLDN db user oldLDN
       getContact db cxt newUser contactId
 
-createDirectContact :: DB.Connection -> StoreCxt -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
-createDirectContact db cxt user Connection {connId, localAlias} p = do
+createDirectContact :: DB.Connection -> StoreCxt -> User -> Connection -> Maybe ProofPresHeader -> Profile -> ExceptT StoreError IO Contact
+createDirectContact db cxt user Connection {connId, localAlias} presHeader_ p = do
   currentTs <- liftIO getCurrentTime
   let ctUserPreferences = newContactUserPrefs user p
-  contactId <- createContact_ db cxt user p ctUserPreferences Nothing localAlias currentTs
+  contactId <- createContact_ db cxt user presHeader_ p ctUserPreferences Nothing localAlias currentTs
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   getContact db cxt user contactId
 
@@ -562,13 +562,13 @@ deleteUnusedProfile_ db userId profileId =
         :. (userId, profileId, userId, profileId, profileId)
     )
 
-updateContactProfile :: DB.Connection -> StoreCxt -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
-updateContactProfile db cxt user@User {userId} c p' = do
+updateContactProfile :: DB.Connection -> StoreCxt -> User -> Contact -> Maybe ProofPresHeader -> Profile -> ExceptT StoreError IO Contact
+updateContactProfile db cxt user@User {userId} c presHeader_ p' = do
   currentTs <- liftIO getCurrentTime
-  badgeVerified <- liftIO $ profileBadgeVerified (badgeKeys cxt) lp p'
+  (p''', badgeVerified) <- liftIO $ profileBadgeVerified presHeader_ (badgeKeys cxt) (Just lp) p''
   let nameVerified = if claimChanged then Nothing else prevVerification
-      profile = toLocalProfile profileId p'' localAlias currentTs badgeVerified nameVerified
-  updateContactProfile' currentTs badgeVerified profile
+      profile = toLocalProfile profileId p''' localAlias currentTs badgeVerified nameVerified
+  updateContactProfile' currentTs p''' badgeVerified profile
   where
     Contact {contactId, localDisplayName, profile = lp@LocalProfile {profileId, displayName, localAlias, contactDomain = prevClaim, contactDomainVerified = prevVerification}, userPreferences} = c
     Profile {displayName = newName, contactDomain, preferences} = p'
@@ -578,14 +578,14 @@ updateContactProfile db cxt user@User {userId} c p' = do
     clearVerificationIfClaimChanged =
       when claimChanged $
         DB.execute db "UPDATE contact_profiles SET contact_domain_verified = NULL WHERE user_id = ? AND contact_profile_id = ?" (userId, profileId)
-    updateContactProfile' currentTs badgeVerified profile
+    updateContactProfile' currentTs p''' badgeVerified profile
       | displayName == newName = do
-          liftIO $ updateContactProfile_' db userId profileId p'' badgeVerified currentTs
+          liftIO $ updateContactProfile_' db userId profileId p''' badgeVerified currentTs
           liftIO clearVerificationIfClaimChanged
           pure c {profile, mergedPreferences}
       | otherwise =
           ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
-            updateContactProfile_' db userId profileId p'' badgeVerified currentTs
+            updateContactProfile_' db userId profileId p''' badgeVerified currentTs
             updateContactLDN_ db user contactId localDisplayName ldn currentTs
             clearVerificationIfClaimChanged
             pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}

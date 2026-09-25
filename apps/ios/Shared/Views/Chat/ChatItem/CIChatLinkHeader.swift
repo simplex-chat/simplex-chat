@@ -56,7 +56,7 @@ struct CIChatLinkHeader: View {
             )
             .padding(.trailing, 4)
             VStack(alignment: .leading) {
-                Text(chatLink.displayName).font(.headline).lineLimit(2)
+                NameWithBadge(Text(chatLink.displayName).font(.headline), linkBadge, .headline).lineLimit(2)
                 let fn = chatLink.fullName
                 if fn != "" && fn != chatLink.displayName {
                     Text(fn).font(.subheadline).lineLimit(2)
@@ -64,5 +64,12 @@ struct CIChatLinkHeader: View {
             }
             .frame(minHeight: 44)
         }
+    }
+
+    private var linkBadge: LocalBadge? {
+        guard case let .contact(_, profile, _) = chatLink, let b = profile.badge else { return nil }
+        let expired = Date.now.timeIntervalSince(b.badgeInfo.badgeExpiry)
+        let status: BadgeStatus = expired > 38 * 86400 ? .expiredOld : expired > 7 * 86400 ? .expired : .active
+        return LocalBadge(badge: b.badgeInfo, status: status)
     }
 }

@@ -5006,10 +5006,10 @@ Plan:
 Query: 
       INSERT INTO connections (
         user_id, agent_conn_id, conn_status, conn_type, contact_conn_initiated,
-        via_contact_uri, via_contact_uri_hash, via_short_link_contact, contact_id, group_member_id,
+        via_contact_uri, pres_header, via_contact_uri_hash, via_short_link_contact, contact_id, group_member_id,
         xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
         created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -7592,6 +7592,10 @@ Query: SELECT issue_failed_since, issue_error FROM badge_purchases
 Plan:
 SCAN badge_purchases
 
+Query: SELECT item_content FROM chat_items ORDER BY chat_item_id DESC LIMIT 1
+Plan:
+SCAN chat_items
+
 Query: SELECT last_insert_rowid()
 Plan:
 SCAN CONSTANT ROW
@@ -7768,7 +7772,7 @@ Query: SELECT user_id FROM users WHERE local_display_name = ?
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_2 (local_display_name=?)
 
-Query: SELECT via_contact_uri FROM connections WHERE connection_id = ?
+Query: SELECT via_contact_uri, pres_header FROM connections WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -8219,6 +8223,10 @@ SEARCH snd_files USING PRIMARY KEY (file_id=? AND connection_id=?)
 Query: UPDATE usage_conditions SET notified_at = ? WHERE usage_conditions_id = ?
 Plan:
 SEARCH usage_conditions USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE user_contact_links SET short_link_contact = NULL
+Plan:
+SCAN user_contact_links
 
 Query: UPDATE users SET active_user = 0
 Plan:

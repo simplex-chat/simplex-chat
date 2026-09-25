@@ -54,7 +54,7 @@ import Data.Time.Clock (UTCTime)
 import Data.Type.Equality (testEquality, (:~:) (Refl))
 import Data.Typeable (Typeable)
 import Data.Word (Word16)
-import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
+import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), LocalBadge (..), ProofPresHeader, acceptedProof, localBadgeInfo, localBadgeStatus, mkBadgeStatus, verifyBadge)
 import Simplex.Chat.Names (SimplexDomainClaim (..))
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Chat.Types.Preferences
@@ -848,15 +848,23 @@ fromLocalProfile LocalProfile {displayName, fullName, shortDescr, description, i
       OwnBadge _ _ -> Nothing -- the own credential is not sent, proof is generated on send
       ShownBadge _ _ -> Nothing -- a display-only badge is not sent
 
-profileBadgeVerified :: Map Int BBSPublicKey -> LocalProfile -> Profile -> IO (Maybe Bool)
-profileBadgeVerified keys LocalProfile {localBadge} Profile {badge = newBadge} =
-  case (localBadge, newBadge) of
-    (_, Nothing) -> pure (Just False)
+profileBadgeVerified :: Maybe ProofPresHeader -> Map Int BBSPublicKey -> Maybe LocalProfile -> Profile -> IO (Profile, Maybe Bool)
+profileBadgeVerified expected keys lp_ p@Profile {badge = newBadge} = case newBadge of
+  Nothing -> pure (p, Just False)
+  Just newB@(BadgeProof _ _ _ newInfo)
+    | not (acceptedProof expected newB) -> pure (p {badge = storedProof}, storedVerified)
     -- an unchanged badge that verified before stays verified; failed or unknown-key badges
     -- are re-verified, so an unknown key heals once an app update adds it
-    (Just lb, Just (BadgeProof _ _ _ newInfo))
-      | localBadgeInfo lb == newInfo && localBadgeStatus lb `notElem` [BSFailed, BSUnknownKey] -> pure (Just True)
-    (_, Just newB) -> verifyBadge keys newB
+    | Just lb <- storedBadge, localBadgeInfo lb == newInfo && localBadgeStatus lb `notElem` [BSFailed, BSUnknownKey] -> pure (p, Just True)
+    | otherwise -> (,) p <$> verifyBadge keys newB
+  where
+    storedBadge = (\LocalProfile {localBadge} -> localBadge) =<< lp_
+    Profile {badge = storedProof} = maybe p {badge = Nothing} fromLocalProfile lp_
+    storedVerified = case localBadgeStatus <$> storedBadge of
+      Nothing -> Just False
+      Just BSFailed -> Just False
+      Just BSUnknownKey -> Nothing
+      Just _ -> Just True
 
 -- a failed or unknown-key badge is re-verified on the next profile update even when its disclosed content
 -- is unchanged, so it heals once an app update adds the issuer key

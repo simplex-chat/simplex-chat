@@ -47,7 +47,7 @@ module Simplex.Chat.Badges
     generateBadgeProof,
     badgeProof,
     verifyBadge,
-    verifyBadge_,
+    acceptedProof,
     mkBadgeStatus,
     BadgeRow,
     BadgeProofKind (..),
@@ -76,7 +76,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, nominalDay)
 import Data.Time.Clock.System (systemToUTCTime, utcToSystemTime)
 import Simplex.FileTransfer.Description (gb, maxFileSize)
-import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), fromTextField_)
+import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), blobFieldDecoder, fromTextField_)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Crypto.Entitlement (Entitlement (Entitlement), EntitlementCredential (EntitlementCredential), MasterKey (MasterKey), entitlementBBSHeader)
@@ -270,7 +270,7 @@ maxSndXFTPFileSize lims now = \case
 -- presentation, not bound to any context; the 'T' tag marks it so master rejects it.
 -- PHUnknown is the forward-compat catch-all for tags this version does not interpret.
 
-data ProofPresHeaderTag = PHTestTag | PHChatTag | PHFileInvTag | PHFileDescrTag | PHUnknownTag Char
+data ProofPresHeaderTag = PHTestTag | PHChatTag | PHFileInvTag | PHFileDescrTag | PHRequestTag | PHLinkTag | PHUnknownTag Char
 
 instance StrEncoding ProofPresHeaderTag where
   strEncode = B.singleton . \case
@@ -278,6 +278,8 @@ instance StrEncoding ProofPresHeaderTag where
     PHChatTag -> 'C'
     PHFileInvTag -> 'F'
     PHFileDescrTag -> 'D'
+    PHRequestTag -> 'R'
+    PHLinkTag -> 'L'
     PHUnknownTag c -> c
   strP = tag <$> A.anyChar
     where
@@ -286,6 +288,8 @@ instance StrEncoding ProofPresHeaderTag where
         'C' -> PHChatTag
         'F' -> PHFileInvTag
         'D' -> PHFileDescrTag
+        'R' -> PHRequestTag
+        'L' -> PHLinkTag
         c -> PHUnknownTag c
 
 data ProofPresHeader
@@ -293,6 +297,8 @@ data ProofPresHeader
   | PHChat ByteString
   | PHFileInv {chatBinding :: ByteString, fileSize :: Int64}
   | PHFileDescr {chatBinding :: ByteString, fileSize :: Int64, descrHash :: ByteString, fileExpires :: Maybe UTCTime}
+  | PHRequest ByteString
+  | PHLink ByteString
   | PHUnknown Char ByteString
   deriving (Eq, Show)
   deriving (ToJSON, FromJSON) via (StrJSON "ProofPresHeader" ProofPresHeader)
@@ -305,6 +311,8 @@ instance StrEncoding ProofPresHeader where
       strEncode PHFileInvTag <> smpEncode (chatBinding, fileSize)
     PHFileDescr {chatBinding, fileSize, descrHash, fileExpires} ->
       strEncode PHFileDescrTag <> smpEncode (chatBinding, fileSize, descrHash, utcToSystemTime <$> fileExpires)
+    PHRequest code -> strEncode PHRequestTag <> code
+    PHLink linkKey -> strEncode PHLinkTag <> linkKey
     PHUnknown c b -> strEncode (PHUnknownTag c) <> b
   strP =
     strP >>= \case
@@ -316,16 +324,14 @@ instance StrEncoding ProofPresHeader where
       PHFileDescrTag -> do
         (chatBinding, fileSize, descrHash, expires_) <- smpP
         pure PHFileDescr {chatBinding, fileSize, descrHash, fileExpires = systemToUTCTime <$> expires_}
+      PHRequestTag -> PHRequest <$> A.takeByteString
+      PHLinkTag -> PHLink <$> A.takeByteString
       PHUnknownTag c -> PHUnknown c <$> A.takeByteString
 
--- v6.5.x accepts both; v7 will reject PHTest/PHUnknown
-proofPresHeaderAccepted :: ProofPresHeader -> Bool
-proofPresHeaderAccepted = \case
-  PHTest _ -> True
-  PHChat _ -> True
-  PHFileInv {} -> True
-  PHFileDescr {} -> True
-  PHUnknown _ _ -> True
+acceptedProof :: Maybe ProofPresHeader -> BadgeProof -> Bool
+acceptedProof expected_ BadgeProof {presHeader = BBSPresHeader ph} = case strDecode ph of
+  Right (PHTest _) -> True
+  _ -> maybe False ((ph ==) . strEncode) expected_
 
 -- Payment proof
 
@@ -419,15 +425,14 @@ verifyBadge keys b@(BadgeProof keyIdx _ _ _) = case M.lookup keyIdx keys of
   Just pk -> Just <$> verifyBadgeWith pk b
 
 verifyBadgeWith :: BBSPublicKey -> BadgeProof -> IO Bool
-verifyBadgeWith pk (BadgeProof _ ph@(BBSPresHeader phBytes) proof badgeInfo)
-  | either (const False) proofPresHeaderAccepted (strDecode phBytes) =
-      bbsProofVerify pk proof bbsBadgeHeader ph bbsBadgeDisclosedIndexes bbsBadgeMessageCount (badgeInfoMessages badgeInfo)
-  | otherwise = pure False
-
-verifyBadge_ :: Map Int BBSPublicKey -> Maybe BadgeProof -> IO (Maybe Bool)
-verifyBadge_ keys = maybe (pure (Just False)) (verifyBadge keys)
+verifyBadgeWith pk (BadgeProof _ ph proof badgeInfo) =
+  bbsProofVerify pk proof bbsBadgeHeader ph bbsBadgeDisclosedIndexes bbsBadgeMessageCount (badgeInfoMessages badgeInfo)
 
 -- DB
+
+instance FromField ProofPresHeader where fromField = blobFieldDecoder strDecode
+
+instance ToField ProofPresHeader where toField = toField . Binary . strEncode
 
 instance FromField BadgeType where fromField = fromTextField_ textDecode
 
