@@ -200,6 +200,8 @@ SimpleX links (`simplex:/chat#...`) are handled via [`connectViaUrl()`](../../Sh
 
 URL processing routes to the appropriate connection flow (join group, add contact, etc.) via [`planAndConnect()`](../../Shared/Views/NewChat/NewChatView.swift#L1181).
 
+App links use the app's own scheme, `simplexchat:`, for everything that is not a connection link. `connectViaUrl_()` branches on that scheme before the path switch, so an app link never reaches `planAndConnect()`, and `openAppLink()` dispatches on its path. A badge link (`simplexchat:/badge/code/<code>`) goes to `openBadgeLink()` in [`BadgesRedeemCodeView.swift`](../../Shared/Views/Badges/BadgesRedeemCodeView.swift), which presents `BadgesRedeemLinkView` as an app sheet. The sheet names the active profile and asks before redeeming, since any page or message can send the link and a profile holds one badge at a time. On *Add badge* it redeems the code into that profile and then shows `BadgesView`; *Cancel* sends nothing. Any other path is a link type from a later version, and gets an alert asking to check for app updates. An app link can carry a secret, so `onOpenURL` logs it as "app link" rather than the URL.
+
 ### Call Deep Link
 
 Call invitations from notifications:

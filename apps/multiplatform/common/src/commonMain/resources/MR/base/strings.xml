@@ -25,6 +25,7 @@
   <string name="connect_plan_you_are_owner">You are an owner</string>
   <string name="error_parsing_uri_title">Invalid link</string>
   <string name="error_parsing_uri_desc">Please check that SimpleX link is correct.</string>
+  <string name="app_link_not_supported">This link is not supported by this app version. Please check for app updates.</string>
 
   <!-- MainActivity.kt -->
   <string name="opening_database">Opening database…</string>
@@ -3182,8 +3183,12 @@
   <string name="badges_purchase_pending">Purchase pending</string>
   <string name="badges_purchase_pending_desc">The purchase is awaiting approval. This build does not deliver purchases approved later.</string>
   <string name="badges_purchase_error">Purchase error</string>
-  <string name="badges_get_your_code">Get your code</string>
+  <string name="badges_buy_in_browser">Buy in browser</string>
   <string name="badges_redeem_code_title">Redeem code</string>
+  <string name="badges_link_confirm_title">Add badge to your profile?</string>
+  <string name="badges_link_confirm_profile">The badge will be added to the profile %1$s.</string>
+  <string name="badges_link_add_badge">Add badge</string>
+  <string name="badges_being_issued">Badge is being issued</string>
   <string name="badges_redeem_code_body">Paste the code you received.</string>
   <string name="badges_redeem_code_placeholder" translatable="false">SB-XXXXX-XXXXX-XXXXX-XXXXX</string>
   <string name="badges_redeem">Redeem</string>

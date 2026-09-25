@@ -57,10 +57,44 @@ private fun formatBadgeCodeInput(s: String): String {
   return groups.joinToString("-")
 }
 
+sealed class BadgeRedeemOutcome {
+  object Redeemed: BadgeRedeemOutcome()
+  class Refused(val message: String): BadgeRedeemOutcome()
+  object Cancelled: BadgeRedeemOutcome()
+}
+
+// sets the badge before returning, so a caller that dismisses on Redeemed lands on Your Badge
+// instead of showing the switch from Support. Cancelled when the user cancels the retry alert.
+suspend fun redeemBadgeCode(rhId: Long?, user: User, code: String): BadgeRedeemOutcome =
+  when (val result = chatModel.controller.apiRedeemBadgeCode(rhId, user.userId, code)) {
+    null -> BadgeRedeemOutcome.Cancelled
+    is BadgeRedeemResult.Redeemed -> withContext(Dispatchers.Main) {
+      val badgeState = result.badgeState
+      BadgeModel.set(rhId, user.userId, badgeState)
+      chatModel.updateUser(result.user)
+      if (badgeState != null && !badgeState.shown) {
+        // a replay adds no purchase; a fresh code's badge can be retired on arrival
+        BadgeRedeemOutcome.Refused(
+          generalGetString(if (result.newBadge) MR.strings.badges_error_badge_ended else MR.strings.badges_error_code_used)
+        )
+      } else {
+        appPrefs.supporterBannerShown.set(true)
+        BadgeRedeemOutcome.Redeemed
+      }
+    }
+    is BadgeRedeemResult.Failed -> {
+      Log.e(TAG, "apiRedeemBadgeCode: ${result.err?.string}")
+      BadgeRedeemOutcome.Refused(chatModel.controller.redeemErrorText(result.err))
+    }
+  }
+
+fun showCannotRedeemAlert(message: String) {
+  AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.badges_error_title), text = message)
+}
+
 @Composable
 fun BadgesRedeemCodeView(modalManager: ModalManager) {
   val rhId = remember { chatModel.remoteHostId() }
-  val supporterBannerShown = remember { appPrefs.supporterBannerShown }
   val code = remember { mutableStateOf(TextFieldValue("")) }
   val canonicalCode = remember { mutableStateOf<String?>(null) }
   val submitting = remember { mutableStateOf(false) }
@@ -78,37 +112,13 @@ fun BadgesRedeemCodeView(modalManager: ModalManager) {
     val user = chatModel.currentUser.value ?: return
     submitting.value = true
     withBGApi {
-      when (val result = chatModel.controller.apiRedeemBadgeCode(rhId, user.userId, sending)) {
-        null -> withContext(Dispatchers.Main) { submitting.value = false }
-        is BadgeRedeemResult.Redeemed -> {
-          val badgeState = result.badgeState
-          withContext(Dispatchers.Main) {
-            submitting.value = false
-            // set before dismissing: BadgesView then switches Support to Your Badge while this screen
-            // still covers it, so the pop lands on Your Badge instead of showing the switch
-            BadgeModel.set(rhId, user.userId, badgeState)
-            chatModel.updateUser(result.user)
-            if (badgeState != null && !badgeState.shown) {
-              // a replay adds no purchase; a fresh code's badge can be retired on arrival
-              AlertManager.shared.showAlertMsg(
-                title = generalGetString(MR.strings.badges_error_title),
-                text = generalGetString(if (result.newBadge) MR.strings.badges_error_badge_ended else MR.strings.badges_error_code_used)
-              )
-            } else {
-              supporterBannerShown.set(true)
-              modalManager.closeModal()
-            }
-          }
-        }
-        is BadgeRedeemResult.Failed -> {
-          Log.e(TAG, "apiRedeemBadgeCode: ${result.err?.string}")
-          withContext(Dispatchers.Main) {
-            submitting.value = false
-            AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.badges_error_title),
-              text = chatModel.controller.redeemErrorText(result.err)
-            )
-          }
+      val outcome = redeemBadgeCode(rhId, user, sending)
+      withContext(Dispatchers.Main) {
+        submitting.value = false
+        when (outcome) {
+          is BadgeRedeemOutcome.Redeemed -> modalManager.closeModal()
+          is BadgeRedeemOutcome.Refused -> showCannotRedeemAlert(outcome.message)
+          is BadgeRedeemOutcome.Cancelled -> {}
         }
       }
     }
@@ -243,4 +253,119 @@ private fun SubmitButton(enabled: Boolean, onClick: () -> Unit) {
     enabled = enabled,
     onclick = onClick
   )
+}
+
+fun openBadgeLink(rhId: Long?, codeText: String) {
+  val code = parseBadgeCode(codeText)
+    ?: return showCannotRedeemAlert(generalGetString(MR.strings.badges_error_invalid_code))
+  ModalManager.end.showCustomModal { close ->
+    BadgesRedeemLinkView(rhId, code, close)
+  }
+}
+
+enum class BadgeLinkStep {
+  Confirming,
+  Issuing,
+  Redeemed
+}
+
+// Any web page or chat message can send a badge link, and a profile holds one badge at a time,
+// so this screen asks before redeeming, names the profile, and offers nothing but the redemption.
+@Composable
+fun BadgesRedeemLinkView(rhId: Long?, code: String, close: () -> Unit) {
+  val step = remember { mutableStateOf(BadgeLinkStep.Confirming) }
+
+  fun redeemFromLink() {
+    // a second tap before the screen changes must not send the code again
+    if (step.value != BadgeLinkStep.Confirming) return
+    val user = chatModel.currentUser.value ?: return close()
+    step.value = BadgeLinkStep.Issuing
+    withBGApi {
+      val outcome = redeemBadgeCode(rhId, user, code)
+      withContext(Dispatchers.Main) {
+        when (outcome) {
+          is BadgeRedeemOutcome.Redeemed -> step.value = BadgeLinkStep.Redeemed
+          is BadgeRedeemOutcome.Refused -> {
+            close()
+            showCannotRedeemAlert(outcome.message)
+          }
+          is BadgeRedeemOutcome.Cancelled -> close()
+        }
+      }
+    }
+  }
+
+  when (step.value) {
+    BadgeLinkStep.Confirming -> ModalView(close) { Confirming(onConfirm = ::redeemFromLink, onCancel = close) }
+    // the outcome closes what is on screen, which after a close here would be some other screen
+    BadgeLinkStep.Issuing -> ModalView(close, enableClose = false) { BeingIssued() }
+    BadgeLinkStep.Redeemed -> BadgesView(ModalManager.end, close)
+  }
+}
+
+@Composable
+private fun Confirming(onConfirm: () -> Unit, onCancel: () -> Unit) {
+  ColumnWithScrollBar(
+    Modifier.padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    maxIntrinsicSize = true,
+  ) {
+    Text(
+      stringResource(MR.strings.badges_link_confirm_title),
+      style = MaterialTheme.typography.h1,
+      fontWeight = FontWeight.Bold,
+      color = MaterialTheme.colors.primary,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth()
+    )
+
+    Text(
+      String.format(stringResource(MR.strings.badges_link_confirm_profile), chatModel.currentUser.value?.displayName ?: ""),
+      style = MaterialTheme.typography.body1,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth()
+    )
+
+    Spacer(Modifier.weight(1f))
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      OnboardingActionButton(
+        modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+        labelId = MR.strings.badges_link_add_badge,
+        onboarding = null,
+        onclick = onConfirm
+      )
+      TextButtonBelowOnboardingButton(stringResource(MR.strings.cancel_verb), onCancel)
+    }
+  }
+}
+
+@Composable
+private fun BeingIssued() {
+  ColumnWithScrollBar(
+    Modifier.padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    maxIntrinsicSize = true,
+  ) {
+    Text(
+      stringResource(MR.strings.badges_being_issued),
+      style = MaterialTheme.typography.h1,
+      fontWeight = FontWeight.Bold,
+      color = MaterialTheme.colors.primary,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth()
+    )
+
+    Spacer(Modifier.weight(1f))
+
+    CircularProgressIndicator(
+      Modifier.size(30.dp),
+      color = MaterialTheme.colors.secondary,
+      strokeWidth = 3.dp
+    )
+
+    Spacer(Modifier.weight(1f))
+  }
 }

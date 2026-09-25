@@ -47,9 +47,9 @@ struct BadgesSupportSimplexView: View {
                 Spacer(minLength: 0)
 
                 VStack(spacing: 10) {
-                    redeemCodeButton()
+                    buyInBrowserButton()
                         .padding(.vertical, 10)
-                    getCodeButton()
+                    redeemCodeButton()
                         .frame(height: 22)
                 }
                 .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
@@ -131,8 +131,10 @@ struct BadgesSupportSimplexView: View {
                 redeemCodeActive = true
             } label: {
                 Text("Redeem badge code")
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(theme.colors.primary)
             }
-            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
 
             NavigationLink(isActive: $redeemCodeActive) {
                 BadgesRedeemCodeView()
@@ -145,15 +147,13 @@ struct BadgesSupportSimplexView: View {
         }
     }
 
-    private func getCodeButton() -> some View {
+    private func buyInBrowserButton() -> some View {
         Button {
-            openExternalLink(URL(string: "https://simplex.chat/badges/")!)
+            UIApplication.shared.open(URL(string: badgePageUrl)!)
         } label: {
-            Text("Get your code")
-                .font(.body)
-                .fontWeight(.medium)
-                .foregroundColor(theme.colors.primary)
+            Text("Buy in browser")
         }
+        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 }
 

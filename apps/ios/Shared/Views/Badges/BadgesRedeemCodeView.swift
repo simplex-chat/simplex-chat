@@ -33,10 +33,43 @@ private func formatBadgeCodeInput(_ s: String) -> String {
     return groups.joined(separator: "-")
 }
 
+enum BadgeRedeemOutcome {
+    case redeemed
+    case refused(message: String)
+    case cancelled
+}
+
+// sets the badge before returning, so a caller that dismisses on .redeemed lands on Your Badge
+// instead of showing the switch from Support. .cancelled when the user cancels the retry alert.
+func redeemBadgeCode(_ user: User, _ code: String) async -> BadgeRedeemOutcome {
+    do {
+        guard let redeemed = try await apiRedeemBadgeCode(user.userId, code) else { return .cancelled }
+        return await MainActor.run { () -> BadgeRedeemOutcome in
+            BadgeModel.shared.set(userId: user.userId, badgeState: redeemed.badgeState)
+            ChatModel.shared.updateUser(redeemed.user)
+            if let badgeState = redeemed.badgeState, !badgeState.shown {
+                // a replay adds no purchase; a fresh code's badge can be retired on arrival
+                return .refused(message: redeemed.newBadge
+                    ? NSLocalizedString("The code was accepted, but the badge it grants has already ended.", comment: "alert message")
+                    : NSLocalizedString("This code has already been used.", comment: "alert message")
+                )
+            }
+            UserDefaults.standard.set(true, forKey: DEFAULT_SUPPORTER_BANNER_SHOWN)
+            return .redeemed
+        }
+    } catch let error {
+        logger.error("apiRedeemBadgeCode: \(responseError(error))")
+        return .refused(message: redeemErrorText(error))
+    }
+}
+
+func showCannotRedeemAlert(_ message: String) {
+    showAlert(NSLocalizedString("Cannot redeem code", comment: "alert title"), message: message)
+}
+
 struct BadgesRedeemCodeView: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
-    @AppStorage(DEFAULT_SUPPORTER_BANNER_SHOWN) private var supporterBannerShown = false
     @Environment(\.dismiss) var dismiss: DismissAction
     @State private var code = ""
     @State private var canonicalCode: String? = nil
@@ -184,33 +217,132 @@ struct BadgesRedeemCodeView: View {
         guard let sending = canonicalCode, let user = chatModel.currentUser else { return }
         submitting = true
         Task {
-            do {
-                guard let redeemed = try await apiRedeemBadgeCode(user.userId, sending) else {
-                    await MainActor.run { submitting = false }
-                    return
+            let outcome = await redeemBadgeCode(user, sending)
+            await MainActor.run {
+                submitting = false
+                switch outcome {
+                case .redeemed: dismiss()
+                case let .refused(message): showCannotRedeemAlert(message)
+                case .cancelled: break
                 }
-                await MainActor.run {
-                    submitting = false
-                    // set before dismissing: BadgesView then switches Support to Your Badge while this screen
-                    // still covers it, so the pop lands on Your Badge instead of showing the switch
-                    BadgeModel.shared.set(userId: user.userId, badgeState: redeemed.badgeState)
-                    chatModel.updateUser(redeemed.user)
-                    if let badgeState = redeemed.badgeState, !badgeState.shown {
-                        // a replay adds no purchase; a fresh code's badge can be retired on arrival
-                        let message = redeemed.newBadge
-                            ? NSLocalizedString("The code was accepted, but the badge it grants has already ended.", comment: "alert message")
-                            : NSLocalizedString("This code has already been used.", comment: "alert message")
-                        showAlert(NSLocalizedString("Cannot redeem code", comment: "alert title"), message: message)
-                    } else {
-                        supporterBannerShown = true
-                        dismiss()
-                    }
+            }
+        }
+    }
+}
+
+func openBadgeLink(_ codeText: String) {
+    guard let code = parseBadgeCode(codeText) else {
+        return showCannotRedeemAlert(NSLocalizedString("This code is not valid.", comment: "alert message"))
+    }
+    showAppSheet {
+        NavigationView {
+            BadgesRedeemLinkView(code: code)
+                .modifier(ThemedBackground())
+        }
+    }
+}
+
+enum BadgeLinkStep {
+    case confirming
+    case issuing
+    case redeemed
+}
+
+// Any web page or chat message can send a badge link, and a profile holds one badge at a time,
+// so this screen asks before redeeming, names the profile, and offers nothing but the redemption.
+struct BadgesRedeemLinkView: View {
+    @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var chatModel: ChatModel
+    let code: String
+    @State private var step = BadgeLinkStep.confirming
+
+    var body: some View {
+        switch step {
+        case .confirming: confirming()
+        case .issuing: beingIssued()
+        case .redeemed: BadgesView(showsAsSheet: true)
+        }
+    }
+
+    private func confirming() -> some View {
+        VStack(alignment: .center, spacing: 16) {
+            Text("Add badge to your profile?")
+                .font(.largeTitle)
+                .bold()
+                .foregroundColor(theme.colors.primary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(String.localizedStringWithFormat(NSLocalizedString("The badge will be added to the profile %@.", comment: "badge link confirmation"), chatModel.currentUser?.displayName ?? ""))
+                .font(.body)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer()
+
+            VStack(spacing: 10) {
+                Button {
+                    redeemFromLink()
+                } label: {
+                    Text("Add badge")
                 }
-            } catch let error {
-                logger.error("apiRedeemBadgeCode: \(responseError(error))")
-                await MainActor.run {
-                    submitting = false
-                    showAlert(NSLocalizedString("Cannot redeem code", comment: "alert title"), message: redeemErrorText(error))
+                .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+                .padding(.vertical, 10)
+
+                Button {
+                    dismissAllSheets()
+                } label: {
+                    Text("Cancel")
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(theme.colors.primary)
+                }
+                .frame(height: 22)
+            }
+        }
+        .padding(.horizontal, 25)
+        .padding(.top, 48)
+        .padding(.bottom, 20)
+        .frame(maxHeight: .infinity)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func beingIssued() -> some View {
+        VStack(alignment: .center, spacing: 16) {
+            Text("Badge is being issued")
+                .font(.largeTitle)
+                .bold()
+                .foregroundColor(theme.colors.primary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer()
+
+            ProgressView().scaleEffect(2)
+
+            Spacer()
+        }
+        .padding(.horizontal, 25)
+        .padding(.top, 48)
+        .padding(.bottom, 20)
+        .frame(maxHeight: .infinity)
+        .navigationBarTitleDisplayMode(.inline)
+        // the outcome closes what is on screen, which after a close here would be some other screen
+        .interactiveDismissDisabled(true)
+    }
+
+    private func redeemFromLink() {
+        // a second tap before the screen changes must not send the code again
+        guard step == .confirming else { return }
+        guard let user = chatModel.currentUser else { return dismissAllSheets() }
+        step = .issuing
+        Task {
+            let outcome = await redeemBadgeCode(user, code)
+            await MainActor.run {
+                switch outcome {
+                case .redeemed: step = .redeemed
+                case let .refused(message): dismissAllSheets { showCannotRedeemAlert(message) }
+                case .cancelled: dismissAllSheets()
                 }
             }
         }
