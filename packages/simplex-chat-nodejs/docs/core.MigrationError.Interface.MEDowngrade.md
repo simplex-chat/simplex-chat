@@ -6,7 +6,7 @@
 
 # Interface: MEDowngrade
 
-Defined in: [src/core.ts:182](../src/core.ts#L182)
+Defined in: [src/core.ts:203](../src/core.ts#L203)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:182](../src/core.ts#L182)
 
 > **downMigrations**: `string`[]
 
-Defined in: [src/core.ts:184](../src/core.ts#L184)
+Defined in: [src/core.ts:205](../src/core.ts#L205)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [src/core.ts:184](../src/core.ts#L184)
 
 > **type**: `"downgrade"`
 
-Defined in: [src/core.ts:183](../src/core.ts#L183)
+Defined in: [src/core.ts:204](../src/core.ts#L204)
 
 #### Overrides
 

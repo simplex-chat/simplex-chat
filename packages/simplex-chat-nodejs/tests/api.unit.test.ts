@@ -5,6 +5,7 @@ import * as core from "../src/core"
 const user = {userId: 1} as T.User
 
 async function chatWithResponse(response: object): Promise<api.ChatApi> {
+  jest.spyOn(core, "loadLibrary").mockResolvedValue()
   jest.spyOn(core, "chatMigrateInit").mockResolvedValue(BigInt(1))
   jest.spyOn(core, "chatSendCmd").mockResolvedValue(response as ChatResponse)
   return api.ChatApi.init({type: "sqlite", filePrefix: "unused"})
@@ -38,6 +39,7 @@ describe("documented success responses", () => {
 
 describe("startChat lifecycle", () => {
   function chatWithResponses(...responses: object[]): Promise<api.ChatApi> {
+    jest.spyOn(core, "loadLibrary").mockResolvedValue()
     jest.spyOn(core, "chatMigrateInit").mockResolvedValue(BigInt(1))
     jest.spyOn(core, "chatRecvMsgWait").mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(undefined), 10)))
     const send = jest.spyOn(core, "chatSendCmd")
@@ -98,5 +100,26 @@ describe("startChat lifecycle", () => {
     const chat = await chatWithResponses()
     await chat.recvChatEvent()
     expect(core.chatRecvMsgWait).toHaveBeenCalledWith(BigInt(1), 500_000)
+  })
+})
+
+describe("ChatApi.init", () => {
+  it("loads the library for the configured backend before opening the database", async () => {
+    let loaded!: () => void
+    const load = jest.spyOn(core, "loadLibrary").mockReturnValue(new Promise(resolve => { loaded = resolve }))
+    const migrate = jest.spyOn(core, "chatMigrateInit").mockResolvedValue(BigInt(1))
+    const init = api.ChatApi.init({type: "postgres", connectionString: "postgres://unused"})
+    await new Promise(setImmediate)
+    expect(load).toHaveBeenCalledWith("postgres")
+    expect(migrate).not.toHaveBeenCalled()
+    loaded()
+    await init
+    expect(migrate).toHaveBeenCalled()
+  })
+
+  it("rejects an invalid config before loading the library", async () => {
+    const load = jest.spyOn(core, "loadLibrary").mockResolvedValue()
+    await expect(api.ChatApi.init({type: "mysql"} as unknown as api.DbConfig)).rejects.toThrow('Invalid DbConfig: {"type":"mysql"}')
+    expect(load).not.toHaveBeenCalled()
   })
 })

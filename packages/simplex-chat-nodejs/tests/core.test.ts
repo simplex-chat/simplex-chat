@@ -2,8 +2,16 @@ import {execFile, spawnSync} from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import {core} from "../src/index";
+import * as libs from "../src/libs";
+import * as simplex from "../src/simplex";
 
 describe("Core tests", () => {
+  let libPath: string;
+  // the first run downloads libsimplex
+  beforeAll(async () => {
+    libPath = libs.libPath(await libs.resolveLibsDir("sqlite"));
+    await core.loadLibrary("sqlite");
+  }, 300000);
   const tmpDir = "./tests/tmp";
   const dbPath = path.join(tmpDir, "simplex_v1");
 
@@ -191,10 +199,42 @@ describe("Core tests", () => {
     expect(await receives).toEqual([{event: undefined}, {error: "chat receiver stopped"}]);
   }, 10000);
 
+  it("should accept loading libsimplex again from the same path", () => {
+    expect(() => simplex.load(libPath)).not.toThrow();
+  });
+
+  it("should refuse to load libsimplex from another path", () => {
+    expect(() => simplex.load(path.resolve("other", "libsimplex.so"))).toThrow(`libsimplex already loaded from ${libPath}`);
+  });
+
+  it("should load libsimplex after a failed load and in several workers", () => {
+    const addon = path.resolve(__dirname, "..", "build", "Release", "simplex.node");
+    const childDbPath = path.resolve(tmpDir, "simplex_workers");
+    const script = `
+      const {Worker} = require("worker_threads");
+      const simplex = require(${JSON.stringify(addon)});
+      try { simplex.load(${JSON.stringify(addon)}) } catch (e) { console.log(e.message.endsWith("does not export hs_init_with_rtsopts")) }
+      const load = ${JSON.stringify(`require(${JSON.stringify(addon)}).load(${JSON.stringify(libPath)})`)};
+      const workers = Array.from({length: 4}, () => new Worker(load, {eval: true}));
+      Promise.all(workers.map((w) => new Promise((resolve, reject) => w.on("exit", resolve).on("error", reject))))
+        .then(async (codes) => {
+          simplex.load(${JSON.stringify(libPath)});
+          const [ctrl] = await simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp");
+          await simplex.chat_send_cmd(ctrl, "/_stop");
+          console.log(JSON.stringify(codes), await simplex.chat_close_store(ctrl) === "");
+        });
+    `;
+    const child = spawnSync(process.execPath, ["-e", script], {timeout: 30000, encoding: "utf8"});
+    if (child.status !== 0 || child.signal !== null) console.log("child stderr:", child.stderr);
+    expect({status: child.status, signal: child.signal, stdout: child.stdout.trim()})
+      .toEqual({status: 0, signal: null, stdout: "true\n[0,0,0,0] true"});
+  }, 35000);
+
   it("should let the process exit while a receiver is idle", () => {
     const childDbPath = path.resolve(tmpDir, "simplex_child");
     const script = `
       const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
       simplex.chat_migrate_init(${JSON.stringify(childDbPath)}, "key", "yesUp")
         .then(([ctrl]) => simplex.chat_recv_msg_wait(ctrl, 1))
         .then((res) => console.log("received " + JSON.stringify(res)));
@@ -209,6 +249,7 @@ describe("Core tests", () => {
     const script = `
       const fs = require("fs"), path = require("path");
       const simplex = require("./build/Release/simplex.node");
+      simplex.load(${JSON.stringify(libPath)});
       (async () => {
         for (let i = 0; i < 40; i++) {
           const dir = fs.mkdtempSync(path.join(${JSON.stringify(path.resolve(tmpDir))}, "close-"));

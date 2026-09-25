@@ -1,7 +1,26 @@
 import {ChatEvent, ChatResponse, T} from "@simplex-chat/types"
+import * as libs from "./libs"
 import * as simplex from "./simplex"
 
 export type Backend = "sqlite" | "postgres"
+
+let loading: {backend: Backend, promise: Promise<void>} | undefined
+
+/**
+ * Resolve (downloading on first use) and load libsimplex for the backend.
+ * One libsimplex per process: the Haskell runtime is initialized once, and another backend is rejected.
+ */
+export function loadLibrary(backend: Backend): Promise<void> {
+  if (loading) {
+    if (loading.backend === backend) return loading.promise
+    return Promise.reject(new Error(`libsimplex already loaded with backend=${loading.backend}; cannot switch to ${backend} in the same process`))
+  }
+  const promise = libs.resolveLibsDir(backend).then(dir => simplex.load(libs.libPath(dir)))
+  loading = {backend, promise}
+  // a failed download or load can be retried
+  promise.catch(() => { loading = undefined })
+  return promise
+}
 
 /**
  * Initialize chat controller
