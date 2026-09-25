@@ -12,30 +12,18 @@ A business-address bot that triages incoming support chats, optionally runs them
 
 ```bash
 cd apps/simplex-support-bot
-npm install      # downloads native libs + transitive deps
+npm install
 npm run build    # tsc
 ```
 
-By default this installs the **SQLite** backend.
+The native library is downloaded on first start into the user cache. To download it ahead of time (for example in a Dockerfile), run as the user that runs the bot:
 
-To use **PostgreSQL** instead, drop a `.npmrc` next to `package.json` *before* `npm install`:
-
-```bash
-echo 'simplex_backend=postgres' > .npmrc
-npm install      # now pulls postgres-flavored native libs
-npm run build
+```sh
+npx simplex-chat install --backend sqlite
+npx simplex-chat install --backend postgres   # Linux x86_64 only
 ```
 
-`.npmrc` lives next to the package — npm reads it natively, no extra setup.
-
-### Switching backends
-
-`npm install` is a no-op for already-installed deps, so editing `.npmrc` and re-running `npm install` will *not* re-trigger `simplex-chat`'s preinstall. To switch backends, force a clean install:
-
-```bash
-rm -rf node_modules
-npm install      # download-libs.js re-runs and pulls the right native lib
-```
+Select the database with `--db sqlite` (default) or `--db postgres`.
 
 ## Run
 
@@ -47,10 +35,8 @@ npm start -- --team-group "Support Team"
 
 # PostgreSQL
 npm start -- --team-group "Support Team" \
-             --pg-conn "postgres://user:pass@host/db"
+             --db postgres --pg-conn "postgres://user:pass@host/db"
 ```
-
-The bot runs via `npm start` so npm can expose `.npmrc` settings to the process — `detectBackend()` reads `npm_config_simplex_backend` to know which backend was installed.
 
 ## Flags
 
@@ -60,6 +46,7 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 |---|---|---|---|---|
 | `--team-group` | both | yes | — | team group display name |
 | `--state-file` | both | no | `./data/state.json` | path to bot state JSON |
+| `--db` | both | no | `sqlite` | `sqlite` or `postgres` |
 | `--sqlite-file-prefix` | sqlite | no | `./data/simplex` | DB file prefix (creates `<prefix>_chat.db`, `<prefix>_agent.db`) |
 | `--sqlite-key` | sqlite | no | (unencrypted) | SQLCipher encryption key |
 | `--pg-conn` | postgres | yes | — | PostgreSQL connection string |
@@ -76,7 +63,7 @@ Run `npm start -- --help` for the auto-generated reference. Summary:
 | Var | Purpose |
 |---|---|
 | `GROK_API_KEY` | xAI API key; enables Grok replies |
-| `SIMPLEX_BACKEND` | alternative to `.npmrc` for selecting the install backend (`sqlite` or `postgres`) |
+| `SIMPLEX_LIBS_DIR` | directory with a local libsimplex build for the `--db` backend, instead of the downloaded one |
 
 ## Local development against unreleased lib changes
 
@@ -94,8 +81,6 @@ npm link simplex-chat
 
 ## Troubleshooting
 
-- **`--pg-conn is required when backend is postgres`** — the postgres backend is installed but you didn't pass a connection string.
+- **`--pg-conn is required with --db postgres`** — pass a connection string, or use `--db sqlite`.
 - **`libpq5` errors at startup** — install `libpq5` on the host (`apt install libpq5` on Debian/Ubuntu).
 - **`ENOENT: no such file or directory, open './data/state.json'`** — the parent directory of `--state-file` must exist; `mkdir -p data` before starting.
-- **Wrong backend installed** — check `node_modules/simplex-chat/libs/installed.txt`. Edit `.npmrc`, then `rm -rf node_modules && npm install` to switch (`npm install` alone won't re-run the dep's preinstall).
-- **`libpq` connection error** at startup with sqlite-flavored config (or vice versa) — `.npmrc` was changed but libs weren't reinstalled. See "Switching backends" above.
