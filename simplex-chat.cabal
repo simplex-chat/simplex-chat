@@ -94,6 +94,7 @@ library
       Simplex.Chat.Store.RelayRequests
       Simplex.Chat.Store.Remote
       Simplex.Chat.Store.Shared
+      Simplex.Chat.Store.Wallets
       Simplex.Chat.Styled
       Simplex.Chat.Types
       Simplex.Chat.Types.MemberRelations
@@ -101,6 +102,7 @@ library
       Simplex.Chat.Types.Shared
       Simplex.Chat.Types.UITheme
       Simplex.Chat.Util
+      Simplex.Chat.Wallet
       Simplex.Chat.Web
   if !flag(client_library)
       exposed-modules:
@@ -168,6 +170,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260915_user_badges
           Simplex.Chat.Store.Postgres.Migrations.M20260918_badge_issue_errors
           Simplex.Chat.Store.Postgres.Migrations.M20260923_preferences_json
+          Simplex.Chat.Store.Postgres.Migrations.M20260924_wallet_seeds
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -345,6 +348,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260915_user_badges
           Simplex.Chat.Store.SQLite.Migrations.M20260918_badge_issue_errors
           Simplex.Chat.Store.SQLite.Migrations.M20260923_preferences_json
+          Simplex.Chat.Store.SQLite.Migrations.M20260924_wallet_seeds
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -706,6 +710,7 @@ test-suite simplex-chat-test
       RemoteTests
       ValidNames
       ViewTests
+      WalletTests
       API.Docs.Commands
       API.Docs.Events
       API.Docs.Generate

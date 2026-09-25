@@ -883,6 +883,10 @@ class ChatErrorType_simplexDomainNotReady(TypedDict):
     simplexDomain: "SimplexDomain"
     simplexDomainError: "SimplexDomainError"
 
+class ChatErrorType_wallet(TypedDict):
+    type: Literal["wallet"]
+    walletError: "WalletError"
+
 class ChatErrorType_notResolvedLocally(TypedDict):
     type: Literal["notResolvedLocally"]
 
@@ -1121,6 +1125,7 @@ ChatErrorType = (
     | ChatErrorType_chatStoreChanged
     | ChatErrorType_invalidConnReq
     | ChatErrorType_simplexDomainNotReady
+    | ChatErrorType_wallet
     | ChatErrorType_notResolvedLocally
     | ChatErrorType_unsupportedConnReq
     | ChatErrorType_connReqMessageProhibited
@@ -1179,7 +1184,7 @@ ChatErrorType = (
     | ChatErrorType_exception
 )
 
-ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "badgeRedeemError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
+ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "wallet", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "badgeRedeemError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
 
 ChatFeature = Literal["timedMessages", "fullDelete", "reactions", "voice", "files", "calls", "sessions"]
 
@@ -3716,6 +3721,48 @@ class UserPwdHash(TypedDict):
 class VersionRange(TypedDict):
     minVersion: int  # int
     maxVersion: int  # int
+
+class WalletError_noMaster(TypedDict):
+    type: Literal["noMaster"]
+
+class WalletError_masterExists(TypedDict):
+    type: Literal["masterExists"]
+
+class WalletError_badMnemonic(TypedDict):
+    type: Literal["badMnemonic"]
+
+class WalletError_hiddenProfile(TypedDict):
+    type: Literal["hiddenProfile"]
+
+class WalletError_accountBound(TypedDict):
+    type: Literal["accountBound"]
+
+class WalletError_accountNotHeld(TypedDict):
+    type: Literal["accountNotHeld"]
+
+class WalletError_counterUnknown(TypedDict):
+    type: Literal["counterUnknown"]
+
+class WalletError_accountsExhausted(TypedDict):
+    type: Literal["accountsExhausted"]
+
+class WalletError_derivation(TypedDict):
+    type: Literal["derivation"]
+    derivationError: str
+
+WalletError = (
+    WalletError_noMaster
+    | WalletError_masterExists
+    | WalletError_badMnemonic
+    | WalletError_hiddenProfile
+    | WalletError_accountBound
+    | WalletError_accountNotHeld
+    | WalletError_counterUnknown
+    | WalletError_accountsExhausted
+    | WalletError_derivation
+)
+
+WalletError_Tag = Literal["noMaster", "masterExists", "badMnemonic", "hiddenProfile", "accountBound", "accountNotHeld", "counterUnknown", "accountsExhausted", "derivation"]
 
 class XFTPErrorType_BLOCK(TypedDict):
     type: Literal["BLOCK"]

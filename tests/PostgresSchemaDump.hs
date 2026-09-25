@@ -7,10 +7,9 @@ module PostgresSchemaDump (postgresSchemaDumpTest) where
 import ChatTests.Utils hiding (it)
 import Control.Concurrent (threadDelay)
 import Control.DeepSeq
-import Control.Monad (unless, void)
+import Control.Monad (forM_, unless, void)
 import qualified Data.ByteString.Char8 as B
-import Data.List (dropWhileEnd)
-import Data.Maybe (fromJust, isJust)
+import Data.Maybe (isNothing)
 import Simplex.Messaging.Agent.Store.Postgres (closeDBStore, createDBStore)
 import Simplex.Messaging.Agent.Store.Postgres.Common (DBOpts (..))
 import qualified Simplex.Messaging.Agent.Store.Postgres.Migrations as Migrations
@@ -36,17 +35,17 @@ postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSch
       getSchema srcSchemaPath `shouldReturn` savedSchema
 
     testSchemaMigrations = do
-      let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) migrations
+      let noDownMigrations = takeWhile (\Migration {down} -> isNothing down) migrations
       st <- createDBStore testDBOpts noDownMigrations (MigrationConfig MCYesUpDown Nothing) >>= \case
         Right st -> pure st
         Left e -> error $ show e
-      mapM_ (testDownMigration st) $ drop (length noDownMigrations) migrations
+      forM_ (drop (length noDownMigrations) migrations) $ \m ->
+        maybe (Migrations.run st Nothing $ MTRUp [m]) (testDownMigration st m) (toDownMigration m)
       closeDBStore st
       whenM (doesFileExist testSchemaPath) $ removeFile testSchemaPath
       where
-        testDownMigration st m = do
+        testDownMigration st m downMigr = do
           putStrLn $ "down migration " <> name m
-          let downMigr = fromJust $ toDownMigration m
           schema <- getSchema testSchemaPath
           Migrations.run st Nothing $ MTRUp [m]
           schema' <- getSchema testSchemaPath

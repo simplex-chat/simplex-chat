@@ -1730,6 +1730,51 @@ ALTER TABLE test_chat_schema.users ALTER COLUMN user_id ADD GENERATED ALWAYS AS 
 
 
 
+CREATE TABLE test_chat_schema.wallet_accounts (
+    wallet_account_id bigint NOT NULL,
+    wallet_seed_id bigint NOT NULL,
+    account_index bigint,
+    user_id bigint,
+    CONSTRAINT wallet_accounts_account_index_check CHECK (((account_index >= 0) AND (account_index <= 2147483647)))
+);
+
+
+
+ALTER TABLE test_chat_schema.wallet_accounts ALTER COLUMN wallet_account_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.wallet_accounts_wallet_account_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE test_chat_schema.wallet_seeds (
+    wallet_seed_id bigint NOT NULL,
+    entropy bytea NOT NULL,
+    master bytea NOT NULL,
+    next_account_index bigint,
+    single_seed smallint DEFAULT 1 NOT NULL,
+    CONSTRAINT wallet_seeds_entropy_check CHECK ((length(entropy) = 32)),
+    CONSTRAINT wallet_seeds_master_check CHECK ((length(master) = 64)),
+    CONSTRAINT wallet_seeds_next_account_index_check CHECK (((next_account_index >= 0) AND (next_account_index <= '2147483648'::bigint)))
+);
+
+
+
+ALTER TABLE test_chat_schema.wallet_seeds ALTER COLUMN wallet_seed_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.wallet_seeds_wallet_seed_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
 CREATE TABLE test_chat_schema.xftp_file_descriptions (
     file_descr_id bigint NOT NULL,
     user_id bigint NOT NULL,
@@ -2140,6 +2185,16 @@ ALTER TABLE ONLY test_chat_schema.users
 
 ALTER TABLE ONLY test_chat_schema.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (user_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.wallet_accounts
+    ADD CONSTRAINT wallet_accounts_pkey PRIMARY KEY (wallet_account_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.wallet_seeds
+    ADD CONSTRAINT wallet_seeds_pkey PRIMARY KEY (wallet_seed_id);
 
 
 
@@ -2944,6 +2999,18 @@ CREATE INDEX idx_users_shown_badge ON test_chat_schema.users USING btree (shown_
 
 
 
+CREATE INDEX idx_wallet_accounts_user_id ON test_chat_schema.wallet_accounts USING btree (user_id);
+
+
+
+CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON test_chat_schema.wallet_accounts USING btree (wallet_seed_id, account_index);
+
+
+
+CREATE UNIQUE INDEX idx_wallet_seeds_single_seed ON test_chat_schema.wallet_seeds USING btree (single_seed);
+
+
+
 CREATE INDEX idx_xftp_file_descriptions_user_id ON test_chat_schema.xftp_file_descriptions USING btree (user_id);
 
 
@@ -3666,6 +3733,16 @@ ALTER TABLE ONLY test_chat_schema.user_contact_links
 
 ALTER TABLE ONLY test_chat_schema.users
     ADD CONSTRAINT users_shown_badge_id_fkey FOREIGN KEY (shown_badge_id) REFERENCES test_chat_schema.badge_purchases(badge_purchase_id) ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY test_chat_schema.wallet_accounts
+    ADD CONSTRAINT wallet_accounts_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY test_chat_schema.wallet_accounts
+    ADD CONSTRAINT wallet_accounts_wallet_seed_id_fkey FOREIGN KEY (wallet_seed_id) REFERENCES test_chat_schema.wallet_seeds(wallet_seed_id) ON DELETE CASCADE;
 
 
 
