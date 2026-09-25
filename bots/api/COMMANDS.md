@@ -74,6 +74,7 @@ This file is generated automatically.
 
 [Service commands](#service-commands)
 - [APISendServiceResponse](#apisendserviceresponse)
+- [APIRejectServiceRequest](#apirejectservicerequest)
 
 [Chat management](#chat-management)
 - [StartChat](#startchat)
@@ -2338,6 +2339,44 @@ ServiceReplyAccepted: Service reply accepted for delivery. `connectionId` correl
 - type: "serviceReplyAccepted"
 - user: [User](./TYPES.md#user)
 - connectionId: string
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APIRejectServiceRequest
+
+Reject a received service request. With a reason the requester fails fast; without it the request is dropped and the requester waits out its timeout.
+
+*Network usage*: background.
+
+**Parameters**:
+- userId: int64
+- requestId: string
+- rejectionReason: string?
+
+**Syntax**:
+
+```
+/_reject_service_request <userId> <requestId>[ <rejectionReason>]
+```
+
+```javascript
+'/_reject_service_request ' + userId + ' ' + requestId + (rejectionReason ? ' ' + rejectionReason : '') // JavaScript
+```
+
+```python
+'/_reject_service_request ' + str(userId) + ' ' + requestId + ((' ' + rejectionReason) if rejectionReason is not None else '') # Python
+```
+
+**Responses**:
+
+CmdOk: Ok.
+- type: "cmdOk"
+- user_: [User](./TYPES.md#user)?
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"

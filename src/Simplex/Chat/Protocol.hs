@@ -1039,6 +1039,48 @@ markCompressedBatch :: ByteString -> ByteString
 markCompressedBatch = B.cons 'X'
 {-# INLINE markCompressedBatch #-}
 
+compressBodyTo :: Int -> ByteString -> Maybe ByteString
+compressBodyTo maxLen body
+  | B.length body <= maxLen = Just body
+  | B.length body' > maxLen = Nothing
+  | otherwise = Just body'
+  where
+    body' = compressedBatchMsgBody_ body
+
+-- A service payload is padded to the same size as connection info, so it gets the same bound.
+-- JSON never starts with 'X', so that marker unambiguously means the body is compressed.
+compressServiceBody :: ByteString -> Either String ByteString
+compressServiceBody = maybe (Left "service payload is too large") Right . compressBodyTo maxCompressedInfoLength
+
+decompressServiceBody :: ByteString -> Either String ByteString
+decompressServiceBody body = case B.uncons body of
+  Nothing -> Left "empty service payload"
+  Just ('X', body') -> case smpDecode body' :: Either String (L.NonEmpty Compressed) of
+    Left e -> Left e
+    Right (c L.:| []) -> case decompressedSize c of
+      -- the bound is required: without it a small payload can expand to an unbounded one
+      Just size | size > maxDecompressedMsgLength -> Left "decompressed size exceeds limit"
+      Just _ -> decompress1 c
+      Nothing -> Left "compressed size not specified"
+    Right _ -> Left "unexpected compressed batch"
+  _ -> Right body
+
+-- The apps decode this payload recursively on a small stack, so deep nesting crashes them.
+-- Bounded here rather than in each client, as no service needs more than a few levels.
+maxServiceBodyDepth :: Int
+maxServiceBodyDepth = 32
+
+parseServiceBody :: ByteString -> Either String J.Object
+parseServiceBody body = do
+  o <- J.eitherDecodeStrict' =<< decompressServiceBody body
+  when (depth (J.Object o) > maxServiceBodyDepth) $ Left "service payload is nested too deeply"
+  pure o
+  where
+    depth = \case
+      J.Object kv -> 1 + foldr (max . depth) 0 kv
+      J.Array vs -> 1 + foldr (max . depth) 0 vs
+      _ -> 0
+
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
 justTrue False = Nothing

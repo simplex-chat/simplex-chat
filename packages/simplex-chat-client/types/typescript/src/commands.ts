@@ -874,6 +874,22 @@ export namespace APISendServiceResponse {
   }
 }
 
+// Reject a received service request. With a reason the requester fails fast; without it the request is dropped and the requester waits out its timeout.
+// Network usage: background.
+export interface APIRejectServiceRequest {
+  userId: number // int64
+  requestId: string
+  rejectionReason?: string
+}
+
+export namespace APIRejectServiceRequest {
+  export type Response = CR.CmdOk | CR.ChatCmdError
+
+  export function cmdString(self: APIRejectServiceRequest): string {
+    return '/_reject_service_request ' + self.userId + ' ' + self.requestId + (self.rejectionReason ? ' ' + self.rejectionReason : '')
+  }
+}
+
 // Chat management
 // These commands should not be used with CLI-based bots
 

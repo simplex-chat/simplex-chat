@@ -18,7 +18,7 @@ import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
+import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts (..), CreateBotOpts (..), coreChatOptsP)
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
@@ -37,6 +37,7 @@ data DirectoryOpts = DirectoryOpts
     clientService :: Bool,
     runCLI :: Bool,
     searchResults :: Int,
+    maxServiceRequestsInFlight :: Int,
     webFolder :: Maybe FilePath,
     linkCheckInterval :: Int,
     prohibitedToObserver :: Bool,
@@ -199,6 +200,7 @@ directoryOpts appDir defaultDbName = do
         clientService,
         runCLI,
         searchResults = 10,
+        maxServiceRequestsInFlight = 8,
         webFolder,
         linkCheckInterval,
         prohibitedToObserver,
@@ -222,7 +224,7 @@ getDirectoryOpts appDir defaultDbName =
 mkChatOpts :: DirectoryOpts -> ChatOpts
 mkChatOpts DirectoryOpts {coreOptions, serviceName, clientService} =
   ChatOpts
-    { coreOptions,
+    { coreOptions = coreOptions {serviceRequests = True},
       chatCmd = "",
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,

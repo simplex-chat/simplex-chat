@@ -2443,10 +2443,8 @@ encodeConnInfoPQ pqSup chatMsgEvent = do
   let info = ChatMessage {chatVRange = vr cxt, msgId = Nothing, chatMsgEvent}
   case encodeChatMessage maxEncodedInfoLength info of
     ECMEncoded connInfo -> case pqSup of
-      PQSupportOn | B.length connInfo > maxCompressedInfoLength -> do
-        let connInfo' = compressedBatchMsgBody_ connInfo
-        when (B.length connInfo' > maxCompressedInfoLength) $ throwChatError $ CEException "large compressed info"
-        pure connInfo'
+      -- with PQ off the size budget is larger, so the body always fits and compressing is wasted work
+      PQSupportOn -> maybe (throwChatError $ CEException "large compressed info") pure $ compressBodyTo maxCompressedInfoLength connInfo
       _ -> pure connInfo
     ECMLarge -> throwChatError $ CEException "large info"
 
@@ -2502,10 +2500,8 @@ deliverMessagesB msgReqs = do
     compressBodies =
       forME msgReqs $ \(conn, msgFlags, (mbr, msgIds)) -> runExceptT $ do
         mbr' <- case mbr of
-          VRValue i msgBody | B.length msgBody > maxCompressedMsgLength -> do
-            let msgBody' = compressedBatchMsgBody_ msgBody
-            when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
-            pure $ VRValue i msgBody'
+          VRValue i msgBody ->
+            VRValue i <$> maybe (throwError $ ChatError $ CEException "large compressed message") pure (compressBodyTo maxCompressedMsgLength msgBody)
           v -> pure v
         pure (conn, msgFlags, (mbr', msgIds))
     toAgent prev = \case

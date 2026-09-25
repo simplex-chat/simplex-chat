@@ -298,30 +298,47 @@ class ChatItemDummyModel: ObservableObject {
     func sendUpdate() { objectWillChange.send() }
 }
 
+// There is one spinner, and a search and a connection can run at once - tapping a result starts
+// connecting while the search is still going - so it records which of them it belongs to.
+enum ConnectProgressOwner {
+    case connect
+    case directorySearch
+}
+
 class ConnectProgressManager: ObservableObject {
     @Published private var connectInProgress: String? = nil
     @Published private var connectProgressByTimeout: Bool = false
     private var onCancel: (() -> Void)?
+    private var owner: ConnectProgressOwner?
 
     static let shared = ConnectProgressManager()
 
-    func startConnectProgress(_ text: String, onCancel: (() -> Void)? = nil) {
+    func startConnectProgress(_ text: String, owner: ConnectProgressOwner = .connect, onCancel: (() -> Void)? = nil) {
         connectInProgress = text
+        self.owner = owner
         self.onCancel = onCancel
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             self.connectProgressByTimeout = self.connectInProgress != nil
         }
     }
 
-    func stopConnectProgress() {
+    // a search finishing late must not stop the spinner if a connection has taken it over
+    func stopConnectProgress(_ owner: ConnectProgressOwner = .connect) {
+        if let current = self.owner, current != owner { return }
         connectInProgress = nil
+        self.owner = nil
         onCancel = nil
         connectProgressByTimeout = false
     }
 
+    // unlike stopConnectProgress, this cancels whoever owns the spinner
     func cancelConnectProgress() {
-        onCancel?()
-        stopConnectProgress()
+        let cancel = onCancel
+        owner = nil
+        onCancel = nil
+        connectInProgress = nil
+        connectProgressByTimeout = false
+        cancel?()
     }
 
     var showConnectProgress: String? {

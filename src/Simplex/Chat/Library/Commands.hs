@@ -1495,8 +1495,14 @@ processChatCommand cxt nm = \case
     CRServiceResponse user <$> sendServiceRequestTo nm user sendTarget requestTimeout (C.unStored <$> signKey) request
   APISendServiceResponse userId requestId responseData -> withUserId userId $ \user -> do
     let AgentInvId invId = requestId
-    connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
+    respData <- either throwCmdError pure $ compressServiceBody $ LB.toStrict $ J.encode responseData
+    connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId respData
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
+  APIRejectServiceRequest userId requestId reason -> withUserId userId $ \user -> do
+    let AgentInvId invId = requestId
+    -- without a reason the request is dropped silently and the requester waits out its timeout
+    withAgent $ \a -> rejectServiceRequestAsync a "" (aUserId user) invId (encodeUtf8 <$> reason)
+    ok user
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withFastStore $ \db -> getContact db cxt user contactId
@@ -5235,7 +5241,7 @@ redeemBadgeCode nm user@User {userId} codeText = do
       maybe (withStore' $ \db -> createBadgeCodeRedemption db g user codeSent now) pure redemption_
     let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request = BSCRedeemBadgeCode {masterKey, code = codeSent}}
     respBytes <- sendServiceRequestBytes nm user sendTarget Nothing (Just purchasePrivKey) req
-    respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ J.eitherDecodeStrict' respBytes
+    respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ parseServiceBody respBytes
     case J.fromJSON (J.Object respData) of
       J.Error _ -> throwRedeemError $ BREInvalidResponse "not a badge service response"
       J.Success BSPError {code = errCode} -> do
@@ -5703,12 +5709,13 @@ applyBadgeStatement db g purchaseId badgeType BadgeStatement {entries} cred_ now
 sendServiceRequestTo :: J.ToJSON a => NetworkRequestMode -> User -> ConnectTarget 'CMContact -> Maybe NominalDiffTime -> Maybe C.PrivateKeyEd25519 -> a -> CM J.Object
 sendServiceRequestTo nm user sendTarget requestTimeout signKey request =
   sendServiceRequestBytes nm user sendTarget requestTimeout signKey request
-    >>= either (const $ throwCmdError "invalid service response") pure . J.eitherDecodeStrict'
+    >>= either (const $ throwCmdError "invalid service response") pure . parseServiceBody
 
 sendServiceRequestBytes :: J.ToJSON a => NetworkRequestMode -> User -> ConnectTarget 'CMContact -> Maybe NominalDiffTime -> Maybe C.PrivateKeyEd25519 -> a -> CM ByteString
 sendServiceRequestBytes nm user sendTarget requestTimeout signKey request = do
   cReq <- resolveServiceTarget sendTarget
-  withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout signKey (LB.toStrict $ J.encode request)
+  reqData <- either throwCmdError pure $ compressServiceBody $ LB.toStrict $ J.encode request
+  withAgent $ \a -> sendServiceRequestAsync a (aUserId user) cReq requestTimeout signKey reqData
   where
     resolveServiceTarget = \case
       CTFullContact cReq -> pure cReq
@@ -6113,6 +6120,7 @@ chatCommandP =
       "/_badge ledger " *> (APIGetBadgeLedger <$> A.decimal <* A.space <*> A.decimal),
       "/_badge ack " *> (APIAckBadgeAlert <$> A.decimal <* A.space <*> A.decimal <* A.space <*> badgeAlertKindP <* A.space <*> onOffP <* A.space <*> textP),
       "/_service_response " *> (APISendServiceResponse <$> A.decimal <* A.space <*> strP <* A.space <*> jsonP),
+      "/_reject_service_request " *> (APIRejectServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (A.space *> (safeDecodeUtf8 <$> A.takeByteString))),
       "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
       "/call " *> char_ '@' *> (SendCallInvitation <$> displayNameP <*> pure defaultCallType),
       "/_call reject @" *> (APIRejectCall <$> A.decimal),
