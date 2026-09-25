@@ -1,5 +1,5 @@
-export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
-export type Operator = "+" | "-" | "×" | "÷"
+type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+type Operator = "+" | "-" | "×" | "÷"
 export type Key = Digit | Operator | "C" | "±" | "%" | "√" | "." | "="
 export type Update = (calc: Calc) => [Calc, string?]
 
@@ -13,7 +13,7 @@ export interface Calc {
 
 export const initialCalc: Calc = {display: "0", operand: "0", terms: [], mode: "typing"}
 
-export const keypad: Key[][] = [
+const keypad: Key[][] = [
   ["C", "±", "%", "÷"],
   ["7", "8", "9", "×"],
   ["4", "5", "6", "-"],
@@ -33,7 +33,7 @@ const keyWords: Partial<Record<Key, string>> = {
   "=": "eq",
 }
 
-export function keyWord(key: Key): string {
+function keyWord(key: Key): string {
   return keyWords[key] ?? key
 }
 
@@ -49,18 +49,23 @@ const errorDisplay = "Error"
 
 export function press(calc: Calc, key: Key): [Calc, string?] {
   switch (key) {
-    case "C": return [calc.display === "0" || calc.display === errorDisplay ? initialCalc : {...calc, display: "0", operand: "0", mode: "typing"}]
+    case "C": return [clear(calc)]
     case "=": return equals(calc)
     case "+": case "-": case "×": case "÷": return [operator(calc, key)]
-    case "%": return [result(calc, percent(calc), `${calc.operand}%`)]
-    case "√": return [result(calc, Math.sqrt(value(calc)), `√${calc.operand}`)]
+    case "%": return [showNumber(calc, percent(calc), `${calc.operand}%`)]
+    case "√": return [showNumber(calc, Math.sqrt(value(calc)), `√${calc.operand}`)]
     case "±": return [negate(calc)]
     default: return [enter(calc, key)]
   }
 }
 
+function clear(calc: Calc): Calc {
+  if (calc.display === "0" || calc.display === errorDisplay) return initialCalc
+  return {...calc, display: "0", operand: "0", mode: "typing"}
+}
+
 function enter(calc: Calc, key: Digit | "."): Calc {
-  const display = calc.mode === "typing" ? append(calc.display, key) : key === "." ? "0." : key
+  const display = append(calc.mode === "typing" ? calc.display : "0", key)
   return {...calc, display, operand: display, mode: "typing"}
 }
 
@@ -71,7 +76,7 @@ function append(display: string, key: Digit | "."): string {
 }
 
 function negate(calc: Calc): Calc {
-  if (calc.mode !== "typing") return enterNumber(calc, -value(calc))
+  if (calc.mode !== "typing") return showNumber(calc, -value(calc))
   const display = calc.display.startsWith("-") ? calc.display.slice(1) : `-${calc.display}`
   return {...calc, display, operand: display}
 }
@@ -82,12 +87,9 @@ function percent(calc: Calc): number {
   return pending && (pending.op === "+" || pending.op === "-") ? pending.acc * b / 100 : b / 100
 }
 
-function enterNumber(calc: Calc, n: number): Calc {
-  return result(calc, n, format(n))
-}
-
-function result(calc: Calc, n: number, operand: string): Calc {
-  return {...calc, display: format(n), operand, mode: "result"}
+function showNumber(calc: Calc, n: number, operand?: string): Calc {
+  const display = format(n)
+  return {...calc, display, operand: operand ?? display, mode: "result"}
 }
 
 function operator(calc: Calc, op: Operator): Calc {
@@ -132,7 +134,7 @@ export function textInput(text: string): Update | undefined {
   const n = expressionValue(input.replace(/=$/, ""))
   if (n !== undefined) {
     return calc => {
-      const entered = enterNumber(calc, n)
+      const entered = showNumber(calc, n)
       return input.endsWith("=") ? press(entered, "=") : [entered]
     }
   }
@@ -150,13 +152,13 @@ function expressionValue(expression: string): number | undefined {
   if (!valid) return undefined
   const calc = terms.reduce((current, [, op, sign, number, percentSign]) => {
     const withOperator = op ? press(current, keyAliases[op] ?? op as Key)[0] : current
-    const entered = enterNumber(withOperator, sign ? -Number(number) : Number(number))
+    const entered = showNumber(withOperator, sign ? -Number(number) : Number(number))
     return percentSign ? press(entered, "%")[0] : entered
   }, initialCalc)
   return value(press(calc, "=")[0])
 }
 
-const nbsp = " "
+const nbsp = String.fromCharCode(0xa0)
 const wordWidth = Math.max(...keypad.flat().map(key => keyWord(key).length))
 
 export function calculatorText(calc: Calc | undefined, symbolKeys: boolean): string {

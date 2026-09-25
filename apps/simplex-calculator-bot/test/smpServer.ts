@@ -28,20 +28,22 @@ export async function startSmpServer(): Promise<SmpServer> {
     env: {...process.env, SMP_SERVER_CFG_PATH: configDir, SMP_SERVER_LOG_PATH: join(dir, "logs")},
     stdio: ["ignore", "ignore", "inherit"],
   })
-  let spawnError: Error | undefined
-  server.on("error", e => { spawnError = e })
-  await waitForServer(server, port, () => spawnError)
-  return {
-    address: `smp://${fingerprint}@localhost:${port}`,
-    stop: async () => {
-      if (server.exitCode === null) {
-        const exited = once(server, "exit")
-        server.kill()
-        await exited
-      }
-      rmSync(dir, {recursive: true, force: true})
-    },
+  const stop = async () => {
+    if (server.exitCode === null) {
+      const exited = once(server, "exit")
+      server.kill()
+      await exited
+    }
+    rmSync(dir, {recursive: true, force: true})
   }
+  try {
+    await once(server, "spawn")
+    await waitForServer(server, port)
+  } catch (e) {
+    await stop()
+    throw e
+  }
+  return {address: `smp://${fingerprint}@localhost:${port}`, stop}
 }
 
 async function smpServerExecutable(): Promise<string> {
@@ -54,7 +56,7 @@ async function smpServerExecutable(): Promise<string> {
 async function downloadSmpServer(path: string): Promise<void> {
   const arch = releaseArch[process.arch]
   if (process.platform !== "linux" || !arch) {
-    throw new Error("smp-server release binaries are only available for Linux, set SMP_SERVER to the smp-server executable")
+    throw new Error(`smp-server release binaries are not available for ${process.platform} ${process.arch}, set SMP_SERVER to the smp-server path`)
   }
   const url = `https://github.com/simplex-chat/simplexmq/releases/download/${smpServerRelease}/smp-server-ubuntu-22_04-${arch}`
   const response = await fetch(url)
@@ -80,12 +82,10 @@ function freePort(): Promise<number> {
   })
 }
 
-async function waitForServer(server: ChildProcess, port: number, spawnError: () => Error | undefined): Promise<void> {
+async function waitForServer(server: ChildProcess, port: number): Promise<void> {
   const deadline = Date.now() + 15_000
   while (!(await canConnect(port))) {
-    if (server.pid === undefined || server.exitCode !== null || Date.now() > deadline) {
-      throw new Error(`smp-server did not start on port ${port}: ${spawnError()?.message ?? "no error"}`)
-    }
+    if (server.exitCode !== null || Date.now() > deadline) throw new Error(`smp-server did not start on port ${port}`)
     await new Promise(resolve => setTimeout(resolve, 100))
   }
 }

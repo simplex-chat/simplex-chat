@@ -407,10 +407,7 @@ textWithCommands = describe "text with commands" do
     "send /'filter 1'." <==> "send " <> command "filter 1" "/'filter 1'" <> "."
     "send /'filter 1.'!" <==> "send " <> command "filter 1." "/'filter 1.'" <> "!"
     "send /he?lp" <==> "send " <> command "he?lp" "/he?lp"
-    "/+" <==> command "+" "/+"
     "/-" <==> command "-" "/-"
-    "/." <==> command "." "/."
-    "/√ /÷" <==> command "√" "/√" <> " " <> command "÷" "/÷"
     "send /+." <==> "send " <> command "+" "/+" <> "."
     "/'+'" <==> command "+" "/'+'"
   it "calculator keys" do

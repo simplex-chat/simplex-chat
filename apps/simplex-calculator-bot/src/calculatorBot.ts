@@ -6,13 +6,14 @@ import {calculatorIcon} from "./icon.js"
 const anyTextCommandsVersion = 21
 const idleMinutes = 10
 
-const welcomeMessage = `Tap the keys, or send numbers, keys like + or =, and expressions like 12 × 3 + 4.\nKeys are applied left to right, as on a pocket calculator.\nThe calculator turns off after ${idleMinutes} minutes, any key turns it on.`
+const welcomeMessage = `Tap the keys or send numbers, keys like + and =, or expressions like 12 × 3 + 4.
+Keys are applied left to right, as on a pocket calculator.
+The calculator turns off after ${idleMinutes} minutes; any key turns it on.`
 const hint = "Send a number, a key like + or =, or an expression like 12 × 3 + 4."
 
 interface Session {
   calc?: Calc
   itemId: number
-  symbolKeys: boolean
   timer?: NodeJS.Timeout
 }
 
@@ -29,17 +30,13 @@ function groupSender({chatInfo, chatItem}: T.AChatItem): Sender | undefined {
     : undefined
 }
 
-function currentCalc(groupId: number): Calc {
-  return sessions.get(groupId)?.calc ?? initialCalc
-}
-
-async function showCalculator(chat: api.ChatApi, groupId: number, member: T.GroupMember, calc: Calc): Promise<void> {
+async function showCalculator(chat: api.ChatApi, {groupId, member}: Sender, calc: Calc): Promise<void> {
   const symbolKeys = member.memberChatVRange.maxVersion >= anyTextCommandsVersion
   const [sent] = await chat.apiSendTextMessage([T.ChatType.Group, groupId], calculatorText(calc, symbolKeys))
   const itemId = sent.chatItem.meta.itemId
   const previous = sessions.get(groupId)
   const timer = setTimeout(() => turnOff(chat, groupId, itemId, symbolKeys), idleMinutes * 60_000)
-  sessions.set(groupId, {calc, itemId, symbolKeys, timer})
+  sessions.set(groupId, {calc, itemId, timer})
   if (previous) {
     clearTimeout(previous.timer)
     await chat.apiDeleteChatItems(T.ChatType.Group, groupId, [previous.itemId], T.CIDeleteMode.Broadcast)
@@ -47,15 +44,15 @@ async function showCalculator(chat: api.ChatApi, groupId: number, member: T.Grou
 }
 
 function turnOff(chat: api.ChatApi, groupId: number, itemId: number, symbolKeys: boolean): void {
-  sessions.set(groupId, {itemId, symbolKeys})
+  sessions.set(groupId, {itemId})
   chat.apiUpdateChatItem(T.ChatType.Group, groupId, itemId, {type: "text", text: calculatorText(undefined, symbolKeys)}, false)
     .catch(e => console.log("error turning calculator off", e))
 }
 
-async function updateCalculator(chat: api.ChatApi, {groupId, member}: Sender, update: Update): Promise<void> {
-  const [calc, logLine] = update(currentCalc(groupId))
-  if (logLine) await chat.apiSendTextMessage([T.ChatType.Group, groupId], logLine)
-  await showCalculator(chat, groupId, member, calc)
+async function updateCalculator(chat: api.ChatApi, sender: Sender, update: Update): Promise<void> {
+  const [calc, logLine] = update(sessions.get(sender.groupId)?.calc ?? initialCalc)
+  if (logLine) await chat.apiSendTextMessage([T.ChatType.Group, sender.groupId], logLine)
+  await showCalculator(chat, sender, calc)
 }
 
 function tapCommand(update: Update) {
@@ -92,7 +89,7 @@ export function runCalculatorBot(dbOpts: bot.BotDbOpts): Promise<[api.ChatApi, T
       "": async (ci, _command, chat) => { await chat.apiSendTextReply(ci, hint) },
     },
     events: {
-      joinedGroupMember: ({groupInfo, member}, chat) => showCalculator(chat, groupInfo.groupId, member, initialCalc),
+      joinedGroupMember: ({groupInfo, member}, chat) => showCalculator(chat, {groupId: groupInfo.groupId, member}, initialCalc),
     },
   })
 }

@@ -62,7 +62,7 @@ There is an example with more options in [./examples/squaring-bot.ts](./examples
 
 You can run it with: `npx ts-node ./examples/squaring-bot.ts`
 
-A complete bot using business chats, command keys and message updates: [SimpleX Calculator](../../apps/simplex-calculator-bot/).
+A larger example, with a business address and commands as keys: [SimpleX Calculator](../../apps/simplex-calculator-bot/).
 
 ## PostgreSQL backend
 

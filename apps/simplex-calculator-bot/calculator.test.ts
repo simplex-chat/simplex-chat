@@ -134,6 +134,8 @@ describe("typed messages", () => {
 })
 
 describe("calculator text", () => {
+  const nbsp = String.fromCharCode(0xa0)
+
   test("symbol keys", () => {
     expect(calculatorText(initialCalc, true)).toBe([
       "*0*",
@@ -147,12 +149,12 @@ describe("calculator text", () => {
 
   test("switched off: keys without number", () => {
     const [displayLine, ...rows] = calculatorText(undefined, true).split("\n")
-    expect(displayLine).toBe("* *")
+    expect(displayLine).toBe(`*${nbsp}*`)
     expect(rows).toEqual(calculatorText(initialCalc, true).split("\n").slice(1))
   })
 
   test("word keys padded to equal width", () => {
-    const pad = (n: number) => `\`${" ".repeat(n)}\``
+    const pad = (n: number) => `\`${nbsp.repeat(n)}\``
     const [displayLine, firstRow] = calculatorText(initialCalc, false).split("\n")
     expect(displayLine).toBe("*0*")
     expect(firstRow).toBe(`/C ${pad(4)}/neg ${pad(2)}/pct ${pad(2)}/div ${pad(2)}`)
