@@ -26,12 +26,10 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import qualified Data.Aeson as J
-import qualified Data.Aeson.KeyMap as JM
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.Attoparsec.Combinator as A
 import qualified Data.ByteString.Base64 as B64
-import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -78,7 +76,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
-import Simplex.Chat.PaymentService (ServicePayment (..))
+import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionId, googlePurchaseRef)
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote
@@ -5244,14 +5242,15 @@ redeemBadgeCode nm user@User {userId} codeText = do
       BSECodeExpired -> True
       _ -> False
 
--- | The app presents a purchase until this returns its badge. The stash is keyed by the store's own
--- id for the transaction, so every retry reaches the service as the signer it first credited.
+-- | The app presents a purchase until this returns its badge, under whichever profile is active; the
+-- stash stays with the profile it was first presented under, so every retry is the signer first credited.
 purchaseBadge :: NetworkRequestMode -> User -> ServicePayment -> CM ChatResponse
-purchaseBadge nm user@User {userId} payment = do
+purchaseBadge nm presentingUser payment = do
   txRef <- maybe (throwRedeemError BREInvalidReceipt) pure $ storeTransactionRef payment
   sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
   g <- asks random
   now <- liftIO getCurrentTime
+  user@User {userId} <- withStore $ \db -> liftIO (getBadgeStoreReceiptUserId db txRef) >>= maybe (pure presentingUser) (getUser db)
   (present_, purchased) <- withEntityLock "badgePurchase" (CLBadgeUser userId) $ do
     stash_ <- withStore' $ \db -> getBadgeStoreReceipt db user txRef
     stash@BadgeStash {masterKey} <- stashBadgeKeys user stash_ $ \db -> createBadgeStoreReceipt db g user txRef now
@@ -5266,21 +5265,13 @@ purchaseBadge nm user@User {userId} payment = do
       BSEReceiptUsed -> True
       _ -> False
 
--- | Read without verifying anything: the id only keys the stash on this device, and the service
--- verifies the evidence itself. A Google token is a bearer secret, so only its hash is kept.
+-- | The same reference the service claims a transaction by, read without verifying anything.
 storeTransactionRef :: ServicePayment -> Maybe StoreTransactionRef
 storeTransactionRef = \case
   SPApple {jws} -> StoreTransactionRef "apple" <$> appleTransactionId jws
-  SPGoogle {token} -> Just $ StoreTransactionRef "google" $ safeDecodeUtf8 $ strEncode $ C.sha256Hash $ encodeUtf8 token
+  SPGoogle {token} -> Just $ StoreTransactionRef "google" $ googlePurchaseRef token
   SPInvoice {} -> Nothing
   SPReceipt {} -> Nothing
-  where
-    appleTransactionId signed = case T.splitOn "." signed of
-      [_, payload, _] -> do
-        J.Object o <- J.decodeStrict' =<< eitherToMaybe (B64U.decodeUnpadded $ encodeUtf8 payload)
-        J.String txId <- JM.lookup "transactionId" o
-        pure txId
-      _ -> Nothing
 
 -- | A stash that already bought a badge here passes, as re-sending it adds nothing; any other is
 -- refused while a badge is held, before its keys are stashed or sent, so the funding stays unspent.

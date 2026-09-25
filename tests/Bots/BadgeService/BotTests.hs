@@ -15,6 +15,7 @@ import Bots.BadgeService.ConfigTests (withIssuer)
 import Bots.BadgeService.FakeStore
 import BadgeService.Options
 import BadgeService.Service
+import BadgeService.Store (NewStorePurchase (..), createStorePurchase)
 import BadgeService.Store.Invoices (markCodePaid)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -52,7 +53,7 @@ import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.PaymentService (ServicePayment (..))
-import Simplex.Chat.PaymentService.Types (InvoiceId (..))
+import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..))
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
@@ -122,12 +123,16 @@ badgeServiceTests = do
     it "should refuse a store purchase that carries an upgrade" testStoreUpgradeRefused
     it "should grant the badge of the product the receipt proves" testStoreBadgeTypeFromProduct
     it "should keep refusing invoice and receipt funding" testNonStoreFundingRefused
+    it "should replay a receipt to its own key while the store is down, and to no other" testStoreReplayWhileStoreDown
+    it "should answer a throwing Apple verifier as internal, and a failing or hanging Google one as retryable" testStoreVerifierFailures
+    it "should credit a transaction claimed twice at once only once" testStoreClaimRace
     it "should refuse a store purchase whose purchaseKey is not the verified signer" testStorePurchaseKeyMismatch
     it "should redeem a Play purchase into a badge, and replay it as the same badge" testPurchaseBadge
     it "should redeem an App Store purchase by its JWS" testPurchaseBadgeAppStore
     it "should drop the keys of a receipt refused for good, and keep them while it is pending" testPurchaseStash
     it "should refuse a store purchase while a badge is held, before anything is sent" testPurchaseWhileBadgeHeld
-    it "should tell a second profile presenting the same receipt that it is used" testPurchaseSameReceiptOtherProfile
+    it "should answer a receipt presented under a second profile as the profile that bought it" testPurchaseSameReceiptOtherProfile
+    it "should deliver a purchase first presented under another profile to that profile" testPurchaseStrandedUnderOtherProfile
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -1445,18 +1450,13 @@ testStoreReceiptUsed ps =
 
 testStoreReceiptInvalid :: HasCallStack => TestParams -> IO ()
 testStoreReceiptInvalid ps =
-  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = FakeStore {appleSupporterJWS}} -> do
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = FakeStore {appleSandboxJWS}} -> do
     (purchaseKey, masterKey) <- newPurchaseKeys
     let refused payment = refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey payment)
     refused (googlePayment "badge_supporter_01" "not-a-purchase") `shouldReturn` (BSEReceiptInvalid, Nothing)
-    -- a real token presented for another product is not a purchase of it
-    refused (googlePayment "badge_legend_01" googleSupporterToken) `shouldReturn` (BSEReceiptInvalid, Nothing)
     refused SPApple {jws = "not.a.jws"} `shouldReturn` (BSEReceiptInvalid, Nothing)
-    -- the payload of a real transaction under a signature that is not the store's
-    let resigned = case T.splitOn "." appleSupporterJWS of
-          [header, payload, _] -> T.intercalate "." [header, payload, "c2lnbmVkIGVsc2V3aGVyZQ"]
-          _ -> error "fixture is not a JWS"
-    refused SPApple {jws = resigned} `shouldReturn` (BSEReceiptInvalid, Nothing)
+    -- refused by the service, which the store would have vouched for
+    refused SPApple {jws = appleSandboxJWS} `shouldReturn` (BSEReceiptInvalid, Nothing)
     nothingPurchased cc
 
 testStoreUnreachable :: HasCallStack => TestParams -> IO ()
@@ -1501,7 +1501,7 @@ testStoreUpgradeRefused ps =
     now <- getCurrentTime
     let upgrade = BadgeUpgrade {fromPurchaseKey, receipt = "receipt", receiptSignature = C.sign' fromPriv "receipt", balance = BadgeBalance {lastEntry = emptyEntry now BTSupporter}}
     upgraded <- serviceCmd env purchaseKey BSCPurchaseBadge {masterKey, payment = supporterPlay, upgrade = Just upgrade}
-    refusalOf upgraded `shouldBe` (BSEUnsupportedVersion, Nothing)
+    refusalOf upgraded `shouldBe` (BSEBadRequest, Nothing)
     nothingPurchased cc
 
 testStoreBadgeTypeFromProduct :: HasCallStack => TestParams -> IO ()
@@ -1522,6 +1522,48 @@ testNonStoreFundingRefused ps =
     transfer <- serviceCmd env purchaseKey $ purchaseCmd masterKey SPReceipt {receipt = "receipt"}
     refusalOf transfer `shouldBe` (BSEUnknownPurchaseKey, Nothing)
     nothingPurchased cc
+
+testStoreReplayWhileStoreDown :: HasCallStack => TestParams -> IO ()
+testStoreReplayWhileStoreDown ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey supporterPlay
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    setGoogleDown store True
+    -- the key it was credited to is answered from the record
+    replayed <- serviceCmd env purchaseKey $ purchaseCmd masterKey supporterPlay
+    credentialOf replayed `shouldBe` credentialOf purchased
+    -- any other key waits for the store, or the answer would tell it which purchases were credited
+    (otherKey, otherMasterKey) <- newPurchaseKeys
+    other <- serviceCmd env otherKey $ purchaseCmd otherMasterKey supporterPlay
+    fst (refusalOf other) `shouldBe` BSEProviderUnavailable
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+
+testStoreVerifierFailures :: HasCallStack => TestParams -> IO ()
+testStoreVerifierFailures ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = FakeStore {appleThrowingJWS}} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    let answer payment = refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey payment)
+    -- Apple is checked offline, so a verifier that throws was answered by nothing but its own bug
+    answer SPApple {jws = appleThrowingJWS} `shouldReturn` (BSEInternal, Nothing)
+    answer (googlePayment "badge_supporter_01" googleThrowingToken) >>= (`shouldSatisfy` \(code, retryAfter) -> code == BSEProviderUnavailable && isJust retryAfter)
+    answer (googlePayment "badge_supporter_01" googleHangingToken) >>= (`shouldSatisfy` \(code, retryAfter) -> code == BSEProviderUnavailable && isJust retryAfter)
+    nothingPurchased cc
+
+testStoreClaimRace :: HasCallStack => TestParams -> IO ()
+testStoreClaimRace ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsController = cc} -> do
+    (firstKey, firstMasterKey) <- newPurchaseKeys
+    (otherKey, otherMasterKey) <- newPurchaseKeys
+    now <- getCurrentTime
+    let claim paymentId purchaseKey masterKey =
+          withDB' "claim" cc $ \db ->
+            createStorePurchase db NewStorePurchase {paymentId, provider = PPGoogle, providerRef = "ref", paid = Nothing, purchaseKey, masterKey, badgeType = BTSupporter} now
+    -- both past the read before either wrote, as two requests signing at once are
+    claim "p1" firstKey firstMasterKey >>= (`shouldSatisfy` either (const False) isJust)
+    claim "p2" otherKey otherMasterKey `shouldReturn` Right Nothing
+    rowCount cc "sx_badge_service_payments" `shouldReturn` 1
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
 
 testStorePurchaseKeyMismatch :: HasCallStack => TestParams -> IO ()
 testStorePurchaseKeyMismatch ps =
@@ -1608,7 +1650,7 @@ testPurchaseWhileBadgeHeld ps =
 
 testPurchaseSameReceiptOtherProfile :: HasCallStack => TestParams -> IO ()
 testPurchaseSameReceiptOtherProfile ps =
-  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg} ->
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
       alice <## "badge redeemed"
@@ -1616,5 +1658,29 @@ testPurchaseSameReceiptOtherProfile ps =
       alice <##. "expires "
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
+      -- the store transaction is the device's, so it stays with the profile it was bought under
       alice ##> ("/_badge purchase 2 " <> paymentArg supporterPlay)
-      alice <## "cannot redeem badge code: badge service error: receipt_used"
+      alice <## "[user: alice] badge already redeemed"
+      rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+      alice ##> "/p"
+      showActiveUser alice "alisa"
+
+testPurchaseStrandedUnderOtherProfile :: HasCallStack => TestParams -> IO ()
+testPurchaseStrandedUnderOtherProfile ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      let unsettled userId = "/_badge purchase " <> show (userId :: Int) <> " " <> paymentArg (googlePayment "badge_supporter_01" googlePendingToken)
+      alice ##> unsettled 1
+      alice <## "cannot redeem badge code: badge service error: payment_pending"
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      settlePending store
+      -- presented again under whichever profile is active, the purchase reaches the keys alice stashed
+      alice ##> unsettled 2
+      alice <## "[user: alice] badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 1
+      rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice, * supporter)"

@@ -9,7 +9,7 @@
 
 module BadgeTests (badgeTests) where
 
-import BadgeService.Service (badgeErrorRetryAfter)
+import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest)
 import Control.Concurrent.STM (atomically)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
@@ -103,6 +103,7 @@ badgeTests = do
     it "statement entries round-trip, unknown entry types verbatim" testStatementJSON
   describe "store purchases" $ do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
+    it "shows a service request in the terminal as its type alone" testShownServiceRequest
 
 proofOf :: BadgeProof -> BBSProof
 proofOf (BadgeProof _ _ p _) = p
@@ -842,6 +843,18 @@ testStoreTransactionRef = do
   google `shouldSatisfy` maybe False (\(StoreTransactionRef provider ref) -> provider == "google" && ref /= "play-token")
   google `shouldBe` storeTransactionRef SPGoogle {productId = "badge_supporter_01", token = "play-token"}
   storeTransactionRef SPInvoice {invoiceId = InvoiceId "inv"} `shouldBe` Nothing
+
+testShownServiceRequest :: IO ()
+testShownServiceRequest = do
+  drg <- C.newRandom
+  mk <- generateMasterKey drg
+  (k, _) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
+  let shown request = case J.toJSON BadgeServiceRequest {version = Version 1, purchaseKey = Just k, request} of
+        J.Object o -> J.Object (shownServiceRequest o)
+        _ -> J.Null
+      typeOnly t = J.object ["request" J..= J.object ["type" J..= (t :: T.Text)]]
+  shown BSCPurchaseBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}, upgrade = Nothing} `shouldBe` typeOnly "purchaseBadge"
+  shown BSCRedeemBadgeCode {masterKey = mk, code = "SB-00000-00000-00000-00001"} `shouldBe` typeOnly "redeemBadgeCode"
 
 testCredentialResponseJSON :: IO ()
 testCredentialResponseJSON = do

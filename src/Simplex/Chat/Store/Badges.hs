@@ -20,6 +20,7 @@ module Simplex.Chat.Store.Badges
     clearShownBadge,
     getBadgeCodeRedemption,
     createBadgeCodeRedemption,
+    getBadgeStoreReceiptUserId,
     getBadgeStoreReceipt,
     createBadgeStoreReceipt,
     deleteBadgeStash,
@@ -49,6 +50,7 @@ import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType
 import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types
+import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
@@ -104,6 +106,13 @@ createBadgeCodeRedemption db g User {userId} code now = do
     (userId, code, purchaseKey, purchasePrivKey, Binary mk, now)
   redemptionId <- insertedRowId db
   pure BadgeStash {stashRef = BSRCodeRedemption redemptionId, purchaseKey, purchasePrivKey, masterKey}
+
+-- | A store transaction belongs to the store account, not to a profile, so its stash is looked up
+-- across profiles: presented under another, it still reaches the service as the key it was credited to.
+getBadgeStoreReceiptUserId :: DB.Connection -> StoreTransactionRef -> IO (Maybe UserId)
+getBadgeStoreReceiptUserId db StoreTransactionRef {provider, transactionRef} =
+  maybeFirstRow fromOnly $
+    DB.query db "SELECT user_id FROM badge_store_receipts WHERE provider = ? AND transaction_ref = ?" (provider, transactionRef)
 
 getBadgeStoreReceipt :: DB.Connection -> User -> StoreTransactionRef -> IO (Maybe BadgeStash)
 getBadgeStoreReceipt db User {userId} StoreTransactionRef {provider, transactionRef} =

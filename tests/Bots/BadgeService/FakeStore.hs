@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -6,9 +7,12 @@ module Bots.BadgeService.FakeStore
   ( FakeStore (..),
     newFakeStore,
     settlePending,
+    setGoogleDown,
     googleSupporterToken,
     googlePendingToken,
     googleUnreachableToken,
+    googleThrowingToken,
+    googleHangingToken,
     googleSubscriptionToken,
     googlePayment,
     unsignedJWS,
@@ -16,17 +20,16 @@ module Bots.BadgeService.FakeStore
 where
 
 import BadgeService.StoreReceipts
+import Control.Concurrent (threadDelay)
+import Control.Monad (forever)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.PaymentService (ServicePayment (..))
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
-import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.FilePath ((</>))
 
@@ -38,46 +41,74 @@ fixtureDir = "apps" </> "simplex-badge-service" </> "test-fixtures" </> "apple"
 data FakeStore = FakeStore
   { appleSupporterJWS :: Text,
     appleLegendJWS :: Text,
+    appleSandboxJWS :: Text,
+    appleThrowingJWS :: Text,
     pendingSettled :: IORef Bool,
+    googleDown :: IORef Bool,
     fakeVerifier :: StoreVerifier
   }
 
 newFakeStore :: IO FakeStore
 newFakeStore = do
-  appleSupporterJWS <- unsignedJWS <$> B.readFile (fixtureDir </> "transaction-supporter.json")
-  appleLegendJWS <- unsignedJWS <$> B.readFile (fixtureDir </> "transaction-legend.json")
+  appleSupporterJWS <- fixtureJWS "transaction-supporter.json"
+  appleLegendJWS <- fixtureJWS "transaction-legend.json"
+  appleSandboxJWS <- fixtureJWS "transaction-sandbox.json"
+  let appleThrowingJWS = unsignedJWS "{\"transactionId\":\"2000000812345679\",\"productId\":\"BADGE_SUPPORTER_01\"}"
   pendingSettled <- newIORef False
+  googleDown <- newIORef False
   let appleReceipts =
-        [ (appleSupporterJWS, appleTransaction "2000000812345671" "BADGE_SUPPORTER_01" 700),
-          (appleLegendJWS, appleTransaction "2000000812345672" "BADGE_LEGEND_01" 7000)
+        [ (appleSupporterJWS, appleTransaction "BADGE_SUPPORTER_01" SEProduction 700),
+          (appleLegendJWS, appleTransaction "BADGE_LEGEND_01" SEProduction 7000),
+          (appleSandboxJWS, appleTransaction "BADGE_LEGEND_01" SETest 7000)
         ]
-      verifyApple jws = pure $ maybe (Left $ SRInvalid "not a fake receipt") Right $ lookup jws appleReceipts
-      verifyGoogle productId token = googleVerdict pendingSettled productId token
-  pure FakeStore {appleSupporterJWS, appleLegendJWS, pendingSettled, fakeVerifier = StoreVerifier {verifyApple, verifyGoogle}}
+      verifyApple jws
+        | jws == appleThrowingJWS = error "fake verifier bug"
+        | otherwise = maybe (Left "not a fake receipt") Right $ lookup jws appleReceipts
+      verifyGoogle = googleVerdict pendingSettled googleDown
+  pure
+    FakeStore
+      { appleSupporterJWS,
+        appleLegendJWS,
+        appleSandboxJWS,
+        appleThrowingJWS,
+        pendingSettled,
+        googleDown,
+        fakeVerifier = StoreVerifier {verifyApple = Just verifyApple, verifyGoogle = Just verifyGoogle}
+      }
   where
-    appleTransaction providerRef productId cents =
-      StoreTransaction {providerRef, productId, quantity = 1, paid = Just (CurrencyAmount cents, "USD")}
+    fixtureJWS name = unsignedJWS <$> B.readFile (fixtureDir </> name)
+    appleTransaction productId environment cents =
+      StoreTransaction {productId, quantity = 1, environment, paid = Just (CurrencyAmount cents, "USD")}
 
-googleVerdict :: IORef Bool -> Text -> Text -> IO (Either StoreRefusal StoreTransaction)
-googleVerdict pendingSettled productId token
-  | (productId, token) == ("badge_supporter_01", googleSupporterToken) = pure $ Right purchased
-  | (productId, token) == ("subscr_badge_supporter_01", googleSubscriptionToken) = pure $ Right purchased
-  | (productId, token) == ("badge_supporter_01", googlePendingToken) = do
-      settled <- readIORef pendingSettled
-      pure $ if settled then Right purchased else Left SRPending
-  | token == googleUnreachableToken = pure $ Left $ SRUnreachable "fake store is down"
-  | otherwise = pure $ Left $ SRInvalid "not a fake purchase"
+googleVerdict :: IORef Bool -> IORef Bool -> Text -> Text -> IO (Either StoreRefusal StoreTransaction)
+googleVerdict pendingSettled googleDown productId token =
+  readIORef googleDown >>= \case
+    True -> pure $ Left $ SRUnreachable "fake store is down"
+    False
+      | (productId, token) == ("badge_supporter_01", googleSupporterToken) -> pure $ Right purchased
+      | (productId, token) == ("subscr_badge_supporter_01", googleSubscriptionToken) -> pure $ Right purchased
+      | (productId, token) == ("badge_supporter_01", googlePendingToken) -> do
+          settled <- readIORef pendingSettled
+          pure $ if settled then Right purchased else Left SRPending
+      | token == googleUnreachableToken -> pure $ Left $ SRUnreachable "fake store is down"
+      | token == googleThrowingToken -> ioError $ userError "fake connection reset"
+      | token == googleHangingToken -> forever $ threadDelay 1000000
+      | otherwise -> pure $ Left $ SRInvalid "not a fake purchase"
   where
-    purchased = StoreTransaction {providerRef = tokenRef, productId, quantity = 1, paid = Nothing}
-    tokenRef = safeDecodeUtf8 $ strEncode $ C.sha256Hash $ encodeUtf8 token
+    purchased = StoreTransaction {productId, quantity = 1, environment = SEProduction, paid = Nothing}
 
 settlePending :: FakeStore -> IO ()
 settlePending FakeStore {pendingSettled} = writeIORef pendingSettled True
 
-googleSupporterToken, googlePendingToken, googleUnreachableToken, googleSubscriptionToken :: Text
+setGoogleDown :: FakeStore -> Bool -> IO ()
+setGoogleDown FakeStore {googleDown} = writeIORef googleDown
+
+googleSupporterToken, googlePendingToken, googleUnreachableToken, googleThrowingToken, googleHangingToken, googleSubscriptionToken :: Text
 googleSupporterToken = "fake-play-token-supporter.AO-J1Oz9x2kqE7wYt3"
 googlePendingToken = "fake-play-token-pending.AO-J1Oy8w1jpD6vXs2"
 googleUnreachableToken = "fake-play-token-unreachable.AO-J1Ox7v0ioC5uWr1"
+googleThrowingToken = "fake-play-token-throwing.AO-J1Ov5t8gmA3sUp9"
+googleHangingToken = "fake-play-token-hanging.AO-J1Ou4s7flZ2rTo8"
 googleSubscriptionToken = "fake-play-token-subscription.AO-J1Ow6u9hnB4tVq0"
 
 googlePayment :: Text -> Text -> ServicePayment

@@ -15,6 +15,7 @@ module BadgeService.Service
     badgeServiceCLI,
     badgeServiceResponse,
     badgeErrorRetryAfter,
+    shownServiceRequest,
     IssueCodeOpts (..),
     issueBadgeCode,
   )
@@ -44,7 +45,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Either (fromRight)
-import Data.Functor (($>))
+import Data.Functor (($>), (<&>))
 import Data.Int (Int64)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, maybeToList)
@@ -63,7 +64,6 @@ import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent (..), SMsgDirection (..), ciContentToText)
 import Simplex.Chat.Options (printDbOpts)
-import Simplex.Chat.PaymentService.Types (PaymentProvider)
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types (AgentInvId (..), Contact, User (..))
@@ -186,12 +186,11 @@ badgeServiceCLI opts@BadgeServiceOpts {serviceConfigFile} = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
   key <- requireIssuerKey opts serviceCfg terminalChatConfig
   env <- newServiceState
-  let eventHook _cc ev = do
-        case ev of
-          Right (CEvtServiceRequest u reqId sigKey reqData) ->
-            atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
-          _ -> pure ()
-        pure ev
+  let eventHook _cc = \case
+        Right (CEvtServiceRequest u reqId sigKey reqData) -> do
+          atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
+          pure $ Right $ CEvtServiceRequest u reqId sigKey (shownServiceRequest reqData)
+        ev -> pure ev
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
@@ -203,6 +202,12 @@ badgeServiceCLI opts@BadgeServiceOpts {serviceConfigFile} = do
     [ simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing,
       processQueuedRequests key env
     ]
+
+-- | The terminal prints each request, and requests carry codes and store receipts, which are bearer secrets.
+shownServiceRequest :: J.Object -> J.Object
+shownServiceRequest reqData = case KM.lookup "request" reqData of
+  Just (J.Object cmd) | Just t <- KM.lookup "type" cmd -> KM.singleton "request" $ J.object ["type" J..= t]
+  _ -> KM.empty
 
 badgeCmdHook :: ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
 badgeCmdHook cc = \case
@@ -352,10 +357,10 @@ badgeServiceResponse key verifier cc sigKey reqData = case J.fromJSON (J.Object 
           Just k -> redeemCode key cc k masterKey code
           Nothing -> pure $ errorResponse BSEBadRequest
         BSCPurchaseBadge {masterKey, payment, upgrade}
-          | Just (provider, verify) <- storeVerification verifier payment -> case (purchaseKey, upgrade) of
-              (Just k, Nothing) -> purchaseWithReceipt key cc k masterKey provider verify
+          | Just receipt_ <- storeReceipt verifier payment -> case (purchaseKey, upgrade) of
+              (Just k, Nothing) -> either storeRefusalResponse (purchaseWithReceipt key cc k masterKey) receipt_
               -- store upgrades are not built, and ignoring one would credit its months at the discounted price
-              (Just _, Just _) -> pure $ errorResponse BSEUnsupportedVersion
+              (Just _, Just _) -> pure $ errorResponse BSEBadRequest
               (Nothing, _) -> pure $ errorResponse BSEBadRequest
         BSCIssueBadge {balance} -> case purchaseKey of
           Just k -> issueBadgeCmd key cc k balance
@@ -428,41 +433,55 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
 
 -- | Every refusal is answered before anything is written, so it leaves the receipt unclaimed; and
 -- nothing is written until the credential is signed.
-purchaseWithReceipt :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeMasterKey -> PaymentProvider -> IO (Either StoreRefusal StoreTransaction) -> IO BadgeServiceResponse
-purchaseWithReceipt key cc purchaseKey masterKey provider verify =
-  verify >>= \case
-    Left refusal -> storeRefusalResponse refusal
-    Right StoreTransaction {providerRef, productId, quantity, paid} ->
-      withDB "getStorePayment" cc (readClaim providerRef) >>= \case
-        Left _ -> pure $ errorResponse BSEInternal
-        Right (Left resp) -> pure resp
-        -- the product is read only for a receipt not yet credited, so retiring it leaves its replays answered
-        Right (Right ()) -> case storeProduct provider productId of
-          Nothing -> pure $ errorResponse BSEProductUnavailable
-          Just StoreProduct {badgeType, months} -> do
-            now <- badgeNow cc
-            signFirstMonth key cc masterKey badgeType (months * quantity) (SCPayment Nothing) now >>= \case
-              Left resp -> pure resp
-              Right firstMonth -> do
-                paymentId <- randomId cc
-                r <- withDB "writeStorePurchase" cc $ \db ->
-                  liftIO (createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey, badgeType} now) >>= \case
-                    -- Credited to another key, or to this one by a request that ran alongside it, while signing.
-                    Nothing ->
-                      readClaim providerRef db >>= \case
-                        Left resp -> pure resp
-                        Right () -> logError "badge service: claiming a store payment failed, but it funds no purchase" $> errorResponse BSEInternal
-                    Just purchaseId -> liftIO $ firstMonthResponse db purchaseId (Just paymentId) firstMonth
-                pure $ fromRight (errorResponse BSEInternal) r
+purchaseWithReceipt :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeMasterKey -> StoreReceipt -> IO BadgeServiceResponse
+purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {provider, providerRef, verifyReceipt} =
+  withDB' "getStorePayment" cc (\db -> getStorePaymentClaim db provider providerRef) >>= \case
+    Left _ -> pure $ errorResponse BSEInternal
+    Right claim
+      -- only the key it credited can ask, and it is told only what it was given, so the store is not asked
+      | claimedBy claim -> answerClaim claim
+      | otherwise ->
+          verifyReceipt >>= \case
+            Left refusal -> storeRefusalResponse refusal
+            Right StoreTransaction {environment = SETest} -> storeRefusalResponse $ SRInvalid "test purchase"
+            -- another key's claim is told only once the store vouched for the receipt, or it would reveal which transactions were credited
+            Right tx -> case claim of
+              Unclaimed -> newPurchase tx
+              _ -> answerClaim claim
   where
-    readClaim providerRef db = liftIO $ getStorePaymentClaim db provider providerRef >>= claimedResponse db BSEReceiptUsed purchaseKey
+    claimedBy = \case
+      Claimed ClaimedPurchase {purchaseKey = k} -> k == purchaseKey
+      _ -> False
+    answerClaim claim =
+      withDB' "answerStoreClaim" cc (\db -> claimedResponse db BSEReceiptUsed purchaseKey claim) <&> \case
+        Right (Left resp) -> resp
+        _ -> errorResponse BSEInternal
+    -- the product is read only for a receipt not yet credited, so retiring it leaves its replays answered
+    newPurchase StoreTransaction {productId, quantity, paid} = case storeProduct provider productId of
+      Nothing -> pure $ errorResponse BSEProductUnavailable
+      Just StoreProduct {badgeType, months} -> do
+        now <- badgeNow cc
+        signFirstMonth key cc masterKey badgeType (months * quantity) (SCPayment Nothing) now >>= \case
+          Left resp -> pure resp
+          Right firstMonth -> do
+            paymentId <- randomId cc
+            r <- withDB "writeStorePurchase" cc $ \db ->
+              liftIO (createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey, badgeType} now) >>= \case
+                -- Credited to another key, or to this one by a request that ran alongside it, while signing.
+                Nothing ->
+                  liftIO (getStorePaymentClaim db provider providerRef >>= claimedResponse db BSEReceiptUsed purchaseKey) >>= \case
+                    Left resp -> pure resp
+                    Right () -> logError "badge service: claiming a store payment failed, but it funds no purchase" $> errorResponse BSEInternal
+                Just purchaseId -> liftIO $ firstMonthResponse db purchaseId (Just paymentId) firstMonth
+            pure $ fromRight (errorResponse BSEInternal) r
 
--- | The client learns only the code: a forged receipt and a refunded purchase are both receipt_invalid.
+-- | The client learns only the code: a forged receipt, a refunded purchase and a test one are all receipt_invalid.
 storeRefusalResponse :: StoreRefusal -> IO BadgeServiceResponse
 storeRefusalResponse = \case
   SRInvalid reason -> logInfo ("store receipt refused: " <> reason) $> errorResponse BSEReceiptInvalid
   SRPending -> pure $ errorResponse BSEPaymentPending
   SRUnreachable reason -> logWarn ("store unreachable: " <> reason) $> errorResponse BSEProviderUnavailable
+  SRVerifierFailed reason -> logError ("store receipt not verified: " <> reason) $> errorResponse BSEInternal
 
 claimedResponse :: DB.Connection -> BadgeServiceErrorCode -> C.PublicKeyEd25519 -> FundingClaim -> IO (Either BadgeServiceResponse ())
 claimedResponse db usedCode purchaseKey = \case

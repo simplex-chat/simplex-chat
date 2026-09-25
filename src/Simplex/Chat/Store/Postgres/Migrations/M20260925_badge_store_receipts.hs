@@ -18,7 +18,7 @@ CREATE TABLE badge_store_receipts(
   purchase_priv_key BYTEA NOT NULL,
   master_key BYTEA NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
-  UNIQUE(user_id, provider, transaction_ref)
+  UNIQUE(provider, transaction_ref)
 );
 
 CREATE INDEX idx_badge_store_receipts_user ON badge_store_receipts(user_id);

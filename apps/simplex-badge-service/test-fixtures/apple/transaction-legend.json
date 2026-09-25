@@ -10,7 +10,7 @@
   "appAccountToken": "0b6a7e1d-5c3f-4a8e-b2d4-9e1f6c7a8b20",
   "inAppOwnershipType": "PURCHASED",
   "signedDate": 1790000001000,
-  "environment": "Sandbox",
+  "environment": "Production",
   "transactionReason": "PURCHASE",
   "storefront": "USA",
   "storefrontId": "143441",
