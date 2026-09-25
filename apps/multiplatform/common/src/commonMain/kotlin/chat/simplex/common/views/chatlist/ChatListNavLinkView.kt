@@ -977,21 +977,19 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       else -> false
     }
     if (res && newChatInfo != null) {
-      val chat = chatModel.getChat(chatInfo.id)
-      val wasUnread = chat?.unreadTag ?: false
       val wasFavorite = chatInfo.chatSettings?.favorite ?: false
       chatModel.updateChatFavorite(favorite = chatSettings.favorite, wasFavorite)
       withContext(Dispatchers.Main) {
+        val chat = chatModel.getChat(chatInfo.id)
         chatModel.chatsContext.updateChatInfo(remoteHostId, newChatInfo)
+        val updatedChat = chatModel.getChat(chatInfo.id)
+        if (chat != null && updatedChat != null) {
+          chatModel.chatsContext.changeUserUnreadCounter(remoteHostId, chat.userUnreadCount, updatedChat.userUnreadCount)
+          chatModel.chatsContext.updateChatTagReadInPrimaryContext(updatedChat, chat.unreadTag)
+        }
       }
       if (chatSettings.enableNtfs == MsgFilter.None) {
         ntfManager.cancelNotificationsForChat(chatInfo.id)
-      }
-      val updatedChat = chatModel.getChat(chatInfo.id)
-      if (updatedChat != null) {
-        withContext(Dispatchers.Main) {
-          chatModel.chatsContext.updateChatTagReadInPrimaryContext(updatedChat, wasUnread)
-        }
       }
       val current = currentState?.value
       if (current != null) {

@@ -834,6 +834,11 @@ private fun afterSetCiTTL(
       withContext(Dispatchers.Main) {
         // this is using current remote host on purpose - if it changes during update, it will load correct chats
         val chats = m.controller.apiGetChats(m.remoteHostId())
+        val users = kotlin.runCatching { m.controller.listUsers(m.remoteHostId()) }.getOrNull()
+        if (users != null) {
+          chatModel.users.clear()
+          chatModel.users.addAll(users)
+        }
         chatModel.chatsContext.updateChats(chats)
       }
     } catch (e: Exception) {
