@@ -73,7 +73,8 @@ async function onMessage(ci: T.AChatItem, content: T.MsgContent, chat: api.ChatA
     await chat.apiSendTextReply(ci, hint)
     return
   }
-  if (input.result) await chat.apiSendTextReply(ci, `= ${input.result}`)
+  if (input.result) await chat.apiSendTextReply(ci, input.result)
+  else await chat.apiDeleteMemberChatItem(sender.groupId, [ci.chatItem.meta.itemId])
   await updateCalculator(chat, sender, input.update)
 }
 

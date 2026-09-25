@@ -9,7 +9,7 @@ Each user who connects via the bot's business address receives a calculator mess
 - Tap `C` to clear the number, and `C` again to clear the calculation.
 - Numbers are shown without exponent, up to 15 digits; larger results are shown as `Error`.
 - You can also send numbers and keys like `+`, `=`, `add` or `c`. Expressions like `(2 + 3) × 4` are entered as one number, and the bot replies to them with the result.
-- The bot deletes tapped keys and sends each calculation after `=`.
+- The bot deletes keys and numbers, tapped or sent, and sends each calculation after `=`.
 - After 10 minutes without input, the bot turns the calculator off and discards the calculation; tap any key to turn it on.
 - The bot sends keys like `/+` to apps with chat protocol version 21 or later, and keys like `/add` to older apps.
 

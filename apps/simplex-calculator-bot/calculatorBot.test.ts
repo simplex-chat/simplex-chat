@@ -44,6 +44,8 @@ test("calculator in business chat", async () => {
   await alice.startChat()
   await useSmpServer(alice)
   const receives = (check: ItemCheck) => alice.wait("newChatItems", ({chatItems}) => chatItems.some(check), 30000)
+  const deletes = (text: string) =>
+    alice.wait("chatItemsDeleted", ({chatItemDeletions}) => chatItemDeletions.some(({deletedChatItem}) => hasText(text)(deletedChatItem)), 30000)
   try {
     const [_plan, link] = await alice.apiConnectPlan(aliceUser.userId, util.contactAddressStr(address!.connLinkContact))
     const firstCalculator = receives(calculatorShows("0"))
@@ -51,14 +53,13 @@ test("calculator in business chat", async () => {
     const calculatorItem = (await firstCalculator)?.chatItems.find(calculatorShows("0"))
     expect(calculatorItem?.chatInfo.type).toBe(T.ChatType.Group)
     const groupId = (calculatorItem!.chatInfo as T.ChatInfo.Group).groupInfo.groupId
-    const send = async (texts: string[], ...checks: ItemCheck[]) => {
-      const received = checks.map(receives)
+    const send = async (texts: string[], ...events: Promise<unknown>[]) => {
       for (const text of texts) await alice.apiSendTextMessage([T.ChatType.Group, groupId], text)
-      for (const event of received) expect(await event).toBeDefined()
+      for (const event of events) expect(await event).toBeDefined()
     }
-    await send(["/2", "/+", "/2", "/="], hasText("2 + 2 = 4"), calculatorShows("4"))
-    await send(["2 × (3 + 4) - 1"], repliesTo("2 × (3 + 4) - 1", "= 13"), calculatorShows("13"))
-    await send(["25", "+", "25", "="], hasText("25 + 25 = 50"), calculatorShows("50"))
+    await send(["/2", "/+", "/2", "/="], receives(hasText("2 + 2 = 4")), receives(calculatorShows("4")), deletes("/+"))
+    await send(["2 × (3 + 4) - 1"], receives(repliesTo("2 × (3 + 4) - 1", "13")), receives(calculatorShows("13")))
+    await send(["25", "+", "25", "="], receives(hasText("25 + 25 = 50")), receives(calculatorShows("50")), deletes("+"))
   } finally {
     await alice.close()
     await calculator.close()
