@@ -17,6 +17,9 @@ struct NotificationsView: View {
     @State private var legacyDatabase = dbContainerGroupDefault.get() == .documents
     @State private var testing = false
     @State private var testedSuccess: Bool? = nil
+    @AppStorage(GROUP_DEFAULT_NTF_QUICK_REPLY, store: groupDefaults) private var ntfQuickReply = true
+    @AppStorage(GROUP_DEFAULT_NTF_QUICK_REPLY_WHEN_LOCKED, store: groupDefaults) private var ntfQuickReplyWhenLocked = false
+    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
 
     var body: some View {
         ZStack {
@@ -77,6 +80,21 @@ struct NotificationsView: View {
                         .font(.callout)
                         .padding(.top, 1)
                 }
+            }
+
+            Section {
+                Toggle("Reply from notifications", isOn: $ntfQuickReply)
+                if ntfQuickReply && prefPerformLA {
+                    Toggle("Allow when locked", isOn: $ntfQuickReplyWhenLocked)
+                }
+            } header: {
+                Text("Quick reply")
+                    .foregroundColor(theme.colors.secondary)
+            } footer: {
+                Text("Reply to messages directly from notifications, without opening the app.")
+                    .foregroundColor(theme.colors.secondary)
+                    .font(.callout)
+                    .padding(.top, 1)
             }
         }
         .disabled(legacyDatabase)
