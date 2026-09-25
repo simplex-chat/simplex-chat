@@ -4162,7 +4162,12 @@ sealed class MsgReaction {
       MREmojiChar.Sad,
       MREmojiChar.Heart,
       MREmojiChar.Launch,
-      MREmojiChar.Check
+      MREmojiChar.Check,
+      MREmojiChar.Celebrate,
+      MREmojiChar.Pray,
+      MREmojiChar.Eyes,
+      MREmojiChar.Surprise,
+      MREmojiChar.Thinking
     ).map(::Emoji)
   }
 }
@@ -4219,7 +4224,12 @@ enum class MREmojiChar(val value: String) {
   @SerialName("😢") Sad("😢"),
   @SerialName("❤") Heart("❤"),
   @SerialName("🚀") Launch("🚀"),
-  @SerialName("✅") Check("✅");
+  @SerialName("✅") Check("✅"),
+  @SerialName("🎉") Celebrate("🎉"),
+  @SerialName("🙏") Pray("🙏"),
+  @SerialName("👀") Eyes("👀"),
+  @SerialName("😮") Surprise("😮"),
+  @SerialName("🤔") Thinking("🤔");
 }
 
 @Serializable
