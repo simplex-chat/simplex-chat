@@ -27,7 +27,7 @@ A device has one piece of [BIP-39](https://github.com/bitcoin/bips/blob/master/b
 Each thing the device owns on chain is assigned an **account index**, and the key at that index is the **account key**. Names are the first use: one name, one account, and that account's address is the owner address in the name record. Which chat profile an account belongs to is a mapping in the database. No path contains a profile, so no profile data is an input to the derivation, and the mapping can be changed without changing any key.
 
 ```
-master seed, 24 words     the only thing to back up
+master seed, 24 words     the only key material to back up
 └── m/44'/60'/n'/0/0      account n, n >= 0
 ```
 
@@ -114,7 +114,7 @@ Three cases, by how much of the database is restored.
 
 What the scan finds is unbound, and the user attaches each account to a profile with `bind account=<n>`. The names those accounts own identify them, which is what makes the choice possible at all: the user chooses between names they recognise, not between numbers. Binding changes no key and signs nothing, because ownership does not change, only the profile under which the app shows the account. Pointing a name at that profile's SimpleX address is a separate signed edit of the name's record.
 
-**The database is restored from a backup.** It contains the accounts as of the backup and nothing written after it, so its counter is behind if an account was bound after the backup. A counter that is behind is worse than one that is unknown, because it appears valid, so `bind` returns an account that is already in use. Nothing here distinguishes a restored database from a current one, so clearing the counter is the responsibility of whatever restores a database, along with the scan that sets it again.
+**The database is restored from a backup.** It contains the accounts as of the backup and nothing written after it, so its counter is behind if an account was bound after the backup. A counter that is behind is worse than one that is unknown, because it appears valid, so `bind` can return an account that is already in use. Nothing here distinguishes a restored database from a current one, so clearing the counter is the responsibility of whatever restores a database, along with the scan that sets it again.
 
 **The database is current.** It records which profile holds which account, so the user is asked nothing.
 
