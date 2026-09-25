@@ -12,6 +12,11 @@ module BadgeService.Store
     KeyPurchase (..),
     NewCodePurchase (..),
     ServicePurchase (..),
+    ManagedGroup (..),
+    getManagedGroup,
+    insertManagedGroup,
+    clearCodeGroupItems,
+    markOwnerBootstrapped,
     getBadgeCode,
     getCodePurchaseForKey,
     purchaseKeyExists,
@@ -23,6 +28,10 @@ module BadgeService.Store
     appendLedgerPlan,
     createCodePurchase,
     insertBadgeCode,
+    setCodeGroupItem,
+    CodeTracker (..),
+    getCodeTracker,
+    getEditableTrackers,
     RevokeResult (..),
     revokeCode,
   )
@@ -34,6 +43,7 @@ import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges (BadgeCredential, BadgeMasterKey (..), BadgeType)
@@ -41,7 +51,7 @@ import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementEntry (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus, BadgePurchaseStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
-import Simplex.Messaging.Agent.Store.DB (Binary (..))
+import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow')
@@ -87,6 +97,48 @@ data ServicePurchase = ServicePurchase
     masterKey :: BadgeMasterKey,
     badgeType :: BadgeType
   }
+
+data ManagedGroup = ManagedGroup
+  { mgGroupId :: Int64,
+    mgGroupLink :: Text,
+    mgOwnerBootstrapped :: Bool
+  }
+  deriving (Eq)
+
+-- The join link is a bearer secret, so it is left out.
+instance Show ManagedGroup where
+  show ManagedGroup {mgGroupId, mgOwnerBootstrapped} = "managed group " <> show mgGroupId <> ", owner set up: " <> show mgOwnerBootstrapped
+
+getManagedGroup :: DB.Connection -> IO (Maybe ManagedGroup)
+getManagedGroup db =
+  maybeFirstRow toGroup $
+    DB.query_ db "SELECT group_id, group_link, owner_bootstrapped FROM sx_badge_service_group LIMIT 1"
+  where
+    toGroup (mgGroupId, mgGroupLink, BI mgOwnerBootstrapped) = ManagedGroup {mgGroupId, mgGroupLink, mgOwnerBootstrapped}
+
+-- getManagedGroup reads with no ordering, so a second row would change which group is used.
+insertManagedGroup :: DB.Connection -> Int64 -> Text -> UTCTime -> IO ()
+insertManagedGroup db gid link now =
+  DB.execute
+    db
+    [sql|
+      INSERT INTO sx_badge_service_group (group_id, group_link, owner_bootstrapped, created_at)
+      SELECT ?,?,0,? WHERE NOT EXISTS (SELECT 1 FROM sx_badge_service_group)
+    |]
+    (gid, link, now)
+
+-- A tracker's item id is only found in the group it was posted to, so a new group starts with none.
+clearCodeGroupItems :: DB.Connection -> IO ()
+clearCodeGroupItems db =
+  DB.execute_ db "UPDATE sx_badge_service_badge_codes SET group_item_id = NULL, group_item_sent_at = NULL WHERE group_item_id IS NOT NULL"
+
+markOwnerBootstrapped :: DB.Connection -> Int64 -> IO Bool
+markOwnerBootstrapped db gid =
+  (> 0)
+    <$> executeChanging
+      db
+      "UPDATE sx_badge_service_group SET owner_bootstrapped = 1 WHERE group_id = ? AND owner_bootstrapped = 0"
+      (Only gid)
 
 getBadgeCode :: DB.Connection -> ByteString -> IO (Maybe IssuedCode)
 getBadgeCode db codeHash =
@@ -255,7 +307,9 @@ createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey = Bad
       (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, badgeCodeId, now, now)
     (,claimedCount) <$> insertedRowId db
 
-data RevokeResult = Revoked | AlreadyRevoked | AlreadyRedeemed | NoSuchCode
+-- | Revoked and AlreadyRevoked carry the code id, so the caller can retire the code's group tracker,
+-- or repair one an earlier revoke left live.
+data RevokeResult = Revoked Int64 | AlreadyRevoked Int64 | AlreadyRedeemed | NoSuchCode
   deriving (Eq, Show)
 
 -- | A code with no uses left can't be revoked, because every badge it grants was already given out.
@@ -266,14 +320,15 @@ revokeCode db codeHash now = do
       db
       "UPDATE sx_badge_service_badge_codes SET revoked_at = ? WHERE code_hash = ? AND revoked_at IS NULL AND redeem_count < redeem_limit"
       (now, Binary codeHash)
-  if revoked > 0
-    then pure Revoked
-    else
-      maybeFirstRow' NoSuchCode refusal $
-        DB.query db "SELECT revoked_at FROM sx_badge_service_badge_codes WHERE code_hash = ?" (Only (Binary codeHash))
+  -- The result is read in the same transaction as the UPDATE, so the row it answers about is the row that changed.
+  maybeFirstRow' NoSuchCode (result revoked) $
+    DB.query db "SELECT badge_code_id, revoked_at FROM sx_badge_service_badge_codes WHERE code_hash = ?" (Only (Binary codeHash))
   where
-    refusal :: Only (Maybe UTCTime) -> RevokeResult
-    refusal (Only revokedAt) = maybe AlreadyRedeemed (const AlreadyRevoked) revokedAt
+    result :: Int -> (Int64, Maybe UTCTime) -> RevokeResult
+    result revoked (badgeCodeId, revokedAt)
+      | revoked > 0 = Revoked badgeCodeId
+      | isJust revokedAt = AlreadyRevoked badgeCodeId
+      | otherwise = AlreadyRedeemed
 
 insertBadgeCode :: DB.Connection -> ByteString -> BadgeType -> Int -> BadgeCodePaymentStatus -> Int -> UTCTime -> IO Int64
 insertBadgeCode db codeHash badgeType months paymentStatus redeemLimit now = do
@@ -285,3 +340,46 @@ insertBadgeCode db codeHash badgeType months paymentStatus redeemLimit now = do
     |]
     (Binary codeHash, badgeType, months, paymentStatus, redeemLimit, now)
   insertedRowId db
+
+setCodeGroupItem :: DB.Connection -> Int64 -> Int64 -> UTCTime -> IO ()
+setCodeGroupItem db badgeCodeId itemId sentAt =
+  DB.execute
+    db
+    "UPDATE sx_badge_service_badge_codes SET group_item_id = ?, group_item_sent_at = ? WHERE badge_code_id = ?"
+    (itemId, sentAt, badgeCodeId)
+
+data CodeTracker = CodeTracker
+  { trackerItemId :: Int64,
+    trackerSentAt :: UTCTime,
+    redeemLimit :: Int,
+    redeemCount :: Int,
+    revokedAt :: Maybe UTCTime,
+    redeemedAt :: Maybe UTCTime
+  }
+
+getCodeTracker :: DB.Connection -> Int64 -> IO (Maybe CodeTracker)
+getCodeTracker db badgeCodeId =
+  maybeFirstRow toTracker $
+    DB.query
+      db
+      [sql|
+        SELECT group_item_id, group_item_sent_at, redeem_limit, redeem_count, revoked_at, redeemed_at
+        FROM sx_badge_service_badge_codes
+        WHERE badge_code_id = ? AND group_item_id IS NOT NULL AND group_item_sent_at IS NOT NULL
+      |]
+      (Only badgeCodeId)
+  where
+    toTracker (trackerItemId, trackerSentAt, redeemLimit, redeemCount, revokedAt, redeemedAt) =
+      CodeTracker {trackerItemId, trackerSentAt, redeemLimit, redeemCount, revokedAt, redeemedAt}
+
+getEditableTrackers :: DB.Connection -> UTCTime -> IO [(Int64, Int64)]
+getEditableTrackers db sentAfter =
+  DB.query
+    db
+    [sql|
+      SELECT badge_code_id, group_item_id
+      FROM sx_badge_service_badge_codes
+      WHERE group_item_id IS NOT NULL AND group_item_sent_at > ?
+      ORDER BY badge_code_id
+    |]
+    (Only sentAfter)

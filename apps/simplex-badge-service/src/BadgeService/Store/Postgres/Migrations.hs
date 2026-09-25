@@ -115,9 +115,20 @@ m20260918_badge_group_ops =
   withPrefix
     servicePrefix
     [r|
+CREATE TABLE @group(
+  group_id BIGINT NOT NULL PRIMARY KEY,
+  group_link TEXT NOT NULL,
+  owner_bootstrapped SMALLINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL
+);
+
 ALTER TABLE @badge_codes ADD COLUMN redeem_limit INTEGER NOT NULL DEFAULT 1;
 
 ALTER TABLE @badge_codes ADD COLUMN redeem_count INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE @badge_codes ADD COLUMN group_item_id BIGINT;
+
+ALTER TABLE @badge_codes ADD COLUMN group_item_sent_at TIMESTAMPTZ;
 
 -- Redemptions made before this migration must count against the new limit, or every code
 -- redeemed already would read as unspent and could be redeemed once more.
@@ -134,8 +145,11 @@ down_m20260918_badge_group_ops =
   withPrefix
     servicePrefix
     [r|
+ALTER TABLE @badge_codes DROP COLUMN group_item_sent_at;
+ALTER TABLE @badge_codes DROP COLUMN group_item_id;
 ALTER TABLE @badge_codes DROP COLUMN redeem_count;
 ALTER TABLE @badge_codes DROP COLUMN redeem_limit;
+DROP TABLE @group;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

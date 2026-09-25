@@ -14,7 +14,7 @@ import BadgeService.Poller
 import BadgeService.Providers
 import BadgeService.Providers.BTCPay (btcpayProvider, listPageSize, maxListPages)
 import BadgeService.Providers.Stripe (stripeProvider)
-import BadgeService.Store (KeyPurchase (..), KeyRedemption (..), NewCodePurchase (..), RevokeResult (..), createCodePurchase, getCodePurchaseForKey, insertBadgeCode, revokeCode)
+import BadgeService.Store (KeyPurchase (..), KeyRedemption (..), ManagedGroup (..), NewCodePurchase (..), RevokeResult (..), createCodePurchase, getCodePurchaseForKey, getManagedGroup, insertBadgeCode, insertManagedGroup, markOwnerBootstrapped, revokeCode)
 import BadgeService.Store.Invoices
 import BadgeService.Waiters (awaitStatus, newWaiters, publish, waitingCount)
 import BadgeService.Web.Server
@@ -42,7 +42,7 @@ import Data.Char (toLower)
 import Data.Either (isLeft)
 import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef)
 import Data.Int (Int64)
-import Data.List (sort, sortOn)
+import Data.List (isInfixOf, sort, sortOn)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, isJust, isNothing, fromMaybe, mapMaybe)
 import Data.Text (Text)
@@ -138,7 +138,7 @@ badgeWebTests = do
   describe "badge service schema" $ do
     it "carries the five service-only columns" testServiceColumns
     it "refuses a duplicate provider_ref" testProviderRefUnique
-    it "M20260918 adds the multi-use columns" testGroupOpsColumns
+    it "M20260918 adds the multi-use columns and the group table" testGroupOpsColumns
     it "M20260918 defaults a fresh code to one use with none spent" testGroupOpsRedeemCounts
     it "migrates all the way down and up again" testSchemaDownUpCycle
     it "rolls back only the group migration and re-applies it, keeping a code redeemed twice spent" testGroupOpsDownUp
@@ -154,6 +154,9 @@ badgeWebTests = do
     it "a revoked code cannot be redeemed, and a redeemed code cannot be revoked" testRevokeAndRedeemExcludeEachOther
     it "a multi-use code can be revoked while it has uses left, and not once they are gone" testRevokeMultiUseCode
     it "every timestamp round-trips to the second" testTimestampRoundTrip
+  describe "managed group" $ do
+    it "round-trips and bootstraps once" testManagedGroupRoundTripsAndBootstrapsOnce
+    it "refuses a second row and burns the flag per group" testManagedGroupIsSingleRow
   describe "multi-use" $ do
     it "finds a key's own purchase with its newest credential, and none for another key" testKeyPurchaseLookup
     it "gives concurrent claims exactly the code's uses, each a distinct count" testMultiUseConcurrentClaimsUpToLimit
@@ -320,7 +323,9 @@ testGroupOpsColumns = withServiceStore assertGroupOpsColumns
 assertGroupOpsColumns :: HasCallStack => DBStore -> IO ()
 assertGroupOpsColumns st = do
   columnsOf st "sx_badge_service_badge_codes"
-    >>= (`shouldSatisfy` \cs -> all (`elem` cs) ["redeem_limit", "redeem_count"])
+    >>= (`shouldSatisfy` \cs -> all (`elem` cs) ["redeem_limit", "redeem_count", "group_item_id", "group_item_sent_at"])
+  columnsOf st "sx_badge_service_group"
+    >>= (`shouldSatisfy` \cs -> all (`elem` cs) ["group_id", "group_link", "owner_bootstrapped", "created_at"])
 
 runMigrations :: DBStore -> MigrationsToRun -> IO ()
 #if defined(dbPostgres)
@@ -335,6 +340,7 @@ testSchemaDownUpCycle = withServiceStore $ \st -> do
   length downMigrations `shouldBe` length badgeServiceSchemaMigrations
   runMigrations st $ MTRDown downMigrations
   columnsOf st "sx_badge_service_badge_codes" `shouldReturn` []
+  columnsOf st "sx_badge_service_group" `shouldReturn` []
   runMigrations st $ MTRUp badgeServiceSchemaMigrations
   assertGroupOpsColumns st
 
@@ -531,7 +537,7 @@ testRevokeAndRedeemExcludeEachOther = withServiceStore $ \st -> do
       redeem badgeCodeId = claimUse st badgeCodeId now keys
       revoke codeHash = withTransaction st $ \db -> revokeCode db codeHash now
   revokedFirst <- newCode "revoked-first"
-  revoke "revoked-first" `shouldReturn` Revoked
+  revoke "revoked-first" `shouldReturn` Revoked revokedFirst
   redeem revokedFirst `shouldReturn` Nothing
   codeCounts st "revoked-first" `shouldReturn` Just (1, 0)
   redeemedFirst <- newCode "redeemed-first"
@@ -548,7 +554,7 @@ testRevokeMultiUseCode = withServiceStore $ \st -> do
       revoke codeHash = withTransaction st $ \db -> revokeCode db codeHash now
   partlyUsed <- newCode "partly-used"
   isJust <$> redeem partlyUsed `shouldReturn` True
-  revoke "partly-used" `shouldReturn` Revoked
+  revoke "partly-used" `shouldReturn` Revoked partlyUsed
   redeem partlyUsed `shouldReturn` Nothing
   usedUp <- newCode "used-up"
   isJust <$> redeem usedUp `shouldReturn` True
@@ -687,6 +693,35 @@ testTimestampRoundTrip = withServiceStore $ \st -> do
   Just row <- getInvoice st (niInvoiceId ni)
   irExpiresAt row `shouldBe` truncated
   irCreatedAt row `shouldBe` truncated
+
+testManagedGroupRoundTripsAndBootstrapsOnce :: IO ()
+testManagedGroupRoundTripsAndBootstrapsOnce = withServiceStore $ \st -> do
+  now <- truncateToSecond <$> getCurrentTime
+  beforeInsert <- withTransaction st getManagedGroup
+  beforeInsert `shouldBe` Nothing
+  withTransaction st $ \db -> insertManagedGroup db 42 "https://link" now
+  afterInsert <- withTransaction st getManagedGroup
+  afterInsert `shouldBe` Just ManagedGroup {mgGroupId = 42, mgGroupLink = "https://link", mgOwnerBootstrapped = False}
+  show afterInsert `shouldNotSatisfy` ("https://link" `isInfixOf`)
+  firstMark <- withTransaction st (`markOwnerBootstrapped` 42)
+  secondMark <- withTransaction st (`markOwnerBootstrapped` 42)
+  (firstMark, secondMark) `shouldBe` (True, False)
+
+testManagedGroupIsSingleRow :: IO ()
+testManagedGroupIsSingleRow = withServiceStore $ \st -> do
+  now <- truncateToSecond <$> getCurrentTime
+  withTransaction st $ \db -> insertManagedGroup db 42 "https://link" now
+  withTransaction st $ \db -> insertManagedGroup db 43 "https://other" now
+  withTransaction st $ \db -> insertManagedGroup db 42 "https://again" now
+  managedGroupRows st `shouldReturn` [(42, "https://link")]
+  withTransaction st (`markOwnerBootstrapped` 43) `shouldReturn` False
+  (fmap mgOwnerBootstrapped <$> withTransaction st getManagedGroup) `shouldReturn` Just False
+  withTransaction st (`markOwnerBootstrapped` 42) `shouldReturn` True
+  (fmap mgOwnerBootstrapped <$> withTransaction st getManagedGroup) `shouldReturn` Just True
+
+managedGroupRows :: DBStore -> IO [(Int64, Text)]
+managedGroupRows st =
+  withConnection st $ \db -> DB.query_ db "SELECT group_id, group_link FROM sx_badge_service_group ORDER BY group_id"
 
 insertCode :: DBStore -> ByteString -> BadgeCodePaymentStatus -> Int -> UTCTime -> IO Int64
 insertCode st codeHash paymentStatus redeemLimit now =
@@ -942,7 +977,7 @@ testServiceConfig staticDir trustForwarded =
       stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
       issuer = Nothing,
-      devChatRedeem = False
+      group = Nothing
     }
 
 testServeWebappOff :: IO ()

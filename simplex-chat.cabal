@@ -431,6 +431,8 @@ executable simplex-badge-service
       BadgeService.Catalog
       BadgeService.Codes
       BadgeService.Config
+      BadgeService.Group
+      BadgeService.Group.Command
       BadgeService.Log
       BadgeService.Options
       BadgeService.Orders
@@ -720,6 +722,8 @@ test-suite simplex-chat-test
       BadgeService.Catalog
       BadgeService.Codes
       BadgeService.Config
+      BadgeService.Group
+      BadgeService.Group.Command
       BadgeService.Log
       BadgeService.Options
       BadgeService.Orders
@@ -739,6 +743,8 @@ test-suite simplex-chat-test
       Bots.BadgeService.ConfigTests
       Bots.BadgeService.FakeBTCPay
       Bots.BadgeService.FakeStripe
+      Bots.BadgeService.GroupIntegrationTests
+      Bots.BadgeService.GroupTests
       Bots.BadgeService.StripeTests
       Bots.BadgeService.WaitersTests
       Bots.BadgeService.WebTests
