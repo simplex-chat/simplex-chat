@@ -211,10 +211,11 @@ testWalletExport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   addr `shouldBe` "0xF278cF59F82eDcf871d630F28EcC8056f25C1cdb"
   addressFromSecret secret `shouldReturn` addr
   alice ##> "/_wallet export account 1 1"
-  (idx', path', addr', _) <- exportRow <$> getTermLine alice
+  (idx', path', addr', secret') <- exportRow <$> getTermLine alice
   idx' `shouldBe` "1"
   path' `shouldBe` "m/44'/60'/1'/0/0"
   (T.unpack . address . snd <$> walletAccount testPhrase24 1) `shouldReturn` addr'
+  addressFromSecret secret' `shouldReturn` addr'
   alice ##> "/_wallet address account=1"
   (words <$> getTermLine alice) `shouldReturn` ["1", "m/44'/60'/1'/0/0", addr']
 
