@@ -1,0 +1,36 @@
+{
+  "_fixture": "POST /api/v1/stores/{storeId}/invoices and GET .../invoices/{invoiceId} -- InvoiceData with status Processing -- InvoiceProcessing has fired: the payment is seen and is waiting for the confirmations `checkout.speedPolicy` requires -- from BTCPay's DOCUMENTED Greenfield schema (BTCPay 2.x naming). NOT captured from a live instance; replace `response` with a recorded body and rewrite this line. The fake patches `id`, `status` and `additionalStatus`; everything else is served as written here.",
+  "response": {
+    "metadata": {},
+    "checkout": {
+      "speedPolicy": "MediumSpeed",
+      "paymentMethods": ["BTC-CHAIN"],
+      "defaultPaymentMethod": null,
+      "expirationMinutes": 60,
+      "monitoringMinutes": 4320,
+      "paymentTolerance": 0.5,
+      "redirectURL": null,
+      "redirectAutomatically": false,
+      "requiresRefundEmail": false,
+      "defaultLanguage": null
+    },
+    "receipt": {
+      "enabled": null,
+      "showQR": null,
+      "showPayments": null
+    },
+    "id": "GmpP7VDp3jj7HZeJVQpSNP",
+    "storeId": "BqZKtkeSN9JgLLdCJRJfXQjLwCLDNCVLdxLTTdMzTHnT",
+    "amount": "54.00",
+    "currency": "USD",
+    "type": "Standard",
+    "checkoutLink": "https://btcpay.example.org/i/GmpP7VDp3jj7HZeJVQpSNP",
+    "createdTime": 1700000000,
+    "expirationTime": 1700003600,
+    "monitoringExpiration": 1700259200,
+    "status": "Processing",
+    "additionalStatus": "None",
+    "availableStatusesForManualMarking": ["Settled", "Invalid"],
+    "archived": false
+  }
+}
