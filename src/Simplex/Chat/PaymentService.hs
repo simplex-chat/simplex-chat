@@ -27,7 +27,7 @@ data ServiceInvoice = ServiceInvoice
 
 data ServicePayment
   = SPApple {jws :: Text}
-  | SPGoogle {token :: Text}
+  | SPGoogle {productId :: Text, token :: Text} -- the Publisher API finds a purchase by product and token
   | SPInvoice {invoiceId :: InvoiceId}
   | SPReceipt {receipt :: Text} -- transfer of unissued months
   deriving (Show)

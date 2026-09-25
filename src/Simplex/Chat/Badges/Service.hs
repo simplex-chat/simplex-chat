@@ -87,7 +87,7 @@ data BadgeServiceCommand
         code :: Text -- no badgeRequest: a code carries no tier for the client to state
       }
   | BSCPurchaseBadge
-      { badgeRequest :: BadgeRequest,
+      { masterKey :: BadgeMasterKey, -- no badgeRequest: the tier is the product's, the expiry the week's
         payment :: ServicePayment,
         upgrade :: Maybe BadgeUpgrade -- upgrade store 1-time badge
       }

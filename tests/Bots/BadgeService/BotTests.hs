@@ -12,6 +12,7 @@ module Bots.BadgeService.BotTests where
 
 import BadgeService.Config (BadgeIssuerKey (..), readServiceConfig)
 import Bots.BadgeService.ConfigTests (withIssuer)
+import Bots.BadgeService.FakeStore
 import BadgeService.Options
 import BadgeService.Service
 import BadgeService.Store.Invoices (markCodePaid)
@@ -27,6 +28,7 @@ import Control.Exception (finally)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (toLower)
 import Data.Either (isLeft, isRight)
 import Data.Int (Int64)
@@ -39,15 +41,18 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Format (defaultTimeLocale, formatTime)
+import Data.Word (Word32)
 import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType (..), generateMasterKey)
 import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeHash, badgeCodeText, formatBadgeCode, parseBadgeCode, randomBadgeCode)
-import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag, endOfMondayAfter)
+import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag, emptyEntry, endOfMondayAfter)
 import Simplex.Chat.Badges.Service
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
+import Simplex.Chat.PaymentService (ServicePayment (..))
+import Simplex.Chat.PaymentService.Types (InvoiceId (..))
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
 import Simplex.Messaging.Agent.Store.Common (withTransaction)
@@ -106,6 +111,23 @@ badgeServiceTests = do
   it "should renew a badge on a profile that is not active, without switching to it" testRenewalKeepsActiveProfile
   it "should broadcast the current profile when a renewal presents a badge" testRenewalKeepsProfileEdits
   it "should present the month already issued when a previous pass did not" testPresentationCatchesUp
+  describe "store purchases" $ do
+    it "should credit the months a store receipt paid for and issue the first" testStorePurchase
+    it "should return the same credential for a receipt its key presents again, writing nothing" testStorePurchaseReplay
+    it "should refuse a receipt another key was credited with" testStoreReceiptUsed
+    it "should refuse a receipt the store does not vouch for, with no retry" testStoreReceiptInvalid
+    it "should answer a store it cannot reach as retryable, writing nothing" testStoreUnreachable
+    it "should write nothing for a pending purchase, and credit it once when it settles" testStorePending
+    it "should refuse a product that grants no badge" testStoreUnknownProduct
+    it "should refuse a store purchase that carries an upgrade" testStoreUpgradeRefused
+    it "should grant the badge of the product the receipt proves" testStoreBadgeTypeFromProduct
+    it "should keep refusing invoice and receipt funding" testNonStoreFundingRefused
+    it "should refuse a store purchase whose purchaseKey is not the verified signer" testStorePurchaseKeyMismatch
+    it "should redeem a Play purchase into a badge, and replay it as the same badge" testPurchaseBadge
+    it "should redeem an App Store purchase by its JWS" testPurchaseBadgeAppStore
+    it "should drop the keys of a receipt refused for good, and keep them while it is pending" testPurchaseStash
+    it "should refuse a store purchase while a badge is held, before anything is sent" testPurchaseWhileBadgeHeld
+    it "should tell a second profile presenting the same receipt that it is used" testPurchaseSameReceiptOtherProfile
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -157,7 +179,8 @@ data BadgeServiceEnv = BadgeServiceEnv
     bsClock :: TestClock,
     bsClientCfg :: ChatConfig,
     bsAddress :: String,
-    bsController :: ChatController
+    bsController :: ChatController,
+    bsStore :: FakeStore
   }
 
 -- | Stop the service for good: requests sent after it go unanswered until they time out. Stopping
@@ -173,10 +196,11 @@ withBadgeServiceEnv :: HasCallStack => TestParams -> (BadgeServiceEnv -> IO ()) 
 withBadgeServiceEnv ps test = do
   Right (pk, sk) <- bbsKeyGen
   clock <- newTestClock
+  store <- newFakeStore
   let opts = mkBadgeServiceOpts ps sk
       svcCfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk, badgeCurrentTime = testClockTime clock}
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
-  runBadgeService svcCfg opts $ \_ -> pure ()
+  runBadgeService store svcCfg opts $ \_ -> pure ()
   bsLink <- withTestChat ps serviceDbPrefix $ \bs -> do
     bs <## "subscribed 1 connections on server localhost"
     bs ##> "/sa"
@@ -185,9 +209,9 @@ withBadgeServiceEnv ps test = do
     pure sLink
   let clientCfg =
         svcCfg {badgeServiceAddress = Just $ either (error . ("bad badge service address: " <>)) id $ strDecode (B.pack bsLink)}
-  runBadgeService svcCfg opts $ \env -> do
+  runBadgeService store svcCfg opts $ \env -> do
     cc <- atomically $ readTMVar $ serviceCC env
-    test BadgeServiceEnv {bsIssuerKey = BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk}, bsClock = clock, bsClientCfg = clientCfg, bsAddress = bsLink, bsController = cc}
+    test BadgeServiceEnv {bsIssuerKey = BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk}, bsClock = clock, bsClientCfg = clientCfg, bsAddress = bsLink, bsController = cc, bsStore = store}
 
 issueCode :: HasCallStack => ChatController -> BadgeType -> Int -> IO BadgeCode
 issueCode cc badgeType months = issueCodeAs cc badgeType months "free"
@@ -208,9 +232,9 @@ issueCodeAs cc badgeType months status =
     r -> error $ "issue failed: " <> show (() <$ r)
 
 -- | The post-start hook fills serviceCC once the address exists, so the test waits on it rather than on a fixed delay that would race with startup and let one start's address output arrive during the next test.
-runBadgeService :: ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
-runBadgeService cfg opts action = do
-  env <- newServiceState
+runBadgeService :: FakeStore -> ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
+runBadgeService FakeStore {fakeVerifier} cfg opts action = do
+  env <- (\s -> s {storeVerifier = fakeVerifier}) <$> newServiceState
   t <- forkIO $ badgeService opts cfg env
   ready <- timeout 30000000 $ atomically $ readTMVar $ serviceCC env
   when (isNothing ready) $ killThread t >> error "badge service did not start"
@@ -359,8 +383,8 @@ testRedeemSameCodeOtherProfile ps =
       showActiveUser alice "alice (Alice, * supporter)"
 
 serviceCmd :: HasCallStack => BadgeServiceEnv -> C.PublicKeyEd25519 -> BadgeServiceCommand -> IO BadgeServiceResponse
-serviceCmd BadgeServiceEnv {bsIssuerKey, bsController} purchaseKey request =
-  badgeServiceResponse bsIssuerKey bsController (Just purchaseKey) reqObject
+serviceCmd BadgeServiceEnv {bsIssuerKey, bsController, bsStore = FakeStore {fakeVerifier}} purchaseKey request =
+  badgeServiceResponse bsIssuerKey fakeVerifier bsController (Just purchaseKey) reqObject
   where
     reqObject = case J.toJSON BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request} of
       J.Object o -> o
@@ -1341,3 +1365,256 @@ testRevokedCode ps =
       alice <## "cannot redeem badge code: badge service error: code_invalid"
       second <- revokeCodeAs cc paid
       second `shouldSatisfy` T.isInfixOf "revoked already"
+
+purchaseCmd :: BadgeMasterKey -> ServicePayment -> BadgeServiceCommand
+purchaseCmd masterKey payment = BSCPurchaseBadge {masterKey, payment, upgrade = Nothing}
+
+supporterPlay :: ServicePayment
+supporterPlay = googlePayment "badge_supporter_01" googleSupporterToken
+
+paymentArg :: ServicePayment -> String
+paymentArg = LB.unpack . J.encode
+
+refusalOf :: HasCallStack => BadgeServiceResponse -> (BadgeServiceErrorCode, Maybe Word32)
+refusalOf = \case
+  BSPError {code, retryAfter} -> (code, retryAfter)
+  r -> error $ "expected an error, got " <> show (J.toJSON r)
+
+badgeTypeOf :: HasCallStack => BadgeServiceResponse -> Maybe BadgeType
+badgeTypeOf r = (\(BadgeCredential _ _ _ BadgeInfo {badgeType}) -> badgeType) <$> credentialOf r
+
+rowCount :: ChatController -> String -> IO Int
+rowCount ChatController {chatStore} table =
+  withTransaction chatStore $ \db -> do
+    [Only n] <- DB.query_ db $ fromString $ "SELECT COUNT(*) FROM " <> table
+    pure n
+
+-- | Each store payment's provider, amount and currency, and the ledger rows that name it.
+storePayments :: ChatController -> IO [(Text, Maybe Int, Maybe Text, Int)]
+storePayments ChatController {chatStore} =
+  withTransaction chatStore $ \db ->
+    DB.query_ db . fromString $
+      "SELECT pay.provider, pay.amount, pay.currency, COUNT(l.entry_id) FROM sx_badge_service_payments pay "
+        <> "LEFT JOIN sx_badge_service_badge_ledger l ON l.payment_id = pay.payment_id "
+        <> "GROUP BY pay.payment_id, pay.provider, pay.amount, pay.currency ORDER BY pay.provider"
+
+nothingPurchased :: HasCallStack => ChatController -> IO ()
+nothingPurchased cc = do
+  rowCount cc "sx_badge_service_payments" `shouldReturn` 0
+  rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 0
+
+testStorePurchase :: HasCallStack => TestParams -> IO ()
+testStorePurchase ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey supporterPlay
+    let (entries, previousEntryId) = statementOf purchased
+    previousEntryId `shouldBe` Nothing
+    map entryTag entries `shouldBe` ["payment", "badge"]
+    map (\e -> let (c, m, _) = entryOf e in (c, m)) entries `shouldBe` [(1, 1), (-1, 0)]
+    badgeTypeOf purchased `shouldBe` Just BTSupporter
+    masterKeyOf purchased `shouldBe` Just masterKey
+    map (\(_, c, m, _, _, t) -> (c, m, t)) <$> ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` [(1, 1, Just "payment"), (-1, 0, Just "badge")]
+    -- Play reports no price, and only the credit names the payment
+    storePayments cc `shouldReturn` [("google", Nothing, Nothing, 1)]
+
+testStorePurchaseReplay :: HasCallStack => TestParams -> IO ()
+testStorePurchaseReplay ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    purchased <- serviceCmd env purchaseKey $ purchaseCmd masterKey supporterPlay
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    replayed <- serviceCmd env purchaseKey $ purchaseCmd masterKey supporterPlay
+    credentialOf replayed `shouldBe` credentialOf purchased
+    map entryTag (fst $ statementOf replayed) `shouldBe` map entryTag (fst $ statementOf purchased)
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    storePayments cc `shouldReturn` [("google", Nothing, Nothing, 1)]
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+
+testStoreReceiptUsed :: HasCallStack => TestParams -> IO ()
+testStoreReceiptUsed ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
+    (firstKey, firstMasterKey) <- newPurchaseKeys
+    _ <- serviceCmd env firstKey $ purchaseCmd firstMasterKey supporterPlay
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    (otherKey, otherMasterKey) <- newPurchaseKeys
+    used <- serviceCmd env otherKey $ purchaseCmd otherMasterKey supporterPlay
+    refusalOf used `shouldBe` (BSEReceiptUsed, Nothing)
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+
+testStoreReceiptInvalid :: HasCallStack => TestParams -> IO ()
+testStoreReceiptInvalid ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = FakeStore {appleSupporterJWS}} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    let refused payment = refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey payment)
+    refused (googlePayment "badge_supporter_01" "not-a-purchase") `shouldReturn` (BSEReceiptInvalid, Nothing)
+    -- a real token presented for another product is not a purchase of it
+    refused (googlePayment "badge_legend_01" googleSupporterToken) `shouldReturn` (BSEReceiptInvalid, Nothing)
+    refused SPApple {jws = "not.a.jws"} `shouldReturn` (BSEReceiptInvalid, Nothing)
+    -- the payload of a real transaction under a signature that is not the store's
+    let resigned = case T.splitOn "." appleSupporterJWS of
+          [header, payload, _] -> T.intercalate "." [header, payload, "c2lnbmVkIGVsc2V3aGVyZQ"]
+          _ -> error "fixture is not a JWS"
+    refused SPApple {jws = resigned} `shouldReturn` (BSEReceiptInvalid, Nothing)
+    nothingPurchased cc
+
+testStoreUnreachable :: HasCallStack => TestParams -> IO ()
+testStoreUnreachable ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    unreachable <- serviceCmd env purchaseKey $ purchaseCmd masterKey $ googlePayment "badge_supporter_01" googleUnreachableToken
+    refusalOf unreachable `shouldSatisfy` \(code, retryAfter) -> code == BSEProviderUnavailable && isJust retryAfter
+    nothingPurchased cc
+
+testStorePending :: HasCallStack => TestParams -> IO ()
+testStorePending ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = store} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    let unsettled = purchaseCmd masterKey $ googlePayment "badge_supporter_01" googlePendingToken
+    waiting <- serviceCmd env purchaseKey unsettled
+    refusalOf waiting `shouldSatisfy` \(code, retryAfter) -> code == BSEPaymentPending && isJust retryAfter
+    nothingPurchased cc
+    settlePending store
+    settled <- serviceCmd env purchaseKey unsettled
+    badgeTypeOf settled `shouldBe` Just BTSupporter
+    again <- serviceCmd env purchaseKey unsettled
+    credentialOf again `shouldBe` credentialOf settled
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+    storePayments cc `shouldReturn` [("google", Nothing, Nothing, 1)]
+
+testStoreUnknownProduct :: HasCallStack => TestParams -> IO ()
+testStoreUnknownProduct ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    -- a real purchase of a subscription, whose renewals nothing adds to a badge yet
+    subscription <- serviceCmd env purchaseKey $ purchaseCmd masterKey $ googlePayment "subscr_badge_supporter_01" googleSubscriptionToken
+    refusalOf subscription `shouldBe` (BSEProductUnavailable, Nothing)
+    nothingPurchased cc
+
+testStoreUpgradeRefused :: HasCallStack => TestParams -> IO ()
+testStoreUpgradeRefused ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    g <- C.newRandom
+    (fromPurchaseKey, fromPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
+    now <- getCurrentTime
+    let upgrade = BadgeUpgrade {fromPurchaseKey, receipt = "receipt", receiptSignature = C.sign' fromPriv "receipt", balance = BadgeBalance {lastEntry = emptyEntry now BTSupporter}}
+    upgraded <- serviceCmd env purchaseKey BSCPurchaseBadge {masterKey, payment = supporterPlay, upgrade = Just upgrade}
+    refusalOf upgraded `shouldBe` (BSEUnsupportedVersion, Nothing)
+    nothingPurchased cc
+
+testStoreBadgeTypeFromProduct :: HasCallStack => TestParams -> IO ()
+testStoreBadgeTypeFromProduct ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = FakeStore {appleLegendJWS}} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    legend <- serviceCmd env purchaseKey $ purchaseCmd masterKey SPApple {jws = appleLegendJWS}
+    badgeTypeOf legend `shouldBe` Just BTLegend
+    map (\StatementEntry {balanceBadgeType} -> balanceBadgeType) (fst $ statementOf legend) `shouldBe` [BTLegend, BTLegend]
+    storePayments cc `shouldReturn` [("apple", Just 7000, Just "USD", 1)]
+
+testNonStoreFundingRefused :: HasCallStack => TestParams -> IO ()
+testNonStoreFundingRefused ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    invoice <- serviceCmd env purchaseKey $ purchaseCmd masterKey SPInvoice {invoiceId = InvoiceId "inv"}
+    refusalOf invoice `shouldBe` (BSEUnknownPurchaseKey, Nothing)
+    transfer <- serviceCmd env purchaseKey $ purchaseCmd masterKey SPReceipt {receipt = "receipt"}
+    refusalOf transfer `shouldBe` (BSEUnknownPurchaseKey, Nothing)
+    nothingPurchased cc
+
+testStorePurchaseKeyMismatch :: HasCallStack => TestParams -> IO ()
+testStorePurchaseKeyMismatch ps =
+  withBadgeService ps $ \clientCfg bsLink cc ->
+    withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
+      g <- C.newRandom
+      (_, signPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
+      (claimedPub, _) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
+      let signKey = B.unpack $ strEncode (C.StoredPrivateKey signPriv)
+          claimed = B.unpack $ strEncode claimedPub
+          req =
+            "{\"version\":1,\"purchaseKey\":\"" <> claimed
+              <> "\",\"request\":{\"type\":\"purchaseBadge\",\"masterKey\":\"" <> testMasterKeyB64
+              <> "\",\"payment\":" <> paymentArg supporterPlay <> "}}"
+      alice ##> ("/_service_request 1 " <> bsLink <> " sign_key=" <> signKey <> " " <> req)
+      alice <## "service response: {\"code\":\"bad_request\",\"type\":\"error\"}"
+      nothingPurchased cc
+
+testPurchaseBadge :: HasCallStack => TestParams -> IO ()
+testPurchaseBadge ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      let purchase = "/_badge purchase 1 " <> paymentArg supporterPlay
+      alice ##> purchase
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      -- the app presents a purchase until the badge is stored, and one already stored adds nothing
+      alice ##> purchase
+      alice <## "badge already redeemed"
+      alice ##> "/p"
+      alice <## "user profile: alice (Alice, * supporter)"
+      alice <## "use /p <name> [<bio>] to change it"
+      rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+      map (\(_, c, m, _, _, t) -> (c, m, t)) <$> ledgerRows (chatController alice) "badge_ledger" `shouldReturn` [(1, 1, Just "payment"), (-1, 0, Just "badge")]
+
+testPurchaseBadgeAppStore :: HasCallStack => TestParams -> IO ()
+testPurchaseBadgeAppStore ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc, bsStore = FakeStore {appleLegendJWS}} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleLegendJWS})
+      alice <## "badge redeemed"
+      alice <## "legend badge - active"
+      alice <##. "expires "
+      storePayments cc `shouldReturn` [("apple", Just 7000, Just "USD", 1)]
+
+testPurchaseStash :: HasCallStack => TestParams -> IO ()
+testPurchaseStash ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      let stashes = rowCount (chatController alice) "badge_store_receipts"
+      -- the store does not vouch for it, so the keys stashed for it can never be credited
+      alice ##> ("/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" "not-a-purchase"))
+      alice <## "cannot redeem badge code: badge service error: receipt_invalid"
+      stashes `shouldReturn` 0
+      -- no store transaction to key a stash by, so nothing is stashed or sent
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = "not.a-jws"})
+      alice <## "cannot redeem badge code: invalid store receipt"
+      stashes `shouldReturn` 0
+      nothingPurchased cc
+      -- pending keeps the keys, and the settled purchase is credited to them, once
+      let unsettled = "/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" googlePendingToken)
+      alice ##> unsettled
+      alice <## "cannot redeem badge code: badge service error: payment_pending"
+      stashes `shouldReturn` 1
+      settlePending store
+      alice ##> unsettled
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      stashes `shouldReturn` 1
+      rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+
+testPurchaseWhileBadgeHeld :: HasCallStack => TestParams -> IO ()
+testPurchaseWhileBadgeHeld ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 1
+      redeemFirstBadge alice code
+      alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
+      alice <## "cannot redeem badge code: badge already active"
+      rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 0
+      rowCount cc "sx_badge_service_payments" `shouldReturn` 0
+
+testPurchaseSameReceiptOtherProfile :: HasCallStack => TestParams -> IO ()
+testPurchaseSameReceiptOtherProfile ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> ("/_badge purchase 2 " <> paymentArg supporterPlay)
+      alice <## "cannot redeem badge code: badge service error: receipt_used"

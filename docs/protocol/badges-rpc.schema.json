@@ -95,7 +95,7 @@
           "properties": {"jws": {"type": "string"}}
         },
         "google": {
-          "properties": {"token": {"type": "string"}}
+          "properties": {"productId": {"type": "string"}, "token": {"type": "string"}}
         },
         "invoice": {
           "properties": {"invoiceId": {"type": "string"}}
@@ -309,7 +309,7 @@
         },
         "purchaseBadge": {
           "properties": {
-            "badgeRequest": {"ref": "badgeRequest"},
+            "masterKey": {"ref": "base64url"},
             "payment": {"ref": "payment"}
           },
           "optionalProperties": {

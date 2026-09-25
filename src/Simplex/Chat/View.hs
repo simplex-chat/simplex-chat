@@ -2867,6 +2867,7 @@ viewChatError isCmd logLevel testView = \case
     CEBadgeRedeemError e ->
       let reason = case e of
             BREInvalidCode -> "invalid code"
+            BREInvalidReceipt -> "invalid store receipt"
             BREServiceNotConfigured -> "badge service not configured"
             BREBadgeActive -> "badge already active"
             BREServiceError code -> "badge service error: " <> T.unpack (badgeServiceErrorText code)

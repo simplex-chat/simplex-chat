@@ -12,9 +12,11 @@ module BadgeTests (badgeTests) where
 import BadgeService.Service (badgeErrorRetryAfter)
 import Control.Concurrent.STM (atomically)
 import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Base64.URL as B64U
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.Calendar.WeekDate (toWeekDate)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
@@ -30,13 +32,16 @@ import Simplex.Chat.Badges.Service
 import Simplex.Chat.Badges.Types (BadgeIssueFailure (..))
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
-import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval)
+import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, storeTransactionRef)
+import Simplex.Chat.PaymentService (ServicePayment (..))
+import Simplex.Chat.PaymentService.Types (InvoiceId (..))
+import Simplex.Chat.Store.Badges (StoreTransactionRef (..))
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
 import Simplex.Messaging.Crypto.BBS
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (BrokerErrorType (..), ErrorType (AUTH), NetworkError (..))
-import Simplex.Messaging.Util (tshow)
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version.Internal (Version (..))
 import Test.Hspec
 
@@ -92,9 +97,12 @@ badgeTests = do
     it "bounds and strips a code this version does not know" testServiceErrorCodeBounded
   describe "service protocol JSON" $ do
     it "redeemBadgeCode request matches the schema" testRedeemRequestJSON
+    it "purchaseBadge request matches the schema" testPurchaseRequestJSON
     it "badgeCredential response matches the schema" testCredentialResponseJSON
     it "error response matches the schema" testErrorResponseJSON
     it "statement entries round-trip, unknown entry types verbatim" testStatementJSON
+  describe "store purchases" $ do
+    it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
 
 proofOf :: BadgeProof -> BBSProof
 proofOf (BadgeProof _ _ p _) = p
@@ -753,12 +761,18 @@ testEntryTypeColumns = do
       debits = [SDRefund, SDUpgrade k, SDTransferOut k, SDSupport, SDBadge, SDLapse]
   mapM_ (\c -> wireTag (J.toJSON (SECredit c)) "credit" `shouldBe` Just (creditTypeTag c)) credits
   mapM_ (\d -> wireTag (J.toJSON (SEDebit d)) "debit" `shouldBe` Just (debitTypeTag d)) debits
-  -- the three types this version writes survive a round trip through the columns
+  -- the types this version writes survive a round trip through the columns, a payment credit
+  -- through the payment its row references
   mapM_
-    (\t -> uncurry3 entryTypeFromColumns (entryTypeColumns t) `shouldSatisfy` sameEntryType t)
+    (\t -> uncurry3 (entryTypeFromColumns Nothing) (entryTypeColumns t) `shouldSatisfy` sameEntryType t)
     [SECredit SCCode, SEDebit SDBadge, SEDebit SDLapse]
+  let storeCredit = SECredit (SCPayment Nothing)
+      invoiceCredit = SECredit (SCPayment (Just (InvoiceId "inv1")))
+  uncurry3 (entryTypeFromColumns (Just Nothing)) (entryTypeColumns storeCredit) `shouldSatisfy` sameEntryType storeCredit
+  uncurry3 (entryTypeFromColumns (Just (Just (InvoiceId "inv1")))) (entryTypeColumns invoiceCredit) `shouldSatisfy` sameEntryType invoiceCredit
   -- a type that needs a reference column is not silently read back as something else
-  uncurry3 entryTypeFromColumns (entryTypeColumns (SECredit (SCCharge "ch1"))) `shouldSatisfy` isNothing
+  uncurry3 (entryTypeFromColumns Nothing) (entryTypeColumns storeCredit) `shouldSatisfy` isNothing
+  uncurry3 (entryTypeFromColumns Nothing) (entryTypeColumns (SECredit (SCCharge "ch1"))) `shouldSatisfy` isNothing
   -- which is why every type is stored as its own JSON as well, and read from that first: the
   -- columns alone would answer a row naming an invoice or a purchase as no row at all
   mapM_ roundTrips credits
@@ -789,6 +803,45 @@ testRedeemRequestJSON = do
   J.toJSON BadgeServiceRequest {version = Version 1, purchaseKey = Nothing, request = BSCGetBadgeCatalog}
     `shouldBe` J.object ["version" J..= (1 :: Int), "request" J..= J.object ["type" J..= ("getBadgeCatalog" :: T.Text)]]
   roundTrips req
+
+testPurchaseRequestJSON :: IO ()
+testPurchaseRequestJSON = do
+  drg <- C.newRandom
+  mk <- generateMasterKey drg
+  (k, _) <- atomically $ C.generateKeyPair drg :: IO (C.KeyPair 'C.Ed25519)
+  let payment = SPGoogle {productId = "badge_supporter_01", token = "token"}
+      req = BadgeServiceRequest {version = Version 1, purchaseKey = Just k, request = BSCPurchaseBadge {masterKey = mk, payment, upgrade = Nothing}}
+  -- the client states its master key and the store's evidence, and nothing a receipt already decides
+  J.toJSON req
+    `shouldBe` J.object
+      [ "version" J..= (1 :: Int),
+        "purchaseKey" J..= k,
+        "request"
+          J..= J.object
+            [ "type" J..= ("purchaseBadge" :: T.Text),
+              "masterKey" J..= mk,
+              "payment" J..= J.object ["type" J..= ("google" :: T.Text), "productId" J..= ("badge_supporter_01" :: T.Text), "token" J..= ("token" :: T.Text)]
+            ]
+      ]
+  J.toJSON SPApple {jws = "a.b.c"} `shouldBe` J.object ["type" J..= ("apple" :: T.Text), "jws" J..= ("a.b.c" :: T.Text)]
+  roundTrips req
+
+testStoreTransactionRef :: IO ()
+testStoreTransactionRef = do
+  let jws transactionId signature = T.intercalate "." [part "{\"alg\":\"ES256\"}", part ("{\"transactionId\":\"" <> transactionId <> "\",\"productId\":\"BADGE_SUPPORTER_01\"}"), signature]
+      part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
+      apple = storeTransactionRef . SPApple
+  -- the store may sign the same transaction again, and a retry must find the keys it stashed
+  apple (jws "2000000812345671" "c2lnbmVkIG9uY2U") `shouldBe` Just (StoreTransactionRef "apple" "2000000812345671")
+  apple (jws "2000000812345671" "c2lnbmVkIGFnYWlu") `shouldBe` apple (jws "2000000812345671" "c2lnbmVkIG9uY2U")
+  apple (jws "2000000812345672" "c2lnbmVkIG9uY2U") `shouldNotBe` apple (jws "2000000812345671" "c2lnbmVkIG9uY2U")
+  apple "not.a-jws" `shouldBe` Nothing
+  apple (T.intercalate "." [part "{}", part "{\"productId\":\"BADGE_SUPPORTER_01\"}", "sig"]) `shouldBe` Nothing
+  -- a Play token is a bearer secret, so it is kept only as its hash
+  let google = storeTransactionRef SPGoogle {productId = "badge_supporter_01", token = "play-token"}
+  google `shouldSatisfy` maybe False (\(StoreTransactionRef provider ref) -> provider == "google" && ref /= "play-token")
+  google `shouldBe` storeTransactionRef SPGoogle {productId = "badge_supporter_01", token = "play-token"}
+  storeTransactionRef SPInvoice {invoiceId = InvoiceId "inv"} `shouldBe` Nothing
 
 testCredentialResponseJSON :: IO ()
 testCredentialResponseJSON = do

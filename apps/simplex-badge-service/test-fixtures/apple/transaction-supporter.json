@@ -1,0 +1,19 @@
+{
+  "transactionId": "2000000812345671",
+  "originalTransactionId": "2000000812345671",
+  "bundleId": "chat.simplex.app",
+  "productId": "BADGE_SUPPORTER_01",
+  "purchaseDate": 1790000000000,
+  "originalPurchaseDate": 1790000000000,
+  "quantity": 1,
+  "type": "Consumable",
+  "appAccountToken": "7f7c0f43-4b7b-4c2e-9d57-1b7a2b1f3c11",
+  "inAppOwnershipType": "PURCHASED",
+  "signedDate": 1790000001000,
+  "environment": "Sandbox",
+  "transactionReason": "PURCHASE",
+  "storefront": "USA",
+  "storefrontId": "143441",
+  "price": 7000,
+  "currency": "USD"
+}

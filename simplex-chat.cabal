@@ -168,6 +168,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20260915_user_badges
           Simplex.Chat.Store.Postgres.Migrations.M20260918_badge_issue_errors
           Simplex.Chat.Store.Postgres.Migrations.M20260923_preferences_json
+          Simplex.Chat.Store.Postgres.Migrations.M20260925_badge_store_receipts
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -345,6 +346,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20260915_user_badges
           Simplex.Chat.Store.SQLite.Migrations.M20260918_badge_issue_errors
           Simplex.Chat.Store.SQLite.Migrations.M20260923_preferences_json
+          Simplex.Chat.Store.SQLite.Migrations.M20260925_badge_store_receipts
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -441,6 +443,7 @@ executable simplex-badge-service
       BadgeService.Store
       BadgeService.Store.Invoices
       BadgeService.Store.Migrate
+      BadgeService.StoreReceipts
       BadgeService.Waiters
       BadgeService.Web.Server
       Paths_simplex_chat
@@ -729,6 +732,7 @@ test-suite simplex-chat-test
       BadgeService.Store
       BadgeService.Store.Invoices
       BadgeService.Store.Migrate
+      BadgeService.StoreReceipts
       BadgeService.Waiters
       BadgeService.Web.Server
       Bots.BadgeService.BTCPayTests
@@ -736,6 +740,7 @@ test-suite simplex-chat-test
       Bots.BadgeService.CatalogTests
       Bots.BadgeService.ConfigTests
       Bots.BadgeService.FakeBTCPay
+      Bots.BadgeService.FakeStore
       Bots.BadgeService.FakeStripe
       Bots.BadgeService.StripeTests
       Bots.BadgeService.WaitersTests

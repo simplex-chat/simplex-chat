@@ -166,10 +166,6 @@ CREATE TABLE @subscription_charges(
   UNIQUE(payment_id, provider_charge_ref)
 ) STRICT;
 
-ALTER TABLE @badge_purchases ADD COLUMN payment_id TEXT REFERENCES @payments;
-
-CREATE UNIQUE INDEX @idx_badge_purchases_payment ON @badge_purchases(payment_id);
-
 CREATE TABLE @badge_invoices(
   invoice_id TEXT NOT NULL PRIMARY KEY REFERENCES @invoices ON DELETE CASCADE,
   badge_purchase_id INTEGER NOT NULL REFERENCES @badge_purchases ON DELETE CASCADE,
@@ -201,15 +197,11 @@ CREATE TABLE @badge_subscription_changes(
 
 CREATE INDEX @idx_badge_subscription_changes_purchase ON @badge_subscription_changes(badge_purchase_id);
 
-ALTER TABLE @badge_ledger ADD COLUMN payment_id TEXT REFERENCES @payments;
-
 ALTER TABLE @badge_ledger ADD COLUMN charge_id TEXT REFERENCES @subscription_charges;
 
 ALTER TABLE @badge_ledger ADD COLUMN from_purchase_id INTEGER REFERENCES @badge_purchases;
 
 ALTER TABLE @badge_ledger ADD COLUMN to_purchase_id INTEGER REFERENCES @badge_purchases;
-
-CREATE INDEX @idx_badge_ledger_payment ON @badge_ledger(payment_id);
 
 CREATE INDEX @idx_badge_ledger_charge ON @badge_ledger(charge_id);
 
@@ -218,11 +210,9 @@ CREATE INDEX @idx_badge_ledger_from_purchase ON @badge_ledger(from_purchase_id);
 CREATE INDEX @idx_badge_ledger_to_purchase ON @badge_ledger(to_purchase_id);
 
 -- down
-DROP INDEX @idx_badge_ledger_payment;
 DROP INDEX @idx_badge_ledger_charge;
 DROP INDEX @idx_badge_ledger_from_purchase;
 DROP INDEX @idx_badge_ledger_to_purchase;
-ALTER TABLE @badge_ledger DROP COLUMN payment_id;
 ALTER TABLE @badge_ledger DROP COLUMN charge_id;
 ALTER TABLE @badge_ledger DROP COLUMN from_purchase_id;
 ALTER TABLE @badge_ledger DROP COLUMN to_purchase_id;
@@ -232,8 +222,6 @@ DROP INDEX @idx_badge_invoices_purchase;
 DROP INDEX @idx_badge_invoices_offer;
 DROP INDEX @idx_badge_invoices_price;
 DROP TABLE @badge_invoices;
-DROP INDEX @idx_badge_purchases_payment;
-ALTER TABLE @badge_purchases DROP COLUMN payment_id;
 DROP TABLE @subscription_charges;
 -}
 

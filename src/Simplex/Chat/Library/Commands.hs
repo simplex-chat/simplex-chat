@@ -26,10 +26,12 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import qualified Data.Aeson as J
+import qualified Data.Aeson.KeyMap as JM
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.Attoparsec.Combinator as A
 import qualified Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -76,6 +78,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
+import Simplex.Chat.PaymentService (ServicePayment (..))
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote
@@ -3562,6 +3565,7 @@ processChatCommand cxt nm = \case
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
   AddBadge cred -> withUser $ \user -> addUserBadge user cred >> ok user
   APIRedeemBadgeCode userId codeText -> withUserId userId $ \user -> redeemBadgeCode nm user codeText
+  APIPurchaseBadge userId payment -> withUserId userId $ \user -> purchaseBadge nm user payment
   APIGetBadgeState userId -> withUserId' userId $ \user -> do
     -- the read also signals the worker, whose results follow as CEvtBadgeChanged
     lift $ startBadgeWork user
@@ -5227,22 +5231,8 @@ redeemBadgeCode nm user@User {userId} codeText = do
   -- both pass the guard and are both spent, for one badge
   (present_, redeemed) <- withEntityLock "badgeRedeem" (CLBadgeUser userId) $ do
     redemption_ <- withStore' $ \db -> getBadgeCodeRedemption db user codeSent
-    -- a code already redeemed here is allowed through: re-sending it returns the badge it bought
-    -- and adds nothing. Refused before its keys are stashed and before the request, so it stays unspent
-    replaying <- maybe (pure False) (\r -> withStore' $ \db -> isJust <$> getCodeBadgePurchase db r) redemption_
-    unless replaying $ whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
-    redemption@BadgeCodeRedemption {purchaseKey, purchasePrivKey, masterKey} <-
-      maybe (withStore' $ \db -> createBadgeCodeRedemption db g user codeSent now) pure redemption_
-    let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request = BSCRedeemBadgeCode {masterKey, code = codeSent}}
-    respBytes <- sendServiceRequestBytes nm user sendTarget Nothing (Just purchasePrivKey) req
-    respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ J.eitherDecodeStrict' respBytes
-    case J.fromJSON (J.Object respData) of
-      J.Error _ -> throwRedeemError $ BREInvalidResponse "not a badge service response"
-      J.Success BSPError {code = errCode} -> do
-        when (terminalCodeError errCode) $ withStore' $ \db -> deleteBadgeCodeRedemption db (redemptionId redemption)
-        throwRedeemError $ BREServiceError errCode
-      J.Success BSPBadgeCredential {credential = Just cred, statement} -> storeRedeemedBadge user redemption cred statement
-      J.Success _ -> throwRedeemError $ BREInvalidResponse "unexpected response type"
+    redemption@BadgeStash {masterKey} <- stashBadgeKeys user redemption_ $ \db -> createBadgeCodeRedemption db g user codeSent now
+    requestStashedBadge nm user sendTarget redemption BSCRedeemBadgeCode {masterKey, code = codeSent} terminalCodeError
   -- outside the badge lock: the chat lock must not be taken under it
   mapM_ presentUserBadgeToContacts present_
   pure redeemed
@@ -5253,6 +5243,66 @@ redeemBadgeCode nm user@User {userId} codeText = do
       BSECodeUsed -> True
       BSECodeExpired -> True
       _ -> False
+
+-- | The app presents a purchase until this returns its badge. The stash is keyed by the store's own
+-- id for the transaction, so every retry reaches the service as the signer it first credited.
+purchaseBadge :: NetworkRequestMode -> User -> ServicePayment -> CM ChatResponse
+purchaseBadge nm user@User {userId} payment = do
+  txRef <- maybe (throwRedeemError BREInvalidReceipt) pure $ storeTransactionRef payment
+  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+  g <- asks random
+  now <- liftIO getCurrentTime
+  (present_, purchased) <- withEntityLock "badgePurchase" (CLBadgeUser userId) $ do
+    stash_ <- withStore' $ \db -> getBadgeStoreReceipt db user txRef
+    stash@BadgeStash {masterKey} <- stashBadgeKeys user stash_ $ \db -> createBadgeStoreReceipt db g user txRef now
+    requestStashedBadge nm user sendTarget stash BSCPurchaseBadge {masterKey, payment, upgrade = Nothing} terminalReceiptError
+  -- outside the badge lock: the chat lock must not be taken under it
+  mapM_ presentUserBadgeToContacts present_
+  pure purchased
+  where
+    -- the receipt will never be credited to this key; any other refusal may pass on a retry
+    terminalReceiptError = \case
+      BSEReceiptInvalid -> True
+      BSEReceiptUsed -> True
+      _ -> False
+
+-- | Read without verifying anything: the id only keys the stash on this device, and the service
+-- verifies the evidence itself. A Google token is a bearer secret, so only its hash is kept.
+storeTransactionRef :: ServicePayment -> Maybe StoreTransactionRef
+storeTransactionRef = \case
+  SPApple {jws} -> StoreTransactionRef "apple" <$> appleTransactionId jws
+  SPGoogle {token} -> Just $ StoreTransactionRef "google" $ safeDecodeUtf8 $ strEncode $ C.sha256Hash $ encodeUtf8 token
+  SPInvoice {} -> Nothing
+  SPReceipt {} -> Nothing
+  where
+    appleTransactionId signed = case T.splitOn "." signed of
+      [_, payload, _] -> do
+        J.Object o <- J.decodeStrict' =<< eitherToMaybe (B64U.decodeUnpadded $ encodeUtf8 payload)
+        J.String txId <- JM.lookup "transactionId" o
+        pure txId
+      _ -> Nothing
+
+-- | A stash that already bought a badge here passes, as re-sending it adds nothing; any other is
+-- refused while a badge is held, before its keys are stashed or sent, so the funding stays unspent.
+stashBadgeKeys :: User -> Maybe BadgeStash -> (DB.Connection -> IO BadgeStash) -> CM BadgeStash
+stashBadgeKeys user stash_ createStash = do
+  replaying <- maybe (pure False) (\s -> withStore' $ \db -> isJust <$> getStashBadgePurchase db s) stash_
+  unless replaying $ whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
+  maybe (withStore' createStash) pure stash_
+
+-- | A refusal for which stashDead holds drops the stash; any other, and a timeout, keep it.
+requestStashedBadge :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> BadgeStash -> BadgeServiceCommand -> (BadgeServiceErrorCode -> Bool) -> CM (Maybe User, ChatResponse)
+requestStashedBadge nm user sendTarget stash@BadgeStash {purchaseKey, purchasePrivKey} request stashDead = do
+  let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request}
+  respBytes <- sendServiceRequestBytes nm user sendTarget Nothing (Just purchasePrivKey) req
+  respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ J.eitherDecodeStrict' respBytes
+  case J.fromJSON (J.Object respData) of
+    J.Error _ -> throwRedeemError $ BREInvalidResponse "not a badge service response"
+    J.Success BSPError {code = errCode} -> do
+      when (stashDead errCode) $ withStore' (`deleteBadgeStash` stash)
+      throwRedeemError $ BREServiceError errCode
+    J.Success BSPBadgeCredential {credential = Just cred, statement} -> storeRedeemedBadge user stash cred statement
+    J.Success _ -> throwRedeemError $ BREInvalidResponse "unexpected response type"
 
 throwRedeemError :: BadgeRedeemError -> CM a
 throwRedeemError = throwChatError . CEBadgeRedeemError
@@ -5654,8 +5704,8 @@ stopBadgeWorkers workers =
 -- | Verify the credential before writing anything; the purchase, the statement's rows, the
 -- issuance and the profile's badge go in one transaction. Answers the user to tell contacts about,
 -- which the caller does once the badge lock is released.
-storeRedeemedBadge :: User -> BadgeCodeRedemption -> BadgeCredential -> BadgeStatement -> CM (Maybe User, ChatResponse)
-storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey} cred@(BadgeCredential _ credMasterKey _ info@BadgeInfo {badgeType}) statement =
+storeRedeemedBadge :: User -> BadgeStash -> BadgeCredential -> BadgeStatement -> CM (Maybe User, ChatResponse)
+storeRedeemedBadge user@User {userId} stash@BadgeStash {masterKey} cred@(BadgeCredential _ credMasterKey _ info@BadgeInfo {badgeType}) statement =
   verifyOwnBadge cred >>= \case
     Nothing -> throwRedeemError BREUnknownKeyIndex
     Just False -> throwRedeemError BRECredentialNotVerified
@@ -5668,7 +5718,7 @@ storeRedeemedBadge user@User {userId} redemption@BadgeCodeRedemption {masterKey}
       let badge = OwnBadge cred (mkBadgeStatus now (Just True) info)
       -- TODO [badges] retire a previously held badge
       (user', newBadge, applied) <- withStore $ \db -> do
-        (purchaseId, newBadge) <- liftIO $ createCodeBadgePurchase db user redemption cred now
+        (purchaseId, newBadge) <- liftIO $ createStashBadgePurchase db user stash cred now
         applied <- liftIO $ applyBadgeStatement db g purchaseId badgeType statement (Just cred) now
         -- a replay must not put a superseded badge back, or tell every contact again
         user' <- if newBadge then setUserBadge db user (Just badge) else getUser db userId
@@ -6109,6 +6159,7 @@ chatCommandP =
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_redeem_badge_code " *> (APIRedeemBadgeCode <$> A.decimal <* A.space <*> textP),
+      "/_badge purchase " *> (APIPurchaseBadge <$> A.decimal <* A.space <*> jsonP),
       "/_badge state " *> (APIGetBadgeState <$> A.decimal),
       "/_badge ledger " *> (APIGetBadgeLedger <$> A.decimal <* A.space <*> A.decimal),
       "/_badge ack " *> (APIAckBadgeAlert <$> A.decimal <* A.space <*> A.decimal <* A.space <*> badgeAlertKindP <* A.space <*> onOffP <* A.space <*> textP),
