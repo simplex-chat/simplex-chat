@@ -33,6 +33,7 @@ The toolbar supports two layout modes:
 - When active, `searchMode = true` hides the navigation bar and shows inline search
 - Filters chat list in real-time by contact/group name and message content
 - Detects pasted SimpleX links (`searchShowingSimplexLink`) and offers to connect
+- Unread filter toggle button at the trailing edge while search is unfocused and the list is non-empty; highlighted while the current profile has unread
 
 ### Chat Filter Tabs (Tags)
 

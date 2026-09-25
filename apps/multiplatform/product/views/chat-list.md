@@ -44,7 +44,7 @@ The toolbar supports two layout modes controlled by `appPrefs.oneHandUI`:
 |---|---|
 | Search icon | Magnifying glass icon at leading edge |
 | Text field | `SearchTextField` with placeholder "Search or paste SimpleX link" |
-| Filter button | `ToggleFilterEnabledButton` (filter icon) toggles unread-only filter; shown when search text is empty |
+| Filter button | `ToggleFilterEnabledButton` (filter icon) toggles unread-only filter, highlighted while the current profile has unread; shown when search text is empty |
 | Clear button | Appears when text is entered; `BackHandler` clears search on back |
 
 Behavior:
