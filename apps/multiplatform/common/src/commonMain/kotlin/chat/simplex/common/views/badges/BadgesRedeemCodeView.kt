@@ -276,6 +276,8 @@ fun BadgesRedeemLinkView(rhId: Long?, code: String, close: () -> Unit) {
   val step = remember { mutableStateOf(BadgeLinkStep.Confirming) }
 
   fun redeemFromLink() {
+    // a second tap before the screen changes must not send the code again
+    if (step.value != BadgeLinkStep.Confirming) return
     val user = chatModel.currentUser.value ?: return close()
     step.value = BadgeLinkStep.Issuing
     withBGApi {
@@ -295,7 +297,8 @@ fun BadgesRedeemLinkView(rhId: Long?, code: String, close: () -> Unit) {
 
   when (step.value) {
     BadgeLinkStep.Confirming -> ModalView(close) { Confirming(onConfirm = ::redeemFromLink, onCancel = close) }
-    BadgeLinkStep.Issuing -> ModalView(close) { BeingIssued() }
+    // the outcome closes what is on screen, which after a close here would be some other screen
+    BadgeLinkStep.Issuing -> ModalView(close, enableClose = false) { BeingIssued() }
     BadgeLinkStep.Redeemed -> BadgesView(ModalManager.end, close)
   }
 }

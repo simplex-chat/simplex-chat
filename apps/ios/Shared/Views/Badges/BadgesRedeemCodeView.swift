@@ -327,9 +327,13 @@ struct BadgesRedeemLinkView: View {
         .padding(.bottom, 20)
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
+        // the outcome closes what is on screen, which after a close here would be some other screen
+        .interactiveDismissDisabled(true)
     }
 
     private func redeemFromLink() {
+        // a second tap before the screen changes must not send the code again
+        guard step == .confirming else { return }
         guard let user = chatModel.currentUser else { return dismissAllSheets() }
         step = .issuing
         Task {
