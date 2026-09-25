@@ -44,7 +44,7 @@ abstract class NtfManager {
               chatModel.chatId.value != cInfo.id ||
               chatModel.remoteHostId() != rhId)
     ) {
-      displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem, cInfo.isChannel))
+      displayNotification(user = user, chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem, cInfo.isChannel), image = cInfo.image)
     }
   }
 
