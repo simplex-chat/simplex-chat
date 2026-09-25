@@ -54,7 +54,7 @@ enum class BadgeLevel {
 }
 
 @Composable
-fun BadgesYourLevelView(modalManager: ModalManager) {
+fun BadgesChooseBadgeView(modalManager: ModalManager) {
   var selectedLevel by remember { mutableStateOf(BadgeLevel.Supporter) }
 
   LaunchedEffect(Unit) { BadgeStore.load() }
@@ -154,7 +154,7 @@ private fun ContinueButton(selectedLevel: BadgeLevel, modalManager: ModalManager
     labelId = MR.strings.badges_continue,
     onboarding = null,
     onclick = {
-      modalManager.showModal { BadgesPayView(selectedLevel) }
+      modalManager.showModal { BadgesHowLongView(selectedLevel) }
     }
   )
 }

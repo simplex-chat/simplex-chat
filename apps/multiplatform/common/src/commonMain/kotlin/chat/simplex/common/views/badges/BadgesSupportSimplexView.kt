@@ -80,7 +80,7 @@ private fun ChooseLevelButton(modalManager: ModalManager) {
     labelId = MR.strings.badges_choose_your_level,
     onboarding = null,
     onclick = {
-      modalManager.showModal { BadgesYourLevelView(modalManager) }
+      modalManager.showModal { BadgesChooseBadgeView(modalManager) }
     }
   )
 }

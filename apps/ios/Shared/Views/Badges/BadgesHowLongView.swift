@@ -1,5 +1,5 @@
 //
-//  BadgesPayView.swift
+//  BadgesHowLongView.swift
 //  SimpleX (iOS)
 //
 //  Created by spaced4ndy on 28.07.2026.
@@ -60,7 +60,7 @@ enum BadgePeriod: String, CaseIterable, Identifiable {
     }
 }
 
-struct BadgesPayView: View {
+struct BadgesHowLongView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
     let level: BadgeLevel
@@ -201,7 +201,7 @@ struct BadgesPayView: View {
                     }
                 }
             } catch let error {
-                logger.error("BadgesPayView.purchase: \(String(describing: error))")
+                logger.error("BadgesHowLongView.purchase: \(String(describing: error))")
                 await MainActor.run {
                     purchasing = false
                     alert = SomeAlert(
@@ -259,10 +259,10 @@ struct BadgesPayView: View {
     }
 }
 
-struct BadgesPayView_Previews: PreviewProvider {
+struct BadgesHowLongView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesPayView(level: .supporter)
+            BadgesHowLongView(level: .supporter)
         }
     }
 }

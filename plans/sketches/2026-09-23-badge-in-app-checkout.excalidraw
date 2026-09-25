@@ -5218,7 +5218,7 @@
         "lane2"
       ],
       "seed": 2217,
-      "text": "B2.  BadgesYourLevelView, renamed",
+      "text": "B2.  BadgesChooseBadgeView",
       "fontSize": 11,
       "fontFamily": 2,
       "textAlign": "left",
@@ -5240,7 +5240,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "B2.  BadgesYourLevelView, renamed",
+      "originalText": "B2.  BadgesChooseBadgeView",
       "lineHeight": 1.2727272727272727
     },
     {
@@ -5868,7 +5868,7 @@
         "lane2"
       ],
       "seed": 2316,
-      "text": "B3.  BadgesPayView, renamed and disarmed",
+      "text": "B3.  BadgesHowLongView, disarmed",
       "fontSize": 11,
       "fontFamily": 2,
       "textAlign": "left",
@@ -5890,7 +5890,7 @@
       "link": null,
       "locked": false,
       "containerId": null,
-      "originalText": "B3.  BadgesPayView, renamed and disarmed",
+      "originalText": "B3.  BadgesHowLongView, disarmed",
       "lineHeight": 1.2727272727272727
     },
     {

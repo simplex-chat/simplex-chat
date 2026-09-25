@@ -1,5 +1,5 @@
 //
-//  BadgesYourLevelView.swift
+//  BadgesChooseBadgeView.swift
 //  SimpleX (iOS)
 //
 //  Created by spaced4ndy on 28.07.2026.
@@ -45,7 +45,7 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
     }
 }
 
-struct BadgesYourLevelView: View {
+struct BadgesChooseBadgeView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
     @State private var selectedLevel: BadgeLevel = .supporter
@@ -151,7 +151,7 @@ struct BadgesYourLevelView: View {
             .buttonStyle(OnboardingButtonStyle(isDisabled: false))
 
             NavigationLink(isActive: $continueActive) {
-                BadgesPayView(level: selectedLevel)
+                BadgesHowLongView(level: selectedLevel)
                     .modifier(ThemedBackground())
             } label: {
                 EmptyView()
@@ -185,10 +185,10 @@ struct BadgesYourLevelView: View {
     }
 }
 
-struct BadgesYourLevelView_Previews: PreviewProvider {
+struct BadgesChooseBadgeView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            BadgesYourLevelView()
+            BadgesChooseBadgeView()
         }
     }
 }
