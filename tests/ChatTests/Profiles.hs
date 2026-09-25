@@ -857,7 +857,7 @@ testUserBadgeAddressCard ps = do
       _ <- getTermLine bob
       lastItemContent bob >>= (`shouldContain` "\"badgeType\":\"supporter\"")
       cred <- issueTestBadge sk futureDate
-      Right otherProof <- badgeProof pk cred (PHChat $ encodeChatBinding CBLink "other link")
+      Right otherProof <- badgeProof pk cred (PHLink "other link")
       let cLink = either error id $ strDecode (B.pack bLink)
           mc = MCChat (T.pack bLink) (MCLContact cLink (profileFromName "alice") {badge = Just otherProof} False) Nothing
       bob ##> ("/_send @3 json [{\"msgContent\":" <> T.unpack (encodeJSON mc) <> "}]")

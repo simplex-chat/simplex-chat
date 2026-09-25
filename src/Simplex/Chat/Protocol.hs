@@ -313,7 +313,7 @@ data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMess
 data KeyRef = KRMember
   deriving (Eq, Show)
 
-data ChatBinding = CBGroup | CBDirect | CBChannel | CBLink
+data ChatBinding = CBGroup | CBDirect | CBChannel
   deriving (Eq, Show)
 
 data MsgSignature = MsgSignature KeyRef C.ASignature
@@ -410,13 +410,11 @@ instance Encoding ChatBinding where
     CBGroup -> "G"
     CBDirect -> "D"
     CBChannel -> "C"
-    CBLink -> "L"
   smpP =
     A.anyChar >>= \case
       'G' -> pure CBGroup
       'D' -> pure CBDirect
       'C' -> pure CBChannel
-      'L' -> pure CBLink
       c -> fail $ "invalid ChatBinding: " <> show c
 
 instance ToField ChatBinding where toField = toField . decodeLatin1 . smpEncode

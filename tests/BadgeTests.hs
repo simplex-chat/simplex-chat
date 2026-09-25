@@ -208,6 +208,7 @@ testPresHeaderEncoding =
       PHFileDescr {chatBinding = aliceBinding, fileSize = 139737, descrHash = "descr-hash", fileExpires = Nothing},
       PHFileDescr {chatBinding = aliceBinding, fileSize = 139737, descrHash = "descr-hash", fileExpires = Just futureTime},
       PHRequest requestCode,
+      PHLink "link-key",
       PHUnknown 'Z' "payload"
     ]
 

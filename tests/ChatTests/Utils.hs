@@ -757,6 +757,7 @@ storedBadgeHeader LocalProfile {localBadge} = case localBadge of
     headerTag = \case
       Right (PHChat b) -> 'C' : take 1 (B.unpack b)
       Right (PHRequest _) -> "R"
+      Right (PHLink _) -> "L"
       Right (PHTest _) -> "T"
       _ -> "?"
 

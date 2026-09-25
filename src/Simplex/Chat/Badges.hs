@@ -270,7 +270,7 @@ maxSndXFTPFileSize lims now = \case
 -- presentation, not bound to any context; the 'T' tag marks it so master rejects it.
 -- PHUnknown is the forward-compat catch-all for tags this version does not interpret.
 
-data ProofPresHeaderTag = PHTestTag | PHChatTag | PHFileInvTag | PHFileDescrTag | PHRequestTag | PHUnknownTag Char
+data ProofPresHeaderTag = PHTestTag | PHChatTag | PHFileInvTag | PHFileDescrTag | PHRequestTag | PHLinkTag | PHUnknownTag Char
 
 instance StrEncoding ProofPresHeaderTag where
   strEncode = B.singleton . \case
@@ -279,6 +279,7 @@ instance StrEncoding ProofPresHeaderTag where
     PHFileInvTag -> 'F'
     PHFileDescrTag -> 'D'
     PHRequestTag -> 'R'
+    PHLinkTag -> 'L'
     PHUnknownTag c -> c
   strP = tag <$> A.anyChar
     where
@@ -288,6 +289,7 @@ instance StrEncoding ProofPresHeaderTag where
         'F' -> PHFileInvTag
         'D' -> PHFileDescrTag
         'R' -> PHRequestTag
+        'L' -> PHLinkTag
         c -> PHUnknownTag c
 
 data ProofPresHeader
@@ -296,6 +298,7 @@ data ProofPresHeader
   | PHFileInv {chatBinding :: ByteString, fileSize :: Int64}
   | PHFileDescr {chatBinding :: ByteString, fileSize :: Int64, descrHash :: ByteString, fileExpires :: Maybe UTCTime}
   | PHRequest ByteString
+  | PHLink ByteString
   | PHUnknown Char ByteString
   deriving (Eq, Show)
   deriving (ToJSON, FromJSON) via (StrJSON "ProofPresHeader" ProofPresHeader)
@@ -309,6 +312,7 @@ instance StrEncoding ProofPresHeader where
     PHFileDescr {chatBinding, fileSize, descrHash, fileExpires} ->
       strEncode PHFileDescrTag <> smpEncode (chatBinding, fileSize, descrHash, utcToSystemTime <$> fileExpires)
     PHRequest code -> strEncode PHRequestTag <> code
+    PHLink linkKey -> strEncode PHLinkTag <> linkKey
     PHUnknown c b -> strEncode (PHUnknownTag c) <> b
   strP =
     strP >>= \case
@@ -321,6 +325,7 @@ instance StrEncoding ProofPresHeader where
         (chatBinding, fileSize, descrHash, expires_) <- smpP
         pure PHFileDescr {chatBinding, fileSize, descrHash, fileExpires = systemToUTCTime <$> expires_}
       PHRequestTag -> PHRequest <$> A.takeByteString
+      PHLinkTag -> PHLink <$> A.takeByteString
       PHUnknownTag c -> PHUnknown c <$> A.takeByteString
 
 acceptedProof :: Maybe ProofPresHeader -> BadgeProof -> Bool

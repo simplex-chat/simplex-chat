@@ -2254,7 +2254,7 @@ directPresHeader = \case
   CRBRequest code -> PHRequest code
 
 linkPresHeader :: LinkKey -> ProofPresHeader
-linkPresHeader (LinkKey key) = PHChat $ encodeChatBinding CBLink key
+linkPresHeader (LinkKey key) = PHLink key
 
 invitationPresHeader :: ConnReqInvitation -> ProofPresHeader
 invitationPresHeader = PHRequest . invitationRequestCode
