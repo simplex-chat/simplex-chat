@@ -45,7 +45,7 @@ import qualified Data.Set as S
 import Data.Text (Text)
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime)
 import Numeric.Natural (Natural)
-import Simplex.Chat.PaymentService.Types (InvoiceStatus (..), PaymentProvider)
+import Simplex.Chat.PaymentService.Types (InvoiceStatus (..), PaymentProvider (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore)
 import Simplex.Messaging.Util (tshow)
 
@@ -181,6 +181,7 @@ listPass env now p =
       pure False
     Right ListPass {lpMoved, lpSkipped} -> do
       owners <- mapM (\s -> safelyWith (skipWhat s) SkipUnaccounted (reportSkip env (pProvider p) now s)) lpSkipped
+      reportStrangers env (pProvider p) now [reason | (SkipStranger, (_, reason)) <- zip owners lpSkipped]
       settled <- mapM (\m -> safely (settleWhat m) (settleMoved env (pProvider p) now m)) lpMoved
       pure (all (== SkipStranger) owners && and settled)
       where
@@ -290,12 +291,25 @@ skipOwner PollerEnv {peStore} provider = \case
 reportSkip :: PollerEnv -> PaymentProvider -> UTCTime -> (Maybe Text, Text) -> IO SkipOwner
 reportSkip env provider now (ref, reason) = do
   owner <- skipOwner env provider ref
-  due <- dueToWarn env now reason
-  when due $ case owner of
-    SkipOurs -> logError ("badge poller: an invoice this service sold was not read, so its payment cannot be detected: " <> reason)
-    SkipUnaccounted -> logError ("badge poller: part of the window was not read, so a payment to any invoice in it cannot be detected: " <> reason)
-    SkipStranger -> logWarn ("badge poller: the list pass could not read everything: " <> reason)
+  let raise msg = dueToWarn env now reason >>= (`when` logError (msg <> reason))
+  case owner of
+    SkipOurs -> raise "badge poller: an invoice this service sold was not read, so its payment cannot be detected: "
+    SkipUnaccounted -> raise "badge poller: part of the window was not read, so a payment to any invoice in it cannot be detected: "
+    SkipStranger -> pure ()
   pure owner
+
+-- | One limiter key per provider, so a store full of invoices sold elsewhere costs one line an hour, not one per invoice.
+reportStrangers :: PollerEnv -> PaymentProvider -> UTCTime -> [Text] -> IO ()
+reportStrangers env provider now = \case
+  [] -> pure ()
+  reasons@(example : _) -> do
+    due <- dueToWarn env now ("stranger skips: " <> tshow provider)
+    when due $ logWarn ("badge poller: " <> tshow (length reasons) <> " unreadable invoice(s) not created by this service; use a dedicated " <> home <> "; first: " <> example)
+  where
+    home = case provider of
+      PPCrypto -> "BTCPay store"
+      PPStripe -> "Stripe account"
+      other -> providerText other <> " account"
 
 dueToWarn :: PollerEnv -> UTCTime -> Text -> IO Bool
 dueToWarn PollerEnv {peSkipped} now reason = atomically $ do

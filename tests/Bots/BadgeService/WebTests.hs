@@ -28,7 +28,7 @@ import qualified Control.Concurrent.Async as Async
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically, modifyTVar', readTVarIO)
 import qualified Control.Exception as E
-import Control.Monad (join, replicateM, replicateM_, void, when)
+import Control.Monad (forM_, join, replicateM, replicateM_, void, when)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Key as K
@@ -237,6 +237,7 @@ badgeWebTests = do
     it "reports a skipped invoice once, and again only after the interval" testSkipWarningsAreRateLimited
     it "warns once for a provider that stays down, not once a pass" testOutageWarnsOnceNotEveryPass
     it "holds the skip log under its cap when every reason is fresh" testSkipReasonsStayBounded
+    it "warns once for all the invoices it did not sell, not once per invoice" testStrangerSkipsShareOneWarning
     it "raises a skip naming an invoice this service sold" testSkipNamingOurInvoiceIsRaised
     it "holds the sweep back until a pass has accounted for every invoice" testSweepWaitsForAPassThatSawEverything
     it "settles the rest of the pass around an invoice that throws" testOneBadInvoiceDoesNotStopThePass
@@ -2665,12 +2666,18 @@ testSkipNamingOurInvoiceIsRaised = bounded "skip ownership" $ withStubPoller rac
   invoiceStatus (weStore env) iid `shouldReturn` ISPaid
 
 testSkipReasonsStayBounded :: IO ()
-testSkipReasonsStayBounded = bounded "skip reasons bounded" $ withStubPoller raceHold $ \ref poller _ _ -> do
-  let reasons n = [(Just ("p-" <> tshow i), "btcpay invoice p-" <> tshow i <> ": unknown method") | i <- [1 .. n :: Int]]
-  setSkipped ref (reasons (maxSkipReasons + 500))
+testSkipReasonsStayBounded = bounded "skip reasons bounded" $ withStubPoller raceHold $ \_ poller _ _ -> do
+  now <- getCurrentTime
+  forM_ [1 .. maxSkipReasons + 500] $ \i -> dueToWarn poller now ("btcpay invoice p-" <> tshow i <> ": unknown method")
   runOnePass poller
   held <- Map.size <$> readTVarIO (peSkipped poller)
   held `shouldSatisfy` (<= maxSkipReasons)
+
+testStrangerSkipsShareOneWarning :: IO ()
+testStrangerSkipsShareOneWarning = bounded "stranger skips" $ withStubPoller raceHold $ \ref poller _ _ -> do
+  setSkipped ref [(Just ("stranger-" <> tshow i), "btcpay invoice stranger-" <> tshow i <> ": unknown method") | i <- [1 .. 3 :: Int]]
+  runOnePass poller
+  Map.size <$> readTVarIO (peSkipped poller) `shouldReturn` 1
 
 -- | The failure text carries the whole request, whose window moves with the clock, so the two
 -- messages differ only in startDate to prove the limiter key ignores it rather than warning
