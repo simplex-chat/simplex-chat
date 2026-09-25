@@ -28,9 +28,9 @@ Everything in the app sections below is both platforms unless it says otherwise.
 
 Three changes, all in `apps/simplex-badge-service/web`.
 
-**Read an `app` flag.** `#app=true` for mobile apps, `#app=desktop` for desktop, on the page's only path, `/`. It goes in the fragment rather than the query because the fragment is never sent: the service learns nothing about which visitors came from the app, and it is stripped from the `Referer` when the page hands off to a payment provider. Nothing server-side needs it — both things it decides are rendering, from data the browser already holds.
+**Start at the second screen.** This needs nothing built. The page already routes on the fragment, and `#/tier` lands on Choose your badge — the screen after its own Support SimpleX, which the app has just shown. The app opens that hash and the page behaves.
 
-**Start at the second screen when it is set.** The app has just shown Support SimpleX, so showing the page's own version of it is a duplicate. Preserve the fragment when the page rewrites the URL for an order, so a reload keeps it; an order resumed in some other browser loses it and falls back to the plain page, which is fine.
+**Carry an `app` flag through the flow.** Only the ending needs it, and it has to survive every step and a reload, so it belongs in the session record the page already persists, seeded once from the URL. Put it in the fragment beside the step — `#/tier?app=true`, or `?app=desktop` — rather than in the query, because a fragment is never sent: the service learns nothing about which visitors came from the app, and it is stripped from the `Referer` when the page hands off to a payment provider. Nothing server-side needs it, and both things it decides are rendering.
 
 **Replace the final screen for `app=true` (A5).** Try the deep link on load, then offer *Return to SimpleX* with *Show code* under it. `Show code` reveals the existing `codeIssued` content, unchanged — which means the code must still be minted and saved in the browser exactly as now. For `app=desktop` (D2), keep `codeIssued` as it is and change only the "Redeem it in the app" line to say the screen is already open. With no flag, nothing changes.
 
