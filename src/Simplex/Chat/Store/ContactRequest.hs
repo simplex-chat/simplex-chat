@@ -24,7 +24,7 @@ import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Int (Int64)
 import Data.Time.Clock (getCurrentTime)
-import Simplex.Chat.Badges (badgeToRow, unboundProof, verifyBadge_)
+import Simplex.Chat.Badges (ProofPresHeader, badgeToRow)
 import Simplex.Chat.Protocol (MsgContent, businessChatsVersion)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Groups
@@ -57,6 +57,7 @@ createOrUpdateContactRequest ::
   Bool ->
   InvitationId ->
   VersionRangeChat ->
+  Maybe ProofPresHeader ->
   Profile ->
   Maybe XContactId ->
   Maybe SharedMsgId ->
@@ -74,7 +75,8 @@ createOrUpdateContactRequest
   isSimplexTeam
   invId
   cReqChatVRange@(VersionRange minV maxV)
-  profile@Profile {displayName, fullName, shortDescr, description, image, contactLink, badge, preferences}
+  presHeader_
+  profile@Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences}
   xContactId_
   welcomeMsgId_
   requestMsg_
@@ -167,7 +169,7 @@ createOrUpdateContactRequest
       createContactRequest :: ExceptT StoreError IO RequestStage
       createContactRequest = do
         currentTs <- liftIO $ getCurrentTime
-        badgeVerified <- liftIO $ verifyBadge_ unboundProof (badgeKeys cxt) badge
+        (Profile {badge}, badgeVerified) <- liftIO $ profileBadgeVerified presHeader_ (badgeKeys cxt) Nothing profile
         ExceptT $ withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
           liftIO $
             DB.execute
@@ -225,7 +227,7 @@ createOrUpdateContactRequest
                 ucr <- getContactRequest db user contactRequestId
                 pure $ RSCurrentRequest Nothing ucr (Just $ REBusinessChat gInfo clientMember)
       updateContactRequest :: UserContactRequest -> ExceptT StoreError IO RequestStage
-      updateContactRequest ucr@UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = LocalProfile {displayName = oldDisplayName}} = do
+      updateContactRequest ucr@UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = oldProfile@LocalProfile {displayName = oldDisplayName}} = do
         currentTs <- liftIO getCurrentTime
         liftIO $ updateProfile currentTs
         updateRequest currentTs
@@ -234,7 +236,7 @@ createOrUpdateContactRequest
         pure $ RSCurrentRequest (Just ucr) ucr' re_
         where
           updateProfile currentTs = do
-            badgeVerified <- liftIO $ verifyBadge_ unboundProof (badgeKeys cxt) badge
+            (Profile {badge}, badgeVerified) <- profileBadgeVerified presHeader_ (badgeKeys cxt) (Just oldProfile) profile
             DB.execute
               db
               [sql|

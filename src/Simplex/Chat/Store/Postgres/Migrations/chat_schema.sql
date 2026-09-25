@@ -618,7 +618,8 @@ CREATE TABLE test_chat_schema.connections (
     short_link_inv bytea,
     via_short_link_contact bytea,
     via_contact_uri bytea,
-    relay_test smallint DEFAULT 0 NOT NULL
+    relay_test smallint DEFAULT 0 NOT NULL,
+    pres_header bytea
 );
 
 

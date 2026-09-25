@@ -32,7 +32,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Type.Equality
-import Simplex.Chat.Badges (BadgeRow, badgeToRow, rowToBadge, unboundProof, verifyBadge_)
+import Simplex.Chat.Badges (BadgeRow, ProofPresHeader, badgeToRow, rowToBadge)
 import Simplex.Chat.Names (SimplexDomainProof, SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Messages
 import Simplex.Chat.Remote.Types
@@ -413,12 +413,12 @@ setCommandConnId db User {userId} cmdId connId = do
 createContact :: DB.Connection -> StoreCxt -> User -> Profile -> ExceptT StoreError IO ()
 createContact db cxt user profile = do
   currentTs <- liftIO getCurrentTime
-  void $ createContact_ db cxt user profile emptyChatPrefs Nothing "" currentTs
+  void $ createContact_ db cxt user Nothing profile emptyChatPrefs Nothing "" currentTs
 
-createContact_ :: DB.Connection -> StoreCxt -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> ExceptT StoreError IO ContactId
-createContact_ db cxt User {userId} Profile {displayName, fullName, shortDescr, description, image, contactLink, contactDomain, peerType, badge, preferences} ctUserPreferences prepared localAlias currentTs =
+createContact_ :: DB.Connection -> StoreCxt -> User -> Maybe ProofPresHeader -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> ExceptT StoreError IO ContactId
+createContact_ db cxt User {userId} presHeader_ p@Profile {displayName, fullName, shortDescr, description, image, contactLink, contactDomain, peerType, preferences} ctUserPreferences prepared localAlias currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
-    badgeVerified <- verifyBadge_ unboundProof (badgeKeys cxt) badge
+    (Profile {badge}, badgeVerified) <- profileBadgeVerified presHeader_ (badgeKeys cxt) Nothing p
     DB.execute
       db
       "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, chat_peer_type, user_id, local_alias, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, contact_domain, contact_domain_proof, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
@@ -588,12 +588,12 @@ getConnReqInv db connId =
       "SELECT conn_req_inv FROM connections WHERE connection_id = ?"
       (Only connId)
 
-getConnReqContact :: DB.Connection -> Int64 -> ExceptT StoreError IO ConnReqContact
+getConnReqContact :: DB.Connection -> Int64 -> ExceptT StoreError IO (ConnReqContact, Maybe ProofPresHeader)
 getConnReqContact db connId =
-  ExceptT . firstRow fromOnly (SEConnectionNotFoundById connId) $
+  ExceptT . firstRow id (SEConnectionNotFoundById connId) $
     DB.query
       db
-      "SELECT via_contact_uri FROM connections WHERE connection_id = ?"
+      "SELECT via_contact_uri, pres_header FROM connections WHERE connection_id = ?"
       (Only connId)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.

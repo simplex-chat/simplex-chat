@@ -390,6 +390,7 @@ CREATE TABLE connections(
   via_short_link_contact BLOB,
   via_contact_uri BLOB,
   relay_test INTEGER NOT NULL DEFAULT 0,
+  pres_header BLOB,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE

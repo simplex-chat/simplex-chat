@@ -207,6 +207,7 @@ testPresHeaderEncoding =
       PHFileInv {chatBinding = aliceBinding, fileSize = 139737},
       PHFileDescr {chatBinding = aliceBinding, fileSize = 139737, descrHash = "descr-hash", fileExpires = Nothing},
       PHFileDescr {chatBinding = aliceBinding, fileSize = 139737, descrHash = "descr-hash", fileExpires = Just futureTime},
+      PHRequest requestCode,
       PHUnknown 'Z' "payload"
     ]
 
@@ -222,23 +223,28 @@ testProfileProofHeader :: IO ()
 testProfileProofHeader = do
   (pk, unbound) <- issueBadgeProof BTSupporter futureTime
   (pk', bound) <- issueBadgeProofHeader BTSupporter futureTime (PHChat aliceBinding)
-  unboundProof unbound `shouldBe` True
-  unboundProof bound `shouldBe` False
-  boundProof (Just aliceBinding) bound `shouldBe` True
-  boundProof (Just bobBinding) bound `shouldBe` False
-  boundProof Nothing bound `shouldBe` False
-  boundProof (Just aliceBinding) unbound `shouldBe` False
-  verifyBadge_ unboundProof (keysFor pk) (Just unbound) >>= (`shouldBe` Just True)
-  verifyBadge_ unboundProof (keysFor pk') (Just bound) >>= (`shouldBe` Just False)
-  verifyBadge_ (boundProof (Just aliceBinding)) (keysFor pk') (Just bound) >>= (`shouldBe` Just True)
-  verifyBadge_ (boundProof (Just aliceBinding)) (keysFor pk) (Just unbound) >>= (`shouldBe` Just False)
-  verifyBadge_ (boundProof (Just aliceBinding)) (keysFor pk') Nothing >>= (`shouldBe` Just False)
+  (pk'', requested) <- issueBadgeProofHeader BTSupporter futureTime (PHRequest requestCode)
+  acceptedProof Nothing unbound `shouldBe` True
+  acceptedProof (Just $ PHChat aliceBinding) unbound `shouldBe` True
+  acceptedProof (Just $ PHChat aliceBinding) bound `shouldBe` True
+  acceptedProof (Just $ PHChat bobBinding) bound `shouldBe` False
+  acceptedProof (Just $ PHRequest aliceBinding) bound `shouldBe` False
+  acceptedProof Nothing bound `shouldBe` False
+  acceptedProof (Just $ PHRequest requestCode) requested `shouldBe` True
+  acceptedProof (Just $ PHRequest "other-request-code") requested `shouldBe` False
+  acceptedProof (Just $ PHChat requestCode) requested `shouldBe` False
+  verifyBadge (keysFor pk) unbound >>= (`shouldBe` Just True)
+  verifyBadge (keysFor pk') bound >>= (`shouldBe` Just True)
+  verifyBadge (keysFor pk'') requested >>= (`shouldBe` Just True)
 
 aliceBinding :: ByteString
 aliceBinding = "Galice-member-id"
 
 bobBinding :: ByteString
 bobBinding = "Gbob-member-id"
+
+requestCode :: ByteString
+requestCode = "request-code"
 
 issueBadgeProof :: BadgeType -> UTCTime -> IO (BBSPublicKey, BadgeProof)
 issueBadgeProof bt expiry = issueBadgeProofHeader bt expiry (PHTest "test-nonce")

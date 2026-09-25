@@ -313,7 +313,7 @@ data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMess
 data KeyRef = KRMember
   deriving (Eq, Show)
 
-data ChatBinding = CBGroup | CBDirect | CBChannel
+data ChatBinding = CBGroup | CBDirect | CBChannel | CBLink
   deriving (Eq, Show)
 
 data MsgSignature = MsgSignature KeyRef C.ASignature
@@ -410,11 +410,13 @@ instance Encoding ChatBinding where
     CBGroup -> "G"
     CBDirect -> "D"
     CBChannel -> "C"
+    CBLink -> "L"
   smpP =
     A.anyChar >>= \case
       'G' -> pure CBGroup
       'D' -> pure CBDirect
       'C' -> pure CBChannel
+      'L' -> pure CBLink
       c -> fail $ "invalid ChatBinding: " <> show c
 
 instance ToField ChatBinding where toField = toField . decodeLatin1 . smpEncode
@@ -465,7 +467,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XMember :: {profile :: Profile, newMemberId :: MemberId, newMemberKey :: MemberKey, viaRelay :: Maybe MemberId} -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
-  XGrpAcpt :: MemberId -> Maybe MemberKey -> ChatMsgEvent 'Json
+  XGrpAcpt :: MemberId -> Maybe MemberKey -> Maybe Profile -> ChatMsgEvent 'Json
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
   XGrpLinkMem :: Profile -> Maybe MemberKey -> ChatMsgEvent 'Json
@@ -1427,7 +1429,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XMember_ -> XMember <$> p "profile" <*> p "newMemberId" <*> p "newMemberKey" <*> opt "viaRelay"
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
-      XGrpAcpt_ -> XGrpAcpt <$> p "memberId" <*> opt "memberKey"
+      XGrpAcpt_ -> XGrpAcpt <$> p "memberId" <*> opt "memberKey" <*> opt "profile"
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
       XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
       XGrpLinkMem_ -> XGrpLinkMem <$> p "profile" <*> opt "memberKey"
@@ -1503,7 +1505,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XMember {profile, newMemberId, newMemberKey, viaRelay} -> o $ ("viaRelay" .=? viaRelay) ["profile" .= profile, "newMemberId" .= newMemberId, "newMemberKey" .= newMemberKey]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
-      XGrpAcpt memId memberKey -> o $ ("memberKey" .=? memberKey) ["memberId" .= memId]
+      XGrpAcpt memId memberKey profile -> o $ ("profile" .=? profile) $ ("memberKey" .=? memberKey) ["memberId" .= memId]
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
       XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]
       XGrpLinkMem profile memberKey -> o $ ("memberKey" .=? memberKey) ["profile" .= profile]

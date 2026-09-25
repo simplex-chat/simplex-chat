@@ -11,14 +11,14 @@ The same badge raises the size limit for files the user sends. Today each app de
 
 The changes:
 
-1. Three new presentation headers: one for a profile shown in a chat, one for a file invitation, one for a file description. The random header stays valid where there is no chat yet, and for the profile in direct chats until the direct binding reaches the handshake.
-2. In p2p groups a badge is accepted only from a message signed by the member. The member connection handshake is signed in both directions, and the profile sent in it is stored, so the badge appears when two members connect.
-3. In channels a badge is accepted from any profile message, because member keys there come from the roster, the member list signed by the channel owner.
+1. Four new presentation headers: a profile shown in a chat, a file invitation, a file description, and a contact request. The random header of released clients stays accepted.
+2. Every profile badge is bound to the chat it is shown in: a direct chat, a contact request, a link, or a group membership (section 14). A proof bound to another chat is ignored.
+3. In p2p groups a badge is accepted from a message signed by the member, from an introduction under the key it introduces, and from a join request under the request header. In channels it is accepted from any profile message.
 4. Files above the default limit include a proof in the invitation and a proof in the description, in every chat type. The core library verifies both. The decision is stored on the file and shown by the apps from one field.
 5. Forwarding a file above the forwarder's limit is refused with an alert before the forwarding sheet opens, and again, for the chosen destination, before anything is uploaded.
 6. A received file keeps its two proofs, so a file re-sent to a new member as part of history keeps them; the sender's own files get fresh proofs from the credential.
 
-Two new columns on `files`, and a new table `file_badge_proofs` holding the invitation proof and the description proof of a file, kept for history. One new function in simplexmq, the hash of the fields shared by all descriptions of one upload.
+Two new columns on `files`, and a new table `file_badge_proofs` holding the invitation proof and the description proof of a file, kept for history. A new column on `connections`, the request header of a prepared connection. In simplexmq: the hash of the fields shared by all descriptions of one upload, the verification codes of a connection, links and invitations before link data is signed, and the request code of an invitation.
 
 ## Terms
 
@@ -46,7 +46,7 @@ Two new columns on `files`, and a new table `file_badge_proofs` holding the invi
 
 **Presentation header.** A byte string that is an input to proof generation and to proof verification. A proof verifies only with the header it was generated with. Type `ProofPresHeader` in `Badges.hs`. `PHTest` is a random nonce.
 
-**Chat binding.** The byte string that identifies the sender in one conversation, produced by `encodeChatBinding` (`Protocol.hs:444`). Message signatures and shared contact cards are computed over it. For a direct chat it is `encodeChatBinding CBDirect adHash`, where `adHash` is the hash of the connection's ratchet data, which both sides obtain with `getConnectionRatchetAdHash`. For a p2p group it is `encodeChatBinding CBGroup (smpEncode (memberId, memberKey))`. For a channel it is `encodeChatBinding CBGroup (smpEncode (publicGroupId, memberId))`. `groupBindingData` (`Internal.hs:2261`) computes the inner part for groups.
+**Chat binding.** The byte string that identifies the sender in one conversation, produced by `encodeChatBinding` (`Protocol.hs:444`). Message signatures and shared contact cards are computed over it. For a direct chat it is `encodeChatBinding CBDirect codeAD`, where `codeAD` is the hash of the connection's ratchet data, which both sides obtain with `getConnectionVerifyCodes`. For a p2p group it is `encodeChatBinding CBGroup (smpEncode (memberId, memberKey))`. For a channel it is `encodeChatBinding CBGroup (smpEncode (publicGroupId, memberId))`. For a link it is `encodeChatBinding CBLink linkKey`. `groupBindingData` (`Internal.hs:2322`) computes the inner part for groups.
 
 **Member key.** The Ed25519 key a member holds for one group. It is created when first needed — at group creation on this branch, or by `createUserMemberKey` before the first signed message — and the public key is sent in introductions and in `XInfo`.
 
@@ -64,10 +64,12 @@ data ProofPresHeader
   | PHChat ByteString
   | PHFileInv ByteString String Integer
   | PHFileDescr ByteString String Integer ByteString (Maybe UTCTime)
+  | PHRequest ByteString
   | PHUnknown Char ByteString
 ```
 
 - `PHChat` holds the chat binding.
+- `PHRequest` holds the request code (section 14.1).
 - `PHFileInv` holds the chat binding and the file size from the invitation.
 - `PHFileDescr` holds the same two values, then the shared description hash (section 8) and the file expiration.
 
@@ -77,49 +79,50 @@ One constructor serves every chat type, because the chat binding already encodes
 
 `verifyBadgeWith` today verifies a proof with whatever header the proof contains. After this change the receiver first checks that the header names the sender as the receiver knows them, and only then runs BBS verification with that header. `proofPresHeaderAccepted` is removed; `verifyBadge` runs BBS verification only, and the header rule is applied by its callers:
 
-- A contact request, link data, and the profile in a direct chat: the header must be `PHTest` until direct chats are bound (section 14).
-- A file in a direct chat: the receiver has the contact's connection and obtains its ratchet hash from the agent, as `newContentMessage` does for a contact card (`Subscriber.hs:1883`). The binding in the header must equal `encodeChatBinding CBDirect adHash`.
+- A contact request, link data, and the profile in a direct chat: the header of section 14.
+- A file in a direct chat: the receiver has the contact's connection and obtains its ratchet hash from the agent, as `newContentMessage` does for a contact card (`Subscriber.hs:1883`). The binding in the header must equal `encodeChatBinding CBDirect codeAD`.
 - A profile or a file in a group: the receiver has the `GroupInfo` and the sender's `GroupMember`. The binding in the header must equal `groupBindingData` for that member — for a channel the group's public id and the member id; for a p2p group the member id and the member key.
 
 **The key in a p2p binding.** For a file the receiver may not know the sender's key yet; if it knows one and it differs from the key in the header, the proof fails, otherwise the key in the header is used for this verification and never stored (`proofMemberKey`). For a profile the key is the one the message signature was verified under, section 3; a header key is never used.
 
 The file headers are checked the same way and then further: `PHFileInv` must also name the file size as received; `PHFileDescr` must also hold the hash of the received description and the expiration received with it.
 
-`PHUnknown` fails every check. A proof from a released client, which presents `PHTest` in groups, fails in groups; no badge has been issued yet, so nothing in use is affected. A released client that receives one of the new headers verifies it, because its `proofPresHeaderAccepted` admits unknown tags and BBS verification runs with the header bytes as sent. No protocol version change is needed.
+`PHUnknown` fails every check. `PHTest`, presented by released clients, is accepted in every chat. A released client that receives one of the new headers verifies it, because its `proofPresHeaderAccepted` admits unknown tags and BBS verification runs with the header bytes as sent. No protocol version change is needed.
 
-The chat layer computes the expected binding and passes it to the store, so `groupBindingData` and `profileBadgeVerified` stay where they are. `Badges.hs` holds the two header predicates: `unboundProof`, true for a `PHTest` header, and `boundProof binding_`, true when the header equals `PHChat` of the given binding and false when there is none. `verifyBadge_` and `profileBadgeVerified` take the predicate as their first argument.
+The expected header is computed in the chat layer and passed to the store, so `groupBindingData` and `profileBadgeVerified` stay where they are. One predicate is defined in `Badges.hs`: `acceptedProof`, true for `PHTest` and for a header equal to the expected one (section 14.3).
 
 `SimplexDomainProof` (`Names.hs:37`) also uses `ProofPresHeader`, as an opaque value. Its verification is unchanged.
 
 ## 2. Presenting the profile badge
 
-File: `src/Simplex/Chat/Library/Internal.hs`, `presentUserBadge` (`:2237`).
+File: `src/Simplex/Chat/Library/Internal.hs`, `presentUserBadge` (`:2238`).
 
-The function generates the proof for an outgoing profile. It takes a new argument, `Maybe GroupInfo`. With `Nothing` it generates `PHTest` as today. With `Just gInfo` it generates `PHChat` of `sndGroupChatBinding gInfo False`, the user's own member binding in that group; the membership key is stored by `mkGroupKeys` when the group is read with its keys, and a membership with no stored public key presents no badge. The proof is generated by `sndBadgeProof`, as file proofs are.
+The proof for an outgoing profile is generated with `sndBadgeProof`, as file proofs are. The header, `Maybe ProofPresHeader`, is a parameter; with `Nothing`, no badge is presented. For a send into a group the header is `groupPresHeader`, `PHChat` of `sndGroupChatBinding gInfo False`, the user's own member binding in that group. The membership key is stored by `mkGroupKeys` when the group is read with its keys; for a membership without a stored public key, no badge is presented. The header of every call site is listed in section 14.3.
 
-Call sites that send a profile into a group pass the group: `Commands.hs:3976` (join via group link, the relay case), `:4315` (the owner's profile to a relay); `Subscriber.hs:505` (the group case), `:637`, `:826`, `:840`, `:967`, `:1249`, `:3335`; `Internal.hs:2652` (`sendGroupProfileUpdate`). All other call sites send a direct profile and pass `Nothing`.
-
-A join by `XContact` (`Commands.hs:3976`, a p2p group or a group not yet known) sends the profile without a badge, since section 3 does not accept one there. The two handshake sends (section 4) present the badge only when the peer version is at least `relayWebCapVersion`.
+The two handshake sends (section 4) present the badge only when the peer version is at least `relayWebCapVersion`.
 
 ## 3. Accepting the profile badge
 
 A received badge is verified today at seven places in the store layer, each verifying the proof with no knowledge of the sender: `profileBadgeVerified` (`Types.hs:851`), `createContact_` (`Store/Shared.hs:421`), `createJoiningMember` (`Store/Groups.hs:2085`), `createNewMemberProfile_` (`Store/Groups.hs:2440`), two contact request sites (`Store/ContactRequest.hs:170, 237`), and `linkDataBadge` (`Internal.hs:2253`).
 
-The direct sites verify with `unboundProof`. The group store functions take the expected binding, `Maybe ByteString`, and verify with `boundProof`: `updateMemberProfile`, `updateContactMemberProfile` (`Store/Groups.hs:3411, 3434`), `createJoiningMember`, `createNewGroupMember`, `createIntroReMember`, and the functions that call `updateMemberProfile` inside the store — `updateUnknownMemberAnnounced`, `updateRosterMemberAnnounced`, `updatePreparedChannelMember`, `setRelayLinkAccepted`, `updateRelayMemberData`; the callers that build a profile from a name alone pass `Nothing`. A badge with no binding, or with a header that names another binding, is stored as failed, as a proof that fails BBS verification is today.
+The expected header, `Maybe ProofPresHeader`, is a parameter of the store functions and is checked with `acceptedProof` (section 14.3); `Nothing` is passed where a profile is built from a name alone. A proof rejected by `acceptedProof` is ignored: at creation no badge is stored, at update the stored badge is kept. A proof that fails BBS verification is stored as failed.
 
-The chat layer computes the binding with `memberChatBinding gInfo memberId key_` (`Internal.hs`): for a channel `encodeChatBinding CBGroup (publicGroupId, memberId)`, whatever the key; for a p2p group `encodeChatBinding CBGroup (memberId, key)`, or `Nothing` without a key. `rcvGroupChatBinding` uses it for its member alternatives. The key passed is the one the message was verified under:
+The chat layer computes the binding with `memberChatBinding gInfo memberId key_` (`Internal.hs`): for a channel `encodeChatBinding CBGroup (publicGroupId, memberId)`, whatever the key; for a p2p group `encodeChatBinding CBGroup (memberId, key)`, or `Nothing` without a key. `rcvGroupChatBinding` uses it for its member alternatives. The key passed at each site:
 
-- `xInfoMember` (`Subscriber.hs:2798`) and `xGrpLinkMem` (`:2804`): the stored key when `RcvMessage.msgSigned` is `MSSVerified`; otherwise the key the message delivers, when `storeMemberKey` verified the signature with it and stored it — `storeMemberKey` returns that key; otherwise none.
+- `xInfoMember` (`Subscriber.hs:2801`) and `xGrpLinkMem` (`:2807`): the stored key when `RcvMessage.msgSigned` is `MSSVerified`; otherwise the key the message delivers, when `storeMemberKey` verified the signature with it and stored it — `storeMemberKey` returns that key; otherwise none.
 - The member connection handshake, section 4: the stored key when it verifies the signature.
-- `createJoiningMember`, `createNewGroupMember`, `createIntroReMember`, `updateUnknownMemberAnnounced`, `updateRosterMemberAnnounced`, `updatePreparedChannelMember`, and `updateMemberProfile` in `acceptGroupJoinRequestAsync`: no key. In a channel the binding is complete without it; in a p2p group a join by `XContact` (unsigned JSON) or an introduction (the key is asserted by the introducer) yields no binding, and the member's badge arrives at the handshake. A relay's profile, from its link data, passes `Nothing`.
+- Introductions — `createNewGroupMember`, `createIntroReMember`, `updateUnknownMemberAnnounced`: the key in the `MemberInfo`.
+- Channel sites — `updateRosterMemberAnnounced`, `updatePreparedChannelMember`, a join via a relay (`createJoiningMember`, `updateMemberProfile`): no key; the channel binding is complete without it.
+- A join by `XContact` to a p2p group: the request header (section 14.3).
+- A relay's profile, from its link data: `Nothing`.
 
-So in a channel a badge is accepted from any profile message: from `XMember` when the member joins, from the introduction by a relay, and from `XInfo`. The binding names the member id and the group only, and a proof can be replayed only for the member who made it. In a p2p group a badge is accepted only from a message whose signature was verified under the member's key; `withVerifiedMsg` treats signatures as optional there, so the check is made at the three sites above.
+In a channel a badge is accepted from any profile message: from `XMember` when the member joins, from the introduction by a relay, and from `XInfo`. In a p2p group a badge is accepted from a message whose signature was verified under the member's key, from an introduction under the key it introduces, and from a join request under the request header.
 
 ## 4. The member connection handshake
 
 When two p2p members connect, each sends `XGrpMemInfo` with its group profile. It is sent from two places: the reply on the member connection (`Subscriber.hs:843`) and the join of the member connection and of the direct connection to the same member (`:3336`, both joined with the same message at `:3345-3347`). The four receiving sites — `:615, 647` on the direct connection, `:837, 850` on the member connection — each have a "TODO update member profile" comment.
 
-`XGrpMemInfo` is not in `requiresSignature`: the recipient enforces that list only in channels, where the handshake does not occur, and a signature needs the binary encoding, which the peer version decides. Instead `groupMsgSigning` signs `XGrpMemInfo` when its profile carries a badge, and the badge is presented only when the peer version is at least `relayWebCapVersion`, so a presented badge is always signed. The recipient keeps a badge only from a verified signature, so a profile without a badge needs none.
+`XGrpMemInfo` is not in `requiresSignature`: the recipient enforces that list only in channels, where the handshake does not occur, and a signature needs the binary encoding, which the peer version decides. Instead `groupMsgSigning` signs `XGrpMemInfo` when its profile includes a badge, and the badge is presented only when the peer version is at least `relayWebCapVersion`, so a presented badge is always signed. The recipient keeps a badge only from a verified signature, so a profile without a badge needs none.
 
 - **Sign the join side.** `xGrpMemFwd` sends `encodeConnInfo $ XGrpMemInfo ...` (`:3336`), plain JSON. It takes `GroupInfoKeys` from the dispatch and encodes with `encodeSignedConnInfo` when `groupMsgSigning` returns a signing. The agreed version is computed below the send, as `chatV`; that computation moves above it, and the badge is presented when `chatV` is at least `relayWebCapVersion`.
 - **The reply side** (`:843`) presents the badge when `peerChatVRange` of the connection allows, and `allowAgentConnectionAsync` signs by the same rule.
@@ -256,55 +259,266 @@ The six proof columns are the fields of `BadgeProof` — the proof, the presenta
 ## 13. Tests
 
 - `BadgeTests.hs`: each header encodes and decodes; a proof generated with one header fails with another; the key check accepts an unknown key, accepts an equal key, rejects a different one.
-- `ChatTests/Profiles.hs`, beside the seven badge tests: a badge in a p2p group appears at the other member after the connection handshake and not before; a proof presented under another member's binding is rejected; a badge in a channel appears on presentation. Existing tests that assert a badge at introduction time are updated.
+- `ChatTests/Profiles.hs`, beside the seven badge tests: a badge in a p2p group is shown at the other member from the introduction and from the connection handshake; a proof presented under another member's binding is ignored; a badge in a channel is shown on presentation. The tests of section 14.3 follow.
 - `ChatTests/Files.hs`, beside `testXFTPGroupFileTransfer`: a file above the default limit from a badge holder is received in a group and in a direct chat; an invitation whose proof was made for another member is refused; a description with a changed hash fails before download; a file above the limit received as history is received by the new member; a forward into an incognito membership above the default limit fails the command before any upload.
 - `ProtocolTests.hs`: the new fields in `FileInvitation` and `XMsgFileDescr`.
 
-## 14. Direct chats
+## 14. Bindings in every chat
 
-The binding of a direct chat is the ratchet associated data, `rcAD = k1_snd ‖ k1_rcv` (simplexmq `Ratchet.hs:498`), hashed: the value `getConnectionRatchetAdHash` returns, already the `CBDirect` payload of file proofs and shared contact cards. A contact request to an address without ratchet keys has no ratchet yet; its binding is the request itself. Both are made available by the agent before the chat composes the message, so every profile message is bound and nothing is sent after connection. Implementation starts in simplexmq, in `/code/simplexmq-4`; the chat then builds against it.
+Every profile badge is bound to the chat it is shown in. The sender presents the proof under the header of that chat; the receiver computes the expected header and accepts the proof only under it. Implementation starts in simplexmq, in `/code/simplexmq-4`; the chat then builds against it.
 
-### 14.1 Agent
+Rules:
 
-**Second verification code.** `RatchetInitParams` gains `rcVerifyCodePQ` and `Ratchet` gains `rcVCPQ :: Maybe Str`. `pqX3dh` expands the KDF to 128 bytes with `hkdf4` and takes the last 32 as the code; the first 96 bytes are the same output as today, so peers on either version derive the same keys, and `rcAD` stays the AEAD associated data. It is not associated data itself — it is exported keying material, the fourth of the paper's mitigations, and it covers every handshake input, the KEM included. A ratchet created before this change decodes with `rcVCPQ = Nothing`, and the value cannot be computed for it afterwards — the handshake secrets are gone — so it appears at the next ratchet resync or not at all. For that reason the chat keeps using the AD code, `codeAD`, for the security code and for badge bindings; `codePQ` is stored now and used when connections have it.
+1. A ratchet held by both sides: the ratchet code.
+2. A connection request before the ratchet: the request code — the proposing party's X448 keys and the id of the queue the joining party sends to.
+3. A link shown to anyone who holds it: the link key.
+4. A group: the member identity.
 
-**Columns.** Migration `M20260919_ratchet_ad`, SQLite and Postgres, both schema dumps: `ratchets` gains `ratchet_ad BLOB` and `ratchet_ad_pq BLOB` (`BYTEA` on Postgres). `createRatchet` and `createSndRatchet` write both, also through their `ON CONFLICT` update, which is how a resync recreates the ratchet.
+| Context | Received by | Header |
+|---|---|---|
+| Direct chat: `XInfo`, `CONF` and `INFO` replies, accept, one-time link join, member contacts | contact | `PHChat (encodeChatBinding CBDirect codeAD)` |
+| Request to an address with ratchet keys | address owner | `PHChat (encodeChatBinding CBDirect codeAD)` |
+| Request to an address without ratchet keys | address owner, group host | `PHRequest code` — the joining party's keys, the address queue |
+| One-time invitation link data | joining party | `PHRequest code` — the inviter's keys, the invitation queue |
+| Address link data, shared address card | anyone with the link | `PHChat (encodeChatBinding CBLink linkKey)` |
+| P2p group | members | `PHChat (encodeChatBinding CBGroup (smpEncode (memberId, memberKey)))` |
+| Channel | subscribers | `PHChat (encodeChatBinding CBGroup (smpEncode (publicGroupId, memberId)))` |
 
-One store function, `getRatchetADs :: DB.Connection -> [ConnId] -> IO (Map ConnId (ByteString, Maybe ByteString))`, serves one id or many, with one SELECT and at most one batched UPDATE:
+An address is a contact address, a business address, or a group link. The link key is part of the link: `sha3_256` of the fixed link data — the root key, the entity id, and the connection request with its server and queue id (`ShortLink.hs:61-64`).
+
+### 14.1 Agent: verification codes
+
+Merged in simplexmq `5294b7d8`.
+
+**Second verification code.** `RatchetInitParams` gains `rcVerifyCodePQ` and `Ratchet` gains `rcVCPQ :: Maybe Str`. `pqX3dh` derives the code with a separate HKDF over the same inputs, info `SimpleXVerifyCode`, 32 bytes; the ratchet keys and `rcAD` are unchanged. It is not associated data itself — it is exported keying material, the fourth of the paper's mitigations, and it covers every handshake input, the KEM included. A ratchet created before this change decodes with `rcVCPQ = Nothing`, and the value cannot be computed for it afterwards — the handshake secrets are gone — so it appears at the next ratchet resync or not at all. For that reason the chat keeps using the AD code, `codeAD`, for the security code and for badge bindings; `codePQ` is stored now and used when connections have it.
+
+**Columns.** Migration `M20260919_ratchet_verify_codes`, SQLite and Postgres, both schema dumps:
 
 ```sql
-SELECT conn_id, ratchet_ad, ratchet_ad_pq, CASE WHEN ratchet_ad IS NULL THEN ratchet_state END
-FROM ratchets
-WHERE conn_id IN (?, ?, ...)
+ALTER TABLE ratchets ADD COLUMN rc_verify_code_ad BLOB;
+ALTER TABLE ratchets ADD COLUMN rc_verify_code_pq BLOB;
 ```
 
-The blob column is NULL in every row that has `ratchet_ad`, so an established connection costs one small row and no JSON decoding. Rows are `(ConnId, Maybe ByteString, Maybe ByteString, Maybe RatchetX448)`; a row with the AD is used as is; a row with the blob is decoded for `rcAD` and `rcADPQ` and collected; a row with neither (a ratchet row holding only x3dh keys, before CONF) is skipped. The collected rows are written back with one `executeMany "UPDATE ratchets SET ratchet_ad = ?, ratchet_ad_pq = ? WHERE conn_id = ?"`. On Postgres the list is `In connIds`; on SQLite the placeholder list is built from the id count, in chunks of 500 to stay under the variable limit. Only a NULL `ratchet_ad` selects the blob: `ratchet_ad_pq` stays NULL for a ratchet created before the change and never causes a second read.
+`BYTEA` on Postgres. `createRatchet` and `createSndRatchet` write both, also through their `ON CONFLICT` update, which is how a resync recreates the ratchet.
 
-`getConnectionVerifyCodes` uses it with one id, `getConnectionsVerifyCodes` with many; both return `ConnVerifyCodes {codeAD, codePQ}`, defined in `Agent/Protocol.hs`, where `codeAD = sha256 rcAD` and `codePQ` is the PQ code as derived.
+One store function, `getRatchetVerifyCodes :: DB.Connection -> [ConnId] -> IO (Map ConnId ConnVerifyCodes)`, serves one id or many:
 
-**Prepare step.** `prepareConnectionToJoin` returns `(ConnId, ConnVerifyCodes)`, the binding for the message the chat composes next:
+```sql
+SELECT conn_id, rc_verify_code_ad, rc_verify_code_pq, CASE WHEN rc_verify_code_ad IS NULL THEN ratchet_state END
+FROM ratchets
+```
 
-- `CRInvitationUri`: creates the sender ratchet (`createRatchet_`, local — the link's keys and a fresh keypair) and returns its codes.
+- A row with `rc_verify_code_ad` is used as is.
+- A row with the ratchet state is decoded, and its codes are computed and saved.
+- A row with x3dh keys only is skipped.
+- SQLite: one SELECT per id; the computed codes are saved with one `executeMany` UPDATE.
+- Postgres: one SELECT with `In connIds`; the computed codes are saved with one `UPDATE ... FROM (VALUES ...) RETURNING`; codes saved by a concurrent read are kept.
+
+It is used by `getConnectionVerifyCodes` with one id, with `CONN NOT_FOUND` for a connection without codes, and by `getConnectionsVerifyCodes` with many. The result is `ConnVerifyCodes {codeAD, codePQ}`, defined in `Agent/Protocol.hs`, where `codeAD = sha256 rcAD` and `codePQ` is the PQ code as derived.
+
+**Prepare step.** The result of `prepareConnectionToJoin` is `(ConnId, ContactRequestBinding)`, the binding for the message the chat composes next:
+
+```haskell
+data ContactRequestBinding = CRBRatchet ConnVerifyCodes | CRBRequest ByteString
+```
+
+- `CRInvitationUri`: the sender ratchet is created (`createRatchet_`, local — the link's keys and a fresh keypair); the binding is `CRBRatchet` of its codes.
 - `CRContactUri` with ratchet keys: the same, from the address keys.
-- `CRContactUri` without keys: generates the x3dh keys (`generateRcvE2EParams`, `createRatchetX3dhKeys`) and returns `codeAD = sha256 (k1 ‖ k2 ‖ kem ‖ senderId)` with no `codePQ` — the request's public keys and the queue id from the link's `SMPQueueUri`.
+- `CRContactUri` without keys: the x3dh keys are generated and stored (`generateRcvE2EParams`, `createRatchetX3dhKeys`); the binding is `CRBRequest (sha256 (smpEncode (k1, k2, kem, senderId)))` — the request's public keys and the queue id from the link's `SMPQueueUri`. The PQ key is removed from this code in section 14.2.
 
 `prepareConnectionToAccept` returns the same pair: for `CRInvitation` it creates the ratchet from the invitation's keys, for `CRInvitationDR` it takes the ratchet stored in the invitation. `startJoinInvitation` reads the ratchet before creating one, as the contact path and its retry branch already do; `createConnReq` reads the x3dh keys before generating them, as `mkJoinInvitation` does. Async joins and accepts then find the ratchet in place. Nothing in the prepare step touches the network.
 
-**Events.** `REQ` gains a `ConnVerifyCodes` field: `smpInvitation` computes `codeAD` from the received `CRInvitationUri` and the queue it arrived on; `smpContactRequest` passes the codes of the ratchet it initialised. `CONF` and `INFO` are unchanged: the receiver's ratchet is stored before the notification, so the getter serves. A request without a ratchet proves no key possession; X448 keys cannot sign, and a forged request with copied public keys shows the badge in the request list and then fails to connect — accepted.
+**Events.** A `ContactRequestBinding` field in `REQ`: `CRBRequest` in `smpInvitation`, computed from the received `CRInvitationUri` and the queue of the request; `CRBRatchet` in `smpContactRequest`, from the ratchet initialised there. `CONF` and `INFO` are unchanged: the receiver's ratchet is stored before the notification, so its codes are available to `getConnectionVerifyCodes`.
 
 **Tests.** `DoubleRatchetTests`: the parties agree on `rcVerifyCodePQ`, a substituted KEM key makes it differ while `assocData` matches, and a ratchet stored before the change decodes with `rcVCPQ = Nothing`. `FunctionalAPITests`: both peers get the same codes, and codes cleared from a row are recomputed and saved on the next read.
 
-### 14.2 Chat
+### 14.2 Agent: links before link data
 
-The chat uses `codeAD` — for the security code it shows today and for every badge binding. `codePQ` is stored by the agent and used later, once connections have it on both sides; a ratchet created before the change never does without a resync.
+Files: `Agent.hs`, `Agent/Protocol.hs`, `tests/AgentTests/FunctionalAPITests.hs`.
 
-`presentUserBadge` takes the binding, `Maybe ByteString`, for both chat kinds — `sndGroupChatBinding gInfo False` for a group, `codeAD` for a direct chat — and generates `PHChat`; the `PHTest` branch, `unboundProof` and the `PHTest` acceptance go.
+Every link, and every invitation, is available to the chat before its link data is signed; each creation makes one network request.
 
-Sending: a join via one-time link (`Commands.hs:3826`, member contact `:3408`, `Subscriber.hs:3933`) and a request (`joinContact`, `Commands.hs:3980`) use the value from `prepareConnectionToJoin`; accepting (`Internal.hs:998, 1010`) the value from `prepareConnectionToAccept`; INFO (`Subscriber.hs:505` direct case, `:624`) the getter on the connection; `XInfo` to contacts (`Commands.hs:4062, 4095`, `presentUserBadgeToContacts`) the bulk getter, once per command.
+**New links.** The link, and for an invitation the invitation, are returned by `prepareConnectionLink` before the user data is signed, in both connection modes:
 
-Receiving: `updateContactProfile` (`Direct.hs:566`), `createContact_` (`Shared.hs:419`), the request sites (`ContactRequest.hs:170, 237`) and `linkDataBadge` take `Maybe ByteString` and verify with `boundProof`; `processContactProfileUpdate` (`Subscriber.hs:2758`) and the contact creation at CONF (`:3173`) pass the getter's value, the request sites the `REQ` field. After a resync the value changes on both sides; a badge received under the old one fails and is re-verified with the next update, which `badgeNeedsReverify` already does.
+```haskell
+prepareConnectionLink :: ConnectionModeI c => AgentClient -> UserId -> SConnectionMode c -> C.KeyPairEd25519 -> Maybe ByteString -> Bool -> Maybe CRClientData -> CR.InitialKeys -> UseRatchetKeys -> Maybe SMPServerWithAuth -> AE (CreatedConnLink c, PreparedLinkParams)
 
-Link data: bound to the link key with a new `ChatBinding` constructor, `CBLink`, payload `strEncode linkKey` from `CSLContact` or `CSLInvitation`, which both the owner and anyone with the link hold. The key is derived from local data (`encodeSignLinkData`), so `prepareConnectionLink` is generalised to addresses and invitation links and the badge is bound before `createConnectionForLink` uploads the data; updates (`setMyAddressData`, `updatePCCShortLinkData`) already hold the link.
+createConnectionForLink :: ConnectionModeI c => AgentClient -> NetworkRequestMode -> UserId -> Bool -> CreatedConnLink c -> PreparedLinkParams -> UserConnLinkData c -> SubscriptionMode -> AE (ConnId, CreatedConnLink c)
+```
+
+- The link entity id is optional; `Nothing` for an invitation.
+- A new field in `PreparedLinkParams`:
+
+  ```haskell
+  plpInvitationKeys :: Maybe (RcvE2EPrivRatchetParams 'C.X448)
+  ```
+
+- Contact mode is unchanged; the link given to `createConnectionForLink` is returned.
+- Invitation mode, prepare:
+  - x3dh keys from `CR.generateRcvE2EParams`, PQ support from `CR.initialPQEncryption True pqInitKeys`
+  - `connReq = CRInvitationUri crData e2eRcvParams`, queue mode `QMMessaging`
+  - the returned link is `CCLink connReq Nothing`; the key is `plpLinkKey`
+  - `useDR` is ignored
+- Invitation mode, create:
+  - `plpInvitationKeys` are stored with `createRatchetX3dhKeys`
+  - link data: `SL.encodeSignUserData SCMInvitation`, encrypted with `SL.invShortLinkKdf plpLinkKey`
+  - queue request: `CQRMessaging (Just CQRData {linkKey, privSigKey, srvReq = (sndId, srvData)})`
+  - the returned link: from `connReqWithShortLink`, moved from `newRcvConnSrv` to top level — `CSLInvitation` with the link id from the server, PQ keys removed from the full link for `IKPQOn`
+- Tests: a connection via an invitation made by prepare and create; its link data is read by the joining party; `plpLinkKey` equals the key in the returned `CSLInvitation`. The six existing test calls are updated for the mode and the pair.
+
+**Existing connections.** The link of a connection is returned without a network call:
+
+```haskell
+prepareConnShortLink :: AgentClient -> ConnId -> Maybe CRClientData -> Maybe CR.InitialKeys -> AE (ConnShortLink 'CMContact)
+```
+
+- A stored link is returned as is.
+- Otherwise the address ratchet keys are chosen from `InitialKeys` (`addressRatchetKeys`), and the credentials are created and stored (`newContactLinkCreds`): the signing key pair is generated, the fixed data is built, signed and encrypted (`SL.encryptFixedData`), and `ShortLinkCreds` are stored.
+- `setConnShortLink` uses the same two functions for a connection without stored credentials, and then encrypts and uploads the user data with one `LSET`.
+- Tests: for an address without a short link, the link is the same from two `prepareConnShortLink` calls and from `setConnShortLink`; a requester connects via it.
+
+**Invitation code.** Exported:
+
+```haskell
+invitationRequestCode :: ConnectionRequestUri 'CMInvitation -> ByteString
+```
+
+- `requestCode` (`Agent.hs:1423-1424`) of the invitation's X448 keys and the sender id of its first queue.
+- The PQ key is removed from `requestCode`: `sha256 (smpEncode (k1, k2, sndId))`, for requests and invitations alike, so the full link of an invitation created with `IKPQOn`, which is stored without the PQ key, gives the same code as its link data.
+- Tests: the code of a prepared invitation equals the code of the invitation read from its link data and the code of its full link.
+
+### 14.3 Chat
+
+Todo, in implementation order. At every send, a `Nothing` from a header helper is replaced by `unboundPresHeader`.
+
+**1. Headers** — `Badges.hs`, `Protocol.hs`
+
+- `PHRequest ByteString` in `ProofPresHeader`, tag `'R'`.
+- `CBLink` in `ChatBinding`, tag `'L'`; payload: the link key bytes.
+- `acceptedProof :: Maybe ProofPresHeader -> BadgeProof -> Bool`: true for `PHTest`, and for a header equal to `strEncode` of the expected one. `unboundProof` and `boundProof` are replaced by it.
+- `ToField` and `FromField` for `ProofPresHeader`: the `strEncode` bytes as a blob.
+
+**2. Ignored proofs** — `Types.hs`, store modules
+
+- A proof rejected by `acceptedProof` is ignored.
+- At creation no badge is stored: `createContact_`, `createContactRequest` (`ContactRequest.hs:170`), `createJoiningMember`, `createNewMemberProfile_`.
+- At update the stored badge is kept: the badge to store and its verification are returned by `profileBadgeVerified` — for a rejected proof, the stored proof and its stored verification. Used in `updateContactProfile`, `updateMemberProfile`, `updateContactMemberProfile`, and the request update (`ContactRequest.hs:237`).
+- The predicate is removed from `verifyBadge_`. `BSFailed` is stored only for a failed BBS verification.
+
+**3. Expected header in the store**
+
+The expected header, `Maybe ProofPresHeader`, is a parameter of:
+
+- `updateContactProfile`
+- `createDirectContact`
+- `createPreparedContact`
+- `createOrUpdateContactRequest`
+- `updateMemberProfile`
+- `updateContactMemberProfile`
+- `createJoiningMember`
+- `createNewGroupMember`
+- `createIntroReMember`
+- `updateUnknownMemberAnnounced`
+- `updateRosterMemberAnnounced`
+- `updatePreparedChannelMember`
+- `setRelayLinkAccepted`
+- `updateRelayMemberData`
+
+`Nothing` for `createContact`, the preset contact card. The same parameter in `processMemberProfileUpdate`. In group callers the bindings computed today are wrapped with `PHChat <$>`.
+
+**4. Presenting** — `Internal.hs`
+
+```haskell
+presentUserBadge :: User -> Maybe i -> Maybe ProofPresHeader -> Profile -> CM Profile
+```
+
+With `Nothing`, no badge is presented. Header helpers:
+
+- `groupPresHeader :: GroupInfo -> Maybe ProofPresHeader` — `PHChat <$> sndGroupChatBinding gInfo False`
+- `directPresHeader :: ContactRequestBinding -> ProofPresHeader` — `PHChat (encodeChatBinding CBDirect codeAD)` for `CRBRatchet`, `PHRequest code` for `CRBRequest`
+- `linkPresHeader :: LinkKey -> ProofPresHeader` — `PHChat (encodeChatBinding CBLink key)`
+- a one-time invitation's header: `PHRequest (invitationRequestCode connReq)`
+- `unboundPresHeader :: CM ProofPresHeader` — `PHTest` of 16 random bytes
+- `connPresHeader :: Connection -> CM (Maybe ProofPresHeader)` — `directPresHeader . CRBRatchet` of `getConnectionVerifyCodes`; `Nothing` on error
+- `connsPresHeaders :: [Connection] -> CM (Map ConnId ProofPresHeader)` — the same from `getConnectionsVerifyCodes`
+
+**5. The binding from prepare steps**
+
+- `prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat, ContactRequestBinding)`
+- `prepareAgentJoin :: User -> Maybe Connection -> Bool -> ConnectionRequestUri c -> CM ((CommandId, ConnId), Maybe ContactRequestBinding)` — `Nothing` for an existing connection
+- `prepareAgentAccept :: User -> Bool -> InvitationId -> PQSupport -> CM ((CommandId, ConnId), ContactRequestBinding)`
+
+**6. Stored request header**
+
+Migration `M20260924_conn_pres_header`, SQLite and Postgres:
+
+```sql
+ALTER TABLE connections ADD COLUMN pres_header BLOB;
+```
+
+`BYTEA` on Postgres. Both schema dumps and `chat_query_plans.txt` are updated.
+
+- `createConnReqConnection`: the request header is a parameter, written to `pres_header`.
+- `getConnReqContact`: the result is `(ConnReqContact, Maybe ProofPresHeader)`, read from `via_contact_uri` and `pres_header`.
+
+**7. Direct sends**
+
+- `joinContact` (`Commands.hs:3973`): the header, `Maybe ProofPresHeader`, is a parameter, set in `connect'`, `joinPreparedConn'` and `connectContactViaAddress`:
+  - a relay group: `groupPresHeader`
+  - every other join: `directPresHeader` of the `prepareContact` binding for a new connection, the stored header for a retry
+- The branch on `gInfo_` for the badge (`Commands.hs:3976-3982`) is removed; the profile is still chosen by `gInfo_`.
+- `connectViaInvitation` (`Commands.hs:3819-3832`) and `connectMemberContact` (`:3398-3413`): the prepare binding for a new connection; `connPresHeader` for a prepared one.
+- `joinMemberContactAsync` (`Subscriber.hs:3931`): the header is a parameter, set in `xGrpDirectInv` to `directPresHeader` of the `prepareAgentJoin` binding.
+- `acceptContactRequest` (`Internal.hs:970-1000`): the prepare binding for a new connection; `connPresHeader` for an existing one.
+- `acceptContactRequestAsync` (`Internal.hs:1002-1021`): the profile is built after `prepareAgentAccept`, from its binding.
+- `CONF` replies (`Subscriber.hs:505` direct case, `:624`) and `updateContactPrefs` (`Commands.hs:4099`): `connPresHeader`.
+- `sendUpdateToContacts` (`Commands.hs:4033-4071`) and `presentUserBadgeToContacts` (`:5200-5216`): one `connsPresHeaders` call per command.
+
+**8. Direct receipts**
+
+- `REQ` (`Subscriber.hs:1396`): `directPresHeader` of the `REQ` binding is a parameter of `profileContactRequest`, passed to `createOrUpdateContactRequest` and to `acceptGroupJoinRequestAsync`.
+- `processContactProfileUpdate` (`Subscriber.hs:2758`): `connPresHeader` of the contact's connection, read in the update branch.
+- `saveConnInfo` (`Subscriber.hs:3173`): `connPresHeader` of the connection, for `createDirectContact`.
+
+**9. Groups**
+
+- `groupPresHeader` at every send into a group: `Commands.hs:4319`; `Subscriber.hs:505` group case, `:637`, `:826`, `:843`, `:970`, `:1252`, `:3356`; `Internal.hs:2656`.
+- `acceptGroupJoinRequestAsync`: the expected header is a parameter, in place of `binding_` (`Internal.hs:1044`) — `PHChat <$> memberChatBinding gInfo joiningMemberId Nothing` in `memberJoinRequestViaRelay`. `Nothing` in `acceptGroupJoinSendRejectAsync`.
+- Host `INFO` with `XInfo` (`Subscriber.hs:859-864`): after `storeMemberKey`, the profile is stored by `processMemberProfileUpdate` with `PHChat <$> signedMemberBinding`, under the member's key.
+- The profile is also stored by `processMemberProfileUpdate` when the new proof is accepted and its header differs from the stored proof's header.
+- Introductions:
+  - In `memberInfo` (`Internal.hs:1330`) the stored proof is included when `acceptedProof (PHChat <$> memberChatBinding g memberId memberPubKey)` holds, and omitted otherwise.
+  - In `xGrpMemNew`, `xGrpMemIntro` and `xGrpMemFwd` (`Subscriber.hs:3197, 3279, 3341`): `PHChat <$> memberChatBinding gInfo memId key`, with `key` from the `MemberInfo`.
+- Invitation via contact:
+  - `profile :: Maybe Profile` in `XGrpAcpt`, the optional JSON field `profile`.
+  - The invitee (`Commands.hs:2845`, `Subscriber.hs:2697`) includes its group profile, with `groupPresHeader`, when the maximum of the contact connection's `peerChatVRange` is at least `relayWebCapVersion`; the message is encoded with `encodeSignedConnInfo` when a signing is returned by `groupMsgSigning`.
+  - `XGrpAcpt` with a badge in its profile is signed by `groupMsgSigning` (`Internal.hs:2316-2319`).
+  - The host (`Subscriber.hs:786`) stores the key, then the profile with `PHChat <$> signedMemberBinding`.
+  - The host replies with `XGrpMemInfo` and its group profile in place of `XOk` (`Subscriber.hs:791`); the badge is presented when the invitee's version is at least `relayWebCapVersion`, as at `:840-846`.
+
+**10. Link data**
+
+- Invitation links (`APIAddContact`, `recreateConn`): the chat generates the root key pair and calls `prepareConnectionLink SCMInvitation`; the badge is presented with the header of the prepared invitation; then `createConnectionForLink` is called.
+- Invitation updates (`updatePCCShortLinkData`, `APISetConnectionIncognito`): the header of the stored invitation.
+- Address (`APICreateMyAddress`): `linkPresHeader` of the key in the prepared `CSLContact`.
+- Address updates (`setMyAddressData`): the key of the stored short link. For an address without a short link, the key is taken from `prepareConnShortLink`, then `setConnShortLink` is called once.
+- Receipts:
+  - `linkDataBadge` (`Internal.hs:2251`): the expected header is a parameter — the header of the invitation read with the link data for an invitation (`Commands.hs:4403-4404`), `linkPresHeader` of the link key for an address (`:4457-4458`).
+  - `createPreparedContact` (`Commands.hs:2203`): the same headers, from `accLink`; `Nothing` for an address without a short link.
+  - `updateContactFromLinkData` (`Internal.hs:1637`): the header of the address link is a parameter.
+- Shared address card:
+  - `APIShareMyAddress` (`Commands.hs:1243-1255`): the badge is presented with `linkPresHeader` of `connLink`.
+  - Receipts (`Subscriber.hs:1910-1916`, `:2217-2221`): the proof in `MCLContact.profile` is kept when accepted under `linkPresHeader` of `connLink` and verified, and removed otherwise.
+  - The badge from `profile.badge` is shown in `CIChatLinkHeader`, on iOS and in the multiplatform app.
+
+**11. Tests** — `ChatTests/Profiles.hs`
+
+- Direct: the badge is shown after a request to an address with and without ratchet keys, after accepting, after joining a one-time link, after a retried join, and after a profile update.
+- A proof bound to another chat is ignored, and the stored badge is kept.
+- P2p group: the joiner's badge is shown at the host at the request and after `INFO`; an introduced member's badge is shown at introduction; the badge is shown on both sides of an invitation via contact.
+- Link data: the badge is shown from an invitation link, an address, an address that gets its first short link, and a shared address card.
+
+`PHTest` is still sent by released clients and, through `unboundPresHeader`, on a retry of a connection prepared before this change.
 
 ## Out of scope
 
