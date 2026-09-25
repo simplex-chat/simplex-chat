@@ -104,7 +104,7 @@ Default to none. Add one only where behaviour or a consequence cannot be carried
 
 ## Open questions
 
-- **Will a browser follow the scheme without a gesture?** Safari and Chrome both block some automatic scheme navigations, and a blocked one can show an error page rather than nothing. *Return to SimpleX* exists for this; the question is only whether the automatic attempt is worth making.
+- **Will a browser follow the scheme without a gesture?** The attempt is made from a hidden frame, so a refusal stays inside the frame instead of replacing the screen with an error page and putting the code into history. Expect it to do nothing on iOS Safari, which has ignored custom schemes in frames for years, and on Chrome, which blocks an external-protocol launch with no user gesture — and a payment settling minutes after the last tap has none. So *Return to SimpleX* is the real path and the automatic attempt is a bonus where it happens to work. What remains is to try it on real devices once the app registers the scheme.
 - **Where the browser button is allowed.** Which markets, and whether the same answer governs both builds.
 
 ## Part 2: subscriptions

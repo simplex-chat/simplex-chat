@@ -688,6 +688,66 @@ domTest("screens: the code screen is the one screen that prints a code, with the
   assert.deepEqual(copied, [HELD_CODE]);
 });
 
+domTest("screens: opened from the desktop app, the code screen says the Redeem code screen is already open", () => {
+  const p = render(screens.codeIssued({ code: HELD_CODE, savedLocally: true, app: "desktop" }));
+  assert.ok(p.textContent.includes("Redeem it in the app"));
+  assert.ok(p.textContent.includes(screens.REDEEM_SCREEN_OPEN));
+  assert.ok(!p.textContent.includes(screens.REDEEM_IN_SETTINGS), "one way to redeem, the one already on screen");
+  assert.ok(p.textContent.includes(HELD_CODE), "and the code itself is unchanged");
+});
+
+domTest("screens: the return-to-app ending opens on the tick, offers the link and Show code, and prints no code", () => {
+  let returned = 0;
+  let shown = 0;
+  const p = render(screens.returnToApp({
+    onReturn: () => { returned += 1; },
+    code: { kind: "hidden", onShow: () => { shown += 1; } },
+  }));
+  assert.equal(p.children[0], p.all("div.tick")[0], "the payment went through, and this is the first thing that says so");
+  assert.equal(p.all("div.tick")[0]!.textContent, "✓");
+  assert.equal(p.all("h1")[0]!.textContent, "Paid");
+  assert.ok(p.textContent.includes("Opening SimpleX to add your badge."));
+  assert.ok(p.textContent.includes("If nothing happens, use the button."));
+  assertNoCode(p, "the return-to-app ending");
+  p.all("button.primary").find((b) => b.textContent === screens.RETURN_TO_APP)!.click();
+  p.all("button.link").find((b) => b.textContent === screens.SHOW_CODE)!.click();
+  assert.deepEqual([returned, shown], [1, 1]);
+});
+
+domTest("screens: Show code reveals the code in place, under a Return to SimpleX that stays, and with no QR", () => {
+  copied.length = 0;
+  let returned = 0;
+  const p = render(screens.returnToApp({
+    onReturn: () => { returned += 1; },
+    code: { kind: "shown", code: HELD_CODE, savedLocally: true },
+  }));
+  assert.equal(p.all("h1")[0]!.textContent, "Paid", "the ending stays the ending");
+  assert.equal(p.all("div.tick").length, 1);
+  assert.equal(p.all("div.code")[0]!.textContent, HELD_CODE);
+  assert.equal(p.all("button").filter((b) => b.textContent === screens.SHOW_CODE).length, 0, "Show code has given way");
+  assert.equal(p.all("svg").filter((s) => s.getAttribute("class") === "qr").length, 0,
+    "the buyer is already on the phone, so there is nothing to scan it to");
+  assert.ok(!p.textContent.includes("scan to carry it to your phone"));
+  for (const line of ["Redeem it in the app", screens.REDEEM_IN_SETTINGS, "This is the only copy.",
+    "Saved in this browser and nowhere else."]) {
+    assert.ok(p.textContent.includes(line), `the revealed code is missing: ${line}`);
+  }
+
+  p.all("button.primary").find((b) => b.textContent === "Copy code")!.click();
+  assert.deepEqual(copied, [HELD_CODE], "the copy control copies the code");
+  p.all("button.primary").find((b) => b.textContent === screens.RETURN_TO_APP)!.click();
+  assert.equal(returned, 1, "and the link is still one tap away");
+});
+
+domTest("screens: the launcher is a hidden frame out of the tab order, pointed at the link", () => {
+  const f = render(screens.appLauncher("simplexchat:/badge/code/X"));
+  assert.equal(f.tagName, "iframe");
+  assert.equal(f.getAttribute("src"), "simplexchat:/badge/code/X");
+  assert.ok(f.hasAttribute("hidden"));
+  assert.equal(f.getAttribute("aria-hidden"), "true");
+  assert.equal(f.getAttribute("tabindex"), "-1");
+});
+
 domTest("screens: the code screen drops its saved-copy clause where the local write failed", () => {
   const p = render(screens.codeIssued({ code: HELD_CODE, savedLocally: false }));
   assert.ok(p.textContent.includes("This code could not be saved in this browser."));
