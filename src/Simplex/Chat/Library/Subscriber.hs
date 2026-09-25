@@ -1404,8 +1404,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           True -> case parseServiceBody payload of
             Right request -> toView $ CEvtServiceRequest user (AgentInvId invId) sigKey_ request
             Left e -> logError ("service request dropped, invalid payload: " <> tshow e) >> dropSReq
-          -- the requester gets no reply and waits out its timeout, so this must be visible
-          -- to whoever deployed the service without enabling service requests
+          -- logged, not silent: this is a deployment mistake, and the requester only sees a timeout
           False -> logError "service request dropped: service requests are not enabled" >> dropSReq
         where
           dropSReq = withAgent $ \a -> rejectServiceRequest a NRMBackground (aUserId user) invId Nothing

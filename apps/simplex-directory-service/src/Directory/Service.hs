@@ -137,8 +137,8 @@ newServiceState opts = do
   serviceRequestsInFlight <- newTVarIO 0
   pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, serviceCC, eventQ, updateListingsJob, serviceRequestsInFlight}
 
--- bounds the LIKE scan an unauthenticated request can demand;
--- no substring of a name or description worth matching is longer
+-- anyone can search without connecting first, so limit the work one request can ask for.
+-- No name or description is long enough for a longer search term to be useful.
 maxSearchTextLength :: Int
 maxSearchTextLength = 100
 
@@ -357,7 +357,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
   where
     deServiceRequest :: AgentInvId -> J.Object -> IO ()
     deServiceRequest reqId req = do
-      -- the loop is shared with registrations and captchas, so the bound is on the forked handlers
+      -- the event loop is shared with registrations and captchas, so the bound is on the forked handlers
       accepted <- atomically $ stateTVar serviceRequestsInFlight $ \n ->
         if n < maxServiceRequestsInFlight then (True, n + 1) else (False, n)
       if accepted
@@ -365,8 +365,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         else reject "service is busy"
       where
         releaseSlot = atomically $ modifyTVar' serviceRequestsInFlight (subtract 1)
-        -- runs on the shared event loop, so it must not block on the network: the reject
-        -- is enqueued, like the response is
+        -- this runs on the shared event loop, so the reject is enqueued rather than sent here
         reject reason =
           sendChatCmd cc (APIRejectServiceRequest userId reqId $ Just reason) >>= \case
             Right _ -> pure ()

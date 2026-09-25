@@ -15,8 +15,8 @@ data SearchRequest = SearchRequest
     searchCursor :: SearchCursor
   }
 
--- Position of the last sent row in the sort order of its search type. Each mode
--- reads the value it sorts by; the group ID breaks ties, as neither sort key is unique.
+-- Where the last page ended: each search mode reads the field it sorts by, and the group ID
+-- breaks ties, because member counts and timestamps are not unique.
 data SearchCursor = SearchCursor
   { lastMembers :: Int64,
     lastCreatedAt :: UTCTime,

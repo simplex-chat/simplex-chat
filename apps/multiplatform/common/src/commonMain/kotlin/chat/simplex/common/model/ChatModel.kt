@@ -45,9 +45,8 @@ import kotlin.collections.ArrayList
 import kotlin.random.Random
 import kotlin.time.*
 
-// A directory search and a connection can overlap - tapping a result starts a connection while
-// the search is still running - so the single progress slot records its owner: a late search
-// result must not clear the spinner that now belongs to the connection.
+// There is one spinner, and a search and a connection can run at once - tapping a result starts
+// connecting while the search is still going - so it records which of them it belongs to.
 enum class ConnectProgressOwner { Connect, DirectorySearch }
 
 object ConnectProgressManager {
@@ -68,6 +67,7 @@ object ConnectProgressManager {
     }
   }
 
+  // a search finishing late must not stop the spinner if a connection has taken it over
   fun stopConnectProgress(owner: ConnectProgressOwner = ConnectProgressOwner.Connect) {
     if (this.owner != null && this.owner != owner) return
     connectInProgress.value = null
@@ -76,7 +76,7 @@ object ConnectProgressManager {
     connectProgressByTimeout.value = false
   }
 
-  // a user-initiated cancel, and the takeover in planAndConnect, cancel whatever is running
+  // unlike stopConnectProgress, this cancels whoever owns the spinner
   fun cancelConnectProgress() {
     val cancel = onCancel
     owner = null

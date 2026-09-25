@@ -4,13 +4,11 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
-// The directory's contact address, as published in docs/DIRECTORY.md. It must be the short
-// link: only that form carries the address DR keys that service requests require, so the full
-// links on the What's New cards cannot be substituted here.
+// The directory's address, as published in docs/DIRECTORY.md. It must be the short link form -
+// only that one carries the keys a service request needs; a full link fails every time.
 const val DIRECTORY_SERVICE_LINK = "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok"
 
-// A service request is a full DR handshake, so it is slower than a local API call; the user
-// gets a cancellable spinner while it runs and a retry row if it times out.
+// A search sets up an encrypted connection, so it takes seconds, not milliseconds.
 const val DIRECTORY_SEARCH_TIMEOUT_SEC = 10.0
 
 @Serializable
@@ -52,8 +50,8 @@ fun directorySearchRequest(text: String, cursor: JsonObject?): JsonObject = buil
   if (cursor != null) put("searchCursor", cursor)
 }
 
-// The response is a tagged object: searchResults or error. Anything else is treated as a failure
-// rather than parsed leniently - it comes from outside the app.
+// Anything but a well-formed results response is a failure, not something to salvage: it comes
+// from another party, not from our own core.
 fun parseDirectorySearchResponse(resp: JsonObject): DirectorySearchResults? =
   when ((resp["type"] as? JsonPrimitive)?.contentOrNull) {
     "searchResults" -> {

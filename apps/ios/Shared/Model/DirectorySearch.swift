@@ -9,13 +9,11 @@
 import Foundation
 import SimpleXChat
 
-// The directory's contact address, as published in docs/DIRECTORY.md. It must be the short
-// link: only that form carries the address DR keys that service requests require, so the full
-// links on the What's New cards cannot be substituted here.
+// The directory's address, as published in docs/DIRECTORY.md. It must be the short link form -
+// only that one carries the keys a service request needs; a full link fails every time.
 let DIRECTORY_SERVICE_LINK = "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok"
 
-// A service request is a full DR handshake, so it is slower than a local API call; the user
-// gets a cancellable spinner while it runs and a retry row if it times out.
+// A search sets up an encrypted connection, so it takes seconds, not milliseconds.
 let DIRECTORY_SEARCH_TIMEOUT_SEC: Double = 10
 
 struct DirectoryPublicLink: Decodable, Hashable {
@@ -45,8 +43,8 @@ struct DirectorySearchEntry: Decodable, Hashable, Identifiable {
     var id: String { connectLink ?? displayName }
 }
 
-// entries stay as JSONValue so they can be decoded one by one: an entry the app cannot decode
-// must not fail the whole response, as it would on a future directory field
+// entries stay undecoded here so they can be decoded one at a time: one entry the app does not
+// understand, because a newer directory added a field, must not discard the whole response
 private struct DirectorySearchResponse: Decodable {
     var type: String
     var entries: [JSONValue]?
@@ -65,8 +63,8 @@ func directorySearchRequestJSON(_ text: String, _ cursor: JSONValue?) -> String 
     return encodeJSON(JSONValue.object(req))
 }
 
-// The response is a tagged object: searchResults or error. Anything else is a failure rather
-// than something to parse leniently - it comes from outside the app.
+// Anything but a well-formed results response is a failure, not something to salvage: it comes
+// from another party, not from our own core.
 func parseDirectorySearchResponse(_ resp: JSONValue) -> DirectorySearchResults? {
     guard let r: DirectorySearchResponse = decodeJSONValue(resp), r.type == "searchResults" else {
         return nil

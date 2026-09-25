@@ -9,21 +9,18 @@
 import SwiftUI
 import SimpleXChat
 
-// Results of searching the directory over the service RPC. They are not chats and are never
-// persisted: they live as long as the search text does.
+// Directory results are not chats and are never saved: they live as long as the search text does.
 @MainActor
 class DirectorySearchModel: ObservableObject {
     @Published private(set) var entries: [DirectorySearchEntry] = []
     @Published private(set) var loading = false
     @Published private(set) var failed = false
-    // set once a search has actually run, so the empty state can tell "not searched yet" from
-    // "searched and found nothing"
+    // tells "nothing searched yet" apart from "searched and found nothing"
     @Published private(set) var searched = false
 
     private var cursor: JSONValue? = nil
     private var searchedText = ""
-    // bumped on every reset, so a reply that arrives after the text, profile or host changed
-    // cannot repopulate a list the user has moved on from
+    // bumped on every reset, so a reply that arrives too late cannot refill a list already cleared
     private var generation = 0
 
     var hasMore: Bool { cursor != nil }
@@ -79,15 +76,12 @@ class DirectorySearchModel: ObservableObject {
             return
         }
         cursor = r.cursor
-        // the link is the identity of a result, so a row cannot appear twice across pages
         let known = Set(entries.map { $0.id })
         let fresh = r.entries.filter { !known.contains($0.id) }
         entries = append ? entries + fresh : fresh
     }
 }
 
-// Offered whenever there is search text, next to the connect-by-name row. Tapping it sends the
-// text to the directory.
 struct SearchInDirectoryRow: View {
     @EnvironmentObject var theme: AppTheme
     @FocusState.Binding var searchFocussed: Bool
@@ -159,8 +153,6 @@ struct DirectorySearchRow: View {
     }
 }
 
-// Shown before the first directory search of the session: the search text leaves the device,
-// so the user is told before it does, not after.
 func showDirectorySearchAlert(onSearch: @escaping () -> Void) {
     showAlert(
         NSLocalizedString("Search in Directory?", comment: "alert title"),

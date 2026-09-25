@@ -687,7 +687,6 @@ testSearchGroupsPaging ps =
       u <##. "Link to join the group "
       u <## (show count <> " members")
 
--- the app path: a client that is not a contact searches the directory over the service RPC
 testDirectorySearchRpc :: HasCallStack => TestParams -> IO ()
 testDirectorySearchRpc ps =
   withDirectoryService ps $ \superUser (dsShortLink, _) ->
@@ -706,7 +705,7 @@ testDirectorySearchRpc ps =
         cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"nonsense\"}")
         cath <## "service response: {\"errorMessage\":\"unsupported request\",\"type\":\"error\"}"
 
--- the contract the apps page by: the cursor is opaque, echoed back as received, and continues where the page stopped
+-- the cursor is echoed back exactly as received, which is what the apps do with it
 testDirectorySearchRpcPaging :: HasCallStack => TestParams -> IO ()
 testDirectorySearchRpcPaging ps =
   withDirectoryService ps $ \superUser (dsShortLink, _) ->
@@ -754,9 +753,8 @@ testDirectorySearchRpcBusy ps =
       cath ##> ("/_service_request 1 " <> dsShortLink <> " {\"type\":\"search\",\"searchText\":\"privacy\"}")
       cath <## "smp agent error: AGENT {agentErr = A_SERVICE {serviceError = ASERejected {rejectReason = \"service is busy\"}}}"
 
--- The response is read from the controller, not the terminal: an entry with a profile image is
--- longer than a terminal row, and a wrapped line reaches the test queue as its last row only.
--- The cursor stays a raw J.Value: echoing back what was received is the contract the apps follow.
+-- Read from the controller, not the terminal: an entry with an image is longer than a terminal
+-- row, and the test terminal only queues the last row of a line that wrapped.
 searchDirectory :: TestCC -> String -> String -> Maybe J.Value -> IO ([DirectorySearchEntry], Maybe J.Value)
 searchDirectory TestCC {chatController = cc} dsLink text cursor_ = do
   let req = J.object $ ["type" .= ("search" :: String), "searchText" .= text] <> maybe [] (\c -> ["searchCursor" .= c]) cursor_
@@ -781,7 +779,6 @@ searchEntryOnly u dsLink text = do
     ([e], Nothing) -> pure e
     _ -> fail $ "expected one entry and no cursor, got: " <> show (first (map entryName) r)
 
--- every field the app renders or connects with, for a group registered the ordinary way
 testDirectorySearchEntryFields :: HasCallStack => TestParams -> IO ()
 testDirectorySearchEntryFields ps =
   withDirectoryService ps $ \superUser (dsShortLink, dsLink) ->
@@ -826,9 +823,8 @@ testDirectorySearchChannelEntry ps =
           (B.unpack . strEncode <$> connShortLink) `shouldBe` Just shortLink
           isNothing connFullLink `shouldBe` True
 
--- searchEntry drops an image over maxProfileImageSize and relays the rest of the entry. No client
--- can send such a profile - group creation and profile update both check the size - and only the
--- receiving side stores one unchecked, so the bound is exercised on a real GroupInfo from the store.
+-- Tested directly rather than end to end: our own client checks the image size when a profile is
+-- created or updated, so only a group received from someone else can carry an oversize one.
 testSearchEntryImageBound :: HasCallStack => TestParams -> IO ()
 testSearchEntryImageBound ps =
   withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -852,8 +848,7 @@ testSearchEntryImageBound ps =
         isJust connShortLink `shouldBe` True
       Nothing -> expectationFailure "entry over the image bound was dropped"
 
--- an entry with a near-cap image nearly fills the envelope, so a page holds one and the cursor
--- must come from the last row included, not the last row read
+-- one entry with a large image nearly fills a response, so both groups match but only one is sent
 testDirectorySearchImagePaging :: HasCallStack => TestParams -> IO ()
 testDirectorySearchImagePaging ps =
   withDirectoryService ps $ \superUser (dsShortLink, dsLink) ->
@@ -869,7 +864,7 @@ testDirectorySearchImagePaging ps =
         page2 `shouldSatisfy` notElem (head page1)
         sort (page1 <> page2) `shouldBe` ["photos1", "photos2"]
 
--- the link behind a tap in the app is usable: cath joins with the short link from the entry
+-- the link in a result actually works: this is what happens when a user taps a row in the app
 testDirectorySearchJoinGroup :: HasCallStack => TestParams -> IO ()
 testDirectorySearchJoinGroup ps =
   withDirectoryService ps $ \superUser (dsShortLink, dsLink) ->
@@ -895,8 +890,6 @@ testDirectorySearchJoinGroup ps =
         bob <## "#privacy: 'SimpleX Directory' added cath (Catherine) to the group (connecting...)"
         bob <## "#privacy: new member cath is connected"
 
--- a real GroupInfo and its link from the owner's store, so a pure-function test does not
--- hand-build a 24-field record
 ownerGroup :: TestCC -> String -> IO (GroupInfo, Maybe GroupLink)
 ownerGroup TestCC {chatController = cc@ChatController {chatStore, currentUser}} gName = do
   u_ <- readTVarIO currentUser
@@ -925,8 +918,7 @@ registerGroupWithImage su u n descr gId = do
   groupAccepted u n gId
   void $ completeRegistrationId su u n descr gId gId
 
--- share the channel card with the directory, wait for it to join via the relay, and approve;
--- simplexName_ is the name line the admin sees when the channel has a verified domain
+-- simplexName_ is the extra line the admin sees when the channel has a verified domain
 registerChannel :: HasCallStack => TestCC -> TestCC -> TestCC -> String -> Maybe String -> IO ()
 registerChannel su u relay n simplexName_ = do
   uName <- userName u
@@ -971,8 +963,7 @@ channelFoundSubscribers u name = do
   line <- getTermLine u
   maybe (fail $ "unexpected subscribers line: " <> line) pure $ readMaybe (takeWhile (/= ' ') line)
 
--- the page is bounded by the envelope, not by searchResults: entries are cut from the end, the cursor
--- follows the last row consumed, and a lone oversize entry loses its image or is skipped
+-- what limits a page is the response size, not the configured page size
 testSearchResultsPage :: HasCallStack => TestParams -> IO ()
 testSearchResultsPage _ps = do
   g <- C.newRandom
@@ -2186,8 +2177,7 @@ withDirectoryService ps = withDirectoryServiceCfg ps testCfg
 withDirectoryServiceCfg :: HasCallStack => TestParams -> ChatConfig -> (TestCC -> (String, String) -> IO ()) -> IO ()
 withDirectoryServiceCfg ps cfg = withDirectoryServiceCfgOwnersGroup ps cfg False Nothing
 
--- the short link is the only form that carries the address DR keys, so service request tests
--- need it; tests that only connect take the full link and void the other
+-- passes both link forms: only the short one works for service requests, so those tests need it
 withDirectoryServiceCfgOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> Bool -> Maybe FilePath -> (TestCC -> (String, String) -> IO ()) -> IO ()
 withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup webFolder test = do
   dsLinks <-

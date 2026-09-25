@@ -36,7 +36,7 @@ data DirectorySearchEntry = DirectorySearchEntry
     displayName :: Text,
     simplexName :: Maybe Text,
     groupLink :: PublicLink,
-    -- stored text, not DirectoryEntry's MarkdownList: the apps parse markdown locally
+    -- plain text, not parsed markdown: the apps parse it themselves, and their format differs
     shortDescr :: Maybe Text,
     image :: Maybe ImageData,
     activeAt :: Maybe UTCTime,
@@ -61,8 +61,8 @@ responseObject resp = case J.toJSON resp of
   J.Object o -> o
   _ -> JM.fromList [("type", J.String "error"), ("errorMessage", J.String "internal error")]
 
--- The page is shrunk from the end until its compressed encoding fits the envelope, and the cursor is the
--- last row consumed. A lone entry that does not fit is retried without its image, then skipped, or paging would stall.
+-- Entries are dropped from the end until the response fits, so the cursor must point at the last row
+-- included, not the last one read. A single entry that still does not fit is skipped, or paging stalls on it.
 searchResultsPage :: (row -> SearchCursor) -> Bool -> [(row, Maybe DirectorySearchEntry)] -> DirectoryResponse
 searchResultsPage rowCursor storeHasMore rows = fit entryRows
   where
@@ -99,8 +99,7 @@ searchEntry now g@GroupInfo {groupProfile, chatTs, createdAt = groupCreatedAt, g
           -- the apps connect through the short link, and a full link is hundreds of bytes of the envelope
           groupLink = if isJust connShortLink then link {connFullLink = Nothing} else link,
           shortDescr,
-          -- a profile received from its owner is not size-checked, so bound what is relayed
-          -- rather than passing an arbitrarily large data URI on to the apps
+          -- an owner can put any size of image in the profile we store, so bound what we relay
           image = image >>= \img@(ImageData t) -> if T.length t > maxProfileImageSize then Nothing else Just img,
           activeAt = recentRoundedTime 900 now $ fromMaybe groupCreatedAt chatTs,
           createdAt = recentRoundedTime 86400 now groupCreatedAt

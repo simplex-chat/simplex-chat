@@ -2443,8 +2443,7 @@ encodeConnInfoPQ pqSup chatMsgEvent = do
   let info = ChatMessage {chatVRange = vr cxt, msgId = Nothing, chatMsgEvent}
   case encodeChatMessage maxEncodedInfoLength info of
     ECMEncoded connInfo -> case pqSup of
-      -- with PQ off the budget is larger, so compressing is wasted work; service payloads need no
-      -- such gate because the request JOIN is PQSupportOn and the reply inherits it
+      -- with PQ off the size budget is larger, so the body always fits and compressing is wasted work
       PQSupportOn -> maybe (throwChatError $ CEException "large compressed info") pure $ compressBodyTo maxCompressedInfoLength connInfo
       _ -> pure connInfo
     ECMLarge -> throwChatError $ CEException "large info"

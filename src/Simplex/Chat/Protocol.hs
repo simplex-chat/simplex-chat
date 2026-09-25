@@ -1039,7 +1039,6 @@ markCompressedBatch :: ByteString -> ByteString
 markCompressedBatch = B.cons 'X'
 {-# INLINE markCompressedBatch #-}
 
--- Compress a body that is over the bound, and fail when it is still over it compressed.
 compressBodyTo :: Int -> ByteString -> Maybe ByteString
 compressBodyTo maxLen body
   | B.length body <= maxLen = Just body
@@ -1048,9 +1047,8 @@ compressBodyTo maxLen body
   where
     body' = compressedBatchMsgBody_ body
 
--- Service payloads are padded to e2eEncConnInfoLength, the same budget as connection info,
--- so they use the compression, marker and size bound of encodeConnInfoPQ. A JSON payload
--- never starts with 'X', so the marker is unambiguous.
+-- A service payload is padded to the same size as connection info, so it gets the same bound.
+-- JSON never starts with 'X', so that marker unambiguously means the body is compressed.
 compressServiceBody :: ByteString -> Either String ByteString
 compressServiceBody = maybe (Left "service payload is too large") Right . compressBodyTo maxCompressedInfoLength
 
@@ -1067,8 +1065,8 @@ decompressServiceBody body = case B.uncons body of
     Right _ -> Left "unexpected compressed batch"
   _ -> Right body
 
--- The apps decode a service payload recursively on a fixed stack, and no service nests deeper
--- than a few levels, so depth is bounded here rather than left to each client.
+-- The apps decode this payload recursively on a small stack, so deep nesting crashes them.
+-- Bounded here rather than in each client, as no service needs more than a few levels.
 maxServiceBodyDepth :: Int
 maxServiceBodyDepth = 32
 

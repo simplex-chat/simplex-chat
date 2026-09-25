@@ -433,8 +433,7 @@ struct ChatListView: View {
 
     @ViewBuilder private var chatList: some View {
         if shouldShowOnboarding {
-            // the onboarding content stays, but below a live search bar rather than instead of
-            // it: a user with no conversations is exactly who needs to find some
+            // the search bar is shown here too: someone with no chats yet is who most needs to find some
             VStack(spacing: 0) {
                 ChatListSearchBar(
                     searchMode: $searchMode,
@@ -501,8 +500,6 @@ struct ChatListView: View {
         return ZStack {
             ScrollViewReader { scrollProxy in
                 List {
-                    // always shown: the search field is now the way to discover chats, not only
-                    // to filter the ones that already exist
                     ChatListSearchBar(
                         searchMode: $searchMode,
                         searchFocussed: $searchFocussed,
@@ -636,7 +633,7 @@ struct ChatListView: View {
                     }
                 }
             }
-            // the overlay covers the list, so it yields to the directory section and its own empty and retry rows
+            // this covers the whole list, so it must not hide the directory section or its own messages
             if cs.isEmpty && !chatModel.chats.isEmpty && !directorySearch.showResults {
                 noChatsView()
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -921,7 +918,6 @@ struct ChatListSearchBar: View {
             withAnimation { searchMode = sf }
         }
         .onChange(of: searchText) { _ in
-            // results belong to the text that produced them
             directorySearch.reset()
         }
         .onChange(of: m.currentUser?.userId) { _ in
@@ -1028,7 +1024,7 @@ struct ChatListSearchBar: View {
         }
     }
 
-    // The search text leaves the device, so the first time it does the user is asked first.
+    // whatever is typed here gets sent to the directory, so ask before the first time
     private func runDirectorySearch() {
         let text = searchTrimmed
         guard !text.isEmpty, !searchShowingSimplexLink else { return }

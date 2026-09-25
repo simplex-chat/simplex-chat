@@ -298,8 +298,8 @@ class ChatItemDummyModel: ObservableObject {
     func sendUpdate() { objectWillChange.send() }
 }
 
-// A directory search and a connection can overlap - tapping a result starts a connection while
-// the search is still running - so the single progress slot records its owner.
+// There is one spinner, and a search and a connection can run at once - tapping a result starts
+// connecting while the search is still going - so it records which of them it belongs to.
 enum ConnectProgressOwner {
     case connect
     case directorySearch
@@ -322,7 +322,7 @@ class ConnectProgressManager: ObservableObject {
         }
     }
 
-    // a late directory search result must not clear the spinner that now belongs to a connection
+    // a search finishing late must not stop the spinner if a connection has taken it over
     func stopConnectProgress(_ owner: ConnectProgressOwner = .connect) {
         if let current = self.owner, current != owner { return }
         connectInProgress = nil
@@ -331,7 +331,7 @@ class ConnectProgressManager: ObservableObject {
         connectProgressByTimeout = false
     }
 
-    // a user-initiated cancel, and the takeover in planAndConnect, cancel whatever is running
+    // unlike stopConnectProgress, this cancels whoever owns the spinner
     func cancelConnectProgress() {
         let cancel = onCancel
         owner = nil

@@ -1040,7 +1040,7 @@ func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> Pendi
     if let r { throw r.unexpected } else { return nil }
 }
 
-// Blocks until the directory replies or the timeout elapses.
+// Blocks for up to the timeout, unlike most API calls here.
 func apiSearchDirectory(_ text: String, cursor: JSONValue?) async -> DirectorySearchResults? {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiSearchDirectory: no current user")
