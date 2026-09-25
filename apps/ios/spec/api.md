@@ -50,7 +50,7 @@ The `ChatCommand` enum ([`AppAPITypes.swift` L15](../Shared/Model/AppAPITypes.sw
 | Command | Parameters | Description | Source |
 |---------|-----------|-------------|--------|
 | `showActiveUser` | -- | Get current active user | [L16](../Shared/Model/AppAPITypes.swift#L16) |
-| `createActiveUser` | `profile: Profile?, pastTimestamp: Bool` | Create new user profile | [L17](../Shared/Model/AppAPITypes.swift#L17) |
+| `createActiveUser` | `profile: Profile?, pastTimestamp: Bool, keepActiveUser: Bool` | Create new user profile | [L17](../Shared/Model/AppAPITypes.swift#L17) |
 | `listUsers` | -- | List all user profiles | [L18](../Shared/Model/AppAPITypes.swift#L18) |
 | `apiSetActiveUser` | `userId: Int64, viewPwd: String?` | Switch active user | [L19](../Shared/Model/AppAPITypes.swift#L19) |
 | `apiHideUser` | `userId: Int64, viewPwd: String` | Hide user behind password | [L24](../Shared/Model/AppAPITypes.swift#L24) |
