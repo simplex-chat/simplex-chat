@@ -16,8 +16,10 @@ where
 
 import Control.Exception (evaluate)
 import Data.Bifunctor (first)
+import Data.Char (isAsciiLower, isAsciiUpper, isDigit)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionId, googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount, PaymentProvider (..))
 import Simplex.Messaging.Util (catchOwn')
@@ -50,7 +52,9 @@ data StoreRefusal
 -- A store with no verifier deployed is unreachable: its purchases may be real.
 data StoreVerifier = StoreVerifier
   { verifyApple :: Maybe (Text -> Either Text StoreTransaction), -- the JWS; Left is why Apple did not sign it
-    verifyGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal StoreTransaction)) -- the product id and the token
+    verifyGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal StoreTransaction)), -- the product id and the token
+    -- microseconds; requests are answered one at a time, so a verifier that does not finish holds up every other one
+    verifyTimeout :: Int
   }
 
 -- | A store payment, named by the store's own reference before anything is verified.
@@ -61,28 +65,38 @@ data StoreReceipt = StoreReceipt
   }
 
 noStoreVerifier :: StoreVerifier
-noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing}
+noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing, verifyTimeout = 10000000}
 
 -- | Nothing for a payment no store made. Exceptions are not logged, since they can quote the receipt
 -- or, from Google, a URL holding the token.
 storeReceipt :: StoreVerifier -> ServicePayment -> Maybe (Either StoreRefusal StoreReceipt)
-storeReceipt StoreVerifier {verifyApple, verifyGoogle} = \case
+storeReceipt StoreVerifier {verifyApple, verifyGoogle, verifyTimeout} = \case
   SPApple {jws} -> Just $ case appleTransactionId jws of
     Nothing -> Left $ SRInvalid "names no transaction"
     Just ref -> Right $ StoreReceipt PPApple ref $ maybe unconfigured (\verify -> offline $ first SRInvalid $ verify jws) verifyApple
-  SPGoogle {productId, token} -> Just $ Right $ StoreReceipt PPGoogle (googlePurchaseRef token) $ maybe unconfigured (\verify -> online $ verify productId token) verifyGoogle
+  SPGoogle {productId, token}
+    -- the claim is the token's hash, so neither string may name any purchase but the one it claims,
+    -- whatever path a verifier builds from them
+    | not (googleProductId productId && googleToken token) -> Just $ Left $ SRInvalid "not a Play product id and token"
+    | otherwise -> Just $ Right $ StoreReceipt PPGoogle (googlePurchaseRef token) $ maybe unconfigured (\verify -> online $ verify productId token) verifyGoogle
   SPInvoice {} -> Nothing
   SPReceipt {} -> Nothing
   where
     unconfigured = pure $ Left $ SRUnreachable "no verifier configured"
-    -- nothing was fetched, so a throw is a bug or a malformed receipt, never an outage
-    offline verdict = forced verdict `catchOwn'` \_ -> pure $ Left $ SRVerifierFailed "apple verifier threw"
+    -- nothing was fetched, so a throw or an overrun is a bug or a malformed receipt, never an outage
+    offline verdict =
+      (fromMaybe (Left $ SRVerifierFailed "apple verifier timed out") <$> timeout verifyTimeout (forced verdict))
+        `catchOwn'` \_ -> pure $ Left $ SRVerifierFailed "apple verifier threw"
     online verify =
-      (fromMaybe (Left $ SRUnreachable "google verifier timed out") <$> timeout storeVerifyTimeout (verify >>= forced))
+      (fromMaybe (Left $ SRUnreachable "google verifier timed out") <$> timeout verifyTimeout (verify >>= forced))
         `catchOwn'` \_ -> pure $ Left $ SRUnreachable "google verifier threw"
     -- a verdict holding a thunk that throws would otherwise throw later, outside these handlers
     forced = either (fmap Left . evaluate) (fmap Right . evaluate)
 
--- | Requests are answered one at a time, so a store that does not answer holds up every other one.
-storeVerifyTimeout :: Int
-storeVerifyTimeout = 10000000
+googleProductId :: Text -> Bool
+googleProductId pid = case T.uncons pid of
+  Just (c, _) -> T.length pid <= 150 && (isAsciiLower c || isDigit c) && T.all (\x -> isAsciiLower x || isDigit x || x == '_' || x == '.') pid
+  Nothing -> False
+
+googleToken :: Text -> Bool
+googleToken t = not (T.null t) && T.length t <= 4096 && T.all (\x -> isAsciiLower x || isAsciiUpper x || isDigit x || x == '.' || x == '_' || x == '-') t

@@ -73,7 +73,7 @@ newFakeStore = do
         appleThrowingJWS,
         pendingSettled,
         googleDown,
-        fakeVerifier = StoreVerifier {verifyApple = Just verifyApple, verifyGoogle = Just verifyGoogle}
+        fakeVerifier = StoreVerifier {verifyApple = Just verifyApple, verifyGoogle = Just verifyGoogle, verifyTimeout = 500000}
       }
   where
     fixtureJWS name = unsignedJWS <$> B.readFile (fixtureDir </> name)

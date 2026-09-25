@@ -5257,8 +5257,10 @@ purchaseBadge nm presentingUser payment = do
     requestStashedBadge nm user sendTarget stash BSCPurchaseBadge {masterKey, payment, upgrade = Nothing} terminalReceiptError
   -- outside the badge lock: the chat lock must not be taken under it
   mapM_ presentUserBadgeToContacts present_
-  pure purchased
+  -- the owner may be hidden, so the answer is the same whether it is or not, and names only the presenter
+  pure $ if userId == presentingUserId then purchased else CRBadgePurchaseDelivered presentingUser
   where
+    User {userId = presentingUserId} = presentingUser
     -- the receipt will never be credited to this key; any other refusal may pass on a retry
     terminalReceiptError = \case
       BSEReceiptInvalid -> True

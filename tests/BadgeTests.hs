@@ -10,6 +10,7 @@
 module BadgeTests (badgeTests) where
 
 import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest)
+import BadgeService.StoreReceipts (StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), storeReceipt)
 import Control.Concurrent.STM (atomically)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
@@ -34,7 +35,7 @@ import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
 import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, storeTransactionRef)
 import Simplex.Chat.PaymentService (ServicePayment (..))
-import Simplex.Chat.PaymentService.Types (InvoiceId (..))
+import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..))
 import Simplex.Chat.Store.Badges (StoreTransactionRef (..))
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
@@ -104,6 +105,7 @@ badgeTests = do
   describe "store purchases" $ do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
     it "shows a service request in the terminal as its type alone" testShownServiceRequest
+    it "refuses a Play product id or token that could name another purchase, before any verifier" testGooglePathStrings
 
 proofOf :: BadgeProof -> BBSProof
 proofOf (BadgeProof _ _ p _) = p
@@ -855,6 +857,19 @@ testShownServiceRequest = do
       typeOnly t = J.object ["request" J..= J.object ["type" J..= (t :: T.Text)]]
   shown BSCPurchaseBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}, upgrade = Nothing} `shouldBe` typeOnly "purchaseBadge"
   shown BSCRedeemBadgeCode {masterKey = mk, code = "SB-00000-00000-00000-00001"} `shouldBe` typeOnly "redeemBadgeCode"
+
+testGooglePathStrings :: IO ()
+testGooglePathStrings = do
+  let calledVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Just $ \_ _ -> error "verifier called", verifyTimeout = 500000}
+      refused productId token = case storeReceipt calledVerifier SPGoogle {productId, token} of
+        Just (Left SRInvalid {}) -> True
+        _ -> False
+      validToken = "fake-play-token.AO-J1Oz9x2kqE7wYt3"
+  mapM_ (\p -> refused p validToken `shouldBe` True) ["badge_legend_01/tokens/other?", "badge_legend_01?x", "badge_legend_01#x", "..", "../badge_legend_01", "Badge_legend_01", ""]
+  mapM_ (\t -> refused "badge_supporter_01" t `shouldBe` True) ["a/b", "../x", "t?x", "t#x", "t x", ""]
+  case storeReceipt calledVerifier SPGoogle {productId = "badge_supporter_01", token = validToken} of
+    Just (Right StoreReceipt {provider}) -> provider `shouldBe` PPGoogle
+    _ -> expectationFailure "a valid product id and token were refused"
 
 testCredentialResponseJSON :: IO ()
 testCredentialResponseJSON = do

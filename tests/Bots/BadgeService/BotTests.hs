@@ -133,6 +133,7 @@ badgeServiceTests = do
     it "should refuse a store purchase while a badge is held, before anything is sent" testPurchaseWhileBadgeHeld
     it "should answer a receipt presented under a second profile as the profile that bought it" testPurchaseSameReceiptOtherProfile
     it "should deliver a purchase first presented under another profile to that profile" testPurchaseStrandedUnderOtherProfile
+    it "should deliver a purchase to a hidden profile without naming it" testPurchaseDeliveredToHiddenProfile
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -1660,7 +1661,7 @@ testPurchaseSameReceiptOtherProfile ps =
       showActiveUser alice "alisa"
       -- the store transaction is the device's, so it stays with the profile it was bought under
       alice ##> ("/_badge purchase 2 " <> paymentArg supporterPlay)
-      alice <## "[user: alice] badge already redeemed"
+      alice <## "badge purchase delivered to another profile"
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
       alice ##> "/p"
       showActiveUser alice "alisa"
@@ -1677,10 +1678,28 @@ testPurchaseStrandedUnderOtherProfile ps =
       settlePending store
       -- presented again under whichever profile is active, the purchase reaches the keys alice stashed
       alice ##> unsettled 2
-      alice <## "[user: alice] badge redeemed"
-      alice <## "supporter badge - active"
-      alice <##. "expires "
+      alice <## "badge purchase delivered to another profile"
       rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 1
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
       alice ##> "/user alice"
+      showActiveUser alice "alice (Alice, * supporter)"
+
+testPurchaseDeliveredToHiddenProfile :: HasCallStack => TestParams -> IO ()
+testPurchaseDeliveredToHiddenProfile ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      let unsettled userId = "/_badge purchase " <> show (userId :: Int) <> " " <> paymentArg (googlePayment "badge_supporter_01" googlePendingToken)
+      alice ##> unsettled 1
+      alice <## "cannot redeem badge code: badge service error: payment_pending"
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> "/_hide user 1 \"password\""
+      alice <## "user alice:"
+      alice <## "messages are hidden (use /tail to view)"
+      alice <## "profile is hidden"
+      settlePending store
+      -- the answer names only the presenting profile, and nothing printed names the hidden one
+      alice ##> unsettled 2
+      alice <## "badge purchase delivered to another profile"
+      alice ##> "/user alice password"
       showActiveUser alice "alice (Alice, * supporter)"
