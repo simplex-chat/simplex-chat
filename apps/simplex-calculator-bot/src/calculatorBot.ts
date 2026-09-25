@@ -1,23 +1,29 @@
 import {T} from "@simplex-chat/types"
 import {api, bot, util} from "simplex-chat"
-import {Calc, calculatorText, evaluate, initialCalc, keyWord, keypad, press, textKeys} from "./calculator.js"
+import {Calc, Update, calculatorText, initialCalc, keyNames, press, textInput} from "./calculator.js"
+import {calculatorIcon} from "./icon.js"
 
 const anyTextCommandsVersion = 21
 const idleMinutes = 10
 
-const welcomeMessage = `Tap the keys, or send an expression like 12 × 3 + 4.\nKeys are applied left to right, as on a pocket calculator.\nThe calculator turns off after ${idleMinutes} minutes.`
-const offText = "*Off*\nTap /calc or send an expression."
-const hint = "Send a number or an expression like 12 × 3 + 4."
+const welcomeMessage = `Tap the keys, or send numbers, keys like + or =, and expressions like 12 × 3 + 4.\nKeys are applied left to right, as on a pocket calculator.\nThe calculator turns off after ${idleMinutes} minutes, any key turns it on.`
+const hint = "Send a number, a key like + or =, or an expression like 12 × 3 + 4."
 
 interface Session {
-  calc: Calc
+  calc?: Calc
   itemId: number
-  timer: NodeJS.Timeout
+  symbolKeys: boolean
+  timer?: NodeJS.Timeout
+}
+
+interface Sender {
+  groupId: number
+  member: T.GroupMember
 }
 
 const sessions = new Map<number, Session>()
 
-function groupSender({chatInfo, chatItem}: T.AChatItem): {groupId: number, member: T.GroupMember} | undefined {
+function groupSender({chatInfo, chatItem}: T.AChatItem): Sender | undefined {
   return chatInfo.type === "group" && chatItem.chatDir.type === "groupRcv"
     ? {groupId: chatInfo.groupInfo.groupId, member: chatItem.chatDir.groupMember}
     : undefined
@@ -32,45 +38,48 @@ async function showCalculator(chat: api.ChatApi, groupId: number, member: T.Grou
   const [sent] = await chat.apiSendTextMessage([T.ChatType.Group, groupId], calculatorText(calc, symbolKeys))
   const itemId = sent.chatItem.meta.itemId
   const previous = sessions.get(groupId)
-  sessions.set(groupId, {calc, itemId, timer: setTimeout(() => turnOff(chat, groupId, itemId), idleMinutes * 60_000)})
+  const timer = setTimeout(() => turnOff(chat, groupId, itemId, symbolKeys), idleMinutes * 60_000)
+  sessions.set(groupId, {calc, itemId, symbolKeys, timer})
   if (previous) {
     clearTimeout(previous.timer)
     await chat.apiDeleteChatItems(T.ChatType.Group, groupId, [previous.itemId], T.CIDeleteMode.Broadcast)
   }
 }
 
-function turnOff(chat: api.ChatApi, groupId: number, itemId: number): void {
-  sessions.delete(groupId)
-  chat.apiUpdateChatItem(T.ChatType.Group, groupId, itemId, {type: "text", text: offText}, false)
+function turnOff(chat: api.ChatApi, groupId: number, itemId: number, symbolKeys: boolean): void {
+  sessions.set(groupId, {itemId, symbolKeys})
+  chat.apiUpdateChatItem(T.ChatType.Group, groupId, itemId, {type: "text", text: calculatorText(undefined, symbolKeys)}, false)
     .catch(e => console.log("error turning calculator off", e))
 }
 
-function tapCommand(update: (calc: Calc) => [Calc, string?]) {
+async function updateCalculator(chat: api.ChatApi, {groupId, member}: Sender, update: Update): Promise<void> {
+  const [calc, logLine] = update(currentCalc(groupId))
+  if (logLine) await chat.apiSendTextMessage([T.ChatType.Group, groupId], logLine)
+  await showCalculator(chat, groupId, member, calc)
+}
+
+function tapCommand(update: Update) {
   return async (ci: T.AChatItem, _command: util.BotCommand, chat: api.ChatApi): Promise<void> => {
     const sender = groupSender(ci)
     if (!sender) return
     await chat.apiDeleteMemberChatItem(sender.groupId, [ci.chatItem.meta.itemId])
-    const [calc, logLine] = update(currentCalc(sender.groupId))
-    if (logLine) await chat.apiSendTextMessage([T.ChatType.Group, sender.groupId], logLine)
-    await showCalculator(chat, sender.groupId, sender.member, calc)
+    await updateCalculator(chat, sender, update)
   }
 }
 
-const keyCommands = Object.fromEntries(
-  keypad.flat().flatMap(key => [key, keyWord(key)].map(keyword => [keyword, tapCommand(calc => press(calc, key))]))
-)
+const keyCommands = Object.fromEntries([...keyNames].map(([name, key]) => [name, tapCommand(calc => press(calc, key))]))
 
 async function onMessage(ci: T.AChatItem, content: T.MsgContent, chat: api.ChatApi): Promise<void> {
   const sender = groupSender(ci)
   if (!sender || content.type !== "text") return
-  const keys = textKeys(content.text)
-  if (keys) await showCalculator(chat, sender.groupId, sender.member, evaluate(keys))
+  const update = textInput(content.text)
+  if (update) await updateCalculator(chat, sender, update)
   else await chat.apiSendTextReply(ci, hint)
 }
 
 export function runCalculatorBot(dbOpts: bot.BotDbOpts): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {
   return bot.run({
-    profile: {displayName: "SimpleX Calculator", fullName: "", preferences: {fullDelete: {allow: T.FeatureAllowed.Yes}}},
+    profile: {displayName: "SimpleX Calculator", fullName: "", image: calculatorIcon, preferences: {fullDelete: {allow: T.FeatureAllowed.Yes}}},
     dbOpts,
     options: {
       addressSettings: {businessAddress: true, welcomeMessage},

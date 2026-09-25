@@ -8,10 +8,14 @@ Each user who connects via the bot's business address gets their own chat with a
 
 - Keys are applied left to right, without operator priority: `2 + 3 × 4 =` gives 20.
 - `%` follows Apple's calculator: `100 + 15 %` shows 15, and `=` gives 115; `50 × 10 %` shows 0.1, and `=` gives 5.
+- `C` clears the current number; the second `C` clears the whole calculation.
+- The display shows up to 15 digits, without exponent; larger results show `Error`.
 - After `=`, the bot sends the calculation as a message, e.g. `2 + 2 = 4`.
 - Tapped keys are deleted from the chat; the calculation messages stay as a log.
-- Users can also send a number or an expression, e.g. `12 × 3 + 4`; the calculator shows the result.
-- The calculator turns off after 10 minutes without use. Tap `/calc` or send an expression to turn it on.
+- Users can also send messages instead of tapping keys:
+  - a number or an expression, e.g. `12 × 3 + 4`, is computed and entered as the current number, so `25`, `/add`, `25`, `=` gives 50.
+  - a key, e.g. `+`, `=`, `x`, `*`, `/`, `add` or `c`, works as the tapped key.
+- The calculator turns off after 10 minutes without use: the number is removed from the display, the keys stay. Any key, number or `/calc` turns it on.
 - Apps that support commands made of symbols (chat protocol version 21) get keys like `/+`; older apps get keys like `/add`.
 
 ## Install & build

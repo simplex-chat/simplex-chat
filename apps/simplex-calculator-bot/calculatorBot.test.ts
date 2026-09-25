@@ -58,6 +58,12 @@ test("calculator in business chat", async () => {
     const forty = alice.wait("newChatItems", calculatorShows("40"), 30000)
     await alice.apiSendTextMessage([T.ChatType.Group, groupId], "12 × 3 + 4")
     expect(await forty).toBeDefined()
+
+    const typedLogLine = alice.wait("newChatItems", hasText("25 + 25 = 50"), 30000)
+    const fifty = alice.wait("newChatItems", calculatorShows("50"), 30000)
+    for (const text of ["25", "+", "25", "="]) await alice.apiSendTextMessage([T.ChatType.Group, groupId], text)
+    expect(await typedLogLine).toBeDefined()
+    expect(await fifty).toBeDefined()
   } finally {
     await alice.close()
     await calculator.close()

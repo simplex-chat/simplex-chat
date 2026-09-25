@@ -1,6 +1,7 @@
 export type Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
 export type Operator = "+" | "-" | "×" | "÷"
 export type Key = Digit | Operator | "C" | "±" | "%" | "√" | "." | "="
+export type Update = (calc: Calc) => [Calc, string?]
 
 export interface Calc {
   display: string
@@ -10,7 +11,7 @@ export interface Calc {
   mode: "typing" | "result" | "operator"
 }
 
-export const initialCalc: Calc = {display: "0", operand: "0", terms: [], mode: "result"}
+export const initialCalc: Calc = {display: "0", operand: "0", terms: [], mode: "typing"}
 
 export const keypad: Key[][] = [
   ["C", "±", "%", "÷"],
@@ -36,19 +37,25 @@ export function keyWord(key: Key): string {
   return keyWords[key] ?? key
 }
 
-const maxDigits = 12
+const keyAliases: Record<string, Key> = {"c": "C", "*": "×", "x": "×", "/": "÷", "−": "-"}
+
+export const keyNames = new Map<string, Key>([
+  ...keypad.flat().flatMap((key): [string, Key][] => [[key, key], [keyWord(key), key]]),
+  ...Object.entries(keyAliases),
+])
+
+const maxDigits = 15
 const errorDisplay = "Error"
 
 export function press(calc: Calc, key: Key): [Calc, string?] {
-  const current = calc.display === errorDisplay ? initialCalc : calc
   switch (key) {
-    case "C": return [initialCalc]
-    case "=": return equals(current)
-    case "+": case "-": case "×": case "÷": return [operator(current, key)]
-    case "%": return [result(current, percent(current), `${current.operand}%`)]
-    case "√": return [result(current, Math.sqrt(value(current)), `√${current.operand}`)]
-    case "±": return [negate(current)]
-    default: return [enter(current, key)]
+    case "C": return [calc.display === "0" || calc.display === errorDisplay ? initialCalc : {...calc, display: "0", operand: "0", mode: "typing"}]
+    case "=": return equals(calc)
+    case "+": case "-": case "×": case "÷": return [operator(calc, key)]
+    case "%": return [result(calc, percent(calc), `${calc.operand}%`)]
+    case "√": return [result(calc, Math.sqrt(value(calc)), `√${calc.operand}`)]
+    case "±": return [negate(calc)]
+    default: return [enter(calc, key)]
   }
 }
 
@@ -64,14 +71,19 @@ function append(display: string, key: Digit | "."): string {
 }
 
 function negate(calc: Calc): Calc {
+  if (calc.mode !== "typing") return enterNumber(calc, -value(calc))
   const display = calc.display.startsWith("-") ? calc.display.slice(1) : `-${calc.display}`
-  return {...calc, display, operand: display, mode: calc.mode === "typing" ? "typing" : "result"}
+  return {...calc, display, operand: display}
 }
 
 function percent(calc: Calc): number {
   const {pending} = calc
   const b = value(calc)
   return pending && (pending.op === "+" || pending.op === "-") ? pending.acc * b / 100 : b / 100
+}
+
+function enterNumber(calc: Calc, n: number): Calc {
+  return result(calc, n, format(n))
 }
 
 function result(calc: Calc, n: number, operand: string): Calc {
@@ -107,28 +119,49 @@ function value(calc: Calc): number {
 }
 
 function format(n: number): string {
-  return Number.isFinite(n) ? String(Number(n.toPrecision(maxDigits))) : errorDisplay
+  const rounded = Number(n.toPrecision(maxDigits))
+  if (!Number.isFinite(rounded) || Math.abs(rounded) >= 10 ** maxDigits) return errorDisplay
+  const integerDigits = Math.trunc(Math.abs(rounded)).toString().length
+  const fixed = rounded.toFixed(maxDigits - integerDigits)
+  const trimmed = fixed.includes(".") ? fixed.replace(/\.?0+$/, "") : fixed
+  return trimmed === "-0" ? "0" : trimmed
 }
 
-const typedKeys: Record<string, Key> = {"*": "×", "x": "×", "/": "÷", "−": "-"}
-
-export function textKeys(text: string): Key[] | undefined {
-  const expression = text.replace(/\s/g, "").replace(/=$/, "")
-  if (!/^[\d.+\-−×x*÷\/%]+$/.test(expression) || !/\d/.test(expression)) return undefined
-  return [...expression].map(c => typedKeys[c] ?? c as Key)
+export function textInput(text: string): Update | undefined {
+  const input = text.replace(/\s/g, "")
+  const n = expressionValue(input.replace(/=$/, ""))
+  if (n !== undefined) {
+    return calc => {
+      const entered = enterNumber(calc, n)
+      return input.endsWith("=") ? press(entered, "=") : [entered]
+    }
+  }
+  const key = keyNames.get(input.toLowerCase())
+  return key ? calc => press(calc, key) : undefined
 }
 
-export function evaluate(keys: Key[]): Calc {
-  const allKeys: Key[] = [...keys, "="]
-  return allKeys.reduce((calc, key) => press(calc, key)[0], initialCalc)
+const termPattern = /([-+−×x*÷\/]?)([-−]?)(\d+(?:\.\d*)?|\.\d+)(%?)/g
+
+function expressionValue(expression: string): number | undefined {
+  const terms = [...expression.matchAll(termPattern)]
+  const valid = terms.length > 0
+    && terms.map(([term]) => term).join("") === expression
+    && terms.every(([, op], i) => i === 0 || op !== "")
+  if (!valid) return undefined
+  const calc = terms.reduce((current, [, op, sign, number, percentSign]) => {
+    const withOperator = op ? press(current, keyAliases[op] ?? op as Key)[0] : current
+    const entered = enterNumber(withOperator, sign ? -Number(number) : Number(number))
+    return percentSign ? press(entered, "%")[0] : entered
+  }, initialCalc)
+  return value(press(calc, "=")[0])
 }
 
 const nbsp = " "
 const wordWidth = Math.max(...keypad.flat().map(key => keyWord(key).length))
 
-export function calculatorText(calc: Calc, symbolKeys: boolean): string {
+export function calculatorText(calc: Calc | undefined, symbolKeys: boolean): string {
   const rows = keypad.map(row => symbolKeys ? row.map(key => `/${key}`).join("   ") : row.map(wordKey).join(""))
-  return [`*${calc.display}*`, ...rows].join("\n")
+  return [`*${calc?.display ?? nbsp}*`, ...rows].join("\n")
 }
 
 function wordKey(key: Key): string {
