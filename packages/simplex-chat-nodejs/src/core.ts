@@ -1,6 +1,8 @@
 import {ChatEvent, ChatResponse, T} from "@simplex-chat/types"
 import * as simplex from "./simplex"
 
+export type Backend = "sqlite" | "postgres"
+
 /**
  * Initialize chat controller
  * @param {number} [queueSize] - Size of internal queues, the core default is used when omitted.
