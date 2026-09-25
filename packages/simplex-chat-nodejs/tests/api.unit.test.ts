@@ -30,6 +30,13 @@ describe("documented success responses", () => {
     await expect(chat.apiSetProfileAddress(1, true)).resolves.toEqual({updateSuccesses: 0, updateFailures: 0, changedContacts: []})
   })
 
+  it("apiSetUserDomain sets and removes the name", async () => {
+    const chat = await chatWithResponse({type: "userProfileNoChange", user})
+    await expect(chat.apiSetUserDomain(1, "calc.simplex")).resolves.toEqual(user)
+    await expect(chat.apiSetUserDomain(1)).resolves.toEqual(user)
+    expect(jest.mocked(core.chatSendCmd).mock.calls.map(([, cmd]) => cmd)).toEqual(["/_set domain 1 calc.simplex", "/_set domain 1"])
+  })
+
   it("apiReceiveFile reports a file cancelled by sender", async () => {
     const chat = await chatWithResponse({type: "rcvFileAcceptedSndCancelled", user, rcvFileTransfer: {}})
     await expect(chat.apiReceiveFile(3)).rejects.toThrow("file cancelled by sender")

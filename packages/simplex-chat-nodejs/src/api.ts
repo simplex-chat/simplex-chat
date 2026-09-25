@@ -422,7 +422,18 @@ export class ChatApi {
     const r = await this.sendChatCmd(CC.APISetAddressSettings.cmdString({userId, settings}))
     if (r.type !== "userContactLinkUpdated") {
       throw new ChatCommandError("error changing user contact address settings", r)
-    }  
+    }
+  }
+
+  async apiSetUserDomain(userId: number, simplexDomain?: string): Promise<T.User> {
+    const r = await this.sendChatCmd(CC.APISetUserDomain.cmdString({userId, simplexDomain}))
+    switch (r.type) {
+      case "userProfileUpdated":
+      case "userProfileNoChange":
+        return r.user
+      default:
+        throw new ChatCommandError("error setting SimpleX name", r)
+    }
   }
 
   /**

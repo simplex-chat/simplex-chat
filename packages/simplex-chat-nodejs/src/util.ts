@@ -53,8 +53,8 @@ export function botAddressSettings({addressSettings}: T.UserContactLink): BotAdd
   }
 }
 
-export function fromLocalProfile({displayName, fullName, shortDescr, image, contactLink, preferences, peerType}: T.LocalProfile): T.Profile {
-  const profile = {displayName, fullName, shortDescr, image, contactLink, preferences, peerType}
+export function fromLocalProfile({displayName, fullName, shortDescr, image, contactLink, preferences, peerType, contactDomain}: T.LocalProfile): T.Profile {
+  const profile = {displayName, fullName, shortDescr, image, contactLink, preferences, peerType, contactDomain: contactDomain && {domain: contactDomain.domain}}
   for (const key in profile) {
     if (typeof (profile as any)[key] === "undefined") delete (profile as any)[key]
   }

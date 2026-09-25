@@ -1,6 +1,6 @@
 import {ChatEvent, T} from "@simplex-chat/types"
 import * as api from "../src/api"
-import {subscribeChatItems} from "../src/bot"
+import {run, subscribeChatItems} from "../src/bot"
 
 type Handler = (evt: ChatEvent) => Promise<void>
 
@@ -54,5 +54,70 @@ describe("subscribeChatItems", () => {
     subscribeChatItems(bot, async () => { calls.push("message") }, {help: async () => { calls.push("help") }})
     await deliver([item("sndMsgContent", "/help"), item("sndMsgContent", "hello")])
     expect(calls).toEqual([])
+  })
+})
+
+describe("run", () => {
+  const address = {
+    connLinkContact: {connFullLink: "full", connShortLink: "short"},
+    addressSettings: {businessAddress: false, autoAccept: {acceptIncognito: false}},
+  } as unknown as T.UserContactLink
+
+  function fakeChat(contactDomain?: T.SimplexDomainClaim) {
+    const user = {userId: 1, profile: {displayName: "Old", fullName: "", contactDomain}} as unknown as T.User
+    const chat = {
+      on: jest.fn(),
+      apiGetActiveUser: jest.fn().mockResolvedValue(user),
+      startChat: jest.fn(),
+      apiGetUserAddress: jest.fn().mockResolvedValue(address),
+      apiSetAddressSettings: jest.fn(),
+      apiSetUserDomain: jest.fn(async (_userId: number, domain?: string) => ({...user, profile: {...user.profile, contactDomain: domain && {domain}}})),
+      apiUpdateProfile: jest.fn().mockResolvedValue({updateSuccesses: 0, updateFailures: 0}),
+    }
+    jest.spyOn(api.ChatApi, "init").mockResolvedValue(chat as unknown as api.ChatApi)
+    return chat
+  }
+
+  const runBot = (simplexName?: string, options = {}) =>
+    run({profile: {displayName: "Calculator", fullName: ""}, simplexName, dbOpts: {type: "sqlite", filePrefix: "unused"}, options})
+
+  const updatedProfile = (chat: ReturnType<typeof fakeChat>) => chat.apiUpdateProfile.mock.calls[0][1]
+
+  beforeEach(() => jest.spyOn(console, "log").mockImplementation(() => {}))
+  afterEach(() => jest.restoreAllMocks())
+
+  it("sets the configured SimpleX name", async () => {
+    const chat = fakeChat()
+    await runBot("Calc.simplex")
+    expect(chat.apiSetUserDomain).toHaveBeenCalledWith(1, "calc.simplex")
+    expect(updatedProfile(chat).contactDomain).toEqual({domain: "calc.simplex"})
+  })
+
+  it("removes the SimpleX name that is not configured", async () => {
+    const chat = fakeChat({domain: "calc.simplex"})
+    await runBot()
+    expect(chat.apiSetUserDomain).toHaveBeenCalledWith(1, undefined)
+    expect(updatedProfile(chat).contactDomain).toBeUndefined()
+  })
+
+  it("keeps the SimpleX name when updating the profile", async () => {
+    const chat = fakeChat({domain: "calc.simplex", proof: {presHeader: "header", signature: "signature"}})
+    await runBot("calc.simplex")
+    expect(chat.apiSetUserDomain).not.toHaveBeenCalled()
+    expect(updatedProfile(chat).displayName).toBe("Calculator")
+    expect(updatedProfile(chat).contactDomain).toEqual({domain: "calc.simplex"})
+  })
+
+  it("continues when the SimpleX name cannot be set", async () => {
+    const chat = fakeChat()
+    chat.apiSetUserDomain.mockRejectedValue(new Error("simplexDomainNotReady"))
+    await expect(runBot("calc.simplex")).resolves.toBeDefined()
+    expect(updatedProfile(chat).contactDomain).toBeUndefined()
+  })
+
+  it("does not change the SimpleX name without updateAddress", async () => {
+    const chat = fakeChat()
+    await runBot("calc.simplex", {updateAddress: false})
+    expect(chat.apiSetUserDomain).not.toHaveBeenCalled()
   })
 })
