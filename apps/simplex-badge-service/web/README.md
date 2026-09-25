@@ -59,7 +59,7 @@ is plain TypeScript, tested directly in Node.
 | `routing.ts` | Reading `?order=`, the step hash with its `?app=` flag, and the store into what to render; the `simplexchat:` link that hands a code to the app |
 | `api.ts` | The three routes — create, cancel and read — and the long-poll wait loop, with `fetch`, sleep and the clock injected |
 | `flow.ts` | Payment flow control logic — pure, no DOM, no globals |
-| `stripe.ts` | Loading Stripe.js, mounting the Payment Element, confirming, and the no-key stand-in |
+| `stripe.ts` | Loading Stripe.js, mounting the Payment Element, confirming, and refusing the card path with no key |
 | `icons.ts` | The badge art, the payment marks and the hamburger, built with `createElementNS`. The brand mark is NOT here: it is a served file |
 | `qr.ts` | A QR encoder written for this page, with no dependency, no network and no raster |
 | `screens.ts` | Every screen of the spec, and the header and its menu, built node by node — markup is never assigned from a string |
@@ -183,6 +183,29 @@ which is what the page's own wait loop relies on — no polling on a timer.
 Card invoices (`"method":"card"`) get a `clientSecret` in the response
 instead of an address; BTC and XMR get `address` and `cryptoAmount`.
 
+### Opening the page as the app does
+
+The SimpleX app opens the page at a step hash carrying a flag, which decides
+only how the code is handed over at the end. Both endings can be driven here:
+
+```
+http://localhost:8099/#/tier?app=true      # Return to SimpleX, with Show code under it
+http://localhost:8099/#/tier?app=desktop   # the code screen, saying the Redeem code screen is already open
+```
+
+With no flag the page ends as it always has.
+
+**Open each in a fresh private window.** The flag is read once, at load, and
+kept in the session; nothing re-reads it when the hash changes, so editing the
+address bar of a page that is already open does nothing. A session left over
+from an earlier purchase in the same browser has already spent its flag at
+checkout, and the ending falls back to the plain code screen.
+
+Pay with Monero or Bitcoin and settle it with `/control/settle` above — the
+card path needs a Stripe key. A code the browser could not store also falls
+back to the plain screen, so a browser that blocks `localStorage` never shows
+the `app=true` ending at all.
+
 ### The Stripe key
 
 The publishable key lives in a `<meta id="stripe-publishable-key">` element
@@ -191,12 +214,10 @@ in `public/index.html`, committed empty. `mock/server.py` substitutes
 set to anything but a `pk_`-prefixed key (a secret or restricted key would
 otherwise be baked into a page anyone can read).
 
-With no key set, the card path renders a labelled development stand-in
-instead of a Stripe Payment Element: its button does what a successful
-confirm does, and settling it calls the mock's `/control/settle` directly.
-**This stand-in cannot appear when a key is set** — the code path that
-builds it is unreachable once Stripe.js has actually loaded. To see the real
-Payment Element, set a test key:
+With no key set there is no card path at all: `cardPlan` answers
+`unconfigured`, `renderCardForm` returns before it builds anything, and
+choosing Card reaches "The card form did not load". Drive a purchase with
+Monero or Bitcoin instead, or set a test key:
 
 ```
 STRIPE_PUBLISHABLE_KEY=pk_test_... python3 mock/server.py --port 8099

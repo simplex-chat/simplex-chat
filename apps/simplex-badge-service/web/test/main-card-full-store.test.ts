@@ -22,7 +22,7 @@ mock.timers.enable({ apis: ["setTimeout", "Date"], now: NOW });
 const page = installPage({ storage: full });
 const { app } = page;
 
-// The publishable key makes the card path use the real Payment Element, not a stand-in.
+// The publishable key is what makes the card path exist at all; with none, it refuses.
 const keyMeta = new StubElement("meta");
 keyMeta.setAttribute("id", "stripe-publishable-key");
 keyMeta.setAttribute("name", "stripe-publishable-key");
