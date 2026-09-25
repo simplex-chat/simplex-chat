@@ -68,9 +68,13 @@ const keyCommands = Object.fromEntries([...keyNames].map(([name, key]) => [name,
 async function onMessage(ci: T.AChatItem, content: T.MsgContent, chat: api.ChatApi): Promise<void> {
   const sender = groupSender(ci)
   if (!sender || content.type !== "text") return
-  const update = textInput(content.text)
-  if (update) await updateCalculator(chat, sender, update)
-  else await chat.apiSendTextReply(ci, hint)
+  const input = textInput(content.text)
+  if (!input) {
+    await chat.apiSendTextReply(ci, hint)
+    return
+  }
+  if (input.result) await chat.apiSendTextReply(ci, `= ${input.result}`)
+  await updateCalculator(chat, sender, input.update)
 }
 
 export function runCalculatorBot(dbOpts: bot.BotDbOpts): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {

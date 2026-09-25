@@ -157,17 +157,19 @@ function format(n: number): string {
   return trimmed === "-0" ? "0" : trimmed
 }
 
-export function textInput(text: string): Update | undefined {
+export function textInput(text: string): {update: Update, result?: string} | undefined {
   const input = text.replace(/\s/g, "")
-  const n = expressionValue(input.replace(/=$/, ""))
+  const entry = input.replace(/=$/, "")
+  const n = expressionValue(entry)
   if (n !== undefined) {
-    return calc => {
+    const update: Update = calc => {
       const entered = showNumber(calc, n)
       return input.endsWith("=") ? press(entered, "=") : [entered]
     }
+    return {update, result: Number.isNaN(Number(entry)) ? format(n) : undefined}
   }
   const key = keyNames.get(input.toLowerCase())
-  return key ? calc => press(calc, key) : undefined
+  return key ? {update: calc => press(calc, key)} : undefined
 }
 
 const tokenPattern = /\d+(?:\.\d*)?|\.\d+|[-+−×x*÷\/%()]/g

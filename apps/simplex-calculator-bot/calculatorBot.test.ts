@@ -31,6 +31,9 @@ const calculatorShows = (display: string): ItemCheck => ci => ci.chatItem.meta.i
 
 const hasText = (text: string): ItemCheck => ci => ci.chatItem.meta.itemText === text
 
+const repliesTo = (quoted: string, text: string): ItemCheck => ({chatItem}) =>
+  chatItem.meta.itemText === text && chatItem.quotedItem?.content.text === quoted
+
 test("calculator in business chat", async () => {
   const dir = mkdtempSync(join(tmpdir(), "calculator-bot-"))
   const botDbOpts: bot.BotDbOpts = {type: "sqlite", filePrefix: join(dir, "bot")}
@@ -54,7 +57,7 @@ test("calculator in business chat", async () => {
       for (const event of received) expect(await event).toBeDefined()
     }
     await send(["/2", "/+", "/2", "/="], hasText("2 + 2 = 4"), calculatorShows("4"))
-    await send(["2 × (3 + 4) - 1"], calculatorShows("13"))
+    await send(["2 × (3 + 4) - 1"], repliesTo("2 × (3 + 4) - 1", "= 13"), calculatorShows("13"))
     await send(["25", "+", "25", "="], hasText("25 + 25 = 50"), calculatorShows("50"))
   } finally {
     await alice.close()

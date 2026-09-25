@@ -6,7 +6,7 @@ type Input = {tap: string} | {text: string}
 function run(inputs: Input[]): {calc: Calc, logLines: string[]} {
   const logLines: string[] = []
   const calc = inputs.reduce((current, input) => {
-    const [next, logLine] = "tap" in input ? press(current, input.tap as Key) : textInput(input.text)!(current)
+    const [next, logLine] = "tap" in input ? press(current, input.tap as Key) : textInput(input.text)!.update(current)
     if (logLine) logLines.push(logLine)
     return next
   }, initialCalc)
@@ -140,6 +140,18 @@ describe("typed messages", () => {
     expect(result("100 + (10 + 5)%")).toBe("115")
     expect(type("10", "×", "2 + 3", "=").logLines).toEqual(["10 × 5 = 50"])
     expect(type("10", "+", "25=").calc.display).toBe("35")
+  })
+
+  test("result only for expressions", () => {
+    const result = (text: string) => textInput(text)?.result
+    expect(result("(2 + 3) × 4")).toBe("20")
+    expect(result("(2 + 3) × 4 =")).toBe("20")
+    expect(result("15%")).toBe("0.15")
+    expect(result("1 / 0")).toBe("Error")
+    expect(result("25")).toBeUndefined()
+    expect(result("-5")).toBeUndefined()
+    expect(result("25=")).toBeUndefined()
+    expect(result("+")).toBeUndefined()
   })
 
   test("overflow in typed numbers", () => {
