@@ -6,10 +6,9 @@ import {calculatorIcon} from "./icon.js"
 const anyTextCommandsVersion = 21
 const idleMinutes = 10
 
-const welcomeMessage = `Tap the keys or send numbers, keys like + and =, or expressions like 12 × 3 + 4.
-Keys are applied left to right, as on a pocket calculator.
+const welcomeMessage = `Tap the keys or send numbers, keys like + and =, or expressions like (2 + 3) × 4.
 The calculator turns off after ${idleMinutes} minutes; any key turns it on.`
-const hint = "Send a number, a key like + or =, or an expression like 12 × 3 + 4."
+const hint = "Send a number, a key like + or =, or an expression like (2 + 3) × 4."
 
 interface Session {
   calc?: Calc

@@ -25,10 +25,20 @@ describe("keys", () => {
     expect(display("1 . . 5")).toBe("1.5")
   })
 
-  test("compute left to right and log after equals", () => {
+  test("compute × and ÷ before + and -", () => {
     expect(tap("2 + 2 =")).toEqual({calc: expect.objectContaining({display: "4"}), logLines: ["2 + 2 = 4"]})
-    expect(tap("2 + 3 × 4 =").logLines).toEqual(["2 + 3 × 4 = 20"])
-    expect(display("2 + 3 ×")).toBe("5")
+    expect(tap("2 + 3 × 4 =").logLines).toEqual(["2 + 3 × 4 = 14"])
+    expect(tap("2 × 3 + 4 =").logLines).toEqual(["2 × 3 + 4 = 10"])
+    expect(display("1 0 - 2 × 3 =")).toBe("4")
+    expect(display("1 0 - 2 - 3 =")).toBe("5")
+    expect(display("8 ÷ 4 ÷ 2 =")).toBe("1")
+  })
+
+  test("show the operand of the pressed operator", () => {
+    expect(display("2 + 3 ×")).toBe("3")
+    expect(display("2 × 3 +")).toBe("6")
+    expect(display("2 + 3 × 4 ×")).toBe("12")
+    expect(display("2 + 3 × 4 +")).toBe("14")
   })
 
   test("log only after equals", () => {
@@ -38,6 +48,8 @@ describe("keys", () => {
 
   test("replace operator", () => {
     expect(tap("2 + × 3 =").logLines).toEqual(["2 × 3 = 6"])
+    expect(tap("2 + 3 × + 4 =").logLines).toEqual(["2 + 3 + 4 = 9"])
+    expect(tap("2 × 3 + × 4 =").logLines).toEqual(["2 × 3 × 4 = 24"])
   })
 
   test("continue from result", () => {
@@ -55,6 +67,9 @@ describe("keys", () => {
     expect(display("5 0 ÷ 1 0 %")).toBe("0.1")
     expect(display("5 0 ÷ 1 0 % =")).toBe("500")
     expect(display("1 5 %")).toBe("0.15")
+    expect(display("1 0 0 + 2 × 1 5 %")).toBe("0.15")
+    expect(display("1 0 0 + 2 × 1 5 % =")).toBe("100.3")
+    expect(display("2 × 3 + 1 0 %")).toBe("0.6")
   })
 
   test("square root and sign", () => {
@@ -117,6 +132,12 @@ describe("typed messages", () => {
     expect(result("2 × -3")).toBe("-6")
     expect(result("100 + 15%")).toBe("115")
     expect(result("42")).toBe("42")
+    expect(result("2 + 3 × 4")).toBe("14")
+    expect(result("(2 + 3) × 4")).toBe("20")
+    expect(result("2 × (3 + 4)")).toBe("14")
+    expect(result("((1 + 2) × 3)")).toBe("9")
+    expect(result("-(2 + 3)")).toBe("-5")
+    expect(result("100 + (10 + 5)%")).toBe("115")
     expect(type("10", "×", "2 + 3", "=").logLines).toEqual(["10 × 5 = 50"])
     expect(type("10", "+", "25=").calc.display).toBe("35")
   })
@@ -130,6 +151,11 @@ describe("typed messages", () => {
     expect(textInput("hello")).toBeUndefined()
     expect(textInput("2 ^ 3")).toBeUndefined()
     expect(textInput("2.3.4")).toBeUndefined()
+    expect(textInput("(2 + 3")).toBeUndefined()
+    expect(textInput("2 + 3)")).toBeUndefined()
+    expect(textInput("()")).toBeUndefined()
+    expect(textInput("2(3)")).toBeUndefined()
+    expect(textInput("2 +")).toBeUndefined()
   })
 })
 

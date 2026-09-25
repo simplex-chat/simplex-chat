@@ -6,9 +6,14 @@ export type Update = (calc: Calc) => [Calc, string?]
 export interface Calc {
   display: string
   operand: string
-  terms: string[]
-  pending?: {acc: number, op: Operator}
+  terms: Term[]
   mode: "typing" | "result" | "operator"
+}
+
+interface Term {
+  operand: string
+  value: number
+  op: Operator
 }
 
 export const initialCalc: Calc = {display: "0", operand: "0", terms: [], mode: "typing"}
@@ -37,11 +42,14 @@ function keyWord(key: Key): string {
   return keyWords[key] ?? key
 }
 
-const keyAliases: Record<string, Key> = {"c": "C", "*": "×", "x": "×", "/": "÷", "−": "-"}
+const operatorNames = new Map<string, Operator>([
+  ["+", "+"], ["-", "-"], ["−", "-"], ["×", "×"], ["x", "×"], ["*", "×"], ["÷", "÷"], ["/", "÷"],
+])
 
 export const keyNames = new Map<string, Key>([
   ...keypad.flat().flatMap((key): [string, Key][] => [[key, key], [keyWord(key), key]]),
-  ...Object.entries(keyAliases),
+  ...operatorNames,
+  ["c", "C"],
 ])
 
 const maxDigits = 15
@@ -82,9 +90,9 @@ function negate(calc: Calc): Calc {
 }
 
 function percent(calc: Calc): number {
-  const {pending} = calc
-  const b = value(calc)
-  return pending && (pending.op === "+" || pending.op === "-") ? pending.acc * b / 100 : b / 100
+  const last = calc.terms.at(-1)
+  const share = value(calc) / 100
+  return last && isAdditive(last.op) ? leftOperand(calc.terms) * share : share
 }
 
 function showNumber(calc: Calc, n: number, operand?: string): Calc {
@@ -93,26 +101,46 @@ function showNumber(calc: Calc, n: number, operand?: string): Calc {
 }
 
 function operator(calc: Calc, op: Operator): Calc {
-  if (calc.mode === "operator" && calc.pending) {
-    return {...calc, pending: {...calc.pending, op}, terms: [...calc.terms.slice(0, -1), op]}
-  }
-  const display = format(calc.pending ? apply(calc.pending, value(calc)) : value(calc))
-  return {display, operand: display, terms: [...calc.terms, calc.operand, op], pending: {acc: Number(display), op}, mode: "operator"}
+  const terms = calc.mode === "operator"
+    ? [...calc.terms.slice(0, -1), {...calc.terms[calc.terms.length - 1], op}]
+    : [...calc.terms, {operand: calc.operand, value: value(calc), op}]
+  const display = format(leftOperand(terms))
+  return {display, operand: display, terms, mode: "operator"}
 }
 
 function equals(calc: Calc): [Calc, string?] {
-  if (!calc.pending) return [calc]
-  const display = format(apply(calc.pending, value(calc)))
-  const logLine = [...calc.terms, calc.operand, "=", display].join(" ")
+  if (calc.terms.length === 0) return [calc]
+  const display = format(evaluate(calc.terms, value(calc)).total)
+  const logLine = [...calc.terms.flatMap(term => [term.operand, term.op]), calc.operand, "=", display].join(" ")
   return [{display, operand: display, terms: [], mode: "result"}, logLine]
 }
 
-function apply({acc, op}: {acc: number, op: Operator}, b: number): number {
+function leftOperand(terms: Term[]): number {
+  const {value, op} = terms[terms.length - 1]
+  const {total, product} = evaluate(terms.slice(0, -1), value)
+  return isAdditive(op) ? total : product
+}
+
+function evaluate(terms: Term[], last: number): {total: number, product: number} {
+  const sumEnd = terms.map(term => isAdditive(term.op)).lastIndexOf(true)
+  const factors = terms.slice(sumEnd + 1)
+  const values = [...factors.map(term => term.value), last]
+  const product = factors.reduce((acc, {op}, i) => apply(acc, op, values[i + 1]), values[0])
+  if (sumEnd < 0) return {total: product, product}
+  const {value, op} = terms[sumEnd]
+  return {total: apply(evaluate(terms.slice(0, sumEnd), value).total, op, product), product}
+}
+
+function isAdditive(op: Operator): boolean {
+  return op === "+" || op === "-"
+}
+
+function apply(a: number, op: Operator, b: number): number {
   switch (op) {
-    case "+": return acc + b
-    case "-": return acc - b
-    case "×": return acc * b
-    case "÷": return acc / b
+    case "+": return a + b
+    case "-": return a - b
+    case "×": return a * b
+    case "÷": return a / b
   }
 }
 
@@ -142,20 +170,41 @@ export function textInput(text: string): Update | undefined {
   return key ? calc => press(calc, key) : undefined
 }
 
-const termPattern = /([-+−×x*÷\/]?)([-−]?)(\d+(?:\.\d*)?|\.\d+)(%?)/g
+const tokenPattern = /\d+(?:\.\d*)?|\.\d+|[-+−×x*÷\/%()]/g
 
-function expressionValue(expression: string): number | undefined {
-  const terms = [...expression.matchAll(termPattern)]
-  const valid = terms.length > 0
-    && terms.map(([term]) => term).join("") === expression
-    && terms.every(([, op], i) => i === 0 || op !== "")
-  if (!valid) return undefined
-  const calc = terms.reduce((current, [, op, sign, number, percentSign]) => {
-    const withOperator = op ? press(current, keyAliases[op] ?? op as Key)[0] : current
-    const entered = showNumber(withOperator, sign ? -Number(number) : Number(number))
-    return percentSign ? press(entered, "%")[0] : entered
-  }, initialCalc)
-  return value(press(calc, "=")[0])
+interface Parsed {
+  value: number
+  rest: string[]
+}
+
+function expressionValue(text: string): number | undefined {
+  const tokens = text.match(tokenPattern) ?? []
+  const parsed = tokens.join("") === text ? expression(tokens, initialCalc) : undefined
+  return parsed?.rest.length === 0 ? parsed.value : undefined
+}
+
+function expression(tokens: string[], calc: Calc): Parsed | undefined {
+  const operand = term(tokens)
+  if (!operand) return undefined
+  const percent = operand.rest[0] === "%"
+  const shown = showNumber(calc, operand.value)
+  const entered = percent ? press(shown, "%")[0] : shown
+  const rest = percent ? operand.rest.slice(1) : operand.rest
+  const op = operatorNames.get(rest[0])
+  return op ? expression(rest.slice(1), press(entered, op)[0]) : {value: value(press(entered, "=")[0]), rest}
+}
+
+function term([first, ...rest]: string[]): Parsed | undefined {
+  if (first === "(") {
+    const inner = expression(rest, initialCalc)
+    return inner?.rest[0] === ")" ? {value: inner.value, rest: inner.rest.slice(1)} : undefined
+  }
+  if (operatorNames.get(first) === "-") {
+    const operand = term(rest)
+    return operand && {value: -operand.value, rest: operand.rest}
+  }
+  const n = Number(first)
+  return Number.isNaN(n) ? undefined : {value: n, rest}
 }
 
 const nbsp = String.fromCharCode(0xa0)

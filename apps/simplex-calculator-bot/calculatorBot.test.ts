@@ -54,7 +54,7 @@ test("calculator in business chat", async () => {
       for (const event of received) expect(await event).toBeDefined()
     }
     await send(["/2", "/+", "/2", "/="], hasText("2 + 2 = 4"), calculatorShows("4"))
-    await send(["12 × 3 + 4"], calculatorShows("40"))
+    await send(["2 × (3 + 4) - 1"], calculatorShows("13"))
     await send(["25", "+", "25", "="], hasText("25 + 25 = 50"), calculatorShows("50"))
   } finally {
     await alice.close()
