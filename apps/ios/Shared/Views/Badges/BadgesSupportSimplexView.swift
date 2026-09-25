@@ -76,7 +76,7 @@ struct BadgesSupportSimplexView: View {
             .buttonStyle(OnboardingButtonStyle(isDisabled: false))
 
             NavigationLink(isActive: $chooseLevelActive) {
-                BadgesYourLevelView()
+                BadgesChooseBadgeView()
                     .modifier(ThemedBackground())
             } label: {
                 EmptyView()
