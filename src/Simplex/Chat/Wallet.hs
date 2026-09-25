@@ -78,13 +78,13 @@ entropyFromMnemonic phrase = case B39.parseMnemonic phrase of
 seedMnemonic :: BA.ScrubbedBytes -> Either WalletError Text
 seedMnemonic = bimap WEDerivation (decodeLatin1 . B39.mnemonicPhrase) . B39.entropyToMnemonic
 
-deriveAccount :: BA.ScrubbedBytes -> AccountIndex -> IO (Either WalletError (AccountKey, WalletAddress))
-deriveAccount entropy n = runExceptT $ do
+deriveAccount :: TVar ChaChaDRG -> BA.ScrubbedBytes -> AccountIndex -> IO (Either WalletError (AccountKey, WalletAddress))
+deriveAccount g entropy n = runExceptT $ do
   path <- liftEither $ accountPath n
   m <- liftEitherWith WEDerivation $ B39.entropyToMnemonic entropy
-  master <- liftError' WEDerivation $ B32.masterKey (B39.mnemonicToSeed m "")
-  k <- B32.xkKey <$> liftError' WEDerivation (B32.derivePath master path)
-  a <- liftIO $ addressFromPrivateKey k
+  master <- liftError' WEDerivation $ B32.masterKey g (B39.mnemonicToSeed m "")
+  k <- B32.xkKey <$> liftError' WEDerivation (B32.derivePath g master path)
+  a <- liftIO $ addressFromPrivateKey g k
   pure (k, WalletAddress {accountIndex = n, keyPath = decodeLatin1 $ B32.renderPath path, address = decodeLatin1 $ strEncode a})
 
 accountSecret :: AccountKey -> Text

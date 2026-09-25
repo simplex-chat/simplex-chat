@@ -15,6 +15,7 @@ import Data.List (nub)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccount, entropyFromMnemonic, seedMnemonic)
+import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Encoding.String (strEncode)
@@ -32,12 +33,15 @@ seedEntropy :: Text -> BA.ScrubbedBytes
 seedEntropy phrase = B39.mnemonicToEntropy . either error id $ B39.parseMnemonic phrase
 
 walletAccount :: Text -> AccountIndex -> IO (AccountKey, WalletAddress)
-walletAccount phrase n = either (error . show) id <$> deriveAccount (seedEntropy phrase) n
+walletAccount phrase n = do
+  g <- C.newRandom
+  either (error . show) id <$> deriveAccount g (seedEntropy phrase) n
 
 addressFromSecret :: String -> IO String
 addressFromSecret secret = do
-  k <- either error id <$> S.mkPrivateKey (either error id $ BAE.convertFromBase BAE.Base16 (B.drop 2 $ B.pack secret))
-  B.unpack . strEncode <$> addressFromPrivateKey k
+  g <- C.newRandom
+  k <- either error id <$> S.mkPrivateKey g (either error id $ BAE.convertFromBase BAE.Base16 (B.drop 2 $ B.pack secret))
+  B.unpack . strEncode <$> addressFromPrivateKey g k
 
 exportRow :: HasCallStack => String -> (String, String, String, String)
 exportRow row = case words row of
@@ -60,15 +64,17 @@ walletDerivationTests = do
     addrs <- mapM (fmap (address . snd) . walletAccount testPhrase12) [0 .. 9]
     length (nub addrs) `shouldBe` 10
   Hspec.it "renders a secret whose first byte is zero with 64 hex digits" $ do
-    k <- either error id <$> S.mkPrivateKey (BA.convert $ B.pack ('\0' : replicate 31 '\1'))
+    g <- C.newRandom
+    k <- either error id <$> S.mkPrivateKey g (BA.convert $ B.pack ('\0' : replicate 31 '\1'))
     let secret = T.unpack $ accountSecret k
     take 4 secret `shouldBe` "0x00"
     length secret `shouldBe` 66
   Hspec.it "renders the path an account is derived at" $ do
     (keyPath . snd <$> walletAccount testPhrase12 0) `shouldReturn` "m/44'/60'/0'/0/0"
     (keyPath . snd <$> walletAccount testPhrase12 7) `shouldReturn` "m/44'/60'/7'/0/0"
-  Hspec.it "rejects an account index at or above 2^31" $
-    (void <$> deriveAccount (seedEntropy testPhrase12) 2147483648) `shouldReturn` Left WEIndexTooLarge
+  Hspec.it "rejects an account index at or above 2^31" $ do
+    g <- C.newRandom
+    (void <$> deriveAccount g (seedEntropy testPhrase12) 2147483648) `shouldReturn` Left WEIndexTooLarge
   Hspec.it "round-trips the phrase it was imported from" $
     seedMnemonic (seedEntropy testPhrase24) `shouldBe` Right testPhrase24
   Hspec.it "accepts only 24 words with a valid checksum" $ do

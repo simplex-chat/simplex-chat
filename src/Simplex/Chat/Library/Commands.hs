@@ -6035,7 +6035,9 @@ withWalletStore :: (DB.Connection -> IO (Either WalletError a)) -> CM a
 withWalletStore action = liftWallet =<< withFastStore' action
 
 seedAccount :: WalletSeed -> AccountIndex -> CM (AccountKey, WalletAddress)
-seedAccount WalletSeed {wsEntropy} n = liftError' (ChatError . CEWallet) (deriveAccount wsEntropy n)
+seedAccount WalletSeed {wsEntropy} n = do
+  g <- asks random
+  liftError' (ChatError . CEWallet) (deriveAccount g wsEntropy n)
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
