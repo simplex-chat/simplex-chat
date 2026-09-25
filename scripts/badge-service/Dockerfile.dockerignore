@@ -1,0 +1,30 @@
+# The build context is the repository root. Exclude everything, then add back
+# what the image is built from, one directory level at a time.
+*
+
+!cabal.project
+!simplex-chat.cabal
+!README.md
+!PRIVACY.md
+!src
+
+!scripts
+scripts/*
+!scripts/cabal.project.local.linux
+
+!apps
+apps/*
+!apps/simplex-badge-service
+
+# Build output, caches, local state, and anything holding a secret. The ini is
+# mounted at run time and must never be baked into an image: it holds the issuer
+# secret, and with [btcpay] the API key and webhook secret too.
+badge_service.ini
+**/dist
+**/dist-newstyle
+**/node_modules
+**/*.db
+**/*.db-*
+apps/simplex-badge-service/test-fixtures
+apps/simplex-badge-service/web-traversal-test
+apps/simplex-badge-service/web/build

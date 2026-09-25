@@ -3,7 +3,13 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
-import Bots.BadgeServiceTests
+import Bots.BadgeService.BTCPayTests
+import Bots.BadgeService.BotTests
+import Bots.BadgeService.CatalogTests
+import Bots.BadgeService.ConfigTests
+import Bots.BadgeService.StripeTests
+import Bots.BadgeService.WaitersTests
+import Bots.BadgeService.WebTests
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -64,6 +70,13 @@ main = do
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
       describe "Supporter badges" badgeTests
+      describe "SimpleX badge service" $ do
+        badgeConfigTests
+        badgeWebTests
+        badgeCatalogTests
+        badgeWaitersTests
+        badgeBTCPayTests
+        badgeStripeTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
@@ -89,7 +102,7 @@ main = do
           describe "SimpleX chat client" chatTests
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           xdescribe'' "SimpleX Directory service bot" directoryServiceTests
-          xdescribe'' "SimpleX Badge service bot" badgeServiceTests
+          xdescribe'' "SimpleX badge service e2e" badgeServiceTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           sequential $ xdescribe'' "Save query plans" saveQueryPlans
