@@ -21,6 +21,7 @@ module BadgeService.Service
 where
 
 import BadgeService.Catalog (defaultCatalog)
+import BadgeService.Codes (issueOneCode, singleUse)
 import BadgeService.Config (BadgeIssuerKey (..), ServiceConfig (..), readServiceConfig)
 import BadgeService.Options
 import BadgeService.Poller (newPollerEnv, newReadHints, runPoller)
@@ -259,13 +260,9 @@ data IssueCodeOpts = IssueCodeOpts
     paymentStatus :: BadgeCodePaymentStatus
   }
 
--- | The caller sees the code once; only its hash is stored, so a lost code cannot be recovered.
 issueBadgeCode :: ChatController -> IssueCodeOpts -> IO (Either String BadgeCode)
-issueBadgeCode cc IssueCodeOpts {badgeType, months, paymentStatus} = do
-  code <- randomBadgeCode $ random cc
-  now <- getCurrentTime
-  r <- withDB' "issueBadgeCode" cc $ \db -> insertBadgeCode db (badgeCodeHash code) badgeType months paymentStatus now
-  pure $ code <$ r
+issueBadgeCode cc IssueCodeOpts {badgeType, months, paymentStatus} =
+  fmap fst <$> issueOneCode cc badgeType months paymentStatus singleUse
 
 processQueuedRequests :: BadgeIssuerKey -> ServiceState -> IO ()
 processQueuedRequests key env = do
@@ -395,14 +392,14 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
           Just issued -> credentialForEntry key masterKey issued >>= \case
             Left e -> logError ("badge service signing failed: " <> T.pack e) $> errorResponse BSEInternal
             Right signed -> do
-              -- If the code was revoked or redeemed while signing, the claim fails. Read the code again to tell the client why.
+              -- If the code was revoked or used up while signing, the claim fails. Read the code again to tell the client why.
               r <- withDB "writeCodeRedemption" cc $ \db ->
                 liftIO (createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType} now) >>= \case
                   Nothing ->
                     readCode now code db >>= \case
                       Left resp -> pure resp
-                      Right _ -> logError "badge service: redeeming a code failed, but the code is neither redeemed nor revoked" $> errorResponse BSEInternal
-                  Just purchaseId -> liftIO $ do
+                      Right _ -> logError "badge service: redeeming a code failed, but the code has uses left and is not revoked" $> errorResponse BSEInternal
+                  Just (purchaseId, _) -> liftIO $ do
                     appendLedgerPlan db purchaseId [granted] $ Just $ issuanceAfter granted signed
                     entries_ <- getLedgerEntries db purchaseId 0
                     pure $ maybe (errorResponse BSEInternal) (credentialResponse (Just $ snd signed) Nothing) entries_
@@ -411,25 +408,24 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
     readCode now code db = liftIO $
       getBadgeCode db (badgeCodeHash code) >>= \case
         Nothing -> pure $ Left $ errorResponse BSECodeInvalid
-        Just c@IssuedCode {revokedAt, paymentStatus, expiresAt, redemption}
-          -- Revoked is checked first, so it answers as if the code never existed.
-          | Just _ <- revokedAt -> pure $ Left $ errorResponse BSECodeInvalid
-          -- Redeeming an unpaid code would issue a free badge, so unpaid is refused.
-          | CPSUnpaid <- paymentStatus -> pure $ Left $ errorResponse BSEPaymentPending
-          | otherwise ->
-              checkUnspent db redemption >>= \case
-                Left resp -> pure $ Left resp
-                Right ()
-                  | maybe False (now >=) expiresAt -> pure $ Left $ errorResponse BSECodeExpired
-                  | otherwise -> pure $ Right c
-    checkUnspent db = \case
-      CodeUnredeemed -> pure $ Right ()
-      CodeRedeemedUnreadable -> pure $ Left $ errorResponse BSEInternal
-      CodeRedeemed RedeemedCode {purchaseKey = k, badgePurchaseId, credential}
-        | k /= purchaseKey -> pure $ Left $ errorResponse BSECodeUsed
-        | otherwise ->
-            maybe (Left $ errorResponse BSEInternal) (Left . credentialResponse (Just credential) Nothing)
-              <$> getLedgerEntries db badgePurchaseId 0
+        Just c@IssuedCode {badgeCodeId, revokedAt, paymentStatus, expiresAt, redeemLimit, redeemCount} ->
+          getCodePurchaseForKey db badgeCodeId purchaseKey >>= \case
+            -- A key that already redeemed gets its credential back without a use, even if the code has since
+            -- expired or been revoked: a client whose reply was lost retries, and would otherwise lose the badge.
+            KeyRedeemed KeyPurchase {badgePurchaseId, credential} ->
+              maybe (Left $ errorResponse BSEInternal) (Left . credentialResponse (Just credential) Nothing)
+                <$> getLedgerEntries db badgePurchaseId 0
+            -- code_used would make the client drop its keys, so the holder could never get the badge back.
+            KeyRedeemedUnreadable ->
+              logError "badge service: a redeemed code's credential is missing or unreadable" $> Left (errorResponse BSEInternal)
+            KeyUnredeemed
+              -- Revoked is checked first, so it answers as if the code never existed.
+              | Just _ <- revokedAt -> pure $ Left $ errorResponse BSECodeInvalid
+              -- Redeeming an unpaid code would issue a free badge, so unpaid is refused.
+              | CPSUnpaid <- paymentStatus -> pure $ Left $ errorResponse BSEPaymentPending
+              | redeemCount >= redeemLimit -> pure $ Left $ errorResponse BSECodeUsed
+              | maybe False (now >=) expiresAt -> pure $ Left $ errorResponse BSECodeExpired
+              | otherwise -> pure $ Right c
 
 -- | The purchase is reached through the verified signer key and no other way.
 issueBadgeCmd :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeBalance -> IO BadgeServiceResponse

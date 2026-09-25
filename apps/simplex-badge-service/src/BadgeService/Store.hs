@@ -4,14 +4,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module BadgeService.Store
   ( IssuedCode (..),
-    CodeRedemption (..),
-    RedeemedCode (..),
+    KeyRedemption (..),
+    KeyPurchase (..),
     NewCodePurchase (..),
     ServicePurchase (..),
     getBadgeCode,
+    getCodePurchaseForKey,
     purchaseKeyExists,
     getPurchaseByKey,
     getLedgerTip,
@@ -27,6 +29,7 @@ module BadgeService.Store
 where
 
 import BadgeService.Store.Invoices (executeChanging)
+import Control.Monad (forM)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -58,17 +61,17 @@ data IssuedCode = IssuedCode
     paymentStatus :: BadgeCodePaymentStatus,
     revokedAt :: Maybe UTCTime,
     expiresAt :: Maybe UTCTime,
-    redemption :: CodeRedemption
+    redeemLimit :: Int,
+    redeemCount :: Int
   }
 
-data CodeRedemption
-  = CodeUnredeemed
-  | CodeRedeemed RedeemedCode
-  | CodeRedeemedUnreadable
+data KeyRedemption
+  = KeyUnredeemed
+  | KeyRedeemed KeyPurchase
+  | KeyRedeemedUnreadable
 
-data RedeemedCode = RedeemedCode
+data KeyPurchase = KeyPurchase
   { badgePurchaseId :: Int64,
-    purchaseKey :: C.PublicKeyEd25519,
     credential :: BadgeCredential
   }
 
@@ -91,24 +94,33 @@ getBadgeCode db codeHash =
     DB.query
       db
       [sql|
-        SELECT c.badge_code_id, c.badge_type, c.months, c.code_payment_status, c.revoked_at,
-               c.expires_at, p.badge_purchase_id, p.purchase_key, i.credential
-        FROM sx_badge_service_badge_codes c
-        LEFT JOIN sx_badge_service_badge_purchases p ON p.badge_code_id = c.badge_code_id
-        LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
-        WHERE c.code_hash = ?
-        ORDER BY i.period_end DESC
-        LIMIT 1
+        SELECT badge_code_id, badge_type, months, code_payment_status, revoked_at, expires_at, redeem_limit, redeem_count
+        FROM sx_badge_service_badge_codes
+        WHERE code_hash = ?
       |]
       (Only (Binary codeHash))
   where
-    toCode (badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, purchaseId_, purchaseKey_, credential_) =
-      IssuedCode {badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, redemption = codeRedemption purchaseId_ purchaseKey_ credential_}
-    codeRedemption purchaseId_ purchaseKey_ credential_ = case (purchaseId_, purchaseKey_) of
-      (Just badgePurchaseId, Just purchaseKey) -> case decodeCredential =<< credential_ of
-        Just credential -> CodeRedeemed RedeemedCode {badgePurchaseId, purchaseKey, credential}
-        Nothing -> CodeRedeemedUnreadable
-      _ -> CodeUnredeemed
+    toCode (badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, redeemLimit, redeemCount) =
+      IssuedCode {badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, redeemLimit, redeemCount}
+
+getCodePurchaseForKey :: DB.Connection -> Int64 -> C.PublicKeyEd25519 -> IO KeyRedemption
+getCodePurchaseForKey db badgeCodeId key =
+  maybeFirstRow' KeyUnredeemed toRedemption $
+    DB.query
+      db
+      [sql|
+        SELECT p.badge_purchase_id, i.credential
+        FROM sx_badge_service_badge_purchases p
+        LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
+        WHERE p.badge_code_id = ? AND p.purchase_key = ?
+        ORDER BY i.period_end DESC
+        LIMIT 1
+      |]
+      (badgeCodeId, key)
+  where
+    toRedemption (badgePurchaseId, credential_) = case decodeCredential =<< credential_ of
+      Just credential -> KeyRedeemed KeyPurchase {badgePurchaseId, credential}
+      Nothing -> KeyRedeemedUnreadable
     decodeCredential (Binary bs) = J.decodeStrict' bs
 
 purchaseKeyExists :: DB.Connection -> C.PublicKeyEd25519 -> IO Bool
@@ -222,39 +234,37 @@ appendLedgerPlan db purchaseId rows issuance_ = do
         ((entryId, purchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, createdAt, createdAt, entryTypeT, creditType, debitType))
       insertedRowId db
 
--- redeemed_at is stamped here, so this must run in the same transaction as the credential rows.
--- Mark the code as redeemed before adding the purchase. On Postgres, a revoke or redemption running
--- at the same time then waits, sees the code is taken, and fails.
-createCodePurchase :: DB.Connection -> NewCodePurchase -> UTCTime -> IO (Maybe Int64)
+-- The claim takes one use before adding the purchase, so a concurrent revoke or redemption waits on this row and sees the new count.
+-- Run it in the credential's transaction. It returns the use count this claim reached.
+createCodePurchase :: DB.Connection -> NewCodePurchase -> UTCTime -> IO (Maybe (Int64, Int))
 createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do
-  claimed <-
-    executeChanging
-      db
-      "UPDATE sx_badge_service_badge_codes SET redeemed_at = ? WHERE badge_code_id = ? AND redeemed_at IS NULL AND revoked_at IS NULL"
-      (now, badgeCodeId)
-  if claimed == 0
-    then pure Nothing
-    else do
-      DB.execute
+  claimed_ <-
+    maybeFirstRow fromOnly $
+      DB.query
         db
-        [sql|
-          INSERT INTO sx_badge_service_badge_purchases
-            (purchase_key, master_key, initial_badge_type, current_badge_type, status, badge_code_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?)
-        |]
-        (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, badgeCodeId, now, now)
-      Just <$> insertedRowId db
+        "UPDATE sx_badge_service_badge_codes SET redeem_count = redeem_count + 1, redeemed_at = ? WHERE badge_code_id = ? AND redeem_count < redeem_limit AND revoked_at IS NULL RETURNING redeem_count"
+        (now, badgeCodeId)
+  forM claimed_ $ \claimedCount -> do
+    DB.execute
+      db
+      [sql|
+        INSERT INTO sx_badge_service_badge_purchases
+          (purchase_key, master_key, initial_badge_type, current_badge_type, status, badge_code_id, created_at, updated_at)
+        VALUES (?,?,?,?,?,?,?,?)
+      |]
+      (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, badgeCodeId, now, now)
+    (,claimedCount) <$> insertedRowId db
 
 data RevokeResult = Revoked | AlreadyRevoked | AlreadyRedeemed | NoSuchCode
   deriving (Eq, Show)
 
--- | A code that was already redeemed can't be revoked, because its badge was already given out.
+-- | A code with no uses left can't be revoked, because every badge it grants was already given out.
 revokeCode :: DB.Connection -> ByteString -> UTCTime -> IO RevokeResult
 revokeCode db codeHash now = do
   revoked <-
     executeChanging
       db
-      "UPDATE sx_badge_service_badge_codes SET revoked_at = ? WHERE code_hash = ? AND revoked_at IS NULL AND redeemed_at IS NULL"
+      "UPDATE sx_badge_service_badge_codes SET revoked_at = ? WHERE code_hash = ? AND revoked_at IS NULL AND redeem_count < redeem_limit"
       (now, Binary codeHash)
   if revoked > 0
     then pure Revoked
@@ -265,12 +275,13 @@ revokeCode db codeHash now = do
     refusal :: Only (Maybe UTCTime) -> RevokeResult
     refusal (Only revokedAt) = maybe AlreadyRedeemed (const AlreadyRevoked) revokedAt
 
-insertBadgeCode :: DB.Connection -> ByteString -> BadgeType -> Int -> BadgeCodePaymentStatus -> UTCTime -> IO ()
-insertBadgeCode db codeHash badgeType months paymentStatus now =
+insertBadgeCode :: DB.Connection -> ByteString -> BadgeType -> Int -> BadgeCodePaymentStatus -> Int -> UTCTime -> IO Int64
+insertBadgeCode db codeHash badgeType months paymentStatus redeemLimit now = do
   DB.execute
     db
     [sql|
-      INSERT INTO sx_badge_service_badge_codes (code_hash, badge_type, months, code_payment_status, created_at)
-      VALUES (?,?,?,?,?)
+      INSERT INTO sx_badge_service_badge_codes (code_hash, badge_type, months, code_payment_status, redeem_limit, created_at)
+      VALUES (?,?,?,?,?,?)
     |]
-    (Binary codeHash, badgeType, months, paymentStatus, now)
+    (Binary codeHash, badgeType, months, paymentStatus, redeemLimit, now)
+  insertedRowId db

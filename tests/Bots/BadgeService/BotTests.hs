@@ -10,10 +10,12 @@
 
 module Bots.BadgeService.BotTests where
 
+import BadgeService.Codes (issueOneCode)
 import BadgeService.Config (BadgeIssuerKey (..), readServiceConfig)
 import Bots.BadgeService.ConfigTests (withIssuer)
 import BadgeService.Options
 import BadgeService.Service
+import BadgeService.Store (IssuedCode (..), getBadgeCode)
 import BadgeService.Store.Invoices (markCodePaid)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -43,6 +45,7 @@ import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey
 import Simplex.Chat.Badges.Code (BadgeCode, badgeCodeHash, badgeCodeText, formatBadgeCode, parseBadgeCode, randomBadgeCode)
 import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag, endOfMondayAfter)
 import Simplex.Chat.Badges.Service
+import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
@@ -50,7 +53,7 @@ import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
-import Simplex.Messaging.Agent.Store.Common (withTransaction)
+import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -85,11 +88,16 @@ badgeServiceTests = do
   it "should refuse to start when the [issuer] key is not one clients trust" testIssuerIniKeyMustBeTrusted
   it "should credit a code's months and issue one credential per month" testCodeMonthsRenew
   it "should return the stored credential for a repeat inside an issued period" testRepeatInsideIssuedPeriod
+  it "should redeem a multi-use code to its limit" testMultiUseWithoutGroup
+  it "should not spend a multi-use code again when its holder redeems it after the badge ended" testMultiUseRepeatAfterExpiry
+  it "should answer internal, spending no use, when a holder's stored credential is unreadable" testUnreadableCredentialIsInternal
   it "should lapse only the months that elapsed while the client was away" testLapseWhileAway
   it "should round the last month's expiry up to the end of the Monday after it" testLastMonthExpiryRounds
   it "should sign a renewal with the master key stored on the purchase" testRenewalSignsWithStoredMasterKey
   it "should leave the client holding the same ledger rows as the service" testClientReplicatesLedger
   it "should renew a badge whose credential is lapsing, with no command" testWorkerRenews
+  it "should keep answering and renewing a holder after its partly used multi-use code is revoked" testRevokedMultiUseHolderRenews
+  it "should return a multi-use holder's renewed credential on a repeat, apart from a later holder" testMultiUseHoldersRenewApart
   it "should request from the wake it set a day before the credential lapses" testRequestWakeFires
   it "should present from the wake it set at the credential's expiry" testPresentWakeFires
   it "should renew a badge whose newest ledger row is of an unknown type" testRenewsAfterUnknownEntry
@@ -180,7 +188,9 @@ withBadgeServiceEnv ps test = do
   bsLink <- withTestChat ps serviceDbPrefix $ \bs -> do
     bs <## "subscribed 1 connections on server localhost"
     bs ##> "/sa"
-    (sLink, _) <- getContactLinks bs False
+    -- getContactLinks gives the old-clients line only half a second, which a loaded run can miss.
+    sLink <- getContactLink_ bs False
+    bs <##. "The contact link for old clients: "
     bs <## "auto_accept off"
     pure sLink
   let clientCfg =
@@ -387,6 +397,17 @@ credentialOf = \case
   BSPBadgeCredential {credential} -> credential
   r -> error $ "expected badgeCredential, got " <> show (J.toJSON r)
 
+shouldAnswerError :: HasCallStack => BadgeServiceResponse -> BadgeServiceErrorCode -> IO ()
+shouldAnswerError r expected = case r of
+  BSPError {code = ec} -> ec `shouldBe` expected
+  _ -> expectationFailure $ "expected " <> show expected <> ", got: " <> show (J.toJSON r)
+
+codeCounts :: DBStore -> ByteString -> IO (Maybe (Int, Int))
+codeCounts st codeHash = fmap (\IssuedCode {redeemLimit, redeemCount} -> (redeemLimit, redeemCount)) <$> withTransaction st (`getBadgeCode` codeHash)
+
+codeUses :: ChatController -> BadgeCode -> IO (Maybe (Int, Int))
+codeUses cc code = codeCounts (chatStore cc) (badgeCodeHash code)
+
 nextDue :: [StatementEntry] -> UTCTime
 nextDue entries = let (_, _, start) = entryOf (last entries) in start
 
@@ -396,12 +417,21 @@ newPurchaseKeys = do
   (purchaseKey, _) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
   (purchaseKey,) <$> generateMasterKey g
 
+redeemAsNewPurchase :: HasCallStack => BadgeServiceEnv -> BadgeCode -> IO BadgeServiceResponse
+redeemAsNewPurchase env code = newPurchaseKeys >>= \keys -> redeemWithKeys env keys code
+
+redeemWithKeys :: HasCallStack => BadgeServiceEnv -> (C.PublicKeyEd25519, BadgeMasterKey) -> BadgeCode -> IO BadgeServiceResponse
+redeemWithKeys env (purchaseKey, masterKey) code = serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
+
 assertBalance :: HasCallStack => BadgeServiceEnv -> C.PublicKeyEd25519 -> StatementEntry -> IO BadgeServiceResponse
 assertBalance env purchaseKey lastEntry =
   serviceCmd env purchaseKey BSCIssueBadge {balance = BadgeBalance {lastEntry}}
 
 expiryOf :: HasCallStack => BadgeServiceResponse -> Maybe UTCTime
 expiryOf r = (\(BadgeCredential _ _ _ BadgeInfo {badgeExpiry}) -> badgeExpiry) <$> credentialOf r
+
+badgeTypeOf :: HasCallStack => BadgeServiceResponse -> Maybe BadgeType
+badgeTypeOf r = (\(BadgeCredential _ _ _ BadgeInfo {badgeType}) -> badgeType) <$> credentialOf r
 
 masterKeyOf :: HasCallStack => BadgeServiceResponse -> Maybe BadgeMasterKey
 masterKeyOf r = (\(BadgeCredential _ mk _ _) -> mk) <$> credentialOf r
@@ -410,8 +440,8 @@ testCodeMonthsRenew :: HasCallStack => TestParams -> IO ()
 testCodeMonthsRenew ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc} -> do
     code <- issueCode cc BTSupporter 3
-    (purchaseKey, masterKey) <- newPurchaseKeys
-    redeemed <- serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
+    keys@(purchaseKey, _) <- newPurchaseKeys
+    redeemed <- redeemWithKeys env keys code
     let (entries, previousEntryId) = statementOf redeemed
     previousEntryId `shouldBe` Nothing
     map entryTag entries `shouldBe` ["code", "badge"]
@@ -435,19 +465,79 @@ testRepeatInsideIssuedPeriod :: HasCallStack => TestParams -> IO ()
 testRepeatInsideIssuedPeriod ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
     code <- issueCode cc BTSupporter 2
-    (purchaseKey, masterKey) <- newPurchaseKeys
-    redeemed <- serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
+    keys@(purchaseKey, _) <- newPurchaseKeys
+    redeemed <- redeemWithKeys env keys code
     let (entries, _) = statementOf redeemed
     repeated <- assertBalance env purchaseKey (last entries)
     map entryTag (fst $ statementOf repeated) `shouldBe` []
     credentialOf repeated `shouldBe` credentialOf redeemed
 
+testMultiUseRepeatAfterExpiry :: HasCallStack => TestParams -> IO ()
+testMultiUseRepeatAfterExpiry ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueMultiUseCode cc BTSupporter 1 2
+      redeemFirstBadge alice code
+      rows <- ledgerRows (chatController alice) "badge_ledger"
+      setClockAt bsClock $ dueAtOf rows
+      alice ##> "/_app activate"
+      alice <## "ok"
+      alice <##. "badge alert: support_ended "
+      alice <##. "1: supporter"
+      alice <##. "badge alert: support_ended "
+      waitShownBadge (chatController alice) Nothing
+      -- The repeat uses the same purchase key, so the service returns the credential it already issued.
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      alice <## "badge already redeemed"
+      waitShownBadge (chatController alice) Nothing
+      codeUses cc code `shouldReturn` Just (2, 1)
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> redeemFirstBadge bob code
+      redeemAsNewPurchase env code >>= (`shouldAnswerError` BSECodeUsed)
+
+testMultiUseWithoutGroup :: HasCallStack => TestParams -> IO ()
+testMultiUseWithoutGroup ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
+    code <- issueMultiUseCode cc BTLegend 2 2
+    forM_ [1 :: Int, 2] $ \claimed -> do
+      keys@(_, masterKey) <- newPurchaseKeys
+      redeemed <- redeemWithKeys env keys code
+      let (entries, _) = statementOf redeemed
+      map (\e -> let (c, m, _) = entryOf e in (c, m)) entries `shouldBe` [(2, 2), (-1, 1)]
+      badgeTypeOf redeemed `shouldBe` Just BTLegend
+      expiryOf redeemed `shouldBe` Just (endOfMondayAfter (nextDue entries))
+      masterKeyOf redeemed `shouldBe` Just masterKey
+      codeUses cc code `shouldReturn` Just (2, claimed)
+    redeemAsNewPurchase env code >>= (`shouldAnswerError` BSECodeUsed)
+
+testUnreadableCredentialIsInternal :: HasCallStack => TestParams -> IO ()
+testUnreadableCredentialIsInternal ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
+    code <- issueMultiUseCode cc BTSupporter 1 2
+    let redeem keys = redeemWithKeys env keys code
+    holder <- newPurchaseKeys
+    redeem holder >>= (`shouldSatisfy` isJust) . credentialOf
+    withTransaction (chatStore cc) $ \db ->
+      DB.execute db "UPDATE sx_badge_service_badge_issuances SET credential = ?" (Only (Binary ("not a credential" :: ByteString)))
+    redeem holder >>= (`shouldAnswerError` BSEInternal)
+    codeUses cc code `shouldReturn` Just (2, 1)
+    newPurchaseKeys >>= redeem >>= (`shouldSatisfy` isJust) . credentialOf
+    codeUses cc code `shouldReturn` Just (2, 2)
+    redeem holder >>= (`shouldAnswerError` BSEInternal)
+    codeUses cc code `shouldReturn` Just (2, 2)
+
+-- The operator's //issue makes single-use codes only, so multi-use codes are issued directly.
+issueMultiUseCode :: HasCallStack => ChatController -> BadgeType -> Int -> Int -> IO BadgeCode
+issueMultiUseCode cc badgeType months uses =
+  issueOneCode cc badgeType months CPSFree uses >>= \case
+    Right (code, _) -> pure code
+    Left e -> error $ "issuing a multi-use code failed: " <> e
+
 testLapseWhileAway :: HasCallStack => TestParams -> IO ()
 testLapseWhileAway ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc} -> do
     code <- issueCode cc BTSupporter 6
-    (purchaseKey, masterKey) <- newPurchaseKeys
-    redeemed <- serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
+    keys@(purchaseKey, _) <- newPurchaseKeys
+    redeemed <- redeemWithKeys env keys code
     let (entries, _) = statementOf redeemed
     -- The clock is moved from the anchor because adding months to an already clipped due date would miss the boundary.
     setClockAt bsClock (addMonths 4 (anchorOf (last entries)))
@@ -461,8 +551,8 @@ testLastMonthExpiryRounds :: HasCallStack => TestParams -> IO ()
 testLastMonthExpiryRounds ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc} -> do
     code <- issueCode cc BTSupporter 2
-    (purchaseKey, masterKey) <- newPurchaseKeys
-    redeemed <- serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
+    keys@(purchaseKey, _) <- newPurchaseKeys
+    redeemed <- redeemWithKeys env keys code
     let (entries, _) = statementOf redeemed
     setClockAt bsClock (nextDue entries)
     renewed <- assertBalance env purchaseKey (last entries)
@@ -475,8 +565,8 @@ testRenewalSignsWithStoredMasterKey :: HasCallStack => TestParams -> IO ()
 testRenewalSignsWithStoredMasterKey ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsController = cc} -> do
     code <- issueCode cc BTSupporter 2
-    (purchaseKey, masterKey) <- newPurchaseKeys
-    redeemed <- serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
+    keys@(purchaseKey, masterKey) <- newPurchaseKeys
+    redeemed <- redeemWithKeys env keys code
     masterKeyOf redeemed `shouldBe` Just masterKey
     let (entries, _) = statementOf redeemed
     setClockAt bsClock (nextDue entries)
@@ -486,14 +576,30 @@ testRenewalSignsWithStoredMasterKey ps =
 -- This type omits service_created_at and created_at because the client records when it stored a row, not when the service wrote it, so those columns never match.
 type ReplicatedRow = (Text, Int, Int, UTCTime, Text, Maybe Text)
 
+replicatedColumns :: String
+replicatedColumns =
+  "entry_uuid, change_months, balance_months, balance_start_ts, balance_badge_type, "
+    <> "COALESCE(entry_credit_type, entry_debit_type)"
+
 ledgerRows :: ChatController -> String -> IO [ReplicatedRow]
 ledgerRows ChatController {chatStore} table =
   withTransaction chatStore $ \db ->
     DB.query_ db . fromString $
-      "SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_badge_type, "
-        <> "COALESCE(entry_credit_type, entry_debit_type) FROM "
-        <> table
-        <> " ORDER BY entry_id"
+      "SELECT " <> replicatedColumns <> " FROM " <> table <> " ORDER BY entry_id"
+
+purchaseLedgerRows :: ChatController -> Text -> IO [ReplicatedRow]
+purchaseLedgerRows ChatController {chatStore} entryUuid =
+  withTransaction chatStore $ \db ->
+    DB.query
+      db
+      ( fromString $
+          "SELECT "
+            <> replicatedColumns
+            <> " FROM sx_badge_service_badge_ledger "
+            <> "WHERE badge_purchase_id = (SELECT badge_purchase_id FROM sx_badge_service_badge_ledger WHERE entry_uuid = ?) "
+            <> "ORDER BY entry_id"
+      )
+      (Only entryUuid)
 
 -- the two dates the CLI prints for each row
 ledgerTimes :: ChatController -> IO [(UTCTime, UTCTime)]
@@ -696,6 +802,78 @@ testWorkerRenews ps =
       alice ##> "/_app activate"
       alice <## "ok"
       waitShownIssued (chatController alice)
+
+testRevokedMultiUseHolderRenews :: HasCallStack => TestParams -> IO ()
+testRevokedMultiUseHolderRenews ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueMultiUseCode cc BTSupporter 3 2
+      redeemFirstBadge alice code
+      redeemed <- ledgerRows (chatController alice) "badge_ledger"
+      revokeCodeAs cc code `shouldReturn` "revoked"
+      redeemAsNewPurchase env code >>= (`shouldAnswerError` BSECodeInvalid)
+      codeUses cc code `shouldReturn` Just (2, 1)
+      -- A holder whose reply was lost retries with the same key and still gets its badge.
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      alice <## "badge already redeemed"
+      codeUses cc code `shouldReturn` Just (2, 1)
+      let (requestAt, presentAt) = renewalMoments redeemed
+      setClockAt bsClock requestAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      renewed <- waitLedgerRows (chatController alice) 3
+      alice <##. "1: supporter"
+      map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-1, 1, Just "badge")]
+      ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` renewed
+      setClockAt bsClock presentAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      waitShownIssued (chatController alice)
+
+testMultiUseHoldersRenewApart :: HasCallStack => TestParams -> IO ()
+testMultiUseHoldersRenewApart ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClock, bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueMultiUseCode cc BTSupporter 3 2
+      redeemFirstBadge alice code
+      redeemed <- ledgerRows (chatController alice) "badge_ledger"
+      let requestAt = fst $ renewalMoments redeemed
+      setClockAt bsClock requestAt
+      alice ##> "/_app activate"
+      alice <## "ok"
+      renewed <- waitLedgerRows (chatController alice) 3
+      alice <##. "1: supporter"
+      map (\(_, ch, m, _, _, t) -> (ch, m, t)) renewed `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge"), (-1, 1, Just "badge")]
+      bobRows <- withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
+        redeemFirstBadge bob code
+        ledgerRows (chatController bob) "badge_ledger"
+      map (\(_, ch, m, _, _, t) -> (ch, m, t)) bobRows `shouldBe` [(3, 3, Just "code"), (-1, 2, Just "badge")]
+      let (bobFirstUuid, _, _, bobRedeemedAt, _, _) = head bobRows
+      bobRedeemedAt `shouldSatisfy` (>= requestAt)
+      purchaseLedgerRows cc bobFirstUuid `shouldReturn` bobRows
+      issued <- issuedExpiries (chatController alice)
+      length issued `shouldBe` 2
+      alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
+      alice <## "badge already redeemed"
+      codeUses cc code `shouldReturn` Just (2, 2)
+      let (aliceFirstUuid, _, _, _, _, _) = head renewed
+      ledgerRows (chatController alice) "badge_ledger" `shouldReturn` renewed
+      purchaseLedgerRows cc aliceFirstUuid `shouldReturn` renewed
+      issuedExpiries (chatController alice) `shouldReturn` issued
+      alicePurchaseKey <- codeRedemptionKey (chatController alice)
+      (_, masterKey) <- newPurchaseKeys
+      repeated <- redeemWithKeys env (alicePurchaseKey, masterKey) code
+      expiryOf repeated `shouldBe` Just (last issued)
+      codeUses cc code `shouldReturn` Just (2, 2)
+
+codeRedemptionKey :: HasCallStack => ChatController -> IO C.PublicKeyEd25519
+codeRedemptionKey ChatController {chatStore} = do
+  rows :: [Only C.PublicKeyEd25519] <-
+    withTransaction chatStore $ \db ->
+      DB.query_ db "SELECT purchase_key FROM badge_code_redemptions"
+  case rows of
+    [Only k] -> pure k
+    _ -> error $ "expected one code redemption, got " <> show (length rows)
 
 testRequestWakeFires :: HasCallStack => TestParams -> IO ()
 testRequestWakeFires ps =

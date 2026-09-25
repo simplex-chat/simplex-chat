@@ -17,7 +17,8 @@ badgeServiceSchemaMigrations = sortOn name $ map migration schemaMigrations
 
 schemaMigrations :: [(String, Text, Maybe Text)]
 schemaMigrations =
-  [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema)
+  [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema),
+    ("20260918_badge_group_ops", m20260918_badge_group_ops, Just down_m20260918_badge_group_ops)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -107,6 +108,34 @@ DROP INDEX @idx_badge_purchases_code;
       servicePrefix
       [r|
 DROP TABLE @badge_codes;
+|]
+
+m20260918_badge_group_ops :: Text
+m20260918_badge_group_ops =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @badge_codes ADD COLUMN redeem_limit INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE @badge_codes ADD COLUMN redeem_count INTEGER NOT NULL DEFAULT 0;
+
+-- Redemptions made before this migration must count against the new limit, or every code
+-- redeemed already would read as unspent and could be redeemed once more.
+UPDATE @badge_codes SET redeem_count = 1 WHERE redeemed_at IS NOT NULL;
+
+DROP INDEX @idx_badge_purchases_code;
+
+CREATE INDEX @idx_badge_purchases_code ON @badge_purchases(badge_code_id);
+|]
+
+-- The index stays non-unique, since a multi-use code may already have several purchases.
+down_m20260918_badge_group_ops :: Text
+down_m20260918_badge_group_ops =
+  withPrefix
+    servicePrefix
+    [r|
+ALTER TABLE @badge_codes DROP COLUMN redeem_count;
+ALTER TABLE @badge_codes DROP COLUMN redeem_limit;
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.
