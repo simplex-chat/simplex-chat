@@ -12,6 +12,7 @@ module Bots.BadgeService.BotTests where
 
 import BadgeService.Codes (issueOneCode)
 import BadgeService.Config (BadgeIssuerKey (..), readServiceConfig)
+import BadgeService.Group (GroupEvent)
 import Bots.BadgeService.ConfigTests (withIssuer)
 import BadgeService.Options
 import BadgeService.Service
@@ -23,7 +24,7 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
-import Control.Concurrent.STM (atomically, readTMVar)
+import Control.Concurrent.STM (TQueue, atomically, readTMVar)
 import Control.Monad (forM_, void, when)
 import Control.Exception (finally)
 import qualified Data.Aeson as J
@@ -47,7 +48,7 @@ import Simplex.Chat.Badges.Ledger (addMonths, creditTypeTag, debitTypeTag, endOf
 import Simplex.Chat.Badges.Service
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
 import Simplex.Chat.Bot.Store (withDB')
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (CRCustomChatResponse))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatError (..), ChatErrorType (..), ChatResponse (CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
@@ -79,16 +80,18 @@ badgeServiceTests = do
   it "should refuse a code that has not been paid for" testRedeemUnpaidCode
   it "should refuse a badge code past its redemption deadline" testExpiredCode
   it "should keep answering a code redeemed before its deadline" testRedeemedBeforeTheDeadline
-  it "should refuse a revoked badge code, and refuse to revoke it twice" testRevokedCode
+  it "should refuse a revoked badge code, and report a second revoke as already revoked" testRevokedCode
   it "should refuse to revoke a code that was redeemed, and keep its badge" testRevokeRedeemedCode
   it "should answer revoking an unknown code as no such code" testRevokeUnknownCode
+  it "should answer code_invalid to a code that is both unpaid and revoked" testRevokedUnpaidCode
+  it "should refuse a revoke with trailing input, leaving the code live" testRevokeRejectsTrailingInput
   it "should refuse to issue a code with an unknown badge type or a nonsense month count" testIssueRejectsBadArguments
   it "should refuse a request whose purchaseKey is not the verified signer" testPurchaseKeyMismatch
   it "should refuse to start unless the issuer secret is the key trusted at its index" testIssuerKeyMustMatchConfig
   it "should refuse to start when the [issuer] key is not one clients trust" testIssuerIniKeyMustBeTrusted
   it "should credit a code's months and issue one credential per month" testCodeMonthsRenew
   it "should return the stored credential for a repeat inside an issued period" testRepeatInsideIssuedPeriod
-  it "should redeem a multi-use code to its limit" testMultiUseWithoutGroup
+  it "should redeem a multi-use code to its limit with no group to track it" testMultiUseWithoutGroup
   it "should not spend a multi-use code again when its holder redeems it after the badge ended" testMultiUseRepeatAfterExpiry
   it "should answer internal, spending no use, when a holder's stored credential is unreadable" testUnreadableCredentialIsInternal
   it "should lapse only the months that elapsed while the client was away" testLapseWhileAway
@@ -115,8 +118,11 @@ badgeServiceTests = do
   it "should broadcast the current profile when a renewal presents a badge" testRenewalKeepsProfileEdits
   it "should present the month already issued when a previous pass did not" testPresentationCatchesUp
 
+badgeBotName :: Text
+badgeBotName = "SimpleX Badges"
+
 badgeProfile :: Profile
-badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
+badgeProfile = Profile {displayName = badgeBotName, fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
 
 serviceDbPrefix :: FilePath
 serviceDbPrefix = "badge_service"
@@ -137,7 +143,7 @@ mkBadgeServiceOpts TestParams {tmpPath = ps} secretKey =
                 {dbFilePrefix = ps </> serviceDbPrefix}
 #endif
           },
-      serviceName = "SimpleX Badges",
+      serviceName = badgeBotName,
       clientService = True,
       noAddress = False,
       runCLI = False,
@@ -202,11 +208,15 @@ withBadgeServiceEnv ps test = do
 issueCode :: HasCallStack => ChatController -> BadgeType -> Int -> IO BadgeCode
 issueCode cc badgeType months = issueCodeAs cc badgeType months "free"
 
-revokeCodeAs :: HasCallStack => ChatController -> BadgeCode -> IO T.Text
-revokeCodeAs cc code =
-  sendChatCmdStr cc ("//revoke " <> T.unpack (formatBadgeCode code)) >>= \case
-    Right (CRCustomChatResponse _ response) -> pure response
-    Left e -> pure (T.pack (show e))
+revokeCodeAs :: HasCallStack => ChatController -> BadgeCode -> IO (Either T.Text T.Text)
+revokeCodeAs cc code = revokeRaw cc (formatBadgeCode code)
+
+-- | Left is a refusal or a failure the service answers as a command error.
+revokeRaw :: HasCallStack => ChatController -> T.Text -> IO (Either T.Text T.Text)
+revokeRaw cc args =
+  sendChatCmdStr cc ("//revoke " <> T.unpack args) >>= \case
+    Right (CRCustomChatResponse _ response) -> pure (Right response)
+    Left (ChatError (CECommandError e)) -> pure (Left (T.pack e))
     r -> error $ "revoke failed: " <> show (() <$ r)
 
 issueCodeAs :: HasCallStack => ChatController -> BadgeType -> Int -> String -> IO BadgeCode
@@ -323,11 +333,13 @@ testIssueRejectsBadArguments ps =
     refuses ""
     issueRaw cc "supporter 255 paid" >>= (`shouldSatisfy` isRight)
 
-issueRaw :: ChatController -> String -> IO (Either () ())
+-- | Left is a refusal or a failure the service answers as a command error.
+issueRaw :: HasCallStack => ChatController -> String -> IO (Either T.Text ())
 issueRaw cc args =
   sendChatCmdStr cc ("//issue " <> args) >>= \case
     Right CRCustomChatResponse {} -> pure $ Right ()
-    _ -> pure $ Left ()
+    Left (ChatError (CECommandError e)) -> pure (Left (T.pack e))
+    r -> error $ "issue failed: " <> show (() <$ r)
 
 testRedeemSecondCode :: HasCallStack => TestParams -> IO ()
 testRedeemSecondCode ps =
@@ -369,12 +381,16 @@ testRedeemSameCodeOtherProfile ps =
       showActiveUser alice "alice (Alice, * supporter)"
 
 serviceCmd :: HasCallStack => BadgeServiceEnv -> C.PublicKeyEd25519 -> BadgeServiceCommand -> IO BadgeServiceResponse
-serviceCmd BadgeServiceEnv {bsIssuerKey, bsController} purchaseKey request =
-  badgeServiceResponse bsIssuerKey bsController (Just purchaseKey) reqObject
-  where
-    reqObject = case J.toJSON BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request} of
-      J.Object o -> o
-      _ -> error "badge service request must encode as an object"
+serviceCmd BadgeServiceEnv {bsIssuerKey, bsController} = serviceCmdWith bsIssuerKey bsController Nothing
+
+serviceCmdWith :: HasCallStack => BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> C.PublicKeyEd25519 -> BadgeServiceCommand -> IO BadgeServiceResponse
+serviceCmdWith key cc trackerQ_ purchaseKey request =
+  badgeServiceResponse key cc trackerQ_ (Just purchaseKey) (requestObject purchaseKey request)
+
+requestObject :: HasCallStack => C.PublicKeyEd25519 -> BadgeServiceCommand -> J.Object
+requestObject purchaseKey request = case J.toJSON BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request} of
+  J.Object o -> o
+  _ -> error "badge service request must encode as an object"
 
 entryOf :: StatementEntry -> (Int, Int, UTCTime)
 entryOf StatementEntry {changeMonths, balanceMonths, balanceStartTs} = (changeMonths, balanceMonths, balanceStartTs)
@@ -418,10 +434,15 @@ newPurchaseKeys = do
   (purchaseKey,) <$> generateMasterKey g
 
 redeemAsNewPurchase :: HasCallStack => BadgeServiceEnv -> BadgeCode -> IO BadgeServiceResponse
-redeemAsNewPurchase env code = newPurchaseKeys >>= \keys -> redeemWithKeys env keys code
+redeemAsNewPurchase BadgeServiceEnv {bsIssuerKey, bsController} = redeemWithQueue bsIssuerKey bsController Nothing . badgeCodeText
 
 redeemWithKeys :: HasCallStack => BadgeServiceEnv -> (C.PublicKeyEd25519, BadgeMasterKey) -> BadgeCode -> IO BadgeServiceResponse
 redeemWithKeys env (purchaseKey, masterKey) code = serviceCmd env purchaseKey BSCRedeemBadgeCode {masterKey, code = badgeCodeText code}
+
+redeemWithQueue :: HasCallStack => BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> Text -> IO BadgeServiceResponse
+redeemWithQueue key cc trackerQ_ codeText = do
+  (purchaseKey, masterKey) <- newPurchaseKeys
+  serviceCmdWith key cc trackerQ_ purchaseKey BSCRedeemBadgeCode {masterKey, code = codeText}
 
 assertBalance :: HasCallStack => BadgeServiceEnv -> C.PublicKeyEd25519 -> StatementEntry -> IO BadgeServiceResponse
 assertBalance env purchaseKey lastEntry =
@@ -525,7 +546,7 @@ testUnreadableCredentialIsInternal ps =
     redeem holder >>= (`shouldAnswerError` BSEInternal)
     codeUses cc code `shouldReturn` Just (2, 2)
 
--- The operator's //issue makes single-use codes only, so multi-use codes are issued directly.
+-- Multi-use codes come from the group command, and this service has no group.
 issueMultiUseCode :: HasCallStack => ChatController -> BadgeType -> Int -> Int -> IO BadgeCode
 issueMultiUseCode cc badgeType months uses =
   issueOneCode cc badgeType months CPSFree uses >>= \case
@@ -810,7 +831,7 @@ testRevokedMultiUseHolderRenews ps =
       code <- issueMultiUseCode cc BTSupporter 3 2
       redeemFirstBadge alice code
       redeemed <- ledgerRows (chatController alice) "badge_ledger"
-      revokeCodeAs cc code `shouldReturn` "revoked"
+      revokeCodeAs cc code `shouldReturn` Right "revoked"
       redeemAsNewPurchase env code >>= (`shouldAnswerError` BSECodeInvalid)
       codeUses cc code `shouldReturn` Just (2, 1)
       -- A holder whose reply was lost retries with the same key and still gets its badge.
@@ -1497,7 +1518,7 @@ testRevokeRedeemedCode ps =
       alice <## "supporter badge - active"
       alice <##. "expires "
       refused <- revokeCodeAs cc code
-      refused `shouldSatisfy` T.isInfixOf "redeemed already, so it cannot be revoked"
+      refused `shouldBe` Left "code was redeemed already, so it cannot be revoked"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
       alice <## "badge already redeemed"
 
@@ -1507,15 +1528,34 @@ testRevokeUnknownCode ps =
     g <- C.newRandom
     code <- randomBadgeCode g
     unknown <- revokeCodeAs cc code
-    unknown `shouldSatisfy` T.isInfixOf "no such code"
+    unknown `shouldBe` Left "no such code"
 
 testRevokedCode :: HasCallStack => TestParams -> IO ()
 testRevokedCode ps =
   withBadgeService ps $ \clientCfg _ cc ->
     withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
       paid <- issueCodeAs cc BTSupporter 1 "paid"
-      revokeCodeAs cc paid `shouldReturn` "revoked"
+      revokeCodeAs cc paid `shouldReturn` Right "revoked"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
       alice <## "cannot redeem badge code: badge service error: code_invalid"
-      second <- revokeCodeAs cc paid
-      second `shouldSatisfy` T.isInfixOf "revoked already"
+      revokeCodeAs cc paid `shouldReturn` Right "already revoked"
+
+testRevokedUnpaidCode :: HasCallStack => TestParams -> IO ()
+testRevokedUnpaidCode ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
+    code <- issueCodeAs cc BTSupporter 1 "unpaid"
+    revokeCodeAs cc code `shouldReturn` Right "revoked"
+    redeemAsNewPurchase env code >>= (`shouldAnswerError` BSECodeInvalid)
+
+testRevokeRejectsTrailingInput :: HasCallStack => TestParams -> IO ()
+testRevokeRejectsTrailingInput ps =
+  withBadgeService ps $ \_ _ cc -> do
+    code <- issueCodeAs cc BTSupporter 1 "paid"
+    refused <- revokeRaw cc (formatBadgeCode code <> " junk")
+    -- If the refused call revoked the code anyway, this fails with "already revoked".
+    revokeCodeAs cc code `shouldReturn` Right "revoked"
+    refused `shouldBe` Left badgeCmdUsage
+
+-- The text is spelled out rather than taken from the service, so a change there fails here.
+badgeCmdUsage :: Text
+badgeCmdUsage = "use: //issue supporter|legend|investor [months 1-255] [paid|unpaid|free], or //revoke <code>"

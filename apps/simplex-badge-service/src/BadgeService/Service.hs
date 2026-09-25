@@ -1,6 +1,4 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -21,8 +19,10 @@ module BadgeService.Service
 where
 
 import BadgeService.Catalog (defaultCatalog)
-import BadgeService.Codes (issueOneCode, singleUse)
+import BadgeService.Codes (issueFailedText, issueOneCode, singleUse)
 import BadgeService.Config (BadgeIssuerKey (..), ServiceConfig (..), readServiceConfig)
+import BadgeService.Group (GroupEvent, ensureManagedGroup, groupEvent, hasTracker, refreshTracker, revokeWithTracker, runGroupLane)
+import BadgeService.Group.Command (badgeTypeP, codeP, maxMonths, textTokenP)
 import BadgeService.Options
 import BadgeService.Poller (newPollerEnv, newReadHints, runPoller)
 import BadgeService.Providers.BTCPay (btcpayProvider)
@@ -34,19 +34,17 @@ import BadgeService.Waiters (Waiters, newWaiters)
 import BadgeService.Web.Server (exportWebapp, newWebEnv, runWebListener)
 import Control.Applicative (optional)
 import Control.Concurrent.STM
-import BadgeService.Log (logError, logInfo, logWarn)
+import BadgeService.Log (logError, logInfo)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
-import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Char (isSpace)
 import Data.Either (fromRight)
-import Data.Functor (($>))
+import Data.Functor (($>), (<&>))
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, maybeToList)
+import Data.Maybe (fromMaybe, isJust, maybeToList)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Word (Word32)
@@ -55,20 +53,18 @@ import Simplex.Chat.Badges.Code
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus (..))
-import Simplex.Chat.Bot (initializeBotAddress', sendMessage)
+import Simplex.Chat.Bot (initializeBotAddress')
 import Simplex.Chat.Bot.Store (withDB, withDB')
 import Simplex.Chat.Controller
 import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
-import Simplex.Chat.Messages
-import Simplex.Chat.Messages.CIContent (CIContent (..), SMsgDirection (..), ciContentToText)
 import Simplex.Chat.Options (printDbOpts)
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
-import Simplex.Chat.Types (AgentInvId (..), Contact, User (..))
+import Simplex.Chat.Types (AgentInvId (..), User (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsPublicKey)
-import Simplex.Messaging.Encoding.String (TextEncoding, strEncode, textDecode, textEncode)
+import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Util (raceAny_, safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version (isCompatible)
 import System.Directory (getAppUserDataDirectory)
@@ -77,15 +73,15 @@ import System.Exit (exitFailure)
 data ServiceState = ServiceState
   { serviceCC :: TMVar ChatController,
     serviceRequestQ :: TQueue (User, AgentInvId, Maybe C.PublicKeyEd25519, J.Object),
-    chatRedeemQ :: TQueue (Contact, T.Text)
+    groupEventQ :: TQueue GroupEvent
   }
 
 newServiceState :: IO ServiceState
 newServiceState = do
   serviceCC <- newEmptyTMVarIO
   serviceRequestQ <- newTQueueIO
-  chatRedeemQ <- newTQueueIO
-  pure ServiceState {serviceCC, serviceRequestQ, chatRedeemQ}
+  groupEventQ <- newTQueueIO
+  pure ServiceState {serviceCC, serviceRequestQ, groupEventQ}
 
 welcomeGetOpts :: IO BadgeServiceOpts
 welcomeGetOpts = do
@@ -129,29 +125,29 @@ badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
   key <- requireIssuerKey opts serviceCfg cfg
   waiters <- newWaiters
-  let devRedeem = maybe False devChatRedeem serviceCfg
-      chatHooks =
-        defaultChatHooks
-          { preStartHook = Just $ badgePreStartHook opts,
-            postStartHook = Just $ badgePostStartHook opts devRedeem env,
-            preCmdHook = Just badgeCmdHook
-          }
-  when devRedeem $ logWarn "[dev] chat_redeem is on: /redeem over chat hands out credentials this service can link"
-  -- The reader must not block, since outputQ carries every chat event.
-  simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> do
-    lanes <- maybe (pure []) (serviceLanes waiters cc) serviceCfg
-    raceAny_ $
-      [ forever $
+  let groupCfg = serviceCfg >>= \ServiceConfig {group} -> group
+      trackerQ_ = groupEventQ env <$ groupCfg
+      readEvents cc =
+        forever $
           atomically (readTBQueue $ outputQ cc) >>= \case
             (_, Right (CEvtServiceRequest u reqId sigKey reqData)) ->
               atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
-            (_, Right CEvtNewChatItems {chatItems = AChatItem _ SMDRcv (DirectChat ct) ChatItem {content = mc@CIRcvMsgContent {}} : _})
-              | devRedeem -> atomically $ writeTQueue (chatRedeemQ env) (ct, ciContentToText mc)
-            _ -> pure (),
-        processQueuedRequests key env
-      ]
-        <> [processChatRedeems key env | devRedeem]
-        <> lanes
+            (_, Right ev)
+              | isJust groupCfg -> forM_ (groupEvent ev) $ atomically . writeTQueue (groupEventQ env)
+            _ -> pure ()
+      startLanes cc = do
+        lanes <- maybe (pure []) (serviceLanes waiters cc) serviceCfg
+        -- The group is resolved before the other lanes start, so a failed lookup exits at once rather than waiting for them to end.
+        groupLane_ <- forM groupCfg $ \gc -> runGroupLane cc (groupEventQ env) <$> ensureManagedGroup cc gc
+        raceAny_ $ processQueuedRequests key trackerQ_ env : maybeToList groupLane_ <> lanes
+      chatHooks =
+        defaultChatHooks
+          { preStartHook = Just $ badgePreStartHook opts,
+            postStartHook = Just $ badgePostStartHook opts env,
+            preCmdHook = Just badgeCmdHook
+          }
+  -- The reader runs from the start and must not block, since outputQ carries every chat event and a full queue stalls the core.
+  simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> raceAny_ [readEvents cc, startLanes cc]
   where
     serviceLanes :: Waiters -> ChatController -> ServiceConfig -> IO [IO ()]
     serviceLanes ws ChatController {chatStore} sc = do
@@ -189,13 +185,13 @@ badgeServiceCLI opts@BadgeServiceOpts {serviceConfigFile} = do
       chatHooks =
         defaultChatHooks
           { preStartHook = Just $ badgePreStartHook opts,
-            postStartHook = Just $ badgePostStartHook opts False env,
+            postStartHook = Just $ badgePostStartHook opts env,
             preCmdHook = Just badgeCmdHook,
             eventHook = Just eventHook
           }
   raceAny_
     [ simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing,
-      processQueuedRequests key env
+      processQueuedRequests key Nothing env
     ]
 
 badgeCmdHook :: ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)
@@ -208,25 +204,15 @@ runBadgeCmd cc cmd
   | Right issueOpts <- A.parseOnly issueCmdP cmd =
       issueBadgeCode cc issueOpts >>= \case
         Right code -> pure $ Right CRCustomChatResponse {user_ = Nothing, response = "code " <> formatBadgeCode code}
-        Left e -> pure $ chatCmdError $ "issuing code: " <> e
+        Left _ -> pure $ chatCmdError (T.unpack issueFailedText)
   | Right code <- A.parseOnly revokeCmdP cmd =
-      revokeBadgeCode cc code >>= \case
-        Right Revoked -> pure $ Right CRCustomChatResponse {user_ = Nothing, response = "revoked"}
-        Right AlreadyRevoked -> pure $ chatCmdError "code was revoked already"
-        Right AlreadyRedeemed -> pure $ chatCmdError "code was redeemed already, so it cannot be revoked"
-        Right NoSuchCode -> pure $ chatCmdError "no such code"
-        Left e -> pure $ chatCmdError $ "revoking code: " <> e
-  | otherwise = pure $ chatCmdError "use: //issue supporter|legend|investor [months 1-255] [paid|unpaid|free], or //revoke <code>"
+      revokeWithTracker cc code <&> \case
+        Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
+        Left e -> chatCmdError (T.unpack e)
+  | otherwise = pure $ chatCmdError $ "use: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], or //revoke <code>"
 
 revokeCmdP :: A.Parser BadgeCode
-revokeCmdP =
-  "revoke " *> (A.takeWhile1 (not . isSpace) >>= maybe (fail "not a badge code") pure . parseBadgeCode . safeDecodeUtf8)
-    <* (A.skipSpace *> A.endOfInput)
-
-revokeBadgeCode :: ChatController -> BadgeCode -> IO (Either String RevokeResult)
-revokeBadgeCode cc code = do
-  now <- truncateToSecond <$> getCurrentTime
-  withDB' "revokeBadgeCode" cc $ \db -> revokeCode db (badgeCodeHash code) now
+revokeCmdP = "revoke " *> codeP <* (A.skipSpace *> A.endOfInput)
 
 issueCmdP :: A.Parser IssueCodeOpts
 issueCmdP =
@@ -242,17 +228,8 @@ issueCmdP =
   where
     -- Integer, because attoparsec's decimal wraps silently at Int, so the guard would check a truncated count.
     checkMonths n
-      | n >= 1 && n <= 255 = pure (fromInteger n)
-      | otherwise = fail "months must be between 1 and 255"
-    -- BadgeType decodes anything to BTUnknown, so a typo would issue an unusable code
-    badgeTypeP =
-      textTokenP >>= \case
-        BTUnknown t -> fail $ "unknown badge type " <> T.unpack t
-        bt -> pure bt
-    textTokenP :: TextEncoding a => A.Parser a
-    textTokenP = do
-      t <- A.takeWhile1 (not . isSpace)
-      maybe (fail "invalid value") pure $ textDecode $ safeDecodeUtf8 t
+      | n >= 1 && n <= fromIntegral maxMonths = pure (fromInteger n)
+      | otherwise = fail $ "months must be between 1 and " <> show maxMonths
 
 data IssueCodeOpts = IssueCodeOpts
   { badgeType :: BadgeType,
@@ -264,52 +241,33 @@ issueBadgeCode :: ChatController -> IssueCodeOpts -> IO (Either String BadgeCode
 issueBadgeCode cc IssueCodeOpts {badgeType, months, paymentStatus} =
   fmap fst <$> issueOneCode cc badgeType months paymentStatus singleUse
 
-processQueuedRequests :: BadgeIssuerKey -> ServiceState -> IO ()
-processQueuedRequests key env = do
+processQueuedRequests :: BadgeIssuerKey -> Maybe (TQueue GroupEvent) -> ServiceState -> IO ()
+processQueuedRequests key trackerQ_ env = do
   cc <- atomically $ readTMVar $ serviceCC env
   forever $ do
     (u, reqId, sigKey, reqData) <- atomically $ readTQueue $ serviceRequestQ env
-    handleServiceRequest key cc u reqId sigKey reqData
-
-processChatRedeems :: BadgeIssuerKey -> ServiceState -> IO ()
-processChatRedeems key env = do
-  cc <- atomically $ readTMVar $ serviceCC env
-  forever $ do
-    (ct, msg) <- atomically $ readTQueue $ chatRedeemQ env
-    chatRedeem key cc ct msg
-
--- | Here the service generates the master key and can link the badge, so [dev] chat_redeem gates this.
-chatRedeem :: BadgeIssuerKey -> ChatController -> Contact -> T.Text -> IO ()
-chatRedeem key cc ct msg = case T.stripPrefix "/redeem" (T.strip msg) of
-  Just rest | not (T.null (T.strip rest)) -> do
-    masterKey <- generateMasterKey (random cc)
-    (purchaseKey, _) <- atomically $ C.generateKeyPair (random cc) :: IO (C.KeyPair 'C.Ed25519)
-    resp <- redeemCode key cc purchaseKey masterKey (T.strip rest)
-    sendMessage cc ct $ case resp of
-      BSPBadgeCredential {credential = Just cred} -> safeDecodeUtf8 $ LB.toStrict $ J.encode cred
-      BSPError {code} -> "error: " <> textEncode code
-      _ -> "unexpected response"
-  _ -> sendMessage cc ct "send: /redeem <code>"
+    handleServiceRequest key cc trackerQ_ u reqId sigKey reqData
 
 badgePreStartHook :: BadgeServiceOpts -> ChatController -> IO ()
 badgePreStartHook opts ChatController {config, chatStore} =
   runBadgeServiceMigrations opts config chatStore
 
-badgePostStartHook :: BadgeServiceOpts -> Bool -> ServiceState -> ChatController -> IO ()
-badgePostStartHook BadgeServiceOpts {noAddress, testing} devRedeem env cc = do
+badgePostStartHook :: BadgeServiceOpts -> ServiceState -> ChatController -> IO ()
+badgePostStartHook BadgeServiceOpts {noAddress, testing} env cc = do
   -- Core starts this False and gates service request delivery on it, so the hook must set it.
   atomically $ writeTVar (processServiceRequests cc) True
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just _ -> do
-      unless noAddress $ initializeBotAddress' (not testing) (Just True) devRedeem cc
+      -- The address carries service RPC only, so contact requests are never auto-accepted.
+      unless noAddress $ initializeBotAddress' (not testing) (Just True) False cc
       void $ atomically $ tryPutTMVar (serviceCC env) cc
 
-handleServiceRequest :: BadgeIssuerKey -> ChatController -> User -> AgentInvId -> Maybe C.PublicKeyEd25519 -> J.Object -> IO ()
-handleServiceRequest key cc User {userId} reqId sigKey reqData = do
+handleServiceRequest :: BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> User -> AgentInvId -> Maybe C.PublicKeyEd25519 -> J.Object -> IO ()
+handleServiceRequest key cc trackerQ_ User {userId} reqId sigKey reqData = do
   let reqIdT = safeDecodeUtf8 (strEncode reqId)
   logInfo $ "badge service request " <> reqIdT
-  resp <- badgeServiceResponse key cc sigKey reqData
+  resp <- badgeServiceResponse key cc trackerQ_ sigKey reqData
   sendChatCmd cc (APISendServiceResponse userId reqId (responseObject resp)) >>= \case
     Right _ -> pure ()
     Left e -> logError $ "badge service response failed for " <> reqIdT <> ": " <> tshow e
@@ -331,15 +289,15 @@ badgeErrorRetryAfter = \case
 
 
 -- | The agent verified the signature, so sigKey is a key the sender holds; a differing purchaseKey would let a client claim a purchase it cannot sign for.
-badgeServiceResponse :: BadgeIssuerKey -> ChatController -> Maybe C.PublicKeyEd25519 -> J.Object -> IO BadgeServiceResponse
-badgeServiceResponse key cc sigKey reqData = case J.fromJSON (J.Object reqData) of
+badgeServiceResponse :: BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> Maybe C.PublicKeyEd25519 -> J.Object -> IO BadgeServiceResponse
+badgeServiceResponse key cc trackerQ_ sigKey reqData = case J.fromJSON (J.Object reqData) of
   J.Error _ -> pure $ errorResponse BSEBadRequest
   J.Success BadgeServiceRequest {version, purchaseKey, request}
     | not (version `isCompatible` supportedBadgeServiceVRange) -> pure $ errorResponse BSEUnsupportedVersion
     | purchaseKey /= sigKey -> pure $ errorResponse BSEBadRequest
     | otherwise -> case request of
         BSCRedeemBadgeCode {masterKey, code} -> case purchaseKey of
-          Just k -> redeemCode key cc k masterKey code
+          Just k -> redeemCode key cc trackerQ_ k masterKey code
           Nothing -> pure $ errorResponse BSEBadRequest
         BSCIssueBadge {balance} -> case purchaseKey of
           Just k -> issueBadgeCmd key cc k balance
@@ -373,15 +331,15 @@ credentialResponse credential previousEntryId entries =
   BSPBadgeCredential {credential, receipt = Nothing, statement = BadgeStatement {entries, previousEntryId}}
 
 -- | Nothing is written until the credential is signed, so a signing failure leaves the code unspent.
-redeemCode :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeMasterKey -> T.Text -> IO BadgeServiceResponse
-redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText of
+redeemCode :: BadgeIssuerKey -> ChatController -> Maybe (TQueue GroupEvent) -> C.PublicKeyEd25519 -> BadgeMasterKey -> T.Text -> IO BadgeServiceResponse
+redeemCode key cc trackerQ_ purchaseKey masterKey codeText = case parseBadgeCode codeText of
   Nothing -> pure $ errorResponse BSECodeInvalid
   Just code -> do
     now <- badgeNow cc
     withDB "getBadgeCode" cc (readCode now code) >>= \case
       Left _ -> pure $ errorResponse BSEInternal
       Right (Left resp) -> pure resp
-      Right (Right IssuedCode {badgeCodeId, badgeType, months}) -> do
+      Right (Right IssuedCode {badgeCodeId, badgeType, months, redeemLimit}) -> do
         (grantUuid, issueUuid) <- (,) <$> randomId cc <*> randomId cc
         -- TODO [badges] a top-up grants onto an existing ledger, and must lapse before it or the
         -- months it adds are counted from a start already in the past
@@ -397,13 +355,15 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
                 liftIO (createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType} now) >>= \case
                   Nothing ->
                     readCode now code db >>= \case
-                      Left resp -> pure resp
-                      Right _ -> logError "badge service: redeeming a code failed, but the code has uses left and is not revoked" $> errorResponse BSEInternal
-                  Just (purchaseId, _) -> liftIO $ do
+                      Left resp -> pure (resp, Nothing)
+                      Right _ -> logError "badge service: redeeming a code failed, but the code has uses left and is not revoked" $> (errorResponse BSEInternal, Nothing)
+                  Just (purchaseId, claimedCount) -> liftIO $ do
                     appendLedgerPlan db purchaseId [granted] $ Just $ issuanceAfter granted signed
                     entries_ <- getLedgerEntries db purchaseId 0
-                    pure $ maybe (errorResponse BSEInternal) (credentialResponse (Just $ snd signed) Nothing) entries_
-              pure $ fromRight (errorResponse BSEInternal) r
+                    pure (maybe (errorResponse BSEInternal) (credentialResponse (Just $ snd signed) Nothing) entries_, Just claimedCount)
+              let (resp, claimedCount_) = fromRight (errorResponse BSEInternal, Nothing) r
+              when (hasTracker redeemLimit) $ forM_ claimedCount_ $ refreshTracker cc trackerQ_ badgeCodeId code
+              pure resp
   where
     readCode now code db = liftIO $
       getBadgeCode db (badgeCodeHash code) >>= \case
