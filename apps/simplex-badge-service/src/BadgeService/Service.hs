@@ -464,8 +464,6 @@ storeRefusalResponse = \case
   SRPending -> pure $ errorResponse BSEPaymentPending
   SRUnreachable reason -> logWarn ("store unreachable: " <> reason) $> errorResponse BSEProviderUnavailable
 
--- | A funding already spent answers as the purchase it funded: that purchase again for its own key,
--- and usedCode for any other.
 claimedResponse :: DB.Connection -> BadgeServiceErrorCode -> C.PublicKeyEd25519 -> FundingClaim -> IO (Either BadgeServiceResponse ())
 claimedResponse db usedCode purchaseKey = \case
   Unclaimed -> pure $ Right ()
@@ -476,7 +474,6 @@ claimedResponse db usedCode purchaseKey = \case
         maybe (Left $ errorResponse BSEInternal) (Left . credentialResponse (Just credential) Nothing)
           <$> getLedgerEntries db badgePurchaseId 0
 
--- | The grant of a new purchase and the first month issued from it, signed; nothing is written.
 signFirstMonth :: BadgeIssuerKey -> ChatController -> BadgeMasterKey -> BadgeType -> Int -> StatementCreditType -> UTCTime -> IO (Either BadgeServiceResponse (StatementEntry, (StatementEntry, BadgeCredential)))
 signFirstMonth key cc masterKey badgeType months credit now = do
   (grantUuid, issueUuid) <- (,) <$> randomId cc <*> randomId cc
@@ -491,7 +488,6 @@ signFirstMonth key cc masterKey badgeType months credit now = do
         Left e -> logError ("badge service signing failed: " <> T.pack e) $> Left (errorResponse BSEInternal)
         Right signed -> pure $ Right (granted, signed)
 
--- | Writes what signFirstMonth signed onto the purchase just claimed for it.
 firstMonthResponse :: DB.Connection -> Int64 -> Maybe T.Text -> (StatementEntry, (StatementEntry, BadgeCredential)) -> IO BadgeServiceResponse
 firstMonthResponse db purchaseId creditPaymentId_ (granted, signed) = do
   appendLedgerPlan db purchaseId creditPaymentId_ [granted] $ Just $ issuanceAfter granted signed

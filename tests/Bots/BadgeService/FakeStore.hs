@@ -33,9 +33,8 @@ import System.FilePath ((</>))
 fixtureDir :: FilePath
 fixtureDir = "apps" </> "simplex-badge-service" </> "test-fixtures" </> "apple"
 
--- | Stores that vouch for a fixed set of receipts. The Apple JWS are the fixtures wrapped in a JWS
--- envelope with no real signature, and are accepted as these exact strings only, never because a
--- payload decodes - which is what a real verifier must refuse to do.
+-- | The Apple JWS are the fixtures under no real signature, so they are accepted as these exact
+-- strings only, never because a payload decodes - which a real verifier must refuse to do.
 data FakeStore = FakeStore
   { appleSupporterJWS :: Text,
     appleLegendJWS :: Text,

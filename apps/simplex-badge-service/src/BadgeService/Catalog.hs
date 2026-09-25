@@ -136,16 +136,14 @@ defaultCatalog seededAt = (prices, offers)
           createdAt = seededAt
         }
 
--- | What one unit of a store product grants.
 data StoreProduct = StoreProduct
   { badgeType :: BadgeType,
     months :: Int
   }
   deriving (Eq, Show)
 
--- | A receipt proves only which product was paid for, so the badge comes from here and never from
--- the client. Mirrors the one-time products of BadgeStore.swift and BadgeStore.kt, whose ids differ
--- by store; their subscriptions are refused, since nothing adds a renewal's months to a badge yet.
+-- | A receipt proves only the product paid for, so the badge comes from here, never from the client.
+-- Mirrors the one-time SKUs of BadgeStore.swift and .kt; subscriptions wait until renewals add months.
 storeProduct :: PaymentProvider -> Text -> Maybe StoreProduct
 storeProduct provider productId = case (provider, productId) of
   (PPApple, "BADGE_SUPPORTER_01") -> Just $ StoreProduct BTSupporter 1

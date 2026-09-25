@@ -92,7 +92,7 @@ data BadgeServiceCommand
         upgrade :: Maybe BadgeUpgrade -- upgrade store 1-time badge
       }
   | BSCUpgradeBadgeSubscription
-      { badgeRequest :: BadgeRequest,
+      { badgeRequest :: BadgeRequest, -- TODO [badges] drop when implemented: a client-stated expiry leaves the week's anonymity set
         payment :: ServicePayment, -- store payments only
         balance :: BadgeBalance
       }

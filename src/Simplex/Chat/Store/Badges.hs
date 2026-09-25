@@ -72,7 +72,6 @@ data BadgeStash = BadgeStash
     masterKey :: BadgeMasterKey
   }
 
--- | The row a stash is kept in, which a purchase bought with it references.
 data BadgeStashRef = BSRCodeRedemption Int64 | BSRStoreReceipt Int64
 
 -- | A store and its own id for one transaction. The evidence is not the key: the store may sign it

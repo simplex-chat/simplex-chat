@@ -321,7 +321,10 @@
         },
         "upgradeBadgeSubscription": {
           "properties": {
-            "badgeRequest": {"ref": "badgeRequest"},
+            "badgeRequest": {
+              "ref": "badgeRequest",
+              "metadata": {"comment": "known wrong: to be dropped when implemented, see badges-rpc.md"}
+            },
             "payment": {
               "ref": "payment",
               "metadata": {"comment": "store payments only"}

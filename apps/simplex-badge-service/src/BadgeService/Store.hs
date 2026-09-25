@@ -66,7 +66,6 @@ data IssuedCode = IssuedCode
     redemption :: FundingClaim
   }
 
--- | Whether a code or a store payment has already funded a purchase, and which.
 data FundingClaim
   = Unclaimed
   | Claimed ClaimedPurchase
@@ -121,7 +120,6 @@ getBadgeCode db codeHash =
     toCode (badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, purchaseId_, purchaseKey_, credential_) =
       IssuedCode {badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, redemption = fundingClaim purchaseId_ purchaseKey_ credential_}
 
--- | The purchase a store transaction's payment funds, read the same way as a code's.
 getStorePaymentClaim :: DB.Connection -> PaymentProvider -> Text -> IO FundingClaim
 getStorePaymentClaim db provider providerRef =
   maybeFirstRow' Unclaimed (\(purchaseId, purchaseKey, credential_) -> fundingClaim (Just purchaseId) (Just purchaseKey) credential_) $
@@ -287,9 +285,8 @@ createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey = Bad
         (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, badgeCodeId, now, now)
       Just <$> insertedRowId db
 
--- | Must run in the same transaction as the credential rows. The payment is inserted before the
--- purchase, and its (provider, provider_ref) is unique: a transaction presented twice at once, or
--- under another key, inserts nothing the second time and fails.
+-- | In the transaction of the credential rows. The payment's unique (provider, provider_ref) is the
+-- claim: a transaction presented twice at once, or under another key, inserts nothing the second time.
 createStorePurchase :: DB.Connection -> NewStorePurchase -> UTCTime -> IO (Maybe Int64)
 createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do
   claimed <-
