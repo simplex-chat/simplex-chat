@@ -66,8 +66,8 @@ fun BadgesSupportSimplexView(modalManager: ModalManager) {
     Spacer(Modifier.weight(1f))
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      BuyInBrowserButton(modalManager)
       RedeemCodeButton(modalManager)
-      GetCodeButton()
     }
   }
 }
@@ -112,22 +112,24 @@ private fun HowItWorksButton(modalManager: ModalManager) {
 
 @Composable
 private fun RedeemCodeButton(modalManager: ModalManager) {
-  OnboardingActionButton(
-    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-    labelId = MR.strings.badges_redeem_code_button,
-    onboarding = null,
-    onclick = {
-      modalManager.showModal { BadgesRedeemCodeView(modalManager) }
-    }
+  TextButtonBelowOnboardingButton(
+    text = stringResource(MR.strings.badges_redeem_code_button),
+    onClick = { modalManager.showModal { BadgesRedeemCodeView(modalManager) } }
   )
 }
 
 @Composable
-private fun GetCodeButton() {
+private fun BuyInBrowserButton(modalManager: ModalManager) {
   val uriHandler = LocalUriHandler.current
-  TextButtonBelowOnboardingButton(
-    text = stringResource(MR.strings.badges_get_your_code),
-    onClick = { uriHandler.openExternalLink("https://simplex.chat/badges/") }
+  OnboardingActionButton(
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    labelId = MR.strings.badges_buy_in_browser,
+    onboarding = null,
+    onclick = {
+      uriHandler.openUriCatching(badgePageUrl)
+      // desktop has no scheme to bring the code back, so the code is pasted into this screen, opened beside the browser
+      if (appPlatform.isDesktop) modalManager.showModal { BadgesRedeemCodeView(modalManager) }
+    }
   )
 }
 

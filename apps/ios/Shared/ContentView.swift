@@ -463,7 +463,10 @@ struct ContentView: View {
     func connectViaUrl_(_ url: URL) {
         dismissAllSheets() {
             var path = url.path
-            if path == "/r" {
+            if isAppLink(url) {
+                // branched on the scheme before the connection dispatch, which an app link must never reach
+                openAppLink(url)
+            } else if path == "/r" {
                 showAlert(
                     NSLocalizedString("Relay address", comment: "alert title"),
                     message: NSLocalizedString("This is a chat relay address, it cannot be used to connect.", comment: "alert message")
@@ -495,6 +498,24 @@ struct ContentView: View {
                 ))
             }
         }
+    }
+}
+
+// the app's own scheme, for every link that is not a connection link, which stays on simplex:
+private let appLinkScheme = "simplexchat"
+private let badgeLinkPath = "/badge/code/"
+
+func isAppLink(_ url: URL) -> Bool {
+    url.scheme?.lowercased() == appLinkScheme
+}
+
+// a link type added in a later version reaches this build too, so an unknown path asks for an update
+private func openAppLink(_ url: URL) {
+    let path = url.path
+    if path.hasPrefix(badgeLinkPath) {
+        openBadgeLink(String(path.dropFirst(badgeLinkPath.count)))
+    } else {
+        AlertManager.shared.showAlert(Alert(title: Text("This link is not supported by this app version. Please check for app updates.")))
     }
 }
 

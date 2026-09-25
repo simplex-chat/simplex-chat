@@ -776,11 +776,33 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
     chatModel.appOpenUrl.value = rhId to uri
+  } else if (isAppLink(uri)) {
+    // branched on the scheme before the connection dispatch, which an app link must never reach
+    openAppLink(rhId, uri)
   } else {
     withBGApi {
       chatModel.appOpenUrlConnecting.value = true
       planAndConnect(rhId, uri, close = null, cleanup = { chatModel.appOpenUrlConnecting.value = false })
     }
+  }
+}
+
+// the app's own scheme, for every link that is not a connection link, which stays on simplex:
+private const val appLinkScheme = "simplexchat"
+private const val badgeLinkPath = "/badge/code/"
+
+// the prefix of the raw text, not a parsed URI: a link that does not parse is still an app link
+fun isAppLink(uri: String): Boolean =
+  uri.startsWith("$appLinkScheme:", ignoreCase = true)
+
+// a link type added in a later version reaches this build too, so an unknown path asks for an update
+private fun openAppLink(rhId: Long?, uri: String) {
+  // a link that does not parse is dropped, as iOS never receives one
+  val path = uriCreateOrNull(uri)?.path ?: return
+  if (path.startsWith(badgeLinkPath)) {
+    openBadgeLink(rhId, path.removePrefix(badgeLinkPath))
+  } else {
+    AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.app_link_not_supported))
   }
 }
 
