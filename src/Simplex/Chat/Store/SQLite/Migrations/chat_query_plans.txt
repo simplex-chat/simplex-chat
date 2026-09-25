@@ -2049,7 +2049,7 @@ Query:
 Plan:
 
 Query: 
-        INSERT INTO wallet_seeds (entropy, next_account_index) VALUES (?, ?)
+        INSERT INTO wallet_seeds (entropy, master, next_account_index) VALUES (?, ?, ?)
         ON CONFLICT (single_seed) DO NOTHING
         RETURNING wallet_seed_id
       
@@ -7820,7 +7820,7 @@ Query: SELECT via_contact_uri, via_contact_uri_hash FROM connections WHERE conne
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT wallet_seed_id, entropy, next_account_index FROM wallet_seeds ORDER BY wallet_seed_id LIMIT 1
+Query: SELECT wallet_seed_id, entropy, master, next_account_index FROM wallet_seeds ORDER BY wallet_seed_id LIMIT 1
 Plan:
 SCAN wallet_seeds
 

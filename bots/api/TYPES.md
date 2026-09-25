@@ -4665,8 +4665,8 @@ AccountNotHeld:
 CounterUnknown:
 - type: "counterUnknown"
 
-IndexTooLarge:
-- type: "indexTooLarge"
+AccountsExhausted:
+- type: "accountsExhausted"
 
 Derivation:
 - type: "derivation"

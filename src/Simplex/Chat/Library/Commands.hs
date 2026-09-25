@@ -65,7 +65,7 @@ import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIss
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress, WalletError (..), accountSecret, deriveAccount, entropyFromMnemonic, newSeedEntropy, seedMnemonic)
+import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress, WalletError (..), accountSecret, deriveAccount, entropyFromMnemonic, newSeedEntropy, newWalletMaster, seedMnemonic)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -96,7 +96,7 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
-import Simplex.Chat.Store.Wallets (WalletSeed (..), accountHeldBy, bindAccount, createWalletSeed, deleteWalletSeed, getUserAccounts, getWalletSeed, resolveAccount)
+import Simplex.Chat.Store.Wallets (Wallet (..), accountHeldBy, bindAccount, createWallet, deleteWallet, getUserAccounts, getWallet, resolveAccount)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -116,6 +116,7 @@ import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
+import Simplex.Messaging.Crypto.BIP44 (mkAccountIndex)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (E2ERatchetParamsUri (..), InitialKeys (..), PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern IKPQOn, pattern PQSupportOff, pattern PQSupportOn)
@@ -1500,35 +1501,36 @@ processChatCommand cxt nm = \case
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
   APIGetWallet userId -> withUserId userId $ \user ->
-    CRWallet user <$> withFastStore' (\db -> getWalletSeed db >>= mapM (\WalletSeed {wsId} -> getUserAccounts db wsId userId))
+    CRWallet user <$> withFastStore (\db -> getWallet db >>= mapM (\Wallet {walletId} -> liftIO $ getUserAccounts db walletId userId))
   APICreateWallet mnemonic_ -> withUser $ \user -> do
-    seed_ <- withFastStore' getWalletSeed
-    when (isJust seed_) $ throwWalletError WEMasterExists
+    wallet_ <- withFastStore getWallet
+    when (isJust wallet_) $ throwWalletError WEMasterExists
     -- the counter starts at 0 for a generated seed and is unknown for an imported one
     (entropy, nextAccount) <- case mnemonic_ of
       Nothing -> (,Just 0) <$> (asks random >>= atomically . newSeedEntropy)
       Just phrase -> (,Nothing) <$> liftWallet (entropyFromMnemonic phrase)
-    created <- withFastStore' $ \db -> createWalletSeed db entropy nextAccount
+    master <- liftWallet $ newWalletMaster entropy
+    created <- withFastStore' $ \db -> createWallet db master nextAccount
     unless created $ throwWalletError WEMasterExists
     pure $ CRWallet user (Just [])
   APIBindWalletAccount userId accountIdx_ -> withUserId userId $ \user@User {viewPwdHash} -> do
     when (isJust viewPwdHash) $ throwWalletError WEHiddenProfile
-    (seed, n) <- withWalletStore $ \db -> bindAccount db userId accountIdx_
-    CRWalletAddress user . snd <$> seedAccount seed n
+    (wallet, n) <- withWalletStore $ \db -> bindAccount db userId accountIdx_
+    CRWalletAddress user . snd <$> walletAccount wallet n
   APIGetWalletAddress accountIdx_ -> withUser $ \user -> do
-    (seed, n) <- withWalletStore (`resolveAccount` accountIdx_)
-    CRWalletAddress user . snd <$> seedAccount seed n
+    (wallet, n) <- withWalletStore (`resolveAccount` accountIdx_)
+    CRWalletAddress user . snd <$> walletAccount wallet n
   APIExportWalletMnemonic -> withUser $ \user -> do
-    WalletSeed {wsEntropy} <- withFastStore' getWalletSeed >>= maybe (throwWalletError WENoMaster) pure
-    CRWalletMnemonic user <$> liftWallet (seedMnemonic wsEntropy)
+    Wallet {walletMaster} <- withFastStore getWallet >>= maybe (throwWalletError WENoMaster) pure
+    pure $ CRWalletMnemonic user (seedMnemonic walletMaster)
   APIExportWalletAccount userId n -> withUserId userId $ \user -> do
-    (seed@WalletSeed {wsId}, _) <- withWalletStore (`resolveAccount` Just n)
-    held <- withFastStore' $ \db -> accountHeldBy db wsId userId n
+    (wallet@Wallet {walletId}, _) <- withWalletStore (`resolveAccount` Just n)
+    held <- withFastStore' $ \db -> accountHeldBy db walletId userId n
     unless held $ throwWalletError WEAccountNotHeld
-    (k, a) <- seedAccount seed n
+    (k, a) <- walletAccount wallet n
     pure $ CRWalletAccountSecret user a (accountSecret k)
   APIDeleteWallet -> withUser_ $ do
-    deleted <- withFastStore' deleteWalletSeed
+    deleted <- withFastStore' deleteWallet
     unless deleted $ throwWalletError WENoMaster
     ok_
   APISendCallInvitation contactId callType -> withUser $ \user -> do
@@ -6031,13 +6033,13 @@ throwWalletError = throwChatError . CEWallet
 liftWallet :: Either WalletError a -> CM a
 liftWallet = liftEitherWith (ChatError . CEWallet)
 
-withWalletStore :: (DB.Connection -> IO (Either WalletError a)) -> CM a
-withWalletStore action = liftWallet =<< withFastStore' action
+withWalletStore :: (DB.Connection -> ExceptT StoreError IO (Either WalletError a)) -> CM a
+withWalletStore action = liftWallet =<< withFastStore action
 
-seedAccount :: WalletSeed -> AccountIndex -> CM (AccountKey, WalletAddress)
-seedAccount WalletSeed {wsEntropy} n = do
+walletAccount :: Wallet -> AccountIndex -> CM (AccountKey, WalletAddress)
+walletAccount Wallet {walletMaster} n = do
   g <- asks random
-  liftError' (ChatError . CEWallet) (deriveAccount g wsEntropy n)
+  liftError' (ChatError . CEWallet) (deriveAccount g walletMaster n)
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
@@ -6714,7 +6716,7 @@ chatCommandP =
     char_ = optional . A.char
     accountIndexP = do
       i <- A.decimal
-      if i <= toInteger (maxBound :: AccountIndex) then pure (fromInteger i) else fail "account index too large"
+      maybe (fail "account index too large") pure $ if i <= toInteger (maxBound :: Word32) then mkAccountIndex (fromInteger i) else Nothing
 
 displayNameP :: Parser Text
 displayNameP = safeDecodeUtf8 <$> displayNameP_

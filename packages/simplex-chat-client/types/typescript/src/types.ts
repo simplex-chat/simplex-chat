@@ -5315,7 +5315,7 @@ export type WalletError =
   | WalletError.AccountBound
   | WalletError.AccountNotHeld
   | WalletError.CounterUnknown
-  | WalletError.IndexTooLarge
+  | WalletError.AccountsExhausted
   | WalletError.Derivation
 
 export namespace WalletError {
@@ -5327,7 +5327,7 @@ export namespace WalletError {
     | "accountBound"
     | "accountNotHeld"
     | "counterUnknown"
-    | "indexTooLarge"
+    | "accountsExhausted"
     | "derivation"
 
   interface Interface {
@@ -5362,8 +5362,8 @@ export namespace WalletError {
     type: "counterUnknown"
   }
 
-  export interface IndexTooLarge extends Interface {
-    type: "indexTooLarge"
+  export interface AccountsExhausted extends Interface {
+    type: "accountsExhausted"
   }
 
   export interface Derivation extends Interface {

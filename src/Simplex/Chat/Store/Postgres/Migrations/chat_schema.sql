@@ -1754,9 +1754,11 @@ ALTER TABLE test_chat_schema.wallet_accounts ALTER COLUMN wallet_account_id ADD 
 CREATE TABLE test_chat_schema.wallet_seeds (
     wallet_seed_id bigint NOT NULL,
     entropy bytea NOT NULL,
+    master bytea NOT NULL,
     next_account_index bigint,
     single_seed smallint DEFAULT 1 NOT NULL,
     CONSTRAINT wallet_seeds_entropy_check CHECK ((length(entropy) = 32)),
+    CONSTRAINT wallet_seeds_master_check CHECK ((length(master) = 64)),
     CONSTRAINT wallet_seeds_next_account_index_check CHECK (((next_account_index >= 0) AND (next_account_index <= '2147483648'::bigint)))
 );
 

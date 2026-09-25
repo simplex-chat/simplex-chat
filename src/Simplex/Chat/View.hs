@@ -69,6 +69,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BIP44 (unAccountIndex)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
@@ -199,7 +200,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRWallet u accounts_ -> ttyUser u $ case accounts_ of
     Nothing -> ["no wallet on this device"]
     Just [] -> ["wallet, no accounts for this profile"]
-    Just accounts -> [plain $ "accounts: " <> T.intercalate ", " (map tshow accounts)]
+    Just accounts -> [plain $ "accounts: " <> T.intercalate ", " (map (tshow . unAccountIndex) accounts)]
   CRWalletMnemonic u mnemonic -> ttyUser u [plain mnemonic]
   CRWalletAddress u a -> ttyUser u [walletAddressRow a]
   CRWalletAccountSecret u a secret -> ttyUser u [walletAddressRow a <> "  " <> plain secret]
@@ -1112,7 +1113,7 @@ viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
 
 walletAddressRow :: WalletAddress -> StyledString
 walletAddressRow WalletAddress {accountIndex, keyPath, address} =
-  plain $ tshow accountIndex <> "  " <> keyPath <> "  " <> address
+  plain $ tshow (unAccountIndex accountIndex) <> "  " <> keyPath <> "  " <> address
 
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
@@ -2820,7 +2821,7 @@ viewChatError isCmd logLevel testView = \case
             WEAccountBound -> "another profile holds this account"
             WEAccountNotHeld -> "this profile does not hold this account"
             WECounterUnknown -> "the next account is unknown after an import"
-            WEIndexTooLarge -> "account index must be below 2^31"
+            WEAccountsExhausted -> "every account index is used"
             WEDerivation e -> "derivation failed: " <> T.pack e
        in [plain $ "wallet: " <> reason]
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]

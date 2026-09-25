@@ -5,18 +5,21 @@ module WalletTests where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
-import Control.Monad (void)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteArray.Encoding as BAE
 import qualified Data.ByteString.Char8 as B
 import Data.Char (toUpper)
 import Data.Either (isRight)
 import Data.List (nub)
+import Data.Maybe (fromJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccount, entropyFromMnemonic, seedMnemonic)
+import Data.Word (Word32)
+import Simplex.Chat.Wallet (AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccount, entropyFromMnemonic, seedMnemonic)
 import qualified Simplex.Messaging.Crypto as C
+import qualified Simplex.Messaging.Crypto.BIP32 as B32
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
+import Simplex.Messaging.Crypto.BIP44 (mkAccountIndex)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
@@ -29,18 +32,18 @@ testPhrase12 = T.unwords $ replicate 11 "abandon" <> ["about"]
 testPhrase24 :: Text
 testPhrase24 = T.unwords $ replicate 23 "abandon" <> ["art"]
 
-seedEntropy :: Text -> BA.ScrubbedBytes
-seedEntropy phrase = B39.mnemonicToEntropy . either error id $ B39.parseMnemonic phrase
+walletMaster :: Text -> B32.WalletMaster
+walletMaster phrase = either error id $ B32.mkWalletMaster (either error id $ B39.parsePhrase phrase) ""
 
-walletAccount :: Text -> AccountIndex -> IO (AccountKey, WalletAddress)
+walletAccount :: Text -> Word32 -> IO (AccountKey, WalletAddress)
 walletAccount phrase n = do
   g <- C.newRandom
-  either (error . show) id <$> deriveAccount g (seedEntropy phrase) n
+  either (error . show) id <$> deriveAccount g (walletMaster phrase) (fromJust $ mkAccountIndex n)
 
 addressFromSecret :: String -> IO String
 addressFromSecret secret = do
   g <- C.newRandom
-  k <- either error id <$> S.mkPrivateKey g (either error id $ BAE.convertFromBase BAE.Base16 (B.drop 2 $ B.pack secret))
+  let k = either error id $ S.mkPrivateKey (either error id $ BAE.convertFromBase BAE.Base16 (B.drop 2 $ B.pack secret))
   B.unpack . strEncode <$> addressFromPrivateKey g k
 
 exportRow :: HasCallStack => String -> (String, String, String, String)
@@ -64,19 +67,15 @@ walletDerivationTests = do
     addrs <- mapM (fmap (address . snd) . walletAccount testPhrase12) [0 .. 9]
     length (nub addrs) `shouldBe` 10
   Hspec.it "renders a secret whose first byte is zero with 64 hex digits" $ do
-    g <- C.newRandom
-    k <- either error id <$> S.mkPrivateKey g (BA.convert $ B.pack ('\0' : replicate 31 '\1'))
+    let k = either error id $ S.mkPrivateKey (BA.convert $ B.pack ('\0' : replicate 31 '\1'))
     let secret = T.unpack $ accountSecret k
     take 4 secret `shouldBe` "0x00"
     length secret `shouldBe` 66
   Hspec.it "renders the path an account is derived at" $ do
     (keyPath . snd <$> walletAccount testPhrase12 0) `shouldReturn` "m/44'/60'/0'/0/0"
     (keyPath . snd <$> walletAccount testPhrase12 7) `shouldReturn` "m/44'/60'/7'/0/0"
-  Hspec.it "rejects an account index at or above 2^31" $ do
-    g <- C.newRandom
-    (void <$> deriveAccount g (seedEntropy testPhrase12) 2147483648) `shouldReturn` Left WEIndexTooLarge
   Hspec.it "round-trips the phrase it was imported from" $
-    seedMnemonic (seedEntropy testPhrase24) `shouldBe` Right testPhrase24
+    seedMnemonic (walletMaster testPhrase24) `shouldBe` testPhrase24
   Hspec.it "accepts only 24 words with a valid checksum" $ do
     entropyFromMnemonic testPhrase24 `shouldSatisfy` isRight
     entropyFromMnemonic testPhrase12 `shouldBe` Left WEBadMnemonic
@@ -304,11 +303,11 @@ testWalletIndexTooLarge ps = withNewTestChat ps "alice" aliceProfile $ \alice ->
   alice ##> "/_wallet create new"
   alice <## "wallet, no accounts for this profile"
   alice ##> "/_wallet address account=2147483648"
-  alice <## "wallet: account index must be below 2^31"
+  alice <## "bad chat command: Failed reading: empty"
   alice ##> "/_wallet bind 1 account=2147483648"
-  alice <## "wallet: account index must be below 2^31"
+  alice <## "bad chat command: Failed reading: empty"
   alice ##> "/_wallet export account 1 2147483648"
-  alice <## "wallet: account index must be below 2^31"
+  alice <## "bad chat command: Failed reading: empty"
   alice ##> "/_wallet address account=4294967296"
   alice <## "bad chat command: Failed reading: empty"
   alice ##> "/_wallet bind 1 account=4294967296"
@@ -316,4 +315,4 @@ testWalletIndexTooLarge ps = withNewTestChat ps "alice" aliceProfile $ \alice ->
   alice ##> "/_wallet bind 1 account=2147483647"
   alice `accountBound` "2147483647"
   alice ##> "/_wallet bind 1"
-  alice <## "wallet: account index must be below 2^31"
+  alice <## "wallet: every account index is used"
