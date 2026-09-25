@@ -7,7 +7,9 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store.Badges
-  ( BadgeCodeRedemption (..),
+  ( BadgeStash (..),
+    BadgeStashRef (..),
+    StoreTransactionRef (..),
     UserBadgePurchase (..),
     getUserBadgePurchase,
     getBadgePurchase,
@@ -18,9 +20,12 @@ module Simplex.Chat.Store.Badges
     clearShownBadge,
     getBadgeCodeRedemption,
     createBadgeCodeRedemption,
-    deleteBadgeCodeRedemption,
-    createCodeBadgePurchase,
-    getCodeBadgePurchase,
+    getBadgeStoreReceiptUserId,
+    getBadgeStoreReceipt,
+    createBadgeStoreReceipt,
+    deleteBadgeStash,
+    createStashBadgePurchase,
+    getStashBadgePurchase,
     storeBadgeIssuance,
     getLatestIssuedCredential,
     storeBadgeStatement,
@@ -33,6 +38,7 @@ where
 import Control.Concurrent.STM (TVar, atomically)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Maybe (isJust, mapMaybe)
@@ -44,6 +50,7 @@ import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType
 import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types
+import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
@@ -58,18 +65,25 @@ import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
--- | The keys one redemption attempt is signed with, stashed before the request is sent so that a
--- retry reaches the service as the same signer and is answered with the credential already issued.
-data BadgeCodeRedemption = BadgeCodeRedemption
-  { redemptionId :: Int64,
+-- | The keys one attempt to fund a badge is signed with, stashed before the request is sent so that
+-- a retry reaches the service as the same signer and is answered with the credential already issued.
+data BadgeStash = BadgeStash
+  { stashRef :: BadgeStashRef,
     purchaseKey :: C.PublicKeyEd25519,
     purchasePrivKey :: C.PrivateKeyEd25519,
     masterKey :: BadgeMasterKey
   }
 
-getBadgeCodeRedemption :: DB.Connection -> User -> Text -> IO (Maybe BadgeCodeRedemption)
+data BadgeStashRef = BSRCodeRedemption Int64 | BSRStoreReceipt Int64
+
+-- | A store and its own id for one transaction. The evidence is not the key: the store may sign it
+-- again, and a retry of the same purchase has to find the same stash.
+data StoreTransactionRef = StoreTransactionRef {provider :: Text, transactionRef :: Text}
+  deriving (Eq, Show)
+
+getBadgeCodeRedemption :: DB.Connection -> User -> Text -> IO (Maybe BadgeStash)
 getBadgeCodeRedemption db User {userId} code =
-  maybeFirstRow toRedemption $
+  maybeFirstRow (toBadgeStash BSRCodeRedemption) $
     DB.query
       db
       [sql|
@@ -78,11 +92,8 @@ getBadgeCodeRedemption db User {userId} code =
         WHERE user_id = ? AND code = ?
       |]
       (userId, code)
-  where
-    toRedemption (redemptionId, purchaseKey, purchasePrivKey, Binary mk) =
-      BadgeCodeRedemption {redemptionId, purchaseKey, purchasePrivKey, masterKey = BadgeMasterKey mk}
 
-createBadgeCodeRedemption :: DB.Connection -> TVar ChaChaDRG -> User -> Text -> UTCTime -> IO BadgeCodeRedemption
+createBadgeCodeRedemption :: DB.Connection -> TVar ChaChaDRG -> User -> Text -> UTCTime -> IO BadgeStash
 createBadgeCodeRedemption db g User {userId} code now = do
   (purchaseKey, purchasePrivKey) <- atomically $ C.generateKeyPair g
   masterKey@(BadgeMasterKey mk) <- generateMasterKey g
@@ -94,42 +105,93 @@ createBadgeCodeRedemption db g User {userId} code now = do
     |]
     (userId, code, purchaseKey, purchasePrivKey, Binary mk, now)
   redemptionId <- insertedRowId db
-  pure BadgeCodeRedemption {redemptionId, purchaseKey, purchasePrivKey, masterKey}
+  pure BadgeStash {stashRef = BSRCodeRedemption redemptionId, purchaseKey, purchasePrivKey, masterKey}
 
--- | Drop a stashed attempt whose code the service refused for good, unless a purchase already
--- came from it - badge_purchases references this row.
-deleteBadgeCodeRedemption :: DB.Connection -> Int64 -> IO ()
-deleteBadgeCodeRedemption db redemptionId =
+-- | A store transaction belongs to the store account, not to a profile, so its stash is looked up
+-- across profiles: presented under another, it still reaches the service as the key it was credited to.
+getBadgeStoreReceiptUserId :: DB.Connection -> StoreTransactionRef -> IO (Maybe UserId)
+getBadgeStoreReceiptUserId db StoreTransactionRef {provider, transactionRef} =
+  maybeFirstRow fromOnly $
+    DB.query db "SELECT user_id FROM badge_store_receipts WHERE provider = ? AND transaction_ref = ?" (provider, transactionRef)
+
+getBadgeStoreReceipt :: DB.Connection -> User -> StoreTransactionRef -> IO (Maybe BadgeStash)
+getBadgeStoreReceipt db User {userId} StoreTransactionRef {provider, transactionRef} =
+  maybeFirstRow (toBadgeStash BSRStoreReceipt) $
+    DB.query
+      db
+      [sql|
+        SELECT badge_store_receipt_id, purchase_key, purchase_priv_key, master_key
+        FROM badge_store_receipts
+        WHERE user_id = ? AND provider = ? AND transaction_ref = ?
+      |]
+      (userId, provider, transactionRef)
+
+createBadgeStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> StoreTransactionRef -> UTCTime -> IO BadgeStash
+createBadgeStoreReceipt db g User {userId} StoreTransactionRef {provider, transactionRef} now = do
+  (purchaseKey, purchasePrivKey) <- atomically $ C.generateKeyPair g
+  masterKey@(BadgeMasterKey mk) <- generateMasterKey g
   DB.execute
     db
     [sql|
-      DELETE FROM badge_code_redemptions
-      WHERE badge_code_redemption_id = ?
-        AND NOT EXISTS (SELECT 1 FROM badge_purchases WHERE badge_code_redemption_id = ?)
+      INSERT INTO badge_store_receipts (user_id, provider, transaction_ref, purchase_key, purchase_priv_key, master_key, created_at)
+      VALUES (?,?,?,?,?,?,?)
     |]
-    (redemptionId, redemptionId)
+    (userId, provider, transactionRef, purchaseKey, purchasePrivKey, Binary mk, now)
+  storeReceiptId <- insertedRowId db
+  pure BadgeStash {stashRef = BSRStoreReceipt storeReceiptId, purchaseKey, purchasePrivKey, masterKey}
 
--- | 'False' when the code was already redeemed here: the service replays the credential it
+toBadgeStash :: (Int64 -> BadgeStashRef) -> (Int64, C.PublicKeyEd25519, C.PrivateKeyEd25519, Binary ByteString) -> BadgeStash
+toBadgeStash ref (stashId, purchaseKey, purchasePrivKey, Binary mk) =
+  BadgeStash {stashRef = ref stashId, purchaseKey, purchasePrivKey, masterKey = BadgeMasterKey mk}
+
+-- | Drop a stash whose funding the service refused for good, unless a purchase already came from
+-- it - badge_purchases references its row.
+deleteBadgeStash :: DB.Connection -> BadgeStash -> IO ()
+deleteBadgeStash db BadgeStash {stashRef} = case stashRef of
+  BSRCodeRedemption redemptionId ->
+    DB.execute
+      db
+      [sql|
+        DELETE FROM badge_code_redemptions
+        WHERE badge_code_redemption_id = ?
+          AND NOT EXISTS (SELECT 1 FROM badge_purchases WHERE badge_code_redemption_id = ?)
+      |]
+      (redemptionId, redemptionId)
+  BSRStoreReceipt storeReceiptId ->
+    DB.execute
+      db
+      [sql|
+        DELETE FROM badge_store_receipts
+        WHERE badge_store_receipt_id = ?
+          AND NOT EXISTS (SELECT 1 FROM badge_purchases WHERE badge_store_receipt_id = ?)
+      |]
+      (storeReceiptId, storeReceiptId)
+
+-- | 'False' when the stash already funded a purchase here: the service replays the credential it
 -- issued, and that must add no purchase and leave the shown badge alone.
-createCodeBadgePurchase :: DB.Connection -> User -> BadgeCodeRedemption -> BadgeCredential -> UTCTime -> IO (Int64, Bool)
-createCodeBadgePurchase db User {userId} redemption credential now =
-  getCodeBadgePurchase db redemption >>= \case
+createStashBadgePurchase :: DB.Connection -> User -> BadgeStash -> BadgeCredential -> UTCTime -> IO (Int64, Bool)
+createStashBadgePurchase db User {userId} stash credential now =
+  getStashBadgePurchase db stash >>= \case
     Just purchaseId -> pure (purchaseId, False)
     Nothing -> do
       DB.execute
         db
         [sql|
           INSERT INTO badge_purchases
-            (user_id, purchase_key, purchase_priv_key, master_key, initial_badge_type, current_badge_type, status, badge_code_redemption_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?)
+            (user_id, purchase_key, purchase_priv_key, master_key, initial_badge_type, current_badge_type, status,
+             badge_code_redemption_id, badge_store_receipt_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?)
         |]
-        (userId, purchaseKey, purchasePrivKey, Binary mk, badgeType, badgeType, PSIssued, redemptionId, now, now)
+        ((userId, purchaseKey, purchasePrivKey, Binary mk, badgeType, badgeType) :. (PSIssued, redemptionId_, storeReceiptId_, now, now))
       purchaseId <- insertedRowId db
       DB.execute db "UPDATE users SET shown_badge_id = ? WHERE user_id = ?" (purchaseId, userId)
       pure (purchaseId, True)
   where
-    BadgeCodeRedemption {redemptionId, purchaseKey, purchasePrivKey, masterKey = BadgeMasterKey mk} = redemption
+    BadgeStash {stashRef, purchaseKey, purchasePrivKey, masterKey = BadgeMasterKey mk} = stash
     BadgeCredential {badgeInfo = BadgeInfo {badgeType}} = credential
+    (redemptionId_, storeReceiptId_) = case stashRef of
+      BSRCodeRedemption redemptionId -> (Just redemptionId, Nothing)
+      BSRStoreReceipt storeReceiptId -> (Nothing, Just storeReceiptId)
 
 -- | The period comes from the ledger, the expiry from the credential, which runs a week longer.
 -- 'False' means no issuance row was written, which the caller reports rather than drop in silence.
@@ -194,10 +256,13 @@ getIssuedPeriod db badgePurchaseId entryId = do
     [(Just periodStart, periodEnd)] -> Just (periodStart, periodEnd)
     _ -> Nothing
 
-getCodeBadgePurchase :: DB.Connection -> BadgeCodeRedemption -> IO (Maybe Int64)
-getCodeBadgePurchase db BadgeCodeRedemption {redemptionId} =
-  maybeFirstRow fromOnly $
-    DB.query db "SELECT badge_purchase_id FROM badge_purchases WHERE badge_code_redemption_id = ?" (Only redemptionId)
+getStashBadgePurchase :: DB.Connection -> BadgeStash -> IO (Maybe Int64)
+getStashBadgePurchase db BadgeStash {stashRef} =
+  maybeFirstRow fromOnly $ case stashRef of
+    BSRCodeRedemption redemptionId ->
+      DB.query db "SELECT badge_purchase_id FROM badge_purchases WHERE badge_code_redemption_id = ?" (Only redemptionId)
+    BSRStoreReceipt storeReceiptId ->
+      DB.query db "SELECT badge_purchase_id FROM badge_purchases WHERE badge_store_receipt_id = ?" (Only storeReceiptId)
 
 data UserBadgePurchase = UserBadgePurchase
   { badgePurchaseId :: Int64,
@@ -370,7 +435,7 @@ getBadgeLedger db User {userId} badgePurchaseId =
 toStatementEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType) :. (Maybe UTCTime, UTCTime, Text, Maybe Text, Maybe Text, Maybe Text) -> Maybe StatementEntry
 toStatementEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType) :. (wasPausedSince, createdAt, entryType_, credit_, debit_, value_)) =
   (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince, createdAt, entryType})
-    <$> maybe (entryTypeFromColumns entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
+    <$> maybe (entryTypeFromColumns Nothing entryType_ credit_ debit_) (entryTypeFromValue entryType_) value_
 
 -- | Decodes the stored JSON rather than rebuilding from the tag, so a version that has since
 -- learnt the type reads it with its fields, and one that has not still gets it back verbatim.

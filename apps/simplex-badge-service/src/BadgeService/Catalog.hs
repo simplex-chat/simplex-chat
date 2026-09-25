@@ -11,6 +11,8 @@ module BadgeService.Catalog
     priceOffer,
     catalogCurrency,
     defaultCatalog,
+    StoreProduct (..),
+    storeProduct,
   )
 where
 
@@ -21,7 +23,7 @@ import Data.Word (Word32, Word64, Word8)
 import Simplex.Chat.Badges (BadgeType (..))
 import Simplex.Chat.Badges.Service (BadgeOffer (..), BadgePrice (..))
 import Simplex.Chat.Badges.Types (BadgeItemStatus (..), BadgeOfferId (..), BadgePriceId (..), OfferDiscount (..))
-import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
+import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), PaymentProvider (..))
 
 data OfferInvalid = OIZeroMonths | OIFreeMonthsExceedTerm | OIDiscountTooLarge | OIAmountUnsellable
   deriving (Eq, Show)
@@ -133,3 +135,19 @@ defaultCatalog seededAt = (prices, offers)
           status = BISActive,
           createdAt = seededAt
         }
+
+data StoreProduct = StoreProduct
+  { badgeType :: BadgeType,
+    months :: Int
+  }
+  deriving (Eq, Show)
+
+-- | A receipt proves only the product paid for, so the badge comes from here, never from the client.
+-- Mirrors the one-time SKUs of BadgeStore.swift and .kt; subscriptions wait until renewals add months.
+storeProduct :: PaymentProvider -> Text -> Maybe StoreProduct
+storeProduct provider productId = case (provider, productId) of
+  (PPApple, "BADGE_SUPPORTER_01") -> Just $ StoreProduct BTSupporter 1
+  (PPApple, "BADGE_LEGEND_01") -> Just $ StoreProduct BTLegend 1
+  (PPGoogle, "badge_supporter_01") -> Just $ StoreProduct BTSupporter 1
+  (PPGoogle, "badge_legend_01") -> Just $ StoreProduct BTLegend 1
+  _ -> Nothing

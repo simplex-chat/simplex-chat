@@ -14,7 +14,7 @@ import BadgeService.Poller
 import BadgeService.Providers
 import BadgeService.Providers.BTCPay (btcpayProvider, listPageSize, maxListPages)
 import BadgeService.Providers.Stripe (stripeProvider)
-import BadgeService.Store (CodeRedemption (..), IssuedCode (..), NewCodePurchase (..), RevokeResult (..), createCodePurchase, getBadgeCode, insertBadgeCode, revokeCode)
+import BadgeService.Store (FundingClaim (..), IssuedCode (..), NewCodePurchase (..), RevokeResult (..), createCodePurchase, getBadgeCode, insertBadgeCode, revokeCode)
 import BadgeService.Store.Invoices
 import BadgeService.Waiters (awaitStatus, newWaiters, publish, waitingCount)
 import BadgeService.Web.Server
@@ -471,7 +471,7 @@ testRevokeAndRedeemExcludeEachOther = withServiceStore $ \st -> do
       revoke codeHash = withTransaction st $ \db -> revokeCode db codeHash now
       unredeemed codeHash =
         withTransaction st (`getBadgeCode` codeHash) >>= \case
-          Just IssuedCode {redemption = CodeUnredeemed} -> pure True
+          Just IssuedCode {redemption = Unclaimed} -> pure True
           _ -> pure False
   revokedFirst <- newCode "revoked-first"
   revoke "revoked-first" `shouldReturn` Revoked

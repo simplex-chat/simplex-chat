@@ -26,6 +26,7 @@ import Data.Time.Calendar.WeekDate (toWeekDate)
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime)
 import Simplex.Chat.Badges (BadgeType)
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
+import Simplex.Chat.PaymentService.Types (InvoiceId)
 
 -- The calendar difference overshoots by at most one month, so one comparison settles it.
 monthsBetween :: UTCTime -> UTCTime -> Integer
@@ -204,13 +205,15 @@ debitTypeTag = \case
   SDLapse -> "lapse"
   SDUnknown {tag} -> tag
 
--- | Only the types a tag alone rebuilds, which is those whose constructor has no fields; the rest
--- answer Nothing rather than a type with an invented payload. The client also stores each type's
--- JSON and reads that first, so this is its fallback; the service has no such column.
--- TODO [badges] take the reference columns and rebuild payment, charge, transferIn, upgrade and
--- transferOut, without which the service cannot re-emit a statement carrying one.
-entryTypeFromColumns :: Text -> Maybe Text -> Maybe Text -> Maybe StatementEntryType
-entryTypeFromColumns entryType credit_ debit_ = case (entryType, credit_, debit_) of
+-- | Only the types a tag alone rebuilds, which is those whose constructor has no fields, and a
+-- payment credit when the row references its payment - payment_ is then that payment's invoice, if
+-- it had one. The rest answer Nothing rather than a type with an invented payload. The client also
+-- stores each type's JSON and reads that first, so this is its fallback; the service has no such column.
+-- TODO [badges] take the reference columns and rebuild charge, transferIn, upgrade and transferOut,
+-- without which the service cannot re-emit a statement carrying one.
+entryTypeFromColumns :: Maybe (Maybe InvoiceId) -> Text -> Maybe Text -> Maybe Text -> Maybe StatementEntryType
+entryTypeFromColumns payment_ entryType credit_ debit_ = case (entryType, credit_, debit_) of
+  ("credit", Just "payment", _) -> SECredit . SCPayment <$> payment_
   ("credit", Just t, _) -> SECredit <$> creditType t
   ("debit", _, Just t) -> SEDebit <$> debitType t
   _ -> Nothing
