@@ -41,9 +41,17 @@ fun ModalData.MemberSupportView(
   KeyChangeEffect(chatModel.chatId.value) {
     ModalManager.end.closeModals()
   }
+  val membersLoading = remember { stateGetOrPut("membersLoading") { false } }
   LaunchedEffect(chatModel.membersLoaded.value) {
-    if (!chatModel.membersLoaded.value && chatModel.chatId.value == groupInfo.id) {
-      setGroupMembers(rhId, groupInfo, chatModel)
+    if (!chatModel.membersLoaded.value && chatModel.chatId.value == groupInfo.id && !membersLoading.value) {
+      membersLoading.value = true
+      withBGApi {
+        try {
+          setGroupMembers(rhId, groupInfo, chatModel)
+        } finally {
+          membersLoading.value = false
+        }
+      }
     }
   }
   ModalView(close = close) {

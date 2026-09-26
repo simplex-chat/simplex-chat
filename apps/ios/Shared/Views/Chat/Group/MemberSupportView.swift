@@ -13,26 +13,25 @@ struct MemberSupportView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State private var searchText: String = ""
+    @State private var membersLoading = false
     @FocusState private var searchFocussed
     var groupInfo: GroupInfo
     @Binding var scrollToItemId: ChatItem.ID?
 
     var body: some View {
         viewBody()
-            .onAppear {
-                if !chatModel.membersLoaded || chatModel.membersLoadedGroupId != groupInfo.groupId {
-                    Task {
-                        await chatModel.loadGroupMembers(groupInfo)
-                    }
-                }
+            .onAppear { loadMembersIfNeeded() }
+            .onChange(of: chatModel.membersLoaded) { _ in loadMembersIfNeeded() }
+    }
+
+    private func loadMembersIfNeeded() {
+        if (!chatModel.membersLoaded || chatModel.membersLoadedGroupId != groupInfo.groupId) && chatModel.chatId == groupInfo.id && !membersLoading {
+            membersLoading = true
+            Task {
+                await chatModel.loadGroupMembers(groupInfo)
+                await MainActor.run { membersLoading = false }
             }
-            .onChange(of: chatModel.membersLoaded) { loaded in
-                if !loaded && chatModel.chatId == groupInfo.id {
-                    Task {
-                        await chatModel.loadGroupMembers(groupInfo)
-                    }
-                }
-            }
+        }
     }
 
     @ViewBuilder private func viewBody() -> some View {

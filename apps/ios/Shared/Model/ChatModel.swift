@@ -1333,13 +1333,17 @@ final class ChatModel: ObservableObject {
     func upsertSupportChatMember(_ cInfo: ChatInfo) {
         if case let .group(groupInfo, .memberSupport(member?)?) = cInfo, chatId == groupInfo.id {
             var m = member
+            var supportChatAdded = false
             if let current = getGroupMember(member.groupMemberId)?.wrapped {
+                supportChatAdded = current.supportChat == nil && member.supportChat != nil
                 m = current
                 m.supportChat = member.supportChat
                 m.memberProfile = member.memberProfile
             }
             _ = upsertGroupMember(groupInfo, m)
-            objectWillChange.send()
+            if supportChatAdded {
+                objectWillChange.send()
+            }
         }
     }
 
