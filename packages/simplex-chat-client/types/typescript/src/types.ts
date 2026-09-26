@@ -5316,7 +5316,6 @@ export type WalletError =
   | WalletError.AccountNotHeld
   | WalletError.CounterUnknown
   | WalletError.AccountsExhausted
-  | WalletError.Derivation
 
 export namespace WalletError {
   export type Tag = 
@@ -5328,7 +5327,6 @@ export namespace WalletError {
     | "accountNotHeld"
     | "counterUnknown"
     | "accountsExhausted"
-    | "derivation"
 
   interface Interface {
     type: Tag
@@ -5364,11 +5362,6 @@ export namespace WalletError {
 
   export interface AccountsExhausted extends Interface {
     type: "accountsExhausted"
-  }
-
-  export interface Derivation extends Interface {
-    type: "derivation"
-    derivationError: string
   }
 }
 

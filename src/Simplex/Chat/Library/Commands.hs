@@ -65,7 +65,7 @@ import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIss
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress, WalletError (..), accountSecret, deriveAccount, entropyFromMnemonic, newSeedEntropy, newWalletMaster, seedMnemonic)
+import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress, WalletError (..), accountSecret, deriveAccount, importWalletMaster, newWalletMaster, seedMnemonic)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -1506,10 +1506,9 @@ processChatCommand cxt nm = \case
     wallet_ <- withFastStore getWallet
     when (isJust wallet_) $ throwWalletError WEMasterExists
     -- the counter starts at 0 for a generated seed and is unknown for an imported one
-    (entropy, nextAccount) <- case mnemonic_ of
-      Nothing -> (,Just 0) <$> (asks random >>= atomically . newSeedEntropy)
-      Just phrase -> (,Nothing) <$> liftWallet (entropyFromMnemonic phrase)
-    master <- liftWallet $ newWalletMaster entropy
+    (master, nextAccount) <- case mnemonic_ of
+      Nothing -> (,Just 0) <$> (liftIO . newWalletMaster =<< asks random)
+      Just phrase -> (,Nothing) <$> liftWallet (importWalletMaster phrase)
     created <- withFastStore' $ \db -> createWallet db master nextAccount
     unless created $ throwWalletError WEMasterExists
     pure $ CRWallet user (Just [])
@@ -6039,7 +6038,7 @@ withWalletStore action = liftWallet =<< withFastStore action
 walletAccount :: Wallet -> AccountIndex -> CM (AccountKey, WalletAddress)
 walletAccount Wallet {walletMaster} n = do
   g <- asks random
-  liftError' (ChatError . CEWallet) (deriveAccount g walletMaster n)
+  liftIO $ deriveAccount g walletMaster n
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =

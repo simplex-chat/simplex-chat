@@ -6,9 +6,9 @@ module Simplex.Chat.Wallet
     AccountKey,
     WalletAddress (..),
     WalletError (..),
-    newSeedEntropy,
-    entropyFromMnemonic,
     newWalletMaster,
+    entropyFromMnemonic,
+    importWalletMaster,
     seedMnemonic,
     deriveAccount,
     accountSecret,
@@ -16,11 +16,8 @@ module Simplex.Chat.Wallet
 where
 
 import Control.Concurrent.STM
-import Control.Monad.Except
-import Control.Monad.IO.Class (liftIO)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as JQ
-import Data.Bifunctor (first)
 import qualified Data.ByteArray.Encoding as BAE
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
@@ -31,7 +28,6 @@ import qualified Simplex.Messaging.Crypto.Secp256k1 as S
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Eth.Address (addressFromPrivateKey)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
-import Simplex.Messaging.Util (liftError')
 
 type AccountKey = S.Secp256k1PrivateKey
 
@@ -51,30 +47,29 @@ data WalletError
   | WEAccountNotHeld
   | WECounterUnknown
   | WEAccountsExhausted
-  | WEDerivation {derivationError :: String}
   deriving (Eq, Show)
 
 masterStrength :: B39.EntropyStrength
 masterStrength = B39.ES256
 
-newSeedEntropy :: TVar ChaChaDRG -> STM B39.WalletEntropy
-newSeedEntropy = B39.randomEntropy masterStrength
+newWalletMaster :: TVar ChaChaDRG -> IO B32.WalletMaster
+newWalletMaster g = (`B32.mkWalletMaster` "") <$> atomically (B39.randomEntropy masterStrength g)
 
 entropyFromMnemonic :: Text -> Either WalletError B39.WalletEntropy
 entropyFromMnemonic phrase = case B39.parsePhrase phrase of
   Right ent | B39.entropyWordCount ent == 24 -> Right ent
   _ -> Left WEBadMnemonic
 
-newWalletMaster :: B39.WalletEntropy -> Either WalletError B32.WalletMaster
-newWalletMaster ent = first WEDerivation $ B32.mkWalletMaster ent ""
+importWalletMaster :: Text -> Either WalletError B32.WalletMaster
+importWalletMaster phrase = (`B32.mkWalletMaster` "") <$> entropyFromMnemonic phrase
 
 seedMnemonic :: B32.WalletMaster -> Text
 seedMnemonic = decodeLatin1 . B39.entropyPhrase . B32.masterEntropy
 
-deriveAccount :: TVar ChaChaDRG -> B32.WalletMaster -> AccountIndex -> IO (Either WalletError (AccountKey, WalletAddress))
-deriveAccount g master n = runExceptT $ do
-  k <- B32.xkKey <$> liftError' WEDerivation (B32.derivePath g (B32.walletMasterKey master) path)
-  a <- liftIO $ addressFromPrivateKey g k
+deriveAccount :: TVar ChaChaDRG -> B32.WalletMaster -> AccountIndex -> IO (AccountKey, WalletAddress)
+deriveAccount g master n = do
+  k <- B32.xkKey <$> B32.derivePath g (B32.walletMasterKey master) path
+  a <- addressFromPrivateKey g k
   pure (k, WalletAddress {accountIndex = n, keyPath = decodeLatin1 $ B32.renderPath path, address = decodeLatin1 $ strEncode a})
   where
     path = bip44Path Ethereum n

@@ -33,12 +33,12 @@ testPhrase24 :: Text
 testPhrase24 = T.unwords $ replicate 23 "abandon" <> ["art"]
 
 walletMaster :: Text -> B32.WalletMaster
-walletMaster phrase = either error id $ B32.mkWalletMaster (either error id $ B39.parsePhrase phrase) ""
+walletMaster phrase = B32.mkWalletMaster (either error id $ B39.parsePhrase phrase) ""
 
 walletAccount :: Text -> Word32 -> IO (AccountKey, WalletAddress)
 walletAccount phrase n = do
   g <- C.newRandom
-  either (error . show) id <$> deriveAccount g (walletMaster phrase) (fromJust $ mkAccountIndex n)
+  deriveAccount g (walletMaster phrase) (fromJust $ mkAccountIndex n)
 
 addressFromSecret :: String -> IO String
 addressFromSecret secret = do

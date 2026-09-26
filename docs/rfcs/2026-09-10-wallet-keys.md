@@ -85,7 +85,7 @@ A command that acts on a profile's accounts names the profile and is rejected wh
 
 `bind` without `account=` binds the account at a counter on the master, which is a high-water mark and not a count of bound accounts, and returns the bound account's index, path and address. With `account=<n>` it binds that account, which is how an account found by a scan is attached to the profile it belongs to, and it is rejected for an account another profile holds. After an import the counter is unknown rather than zero, because the phrase does not encode how many accounts it has been used for, so binding the next account is rejected until a scan sets the counter, while binding a known account is still allowed.
 
-BIP-32 marks an index as hardened by setting its top bit, so an index at or above 2^31 already has that bit set and derives the same key as the index 2^31 below it: account 2^31 is account 0. That is a collision, not a loss of hardening, and it would put one key under two account indexes. An account index is a simplexmq type that only holds values below 2^31, so the command parser rejects 2^31 and above as a bad command, the columns have CHECK constraints for that bound, and reading a row that violates it is an error. The counter's bound is one higher than an account's, because it contains the next index to bind, and 2^31 there means the counter has passed every index that can be hardened, which `bind` without an index reports.
+BIP-32 marks an index as hardened by setting its top bit, so an index at or above 2^31 already has that bit set and derives the same key as the index 2^31 below it: account 2^31 is account 0. That is a collision, not a loss of hardening, and it would put one key under two account indexes. Derivation itself cannot fail: for the one key in 2^128 that BIP-32 declares invalid, simplexmq recomputes it as SLIP-0010 specifies and Trezor implements, instead of skipping the index, so every account index has a key. An account index is a simplexmq type that only holds values below 2^31, so the command parser rejects 2^31 and above as a bad command, the columns have CHECK constraints for that bound, and reading a row that violates it is an error. The counter's bound is one higher than an account's, because it contains the next index to bind, and 2^31 there means the counter has passed every index that can be hardened, which `bind` without an index reports.
 
 `address` reads the counter without changing it, so two calls return the same address, and it derives an address for an account the database has no row for, which a device that lost its database requires. One address per call is sufficient: a caller that scans the tree calls it in a loop.
 
@@ -103,7 +103,6 @@ data WalletError
   | WEAccountNotHeld  -- export account, on an account the profile does not hold
   | WECounterUnknown  -- the counter is not set yet, after an import
   | WEAccountsExhausted -- bind without an index, when the counter has passed every index
-  | WEDerivation {derivationError :: String} -- BIP-32 or BIP-39 derivation failed
 ```
 
 ## Recovery

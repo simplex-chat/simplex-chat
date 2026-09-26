@@ -2813,7 +2813,8 @@ viewChatError isCmd logLevel testView = \case
             SDEUnknownDomain -> "is not included in the connection link's profile"
        in [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
     CEWallet walletErr ->
-      let reason = case walletErr of
+      let reason :: Text
+          reason = case walletErr of
             WENoMaster -> "this device has no wallet"
             WEMasterExists -> "this device already has a wallet"
             WEBadMnemonic -> "not a valid 24 word recovery phrase"
@@ -2822,7 +2823,6 @@ viewChatError isCmd logLevel testView = \case
             WEAccountNotHeld -> "this profile does not hold this account"
             WECounterUnknown -> "the next account is unknown after an import"
             WEAccountsExhausted -> "every account index is used"
-            WEDerivation e -> "derivation failed: " <> T.pack e
        in [plain $ "wallet: " <> reason]
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]

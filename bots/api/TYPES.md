@@ -4668,10 +4668,6 @@ CounterUnknown:
 AccountsExhausted:
 - type: "accountsExhausted"
 
-Derivation:
-- type: "derivation"
-- derivationError: string
-
 
 ---
 
