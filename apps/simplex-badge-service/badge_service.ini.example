@@ -50,7 +50,13 @@ idle_seconds = 60
 ;index = 1
 ;private_key = replace-me
 
-; local testing only: signs a credential for anyone who sends /redeem <code> over chat,
-; with a master key this service generates and can therefore link
-[dev]
-chat_redeem = off
+; optional: when present the service manages one group, created on its first start without
+; --run-cli, and logs its join link once, on the start that creates it. The link is a bearer
+; secret that stays valid, so keep that log private. The first member to join is promoted to
+; owner, so join right away.
+; moderators can /issue and /bulk codes; admins and owners can also /revoke.
+; display_name must be a name the chat core accepts unchanged: one it would spell
+; differently stops the whole service, payments included, from starting.
+;[group]
+;display_name = SimpleX Badges
+;description = Welcome to the badges group
