@@ -32,6 +32,7 @@ Load the list once per open group, then keep it current from what arrives.
 - `updateGroupScopeUnreadStats` returns the updated `GroupChatScopeInfo` together with `GroupInfo`.
 - `APIChatItemsRead` returns `GroupChat gInfo' chatScopeInfo'`.
 - `deleteGroupCIs` puts the updated scope member into each deletion's chat info.
+- The group send response re-reads the support scope member after `saveSndChatItems` has updated `support_chat_ts`, instead of returning the member from before the send.
 - Existing clients are unaffected: both apps strip the scope in `updateChatInfo`.
 
 **Android/desktop, and iOS**
@@ -40,18 +41,19 @@ Load the list once per open group, then keep it current from what arrives.
   - `NewChatItems` events;
   - `ChatItemsDeleted` events;
   - delete responses (items and reports);
-  - send responses (Kotlin only);
+  - send responses;
   - the mark-read response;
   - the initial load of a support chat.
 - The member list loads only if `membersLoaded` is false. The mention picker already uses this flag the same way, and it is reset when leaving the group.
+- Kotlin `setGroupMembers` writes its result only if the group is still the open chat (or the channel being created), as iOS `loadGroupMembers` already does. Without this check, a slow load from a previously opened channel could finish after a chat switch and mark another group's members as loaded. The old reload on every return hid that.
 - The refresh button is removed. The list is kept current by the updates above.
 - iOS also sends `objectWillChange`, because updating a `GMember` in place does not re-render or re-sort the list.
 
 A member's first support message arrives as a `NewChatItems` event with that member, so a new support chat appears in the list without a reload.
 
-## Not covered
+## Known limitation
 
-- On iOS, `apiSendMessages` returns bare `ChatItem`s without chat info. The list's last-activity order after the user's own reply updates only when the group is reopened.
+A full member load that is in flight when a support-chat update arrives overwrites that update with its snapshot. For example, the first list load can race a member's first support message. The member then reappears on their next message, when their chat is opened, or when the group is reopened.
 
 ## Alternatives considered
 

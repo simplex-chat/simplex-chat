@@ -592,6 +592,11 @@ private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async
     } else {
         r = await chatApiSendCmd(cmd, bgDelay: msgDelay)
         if case let .result(.newChatItems(_, aChatItems)) = r {
+            await MainActor.run {
+                for aChatItem in aChatItems {
+                    chatModel.upsertSupportChatMember(aChatItem.chatInfo)
+                }
+            }
             return aChatItems.map { $0.chatItem }
         }
         sendMessageErrorAlert(r.unexpected)

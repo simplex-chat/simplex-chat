@@ -265,6 +265,7 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
       newMember
     }
   }
+  if (chatModel.chatId.value != groupInfo.id && chatModel.creatingChannelId.value != groupInfo.id) return@coroutineScope
   chatModel.groupMembersIndexes.value = emptyMap()
   chatModel.groupMembers.value = newMembers
   chatModel.membersLoaded.value = true

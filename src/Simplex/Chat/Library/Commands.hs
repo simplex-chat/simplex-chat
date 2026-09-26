@@ -4874,7 +4874,11 @@ processChatCommand cxt nm = \case
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
               startProximateTimedItemThread user (ChatRef CTGroup groupId scope, chatItemId' ci) deleteAt
-          pure $ CRNewChatItems user (map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo)) cis)
+          chatScopeInfo' <- case chatScopeInfo of
+            Just GCSIMemberSupport {groupMember_ = Just sentScopeMem} ->
+              Just . GCSIMemberSupport . Just <$> withFastStore (\db -> getGroupMemberById db cxt user (groupMemberId' sentScopeMem))
+            _ -> pure chatScopeInfo
+          pure $ CRNewChatItems user (map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo')) cis)
           where
             setupSndFileTransfers :: Int -> CM (NonEmpty (Maybe FileInvitation, Maybe (CIFile 'MDSnd)))
             setupSndFileTransfers n =
