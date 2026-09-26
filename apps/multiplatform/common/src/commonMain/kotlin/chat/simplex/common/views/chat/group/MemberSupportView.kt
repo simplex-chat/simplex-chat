@@ -41,7 +41,7 @@ fun ModalData.MemberSupportView(
   KeyChangeEffect(chatModel.chatId.value) {
     ModalManager.end.closeModals()
   }
-  LaunchedEffect(Unit) {
+  LaunchedEffect(chatModel.membersLoaded.value) {
     if (!chatModel.membersLoaded.value) {
       setGroupMembers(rhId, groupInfo, chatModel)
     }
