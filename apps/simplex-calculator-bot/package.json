@@ -9,8 +9,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@simplex-chat/types": "^0.11.4",
-    "simplex-chat": "^7.1.0-beta.4.1"
+    "@simplex-chat/types": "^0.12.0",
+    "simplex-chat": "^7.1.0-beta.4.2"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
