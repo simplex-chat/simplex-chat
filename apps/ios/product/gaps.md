@@ -36,6 +36,22 @@ When `ChatModel.chatInitialized` transitions to `true`, the chat list appears fu
 
 ---
 
+## Chat List
+
+### GAP: Chat list is silently limited to 5000 chats
+**Source:** [spec/client/chat-list.md](../spec/client/chat-list.md)
+`apiGetChats` sends `/_get chats <userId> pcc=on` with no pagination, so the core applies its default of `PTLast maxChats` with `maxChats = 5000`. On a profile with more chats than that, the oldest are not shown, not searched (chat-list search is in-memory) and missing from the in-memory tag counts, with no indication to the user. They reappear only when they receive a message, or once a reload finds them inside the window.
+
+**REC:** Paginate the chat list, or raise the count and surface the limit in the UI.
+
+### GAP: Unread counters are not decremented when a chat is removed
+**Source:** [spec/state.md](../spec/state.md)
+`removeChat` removes preset tags and wallpaper files but decrements neither the profile unread counter nor the per-tag unread counts, so deleting or leaving a chat that had unread messages leaves both high until the next profile switch.
+
+**REC:** Decrement both in `removeChat`, as the read paths do.
+
+---
+
 ## Security
 
 ### GAP: Database passphrase not enforced by default
