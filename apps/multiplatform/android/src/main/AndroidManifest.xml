@@ -100,6 +100,12 @@
         <data android:host="smp4.simplexonflux.com" />
         <data android:host="smp5.simplexonflux.com" />
         <data android:host="smp6.simplexonflux.com" />
+        <data android:path="/invitation" />
+        <data android:path="/contact" />
+        <data android:path="/a" />
+        <data android:path="/c" />
+        <data android:path="/g" />
+        <data android:path="/i" />
         <data android:pathPrefix="/invitation/" />
         <data android:pathPrefix="/contact/" />
         <data android:pathPrefix="/a/" />
