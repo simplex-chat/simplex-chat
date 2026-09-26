@@ -50,12 +50,12 @@ Load the list once per open group, then keep it current from what arrives.
 - `JoinedGroupMember` and `JoinedGroupMemberConnecting` are emitted right after the "new member pending review" item, and they carry the member with zero support stats. Their handlers keep the support stats already in the list, so they do not erase the badge the item event just set. On Kotlin that item event can also be applied after them; the merge covers either order.
 - The member list loads only if `membersLoaded` is false. The mention picker already uses this flag the same way, and it is reset when leaving the group.
 - `apiListMembers` returns `null`/`nil` on error on both platforms, and the member load then keeps the current state, so a failed load does not mark members as loaded. iOS still runs the load's completion, so group info still opens.
-- iOS resets `membersLoaded` when the open chat changes without going through the chat list (notification tap, "forwarded from", member info), as Kotlin already does, because group info can be opened without reloading members.
+- iOS clears the loaded members and resets `membersLoaded` when the open chat changes without going through the chat list (notification tap, "forwarded from", member info), as Kotlin already does. Because group info can also be opened from a message avatar without reloading members, the iOS list additionally reloads when the loaded members belong to another group.
 - iOS resets `membersLoaded` when chats are refreshed on resume, because the notification extension may have changed support chats while the app was suspended.
 - Kotlin `upsertGroupMember` also resets `membersLoaded` when it clears another group's stale members.
 - Kotlin `setGroupMembers` now writes on the main thread, where all upserts run, so an upsert can no longer land between clearing the index and rebuilding it and add a duplicate. It writes its result only if the group is still the open chat (or the channel being created), as iOS `loadGroupMembers` already does. Without this check, a slow load from a previously opened channel could finish after a chat switch and mark another group's members as loaded. The old reload on every return hid that.
 - The refresh button is removed. The list is kept current by the updates above.
-- iOS also sends `objectWillChange`, because updating a `GMember` in place does not re-render or re-sort the list.
+- iOS also sends `objectWillChange` (only for the open group), because updating a `GMember` in place does not re-render or re-sort the list.
 
 A member's first support message arrives as a `NewChatItems` event with that member, so a new support chat appears in the list without a reload.
 
@@ -66,6 +66,10 @@ A member's first support message arrives as a `NewChatItems` event with that mem
 - On iOS, if the list is on screen while the app resumes, changes the notification extension made while suspended appear only after the list is left and reopened.
 - On iOS, handlers that update an existing member in place without publishing a change, such as "Mark read" from the context menu or accept, update the row but not the list order or filter until the next `ChatModel` change. The existing TODO in `deleteMemberSupportChat` describes the same mechanism. Previously, returning to the list also re-sorted it.
 - The connection-state labels in rows (failed, disabled, inactive) come from `activeConn`. Neither app handles `ConnectionDisabled` or `ConnectionInactive`, so these labels now refresh only when the group is reopened.
+
+## Not addressed
+
+- In channels (`useRelays`), opening a support chat runs the chat view's initialisation, which loads all members for relay groups on both platforms. So each support chat open in a channel still does a full member load. This was already the case before this change; the reported bug is in an ordinary group.
 
 ## Alternatives considered
 
