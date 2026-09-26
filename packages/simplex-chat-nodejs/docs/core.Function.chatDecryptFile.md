@@ -8,7 +8,7 @@
 
 > **chatDecryptFile**(`fromPath`, `__namedParameters`, `toPath`): `Promise`\<`void`\>
 
-Defined in: [src/core.ts:76](../src/core.ts#L76)
+Defined in: [src/core.ts:97](../src/core.ts#L97)
 
 Decrypt file
 
