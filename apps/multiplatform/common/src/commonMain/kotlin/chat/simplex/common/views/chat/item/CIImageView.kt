@@ -114,7 +114,7 @@ fun CIImageView(
           onClick = onClick
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, imageBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
       contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
     )
   }
@@ -138,7 +138,7 @@ fun CIImageView(
             onClick = onClick
           )
           .onRightClick { showMenu.value = true }
-          .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+          .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
       )
     } else {
@@ -149,7 +149,7 @@ fun CIImageView(
           onClick = {}
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentAlignment = Alignment.Center
       ) {
         imageView(previewBitmap, onClick = {
@@ -195,22 +195,26 @@ fun CIImageView(
     contentAlignment = Alignment.TopEnd
   ) {
     val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember { mutableStateOf(null) }
-    if (chatModel.connectedToRemote()) {
-      LaunchedEffect(file, CIFile.cachedRemoteFileRequests.toList()) {
-        withBGApi {
+    // Hidden media is not worth reading, decoding at full size and caching.
+    val revealed = !blurHidesMedia(!smallView, blurred)
+    if (revealed) {
+      if (chatModel.connectedToRemote()) {
+        LaunchedEffect(file, CIFile.cachedRemoteFileRequests.toList()) {
+          withBGApi {
+            if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
+              res.value = imageAndFilePath(file)
+            }
+          }
+        }
+      } else {
+        LaunchedEffect(file) {
           if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
-            res.value = imageAndFilePath(file)
+            res.value = withContext(Dispatchers.IO) { imageAndFilePath(file) }
           }
         }
       }
-    } else {
-      LaunchedEffect(file) {
-        if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
-          res.value = withContext(Dispatchers.IO) { imageAndFilePath(file) }
-        }
-      }
     }
-    val loaded = res.value
+    val loaded = if (revealed) res.value else null
     if (loaded != null && file != null) {
       val (imageBitmap, data, _) = loaded
       SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, blurred, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })

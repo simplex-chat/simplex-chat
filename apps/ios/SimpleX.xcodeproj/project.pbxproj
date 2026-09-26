@@ -170,6 +170,7 @@
 		646BB38E283FDB6D001CE359 /* LocalAuthenticationUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646BB38D283FDB6D001CE359 /* LocalAuthenticationUtils.swift */; };
 		647B15E82F4C8D2500EB431E /* AddChannelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647B15E72F4C8D2500EB431E /* AddChannelView.swift */; };
 		647B15EA2F4C8D5100EB431E /* ChatRelayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647B15E92F4C8D5100EB431E /* ChatRelayView.swift */; };
+		647C9E293061362A0032110E /* GetStakeBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647C9E283061362A0032110E /* GetStakeBanner.swift */; };
 		647F090E288EA27B00644C40 /* GroupMemberInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647F090D288EA27B00644C40 /* GroupMemberInfoView.swift */; };
 		648010AB281ADD15009009B9 /* CIFileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 648010AA281ADD15009009B9 /* CIFileView.swift */; };
 		648679AB2BC96A74006456E7 /* ChatItemForwardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 648679AA2BC96A74006456E7 /* ChatItemForwardingView.swift */; };
@@ -566,6 +567,7 @@
 		646BB38D283FDB6D001CE359 /* LocalAuthenticationUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAuthenticationUtils.swift; sourceTree = "<group>"; };
 		647B15E72F4C8D2500EB431E /* AddChannelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddChannelView.swift; sourceTree = "<group>"; };
 		647B15E92F4C8D5100EB431E /* ChatRelayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatRelayView.swift; sourceTree = "<group>"; };
+		647C9E283061362A0032110E /* GetStakeBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetStakeBanner.swift; sourceTree = "<group>"; };
 		647F090D288EA27B00644C40 /* GroupMemberInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupMemberInfoView.swift; sourceTree = "<group>"; };
 		648010AA281ADD15009009B9 /* CIFileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIFileView.swift; sourceTree = "<group>"; };
 		648679AA2BC96A74006456E7 /* ChatItemForwardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemForwardingView.swift; sourceTree = "<group>"; };
@@ -1062,6 +1064,7 @@
 		5CB9250B27A942F300ACCCDD /* ChatList */ = {
 			isa = PBXGroup;
 			children = (
+				647C9E283061362A0032110E /* GetStakeBanner.swift */,
 				5C2E260A27A30CFA00F70299 /* ChatListView.swift */,
 				5C5346A727B59A6A004DF848 /* ChatHelp.swift */,
 				5CB9250C27A9432000ACCCDD /* ChatListNavLink.swift */,
@@ -1746,6 +1749,7 @@
 				5C1A4C1E27A715B700EAD5AD /* ChatItemView.swift in Sources */,
 				64AA1C6927EE10C800AC7277 /* ContextItemView.swift in Sources */,
 				CE176F202C87014C00145DBC /* InvertedForegroundStyle.swift in Sources */,
+				647C9E293061362A0032110E /* GetStakeBanner.swift in Sources */,
 				5CEBD7482A5F115D00665FE2 /* SetDeliveryReceiptsView.swift in Sources */,
 				5C9C2DA7289957AE00CC63B1 /* AdvancedNetworkSettings.swift in Sources */,
 				5CADE79A29211BB900072E13 /* PreferencesView.swift in Sources */,
