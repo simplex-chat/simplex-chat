@@ -44,11 +44,11 @@ Creating a channel involves generating cryptographic material, creating the chan
 
 When a relay receives an invitation to serve a channel, it validates the channel and creates its own relay link. This flow is currently part of channel creation; adding relays to an existing channel is planned but not yet implemented.
 
-1. Owner sends `x.grp.relay.inv` to the relay's contact address. This message includes the relay's member ID and role, the owner's profile, and the channel's short link.
+1. Owner sends `x.grp.relay.inv` to the relay's contact address. This message includes the relay's member ID and role, the owner's profile, the channel's short link, and the channel's public group ID.
 
-2. Relay receives the invitation and creates a relay request record. A relay request worker processes it asynchronously.
+2. Relay receives the invitation and creates a relay request record. The owner's badge is verified under the channel binding of the public group ID from the invitation. A relay request worker processes it asynchronously.
 
-3. The worker retrieves the channel's link data from the SMP server, extracts and validates the channel profile and owner authorization.
+3. The worker retrieves the channel's link data from the SMP server, extracts and validates the channel profile and owner authorization. The request fails when the link's entity ID differs from the public group ID in the invitation.
 
 4. The relay creates its own contact address link (the relay link) with the channel's entity ID in the immutable fixed data.
 

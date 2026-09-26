@@ -683,6 +683,7 @@ getFileBadgeProofs db fileId = foldl' addProof (Nothing, Nothing) <$> DB.query d
     addProof (inv_, descr_) (Only kind :. row) = case kind of
       BPKInvitation -> (rowToBadgeProof row, descr_)
       BPKDescription -> (inv_, rowToBadgeProof row)
+      BPKMember -> (inv_, descr_)
 
 toRcvFileDescr :: (Int64, Text, Int, BoolInt) -> RcvFileDescr
 toRcvFileDescr (fileDescrId, fileDescrText, fileDescrPartNo, BI fileDescrComplete) =

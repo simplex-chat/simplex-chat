@@ -54,6 +54,8 @@ module Simplex.Chat.Badges
     BadgeProofRow,
     badgeProofToRow,
     rowToBadgeProof,
+    MaybeBadgeProofRow,
+    maybeRowToBadgeProof,
     badgeToRow,
     localBadgeToRow,
     rowToBadge,
@@ -141,16 +143,18 @@ instance TextEncoding BadgeStatus where
 
 -- Badge proof kind - a file has at most one proof of each kind
 
-data BadgeProofKind = BPKInvitation | BPKDescription
+data BadgeProofKind = BPKInvitation | BPKDescription | BPKMember
   deriving (Eq, Show)
 
 instance TextEncoding BadgeProofKind where
   textEncode = \case
     BPKInvitation -> "inv"
     BPKDescription -> "descr"
+    BPKMember -> "member"
   textDecode = \case
     "inv" -> Just BPKInvitation
     "descr" -> Just BPKDescription
+    "member" -> Just BPKMember
     _ -> Nothing
 
 -- Disclosed badge content (BBS messages 1, 2, 3)
@@ -457,6 +461,12 @@ rowToBadgeProof :: BadgeProofRow -> Maybe BadgeProof
 rowToBadgeProof (Binary p, Binary ph, idx, type_, badgeExpiry, badgeExtra) = do
   badgeType <- textDecode type_
   pure $ BadgeProof idx (BBSPresHeader ph) (BBSProof p) BadgeInfo {badgeType, badgeExpiry, badgeExtra}
+
+type MaybeBadgeProofRow = (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int, Maybe Text, Maybe UTCTime, Maybe Text)
+
+maybeRowToBadgeProof :: MaybeBadgeProofRow -> Maybe BadgeProof
+maybeRowToBadgeProof (p_, ph_, idx_, type_, expiry_, extra_) =
+  rowToBadgeProof =<< (,,,,,) <$> p_ <*> ph_ <*> idx_ <*> type_ <*> expiry_ <*> extra_
 
 -- (proof, pres_header, expiry, type, verified, extra, master_key, signature, key_idx) - binary columns wrapped in Binary (BLOB/bytea)
 type BadgeRow = (Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe UTCTime, Maybe Text, Maybe BoolInt, Maybe Text, Maybe (Binary ByteString), Maybe (Binary ByteString), Maybe Int)

@@ -490,7 +490,8 @@ data GroupKeys
         memberPrivKey :: C.PrivateKeyEd25519
       }
   | GKRelayRequest
-      { memberPrivKey :: C.PrivateKeyEd25519
+      { memberPrivKey :: C.PrivateKeyEd25519,
+        publicGroupId :: Maybe B64UrlByteString
       }
   | GKPreparedPublicGroup
       { memberPrivKey :: C.PrivateKeyEd25519
@@ -1008,7 +1009,8 @@ data GroupRelayInvitation = GroupRelayInvitation
   { fromMember :: MemberIdRole,
     fromMemberProfile :: Profile,
     relayMemberId :: MemberId,
-    groupLink :: ShortLinkContact
+    groupLink :: ShortLinkContact,
+    publicGroupId :: Maybe B64UrlByteString
   }
   deriving (Eq, Show)
 
@@ -1212,7 +1214,8 @@ data GroupMember = GroupMember
     relayLink :: Maybe ShortLinkContact,
     -- out-of-band verified security code for connectionless (channel) members;
     -- regular members carry it in activeConn instead (see memberSecurityCode)
-    memberVerifiedCode :: Maybe SecurityCode
+    memberVerifiedCode :: Maybe SecurityCode,
+    memberBadgeProof :: NoJSON BadgeProof
   }
   deriving (Eq, Show)
 

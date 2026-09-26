@@ -875,7 +875,7 @@ ALTER TABLE test_chat_schema.extra_xftp_file_descriptions ALTER COLUMN extra_fil
 
 CREATE TABLE test_chat_schema.file_badge_proofs (
     badge_proof_id bigint NOT NULL,
-    file_id bigint NOT NULL,
+    file_id bigint,
     proof_kind text NOT NULL,
     badge_proof bytea NOT NULL,
     badge_pres_header bytea NOT NULL,
@@ -884,7 +884,8 @@ CREATE TABLE test_chat_schema.file_badge_proofs (
     badge_expiry timestamp with time zone NOT NULL,
     badge_extra text NOT NULL,
     created_at timestamp with time zone NOT NULL,
-    updated_at timestamp with time zone NOT NULL
+    updated_at timestamp with time zone NOT NULL,
+    group_member_id bigint
 );
 
 
@@ -2629,6 +2630,10 @@ CREATE UNIQUE INDEX idx_file_badge_proofs_file_id_kind ON test_chat_schema.file_
 
 
 
+CREATE UNIQUE INDEX idx_file_badge_proofs_group_member_id ON test_chat_schema.file_badge_proofs USING btree (group_member_id);
+
+
+
 CREATE INDEX idx_files_chat_item_id ON test_chat_schema.files USING btree (chat_item_id);
 
 
@@ -3322,6 +3327,11 @@ ALTER TABLE ONLY test_chat_schema.extra_xftp_file_descriptions
 
 ALTER TABLE ONLY test_chat_schema.file_badge_proofs
     ADD CONSTRAINT file_badge_proofs_file_id_fkey FOREIGN KEY (file_id) REFERENCES test_chat_schema.files(file_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.file_badge_proofs
+    ADD CONSTRAINT file_badge_proofs_group_member_id_fkey FOREIGN KEY (group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
 
 
 

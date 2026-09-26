@@ -76,6 +76,7 @@ chatProfileTests = do
     it "supporter badge bound to another chat is ignored, stored badge is kept" testUserBadgeOtherBinding
     it "supporter badge of member joining via group link, at request and after handshake" testUserBadgeGroupLinkJoiner
     it "supporter badge of introduced member" testUserBadgeIntroduced
+    it "supporter badge of member invited via contact, forwarded to introduced member" testUserBadgeInvitedIntroduced
     it "supporter badge in one-time link data" testUserBadgeInvitationLinkData
     it "supporter badge in data of address getting its first short link" testUserBadgeAddressFirstShortLink
     it "supporter badge in shared address card" testUserBadgeAddressCard
@@ -798,6 +799,34 @@ testUserBadgeIntroduced ps = do
         ]
       alice #> "#team hello"
       cath <# "#team alice> hello"
+      memberBadgeHeader cath "team" "bob" `shouldReturn` Just ("CG", BSActive)
+
+testUserBadgeInvitedIntroduced :: HasCallStack => TestParams -> IO ()
+testUserBadgeInvitedIntroduced ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg3 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile cathProfile (test sk) ps
+  where
+    test sk alice bob cath = do
+      createGroup2 "team" alice cath
+      connectUsers alice bob
+      addTestBadge bob =<< issueTestBadge sk futureDate
+      bob #> "@alice hi"
+      alice <# "bob *> hi"
+      cath ##> "/_stop"
+      cath <## "chat stopped"
+      addMember "team" alice bob GRAdmin
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      memberBadgeHeader alice "team" "bob" `shouldReturn` Just ("CD", BSActive)
+      memberProofHeader alice "team" "bob" `shouldReturn` Just "CG"
+      bob ##> "/_stop"
+      bob <## "chat stopped"
+      cath ##> "/_start"
+      cath <## "chat started"
+      cath <## "subscribed 2 connections on server localhost"
+      cath <## "#team: alice added bob (Bob) to the group (connecting...)"
       memberBadgeHeader cath "team" "bob" `shouldReturn` Just ("CG", BSActive)
 
 testUserBadgeInvitationLinkData :: HasCallStack => TestParams -> IO ()

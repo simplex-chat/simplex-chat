@@ -4341,7 +4341,8 @@ processChatCommand cxt nm = \case
                     fromMember = MemberIdRole userMemberId userRole,
                     fromMemberProfile = membershipProfile,
                     relayMemberId,
-                    groupLink = groupSLink
+                    groupLink = groupSLink,
+                    publicGroupId = (\PublicGroupProfile {publicGroupId = gId} -> gId) <$> publicGroup' gInfo
                   }
               dm <- encodeConnInfo $ XGrpRelayInv relayInv
               sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode

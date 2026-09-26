@@ -1184,7 +1184,7 @@ rejectRelayInvitationAsync
   -> CM ()
 rejectRelayInvitationAsync user uclId cxt groupRelayInv invId reqChatVRange initialDelay reason = do
   (_gInfo, ownerMember) <- withStore $ \db ->
-    createRelayRequestGroup db cxt user groupRelayInv invId reqChatVRange initialDelay GSMemInvited RSRejected
+    createRelayRequestGroup db cxt user groupRelayInv (relayInvPresHeader groupRelayInv) invId reqChatVRange initialDelay GSMemInvited RSRejected
   let GroupMember {groupMemberId} = ownerMember
       msg = XGrpRelayReject reason
   subMode <- chatReadVar subscriptionMode
@@ -1329,12 +1329,12 @@ userProfileInGroup' User {profile = p} mg incognitoProfile =
    in maybe p' (\g -> redactedMemberProfile g (membership g) p') mg
 
 memberInfo :: GroupInfo -> GroupMember -> MemberInfo
-memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, activeConn} =
+memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, activeConn, memberBadgeProof} =
   MemberInfo
     { memberId,
       memberRole,
       v = ChatVersionRange . peerChatVRange <$> activeConn,
-      profile = (p :: Profile) {badge = mfilter (acceptedProof $ PHChat <$> memberChatBinding g memberId memberPubKey) badge},
+      profile = (p :: Profile) {badge = mfilter (acceptedProof $ PHChat <$> memberChatBinding g memberId memberPubKey) (unNoJSON memberBadgeProof <|> badge)},
       memberKey = MemberKey <$> memberPubKey
     }
   where
@@ -2258,6 +2258,10 @@ linkPresHeader (LinkKey key) = PHLink key
 
 invitationPresHeader :: ConnReqInvitation -> ProofPresHeader
 invitationPresHeader = PHRequest . invitationRequestCode
+
+relayInvPresHeader :: GroupRelayInvitation -> Maybe ProofPresHeader
+relayInvPresHeader GroupRelayInvitation {fromMember = MemberIdRole {memberId}, publicGroupId} =
+  (\gId -> PHChat $ encodeChatBinding CBGroup $ smpEncode (gId, memberId)) <$> publicGroupId
 
 unboundPresHeader :: CM ProofPresHeader
 unboundPresHeader = PHTest <$> drgRandomBytes 16

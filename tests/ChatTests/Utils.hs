@@ -130,9 +130,9 @@ versionTestMatrix2 runTest = do
   it "prev" $ runTestCfg2 testCfgVPrev testCfgVPrev (runTest True True)
   it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest True True)
   it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest True True)
-  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest True False)
+  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest True True)
   it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest True True)
-  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest True False)
+  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest True True)
 
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix3 runTest = do
@@ -732,7 +732,13 @@ requestBadgeHeader cc cName =
         >>= either (fail . show) (\UserContactRequest {profile} -> pure $ storedBadgeHeader profile)
 
 memberBadgeHeader :: TestCC -> GroupName -> ContactName -> IO (Maybe (String, BadgeStatus))
-memberBadgeHeader cc gName mName =
+memberBadgeHeader cc gName mName = (\GroupMember {memberProfile} -> storedBadgeHeader memberProfile) <$> getTestMember cc gName mName
+
+memberProofHeader :: TestCC -> GroupName -> ContactName -> IO (Maybe String)
+memberProofHeader cc gName mName = (\GroupMember {memberBadgeProof} -> proofHeaderTag <$> unNoJSON memberBadgeProof) <$> getTestMember cc gName mName
+
+getTestMember :: TestCC -> GroupName -> ContactName -> IO GroupMember
+getTestMember cc gName mName =
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
       runExceptT
@@ -740,7 +746,7 @@ memberBadgeHeader cc gName mName =
             gId <- getGroupIdByName db user gName
             getGroupMember db (storeCxt $ chatController cc) user gId =<< getGroupMemberIdByName db user gId mName
         )
-        >>= either (fail . show) (\GroupMember {memberProfile} -> pure $ storedBadgeHeader memberProfile)
+        >>= either (fail . show) pure
 
 lastItemContent :: TestCC -> IO String
 lastItemContent cc =
@@ -751,15 +757,16 @@ lastItemContent cc =
 
 storedBadgeHeader :: LocalProfile -> Maybe (String, BadgeStatus)
 storedBadgeHeader LocalProfile {localBadge} = case localBadge of
-  Just (PeerBadge (BadgeProof _ (BBSPresHeader ph) _ _) st) -> Just (headerTag $ strDecode ph, st)
+  Just (PeerBadge b st) -> Just (proofHeaderTag b, st)
   _ -> Nothing
-  where
-    headerTag = \case
-      Right (PHChat b) -> 'C' : take 1 (B.unpack b)
-      Right (PHRequest _) -> "R"
-      Right (PHLink _) -> "L"
-      Right (PHTest _) -> "T"
-      _ -> "?"
+
+proofHeaderTag :: BadgeProof -> String
+proofHeaderTag (BadgeProof _ (BBSPresHeader ph) _ _) = case strDecode ph of
+  Right (PHChat b) -> 'C' : take 1 (B.unpack b)
+  Right (PHRequest _) -> "R"
+  Right (PHLink _) -> "L"
+  Right (PHTest _) -> "T"
+  _ -> "?"
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do

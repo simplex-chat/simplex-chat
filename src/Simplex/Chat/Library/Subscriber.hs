@@ -1658,7 +1658,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             then rejectRelayInvitationAsync user uclId cxt groupRelayInv invId chatVRange initialDelay RRRRejoinRejected
             else do
               (_gInfo, _ownerMember) <- withStore $ \db ->
-                createRelayRequestGroup db cxt user groupRelayInv invId chatVRange initialDelay GSMemAccepted RSInvited
+                createRelayRequestGroup db cxt user groupRelayInv (relayInvPresHeader groupRelayInv) invId chatVRange initialDelay GSMemAccepted RSInvited
               lift $ void $ getRelayRequestWorker True
         xGrpRelayTest :: InvitationId -> VersionRangeChat -> ByteString -> CM ()
         xGrpRelayTest invId chatVRange challenge
@@ -2934,7 +2934,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           when contentChanged $ updateBusinessChatProfile gInfo
           case memberContactId of
             Nothing -> do
-              m' <- withStore $ \db -> updateMemberProfile db cxt user m presHeader_ p''
+              m' <- withStore $ \db -> updateMemberProfile db cxt user m presHeader_ (redactedMemberProfile gInfo m rcvProfile)
               unless (muteEventInChannel gInfo m') $ do
                 when contentChanged $ forM_ msgTs_ $ createProfileUpdatedItem m'
                 toView $ CEvtGroupMemberUpdated user gInfo m m'
@@ -2943,13 +2943,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               mCt <- withStore $ \db -> getContact db cxt user mContactId
               if canUpdateProfile mCt
                 then do
-                  (m', ct') <- withStore $ \db -> updateContactMemberProfile db cxt user m mCt presHeader_ p'
+                  (m', ct') <- withStore $ \db -> updateContactMemberProfile db cxt user m mCt presHeader_ rcvProfile
                   unless (muteEventInChannel gInfo m') $ do
                     when contentChanged $ forM_ msgTs_ $ createProfileUpdatedItem m'
                     toView $ CEvtGroupMemberUpdated user gInfo m m'
                     toView $ CEvtContactUpdated user mCt ct'
                   pure m'
-                else pure m
+                else withStore' $ \db -> setMemberBadgeProof db m presHeader_ rcvProfile
               where
                 canUpdateProfile ct
                   | not (contactActive ct) = True
@@ -4563,8 +4563,8 @@ runRelayRequestWorker a Worker {doWork} = do
           where
             getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfoKeys -> CM (GroupInfo, ShortLinkContact)
             getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} (GIK gInfo gks) = do
-              memberPrivKey' <- case gks of
-                GKRelayRequest {memberPrivKey} -> pure memberPrivKey
+              (memberPrivKey', claimedGroupId_) <- case gks of
+                GKRelayRequest {memberPrivKey, publicGroupId} -> pure (memberPrivKey, publicGroupId)
                 _ -> throwChatError $ CEException "getLinkDataCreateRelayLink: group is not a relay request"
               (FixedLinkData {linkEntityId, rootKey}, cData@(ContactLinkData _ UserContactData {owners}), _) <- getShortLinkConnReq' NRMBackground user reqGroupLink
               liftIO (decodeLinkUserData cData) >>= \case
@@ -4572,8 +4572,8 @@ runRelayRequestWorker a Worker {doWork} = do
                 Just GroupShortLinkData {groupProfile = gp@GroupProfile {publicGroup}} -> do
                   pg <- case (linkEntityId, publicGroup) of
                     (Just entityId, Just pg@PublicGroupProfile {publicGroupId})
-                      | B64UrlByteString entityId == publicGroupId -> pure pg
-                    _ -> throwChatError $ CEException "getLinkDataCreateRelayLink: linkEntityId does not match profile publicGroupId"
+                      | B64UrlByteString entityId == publicGroupId && all (== publicGroupId) claimedGroupId_ -> pure pg
+                    _ -> throwChatError $ CEException "getLinkDataCreateRelayLink: linkEntityId does not match publicGroupId of profile or invitation"
                   validateGroupProfile gp
                   sLnk <- createRelayLink gInfo (C.publicKey memberPrivKey', memberPrivKey')
                   gInfo' <- withStore $ \db -> do
