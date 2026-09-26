@@ -78,9 +78,10 @@ async function onMessage(ci: T.AChatItem, content: T.MsgContent, chat: api.ChatA
   await updateCalculator(chat, sender, input.update)
 }
 
-export function runCalculatorBot(dbOpts: bot.BotDbOpts): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {
+export function runCalculatorBot(dbOpts: bot.BotDbOpts, simplexDomain?: string): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {
   return bot.run({
     profile: {displayName: "SimpleX Calculator", fullName: "", image: calculatorIcon, preferences: {fullDelete: {allow: T.FeatureAllowed.Yes}}},
+    simplexDomain,
     dbOpts,
     options: {
       addressSettings: {businessAddress: true, welcomeMessage},

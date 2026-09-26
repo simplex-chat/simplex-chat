@@ -35,7 +35,7 @@ const defaultOpts: Required<BotOptions> = {
 
 export interface BotConfig {
   profile: T.Profile,
-  simplexName?: string,
+  simplexDomain?: string | null,
   dbOpts: BotDbOpts,
   options: BotOptions,
   onMessage?: (chatItem: T.AChatItem, content: T.MsgContent, chat: api.ChatApi) => void | Promise<void>,
@@ -46,7 +46,7 @@ export interface BotConfig {
   events?: api.EventSubscribers
 }
 
-export async function run({profile, simplexName, dbOpts, options = defaultOpts, onMessage, onCommands = {}, events = {}}: BotConfig): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {
+export async function run({profile, simplexDomain, dbOpts, options = defaultOpts, onMessage, onCommands = {}, events = {}}: BotConfig): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {
   const bot = await api.ChatApi.init(dbOpts, dbOpts.confirmMigrations || core.MigrationConfirmation.YesUp, dbOpts.queueSize)
   const opts = fullOptions(options)
   if (onMessage || Object.keys(onCommands).length > 0) subscribeChatItems(bot, onMessage, onCommands)
@@ -61,7 +61,7 @@ export async function run({profile, simplexName, dbOpts, options = defaultOpts, 
     console.log(`Bot address: ${addressLink}`)
     if (opts.useBotProfile) botProfile.contactLink = addressLink
   }
-  const namedUser = await updateBotSimplexName(bot, user, simplexName, opts)
+  const namedUser = await updateBotSimplexDomain(bot, user, simplexDomain, opts)
   await updateBotUserProfile(bot, namedUser, botProfile, opts)
   return [bot, user, address]
 }
@@ -185,16 +185,17 @@ async function createOrUpdateAddress(bot: api.ChatApi, user: T.User, opts: Requi
   return address
 }
 
-async function updateBotSimplexName(bot: api.ChatApi, user: T.User, simplexName: string | undefined, opts: Required<BotOptions>): Promise<T.User> {
-  const name = simplexName?.toLowerCase()
-  if (user.profile.contactDomain?.domain === name) return user
+async function updateBotSimplexDomain(bot: api.ChatApi, user: T.User, simplexDomain: string | null | undefined, opts: Required<BotOptions>): Promise<T.User> {
+  if (simplexDomain === undefined) return user
+  const domain = simplexDomain === null ? undefined : simplexDomain.toLowerCase()
+  if (user.profile.contactDomain?.domain === domain) return user
   if (!opts.updateAddress) {
     console.log("Bot SimpleX name changed")
     return user
   }
   console.log("Bot SimpleX name changed, updating...")
   try {
-    return await bot.apiSetUserDomain(user.userId, name)
+    return await bot.apiSetUserDomain(user.userId, domain)
   } catch (e) {
     console.log("Error updating bot SimpleX name", e)
     return user

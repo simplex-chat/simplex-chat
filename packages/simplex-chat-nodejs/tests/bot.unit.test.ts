@@ -78,8 +78,8 @@ describe("run", () => {
     return chat
   }
 
-  const runBot = (simplexName?: string, options = {}) =>
-    run({profile: {displayName: "Calculator", fullName: ""}, simplexName, dbOpts: {type: "sqlite", filePrefix: "unused"}, options})
+  const runBot = (simplexDomain?: string | null, options = {}) =>
+    run({profile: {displayName: "Calculator", fullName: ""}, simplexDomain, dbOpts: {type: "sqlite", filePrefix: "unused"}, options})
 
   const updatedProfile = (chat: ReturnType<typeof fakeChat>) => chat.apiUpdateProfile.mock.calls[0][1]
 
@@ -93,11 +93,18 @@ describe("run", () => {
     expect(updatedProfile(chat).contactDomain).toEqual({domain: "calc.simplex"})
   })
 
-  it("removes the SimpleX name that is not configured", async () => {
+  it("removes the SimpleX name set to null", async () => {
     const chat = fakeChat({domain: "calc.simplex"})
-    await runBot()
+    await runBot(null)
     expect(chat.apiSetUserDomain).toHaveBeenCalledWith(1, undefined)
     expect(updatedProfile(chat).contactDomain).toBeUndefined()
+  })
+
+  it("keeps the stored SimpleX name when it is not configured", async () => {
+    const chat = fakeChat({domain: "calc.simplex"})
+    await runBot()
+    expect(chat.apiSetUserDomain).not.toHaveBeenCalled()
+    expect(updatedProfile(chat).contactDomain).toEqual({domain: "calc.simplex"})
   })
 
   it("keeps the SimpleX name when updating the profile", async () => {
