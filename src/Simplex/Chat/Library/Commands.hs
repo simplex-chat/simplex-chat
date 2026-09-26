@@ -5132,7 +5132,7 @@ nameResolvesTo sLnk = any (either (const False) (sameShortLinkContact sLnk) . st
 
 resolveNameRegistration :: User -> NetworkRequestMode -> SimplexDomain -> CM NameRegistration
 resolveNameRegistration user nm domain =
-  registration <$> withAgent (\a -> resolveSimplexName a nm (aUserId user) domain)
+  (\NameResponse {registration} -> registration) <$> withAgent (\a -> resolveSimplexName a nm (aUserId user) domain)
 
 -- the resolver now also reports names that are not registered, which stay the agent's NAME NOT_FOUND
 resolveNameRecord :: User -> NetworkRequestMode -> SimplexDomain -> CM (NameRecord, Maybe UTCTime)

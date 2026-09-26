@@ -84,8 +84,9 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits, LocalBadge)
-import Simplex.Chat.Badges.Service (BadgeServiceErrorCode, StatementEntry)
+import Simplex.Chat.Badges.Service (BadgeServiceErrorCode, NameCredit, StatementEntry)
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeState (..))
+import Simplex.Chat.PaymentService (ServicePayment)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -664,6 +665,15 @@ data ChatCommand
   -- episode is last because it is free text: it is the value that makes one occurrence of an
   -- alert distinct from the next, and the app returns whatever it was given
   | APIAckBadgeAlert {userId :: UserId, badgePurchaseId :: Int64, alertKind :: BadgeAlertKind, snooze :: Bool, episode :: Text}
+  | APIPurchaseName {userId :: UserId, domain :: SimplexDomain, nameLinks :: NameLinks, payment :: ServicePayment} -- register a name paid in the app store; progress follows as CEvtNameChanged
+  | APIRedeemNameCode {userId :: UserId, domain :: SimplexDomain, nameLinks :: NameLinks, code :: Text} -- register a name with a code
+  | APICheckNameCode {userId :: UserId, code :: Text} -- what a code covers, checked on the device without spending it
+  | APIGetNameState {userId :: UserId} -- the user's names, and registrations in progress
+  | APIRetryName {userId :: UserId, namePurchaseId :: Int64, domain_ :: Maybe SimplexDomain} -- the payment is kept after a failure: the same name again, or another one when it was taken
+  | APICancelName {userId :: UserId, namePurchaseId :: Int64} -- stop a registration that is still running; the payment stays for another name
+  | APISetNameLinks {userId :: UserId, namePurchaseId :: Int64, nameLinks :: NameLinks}
+  | APIRenewName {userId :: UserId, namePurchaseId :: Int64, payment :: ServicePayment}
+  | APIRenewNameCode {userId :: UserId, namePurchaseId :: Int64, code :: Text}
   | ShowProfileImage
   | SetUserFeature AChatFeature FeatureAllowed -- UserId (not used in UI)
   | SetContactFeature AChatFeature ContactName (Maybe FeatureAllowed)
@@ -870,6 +880,8 @@ data ChatResponse
   | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
   | CRBadgeState {user :: User, badgeState :: Maybe BadgeState}
   | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
+  | CRNameState {user :: User, nameState :: [NameState]}
+  | CRNameCode {user :: User, credit :: NameCredit}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
@@ -989,6 +1001,7 @@ data ChatEvent
   | CEvtServiceReplySent {connectionId :: AgentConnId}
   | CEvtBadgeChanged {user :: User, badgeState :: Maybe BadgeState} -- badge state changed, including a renewal that arrived without a command
   | CEvtBadgeAlert {user :: User, badgeAlert :: BadgeAlert}
+  | CEvtNameChanged {user :: User, nameState :: NameState} -- a registration moved on, including results that arrive without a command
   | CEvtContactRequestRejected {user :: User, contact :: Contact, rejectionReason :: Maybe ContactRejectionReason}
   | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
   | CEvtAcceptingBusinessRequest {user :: User, groupInfo :: GroupInfo}
@@ -1490,6 +1503,40 @@ data BadgeRedeemError
   | BRECredentialNotVerified
   deriving (Eq, Show)
 
+-- where a name leads: one profile's contact address and one channel, each optional
+data NameLinks = NameLinks
+  { contactUserId :: Maybe UserId, -- the profile's address is created if it has none
+    channelGroupId :: Maybe GroupId
+  }
+  deriving (Show)
+
+-- a name as the names surfaces render it; its keys stay in core, as BadgeState's do
+data NameState = NameState
+  { namePurchaseId :: Int64,
+    domain :: SimplexDomain,
+    nameLinks :: NameLinks,
+    status :: NamePurchaseStatus,
+    registration :: Maybe NameRegistration -- as the service last wrote it
+  }
+  deriving (Show)
+
+data NamePurchaseStatus
+  = NPSCommitting
+  | NPSWaiting {revealAfter :: UTCTime}
+  | NPSRevealing
+  | NPSRegistered
+  | NPSTaken -- registered by someone else first; the payment is kept for another name
+  | NPSFailed -- not registered; the payment is kept
+  | NPSCancelled -- stopped on the user's word; the payment is kept
+  deriving (Show)
+
+data NameError
+  = NEInvalidCode -- not a names code, or its signature does not verify
+  | NEServiceNotConfigured
+  | NEServiceError {serviceError :: BadgeServiceErrorCode}
+  | NEInvalidResponse {message :: String}
+  deriving (Eq, Show)
+
 data ChatErrorType
   = CENoActiveUser
   | CENoConnectionUser {agentConnId :: AgentConnId}
@@ -1563,6 +1610,7 @@ data ChatErrorType
   | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
   | CEBadgeRedeemError {badgeRedeemError :: BadgeRedeemError}
+  | CENameError {nameError :: NameError}
   | CEServerProtocol {serverProtocol :: AProtocolType}
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
@@ -1848,6 +1896,14 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FC") ''ForwardConfirmation)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SDE") ''SimplexDomainError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BRE") ''BadgeRedeemError)
+
+$(JQ.deriveJSON defaultJSON ''NameLinks)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NPS") ''NamePurchaseStatus)
+
+$(JQ.deriveJSON defaultJSON ''NameState)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NE") ''NameError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
 
