@@ -359,6 +359,7 @@ struct ChatView: View {
             revealedItems = Set()
             stopAudioPlayer()
             if let cId {
+                chatModel.membersLoaded = false
                 if let c = chatModel.getChat(cId) {
                     chat = c
                 }
