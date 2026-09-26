@@ -42,7 +42,7 @@ fun ModalData.MemberSupportView(
     ModalManager.end.closeModals()
   }
   LaunchedEffect(chatModel.membersLoaded.value) {
-    if (!chatModel.membersLoaded.value) {
+    if (!chatModel.membersLoaded.value && chatModel.chatId.value == groupInfo.id) {
       setGroupMembers(rhId, groupInfo, chatModel)
     }
   }

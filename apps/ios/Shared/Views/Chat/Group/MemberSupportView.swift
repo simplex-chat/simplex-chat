@@ -26,6 +26,13 @@ struct MemberSupportView: View {
                     }
                 }
             }
+            .onChange(of: chatModel.membersLoaded) { loaded in
+                if !loaded && chatModel.chatId == groupInfo.id {
+                    Task {
+                        await chatModel.loadGroupMembers(groupInfo)
+                    }
+                }
+            }
     }
 
     @ViewBuilder private func viewBody() -> some View {
