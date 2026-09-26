@@ -100,12 +100,12 @@
         <data android:host="smp4.simplexonflux.com" />
         <data android:host="smp5.simplexonflux.com" />
         <data android:host="smp6.simplexonflux.com" />
-        <data android:pathPrefix="/invitation" />
-        <data android:pathPrefix="/contact" />
-        <data android:pathPrefix="/a" />
-        <data android:pathPrefix="/c" />
-        <data android:pathPrefix="/g" />
-        <data android:pathPrefix="/i" />
+        <data android:pathPrefix="/invitation/" />
+        <data android:pathPrefix="/contact/" />
+        <data android:pathPrefix="/a/" />
+        <data android:pathPrefix="/c/" />
+        <data android:pathPrefix="/g/" />
+        <data android:pathPrefix="/i/" />
       </intent-filter>
       <!-- Receive files from other apps -->
       <intent-filter>
