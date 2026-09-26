@@ -443,10 +443,11 @@ xftpSndFileTransfer_ user file@(CryptoFile filePath cfArgs) fileSize n contactOr
       fInv = (xftpFileInvitation fileName fileSize dummyFileDescr :: FileInvitation) {fileBadge}
   fsFilePath <- lift $ toFSFilePath filePath
   let srcFile = CryptoFile fsFilePath cfArgs
-  aFileId <- withAgent $ \a -> xftpSendFile a (aUserId user) srcFile (roundedFDCount n) Nothing
+  aFileId <- withAgent $ \a -> xftpPrepareSendFile a (aUserId user) srcFile (roundedFDCount n) Nothing
   -- TODO CRSndFileStart event for XFTP
   chSize <- asks $ fileChunkSize . config
   ft@FileTransferMeta {fileId} <- withStore' $ \db -> createSndFileTransferXFTP db user contactOrGroup_ file fInv (AgentSndFileId aFileId) Nothing chSize
+  withAgent (`xftpStartSendFile` aFileId)
   let fileSource = Just $ CryptoFile filePath cfArgs
       ciFile = CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndStored, fileProtocol = FPXFTP, fileExpires = Nothing, fileProhibited = Nothing}
   pure (fInv, ciFile, ft)
@@ -485,9 +486,10 @@ xftpSndFileRedirect user ftId vfd = do
   let fileName = "redirect.yaml"
       file = CryptoFile fileName Nothing
       fInv = xftpFileInvitation fileName (fromIntegral $ B.length $ strEncode vfd) dummyFileDescr
-  aFileId <- withAgent $ \a -> xftpSendDescription a (aUserId user) vfd (roundedFDCount 1)
+  aFileId <- withAgent $ \a -> xftpPrepareSendDescription a (aUserId user) vfd (roundedFDCount 1)
   chSize <- asks $ fileChunkSize . config
-  withStore' $ \db -> createSndFileTransferXFTP db user Nothing file fInv (AgentSndFileId aFileId) (Just ftId) chSize
+  ft <- withStore' $ \db -> createSndFileTransferXFTP db user Nothing file fInv (AgentSndFileId aFileId) (Just ftId) chSize
+  ft <$ withAgent (`xftpStartSendFile` aFileId)
 
 dummyFileDescr :: FileDescr
 dummyFileDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
@@ -852,9 +854,10 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
   where
     receive' :: ValidFileDescription 'FRecipient -> Bool -> CM ()
     receive' rd approved = do
-      aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) rd cfArgs approved
+      aFileId <- withAgent $ \a -> xftpPrepareReceiveFile a (aUserId user) rd cfArgs approved
       startReceivingFile user fileId
       withStore' $ \db -> updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
+      withAgent (`xftpStartReceiveFile` aFileId)
     getUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
     getUnknownSrvs srvs = do
       knownSrvs <- L.map protoServer' <$> getKnownAgentServers SPXFTP user
@@ -905,13 +908,14 @@ receiveViaURI :: User -> FileDescriptionURI -> CryptoFile -> CM RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
   fileId <- withStore $ \db -> createRcvStandaloneFileTransfer db userId cf fileSize chunkSize
   -- currently the only use case is user migrating via their configured servers, so we pass approvedRelays = True
-  aFileId <- withAgent $ \a -> xftpReceiveFile a (aUserId user) description cryptoArgs True
-  withStore $ \db -> do
+  aFileId <- withAgent $ \a -> xftpPrepareReceiveFile a (aUserId user) description cryptoArgs True
+  ft <- withStore $ \db -> do
     liftIO $ do
       updateRcvFileStatus db fileId FSConnected
       updateCIFileStatus db user fileId $ CIFSRcvTransfer 0 1
       updateRcvFileAgentId db fileId (Just $ AgentRcvFileId aFileId)
     getRcvFileTransfer db user fileId
+  ft <$ withAgent (`xftpStartReceiveFile` aFileId)
   where
     FD.ValidFileDescription FD.FileDescription {size = FD.FileSize fileSize, chunkSize = FD.FileSize chunkSize} = description
 
