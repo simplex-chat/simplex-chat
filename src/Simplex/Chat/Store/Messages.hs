@@ -1481,10 +1481,14 @@ getCreateGroupChatScopeInfo db cxt user GroupInfo {membership} = \case
     pure $ GCSIMemberSupport {groupMember_ = Nothing}
   GCSMemberSupport (Just gmId) -> do
     m <- getGroupMemberById db cxt user gmId
-    when (isNothing $ supportChat m) $ do
-      ts <- liftIO getCurrentTime
-      liftIO $ setSupportChatTs db gmId ts
-    pure GCSIMemberSupport {groupMember_ = Just m}
+    m' <-
+      if isNothing (supportChat m)
+        then do
+          ts <- liftIO getCurrentTime
+          liftIO $ setSupportChatTs db gmId ts
+          getGroupMemberById db cxt user gmId
+        else pure m
+    pure GCSIMemberSupport {groupMember_ = Just m'}
 
 getGroupChatScopeInfoForItem :: DB.Connection -> StoreCxt -> User -> GroupInfo -> ChatItemId -> ExceptT StoreError IO (Maybe GroupChatScopeInfo)
 getGroupChatScopeInfoForItem db cxt user g itemId =

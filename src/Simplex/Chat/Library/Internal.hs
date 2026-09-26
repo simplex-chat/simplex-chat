@@ -34,7 +34,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
 import Data.Containers.ListUtils (nubOrd)
-import Data.Either (partitionEithers, rights)
+import Data.Either (fromRight, partitionEithers, rights)
 import Data.Fixed (div')
 import Data.Foldable (foldr')
 import Data.Functor (($>))
@@ -3292,13 +3292,13 @@ createChatItems user itemTs_ dirsCIContents = do
   createdAt <- liftIO getCurrentTime
   let itemTs = fromMaybe createdAt itemTs_
   cxt <- asks storeCxt
-  void . withStoreBatch' $ \db -> map (updateChat db cxt createdAt) dirsCIContents
-  withStoreBatch' $ \db -> concatMap (createACIs db itemTs createdAt) dirsCIContents
+  cInfos <- withStoreBatch' $ \db -> map (updateChat db cxt createdAt) dirsCIContents
+  withStoreBatch' $ \db -> concat $ zipWith (createACIs db itemTs createdAt) cInfos dirsCIContents
   where
-    updateChat :: DB.Connection -> StoreCxt -> UTCTime -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)]) -> IO ()
+    updateChat :: DB.Connection -> StoreCxt -> UTCTime -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)]) -> IO (ChatInfo c)
     updateChat db cxt createdAt (cd, _, contents)
-      | any (\(content, _, _) -> ciRequiresAttention content) contents || contactChatDeleted cd = void $ updateChatTsStats db cxt user cd createdAt memberChatStats
-      | otherwise = pure ()
+      | any (\(content, _, _) -> ciRequiresAttention content) contents || contactChatDeleted cd = updateChatTsStats db cxt user cd createdAt memberChatStats
+      | otherwise = pure $ toChatInfo cd
       where
         memberChatStats :: Maybe (Int, MemberAttention, Int)
         memberChatStats = case cd of
@@ -3306,15 +3306,15 @@ createChatItems user itemTs_ dirsCIContents = do
             let unread = length $ filter (\(content, _, _) -> ciRequiresAttention content) contents
              in Just (unread, memberAttentionChange unread itemTs_ (Just m) scope, 0)
           _ -> Nothing
-    createACIs :: DB.Connection -> UTCTime -> UTCTime -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)]) -> [IO AChatItem]
-    createACIs db itemTs createdAt (cd, showGroupAsSender, contents) = map createACI contents
+    createACIs :: DB.Connection -> UTCTime -> UTCTime -> Either ChatError (ChatInfo c) -> (ChatDirection c d, ShowGroupAsSender, [(CIContent d, Maybe SharedMsgId, Maybe MsgSigStatus)]) -> [IO AChatItem]
+    createACIs db itemTs createdAt cInfo_ (cd, showGroupAsSender, contents) = map createACI contents
       where
         createACI (content, sharedMsgId, msgSigned) = do
           let hasLink_ = ciContentHasLink content Nothing
               msgVerified = toMsgVerified False msgSigned
           ciId <- createNewChatItemNoMsg db user cd showGroupAsSender content sharedMsgId hasLink_ msgVerified itemTs createdAt
           let ci = mkChatItem cd showGroupAsSender ciId content Nothing Nothing Nothing Nothing Nothing False False itemTs Nothing msgVerified createdAt
-          pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
+          pure $ AChatItem (chatTypeI @c) (msgDirection @d) (fromRight (toChatInfo cd) cInfo_) ci
 
 -- rcvMem_ Nothing means message from channel - treated same as message from moderator,
 -- e.g. it can reset unanswered counter if newer than last unanswered message.

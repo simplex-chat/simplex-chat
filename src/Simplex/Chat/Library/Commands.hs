@@ -4876,7 +4876,7 @@ processChatCommand cxt nm = \case
               startProximateTimedItemThread user (ChatRef CTGroup groupId scope, chatItemId' ci) deleteAt
           chatScopeInfo' <- case chatScopeInfo of
             Just GCSIMemberSupport {groupMember_ = Just sentScopeMem} ->
-              Just . GCSIMemberSupport . Just <$> withFastStore (\db -> getGroupMemberById db cxt user (groupMemberId' sentScopeMem))
+              Just . GCSIMemberSupport . Just . fromRight sentScopeMem <$> withFastStore' (\db -> runExceptT $ getGroupMemberById db cxt user (groupMemberId' sentScopeMem))
             _ -> pure chatScopeInfo
           pure $ CRNewChatItems user (map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo')) cis)
           where

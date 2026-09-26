@@ -32,28 +32,34 @@ Load the list once per open group, then keep it current from what arrives.
 - `updateGroupScopeUnreadStats` returns the updated `GroupChatScopeInfo` together with `GroupInfo`.
 - `APIChatItemsRead` returns `GroupChat gInfo' chatScopeInfo'`.
 - `deleteGroupCIs` puts the updated scope member into each deletion's chat info.
-- The group send response re-reads the support scope member after `saveSndChatItems` has updated `support_chat_ts`, instead of returning the member from before the send.
+- The group send response re-reads the support scope member after `saveSndChatItems` has updated `support_chat_ts`, instead of returning the member from before the send. If that read fails, it falls back to the pre-send member rather than failing a send that has already happened.
+- Internal items go through `createChatItems`, for example "new member pending review" (unread and attention +1). It now builds its items from the `ChatInfo` returned by `updateChatTsStats`, as `saveRcvChatItem'` already does, instead of the pre-update `toChatInfo cd`. Otherwise a new pending member would appear without a badge.
+- Opening a member's support chat for the first time sets `support_chat_ts` and now returns the re-read member, so the new chat appears in the list.
 - Existing clients are unaffected: both apps strip the scope in `updateChatInfo`.
 
 **Android/desktop, and iOS**
-- New `upsertSupportChatMember(cInfo)`. When the chat info carries a support-chat member, it upserts that member into the group's members.
+- New `upsertSupportChatMember(cInfo)`. When the chat info carries a support-chat member, it adds that member if absent. If the member is already present, it replaces only its `supportChat` stats. Status, role and profile keep coming from their dedicated events. That way an item event applied late, such as a leave item handled after `LeftMember`, cannot restore an old status.
 - It is called for:
   - `NewChatItems` events;
   - `ChatItemsDeleted` events;
   - delete responses (items and reports);
-  - send responses;
+  - send and forward responses (in `processSendMessageCmd` on both platforms);
   - the mark-read response;
   - the initial load of a support chat.
 - The member list loads only if `membersLoaded` is false. The mention picker already uses this flag the same way, and it is reset when leaving the group.
+- Kotlin `apiListMembers` returns `null` on error, and `setGroupMembers` then keeps the current state, so a failed load does not mark members as loaded.
+- iOS resets `membersLoaded` when chats are refreshed on resume, because the notification extension may have changed support chats while the app was suspended.
 - Kotlin `setGroupMembers` writes its result only if the group is still the open chat (or the channel being created), as iOS `loadGroupMembers` already does. Without this check, a slow load from a previously opened channel could finish after a chat switch and mark another group's members as loaded. The old reload on every return hid that.
 - The refresh button is removed. The list is kept current by the updates above.
 - iOS also sends `objectWillChange`, because updating a `GMember` in place does not re-render or re-sort the list.
 
 A member's first support message arrives as a `NewChatItems` event with that member, so a new support chat appears in the list without a reload.
 
-## Known limitation
+## Known limitations
 
-A full member load that is in flight when a support-chat update arrives overwrites that update with its snapshot. For example, the first list load can race a member's first support message. The member then reappears on their next message, when their chat is opened, or when the group is reopened.
+- A full member load that is in flight when a support-chat update arrives overwrites that update with its snapshot. For example, the first list load can race a member's first support message. The member then reappears on their next message, when their chat is opened, or when the group is reopened.
+- Support stats snapshots from different events and responses are applied in arrival order, so a rare reordering can briefly show an older count until the next update for that member.
+- The connection-state labels in rows (failed, disabled, inactive) come from `activeConn`. Neither app handles `ConnectionDisabled` or `ConnectionInactive`, so these labels now refresh only when the group is reopened.
 
 ## Alternatives considered
 

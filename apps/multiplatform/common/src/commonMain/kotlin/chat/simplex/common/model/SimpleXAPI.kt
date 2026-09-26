@@ -1210,7 +1210,12 @@ object ChatController {
   private suspend fun processSendMessageCmd(rh: Long?, cmd: CC): List<AChatItem>? {
     val r = sendCmd(rh, cmd)
     return when {
-      r is API.Result && r.res is CR.NewChatItems -> r.res.chatItems
+      r is API.Result && r.res is CR.NewChatItems -> {
+        withContext(Dispatchers.Main) {
+          r.res.chatItems.forEach { chatModel.upsertSupportChatMember(rh, it.chatInfo) }
+        }
+        r.res.chatItems
+      }
       r is API.Error && r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.LargeMsg && cmd is CC.ApiSendMessages -> {
         val mc = cmd.composedMessages.last().msgContent
         AlertManager.shared.showAlertMsg(
@@ -2483,11 +2488,11 @@ object ChatController {
     return null
   }
 
-  suspend fun apiListMembers(rh: Long?, groupId: Long): List<GroupMember> {
+  suspend fun apiListMembers(rh: Long?, groupId: Long): List<GroupMember>? {
     val r = sendCmd(rh, CC.ApiListMembers(groupId))
     if (r is API.Result && r.res is CR.GroupMembers) return r.res.group.members
     Log.e(TAG, "apiListMembers bad response: ${r.responseType} ${r.details}")
-    return emptyList()
+    return null
   }
 
   suspend fun apiUpdateGroup(rh: Long?, groupId: Long, groupProfile: GroupProfile, isChannel: Boolean): GroupInfo? {
