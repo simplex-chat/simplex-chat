@@ -11,11 +11,10 @@ import qualified Data.ByteString.Char8 as B
 import Data.Char (toUpper)
 import Data.Either (isRight)
 import Data.List (nub)
-import Data.Maybe (fromJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Word (Word32)
-import Simplex.Chat.Wallet (AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccount, entropyFromMnemonic, seedMnemonic)
+import Simplex.Chat.Wallet (AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccount, entropyFromMnemonic, masterMnemonic)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.BIP32 as B32
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
@@ -33,12 +32,12 @@ testPhrase24 :: Text
 testPhrase24 = T.unwords $ replicate 23 "abandon" <> ["art"]
 
 walletMaster :: Text -> B32.WalletMaster
-walletMaster phrase = B32.mkWalletMaster (either error id $ B39.parsePhrase phrase) ""
+walletMaster phrase = B32.mkWalletMaster (either error id $ B39.parsePhrase phrase)
 
 walletAccount :: Text -> Word32 -> IO (AccountKey, WalletAddress)
 walletAccount phrase n = do
   g <- C.newRandom
-  deriveAccount g (walletMaster phrase) (fromJust $ mkAccountIndex n)
+  deriveAccount g (walletMaster phrase) (either error id $ mkAccountIndex n)
 
 addressFromSecret :: String -> IO String
 addressFromSecret secret = do
@@ -57,7 +56,7 @@ accountBound cc idx = (take 1 . words <$> getTermLine cc) `shouldReturn` [idx]
 walletDerivationTests :: Spec
 walletDerivationTests = do
   Hspec.it "derives the addresses another wallet derives for the same phrase" $ do
-    let addrOf n = address . snd <$> walletAccount testPhrase12 n
+    let addrOf n = strEncode . address . snd <$> walletAccount testPhrase12 n
     addrOf 0 `shouldReturn` "0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
     addrOf 1 `shouldReturn` "0x78839F6054d7ed13918bAe0473BA31b1Ca9D7265"
   Hspec.it "the exported secret is the one another wallet shows for that account" $ do
@@ -75,10 +74,10 @@ walletDerivationTests = do
     (keyPath . snd <$> walletAccount testPhrase12 0) `shouldReturn` "m/44'/60'/0'/0/0"
     (keyPath . snd <$> walletAccount testPhrase12 7) `shouldReturn` "m/44'/60'/7'/0/0"
   Hspec.it "round-trips the phrase it was imported from" $
-    seedMnemonic (walletMaster testPhrase24) `shouldBe` testPhrase24
-  Hspec.it "accepts only 24 words with a valid checksum" $ do
+    masterMnemonic (walletMaster testPhrase24) `shouldBe` testPhrase24
+  Hspec.it "accepts a phrase of any BIP-39 length with a valid checksum" $ do
     entropyFromMnemonic testPhrase24 `shouldSatisfy` isRight
-    entropyFromMnemonic testPhrase12 `shouldBe` Left WEBadMnemonic
+    entropyFromMnemonic testPhrase12 `shouldSatisfy` isRight
     entropyFromMnemonic (T.unwords $ replicate 24 "abandon") `shouldBe` Left WEBadMnemonic
 
 walletTests :: SpecWith TestParams
@@ -110,50 +109,56 @@ testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet 1"
   alice <## "no wallet on this device"
   alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account 1, no accounts for this profile"
   alice ##> "/_wallet create new"
   alice <## "wallet: this device already has a wallet"
   alice ##> "/_wallet delete"
   alice <## "ok"
   alice ##> ("/_wallet create mnemonic=" <> unwords (replicate 24 "abandon"))
-  alice <## "wallet: not a valid 24 word recovery phrase"
+  alice <## "wallet: not a valid recovery phrase"
   alice ##> ("/_wallet create mnemonic=" <> map toUpper (T.unpack testPhrase24))
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account unknown, no accounts for this profile"
   alice ##> "/_wallet export master"
   alice <## T.unpack testPhrase24
+  alice ##> "/_wallet delete"
+  alice <## "ok"
+  alice ##> ("/_wallet create mnemonic=" <> T.unpack testPhrase12)
+  alice <## "wallet, next account unknown, no accounts for this profile"
+  alice ##> "/_wallet address account=0"
+  alice <## "0  m/44'/60'/0'/0/0  0x9858EfFD232B4033E47d90003D41EC34EcaEda94"
 
 testWalletBind :: HasCallStack => TestParams -> IO ()
 testWalletBind ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
-  alice ##> "/_wallet bind 1"
-  alice `accountBound` "0"
+  alice <## "wallet, next account 1, no accounts for this profile"
   alice ##> "/_wallet bind 1"
   alice `accountBound` "1"
+  alice ##> "/_wallet bind 1"
+  alice `accountBound` "2"
   alice ##> "/_wallet bind 1 account=0"
   alice `accountBound` "0"
   alice ##> "/_wallet 1"
-  alice <## "accounts: 0, 1"
+  alice <## "wallet, next account 3, accounts: 0, 1, 2"
 
 testWalletAccountsPerProfile :: HasCallStack => TestParams -> IO ()
 testWalletAccountsPerProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account 1, no accounts for this profile"
   alice ##> "/_wallet bind 1"
-  alice `accountBound` "0"
+  alice `accountBound` "1"
   alice ##> "/create user alisa"
   showActiveUser alice "alisa"
   alice ##> "/_wallet 2"
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account 2, no accounts for this profile"
   alice ##> "/_wallet bind 2"
-  alice `accountBound` "1"
-  alice ##> "/_wallet bind 2 account=0"
+  alice `accountBound` "2"
+  alice ##> "/_wallet bind 2 account=1"
   alice <## "wallet: another profile holds this account"
 
 testWalletBindByIndexThenNext :: HasCallStack => TestParams -> IO ()
 testWalletBindByIndexThenNext ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account 1, no accounts for this profile"
   alice ##> "/_wallet bind 1 account=2"
   alice `accountBound` "2"
   alice ##> "/_wallet bind 1"
@@ -161,34 +166,34 @@ testWalletBindByIndexThenNext ps = withNewTestChat ps "alice" aliceProfile $ \al
   alice ##> "/_wallet bind 1 account=1"
   alice `accountBound` "1"
   alice ##> "/_wallet 1"
-  alice <## "accounts: 1, 2, 3"
+  alice <## "wallet, next account 4, accounts: 1, 2, 3"
   alice ##> "/_wallet bind 1"
   alice `accountBound` "4"
 
 testWalletDeletedProfileAccount :: HasCallStack => TestParams -> IO ()
 testWalletDeletedProfileAccount ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account 1, no accounts for this profile"
   alice ##> "/_wallet bind 1"
-  alice `accountBound` "0"
+  alice `accountBound` "1"
   alice ##> "/create user alisa"
   showActiveUser alice "alisa"
   alice ##> "/delete user alice"
   alice <### ["ok", "completed deleting user"]
   alice ##> "/_wallet 2"
-  alice <## "wallet, no accounts for this profile"
-  alice ##> "/_wallet bind 2 account=0"
-  alice `accountBound` "0"
+  alice <## "wallet, next account 2, no accounts for this profile"
+  alice ##> "/_wallet bind 2 account=1"
+  alice `accountBound` "1"
 
 testWalletAddress :: HasCallStack => TestParams -> IO ()
 testWalletAddress ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account 1, no accounts for this profile"
   alice ##> "/_wallet address"
   addr <- getTermLine alice
   alice ##> "/_wallet address"
   getTermLine alice `shouldReturn` addr
-  words addr !! 1 `shouldBe` "m/44'/60'/0'/0/0"
+  words addr !! 1 `shouldBe` "m/44'/60'/1'/0/0"
   alice ##> "/_wallet address account=3"
   at3 <- getTermLine alice
   words at3 !! 1 `shouldBe` "m/44'/60'/3'/0/0"
@@ -197,12 +202,12 @@ testWalletAddress ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet bind 1 account=abc"
   alice <## "bad chat command: Failed reading: empty"
   alice ##> "/_wallet 1"
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account 1, no accounts for this profile"
 
 testWalletExport :: HasCallStack => TestParams -> IO ()
 testWalletExport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet create mnemonic=" <> T.unpack testPhrase24)
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account unknown, no accounts for this profile"
   alice ##> "/_wallet export master"
   alice <## T.unpack testPhrase24
   alice ##> "/_wallet bind 1 account=0"
@@ -219,7 +224,7 @@ testWalletExport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   (idx', path', addr', secret') <- exportRow <$> getTermLine alice
   idx' `shouldBe` "1"
   path' `shouldBe` "m/44'/60'/1'/0/0"
-  (T.unpack . address . snd <$> walletAccount testPhrase24 1) `shouldReturn` addr'
+  (B.unpack . strEncode . address . snd <$> walletAccount testPhrase24 1) `shouldReturn` addr'
   addressFromSecret secret' `shouldReturn` addr'
   alice ##> "/_wallet address account=1"
   (words <$> getTermLine alice) `shouldReturn` ["1", "m/44'/60'/1'/0/0", addr']
@@ -227,7 +232,7 @@ testWalletExport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
 testWalletImport :: HasCallStack => TestParams -> IO ()
 testWalletImport ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> ("/_wallet create mnemonic=" <> T.unpack testPhrase24)
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account unknown, no accounts for this profile"
   alice ##> "/_wallet bind 1"
   alice <## "wallet: the next account is unknown after an import"
   alice ##> "/_wallet address"
@@ -241,14 +246,14 @@ testWalletPersists :: HasCallStack => TestParams -> IO ()
 testWalletPersists ps = do
   phrase <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
     alice ##> "/_wallet create new"
-    alice <## "wallet, no accounts for this profile"
+    alice <## "wallet, next account 1, no accounts for this profile"
     alice ##> "/_wallet bind 1 account=2"
     alice `accountBound` "2"
     alice ##> "/_wallet export master"
     getTermLine alice
   withTestChat ps "alice" $ \alice -> do
     alice ##> "/_wallet 1"
-    alice <## "accounts: 2"
+    alice <## "wallet, next account 3, accounts: 2"
     alice ##> "/_wallet export master"
     alice <## phrase
     alice ##> "/_wallet bind 1"
@@ -257,7 +262,7 @@ testWalletPersists ps = do
 testWalletDelete :: HasCallStack => TestParams -> IO ()
 testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account 1, no accounts for this profile"
   alice ##> "/_wallet bind 1 account=1"
   alice `accountBound` "1"
   alice ##> "/_wallet delete"
@@ -265,14 +270,14 @@ testWalletDelete ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet 1"
   alice <## "no wallet on this device"
   alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account 1, no accounts for this profile"
   alice ##> "/_wallet bind 1"
-  alice `accountBound` "0"
+  alice `accountBound` "1"
 
 testWalletHiddenProfile :: HasCallStack => TestParams -> IO ()
 testWalletHiddenProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account 1, no accounts for this profile"
   alice ##> "/create user alisa"
   showActiveUser alice "alisa"
   alice ##> "/hide user my_password"
@@ -285,15 +290,15 @@ testWalletHiddenProfile ps = withNewTestChat ps "alice" aliceProfile $ \alice ->
 testWalletExportNotHeld :: HasCallStack => TestParams -> IO ()
 testWalletExportNotHeld ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account 1, no accounts for this profile"
   alice ##> "/_wallet bind 1"
-  alice `accountBound` "0"
-  alice ##> "/_wallet export account 1 0"
+  alice `accountBound` "1"
+  alice ##> "/_wallet export account 1 1"
   (_, path, _, _) <- exportRow <$> getTermLine alice
-  path `shouldBe` "m/44'/60'/0'/0/0"
+  path `shouldBe` "m/44'/60'/1'/0/0"
   alice ##> "/create user alisa"
   showActiveUser alice "alisa"
-  alice ##> "/_wallet export account 2 0"
+  alice ##> "/_wallet export account 2 1"
   alice <## "wallet: this profile does not hold this account"
   alice ##> "/_wallet export account 2 7"
   alice <## "wallet: this profile does not hold this account"
@@ -301,7 +306,7 @@ testWalletExportNotHeld ps = withNewTestChat ps "alice" aliceProfile $ \alice ->
 testWalletIndexTooLarge :: HasCallStack => TestParams -> IO ()
 testWalletIndexTooLarge ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet create new"
-  alice <## "wallet, no accounts for this profile"
+  alice <## "wallet, next account 1, no accounts for this profile"
   alice ##> "/_wallet address account=2147483648"
   alice <## "bad chat command: Failed reading: empty"
   alice ##> "/_wallet bind 1 account=2147483648"

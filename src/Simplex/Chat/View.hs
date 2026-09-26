@@ -60,7 +60,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Chat.Wallet (WalletAddress (..), WalletError (..))
+import Simplex.Chat.Wallet (WalletAddress (..), WalletError (..), WalletInfo (..))
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent (DatabaseDiff (..))
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
@@ -197,10 +197,12 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRBadgeRedeemed u badge newBadge _ -> ttyUser u $ if newBadge then "badge redeemed" : viewContactBadge (Just badge) else ["badge already redeemed"]
   CRBadgeState u st -> ttyUser u $ viewUserBadgeState st
   CRBadgeLedger u entries -> ttyUser u $ viewBadgeLedger entries
-  CRWallet u accounts_ -> ttyUser u $ case accounts_ of
+  CRWallet u info_ -> ttyUser u $ case info_ of
     Nothing -> ["no wallet on this device"]
-    Just [] -> ["wallet, no accounts for this profile"]
-    Just accounts -> [plain $ "accounts: " <> T.intercalate ", " (map (tshow . unAccountIndex) accounts)]
+    Just WalletInfo {accountIndexes, nextAccountIndex} ->
+      let next = maybe "unknown" tshow nextAccountIndex
+          accounts = if null accountIndexes then "no accounts for this profile" else "accounts: " <> T.intercalate ", " (map (tshow . unAccountIndex) accountIndexes)
+       in [plain $ "wallet, next account " <> next <> ", " <> accounts]
   CRWalletMnemonic u mnemonic -> ttyUser u [plain mnemonic]
   CRWalletAddress u a -> ttyUser u [walletAddressRow a]
   CRWalletAccountSecret u a secret -> ttyUser u [walletAddressRow a <> "  " <> plain secret]
@@ -1113,7 +1115,7 @@ viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
 
 walletAddressRow :: WalletAddress -> StyledString
 walletAddressRow WalletAddress {accountIndex, keyPath, address} =
-  plain $ tshow (unAccountIndex accountIndex) <> "  " <> keyPath <> "  " <> address
+  plain $ tshow (unAccountIndex accountIndex) <> "  " <> keyPath <> "  " <> safeDecodeUtf8 (strEncode address)
 
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
@@ -2817,7 +2819,7 @@ viewChatError isCmd logLevel testView = \case
           reason = case walletErr of
             WENoMaster -> "this device has no wallet"
             WEMasterExists -> "this device already has a wallet"
-            WEBadMnemonic -> "not a valid 24 word recovery phrase"
+            WEBadMnemonic -> "not a valid recovery phrase"
             WEHiddenProfile -> "an account cannot be bound to a hidden profile"
             WEAccountBound -> "another profile holds this account"
             WEAccountNotHeld -> "this profile does not hold this account"

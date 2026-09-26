@@ -69,8 +69,9 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
-import Simplex.Chat.Wallet (AccountIndex, WalletAddress, WalletError)
+import Simplex.Chat.Wallet (WalletAddress, WalletError, WalletInfo)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
+import Simplex.Messaging.Crypto.BIP44 (AccountIndex)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
 import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
@@ -879,7 +880,7 @@ data ChatResponse
   | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
   | CRBadgeState {user :: User, badgeState :: Maybe BadgeState}
   | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
-  | CRWallet {user :: User, accountIndexes_ :: Maybe [AccountIndex]}
+  | CRWallet {user :: User, walletInfo_ :: Maybe WalletInfo}
   | CRWalletMnemonic {user :: User, mnemonic :: Text}
   | CRWalletAddress {user :: User, walletAddress :: WalletAddress}
   | CRWalletAccountSecret {user :: User, walletAddress :: WalletAddress, secret :: Text}

@@ -11,7 +11,7 @@ m20260924_wallet_seeds =
   [r|
 CREATE TABLE wallet_seeds (
   wallet_seed_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  entropy BYTEA NOT NULL CHECK (length(entropy) = 32),
+  entropy BYTEA NOT NULL CHECK (length(entropy) IN (16, 20, 24, 28, 32)),
   master BYTEA NOT NULL CHECK (length(master) = 64),
   next_account_index BIGINT CHECK (next_account_index BETWEEN 0 AND 2147483648),
   single_seed SMALLINT NOT NULL DEFAULT 1

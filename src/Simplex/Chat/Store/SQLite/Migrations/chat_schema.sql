@@ -983,7 +983,7 @@ CREATE TABLE badge_code_redemptions(
 ) STRICT;
 CREATE TABLE wallet_seeds(
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  entropy BLOB NOT NULL CHECK(length(entropy) = 32),
+  entropy BLOB NOT NULL CHECK(length(entropy) IN(16, 20, 24, 28, 32)),
   master BLOB NOT NULL CHECK(length(master) = 64),
   next_account_index INTEGER CHECK(next_account_index BETWEEN 0 AND 2147483648),
   single_seed INTEGER NOT NULL DEFAULT 1

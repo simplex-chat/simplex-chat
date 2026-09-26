@@ -65,7 +65,7 @@ import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIss
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Wallet (AccountIndex, AccountKey, WalletAddress, WalletError (..), accountSecret, deriveAccount, importWalletMaster, newWalletMaster, seedMnemonic)
+import Simplex.Chat.Wallet (AccountKey, WalletAddress, WalletError (..), WalletInfo (..), accountSecret, deriveAccount, importWalletMaster, masterMnemonic, newWalletMaster)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -96,7 +96,7 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
-import Simplex.Chat.Store.Wallets (Wallet (..), accountHeldBy, bindAccount, createWallet, deleteWallet, getUserAccounts, getWallet, resolveAccount)
+import Simplex.Chat.Store.Wallets (Wallet (..), bindAccount, createWallet, deleteWallet, getUserAccounts, getWallet, heldAccount, resolveAccount)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -116,7 +116,8 @@ import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
-import Simplex.Messaging.Crypto.BIP44 (mkAccountIndex)
+import Simplex.Messaging.Crypto.BIP32 (WalletMaster)
+import Simplex.Messaging.Crypto.BIP44 (AccountIndex, mkAccountIndex)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (E2ERatchetParamsUri (..), InitialKeys (..), PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern IKPQOn, pattern PQSupportOff, pattern PQSupportOn)
@@ -1501,32 +1502,30 @@ processChatCommand cxt nm = \case
     connId <- withAgent $ \a -> sendServiceReplyAsync a "" (aUserId user) invId (LB.toStrict $ J.encode responseData)
     pure $ CRServiceReplyAccepted user (AgentConnId connId)
   APIGetWallet userId -> withUserId userId $ \user ->
-    CRWallet user <$> withFastStore (\db -> getWallet db >>= mapM (\Wallet {walletId} -> liftIO $ getUserAccounts db walletId userId))
+    CRWallet user <$> withFastStore (\db -> getWallet db >>= mapM (\Wallet {walletId, nextAccountIndex} -> liftIO $ (`WalletInfo` nextAccountIndex) <$> getUserAccounts db userId walletId))
   APICreateWallet mnemonic_ -> withUser $ \user -> do
     wallet_ <- withFastStore getWallet
     when (isJust wallet_) $ throwWalletError WEMasterExists
-    -- the counter starts at 0 for a generated seed and is unknown for an imported one
+    -- the counter starts at 1 for a generated seed, leaving account 0 to other wallets, and is unknown for an imported one
     (master, nextAccount) <- case mnemonic_ of
-      Nothing -> (,Just 0) <$> (liftIO . newWalletMaster =<< asks random)
+      Nothing -> (,Just 1) <$> (liftIO . newWalletMaster =<< asks random)
       Just phrase -> (,Nothing) <$> liftWallet (importWalletMaster phrase)
     created <- withFastStore' $ \db -> createWallet db master nextAccount
     unless created $ throwWalletError WEMasterExists
-    pure $ CRWallet user (Just [])
+    pure $ CRWallet user (Just $ WalletInfo [] nextAccount)
   APIBindWalletAccount userId accountIdx_ -> withUserId userId $ \user@User {viewPwdHash} -> do
     when (isJust viewPwdHash) $ throwWalletError WEHiddenProfile
-    (wallet, n) <- withWalletStore $ \db -> bindAccount db userId accountIdx_
-    CRWalletAddress user . snd <$> walletAccount wallet n
+    (master, n) <- withWalletStore $ \db -> bindAccount db userId accountIdx_
+    CRWalletAddress user . snd <$> walletAccount master n
   APIGetWalletAddress accountIdx_ -> withUser $ \user -> do
-    (wallet, n) <- withWalletStore (`resolveAccount` accountIdx_)
-    CRWalletAddress user . snd <$> walletAccount wallet n
+    (master, n) <- withWalletStore (`resolveAccount` accountIdx_)
+    CRWalletAddress user . snd <$> walletAccount master n
   APIExportWalletMnemonic -> withUser $ \user -> do
     Wallet {walletMaster} <- withFastStore getWallet >>= maybe (throwWalletError WENoMaster) pure
-    pure $ CRWalletMnemonic user (seedMnemonic walletMaster)
+    pure $ CRWalletMnemonic user (masterMnemonic walletMaster)
   APIExportWalletAccount userId n -> withUserId userId $ \user -> do
-    (wallet@Wallet {walletId}, _) <- withWalletStore (`resolveAccount` Just n)
-    held <- withFastStore' $ \db -> accountHeldBy db walletId userId n
-    unless held $ throwWalletError WEAccountNotHeld
-    (k, a) <- walletAccount wallet n
+    master <- withWalletStore $ \db -> heldAccount db userId n
+    (k, a) <- walletAccount master n
     pure $ CRWalletAccountSecret user a (accountSecret k)
   APIDeleteWallet -> withUser_ $ do
     deleted <- withFastStore' deleteWallet
@@ -6035,10 +6034,10 @@ liftWallet = liftEitherWith (ChatError . CEWallet)
 withWalletStore :: (DB.Connection -> ExceptT StoreError IO (Either WalletError a)) -> CM a
 withWalletStore action = liftWallet =<< withFastStore action
 
-walletAccount :: Wallet -> AccountIndex -> CM (AccountKey, WalletAddress)
-walletAccount Wallet {walletMaster} n = do
+walletAccount :: WalletMaster -> AccountIndex -> CM (AccountKey, WalletAddress)
+walletAccount master n = do
   g <- asks random
-  liftIO $ deriveAccount g walletMaster n
+  liftIO $ deriveAccount g master n
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
@@ -6714,8 +6713,12 @@ chatCommandP =
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
     accountIndexP = do
+      ds <- A.lookAhead $ A.takeWhile1 isDigit
+      when (B.length (B.dropWhile (== '0') ds) > 10) tooLarge
       i <- A.decimal
-      maybe (fail "account index too large") pure $ if i <= toInteger (maxBound :: Word32) then mkAccountIndex (fromInteger i) else Nothing
+      if i <= toInteger (maxBound :: Word32) then either fail pure $ mkAccountIndex (fromInteger i) else tooLarge
+      where
+        tooLarge = fail "account index too large"
 
 displayNameP :: Parser Text
 displayNameP = safeDecodeUtf8 <$> displayNameP_
