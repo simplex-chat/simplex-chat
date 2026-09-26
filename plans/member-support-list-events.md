@@ -61,6 +61,7 @@ A member's first support message arrives as a `NewChatItems` event with that mem
 
 ## Known limitations
 
+- A failed member load (`apiListMembers` error) is not retried while the list stays open; it is retried when the list is reopened.
 - A full member load that is in flight when a support-chat update arrives overwrites that update with its snapshot. For example, the first list load can race a member's first support message. The member then reappears on their next message, when their chat is opened, or when the group is reopened.
 - Support stats snapshots from different events and responses are applied in arrival order, so a rare reordering can briefly show an older count until the next update for that member.
 - On iOS, handlers that update an existing member in place without publishing a change, such as "Mark read" from the context menu or accept, update the row but not the list order or filter until the next `ChatModel` change. The existing TODO in `deleteMemberSupportChat` describes the same mechanism. Previously, returning to the list also re-sorted it.
