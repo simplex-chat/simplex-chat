@@ -58,7 +58,7 @@ private fun formatBadgeCodeInput(s: String): String {
 }
 
 @Composable
-fun BadgesRedeemCodeView() {
+fun BadgesRedeemCodeView(modalManager: ModalManager) {
   val rhId = remember { chatModel.remoteHostId() }
   val supporterBannerShown = remember { appPrefs.supporterBannerShown }
   val code = remember { mutableStateOf(TextFieldValue("")) }
@@ -96,7 +96,7 @@ fun BadgesRedeemCodeView() {
               )
             } else {
               supporterBannerShown.set(true)
-              ModalManager.start.closeModal()
+              modalManager.closeModal()
             }
           }
         }

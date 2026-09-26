@@ -2768,7 +2768,6 @@
     <string name="badge_unverified_title">未验证的徽章</string>
     <string name="relays_no_web_support">所用的聊天中继不支持网页。</string>
     <string name="webpage_code">网页代码</string>
-    <string name="badge_support_from_v7">从 v7 版本起您可以支持 SimpleX。</string>
     <string name="advanced_options">高级选项</string>
     <string name="advanced_settings">高级设置</string>
     <string name="allow_anyone_to_embed">允许任何人嵌入</string>

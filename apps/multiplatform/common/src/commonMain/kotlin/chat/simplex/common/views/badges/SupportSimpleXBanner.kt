@@ -6,6 +6,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.text.font.FontWeight
@@ -25,6 +26,8 @@ import chat.simplex.res.MR
 fun SupportSimpleXBanner(
   title: String = generalGetString(MR.strings.badges_banner_title),
   subtitle: String = generalGetString(MR.strings.badges_banner_subtitle),
+  warning: Boolean = false,
+  showDismiss: Boolean = true,
   onTap: () -> Unit,
   onDismiss: () -> Unit
 ) {
@@ -59,7 +62,7 @@ fun SupportSimpleXBanner(
             title,
             style = MaterialTheme.typography.body1,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colors.primary,
+            color = if (warning) Color.Red else MaterialTheme.colors.primary,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
           )
@@ -73,7 +76,9 @@ fun SupportSimpleXBanner(
         }
       }
 
-      BannerDismissButton(Modifier.align(Alignment.TopEnd), onDismiss)
+      if (showDismiss) {
+        BannerDismissButton(Modifier.align(Alignment.TopEnd), onDismiss)
+      }
     }
 
     HeroThumbnail(

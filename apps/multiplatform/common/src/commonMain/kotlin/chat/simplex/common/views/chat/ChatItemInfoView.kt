@@ -29,7 +29,9 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.MemberProfileImage
 import chat.simplex.common.views.chat.item.*
+import chat.simplex.common.views.badges.openBadgesView
 import chat.simplex.common.views.chatlist.*
+import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.common.views.usersettings.networkAndServers.serverHostname
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -277,6 +279,11 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       if (file?.fileExpires != null) {
         val expiresRes = if (file.expired) MR.strings.info_row_file_expired else MR.strings.info_row_file_expires
         InfoRow(stringResource(expiresRes), localTimestamp(file.fileExpires))
+        if (noShownBadge()) {
+          SectionItemView(::openBadgesView) {
+            Text(stringResource(MR.strings.badges_larger_files_longer), color = MaterialTheme.colors.primary)
+          }
+        }
       }
       if (ci.meta.msgVerified?.verified == true) {
         val signedRes = if (sent) MR.strings.info_row_signed else MR.strings.info_row_signed_verified

@@ -74,6 +74,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: (
 val simplexTeamUri =
   "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im"
 
+val simplexNewsUri =
+  "simplex:/c#grcfG3ulVI4Sh6ow33qBsmSk7uEy3gRSl2KkJ5ER6tA?h=smp18.simplex.im"
+
 @Composable
 fun SettingsLayout(
   stopped: Boolean,
@@ -107,7 +110,7 @@ fun SettingsLayout(
     SectionView {
       // Direct showModal (no settings / cardScreen flags) — settings-style card chrome would render
       // a gray top bar / back button that badges views don't want (they have their own inline titles).
-      SectionItemView(click = { ModalManager.start.showCustomModal { close -> BadgesView(close) } }) {
+      SectionItemView(click = { ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) } }) {
         val badgeType = chatModel.currentUser.value?.profile?.localBadge?.badge?.badgeType ?: BadgeType.Supporter
         Image(painterResource(badgeImage(badgeType)), stringResource(MR.strings.supporter_perks), Modifier.size(24.dp))
         TextIconSpaced()
@@ -161,6 +164,7 @@ fun HelpAndSupportView(
 
     SectionView(stringResource(MR.strings.settings_section_title_contact)) {
       if (!chatModel.desktopNoUserNoRemote) {
+        SettingsActionItem(painterResource(MR.images.ic_bigtop_updates), stringResource(MR.strings.follow_simplex_network_news), { uriHandler.openVerifiedSimplexUri(simplexNewsUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
         SettingsActionItem(painterResource(MR.images.ic_tag), stringResource(MR.strings.chat_with_the_founder), { uriHandler.openVerifiedSimplexUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
       }
       SettingsActionItem(painterResource(MR.images.ic_mail), stringResource(MR.strings.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary)

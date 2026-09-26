@@ -164,6 +164,15 @@ struct ChatItemInfoView: View {
             }
             if let file = ci.file, let fileExpires = file.fileExpires {
                 infoRow(file.expired ? "File was available until" : "File available until", localTimestamp(fileExpires))
+                if noShownBadge() {
+                    Button {
+                        openBadgesView()
+                    } label: {
+                        Text("Support SimpleX to send larger files that stay available longer")
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
             }
             if meta.msgVerified?.verified == true {
                 let signedText: LocalizedStringKey = ci.chatDir.sent ? "Signed" : "Signed & verified"

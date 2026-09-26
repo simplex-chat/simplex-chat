@@ -2858,7 +2858,6 @@
     <string name="badge_unverified_title">Abzeichen nicht verifiziert</string>
     <string name="relays_no_web_support">Die verwendeten Chat‑Relais unterstützen keine Webseiten.</string>
     <string name="webpage_code">Webseiten-Code</string>
-    <string name="badge_support_from_v7">Sie können SimpleX ab der App-Version v7 unterstützen.</string>
     <string name="error_saving_simplex_name">Fehler beim Speichern des Namens</string>
     <string name="set_user_simplex_name_footer">Lassen Sie sich über den mit Ihrer SimpleX‑Adresse registrierten Namen verbinden.</string>
     <string name="set_channel_simplex_name_footer">Ermöglichen Sie Beitritte über den mit diesem Kanal‑Link registrierten Namen.</string>

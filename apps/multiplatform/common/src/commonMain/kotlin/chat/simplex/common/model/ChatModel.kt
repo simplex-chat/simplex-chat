@@ -130,7 +130,7 @@ object BadgeModel {
     this.rhId.value == rhId && this.userId.value == userId
 }
 
-enum class ChatListBanner { BadgeExpired, BadgePitch, GetStake }
+enum class ChatListBanner { BadgeExpired, BadgeIssueFailed, BadgePitch, GetStake }
 
 /*
  * Without this annotation an animation from ChatList to ChatView has 1 frame per the whole animation. Don't delete it
@@ -1931,7 +1931,7 @@ data class Contact(
     }
 
   val isContactCard: Boolean get() =
-    (activeConn == null || activeConn.connStatus == ConnStatus.Prepared) && profile.contactLink != null && active && preparedContact == null && contactRequestId == null
+    (activeConn == null || activeConn.connStatus == ConnStatus.Prepared) && profile.contactLink != null && active && preparedContact == null && contactRequestId == null && groupDirectInv == null
 
   val isBot: Boolean get() = profile.peerType == ChatPeerType.Bot
 
@@ -2240,9 +2240,45 @@ data class BadgeState(
   val paidThrough: Instant,
   val renewsAt: Instant? = null,
   val willRenew: Boolean,
-  val alert: BadgeAlert? = null
+  val alert: BadgeAlert? = null,
+  val issueError: BadgeIssueError? = null,
+  val nextWakeAt: Instant? = null
 ) {
   val paidThroughText: String get() = badgeDateText(paidThrough)
+}
+
+@Serializable
+data class BadgeIssueError(
+  val failedSince: Instant,
+  val lastAttemptAt: Instant,
+  val reason: BadgeIssueFailure
+)
+
+@Serializable
+sealed class BadgeIssueFailure {
+  // retryable is the service's own view of transience: it gave retryAfter
+  @Serializable @SerialName("serviceError") data class ServiceError(val code: BadgeServiceErrorCode, val retryable: Boolean) : BadgeIssueFailure()
+  @Serializable @SerialName("serviceTimeout") object ServiceTimeout : BadgeIssueFailure()
+  @Serializable @SerialName("network") data class Network(val agentError: String) : BadgeIssueFailure()
+  @Serializable @SerialName("invalidCredential") object InvalidCredential : BadgeIssueFailure()
+  @Serializable @SerialName("unexpected") data class Unexpected(val message: String) : BadgeIssueFailure()
+
+  val text: String get() = when (this) {
+    is ServiceError -> badgeServiceErrorText(code) ?: String.format(generalGetString(MR.strings.badges_error_service_refused), code.text)
+    is ServiceTimeout -> generalGetString(MR.strings.badges_error_no_response)
+    is Network -> generalGetString(MR.strings.badges_error_unreachable)
+    is InvalidCredential -> generalGetString(MR.strings.badges_error_credential_invalid)
+    is Unexpected -> String.format(generalGetString(MR.strings.badges_error_unexpected), message)
+  }
+
+  // the stored form, for support
+  val tag: String get() = when (this) {
+    is ServiceError -> "serviceError ${if (retryable) "retry" else "final"} ${code.text}"
+    is ServiceTimeout -> "serviceTimeout"
+    is Network -> "network $agentError"
+    is InvalidCredential -> "invalidCredential"
+    is Unexpected -> "unexpected $message"
+  }
 }
 
 @Serializable
@@ -2395,7 +2431,8 @@ enum class BadgeAlertKind {
   @SerialName("paymentIssue") PaymentIssue,
   @SerialName("subscriptionEnded") SubscriptionEnded,
   @SerialName("prepaidEnding") PrepaidEnding,
-  @SerialName("supportEnded") SupportEnded
+  @SerialName("supportEnded") SupportEnded,
+  @SerialName("issueFailed") IssueFailed
 }
 
 private fun badgeDateText(date: Instant): String {

@@ -64,9 +64,9 @@ sealed class ActiveFilter {
   data object Unread: ActiveFilter()
 }
 
-private fun showSupportEndedDismissAlert() {
+private fun showBadgeAlertDismissAlert(title: String) {
   AlertManager.shared.showAlertDialogButtonsColumn(
-    title = generalGetString(MR.strings.badges_support_ended),
+    title = title,
     buttons = {
       Column {
         SectionItemView({
@@ -779,7 +779,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
   } else {
     withBGApi {
       chatModel.appOpenUrlConnecting.value = true
-      planAndConnect(rhId, uri, close = null, cleanup = { chatModel.appOpenUrlConnecting.value = false })
+      planAndConnect(rhId, uri, close = { ModalManager.closeAllModalsEverywhere() }, cleanup = { chatModel.appOpenUrlConnecting.value = false })
     }
   }
 }
@@ -950,6 +950,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
   val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
   val supporterBannerShown = remember { appPrefs.supporterBannerShown.state }
+  val supporterBannerTapped = remember { appPrefs.supporterBannerTapped.state }
   val getStakeBannerTapped = remember { appPrefs.getStakeBannerTapped.state }
   val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
   // read here rather than in the LazyColumn: it launches an effect, so it needs a composable scope
@@ -1051,8 +1052,21 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           SupportSimpleXBanner(
             title = stringResource(MR.strings.badges_support_ended),
             subtitle = String.format(stringResource(MR.strings.badges_support_ended_on), alert.dateText),
-            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(close) } },
-            onDismiss = ::showSupportEndedDismissAlert
+            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) } },
+            onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_support_ended)) }
+          )
+        }
+      }
+    } else if (badgeIssueFailed()) {
+      item {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.BadgeIssueFailed }
+        Box(Modifier.zIndex(1f).padding(16.dp)) {
+          SupportSimpleXBanner(
+            title = stringResource(MR.strings.badges_renewal_failed),
+            subtitle = stringResource(MR.strings.badges_tap_for_details),
+            warning = true,
+            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) } },
+            onDismiss = { showBadgeAlertDismissAlert(generalGetString(MR.strings.badges_renewal_failed)) }
           )
         }
       }
@@ -1061,7 +1075,11 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
         SideEffect { chatModel.chatListBanner = ChatListBanner.BadgePitch }
         Box(Modifier.zIndex(1f).padding(16.dp)) {
           SupportSimpleXBanner(
-            onTap = { ModalManager.start.showCustomModal { close -> BadgesView(close) } },
+            showDismiss = supporterBannerTapped.value,
+            onTap = {
+              appPrefs.supporterBannerTapped.set(true)
+              ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) }
+            },
             onDismiss = ::showSupportSimpleXDismissAlert
           )
         }

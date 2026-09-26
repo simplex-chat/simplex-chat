@@ -1015,6 +1015,7 @@
   <string name="markdown_in_messages">Markdown in messages</string>
   <string name="chat_with_the_founder">Send questions and ideas</string>
   <string name="send_us_an_email">Send us email</string>
+  <string name="follow_simplex_network_news">Follow SimpleX Network News</string>
   <string name="chat_lock">SimpleX Lock</string>
   <string name="chat_console">Chat console</string>
   <string name="message_servers">Message servers</string>
@@ -2678,8 +2679,8 @@
   <string name="v7_0_invest_descr" translatable="false">Crowdfunding on Wefunder.</string>
   <string name="v7_0_crowdfunding" translatable="false">Crowdfunding on Wefunder</string>
   <string name="v7_0_invest_learn_more" translatable="false">Learn more on Wefunder</string>
-  <string name="invest_banner_title" translatable="false">Get a stake in SimpleX Chat!</string>
-  <string name="invest_banner_subtitle" translatable="false">Invest on Wefunder from $100</string>
+  <string name="invest_banner_title" translatable="false">Invest in SimpleX Chat!</string>
+  <string name="invest_banner_subtitle" translatable="false">Crowdfunding on Wefunder</string>
   <string name="v7_0_simplex_names">SimpleX public names (BETA)</string>
   <string name="v7_0_simplex_names_descr">Public names for your channel or business.</string>
   <string name="v7_0_channels">Better channels 📢</string>
@@ -3134,7 +3135,6 @@
   <string name="appearance_minimize_to_tray_desc">Runs in background to receive messages</string>
   <string name="badge_supports_simplex">%s supports SimpleX Chat.</string>
   <string name="badge_supported_simplex">%1$s supported SimpleX Chat. The badge expired on %2$s.</string>
-  <string name="badge_support_from_v7">You can support SimpleX starting from v7 of the app.</string>
   <string name="badge_invested">%s invested in SimpleX Chat crowdfunding.</string>
   <string name="badge_unverified_title">Unverified badge</string>
   <string name="badge_unverified_desc">This badge could not be verified and may not be genuine.</string>
@@ -3176,6 +3176,7 @@
   <string name="badges_banner_title">Support SimpleX</string>
   <string name="badges_banner_subtitle">Get badge + better files</string>
   <string name="badges_banner_dismiss_message">You can support SimpleX later in Settings.</string>
+  <string name="badges_larger_files_longer">Support SimpleX to send larger files that stay available longer</string>
   <string name="badges_purchase_successful">Purchase successful</string>
   <string name="badges_purchase_pending">Purchase pending</string>
   <string name="badges_purchase_pending_desc">The purchase is awaiting approval. This build does not deliver purchases approved later.</string>
@@ -3189,13 +3190,15 @@
   <string name="badges_error_invalid_code">This code is not valid.</string>
   <string name="badges_error_service_not_configured">This app version cannot redeem badge codes.</string>
   <string name="badges_error_already_active">This profile already has a badge. Redeem the code on another profile, or once this badge ends.</string>
-  <string name="badges_error_code_invalid">This code was not recognised.</string>
+  <string name="badges_error_code_invalid">This code was not recognized.</string>
   <string name="badges_error_code_used">This code has already been used.</string>
   <string name="badges_error_code_expired">This code has expired.</string>
   <string name="badges_error_rate_limited">Too many attempts. Please try again later.</string>
   <string name="badges_error_bad_service_response">The badge service sent an unexpected response: %1$s</string>
   <string name="badges_error_credential_not_verified">This app version cannot verify this badge. Please update the app.</string>
   <string name="badges_error_unsupported_version">This app version is too old for the badge service. Please update the app.</string>
+  <string name="badges_error_unknown_purchase">The badge service does not recognize this badge.</string>
+  <string name="badges_error_service_internal">The badge service reported an internal error.</string>
   <string name="badges_error_badge_ended">The code was accepted, but the badge it grants has already ended.</string>
   <string name="badges_error_unknown">The code could not be redeemed.</string>
   <string name="badges_code_you_scanned_is_not_badge_code">The code you scanned is not a badge code.</string>
@@ -3227,6 +3230,17 @@
   <string name="badges_ledger_charge_id">Charge ID</string>
   <string name="badges_ledger_from_purchase_key">From purchase key</string>
   <string name="badges_ledger_to_purchase_key">To purchase key</string>
+  <string name="badges_renewal_failed">Badge renewal failed</string>
+  <string name="badges_tap_for_details">Tap for details</string>
+  <string name="badges_error_service_refused">The badge service refused the renewal: %1$s</string>
+  <string name="badges_error_no_response">The badge service did not respond.</string>
+  <string name="badges_error_unreachable">The badge service could not be reached.</string>
+  <string name="badges_error_credential_invalid">The badge issued by the service cannot be verified.</string>
+  <string name="badges_error_unexpected">Unexpected error: %1$s</string>
+  <string name="badges_error_since">Since</string>
+  <string name="badges_error_last_attempt">Last attempt</string>
+  <string name="badges_contact_team">Contact SimpleX team</string>
+  <string name="badges_credential_next_check">Next check</string>
   <string name="supporter_perks">Supporter perks</string>
   <string name="v7_1_supporter_badge_title">Supporter badge ❤️</string>
   <string name="v7_1_supporter_badge_body">Help keep the network running — send files up to 2 GB.</string>

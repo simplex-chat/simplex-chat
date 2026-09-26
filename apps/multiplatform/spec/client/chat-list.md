@@ -336,7 +336,7 @@ Gradient card inviting the user to invest on Wefunder. Shown only when `crowdfun
 | Chat list | in `ChatList`'s `LazyColumn`, after `ToggleChatListCard` and before the chats | `Box(Modifier.zIndex(1f).padding(16.dp))` |
 | Onboarding | inside `ConnectOnboardingView` (`views/newchat/OnboardingCards.kt`), below the pager, so it shares the pages' width limit on desktop and their dimming while a start modal is open; opens the page in `ModalManager.center` on desktop, `ModalManager.start` on Android | `padding(start/end = DEFAULT_PADDING, bottom = 8.dp)`, in a `Column` where the pager takes `weight(1f)` |
 
-The list has a single banner slot, filled by an `if`/`else if` chain in priority order: the support-ended alert (`supportEnded()`), the pitch, then the Wefunder banner. Each banner's `item` records itself in `ChatModel.chatListBanner` (`BadgeExpired`, `BadgePitch`, `GetStake`) in a `SideEffect`, and the pitch and Wefunder conditions start with `chatModel.bannerSlotFree(banner)` — true only while nothing else was shown this app session — so dismissing a banner never puts another in its place until restart. The alert has no such check: it takes the slot whenever present, and once shown it holds it. The pitch also requires `noShownBadge()` (`views/newchat/OnboardingCards.kt`), false until `BadgeModel.isCurrent` for the current user, so it cannot take the slot from a supporter whose badge loads a moment later. `ConnectOnboardingView` applies the same `bannerSlotFree` check and records `GetStake`.
+The list has a single banner slot, filled by an `if`/`else if` chain in priority order: the support-ended alert (`supportEnded()`), the renewal-failure alert (`badgeIssueFailed()`), the pitch, then the Wefunder banner. Each banner's `item` records itself in `ChatModel.chatListBanner` (`BadgeExpired`, `BadgeIssueFailed`, `BadgePitch`, `GetStake`) in a `SideEffect`, and the pitch and Wefunder conditions start with `chatModel.bannerSlotFree(banner)` — true only while nothing else was shown this app session — so dismissing a banner never puts another in its place until restart. The alerts have no such check: an alert takes the slot whenever present, and once shown it holds it. The pitch also requires `noShownBadge()` (`views/newchat/OnboardingCards.kt`), false until `BadgeModel.isCurrent` for the current user, so it cannot take the slot from a supporter whose badge loads a moment later. `ConnectOnboardingView` applies the same `bannerSlotFree` check and records `GetStake`.
 
 `crowdfundingAvailable()` launches an effect to load the store country, so both call sites read it in the composable body rather than inside the `LazyColumn` builder.
 
@@ -346,6 +346,10 @@ The list has a single banner slot, filled by an `if`/`else if` chain in priority
 |------------|--------|--------|
 | `getStakeBannerTapped` | `openGetStake()` | the dismiss X appears from then on, while there are chats |
 | `getStakeBannerDismissed` | the dismiss X | hides the banner in both placements |
+| `supporterBannerTapped` | tapping the supporter pitch | the pitch's dismiss X appears from then on |
+| `supporterBannerShown` | the pitch's dismiss X, through its "You can support SimpleX later in Settings." alert, and a successful code redemption | hides the pitch |
+
+The two badge alert banners always offer the X; only the pitch waits to be tapped once, so a user who has not looked at it cannot dismiss it unseen.
 
 Both are in `AppPreferences.hintPreferences`, so "Reset all hints" restores the banner. The X is never offered below the onboarding cards, so the banner cannot be dismissed before the user has a chat.
 

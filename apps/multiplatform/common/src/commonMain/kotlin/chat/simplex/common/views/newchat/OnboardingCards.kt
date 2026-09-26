@@ -52,11 +52,14 @@ private const val GRADIENT_ANGLE_RAD = 80.0 * Math.PI / 180.0
 fun shouldShowOnboarding(): Boolean {
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
   val chats = chatModel.chats.value
-  return !addressCreationCardShown.value && chats.isNotEmpty() && !hasConversations(chats) && !supportEnded()
+  return !addressCreationCardShown.value && chats.isNotEmpty() && !hasConversations(chats) && !supportEnded() && !badgeIssueFailed()
 }
 
 fun supportEnded(): Boolean =
   BadgeModel.alert.value?.kind == BadgeAlertKind.SupportEnded && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
+
+fun badgeIssueFailed(): Boolean =
+  BadgeModel.alert.value?.kind == BadgeAlertKind.IssueFailed && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
 
 // false until the badge state loads: if the pitch rendered before that, it would lock the slot, and a supporter's badge
 // arriving a moment later would hide it, leaving the slot empty for the session

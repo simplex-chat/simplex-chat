@@ -177,6 +177,7 @@ struct ChatListView: View {
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
     @AppStorage(DEFAULT_ADDRESS_CREATION_CARD_SHOWN) private var addressCreationCardShown = false
     @AppStorage(DEFAULT_SUPPORTER_BANNER_SHOWN) private var supporterBannerShown = false
+    @AppStorage(DEFAULT_SUPPORTER_BANNER_TAPPED) private var supporterBannerTapped = false
     @AppStorage(DEFAULT_GET_STAKE_BANNER_TAPPED) private var getStakeBannerTapped = false
     @AppStorage(DEFAULT_GET_STAKE_BANNER_DISMISSED) private var getStakeBannerDismissed = false
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
@@ -381,21 +382,19 @@ struct ChatListView: View {
     // the onboarding cards replace the whole chat list, and the support-ended banner lives in the
     // list - a lapsed supporter is not a newcomer, and must be told even with no conversations yet
     private var shouldShowOnboarding: Bool {
-        !addressCreationCardShown && !chatModel.chats.isEmpty && !hasConversations && !supportEnded
+        !addressCreationCardShown && !chatModel.chats.isEmpty && !hasConversations && !supportEnded && !badgeIssueFailed
     }
 
     private var supportEnded: Bool {
         badgeModel.alert?.kind == .supportEnded && badgeModel.userId == chatModel.currentUser?.userId
     }
 
-    // false until the badge state loads: if the pitch rendered before that, it would lock the slot, and a supporter's badge
-    // arriving a moment later would hide it, leaving the slot empty for the session
-    private var noShownBadge: Bool {
-        badgeModel.badgeState?.shown != true && badgeModel.userId == chatModel.currentUser?.userId
+    private var badgeIssueFailed: Bool {
+        badgeModel.alert?.kind == .issueFailed && badgeModel.userId == chatModel.currentUser?.userId
     }
 
-    private func showSupportEndedDismissAlert() {
-        showAlert(NSLocalizedString("Your badge expired", comment: "alert title")) {
+    private func showBadgeAlertDismissAlert(_ title: String) {
+        showAlert(title) {
             [
                 UIAlertAction(title: NSLocalizedString("Remind me later", comment: "alert button"), style: .default) { _ in
                     Task { await ackBadgeAlert(snooze: true) }
@@ -488,7 +487,7 @@ struct ChatListView: View {
                             title: "Your badge expired",
                             subtitle: "Your badge expired on \(alert.dateText).",
                             onTap: { showBadgesSheet = true },
-                            onDismiss: showSupportEndedDismissAlert
+                            onDismiss: { showBadgeAlertDismissAlert(NSLocalizedString("Your badge expired", comment: "alert title")) }
                         )
                             .padding(.vertical, 3)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -496,9 +495,29 @@ struct ChatListView: View {
                             .listRowBackground(Color.clear)
                             .zIndex(1)
                             .onAppear { chatModel.chatListBanner = .badgeExpired }
-                    } else if chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge && chatModel.chats.count > 3 {
+                    } else if badgeIssueFailed {
                         SupportSimpleXBanner(
+                            title: "Badge renewal failed",
+                            subtitle: "Tap for details",
+                            warning: true,
                             onTap: { showBadgesSheet = true },
+                            onDismiss: { showBadgeAlertDismissAlert(NSLocalizedString("Badge renewal failed", comment: "alert title")) }
+                        )
+                            .padding(.vertical, 3)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .zIndex(1)
+                            .onAppear { chatModel.chatListBanner = .badgeIssueFailed }
+                    // noShownBadge is false until the badge state loads: the pitch must not lock the slot and then
+                    // be hidden by a supporter's badge arriving a moment later, leaving the slot empty for the session
+                    } else if chatModel.bannerSlotFree(for: .badgePitch) && !supporterBannerShown && noShownBadge() && chatModel.chats.count > 3 {
+                        SupportSimpleXBanner(
+                            showDismiss: supporterBannerTapped,
+                            onTap: {
+                                supporterBannerTapped = true
+                                showBadgesSheet = true
+                            },
                             onDismiss: showSupportSimpleXDismissAlert
                         )
                             .padding(.vertical, 3)

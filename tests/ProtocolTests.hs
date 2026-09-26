@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -12,6 +13,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.List (isInfixOf)
 import qualified Data.List.NonEmpty as L
+import Data.Maybe (fromMaybe)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
 import Simplex.Chat.Protocol
@@ -33,6 +35,41 @@ protocolTests = do
   decodeChatMessageTest
   shortLinkDataTests
   batchLimitTests
+  preferencesJSONTests
+
+preferencesJSONTests :: Spec
+preferencesJSONTests = describe "preferences JSON" $ do
+  it "stores no JSON when preferences encode to what was received" $ do
+    ps <- prefs "{\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"no\"}}"
+    storedJSON ps `shouldBe` Nothing
+  it "stores no JSON when group preferences encode to what was received" $ do
+    ps <- groupPrefs "{\"voice\":{\"enable\":\"on\"},\"reactions\":{\"enable\":\"off\"}}"
+    storedJSON ps `shouldBe` Nothing
+  it "stores JSON with a preference that is not defined" $ do
+    let s = "{\"voice\":{\"enable\":\"on\"},\"polls\":{\"enable\":\"on\"}}"
+    ps <- groupPrefs s
+    storedJSON ps `shouldBe` Just (object s)
+    J.toJSON ps `shouldBe` object "{\"voice\":{\"enable\":\"on\"}}"
+  it "stores JSON with a field that is not defined in a preference" $ do
+    let s = "{\"voice\":{\"enable\":\"on\",\"exceptRole\":\"observer\"}}"
+    ps <- groupPrefs s
+    storedJSON ps `shouldBe` Just (object s)
+  it "reads the received preferences from the stored JSON" $
+    groupPrefsFromRow (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"off\"}}")
+      `shouldBe` groupPrefs_ "{\"voice\":{\"enable\":\"off\"}}"
+  it "reads the stored preferences when the received JSON does not parse" $
+    groupPrefsFromRow (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"sometimes\"}}")
+      `shouldBe` groupPrefs_ "{\"voice\":{\"enable\":\"on\"}}"
+  where
+    prefs :: ByteString -> IO Preferences
+    prefs = either fail pure . J.eitherDecodeStrict'
+    groupPrefs :: ByteString -> IO GroupPreferences
+    groupPrefs = either fail pure . J.eitherDecodeStrict'
+    groupPrefs_ :: ByteString -> Maybe GroupPreferences
+    groupPrefs_ = J.decodeStrict'
+    storedJSON ps = J.decodeStrictText =<< snd (prefsToRow $ Just ps) :: Maybe J.Value
+    object :: ByteString -> J.Value
+    object s = fromMaybe (error $ "not JSON: " <> B.unpack s) $ J.decodeStrict' s
 
 batchLimitTests :: Spec
 batchLimitTests = describe "Chat message batch limits" $ do
@@ -133,10 +170,10 @@ s #==# msg = do
   s ==# msg
 
 testChatPreferences :: Maybe Preferences
-testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing}
+testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing, _json = PrefsJSON Nothing}
 
 testGroupPreferences :: Maybe GroupPreferences
-testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing}
+testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing, _json = PrefsJSON Nothing}
 
 testProfile :: Profile
 testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, description = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing}

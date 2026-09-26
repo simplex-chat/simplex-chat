@@ -2316,7 +2316,6 @@
     <string name="channel_subscriber_count_singular">%1$d inscrito</string>
     <string name="channel_subscriber_count_plural">%1$d inscritos</string>
     <string name="badge_supported_simplex">%1$s apoiou o SimpleX Chat. O selo expirou em %2$s.</string>
-    <string name="badge_support_from_v7">Você pode apoiar o SimpleX a partir da versão 7 do aplicativo.</string>
     <string name="accept_contact_request">Aceitar solicitação de contato</string>
     <string name="chat_banner_accept_contact_request">Aceitar solicitação de contato</string>
     <string name="relay_status_accepted">aceito</string>
