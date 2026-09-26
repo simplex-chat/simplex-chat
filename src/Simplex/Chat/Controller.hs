@@ -93,7 +93,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NameRegistration, NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
 import Simplex.Messaging.Session (SessionVar)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
@@ -709,19 +709,18 @@ data ChatCommand
   deriving (Show)
 
 data PlanResolveMode
-  = PRMAllGroups -- resolve all known groups and all unknown chats
-  | PRMUnknown -- only resolve if chat is unknown (default)
+  = PRMUnknown -- only resolve if chat is unknown (default)
   | PRMNever -- do not resolve links and names, only do local search
+  | PRMAll -- always resolve, also known chats
   deriving (Eq, Show)
 
 planResolveModeP :: A.Parser PlanResolveMode
 planResolveModeP =
   A.takeTill (== ' ') >>= \case
-    "allGroups" -> pure PRMAllGroups
-    "on" -> pure PRMAllGroups
     "unknown" -> pure PRMUnknown
     "off" -> pure PRMUnknown
     "never" -> pure PRMNever
+    "all" -> pure PRMAll
     _ -> fail "bad PlanResolveMode"
 
 data CommandSource
@@ -884,7 +883,7 @@ data ChatResponse
   | CRInvitation {user :: User, connLinkInvitation :: CreatedLinkInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
-  | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, planSimplexName :: Maybe SimplexNameInfo, otherSimplexName :: Maybe SimplexNameInfo, connectionPlan :: ConnectionPlan}
+  | CRConnectionPlan {user :: User, connLink :: Maybe ACreatedConnLink, planSimplexName :: Maybe SimplexNameInfo, otherSimplexName :: Maybe SimplexNameInfo, connectionPlan :: ConnectionPlan}
   | CRNewPreparedChat {user :: User, chat :: AChat}
   | CRContactUserChanged {user :: User, fromContact :: Contact, newUser :: User, toContact :: Contact}
   | CRGroupUserChanged {user :: User, fromGroup :: GroupInfo, newUser :: User, toGroup :: GroupInfo}
@@ -1151,8 +1150,9 @@ data ChatDeleteMode
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
-  | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
-  | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
+  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameRegistration_ :: Maybe NameRegistration}
+  | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameRegistration_ :: Maybe NameRegistration}
+  | CPNameNotConnectable {simplexDomain :: SimplexDomain, nameRegistration :: NameRegistration}
   | CPError {chatError :: ChatError}
   deriving (Show)
 
@@ -1164,7 +1164,7 @@ data InvitationLinkPlan
   deriving (Show)
 
 data ContactAddressPlan
-  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification}
+  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool}
   | CAPOwnLink
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
@@ -1173,7 +1173,7 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification}
+  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
@@ -1214,19 +1214,20 @@ connectionPlanProceed = \case
     ILPOk {} -> True
     ILPOwnLink -> True
     _ -> False
-  CPContactAddress cap -> case cap of
+  CPContactAddress cap _ -> case cap of
     CAPOk {} -> True
     CAPOwnLink -> True
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
     _ -> False
-  CPGroupLink glp -> case glp of
+  CPGroupLink glp _ -> case glp of
     GLPOk {} -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
     GLPNoRelays _ -> False
     GLPUpdateRequired _ -> False
     _ -> False
+  CPNameNotConnectable {} -> False
   CPError _ -> True
 
 data ForwardConfirmation
@@ -1473,7 +1474,7 @@ data ChatError
   | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
--- why a resolved SimpleX name could not be used (the name itself resolved; an unregistered name is the agent's NAME NOT_FOUND)
+-- why a resolved SimpleX name could not be used (the name itself resolved; in a connection plan, a name with nothing to connect is CPNameNotConnectable)
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name

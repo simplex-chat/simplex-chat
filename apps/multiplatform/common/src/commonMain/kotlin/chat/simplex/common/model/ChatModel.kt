@@ -5253,6 +5253,40 @@ enum class SimplexTLD {
 }
 
 @Serializable
+sealed class NameRegistration {
+  // held by someone; expires/graceUntil are absent from an older router, which means "not known", not "live forever"
+  @Serializable @SerialName("registered") class Registered(
+    val expires: Long? = null,
+    val graceUntil: Long? = null,
+    val reservedReason_: String? = null
+  ): NameRegistration()
+  @Serializable @SerialName("available") class Available(val pricing: NamePricing): NameRegistration()
+  @Serializable @SerialName("reserved") class Reserved(val reservedReason: String): NameRegistration()
+
+  fun expired(now: Long): Boolean = this is Registered && expires != null && expires < now
+
+  val reservedForCommunity: Boolean get() = when (this) {
+    is Reserved -> reservedReason == RESERVED_COMMUNITY
+    is Registered -> reservedReason_ == RESERVED_COMMUNITY
+    is Available -> false
+  }
+
+  companion object {
+    // the registry may add reasons after this version, so any other value is just "not registrable"
+    const val RESERVED_COMMUNITY = "community"
+  }
+}
+
+@Serializable
+data class NamePricing(
+  val registrationPrices: Map<String, Long> = emptyMap(),
+  val basePrice: Long,
+  val minLabelLength: Int
+) {
+  fun centsPerYear(labelLength: Int): Long = registrationPrices[labelLength.toString()] ?: basePrice
+}
+
+@Serializable
 enum class SimplexNameType {
   @SerialName("publicGroup") publicGroup,
   @SerialName("contact") contact

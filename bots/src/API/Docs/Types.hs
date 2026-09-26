@@ -47,7 +47,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Client
 import Simplex.Messaging.Crypto.File
 import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
-import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NetworkError (..), ProxyError (..))
+import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NamePricing (..), NameRecord (..), NameRegistration (..), NameReservedReason (..), NetworkError (..), ProxyError (..))
 import Simplex.Messaging.Protocol.Types (ClientNotice (..))
 import Simplex.Messaging.Transport
 import Simplex.Chat.Remote.Types (CtrlAppInfo (..))
@@ -186,6 +186,14 @@ removeField n = updateFields $ mapMaybe (\f@(FieldInfo n' _) -> if n == n' then 
    
 updateFields :: ([FieldInfo] -> [FieldInfo]) -> SumTypeInfo -> SumTypeInfo
 updateFields f st@(STI _ records) = st {recordTypes = map (\(RecordTypeInfo name fields) -> RecordTypeInfo name $ f fields) records}
+
+-- JSON field names drop the "nr" prefix, as NameRecord's deriveJSON does
+nameRecordType :: SumTypeInfo
+nameRecordType =
+  let st@(STI _ records) = sti @NameRecord
+      dropNr (FieldInfo n t) = FieldInfo (dropPrefix "nr" n) t
+      updateRecord (RecordTypeInfo name fields) = RecordTypeInfo name $ map dropNr fields
+   in st {recordTypes = map updateRecord records}
 
 -- type info, JSON encoding, constructor prefix, removed constructors, string encoding for commands, description
 chatTypesDocsData :: [(SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Expr, Text)]
@@ -335,6 +343,10 @@ chatTypesDocsData =
     (sti @MsgSigStatus, STEnum, "MSS", [], "", ""),
     (sti @MsgVerified, STUnion, "MV", [], "", ""),
     (sti @NameErrorType, STUnion, "", [], "", ""),
+    (sti @NamePricing, STRecord, "", [], "", ""),
+    (nameRecordType, STRecord, "", [], "", ""),
+    (sti @NameRegistration, STUnion, "NR", [], "", ""),
+    (sti @NameReservedReason, STEnum, "NRR", ["NRRUnknown"], "", ""),
     (sti @NetworkError, STUnion, "NE", [], "", ""),
     (sti @NewUser, STRecord, "", [], "", ""),
     (sti @NoteFolder, STRecord, "", [], "", ""),
@@ -575,6 +587,10 @@ deriving instance Generic MsgReceiptStatus
 deriving instance Generic MsgSigStatus
 deriving instance Generic MsgVerified
 deriving instance Generic NameErrorType
+deriving instance Generic NamePricing
+deriving instance Generic NameRecord
+deriving instance Generic NameRegistration
+deriving instance Generic NameReservedReason
 deriving instance Generic NetworkError
 deriving instance Generic NewUser
 deriving instance Generic NoteFolder

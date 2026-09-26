@@ -2120,10 +2120,11 @@ export type ConnectionPlan =
   | ConnectionPlan.InvitationLink
   | ConnectionPlan.ContactAddress
   | ConnectionPlan.GroupLink
+  | ConnectionPlan.NameNotConnectable
   | ConnectionPlan.Error
 
 export namespace ConnectionPlan {
-  export type Tag = "invitationLink" | "contactAddress" | "groupLink" | "error"
+  export type Tag = "invitationLink" | "contactAddress" | "groupLink" | "nameNotConnectable" | "error"
 
   interface Interface {
     type: Tag
@@ -2137,11 +2138,19 @@ export namespace ConnectionPlan {
   export interface ContactAddress extends Interface {
     type: "contactAddress"
     contactAddressPlan: ContactAddressPlan
+    nameRegistration_?: NameRegistration
   }
 
   export interface GroupLink extends Interface {
     type: "groupLink"
     groupLinkPlan: GroupLinkPlan
+    nameRegistration_?: NameRegistration
+  }
+
+  export interface NameNotConnectable extends Interface {
+    type: "nameNotConnectable"
+    simplexDomain: SimplexDomain
+    nameRegistration: NameRegistration
   }
 
   export interface Error extends Interface {
@@ -2201,6 +2210,7 @@ export namespace ContactAddressPlan {
     type: "ok"
     contactSLinkData_?: ContactShortLinkData
     ownerVerification?: OwnerVerification
+    addressChanged: boolean
   }
 
   export interface OwnLink extends Interface {
@@ -2841,6 +2851,7 @@ export namespace GroupLinkPlan {
     groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
     ownerVerification?: OwnerVerification
+    addressChanged: boolean
   }
 
   export interface OwnLink extends Interface {
@@ -3387,6 +3398,64 @@ export namespace NameErrorType {
   }
 }
 
+export interface NamePricing {
+  registrationPrices: {[key: number]: number} // int : int64
+  basePrice: number // int64
+  minLabelLength: number // int
+}
+
+export interface NameRecord {
+  name: string
+  nickname: string
+  website: string
+  location: string
+  simplexContact: string[]
+  simplexChannel: string[]
+  eth?: string
+  btc?: string
+  xmr?: string
+  dot?: string
+  owner: string
+  resolver: string
+}
+
+export type NameRegistration = 
+  | NameRegistration.Registered
+  | NameRegistration.Available
+  | NameRegistration.Reserved
+
+export namespace NameRegistration {
+  export type Tag = "registered" | "available" | "reserved"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Registered extends Interface {
+    type: "registered"
+    expires?: number // int64
+    graceUntil?: number // int64
+    reservedReason_?: NameReservedReason
+    nameRecord: NameRecord
+  }
+
+  export interface Available extends Interface {
+    type: "available"
+    pricing: NamePricing
+  }
+
+  export interface Reserved extends Interface {
+    type: "reserved"
+    reservedReason: NameReservedReason
+  }
+}
+
+export enum NameReservedReason {
+  Internal = "internal",
+  Trademark = "trademark",
+  Community = "community",
+}
+
 export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
@@ -3506,9 +3575,9 @@ export interface PendingContactConnection {
 }
 
 export enum PlanResolveMode {
-  AllGroups = "allGroups",
   Unknown = "unknown",
   Never = "never",
+  All = "all",
 }
 
 export interface PrefEnabled {

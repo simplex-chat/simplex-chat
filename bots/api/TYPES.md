@@ -145,6 +145,10 @@ This file is generated automatically.
 - [MsgSigStatus](#msgsigstatus)
 - [MsgVerified](#msgverified)
 - [NameErrorType](#nameerrortype)
+- [NamePricing](#namepricing)
+- [NameRecord](#namerecord)
+- [NameRegistration](#nameregistration)
+- [NameReservedReason](#namereservedreason)
 - [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
@@ -1870,10 +1874,17 @@ InvitationLink:
 ContactAddress:
 - type: "contactAddress"
 - contactAddressPlan: [ContactAddressPlan](#contactaddressplan)
+- nameRegistration_: [NameRegistration](#nameregistration)?
 
 GroupLink:
 - type: "groupLink"
 - groupLinkPlan: [GroupLinkPlan](#grouplinkplan)
+- nameRegistration_: [NameRegistration](#nameregistration)?
+
+NameNotConnectable:
+- type: "nameNotConnectable"
+- simplexDomain: [SimplexDomain](#simplexdomain)
+- nameRegistration: [NameRegistration](#nameregistration)
 
 Error:
 - type: "error"
@@ -1920,6 +1931,7 @@ Ok:
 - type: "ok"
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
+- addressChanged: bool
 
 OwnLink:
 - type: "ownLink"
@@ -2530,6 +2542,7 @@ Ok:
 - groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
+- addressChanged: bool
 
 OwnLink:
 - type: "ownLink"
@@ -3106,6 +3119,67 @@ RESOLVER:
 
 ---
 
+## NamePricing
+
+**Record type**:
+- registrationPrices: {int : int64}
+- basePrice: int64
+- minLabelLength: int
+
+
+---
+
+## NameRecord
+
+**Record type**:
+- name: string
+- nickname: string
+- website: string
+- location: string
+- simplexContact: [string]
+- simplexChannel: [string]
+- eth: string?
+- btc: string?
+- xmr: string?
+- dot: string?
+- owner: string
+- resolver: string
+
+
+---
+
+## NameRegistration
+
+**Discriminated union type**:
+
+Registered:
+- type: "registered"
+- expires: int64?
+- graceUntil: int64?
+- reservedReason_: [NameReservedReason](#namereservedreason)?
+- nameRecord: [NameRecord](#namerecord)
+
+Available:
+- type: "available"
+- pricing: [NamePricing](#namepricing)
+
+Reserved:
+- type: "reserved"
+- reservedReason: [NameReservedReason](#namereservedreason)
+
+
+---
+
+## NameReservedReason
+
+**Enum type**:
+- "internal"
+- "trademark"
+- "community"
+
+
+---
+
 ## NetworkError
 
 **Discriminated union type**:
@@ -3219,9 +3293,9 @@ count=<count>
 ## PlanResolveMode
 
 **Enum type**:
-- "allGroups"
 - "unknown"
 - "never"
+- "all"
 
 
 ---

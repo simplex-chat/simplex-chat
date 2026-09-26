@@ -1481,10 +1481,17 @@ class ConnectionPlan_invitationLink(TypedDict):
 class ConnectionPlan_contactAddress(TypedDict):
     type: Literal["contactAddress"]
     contactAddressPlan: "ContactAddressPlan"
+    nameRegistration_: NotRequired["NameRegistration"]
 
 class ConnectionPlan_groupLink(TypedDict):
     type: Literal["groupLink"]
     groupLinkPlan: "GroupLinkPlan"
+    nameRegistration_: NotRequired["NameRegistration"]
+
+class ConnectionPlan_nameNotConnectable(TypedDict):
+    type: Literal["nameNotConnectable"]
+    simplexDomain: "SimplexDomain"
+    nameRegistration: "NameRegistration"
 
 class ConnectionPlan_error(TypedDict):
     type: Literal["error"]
@@ -1494,10 +1501,11 @@ ConnectionPlan = (
     ConnectionPlan_invitationLink
     | ConnectionPlan_contactAddress
     | ConnectionPlan_groupLink
+    | ConnectionPlan_nameNotConnectable
     | ConnectionPlan_error
 )
 
-ConnectionPlan_Tag = Literal["invitationLink", "contactAddress", "groupLink", "error"]
+ConnectionPlan_Tag = Literal["invitationLink", "contactAddress", "groupLink", "nameNotConnectable", "error"]
 
 class Contact(TypedDict):
     contactId: int  # int64
@@ -1528,6 +1536,7 @@ class ContactAddressPlan_ok(TypedDict):
     type: Literal["ok"]
     contactSLinkData_: NotRequired["ContactShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
+    addressChanged: bool
 
 class ContactAddressPlan_ownLink(TypedDict):
     type: Literal["ownLink"]
@@ -1974,6 +1983,7 @@ class GroupLinkPlan_ok(TypedDict):
     groupSLinkInfo_: NotRequired["GroupShortLinkInfo"]
     groupSLinkData_: NotRequired["GroupShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
+    addressChanged: bool
 
 class GroupLinkPlan_ownLink(TypedDict):
     type: Literal["ownLink"]
@@ -2362,6 +2372,50 @@ NameErrorType = NameErrorType_NO_RESOLVER | NameErrorType_NOT_FOUND | NameErrorT
 
 NameErrorType_Tag = Literal["NO_RESOLVER", "NOT_FOUND", "RESOLVER"]
 
+class NamePricing(TypedDict):
+    registrationPrices: dict[int, int]  # int : int64
+    basePrice: int  # int64
+    minLabelLength: int  # int
+
+class NameRecord(TypedDict):
+    name: str
+    nickname: str
+    website: str
+    location: str
+    simplexContact: list[str]
+    simplexChannel: list[str]
+    eth: NotRequired[str]
+    btc: NotRequired[str]
+    xmr: NotRequired[str]
+    dot: NotRequired[str]
+    owner: str
+    resolver: str
+
+class NameRegistration_registered(TypedDict):
+    type: Literal["registered"]
+    expires: NotRequired[int]  # int64
+    graceUntil: NotRequired[int]  # int64
+    reservedReason_: NotRequired["NameReservedReason"]
+    nameRecord: "NameRecord"
+
+class NameRegistration_available(TypedDict):
+    type: Literal["available"]
+    pricing: "NamePricing"
+
+class NameRegistration_reserved(TypedDict):
+    type: Literal["reserved"]
+    reservedReason: "NameReservedReason"
+
+NameRegistration = (
+    NameRegistration_registered
+    | NameRegistration_available
+    | NameRegistration_reserved
+)
+
+NameRegistration_Tag = Literal["registered", "available", "reserved"]
+
+NameReservedReason = Literal["internal", "trademark", "community"]
+
 class NetworkError_connectError(TypedDict):
     type: Literal["connectError"]
     connectError: str
@@ -2445,7 +2499,7 @@ class PendingContactConnection(TypedDict):
     createdAt: str  # ISO-8601 timestamp
     updatedAt: str  # ISO-8601 timestamp
 
-PlanResolveMode = Literal["allGroups", "unknown", "never"]
+PlanResolveMode = Literal["unknown", "never", "all"]
 
 class PrefEnabled(TypedDict):
     forUser: bool

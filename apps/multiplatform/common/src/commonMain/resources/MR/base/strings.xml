@@ -204,6 +204,24 @@
   <string name="simplex_name_resolver_error_desc">Resolver error: %1$s</string>
   <string name="simplex_name_no_valid_link">No valid link</string>
   <string name="simplex_name_no_valid_link_desc">The SimpleX name %1$s is registered, but it has no valid link.</string>
+  <!-- SimpleX name lookup - ConnectPlan.kt -->
+  <string name="simplex_name_expired">Name expired</string>
+  <string name="simplex_name_expired_desc">%1$s expired on %2$s. Its owner can renew it until %3$s.</string>
+  <string name="simplex_name_expired_no_date_desc">%1$s has expired. Its owner can still renew it for a limited time.</string>
+  <string name="simplex_name_own_expired">Your name has expired</string>
+  <string name="simplex_name_own_expired_desc">Your name %1$s expired on %2$s. Renew it before %3$s.</string>
+  <string name="simplex_name_own_expired_no_date_desc">Your name %1$s has expired. Renew it before the grace period ends.</string>
+  <string name="simplex_name_own_available_desc">Your name %1$s is no longer registered. It is available for registration from %2$s per year.</string>
+  <string name="simplex_name_not_registered">Name not registered</string>
+  <string name="simplex_name_no_longer_registered">Name no longer registered</string>
+  <string name="simplex_name_available_desc">%1$s is available for registration from %2$s per year.</string>
+  <string name="simplex_name_reserved_community_desc">%1$s is reserved for community. Please contact SimpleX Chat if you are interested in using it.</string>
+  <string name="simplex_name_address_changed">%1$s now leads to a new address.</string>
+  <string name="simplex_name_register">Register</string>
+  <string name="simplex_name_re_register">Re-register</string>
+  <string name="simplex_name_renew">Renew</string>
+  <string name="simplex_name_connect_simplex_team">Connect to SimpleX team</string>
+  <string name="connect_plan_open_existing_chat">Open existing chat</string>
   <string name="simplex_name_unconfirmed">Unconfirmed name</string>
   <string name="simplex_name_unconfirmed_desc">The SimpleX name %1$s is registered, but not added to profile. Please add it to your address or channel profile, if you are the owner.</string>
   <string name="channel_temporarily_unavailable">Channel temporarily unavailable</string>
