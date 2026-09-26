@@ -39,6 +39,7 @@ Load the list once per open group, then keep it current from what arrives.
 - It is called for:
   - `NewChatItems` events;
   - `ChatItemsDeleted` events;
+  - delete responses (items and reports);
   - send responses (Kotlin only);
   - the mark-read response;
   - the initial load of a support chat.
@@ -51,7 +52,6 @@ A member's first support message arrives as a `NewChatItems` event with that mem
 ## Not covered
 
 - On iOS, `apiSendMessages` returns bare `ChatItem`s without chat info. The list's last-activity order after the user's own reply updates only when the group is reopened.
-- API-response deletions made by the user themselves are not hooked. Only deletion events are. Items the user deletes are normally already read.
 
 ## Alternatives considered
 

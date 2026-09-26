@@ -573,6 +573,7 @@ fun ChatView(
                       chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
                     }
                     chatModel.chatsContext.updateChatInfo(chatRh, deleted.deletedChatItem.chatInfo)
+                    chatModel.upsertSupportChatMember(chatRh, deleted.deletedChatItem.chatInfo)
                   }
                   withContext(Dispatchers.Main) {
                     if (toChatItem != null) {
@@ -3404,6 +3405,7 @@ private fun deleteMessages(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           }
           deleted.lastOrNull()?.deletedChatItem?.chatInfo?.let { updatedChatInfo ->
             chatModel.chatsContext.updateChatInfo(chatRh, updatedChatInfo)
+            chatModel.upsertSupportChatMember(chatRh, updatedChatInfo)
           }
         }
         withContext(Dispatchers.Main) {
@@ -3441,6 +3443,7 @@ private fun archiveReports(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
           }
           deleted.lastOrNull()?.deletedChatItem?.chatInfo?.let { updatedChatInfo ->
             chatModel.chatsContext.updateChatInfo(chatRh, updatedChatInfo)
+            chatModel.upsertSupportChatMember(chatRh, updatedChatInfo)
           }
         }
         withContext(Dispatchers.Main) {
