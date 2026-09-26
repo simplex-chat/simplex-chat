@@ -74,6 +74,7 @@ chatProfileTests = do
     describe "business address" $ do
       it "create and connect via business address" testBusinessAddress
       it "update profiles with business address" testBusinessUpdateProfiles
+      it "customer description is not sent as business welcome message" testBusinessCustomerDescription
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -1317,6 +1318,44 @@ testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile c
     alice #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
     bob #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
     cath #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
+
+testBusinessCustomerDescription :: HasCallStack => TestParams -> IO ()
+testBusinessCustomerDescription = testChat3 businessProfile aliceProfile cathProfile $
+  \biz alice cath -> do
+    biz ##> "/ad"
+    cLink <- getContactLink biz True
+    biz ##> "/auto_accept on business"
+    biz <## "auto_accept on, business"
+    alice ##> ("/c " <> cLink)
+    alice <## "connection request sent!"
+    biz <## "#alice (Alice): accepting business address request..."
+    alice <## "#biz: joining the group..."
+    biz <## "#alice: alice_1 joined the group"
+    alice <## "#biz: you joined the group"
+    alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"\", \"shortDescr\": \"Alice\", \"description\": \"Hi, I'm Alice\"}"
+    alice <## "user description changed to Hi, I'm Alice (your 0 contacts are notified)"
+    alice #> "#biz hello" -- profile update is sent with message
+    biz <# "#alice alice_1> hello"
+    connectUsers biz cath
+    biz ##> "/a #alice cath"
+    biz <## "invitation to join the group #alice sent to cath"
+    cath <## "#alice (Alice): biz invites you to join the group as member"
+    cath <## "use /j alice to accept"
+    cath ##> "/j alice"
+    concurrentlyN_
+      [ do
+          cath <## "#alice: you joined the group"
+          cath <### [WithTime "#alice alice_1> hello [>>]"]
+          cath <## "#alice: member alice_1 (Alice) is connected",
+        biz <## "#alice: cath joined the group",
+        do
+          alice <## "#biz: biz_1 added cath (Catherine) to the group (connecting...)"
+          alice <## "#biz: new member cath is connected"
+      ]
+    cath #> "#alice hi"
+    concurrently_
+      (alice <# "#biz cath> hi")
+      (biz <# "#alice cath> hi")
 
 testPlanAddressOkKnown :: HasCallStack => TestParams -> IO ()
 testPlanAddressOkKnown =
