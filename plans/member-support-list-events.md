@@ -32,7 +32,7 @@ Load the list once per open group, then keep it current from what arrives.
 - `updateGroupScopeUnreadStats` returns the updated `GroupChatScopeInfo` together with `GroupInfo`.
 - `APIChatItemsRead` returns `GroupChat gInfo' chatScopeInfo'`.
 - `deleteGroupCIs` puts the updated scope member into each deletion's chat info.
-- The group send response re-reads the support scope member after `saveSndChatItems` has updated `support_chat_ts`, instead of returning the member from before the send. If that read returns a store error, it falls back to the pre-send member rather than failing a send that has already happened.
+- The group send response re-reads the support scope member after `saveSndChatItems` has updated `support_chat_ts`, instead of returning the member from before the send. If that read fails, it falls back to the pre-send member rather than failing a send that has already happened.
 - Internal items go through `createChatItems`, for example "new member pending review" (unread and attention +1). It now builds its items from the `ChatInfo` returned by `updateChatTsStats`, as `saveRcvChatItem'` already does, instead of the pre-update `toChatInfo cd`. Otherwise a new pending member would appear without a badge. This applies to every chat type: direct and main group chats now carry the updated `chatTs`, as received items already did.
 - A moderation that arrives before its message creates the item and marks it deleted. The `ChatItemsDeleted` event now carries the group info and scope returned by creating the item, not those from before it.
 - Opening a member's support chat for the first time sets `support_chat_ts` and now returns the re-read member, so the new chat appears in the list.
@@ -60,6 +60,7 @@ A member's first support message arrives as a `NewChatItems` event with that mem
 
 ## Known limitations
 
+- A reset of `membersLoaded` that lands between the load's result write and clearing the in-progress flag (one dispatch hop) is skipped. For example, an Android configuration change or an iOS resume at that exact moment. The list then stays unloaded until it is next returned to.
 - A failed member load (`apiListMembers` error) is not retried while the list stays open; it is retried when the list is reopened.
 - A full member load that is in flight when a support-chat update arrives overwrites that update with its snapshot. For example, the first list load can race a member's first support message. The member then reappears on their next message, when their chat is opened, or when the group is reopened.
 - Support stats snapshots from different events and responses are applied in arrival order, so a rare reordering can briefly show an older count until the next update for that member.
