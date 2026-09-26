@@ -20,7 +20,7 @@ You can now support SimpleX Chat and get a supporter badge, larger files and lon
 
 A supporter badge is shown on your profile to your contacts, group members and channel subscribers. With a badge you can send files up to 2GB, or 5GB with a legend badge, instead of 1GB, and servers keep your files for longer &mdash; 7 days with a supporter badge and 21 days with a legend badge.
 
-A badge is a credential stored in your profile on your device. The credential itself is not sent to anyone: to show the badge to a contact or to present it to a server, the app generates a new zero-knowledge proof that reveals only the badge type and the expiry date, and no two proofs can be linked to each other or to the purchase, by the badge service, your contacts or servers. Credentials are issued for one month at a time, and all badges expire on the same day of the week, so a badge places you among all supporters of that week and nothing more.
+A badge is an anonymous credential stored in your profile on your device. The credential itself is not sent to anyone: to show the badge to a contact or to present it to a server, the app generates a new zero-knowledge proof that reveals only the badge type and the expiry date, and no two proofs can be linked to each other or to the purchase, by the badge service, your contacts or servers. Credentials are issued for one month at a time, and all badges expire on the same day of the week, so a badge places you among all supporters of that week and nothing more.
 
 This is only possible because the network has no user identifiers &mdash; in other messengers a paid feature is attached to the account, so the operator knows who paid and what they do with the feature.
 
@@ -55,10 +55,10 @@ Investors in our [equity crowdfunding on Wefunder](https://wefunder.com/simplex.
 | $2,500 | supporter, 12 months, or legend, 3 months |
 | $10,000 | legend, 12 months |
 
-If you invest $500 or more by September 22, you will also receive [a public SimpleX name](https://simplex.domains?utm_source=blog) for 7 years[^name].
+If you invest $500 or more by November 22, you will also receive [a public SimpleX name](https://simplex.domains?utm_source=blog) for 5 years[^name].
 
 Learn more and invest on Wefunder: [https://wefunder.com/simplex.chat](https://wefunder.com/simplex.chat?utm_source=blog)
 
-[^name]: After September 22, investors of $500 or more receive a name for 5 years as early bird investors, and for 3 years after that &mdash; ahead of the public launch of names on December 12.
+[^name]: Investors of $500 or more by September 22 receive a name for 7 years, and after November 22 for 3 years &mdash; ahead of the public launch of names on December 12.
 
 [^beta]: v7.1 beta is available via [Play Store](https://play.google.com/store/apps/details?id=chat.simplex.app) (Android beta), [TestFlight](https://testflight.apple.com/join/DWuT2LQu) (iOS), our [F-Droid repo](https://simplex.chat/fdroid/) and [GitHub](https://github.com/simplex-chat/simplex-chat/releases) (Android and desktop).

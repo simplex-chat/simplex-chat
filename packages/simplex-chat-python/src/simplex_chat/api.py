@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -65,17 +67,20 @@ class ChatApi:
     def __init__(self, ctrl: int):
         self._ctrl: int | None = ctrl
         self._started = False
+        self._recv_executor: ThreadPoolExecutor | None = None
 
     @classmethod
     async def init(
         cls,
         db: Db,
         confirm: MigrationConfirmation = MigrationConfirmation.YES_UP,
+        queue_size: int | None = None,
     ) -> ChatApi:
         path_or_prefix, key_or_conn, backend = _db_to_migrate_args(db)
         # Trigger lazy lib load with the right backend BEFORE chat_migrate_init.
-        _native.lib_for(backend)
-        ctrl = await core.chat_migrate_init(path_or_prefix, key_or_conn, confirm)
+        # It may download ~100 MB, so it must not block the event loop.
+        await asyncio.to_thread(_native.lib_for, backend)
+        ctrl = await core.chat_migrate_init(path_or_prefix, key_or_conn, confirm, queue_size)
         return cls(ctrl)
 
     @property
@@ -114,6 +119,14 @@ class ChatApi:
         self._started = False
 
     async def close(self) -> None:
+        """Stop the chat and close its store; the store stays open if stopping fails."""
+        # a running controller keeps using the database connections that closing frees
+        await self.stop_chat()
+        if self._recv_executor is not None:
+            # Waits for a receive already in flight (up to wait_us) so the store
+            # never closes underneath one; run off-loop since shutdown blocks.
+            await asyncio.to_thread(self._recv_executor.shutdown, wait=True)
+            self._recv_executor = None
         await core.chat_close_store(self.ctrl)
         self._ctrl = None
         self._started = False
@@ -122,7 +135,14 @@ class ChatApi:
         return await core.chat_send_cmd(self.ctrl, cmd)
 
     async def recv_chat_event(self, wait_us: int = 500_000) -> CEvt.ChatEvent | None:
-        return await core.chat_recv_msg_wait(self.ctrl, wait_us)
+        ctrl = self.ctrl  # raises before touching the executor if close() was called
+        if self._recv_executor is None:
+            # A receive blocks for up to wait_us almost back to back, so it would
+            # otherwise pin one of the default executor's few worker threads.
+            self._recv_executor = ThreadPoolExecutor(
+                max_workers=1, thread_name_prefix="simplex-recv"
+            )
+        return await core.chat_recv_msg_wait(ctrl, wait_us, self._recv_executor)
 
     # ------------------------------------------------------------------ #
     # Address commands
@@ -158,6 +178,8 @@ class ChatApi:
         )
         if r["type"] == "userProfileUpdated":
             return r["updateSummary"]
+        if r["type"] == "userProfileNoChange":
+            return {"updateSuccesses": 0, "updateFailures": 0, "changedContacts": []}
         raise ChatCommandError("error setting profile address", r)
 
     async def api_set_address_settings(self, user_id: int, settings: T.AddressSettings) -> None:
@@ -236,6 +258,8 @@ class ChatApi:
         )
         if r["type"] == "chatItemUpdated":
             return r["chatItem"]["chatItem"]
+        if r["type"] == "chatItemNotChanged":
+            return r["chatItem"]["chatItem"]
         raise ChatCommandError("error updating chat item", r)
 
     async def api_delete_chat_items(
@@ -302,6 +326,8 @@ class ChatApi:
         )
         if r["type"] == "rcvFileAccepted":
             return r["chatItem"]
+        if r["type"] == "rcvFileAcceptedSndCancelled":
+            raise ChatCommandError("file cancelled by sender", r)
         raise ChatCommandError("error receiving file", r)
 
     async def api_cancel_file(self, file_id: int) -> None:
@@ -477,12 +503,13 @@ class ChatApi:
         self,
         user_id: int,
         incognito: bool,
-        prepared_link: T.CreatedConnLink | None = None,
+        prepared_link: T.CreatedConnLink,
     ) -> ConnReqType:
-        args: CC.APIConnect = {"userId": user_id, "incognito": incognito}
-        if prepared_link is not None:
-            args["preparedLink_"] = prepared_link
-        r = await self.send_chat_cmd(CC.APIConnect_cmd_string(args))
+        r = await self.send_chat_cmd(
+            CC.APIConnect_cmd_string(
+                {"userId": user_id, "incognito": incognito, "preparedLink_": prepared_link}
+            )
+        )
         return self._handle_connect_result(r)
 
     async def api_connect_active_user(self, conn_link: str) -> ConnReqType:

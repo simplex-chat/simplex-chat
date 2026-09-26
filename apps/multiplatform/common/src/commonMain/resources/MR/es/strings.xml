@@ -2785,7 +2785,6 @@
     <string name="group_link_requires_newer_version">Este grupo requiere una versión más reciente de la aplicación. Por favor, actualizala para unirte.</string>
     <string name="webpage_code">Código web</string>
     <string name="relays_no_web_support">Los servidores usados no admiten páginas web.</string>
-    <string name="badge_support_from_v7">Puedes apoyar SimpleX desde la versión 7.</string>
     <string name="badge_unverified_title">Insignia sin verificar</string>
     <string name="connect_plan_connect_to_name">Conectar con %s</string>
     <string name="error_saving_simplex_name">Error al guardar el nombre</string>

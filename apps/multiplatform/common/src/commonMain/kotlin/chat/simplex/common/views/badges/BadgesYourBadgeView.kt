@@ -12,8 +12,10 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,11 +31,13 @@ import chat.simplex.common.views.helpers.AppBarTitle
 import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.views.helpers.badgeImage
 import chat.simplex.common.views.helpers.badgeTypeName
+import chat.simplex.common.views.helpers.openVerifiedSimplexUri
 import chat.simplex.common.views.usersettings.SettingsActionItem
+import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.res.MR
 
 @Composable
-fun BadgesYourBadgeView(badgeState: BadgeState) {
+fun BadgesYourBadgeView(badgeState: BadgeState, modalManager: ModalManager) {
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.badges_your_badge))
 
@@ -50,10 +54,30 @@ fun BadgesYourBadgeView(badgeState: BadgeState) {
       SettingsActionItem(
         painterResource(MR.images.ic_info),
         stringResource(MR.strings.badges_how_it_works_button),
-        { ModalManager.start.showModal { BadgesHowItWorksView() } },
+        { modalManager.showModal { BadgesHowItWorksView() } },
       )
     }
     SectionSpacer()
+    val issueError = badgeState.issueError
+    if (issueError != null) {
+      val uriHandler = LocalUriHandler.current
+      SectionView(title = stringResource(MR.strings.error), icon = painterResource(MR.images.ic_warning), iconTint = Color.Red, leadingIcon = true) {
+        SectionItemView {
+          Text(issueError.reason.text, color = MaterialTheme.colors.secondary)
+        }
+        InfoRow(stringResource(MR.strings.badges_error_since), localTimestamp(issueError.failedSince))
+        if (issueError.lastAttemptAt != issueError.failedSince) {
+          InfoRow(stringResource(MR.strings.badges_error_last_attempt), localTimestamp(issueError.lastAttemptAt))
+        }
+        SettingsActionItem(
+          painterResource(MR.images.ic_tag),
+          stringResource(MR.strings.badges_contact_team),
+          { uriHandler.openVerifiedSimplexUri(simplexTeamUri) },
+          textColor = MaterialTheme.colors.primary
+        )
+      }
+      SectionSpacer()
+    }
     if (appPrefs.developerTools.get()) {
       val clipboard = LocalClipboardManager.current
       SectionView(stringResource(MR.strings.badges_credential)) {
@@ -64,10 +88,17 @@ fun BadgesYourBadgeView(badgeState: BadgeState) {
         }
         InfoRow(stringResource(MR.strings.badges_credential_months_left), badgeState.monthsLeft.toString())
         InfoRow(stringResource(MR.strings.badges_credential_purchase_id), badgeState.badgePurchaseId.toString())
+        val nextWakeAt = badgeState.nextWakeAt
+        if (nextWakeAt != null) {
+          InfoRow(stringResource(MR.strings.badges_credential_next_check), localTimestamp(nextWakeAt))
+        }
+        if (issueError != null) {
+          InfoRow(stringResource(MR.strings.error), issueError.reason.tag)
+        }
         SectionItemView({ clipboard.setText(AnnotatedString(badgeState.purchaseKey)) }) {
           Text(stringResource(MR.strings.badges_copy_purchase_key), color = MaterialTheme.colors.primary)
         }
-        SectionItemView({ ModalManager.start.showCustomModal { close -> BadgesLedgerView(badgeState, close) } }) {
+        SectionItemView({ modalManager.showCustomModal { close -> BadgesLedgerView(badgeState, close) } }) {
           Text(stringResource(MR.strings.badges_ledger))
         }
       }
