@@ -144,7 +144,7 @@ SEARCH r USING INDEX idx_rcv_file_chunk_replicas_rcv_file_chunk_id (rcv_file_chu
 SEARCH s USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-            SELECT c.corr_id, cs.user_id, c.command
+            SELECT c.corr_id, cs.user_id, c.command, c.created_at
             FROM commands c
             JOIN connections cs USING (conn_id)
             WHERE c.command_id = ?
@@ -1136,7 +1136,7 @@ SEARCH s USING PRIMARY KEY (host=? AND port=?)
 SEARCH c USING PRIMARY KEY (conn_id=?)
 
 Query: 
-    SELECT c.user_id, q.conn_id, q.host, q.port, COALESCE(q.server_key_hash, s.key_hash), q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
+    SELECT c.user_id, q.conn_id, q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
@@ -1148,7 +1148,7 @@ SEARCH q USING PRIMARY KEY (host=? AND port=?)
 SEARCH c USING PRIMARY KEY (conn_id=?)
 
 Query: 
-    SELECT c.user_id, q.conn_id, q.host, q.port, COALESCE(q.server_key_hash, s.key_hash), q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
+    SELECT c.user_id, q.conn_id, q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
@@ -1160,7 +1160,7 @@ SEARCH q USING PRIMARY KEY (host=? AND port=?)
 SEARCH c USING PRIMARY KEY (conn_id=?)
 
 Query: 
-    SELECT c.user_id, q.conn_id, q.host, q.port, COALESCE(q.server_key_hash, s.key_hash), q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
+    SELECT c.user_id, q.conn_id, q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port

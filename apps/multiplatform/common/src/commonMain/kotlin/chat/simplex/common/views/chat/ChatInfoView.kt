@@ -1205,12 +1205,13 @@ fun SynchronizeConnectionButtonForce(syncConnectionForce: () -> Unit) {
 }
 
 @Composable
-fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit) {
+fun VerifyCodeButton(contactVerified: Boolean, onClick: () -> Unit, disabled: Boolean = false) {
   SettingsActionItem(
     if (contactVerified) painterResource(MR.images.ic_verified_user) else painterResource(MR.images.ic_shield),
     stringResource(if (contactVerified) MR.strings.view_security_code else MR.strings.verify_security_code),
     click = onClick,
     iconColor = MaterialTheme.colors.secondary,
+    disabled = disabled,
   )
 }
 
