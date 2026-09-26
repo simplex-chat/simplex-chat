@@ -1015,6 +1015,7 @@
   <string name="markdown_in_messages">Markdown in messages</string>
   <string name="chat_with_the_founder">Send questions and ideas</string>
   <string name="send_us_an_email">Send us email</string>
+  <string name="follow_simplex_network_news">Follow SimpleX Network News</string>
   <string name="chat_lock">SimpleX Lock</string>
   <string name="chat_console">Chat console</string>
   <string name="message_servers">Message servers</string>
@@ -2678,8 +2679,8 @@
   <string name="v7_0_invest_descr" translatable="false">Crowdfunding on Wefunder.</string>
   <string name="v7_0_crowdfunding" translatable="false">Crowdfunding on Wefunder</string>
   <string name="v7_0_invest_learn_more" translatable="false">Learn more on Wefunder</string>
-  <string name="invest_banner_title" translatable="false">Get a stake in SimpleX Chat!</string>
-  <string name="invest_banner_subtitle" translatable="false">Invest on Wefunder from $100</string>
+  <string name="invest_banner_title" translatable="false">Invest in SimpleX Chat!</string>
+  <string name="invest_banner_subtitle" translatable="false">Crowdfunding on Wefunder</string>
   <string name="v7_0_simplex_names">SimpleX public names (BETA)</string>
   <string name="v7_0_simplex_names_descr">Public names for your channel or business.</string>
   <string name="v7_0_channels">Better channels 📢</string>
