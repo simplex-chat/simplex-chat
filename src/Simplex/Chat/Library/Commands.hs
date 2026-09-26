@@ -1311,12 +1311,12 @@ processChatCommand cxt nm = \case
         gInfo <- getGroupInfo db cxt user chatId
         pure (user, gInfo)
       chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
-      (timedItems, gInfo') <- withFastStore $ \db -> do
-        (timedItems, gInfo') <- updateGroupChatItemsReadList db cxt user gInfo chatScopeInfo itemIds
+      (timedItems, gInfo', chatScopeInfo') <- withFastStore $ \db -> do
+        (timedItems, gInfo', chatScopeInfo') <- updateGroupChatItemsReadList db cxt user gInfo chatScopeInfo itemIds
         timedItems' <- liftIO $ setGroupChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
-        pure (timedItems', gInfo')
+        pure (timedItems', gInfo', chatScopeInfo')
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
-      pure $ CRItemsReadForChat user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
+      pure $ CRItemsReadForChat user (AChatInfo SCTGroup $ GroupChat gInfo' chatScopeInfo')
     CTLocal -> throwCmdError "not supported"
     CTContactRequest -> throwCmdError "not supported"
     CTContactConnection -> throwCmdError "not supported"
@@ -4874,7 +4874,12 @@ processChatCommand cxt nm = \case
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
               startProximateTimedItemThread user (ChatRef CTGroup groupId scope, chatItemId' ci) deleteAt
-          pure $ CRNewChatItems user (map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo)) cis)
+          chatScopeInfo' <- case chatScopeInfo of
+            Just GCSIMemberSupport {groupMember_ = Just sentScopeMem} ->
+              Just . GCSIMemberSupport . Just
+                <$> (withFastStore (\db -> getGroupMemberById db cxt user (groupMemberId' sentScopeMem)) `catchAllErrors` \_ -> pure sentScopeMem)
+            _ -> pure chatScopeInfo
+          pure $ CRNewChatItems user (map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo')) cis)
           where
             setupSndFileTransfers :: Int -> CM (NonEmpty (Maybe FileInvitation, Maybe (CIFile 'MDSnd)))
             setupSndFileTransfers n =

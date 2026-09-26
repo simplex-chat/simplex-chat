@@ -13,28 +13,25 @@ struct MemberSupportView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State private var searchText: String = ""
+    @State private var membersLoading = false
     @FocusState private var searchFocussed
     var groupInfo: GroupInfo
     @Binding var scrollToItemId: ChatItem.ID?
 
     var body: some View {
         viewBody()
-            .onAppear {
-                Task {
-                    await chatModel.loadGroupMembers(groupInfo)
-                }
+            .onAppear { loadMembersIfNeeded() }
+            .onChange(of: chatModel.membersLoaded) { _ in loadMembersIfNeeded() }
+    }
+
+    private func loadMembersIfNeeded() {
+        if (!chatModel.membersLoaded || chatModel.membersLoadedGroupId != groupInfo.groupId) && chatModel.chatId == groupInfo.id && !membersLoading {
+            membersLoading = true
+            Task {
+                await chatModel.loadGroupMembers(groupInfo)
+                await MainActor.run { membersLoading = false }
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        Task {
-                            await chatModel.loadGroupMembers(groupInfo)
-                        }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                }
-            }
+        }
     }
 
     @ViewBuilder private func viewBody() -> some View {
@@ -92,8 +89,8 @@ struct MemberSupportView: View {
                 .frame(width: 1, height: 1)
                 .hidden()
             }
-            .if(!memberWithChat.wrapped.memberPending && memberWithChat.wrapped.supportChatNotRead) { v in
-                v.swipeActions(edge: .leading, allowsFullSwipe: true) {
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                if !memberWithChat.wrapped.memberPending && memberWithChat.wrapped.supportChatNotRead {
                     Button {
                         Task { await markSupportChatRead(groupInfo, memberWithChat.wrapped) }
                     } label: {

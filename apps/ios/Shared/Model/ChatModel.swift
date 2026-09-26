@@ -424,6 +424,7 @@ final class ChatModel: ObservableObject {
     @Published var groupMembers: [GMember] = []
     @Published var groupMembersIndexes: Dictionary<Int64, Int> = [:] // groupMemberId to index in groupMembers list
     @Published var membersLoaded = false
+    var membersLoadedGroupId: Int64?
     // Runtime-only relay hostnames for pre-join channel display, not persisted — lost on app restart.
     // APIConnectPreparedGroup re-fetches fresh relays at connect time, so stale data doesn't affect join.
     @Published var channelRelayHostnames: [Int64: [String]] = [:]
@@ -577,9 +578,12 @@ final class ChatModel: ObservableObject {
         let groupMembers = await apiListMembers(groupInfo.groupId)
         await MainActor.run {
             if chatId == groupInfo.id {
-                self.groupMembers = groupMembers.map { GMember.init($0) }
-                self.populateGroupMembersIndexes()
-                self.membersLoaded = true
+                if let groupMembers {
+                    self.groupMembers = groupMembers.map { GMember.init($0) }
+                    self.populateGroupMembersIndexes()
+                    self.membersLoaded = true
+                    self.membersLoadedGroupId = groupInfo.groupId
+                }
                 updateView()
             }
         }
@@ -1324,6 +1328,31 @@ final class ChatModel: ObservableObject {
             }
             membersLoaded = false
         }
+    }
+
+    func upsertSupportChatMember(_ cInfo: ChatInfo) {
+        if case let .group(groupInfo, .memberSupport(member?)?) = cInfo, chatId == groupInfo.id {
+            var m = member
+            var supportChatAdded = false
+            if let current = getGroupMember(member.groupMemberId)?.wrapped {
+                supportChatAdded = current.supportChat == nil && member.supportChat != nil
+                m = current
+                m.supportChat = member.supportChat
+                m.memberProfile = member.memberProfile
+            }
+            _ = upsertGroupMember(groupInfo, m)
+            if supportChatAdded {
+                objectWillChange.send()
+            }
+        }
+    }
+
+    func withLoadedSupportChat(_ member: GroupMember) -> GroupMember {
+        var m = member
+        if let supportChat = getGroupMember(member.groupMemberId)?.wrapped.supportChat {
+            m.supportChat = supportChat
+        }
+        return m
     }
 
     func upsertGroupMember(_ groupInfo: GroupInfo, _ member: GroupMember) -> Bool {

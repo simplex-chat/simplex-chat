@@ -1210,7 +1210,12 @@ object ChatController {
   private suspend fun processSendMessageCmd(rh: Long?, cmd: CC): List<AChatItem>? {
     val r = sendCmd(rh, cmd)
     return when {
-      r is API.Result && r.res is CR.NewChatItems -> r.res.chatItems
+      r is API.Result && r.res is CR.NewChatItems -> {
+        withContext(Dispatchers.Main) {
+          r.res.chatItems.forEach { chatModel.upsertSupportChatMember(rh, it.chatInfo) }
+        }
+        r.res.chatItems
+      }
       r is API.Error && r.err is ChatError.ChatErrorStore && r.err.storeError is StoreError.LargeMsg && cmd is CC.ApiSendMessages -> {
         val mc = cmd.composedMessages.last().msgContent
         AlertManager.shared.showAlertMsg(
@@ -2483,11 +2488,11 @@ object ChatController {
     return null
   }
 
-  suspend fun apiListMembers(rh: Long?, groupId: Long): List<GroupMember> {
+  suspend fun apiListMembers(rh: Long?, groupId: Long): List<GroupMember>? {
     val r = sendCmd(rh, CC.ApiListMembers(groupId))
     if (r is API.Result && r.res is CR.GroupMembers) return r.res.group.members
     Log.e(TAG, "apiListMembers bad response: ${r.responseType} ${r.details}")
-    return emptyList()
+    return null
   }
 
   suspend fun apiUpdateGroup(rh: Long?, groupId: Long, groupProfile: GroupProfile, isChannel: Boolean): GroupInfo? {
@@ -3006,6 +3011,7 @@ object ChatController {
                 chatModel.chatsContext.increaseGroupReportsCounter(rhId, cInfo.id)
               }
               chatModel.secondaryChatsContext.value?.addChatItem(rhId, cInfo, cItem)
+              chatModel.upsertSupportChatMember(rhId, cInfo)
             }
           } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem)) {
             withContext(Dispatchers.Main) {
@@ -3087,6 +3093,7 @@ object ChatController {
             if (cItem.isActiveReport) {
               chatModel.chatsContext.decreaseGroupReportsCounter(rhId, cInfo.id)
             }
+            chatModel.upsertSupportChatMember(rhId, cInfo)
           }
           withContext(Dispatchers.Main) {
             if (toChatItem == null) {
@@ -3155,7 +3162,7 @@ object ChatController {
       is CR.JoinedGroupMemberConnecting ->
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
-            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, chatModel.withLoadedSupportChat(r.member))
           }
         }
       is CR.MemberAcceptedByOther ->
@@ -3266,7 +3273,7 @@ object ChatController {
       is CR.JoinedGroupMember ->
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
-            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, chatModel.withLoadedSupportChat(r.member))
           }
         }
       is CR.ConnectedToGroupMember -> {

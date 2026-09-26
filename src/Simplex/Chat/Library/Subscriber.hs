@@ -2247,8 +2247,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               groupMsgToView cInfo ci'
           | otherwise = do
               file_ <- processFileInv gInfo' (Just m')
-              (ci, _cInfo) <- createNonLive gInfo' (Just m') scopeInfo file_
-              deletions <- markGroupCIsDeleted user gInfo' scopeInfo [CChatItem SMDRcv ci] (Just moderator) moderatedAt
+              (ci, cInfo) <- createNonLive gInfo' (Just m') scopeInfo file_
+              let (moderatedGInfo, moderatedScopeInfo) = case cInfo of
+                    GroupChat itemGInfo itemScopeInfo -> (itemGInfo, itemScopeInfo)
+                    _ -> (gInfo', scopeInfo)
+              deletions <- markGroupCIsDeleted user moderatedGInfo moderatedScopeInfo [CChatItem SMDRcv ci] (Just moderator) moderatedAt
               toView $ CEvtChatItemsDeleted user deletions False False
         -- m' is Maybe GroupMember
         createNonLive gInfo' m' scopeInfo file_ = do

@@ -41,37 +41,24 @@ fun ModalData.MemberSupportView(
   KeyChangeEffect(chatModel.chatId.value) {
     ModalManager.end.closeModals()
   }
-  LaunchedEffect(Unit) {
-    setGroupMembers(rhId, groupInfo, chatModel)
+  val membersLoading = remember { stateGetOrPut("membersLoading") { false } }
+  LaunchedEffect(chatModel.membersLoaded.value) {
+    if (!chatModel.membersLoaded.value && chatModel.chatId.value == groupInfo.id && !membersLoading.value) {
+      membersLoading.value = true
+      withBGApi {
+        try {
+          setGroupMembers(rhId, groupInfo, chatModel)
+        } finally {
+          membersLoading.value = false
+        }
+      }
+    }
   }
-  ModalView(
-    close = close,
-    endButtons = { RefreshMembersButton(rhId, groupInfo) }
-  ) {
+  ModalView(close = close) {
     MemberSupportViewLayout(
       chat,
       groupInfo,
       scrollToItemId
-    )
-  }
-}
-
-@Composable
-fun RefreshMembersButton(
-  rhId: Long?,
-  groupInfo: GroupInfo
-) {
-  IconButton(
-    onClick = {
-      withBGApi {
-        setGroupMembers(rhId, groupInfo, chatModel)
-      }
-    }
-  ) {
-    Icon(
-      painterResource(MR.images.ic_refresh),
-      contentDescription = null,
-      tint = MaterialTheme.colors.primary
     )
   }
 }

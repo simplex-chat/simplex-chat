@@ -253,7 +253,7 @@ suspend fun apiFindMessages(chatsCtx: ChatModel.ChatsContext, ch: Chat, contentT
 
 suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) = coroutineScope {
   // groupMembers loading can take a long time and if the user already closed the screen, coroutine may be canceled
-  val groupMembers = chatModel.controller.apiListMembers(rhId, groupInfo.groupId)
+  val groupMembers = chatModel.controller.apiListMembers(rhId, groupInfo.groupId) ?: return@coroutineScope
   val currentMembersById = chatModel.groupMembers.value.associateBy { it.id }
   val newMembers = groupMembers.map { newMember ->
     val currentMember = currentMembersById[newMember.id]
@@ -265,10 +265,13 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
       newMember
     }
   }
-  chatModel.groupMembersIndexes.value = emptyMap()
-  chatModel.groupMembers.value = newMembers
-  chatModel.membersLoaded.value = true
-  chatModel.populateGroupMembersIndexes()
+  withContext(Dispatchers.Main) {
+    if (chatModel.chatId.value != groupInfo.id && chatModel.creatingChannelId.value != groupInfo.id) return@withContext
+    chatModel.groupMembersIndexes.value = emptyMap()
+    chatModel.groupMembers.value = newMembers
+    chatModel.membersLoaded.value = true
+    chatModel.populateGroupMembersIndexes()
+  }
 }
 
 @Composable
