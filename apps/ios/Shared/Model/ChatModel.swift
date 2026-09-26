@@ -424,6 +424,7 @@ final class ChatModel: ObservableObject {
     @Published var groupMembers: [GMember] = []
     @Published var groupMembersIndexes: Dictionary<Int64, Int> = [:] // groupMemberId to index in groupMembers list
     @Published var membersLoaded = false
+    var membersLoadedGroupId: Int64?
     // Runtime-only relay hostnames for pre-join channel display, not persisted — lost on app restart.
     // APIConnectPreparedGroup re-fetches fresh relays at connect time, so stale data doesn't affect join.
     @Published var channelRelayHostnames: [Int64: [String]] = [:]
@@ -581,6 +582,7 @@ final class ChatModel: ObservableObject {
                     self.groupMembers = groupMembers.map { GMember.init($0) }
                     self.populateGroupMembersIndexes()
                     self.membersLoaded = true
+                    self.membersLoadedGroupId = groupInfo.groupId
                 }
                 updateView()
             }
