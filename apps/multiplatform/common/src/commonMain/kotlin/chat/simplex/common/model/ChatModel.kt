@@ -381,6 +381,12 @@ object ChatModel {
   fun getContactChat(contactId: Long): Chat? = chats.value.firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
   fun getGroupChat(groupId: Long): Chat? = chats.value.firstOrNull { it.chatInfo is ChatInfo.Group && it.chatInfo.apiId == groupId }
 
+  suspend fun upsertSupportChatMember(rhId: Long?, cInfo: ChatInfo) {
+    if (cInfo !is ChatInfo.Group) return
+    val member = (cInfo.groupChatScope as? GroupChatScopeInfo.MemberSupport)?.groupMember_ ?: return
+    chatsContext.upsertGroupMember(rhId, cInfo.groupInfo, member)
+  }
+
   fun populateGroupMembersIndexes() {
     groupMembersIndexes.value = emptyMap()
     val gmIndexes = groupMembersIndexes.value.toMutableMap()

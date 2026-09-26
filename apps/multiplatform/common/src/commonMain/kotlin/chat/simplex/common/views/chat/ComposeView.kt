@@ -599,6 +599,7 @@ fun ComposeView(
       chatItems.forEach { aChatItem ->
         withContext(Dispatchers.Main) {
           chatsCtx.addChatItem(chat.remoteHostId, aChatItem.chatInfo, aChatItem.chatItem)
+          chatModel.upsertSupportChatMember(chat.remoteHostId, aChatItem.chatInfo)
         }
       }
       return chatItems.first().chatItem

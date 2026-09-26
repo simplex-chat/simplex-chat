@@ -566,8 +566,8 @@ deleteGroupCIs user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
     Nothing -> pure deletions
     Just scopeInfo@GCSIMemberSupport {groupMember_} -> do
       let decStats = countDeletedUnreadItems groupMember_ deletions
-      gInfo' <- withFastStore' $ \db -> updateGroupScopeUnreadStats db cxt user gInfo scopeInfo decStats
-      pure $ map (updateDeletionGroupInfo gInfo') deletions
+      (gInfo', scopeInfo') <- withFastStore' $ \db -> updateGroupScopeUnreadStats db cxt user gInfo scopeInfo decStats
+      pure $ map (updateDeletionChatInfo gInfo' scopeInfo') deletions
   pure deletions'
   where
     deleteItem :: DB.Connection -> CChatItem 'CTGroup -> IO ChatItemDeletion
@@ -590,12 +590,18 @@ deleteGroupCIs user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
                   mentions' = if isACIUserMention deletedChatItem then mentions + 1 else mentions
                in (unread', unanswered', mentions')
           | otherwise = (unread, unanswered, mentions)
-    updateDeletionGroupInfo :: GroupInfo -> ChatItemDeletion -> ChatItemDeletion
-    updateDeletionGroupInfo gInfo' ChatItemDeletion {deletedChatItem, toChatItem} =
+    updateDeletionChatInfo :: GroupInfo -> GroupChatScopeInfo -> ChatItemDeletion -> ChatItemDeletion
+    updateDeletionChatInfo gInfo' scopeInfo' ChatItemDeletion {deletedChatItem, toChatItem} =
       ChatItemDeletion
-        { deletedChatItem = updateACIGroupInfo gInfo' deletedChatItem,
-          toChatItem = updateACIGroupInfo gInfo' <$> toChatItem
+        { deletedChatItem = updateACIChatInfo deletedChatItem,
+          toChatItem = updateACIChatInfo <$> toChatItem
         }
+      where
+        updateACIChatInfo :: AChatItem -> AChatItem
+        updateACIChatInfo = \case
+          AChatItem SCTGroup dir (GroupChat _gInfo _scopeInfo) ci ->
+            AChatItem SCTGroup dir (GroupChat gInfo' (Just scopeInfo')) ci
+          aci -> aci
 
 updateACIGroupInfo :: GroupInfo -> AChatItem -> AChatItem
 updateACIGroupInfo gInfo' = \case

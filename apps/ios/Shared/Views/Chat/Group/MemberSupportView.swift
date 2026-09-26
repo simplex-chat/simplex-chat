@@ -20,18 +20,9 @@ struct MemberSupportView: View {
     var body: some View {
         viewBody()
             .onAppear {
-                Task {
-                    await chatModel.loadGroupMembers(groupInfo)
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        Task {
-                            await chatModel.loadGroupMembers(groupInfo)
-                        }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
+                if !chatModel.membersLoaded {
+                    Task {
+                        await chatModel.loadGroupMembers(groupInfo)
                     }
                 }
             }

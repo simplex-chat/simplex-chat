@@ -3006,6 +3006,7 @@ object ChatController {
                 chatModel.chatsContext.increaseGroupReportsCounter(rhId, cInfo.id)
               }
               chatModel.secondaryChatsContext.value?.addChatItem(rhId, cInfo, cItem)
+              chatModel.upsertSupportChatMember(rhId, cInfo)
             }
           } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem)) {
             withContext(Dispatchers.Main) {
@@ -3087,6 +3088,7 @@ object ChatController {
             if (cItem.isActiveReport) {
               chatModel.chatsContext.decreaseGroupReportsCounter(rhId, cInfo.id)
             }
+            chatModel.upsertSupportChatMember(rhId, cInfo)
           }
           withContext(Dispatchers.Main) {
             if (toChatItem == null) {

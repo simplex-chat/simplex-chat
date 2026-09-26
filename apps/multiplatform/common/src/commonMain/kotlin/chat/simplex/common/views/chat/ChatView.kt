@@ -762,6 +762,7 @@ fun ChatView(
                   )
                   if (updatedChatInfo != null) {
                     chatModel.chatsContext.updateChatInfo(chatRh, updatedChatInfo)
+                    chatModel.upsertSupportChatMember(chatRh, updatedChatInfo)
                   }
                 }
                 withContext(Dispatchers.Main) {

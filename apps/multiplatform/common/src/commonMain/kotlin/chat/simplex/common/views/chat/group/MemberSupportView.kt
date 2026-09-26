@@ -42,36 +42,15 @@ fun ModalData.MemberSupportView(
     ModalManager.end.closeModals()
   }
   LaunchedEffect(Unit) {
-    setGroupMembers(rhId, groupInfo, chatModel)
+    if (!chatModel.membersLoaded.value) {
+      setGroupMembers(rhId, groupInfo, chatModel)
+    }
   }
-  ModalView(
-    close = close,
-    endButtons = { RefreshMembersButton(rhId, groupInfo) }
-  ) {
+  ModalView(close = close) {
     MemberSupportViewLayout(
       chat,
       groupInfo,
       scrollToItemId
-    )
-  }
-}
-
-@Composable
-fun RefreshMembersButton(
-  rhId: Long?,
-  groupInfo: GroupInfo
-) {
-  IconButton(
-    onClick = {
-      withBGApi {
-        setGroupMembers(rhId, groupInfo, chatModel)
-      }
-    }
-  ) {
-    Icon(
-      painterResource(MR.images.ic_refresh),
-      contentDescription = null,
-      tint = MaterialTheme.colors.primary
     )
   }
 }
