@@ -265,11 +265,13 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
       newMember
     }
   }
-  if (chatModel.chatId.value != groupInfo.id && chatModel.creatingChannelId.value != groupInfo.id) return@coroutineScope
-  chatModel.groupMembersIndexes.value = emptyMap()
-  chatModel.groupMembers.value = newMembers
-  chatModel.membersLoaded.value = true
-  chatModel.populateGroupMembersIndexes()
+  withContext(Dispatchers.Main) {
+    if (chatModel.chatId.value != groupInfo.id && chatModel.creatingChannelId.value != groupInfo.id) return@withContext
+    chatModel.groupMembersIndexes.value = emptyMap()
+    chatModel.groupMembers.value = newMembers
+    chatModel.membersLoaded.value = true
+    chatModel.populateGroupMembersIndexes()
+  }
 }
 
 @Composable

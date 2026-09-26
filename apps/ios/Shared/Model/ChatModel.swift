@@ -577,9 +577,11 @@ final class ChatModel: ObservableObject {
         let groupMembers = await apiListMembers(groupInfo.groupId)
         await MainActor.run {
             if chatId == groupInfo.id {
-                self.groupMembers = groupMembers.map { GMember.init($0) }
-                self.populateGroupMembersIndexes()
-                self.membersLoaded = true
+                if let groupMembers {
+                    self.groupMembers = groupMembers.map { GMember.init($0) }
+                    self.populateGroupMembersIndexes()
+                    self.membersLoaded = true
+                }
                 updateView()
             }
         }
@@ -1336,6 +1338,14 @@ final class ChatModel: ObservableObject {
             _ = upsertGroupMember(groupInfo, m)
             objectWillChange.send()
         }
+    }
+
+    func withLoadedSupportChat(_ member: GroupMember) -> GroupMember {
+        var m = member
+        if let supportChat = getGroupMember(member.groupMemberId)?.wrapped.supportChat {
+            m.supportChat = supportChat
+        }
+        return m
     }
 
     func upsertGroupMember(_ groupInfo: GroupInfo, _ member: GroupMember) -> Bool {

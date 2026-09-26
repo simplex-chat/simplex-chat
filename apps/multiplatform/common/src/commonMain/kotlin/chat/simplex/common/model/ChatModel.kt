@@ -388,6 +388,11 @@ object ChatModel {
     chatsContext.upsertGroupMember(rhId, cInfo.groupInfo, current?.copy(supportChat = member.supportChat) ?: member)
   }
 
+  fun withLoadedSupportChat(member: GroupMember): GroupMember {
+    val supportChat = groupMembersIndexes.value[member.groupMemberId]?.let { groupMembers.value.getOrNull(it) }?.supportChat
+    return if (supportChat != null) member.copy(supportChat = supportChat) else member
+  }
+
   fun populateGroupMembersIndexes() {
     groupMembersIndexes.value = emptyMap()
     val gmIndexes = groupMembersIndexes.value.toMutableMap()
@@ -979,6 +984,7 @@ object ChatModel {
           // stale data, should be cleared at that point, otherwise, duplicated items will be here which will produce crashes in LazyColumn
           groupMembers.value = emptyList()
           groupMembersIndexes.value = emptyMap()
+          membersLoaded.value = false
         }
         val memberIndex = groupMembersIndexes.value[member.groupMemberId]
         val updated = chatItems.value.map {

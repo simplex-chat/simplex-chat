@@ -2062,10 +2062,10 @@ func apiLeaveGroup(_ groupId: Int64) async throws -> GroupInfo {
 }
 
 // use ChatModel's loadGroupMembers from views
-func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
+func apiListMembers(_ groupId: Int64) async -> [GroupMember]? {
     let r: APIResult<ChatResponse2> = await chatApiSendCmd(.apiListMembers(groupId: groupId))
     if case let .result(.groupMembers(_, group)) = r { return group.members }
-    return []
+    return nil
 }
 
 func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
@@ -2747,7 +2747,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
     case let .joinedGroupMemberConnecting(user, groupInfo, _, member):
         if active(user) {
             await MainActor.run {
-                _ = m.upsertGroupMember(groupInfo, member)
+                _ = m.upsertGroupMember(groupInfo, m.withLoadedSupportChat(member))
             }
         }
     case let .memberAcceptedByOther(user, groupInfo, _, member):
@@ -2810,7 +2810,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
     case let .joinedGroupMember(user, groupInfo, member):
         if active(user) {
             await MainActor.run {
-                _ = m.upsertGroupMember(groupInfo, member)
+                _ = m.upsertGroupMember(groupInfo, m.withLoadedSupportChat(member))
             }
         }
     case let .connectedToGroupMember(user, groupInfo, member, memberContact):

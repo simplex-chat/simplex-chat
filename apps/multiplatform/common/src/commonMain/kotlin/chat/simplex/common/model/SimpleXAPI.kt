@@ -3162,7 +3162,7 @@ object ChatController {
       is CR.JoinedGroupMemberConnecting ->
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
-            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, chatModel.withLoadedSupportChat(r.member))
           }
         }
       is CR.MemberAcceptedByOther ->
@@ -3273,7 +3273,7 @@ object ChatController {
       is CR.JoinedGroupMember ->
         if (active(r.user)) {
           withContext(Dispatchers.Main) {
-            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
+            chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, chatModel.withLoadedSupportChat(r.member))
           }
         }
       is CR.ConnectedToGroupMember -> {
