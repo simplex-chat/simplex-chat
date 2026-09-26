@@ -47,7 +47,7 @@ export const defaultBotAddressSettings: BotAddressSettings = {
   businessAddress: false
 }
 
-export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}) => void | Promise<void>
+export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}, chat: ChatApi) => void | Promise<void>
 
 export type EventSubscribers = {[K in CEvt.Tag]?: EventSubscriberFunc<K>}
 
@@ -177,7 +177,7 @@ export class ChatApi {
         if (subs) {
           for (const {subscriber, once} of [...subs]) {
             try {
-              const p = (subscriber as EventSubscriberFunc<typeof event.type>)(event)
+              const p = (subscriber as EventSubscriberFunc<typeof event.type>)(event, this)
               if (p instanceof Promise) await p
             } catch(e) {
               console.log(`${event.type} event processing error`, e)
@@ -187,7 +187,7 @@ export class ChatApi {
         }
         for (const r of [...this.receivers]) {          
           try {
-            const p = r(event)
+            const p = r(event, this)
             if (p instanceof Promise) await p
           } catch(e) {
             console.log(`${event.type} event processing error`, e)
@@ -422,7 +422,18 @@ export class ChatApi {
     const r = await this.sendChatCmd(CC.APISetAddressSettings.cmdString({userId, settings}))
     if (r.type !== "userContactLinkUpdated") {
       throw new ChatCommandError("error changing user contact address settings", r)
-    }  
+    }
+  }
+
+  async apiSetUserDomain(userId: number, simplexDomain?: string): Promise<T.User> {
+    const r = await this.sendChatCmd(CC.APISetUserDomain.cmdString({userId, simplexDomain}))
+    switch (r.type) {
+      case "userProfileUpdated":
+      case "userProfileNoChange":
+        return r.user
+      default:
+        throw new ChatCommandError("error setting SimpleX name", r)
+    }
   }
 
   /**

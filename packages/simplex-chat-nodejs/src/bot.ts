@@ -35,17 +35,18 @@ const defaultOpts: Required<BotOptions> = {
 
 export interface BotConfig {
   profile: T.Profile,
+  simplexName?: string,
   dbOpts: BotDbOpts,
   options: BotOptions,
-  onMessage?: (chatItem: T.AChatItem, content: T.MsgContent) => void | Promise<void>,
+  onMessage?: (chatItem: T.AChatItem, content: T.MsgContent, chat: api.ChatApi) => void | Promise<void>,
   // command handlers can be different from commands to be shown in client UI
-  onCommands?: {[K in string]?: ((chatItem: T.AChatItem, command: util.BotCommand) => void | Promise<void>)},
+  onCommands?: {[K in string]?: ((chatItem: T.AChatItem, command: util.BotCommand, chat: api.ChatApi) => void | Promise<void>)},
   // If you use `onMessage` and to subscribe "newChatItems" event, exclude content messages from processing
   // If you use `onCommands` and to subscribe "newChatItems" event, exclude commands from processing
   events?: api.EventSubscribers
 }
 
-export async function run({profile, dbOpts, options = defaultOpts, onMessage, onCommands = {}, events = {}}: BotConfig): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {
+export async function run({profile, simplexName, dbOpts, options = defaultOpts, onMessage, onCommands = {}, events = {}}: BotConfig): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {
   const bot = await api.ChatApi.init(dbOpts, dbOpts.confirmMigrations || core.MigrationConfirmation.YesUp, dbOpts.queueSize)
   const opts = fullOptions(options)
   if (onMessage || Object.keys(onCommands).length > 0) subscribeChatItems(bot, onMessage, onCommands)
@@ -60,7 +61,8 @@ export async function run({profile, dbOpts, options = defaultOpts, onMessage, on
     console.log(`Bot address: ${addressLink}`)
     if (opts.useBotProfile) botProfile.contactLink = addressLink
   }
-  await updateBotUserProfile(bot, user, botProfile, opts)  
+  const namedUser = await updateBotSimplexName(bot, user, simplexName, opts)
+  await updateBotUserProfile(bot, namedUser, botProfile, opts)
   return [bot, user, address]
 }
 
@@ -107,8 +109,8 @@ function mkBotProfile(profile: T.Profile, opts: Required<BotOptions>): T.Profile
 
 export function subscribeChatItems(
   bot: api.ChatApi,
-  onMessage: ((chatItem: T.AChatItem, content: T.MsgContent) => void | Promise<void>) | undefined,
-  commands: {[K in string]?: ((chatItem: T.AChatItem, command: util.BotCommand) => void | Promise<void>)}
+  onMessage: ((chatItem: T.AChatItem, content: T.MsgContent, chat: api.ChatApi) => void | Promise<void>) | undefined,
+  commands: {[K in string]?: ((chatItem: T.AChatItem, command: util.BotCommand, chat: api.ChatApi) => void | Promise<void>)}
 ) {
   bot.on("newChatItems", async ({chatItems}) => {
     for (const ci of chatItems) {
@@ -117,8 +119,8 @@ export function subscribeChatItems(
       const cmd = util.ciBotCommand(ci.chatItem)
       const cmdFunc = cmd && (commands[cmd.keyword] || commands[""])
       try {
-        if (cmd && cmdFunc) await cmdFunc(ci, cmd)
-        else if (onMessage) await onMessage(ci, content.msgContent)
+        if (cmd && cmdFunc) await cmdFunc(ci, cmd, bot)
+        else if (onMessage) await onMessage(ci, content.msgContent, bot)
       } catch (e) {
         console.log(cmd && cmdFunc ? `${cmd.keyword} command processing error` : "message processing error", e)
       }
@@ -180,15 +182,32 @@ async function createOrUpdateAddress(bot: api.ChatApi, user: T.User, opts: Requi
     }
   }
   
-  return address    
+  return address
+}
+
+async function updateBotSimplexName(bot: api.ChatApi, user: T.User, simplexName: string | undefined, opts: Required<BotOptions>): Promise<T.User> {
+  const name = simplexName?.toLowerCase()
+  if (user.profile.contactDomain?.domain === name) return user
+  if (!opts.updateAddress) {
+    console.log("Bot SimpleX name changed")
+    return user
+  }
+  console.log("Bot SimpleX name changed, updating...")
+  try {
+    return await bot.apiSetUserDomain(user.userId, name)
+  } catch (e) {
+    console.log("Error updating bot SimpleX name", e)
+    return user
+  }
 }
 
 async function updateBotUserProfile(bot: api.ChatApi, user: T.User, profile: T.Profile, opts: Required<BotOptions>): Promise<void> {
   const {userId} = user
-  if (!equal(util.fromLocalProfile(user.profile), profile)) {
+  const {contactDomain, ...currentProfile} = util.fromLocalProfile(user.profile)
+  if (!equal(currentProfile, profile)) {
     if (opts.updateProfile) {
       console.log("Bot profile changed, updating...")
-      const summary = await bot.apiUpdateProfile(userId, profile)
+      const summary = await bot.apiUpdateProfile(userId, {...profile, contactDomain})
       console.log(
         summary
         ? `Bot profile updated: ${summary.updateSuccesses} updated contact(s), ${summary.updateFailures} failed contact update(s).`

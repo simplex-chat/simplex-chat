@@ -1,4 +1,4 @@
-import {ChatResponse, T} from "@simplex-chat/types"
+import {ChatEvent, ChatResponse, T} from "@simplex-chat/types"
 import * as api from "../src/api"
 import * as core from "../src/core"
 
@@ -28,6 +28,13 @@ describe("documented success responses", () => {
   it("apiSetProfileAddress accepts userProfileNoChange", async () => {
     const chat = await chatWithResponse({type: "userProfileNoChange", user})
     await expect(chat.apiSetProfileAddress(1, true)).resolves.toEqual({updateSuccesses: 0, updateFailures: 0, changedContacts: []})
+  })
+
+  it("apiSetUserDomain sets and removes the name", async () => {
+    const chat = await chatWithResponse({type: "userProfileNoChange", user})
+    await expect(chat.apiSetUserDomain(1, "calc.simplex")).resolves.toEqual(user)
+    await expect(chat.apiSetUserDomain(1)).resolves.toEqual(user)
+    expect(jest.mocked(core.chatSendCmd).mock.calls.map(([, cmd]) => cmd)).toEqual(["/_set domain 1 calc.simplex", "/_set domain 1"])
   })
 
   it("apiReceiveFile reports a file cancelled by sender", async () => {
@@ -91,6 +98,15 @@ describe("startChat lifecycle", () => {
     await chat.startChat()
     await expect(chat.stopChat()).rejects.toThrow("error stopping chat")
     expect(chat.started).toBe(true)
+    await chat.stopChat()
+  })
+
+  it("passes the chat api to event subscribers", async () => {
+    const chat = await chatWithResponses({type: "chatStarted"}, {type: "chatStopped"})
+    jest.mocked(core.chatRecvMsgWait).mockResolvedValueOnce({type: "hostConnected"} as ChatEvent)
+    const subscriberChat = new Promise(resolve => chat.on("hostConnected", (_event, c) => resolve(c)))
+    await chat.startChat()
+    await expect(subscriberChat).resolves.toBe(chat)
     await chat.stopChat()
   })
 
