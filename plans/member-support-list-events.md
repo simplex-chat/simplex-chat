@@ -34,12 +34,12 @@ Load the list once per open group, then keep it current from what arrives.
 - `deleteGroupCIs` puts the updated scope member into each deletion's chat info.
 - The group send response re-reads the support scope member after `saveSndChatItems` has updated `support_chat_ts`, instead of returning the member from before the send. If that read returns a store error, it falls back to the pre-send member rather than failing a send that has already happened.
 - Internal items go through `createChatItems`, for example "new member pending review" (unread and attention +1). It now builds its items from the `ChatInfo` returned by `updateChatTsStats`, as `saveRcvChatItem'` already does, instead of the pre-update `toChatInfo cd`. Otherwise a new pending member would appear without a badge.
-- A moderation that arrives before its message creates the item and marks it deleted. The `ChatItemsDeleted` event now carries the chat info returned by creating the item, not the scope from before it.
+- A moderation that arrives before its message creates the item and marks it deleted. The `ChatItemsDeleted` event now carries the group info and scope returned by creating the item, not those from before it.
 - Opening a member's support chat for the first time sets `support_chat_ts` and now returns the re-read member, so the new chat appears in the list.
 - Existing clients are unaffected: both apps strip the scope in `updateChatInfo`.
 
 **Android/desktop, and iOS**
-- New `upsertSupportChatMember(cInfo)`. When the chat info carries a support-chat member, it adds that member if absent. If the member is already present, it replaces only its `supportChat` stats. Status, role and profile keep coming from their dedicated events. That way an item event applied late, such as a leave item handled after `LeftMember`, cannot restore an old status.
+- New `upsertSupportChatMember(cInfo)`. When the chat info carries a support-chat member, it adds that member if absent. If the member is already present, it replaces only its `supportChat` stats and profile. The profile is copied because a member who is also a contact gets profile updates over the direct connection, and no group event carries them. Status and role keep coming from their dedicated events. That way an item event applied late, such as a leave item handled after `LeftMember`, cannot restore an old status.
 - It is called for:
   - `NewChatItems` events;
   - `ChatItemsDeleted` events;
@@ -63,6 +63,7 @@ A member's first support message arrives as a `NewChatItems` event with that mem
 - A full member load that is in flight when a support-chat update arrives overwrites that update with its snapshot. For example, the first list load can race a member's first support message. The member then reappears on their next message, when their chat is opened, or when the group is reopened.
 - Support stats snapshots from different events and responses are applied in arrival order, so a rare reordering can briefly show an older count until the next update for that member.
 - On iOS, if the list is on screen while the app resumes, changes the notification extension made while suspended appear only after the list is left and reopened.
+- On iOS, handlers that update an existing member in place without publishing a change, such as "Mark read" from the context menu or accept, update the row but not the list order or filter until the next `ChatModel` change. The existing TODO in `deleteMemberSupportChat` describes the same mechanism. Previously, returning to the list also re-sorted it.
 - The connection-state labels in rows (failed, disabled, inactive) come from `activeConn`. Neither app handles `ConnectionDisabled` or `ConnectionInactive`, so these labels now refresh only when the group is reopened.
 
 ## Alternatives considered

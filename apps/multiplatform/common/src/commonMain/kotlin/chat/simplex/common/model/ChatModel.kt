@@ -385,7 +385,7 @@ object ChatModel {
     if (cInfo !is ChatInfo.Group) return
     val member = (cInfo.groupChatScope as? GroupChatScopeInfo.MemberSupport)?.groupMember_ ?: return
     val current = groupMembersIndexes.value[member.groupMemberId]?.let { groupMembers.value.getOrNull(it) }
-    chatsContext.upsertGroupMember(rhId, cInfo.groupInfo, current?.copy(supportChat = member.supportChat) ?: member)
+    chatsContext.upsertGroupMember(rhId, cInfo.groupInfo, current?.copy(supportChat = member.supportChat, memberProfile = member.memberProfile) ?: member)
   }
 
   fun withLoadedSupportChat(member: GroupMember): GroupMember {

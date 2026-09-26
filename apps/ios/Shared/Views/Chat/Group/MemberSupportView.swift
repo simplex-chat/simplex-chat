@@ -20,7 +20,7 @@ struct MemberSupportView: View {
     var body: some View {
         viewBody()
             .onAppear {
-                if !chatModel.membersLoaded {
+                if !chatModel.membersLoaded || chatModel.groupMembers.first?.wrapped.groupId != groupInfo.groupId {
                     Task {
                         await chatModel.loadGroupMembers(groupInfo)
                     }

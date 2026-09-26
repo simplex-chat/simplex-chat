@@ -1334,6 +1334,7 @@ final class ChatModel: ObservableObject {
             if let current = getGroupMember(member.groupMemberId)?.wrapped {
                 m = current
                 m.supportChat = member.supportChat
+                m.memberProfile = member.memberProfile
             }
             _ = upsertGroupMember(groupInfo, m)
             objectWillChange.send()
