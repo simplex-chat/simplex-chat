@@ -416,6 +416,7 @@ Path prefix: `common/src/desktopMain/kotlin/chat/simplex/common/`
 | `DesktopApp.kt` | PC1, PC2, PC3 | High | Desktop Compose window — window lifecycle, crash recovery |
 | `StoreWindowState.kt` | — | Low | Window position/size persistence |
 | `model/NtfManager.desktop.kt` | PC18 | Medium | Desktop system tray notification display |
+| `helpers/NetworkObserver.kt` | PC25 | Medium | Desktop network observer — polls the routing table's source addresses |
 | `platform/AppCommon.desktop.kt` | PC1 through PC31 | Medium | Desktop app initialization actual declarations |
 | `platform/SimplexService.desktop.kt` | PC18 | Low | Desktop background receiver (no foreground service) |
 | `platform/Files.desktop.kt` | PC10, PC23, PC26 | Medium | Desktop file path resolution |
