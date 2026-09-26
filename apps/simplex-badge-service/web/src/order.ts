@@ -138,6 +138,7 @@ function localState(base: OrderRecord, memory: OrderRecord | undefined, method: 
     submitted: memory?.submitted === true || base.submitted === true ? true : undefined,
     canceled: memory?.canceled === true || base.canceled === true ? true : undefined,
     method: method ?? base.method,
+    app: memory?.app ?? base.app,
   };
 }
 
