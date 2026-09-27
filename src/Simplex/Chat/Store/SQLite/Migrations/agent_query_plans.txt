@@ -144,7 +144,7 @@ SEARCH r USING INDEX idx_rcv_file_chunk_replicas_rcv_file_chunk_id (rcv_file_chu
 SEARCH s USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-            SELECT c.corr_id, cs.user_id, c.command
+            SELECT c.corr_id, cs.user_id, c.command, c.created_at
             FROM commands c
             JOIN connections cs USING (conn_id)
             WHERE c.command_id = ?
@@ -248,6 +248,26 @@ Query:
 Plan:
 SEARCH snd_files USING INDEX idx_snd_files_status_created_at (status=? AND created_at>?)
 USE TEMP B-TREE FOR ORDER BY
+
+Query: 
+          SELECT DISTINCT
+            s.xftp_host, s.xftp_port, s.xftp_key_hash
+          FROM rcv_file_chunk_replicas r
+          JOIN xftp_servers s ON s.xftp_server_id = r.xftp_server_id
+          JOIN rcv_file_chunks c ON c.rcv_file_chunk_id = r.rcv_file_chunk_id
+          JOIN rcv_files f ON f.rcv_file_id = c.rcv_file_id
+          WHERE (f.rcv_file_id = ? OR f.redirect_id = ?) AND r.replica_number = 1
+        
+Plan:
+MULTI-INDEX OR
+INDEX 1
+SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
+INDEX 2
+SEARCH f USING COVERING INDEX idx_rcv_files_redirect_id (redirect_id=?)
+SEARCH c USING COVERING INDEX idx_rcv_file_chunks_rcv_file_id (rcv_file_id=?)
+SEARCH r USING INDEX idx_rcv_file_chunk_replicas_rcv_file_chunk_id (rcv_file_chunk_id=?)
+SEARCH s USING INTEGER PRIMARY KEY (rowid=?)
+USE TEMP B-TREE FOR DISTINCT
 
 Query: 
           SELECT MAX(internal_id)
@@ -1001,7 +1021,7 @@ SEARCH s USING PRIMARY KEY (host=? AND port=?)
 SEARCH c USING PRIMARY KEY (conn_id=?)
 
 Query: 
-    SELECT c.user_id, q.conn_id, q.host, q.port, COALESCE(q.server_key_hash, s.key_hash), q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
+    SELECT c.user_id, q.conn_id, q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
@@ -1013,7 +1033,7 @@ SEARCH q USING PRIMARY KEY (host=? AND port=?)
 SEARCH c USING PRIMARY KEY (conn_id=?)
 
 Query: 
-    SELECT c.user_id, q.conn_id, q.host, q.port, COALESCE(q.server_key_hash, s.key_hash), q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
+    SELECT c.user_id, q.conn_id, q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
@@ -1025,7 +1045,7 @@ SEARCH q USING PRIMARY KEY (host=? AND port=?)
 SEARCH c USING PRIMARY KEY (conn_id=?)
 
 Query: 
-    SELECT c.user_id, q.conn_id, q.host, q.port, COALESCE(q.server_key_hash, s.key_hash), q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
+    SELECT c.user_id, q.conn_id, q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
@@ -1374,6 +1394,10 @@ Query: UPDATE rcv_files SET key = ?, nonce = ?, chunk_size = ?, updated_at = ? W
 Plan:
 SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE rcv_files SET status = ?, updated_at = ? WHERE (rcv_file_id = ? OR redirect_id = ?) AND status = ?
+Plan:
+SEARCH rcv_files USING INDEX idx_rcv_files_status_created_at (status=?)
+
 Query: UPDATE rcv_files SET status = ?, updated_at = ? WHERE rcv_file_id = ?
 Plan:
 SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
@@ -1427,6 +1451,10 @@ Plan:
 SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE snd_files SET status = ?, updated_at = ? WHERE snd_file_id = ?
+Plan:
+SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE snd_files SET status = ?, updated_at = ? WHERE snd_file_id = ? AND status = ?
 Plan:
 SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 

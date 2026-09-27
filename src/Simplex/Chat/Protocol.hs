@@ -87,6 +87,7 @@ import Simplex.Messaging.Version hiding (version)
 -- 18 - relay web capabilities (2026-05-31)
 -- 19 - group roster (2026-06-18)
 -- 20 - p2p group member keys for signing (2026-07-26)
+-- 21 - commands with any text, link notices restricting reconnection via links (2026-09-27)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
@@ -139,6 +140,9 @@ groupRosterVersion = VersionChat 19
 -- members sign messages in p2p groups; member keys are distributed for verification
 groupMemberKeyVersion :: VersionChat
 groupMemberKeyVersion = VersionChat 20
+
+anyTextCommandsVersion :: VersionChat
+anyTextCommandsVersion = VersionChat 21
 
 linkNoticeVersion :: VersionChat
 linkNoticeVersion = VersionChat 21

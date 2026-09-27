@@ -59,6 +59,19 @@ def APISetProfileAddress_cmd_string(self: APISetProfileAddress) -> str:
 APISetProfileAddress_Response = CR.UserProfileUpdated | CR.UserProfileNoChange | CR.ChatCmdError
 
 
+# Set or remove SimpleX name of bot address. The name must be registered with the address short link.
+# Network usage: interactive.
+class APISetUserDomain(TypedDict):
+    userId: int  # int64
+    simplexDomain: NotRequired[str]
+
+
+def APISetUserDomain_cmd_string(self: APISetUserDomain) -> str:
+    return '/_set domain ' + str(self['userId']) + ((' ' + self.get('simplexDomain')) if self.get('simplexDomain') is not None else '')
+
+APISetUserDomain_Response = CR.UserProfileUpdated | CR.UserProfileNoChange | CR.ChatCmdError
+
+
 # Set bot address settings.
 # Network usage: interactive.
 class APISetAddressSettings(TypedDict):

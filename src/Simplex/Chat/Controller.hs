@@ -446,7 +446,7 @@ data ChatCommand
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile {userId :: UserId, profile :: Profile}
-  | APISetUserDomain {userId :: UserId, simplexDomain :: Maybe SimplexDomain}
+  | APISetUserDomain {userId :: UserId, simplexDomain :: Maybe (StrJSON "SimplexDomain" SimplexDomain)}
   | APISetContactPrefs {contactId :: ContactId, preferences :: Preferences}
   | APISetContactAlias {contactId :: ContactId, localAlias :: LocalAlias}
   | APISetGroupAlias {groupId :: GroupId, localAlias :: LocalAlias}
