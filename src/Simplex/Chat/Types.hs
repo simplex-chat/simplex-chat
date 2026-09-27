@@ -1007,7 +1007,8 @@ data GroupRelayInvitation = GroupRelayInvitation
     fromMemberProfile :: Profile,
     relayMemberId :: MemberId,
     groupLink :: ShortLinkContact,
-    publicGroupId :: Maybe B64UrlByteString
+    publicGroupId :: Maybe B64UrlByteString,
+    fromMemberKey :: Maybe MemberKey
   }
   deriving (Eq, Show)
 

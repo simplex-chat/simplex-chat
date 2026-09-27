@@ -75,12 +75,11 @@ chatProfileTests = do
     it "supporter badge sent in a retried join of a one-time link" testUserBadgeInvitationConnectRetry
     it "supporter badge bound to another chat is ignored, stored badge is kept" testUserBadgeOtherBinding
     it "supporter badge of member joining via group link, at request and after handshake" testUserBadgeGroupLinkJoiner
-    it "supporter badge of introduced member" testUserBadgeIntroduced
-    it "supporter badge of member invited via contact, forwarded to introduced member" testUserBadgeInvitedIntroduced
+    it "supporter badge of introduced member is not taken from the introduction" testUserBadgeIntroduced
+    it "supporter badge of member invited via contact is not forwarded in the introduction" testUserBadgeInvitedIntroduced
     it "supporter badge of inviting host in the reply to the invited contact" testUserBadgeInvitingHost
     it "supporter badge in one-time link data" testUserBadgeInvitationLinkData
     it "supporter badge in data of address getting its first short link" testUserBadgeAddressFirstShortLink
-    it "supporter badge in shared address card" testUserBadgeAddressCard
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "rotate address ratchet keys" testRotateAddressRatchetKeys
@@ -798,7 +797,7 @@ testUserBadgeIntroduced ps = do
         ]
       alice #> "#team hello"
       cath <# "#team alice> hello"
-      memberBadgeHeader cath "team" "bob" `shouldReturn` Just ("CG", BSActive)
+      memberBadgeHeader cath "team" "bob" `shouldReturn` Nothing
 
 testUserBadgeInvitedIntroduced :: HasCallStack => TestParams -> IO ()
 testUserBadgeInvitedIntroduced ps = do
@@ -826,7 +825,7 @@ testUserBadgeInvitedIntroduced ps = do
       cath <## "chat started"
       cath <## "subscribed 2 connections on server localhost"
       cath <## "#team: alice added bob (Bob) to the group (connecting...)"
-      memberBadgeHeader cath "team" "bob" `shouldReturn` Just ("CG", BSActive)
+      memberBadgeHeader cath "team" "bob" `shouldReturn` Nothing
 
 testUserBadgeInvitingHost :: HasCallStack => TestParams -> IO ()
 testUserBadgeInvitingHost ps = do
@@ -878,46 +877,6 @@ testUserBadgeAddressFirstShortLink ps = do
       sLinkData <- getTermLine bob
       sLinkData `shouldContain` "\"localBadge\":{\"badge\":{\"badgeType\":\"supporter\""
       sLinkData `shouldContain` "\"status\":\"active\""
-
-testUserBadgeAddressCard :: HasCallStack => TestParams -> IO ()
-testUserBadgeAddressCard ps = do
-  Right (pk, sk) <- bbsKeyGen
-  testChatCfg3 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile cathProfile (test pk sk) ps
-  where
-    test pk sk alice bob cath = do
-      alice ##> "/ad"
-      _ <- getContactLinks alice True
-      connectUsers alice bob
-      connectUsers bob cath
-      addTestBadge alice =<< issueTestBadge sk futureDate
-      alice ##> "/share address @bob"
-      alice <# "@bob contact address of @alice (signed):"
-      _ <- getTermLine alice
-      _ <- getTermLine alice
-      bob <# "alice *> contact address of @alice (signed):"
-      bLink <- getTermLine bob
-      _ <- getTermLine bob
-      lastItemContent bob >>= (`shouldContain` "\"badgeType\":\"supporter\"")
-      cred <- issueTestBadge sk futureDate
-      Right otherProof <- badgeProof pk cred (PHLink "other link")
-      Right testProof <- badgeProof pk cred (PHTest "nonce")
-      let cLink = either error id $ strDecode (B.pack bLink)
-          card proof = MCChat (T.pack bLink) (MCLContact cLink (profileFromName "alice") {badge = Just proof} False) Nothing
-      bob ##> ("/_send @3 json [{\"msgContent\":" <> T.unpack (encodeJSON $ card otherProof) <> "}]")
-      bob <# "@cath contact address of @alice:"
-      _ <- getTermLine bob
-      cath <# "bob> contact address of @alice:"
-      _ <- getTermLine cath
-      lastItemContent cath >>= (`shouldNotContain` "\"badge\"")
-      bob #> "@cath hi"
-      cath <# "bob> hi"
-      msgId <- lastItemId bob
-      bob ##> ("/_update item @3 " <> msgId <> " json {\"msgContent\":" <> T.unpack (encodeJSON $ card testProof) <> ",\"mentions\":{}}")
-      bob <# "@cath [edited] contact address of @alice:"
-      _ <- getTermLine bob
-      cath <# "bob> [edited] contact address of @alice:"
-      _ <- getTermLine cath
-      lastItemContent cath >>= (`shouldNotContain` "\"badge\"")
 
 testUpdateProfileImage :: HasCallStack => TestParams -> IO ()
 testUpdateProfileImage =

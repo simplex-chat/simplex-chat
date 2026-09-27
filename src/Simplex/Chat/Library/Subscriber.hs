@@ -579,7 +579,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               case event of
                 XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
                 XMsgFileDescr sharedMsgId fileDescr fileExpires fileBadge -> messageFileDescription ct'' sharedMsgId fileDescr fileExpires fileBadge
-                XMsgUpdate sharedMsgId mContent _ ttl live _msgScope _ -> chatLinkBadge mContent >>= \mc -> messageUpdate ct'' sharedMsgId mc msg msgMeta ttl live
+                XMsgUpdate sharedMsgId mContent _ ttl live _msgScope _ -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live
                 XMsgDel sharedMsgId _ _ _ -> messageDelete ct'' sharedMsgId msg msgMeta
                 XMsgReact sharedMsgId _ _ reaction add -> directMsgReaction ct'' sharedMsgId reaction add msg msgMeta
                 -- TODO discontinue XFile
@@ -1081,7 +1081,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ ->
                 checkSendAsGroup asGroup_ $
                   memberCanSend (Just m'') msgScope $
-                    chatLinkBadge mContent >>= \mc -> groupMessageUpdate gInfo' (Just m'') sharedMsgId mc mentions msgScope msg brokerTs ttl live asGroup_
+                    groupMessageUpdate gInfo' (Just m'') sharedMsgId mContent mentions msgScope msg brokerTs ttl live asGroup_
               XMsgDel sharedMsgId memberId_ scope_ onlyHistory ->
                 groupMessageDelete gInfo' (Just m'') sharedMsgId memberId_ scope_ onlyHistory msg brokerTs
               XMsgReact sharedMsgId memberId scope_ reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId scope_ reaction add msg brokerTs
@@ -1405,7 +1405,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         (signedMsg_, ChatMessage {chatVRange, chatMsgEvent}) <- parseChatMessage' conn connInfo
         let reqHeader = directPresHeader binding
         case chatMsgEvent of
-          XContact p memberKey_ xContactId_ welcomeMsgId_ requestMsg_ -> mapM (traverse chatLinkBadge) requestMsg_ >>= \requestMsg' -> profileContactRequest invId chatVRange reqHeader p memberKey_ xContactId_ welcomeMsgId_ requestMsg' pqSupport rejectionSupported
+          XContact p memberKey_ xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange reqHeader p memberKey_ xContactId_ welcomeMsgId_ requestMsg_ pqSupport rejectionSupported
           XMember p joiningMemberId joiningMemberKey viaRelay -> memberJoinRequestViaRelay invId chatVRange signedMsg_ p joiningMemberId joiningMemberKey viaRelay
           XInfo p _ -> profileContactRequest invId chatVRange reqHeader p Nothing Nothing Nothing Nothing pqSupport rejectionSupported
           XGrpRelayInv groupRelayInv -> xGrpRelayInv invId chatVRange groupRelayInv
@@ -1701,7 +1701,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   && viaRelay == Just (memberId' (membership gInfo))
               _ -> False
             acceptJoin g@(GIK gInfo _) existingMem_ acceptRole = do
-              mem <- acceptGroupJoinRequestAsync user uclId g invId chatVRange p (memberPresHeader gInfo joiningMemberId Nothing) Nothing (Just joiningMemberId) Nothing GAAccepted acceptRole Nothing (Just joiningMemberKey) existingMem_
+              let presHeader_ = memberPresHeader gInfo joiningMemberId $ mfilter (\k -> memberSigned gInfo joiningMemberId k signedMsg_) (Just joiningKey)
+              mem <- acceptGroupJoinRequestAsync user uclId g invId chatVRange p presHeader_ Nothing (Just joiningMemberId) Nothing GAAccepted acceptRole Nothing (Just joiningMemberKey) existingMem_
               (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
               createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
               toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
@@ -1915,7 +1916,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> CM ()
     newContentMessage ct mc msg@RcvMessage {sharedMsgId_} msgMeta = do
       let MsgContainer {content = c, file = fInv_} = mc
-      content <- chatLinkBadge =<< case c of
+      content <- case c of
         MCChat {text, chatLink, ownerSig = Just LinkOwnerSig {chatBinding = B64UrlByteString binding}} -> do
           keepSig <- case contactConn ct of
             Nothing -> pure False
@@ -2265,12 +2266,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         -- m' is Maybe GroupMember
         createNonLive gInfo' m' scopeInfo file_ = do
           let mentions' = if maybe False memberBlocked m' then M.empty else mentions
-          content' <- chatLinkBadge content
-          saveRcvCI gInfo' m' scopeInfo (CIRcvMsgContent content', ts) (snd <$> file_) (timed_ gInfo') False mentions'
+          saveRcvCI gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) (timed_ gInfo') False mentions'
         createContentItem gInfo' m' scopeInfo = do
           file_ <- processFileInv gInfo' m'
-          content' <- chatLinkBadge content
-          newChatItem gInfo' m' scopeInfo (CIRcvMsgContent content', ts) (snd <$> file_) (timed_ gInfo') live'
+          newChatItem gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) (timed_ gInfo') live'
           unless (maybe False memberBlocked m') $ autoAcceptFile file_
         processFileInv gInfo' m' =
           let fileMember_ = if sentAsGroup then Nothing else m'
@@ -3954,7 +3953,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           (g', m'', scopeInfo) <- mkGroupChatScope g m'
           createInternalChatItem user (CDGroupRcv g' scopeInfo m'') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
           toView $ CEvtNewMemberContactReceivedInv user mCt' g' m''
-          forM_ mContent_ $ chatLinkBadge >=> \mc -> do
+          forM_ mContent_ $ \mc -> do
             (ci, cInfo) <- saveRcvChatItem user (CDDirectRcv mCt') msg brokerTs (CIRcvMsgContent mc, msgContentTexts mc)
             toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
 
@@ -4002,7 +4001,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             -- file description is always allowed, to allow sending files to support scope
             XMsgFileDescr sharedMsgId fileDescr fileExpires fileBadge -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr fileExpires fileBadge
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope asGroup_ ->
-              void $ memberCanSend author_ msgScope $ chatLinkBadge mContent >>= \mc -> groupMessageUpdate gInfo author_ sharedMsgId mc mentions msgScope rcvMsg msgTs ttl live asGroup_
+              void $ memberCanSend author_ msgScope $ groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live asGroup_
             XMsgDel sharedMsgId memId scope_ _ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ False rcvMsg msgTs
             XMsgReact sharedMsgId memId scope_ reaction add -> withAuthor XMsgReact_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
@@ -4523,22 +4522,23 @@ runRelayRequestWorker a Worker {doWork} = do
             eToView e
         processRelayRequest :: GroupId -> RelayRequestData -> CM ()
         processRelayRequest groupId rrd = do
-          (g@(GIK gInfo _), groupLink_) <- withStore $ \db -> do
+          (g@(GIK gInfo _), groupLink_, ownerMember) <- withStore $ \db -> do
             g@(GIK gInfo _) <- getGroupInfoKeys db cxt user groupId
             groupLink_ <- liftIO $ runExceptT $ getGroupLink db user gInfo
-            pure (g, groupLink_)
+            ownerMember <- getHostMember db cxt user groupId
+            pure (g, groupLink_, ownerMember)
           -- Check if relay link already exists (recovery case)
           case groupLink_ of
             Right GroupLink {connLinkContact = CCLink _ sLnk_} ->
               case sLnk_ of
-                Just sLnk -> acceptOwnerConnection rrd gInfo sLnk
+                Just sLnk -> acceptOwnerConnection rrd gInfo ownerMember sLnk
                 Nothing -> throwChatError $ CEException "processRelayRequest: relay link doesn't have short link"
             Left _ -> do
-              (gInfo', sLnk) <- getLinkDataCreateRelayLink rrd g
-              acceptOwnerConnection rrd gInfo' sLnk
+              (gInfo', sLnk) <- getLinkDataCreateRelayLink rrd g ownerMember
+              acceptOwnerConnection rrd gInfo' ownerMember sLnk
           where
-            getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfoKeys -> CM (GroupInfo, ShortLinkContact)
-            getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} (GIK gInfo gks) = do
+            getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfoKeys -> GroupMember -> CM (GroupInfo, ShortLinkContact)
+            getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} (GIK gInfo gks) GroupMember {memberId = MemberId ownerMemberId, memberPubKey = claimedOwnerKey_} = do
               (memberPrivKey', claimedGroupId_) <- case gks of
                 GKRelayRequest {memberPrivKey, publicGroupId} -> pure (memberPrivKey, publicGroupId)
                 _ -> throwChatError $ CEException "getLinkDataCreateRelayLink: group is not a relay request"
@@ -4550,6 +4550,8 @@ runRelayRequestWorker a Worker {doWork} = do
                     (Just entityId, Just pg@PublicGroupProfile {publicGroupId})
                       | B64UrlByteString entityId == publicGroupId && all (== publicGroupId) claimedGroupId_ -> pure pg
                     _ -> throwChatError $ CEException "getLinkDataCreateRelayLink: linkEntityId does not match publicGroupId of profile or invitation"
+                  unless (all (\k -> any (\OwnerAuth {ownerId, ownerKey} -> ownerId == ownerMemberId && ownerKey == k) owners) claimedOwnerKey_) $
+                    throwChatError $ CEException "getLinkDataCreateRelayLink: owner key of invitation does not match link data"
                   validateGroupProfile gp
                   sLnk <- createRelayLink gInfo (C.publicKey memberPrivKey', memberPrivKey')
                   gInfo' <- withStore $ \db -> do
@@ -4584,7 +4586,6 @@ runRelayRequestWorker a Worker {doWork} = do
                   subRole <- asks $ channelSubscriberRole . config
                   void $ withFastStore $ \db -> createGroupLink db gVar user gi connId ccLink' groupLinkId subRole subMode
                   pure sLnk
-            acceptOwnerConnection :: RelayRequestData -> GroupInfo -> ShortLinkContact -> CM ()
-            acceptOwnerConnection RelayRequestData {relayInvId, reqChatVRange} gi relayLink = do
-              ownerMember <- withStore $ \db -> getHostMember db cxt user groupId
+            acceptOwnerConnection :: RelayRequestData -> GroupInfo -> GroupMember -> ShortLinkContact -> CM ()
+            acceptOwnerConnection RelayRequestData {relayInvId, reqChatVRange} gi ownerMember relayLink =
               void $ acceptRelayJoinRequestAsync user uclId gi ownerMember relayInvId reqChatVRange relayLink

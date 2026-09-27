@@ -10,13 +10,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.helpers.BADGE_GRACE_INTERVAL
-import chat.simplex.common.views.helpers.BADGE_OLD_INTERVAL
-import chat.simplex.common.views.helpers.NameWithBadge
 import chat.simplex.common.views.helpers.ProfileImage
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.datetime.Clock
 
 @Composable
 fun CIChatLinkHeader(
@@ -43,9 +39,8 @@ fun CIChatLinkHeader(
         Modifier.defaultMinSize(minHeight = 54.dp),
         verticalArrangement = Arrangement.Center
       ) {
-        NameWithBadge(
+        Text(
           chatLink.displayName,
-          linkBadge(chatLink),
           style = MaterialTheme.typography.caption,
           fontWeight = FontWeight.Medium,
           maxLines = 2,
@@ -81,15 +76,4 @@ fun CIChatLinkHeader(
       )
     }
   }
-}
-
-private fun linkBadge(chatLink: MsgChatLink): LocalBadge? {
-  val b = (chatLink as? MsgChatLink.Contact)?.profile?.badge ?: return null
-  val expired = Clock.System.now() - b.badgeInfo.badgeExpiry
-  val status = when {
-    expired > BADGE_OLD_INTERVAL -> BadgeStatus.ExpiredOld
-    expired > BADGE_GRACE_INTERVAL -> BadgeStatus.Expired
-    else -> BadgeStatus.Active
-  }
-  return LocalBadge(b.badgeInfo, status)
 }

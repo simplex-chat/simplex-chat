@@ -748,13 +748,6 @@ getTestMember cc gName mName =
         )
         >>= either (fail . show) pure
 
-lastItemContent :: TestCC -> IO String
-lastItemContent cc =
-  withCCTransaction cc $ \db ->
-    DB.query_ db "SELECT item_content FROM chat_items ORDER BY chat_item_id DESC LIMIT 1" >>= \case
-      [Only c] -> pure $ T.unpack c
-      _ -> fail "no chat items"
-
 storedBadgeHeader :: LocalProfile -> Maybe (String, BadgeStatus)
 storedBadgeHeader LocalProfile {localBadge} = case localBadge of
   Just (PeerBadge b st) -> Just (proofHeaderTag b, st)

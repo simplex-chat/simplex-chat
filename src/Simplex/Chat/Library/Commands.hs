@@ -1249,8 +1249,8 @@ processChatCommand cxt nm = \case
         ownerSig <-
           withAgent (`getConnLinkPrivKey` aConnId conn) $>>= \privKey ->
             mkLinkOwnerSig privKey connLink Nothing <$$> shareChatBinding user toSendRef
-        profile <- presentUserBadge user Nothing (Just $ linkPresHeader connLink) $ userProfileDirect user Nothing Nothing True
         let business = businessAddress addressSettings
+            profile = userProfileDirect user Nothing Nothing True
             text = safeDecodeUtf8 $ strEncode connLink
         pure $ CRChatMsgContent user MCChat {text, chatLink = MCLContact {connLink, profile, business}, ownerSig}
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
@@ -2197,7 +2197,7 @@ processChatCommand cxt nm = \case
                 createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing Nothing
                 cInfo = GroupChat gInfo Nothing
             void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
-            aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent <=< chatLinkBadge) message
+            aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
             let chat = case aci of
                   Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
                   _ -> Chat cInfo [] emptyChatStats
@@ -2210,7 +2210,7 @@ processChatCommand cxt nm = \case
             cInfo = DirectChat ct
         void $ createItem Nothing $ CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ connRequestPQEncryption cReq
         void $ createFeatureEnabledItems_ user ct
-        aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent <=< chatLinkBadge) message
+        aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
         let chat = case aci of
               Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
               _ -> Chat cInfo [] emptyChatStats
@@ -4324,7 +4324,7 @@ processChatCommand cxt nm = \case
                 groupRelay <- createGroupRelayRecord db gInfo relayMember relay
                 conn <- createRelayConnection db cxt user (groupMemberId' relayMember) connId ConnPrepared chatV subMode
                 pure (relayMember, conn, groupRelay)
-              let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+              let GroupMember {memberRole = userRole, memberId = userMemberId, memberPubKey = userMemberKey} = membership
                   GroupMember {memberId = relayMemberId} = relayMember
               membershipProfile <- presentUserBadge user (incognitoMembershipProfile gInfo) (groupPresHeader gInfo) $ redactedMemberProfile gInfo membership $ fromLocalProfile $ memberProfile membership
               let relayInv = GroupRelayInvitation {
@@ -4332,7 +4332,8 @@ processChatCommand cxt nm = \case
                     fromMemberProfile = membershipProfile,
                     relayMemberId,
                     groupLink = groupSLink,
-                    publicGroupId = (\PublicGroupProfile {publicGroupId = gId} -> gId) <$> publicGroup' gInfo
+                    publicGroupId = (\PublicGroupProfile {publicGroupId = gId} -> gId) <$> publicGroup' gInfo,
+                    fromMemberKey = MemberKey <$> userMemberKey
                   }
               dm <- encodeConnInfo $ XGrpRelayInv relayInv
               sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode

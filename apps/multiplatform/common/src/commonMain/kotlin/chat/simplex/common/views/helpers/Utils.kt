@@ -133,9 +133,6 @@ const val MAX_FILE_SIZE_XFTP_LEGEND: Long = 5_368_709_120 // 5GB
 // a badge raises the limit at send for this long after its expiry, shorter than the receiver's grace
 val BADGE_SND_GRACE_INTERVAL: Duration = 1.days
 
-val BADGE_GRACE_INTERVAL: Duration = 7.days
-val BADGE_OLD_INTERVAL: Duration = 38.days
-
 const val MAX_FILE_SIZE_LOCAL: Long = Long.MAX_VALUE
 
 expect fun getAppFileUri(fileName: String): URI

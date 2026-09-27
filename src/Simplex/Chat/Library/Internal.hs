@@ -1338,7 +1338,7 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
     { memberId,
       memberRole,
       v = ChatVersionRange . peerChatVRange <$> activeConn,
-      profile = (p :: Profile) {badge = mfilter (acceptedProof $ memberPresHeader g memberId memberPubKey) (unNoJSON memberBadgeProof <|> badge)},
+      profile = (p :: Profile) {badge = mfilter (acceptedProof $ publicGroup' g *> memberPresHeader g memberId memberPubKey) (unNoJSON memberBadgeProof <|> badge)},
       memberKey = MemberKey <$> memberPubKey
     }
   where
@@ -2255,7 +2255,7 @@ presentsUserBadge User {profile = LocalProfile {localBadge}} = case localBadge o
   _ -> False
 
 groupPresHeader :: GroupInfo -> Maybe ProofPresHeader
-groupPresHeader gInfo = PHChat <$> sndGroupChatBinding gInfo False
+groupPresHeader gInfo@GroupInfo {membership = GroupMember {memberId, memberPubKey}} = memberPresHeader gInfo memberId memberPubKey
 
 directPresHeader :: ContactRequestBinding -> ProofPresHeader
 directPresHeader = \case
@@ -2268,8 +2268,8 @@ linkPresHeader = \case
   CSLContact _ _ _ (LinkKey key) -> PHLink key
 
 relayInvPresHeader :: GroupRelayInvitation -> Maybe ProofPresHeader
-relayInvPresHeader GroupRelayInvitation {fromMember = MemberIdRole {memberId}, publicGroupId} =
-  (\gId -> PHChat $ encodeChatBinding CBGroup $ smpEncode (gId, memberId)) <$> publicGroupId
+relayInvPresHeader GroupRelayInvitation {fromMember = MemberIdRole {memberId}, publicGroupId, fromMemberKey} =
+  (\gId (MemberKey k) -> PHChat $ encodeChatBinding CBGroup $ smpEncode (gId, memberId, k)) <$> publicGroupId <*> fromMemberKey
 
 sndPresHeader :: Maybe ProofPresHeader -> CM ProofPresHeader
 sndPresHeader = maybe (PHTest <$> drgRandomBytes 16) pure
@@ -2290,14 +2290,6 @@ linkDataBadge presHeader cld@ContactShortLinkData {profile = Profile {badge}} = 
     verified <- liftIO $ verifyBadge keys b
     now <- liftIO getCurrentTime
     pure (cld :: ContactShortLinkData) {localBadge = Just $ ShownBadge info (mkBadgeStatus now verified info)}
-
-chatLinkBadge :: MsgContent -> CM MsgContent
-chatLinkBadge = \case
-  MCChat {text, chatLink = chatLink@MCLContact {connLink, profile = p@Profile {badge = Just b@BadgeProof {presHeader = BBSPresHeader ph}}}, ownerSig} -> do
-    keys <- asks $ badgePublicKeys . config
-    verified <- if ph == strEncode (linkPresHeader connLink) then liftIO (verifyBadge keys b) else pure Nothing
-    pure MCChat {text, chatLink = if verified == Just True then chatLink else (chatLink :: MsgChatLink) {profile = (p :: Profile) {badge = Nothing}}, ownerSig}
-  c -> pure c
 
 sendDirectContactMessage :: MsgEncodingI e => User -> Contact -> ChatMsgEvent e -> CM (SndMessage, Int64)
 sendDirectContactMessage user ct chatMsgEvent = do
@@ -2379,20 +2371,19 @@ rcvGroupChatBinding gInfo m_ asGroup badge_ =
   case (publicGroup' gInfo, asGroup, m_) of
     (Just PublicGroupProfile {publicGroupId}, True, _) ->
       Just $ encodeChatBinding CBChannel $ smpEncode publicGroupId
-    (_, False, Just GroupMember {memberId, memberPubKey}) ->
-      memberChatBinding gInfo memberId (memberPubKey <|> proofMemberKey memberId badge_)
+    (Just PublicGroupProfile {publicGroupId}, False, Just GroupMember {memberId}) ->
+      Just $ encodeChatBinding CBGroup $ smpEncode (publicGroupId, memberId)
+    (Nothing, False, Just GroupMember {memberId, memberPubKey}) ->
+      (\k -> encodeChatBinding CBGroup $ smpEncode (memberId, k)) <$> (memberPubKey <|> proofMemberKey memberId badge_)
     _ -> Nothing
 
-memberChatBinding :: GroupInfo -> MemberId -> Maybe C.PublicKeyEd25519 -> Maybe ByteString
-memberChatBinding gInfo memberId key_ = case publicGroup' gInfo of
-  Just PublicGroupProfile {publicGroupId} -> Just $ encodeChatBinding CBGroup $ smpEncode (publicGroupId, memberId)
-  Nothing -> (\k -> encodeChatBinding CBGroup $ smpEncode (memberId, k)) <$> key_
-
 memberPresHeader :: GroupInfo -> MemberId -> Maybe C.PublicKeyEd25519 -> Maybe ProofPresHeader
-memberPresHeader gInfo memberId = fmap PHChat . memberChatBinding gInfo memberId
+memberPresHeader gInfo memberId = fmap $ \k -> PHChat $ encodeChatBinding CBGroup $ case publicGroup' gInfo of
+  Just PublicGroupProfile {publicGroupId} -> smpEncode (publicGroupId, memberId, k)
+  Nothing -> smpEncode (memberId, k)
 
 memberInfoPresHeader :: GroupInfo -> MemberInfo -> Maybe ProofPresHeader
-memberInfoPresHeader gInfo MemberInfo {memberId, memberKey} = memberPresHeader gInfo memberId ((\(MemberKey k) -> k) <$> memberKey)
+memberInfoPresHeader gInfo MemberInfo {memberId, memberKey} = publicGroup' gInfo *> memberPresHeader gInfo memberId ((\(MemberKey k) -> k) <$> memberKey)
 
 proofMemberKey :: MemberId -> Maybe BadgeProof -> Maybe C.PublicKeyEd25519
 proofMemberKey memberId badge_ = do
