@@ -71,6 +71,9 @@ val CREATE_MEMBER_CONTACT_VERSION = 2
 // support group knocking (MsgScope)
 val GROUP_KNOCKING_VERSION = 15
 
+// keeping a call open while it reconnects
+val CALL_RECONNECT_VERSION = 20
+
 enum class CallOnLockScreen {
   DISABLE,
   SHOW,
@@ -3284,7 +3287,8 @@ object ChatController {
             media = r.callType.media,
             aesKey = r.sharedKey,
             iceServers = iceServers,
-            relay = useRelay
+            relay = useRelay,
+            reconnect = (r.contact.activeConn?.peerChatVRange?.maxVersion ?: 0) >= CALL_RECONNECT_VERSION
           ))
         }
       }
