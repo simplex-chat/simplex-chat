@@ -31,7 +31,7 @@ It improves on iOS in four ways:
 - It shows a total per folder.
 - An unreadable file is logged and skipped. On iOS, the first error ends the walk.
 
-The walk uses `Files.walkFileTree` (API 26 = minSdk) without `FOLLOW_LINKS`, so a link inside the tree cannot loop or escape to `/`. A top-level entry that is a symlink is resolved with `toRealPath()` first, so a files folder moved to another disk and linked back is still measured. A broken link falls back to the link itself.
+The walk uses `Files.walkFileTree` (API 26 = minSdk) without `FOLLOW_LINKS`, as iOS's `FileManager.enumerator` does not follow links either: a symlink is counted as the link itself, so it cannot loop, escape to `/`, or (on Android) count the APK's native libraries through a `lib` link that the system may create in the data folder.
 
 Sizes are file lengths (`BasicFileAttributes.size()`). iOS uses allocated size, which has no portable equivalent on the JVM, and length is what the existing Database screen reports.
 
@@ -42,8 +42,6 @@ Sizes are file lengths (`BasicFileAttributes.size()`). iOS uses allocated size, 
   - an unreadable folder: logged, the walk continues
   - a nested folder and a duplicate folder: dropped
   - a missing folder: shown as empty
-  - a symlinked top-level folder: target measured
-  - a broken link: the link's own size
 - On a real 187 MB desktop profile, the walk took 0.8 s and matched `du -sb` exactly (`du` also counts the 4 KB folder entry).
 - A desktop AppImage run on a separate test profile showed all three folders, with sizes matching `ls`.
 

@@ -7,10 +7,7 @@ import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
@@ -39,14 +36,12 @@ fun StorageView() {
     AppBarTitle(stringResource(MR.strings.storage))
     val roots = usage.value
     if (roots == null) {
-      Box(Modifier.fillMaxWidth().padding(DEFAULT_PADDING), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(Modifier.size(30.dp), color = MaterialTheme.colors.secondary, strokeWidth = 2.5.dp)
-      }
+      DefaultProgressView(null)
     } else {
       roots.forEachIndexed { i, root ->
         if (i > 0) SectionDividerSpaced()
         SectionView(root.dir.path) {
-          UsageRow(stringResource(MR.strings.storage_total), root.bytes, FontWeight.Medium)
+          UsageRow(stringResource(MR.strings.storage_total), root.bytes)
           root.entries.forEach { UsageRow(it.name, it.bytes) }
         }
       }
@@ -56,30 +51,29 @@ fun StorageView() {
 }
 
 @Composable
-private fun UsageRow(name: String, bytes: Long, fontWeight: FontWeight? = null) {
+private fun UsageRow(name: String, bytes: Long) {
   SectionItemViewSpaceBetween {
-    Text(name, Modifier.weight(1f), fontWeight = fontWeight)
-    Text(formatBytes(bytes), Modifier.padding(start = DEFAULT_PADDING), color = MaterialTheme.colors.secondary, fontWeight = fontWeight)
+    Text(name, Modifier.weight(1f))
+    Text(formatBytes(bytes), Modifier.padding(start = DEFAULT_PADDING), color = MaterialTheme.colors.secondary)
   }
 }
 
 private fun storageRoots(): List<File> {
-  val dirs = listOf(dataDir, preferencesDir, tmpDir).map { it.absoluteFile }.distinct()
+  val dirs = listOf(dataDir, preferencesDir, tmpDir).distinct()
   return dirs.filter { dir -> dirs.none { it != dir && dir.startsWith(it) } }
 }
 
 private fun rootUsage(root: File): RootUsage =
   RootUsage(
     root,
-    (root.listFiles() ?: emptyArray())
+    root.listFiles().orEmpty()
       .map { EntryUsage(it.name, treeSize(it.toPath())) }
       .sortedByDescending { it.bytes }
   )
 
-private fun treeSize(entry: Path): Long {
+private fun treeSize(path: Path): Long {
   var bytes = 0L
-  val start = runCatching { entry.toRealPath() }.getOrDefault(entry)
-  Files.walkFileTree(start, object : SimpleFileVisitor<Path>() {
+  Files.walkFileTree(path, object : SimpleFileVisitor<Path>() {
     override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
       bytes += attrs.size()
       return FileVisitResult.CONTINUE
