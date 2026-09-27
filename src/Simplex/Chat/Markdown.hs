@@ -213,7 +213,7 @@ markdownP = mconcat <$> A.many' fragmentP
           '+' -> phoneP <|> wordP
           '*' -> boldP <|> formattedP '*' Bold
           '_' -> formattedP '_' Italic
-          '~' -> formattedP '~' StrikeThrough
+          '~' -> strikeP <|> formattedP '~' StrikeThrough
           '`' -> formattedP '`' Snippet
           '#' -> A.char '#' *> (secretP <|> nameRefP '#' <|> secretFallback)
           '!' -> styledP <|> wordP
@@ -239,6 +239,12 @@ markdownP = mconcat <$> A.many' fragmentP
       if T.null s || T.head s == ' ' || T.last s == ' '
         then fail "not bold"
         else pure $ markdown Bold s
+    strikeP :: Parser Markdown
+    strikeP = do
+      s <- A.string "~~" *> A.takeTill (== '~') <* A.string "~~"
+      if T.null s || T.head s == ' ' || T.last s == ' '
+        then fail "not strikethrough"
+        else pure $ markdown StrikeThrough s
     secretP :: Parser Markdown
     secretP = secret <$?> ((,,) <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile1 (== '#'))
     secret :: (Text, Text, Text) -> Either String Markdown
