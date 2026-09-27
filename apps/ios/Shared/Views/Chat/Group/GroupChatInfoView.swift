@@ -874,7 +874,14 @@ struct GroupChatInfoView: View {
     @ViewBuilder private func deleteGroupButton() -> some View {
         let label: LocalizedStringKey = groupInfo.useRelays ? "Delete channel" : groupInfo.businessChat == nil ? "Delete group" : "Delete chat"
         Button(role: .destructive) {
-            alert = .deleteGroupAlert
+            if canBanOnChatDeletion(groupInfo) {
+                showDeleteBusinessChatAlert(chat) {
+                    dismiss()
+                    chatModel.chatId = nil
+                }
+            } else {
+                alert = .deleteGroupAlert
+            }
         } label: {
             Label(label, systemImage: "trash")
                 .foregroundColor(Color.red)
@@ -1010,43 +1017,54 @@ func showRemoveMemberAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: 
                 cancelAlertAction
             ]}
         )
-    } else if groupInfo.useRelays {
-        showAlert(
-            NSLocalizedString("Remove subscriber?", comment: "alert title"),
-            message: NSLocalizedString("Subscriber will be removed from channel - this cannot be undone!", comment: "alert message"),
-            actions: {[
-                UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
-                    removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
-                },
-                UIAlertAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action"), style: .destructive) { _ in
-                    removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
-                },
-                cancelAlertAction
-            ]}
-        )
     } else {
-        showAlert(
-            NSLocalizedString("Remove member?", comment: "alert title"),
-            message: groupInfo.businessChat == nil
+        showMemberBanAlert(
+            groupInfo,
+            mem,
+            groupInfo.useRelays
+                ? NSLocalizedString("Remove subscriber?", comment: "alert title")
+                : NSLocalizedString("Remove member?", comment: "alert title"),
+            message: groupInfo.useRelays
+                ? NSLocalizedString("Subscriber will be removed from channel - this cannot be undone!", comment: "alert message")
+                : groupInfo.businessChat == nil
                 ? NSLocalizedString("Member will be removed from group - this cannot be undone!", comment: "alert message")
                 : NSLocalizedString("Member will be removed from chat - this cannot be undone!", comment: "alert message"),
-            actions: {[
-                UIAlertAction(title: NSLocalizedString("Remove", comment: "alert action"), style: .destructive) { _ in
-                    removeMember(groupInfo, mem, withMessages: false, dismiss: dismiss)
+            actions: [
+                LinkBanAction(title: NSLocalizedString("Remove", comment: "alert action")) { notice in
+                    removeMember(groupInfo, mem, withMessages: false, notice: notice, dismiss: dismiss)
                 },
-                UIAlertAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action"), style: .destructive) { _ in
-                    removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
-                },
-                cancelAlertAction
-            ]}
+                LinkBanAction(title: NSLocalizedString("Remove and delete messages", comment: "alert action")) { notice in
+                    removeMember(groupInfo, mem, withMessages: true, notice: notice, dismiss: dismiss)
+                }
+            ]
         )
     }
 }
 
-func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool, dismiss: DismissAction?) {
+func showMemberBanAlert(_ groupInfo: GroupInfo, _ mem: GroupMember, _ title: String, message: String?, actions: [LinkBanAction]) {
+    if mem.memberStatus == .memInvited {
+        showAlert(title, message: message) {
+            actions.map { a in
+                UIAlertAction(title: a.title, style: .destructive) { _ in a.action(nil) }
+            } + [cancelAlertAction]
+        }
+    } else {
+        showAppSheet(detents: [.medium(), .large()]) {
+            LinkBanDialog(
+                title: title,
+                message: message,
+                banLabel: groupInfo.businessChat == nil ? "Ban from joining" : "Ban from connecting",
+                ban: .day,
+                actions: actions
+            )
+        }
+    }
+}
+
+func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool, notice: LinkNotice? = nil, dismiss: DismissAction?) {
     Task {
         do {
-            let (updatedGroupInfo, updatedMembers) = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId], withMessages)
+            let (updatedGroupInfo, updatedMembers) = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId], withMessages, notice: notice)
             await MainActor.run {
                 ChatModel.shared.updateGroup(updatedGroupInfo)
                 updatedMembers.forEach { updatedMember in
@@ -1067,6 +1085,128 @@ func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, withMessages: Bool
             }
         }
     }
+}
+
+enum LinkBan: Identifiable, Hashable {
+    case no
+    case hour
+    case day
+    case week
+    case month
+    case permanent
+
+    static let values: [LinkBan] = [.no, .hour, .day, .week, .month, .permanent]
+
+    var id: Self { self }
+
+    var text: String {
+        switch self {
+        case .no: NSLocalizedString("No", comment: "ban duration")
+        case .hour: NSLocalizedString("1 hour", comment: "ban duration")
+        case .day: NSLocalizedString("1 day", comment: "ban duration")
+        case .week: NSLocalizedString("1 week", comment: "ban duration")
+        case .month: NSLocalizedString("1 month", comment: "ban duration")
+        case .permanent: NSLocalizedString("Permanently", comment: "ban duration")
+        }
+    }
+
+    func notice(_ reason: ReportReason) -> LinkNotice? {
+        switch self {
+        case .no: nil
+        case .hour: LinkNotice(ttl: 3600, reason: reason)
+        case .day: LinkNotice(ttl: 86400, reason: reason)
+        case .week: LinkNotice(ttl: 604800, reason: reason)
+        case .month: LinkNotice(ttl: 2592000, reason: reason)
+        case .permanent: LinkNotice(ttl: nil, reason: reason)
+        }
+    }
+}
+
+struct LinkBanAction {
+    var title: String
+    var action: (LinkNotice?) -> Void
+}
+
+@ViewBuilder func linkBanRows(_ label: LocalizedStringKey, _ ban: Binding<LinkBan>, _ reason: Binding<ReportReason>) -> some View {
+    WrappedPicker(label, selection: ban) {
+        ForEach(LinkBan.values) { Text($0.text) }
+    }
+    if ban.wrappedValue != .no {
+        WrappedPicker("Reason", selection: reason) {
+            ForEach(ReportReason.supportedReasons, id: \.self) { Text($0.text) }
+        }
+    }
+}
+
+struct LinkBanDialog: View {
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var theme: AppTheme
+    var title: String
+    var message: String?
+    var banLabel: LocalizedStringKey
+    @State var ban: LinkBan
+    var actions: [LinkBanAction]
+    @State private var reason: ReportReason = .spam
+
+    var body: some View {
+        NavigationView {
+            List {
+                Section {
+                    linkBanRows(banLabel, $ban, $reason)
+                    ForEach(actions.indices, id: \.self) { i in
+                        Button(actions[i].title, role: .destructive) {
+                            dismiss()
+                            actions[i].action(ban.notice(reason))
+                        }
+                    }
+                    Button("Cancel", role: .cancel) { dismiss() }
+                } footer: {
+                    if let message {
+                        Text(message).foregroundColor(theme.colors.secondary)
+                    }
+                }
+            }
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .modifier(ThemedBackground(grouped: true))
+        }
+    }
+}
+
+func showDeleteBusinessChatAlert(_ chat: Chat, deleted: (() -> Void)? = nil) {
+    showAppSheet(detents: [.medium(), .large()]) {
+        LinkBanDialog(
+            title: NSLocalizedString("Delete chat?", comment: "alert title"),
+            message: chat.chatInfo.displayName + "\n\n" + NSLocalizedString("Chat will be deleted for all members - this cannot be undone!", comment: "alert message"),
+            banLabel: "Ban from connecting",
+            ban: .no,
+            actions: [
+                LinkBanAction(title: NSLocalizedString("Delete", comment: "alert action")) { notice in
+                    Task {
+                        do {
+                            try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, notice: notice)
+                            await MainActor.run {
+                                deleted?()
+                                ChatModel.shared.removeChat(chat.chatInfo.id)
+                            }
+                        } catch let error {
+                            logger.error("showDeleteBusinessChatAlert apiDeleteChat error: \(responseError(error))")
+                            await MainActor.run {
+                                showAlert(
+                                    NSLocalizedString("Error deleting chat!", comment: "alert title"),
+                                    message: responseError(error)
+                                )
+                            }
+                        }
+                    }
+                }
+            ]
+        )
+    }
+}
+
+func canBanOnChatDeletion(_ groupInfo: GroupInfo) -> Bool {
+    groupInfo.businessChat?.chatType == .customer && groupInfo.membership.memberCurrent
 }
 
 func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {

@@ -1183,6 +1183,7 @@ export type ChatErrorType =
   | ChatErrorType.NotResolvedLocally
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
+  | ChatErrorType.LinkNotice
   | ChatErrorType.ContactNotReady
   | ChatErrorType.ContactNotActive
   | ChatErrorType.ContactDisabled
@@ -1263,6 +1264,7 @@ export namespace ChatErrorType {
     | "notResolvedLocally"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
+    | "linkNotice"
     | "contactNotReady"
     | "contactNotActive"
     | "contactDisabled"
@@ -1432,6 +1434,12 @@ export namespace ChatErrorType {
 
   export interface ConnReqMessageProhibited extends Interface {
     type: "connReqMessageProhibited"
+  }
+
+  export interface LinkNotice extends Interface {
+    type: "linkNotice"
+    expiresAt?: string // ISO-8601 timestamp
+    reason?: ReportReason
   }
 
   export interface ContactNotReady extends Interface {
@@ -2183,6 +2191,7 @@ export type ContactAddressPlan =
   | ContactAddressPlan.ConnectingProhibit
   | ContactAddressPlan.Known
   | ContactAddressPlan.ContactViaAddress
+  | ContactAddressPlan.LinkNotice
 
 export namespace ContactAddressPlan {
   export type Tag = 
@@ -2192,6 +2201,7 @@ export namespace ContactAddressPlan {
     | "connectingProhibit"
     | "known"
     | "contactViaAddress"
+    | "linkNotice"
 
   interface Interface {
     type: Tag
@@ -2224,6 +2234,12 @@ export namespace ContactAddressPlan {
   export interface ContactViaAddress extends Interface {
     type: "contactViaAddress"
     contact: Contact
+  }
+
+  export interface LinkNotice extends Interface {
+    type: "linkNotice"
+    expiresAt?: string // ISO-8601 timestamp
+    reason?: ReportReason
   }
 }
 
@@ -2821,6 +2837,7 @@ export type GroupLinkPlan =
   | GroupLinkPlan.Known
   | GroupLinkPlan.NoRelays
   | GroupLinkPlan.UpdateRequired
+  | GroupLinkPlan.LinkNotice
 
 export namespace GroupLinkPlan {
   export type Tag = 
@@ -2831,6 +2848,7 @@ export namespace GroupLinkPlan {
     | "known"
     | "noRelays"
     | "updateRequired"
+    | "linkNotice"
 
   interface Interface {
     type: Tag
@@ -2873,6 +2891,12 @@ export namespace GroupLinkPlan {
   export interface UpdateRequired extends Interface {
     type: "updateRequired"
     groupSLinkData_?: GroupShortLinkData
+  }
+
+  export interface LinkNotice extends Interface {
+    type: "linkNotice"
+    expiresAt?: string // ISO-8601 timestamp
+    reason?: ReportReason
   }
 }
 
@@ -3117,6 +3141,11 @@ export namespace LinkContent {
     tag: string
     json: object
   }
+}
+
+export interface LinkNotice {
+  ttl?: number // int64
+  reason?: ReportReason
 }
 
 export interface LinkOwnerSig {

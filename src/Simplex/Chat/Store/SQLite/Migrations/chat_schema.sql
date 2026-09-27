@@ -981,6 +981,14 @@ CREATE TABLE badge_code_redemptions(
   created_at TEXT NOT NULL,
   UNIQUE(user_id, code)
 ) STRICT;
+CREATE TABLE link_notices(
+  link_notice_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  link_hash BLOB NOT NULL,
+  expires_at TEXT,
+  reason TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -1544,6 +1552,7 @@ CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(
 CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON badge_purchases(
   badge_code_redemption_id
 );
+CREATE UNIQUE INDEX idx_link_notices_link_hash ON link_notices(link_hash);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

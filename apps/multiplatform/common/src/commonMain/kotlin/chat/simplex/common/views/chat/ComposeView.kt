@@ -697,6 +697,7 @@ fun ComposeView(
     val result = chatModel.controller.apiConnectPreparedGroup(
       rh = chat.remoteHostId,
       groupId = chat.chatInfo.apiId,
+      isChannel = chat.chatInfo.isChannel,
       incognito = incognito,
       msg = mc
     )
@@ -1238,7 +1239,7 @@ fun ComposeView(
   fun ReportReasonView(reason: ReportReason) {
     val reportText = when (reason) {
       is ReportReason.Spam -> generalGetString(MR.strings.report_compose_reason_header_spam)
-      is ReportReason.Illegal -> generalGetString(MR.strings.report_compose_reason_header_illegal)
+      is ReportReason.Content -> generalGetString(MR.strings.report_compose_reason_header_illegal)
       is ReportReason.Profile -> generalGetString(MR.strings.report_compose_reason_header_profile)
       is ReportReason.Community -> generalGetString(MR.strings.report_compose_reason_header_community)
       is ReportReason.Other -> generalGetString(MR.strings.report_compose_reason_header_other)

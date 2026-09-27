@@ -1179,7 +1179,8 @@ private func deleteContactOrConversationDialog(
                                 showAlert: showAlert
                             )
                         ) },
-                        id: "DeleteActiveContactDialog"
+                        id: "DeleteActiveContactDialog",
+                        fraction: contact.activeConn?.viaUserContactLink == nil ? 0.4 : 0.55
                     ))
                 },
                 .cancel()
@@ -1193,11 +1194,12 @@ private func deleteContactMaybeErrorAlert(
     _ chat: Chat,
     _ contact: Contact,
     chatDeleteMode: ChatDeleteMode,
+    notice: LinkNotice? = nil,
     _ dismissToChatList: Bool,
     _ showAlert: @escaping (SomeAlert) -> Void
 ) {
     Task {
-        let alert_ = await deleteContactChat(chat, chatDeleteMode: chatDeleteMode)
+        let alert_ = await deleteContactChat(chat, chatDeleteMode: chatDeleteMode, notice: notice)
         if let alert = alert_ {
             showAlert(SomeAlert(alert: alert, id: "deleteContactMaybeErrorAlert, error"))
         } else {
@@ -1267,6 +1269,8 @@ struct DeleteActiveContactDialog: View {
     var dismissToChatList: Bool
     var showAlert: (SomeAlert) -> Void
     @State private var keepConversation = false
+    @State private var ban: LinkBan = .no
+    @State private var reason: ReportReason = .spam
 
     var body: some View {
         NavigationView {
@@ -1274,16 +1278,20 @@ struct DeleteActiveContactDialog: View {
                 Section {
                     Toggle("Keep conversation", isOn: $keepConversation)
 
+                    if contact.activeConn?.viaUserContactLink != nil {
+                        linkBanRows("Ban from connecting", $ban, $reason)
+                    }
+
                     Button(role: .destructive) {
                         dismiss()
-                        deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: false), dismissToChatList, showAlert)
+                        deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: false), notice: ban.notice(reason), dismissToChatList, showAlert)
                     } label: {
                         Text("Delete without notification")
                     }
 
                     Button(role: .destructive) {
                         dismiss()
-                        deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: true), dismissToChatList, showAlert)
+                        deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: true), notice: ban.notice(reason), dismissToChatList, showAlert)
                     } label: {
                         Text("Delete and notify contact")
                     }

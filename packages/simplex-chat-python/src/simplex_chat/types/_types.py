@@ -892,6 +892,11 @@ class ChatErrorType_unsupportedConnReq(TypedDict):
 class ChatErrorType_connReqMessageProhibited(TypedDict):
     type: Literal["connReqMessageProhibited"]
 
+class ChatErrorType_linkNotice(TypedDict):
+    type: Literal["linkNotice"]
+    expiresAt: NotRequired[str]  # ISO-8601 timestamp
+    reason: NotRequired["ReportReason"]
+
 class ChatErrorType_contactNotReady(TypedDict):
     type: Literal["contactNotReady"]
     contact: "Contact"
@@ -1124,6 +1129,7 @@ ChatErrorType = (
     | ChatErrorType_notResolvedLocally
     | ChatErrorType_unsupportedConnReq
     | ChatErrorType_connReqMessageProhibited
+    | ChatErrorType_linkNotice
     | ChatErrorType_contactNotReady
     | ChatErrorType_contactNotActive
     | ChatErrorType_contactDisabled
@@ -1179,7 +1185,7 @@ ChatErrorType = (
     | ChatErrorType_exception
 )
 
-ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "badgeRedeemError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
+ChatErrorType_Tag = Literal["noActiveUser", "noConnectionUser", "noSndFileUser", "noRcvFileUser", "userUnknown", "userExists", "chatRelayExists", "differentActiveUser", "cantDeleteActiveUser", "cantDeleteLastUser", "cantHideLastUser", "hiddenUserAlwaysMuted", "emptyUserPassword", "userAlreadyHidden", "userNotHidden", "invalidDisplayName", "chatNotStarted", "chatNotStopped", "chatStoreChanged", "invalidConnReq", "simplexDomainNotReady", "notResolvedLocally", "unsupportedConnReq", "connReqMessageProhibited", "linkNotice", "contactNotReady", "contactNotActive", "contactDisabled", "connectionDisabled", "groupUserRole", "groupMemberInitialRole", "contactIncognitoCantInvite", "groupIncognitoCantInvite", "groupContactRole", "groupDuplicateMember", "groupDuplicateMemberId", "groupNotJoined", "groupMemberNotActive", "cantBlockMemberForSelf", "groupMemberUserRemoved", "groupMemberNotFound", "groupCantResendInvitation", "groupInternal", "fileNotFound", "fileSize", "fileAlreadyReceiving", "fileCancelled", "fileCancel", "fileAlreadyExists", "fileWrite", "fileSend", "fileRcvChunk", "fileInternal", "fileImageType", "fileImageSize", "fileNotReceived", "fileNotApproved", "fallbackToSMPProhibited", "inlineFileProhibited", "invalidForward", "invalidChatItemUpdate", "invalidChatItemDelete", "hasCurrentCall", "noCurrentCall", "callContact", "directMessagesProhibited", "agentVersion", "agentNoSubResult", "commandError", "badgeRedeemError", "agentCommandError", "invalidFileDescription", "connectionIncognitoChangeProhibited", "connectionUserChangeProhibited", "peerChatVRangeIncompatible", "relayTestError", "internalError", "exception"]
 
 ChatFeature = Literal["timedMessages", "fullDelete", "reactions", "voice", "files", "calls", "sessions"]
 
@@ -1547,6 +1553,11 @@ class ContactAddressPlan_contactViaAddress(TypedDict):
     type: Literal["contactViaAddress"]
     contact: "Contact"
 
+class ContactAddressPlan_linkNotice(TypedDict):
+    type: Literal["linkNotice"]
+    expiresAt: NotRequired[str]  # ISO-8601 timestamp
+    reason: NotRequired["ReportReason"]
+
 ContactAddressPlan = (
     ContactAddressPlan_ok
     | ContactAddressPlan_ownLink
@@ -1554,9 +1565,10 @@ ContactAddressPlan = (
     | ContactAddressPlan_connectingProhibit
     | ContactAddressPlan_known
     | ContactAddressPlan_contactViaAddress
+    | ContactAddressPlan_linkNotice
 )
 
-ContactAddressPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "contactViaAddress"]
+ContactAddressPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "contactViaAddress", "linkNotice"]
 
 class ContactShortLinkData(TypedDict):
     profile: "Profile"
@@ -2001,6 +2013,11 @@ class GroupLinkPlan_updateRequired(TypedDict):
     type: Literal["updateRequired"]
     groupSLinkData_: NotRequired["GroupShortLinkData"]
 
+class GroupLinkPlan_linkNotice(TypedDict):
+    type: Literal["linkNotice"]
+    expiresAt: NotRequired[str]  # ISO-8601 timestamp
+    reason: NotRequired["ReportReason"]
+
 GroupLinkPlan = (
     GroupLinkPlan_ok
     | GroupLinkPlan_ownLink
@@ -2009,9 +2026,10 @@ GroupLinkPlan = (
     | GroupLinkPlan_known
     | GroupLinkPlan_noRelays
     | GroupLinkPlan_updateRequired
+    | GroupLinkPlan_linkNotice
 )
 
-GroupLinkPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "noRelays", "updateRequired"]
+GroupLinkPlan_Tag = Literal["ok", "ownLink", "connectingConfirmReconnect", "connectingProhibit", "known", "noRelays", "updateRequired", "linkNotice"]
 
 class GroupMember(TypedDict):
     groupMemberId: int  # int64
@@ -2174,6 +2192,10 @@ class LinkContent_unknown(TypedDict):
 LinkContent = LinkContent_page | LinkContent_image | LinkContent_video | LinkContent_unknown
 
 LinkContent_Tag = Literal["page", "image", "video", "unknown"]
+
+class LinkNotice(TypedDict):
+    ttl: NotRequired[int]  # int64
+    reason: NotRequired["ReportReason"]
 
 class LinkOwnerSig(TypedDict):
     ownerId: NotRequired[str]

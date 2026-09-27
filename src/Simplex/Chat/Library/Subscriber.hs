@@ -584,7 +584,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 XFileCancel sharedMsgId -> xFileCancel ct'' sharedMsgId
                 XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInv ct'' sharedMsgId fileConnReq_ fName
                 XInfo p _ -> xInfo ct'' p
-                XDirectDel -> xDirectDel ct'' msg msgMeta
+                XDirectDel silent notice_ -> xDirectDel ct'' silent notice_ msg msgMeta
                 XGrpInv gInv -> processGroupInvitation ct'' gInv msg msgMeta
                 XInfoProbe probe -> xInfoProbe (COMContact ct'') probe
                 XInfoProbeCheck probeHash -> xInfoProbeCheck (COMContact ct'') probeHash
@@ -1093,11 +1093,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               XGrpMemRole memId memRole memberKey rosterVer -> fmap ctx <$> xGrpMemRole (GIK gInfo' gks) Nothing m'' memId memRole memberKey rosterVer msg brokerTs
               XGrpMemRestrict memId memRestrictions -> fmap ctx <$> xGrpMemRestrict gInfo' m'' memId memRestrictions msg brokerTs
               XGrpMemCon memId -> Nothing <$ xGrpMemCon gInfo' m'' memId
-              XGrpMemDel memId withMessages rosterVer -> case encoding @e of
-                SJson -> fmap ctx <$> xGrpMemDel (GIK gInfo' gks) Nothing m'' memId withMessages rosterVer verifiedMsg msg brokerTs False
+              XGrpMemDel memId withMessages rosterVer notice_ -> case encoding @e of
+                SJson -> fmap ctx <$> xGrpMemDel (GIK gInfo' gks) Nothing m'' memId withMessages rosterVer notice_ verifiedMsg msg brokerTs False
                 SBinary -> pure Nothing
               XGrpLeave -> fmap ctx <$> xGrpLeave (GIK gInfo' gks) m'' msg brokerTs
-              XGrpDel -> Just (DeliveryTaskContext (DJSGroup {jobSpec = DJRelayRemoved}) False) <$ xGrpDel gInfo' m'' msg brokerTs
+              XGrpDel notice_ -> Just (DeliveryTaskContext (DJSGroup {jobSpec = DJRelayRemoved}) False) <$ xGrpDel gInfo' m'' notice_ msg brokerTs
               XGrpInfo p' -> fmap ctx <$> xGrpInfo (GIK gInfo' gks) m'' p' msg brokerTs
               XGrpPrefs ps' -> fmap ctx <$> xGrpPrefs gInfo' m'' ps' msg
               XGrpRoster gr -> fmap ctx <$> xGrpRoster gInfo' m'' m'' gr verifiedMsg sharedMsgId_ brokerTs
@@ -2731,24 +2731,26 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     xInfo :: Contact -> Profile -> CM ()
     xInfo c p' = void $ processContactProfileUpdate c p' True
 
-    xDirectDel :: Contact -> RcvMessage -> MsgMeta -> CM ()
-    xDirectDel c msg msgMeta =
-      if directOrUsed c
-        then do
-          (ct', contactConns) <- withStore' $ \db -> do
-            ct' <- updateContactStatus db user c CSDeleted
-            (ct',) <$> getContactConnections db cxt userId ct'
-          deleteAgentConnectionsAsync $ map aConnId contactConns
-          forM_ contactConns $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
-          activeConn' <- forM (contactConn ct') $ \conn -> pure conn {connStatus = ConnDeleted}
-          let ct'' = ct' {activeConn = activeConn'} :: Contact
-          (ci, cInfo) <- saveRcvChatItemNoParse user (CDDirectRcv ct'') msg brokerTs (CIRcvDirectEvent RDEContactDeleted)
-          toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
-          toView $ CEvtContactDeletedByContact user ct''
-        else do
-          contactConns <- withStore' $ \db -> getContactConnections db cxt userId c
-          deleteAgentConnectionsAsync $ map aConnId contactConns
-          withStore $ \db -> deleteContact db user c
+    xDirectDel :: Contact -> Bool -> Maybe LinkNotice -> RcvMessage -> MsgMeta -> CM ()
+    xDirectDel c silent notice_ msg msgMeta = do
+      forM_ notice_ $ \notice -> withStore' $ \db -> setContactLinkNotice db c brokerTs notice
+      unless silent $
+        if directOrUsed c
+          then do
+            (ct', contactConns) <- withStore' $ \db -> do
+              ct' <- updateContactStatus db user c CSDeleted
+              (ct',) <$> getContactConnections db cxt userId ct'
+            deleteAgentConnectionsAsync $ map aConnId contactConns
+            forM_ contactConns $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
+            activeConn' <- forM (contactConn ct') $ \conn -> pure conn {connStatus = ConnDeleted}
+            let ct'' = ct' {activeConn = activeConn'} :: Contact
+            (ci, cInfo) <- saveRcvChatItemNoParse user (CDDirectRcv ct'') msg brokerTs (CIRcvDirectEvent RDEContactDeleted)
+            toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDRcv cInfo ci]
+            toView $ CEvtContactDeletedByContact user ct''
+          else do
+            contactConns <- withStore' $ \db -> getContactConnections db cxt userId c
+            deleteAgentConnectionsAsync $ map aConnId contactConns
+            withStore $ \db -> deleteContact db user c
       where
         brokerTs = metaBrokerTs msgMeta
 
@@ -3678,8 +3680,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       withStore $ \db -> setMemberVectorRelationConnected db sendingMem refMem MRSubjectConnected
       withStore $ \db -> setMemberVectorRelationConnected db refMem sendingMem MRReferencedConnected
 
-    xGrpMemDel :: GroupInfoKeys -> Maybe GroupMember -> GroupMember -> MemberId -> Bool -> Maybe VersionRoster -> VerifiedMsg 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryJobScope)
-    xGrpMemDel g@(GIK gInfo@GroupInfo {membership} gks) fwdRelay_ m@GroupMember {memberRole = senderRole} memId withMessages rosterVer_ verifiedMsg msg@RcvMessage {msgSigned} brokerTs forwarded = do
+    xGrpMemDel :: GroupInfoKeys -> Maybe GroupMember -> GroupMember -> MemberId -> Bool -> Maybe VersionRoster -> Maybe LinkNotice -> VerifiedMsg 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryJobScope)
+    xGrpMemDel g@(GIK gInfo@GroupInfo {membership} gks) fwdRelay_ m@GroupMember {memberRole = senderRole} memId withMessages rosterVer_ notice_ verifiedMsg msg@RcvMessage {msgSigned} brokerTs forwarded = do
       let GroupMember {memberId = membershipMemId} = membership
       if membershipMemId == memId
         then applyAtRosterVersion g fwdRelay_ m rosterVer_ $ checkRole membership $ do
@@ -3689,6 +3691,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           withStore' $ \db -> do
             updateGroupMemberStatus db userId membership GSMemRemoved
             when (maybe False (/= RSRejected) (relayOwnStatus gInfo)) $ updateRelayOwnStatus_ db gInfo RSInactive
+            forM_ notice_ $ setGroupLinkNotice db gInfo brokerTs
           let membership' = membership {memberStatus = GSMemRemoved}
           when withMessages $ deleteMessages gInfo membership'
           deleteMemberItem msg gInfo RGEUserDeleted
@@ -3775,11 +3778,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         toView $ CEvtLeftMember user gInfo''' m' {memberStatus = GSMemLeft} msgSigned
       pure $ memberEventDeliveryScope m
 
-    xGrpDel :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM ()
-    xGrpDel gInfo@GroupInfo {membership} m@GroupMember {memberRole} msg@RcvMessage {msgSigned} brokerTs = do
+    xGrpDel :: GroupInfo -> GroupMember -> Maybe LinkNotice -> RcvMessage -> UTCTime -> CM ()
+    xGrpDel gInfo@GroupInfo {membership} m@GroupMember {memberRole} notice_ msg@RcvMessage {msgSigned} brokerTs = do
       when (memberRole /= GROwner) $ throwChatError $ CEGroupUserRole gInfo GROwner
       deleteGroupLinkIfExists user gInfo
-      withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemGroupDeleted
+      withStore' $ \db -> do
+        updateGroupMemberStatus db userId membership GSMemGroupDeleted
+        forM_ notice_ $ setGroupLinkNotice db gInfo brokerTs
       -- TODO [relays] possible improvement is to immediately delete rcv queues if isUserGrpFwdRelay
       unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
       (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo m
@@ -3974,9 +3979,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
             XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> void $ xGrpMemNew g author memInfo msgScope rcvMsg msgTs
             XGrpMemRole memId memRole memberKey rosterVer -> withAuthor XGrpMemRole_ $ \author -> void $ xGrpMemRole g (Just m) author memId memRole memberKey rosterVer rcvMsg msgTs
             XGrpMemRestrict memId memRestrictions -> withAuthor XGrpMemRestrict_ $ \author -> void $ xGrpMemRestrict gInfo author memId memRestrictions rcvMsg msgTs
-            XGrpMemDel memId withMessages rosterVer -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel g (Just m) author memId withMessages rosterVer verifiedMsg rcvMsg msgTs True
+            XGrpMemDel memId withMessages rosterVer notice_ -> withAuthor XGrpMemDel_ $ \author -> void $ xGrpMemDel g (Just m) author memId withMessages rosterVer notice_ verifiedMsg rcvMsg msgTs True
             XGrpLeave -> withAuthor XGrpLeave_ $ \author -> void $ xGrpLeave g author rcvMsg msgTs
-            XGrpDel -> withAuthor XGrpDel_ $ \author -> void $ xGrpDel gInfo author rcvMsg msgTs
+            XGrpDel notice_ -> withAuthor XGrpDel_ $ \author -> void $ xGrpDel gInfo author notice_ rcvMsg msgTs
             XGrpInfo p' -> withAuthor XGrpInfo_ $ \author -> void $ xGrpInfo g author p' rcvMsg msgTs
             XGrpPrefs ps' -> withAuthor XGrpPrefs_ $ \author -> void $ xGrpPrefs gInfo author ps' rcvMsg
             XGrpRoster gr -> withAuthor XGrpRoster_ $ \author -> void $ xGrpRoster gInfo m author gr verifiedMsg sharedMsgId_ msgTs

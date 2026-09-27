@@ -40,6 +40,8 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.group.ChatTTLOption
+import chat.simplex.common.views.chat.group.LinkBan
+import chat.simplex.common.views.chat.group.LinkBanRows
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.chatlist.updateChatSettings
 import chat.simplex.common.views.newchat.*
@@ -305,6 +307,8 @@ sealed class ContactDeleteMode {
 
 private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)? = null) {
   val contactDeleteMode = mutableStateOf<ContactDeleteMode>(ContactDeleteMode.Full())
+  val ban = mutableStateOf(LinkBan.No)
+  val reason = mutableStateOf<ReportReason>(ReportReason.Spam)
 
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_contact_question),
@@ -330,10 +334,13 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
             )
           }
         }
+        if (contact.activeConn?.viaUserContactLink != null) {
+          LinkBanRows(stringResource(MR.strings.link_ban_from_connecting), ban, reason)
+        }
         // Delete without notification
         SectionItemView({
           AlertManager.shared.hideAlert()
-          deleteContact(chat, chatModel, close, chatDeleteMode = contactDeleteMode.value.toChatDeleteMode(notify = false))
+          deleteContact(chat, chatModel, close, chatDeleteMode = contactDeleteMode.value.toChatDeleteMode(notify = false), notice = ban.value.notice(reason.value))
           if (contactDeleteMode.value is ContactDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
             showDeleteContactNotice(contact)
           }
@@ -343,7 +350,7 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
         // Delete contact and notify
         SectionItemView({
           AlertManager.shared.hideAlert()
-          deleteContact(chat, chatModel, close, chatDeleteMode = contactDeleteMode.value.toChatDeleteMode(notify = true))
+          deleteContact(chat, chatModel, close, chatDeleteMode = contactDeleteMode.value.toChatDeleteMode(notify = true), notice = ban.value.notice(reason.value))
           if (contactDeleteMode.value is ContactDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
             showDeleteContactNotice(contact)
           }
@@ -468,11 +475,11 @@ private fun showDeleteContactNotice(contact: Contact) {
   )
 }
 
-fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)) {
+fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true), notice: LinkNotice? = null) {
   val chatInfo = chat.chatInfo
   withBGApi {
     val chatRh = chat.remoteHostId
-    val ct = chatModel.controller.apiDeleteContact(chatRh, chatInfo.apiId, chatDeleteMode)
+    val ct = chatModel.controller.apiDeleteContact(chatRh, chatInfo.apiId, chatDeleteMode, notice)
     if (ct != null) {
       withContext(Dispatchers.Main) {
         when (chatDeleteMode) {

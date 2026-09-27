@@ -319,6 +319,7 @@ chatTypesDocsData =
     (sti @InvitationLinkPlan, STUnion, "ILP", [], "", ""),
     (sti @InvitedBy, STUnion, "IB", [], "", ""),
     (sti @LinkContent, STUnion, "LC", [], "", ""),
+    (sti @LinkNotice, STRecord, "", [], "", ""),
     (sti @LinkOwnerSig, STRecord, "", [], "", ""),
     (sti @LinkPreview, STRecord, "", [], "", ""),
     (sti @BadgeInfo, STRecord, "", [], "", ""),
@@ -559,6 +560,7 @@ deriving instance Generic JSONCIDirection
 deriving instance Generic JSONCIFileStatus
 deriving instance Generic JSONCIStatus
 deriving instance Generic LinkContent
+deriving instance Generic LinkNotice
 deriving instance Generic LinkOwnerSig
 deriving instance Generic LinkPreview
 deriving instance Generic BadgeInfo

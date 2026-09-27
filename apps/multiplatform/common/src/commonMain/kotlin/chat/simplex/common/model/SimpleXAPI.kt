@@ -33,6 +33,8 @@ import chat.simplex.common.views.chat.item.showContentBlockedAlert
 import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.migration.MigrationFileLinkData
+import chat.simplex.common.views.newchat.LinkNoticeTarget
+import chat.simplex.common.views.newchat.showLinkNoticeAlert
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.views.usersettings.networkAndServers.defaultConditionsLink
@@ -1656,8 +1658,12 @@ object ChatController {
     return null
   }
 
-  private fun apiConnectResponseAlert(r: API) {
+  private fun apiConnectResponseAlert(r: API, noticeTarget: LinkNoticeTarget = LinkNoticeTarget.Link) {
     when {
+      r is API.Error && r.err is ChatError.ChatErrorChat
+          && r.err.errorType is ChatErrorType.LinkNotice -> {
+        showLinkNoticeAlert(noticeTarget, r.err.errorType.expiresAt, r.err.errorType.reason)
+      }
       r is API.Error && r.err is ChatError.ChatErrorChat
           && r.err.errorType is ChatErrorType.InvalidConnReq -> {
         AlertManager.shared.showAlertMsg(
@@ -1818,17 +1824,17 @@ object ChatController {
     if (r is API.Result && r.res is CR.StartedConnectionToContact) return r.res.contact
     if (r != null) {
       Log.e(TAG, "apiConnectPreparedContact bad response: ${r.responseType} ${r.details}")
-      apiConnectResponseAlert(r)
+      apiConnectResponseAlert(r, LinkNoticeTarget.Address)
     }
     return null
   }
 
-  suspend fun apiConnectPreparedGroup(rh: Long?, groupId: Long, incognito: Boolean, msg: MsgContent?): Pair<GroupInfo, List<RelayConnectionResult>>? {
+  suspend fun apiConnectPreparedGroup(rh: Long?, groupId: Long, isChannel: Boolean, incognito: Boolean, msg: MsgContent?): Pair<GroupInfo, List<RelayConnectionResult>>? {
     val r = sendCmdWithRetry(rh, CC.APIConnectPreparedGroup(groupId, incognito, msg))
     if (r is API.Result && r.res is CR.StartedConnectionToGroup) return Pair(r.res.groupInfo, r.res.relayResults)
     if (r != null) {
       Log.e(TAG, "apiConnectPreparedGroup bad response: ${r.responseType} ${r.details}")
-      apiConnectResponseAlert(r)
+      apiConnectResponseAlert(r, if (isChannel) LinkNoticeTarget.Channel else LinkNoticeTarget.Group)
     }
     return null
   }
@@ -1838,24 +1844,26 @@ object ChatController {
     val r = sendCmdWithRetry(rh, CC.ApiConnectContactViaAddress(userId, incognito, contactId))
     if (r is API.Result && r.res is CR.SentInvitationToContact) return r.res.contact
     if (r == null) return null
-    if (!(networkErrorAlert(r))) {
+    if (r is API.Error && r.err is ChatError.ChatErrorChat && r.err.errorType is ChatErrorType.LinkNotice) {
+      showLinkNoticeAlert(LinkNoticeTarget.Address, r.err.errorType.expiresAt, r.err.errorType.reason)
+    } else if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiConnectContactViaAddress", generalGetString(MR.strings.connection_error), r)
     }
     return null
   }
 
-  suspend fun deleteChat(chat: Chat, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)) {
+  suspend fun deleteChat(chat: Chat, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true), notice: LinkNotice? = null) {
     val cInfo = chat.chatInfo
-    if (apiDeleteChat(rh = chat.remoteHostId, type = cInfo.chatType, id = cInfo.apiId, chatDeleteMode = chatDeleteMode)) {
+    if (apiDeleteChat(rh = chat.remoteHostId, type = cInfo.chatType, id = cInfo.apiId, chatDeleteMode = chatDeleteMode, notice = notice)) {
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.removeChat(chat.remoteHostId, cInfo.id)
       }
     }
   }
 
-  suspend fun apiDeleteChat(rh: Long?, type: ChatType, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)): Boolean {
+  suspend fun apiDeleteChat(rh: Long?, type: ChatType, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true), notice: LinkNotice? = null): Boolean {
     chatModel.deletedChats.value += rh to type.type + id
-    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode))
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode, notice))
     val res = r.result
     val success = when {
       res is CR.ContactDeleted && type == ChatType.Direct -> true
@@ -1877,10 +1885,10 @@ object ChatController {
     return success
   }
 
-  suspend fun apiDeleteContact(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)): Contact? {
+  suspend fun apiDeleteContact(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true), notice: LinkNotice? = null): Contact? {
     val type = ChatType.Direct
     chatModel.deletedChats.value += rh to type.type + id
-    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode))
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode, notice))
     val contact = if (r is API.Result && r.res is CR.ContactDeleted) {
       r.res.contact
     } else {
@@ -2449,8 +2457,8 @@ object ChatController {
     return null
   }
 
-  suspend fun apiRemoveMembers(rh: Long?, groupId: Long, memberIds: List<Long>, withMessages: Boolean): Pair<GroupInfo, List<GroupMember>>? {
-    val r = sendCmd(rh, CC.ApiRemoveMembers(groupId, memberIds, withMessages))
+  suspend fun apiRemoveMembers(rh: Long?, groupId: Long, memberIds: List<Long>, withMessages: Boolean, notice: LinkNotice? = null): Pair<GroupInfo, List<GroupMember>>? {
+    val r = sendCmd(rh, CC.ApiRemoveMembers(groupId, memberIds, withMessages, notice))
     if (r is API.Result && r.res is CR.UserDeletedMembers) return r.res.groupInfo to r.res.members
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiRemoveMembers", generalGetString(MR.strings.error_removing_member), r)
@@ -3949,7 +3957,7 @@ sealed class CC {
   class ApiDeleteMemberSupportChat(val groupId: Long, val groupMemberId: Long): CC()
   class ApiMembersRole(val groupId: Long, val memberIds: List<Long>, val memberRole: GroupMemberRole): CC()
   class ApiBlockMembersForAll(val groupId: Long, val memberIds: List<Long>, val blocked: Boolean): CC()
-  class ApiRemoveMembers(val groupId: Long, val memberIds: List<Long>, val withMessages: Boolean): CC()
+  class ApiRemoveMembers(val groupId: Long, val memberIds: List<Long>, val withMessages: Boolean, val notice: LinkNotice?): CC()
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
   class ApiUpdateGroupProfile(val groupId: Long, val groupProfile: GroupProfile): CC()
@@ -4009,7 +4017,7 @@ sealed class CC {
   class APIConnectPreparedGroup(val groupId: Long, val incognito: Boolean, val msg: MsgContent?): CC()
   class APIConnect(val userId: Long, val incognito: Boolean, val connLink: CreatedConnLink): CC()
   class ApiConnectContactViaAddress(val userId: Long, val incognito: Boolean, val contactId: Long): CC()
-  class ApiDeleteChat(val type: ChatType, val id: Long, val chatDeleteMode: ChatDeleteMode): CC()
+  class ApiDeleteChat(val type: ChatType, val id: Long, val chatDeleteMode: ChatDeleteMode, val notice: LinkNotice?): CC()
   class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ApiListContacts(val userId: Long): CC()
   class ApiUpdateProfile(val userId: Long, val profile: Profile): CC()
@@ -4165,7 +4173,7 @@ sealed class CC {
     is ApiDeleteMemberSupportChat -> "/_delete member chat #$groupId $groupMemberId"
     is ApiMembersRole -> "/_member role #$groupId ${memberIds.joinToString(",")} ${memberRole.memberRole}"
     is ApiBlockMembersForAll -> "/_block #$groupId ${memberIds.joinToString(",")} blocked=${onOff(blocked)}"
-    is ApiRemoveMembers -> "/_remove #$groupId ${memberIds.joinToString(",")} messages=${onOff(withMessages)}"
+    is ApiRemoveMembers -> "/_remove #$groupId ${memberIds.joinToString(",")} messages=${onOff(withMessages)}${maybeNotice(notice)}"
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
     is ApiUpdateGroupProfile -> "/_group_profile #$groupId ${json.encodeToString(groupProfile)}"
@@ -4228,7 +4236,7 @@ sealed class CC {
     is APIConnectPreparedGroup -> "/_connect group #$groupId incognito=${onOff(incognito)}${maybeContent(msg)}"
     is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} ${connLink.connFullLink} ${connLink.connShortLink ?: ""}"
     is ApiConnectContactViaAddress -> "/_connect contact $userId incognito=${onOff(incognito)} $contactId"
-    is ApiDeleteChat -> "/_delete ${chatRef(type, id, scope = null)} ${chatDeleteMode.cmdString}"
+    is ApiDeleteChat -> "/_delete ${chatRef(type, id, scope = null)} ${chatDeleteMode.cmdString}${maybeNotice(notice)}"
     is ApiClearChat -> "/_clear chat ${chatRef(type, id, scope = null)}"
     is ApiListContacts -> "/_contacts $userId"
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"
@@ -4520,6 +4528,8 @@ sealed class CC {
       else -> ""
     }
   }
+
+  private fun maybeNotice(notice: LinkNotice?): String = if (notice == null) "" else " notice=" + json.encodeToString(notice)
 
   companion object {
     fun chatRef(chatType: ChatType, id: Long, scope: GroupChatScope?) = when (scope) {
@@ -7295,6 +7305,9 @@ sealed class ChatDeleteMode {
 }
 
 @Serializable
+data class LinkNotice(val ttl: Long? = null, val reason: ReportReason? = null)
+
+@Serializable
 data class CreatedConnLink(val connFullLink: String, val connShortLink: String?) {
   fun simplexChatUri(short: Boolean): String =
     if (short) connShortLink ?: simplexChatLink(connFullLink)
@@ -7462,6 +7475,7 @@ sealed class ContactAddressPlan {
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val contact: Contact): ContactAddressPlan()
   @Serializable @SerialName("known") class Known(val contact: Contact): ContactAddressPlan()
   @Serializable @SerialName("contactViaAddress") class ContactViaAddress(val contact: Contact): ContactAddressPlan()
+  @Serializable @SerialName("linkNotice") class LinkNotice(val expiresAt: Instant? = null, val reason: ReportReason? = null): ContactAddressPlan()
 }
 
 @Serializable
@@ -7473,6 +7487,7 @@ sealed class GroupLinkPlan {
   @Serializable @SerialName("known") class Known(val groupInfo: GroupInfo): GroupLinkPlan()
   @Serializable @SerialName("noRelays") class NoRelays(val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
   @Serializable @SerialName("updateRequired") class UpdateRequired(val groupSLinkData_: GroupShortLinkData? = null): GroupLinkPlan()
+  @Serializable @SerialName("linkNotice") class LinkNotice(val expiresAt: Instant? = null, val reason: ReportReason? = null): GroupLinkPlan()
 }
 
 abstract class TerminalItem {
@@ -7780,6 +7795,7 @@ sealed class ChatErrorType {
       is UnsupportedConnReq -> "unsupportedConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
       is ConnReqMessageProhibited -> "connReqMessageProhibited"
+      is LinkNotice -> "linkNotice"
       is ContactNotReady -> "contactNotReady"
       is ContactNotActive -> "contactNotActive"
       is ContactDisabled -> "contactDisabled"
@@ -7865,6 +7881,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("unsupportedConnReq") object UnsupportedConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("connReqMessageProhibited") object ConnReqMessageProhibited: ChatErrorType()
+  @Serializable @SerialName("linkNotice") class LinkNotice(val expiresAt: Instant? = null, val reason: ReportReason? = null): ChatErrorType()
   @Serializable @SerialName("contactNotReady") class ContactNotReady(val contact: Contact): ChatErrorType()
   @Serializable @SerialName("contactNotActive") class ContactNotActive(val contact: Contact): ChatErrorType()
   @Serializable @SerialName("contactDisabled") class ContactDisabled(val contact: Contact): ChatErrorType()

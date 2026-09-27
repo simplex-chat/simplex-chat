@@ -30,11 +30,13 @@ import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime (..), getCurrentTime)
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock (UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Type.Equality
 import Simplex.Chat.Badges (BadgeRow, badgeToRow, rowToBadge, verifyBadge_)
 import Simplex.Chat.Names (SimplexDomainProof, SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Messages
+import Simplex.Chat.Protocol (LinkNotice (..), ReportReason)
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -985,6 +987,53 @@ setViaGroupLinkUri db groupId connId = do
         WHERE group_id = ?
       |]
       (viaContactUri, viaContactUriHash, groupId)
+
+setGroupLinkNotice :: DB.Connection -> GroupInfo -> UTCTime -> LinkNotice -> IO ()
+setGroupLinkNotice db GroupInfo {groupId} brokerTs notice =
+  maybeFirstRow fromOnly (DB.query db "SELECT via_group_link_uri_hash FROM groups WHERE group_id = ? AND via_group_link_uri_hash IS NOT NULL" (Only groupId))
+    >>= mapM_ (\linkHash -> upsertLinkNotice db linkHash brokerTs notice)
+
+setContactLinkNotice :: DB.Connection -> Contact -> UTCTime -> LinkNotice -> IO ()
+setContactLinkNotice db ct brokerTs notice =
+  forM_ (contactConn ct) $ \Connection {connId} ->
+    maybeFirstRow fromOnly (DB.query db "SELECT via_contact_uri_hash FROM connections WHERE connection_id = ? AND via_contact_uri_hash IS NOT NULL" (Only connId))
+      >>= mapM_ (\linkHash -> upsertLinkNotice db linkHash brokerTs notice)
+
+upsertLinkNotice :: DB.Connection -> ConnReqUriHash -> UTCTime -> LinkNotice -> IO ()
+upsertLinkNotice db linkHash brokerTs LinkNotice {ttl, reason} = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO link_notices (link_hash, expires_at, reason, created_at, updated_at)
+      VALUES (?,?,?,?,?)
+      ON CONFLICT (link_hash) DO UPDATE SET
+        expires_at = EXCLUDED.expires_at,
+        reason = EXCLUDED.reason,
+        updated_at = EXCLUDED.updated_at
+    |]
+    (linkHash, expiresAt, reason, currentTs, currentTs)
+  where
+    expiresAt = mfilter (< maxLinkNoticeExpiry) $ (\t -> addUTCTime (fromIntegral t) brokerTs) <$> ttl
+    maxLinkNoticeExpiry = UTCTime (fromGregorian 10000 1 1) 0
+
+getLinkNotice :: DB.Connection -> UTCTime -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe (Maybe UTCTime, Maybe ReportReason))
+getLinkNotice db currentTs (linkHash1, linkHash2) =
+  maybeFirstRow id $
+    DB.query
+      db
+      [sql|
+        SELECT expires_at, reason
+        FROM link_notices
+        WHERE link_hash IN (?,?) AND (expires_at IS NULL OR expires_at > ?)
+        ORDER BY expires_at IS NULL DESC, expires_at DESC
+        LIMIT 1
+      |]
+      (linkHash1, linkHash2, currentTs)
+
+deleteExpiredLinkNotices :: DB.Connection -> UTCTime -> IO ()
+deleteExpiredLinkNotices db currentTs =
+  DB.execute db "DELETE FROM link_notices WHERE expires_at <= ?" (Only currentTs)
 
 deleteConnectionRecord :: DB.Connection -> User -> Int64 -> IO ()
 deleteConnectionRecord db User {userId} cId = do

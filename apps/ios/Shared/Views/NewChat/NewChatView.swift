@@ -920,6 +920,46 @@ private func showInvitationLinkConnectingAlert(cleanup: (() -> Void)?) {
     )
 }
 
+enum LinkNoticeTarget {
+    case group
+    case channel
+    case address
+    case link
+}
+
+func showLinkNoticeAlert(_ target: LinkNoticeTarget, expiresAt: Date?, reason: ReportReason?, cleanup: (() -> Void)? = nil) {
+    let join = target == .group || target == .channel
+    let banned = switch target {
+    case .group: NSLocalizedString("You were banned from this group.", comment: "alert message")
+    case .channel: NSLocalizedString("You were banned from this channel.", comment: "alert message")
+    case .address: NSLocalizedString("You were banned from connecting via this address.", comment: "alert message")
+    case .link: NSLocalizedString("You were banned from connecting via this link.", comment: "alert message")
+    }
+    let until =
+        if let expiresAt {
+            String.localizedStringWithFormat(
+                join
+                ? NSLocalizedString("You can join again after %@.", comment: "alert message")
+                : NSLocalizedString("You can connect again after %@.", comment: "alert message"),
+                expiresAt.formatted(date: .abbreviated, time: .shortened)
+            )
+        } else {
+            join
+            ? NSLocalizedString("You can't join it again.", comment: "alert message")
+            : NSLocalizedString("You can't connect again.", comment: "alert message")
+        }
+    let reasonLine: String? =
+        if case .some(.unknown) = reason { nil }
+        else { reason.map { String.localizedStringWithFormat(NSLocalizedString("Reason: %@.", comment: "alert message"), $0.text) } }
+    showAlert(
+        NSLocalizedString("Banned", comment: "alert title"),
+        message: [banned, until, reasonLine].compactMap { $0 }.joined(separator: "\n"),
+        actions: {[
+            okCleanupAlertAction(cleanup: cleanup)
+        ]}
+    )
+}
+
 private func showGroupLinkConnectingAlert(groupInfo: GroupInfo?, cleanup: (() -> Void)?) {
     if let groupInfo = groupInfo {
         if groupInfo.businessChat == nil {
@@ -1519,6 +1559,11 @@ func planAndConnect(
                                 cleanup: cleanup
                             )
                         }
+                    case let .linkNotice(expiresAt, reason):
+                        logger.debug("planAndConnect, .contactAddress, .linkNotice")
+                        await MainActor.run {
+                            showLinkNoticeAlert(.address, expiresAt: expiresAt, reason: reason, cleanup: cleanup)
+                        }
                     }
                 case let .groupLink(glp):
                     switch glp {
@@ -1648,6 +1693,14 @@ func planAndConnect(
                                 )
                                 cleanup?()
                             }
+                        }
+                    case let .linkNotice(expiresAt, reason):
+                        logger.debug("planAndConnect, .groupLink, .linkNotice")
+                        let isChannel =
+                            if case .link(_, .channel, _) = strConnectTarget(shortOrFullLink) { true }
+                            else { planSimplexName?.nameType == .publicGroup }
+                        await MainActor.run {
+                            showLinkNoticeAlert(isChannel ? .channel : .group, expiresAt: expiresAt, reason: reason, cleanup: cleanup)
                         }
                     }
                 case let .error(chatError):

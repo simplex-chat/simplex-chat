@@ -225,29 +225,41 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
       if (groupInfo.membership.memberCurrent) MR.strings.delete_chat_for_all_members_cannot_undo_warning
       else MR.strings.delete_chat_for_self_cannot_undo_warning
     }
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(titleId),
-    text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}",
-    parseHtml = false,
-    confirmText = generalGetString(MR.strings.delete_verb),
-    onConfirm = {
-      withBGApi {
-        val r = chatModel.controller.apiDeleteChat(chat.remoteHostId, chatInfo.chatType, chatInfo.apiId)
-        if (r) {
-          withContext(Dispatchers.Main) {
-            chatModel.chatsContext.removeChat(chat.remoteHostId, chatInfo.id)
-            if (chatModel.chatId.value == chatInfo.id) {
-              chatModel.chatId.value = null
-              ModalManager.end.closeModals()
-            }
-            ntfManager.cancelNotificationsForChat(chatInfo.id)
-            close?.invoke()
+  val text = "${groupInfo.displayName}\n\n${generalGetString(messageId)}"
+  val deleteGroup: (LinkNotice?) -> Unit = { notice ->
+    withBGApi {
+      val r = chatModel.controller.apiDeleteChat(chat.remoteHostId, chatInfo.chatType, chatInfo.apiId, notice = notice)
+      if (r) {
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.removeChat(chat.remoteHostId, chatInfo.id)
+          if (chatModel.chatId.value == chatInfo.id) {
+            chatModel.chatId.value = null
+            ModalManager.end.closeModals()
           }
+          ntfManager.cancelNotificationsForChat(chatInfo.id)
+          close?.invoke()
         }
       }
-    },
-    destructive = true,
-  )
+    }
+  }
+  if (canBanOnChatDeletion(groupInfo)) {
+    showLinkBanAlert(
+      generalGetString(titleId),
+      text,
+      generalGetString(MR.strings.link_ban_from_connecting),
+      LinkBan.No,
+      listOf(LinkBanAction(generalGetString(MR.strings.delete_verb), deleteGroup))
+    )
+  } else {
+    AlertManager.shared.showAlertDialog(
+      title = generalGetString(titleId),
+      text = text,
+      parseHtml = false,
+      confirmText = generalGetString(MR.strings.delete_verb),
+      onConfirm = { deleteGroup(null) },
+      destructive = true,
+    )
+  }
 }
 
 fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
@@ -301,61 +313,25 @@ fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
           }
         }
       })
-  } else if (groupInfo.useRelays) {
-    AlertManager.shared.showAlertDialogButtonsColumn(
-      generalGetString(MR.strings.button_remove_subscriber_question),
-      generalGetString(MR.strings.subscriber_will_be_removed_from_channel_cannot_be_undone),
-      buttons = {
-        Column {
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            removeMembers(rhId, groupInfo, listOf(mem.groupMemberId), withMessages = false)
-          }) {
-            Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-          }
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            removeMembers(rhId, groupInfo, listOf(mem.groupMemberId), withMessages = true)
-          }) {
-            Text(generalGetString(MR.strings.remove_member_delete_messages_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-          }
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-          }) {
-            Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
-        }
-      })
   } else {
-    val titleId = MR.strings.button_remove_member_question
-    val messageId = if (groupInfo.businessChat == null)
-      MR.strings.member_will_be_removed_from_group_cannot_be_undone
-    else
-      MR.strings.member_will_be_removed_from_chat_cannot_be_undone
-    AlertManager.shared.showAlertDialogButtonsColumn(
-      generalGetString(titleId),
-      generalGetString(messageId),
-      buttons = {
-        Column {
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            removeMembers(rhId, groupInfo, listOf(mem.groupMemberId), withMessages = false)
-          }) {
-            Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-          }
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            removeMembers(rhId, groupInfo, listOf(mem.groupMemberId), withMessages = true)
-          }) {
-            Text(generalGetString(MR.strings.remove_member_delete_messages_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-          }
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-          }) {
-            Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
+    showMemberBanAlert(
+      groupInfo,
+      showBan = mem.memberStatus != GroupMemberStatus.MemInvited,
+      title = generalGetString(if (groupInfo.useRelays) MR.strings.button_remove_subscriber_question else MR.strings.button_remove_member_question),
+      text = generalGetString(
+        if (groupInfo.useRelays) MR.strings.subscriber_will_be_removed_from_channel_cannot_be_undone
+        else if (groupInfo.businessChat == null) MR.strings.member_will_be_removed_from_group_cannot_be_undone
+        else MR.strings.member_will_be_removed_from_chat_cannot_be_undone
+      ),
+      actions = listOf(
+        LinkBanAction(generalGetString(MR.strings.remove_member_confirmation)) { notice ->
+          removeMembers(rhId, groupInfo, listOf(mem.groupMemberId), withMessages = false, notice = notice)
+        },
+        LinkBanAction(generalGetString(MR.strings.remove_member_delete_messages_confirmation)) { notice ->
+          removeMembers(rhId, groupInfo, listOf(mem.groupMemberId), withMessages = true, notice = notice)
         }
-      })
+      )
+    )
   }
 }
 
@@ -364,22 +340,75 @@ private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, memberIds: Lis
     MR.strings.members_will_be_removed_from_group_cannot_be_undone
   else
     MR.strings.members_will_be_removed_from_chat_cannot_be_undone
+  showMemberBanAlert(
+    groupInfo,
+    showBan = true,
+    title = generalGetString(MR.strings.button_remove_members_question),
+    text = generalGetString(messageId),
+    actions = listOf(
+      LinkBanAction(generalGetString(MR.strings.remove_member_confirmation)) { notice ->
+        removeMembers(rhId, groupInfo, memberIds, withMessages = false, notice = notice, onSuccess = onSuccess)
+      },
+      LinkBanAction(generalGetString(MR.strings.remove_member_delete_messages_confirmation)) { notice ->
+        removeMembers(rhId, groupInfo, memberIds, withMessages = true, notice = notice, onSuccess = onSuccess)
+      }
+    )
+  )
+}
+
+enum class LinkBan {
+  No, Hour, Day, Week, Month, Permanent;
+
+  val text: String get() = generalGetString(
+    when (this) {
+      No -> MR.strings.link_ban_no
+      Hour -> MR.strings.link_ban_1_hour
+      Day -> MR.strings.link_ban_1_day
+      Week -> MR.strings.link_ban_1_week
+      Month -> MR.strings.link_ban_1_month
+      Permanent -> MR.strings.link_ban_permanently
+    }
+  )
+
+  fun notice(reason: ReportReason): LinkNotice? = when (this) {
+    No -> null
+    Hour -> LinkNotice(ttl = 3600, reason = reason)
+    Day -> LinkNotice(ttl = 86400, reason = reason)
+    Week -> LinkNotice(ttl = 604800, reason = reason)
+    Month -> LinkNotice(ttl = 2592000, reason = reason)
+    Permanent -> LinkNotice(ttl = null, reason = reason)
+  }
+}
+
+class LinkBanAction(val title: String, val action: (LinkNotice?) -> Unit)
+
+@Composable
+fun LinkBanRows(label: String, ban: MutableState<LinkBan>, reason: MutableState<ReportReason>) {
+  ExposedDropDownSettingRow(label, LinkBan.entries.map { it to it.text }, ban, onSelected = { ban.value = it })
+  if (ban.value != LinkBan.No) {
+    ExposedDropDownSettingRow(generalGetString(MR.strings.link_ban_reason), ReportReason.supportedReasons.map { it to it.text }, reason, onSelected = { reason.value = it })
+  }
+}
+
+fun showLinkBanAlert(title: String, text: String?, banLabel: String?, ban: LinkBan, actions: List<LinkBanAction>) {
+  val banState = mutableStateOf(ban)
+  val reason = mutableStateOf<ReportReason>(ReportReason.Spam)
   AlertManager.shared.showAlertDialogButtonsColumn(
-    generalGetString(MR.strings.button_remove_members_question),
-    generalGetString(messageId),
+    title,
+    text,
+    parseHtml = false,
     buttons = {
       Column {
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          removeMembers(rhId, groupInfo, memberIds, withMessages = false, onSuccess = onSuccess)
-        }) {
-          Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        if (banLabel != null) {
+          LinkBanRows(banLabel, banState, reason)
         }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          removeMembers(rhId, groupInfo, memberIds, withMessages = true, onSuccess = onSuccess)
-        }) {
-          Text(generalGetString(MR.strings.remove_member_delete_messages_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        actions.forEach { a ->
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            a.action(banState.value.notice(reason.value))
+          }) {
+            Text(a.title, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+          }
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
@@ -389,6 +418,18 @@ private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, memberIds: Lis
       }
     })
 }
+
+fun showMemberBanAlert(groupInfo: GroupInfo, showBan: Boolean, title: String, text: String?, actions: List<LinkBanAction>) {
+  if (showBan) {
+    val banLabel = generalGetString(if (groupInfo.businessChat == null) MR.strings.link_ban_from_joining else MR.strings.link_ban_from_connecting)
+    showLinkBanAlert(title, text, banLabel, LinkBan.Day, actions)
+  } else {
+    showLinkBanAlert(title, text, null, LinkBan.No, actions)
+  }
+}
+
+fun canBanOnChatDeletion(groupInfo: GroupInfo): Boolean =
+  groupInfo.businessChat?.chatType == BusinessChatType.Customer && groupInfo.membership.memberCurrent
 
 @Composable
 fun SearchButton(
@@ -1401,9 +1442,9 @@ private fun setGroupAlias(chat: Chat, localAlias: String, chatModel: ChatModel) 
   }
 }
 
-fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, withMessages: Boolean, onSuccess: () -> Unit = {}) {
+fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, withMessages: Boolean, notice: LinkNotice? = null, onSuccess: () -> Unit = {}) {
   withBGApi {
-    val r = chatModel.controller.apiRemoveMembers(rhId, groupInfo.groupId, memberIds, withMessages = withMessages)
+    val r = chatModel.controller.apiRemoveMembers(rhId, groupInfo.groupId, memberIds, withMessages = withMessages, notice = notice)
     if (r != null) {
       val (updatedGroupInfo, updatedMembers) = r
       withContext(Dispatchers.Main) {

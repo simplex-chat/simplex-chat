@@ -276,60 +276,25 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
           }
         }
       })
-  } else if (groupInfo.useRelays) {
-    AlertManager.shared.showAlertDialogButtonsColumn(
-      generalGetString(MR.strings.button_remove_subscriber_question),
-      generalGetString(MR.strings.subscriber_will_be_removed_from_channel_cannot_be_undone),
-      buttons = {
-        Column {
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close)
-          }) {
-            Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-          }
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            removeMember(rhId, groupInfo, member, withMessages = true, chatModel, close)
-          }) {
-            Text(generalGetString(MR.strings.remove_member_delete_messages_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-          }
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-          }) {
-            Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
-        }
-      })
   } else {
-    val messageId = if (groupInfo.businessChat == null)
-      MR.strings.member_will_be_removed_from_group_cannot_be_undone
-    else
-      MR.strings.member_will_be_removed_from_chat_cannot_be_undone
-    AlertManager.shared.showAlertDialogButtonsColumn(
-      generalGetString(MR.strings.button_remove_member_question),
-      generalGetString(messageId),
-      buttons = {
-        Column {
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close)
-          }) {
-            Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-          }
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            removeMember(rhId, groupInfo, member, withMessages = true, chatModel, close)
-          }) {
-            Text(generalGetString(MR.strings.remove_member_delete_messages_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-          }
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-          }) {
-            Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
+    showMemberBanAlert(
+      groupInfo,
+      showBan = member.memberStatus != GroupMemberStatus.MemInvited,
+      title = generalGetString(if (groupInfo.useRelays) MR.strings.button_remove_subscriber_question else MR.strings.button_remove_member_question),
+      text = generalGetString(
+        if (groupInfo.useRelays) MR.strings.subscriber_will_be_removed_from_channel_cannot_be_undone
+        else if (groupInfo.businessChat == null) MR.strings.member_will_be_removed_from_group_cannot_be_undone
+        else MR.strings.member_will_be_removed_from_chat_cannot_be_undone
+      ),
+      actions = listOf(
+        LinkBanAction(generalGetString(MR.strings.remove_member_confirmation)) { notice ->
+          removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close, notice)
+        },
+        LinkBanAction(generalGetString(MR.strings.remove_member_delete_messages_confirmation)) { notice ->
+          removeMember(rhId, groupInfo, member, withMessages = true, chatModel, close, notice)
         }
-      })
+      )
+    )
   }
 }
 
@@ -345,9 +310,9 @@ fun deleteMemberMessagesDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupM
   )
 }
 
-fun removeMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, withMessages: Boolean, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun removeMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, withMessages: Boolean, chatModel: ChatModel, close: (() -> Unit)? = null, notice: LinkNotice? = null) {
   withBGApi {
-    val r = chatModel.controller.apiRemoveMembers(rhId, member.groupId, listOf(member.groupMemberId), withMessages = withMessages)
+    val r = chatModel.controller.apiRemoveMembers(rhId, member.groupId, listOf(member.groupMemberId), withMessages = withMessages, notice = notice)
     if (r != null) {
       val (updatedGroupInfo, removedMembers) = r
       withContext(Dispatchers.Main) {
