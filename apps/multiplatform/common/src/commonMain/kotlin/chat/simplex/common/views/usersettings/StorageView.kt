@@ -28,13 +28,12 @@ private class RootUsage(val dir: File, val entries: List<EntryUsage>) {
 
 @Composable
 fun StorageView() {
-  val usage = remember { mutableStateOf<List<RootUsage>?>(null) }
-  LaunchedEffect(Unit) {
-    usage.value = withContext(Dispatchers.IO) { storageRoots().map(::rootUsage) }
+  val usage by produceState<List<RootUsage>?>(initialValue = null) {
+    value = withContext(Dispatchers.IO) { storageRoots().map(::rootUsage) }
   }
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.storage))
-    val roots = usage.value
+    val roots = usage
     if (roots == null) {
       DefaultProgressView(null)
     } else {
@@ -67,20 +66,13 @@ private fun rootUsage(root: File): RootUsage =
   RootUsage(
     root,
     root.listFiles().orEmpty()
-      .map { EntryUsage(it.name, entrySize(it)) }
+      .map { EntryUsage(it.name, treeSize(it)) }
       .sortedByDescending { it.bytes }
   )
 
-private fun entrySize(entry: File): Long =
-  try {
-    treeSize(entry.toPath())
-  } catch (e: InvalidPathException) {
-    Log.e(TAG, "StorageView entrySize: $e")
-    0L
-  }
-
-private fun treeSize(path: Path): Long {
+private fun treeSize(entry: File): Long {
   var bytes = 0L
+  val path = try { entry.toPath() } catch (e: InvalidPathException) { Log.e(TAG, "StorageView treeSize: $e"); return 0L }
   Files.walkFileTree(path, object : SimpleFileVisitor<Path>() {
     override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
       bytes += attrs.size()

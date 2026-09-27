@@ -2,7 +2,7 @@
 
 ## Problem
 
-When the Android or desktop app takes a lot of space, there is no way to see from inside the app what is using it. The Database screen shows only the count and size of received files (`directoryFileCountAndSize(appFilesDir)`, `Utils.kt`), and that helper is not recursive: it adds up `File.length()` of the direct children only.
+When the Android or desktop app takes a lot of space, there is no way to see from inside the app what is using it. The Database screen shows only the count and size of received files (`directoryFileCountAndSize(appFilesDir.absolutePath)`, `Utils.kt`), and that helper is not recursive: it adds up `File.length()` of the direct children only.
 
 The databases, their `-wal`/`.bak` copies, wallpapers, core temp files, migration leftovers, remote-host data and preferences are all invisible. On one desktop profile, for example, the `.bak` copies left by database migrations were 5.6 MB of the 13 MB of database files.
 
@@ -29,9 +29,9 @@ It improves on iOS in four ways:
 - It measures on `Dispatchers.IO`; iOS measures on the main thread in `.onAppear`.
 - It sorts rows by size; iOS iterates a dictionary, so the order is random.
 - It shows a total per folder.
-- A folder that cannot be listed is logged and skipped. On iOS, a failure to read one entry's attributes ends the whole walk.
+- A file or folder inside the walk that cannot be read is logged and skipped, and a storage folder that cannot be listed shows as empty. On iOS, a failure to read one entry's attributes ends the whole walk.
 
-The walk uses `Files.walkFileTree` (API 26 = minSdk) without `FOLLOW_LINKS`, as iOS's `FileManager.enumerator` does not follow links either: a symlink is counted as the link itself, so it cannot loop, escape to `/`, or (on Android) count the APK's native libraries through a `lib` link that the system may create in the data folder.
+The walk uses `Files.walkFileTree` (API 26 = minSdk) without `FOLLOW_LINKS`, as iOS's `FileManager.enumerator` does not follow links either: a symlink is counted as the link itself, so it cannot loop, escape to `/` (Windows directory junctions are not treated as links by the JDK, but the app never creates them), or (on Android) count the APK's native libraries through a `lib` link that the system may create in the data folder.
 
 Sizes are file lengths (`BasicFileAttributes.size()`). iOS uses allocated size, which has no portable equivalent on the JVM, and length is what the existing Database screen reports.
 
@@ -42,7 +42,7 @@ Sizes are file lengths (`BasicFileAttributes.size()`). iOS uses allocated size, 
   - an unreadable folder: logged, the walk continues
   - a nested folder and a duplicate folder: dropped
   - a missing folder: shown as empty
-- On a real 187 MB desktop profile, the walk took 0.8 s and matched `du -sb` minus the 4 KB directory entry that `du` also counts.
+- On a real 187 MB desktop profile, the walk took 0.8 s and matched `du -sb` minus the 4 KB that `du` also counts for each directory.
 - A desktop AppImage run on a separate test profile showed all three folders, with sizes matching `ls`.
 
 A top-level name that the JVM cannot convert to a `Path` (a non-ASCII name under a non-UTF-8 locale on Linux, e.g. a received file decrypted into `tmpDir`) would make `File.toPath()` throw out of the screen's coroutine; it is logged and shown as 0 bytes instead.
