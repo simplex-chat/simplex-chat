@@ -67,9 +67,17 @@ private fun rootUsage(root: File): RootUsage =
   RootUsage(
     root,
     root.listFiles().orEmpty()
-      .map { EntryUsage(it.name, treeSize(it.toPath())) }
+      .map { EntryUsage(it.name, entrySize(it)) }
       .sortedByDescending { it.bytes }
   )
+
+private fun entrySize(entry: File): Long =
+  try {
+    treeSize(entry.toPath())
+  } catch (e: InvalidPathException) {
+    Log.e(TAG, "StorageView entrySize: $e")
+    0L
+  }
 
 private fun treeSize(path: Path): Long {
   var bytes = 0L

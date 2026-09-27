@@ -20,7 +20,7 @@ Folders measured: `dataDir`, `preferencesDir` and `tmpDir`. Any folder that is t
 |---|---|
 | Android | `dataDir` only. `shared_prefs` and `app_temp` are inside it, and so are the databases, `files/`, `cache/` (exports) and `app_temp/remote_hosts`. |
 | Linux, macOS | `$XDG_DATA_HOME/simplex`, `$XDG_CONFIG_HOME/simplex`, `java.io.tmpdir/simplex` |
-| Windows | `%AppData%\SimpleX` (config and data are the same folder), `%TEMP%\simplex` |
+| Windows | `%AppData%\SimpleX` (config and data are the same folder), `java.io.tmpdir\simplex` (usually `%TEMP%`) |
 
 Like iOS, it shows whatever entries actually exist rather than named categories. Named categories would need to be kept in sync with the path helpers and would hide anything unexpected, and unexpected entries (such as `.bak` files) are what this screen is for.
 
@@ -29,7 +29,7 @@ It improves on iOS in four ways:
 - It measures on `Dispatchers.IO`; iOS measures on the main thread in `.onAppear`.
 - It sorts rows by size; iOS iterates a dictionary, so the order is random.
 - It shows a total per folder.
-- An unreadable file is logged and skipped. On iOS, the first error ends the walk.
+- A folder that cannot be listed is logged and skipped. On iOS, a failure to read one entry's attributes ends the whole walk.
 
 The walk uses `Files.walkFileTree` (API 26 = minSdk) without `FOLLOW_LINKS`, as iOS's `FileManager.enumerator` does not follow links either: a symlink is counted as the link itself, so it cannot loop, escape to `/`, or (on Android) count the APK's native libraries through a `lib` link that the system may create in the data folder.
 
@@ -42,8 +42,10 @@ Sizes are file lengths (`BasicFileAttributes.size()`). iOS uses allocated size, 
   - an unreadable folder: logged, the walk continues
   - a nested folder and a duplicate folder: dropped
   - a missing folder: shown as empty
-- On a real 187 MB desktop profile, the walk took 0.8 s and matched `du -sb` exactly (`du` also counts the 4 KB folder entry).
+- On a real 187 MB desktop profile, the walk took 0.8 s and matched `du -sb` minus the 4 KB directory entry that `du` also counts.
 - A desktop AppImage run on a separate test profile showed all three folders, with sizes matching `ls`.
+
+A top-level name that the JVM cannot convert to a `Path` (a non-ASCII name under a non-UTF-8 locale on Linux, e.g. a received file decrypted into `tmpDir`) would make `File.toPath()` throw out of the screen's coroutine; it is logged and shown as 0 bytes instead.
 
 ## Not included
 
