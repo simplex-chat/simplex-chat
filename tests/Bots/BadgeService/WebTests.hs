@@ -25,7 +25,7 @@ import Bots.BadgeService.FakeStripe (FakeStripe (..), fakeIntentStatus, setInten
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.Async (async, wait)
 import qualified Control.Concurrent.Async as Async
-import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
+import Control.Concurrent.MVar (MVar, newEmptyMVar, newMVar, putMVar, takeMVar, withMVar)
 import Control.Concurrent.STM (atomically, modifyTVar', readTVarIO)
 import qualified Control.Exception as E
 import Control.Monad (forM_, join, replicateM, replicateM_, void, when)
@@ -2485,9 +2485,13 @@ seedPastWindow st i providerRef provider = do
 passListing :: IORef StubState -> PollerEnv -> IO ()
 passListing ref poller = runOnePass poller >> clearCalls ref
 
+stderrCaptureLock :: MVar ()
+stderrCaptureLock = unsafePerformIO $ newMVar ()
+{-# NOINLINE stderrCaptureLock #-}
+
 -- hDuplicateTo changes stderr's buffering, so put the original setting back.
 capturingStderr :: IO () -> IO Text
-capturingStderr action = do
+capturingStderr action = withMVar stderrCaptureLock $ \_ -> do
   createDirectoryIfMissing True "tests/tmp"
   withTempDirectory "tests/tmp" "badge-stderr" $ \dir -> do
     let path = dir </> "stderr.log"

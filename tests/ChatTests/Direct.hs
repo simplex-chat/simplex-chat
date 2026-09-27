@@ -1362,7 +1362,7 @@ testNegotiateCall =
     threadDelay 100000
     bob #$> ("/_get chat @2 count=100", callChat, chatFeatures <> [(0, "incoming call: ended")])
     alice <## "call with bob ended"
-    alice #$> ("/_get chat @2 count=100", callChat, chatFeatures <> [(1, "outgoing call: ended")])
+    (alice ##> "/_get chat @2 count=100" >> callChat <$> getTermLine alice) `shouldEventuallyReturn` (chatFeatures <> [(1, "outgoing call: ended")])
   where
     callChat = map (fmap noDuration) . chat
     noDuration s = case words s of

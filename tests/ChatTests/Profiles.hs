@@ -1282,11 +1282,8 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     bob <## "contact address: connecting, allowed to reconnect"
     biz <## "#bob (Bob): accepting business address request..."
     bob <## "#biz: joining the group..."
-    -- the next command can be prone to race conditions
-    bob ##> ("/_connect plan 1 " <> cLink)
-    bob <## "business address: connecting to business #biz"
+    checkBusinessPlanWhileJoining bob cLink
     biz <## "#bob: bob_1 joined the group"
-    bob <## "#biz: you joined the group"
     biz #> "#bob hi"
     bob <# "#biz biz_1> hi"
     bob #> "#biz hello"
@@ -1319,6 +1316,19 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     concurrently_
       (alice <# "#bob bob_1> hey there")
       (biz <# "#bob bob_1> hey there")
+
+checkBusinessPlanWhileJoining :: HasCallStack => TestCC -> String -> IO ()
+checkBusinessPlanWhileJoining cc link = do
+  let cmd = "/_connect plan 1 " <> link
+      joined = "#biz: you joined the group"
+      known = "business address: known business #biz"
+  cc `send` cmd
+  ls <- replicateM 3 $ getTermLine cc
+  if known `elem` ls
+    then do
+      l <- getTermLine cc
+      (l : ls) `shouldMatchList` [cmd, joined, known, "use #biz <message> to send messages"]
+    else ls `shouldMatchList` [cmd, joined, "business address: connecting to business #biz"]
 
 testBusinessUpdateProfiles :: HasCallStack => TestParams -> IO ()
 testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile cathProfile $
@@ -3433,8 +3443,9 @@ testShortLinkInvitationImage = testChat2 aliceProfile bobProfile test
       bob <##> alice
 
 testShortLinkInvitationConnectRetry :: HasCallStack => TestParams -> IO ()
-testShortLinkInvitationConnectRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
+testShortLinkInvitationConnectRetry ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test ps
   where
+    cfg' = testCfg {agentConfig = testAgentCfg {persistErrorInterval = 0}}
     test alice bob = do
       shortLink <- withSmpServer' serverCfg' $ do
         alice ##> "/_connect 1"
@@ -3734,11 +3745,8 @@ testShortLinkAddressPrepareBusiness = testChat3 businessProfile aliceProfile {fu
       bob <## "#biz: connection started"
       biz <## "#bob (Bob): accepting business address request..."
       bob <## "#biz: joining the group..."
-      -- the next command can be prone to race conditions
-      bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "business address: connecting to business #biz"
+      checkBusinessPlanWhileJoining bob shortLink
       biz <## "#bob: bob_1 joined the group"
-      bob <## "#biz: you joined the group"
       biz #> "#bob hi"
       bob <# "#biz biz_1> hi"
       bob #> "#biz hello"

@@ -13,7 +13,7 @@ import ChatTests.DBUtils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, mapConcurrently_)
 import Control.Concurrent.STM
-import Control.Monad (unless, when)
+import Control.Monad (join, unless, when)
 import Control.Monad.Except (runExceptT)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
@@ -679,11 +679,24 @@ createCCNoteFolder cc =
     withCCUser cc $ \user ->
       runExceptT (createNoteFolder db user) >>= either (fail . show) pure
 
+shouldEventuallyReturn :: (HasCallStack, Eq a, Show a) => IO a -> a -> Expectation
+shouldEventuallyReturn action expected = go (200 :: Int)
+  where
+    go n = do
+      r <- action
+      if r == expected || n == 0
+        then r `shouldBe` expected
+        else threadDelay 100000 >> go (n - 1)
+
 getProfilePictureByName :: TestCC -> String -> IO (Maybe String)
 getProfilePictureByName cc displayName =
   withTransaction (chatStore $ chatController cc) $ \db ->
-    maybeFirstRow fromOnly $
-      DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
+    join <$> maybeFirstRow fromOnly (DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName))
+
+getProfileShortDescrByName :: TestCC -> String -> IO (Maybe String)
+getProfileShortDescrByName cc displayName =
+  withTransaction (chatStore $ chatController cc) $ \db ->
+    join <$> maybeFirstRow fromOnly (DB.query db "SELECT short_descr FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName))
 
 pqSndForContact :: TestCC -> ContactId -> IO PQEncryption
 pqSndForContact = pqForContact_ pqSndEnabled PQEncOff

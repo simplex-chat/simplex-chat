@@ -659,7 +659,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               ct' = ct {activeConn = Just conn'} :: Contact
           -- [incognito] print incognito profile used for this contact
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
           let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ Just pqEnc) Nothing
           -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
           when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
@@ -674,6 +673,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               withStore' (\db -> getContactRequest' db user connReqId) >>= \case
                 Just UserContactRequest {pqSupport} | CR.pqSupportToEnc pqSupport == pqEnc -> pure ()
                 _ -> createE2EItem
+          toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
           when (contactConnInitiated conn') $ do
             probeMatchingMembers ct' (contactConnIncognito ct')
             withStore' $ \db -> resetContactConnInitiated db user conn'
@@ -884,7 +884,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     pure gInfo {membership = membership {memberStatus = GSMemConnected}}
                   else pure gInfo
               pure (m {memberStatus = GSMemConnected}, gInfo')
-            toView $ CEvtUserJoinedGroup user gInfo' m'
             when (isRelay membership) $ do
               cc <- ask
               atomically $ channelProfileUpdated cc groupId groupProfile
@@ -898,10 +897,14 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   let prepared = preparedGroup gInfo''
                   unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
                   memberConnectedChatItem gInfo'' scopeInfo m''
+                  toView $ CEvtUserJoinedGroup user gInfo' m'
                   let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> prepared
                   unless (memberPending membership || isJust welcomeMsgId_) $ maybeCreateGroupDescrLocal gInfo'' m''
               )
-              (memberConnectedChatItem gInfo'' scopeInfo m'')
+              ( do
+                  memberConnectedChatItem gInfo'' scopeInfo m''
+                  toView $ CEvtUserJoinedGroup user gInfo' m'
+              )
             where
               firstConnectedHost
                 | useRelays' gInfo = do

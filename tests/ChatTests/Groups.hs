@@ -3322,7 +3322,7 @@ testGroupLinkMemberRole =
             bob <## "#team: you joined the group"
         ]
 
-      threadDelay 250000
+      getProfileShortDescrByName bob "alice" `shouldEventuallyReturn` Just "Alice"
 
       alice ##> "/ms team"
       alice
@@ -3492,10 +3492,7 @@ testGroupLinkHostProfileReceived =
             bob <## "#team: you joined the group"
         ]
 
-      threadDelay 250000
-
-      aliceImage <- getProfilePictureByName bob "alice"
-      aliceImage `shouldBe` Just profileImage
+      getProfilePictureByName bob "alice" `shouldEventuallyReturn` Just profileImage
 
 testGroupLinkExistingContactMerged :: HasCallStack => TestParams -> IO ()
 testGroupLinkExistingContactMerged =
