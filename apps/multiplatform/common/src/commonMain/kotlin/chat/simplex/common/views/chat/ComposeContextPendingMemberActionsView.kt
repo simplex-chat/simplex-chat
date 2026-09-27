@@ -13,8 +13,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.views.chat.group.LinkBanAction
 import chat.simplex.common.views.chat.group.removeMember
 import chat.simplex.common.views.chat.group.removeMemberDialog
+import chat.simplex.common.views.chat.group.showMemberBanAlert
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
@@ -71,13 +73,16 @@ fun ComposeContextPendingMemberActionsView(
 }
 
 fun rejectMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  AlertManager.shared.showAlertDialog(
+  showMemberBanAlert(
+    groupInfo,
+    showBan = true,
     title = generalGetString(MR.strings.reject_pending_member_alert_title),
-    confirmText = generalGetString(MR.strings.reject_pending_member_button),
-    onConfirm = {
-      removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close)
-    },
-    destructive = true,
+    text = null,
+    actions = listOf(
+      LinkBanAction(generalGetString(MR.strings.reject_pending_member_button)) { notice ->
+        removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close, notice)
+      }
+    )
   )
 }
 

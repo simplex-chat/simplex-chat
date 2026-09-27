@@ -129,6 +129,7 @@ This file is generated automatically.
 - [InvitationLinkPlan](#invitationlinkplan)
 - [InvitedBy](#invitedby)
 - [LinkContent](#linkcontent)
+- [LinkNotice](#linknotice)
 - [LinkOwnerSig](#linkownersig)
 - [LinkPreview](#linkpreview)
 - [LocalBadge](#localbadge)
@@ -1240,6 +1241,11 @@ UnsupportedConnReq:
 ConnReqMessageProhibited:
 - type: "connReqMessageProhibited"
 
+LinkNotice:
+- type: "linkNotice"
+- expiresAt: UTCTime?
+- reason: [ReportReason](#reportreason)?
+
 ContactNotReady:
 - type: "contactNotReady"
 - contact: [Contact](#contact)
@@ -1939,6 +1945,11 @@ ContactViaAddress:
 - type: "contactViaAddress"
 - contact: [Contact](#contact)
 
+LinkNotice:
+- type: "linkNotice"
+- expiresAt: UTCTime?
+- reason: [ReportReason](#reportreason)?
+
 
 ---
 
@@ -2557,6 +2568,11 @@ UpdateRequired:
 - type: "updateRequired"
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
+LinkNotice:
+- type: "linkNotice"
+- expiresAt: UTCTime?
+- reason: [ReportReason](#reportreason)?
+
 
 ---
 
@@ -2847,6 +2863,15 @@ Unknown:
 - type: "unknown"
 - tag: string
 - json: JSONObject
+
+
+---
+
+## LinkNotice
+
+**Record type**:
+- ttl: int64?
+- reason: [ReportReason](#reportreason)?
 
 
 ---

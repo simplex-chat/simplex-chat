@@ -767,6 +767,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case unsupportedConnReq
     case invalidChatMessage(connection: Connection, message: String)
     case connReqMessageProhibited
+    case linkNotice(expiresAt: Date?, reason: ReportReason?)
     case contactNotReady(contact: Contact)
     case contactNotActive(contact: Contact)
     case contactDisabled(contact: Contact)

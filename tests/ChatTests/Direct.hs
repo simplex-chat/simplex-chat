@@ -67,6 +67,7 @@ chatDirectTests = do
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
     it "delete contact keeping conversation" testDeleteContactKeepConversation
     it "delete conversation keeping contact" testDeleteConversationKeepContact
+    it "delete contact connected via invitation with notice" testDeleteContactInvitationNotice
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
     it "direct message edit history" testDirectMessageEditHistory
@@ -602,6 +603,18 @@ testDeleteContactKeepConversation =
       bob @@@ [("@alice", "contact deleted")]
       bob ##> "@alice hey"
       bob <## "alice: not ready"
+
+testDeleteContactInvitationNotice :: HasCallStack => TestParams -> IO ()
+testDeleteContactInvitationNotice =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/_delete @2 messages notice={\"ttl\":86400}"
+      alice <## "bad chat command: notice requires deleting the contact"
+      alice ##> "/_delete @2 full notice={\"ttl\":86400}"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+      linkNoticesCount bob `shouldReturn` 0
 
 testDeleteConversationKeepContact :: HasCallStack => TestParams -> IO ()
 testDeleteConversationKeepContact =

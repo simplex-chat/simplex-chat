@@ -2038,6 +2038,7 @@ data class Connection(
   val peerChatVRange: VersionRange,
   val connStatus: ConnStatus,
   val connLevel: Int,
+  val viaUserContactLink: Long? = null,
   val viaGroupLink: Boolean,
   val customUserProfileId: Long? = null,
   val connectionCode: SecurityCode? = null,
@@ -5293,19 +5294,19 @@ enum class FormatColor(val color: String) {
 @Serializable(with = ReportReasonSerializer::class)
 sealed class ReportReason {
   @Serializable @SerialName("spam") object Spam: ReportReason()
-  @Serializable @SerialName("illegal") object Illegal: ReportReason()
+  @Serializable @SerialName("content") object Content: ReportReason()
   @Serializable @SerialName("community") object Community: ReportReason()
   @Serializable @SerialName("profile") object Profile: ReportReason()
   @Serializable @SerialName("other") object Other: ReportReason()
   @Serializable @SerialName("unknown") data class Unknown(val type: String): ReportReason()
 
   companion object {
-    val supportedReasons: List<ReportReason> = listOf(Spam, Illegal, Community, Profile, Other)
+    val supportedReasons: List<ReportReason> = listOf(Spam, Content, Community, Profile, Other)
   }
 
   val text: String get() = when (this) {
     Spam -> generalGetString(MR.strings.report_reason_spam)
-    Illegal -> generalGetString(MR.strings.report_reason_illegal)
+    Content -> generalGetString(MR.strings.report_reason_illegal)
     Community -> generalGetString(MR.strings.report_reason_community)
     Profile -> generalGetString(MR.strings.report_reason_profile)
     Other -> generalGetString(MR.strings.report_reason_other)
@@ -5320,7 +5321,7 @@ object ReportReasonSerializer : KSerializer<ReportReason> {
   override fun deserialize(decoder: Decoder): ReportReason {
     return when (val value = decoder.decodeString()) {
       "spam" -> ReportReason.Spam
-      "illegal" -> ReportReason.Illegal
+      "content", "illegal" -> ReportReason.Content
       "community" -> ReportReason.Community
       "profile" -> ReportReason.Profile
       "other" -> ReportReason.Other
@@ -5331,7 +5332,7 @@ object ReportReasonSerializer : KSerializer<ReportReason> {
   override fun serialize(encoder: Encoder, value: ReportReason) {
     val stringValue = when (value) {
       is ReportReason.Spam -> "spam"
-      is ReportReason.Illegal -> "illegal"
+      is ReportReason.Content -> "content"
       is ReportReason.Community -> "community"
       is ReportReason.Profile -> "profile"
       is ReportReason.Other -> "other"

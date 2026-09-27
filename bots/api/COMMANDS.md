@@ -888,19 +888,20 @@ Remove members. Requires Admin role.
 - groupId: int64
 - groupMemberIds: [int64]
 - withMessages: bool
+- notice: [LinkNotice](./TYPES.md#linknotice)?
 
 **Syntax**:
 
 ```
-/_remove #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...][ messages=on]
+/_remove #<groupId> <groupMemberIds[0]>[,<groupMemberIds[1]>...][ messages=on][ notice=<json(notice)>]
 ```
 
 ```javascript
-'/_remove #' + groupId + ' ' + groupMemberIds.join(',') + (withMessages ? ' messages=on' : '') // JavaScript
+'/_remove #' + groupId + ' ' + groupMemberIds.join(',') + (withMessages ? ' messages=on' : '') + (notice ? ' notice=' + JSON.stringify(notice) : '') // JavaScript
 ```
 
 ```python
-'/_remove #' + str(groupId) + ' ' + ','.join(map(str, groupMemberIds)) + (' messages=on' if withMessages else '') # Python
+'/_remove #' + str(groupId) + ' ' + ','.join(map(str, groupMemberIds)) + (' messages=on' if withMessages else '') + ((' notice=' + json.dumps(notice)) if notice is not None else '') # Python
 ```
 
 **Responses**:
@@ -1857,19 +1858,20 @@ Delete chat.
 **Parameters**:
 - chatRef: [ChatRef](./TYPES.md#chatref)
 - chatDeleteMode: [ChatDeleteMode](./TYPES.md#chatdeletemode)
+- notice: [LinkNotice](./TYPES.md#linknotice)?
 
 **Syntax**:
 
 ```
-/_delete <str(chatRef)> <str(chatDeleteMode)>
+/_delete <str(chatRef)> <str(chatDeleteMode)>[ notice=<json(notice)>]
 ```
 
 ```javascript
-'/_delete ' + ChatRef.cmdString(chatRef) + ' ' + ChatDeleteMode.cmdString(chatDeleteMode) // JavaScript
+'/_delete ' + ChatRef.cmdString(chatRef) + ' ' + ChatDeleteMode.cmdString(chatDeleteMode) + (notice ? ' notice=' + JSON.stringify(notice) : '') // JavaScript
 ```
 
 ```python
-'/_delete ' + ChatRef_cmd_string(chatRef) + ' ' + ChatDeleteMode_cmd_string(chatDeleteMode) # Python
+'/_delete ' + ChatRef_cmd_string(chatRef) + ' ' + ChatDeleteMode_cmd_string(chatDeleteMode) + ((' notice=' + json.dumps(notice)) if notice is not None else '') # Python
 ```
 
 **Responses**:

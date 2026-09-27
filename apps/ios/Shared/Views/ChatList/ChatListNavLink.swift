@@ -446,7 +446,7 @@ struct ChatListNavLink: View {
 
             if canShowGroupDelete, let gi = groupInfo, gi.canDelete {
                 buttons.append(.destructive(Text("Delete")) {
-                    AlertManager.shared.showAlert(deleteGroupAlert(gi))
+                    showDeleteGroupAlert(gi)
                 })
             }
             
@@ -484,11 +484,21 @@ struct ChatListNavLink: View {
 
     private func deleteGroupChatButton(_ groupInfo: GroupInfo) -> some View {
         Button {
-            AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
+            showDeleteGroupAlert(groupInfo)
         } label: {
             deleteLabel
         }
         .tint(.red)
+    }
+
+    private func showDeleteGroupAlert(_ groupInfo: GroupInfo) {
+        if canBanOnChatDeletion(groupInfo) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                showDeleteBusinessChatAlert(chat)
+            }
+        } else {
+            AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
+        }
     }
 
     // Spec: spec/client/chat-list.md#contactRequestNavLink

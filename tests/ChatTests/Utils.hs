@@ -680,6 +680,27 @@ createCCNoteFolder cc =
     withCCUser cc $ \user ->
       runExceptT (createNoteFolder db user) >>= either (fail . show) pure
 
+linkNoticesCount :: TestCC -> IO Int
+linkNoticesCount cc =
+  withCCTransaction cc $ \db ->
+    fromMaybe 0 <$> maybeFirstRow fromOnly (DB.query_ db "SELECT count(1) FROM link_notices")
+
+waitLinkNoticesCount :: HasCallStack => TestCC -> Int -> Expectation
+waitLinkNoticesCount cc n = go (50 :: Int)
+  where
+    go attempts = do
+      count <- linkNoticesCount cc
+      if count == n || attempts <= 0
+        then count `shouldBe` n
+        else threadDelay 100000 >> go (attempts - 1)
+
+bannedLine :: HasCallStack => TestCC -> String -> String -> Expectation
+bannedLine cc prefix suffix = do
+  l <- getTermLine' (Just $ "banned: " <> prefix) cc
+  let banned = (prefix <> "banned until ") `isPrefixOf` l && suffix `isSuffixOf` l
+  unless banned $ print ("expected banned line: " <> prefix <> "... " <> suffix, ", got: " <> l)
+  banned `shouldBe` True
+
 getProfilePictureByName :: TestCC -> String -> IO (Maybe String)
 getProfilePictureByName cc displayName =
   withTransaction (chatStore $ chatController cc) $ \db ->

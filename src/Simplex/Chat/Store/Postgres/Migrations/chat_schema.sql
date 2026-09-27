@@ -1229,6 +1229,28 @@ ALTER TABLE test_chat_schema.known_servers ALTER COLUMN server_id ADD GENERATED 
 
 
 
+CREATE TABLE test_chat_schema.link_notices (
+    link_notice_id bigint NOT NULL,
+    link_hash bytea NOT NULL,
+    expires_at timestamp with time zone,
+    reason text,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.link_notices ALTER COLUMN link_notice_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.link_notices_link_notice_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
 CREATE TABLE test_chat_schema.messages (
     message_id bigint NOT NULL,
     msg_sent smallint NOT NULL,
@@ -2003,6 +2025,11 @@ ALTER TABLE ONLY test_chat_schema.known_servers
 
 
 
+ALTER TABLE ONLY test_chat_schema.link_notices
+    ADD CONSTRAINT link_notices_pkey PRIMARY KEY (link_notice_id);
+
+
+
 ALTER TABLE ONLY test_chat_schema.messages
     ADD CONSTRAINT messages_pkey PRIMARY KEY (message_id);
 
@@ -2757,6 +2784,10 @@ CREATE INDEX idx_groups_summary_current_members_count ON test_chat_schema.groups
 
 
 CREATE INDEX idx_groups_via_group_link_uri_hash ON test_chat_schema.groups USING btree (user_id, via_group_link_uri_hash);
+
+
+
+CREATE UNIQUE INDEX idx_link_notices_link_hash ON test_chat_schema.link_notices USING btree (link_hash);
 
 
 

@@ -430,7 +430,7 @@ data ChatCommand
   | APIChatRead {chatRef :: ChatRef}
   | APIChatItemsRead {chatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId}
   | APIChatUnread {chatRef :: ChatRef, unreadChat :: Bool}
-  | APIDeleteChat {chatRef :: ChatRef, chatDeleteMode :: ChatDeleteMode} -- currently delete mode settings are only applied to direct chats
+  | APIDeleteChat {chatRef :: ChatRef, chatDeleteMode :: ChatDeleteMode, notice :: Maybe LinkNotice} -- currently delete mode settings are only applied to direct chats
   | APIClearChat {chatRef :: ChatRef}
   | APIAcceptContact {incognito :: IncognitoEnabled, contactReqId :: Int64}
   | APIRejectContact {contactReqId :: Int64, notify :: Bool}
@@ -468,7 +468,7 @@ data ChatCommand
   | APIDeleteMemberSupportChat GroupId GroupMemberId
   | APIMembersRole {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, memberRole :: GroupMemberRole}
   | APIBlockMembersForAll {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, blocked :: Bool}
-  | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, withMessages :: Bool}
+  | APIRemoveMembers {groupId :: GroupId, groupMemberIds :: NonEmpty GroupMemberId, withMessages :: Bool, notice :: Maybe LinkNotice}
   | APILeaveGroup {groupId :: GroupId}
   | APIListMembers {groupId :: GroupId}
   | APIUpdateGroupProfile {groupId :: GroupId, groupProfile :: GroupProfile}
@@ -617,7 +617,7 @@ data ChatCommand
   | AcceptMember GroupName ContactName GroupMemberRole
   | MemberRole GroupName ContactName GroupMemberRole
   | BlockForAll GroupName ContactName Bool
-  | RemoveMembers {groupName :: GroupName, members :: NonEmpty ContactName, withMessages :: Bool}
+  | RemoveMembers {groupName :: GroupName, members :: NonEmpty ContactName, withMessages :: Bool, notice :: Maybe LinkNotice}
   | LeaveGroup GroupName
   | AllowRelayGroup GroupName
   | DeleteGroup GroupName
@@ -1170,6 +1170,7 @@ data ContactAddressPlan
   | CAPConnectingProhibit {contact :: Contact}
   | CAPKnown {contact :: Contact}
   | CAPContactViaAddress {contact :: Contact}
+  | CAPLinkNotice {expiresAt :: Maybe UTCTime, reason :: Maybe ReportReason}
   deriving (Show)
 
 data GroupLinkPlan
@@ -1180,6 +1181,7 @@ data GroupLinkPlan
   | GLPKnown {groupInfo :: GroupInfo, groupUpdated :: Bool, ownerVerification :: Maybe OwnerVerification, linkOwners :: ListDef GroupLinkOwner}
   | GLPNoRelays {groupSLinkData_ :: Maybe GroupShortLinkData}
   | GLPUpdateRequired {groupSLinkData_ :: Maybe GroupShortLinkData}
+  | GLPLinkNotice {expiresAt :: Maybe UTCTime, reason :: Maybe ReportReason}
   deriving (Show)
 
 data GroupLinkOwner = GroupLinkOwner
@@ -1515,6 +1517,7 @@ data ChatErrorType
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEConnReqMessageProhibited
+  | CELinkNotice {expiresAt :: Maybe UTCTime, reason :: Maybe ReportReason}
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
   | CEContactNotReady {contact :: Contact}
   | CEContactNotActive {contact :: Contact}

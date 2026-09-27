@@ -3848,6 +3848,17 @@ Plan:
 SEARCH badge_ledger USING INDEX idx_badge_ledger_purchase (badge_purchase_id=?)
 
 Query: 
+        SELECT expires_at, reason
+        FROM link_notices
+        WHERE link_hash IN (?,?) AND (expires_at IS NULL OR expires_at > ?)
+        ORDER BY expires_at IS NULL DESC, expires_at DESC
+        LIMIT 1
+      
+Plan:
+SEARCH link_notices USING INDEX idx_link_notices_link_hash (link_hash=?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query: 
         SELECT f.file_id
         FROM files f
         JOIN chat_items i ON i.chat_item_id = f.chat_item_id
@@ -5061,6 +5072,16 @@ Query:
           chunk_size, file_inline, ci_file_status, protocol, created_at, updated_at
         )
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+    
+Plan:
+
+Query: 
+      INSERT INTO link_notices (link_hash, expires_at, reason, created_at, updated_at)
+      VALUES (?,?,?,?,?)
+      ON CONFLICT (link_hash) DO UPDATE SET
+        expires_at = EXCLUDED.expires_at,
+        reason = EXCLUDED.reason,
+        updated_at = EXCLUDED.updated_at
     
 Plan:
 
@@ -7498,6 +7519,10 @@ Query: SELECT count(1) FROM group_members
 Plan:
 SCAN group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id
 
+Query: SELECT count(1) FROM link_notices
+Plan:
+SCAN link_notices USING COVERING INDEX idx_link_notices_link_hash
+
 Query: SELECT count(1) FROM pending_group_messages
 Plan:
 SCAN pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id
@@ -7775,6 +7800,14 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT via_contact_uri, via_contact_uri_hash FROM connections WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT via_contact_uri_hash FROM connections WHERE connection_id = ? AND via_contact_uri_hash IS NOT NULL
+Plan:
+SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT via_group_link_uri_hash FROM groups WHERE group_id = ? AND via_group_link_uri_hash IS NOT NULL
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?
 Plan:

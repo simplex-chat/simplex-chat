@@ -1880,6 +1880,11 @@ day = T.pack . formatTime defaultTimeLocale "%Y-%m-%d"
 dayTime :: UTCTime -> Text
 dayTime = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"
 
+viewLinkNotice :: Maybe UTCTime -> Maybe ReportReason -> Text
+viewLinkNotice expiresAt reason =
+  maybe "banned permanently" (("banned until " <>) . dayTime) expiresAt
+    <> maybe "" ((", reason: " <>) . safeDecodeUtf8 . strEncode) reason
+
 viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
 viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink, localBadge, contactDomain, contactDomainVerified, description}, activeConn, uiThemes, customData} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
@@ -2266,6 +2271,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
             <> contactDomainLine ct
             <> ["use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"]
     CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)] <> contactDomainLine ct
+    CAPLinkNotice expiresAt reason -> [ctAddr $ plain $ viewLinkNotice expiresAt reason]
     where
       ctAddr = ("contact address: " <>)
       addrOrBiz = \case
@@ -2300,6 +2306,7 @@ viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case
         knownGroup prepared = grpOrBizLink g <> ": known " <> prepared <> grpOrBiz g <> " " <> ttyGroup' g
     GLPNoRelays _ -> [grpLink "channel has no active relays, please try to join later"]
     GLPUpdateRequired _ -> [grpLink "this group requires a newer version of the app, please upgrade"]
+    GLPLinkNotice expiresAt reason -> [grpLink $ plain $ viewLinkNotice expiresAt reason]
     where
       connecting g = [grpOrBizLink g <> ": connecting to " <> grpOrBiz g <> " " <> ttyGroup' g]
       grpLink = ("group link: " <>)
@@ -2808,6 +2815,7 @@ viewChatError isCmd logLevel testView = \case
             <> maybe "" (\MsgMetaJSON {rcvId} -> ", agent msg rcv id: " <> show rcvId) msgMeta_
       ]
     CEConnReqMessageProhibited -> ["message is not allowed with this connection link"]
+    CELinkNotice expiresAt reason -> ["connection link: " <> plain (viewLinkNotice expiresAt reason)]
     CEContactNotFound cName m_ -> viewContactNotFound cName m_
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]
     CEContactDisabled ct -> [ttyContact' ct <> ": disabled, to enable: " <> highlight ("/enable " <> viewContactName ct) <> ", to delete: " <> highlight ("/d " <> viewContactName ct)]

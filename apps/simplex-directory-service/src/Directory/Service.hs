@@ -727,7 +727,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         rejectPendingMember rjctNotice = do
           let gmId = groupMemberId' m
           sendComposedMessages cc (SRGroup groupId (Just $ GCSMemberSupport (Just gmId)) False) [MCText rjctNotice]
-          sendChatCmd cc (APIRemoveMembers groupId [gmId] False) >>= \case
+          sendChatCmd cc (APIRemoveMembers groupId [gmId] False Nothing) >>= \case
             Right (CRUserDeletedMembers _ _ (_ : _) _ _) -> do
               atomically $ TM.delete gmId $ pendingCaptchas env
               logInfo $ "Member " <> viewName displayName <> " rejected, group " <> tshow groupId <> ":" <> viewGroupName g
@@ -953,6 +953,7 @@ directoryServiceEvent opts@DirectoryOpts {adminUsers, superUsers, serviceName, o
         GLPNoRelays _ -> sendMessage cc ct $ T.toTitle gt <> " has no active relays. Please try again later."
         GLPUpdateRequired _ -> sendMessage cc ct $ T.toTitle gt <> " requires a newer version."
         GLPOwnLink _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
+        GLPLinkNotice {} -> sendMessage cc ct $ "Directory is banned from joining this " <> gt <> "."
       _ -> sendMessage cc ct "Unexpected error. Please report it to directory admins."
 
     joinAndRegisterPublicGroup :: Contact -> CreatedLinkContact -> MemberId -> Text -> GroupShortLinkData -> IO ()

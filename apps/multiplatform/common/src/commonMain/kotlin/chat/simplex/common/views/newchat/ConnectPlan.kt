@@ -16,6 +16,7 @@ import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
+import kotlinx.datetime.Instant
 
 enum class ConnectionLinkType {
   INVITATION, CONTACT, GROUP
@@ -244,6 +245,11 @@ private suspend fun planAndConnectTask(
             cleanup()
           }
         }
+        is ContactAddressPlan.LinkNotice -> {
+          Log.d(TAG, "planAndConnect, .ContactAddress, .LinkNotice")
+          showLinkNoticeAlert(LinkNoticeTarget.Address, connectionPlan.contactAddressPlan.expiresAt, connectionPlan.contactAddressPlan.reason)
+          cleanup()
+        }
       }
       is ConnectionPlan.GroupLink -> when (connectionPlan.groupLinkPlan) {
         is GroupLinkPlan.Ok ->
@@ -388,6 +394,12 @@ private suspend fun planAndConnectTask(
             cleanup()
           }
         }
+        is GroupLinkPlan.LinkNotice -> {
+          Log.d(TAG, "planAndConnect, .GroupLink, .LinkNotice")
+          val isChannel = (target as? ConnectTarget.Link)?.linkType == SimplexLinkType.channel || planSimplexName?.nameType == SimplexNameType.publicGroup
+          showLinkNoticeAlert(if (isChannel) LinkNoticeTarget.Channel else LinkNoticeTarget.Group, connectionPlan.groupLinkPlan.expiresAt, connectionPlan.groupLinkPlan.reason)
+          cleanup()
+        }
       }
       is ConnectionPlan.Error -> {
         Log.d(TAG, "planAndConnect, error ${connectionPlan.chatError}")
@@ -434,6 +446,33 @@ suspend fun connectViaUri(
   }
   cleanup?.invoke()
   return pcc != null
+}
+
+enum class LinkNoticeTarget {
+  Group, Channel, Address, Link
+}
+
+fun showLinkNoticeAlert(target: LinkNoticeTarget, expiresAt: Instant?, reason: ReportReason?) {
+  val join = target == LinkNoticeTarget.Group || target == LinkNoticeTarget.Channel
+  val banned = generalGetString(
+    when (target) {
+      LinkNoticeTarget.Group -> MR.strings.link_ban_alert_group
+      LinkNoticeTarget.Channel -> MR.strings.link_ban_alert_channel
+      LinkNoticeTarget.Address -> MR.strings.link_ban_alert_address
+      LinkNoticeTarget.Link -> MR.strings.link_ban_alert_link
+    }
+  )
+  val until =
+    if (expiresAt != null) {
+      String.format(generalGetString(if (join) MR.strings.link_ban_alert_join_after else MR.strings.link_ban_alert_connect_after), localTimestamp(expiresAt))
+    } else {
+      generalGetString(if (join) MR.strings.link_ban_alert_cant_join else MR.strings.link_ban_alert_cant_connect)
+    }
+  val reasonLine = if (reason == null || reason is ReportReason.Unknown) null else String.format(generalGetString(MR.strings.link_ban_alert_reason), reason.text)
+  AlertManager.privacySensitive.showAlertMsg(
+    generalGetString(MR.strings.link_ban_alert_title),
+    listOfNotNull(banned, until, reasonLine).joinToString("\n")
+  )
 }
 
 fun planToConnectionLinkType(connectionPlan: ConnectionPlan): ConnectionLinkType? {

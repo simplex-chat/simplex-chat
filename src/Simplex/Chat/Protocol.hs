@@ -92,7 +92,7 @@ import Simplex.Messaging.Version hiding (version)
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 20
+currentChatVersion = VersionChat 21
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -139,6 +139,9 @@ groupRosterVersion = VersionChat 19
 -- members sign messages in p2p groups; member keys are distributed for verification
 groupMemberKeyVersion :: VersionChat
 groupMemberKeyVersion = VersionChat 20
+
+linkNoticeVersion :: VersionChat
+linkNoticeVersion = VersionChat 21
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -288,6 +291,7 @@ instance StrEncoding ReportReason where
     A.takeTill (== ' ') >>= \case
       "spam" -> pure RRSpam
       "content" -> pure RRContent
+      "illegal" -> pure RRContent
       "community" -> pure RRCommunity
       "profile" -> pure RRProfile
       "other" -> pure RROther
@@ -299,6 +303,18 @@ instance FromJSON ReportReason where
 instance ToJSON ReportReason where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+instance ToField ReportReason where toField = toField . safeDecodeUtf8 . strEncode
+
+instance FromField ReportReason where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
+
+data LinkNotice = LinkNotice
+  { ttl :: Maybe Int64,
+    reason :: Maybe ReportReason
+  }
+  deriving (Eq, Show)
+
+$(JQ.deriveJSON defaultJSON ''LinkNotice)
 
 data ChatMessage e = ChatMessage
   { chatVRange :: VersionRangeChat,
@@ -463,7 +479,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XInfo :: {profile :: Profile, memberKey :: Maybe MemberKey} -> ChatMsgEvent 'Json
   XContact :: {profile :: Profile, memberKey :: Maybe MemberKey, contactReqId :: Maybe XContactId, welcomeMsgId :: Maybe SharedMsgId, requestMsg :: Maybe (SharedMsgId, MsgContent)} -> ChatMsgEvent 'Json
   XMember :: {profile :: Profile, newMemberId :: MemberId, newMemberKey :: MemberKey, viaRelay :: Maybe MemberId} -> ChatMsgEvent 'Json
-  XDirectDel :: ChatMsgEvent 'Json
+  XDirectDel :: Bool -> Maybe LinkNotice -> ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> Maybe MemberKey -> ChatMsgEvent 'Json
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
@@ -485,9 +501,9 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpMemRestrict :: MemberId -> MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemCon :: MemberId -> ChatMsgEvent 'Json
   XGrpMemConAll :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
-  XGrpMemDel :: MemberId -> Bool -> Maybe VersionRoster -> ChatMsgEvent 'Json
+  XGrpMemDel :: MemberId -> Bool -> Maybe VersionRoster -> Maybe LinkNotice -> ChatMsgEvent 'Json
   XGrpLeave :: ChatMsgEvent 'Json
-  XGrpDel :: ChatMsgEvent 'Json
+  XGrpDel :: Maybe LinkNotice -> ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
@@ -534,7 +550,7 @@ isForwardedGroupMsg ev = case ev of
   XGrpMemRestrict {} -> True
   XGrpMemDel {} -> True
   XGrpLeave -> True
-  XGrpDel -> True
+  XGrpDel _ -> True
   XGrpInfo _ -> True
   XGrpPrefs _ -> True
   XGrpRoster _ -> True
@@ -1256,7 +1272,7 @@ toCMEventTag msg = case msg of
   XInfo {} -> XInfo_
   XContact {} -> XContact_
   XMember {} -> XMember_
-  XDirectDel -> XDirectDel_
+  XDirectDel {} -> XDirectDel_
   XGrpInv _ -> XGrpInv_
   XGrpAcpt {} -> XGrpAcpt_
   XGrpLinkInv _ -> XGrpLinkInv_
@@ -1280,7 +1296,7 @@ toCMEventTag msg = case msg of
   XGrpMemConAll _ -> XGrpMemConAll_
   XGrpMemDel {} -> XGrpMemDel_
   XGrpLeave -> XGrpLeave_
-  XGrpDel -> XGrpDel_
+  XGrpDel _ -> XGrpDel_
   XGrpInfo _ -> XGrpInfo_
   XGrpPrefs _ -> XGrpPrefs_
   XGrpDirectInv {} -> XGrpDirectInv_
@@ -1425,7 +1441,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         let requestMsg = (,) <$> reqMsgId <*> reqContent
         pure XContact {profile, memberKey, contactReqId, welcomeMsgId, requestMsg}
       XMember_ -> XMember <$> p "profile" <*> p "newMemberId" <*> p "newMemberKey" <*> opt "viaRelay"
-      XDirectDel_ -> pure XDirectDel
+      XDirectDel_ -> XDirectDel <$> Right (fromRight False $ p "silent") <*> Right (fromRight Nothing $ opt "notice")
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId" <*> opt "memberKey"
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
@@ -1450,9 +1466,9 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpMemRestrict_ -> XGrpMemRestrict <$> p "memberId" <*> p "memberRestrictions"
       XGrpMemCon_ -> XGrpMemCon <$> p "memberId"
       XGrpMemConAll_ -> XGrpMemConAll <$> p "memberId"
-      XGrpMemDel_ -> XGrpMemDel <$> p "memberId" <*> Right (fromRight False $ p "messages") <*> opt "rosterVersion"
+      XGrpMemDel_ -> XGrpMemDel <$> p "memberId" <*> Right (fromRight False $ p "messages") <*> opt "rosterVersion" <*> Right (fromRight Nothing $ opt "notice")
       XGrpLeave_ -> pure XGrpLeave
-      XGrpDel_ -> pure XGrpDel
+      XGrpDel_ -> XGrpDel <$> Right (fromRight Nothing $ opt "notice")
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
@@ -1501,7 +1517,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XInfo {profile, memberKey} -> o $ ("memberKey" .=? memberKey) ["profile" .= profile]
       XContact {profile, memberKey, contactReqId, welcomeMsgId, requestMsg} -> o $ ("contactReqId" .=? contactReqId) $ ("welcomeMsgId" .=? welcomeMsgId) $ ("msgId" .=? (fst <$> requestMsg)) $ ("content" .=? (snd <$> requestMsg)) $ ("memberKey" .=? memberKey) $ ["profile" .= profile]
       XMember {profile, newMemberId, newMemberKey, viaRelay} -> o $ ("viaRelay" .=? viaRelay) ["profile" .= profile, "newMemberId" .= newMemberId, "newMemberKey" .= newMemberKey]
-      XDirectDel -> JM.empty
+      XDirectDel silent notice -> o $ ("silent" .=? justTrue silent) $ ("notice" .=? notice) []
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId memberKey -> o $ ("memberKey" .=? memberKey) ["memberId" .= memId]
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
@@ -1525,9 +1541,9 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpMemRestrict memId memRestrictions -> o ["memberId" .= memId, "memberRestrictions" .= memRestrictions]
       XGrpMemCon memId -> o ["memberId" .= memId]
       XGrpMemConAll memId -> o ["memberId" .= memId]
-      XGrpMemDel memId messages rosterVersion -> o $ ("rosterVersion" .=? rosterVersion) $ ("messages" .=? if messages then Just True else Nothing) ["memberId" .= memId]
+      XGrpMemDel memId messages rosterVersion notice -> o $ ("notice" .=? notice) $ ("rosterVersion" .=? rosterVersion) $ ("messages" .=? if messages then Just True else Nothing) ["memberId" .= memId]
       XGrpLeave -> JM.empty
-      XGrpDel -> JM.empty
+      XGrpDel notice -> o $ ("notice" .=? notice) []
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]

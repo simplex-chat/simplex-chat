@@ -1338,7 +1338,7 @@ processChatCommand cxt nm = \case
         liftIO $ updateNoteFolderUnreadChat db user nf unreadChat
       ok user
     _ -> throwCmdError "not supported"
-  APIDeleteChat cRef@(ChatRef cType chatId scope) cdm -> withUser $ \user@User {userId} -> case cType of
+  APIDeleteChat cRef@(ChatRef cType chatId scope) cdm notice_ -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct <- withFastStore $ \db -> getContact db cxt user chatId
       filesInfo <- withFastStore' $ \db -> getContactFileInfo db user ct
@@ -1363,16 +1363,22 @@ processChatCommand cxt nm = \case
               getContact db cxt user chatId
             pure $ CRContactDeleted user ct'
           CDMMessages -> do
+            when (isJust notice_) $ throwCmdError "notice requires deleting the contact"
             void $ processChatCommand cxt nm $ APIClearChat cRef
             withFastStore' $ \db -> setContactChatDeleted db user ct True
             pure $ CRContactDeleted user ct {chatDeleted = True}
       where
         sendDelDeleteConns ct notify = do
-          let doSendDel = contactReady ct && contactActive ct && notify
-          when doSendDel $ void (sendDirectContactMessage user ct XDirectDel) `catchAllErrors` const (pure ())
+          let delMsg_
+                | not (contactReady ct && contactActive ct) = Nothing
+                | notify = Just $ XDirectDel False notice_
+                | isJust notice_ && any (\Connection {peerChatVRange} -> maxVersion peerChatVRange >= linkNoticeVersion) (contactConn ct) = Just $ XDirectDel True notice_
+                | otherwise = Nothing
+          forM_ delMsg_ $ \msg -> void (sendDirectContactMessage user ct msg) `catchAllErrors` const (pure ())
           contactConnIds <- map aConnId <$> withFastStore' (\db -> getContactConnections db cxt userId ct)
-          deleteAgentConnectionsAsync' contactConnIds doSendDel
+          deleteAgentConnectionsAsync' contactConnIds (isJust delMsg_)
     CTContactConnection -> withConnectionLock "deleteChat contactConnection" chatId $ do
+      when (isJust notice_) $ throwCmdError "notice is not supported for pending connections"
       conn@PendingContactConnection {pccAgentConnId = AgentConnId acId} <- withFastStore $ \db -> getPendingContactConnection db userId chatId
       deleteAgentConnectionAsync acId
       withFastStore' $ \db -> deletePendingContactConnection db userId chatId
@@ -1391,7 +1397,7 @@ processChatCommand cxt nm = \case
         let doSendDel = memberActive membership && isOwner
         msgSigned <-
           if doSendDel
-            then (\SndMessage {signedMsg_} -> isJust signedMsg_) <$> sendGroupMessage' user g recipients XGrpDel
+            then (\SndMessage {signedMsg_} -> isJust signedMsg_) <$> sendGroupMessage' user g recipients (XGrpDel notice_)
             else pure False
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections' user members doSendDel
@@ -2269,6 +2275,7 @@ processChatCommand cxt nm = \case
           toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
         pure $ CRStartedConnectionToContact user ct' customUserProfile
       Just PreparedContact {connLinkToConnect = ACCL SCMContact ccLink, welcomeSharedMsgId, requestSharedMsgId} -> do
+        checkLinkNotice $ connFullLink ccLink
         msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
           Just smId -> pure (smId, mc)
           Nothing -> do
@@ -2297,6 +2304,7 @@ processChatCommand cxt nm = \case
     case gInfo of
       GroupInfo {preparedGroup = Nothing} -> throwCmdError "group doesn't have link to connect"
       GroupInfo {useRelays = BoolDef True, preparedGroup = Just PreparedGroup {connLinkToConnect}} -> do
+        checkLinkNotice $ connFullLink connLinkToConnect
         sLnk <- case connShortLink' connLinkToConnect of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
@@ -2359,6 +2367,7 @@ processChatCommand cxt nm = \case
             newConnIds <- getAgentConnShortLinkAsync user CFGetRelayDataJoin Nothing relayLink
             withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
       GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
+        checkLinkNotice $ connFullLink connLinkToConnect
         hostMember <- withFastStore $ \db -> getHostMember db cxt user groupId
         msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
           Just smId -> pure (smId, mc)
@@ -2388,10 +2397,11 @@ processChatCommand cxt nm = \case
       (conn, incognitoProfile) <- connectViaInvitation user incognito ccLink Nothing
       let pcc = mkPendingContactConnection conn $ Just ccLink
       pure $ CRSentConfirmation user pcc incognitoProfile
-    ACCL SCMContact ccLink@(CCLink _ sLnk) -> do
+    ACCL SCMContact ccLink@(CCLink cReq sLnk) -> do
       case sLnk of
         Just (CSLContact _ CCTChannel _ _) -> throwChatError $ CECommandError "channel links must be connected via APIConnectPreparedGroup"
         _ -> pure ()
+      checkLinkNotice cReq
       connectViaContact user Nothing incognito ccLink Nothing Nothing >>= \case
         CVRConnectedContact ct -> pure $ CRContactAlreadyExists user ct
         CVRSentInvitation conn incognitoProfile -> pure $ CRSentInvitation user (mkPendingContactConnection conn Nothing) incognitoProfile
@@ -2443,7 +2453,7 @@ processChatCommand cxt nm = \case
   ConnectSimplex incognito -> withUser $ \user -> do
     plan <- contactRequestPlan user adminContactReq Nothing Nothing `catchAllErrors` const (pure $ CPContactAddress (CAPOk Nothing Nothing))
     connectWithPlan user incognito (ACCL SCMContact (CCLink adminContactReq Nothing)) Nothing Nothing plan
-  DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId Nothing) cdm
+  DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId Nothing) cdm Nothing
   ClearContact cName -> withContactName cName $ \chatId -> APIClearChat $ ChatRef CTDirect chatId Nothing
   APIListContacts userId -> withUserId userId $ \user ->
     CRContactsList user <$> withFastStore' (\db -> getUserContacts db cxt user)
@@ -3071,7 +3081,7 @@ processChatCommand cxt nm = \case
             let content = CISndGroupEvent $ SGEMemberBlocked groupMemberId (fromLocalProfile memberProfile) blockFlag
                 ts = ciContentTexts content
              in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
-  APIRemoveMembers {groupId, groupMemberIds, withMessages} -> withUser $ \user ->
+  APIRemoveMembers {groupId, groupMemberIds, withMessages, notice} -> withUser $ \user ->
     withGroupLock "removeMembers" groupId $ do
       -- TODO [relays] possible optimization is to read only required members + relays
       (Group gInfo members, gks) <- withFastStore $ \db -> getGroupKeys_ db cxt user groupId
@@ -3145,7 +3155,7 @@ processChatCommand cxt nm = \case
         Nothing -> pure ([], [], [], False)
         Just memsToDelete' -> do
           let chatScope = toChatScope <$> chatScopeInfo
-              events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages rosterVer) memsToDelete'
+              events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages rosterVer notice) memsToDelete'
           (msgs_, _gsr) <- sendGroupMessages user g chatScope False recipients False events
           let signed = any (either (const False) (\SndMessage {signedMsg_} -> isJust signedMsg_)) msgs_
               itemsData_ = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
@@ -3245,12 +3255,12 @@ processChatCommand cxt nm = \case
   AcceptMember gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIAcceptMember gId gMemberId memRole
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMembersRole gId [gMemberId] memRole
   BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMembersForAll gId [gMemberId] blocked
-  RemoveMembers gName gMemberNames withMessages -> withUser $ \user -> do
+  RemoveMembers gName gMemberNames withMessages notice -> withUser $ \user -> do
     (gId, gMemberIds) <- withStore $ \db -> do
       gId <- getGroupIdByName db user gName
       gMemberIds <- mapM (getGroupMemberIdByName db user gId) gMemberNames
       pure (gId, gMemberIds)
-    processChatCommand cxt nm $ APIRemoveMembers gId gMemberIds withMessages
+    processChatCommand cxt nm $ APIRemoveMembers gId gMemberIds withMessages notice
   LeaveGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand cxt nm $ APILeaveGroup groupId
@@ -3259,7 +3269,7 @@ processChatCommand cxt nm = \case
     processChatCommand cxt nm $ APIAllowRelayGroup groupId
   DeleteGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
-    processChatCommand cxt nm $ APIDeleteChat (ChatRef CTGroup groupId Nothing) (CDMFull True)
+    processChatCommand cxt nm $ APIDeleteChat (ChatRef CTGroup groupId Nothing) (CDMFull True) Nothing
   ClearGroup gName -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand cxt nm $ APIClearChat (ChatRef CTGroup groupId Nothing)
@@ -3898,7 +3908,8 @@ processChatCommand cxt nm = \case
           conn' <- joinContact user conn cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup
           pure $ CVRSentInvitation conn' incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> CreatedLinkContact -> CM ChatResponse
-    connectContactViaAddress user@User {userId} incognito ct@Contact {contactId, activeConn} (CCLink cReq shortLink) =
+    connectContactViaAddress user@User {userId} incognito ct@Contact {contactId, activeConn} (CCLink cReq shortLink) = do
+      checkLinkNotice cReq
       withInvitationLock "connectContactViaAddress" (strEncode cReq) $
         case activeConn of
           Nothing -> do
@@ -4638,11 +4649,13 @@ processChatCommand cxt nm = \case
     contactRequestPlan :: User -> ConnReqContact -> Maybe ContactShortLinkData -> Maybe OwnerVerification -> CM ConnectionPlan
     contactRequestPlan user cReq cld ov = do
       let cReqSchemas = contactCReqSchemas cReq
-          cReqHashes = bimap contactCReqHash contactCReqHash cReqSchemas
+          cReqHashes = contactCReqHashes cReq
           plan p = pure $ CPContactAddress p
-      withFastStore' (\db -> getUserContactLinkByConnReq db user cReqSchemas) >>= \case
-        Just _ -> plan $ CAPOwnLink
-        Nothing ->
+      ts <- liftIO getCurrentTime
+      withFastStore' (\db -> (,) <$> getUserContactLinkByConnReq db user cReqSchemas <*> getLinkNotice db ts cReqHashes) >>= \case
+        (Just _, _) -> plan $ CAPOwnLink
+        (Nothing, Just (expiresAt, reason)) -> plan $ CAPLinkNotice expiresAt reason
+        (Nothing, Nothing) ->
           withFastStore' (\db -> getContactConnEntityByConnReqHash db cxt user cReqHashes) >>= \case
             Nothing ->
               withFastStore' (\db -> getContactWithoutConnViaAddress db cxt user cReqSchemas) >>= \case
@@ -4661,11 +4674,13 @@ processChatCommand cxt nm = \case
     groupJoinRequestPlan :: User -> ConnReqContact -> Maybe GroupShortLinkInfo -> Maybe GroupShortLinkData -> Maybe OwnerVerification -> [GroupLinkOwner] -> CM ConnectionPlan
     groupJoinRequestPlan user cReq linkInfo gld ov glOwners = do
       let cReqSchemas = contactCReqSchemas cReq
-          cReqHashes = bimap contactCReqHash contactCReqHash cReqSchemas
+          cReqHashes = contactCReqHashes cReq
           plan p = pure $ CPGroupLink p
-      withFastStore' (\db -> getGroupInfoByUserContactLinkConnReq db cxt user cReqSchemas) >>= \case
-        Just g -> plan $ GLPOwnLink g
-        Nothing -> do
+      ts <- liftIO getCurrentTime
+      withFastStore' (\db -> (,) <$> getGroupInfoByUserContactLinkConnReq db cxt user cReqSchemas <*> getLinkNotice db ts cReqHashes) >>= \case
+        (Just g, _) -> plan $ GLPOwnLink g
+        (Nothing, Just (expiresAt, reason)) -> plan $ GLPLinkNotice expiresAt reason
+        (Nothing, Nothing) -> do
           connEnt_ <- withFastStore' $ \db -> getContactConnEntityByConnReqHash db cxt user cReqHashes
           gInfo_ <- withFastStore' $ \db -> getGroupInfoByGroupLinkHash db cxt user cReqHashes
           case (gInfo_, connEnt_) of
@@ -4691,6 +4706,13 @@ processChatCommand cxt nm = \case
       ( CRContactUri crData {crScheme = SSSimplex} e2e,
         CRContactUri crData {crScheme = simplexChat} e2e
       )
+    contactCReqHashes :: ConnReqContact -> (ConnReqUriHash, ConnReqUriHash)
+    contactCReqHashes = bimap contactCReqHash contactCReqHash . contactCReqSchemas
+    checkLinkNotice :: ConnReqContact -> CM ()
+    checkLinkNotice cReq = do
+      ts <- liftIO getCurrentTime
+      withFastStore' (\db -> getLinkNotice db ts $ contactCReqHashes cReq)
+        >>= mapM_ (\(expiresAt, reason) -> throwChatError $ CELinkNotice expiresAt reason)
     -- This function is needed, as UI uses simplex:/ schema in message view, so that the links can be handled without browser,
     -- and short links are stored with server hostname schema, so they wouldn't match without it.
     serverShortLink :: ConnShortLink m -> ConnShortLink m
@@ -5818,6 +5840,7 @@ cleanupManager = do
       cleanupDeliveryJobs `catchAllErrors` eToView
       -- TODO possibly, also cleanup async commands
       cleanupProbes `catchAllErrors` eToView
+      cleanupLinkNotices `catchAllErrors` eToView
     liftIO $ threadDelay' $ diffToMicroseconds interval
   where
     runWithoutInitialDelay cleanupInterval = flip catchAllErrors eToView $ do
@@ -5887,6 +5910,9 @@ cleanupManager = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(14 * nominalDay)) ts
       withStore' (`deleteOldProbes` cutoffTs)
+    cleanupLinkNotices = do
+      ts <- liftIO getCurrentTime
+      withStore' (`deleteExpiredLinkNotices` ts)
 
 deleteInProgressGroup :: User -> GroupInfo -> CM ()
 deleteInProgressGroup user gInfo = do
@@ -6103,7 +6129,7 @@ chatCommandP =
       "/_read chat " *> (APIChatRead <$> chatRefP),
       "/_read chat items " *> (APIChatItemsRead <$> chatRefP <*> _strP),
       "/_unread chat " *> (APIChatUnread <$> chatRefP <* A.space <*> onOffP),
-      "/_delete " *> (APIDeleteChat <$> chatRefP <*> chatDeleteMode),
+      "/_delete " *> (APIDeleteChat <$> chatRefP <*> chatDeleteMode <*> optional (" notice=" *> jsonP)),
       "/_clear chat " *> (APIClearChat <$> chatRefP),
       "/_accept" *> (APIAcceptContact <$> incognitoOnOffP <* A.space <*> A.decimal),
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
@@ -6145,7 +6171,7 @@ chatCommandP =
       "/_delete member chat #" *> (APIDeleteMemberSupportChat <$> A.decimal <* A.space <*> A.decimal),
       "/_member role #" *> (APIMembersRole <$> A.decimal <*> _strP <*> memberRole),
       "/_block #" *> (APIBlockMembersForAll <$> A.decimal <*> _strP <* " blocked=" <*> onOffP),
-      "/_remove #" *> (APIRemoveMembers <$> A.decimal <*> _strP <*> (" messages=" *> onOffP <|> pure False)),
+      "/_remove #" *> (APIRemoveMembers <$> A.decimal <*> _strP <*> (" messages=" *> onOffP <|> pure False) <*> optional (" notice=" *> jsonP)),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),
       -- "/_archive conversations #" *> (APIArchiveGroupConversations <$> A.decimal <*> _strP),
@@ -6245,7 +6271,7 @@ chatCommandP =
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> memberRole),
       "/block for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
       "/unblock for all #" *> (BlockForAll <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False),
-      ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMembers <$> displayNameP <* A.space <*> (L.fromList <$> (char_ '@' *> displayNameP) `A.sepBy1'` A.char ',') <*> (" messages=" *> onOffP <|> pure False)),
+      ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMembers <$> displayNameP <* A.space <*> (L.fromList <$> (char_ '@' *> displayNameP) `A.sepBy1'` A.char ',') <*> (" messages=" *> onOffP <|> pure False) <*> optional (" notice=" *> jsonP)),
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayNameP),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayNameP),
       ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayNameP <*> chatDeleteMode),

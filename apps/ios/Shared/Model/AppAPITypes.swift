@@ -82,7 +82,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiDeleteMemberSupportChat(groupId: Int64, groupMemberId: Int64)
     case apiMembersRole(groupId: Int64, memberIds: [Int64], memberRole: GroupMemberRole)
     case apiBlockMembersForAll(groupId: Int64, memberIds: [Int64], blocked: Bool)
-    case apiRemoveMembers(groupId: Int64, memberIds: [Int64], withMessages: Bool)
+    case apiRemoveMembers(groupId: Int64, memberIds: [Int64], withMessages: Bool, notice: LinkNotice?)
     case apiLeaveGroup(groupId: Int64)
     case apiListMembers(groupId: Int64)
     case apiUpdateGroupProfile(groupId: Int64, groupProfile: GroupProfile)
@@ -142,7 +142,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiConnectPreparedGroup(groupId: Int64, incognito: Bool, msg: MsgContent?)
     case apiConnect(userId: Int64, incognito: Bool, connLink: CreatedConnLink)
     case apiConnectContactViaAddress(userId: Int64, incognito: Bool, contactId: Int64)
-    case apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode)
+    case apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode, notice: LinkNotice?)
     case apiClearChat(type: ChatType, id: Int64)
     case apiListContacts(userId: Int64)
     case apiUpdateProfile(userId: Int64, profile: Profile)
@@ -263,7 +263,7 @@ enum ChatCommand: ChatCmdProtocol {
                 let msgs = encodeJSON(composedMessages)
                 return "/_create *\(noteFolderId) json \(msgs)"
             case let .apiReportMessage(groupId, chatItemId, reportReason, reportText):
-                return "/_report #\(groupId) \(chatItemId) reason=\(reportReason) \(reportText)"
+                return "/_report #\(groupId) \(chatItemId) reason=\(reportReason.rawValue) \(reportText)"
             case let .apiUpdateChatItem(type, id, scope, itemId, um, live): return "/_update item \(ref(type, id, scope: scope)) \(itemId) live=\(onOff(live)) \(um.cmdString)"
             case let .apiDeleteChatItem(type, id, scope, itemIds, mode): return "/_delete item \(ref(type, id, scope: scope)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
@@ -299,7 +299,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiDeleteMemberSupportChat(groupId, groupMemberId): return "/_delete member chat #\(groupId) \(groupMemberId)"
             case let .apiMembersRole(groupId, memberIds, memberRole): return "/_member role #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) \(memberRole.rawValue)"
             case let .apiBlockMembersForAll(groupId, memberIds, blocked): return "/_block #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) blocked=\(onOff(blocked))"
-            case let .apiRemoveMembers(groupId, memberIds, withMessages): return "/_remove #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) messages=\(onOff(withMessages))"
+            case let .apiRemoveMembers(groupId, memberIds, withMessages, notice): return "/_remove #\(groupId) \(memberIds.map({ "\($0)" }).joined(separator: ",")) messages=\(onOff(withMessages))\(noticeCmdString(notice))"
             case let .apiLeaveGroup(groupId): return "/_leave #\(groupId)"
             case let .apiListMembers(groupId): return "/_members #\(groupId)"
             case let .apiUpdateGroupProfile(groupId, groupProfile): return "/_group_profile #\(groupId) \(encodeJSON(groupProfile))"
@@ -371,7 +371,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiConnectPreparedGroup(groupId, incognito, mc): return "/_connect group #\(groupId) incognito=\(onOff(incognito))\(maybeContent(mc))"
             case let .apiConnect(userId, incognito, connLink): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connLink.connFullLink) \(connLink.connShortLink ?? "")"
             case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
-            case let .apiDeleteChat(type, id, chatDeleteMode): return "/_delete \(ref(type, id, scope: nil)) \(chatDeleteMode.cmdString)"
+            case let .apiDeleteChat(type, id, chatDeleteMode, notice): return "/_delete \(ref(type, id, scope: nil)) \(chatDeleteMode.cmdString)\(noticeCmdString(notice))"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id, scope: nil))"
             case let .apiListContacts(userId): return "/_contacts \(userId)"
             case let .apiUpdateProfile(userId, profile): return "/_profile \(userId) \(encodeJSON(profile))"
@@ -1478,6 +1478,7 @@ enum ContactAddressPlan: Decodable, Hashable {
     case connectingProhibit(contact: Contact)
     case known(contact: Contact)
     case contactViaAddress(contact: Contact)
+    case linkNotice(expiresAt: Date?, reason: ReportReason?)
 }
 
 public struct GroupShortLinkInfo: Decodable, Hashable {
@@ -1494,6 +1495,7 @@ enum GroupLinkPlan: Decodable, Hashable {
     case known(groupInfo: GroupInfo)
     case noRelays(groupSLinkData_: GroupShortLinkData?)
     case updateRequired(groupSLinkData_: GroupShortLinkData?)
+    case linkNotice(expiresAt: Date?, reason: ReportReason?)
 }
 
 struct ChatTagData: Encodable {
@@ -1508,6 +1510,15 @@ struct UpdatedMessage: Encodable {
     var cmdString: String {
         "json \(encodeJSON(self))"
     }
+}
+
+struct LinkNotice: Encodable {
+    var ttl: Int64?
+    var reason: ReportReason?
+}
+
+func noticeCmdString(_ notice: LinkNotice?) -> String {
+    notice.map { " notice=\(encodeJSON($0))" } ?? ""
 }
 
 enum ChatDeleteMode: Codable {
