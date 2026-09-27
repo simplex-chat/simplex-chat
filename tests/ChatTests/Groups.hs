@@ -4116,6 +4116,7 @@ testPlanGroupLinkConnecting ps = do
       <### [ "subscribed 1 connections on server localhost",
              "bob (Bob): accepting request to join group #team..."
            ]
+    withCCAgentTransaction alice (\db -> DB.query_ db "SELECT count(1) FROM commands" :: IO [[Int]]) `shouldEventuallyReturn` [[0]]
   withTestChat ps "bob" $ \bob -> do
     threadDelay 500000
     bob <## "subscribed 1 connections on server localhost"

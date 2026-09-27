@@ -2502,7 +2502,7 @@ capturingStderr action = withMVar stderrCaptureLock $ \_ -> do
     T.readFile path
 
 loggedError :: Text -> Text -> Bool
-loggedError message = any (\l -> "[ERROR " `T.isPrefixOf` l && message `T.isInfixOf` l) . T.lines
+loggedError message = any (\l -> "[ERROR " `T.isInfixOf` l && message `T.isInfixOf` l) . T.lines
 
 failCancels :: IORef StubState -> IO ()
 failCancels ref = atomicModifyIORef' ref $ \s -> (s {ssCancelError = Just (ProviderError "refused")}, ())
