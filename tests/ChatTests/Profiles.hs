@@ -77,6 +77,7 @@ chatProfileTests = do
     it "supporter badge of member joining via group link, at request and after handshake" testUserBadgeGroupLinkJoiner
     it "supporter badge of introduced member" testUserBadgeIntroduced
     it "supporter badge of member invited via contact, forwarded to introduced member" testUserBadgeInvitedIntroduced
+    it "supporter badge of inviting host in the reply to the invited contact" testUserBadgeInvitingHost
     it "supporter badge in one-time link data" testUserBadgeInvitationLinkData
     it "supporter badge in data of address getting its first short link" testUserBadgeAddressFirstShortLink
     it "supporter badge in shared address card" testUserBadgeAddressCard
@@ -415,7 +416,6 @@ testUserBadgeGroupHandshake ps = do
             bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
             bob <## "#team: new member cath is connected"
         ]
-      -- bob sent nothing to the group, so the badge reached cath in the member connection handshake
       cath ##> "/i #team bob"
       cath <## "group ID: 1"
       cath <##. "member ID: "
@@ -434,7 +434,6 @@ testUserBadgeGroupUpdate ps = do
     test sk alice bob cath = do
       createGroup3 "team" alice bob cath
       addTestBadge bob =<< issueTestBadge sk futureDate
-      -- the profile with the badge is sent to the group with the next message
       bob #> "#team hello"
       alice <# "#team bob> hello"
       cath <# "#team bob> hello"
@@ -715,7 +714,7 @@ testUserBadgeOtherBinding ps = do
         (alice <## "bob (Bob): contact is connected")
       contactBadgeHeader bob "alice" `shouldReturn` Just ("CD", BSActive)
       legend <- issueTestBadgeType sk BTLegend futureDate
-      Right otherProof <- badgeProof pk legend (PHChat $ encodeChatBinding CBDirect "other chat")
+      Right otherProof <- badgeProof pk legend (PHChat $ encodeChatBinding CBGroup "other chat")
       withCCUser alice $ \user -> do
         ct <- getTestCCContact alice 2
         let p = (userProfileDirect user Nothing (Just ct) True) {badge = Just otherProof}
@@ -829,6 +828,20 @@ testUserBadgeInvitedIntroduced ps = do
       cath <## "#team: alice added bob (Bob) to the group (connecting...)"
       memberBadgeHeader cath "team" "bob" `shouldReturn` Just ("CG", BSActive)
 
+testUserBadgeInvitingHost :: HasCallStack => TestParams -> IO ()
+testUserBadgeInvitingHost ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
+  where
+    test sk alice bob = do
+      connectUsers alice bob
+      addTestBadge alice =<< issueTestBadge sk futureDate
+      alice #> "@bob hi"
+      bob <# "alice *> hi"
+      createGroup2' "team" alice (bob, GRAdmin) False
+      memberBadgeHeader bob "team" "alice" `shouldReturn` Just ("CD", BSActive)
+      memberProofHeader bob "team" "alice" `shouldReturn` Just "CG"
+
 testUserBadgeInvitationLinkData :: HasCallStack => TestParams -> IO ()
 testUserBadgeInvitationLinkData ps = do
   Right (pk, sk) <- bbsKeyGen
@@ -845,7 +858,7 @@ testUserBadgeInvitationLinkData ps = do
       sLinkData `shouldContain` "\"status\":\"active\""
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> sLinkData)
       bob <## "alice: contact is prepared"
-      contactBadgeHeader bob "alice" `shouldReturn` Just ("R", BSActive)
+      contactBadgeHeader bob "alice" `shouldReturn` Just ("L", BSActive)
 
 testUserBadgeAddressFirstShortLink :: HasCallStack => TestParams -> IO ()
 testUserBadgeAddressFirstShortLink ps = do
@@ -887,12 +900,22 @@ testUserBadgeAddressCard ps = do
       lastItemContent bob >>= (`shouldContain` "\"badgeType\":\"supporter\"")
       cred <- issueTestBadge sk futureDate
       Right otherProof <- badgeProof pk cred (PHLink "other link")
+      Right testProof <- badgeProof pk cred (PHTest "nonce")
       let cLink = either error id $ strDecode (B.pack bLink)
-          mc = MCChat (T.pack bLink) (MCLContact cLink (profileFromName "alice") {badge = Just otherProof} False) Nothing
-      bob ##> ("/_send @3 json [{\"msgContent\":" <> T.unpack (encodeJSON mc) <> "}]")
+          card proof = MCChat (T.pack bLink) (MCLContact cLink (profileFromName "alice") {badge = Just proof} False) Nothing
+      bob ##> ("/_send @3 json [{\"msgContent\":" <> T.unpack (encodeJSON $ card otherProof) <> "}]")
       bob <# "@cath contact address of @alice:"
       _ <- getTermLine bob
       cath <# "bob> contact address of @alice:"
+      _ <- getTermLine cath
+      lastItemContent cath >>= (`shouldNotContain` "\"badge\"")
+      bob #> "@cath hi"
+      cath <# "bob> hi"
+      msgId <- lastItemId bob
+      bob ##> ("/_update item @3 " <> msgId <> " json {\"msgContent\":" <> T.unpack (encodeJSON $ card testProof) <> ",\"mentions\":{}}")
+      bob <# "@cath [edited] contact address of @alice:"
+      _ <- getTermLine bob
+      cath <# "bob> [edited] contact address of @alice:"
       _ <- getTermLine cath
       lastItemContent cath >>= (`shouldNotContain` "\"badge\"")
 

@@ -59,7 +59,7 @@ import qualified Data.UUID.V4 as V4
 import Simplex.Chat.Library.Subscriber
 import Crypto.Random (ChaChaDRG)
 import Simplex.Messaging.Session (SessionVar (..), withGetSessVar')
-import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), ProofPresHeader, badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
+import Simplex.Chat.Badges (BadgeCredential (..), BadgeInfo (..), BadgeMasterKey, BadgeType, LocalBadge (..), ProofPresHeader (..), badgeServerCredential, mkBadgeStatus, maxSndXFTPFileSize, verifyCredential)
 import qualified Simplex.Chat.Badges.Ledger as L
 import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIssueError (..), BadgeIssueFailure (..), BadgeState (..))
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
@@ -1244,12 +1244,12 @@ processChatCommand cxt nm = \case
     UserContactLink {connLinkContact = CCLink _ sl_, addressSettings} <- withFastStore (`getUserAddress` user)
     case sl_ of
       Nothing -> throwCmdError "your address has no short link to share"
-      Just connLink@(CSLContact _ _ _ linkKey) -> do
+      Just connLink -> do
         conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
         ownerSig <-
           withAgent (`getConnLinkPrivKey` aConnId conn) $>>= \privKey ->
             mkLinkOwnerSig privKey connLink Nothing <$$> shareChatBinding user toSendRef
-        profile <- presentUserBadge user Nothing (Just $ linkPresHeader linkKey) $ userProfileDirect user Nothing Nothing True
+        profile <- presentUserBadge user Nothing (Just $ linkPresHeader connLink) $ userProfileDirect user Nothing Nothing True
         let business = businessAddress addressSettings
             text = safeDecodeUtf8 $ strEncode connLink
         pure $ CRChatMsgContent user MCChat {text, chatLink = MCLContact {connLink, profile, business}, ownerSig}
@@ -2119,8 +2119,8 @@ processChatCommand cxt nm = \case
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
     rootKey <- atomically . C.generateKeyPair =<< asks random
-    (preparedLink@(CCLink preparedReq _), preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) SCMInvitation rootKey Nothing False Nothing IKUsePQ False Nothing
-    linkProfile <- presentUserBadge user incognitoProfile (Just $ invitationPresHeader preparedReq) $ userProfileDirect user incognitoProfile Nothing True
+    (preparedLink, preparedParams@PreparedLinkParams {plpLinkKey = LinkKey linkKey}) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) SCMInvitation rootKey Nothing False Nothing IKUsePQ False Nothing
+    linkProfile <- presentUserBadge user incognitoProfile (Just $ PHLink linkKey) $ userProfileDirect user incognitoProfile Nothing True
     let userData = contactShortLinkData linkProfile {contactDomain = Nothing} Nothing
         userLinkData = UserInvLinkData userData
     (connId, ccLink) <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True preparedLink preparedParams userLinkData subMode
@@ -2142,7 +2142,7 @@ processChatCommand cxt nm = \case
           updatePCCIncognito db user conn (Just pId) sLnk
         pure $ CRConnectionIncognitoUpdated user conn' (Just incognitoProfile)
       (ConnNew, Just pId, False) -> do
-        sLnk <- updatePCCShortLinkData conn =<< presentUserBadge user Nothing (invitationPresHeader . connFullLink <$> connLinkInv) (userProfileDirect user Nothing Nothing True)
+        sLnk <- updatePCCShortLinkData conn =<< presentUserBadge user Nothing (linkPresHeader <$> (connShortLink' =<< connLinkInv)) (userProfileDirect user Nothing Nothing True)
         conn' <- withFastStore' $ \db -> do
           deletePCCIncognitoProfile db user pId
           updatePCCIncognito db user conn Nothing sLnk
@@ -2164,8 +2164,8 @@ processChatCommand cxt nm = \case
           if isJust $ connShortLink' =<< connLinkInv
             then do
               rootKey <- atomically . C.generateKeyPair =<< asks random
-              (preparedLink@(CCLink preparedReq _), preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId newUser) SCMInvitation rootKey Nothing False Nothing IKPQOn False Nothing
-              userLinkData <- UserInvLinkData . (`contactShortLinkData` Nothing) <$> presentUserBadge newUser Nothing (Just $ invitationPresHeader preparedReq) (userProfileDirect newUser Nothing Nothing True)
+              (preparedLink, preparedParams@PreparedLinkParams {plpLinkKey = LinkKey linkKey}) <- withAgent $ \a -> prepareConnectionLink a (aUserId newUser) SCMInvitation rootKey Nothing False Nothing IKPQOn False Nothing
+              userLinkData <- UserInvLinkData . (`contactShortLinkData` Nothing) <$> presentUserBadge newUser Nothing (Just $ PHLink linkKey) (userProfileDirect newUser Nothing Nothing True)
               withAgent $ \a -> createConnectionForLink a nm (aUserId newUser) True preparedLink preparedParams userLinkData subMode
             else withAgent $ \a -> createConnection a nm (aUserId newUser) True False SCMInvitation Nothing Nothing IKPQOn True subMode
         ccLink' <- shortenCreatedLink ccLink
@@ -2197,23 +2197,20 @@ processChatCommand cxt nm = \case
                 createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing Nothing
                 cInfo = GroupChat gInfo Nothing
             void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
-            aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
+            aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent <=< chatLinkBadge) message
             let chat = case aci of
                   Just (AChatItem SCTGroup dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
                   _ -> Chat cInfo [] emptyChatStats
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
-      ACCL cMode (CCLink cReq sLnk) -> do
-        let presHeader_ = case cMode of
-              SCMInvitation -> Just $ invitationPresHeader cReq
-              SCMContact -> (\(CSLContact _ _ _ linkKey) -> linkPresHeader linkKey) <$> sLnk
-        ct <- withStore $ \db -> createPreparedContact db cxt user presHeader_ profile accLink welcomeSharedMsgId (True <$ verifiedDomain)
+      ACCL _ (CCLink cReq sLnk) -> do
+        ct <- withStore $ \db -> createPreparedContact db cxt user (linkPresHeader <$> sLnk) profile accLink welcomeSharedMsgId (True <$ verifiedDomain)
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         let cd = CDDirectRcv ct
             createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing Nothing
             cInfo = DirectChat ct
         void $ createItem Nothing $ CIRcvDirectE2EEInfo $ e2eInfoEncrypted $ connRequestPQEncryption cReq
         void $ createFeatureEnabledItems_ user ct
-        aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent) message
+        aci <- mapM (createItem welcomeSharedMsgId . CIRcvMsgContent <=< chatLinkBadge) message
         let chat = case aci of
               Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
               _ -> Chat cInfo [] emptyChatStats
@@ -2468,13 +2465,13 @@ processChatCommand cxt nm = \case
           Just True -> (IKUsePQ, True)
           Just False -> (IKPQOn, True)
           Nothing -> (IKPQOn, False)
-    (ccLink, preparedParams@PreparedLinkParams {plpLinkKey}) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) SCMContact rootKey (Just entityId) True Nothing pqInitKeys useDR server_
+    (ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) SCMContact rootKey (Just entityId) True Nothing pqInitKeys useDR server_
     ccLink' <- shortenCreatedLink ccLink
     -- TODO [relays] relay: add identity, key to link data?
     userData <-
       if isTrue userChatRelay
         then pure $ relayShortLinkData (userProfileDirect user Nothing Nothing True)
-        else (`contactShortLinkData` Nothing) <$> presentUserBadge user Nothing (Just $ linkPresHeader plpLinkKey) (userProfileDirect user Nothing Nothing True)
+        else (`contactShortLinkData` Nothing) <$> presentUserBadge user Nothing (linkPresHeader <$> connShortLink' ccLink) (userProfileDirect user Nothing Nothing True)
     let userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData, ratchetKeys = Nothing}
     (connId, _) <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData subMode
     let ccLink'' = if isTrue userChatRelay then setShortLinkType CCTRelay ccLink' else ccLink'
@@ -2843,18 +2840,11 @@ processChatCommand cxt nm = \case
         inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db cxt user groupId
         (inv,) <$> getContactViaMember db cxt user fromMember
       let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership, chatSettings}, groupKeys = gks} = invitation
-          GroupMember {memberId = membershipMemId} = membership
           Contact {activeConn} = ct
       case activeConn of
         Just Connection {peerChatVRange} -> do
           subMode <- chatReadVar subscriptionMode
-          let incognitoProfile = incognitoMembershipProfile g
-          profile_ <-
-            if maxVersion peerChatVRange >= relayWebCapVersion
-              then Just <$> presentUserBadge user incognitoProfile (groupPresHeader g) (userProfileInGroup user g $ fromLocalProfile <$> incognitoProfile)
-              else pure Nothing
-          let msg = XGrpAcpt membershipMemId (Just $ groupMemberKey gks) profile_
-          dm <- maybe (encodeConnInfo msg) (`encodeSignedConnInfo` msg) (groupMsgSigning False (GIK g gks) msg)
+          dm <- encodeXGrpAcpt user (GIK g gks) peerChatVRange
           agentConnId <- case memberConn fromMember of
             Nothing -> do
               (agentConnId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
@@ -3404,7 +3394,7 @@ processChatCommand cxt nm = \case
             -- so incognito profile can be attached to it and be visible in UI before accepting
             Nothing -> joinNewConn subMode
             Just conn@Connection {connStatus} -> case connStatus of
-              ConnPrepared -> joinPreparedConn subMode conn =<< maybe unboundPresHeader pure =<< connPresHeader conn
+              ConnPrepared -> joinPreparedConn subMode conn =<< sndPresHeader =<< connPresHeader conn
               _ -> throwChatError $ CEException "connection already started (past prepared status)"
         where
           joinNewConn subMode = do
@@ -3823,7 +3813,7 @@ processChatCommand cxt nm = \case
                 | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV -- own connection link
                 | connStatus == ConnPrepared -> do -- retrying join after error
                     localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
-                    presHeader <- maybe unboundPresHeader pure =<< connPresHeader conn
+                    presHeader <- sndPresHeader =<< connPresHeader conn
                     joinPreparedConn conn (fromLocalProfile <$> localIncognitoProfile) presHeader
               Just ent -> throwCmdError $ "connection is not RcvDirectMsgConnection: " <> show (connEntityInfo ent)
             where
@@ -3887,33 +3877,29 @@ processChatCommand cxt nm = \case
         relayMemberId_ = case preparedEntity_ of
           Just (PCEGroup (GIK gInfo _) m) | useRelays' gInfo -> Just (memberId' m)
           _ -> Nothing
-        joinPresHeader gInfo_ reqHeader = case gInfo_ of
-          Just (Just (GIK gInfo _)) | useRelays' gInfo -> groupPresHeader gInfo
-          _ -> Just reqHeader
         joinPreparedConn' xContactId_ conn@Connection {connId, customUserProfileId} gInfo_ = do
           when (incognito /= isJust customUserProfileId) $ throwCmdError "incognito mode is different from prepared connection"
           -- TODO [relays] member: refactor joinContact and up avoiding parallel ifs, xContactId is not used
           xContactId <- mkXContactId xContactId_
           ((cReq', reqHeader_), localIncognitoProfile) <- withFastStore $ \db -> (,) <$> getConnReqContact db connId <*> forM customUserProfileId (getProfileById db userId)
-          reqHeader <- maybe unboundPresHeader pure reqHeader_
+          reqHeader <- sndPresHeader reqHeader_
           let incognitoProfile = fromLocalProfile <$> localIncognitoProfile
-          conn' <- joinContact user conn cReq' incognitoProfile (joinPresHeader gInfo_ reqHeader) xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ PQSupportOn
+          conn' <- joinContact user conn cReq' incognitoProfile reqHeader xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ PQSupportOn
           pure $ CVRSentInvitation conn' incognitoProfile
         connect' groupLinkId xContactId_ gInfo_ = do
           let inGroup = isJust groupLinkId
               pqSup = if inGroup then PQSupportOff else PQSupportOn
-          (connId, chatV, binding) <- prepareContact user cReq pqSup
+          (connId, chatV, reqHeader) <- prepareContact user cReq pqSup
           xContactId <- mkXContactId xContactId_
           -- [incognito] generate profile to send, or use membership profile for relay groups
           incognitoProfile_ <- case gInfo_ of
             Just (Just (GIK gInfo _)) | useRelays' gInfo -> pure $ ExistingIncognito <$> incognitoMembershipProfile gInfo
             _ -> if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
           let incognitoProfile = fromIncognitoProfile <$> incognitoProfile_
-              reqHeader = directPresHeader binding
           subMode <- chatReadVar subscriptionMode
           let sLnk' = serverShortLink <$> sLnk
           conn <- withFastStore' $ \db -> createConnReqConnection db userId connId preparedEntity_ cReq reqHeader cReqHash1 sLnk' xContactId incognitoProfile_ groupLinkId subMode chatV pqSup
-          conn' <- joinContact user conn cReq incognitoProfile (joinPresHeader gInfo_ reqHeader) xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup
+          conn' <- joinContact user conn cReq incognitoProfile reqHeader xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup
           pure $ CVRSentInvitation conn' incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> CreatedLinkContact -> CM ChatResponse
     connectContactViaAddress user@User {userId} incognito ct@Contact {contactId, activeConn} (CCLink cReq shortLink) =
@@ -3921,15 +3907,14 @@ processChatCommand cxt nm = \case
         case activeConn of
           Nothing -> do
             let pqSup = PQSupportOn
-            (connId, chatV, binding) <- prepareContact user cReq pqSup
+            (connId, chatV, reqHeader) <- prepareContact user cReq pqSup
             newXContactId <- XContactId <$> drgRandomBytes 16
             -- [incognito] generate profile to send
             incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
             subMode <- chatReadVar subscriptionMode
             let cReqHash = contactCReqHash cReq
-                reqHeader = directPresHeader binding
             conn <- withFastStore' $ \db -> createConnReqConnection db userId connId (Just $ PCEContact ct) cReq reqHeader cReqHash shortLink newXContactId (NewIncognito <$> incognitoProfile) Nothing subMode chatV pqSup
-            void $ joinContact user conn cReq incognitoProfile (Just reqHeader) newXContactId Nothing Nothing Nothing Nothing pqSup
+            void $ joinContact user conn cReq incognitoProfile reqHeader newXContactId Nothing Nothing Nothing Nothing pqSup
             ct' <- withStore $ \db -> getContact db cxt user contactId
             pure $ CRSentInvitationToContact user ct' incognitoProfile
           Just conn@Connection {connId, connStatus, xContactId = xContactId_, customUserProfileId} -> case connStatus of
@@ -3937,9 +3922,9 @@ processChatCommand cxt nm = \case
               when (incognito /= isJust customUserProfileId) $ throwCmdError "incognito mode is different from prepared connection"
               xContactId <- mkXContactId xContactId_
               ((cReq', reqHeader_), localIncognitoProfile) <- withFastStore $ \db -> (,) <$> getConnReqContact db connId <*> forM customUserProfileId (getProfileById db userId)
-              reqHeader <- maybe unboundPresHeader pure reqHeader_
+              reqHeader <- sndPresHeader reqHeader_
               let incognitoProfile = fromLocalProfile <$> localIncognitoProfile
-              void $ joinContact user conn cReq' incognitoProfile (Just reqHeader) xContactId Nothing Nothing Nothing Nothing PQSupportOn
+              void $ joinContact user conn cReq' incognitoProfile reqHeader xContactId Nothing Nothing Nothing Nothing PQSupportOn
               ct' <- withStore $ \db -> getContact db cxt user contactId
               pure $ CRSentInvitationToContact user ct' incognitoProfile
             _ -> throwCmdError "contact already has connection"
@@ -3953,7 +3938,7 @@ processChatCommand cxt nm = \case
         relayLinkData_ <- liftIO $ decodeLinkUserData cData
         relayMemberId <- case (relayLinkData_, linkEntityId) of
           (Just RelayShortLinkData {relayProfile = p}, Just entityId) -> do
-            withFastStore $ \db -> updateRelayMemberData db cxt user relayMember (MemberId entityId) (MemberKey relayKey) Nothing p
+            withFastStore $ \db -> updateRelayMemberData db cxt user relayMember (MemberId entityId) (MemberKey relayKey) p
             pure $ MemberId entityId
           _ -> throwChatError $ CEException "relay link: no relay link data or entity id"
         let relayLinkToConnect = CCLink cReq (Just relayLink)
@@ -3980,22 +3965,23 @@ processChatCommand cxt nm = \case
               deleteMemberConnection m
               deleteOrUpdateMemberRecord user gInfo m
           _ -> pure ()
-    prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat, ContactRequestBinding)
+    prepareContact :: User -> ConnReqContact -> PQSupport -> CM (ConnId, VersionChat, ProofPresHeader)
     prepareContact user cReq pqSup = do
       lift (withAgent' (`connRequestAgentVersion` cReq)) >>= \case
         Nothing -> throwChatError CEInvalidConnReq
         Just _ -> do
           let chatV = initialChatVersion
           (connId, binding) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup
-          pure (connId, chatV, binding)
+          pure (connId, chatV, directPresHeader binding)
     mkXContactId :: Maybe XContactId -> CM XContactId
     mkXContactId = maybe (XContactId <$> drgRandomBytes 16) pure
-    joinContact :: User -> Connection -> ConnReqContact -> Maybe Profile -> Maybe ProofPresHeader -> XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> Maybe (Maybe GroupInfoKeys) -> Maybe MemberId -> PQSupport -> CM Connection
-    joinContact user conn cReq incognitoProfile presHeader_ xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup = do
+    joinContact :: User -> Connection -> ConnReqContact -> Maybe Profile -> ProofPresHeader -> XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> Maybe (Maybe GroupInfoKeys) -> Maybe MemberId -> PQSupport -> CM Connection
+    joinContact user conn cReq incognitoProfile reqHeader xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ pqSup = do
       -- gInfo_ is Maybe (Maybe GroupInfo), where Just Nothing means "some unknown group", e.g. when joining via link without profile
-      profileToSend <- presentUserBadge user incognitoProfile presHeader_ $ case gInfo_ of
-        Just gInfo_' -> userProfileInGroup' user ((\(GIK g _) -> g) <$> gInfo_') incognitoProfile
-        Nothing -> userProfileDirect user incognitoProfile Nothing True
+      profileToSend <-
+        presentUserBadge user incognitoProfile presHeader_ $ case gInfo_ of
+          Just gInfo_' -> userProfileInGroup' user ((\(GIK g _) -> g) <$> gInfo_') incognitoProfile
+          Nothing -> userProfileDirect user incognitoProfile Nothing True
       dm <- case gInfo_ of
         Just (Just gInfo@(GIK g gks))
           | useRelays' g -> case relayMemberId_ of
@@ -4007,6 +3993,10 @@ processChatCommand cxt nm = \case
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode
       withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared ConnJoined
+      where
+        presHeader_ = case gInfo_ of
+          Just (Just (GIK g _)) | useRelays' g -> groupPresHeader g
+          _ -> Just reqHeader
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
@@ -4052,7 +4042,7 @@ processChatCommand cxt nm = \case
           case changedCts_ of
             Nothing -> pure $ UserProfileUpdateSummary 0 0 []
             Just changedCts -> do
-              presHeaders <- connsPresHeaders $ map (\ChangedProfileContact {conn} -> conn) $ L.toList changedCts
+              presHeaders <- if presentsUserBadge user' then connsPresHeaders $ map (\ChangedProfileContact {conn} -> conn) $ L.toList changedCts else pure M.empty
               idsEvts <- mapM (ctSndEvent presHeaders) changedCts
               msgReqs_ <- lift $ L.zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
               (errs, cts) <- partitionEithers . L.toList . L.zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
@@ -4080,7 +4070,7 @@ processChatCommand cxt nm = \case
             -- non-incognito (filtered above), so the user's badge is presented; a profile update keeps the badge instead of clearing it
             ctSndEvent :: Map ConnId ProofPresHeader -> ChangedProfileContact -> CM (ConnOrGroupId, Maybe MsgSigning, ChatMsgEvent 'Json)
             ctSndEvent presHeaders ChangedProfileContact {mergedProfile', conn = conn@Connection {connId}} = do
-              presHeader <- maybe unboundPresHeader pure $ M.lookup (aConnId conn) presHeaders
+              presHeader <- sndPresHeader $ M.lookup (aConnId conn) presHeaders
               p'' <- presentUserBadge user' Nothing (Just presHeader) mergedProfile'
               pure (ConnectionId connId, Nothing, XInfo p'' Nothing)
             ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
@@ -4090,8 +4080,8 @@ processChatCommand cxt nm = \case
     setMyAddressData :: Bool -> Maybe InitialKeys -> User -> UserContactLink -> CM UserContactLink
     setMyAddressData rotateKeys pqInitKeys user@User {userChatRelay} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink sLnk_, addressSettings} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
-      linkKey <- (\(CSLContact _ _ _ k) -> k) <$> maybe (withAgent $ \a -> prepareConnShortLink a (aConnId conn) Nothing) pure sLnk_
-      shortLinkProfile <- presentUserBadge user Nothing (Just $ linkPresHeader linkKey) (userProfileDirect user Nothing Nothing True)
+      presHeader <- linkPresHeader <$> maybe (withAgent $ \a -> prepareConnShortLink a (aConnId conn) Nothing) pure sLnk_
+      shortLinkProfile <- presentUserBadge user Nothing (Just presHeader) (userProfileDirect user Nothing Nothing True)
       -- TODO [short links] do not save address to server if data did not change, spinners, error handling
       let userData
             | isTrue userChatRelay = relayShortLinkData shortLinkProfile
@@ -4115,7 +4105,7 @@ processChatCommand cxt nm = \case
               mergedProfile' = userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') False
           when (mergedProfile' /= mergedProfile) $
             withContactLock "updateContactPrefs" (contactId' ct) $ do
-              presHeader <- maybe unboundPresHeader pure =<< connPresHeader conn
+              presHeader <- sndPresHeader =<< connPresHeader conn
               p <- presentUserBadge user incognitoProfile (Just presHeader) mergedProfile'
               void (sendDirectContactMessage user ct' $ XInfo p Nothing) `catchAllErrors` eToView
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
@@ -4422,7 +4412,7 @@ processChatCommand cxt nm = \case
           Just (createdLink, p) -> pure (createdLink, Nothing, Nothing, p)
           Nothing -> do
             (FixedLinkData {rootKey}, cData, cReq) <- getShortLinkConnReq nm user l'
-            contactSLinkData_ <- mapM (linkDataBadge $ invitationPresHeader cReq) =<< liftIO (decodeLinkUserData cData)
+            contactSLinkData_ <- mapM (linkDataBadge $ linkPresHeader l') =<< liftIO (decodeLinkUserData cData)
             let ov = verifyLinkOwner rootKey [] l sig_
             invitationReqAndPlan cReq (Just l') contactSLinkData_ ov
       where
@@ -4476,7 +4466,7 @@ processChatCommand cxt nm = \case
                 when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
                 l' <- resolveSLink
                 (FixedLinkData {rootKey}, cData, cReq) <- getShortLinkConnReq nm user l'
-                let presHeader = linkPresHeader $ (\(CSLContact _ _ _ linkKey) -> linkKey) l'
+                let presHeader = linkPresHeader l'
                 contactSLinkData_ <- mapM (linkDataBadge presHeader) =<< liftIO (decodeLinkUserData cData)
                 let linkProfile_ = (\ContactShortLinkData {profile} -> profile) <$> contactSLinkData_
                     linkDomain_ = linkProfile_ >>= \Profile {contactDomain} -> claimDomain <$> contactDomain
@@ -5229,16 +5219,13 @@ presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadg
   lift $ withAgent' $ \a -> setUserEntitlement a (aUserId user') (badgeServerCredential localBadge)
   cxt <- chatStoreCxt
   contacts <- withFastStore' $ \db -> getUserContacts db cxt user'
-  presHeaders <- connsPresHeaders [conn | Right conn <- map contactSendConn_ contacts, not (connIncognito conn)]
-  withChatLock "presentUserBadge" $ forM_ contacts $ \ct ->
-    case contactSendConn_ ct of
-      Right conn
-        | not (connIncognito conn) -> do
-            let ct' = updateMergedPreferences user' ct
-            presHeader <- maybe unboundPresHeader pure $ M.lookup (aConnId conn) presHeaders
-            p <- presentUserBadge user' Nothing (Just presHeader) $ userProfileDirect user' Nothing (Just ct') False
-            void (sendDirectContactMessage user' ct' (XInfo p Nothing)) `catchAllErrors` eToView
-      _ -> pure ()
+  let sendConns = [(ct, conn) | ct <- contacts, Right conn <- [contactSendConn_ ct], not (connIncognito conn)]
+  presHeaders <- if presentsUserBadge user' then connsPresHeaders $ map snd sendConns else pure M.empty
+  withChatLock "presentUserBadge" $ forM_ sendConns $ \(ct, conn) -> do
+    let ct' = updateMergedPreferences user' ct
+    presHeader <- sndPresHeader $ M.lookup (aConnId conn) presHeaders
+    p <- presentUserBadge user' Nothing (Just presHeader) $ userProfileDirect user' Nothing (Just ct') False
+    void (sendDirectContactMessage user' ct' (XInfo p Nothing)) `catchAllErrors` eToView
 
 -- | The check character is verified before anything leaves the device, and the signing keys are
 -- stashed before the request is sent, so a retry reaches the service as the same signer.

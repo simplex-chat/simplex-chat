@@ -69,7 +69,7 @@ struct CIChatLinkHeader: View {
     private var linkBadge: LocalBadge? {
         guard case let .contact(_, profile, _) = chatLink, let b = profile.badge else { return nil }
         let expired = Date.now.timeIntervalSince(b.badgeInfo.badgeExpiry)
-        let status: BadgeStatus = expired > 38 * 86400 ? .expiredOld : expired > 7 * 86400 ? .expired : .active
+        let status: BadgeStatus = expired > BADGE_OLD_INTERVAL ? .expiredOld : expired > BADGE_GRACE_INTERVAL ? .expired : .active
         return LocalBadge(badge: b.badgeInfo, status: status)
     }
 }

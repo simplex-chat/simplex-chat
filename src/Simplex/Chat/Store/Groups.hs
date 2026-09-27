@@ -1808,8 +1808,8 @@ updateRelayStatus_ db relayId relayStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?" (relayStatus, currentTs, relayId)
 
-setRelayLinkAccepted :: DB.Connection -> StoreCxt -> User -> GroupMember -> MemberKey -> Maybe ProofPresHeader -> Profile -> ExceptT StoreError IO (GroupMember, GroupRelay)
-setRelayLinkAccepted db cxt user m (MemberKey relayKey) presHeader_ profile = do
+setRelayLinkAccepted :: DB.Connection -> StoreCxt -> User -> GroupMember -> MemberKey -> Profile -> ExceptT StoreError IO (GroupMember, GroupRelay)
+setRelayLinkAccepted db cxt user m (MemberKey relayKey) profile = do
   let gmId = groupMemberId' m
   currentTs <- liftIO getCurrentTime
   liftIO $ DB.execute
@@ -1828,7 +1828,7 @@ setRelayLinkAccepted db cxt user m (MemberKey relayKey) presHeader_ profile = do
       WHERE group_member_id = ?
     |]
     (relayKey, currentTs, gmId)
-  void $ updateMemberProfile db cxt user m presHeader_ profile
+  void $ updateMemberProfile db cxt user m Nothing profile
   (,) <$> getGroupMemberById db cxt user gmId <*> getGroupRelayByGMId db gmId
 
 setRelayLinkConfId :: DB.Connection -> GroupMember -> ConfirmationId -> ShortLinkContact -> IO ()
@@ -1875,8 +1875,8 @@ getRelayConfId db m =
       |]
       (Only (groupMemberId' m))
 
-updateRelayMemberData :: DB.Connection -> StoreCxt -> User -> GroupMember -> MemberId -> MemberKey -> Maybe ProofPresHeader -> Profile -> ExceptT StoreError IO ()
-updateRelayMemberData db cxt user m memberId (MemberKey relayKey) presHeader_ profile = do
+updateRelayMemberData :: DB.Connection -> StoreCxt -> User -> GroupMember -> MemberId -> MemberKey -> Profile -> ExceptT StoreError IO ()
+updateRelayMemberData db cxt user m memberId (MemberKey relayKey) profile = do
   currentTs <- liftIO getCurrentTime
   liftIO $
     DB.execute
@@ -1887,7 +1887,7 @@ updateRelayMemberData db cxt user m memberId (MemberKey relayKey) presHeader_ pr
         WHERE group_member_id = ?
       |]
       (memberId, relayKey, currentTs, groupMemberId' m)
-  void $ updateMemberProfile db cxt user m presHeader_ profile
+  void $ updateMemberProfile db cxt user m Nothing profile
 
 setGroupInProgressDone :: DB.Connection -> GroupInfo -> IO ()
 setGroupInProgressDone db GroupInfo {groupId} = do
@@ -2050,7 +2050,7 @@ getRelayPublishableGroups db User {userId, userContactId} =
   where
     toRow ((gId, pgId) :. accessRow) = (gId, pgId, toPublicGroupAccess accessRow)
 
-getGroupViaPublicGroupId :: DB.Connection -> User -> B64UrlByteString -> IO (Maybe (GroupId, Maybe ShortLinkContact))
+getGroupViaPublicGroupId :: DB.Connection -> User -> B64UrlByteString -> IO (Maybe (GroupId, ShortLinkContact))
 getGroupViaPublicGroupId db User {userId} publicGroupId =
   maybeFirstRow id $
     DB.query
@@ -2635,13 +2635,13 @@ createIntroReMember
   cxt
   user
   gInfo
-  (MemberInfo memId memRole memChatVRange memberProfile memKey)
+  memInfo@(MemberInfo _ _ _ memberProfile _)
   presHeader_
   memRestrictions_ = do
     currentTs <- liftIO getCurrentTime
     (localDisplayName, memProfileId, memberProfile', badgeVerified) <- createNewMemberProfile_ db cxt user memberProfile presHeader_ currentTs
     let memRestriction = restriction <$> memRestrictions_
-        newMember = NewGroupMember {memInfo = MemberInfo memId memRole memChatVRange memberProfile' memKey, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId}
+        newMember = NewGroupMember {memInfo = (memInfo :: MemberInfo) {profile = memberProfile'}, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId}
     createNewMember_ db user gInfo newMember badgeVerified currentTs
 
 createIntroReMemberConn :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionChat -> MemberInfo -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember

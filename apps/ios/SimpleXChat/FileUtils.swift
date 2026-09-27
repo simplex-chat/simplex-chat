@@ -36,6 +36,9 @@ public let MAX_FILE_SIZE_XFTP_LEGEND: Int64 = 5_368_709_120 // 5GB
 // a badge raises the limit at send for this long after its expiry, shorter than the receiver's grace
 public let BADGE_SND_GRACE_INTERVAL = TimeInterval(86400)
 
+public let BADGE_GRACE_INTERVAL = TimeInterval(7 * 86400)
+public let BADGE_OLD_INTERVAL = TimeInterval(38 * 86400)
+
 public let MAX_FILE_SIZE_LOCAL: Int64 = Int64.max
 
 public let MAX_FILE_SIZE_SMP: Int64 = 8000000

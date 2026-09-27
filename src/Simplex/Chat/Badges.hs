@@ -271,7 +271,7 @@ maxSndXFTPFileSize lims now = \case
   _ -> noBadge lims
 
 -- Presentation header: a tag char + payload. PHTest is unbound - a fresh random nonce per
--- presentation, not bound to any context; the 'T' tag marks it so master rejects it.
+-- presentation, not bound to any context.
 -- PHUnknown is the forward-compat catch-all for tags this version does not interpret.
 
 data ProofPresHeaderTag = PHTestTag | PHChatTag | PHFileInvTag | PHFileDescrTag | PHRequestTag | PHLinkTag | PHUnknownTag Char

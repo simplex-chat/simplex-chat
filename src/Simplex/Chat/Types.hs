@@ -850,22 +850,19 @@ fromLocalProfile LocalProfile {displayName, fullName, shortDescr, description, i
       ShownBadge _ _ -> Nothing -- a display-only badge is not sent
 
 profileBadgeVerified :: Maybe ProofPresHeader -> Map Int BBSPublicKey -> Maybe LocalProfile -> Profile -> IO (Profile, Maybe Bool)
-profileBadgeVerified expected keys lp_ p@Profile {badge = newBadge} = case newBadge of
-  Nothing -> pure (p, Just False)
-  Just newB@(BadgeProof _ _ _ newInfo)
-    | not (acceptedProof expected newB) -> pure (p {badge = storedProof}, storedVerified)
+profileBadgeVerified expected keys lp_ p@Profile {badge = rcvBadge} =
+  (,) p {badge = newBadge} <$> case (storedBadge, newBadge) of
+    (_, Nothing) -> pure (Just False)
     -- an unchanged badge that verified before stays verified; failed or unknown-key badges
     -- are re-verified, so an unknown key heals once an app update adds it
-    | Just lb <- storedBadge, localBadgeInfo lb == newInfo && localBadgeStatus lb `notElem` [BSFailed, BSUnknownKey] -> pure (p, Just True)
-    | otherwise -> (,) p <$> verifyBadge keys newB
+    (Just lb, Just (BadgeProof _ _ _ newInfo))
+      | localBadgeInfo lb == newInfo && localBadgeStatus lb `notElem` [BSFailed, BSUnknownKey] -> pure (Just True)
+    (_, Just newB) -> verifyBadge keys newB
   where
     storedBadge = (\LocalProfile {localBadge} -> localBadge) =<< lp_
-    Profile {badge = storedProof} = maybe p {badge = Nothing} fromLocalProfile lp_
-    storedVerified = case localBadgeStatus <$> storedBadge of
-      Nothing -> Just False
-      Just BSFailed -> Just False
-      Just BSUnknownKey -> Nothing
-      Just _ -> Just True
+    newBadge
+      | all (acceptedProof expected) rcvBadge = rcvBadge
+      | otherwise = (\Profile {badge} -> badge) . fromLocalProfile =<< lp_
 
 -- a failed or unknown-key badge is re-verified on the next profile update even when its disclosed content
 -- is unchanged, so it heals once an app update adds the issuer key
