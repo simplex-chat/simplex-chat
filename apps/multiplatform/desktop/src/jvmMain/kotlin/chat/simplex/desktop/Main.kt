@@ -39,6 +39,7 @@ fun main(args: Array<String>) {
     runMigrations()
     setupUpdateChecker()
     initApp()
+    registerAppLinkScheme()
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
     // Only the owning instance cleans tmpDir on exit (see preferencesTmpDir above).
