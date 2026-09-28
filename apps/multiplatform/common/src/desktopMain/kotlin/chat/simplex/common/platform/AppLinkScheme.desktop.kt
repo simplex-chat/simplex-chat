@@ -19,7 +19,7 @@ private const val PROCESS_TIMEOUT_SECONDS = 5L
 @Volatile
 private var registered = false
 
-fun appLinkSchemeRegistered(): Boolean = registered
+actual fun appLinkSchemeRegistered(): Boolean = registered
 
 // Registration spawns processes and touches the registry, so it runs off the startup path.
 fun registerAppLinkScheme() {

@@ -25,6 +25,9 @@ expect val deviceName: String
 
 expect fun isAppVisibleAndFocused(): Boolean
 
+// whether a simplexchat: link opened anywhere on this device reaches this installation
+expect fun appLinkSchemeRegistered(): Boolean
+
 val appVersionInfo: Pair<String, Int?> = if (appPlatform == AppPlatform.ANDROID)
   BuildConfigCommon.ANDROID_VERSION_NAME to BuildConfigCommon.ANDROID_VERSION_CODE
 else
