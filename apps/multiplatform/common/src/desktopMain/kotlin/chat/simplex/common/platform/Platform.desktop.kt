@@ -5,7 +5,8 @@ import java.util.*
 
 private val home = System.getProperty("user.home")
 private val unixConfigPath = (System.getenv("XDG_CONFIG_HOME") ?: "$home/.config") + "/simplex"
-private val unixDataPath = (System.getenv("XDG_DATA_HOME") ?: "$home/.local/share") + "/simplex"
+val unixDataHome = System.getenv("XDG_DATA_HOME") ?: "$home/.local/share"
+private val unixDataPath = "$unixDataHome/simplex"
 val desktopPlatform = detectDesktopPlatform()
 
 enum class DesktopPlatform(val libExtension: String, val configPath: String, val dataPath: String, val githubAssetName: String) {
