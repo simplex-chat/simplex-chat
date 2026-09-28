@@ -100,7 +100,7 @@ Renders a single row in the chat list. Shows:
 | Chat name | `chatInfo.displayName` | Contact name, group name, or connection label |
 | Last message | `chat.chatItems.last` | Preview text of most recent message |
 | Timestamp | `chat.chatItems.last?.timestampText` | Relative time of last message |
-| Unread badge | `chat.chatStats.unreadCount` | Circular badge with unread count |
+| Unread badge | `chat.chatStats.unreadCount` | Circular badge with unread count. For a chat created from a received event this is that one item until the list is reloaded, since `/_get chats` loads at most 5000 chats ([GAP] chat list is silently limited to 5000 chats) |
 | Mute icon | `chatInfo.chatSettings?.enableNtfs` | Bell-slash icon if notifications muted |
 | Pin icon | -- | Pin indicator for pinned chats |
 | Incognito icon | Contact.contactConnIncognito | Incognito mode indicator |

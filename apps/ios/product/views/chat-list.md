@@ -41,7 +41,7 @@ Managed by `ChatTagsModel` and `TagListView`:
 | Filter | PresetTag | Description |
 |---|---|---|
 | All | (none) | No filter, shows all chats |
-| Unread | `.unread` | Chats with unread messages |
+| Unread | `.unread` | Chats with unread messages. Only the most recently active 5000 chats are loaded ([GAP] chat list is silently limited to 5000 chats), so a chat outside that set appears when it receives a message, counting that message as unread until the list is reloaded; muted chats and non-mentions in mentions-only groups stay out of this filter as always |
 | Favorites | `.favorites` | User-favorited chats |
 | Groups | `.groups` | Group conversations only |
 | Contacts | `.contacts` | Direct contacts only |

@@ -107,7 +107,7 @@ Common Module (commonMain)
 | Concepts | [product/concepts.md](../product/concepts.md) | 30 product concepts (PC1-PC30) mapped to docs + source |
 | Glossary | [product/glossary.md](../product/glossary.md) | Domain term definitions (9 sections) |
 | Rules | [product/rules.md](../product/rules.md) | 18 business rules in 6 categories |
-| Gaps | [product/gaps.md](../product/gaps.md) | 7 known gaps with recommendations |
+| Gaps | [product/gaps.md](../product/gaps.md) | 10 known gaps with recommendations |
 | Flows | [product/flows/](../product/flows/) | onboarding, messaging, connection, calling, file-transfer, group-lifecycle |
 | Views | [product/views/](../product/views/) | chat-list, chat, settings, onboarding, call, new-chat, contact-info, group-info, user-profiles |
 

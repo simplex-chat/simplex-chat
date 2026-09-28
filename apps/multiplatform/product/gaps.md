@@ -13,6 +13,9 @@ This document catalogs known gaps in the multiplatform codebase (Android and Des
 5. [Documentation: Haskell Store Layer Not Fully Specified](#gap-05-documentation-haskell-store-layer-not-fully-specified)
 6. [Desktop: Recording Not Implemented](#gap-06-desktop-recording-not-implemented)
 7. [Desktop: Cryptor Not Implemented](#gap-07-desktop-cryptor-not-implemented)
+8. [Unread Counters Drift](#gap-08-unread-counters-drift)
+9. [addChatItem Writes the Primary List Using the Current Context's Index](#gap-09-addchatitem-writes-the-primary-list-using-the-current-contexts-index)
+10. [Chat List: Silent 5000-Chat Limit](#gap-10-chat-list-silent-5000-chat-limit)
 
 ---
 
@@ -289,3 +292,104 @@ This directly undermines RULE-02 (Database Encryption at Rest) and RULE-04 (Self
 
 - GAP-03 (Database Passphrase Not Enforced) is compounded by this gap on Desktop.
 - The `testCrypto()` function referenced in `AppCommon.desktop.kt:39` is commented out with a `// LALAL` marker, suggesting crypto testing was planned but never completed.
+
+---
+
+## GAP-08: Unread Counters Drift
+
+**Severity:** Low
+**Category:** State
+**Platforms:** Android, Desktop
+
+### Description
+
+The profile unread counter (`users[i].unreadCount`) is maintained incrementally from events. The core
+recomputes it in `getUsersInfo`, which the client reads through `listUsers` -- on start, on a user or
+remote-host switch, when the user picker opens (and there only if the user list itself differs), and on a
+few settings and background-event paths -- but never on a chat-list reload, so reloading the list does not
+correct it. The per-tag counts (`unreadTags`) are recomputed client-side by `updateChatTags` from the
+in-memory chats, but only `getUserChatData` calls it, so they drift the same way. Several paths change
+unread state without a matching counter update.
+
+### Affected Locations
+
+- `ChatModel.kt` -- `removeChat` decrements neither the profile counter nor `unreadTags`, so deleting or
+  leaving a chat that had unread messages leaves both high.
+- `ChatModel.kt` -- `decreaseCounterInPrimaryContext` decrements `unreadCount` but never `unreadMentions`,
+  so clearing a mention in a mentions-only group can leave the chat with `unreadCount = 0` and
+  `unreadMentions = 1`. `unreadTag` stays true while `ChatPreviewView` draws no badge, so the chat sits in
+  the Unread filter with nothing shown. iOS does not share this -- its `removeChatItem` decrements both.
+- `ChatModel.kt` -- `markChatItemsRead` has no `secondaryContextFilter` guard, unlike the counter helpers
+  it calls, so with a non-null `itemIds` on a secondary context it computes
+  `chat.chatStats.unreadCount - markedRead` against an entry whose stats are always default zero, and can
+  drive that entry negative.
+
+### Impact
+
+The unread badge on the profile and on tags can be too high (or, in the secondary-context case, negative)
+until the user switches profile or restarts. A chat that is inside the loaded window has its own count
+corrected by the next chat-list reload; a chat outside it (GAP-10) does not.
+
+### Recommendation
+
+Decrement both counters in `removeChat`, pass the mention flag through `decreaseCounterInPrimaryContext`,
+and guard `markChatItemsRead` on `secondaryContextFilter` like its siblings. Longer term, re-read
+`getUsersInfo` after operations that clear a whole chat, so the counter has an authoritative source.
+
+---
+
+## GAP-09: addChatItem Writes the Primary List Using the Current Context's Index
+
+**Severity:** Low
+**Category:** State
+**Platforms:** Android, Desktop
+
+### Description
+
+In `ChatModel.kt`, `addChatItem` takes its index from `getChatIndex`, which searches the *current*
+context's `chats`, but then reads and writes `chatsContext.chats[i]` -- the primary list -- for the
+in-list branch. Invoked on a secondary context (group reports, member support), the index therefore
+addresses a different list than the one it was computed from.
+
+### Affected Locations
+
+- `ChatModel.kt` -- `addChatItem`, in-list branch
+
+### Impact
+
+A message arriving while a reports or member-support view is open can apply a preview and unread update
+to whichever primary chat happens to sit at that index. The secondary context's `chats` list is small and
+its indices rarely line up with the primary one, so this is hard to trigger, but the write is unguarded.
+
+### Recommendation
+
+Index and write the same list: use `chats[i]` throughout, or look the chat up by id in the context being
+updated.
+
+---
+
+## GAP-10: Chat List: Silent 5000-Chat Limit
+
+**Severity:** Low
+**Category:** Chat List
+**Platforms:** Android, Desktop
+
+### Description
+
+`/_get chats` is sent with no pagination, so the core applies its default of `PTLast maxChats` with
+`maxChats = 5000`. The client neither shows nor records that the list is truncated.
+
+### Affected Locations
+
+- `SimpleXAPI.kt` -- `CC.ApiGetChats.cmdString` builds `"/_get chats $userId pcc=on"`, which `apiGetChats` sends
+- `Simplex/Chat/Mobile.hs`, `Simplex/Chat.hs` -- `maxChats = 5000`
+
+### Impact
+
+On a profile with more than 5000 chats the oldest are not shown, not searched (chat-list search is
+in-memory) and missing from the in-memory tag counts, with no indication to the user. They reappear only
+when they receive a message or after the list is reloaded with them inside the window.
+
+### Recommendation
+
+Either paginate the chat list, or raise the count and surface the limit in the UI.

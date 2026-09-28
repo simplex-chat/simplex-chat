@@ -608,7 +608,19 @@ object ChatModel {
         }
       } else {
         if (cInfo.groupChatScope() == null) {
-          addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
+          val unread = cItem.meta.itemStatus is CIStatus.RcvNew
+          // in a secondary context ChatView shows unread count of the chat it was opened for, it must not be set here
+          val chatStats = if (unread && secondaryContextFilter == null) {
+            Chat.ChatStats(unreadCount = 1, unreadMentions = if (cItem.meta.userMention) 1 else 0)
+          } else {
+            Chat.ChatStats()
+          }
+          val newChat = Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem), chatStats = chatStats)
+          if (unread) {
+            increaseUnreadCounter(rhId, currentUser.value!!)
+            updateChatTagReadInPrimaryContext(newChat, wasUnread = false)
+          }
+          addChat(newChat)
         } else {
           addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = emptyList()))
         }

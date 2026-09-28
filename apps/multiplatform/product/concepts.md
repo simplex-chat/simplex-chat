@@ -19,7 +19,7 @@ This document provides a structured mapping between product-level concepts, thei
 
 | # | Concept | Product Docs | Spec Docs | Source Files (Kotlin) | Source Files (Haskell) |
 |---|---------|-------------|-----------|----------------------|----------------------|
-| PC1 | Chat List | [README.md](README.md) (Navigation Map) | [spec/client/chat-list.md](../spec/client/chat-list.md) | `common/.../views/chatlist/ChatListView.kt`, `ChatListNavLinkView.kt`, `ChatPreviewView.kt`, `GetStakeBanner.kt` | `Controller.hs` (`APIGetChats`) |
+| PC1 | Chat List | [README.md](README.md) (Navigation Map), [views/chat-list.md](views/chat-list.md) | [spec/client/chat-list.md](../spec/client/chat-list.md), [spec/state.md](../spec/state.md) | `common/.../views/chatlist/ChatListView.kt`, `ChatListNavLinkView.kt`, `ChatPreviewView.kt`, `GetStakeBanner.kt`, `model/ChatModel.kt` | `Controller.hs` (`APIGetChats`) |
 | PC2 | Direct Chat | [README.md](README.md) (Messaging) | [spec/client/chat-view.md](../spec/client/chat-view.md) | `common/.../views/chat/ChatView.kt`, `ChatInfoView.kt` | `Types.hs` (`Contact`), `Messages.hs` |
 | PC3 | Group Chat | [README.md](README.md) (Groups) | [spec/client/chat-view.md](../spec/client/chat-view.md) | `common/.../views/chat/ChatView.kt`, `group/GroupChatInfoView.kt` | `Types.hs` (`GroupInfo`, `GroupMember`) |
 | PC4 | Message Composition | [README.md](README.md) (Messaging) | [spec/client/compose.md](../spec/client/compose.md) | `common/.../views/chat/ComposeView.kt`, `SendMsgView.kt`, `ComposeVoiceView.kt`, `ComposeImageView.kt`, `ComposeFileView.kt` | `Controller.hs` (`APISendMessages`) |
