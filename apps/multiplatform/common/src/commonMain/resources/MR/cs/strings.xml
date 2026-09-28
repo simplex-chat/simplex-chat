@@ -2450,7 +2450,7 @@
     <string name="sanitize_links_toggle">Odebrat sledování odkazů</string>
     <string name="v6_4_role_moderator_descr">Odstranit zprávy a blokovat členy.</string>
     <string name="e2ee_info_e2ee"><![CDATA[Zprávy jsou chráněny <b>koncovým šifrováním</b>.]]></string>
-    <string name="simplex_link_relay">SimpleX relé odkaz</string>
+    <string name="simplex_link_relay">adresa SimpleX relé</string>
     <string name="private_routing_no_session">Sezení bez soukromého směrování</string>
     <string name="v6_4_1_new_interface_languages">4 nové jazyky rozhraní</string>
     <string name="accept_contact_request">Přijmout žádost o kontakt</string>
