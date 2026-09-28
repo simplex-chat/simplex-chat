@@ -46,7 +46,7 @@ import Simplex.Chat.Badges.Service
 import Simplex.Chat.Bot.Store (withDB')
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (CRCustomChatResponse))
 import Simplex.Chat.Core (sendChatCmdStr)
-import Simplex.Chat.Options (CoreChatOpts (..))
+import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..))
@@ -117,16 +117,16 @@ testIssuerKeyIdx :: Int
 testIssuerKeyIdx = 1
 
 mkBadgeServiceOpts :: TestParams -> BBSSecretKey -> BadgeServiceOpts
-mkBadgeServiceOpts TestParams {tmpPath = ps} secretKey =
+mkBadgeServiceOpts ps secretKey =
   BadgeServiceOpts
     { coreOptions =
-        testCoreOpts
+        coreOpts
           { dbOptions =
               (dbOptions testCoreOpts)
 #if defined(dbPostgres)
-                {dbSchemaPrefix = "client_" <> serviceDbPrefix}
+                {dbSchemaPrefix = testSchemaPrefix ps serviceDbPrefix}
 #else
-                {dbFilePrefix = ps </> serviceDbPrefix}
+                {dbFilePrefix = tmpPath ps </> serviceDbPrefix}
 #endif
           },
       serviceName = "SimpleX Badges",
@@ -137,6 +137,8 @@ mkBadgeServiceOpts TestParams {tmpPath = ps} secretKey =
       issuerKey = Right (Just BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey}),
       testing = True
     }
+  where
+    (_, ChatOpts {coreOptions = coreOpts}) = testPortsCfg ps testCfg testOpts
 
 -- | The clock tracks real time plus a test-controlled offset rather than freezing it, so a sleeping worker still waits the correct real duration.
 newtype TestClock = TestClock (IORef NominalDiffTime)
@@ -176,7 +178,9 @@ withBadgeServiceEnv ps test = do
   let opts = mkBadgeServiceOpts ps sk
       svcCfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk, badgeCurrentTime = testClockTime clock}
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
-  runBadgeService svcCfg opts $ \_ -> pure ()
+  -- First start: badge service takes the CreateMyAddress branch.
+  runBadgeService ps svcCfg opts $ \_ -> pure ()
+  -- Reopen the DB to read the link the service created.
   bsLink <- withTestChat ps serviceDbPrefix $ \bs -> do
     bs <## "subscribed 1 connections on server localhost"
     bs ##> "/sa"
@@ -185,7 +189,8 @@ withBadgeServiceEnv ps test = do
     pure sLink
   let clientCfg =
         svcCfg {badgeServiceAddress = Just $ either (error . ("bad badge service address: " <>)) id $ strDecode (B.pack bsLink)}
-  runBadgeService svcCfg opts $ \env -> do
+  -- Second start: badge service takes the ShowMyAddress branch, then serves the test body.
+  runBadgeService ps svcCfg opts $ \env -> do
     cc <- atomically $ readTMVar $ serviceCC env
     test BadgeServiceEnv {bsIssuerKey = BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk}, bsClock = clock, bsClientCfg = clientCfg, bsAddress = bsLink, bsController = cc}
 
@@ -207,11 +212,13 @@ issueCodeAs cc badgeType months status =
       _ -> error $ "unexpected issue response: " <> T.unpack response
     r -> error $ "issue failed: " <> show (() <$ r)
 
--- | The post-start hook fills serviceCC once the address exists, so the test waits on it rather than on a fixed delay that would race with startup and let one start's address output arrive during the next test.
-runBadgeService :: ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
-runBadgeService cfg opts action = do
+-- | The post-start hook fills serviceCC once the address exists, so waiting on it is the service
+-- being ready. A fixed delay here raced with startup and left the address output of one start
+-- arriving during the next test.
+runBadgeService :: TestParams -> ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
+runBadgeService ps cfg opts action = do
   env <- newServiceState
-  t <- forkIO $ badgeService opts cfg env
+  t <- forkIO $ badgeService opts (fst $ testPortsCfg ps cfg testOpts) env
   ready <- timeout 30000000 $ atomically $ readTMVar $ serviceCC env
   when (isNothing ready) $ killThread t >> error "badge service did not start"
   action env `finally` killThread t

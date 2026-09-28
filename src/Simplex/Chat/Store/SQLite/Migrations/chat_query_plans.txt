@@ -7736,6 +7736,10 @@ Query: SELECT shared_msg_id FROM chat_items WHERE shared_msg_id IS NOT NULL ORDE
 Plan:
 SCAN chat_items
 
+Query: SELECT short_descr FROM contact_profiles WHERE display_name = ? LIMIT 1
+Plan:
+SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
+
 Query: SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1
 Plan:
 SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)

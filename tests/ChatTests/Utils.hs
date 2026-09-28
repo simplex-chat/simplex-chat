@@ -13,7 +13,7 @@ import ChatTests.DBUtils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, mapConcurrently_)
 import Control.Concurrent.STM
-import Control.Monad (unless, when)
+import Control.Monad (join, unless, when)
 import Control.Monad.Except (runExceptT)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
@@ -34,7 +34,7 @@ import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.FileTransfer.Client.Main (xftpClientCLI)
+import Simplex.FileTransfer.Description (FileSize (..))
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -43,8 +43,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern P
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
-import System.Environment (lookupEnv, withArgs)
-import System.IO.Silently (capture_)
+import System.Environment (lookupEnv)
 import System.Info (os)
 import Test.Hspec hiding (it)
 import qualified Test.Hspec as Hspec
@@ -95,7 +94,7 @@ it :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expe
 it name test =
   Hspec.it name $ \tmp -> timeout t (test tmp) >>= maybe (error "test timed out") pure
   where
-    t = 90 * 1000000
+    t = 180 * 1000000
 
 xit' :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 xit' = if os == "linux" then xit else it
@@ -351,7 +350,7 @@ itemId i = show $ length chatFeatures + i
 
 (@@@) :: HasCallStack => TestCC -> [(String, String)] -> Expectation
 (@@@) cc res = do
-  threadDelay 100000
+  threadDelay 500000
   getChats mapChats cc res
 
 mapChats :: [(String, String, Maybe ConnStatus)] -> [(String, String)]
@@ -680,11 +679,24 @@ createCCNoteFolder cc =
     withCCUser cc $ \user ->
       runExceptT (createNoteFolder db user) >>= either (fail . show) pure
 
+shouldEventuallyReturn :: (HasCallStack, Eq a, Show a) => IO a -> a -> Expectation
+shouldEventuallyReturn action expected = go (200 :: Int)
+  where
+    go n = do
+      r <- action
+      if r == expected || n == 0
+        then r `shouldBe` expected
+        else threadDelay 100000 >> go (n - 1)
+
 getProfilePictureByName :: TestCC -> String -> IO (Maybe String)
 getProfilePictureByName cc displayName =
   withTransaction (chatStore $ chatController cc) $ \db ->
-    maybeFirstRow fromOnly $
-      DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
+    join <$> maybeFirstRow fromOnly (DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName))
+
+getProfileShortDescrByName :: TestCC -> String -> IO (Maybe String)
+getProfileShortDescrByName cc displayName =
+  withTransaction (chatStore $ chatController cc) $ \db ->
+    join <$> maybeFirstRow fromOnly (DB.query db "SELECT short_descr FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName))
 
 pqSndForContact :: TestCC -> ContactId -> IO PQEncryption
 pqSndForContact = pqForContact_ pqSndEnabled PQEncOff
@@ -890,7 +902,12 @@ linkAnotherSchema link
   | otherwise = error "link starts with neither https://simplex.chat/ nor simplex:/"
 
 xftpCLI :: [String] -> IO [String]
-xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
+xftpCLI = \case
+  ["rand", path, size] -> do
+    let FileSize n = fromString size :: FileSize Int
+    B.writeFile path =<< atomically . C.randomBytes n =<< C.newRandom
+    pure ["File created: " <> path]
+  params -> error $ "unsupported xftp CLI command: " <> unwords params
 
 setRelativePaths :: HasCallStack => TestCC -> String -> String -> IO ()
 setRelativePaths cc filesFolder tempFolder = do

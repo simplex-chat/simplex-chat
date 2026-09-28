@@ -23,7 +23,7 @@ import System.Directory (emptyPermissions, setOwnerExecutable, setOwnerReadable,
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (ChatConfig (..))
 import qualified Simplex.Chat.Markdown as MD
-import Simplex.Chat.Options (CoreChatOpts (..))
+import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (memberSupportVoiceVersion)
 import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
@@ -113,16 +113,16 @@ directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
 
 mkDirectoryOpts :: TestParams -> [KnownContact] -> Maybe KnownGroup -> Maybe FilePath -> DirectoryOpts
-mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
+mkDirectoryOpts ps superUsers ownersGroup webFolder =
   DirectoryOpts
     { coreOptions =
-        testCoreOpts
+        coreOpts
           { dbOptions =
               (dbOptions testCoreOpts)
 #if defined(dbPostgres)
-                {dbSchemaPrefix = "client_" <> serviceDbPrefix}
+                {dbSchemaPrefix = testSchemaPrefix ps serviceDbPrefix}
 #else
-                {dbFilePrefix = ps </> serviceDbPrefix}
+                {dbFilePrefix = tmpPath ps </> serviceDbPrefix}
 #endif
 
           },
@@ -149,6 +149,8 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
       knocking = False,
       testing = True
     }
+  where
+    (_, ChatOpts {coreOptions = coreOpts}) = testPortsCfg ps testCfg testOpts
 
 serviceDbPrefix :: FilePath
 serviceDbPrefix = "directory_service"
@@ -1157,13 +1159,13 @@ testDuplicateProhibitApproval ps =
 
 testListUserGroups :: HasCallStack => Bool -> TestParams -> IO ()
 testListUserGroups promote ps =
-  withDirectoryServiceCfgOwnersGroup ps testCfg False (Just "./tests/tmp/web") $ \superUser dsLink ->
+  withDirectoryServiceCfgOwnersGroup ps testCfg False (Just webDir) $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         cath `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
-        checkListings ["privacy"] []
+        checkListings webDir ["privacy"] []
         connectUsers bob cath
         fullAddMember "privacy" "Privacy" bob cath GRMember
         joinGroup "privacy" cath bob
@@ -1171,9 +1173,9 @@ testListUserGroups promote ps =
         cath <## "contact and member are merged: 'SimpleX Directory', #privacy 'SimpleX Directory_1'"
         cath <## "use @'SimpleX Directory' <message> to send messages"
         registerGroupId superUser bob "security" "Security" 2 2
-        checkListings ["privacy", "security"] []
+        checkListings webDir ["privacy", "security"] []
         registerGroupId superUser cath "anonymity" "Anonymity" 3 1
-        checkListings ["privacy", "security", "anonymity"] []
+        checkListings webDir ["privacy", "security", "anonymity"] []
         listUserGroup cath "anonymity" "Anonymity"
         -- with de-listed group
         groupFound cath "anonymity"
@@ -1183,14 +1185,14 @@ testListUserGroups promote ps =
         cath <## ""
         cath <## "The group is no longer listed in the directory."
         superUser <# "'SimpleX Directory'> The group ID 3 (anonymity) is de-listed (SimpleX Directory role is changed to member)."
-        checkListings ["privacy", "security"] []
+        checkListings webDir ["privacy", "security"] []
         groupNotFound cath "anonymity"
         listGroups superUser bob cath
         when promote $ do
           superUser #> "@'SimpleX Directory' /promote 1:privacy on"
           superUser <# "'SimpleX Directory'> > /promote 1:privacy on"
           superUser <## "      Group promotion enabled."
-          checkListings ["privacy", "security"] ["privacy"]
+          checkListings webDir ["privacy", "security"] ["privacy"]
           bob ##> "/gp privacy privacy"
           bob <## "description removed"
           cath <## "bob updated group #privacy: (signed)"
@@ -1202,21 +1204,23 @@ testListUserGroups promote ps =
           superUser <## ""
           superUser <## "To approve send:"
           superUser <# "'SimpleX Directory'> /approve 1:privacy 1 promote=on"
-          checkListings ["security"] []
+          checkListings webDir ["security"] []
           superUser #> "@'SimpleX Directory' /approve 1:privacy 1"
           superUser <# "'SimpleX Directory'> > /approve 1:privacy 1"
           superUser <## "      Group approved (promoted)!"
           void $ groupApprovedNotification bob "privacy" 1
-          checkListings ["privacy", "security"] ["privacy"]
+          checkListings webDir ["privacy", "security"] ["privacy"]
+  where
+    webDir = tmpFile ps "web"
 
-checkListings :: HasCallStack => [T.Text] -> [T.Text] -> IO ()
-checkListings listed promoted = do
+checkListings :: HasCallStack => FilePath -> [T.Text] -> [T.Text] -> IO ()
+checkListings webDir listed promoted = do
   threadDelay 100000
   checkListing listingFileName listed
   checkListing promotedFileName promoted
   where
     checkListing f expected = do
-      Just (DirectoryListing gs) <- J.decodeFileStrict $ "./tests/tmp/web/data" </> f
+      Just (DirectoryListing gs) <- J.decodeFileStrict $ webDir </> "data" </> f
       map groupName gs `shouldBe` expected
     groupName DirectoryEntry {displayName} = displayName
 
@@ -1648,7 +1652,7 @@ withDirectoryServiceOpts ps modOpts test = do
         ds ##> "/ad"
         getContactLink ds True
   let opts = modOpts $ mkDirectoryOpts ps [KnownContact 2 "alice"] Nothing Nothing
-  runDirectory testCfg opts $
+  runDirectory ps testCfg opts $
     withTestChatCfg ps testCfg "super_user" $ \superUser -> do
       superUser <## "subscribed 1 connections on server localhost"
       test superUser dsLink
@@ -1806,16 +1810,16 @@ withDirectory ps cfg dsLink = withDirectoryOwnersGroup ps cfg dsLink False Nothi
 withDirectoryOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> String -> Bool -> Maybe FilePath -> (TestCC -> String -> IO ()) -> IO ()
 withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
   let opts = mkDirectoryOpts ps [KnownContact 2 "alice"] (if createOwnersGroup then Just $ KnownGroup 1 "owners" else Nothing) webFolder
-  runDirectory cfg opts $
+  runDirectory ps cfg opts $
     withTestChatCfg ps cfg "super_user" $ \superUser -> do
       if createOwnersGroup
         then superUser <## "subscribed 2 connections on server localhost"
         else superUser <## "subscribed 1 connections on server localhost"
       test superUser dsLink
 
-runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()
-runDirectory cfg opts action = do
-  t <- forkIO $ directoryService opts cfg
+runDirectory :: TestParams -> ChatConfig -> DirectoryOpts -> IO () -> IO ()
+runDirectory ps cfg opts action = do
+  t <- forkIO $ directoryService opts $ fst $ testPortsCfg ps cfg testOpts
   threadDelay 500000
   action `finally` killThread t
 
@@ -2178,7 +2182,7 @@ testRegisterChannelViaCard ps =
 
 -- owner sets a name; directory verifies name<->link consistency and shows the verified name to the admin
 testDirectoryChannelName :: HasCallStack => TestParams -> IO ()
-testDirectoryChannelName ps = withSmpServerAndNames $ \reg ->
+testDirectoryChannelName ps = withSmpServerAndNames ps $ \reg ->
   withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
@@ -2219,7 +2223,7 @@ testDirectoryChannelName ps = withSmpServerAndNames $ \reg ->
 
 -- registry re-pointed to a different link after the owner set the name: directory verification fails
 testDirectoryChannelNameNotVerified :: HasCallStack => TestParams -> IO ()
-testDirectoryChannelNameNotVerified ps = withSmpServerAndNames $ \reg ->
+testDirectoryChannelNameNotVerified ps = withSmpServerAndNames ps $ \reg ->
   withDirectoryServiceCfg ps testCfg $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
       withRelay ps $ \relay -> do
@@ -2391,7 +2395,7 @@ testLinkCheckUpdatesCount ps = do
         ds ##> "/ad"
         getContactLink ds True
   let opts = (mkDirectoryOpts ps [KnownContact 2 "alice"] Nothing Nothing) {linkCheckInterval = 1}
-  runDirectory testCfg opts $
+  runDirectory ps testCfg opts $
     withTestChatCfg ps testCfg "super_user" $ \superUser -> do
       superUser <## "subscribed 1 connections on server localhost"
       withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob ->
