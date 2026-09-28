@@ -58,7 +58,7 @@ private fun UsageRow(name: String, bytes: Long) {
 }
 
 private fun storageRoots(): List<File> {
-  val dirs = listOf(dataDir, preferencesDir, tmpDir).distinct()
+  val dirs = listOf(dataDir, preferencesDir, tmpDir).map { it.normalize() }.distinct()
   return dirs.filter { dir -> dirs.none { it != dir && dir.startsWith(it) } }
 }
 
