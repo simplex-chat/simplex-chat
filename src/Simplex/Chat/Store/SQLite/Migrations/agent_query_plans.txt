@@ -1389,6 +1389,10 @@ Query: SELECT conn_id, rc_verify_code_ad, rc_verify_code_pq, CASE WHEN rc_verify
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
 
+Query: SELECT count(1) FROM commands
+Plan:
+SCAN commands USING COVERING INDEX idx_commands_conn_id
+
 Query: SELECT count(1) FROM connections
 Plan:
 SCAN connections USING COVERING INDEX idx_connections_deleted
@@ -1513,10 +1517,6 @@ Query: UPDATE ratchets SET ratchet_state = ? WHERE conn_id = ?
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
 
-Query: UPDATE rcv_file_chunk_replicas SET delay = ?, retries = retries + 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
-Plan:
-SEARCH rcv_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
-
 Query: UPDATE rcv_file_chunk_replicas SET received = 1, updated_at = ? WHERE rcv_file_chunk_replica_id = ?
 Plan:
 SEARCH rcv_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
@@ -1580,10 +1580,6 @@ SEARCH servers_stats USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE snd_file_chunk_replicas SET replica_status = ?, updated_at = ? WHERE snd_file_chunk_replica_id = ?
 Plan:
 SEARCH snd_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE snd_files SET deleted = 1, updated_at = ? WHERE snd_file_id = ?
-Plan:
-SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE snd_files SET prefix_path = NULL, status = ?, updated_at = ? WHERE snd_file_id = ?
 Plan:
