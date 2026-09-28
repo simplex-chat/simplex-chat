@@ -846,8 +846,8 @@ export function returnToApp(o: ReturnToAppOptions): HTMLElement {
     el("div", { class: "tick" }, "✓"),
     el("h1", { class: "tight" }, "Paid"),
     el("p", { class: "lede" },
-      el("span", { class: "line" }, "Opening SimpleX to add your badge."), " ",
-      el("span", { class: "line" }, "If nothing happens, use the button."),
+      el("span", { class: "line" }, "Your badge is ready."), " ",
+      el("span", { class: "line" }, "Return to SimpleX to add it."),
     ),
     button(RETURN_TO_APP, o.onReturn),
   );
