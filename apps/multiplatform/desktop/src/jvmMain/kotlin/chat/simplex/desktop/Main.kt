@@ -16,6 +16,8 @@ import chat.simplex.common.model.size
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.DesktopPlatform
 import chat.simplex.common.showApp
+import chat.simplex.common.singleInstanceLock
+import chat.simplex.common.startShowFileWatcher
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.*
@@ -24,7 +26,10 @@ import java.io.File
 fun main(args: Array<String>) {
   try {
     val appLink = appLinkFromArgs(args)
-    if (!acquireSingleInstance()) return
+    if (!acquireSingleInstance(appLink)) return
+    appLink?.let { chatModel.appOpenUrl.value = null to it }
+    // started after the launch link is stored, so a link it forwards later is not overwritten
+    if (singleInstanceLock) startShowFileWatcher()
     // Clean shared temp dirs only in the owning instance (not in a Files.desktop val
     // initializer, which a transient second instance would also run). Early: before settings writes.
     preferencesTmpDir.deleteRecursively()
@@ -41,7 +46,6 @@ fun main(args: Array<String>) {
     // installOpenUriHandler and showApp stay inside the try: whichever touches AWT first makes the process's
     // first AWT init, a known startup failure cause (#4146); later crashes go to showApp's WindowExceptionHandler.
     if (desktopPlatform.isMac()) installOpenUriHandler()
-    appLink?.let { chatModel.appOpenUrl.value = null to it }
     return showApp()
   } catch (e: Throwable) {
     showStartupError(e) // the jpackage launcher otherwise hides the error behind "Failed to launch JVM" (#4146)

@@ -8,20 +8,32 @@ import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
 import java.nio.channels.OverlappingFileLockException
 import java.nio.file.*
+import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.nio.file.StandardOpenOption.CREATE
 import java.nio.file.StandardOpenOption.READ
 import java.nio.file.StandardOpenOption.WRITE
+import java.nio.file.attribute.FileTime
+import java.time.Duration
+import java.time.Instant
 import javax.swing.SwingUtilities
 import kotlin.concurrent.thread
 
 private var lockHandle: FileLock? = null
 private var watcher: WatchService? = null
 
+internal const val SHOW_FILE = "simplex.show"
+internal const val SHOW_TMP_SUFFIX = ".tmp"
+internal const val TAKEN_SHOW_FILE = "$SHOW_FILE.taken$SHOW_TMP_SUFFIX"
+// File times can lag the system clock by a clock tick, and by 2 s on FAT.
+internal val FILE_TIME_TOLERANCE: Duration = Duration.ofSeconds(2)
+
 private val lockPath get() = dataDir.resolve("simplex.started").toPath()
-private val showPath get() = dataDir.resolve("simplex.show").toPath()
+private val showPath get() = dataDir.resolve(SHOW_FILE).toPath()
 
 var singleInstanceLock = false
   private set
+
+internal class ShowSignal(val appLink: String?)
 
 private sealed interface LockResult {
   class Acquired(val lock: FileLock) : LockResult
@@ -29,31 +41,29 @@ private sealed interface LockResult {
   object Failed : LockResult
 }
 
-fun acquireSingleInstance(): Boolean {
+fun acquireSingleInstance(appLink: String?): Boolean {
   dataDir.mkdirs()
+  val lockAttemptTime = FileTime.from(Instant.now())
   when (val result = tryAcquireLock()) {
     is LockResult.Acquired -> {
       lockHandle = result.lock
       singleInstanceLock = true
-      deleteShowFile()
-      startShowFileWatcher()
+      deleteStaleSignalFiles(dataDir.toPath(), lockAttemptTime)
       return true
     }
     LockResult.Failed -> {
       return true
     }
     LockResult.Taken -> {
-      // Ensure the signal file exists (createShowFile is a no-op if it does)
-      // and wait up to 1s for the primary's watcher to consume it. If still
-      // there after the wait, the primary is hung — let the user decide.
-      createShowFile()
+      signalRunningInstance(dataDir.toPath(), appLink)
+      // a signal still present after 1 s means the running instance is hung, so the user decides
       val deadline = System.currentTimeMillis() + 1000
       while (Files.exists(showPath) && System.currentTimeMillis() < deadline) {
         try { Thread.sleep(50) } catch (_: InterruptedException) { break }
       }
       if (!Files.exists(showPath)) return false
       val start = showSingleInstanceAlert()
-      if (start) deleteShowFile()
+      if (start) deleteSignalFile(showPath)
       return start
     }
   }
@@ -83,18 +93,74 @@ private fun tryAcquireLock(): LockResult {
   }
 }
 
-private fun deleteShowFile() {
-  try { Files.deleteIfExists(showPath) } catch (e: IOException) {
-    Log.w(TAG, "single-instance: cannot delete show file: ${e.message}")
+private fun deleteSignalFile(path: Path) {
+  try { Files.deleteIfExists(path) } catch (e: IOException) {
+    Log.w(TAG, "single-instance: cannot delete signal file: ${e.message}")
   }
 }
 
-private fun createShowFile() {
-  try { Files.createFile(showPath) } catch (_: FileAlreadyExistsException) {
-    // Another duplicate already signalled; primary will pick it up.
+internal fun deleteStaleSignalFiles(dir: Path, lockAttemptTime: FileTime) {
+  val staleBefore = FileTime.from(lockAttemptTime.toInstant().minus(FILE_TIME_TOLERANCE))
+  try {
+    // only a running instance takes a signal, so a taken file at startup was left by a crash
+    Files.deleteIfExists(dir.resolve(TAKEN_SHOW_FILE))
+    Files.newDirectoryStream(dir, "$SHOW_FILE*").use { files ->
+      files.forEach { file ->
+        try {
+          if (Files.getLastModifiedTime(file) < staleBefore) Files.deleteIfExists(file)
+        } catch (_: NoSuchFileException) {
+          // a second process renamed its temp file meanwhile
+        }
+      }
+    }
   } catch (e: IOException) {
-    Log.w(TAG, "single-instance: cannot create show file: ${e.message}")
+    Log.w(TAG, "single-instance: cannot delete stale signal files: ${e.message}")
+  } catch (e: DirectoryIteratorException) {
+    Log.w(TAG, "single-instance: cannot delete stale signal files: ${e.cause?.message}")
   }
+}
+
+// The temp file is owner-only on POSIX, as the link is a bearer secret, and the rename makes it appear whole.
+internal fun signalRunningInstance(dir: Path, appLink: String?) {
+  var tmp: Path? = null
+  try {
+    tmp = Files.createTempFile(dir, SHOW_FILE, SHOW_TMP_SUFFIX)
+    Files.write(tmp, (appLink ?: "").toByteArray(Charsets.UTF_8))
+    Files.move(tmp, dir.resolve(SHOW_FILE), ATOMIC_MOVE)
+  } catch (e: IOException) {
+    Log.w(TAG, "single-instance: cannot signal running instance: ${e.message}")
+    tmp?.let(::deleteSignalFile)
+    // an empty signal needs no free space and still brings the running instance forward
+    try {
+      Files.createFile(dir.resolve(SHOW_FILE))
+    } catch (_: FileAlreadyExistsException) {
+      // another process has already signalled
+    } catch (createError: IOException) {
+      Log.w(TAG, "single-instance: cannot create signal file: ${createError.message}")
+    }
+  }
+}
+
+// The signal is renamed before it is read, so a newer signal renamed over it meanwhile is not deleted unread.
+internal fun takeSignal(dir: Path): ShowSignal? {
+  val taken = dir.resolve(TAKEN_SHOW_FILE)
+  try {
+    Files.move(dir.resolve(SHOW_FILE), taken, ATOMIC_MOVE)
+  } catch (_: NoSuchFileException) {
+    return null
+  } catch (e: IOException) {
+    Log.w(TAG, "single-instance: cannot take signal file: ${e.message}")
+    return ShowSignal(null)
+  }
+  val bytes = try {
+    Files.newInputStream(taken).use { it.readNBytes(MAX_APP_LINK_BYTES + 1) }
+  } catch (e: IOException) {
+    Log.w(TAG, "single-instance: cannot read signal file: ${e.message}")
+    null
+  } finally {
+    deleteSignalFile(taken)
+  }
+  return ShowSignal(bytes?.toString(Charsets.UTF_8)?.takeIf(::isAcceptedAppLink))
 }
 
 private fun showSingleInstanceAlert(): Boolean {
@@ -108,26 +174,34 @@ private fun showSingleInstanceAlert(): Boolean {
   return result == javax.swing.JOptionPane.YES_OPTION
 }
 
-private fun startShowFileWatcher() {
+fun startShowFileWatcher() {
   if (watcher != null) return
+  val dir = dataDir.toPath()
   val ws = try {
-    dataDir.toPath().fileSystem.newWatchService()
+    dir.fileSystem.newWatchService()
   } catch (e: IOException) {
     Log.w(TAG, "single-instance: WatchService failed: ${e.message}")
     return
   }
-  dataDir.toPath().register(ws, StandardWatchEventKinds.ENTRY_CREATE)
+  dir.register(ws, StandardWatchEventKinds.ENTRY_CREATE)
   watcher = ws
   thread(name = "simplex-single-instance", isDaemon = true) {
-    while (true) {
-      val key = try { ws.take() } catch (_: ClosedWatchServiceException) { return@thread } catch (_: InterruptedException) { return@thread }
-      for (event in key.pollEvents()) {
-        if ((event.context() as? Path)?.fileName?.toString() == "simplex.show") {
-          deleteShowFile()
-          SwingUtilities.invokeLater { showWindow() }
-        }
+    watchShowSignals(ws, dir) { signal ->
+      SwingUtilities.invokeLater {
+        if (signal.appLink != null) openDesktopAppLink(signal.appLink) else showWindow()
       }
-      if (!key.reset()) return@thread
     }
+  }
+}
+
+// dir must already be registered with ws; a signal written before that raised no event, so it is taken first.
+internal fun watchShowSignals(ws: WatchService, dir: Path, onSignal: (ShowSignal) -> Unit) {
+  takeSignal(dir)?.let(onSignal)
+  while (true) {
+    val key = try { ws.take() } catch (_: ClosedWatchServiceException) { return } catch (_: InterruptedException) { return }
+    for (event in key.pollEvents()) {
+      if ((event.context() as? Path)?.fileName?.toString() == SHOW_FILE) takeSignal(dir)?.let(onSignal)
+    }
+    if (!key.reset()) return
   }
 }
