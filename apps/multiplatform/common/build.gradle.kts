@@ -159,6 +159,7 @@ kotlin {
 android {
   namespace = "chat.simplex.common"
   compileSdk = 35
+  useLibrary("android.test.base")
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
     minSdk = 26
