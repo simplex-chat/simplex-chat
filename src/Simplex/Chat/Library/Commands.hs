@@ -65,7 +65,7 @@ import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIss
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Wallet (AccountKey, WalletAddress, WalletError (..), WalletInfo (..), accountSecret, deriveAccount, importWalletMaster, masterMnemonic, newWalletMaster)
+import Simplex.Chat.Wallet (AccountKey, WalletAddress, WalletError (..), WalletInfo (..), accountSecret, deriveAccount, entropyFromMnemonic, masterMnemonic, newWalletMaster)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -116,7 +116,7 @@ import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
-import Simplex.Messaging.Crypto.BIP32 (WalletMaster)
+import Simplex.Messaging.Crypto.BIP32 (WalletMaster, mkWalletMaster)
 import Simplex.Messaging.Crypto.BIP44 (AccountIndex, mkAccountIndex)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -1508,8 +1508,8 @@ processChatCommand cxt nm = \case
     when (isJust wallet_) $ throwWalletError WEMasterExists
     -- the counter starts at 1 for a generated seed, leaving account 0 to other wallets, and is unknown for an imported one
     (master, nextAccount) <- case mnemonic_ of
-      Nothing -> (,Just 1) <$> (liftIO . newWalletMaster =<< asks random)
-      Just phrase -> (,Nothing) <$> liftWallet (importWalletMaster phrase)
+      Nothing -> (,Just 1) <$> (liftDerivation . newWalletMaster =<< asks random)
+      Just phrase -> (,Nothing) <$> (liftDerivation . pure . mkWalletMaster =<< liftWallet (entropyFromMnemonic phrase))
     created <- withFastStore' $ \db -> createWallet db master nextAccount
     unless created $ throwWalletError WEMasterExists
     pure $ CRWallet user (Just $ WalletInfo [] nextAccount)
@@ -6037,7 +6037,10 @@ withWalletStore action = liftWallet =<< withFastStore action
 walletAccount :: WalletMaster -> AccountIndex -> CM (AccountKey, WalletAddress)
 walletAccount master n = do
   g <- asks random
-  liftIO $ deriveAccount g master n
+  liftDerivation $ deriveAccount g master n
+
+liftDerivation :: IO (Either String a) -> CM a
+liftDerivation = liftError' (ChatError . CEInternalError)
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =

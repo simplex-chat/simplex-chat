@@ -8,7 +8,6 @@ module Simplex.Chat.Wallet
     WalletError (..),
     newWalletMaster,
     entropyFromMnemonic,
-    importWalletMaster,
     masterMnemonic,
     deriveAccount,
     accountSecret,
@@ -16,6 +15,8 @@ module Simplex.Chat.Wallet
 where
 
 import Control.Concurrent.STM
+import Control.Monad.Except
+import Control.Monad.IO.Class (liftIO)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
@@ -59,22 +60,19 @@ data WalletError
 masterStrength :: B39.EntropyStrength
 masterStrength = B39.ES256
 
-newWalletMaster :: TVar ChaChaDRG -> IO B32.WalletMaster
+newWalletMaster :: TVar ChaChaDRG -> IO (Either String B32.WalletMaster)
 newWalletMaster g = B32.mkWalletMaster <$> atomically (B39.randomEntropy masterStrength g)
 
 entropyFromMnemonic :: Text -> Either WalletError B39.WalletEntropy
 entropyFromMnemonic = first (const WEBadMnemonic) . B39.parsePhrase
 
-importWalletMaster :: Text -> Either WalletError B32.WalletMaster
-importWalletMaster phrase = B32.mkWalletMaster <$> entropyFromMnemonic phrase
-
 masterMnemonic :: B32.WalletMaster -> Text
 masterMnemonic = decodeLatin1 . B39.entropyPhrase . B32.masterEntropy
 
-deriveAccount :: TVar ChaChaDRG -> B32.WalletMaster -> AccountIndex -> IO (AccountKey, WalletAddress)
-deriveAccount g master n = do
-  k <- B32.xkKey <$> B32.derivePath g (B32.walletMasterKey master) path
-  a <- addressFromPrivateKey g k
+deriveAccount :: TVar ChaChaDRG -> B32.WalletMaster -> AccountIndex -> IO (Either String (AccountKey, WalletAddress))
+deriveAccount g master n = runExceptT $ do
+  k <- B32.xkKey <$> ExceptT (B32.derivePath g (B32.walletMasterKey master) path)
+  a <- liftIO $ addressFromPrivateKey g k
   pure (k, WalletAddress {accountIndex = n, keyPath = decodeLatin1 $ B32.renderPath path, address = a})
   where
     path = bip44Path Ethereum n
