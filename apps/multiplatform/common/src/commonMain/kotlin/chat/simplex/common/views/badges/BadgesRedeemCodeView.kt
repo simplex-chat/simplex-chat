@@ -459,6 +459,9 @@ private fun BeingIssued(onDismiss: () -> Unit) {
 
     Spacer(Modifier.weight(1f))
 
-    TextButtonBelowOnboardingButton(stringResource(MR.strings.badges_dismiss), onDismiss)
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      TextButtonBelowOnboardingButton(stringResource(MR.strings.badges_dismiss), onDismiss)
+      TextButtonBelowOnboardingButton("", null)
+    }
   }
 }

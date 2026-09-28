@@ -392,15 +392,21 @@ struct BadgesRedeemLinkView: View {
 
             Spacer()
 
-            Button {
-                closeIfShowing()
-            } label: {
-                Text("Dismiss")
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .foregroundColor(theme.colors.primary)
+            VStack(spacing: 10) {
+                Button {
+                    closeIfShowing()
+                } label: {
+                    // the inset OnboardingButtonStyle gives a primary, so Dismiss sits where Add badge does
+                    Text("Dismiss")
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(theme.colors.primary)
+                        .padding()
+                }
+                .padding(.vertical, 10)
+                Color.clear
+                    .frame(height: 22)
             }
-            .frame(height: 22)
         }
         .padding(.horizontal, 25)
         .padding(.top, 48)
