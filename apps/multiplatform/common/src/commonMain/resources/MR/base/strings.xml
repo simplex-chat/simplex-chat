@@ -3189,8 +3189,8 @@
   <string name="badges_link_confirm_profile">The badge will be added to the profile %1$s.</string>
   <string name="badges_link_add_badge">Add badge</string>
   <string name="badges_link_held_title">Profile already has a badge</string>
-  <string name="badges_link_held_profile">%1$s already has a badge. Redeem the code on another profile, or once this badge ends.</string>
-  <string name="badges_link_held_page">Your code is still on the page you bought it on, under Show code.</string>
+  <string name="badges_link_held_profile">%1$s already has a badge, so nothing was added.</string>
+  <string name="badges_link_held_page">A different code can be added to another profile, or here once this badge ends — it is still on the page you bought it on, under Show code.</string>
   <string name="badges_link_view_badge">View your badge</string>
   <string name="badges_being_issued">Badge is being issued</string>
   <string name="badges_link_added_title">Badge added</string>

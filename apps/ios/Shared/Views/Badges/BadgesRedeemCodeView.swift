@@ -235,7 +235,7 @@ private weak var badgeLinkSheet: UIViewController?
 private weak var badgeLinkState: BadgeLinkState?
 
 func isBadgeLinkIssuing() -> Bool {
-    badgeLinkSheet != nil && badgeLinkState?.step == .issuing
+    badgeLinkSheet?.presentingViewController != nil && badgeLinkState?.step == .issuing
 }
 
 func openBadgeLink(_ codeText: String) {
@@ -286,88 +286,87 @@ struct BadgesRedeemLinkView: View {
         badgeModel.userId == chatModel.currentUser?.userId && badgeModel.badgeState?.shown == true
     }
 
+    // the screen cannot tell a repeated link for the badge it shows from a code for another badge,
+    // so it asserts neither
     private func badgeHeld() -> some View {
-        VStack(alignment: .center, spacing: 16) {
-            Text("Profile already has a badge")
-                .font(.largeTitle)
-                .bold()
-                .foregroundColor(theme.colors.primary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text(String.localizedStringWithFormat(NSLocalizedString("%@ already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "badge link, profile has a badge"), chatModel.currentUser?.displayName ?? ""))
-                .font(.body)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text("Your code is still on the page you bought it on, under Show code.")
-                .font(.body)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer()
-
-            VStack(spacing: 10) {
-                Button {
-                    state.step = .viewingBadge
-                } label: {
-                    Text("View your badge")
-                }
-                .buttonStyle(OnboardingButtonStyle(isDisabled: false))
-                .padding(.vertical, 10)
-
-                Button {
-                    closeIfShowing()
-                } label: {
-                    Text("Cancel")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(theme.colors.primary)
-                }
-                .frame(height: 22)
-            }
+        linkStep(
+            "Profile already has a badge",
+            primary: ("View your badge", { state.step = .viewingBadge }),
+            textButton: ("Cancel", { closeIfShowing() })
+        ) {
+            linkText(String.localizedStringWithFormat(NSLocalizedString("%@ already has a badge, so nothing was added.", comment: "badge link, profile has a badge"), chatModel.currentUser?.displayName ?? ""))
+            linkText(NSLocalizedString("A different code can be added to another profile, or here once this badge ends — it is still on the page you bought it on, under Show code.", comment: "badge link, profile has a badge"))
         }
-        .padding(.horizontal, 25)
-        .padding(.top, 48)
-        .padding(.bottom, 20)
-        .frame(maxHeight: .infinity)
-        .navigationBarTitleDisplayMode(.inline)
     }
 
     private func confirming() -> some View {
-        VStack(alignment: .center, spacing: 16) {
-            Text("Add badge to your profile?")
+        linkStep(
+            "Add badge to your profile?",
+            primary: ("Add badge", { redeemFromLink() }),
+            textButton: ("Cancel", { closeIfShowing() })
+        ) {
+            linkText(String.localizedStringWithFormat(NSLocalizedString("The badge will be added to the profile %@.", comment: "badge link confirmation"), chatModel.currentUser?.displayName ?? ""))
+        }
+    }
+
+    // leaving does not cancel: the badge is still added after the screen closes
+    private func beingIssued() -> some View {
+        linkStep("Badge is being issued", textButton: ("Dismiss", { closeIfShowing() })) {
+            Spacer()
+            ProgressView().scaleEffect(2)
+        }
+    }
+
+    // with no primary, the text button takes its place, so a button does not move between steps
+    private func linkStep<Content: View>(
+        _ title: LocalizedStringKey,
+        primary: (label: LocalizedStringKey, action: () -> Void)? = nil,
+        textButton: (label: LocalizedStringKey, action: () -> Void),
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        let textButtonLabel = Text(textButton.label)
+            .font(.body)
+            .fontWeight(.medium)
+            .foregroundColor(theme.colors.primary)
+        return VStack(alignment: .center, spacing: 16) {
+            Text(title)
                 .font(.largeTitle)
                 .bold()
                 .foregroundColor(theme.colors.primary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text(String.localizedStringWithFormat(NSLocalizedString("The badge will be added to the profile %@.", comment: "badge link confirmation"), chatModel.currentUser?.displayName ?? ""))
-                .font(.body)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+            content()
 
             Spacer()
 
             VStack(spacing: 10) {
-                Button {
-                    redeemFromLink()
-                } label: {
-                    Text("Add badge")
-                }
-                .buttonStyle(OnboardingButtonStyle(isDisabled: false))
-                .padding(.vertical, 10)
+                if let primary {
+                    Button {
+                        primary.action()
+                    } label: {
+                        Text(primary.label)
+                    }
+                    .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+                    .padding(.vertical, 10)
 
-                Button {
-                    closeIfShowing()
-                } label: {
-                    Text("Cancel")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(theme.colors.primary)
+                    Button {
+                        textButton.action()
+                    } label: {
+                        textButtonLabel
+                    }
+                    .frame(height: 22)
+                } else {
+                    Button {
+                        textButton.action()
+                    } label: {
+                        // the inset OnboardingButtonStyle gives a primary
+                        textButtonLabel.padding()
+                    }
+                    .padding(.vertical, 10)
+                    Color.clear
+                        .frame(height: 22)
                 }
-                .frame(height: 22)
             }
         }
         .padding(.horizontal, 25)
@@ -377,44 +376,11 @@ struct BadgesRedeemLinkView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func beingIssued() -> some View {
-        VStack(alignment: .center, spacing: 16) {
-            Text("Badge is being issued")
-                .font(.largeTitle)
-                .bold()
-                .foregroundColor(theme.colors.primary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer()
-
-            ProgressView().scaleEffect(2)
-
-            Spacer()
-
-            VStack(spacing: 10) {
-                Button {
-                    closeIfShowing()
-                } label: {
-                    // the inset OnboardingButtonStyle gives a primary, so Dismiss sits where Add badge does
-                    Text("Dismiss")
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundColor(theme.colors.primary)
-                        .padding()
-                }
-                .padding(.vertical, 10)
-                Color.clear
-                    .frame(height: 22)
-            }
-        }
-        .padding(.horizontal, 25)
-        .padding(.top, 48)
-        .padding(.bottom, 20)
-        .frame(maxHeight: .infinity)
-        .navigationBarTitleDisplayMode(.inline)
-        // left only by Dismiss; the badge is still added after the screen closes
-        .interactiveDismissDisabled(true)
+    private func linkText(_ text: String) -> some View {
+        Text(text)
+            .font(.body)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func redeemFromLink() {

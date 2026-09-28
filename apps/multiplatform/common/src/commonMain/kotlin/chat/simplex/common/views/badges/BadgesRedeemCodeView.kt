@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -265,10 +266,10 @@ fun isBadgeLinkIssuing(): Boolean =
   isBadgeLinkOpen() && badgeLinkStep?.value == BadgeLinkStep.Issuing
 
 fun openBadgeLink(rhId: Long?, codeText: String) {
-  // a new link replaces a screen that is not issuing, as iOS does by dismissing every sheet before a link
-  if (isBadgeLinkOpen()) ModalManager.end.closeModals()
   val code = parseBadgeCode(codeText)
     ?: return showCannotRedeemAlert(generalGetString(MR.strings.badges_error_invalid_code))
+  // opens over the chat list, as iOS dismisses every sheet before a link
+  ModalManager.closeAllModalsEverywhere()
   // held by the modal, not remembered: a modal is composed only while on top, and rotation recreates the activity,
   // either of which would reset remembered state to Confirming with a request in flight
   val step = mutableStateOf(BadgeLinkStep.Confirming)
@@ -343,125 +344,99 @@ fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLink
         Confirming(onConfirm = ::redeemFromLink, onCancel = ::closeIfShowing)
       }
     }
-    // left only by Dismiss; the badge is still added after the screen closes
-    BadgeLinkStep.Issuing -> ModalView(close, enableClose = false) { BeingIssued(onDismiss = ::closeIfShowing) }
+    BadgeLinkStep.Issuing -> ModalView(::closeIfShowing) { BeingIssued(onDismiss = ::closeIfShowing) }
     BadgeLinkStep.Redeemed, BadgeLinkStep.ViewingBadge -> BadgesView(ModalManager.end, close)
   }
 }
 
+// the screen cannot tell a repeated link for the badge it shows from a code for another badge,
+// so it asserts neither
 @Composable
 private fun BadgeHeld(onViewBadge: () -> Unit, onCancel: () -> Unit) {
-  ColumnWithScrollBar(
-    Modifier.padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp),
-    horizontalAlignment = Alignment.CenterHorizontally,
-    maxIntrinsicSize = true,
+  LinkStep(
+    MR.strings.badges_link_held_title,
+    primary = MR.strings.badges_link_view_badge to onViewBadge,
+    textButton = MR.strings.cancel_verb to onCancel
   ) {
-    Text(
-      stringResource(MR.strings.badges_link_held_title),
-      style = MaterialTheme.typography.h1,
-      fontWeight = FontWeight.Bold,
-      color = MaterialTheme.colors.primary,
-      textAlign = TextAlign.Center,
-      modifier = Modifier.fillMaxWidth()
-    )
-
-    Text(
-      String.format(stringResource(MR.strings.badges_link_held_profile), chatModel.currentUser.value?.displayName ?: ""),
-      style = MaterialTheme.typography.body1,
-      textAlign = TextAlign.Center,
-      modifier = Modifier.fillMaxWidth()
-    )
-
-    Text(
-      stringResource(MR.strings.badges_link_held_page),
-      style = MaterialTheme.typography.body1,
-      textAlign = TextAlign.Center,
-      modifier = Modifier.fillMaxWidth()
-    )
-
-    Spacer(Modifier.weight(1f))
-
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      OnboardingActionButton(
-        modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-        labelId = MR.strings.badges_link_view_badge,
-        onboarding = null,
-        onclick = onViewBadge
-      )
-      TextButtonBelowOnboardingButton(stringResource(MR.strings.cancel_verb), onCancel)
-    }
+    LinkText(String.format(stringResource(MR.strings.badges_link_held_profile), chatModel.currentUser.value?.displayName ?: ""))
+    LinkText(stringResource(MR.strings.badges_link_held_page))
   }
 }
 
 @Composable
 private fun Confirming(onConfirm: () -> Unit, onCancel: () -> Unit) {
-  ColumnWithScrollBar(
-    Modifier.padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp),
-    horizontalAlignment = Alignment.CenterHorizontally,
-    maxIntrinsicSize = true,
+  LinkStep(
+    MR.strings.badges_link_confirm_title,
+    primary = MR.strings.badges_link_add_badge to onConfirm,
+    textButton = MR.strings.cancel_verb to onCancel
   ) {
-    Text(
-      stringResource(MR.strings.badges_link_confirm_title),
-      style = MaterialTheme.typography.h1,
-      fontWeight = FontWeight.Bold,
-      color = MaterialTheme.colors.primary,
-      textAlign = TextAlign.Center,
-      modifier = Modifier.fillMaxWidth()
-    )
-
-    Text(
-      String.format(stringResource(MR.strings.badges_link_confirm_profile), chatModel.currentUser.value?.displayName ?: ""),
-      style = MaterialTheme.typography.body1,
-      textAlign = TextAlign.Center,
-      modifier = Modifier.fillMaxWidth()
-    )
-
-    Spacer(Modifier.weight(1f))
-
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      OnboardingActionButton(
-        modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-        labelId = MR.strings.badges_link_add_badge,
-        onboarding = null,
-        onclick = onConfirm
-      )
-      TextButtonBelowOnboardingButton(stringResource(MR.strings.cancel_verb), onCancel)
-    }
+    LinkText(String.format(stringResource(MR.strings.badges_link_confirm_profile), chatModel.currentUser.value?.displayName ?: ""))
   }
 }
 
+// leaving does not cancel: the badge is still added after the screen closes
 @Composable
 private fun BeingIssued(onDismiss: () -> Unit) {
-  ColumnWithScrollBar(
-    Modifier.padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp),
-    horizontalAlignment = Alignment.CenterHorizontally,
-    maxIntrinsicSize = true,
-  ) {
-    Text(
-      stringResource(MR.strings.badges_being_issued),
-      style = MaterialTheme.typography.h1,
-      fontWeight = FontWeight.Bold,
-      color = MaterialTheme.colors.primary,
-      textAlign = TextAlign.Center,
-      modifier = Modifier.fillMaxWidth()
-    )
-
+  LinkStep(MR.strings.badges_being_issued, textButton = MR.strings.badges_dismiss to onDismiss) {
     Spacer(Modifier.weight(1f))
-
     CircularProgressIndicator(
       Modifier.size(30.dp),
       color = MaterialTheme.colors.secondary,
       strokeWidth = 3.dp
     )
+  }
+}
+
+// with no primary, the text button takes its place, so a button does not move between steps
+@Composable
+private fun LinkStep(
+  title: StringResource,
+  primary: Pair<StringResource, () -> Unit>? = null,
+  textButton: Pair<StringResource, () -> Unit>,
+  content: @Composable ColumnScope.() -> Unit
+) {
+  ColumnWithScrollBar(
+    Modifier.padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    maxIntrinsicSize = true,
+  ) {
+    Text(
+      stringResource(title),
+      style = MaterialTheme.typography.h1,
+      fontWeight = FontWeight.Bold,
+      color = MaterialTheme.colors.primary,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth()
+    )
+
+    content()
 
     Spacer(Modifier.weight(1f))
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      TextButtonBelowOnboardingButton(stringResource(MR.strings.badges_dismiss), onDismiss)
-      TextButtonBelowOnboardingButton("", null)
+      if (primary != null) {
+        OnboardingActionButton(
+          modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+          labelId = primary.first,
+          onboarding = null,
+          onclick = primary.second
+        )
+        TextButtonBelowOnboardingButton(stringResource(textButton.first), textButton.second)
+      } else {
+        TextButtonBelowOnboardingButton(stringResource(textButton.first), textButton.second)
+        TextButtonBelowOnboardingButton("", null)
+      }
     }
   }
+}
+
+@Composable
+private fun LinkText(text: String) {
+  Text(
+    text,
+    style = MaterialTheme.typography.body1,
+    textAlign = TextAlign.Center,
+    modifier = Modifier.fillMaxWidth()
+  )
 }
