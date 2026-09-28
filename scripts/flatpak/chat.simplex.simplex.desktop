@@ -8,3 +8,4 @@ Categories=Utility;Chat;InstantMessaging;
 Exec=simplex %U
 Icon=chat.simplex.simplex
 StartupWMClass=simplex-chat
+MimeType=x-scheme-handler/simplexchat;

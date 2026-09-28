@@ -2,6 +2,7 @@
 Type=Application
 Name=SimpleX Chat
 Comment=Private and secure open-source messenger - no user IDs (not even random numbers)
-Exec=/opt/simplex/bin/simplex
+Exec=/opt/simplex/bin/simplex %u
 Icon=/opt/simplex/lib/simplex
 Categories=Network;Chat;
+MimeType=x-scheme-handler/simplexchat;
