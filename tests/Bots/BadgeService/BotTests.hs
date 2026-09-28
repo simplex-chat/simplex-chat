@@ -18,6 +18,7 @@ import BadgeService.Options
 import BadgeService.Service
 import BadgeService.Store (NewStorePurchase (..), createStorePurchase)
 import BadgeService.Store.Invoices (markCodePaid)
+import BadgeService.StoreReceipts (StoreVerifier, noStoreVerifier)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import ChatClient
@@ -127,6 +128,7 @@ badgeServiceTests = do
     it "should replay a receipt to its own key while the store is down, and to no other" testStoreReplayWhileStoreDown
     it "should answer a throwing Apple verifier as internal, and a failing or hanging Google one as retryable" testStoreVerifierFailures
     it "should credit a transaction claimed twice at once only once" testStoreClaimRace
+    it "should refuse a store with no verifier with no retry, and the client should keep its keys" testPurchaseWithNoVerifier
     it "should refuse a store purchase whose purchaseKey is not the verified signer" testStorePurchaseKeyMismatch
     it "should redeem a Play purchase into a badge, and replay it as the same badge" testPurchaseBadge
     it "should redeem an App Store purchase by its JWS" testPurchaseBadgeAppStore
@@ -187,7 +189,8 @@ data BadgeServiceEnv = BadgeServiceEnv
     bsClientCfg :: ChatConfig,
     bsAddress :: String,
     bsController :: ChatController,
-    bsStore :: FakeStore
+    bsStore :: FakeStore,
+    bsVerifier :: StoreVerifier
   }
 
 -- | Stop the service for good: requests sent after it go unanswered until they time out. Stopping
@@ -200,14 +203,18 @@ withBadgeService ps test =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsAddress, bsController} -> test bsClientCfg bsAddress bsController
 
 withBadgeServiceEnv :: HasCallStack => TestParams -> (BadgeServiceEnv -> IO ()) -> IO ()
-withBadgeServiceEnv ps test = do
+withBadgeServiceEnv ps = withBadgeServiceVerifier ps fakeVerifier
+
+withBadgeServiceVerifier :: HasCallStack => TestParams -> (FakeStore -> StoreVerifier) -> (BadgeServiceEnv -> IO ()) -> IO ()
+withBadgeServiceVerifier ps verifierOf test = do
   Right (pk, sk) <- bbsKeyGen
   clock <- newTestClock
   store <- newFakeStore
   let opts = mkBadgeServiceOpts ps sk
       svcCfg = testCfg {badgePublicKeys = M.singleton testIssuerKeyIdx pk, badgeCurrentTime = testClockTime clock}
+      verifier = verifierOf store
   withNewTestChatCfg ps testCfg serviceDbPrefix badgeProfile $ \_ -> pure ()
-  runBadgeService store svcCfg opts $ \_ -> pure ()
+  runBadgeService verifier svcCfg opts $ \_ -> pure ()
   bsLink <- withTestChat ps serviceDbPrefix $ \bs -> do
     bs <## "subscribed 1 connections on server localhost"
     bs ##> "/sa"
@@ -216,9 +223,9 @@ withBadgeServiceEnv ps test = do
     pure sLink
   let clientCfg =
         svcCfg {badgeServiceAddress = Just $ either (error . ("bad badge service address: " <>)) id $ strDecode (B.pack bsLink)}
-  runBadgeService store svcCfg opts $ \env -> do
+  runBadgeService verifier svcCfg opts $ \env -> do
     cc <- atomically $ readTMVar $ serviceCC env
-    test BadgeServiceEnv {bsIssuerKey = BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk}, bsClock = clock, bsClientCfg = clientCfg, bsAddress = bsLink, bsController = cc, bsStore = store}
+    test BadgeServiceEnv {bsIssuerKey = BadgeIssuerKey {keyIdx = testIssuerKeyIdx, secretKey = sk}, bsClock = clock, bsClientCfg = clientCfg, bsAddress = bsLink, bsController = cc, bsStore = store, bsVerifier = verifier}
 
 issueCode :: HasCallStack => ChatController -> BadgeType -> Int -> IO BadgeCode
 issueCode cc badgeType months = issueCodeAs cc badgeType months "free"
@@ -239,9 +246,9 @@ issueCodeAs cc badgeType months status =
     r -> error $ "issue failed: " <> show (() <$ r)
 
 -- | The post-start hook fills serviceCC once the address exists, so the test waits on it rather than on a fixed delay that would race with startup and let one start's address output arrive during the next test.
-runBadgeService :: FakeStore -> ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
-runBadgeService FakeStore {fakeVerifier} cfg opts action = do
-  env <- (\s -> s {storeVerifier = fakeVerifier}) <$> newServiceState
+runBadgeService :: StoreVerifier -> ChatConfig -> BadgeServiceOpts -> (ServiceState -> IO ()) -> IO ()
+runBadgeService verifier cfg opts action = do
+  env <- (\s -> s {storeVerifier = verifier}) <$> newServiceState
   t <- forkIO $ badgeService opts cfg env
   ready <- timeout 30000000 $ atomically $ readTMVar $ serviceCC env
   when (isNothing ready) $ killThread t >> error "badge service did not start"
@@ -390,8 +397,8 @@ testRedeemSameCodeOtherProfile ps =
       showActiveUser alice "alice (Alice, * supporter)"
 
 serviceCmd :: HasCallStack => BadgeServiceEnv -> C.PublicKeyEd25519 -> BadgeServiceCommand -> IO BadgeServiceResponse
-serviceCmd BadgeServiceEnv {bsIssuerKey, bsController, bsStore = FakeStore {fakeVerifier}} purchaseKey request =
-  badgeServiceResponse bsIssuerKey fakeVerifier bsController (Just purchaseKey) reqObject
+serviceCmd BadgeServiceEnv {bsIssuerKey, bsController, bsVerifier} purchaseKey request =
+  badgeServiceResponse bsIssuerKey bsVerifier bsController (Just purchaseKey) reqObject
   where
     reqObject = case J.toJSON BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request} of
       J.Object o -> o
@@ -1551,6 +1558,18 @@ testStoreVerifierFailures ps =
     answer (googlePayment "badge_supporter_01" googleThrowingToken) >>= (`shouldSatisfy` \(code, retryAfter) -> code == BSEProviderUnavailable && isJust retryAfter)
     answer (googlePayment "badge_supporter_01" googleHangingToken) >>= (`shouldSatisfy` \(code, retryAfter) -> code == BSEProviderUnavailable && isJust retryAfter)
     nothingPurchased cc
+
+testPurchaseWithNoVerifier :: HasCallStack => TestParams -> IO ()
+testPurchaseWithNoVerifier ps =
+  withBadgeServiceVerifier ps (const noStoreVerifier) $ \env@BadgeServiceEnv {bsClientCfg, bsController = cc} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey supporterPlay) `shouldReturn` (BSEProviderNotConfigured, Nothing)
+    nothingPurchased cc
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
+      alice <## "cannot redeem badge code: badge service error: provider_not_configured"
+      -- not yet rather than never, so the keys stay for the retry once a verifier is deployed
+      rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 1
 
 testStoreClaimRace :: HasCallStack => TestParams -> IO ()
 testStoreClaimRace ps =

@@ -9,7 +9,10 @@
 
 module BadgeTests (badgeTests) where
 
-import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest)
+import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest, survive)
+import Control.Concurrent (forkIO, killThread, threadDelay)
+import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
+import Control.Exception (SomeAsyncException, SomeException, catch, fromException, throwIO)
 import BadgeService.StoreReceipts (StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), storeReceipt)
 import Control.Concurrent.STM (atomically)
 import Data.ByteString.Char8 (ByteString)
@@ -24,7 +27,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime, 
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as KM
-import Data.Maybe (fromMaybe, isNothing, maybeToList)
+import Data.Maybe (fromMaybe, isJust, isNothing, maybeToList)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Code
@@ -106,6 +109,8 @@ badgeTests = do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
     it "shows a service request in the terminal as its type alone" testShownServiceRequest
     it "refuses a Play product id or token that could name another purchase, before any verifier" testGooglePathStrings
+  describe "badge service request loop" $ do
+    it "survives a request that throws, and still stops when cancelled" testSurviveRequestFailure
 
 proofOf :: BadgeProof -> BBSProof
 proofOf (BadgeProof _ _ p _) = p
@@ -693,7 +698,7 @@ testServiceRetryAfter = do
   badgeErrorRetryAfter BSEInternal `shouldBe` Nothing
   mapM_
     (\code -> badgeErrorRetryAfter code `shouldBe` Nothing)
-    [BSEBadRequest, BSEUnsupportedVersion, BSEUnknownPurchaseKey, BSECodeInvalid, BSECodeUsed, BSECodeExpired, BSEUnknown "future_code"]
+    [BSEBadRequest, BSEUnsupportedVersion, BSEUnknownPurchaseKey, BSECodeInvalid, BSECodeUsed, BSECodeExpired, BSEProviderNotConfigured, BSEUnknown "future_code"]
 
 -- The app shows the recorded failure in a sentence, so an agent error is stored as the agent
 -- error and not as the chat error wrapping it, whether or not it can clear on its own.
@@ -870,6 +875,19 @@ testGooglePathStrings = do
   case storeReceipt calledVerifier SPGoogle {productId = "badge_supporter_01", token = validToken} of
     Just (Right StoreReceipt {provider}) -> provider `shouldBe` PPGoogle
     _ -> expectationFailure "a valid product id and token were refused"
+
+testSurviveRequestFailure :: IO ()
+testSurviveRequestFailure = do
+  survive "a request" (throwIO $ userError "failed") `shouldReturn` ()
+  started <- newEmptyMVar
+  stopped <- newEmptyMVar
+  t <- forkIO $ survive "a request" (putMVar started () >> threadDelay 10000000) `catch` (putMVar stopped . asyncException)
+  takeMVar started
+  killThread t
+  takeMVar stopped `shouldReturn` True
+  where
+    asyncException :: SomeException -> Bool
+    asyncException e = isJust (fromException e :: Maybe SomeAsyncException)
 
 testCredentialResponseJSON :: IO ()
 testCredentialResponseJSON = do

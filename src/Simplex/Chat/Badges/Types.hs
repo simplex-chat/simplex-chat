@@ -236,6 +236,7 @@ data BadgeServiceErrorCode
   | BSEPaymentNotEntitled
   | BSEPaymentPending
   | BSEProviderUnavailable
+  | BSEProviderNotConfigured
   | BSERateLimited
   | BSECodeInvalid
   | BSECodeUsed
@@ -325,6 +326,7 @@ instance TextEncoding BadgeServiceErrorCode where
     BSEPaymentNotEntitled -> "payment_not_entitled"
     BSEPaymentPending -> "payment_pending"
     BSEProviderUnavailable -> "provider_unavailable"
+    BSEProviderNotConfigured -> "provider_not_configured"
     BSERateLimited -> "rate_limited"
     BSECodeInvalid -> "code_invalid"
     BSECodeUsed -> "code_used"
@@ -344,6 +346,7 @@ instance TextEncoding BadgeServiceErrorCode where
     "payment_not_entitled" -> BSEPaymentNotEntitled
     "payment_pending" -> BSEPaymentPending
     "provider_unavailable" -> BSEProviderUnavailable
+    "provider_not_configured" -> BSEProviderNotConfigured
     "rate_limited" -> BSERateLimited
     "code_invalid" -> BSECodeInvalid
     "code_used" -> BSECodeUsed

@@ -45,11 +45,11 @@ data StoreRefusal
   | SRPending -- a real purchase the store has not settled; it may yet
   | SRUnreachable Text -- the store was not asked, or did not answer
   | SRVerifierFailed Text -- a bug, not the store's answer
+  | SRNotConfigured -- no verifier for this store is deployed; the purchase may be real
   deriving (Eq, Show)
 
 -- | Not a Provider: a receipt is presented once as proof, with nothing to create, watch or cancel.
 -- Apple is checked offline, so its verifier is pure and cannot be unreachable; only Google is asked.
--- A store with no verifier deployed is unreachable: its purchases may be real.
 data StoreVerifier = StoreVerifier
   { verifyApple :: Maybe (Text -> Either Text StoreTransaction), -- the JWS; Left is why Apple did not sign it
     verifyGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal StoreTransaction)), -- the product id and the token
@@ -82,7 +82,7 @@ storeReceipt StoreVerifier {verifyApple, verifyGoogle, verifyTimeout} = \case
   SPInvoice {} -> Nothing
   SPReceipt {} -> Nothing
   where
-    unconfigured = pure $ Left $ SRUnreachable "no verifier configured"
+    unconfigured = pure $ Left SRNotConfigured
     -- nothing was fetched, so a throw or an overrun is a bug or a malformed receipt, never an outage
     offline verdict =
       (fromMaybe (Left $ SRVerifierFailed "apple verifier timed out") <$> timeout verifyTimeout (forced verdict))

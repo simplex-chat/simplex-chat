@@ -16,6 +16,7 @@ module BadgeService.Service
     badgeServiceResponse,
     badgeErrorRetryAfter,
     shownServiceRequest,
+    survive,
     IssueCodeOpts (..),
     issueBadgeCode,
   )
@@ -36,6 +37,7 @@ import BadgeService.Web.Server (exportWebapp, newWebEnv, runWebListener)
 import Control.Applicative (optional)
 import Control.Concurrent.STM
 import BadgeService.Log (logError, logInfo, logWarn)
+import Control.Exception (SomeAsyncException, SomeException, fromException, throwIO, try)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as J
@@ -84,8 +86,8 @@ data ServiceState = ServiceState
     storeVerifier :: StoreVerifier
   }
 
--- | No store verifier exists yet, so every store receipt is answered provider_unavailable: the
--- purchase may be real, and the app keeps presenting it until one is deployed.
+-- | No store verifier exists yet, so every store receipt not already credited is answered
+-- provider_not_configured, terminal for the request: retrying cannot deploy one.
 newServiceState :: IO ServiceState
 newServiceState = do
   serviceCC <- newEmptyTMVarIO
@@ -284,14 +286,24 @@ processQueuedRequests key env = do
   cc <- atomically $ readTMVar $ serviceCC env
   forever $ do
     (u, reqId, sigKey, reqData) <- atomically $ readTQueue $ serviceRequestQ env
-    handleServiceRequest key (storeVerifier env) cc u reqId sigKey reqData
+    survive ("request " <> safeDecodeUtf8 (strEncode reqId)) $ handleServiceRequest key (storeVerifier env) cc u reqId sigKey reqData
 
 processChatRedeems :: BadgeIssuerKey -> ServiceState -> IO ()
 processChatRedeems key env = do
   cc <- atomically $ readTMVar $ serviceCC env
   forever $ do
     (ct, msg) <- atomically $ readTQueue $ chatRedeemQ env
-    chatRedeem key cc ct msg
+    survive "a chat redemption" $ chatRedeem key cc ct msg
+
+-- | Asynchronous exceptions are rethrown, since that is how the race stops this thread. The
+-- exception itself is not logged: it can quote the request, which carries codes and store receipts.
+survive :: T.Text -> IO () -> IO ()
+survive what action =
+  (try action :: IO (Either SomeException ())) >>= \case
+    Right () -> pure ()
+    Left e -> case fromException e :: Maybe SomeAsyncException of
+      Just _ -> throwIO e
+      Nothing -> logError $ "badge service: " <> what <> " failed; the next one will be handled"
 
 -- | Here the service generates the master key and can link the badge, so [dev] chat_redeem gates this.
 chatRedeem :: BadgeIssuerKey -> ChatController -> Contact -> T.Text -> IO ()
@@ -482,6 +494,7 @@ storeRefusalResponse = \case
   SRPending -> pure $ errorResponse BSEPaymentPending
   SRUnreachable reason -> logWarn ("store unreachable: " <> reason) $> errorResponse BSEProviderUnavailable
   SRVerifierFailed reason -> logError ("store receipt not verified: " <> reason) $> errorResponse BSEInternal
+  SRNotConfigured -> logWarn "store receipt refused: no verifier for this store is configured" $> errorResponse BSEProviderNotConfigured
 
 claimedResponse :: DB.Connection -> BadgeServiceErrorCode -> C.PublicKeyEd25519 -> FundingClaim -> IO (Either BadgeServiceResponse ())
 claimedResponse db usedCode purchaseKey = \case
