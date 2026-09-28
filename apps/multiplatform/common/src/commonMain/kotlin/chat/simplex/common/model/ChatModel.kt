@@ -45,15 +45,21 @@ import kotlin.collections.ArrayList
 import kotlin.random.Random
 import kotlin.time.*
 
+// There is one spinner, and a search and a connection can run at once - tapping a result starts
+// connecting while the search is still going - so it records which of them it belongs to.
+enum class ConnectProgressOwner { Connect, DirectorySearch }
+
 object ConnectProgressManager {
   private val connectInProgress = mutableStateOf<String?>(null)
   private val connectProgressByTimeout = mutableStateOf(false)
   private var onCancel: (() -> Unit)? = null
+  private var owner: ConnectProgressOwner? = null
 
   private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-  fun startConnectProgress(text: String, onCancel: (() -> Unit)? = null) {
+  fun startConnectProgress(text: String, owner: ConnectProgressOwner = ConnectProgressOwner.Connect, onCancel: (() -> Unit)? = null) {
     connectInProgress.value = text
+    this.owner = owner
     this.onCancel = onCancel
     coroutineScope.launch {
       delay(1000)
@@ -61,15 +67,23 @@ object ConnectProgressManager {
     }
   }
 
-  fun stopConnectProgress() {
+  // a search finishing late must not stop the spinner if a connection has taken it over
+  fun stopConnectProgress(owner: ConnectProgressOwner = ConnectProgressOwner.Connect) {
+    if (this.owner != null && this.owner != owner) return
     connectInProgress.value = null
+    this.owner = null
     onCancel = null
     connectProgressByTimeout.value = false
   }
 
+  // unlike stopConnectProgress, this cancels whoever owns the spinner
   fun cancelConnectProgress() {
-    onCancel?.invoke()
-    stopConnectProgress()
+    val cancel = onCancel
+    owner = null
+    onCancel = null
+    connectInProgress.value = null
+    connectProgressByTimeout.value = false
+    cancel?.invoke()
   }
 
   val showConnectProgress: String? get() =

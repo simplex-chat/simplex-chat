@@ -1630,6 +1630,17 @@ object ChatController {
     return null
   }
 
+  // Blocks for up to the timeout, so call it from withLongRunningApi, not withBGApi. Plain sendCmd
+  // on purpose: a timeout shows a retry row in the results, not the alert sendCmdWithRetry would pop.
+  suspend fun apiSearchDirectory(rh: Long?, text: String, cursor: JsonObject?): DirectorySearchResults? {
+    val userId = kotlin.runCatching { currentUserId("apiSearchDirectory") }.getOrElse { return null }
+    val req = directorySearchRequest(text, cursor)
+    val r = sendCmd(rh, CC.APISendServiceRequest(userId, DIRECTORY_SERVICE_LINK, DIRECTORY_SEARCH_TIMEOUT_SEC, req))
+    if (r is API.Result && r.res is CR.CRServiceResponse) return parseDirectorySearchResponse(r.res.responseData)
+    Log.e(TAG, "apiSearchDirectory error: $r")
+    return null
+  }
+
   suspend fun apiConnectPlan(rh: Long?, connLink: String, resolveMode: PlanResolveMode = PlanResolveMode.PRMUnknown, linkOwnerSig: LinkOwnerSig? = null, inProgress: MutableState<Boolean>): ConnectionPlanResult? {
     val userId = kotlin.runCatching { currentUserId("apiConnectPlan") }.getOrElse { return null }
     val r = sendCmdWithRetry(rh, CC.APIConnectPlan(userId, connLink, resolveMode, linkOwnerSig), inProgress = inProgress)
@@ -4001,6 +4012,7 @@ sealed class CC {
   class ApiSetConnectionIncognito(val connId: Long, val incognito: Boolean): CC()
   class ApiChangeConnectionUser(val connId: Long, val userId: Long): CC()
   class APIConnectPlan(val userId: Long, val connLink: String, val resolveMode: PlanResolveMode = PlanResolveMode.PRMUnknown, val linkOwnerSig: LinkOwnerSig? = null): CC()
+  class APISendServiceRequest(val userId: Long, val target: String, val timeoutSec: Double?, val request: JsonObject): CC()
   class APIPrepareContact(val userId: Long, val connLink: CreatedConnLink, val contactShortLinkData: ContactShortLinkData, val verifiedDomain: SimplexDomain? = null): CC()
   class APIPrepareGroup(val userId: Long, val connLink: CreatedConnLink, val directLink: Boolean, val groupShortLinkData: GroupShortLinkData, val verifiedDomain: SimplexDomain? = null): CC()
   class APIChangePreparedContactUser(val contactId: Long, val newUserId: Long): CC()
@@ -4220,6 +4232,10 @@ sealed class CC {
       val sigStr = if (linkOwnerSig != null) " sig=${json.encodeToString(linkOwnerSig)}" else ""
       "/_connect plan $userId $connLink$resolveStr$sigStr"
     }
+    is APISendServiceRequest -> {
+      val timeoutStr = if (timeoutSec != null) " timeout=$timeoutSec" else ""
+      "/_service_request $userId $target$timeoutStr ${json.encodeToString(request)}"
+    }
     is APIPrepareContact -> "/_prepare contact $userId ${connLink.cmdString}${verifiedDomain?.let { " ${it.cmdString}" } ?: ""} ${json.encodeToString(contactShortLinkData)}"
     is APIPrepareGroup -> "/_prepare group $userId ${connLink.cmdString} direct=${onOff(directLink)}${verifiedDomain?.let { " ${it.cmdString}" } ?: ""} ${json.encodeToString(groupShortLinkData)}"
     is APIChangePreparedContactUser -> "/_set contact user @$contactId $newUserId"
@@ -4411,6 +4427,7 @@ sealed class CC {
     is ApiSetConnectionIncognito -> "apiSetConnectionIncognito"
     is ApiChangeConnectionUser -> "apiChangeConnectionUser"
     is APIConnectPlan -> "apiConnectPlan"
+    is APISendServiceRequest -> "apiSendServiceRequest"
     is APIPrepareContact -> "apiPrepareContact"
     is APIPrepareGroup -> "apiPrepareGroup"
     is APIChangePreparedContactUser -> "apiChangePreparedContactUser"
@@ -6713,6 +6730,7 @@ sealed class CR {
   @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionUserChanged") class ConnectionUserChanged(val user: UserRef, val fromConnection: PendingContactConnection, val toConnection: PendingContactConnection, val newUser: UserRef): CR()
   @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connLink: CreatedConnLink, val planSimplexName: SimplexNameInfo? = null, val otherSimplexName: SimplexNameInfo? = null, val connectionPlan: ConnectionPlan): CR()
+  @Serializable @SerialName("serviceResponse") class CRServiceResponse(val user: UserRef, val responseData: JsonObject): CR()
   @Serializable @SerialName("newPreparedChat") class NewPreparedChat(val user: UserRef, val chat: Chat): CR()
   @Serializable @SerialName("contactUserChanged") class ContactUserChanged(val user: UserRef, val fromContact: Contact, val newUser: UserRef, val toContact: Contact): CR()
   @Serializable @SerialName("groupUserChanged") class GroupUserChanged(val user: UserRef, val fromGroup: GroupInfo, val newUser: UserRef, val toGroup: GroupInfo): CR()

@@ -108,7 +108,6 @@ import Text.Read (readMaybe)
 import UnliftIO.Concurrent (ThreadId, forkIO, mkWeakThreadId)
 import UnliftIO.Directory
 import UnliftIO.STM
-import qualified Data.Aeson as J
 
 smallGroupsRcptsMemLimit :: Int
 smallGroupsRcptsMemLimit = 20
@@ -1402,10 +1401,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           _ -> pure ()
       SREQ invId sigKey_ payload ->
         chatReadVar processServiceRequests >>= \case
-          True -> case J.eitherDecodeStrict' payload of
+          True -> case parseServiceBody payload of
             Right request -> toView $ CEvtServiceRequest user (AgentInvId invId) sigKey_ request
-            Left _ -> dropSReq
-          False -> dropSReq
+            Left e -> logError ("service request dropped, invalid payload: " <> tshow e) >> dropSReq
+          -- logged, not silent: this is a deployment mistake, and the requester only sees a timeout
+          False -> logError "service request dropped: service requests are not enabled" >> dropSReq
         where
           dropSReq = withAgent $ \a -> rejectServiceRequest a NRMBackground (aUserId user) invId Nothing
       LINK _link auData ->

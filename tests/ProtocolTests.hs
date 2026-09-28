@@ -8,6 +8,7 @@
 
 module ProtocolTests where
 
+import Control.Concurrent.STM (atomically)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -34,6 +35,7 @@ protocolTests :: Spec
 protocolTests = do
   decodeChatMessageTest
   shortLinkDataTests
+  serviceBodyTests
   batchLimitTests
   preferencesJSONTests
 
@@ -70,6 +72,38 @@ preferencesJSONTests = describe "preferences JSON" $ do
     storedJSON ps = J.decodeStrictText =<< snd (prefsToRow $ Just ps) :: Maybe J.Value
     object :: ByteString -> J.Value
     object s = fromMaybe (error $ "not JSON: " <> B.unpack s) $ J.decodeStrict' s
+
+serviceBodyTests :: Spec
+serviceBodyTests = describe "service payload compression" $ do
+  it "passes a small payload through uncompressed" $ do
+    let payload = "{\"ping\":1}"
+    compressServiceBody payload `shouldBe` Right payload
+    decompressServiceBody payload `shouldBe` Right payload
+  it "compresses a payload over the size bound and restores it" $ do
+    let payload = "{\"pong\":\"" <> B.replicate 12000 'a' <> "\"}"
+    compressed <- either fail pure $ compressServiceBody payload
+    B.length compressed `shouldSatisfy` (<= maxCompressedInfoLength)
+    B.head compressed `shouldBe` 'X'
+    decompressServiceBody compressed `shouldBe` Right payload
+  it "rejects a payload that is too large even compressed" $ do
+    -- random bytes do not compress, so this stays over the bound
+    g <- C.newRandom
+    payload <- atomically $ C.randomBytes (maxCompressedInfoLength * 2) g
+    compressServiceBody payload `shouldBe` Left "service payload is too large"
+  it "rejects a payload that expands past the decompressed bound" $ do
+    let bomb = compressedBatchMsgBody_ $ B.replicate (maxDecompressedMsgLength + 1) 'a'
+    B.length bomb `shouldSatisfy` (< maxCompressedInfoLength)
+    decompressServiceBody bomb `shouldBe` Left "decompressed size exceeds limit"
+  it "compresses to the bound it is given" $ do
+    g <- C.newRandom
+    -- random bytes do not compress, so this is over the info bound and under the message bound
+    payload <- atomically $ C.randomBytes (maxCompressedInfoLength + 1000) g
+    compressBodyTo maxCompressedInfoLength payload `shouldBe` Nothing
+    compressBodyTo maxCompressedMsgLength payload `shouldBe` Just payload
+  it "rejects a payload nested deeper than the bound" $ do
+    let nested n = "{\"a\":" <> B.replicate n '[' <> B.replicate n ']' <> "}"
+    parseServiceBody (nested 10) `shouldBe` J.eitherDecodeStrict' (nested 10)
+    parseServiceBody (nested 100) `shouldBe` Left "service payload is nested too deeply"
 
 batchLimitTests :: Spec
 batchLimitTests = describe "Chat message batch limits" $ do
