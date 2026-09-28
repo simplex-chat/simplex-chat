@@ -24,7 +24,7 @@ import java.io.File
 fun main(args: Array<String>) {
   try {
     val appLink = appLinkFromArgs(args)
-    if (!acquireSingleInstance()) return
+    if (!acquireSingleInstance(appLink)) return
     // Clean shared temp dirs only in the owning instance (not in a Files.desktop val
     // initializer, which a transient second instance would also run). Early: before settings writes.
     preferencesTmpDir.deleteRecursively()
