@@ -890,7 +890,7 @@ struct GetStakeView: View {
     var body: some View {
         ZoomablePageView {
             VStack(alignment: .leading, spacing: 18) {
-                Text(verbatim: "Get a stake in\nSimpleX Chat")
+                Text(verbatim: "Invest in\nSimpleX Chat")
                     .font(.largeTitle)
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
