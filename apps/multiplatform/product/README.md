@@ -277,6 +277,7 @@ SettingsView
     -> CallSettings .............. (call preferences)
     -> VersionInfoView ........... (about/version)
     -> DeveloperView ............. (developer options)
+      -> StorageView ............. (storage breakdown)
     -> HelpView .................. (help & support)
 
 UserPicker
