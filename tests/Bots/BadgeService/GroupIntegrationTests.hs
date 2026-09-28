@@ -93,9 +93,9 @@ badgeGroupIntegrationTests = do
   it "answers a failed /issue or //issue without naming what failed in the store" testIssueFailureIsOpaque
   it "lists the codes a /bulk issued before an insert failed" testBulkPartialFailureListsIssued
   it "answers a failed /revoke without naming what failed in the store" testRevokeFailureIsOpaque
-  it "tracks a multi-use code across redemptions and refuses it when used up" testMultiUseTracker
-  it "keeps the counter and posts no second notice for a stale refresh of a used-up code" testStaleRefreshIgnored
-  it "announces a second multi-use code used up on the claim that uses it up" testSecondMultiUseCodeExhausted
+  it "tracks a multi-use code in one message across redemptions and refuses it when used up" testMultiUseTracker
+  it "leaves a used-up code's tracker as it is on a stale refresh" testStaleRefreshIgnored
+  it "keeps each multi-use code's counter to its own claims" testCountersKeptApart
   it "refreshes the tracker for a redemption served with no group lane" testLanelessRedeemRefreshesTracker
   it "refreshes the tracker for a redemption from the service's request queue" testQueuedRequestRefreshesTracker
   it "refreshes the tracker inline for a queued redemption after a restart without [group]" testQueuedRequestWithoutGroupConfig
@@ -105,7 +105,7 @@ badgeGroupIntegrationTests = do
   it "never reposts a tracker deleted on the service's side, publishing the code no further" testDeletedTrackerNotReposted
   it "never reposts a tracker an owner deleted for everyone" testModeratedTrackerNotReposted
   it "revokes a code whose tracker was deleted on the service's side without reposting it" testDeletedTrackerNotRepostedOnRevoke
-  it "posts no notice when a code whose tracker was deleted is used up" testDeletedTrackerNoNotice
+  it "publishes nothing when a code whose tracker was deleted is used up" testDeletedTrackerUsedUp
   it "revokes a code whose tracker an owner deleted for everyone without reposting it" testModeratedTrackerNotRepostedOnRevoke
   it "revokes a code on /revoke, answers a repeat as already revoked and an unknown code as no such code" testGroupRevoke
   it "retires the tracker message when a multi-use code is revoked" testRevokeRetiresTracker
@@ -113,7 +113,7 @@ badgeGroupIntegrationTests = do
   it "retires a tracker left behind when the code is revoked again" testGroupRevokeRepairsTracker
   it "retires a tracker left behind when the service command revokes again" testServiceRevokeRepairsTracker
   it "posts one retired tracker however often a revoke past the window repeats" testRevokeRepeatPastWindow
-  it "reconciles an exhausted tracker whose refresh was lost, posting no notice" testExhaustedTrackerReconciledOnRestart
+  it "reconciles a used-up tracker whose refresh was lost, in place" testUsedUpTrackerReconciledOnRestart
   it "reconciles a tracker with uses left whose refresh was lost" testStalledTrackerReconciledOnRestart
   it "retires on restart a tracker whose revoke never reached it" testRevokedTrackerReconciledOnRestart
   it "reconciles every stalled tracker on restart, not only the first" testEveryStalledTrackerReconciled
@@ -443,7 +443,7 @@ testFirstJoinerPromoted ps = do
       sendGroupCmd alice "/issue supporter"
       waitCodeOfType cc "supporter"
       memberRoles cc gid `shouldReturn` [("alice", "owner"), ("bob", "member")]
-      let codeReply = "#" <> groupName <> " " <> botName <> "> code SB-"
+      let codeReply = "#" <> groupName <> " " <> botName <> "> Code: SB-"
       drainUntil alice [codeReply]
       drainUntil bob [codeReply, "#" <> groupName <> ": member alice"]
 
@@ -471,7 +471,7 @@ testRoleGatedIssue ps = do
         let announced name = "#" <> groupName <> ": " <> botName <> " added " <> name
             preMember name = "#" <> groupName <> ": member " <> name
             newMember name = "#" <> groupName <> ": new member " <> name <> " is connected"
-            usageReply = "#" <> groupName <> " " <> botName <> "> use: /issue <type>"
+            usageReply = "#" <> groupName <> " " <> botName <> "> Usage: /issue <type>"
         joinGroup cc bob
         waitMemberRole cc gid "bob" "member"
         -- cath joins only after alice sees bob announced, or cath's console shows a different line.
@@ -485,14 +485,14 @@ testRoleGatedIssue ps = do
           dropTime
           cath
           [ StartsWith ("#" <> groupName <> " alice> /issue supporter"),
-            StartsWith ("#" <> groupName <> " " <> botName <> "> code SB-")
+            StartsWith ("#" <> groupName <> " " <> botName <> "> Code: SB-")
           ]
         codeCount cc `shouldReturn` 1
         sendGroupCmd bob "/issue legend"
         waitStoredItem cc "/issue legend"
         ownerIssuesNext cc alice 2
         sendGroupCmd alice "/issue supporter uses 0"
-        waitStoredItem cc "use: /issue <type> [months <M>] [uses <N>]"
+        waitStoredItem cc "Usage: /issue <type> [months <M>] [uses <N>]"
         codeCount cc `shouldReturn` 2
         drainUntil alice [usageReply, newMember "bob", newMember "cath"]
         drainUntil bob [usageReply, preMember "alice", newMember "cath"]
@@ -578,7 +578,7 @@ testBulkPartialFailureListsIssued ps =
   withGroupOwner ps $ \gsKey cc env alice -> do
     codeLines <- withCodeTableCapped cc 2 $ do
       (codeLines, summary) <- splitAt 2 . T.lines <$> replyTo cc alice "/bulk supporter count 3"
-      summary `shouldBe` ["issued 2 of 3, the rest failed"]
+      summary `shouldBe` ["Issued 2 of 3 codes. The remaining codes could not be issued."]
       pure codeLines
     codeCount cc `shouldReturn` 2
     forM_ codeLines $ redeemOk gsKey cc env . extractCode
@@ -587,8 +587,8 @@ testIssueFailureIsOpaque :: HasCallStack => TestParams -> IO ()
 testIssueFailureIsOpaque ps =
   withGroupOwner ps $ \_ cc _ alice -> do
     withCodeTableHidden cc $ do
-      replyTo cc alice "/issue supporter" `shouldReturn` "issuing the code failed"
-      issueRaw cc "supporter" `shouldReturn` Left "issuing the code failed"
+      replyTo cc alice "/issue supporter" `shouldReturn` "The code could not be issued."
+      issueRaw cc "supporter" `shouldReturn` Left "The code could not be issued."
     void $ replyTo cc alice "/issue supporter"
     codeCount cc `shouldReturn` 1
 
@@ -597,8 +597,8 @@ testRevokeFailureIsOpaque ps =
   withGroupOwner ps $ \_ cc _ alice -> do
     code <- extractCode <$> replyTo cc alice "/issue supporter"
     withCodeTableHidden cc $
-      replyTo cc alice (revokeCmd code) `shouldReturn` revokeReply code "revoking the code failed"
-    revokeInGroup cc alice code "revoked"
+      replyTo cc alice (revokeCmd code) `shouldReturn` revokeReply code "The code could not be revoked."
+    revokeInGroup cc alice code "Revoked."
 
 withCodeTableHidden :: ChatController -> IO a -> IO a
 withCodeTableHidden cc action = rename codeTable hidden >> (action `finally` rename hidden codeTable)
@@ -632,13 +632,13 @@ testMultiUseTracker :: HasCallStack => TestParams -> IO ()
 testMultiUseTracker ps =
   withGroupOwner ps $ \gsKey cc env alice -> do
     (trackerItemId, tracker0, code) <- issueTracked cc alice "supporter" 2
-    tracker0 `shouldSatisfy` T.isInfixOf "2/2 remaining"
+    tracker0 `shouldSatisfy` T.isInfixOf "2 of 2 uses remaining"
     redeemOk gsKey cc env code
-    t1 <- waitItemText cc trackerItemId "1/2 remaining"
-    t1 `shouldSatisfy` T.isInfixOf "Last redeemed"
+    t1 <- waitItemText cc trackerItemId "1 of 2 uses remaining"
+    t1 `shouldSatisfy` T.isInfixOf "last used"
     redeemOk gsKey cc env code
-    void $ waitItemText cc trackerItemId "0/2 remaining"
-    waitExhausted cc `shouldReturn` exhaustedText code 2
+    usedUp <- waitItemText cc trackerItemId "All 2 uses redeemed"
+    sentItemsWithCode cc code `shouldReturn` [usedUp]
     redeemViaService gsKey cc env code >>= (`shouldAnswerError` BSECodeUsed)
 
 testStaleRefreshIgnored :: HasCallStack => TestParams -> IO ()
@@ -647,35 +647,21 @@ testStaleRefreshIgnored ps =
     (trackerItemId, _, code) <- issueTracked cc alice "supporter" 2
     redeemOk gsKey cc env code
     redeemOk gsKey cc env code
-    void $ waitItemText cc trackerItemId "0/2 remaining"
-    notice <- waitExhausted cc
-    replayRefresh cc env code 2 1
+    usedUp <- waitItemText cc trackerItemId "All 2 uses redeemed"
+    replayRefresh cc env code 2
     awaitLane cc env
-    exhaustedNotices cc `shouldReturn` [notice]
-    readItemText cc trackerItemId >>= (`shouldSatisfy` T.isInfixOf "0/2 remaining")
-    redeemedTrackerCount cc `shouldReturn` 1
+    sentItemsWithCode cc code `shouldReturn` [usedUp]
 
-testSecondMultiUseCodeExhausted :: HasCallStack => TestParams -> IO ()
-testSecondMultiUseCodeExhausted ps =
+testCountersKeptApart :: HasCallStack => TestParams -> IO ()
+testCountersKeptApart ps =
   withGroupOwner ps $ \gsKey cc env alice -> do
-    -- The first code gets 3 claims, the second code's limit, so reading the wrong count would post the notice early.
     (firstItemId, _, firstCode) <- issueTracked cc alice "supporter" 5
     replicateM_ 3 (redeemOk gsKey cc env firstCode)
-    void $ waitItemText cc firstItemId "2/5 remaining"
-    awaitLane cc env
-    exhaustedNotices cc `shouldReturn` []
+    void $ waitItemText cc firstItemId "2 of 5 uses remaining"
     (secondItemId, _, secondCode) <- issueTracked cc alice "legend" 3
-    -- Each claim is awaited because the lane coalesces refreshes queued together.
-    redeemOk gsKey cc env secondCode
-    void $ waitItemText cc secondItemId "2/3 remaining"
-    redeemOk gsKey cc env secondCode
-    void $ waitItemText cc secondItemId "1/3 remaining"
-    awaitLane cc env
-    exhaustedNotices cc `shouldReturn` []
-    redeemOk gsKey cc env secondCode
-    void $ waitItemText cc secondItemId "0/3 remaining"
-    waitExhausted cc `shouldReturn` exhaustedText secondCode 3
-    readItemText cc firstItemId >>= (`shouldSatisfy` T.isInfixOf "2/5 remaining")
+    replicateM_ 3 (redeemOk gsKey cc env secondCode)
+    void $ waitItemText cc secondItemId "All 3 uses redeemed"
+    readItemText cc firstItemId >>= (`shouldSatisfy` T.isInfixOf "2 of 5 uses remaining")
 
 testLanelessRedeemRefreshesTracker :: HasCallStack => TestParams -> IO ()
 testLanelessRedeemRefreshesTracker ps =
@@ -685,12 +671,10 @@ testLanelessRedeemRefreshesTracker ps =
     redeemOkWith gsKey cc Nothing code
     -- The refresh runs before the response, so the counter is already written here.
     t1 <- readItemText cc trackerItemId
-    t1 `shouldSatisfy` T.isInfixOf "1/2 remaining"
-    t1 `shouldSatisfy` T.isInfixOf "Last redeemed"
-    exhaustedNotices cc `shouldReturn` []
+    t1 `shouldSatisfy` T.isInfixOf "1 of 2 uses remaining"
+    t1 `shouldSatisfy` T.isInfixOf "last used"
     redeemOkWith gsKey cc Nothing code
-    readItemText cc trackerItemId >>= (`shouldSatisfy` T.isInfixOf "0/2 remaining")
-    exhaustedNotices cc `shouldReturn` [exhaustedText code 2]
+    readItemText cc trackerItemId >>= (`shouldSatisfy` T.isInfixOf "All 2 uses redeemed")
     redeemedTrackerCount cc `shouldReturn` 1
 
 testQueuedRequestRefreshesTracker :: HasCallStack => TestParams -> IO ()
@@ -698,7 +682,7 @@ testQueuedRequestRefreshesTracker ps =
   withGroupOwner ps $ \_ cc env alice -> do
     (trackerItemId, _, code) <- issueTracked cc alice "supporter" 2
     queueRedemption cc env code
-    void $ waitItemText cc trackerItemId "1/2 remaining"
+    void $ waitItemText cc trackerItemId "1 of 2 uses remaining"
 
 testQueuedRequestWithoutGroupConfig :: HasCallStack => TestParams -> IO ()
 testQueuedRequestWithoutGroupConfig ps = do
@@ -707,7 +691,7 @@ testQueuedRequestWithoutGroupConfig ps = do
     (\(i, _, c) -> (i, c)) <$> issueTracked cc alice "supporter" 2
   runGroupServiceAs svc Nothing $ \cc env _ -> do
     queueRedemption cc env code
-    void $ waitItemText cc trackerItemId "1/2 remaining"
+    void $ waitItemText cc trackerItemId "1 of 2 uses remaining"
 
 testTrackerRepost :: HasCallStack => TestParams -> IO ()
 testTrackerRepost ps =
@@ -716,7 +700,7 @@ testTrackerRepost ps =
     backdated <- backdateTracker cc 2
     redeemOk gsKey cc env code
     (_, tracker1) <- waitTrackerRepost cc 2 itemId0
-    tracker1 `shouldSatisfy` T.isInfixOf "1/2 remaining"
+    tracker1 `shouldSatisfy` T.isInfixOf "1 of 2 uses remaining"
     readItemText cc itemId0 `shouldReturn` tracker0
     sentAt <- trackerSentAt cc 2
     sentAt `shouldSatisfy` (> backdated)
@@ -728,11 +712,10 @@ testRefusedEditReposted ps =
     backdateTrackerItem cc itemId0
     redeemOk gsKey cc env code
     (itemId1, tracker1) <- waitTrackerRepost cc 2 itemId0
-    tracker1 `shouldSatisfy` T.isInfixOf "1/2 remaining"
+    tracker1 `shouldSatisfy` T.isInfixOf "1 of 2 uses remaining"
     redeemOk gsKey cc env code
-    void $ waitItemText cc itemId1 "0/2 remaining"
-    waitExhausted cc `shouldReturn` exhaustedText code 2
-    readItemText cc itemId0 `shouldReturn` tracker0
+    usedUp <- waitItemText cc itemId1 "All 2 uses redeemed"
+    sentItemsWithCode cc code `shouldReturn` [tracker0, usedUp]
 
 testFailedRepostDropped :: HasCallStack => TestParams -> IO ()
 testFailedRepostDropped ps =
@@ -748,8 +731,7 @@ testFailedRepostDropped ps =
     setBotRole cc "owner"
     redeemOk gsKey cc env code
     (_, tracker1) <- waitTrackerRepost cc 2 itemId0
-    tracker1 `shouldSatisfy` T.isInfixOf "0/2 remaining"
-    waitExhausted cc `shouldReturn` exhaustedText code 2
+    tracker1 `shouldSatisfy` T.isInfixOf "All 2 uses redeemed"
 
 testDeletedTrackerNotReposted :: HasCallStack => TestParams -> IO ()
 testDeletedTrackerNotReposted ps =
@@ -769,14 +751,13 @@ testDeletedTrackerNotRepostedOnRevoke ps =
     revokeNeverReposts cc alice code []
 
 -- Both claims fall inside the edit window, so each edit fails because the message is gone.
-testDeletedTrackerNoNotice :: HasCallStack => TestParams -> IO ()
-testDeletedTrackerNoNotice ps =
+testDeletedTrackerUsedUp :: HasCallStack => TestParams -> IO ()
+testDeletedTrackerUsedUp ps =
   withGroupOwner ps $ \gsKey cc env alice -> do
     (itemId0, _, code) <- issueTracked cc alice "supporter" 2
     deleteItem cc itemId0
     replicateM_ 2 $ redeemOk gsKey cc env code
     awaitLane cc env
-    exhaustedNotices cc `shouldReturn` []
     sentItemsWithCode cc code `shouldReturn` []
 
 testModeratedTrackerNotRepostedOnRevoke :: HasCallStack => TestParams -> IO ()
@@ -815,13 +796,12 @@ trackerNeverReposted key cc env code itemId0 codeItems = do
   redeemOk key cc env code
   awaitLane cc env
   sentItemsWithCode cc code `shouldReturn` codeItems
-  exhaustedNotices cc `shouldReturn` []
   trackerAnchor cc 2 `shouldReturn` Just itemId0
 
 revokeNeverReposts :: HasCallStack => ChatController -> TestCC -> Text -> [Text] -> IO ()
 revokeNeverReposts cc member code codeItems = do
-  revokeInGroup cc member code "revoked"
-  sentItemsWithCode cc code `shouldReturn` codeItems <> [revokeReply code "revoked"]
+  revokeInGroup cc member code "Revoked."
+  sentItemsWithCode cc code `shouldReturn` codeItems <> [revokeReply code "Revoked."]
   revokedTrackerCount cc `shouldReturn` 0
 
 testGroupRevoke :: HasCallStack => TestParams -> IO ()
@@ -829,14 +809,14 @@ testGroupRevoke ps =
   withGroupOwner ps $ \gsKey cc env alice -> do
     code <- extractCode <$> replyTo cc alice "/issue supporter"
     other <- extractCode <$> replyTo cc alice "/issue legend"
-    revokeInGroup cc alice code "revoked"
+    revokeInGroup cc alice code "Revoked."
     redeemViaService gsKey cc env code >>= (`shouldAnswerError` BSECodeInvalid)
     redeemOk gsKey cc env other
-    revokeInGroup cc alice code "already revoked"
+    revokeInGroup cc alice code "Already revoked."
     -- The reply follows the tracker step, so the revoke has already passed it here.
     revokedTrackerCount cc `shouldReturn` 0
     unissued <- formatBadgeCode <$> randomBadgeCode (random cc)
-    revokeInGroup cc alice unissued "no such code"
+    revokeInGroup cc alice unissued "No such code."
 
 testGroupRevokeRepairsTracker :: HasCallStack => TestParams -> IO ()
 testGroupRevokeRepairsTracker ps =
@@ -846,9 +826,9 @@ testGroupRevokeRepairsTracker ps =
     revokeInStore cc 2
     readItemText cc trackerItemId `shouldReturn` tracker0
     sendGroupCmd alice (revokeCmd code)
-    retired <- waitItemText cc trackerItemId "revoked"
+    retired <- waitItemText cc trackerItemId "Revoked"
     retired `shouldBe` retiredText code
-    waitStoredItem cc (revokeReply code "already revoked")
+    waitStoredItem cc (revokeReply code "Already revoked.")
     revokedTrackerCount cc `shouldReturn` 1
 
 testRevokeRepeatPastWindow :: HasCallStack => TestParams -> IO ()
@@ -857,36 +837,36 @@ testRevokeRepeatPastWindow ps =
     offsetCodeIds cc
     (itemId0, tracker0, code) <- issueTracked cc alice "supporter" 2
     void $ backdateTracker cc 2
-    revokeInGroup cc alice code "revoked"
+    revokeInGroup cc alice code "Revoked."
     (itemId1, retired) <- waitTrackerRepost cc 2 itemId0
     retired `shouldBe` retiredText code
     revokedTrackerCount cc `shouldReturn` 1
     void $ backdateTracker cc 2
-    revokeInGroup cc alice code "already revoked"
+    revokeInGroup cc alice code "Already revoked."
     revokedTrackerCount cc `shouldReturn` 1
     trackerAnchor cc 2 `shouldReturn` Just itemId1
     readItemText cc itemId1 `shouldReturn` retiredText code
     readItemText cc itemId0 `shouldReturn` tracker0
 
-testExhaustedTrackerReconciledOnRestart :: HasCallStack => TestParams -> IO ()
-testExhaustedTrackerReconciledOnRestart ps = do
+testUsedUpTrackerReconciledOnRestart :: HasCallStack => TestParams -> IO ()
+testUsedUpTrackerReconciledOnRestart ps = do
   svc@GroupSvc {gsKey} <- prepareGroupService ps
-  (lostItemId, notice, lostCode) <- runWithOwner svc $ \cc env _ alice -> do
+  (lostItemId, lostCode) <- runWithOwner svc $ \cc env _ alice -> do
     (doneItemId, _, doneCode) <- issueTracked cc alice "supporter" 2
     redeemOk gsKey cc env doneCode
     redeemOk gsKey cc env doneCode
-    notice <- waitExhausted cc
+    void $ waitItemText cc doneItemId "All 2 uses redeemed"
     (lostItemId, lost0, lostCode) <- issueTracked cc alice "legend" 3
     replicateM_ 3 (redeemLosingRefresh gsKey cc lostCode)
     readItemText cc lostItemId `shouldReturn` lost0
     trackerAnchor cc 2 `shouldReturn` Just doneItemId
     dateRedemption cc 3 lostRedeemedAt
-    pure (lostItemId, notice, lostCode)
+    pure (lostItemId, lostCode)
   runGroupService svc $ \cc env _ -> do
-    corrected <- waitItemText cc lostItemId "0/3 remaining"
-    corrected `shouldBe` ("!2 " <> lostCode <> "!\nLast redeemed: 2026-02-28 — 0/3 remaining")
+    corrected <- waitItemText cc lostItemId "All 3 uses redeemed"
+    corrected `shouldBe` (lostCode <> "\nAll 3 uses redeemed, last used 2026-02-28 23:50 UTC")
     awaitLane cc env
-    exhaustedNotices cc `shouldReturn` [notice]
+    sentItemsWithCode cc lostCode `shouldReturn` [corrected]
     redeemedTrackerCount cc `shouldReturn` 2
 
 -- This date is far from any day the test runs on, so a body dated now cannot match it.
@@ -896,21 +876,21 @@ lostRedeemedAt = UTCTime (fromGregorian 2026 2 28) (23 * 3600 + 50 * 60)
 testStalledTrackerReconciledOnRestart :: HasCallStack => TestParams -> IO ()
 testStalledTrackerReconciledOnRestart ps = do
   svc@GroupSvc {gsKey} <- prepareGroupService ps
-  stalledItemId <- runWithOwner svc $ \cc env _ alice -> do
+  (stalledItemId, code) <- runWithOwner svc $ \cc env _ alice -> do
     (stalledItemId, _, code) <- issueTracked cc alice "supporter" 5
     redeemOk gsKey cc env code
     redeemOk gsKey cc env code
     awaitLane cc env
-    stalled <- waitItemText cc stalledItemId "3/5 remaining"
+    stalled <- waitItemText cc stalledItemId "3 of 5 uses remaining"
     redeemLosingRefresh gsKey cc code
     readItemText cc stalledItemId `shouldReturn` stalled
-    pure stalledItemId
+    dateRedemption cc 5 lostRedeemedAt
+    pure (stalledItemId, code)
   runGroupService svc $ \cc env _ -> do
-    corrected <- waitItemText cc stalledItemId "2/5 remaining"
-    corrected `shouldSatisfy` T.isInfixOf "Last redeemed: "
+    corrected <- waitItemText cc stalledItemId "2 of 5 uses remaining"
+    corrected `shouldBe` ("!2 " <> code <> "!\n2 of 5 uses remaining, last used 2026-02-28 23:50 UTC")
     awaitLane cc env
-    exhaustedNotices cc `shouldReturn` []
-    redeemedTrackerCount cc `shouldReturn` 1
+    sentItemsWithCode cc code `shouldReturn` [corrected]
 
 testRevokedTrackerReconciledOnRestart :: HasCallStack => TestParams -> IO ()
 testRevokedTrackerReconciledOnRestart ps = do
@@ -921,7 +901,7 @@ testRevokedTrackerReconciledOnRestart ps = do
     readItemText cc trackerItemId `shouldReturn` tracker0
     pure (trackerItemId, code)
   runGroupService svc $ \cc env _ -> do
-    retired <- waitItemText cc trackerItemId "revoked"
+    retired <- waitItemText cc trackerItemId "Revoked"
     retired `shouldBe` retiredText code
     awaitLane cc env
     revokedTrackerCount cc `shouldReturn` 1
@@ -938,12 +918,11 @@ testEveryStalledTrackerReconciled ps = do
     readItemText cc secondItemId `shouldReturn` second0
     pure (firstItemId, secondItemId)
   runGroupService svc $ \cc env _ -> do
-    first1 <- waitItemText cc firstItemId "3/5 remaining"
-    first1 `shouldSatisfy` T.isInfixOf "Last redeemed: "
-    second1 <- waitItemText cc secondItemId "2/3 remaining"
-    second1 `shouldSatisfy` T.isInfixOf "Last redeemed: "
+    first1 <- waitItemText cc firstItemId "3 of 5 uses remaining"
+    first1 `shouldSatisfy` T.isInfixOf "last used "
+    second1 <- waitItemText cc secondItemId "2 of 3 uses remaining"
+    second1 `shouldSatisfy` T.isInfixOf "last used "
     awaitLane cc env
-    exhaustedNotices cc `shouldReturn` []
     redeemedTrackerCount cc `shouldReturn` 2
 
 testUneditableTrackerLeftAlone :: HasCallStack => TestParams -> IO ()
@@ -959,7 +938,7 @@ testUneditableTrackerLeftAlone ps = do
     pure (staleItemId, stale0, staleCode, liveItemId, liveCode)
   runGroupService svc $ \cc env _ -> do
     redeemOk gsKey cc env liveCode
-    void $ waitItemText cc liveItemId "2/3 remaining"
+    void $ waitItemText cc liveItemId "2 of 3 uses remaining"
     readItemText cc staleItemId `shouldReturn` stale0
     sentItemsWithCode cc staleCode `shouldReturn` [stale0]
     trackerAnchor cc 2 `shouldReturn` Just staleItemId
@@ -970,15 +949,14 @@ testRevokeRetiresTracker ps =
     offsetCodeIds cc
     (trackerItemId, _, code) <- issueTracked cc alice "supporter" 2
     redeemOk gsKey cc env code
-    void $ waitItemText cc trackerItemId "1/2 remaining"
-    revokeInGroup cc alice code "revoked"
-    retired <- waitItemText cc trackerItemId "revoked"
+    void $ waitItemText cc trackerItemId "1 of 2 uses remaining"
+    revokeInGroup cc alice code "Revoked."
+    retired <- waitItemText cc trackerItemId "Revoked"
     retired `shouldBe` retiredText code
     revokedTrackerCount cc `shouldReturn` 1
-    replayRefresh cc env code 2 2
+    replayRefresh cc env code 2
     awaitLane cc env
     readItemText cc trackerItemId `shouldReturn` retired
-    exhaustedNotices cc `shouldReturn` []
     revokedTrackerCount cc `shouldReturn` 1
     redeemViaService gsKey cc env code >>= (`shouldAnswerError` BSECodeInvalid)
 
@@ -988,14 +966,14 @@ testServiceRevokeRetiresTracker ps =
     offsetCodeIds cc
     (trackerItemId, _, code) <- issueTracked cc alice "supporter" 2
     redeemOk gsKey cc env code
-    void $ waitItemText cc trackerItemId "1/2 remaining"
-    revokeRaw cc code `shouldReturn` Right "revoked"
+    void $ waitItemText cc trackerItemId "1 of 2 uses remaining"
+    revokeRaw cc code `shouldReturn` Right "Revoked."
     readItemText cc trackerItemId `shouldReturn` retiredText code
     revokedTrackerCount cc `shouldReturn` 1
-    revokeRaw cc code `shouldReturn` Right "already revoked"
+    revokeRaw cc code `shouldReturn` Right "Already revoked."
     revokedTrackerCount cc `shouldReturn` 1
     single <- extractCode <$> replyTo cc alice "/issue legend"
-    revokeRaw cc single `shouldReturn` Right "revoked"
+    revokeRaw cc single `shouldReturn` Right "Revoked."
     revokedTrackerCount cc `shouldReturn` 1
 
 testServiceRevokeRepairsTracker :: HasCallStack => TestParams -> IO ()
@@ -1005,7 +983,7 @@ testServiceRevokeRepairsTracker ps =
     (trackerItemId, tracker0, code) <- issueTracked cc alice "supporter" 2
     revokeInStore cc 2
     readItemText cc trackerItemId `shouldReturn` tracker0
-    revokeRaw cc code `shouldReturn` Right "already revoked"
+    revokeRaw cc code `shouldReturn` Right "Already revoked."
     readItemText cc trackerItemId `shouldReturn` retiredText code
     revokedTrackerCount cc `shouldReturn` 1
 
@@ -1035,12 +1013,12 @@ queueRedemption cc env codeText = do
 redeemLosingRefresh :: HasCallStack => BadgeIssuerKey -> ChatController -> Text -> IO ()
 redeemLosingRefresh key cc codeText = newTQueueIO >>= \q -> redeemOkWith key cc (Just q) codeText
 
-replayRefresh :: HasCallStack => ChatController -> ServiceState -> Text -> Int -> Int -> IO ()
-replayRefresh cc env codeText uses claim = case parseBadgeCode codeText of
+replayRefresh :: HasCallStack => ChatController -> ServiceState -> Text -> Int -> IO ()
+replayRefresh cc env codeText uses = case parseBadgeCode codeText of
   Nothing -> error $ "not a badge code: " <> T.unpack codeText
   Just code -> do
     badgeCodeId <- trackedCodeId cc uses
-    atomically $ writeTQueue (groupEventQ env) (GETracker badgeCodeId code claim)
+    atomically $ writeTQueue (groupEventQ env) (GETracker badgeCodeId code)
 
 getStoredGroup :: ChatController -> IO (Maybe ManagedGroup)
 getStoredGroup cc = withTransaction (chatStore cc) getManagedGroup
@@ -1386,26 +1364,13 @@ waitTrackerRepost :: HasCallStack => ChatController -> Int -> Int64 -> IO (Int64
 waitTrackerRepost cc uses itemId0 = pollUntil $ mfilter ((/= itemId0) . fst) <$> trackerItem cc uses
 
 redeemedTrackerCount :: ChatController -> IO Int
-redeemedTrackerCount cc = countRows cc "chat_items WHERE item_text LIKE '%Last redeemed%'"
+redeemedTrackerCount cc = countRows cc "chat_items WHERE item_text LIKE '%last used%'"
 
 revokedTrackerCount :: ChatController -> IO Int
 revokedTrackerCount cc = countRows cc ("chat_items WHERE item_text LIKE '" <> T.unpack (retiredText "SB-%") <> "'")
 
 retiredText :: Text -> Text
-retiredText code = code <> " revoked — no longer redeemable"
-
-exhaustedText :: Text -> Int -> Text
-exhaustedText code uses = code <> " fully redeemed — all " <> tshow uses <> " used"
-
--- Notices are not filtered by code or total, so a wrong one still shows up.
-exhaustedNotices :: ChatController -> IO [Text]
-exhaustedNotices cc = queryColumn cc "SELECT item_text FROM chat_items WHERE item_text LIKE '%fully redeemed%' ORDER BY chat_item_id"
-
-waitExhausted :: HasCallStack => ChatController -> IO Text
-waitExhausted cc =
-  pollUntil (mfilter (not . null) . Just <$> exhaustedNotices cc) >>= \case
-    [t] -> pure t
-    ts -> error $ "expected one exhaustion notice, got " <> show (length ts)
+retiredText code = code <> "\nRevoked, can no longer be redeemed"
 
 extractCode :: HasCallStack => Text -> Text
 extractCode t = maybe (error ("no badge code in: " <> T.unpack t)) formatBadgeCode (codeInTracker t)

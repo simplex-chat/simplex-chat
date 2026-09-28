@@ -30,7 +30,7 @@ revokeBadgeCode cc code = do
 
 -- | The group is joined through a bearer link, so this reply names no database error.
 issueFailedText :: Text
-issueFailedText = "issuing the code failed"
+issueFailedText = "The code could not be issued."
 
 -- | The code table keeps only the hash, so the caller must deliver the code.
 issueOneCode :: ChatController -> BadgeType -> Int -> BadgeCodePaymentStatus -> Int -> IO (Either String (BadgeCode, Int64))

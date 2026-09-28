@@ -4,7 +4,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 
 module BadgeService.Store
   ( IssuedCode (..),
@@ -38,7 +37,6 @@ module BadgeService.Store
 where
 
 import BadgeService.Store.Invoices (executeChanging)
-import Control.Monad (forM)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -287,25 +285,26 @@ appendLedgerPlan db purchaseId rows issuance_ = do
       insertedRowId db
 
 -- The claim takes one use before adding the purchase, so a concurrent revoke or redemption waits on this row and sees the new count.
--- Run it in the credential's transaction. It returns the use count this claim reached.
-createCodePurchase :: DB.Connection -> NewCodePurchase -> UTCTime -> IO (Maybe (Int64, Int))
+-- Run it in the credential's transaction.
+createCodePurchase :: DB.Connection -> NewCodePurchase -> UTCTime -> IO (Maybe Int64)
 createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do
-  claimed_ <-
-    maybeFirstRow fromOnly $
-      DB.query
-        db
-        "UPDATE sx_badge_service_badge_codes SET redeem_count = redeem_count + 1, redeemed_at = ? WHERE badge_code_id = ? AND redeem_count < redeem_limit AND revoked_at IS NULL RETURNING redeem_count"
-        (now, badgeCodeId)
-  forM claimed_ $ \claimedCount -> do
-    DB.execute
+  claimed <-
+    executeChanging
       db
-      [sql|
-        INSERT INTO sx_badge_service_badge_purchases
-          (purchase_key, master_key, initial_badge_type, current_badge_type, status, badge_code_id, created_at, updated_at)
-        VALUES (?,?,?,?,?,?,?,?)
-      |]
-      (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, badgeCodeId, now, now)
-    (,claimedCount) <$> insertedRowId db
+      "UPDATE sx_badge_service_badge_codes SET redeem_count = redeem_count + 1, redeemed_at = ? WHERE badge_code_id = ? AND redeem_count < redeem_limit AND revoked_at IS NULL"
+      (now, badgeCodeId)
+  if claimed == 0
+    then pure Nothing
+    else do
+      DB.execute
+        db
+        [sql|
+          INSERT INTO sx_badge_service_badge_purchases
+            (purchase_key, master_key, initial_badge_type, current_badge_type, status, badge_code_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?)
+        |]
+        (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, badgeCodeId, now, now)
+      Just <$> insertedRowId db
 
 -- | Revoked and AlreadyRevoked carry the code id, so the caller can retire the code's group tracker,
 -- or repair one an earlier revoke left live.

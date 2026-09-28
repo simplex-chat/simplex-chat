@@ -255,7 +255,8 @@ and above, `/revoke <code>` for admins and owners. `months` is 1 to 255, `uses` 
 `count` 1 to 100; a value outside these gets the usage reply. A member's role is checked as the
 service last saw it, so a command sent by a moderator just demoted or removed can still run if it
 reaches the service first; revoke any code the service posts for them after the change. `uses`
-above 1 makes a multi-use code, tracked by a group message counting what is left of it. Every reply carrying a code is read by every member,
+above 1 makes a multi-use code, tracked by a group message showing its remaining uses and the time
+of the last one; when every use is redeemed, the same message says so. Every reply carrying a code is read by every member,
 since the group has no private lane, so a code issued there is only as private as its least trusted
 member.
 Those replies are also kept as plain text in the service's chat database, so a copy of the database
@@ -265,9 +266,9 @@ carries the code, and every redemption edits it or, after a day, posts it again;
 current member receives it, so a member who joined after the code was issued gets the code while it
 still has uses left. A message replaced by a new post stays in the group with its old count. Keep
 disappearing messages off in the group and set no message TTL for the service's chats: a code's
-message that expires is treated as deleted and never posted again, so its counter and its "fully
-redeemed" notice stop.
-Every member can see when a multi-use code's message was edited, which is when each use was redeemed.
+message that expires is treated as deleted and never posted again, so its counter stops.
+Every member can see when each use of a multi-use code was redeemed: the message shows the time of
+the last one, and its edit times show the rest.
 `/revoke <code>` names the code in an ordinary group message, so every member holds it before the
 service reads the command, and the code stays redeemable until the service acts on it — for the
 whole of any downtime. Revoke a code that is not already public in the group, a refunded one above

@@ -22,9 +22,9 @@ import Test.Hspec
 badgeGroupTests :: Spec
 badgeGroupTests = describe "badge group" $ do
   let p = groupCmdAction GROwner
-      issueUsage = ReplyText "use: /issue <type> [months <M>] [uses <N>]"
-      bulkUsage = ReplyText "use: /bulk <type> [months <M>] count <B>"
-      revokeUsage = ReplyText "use: /revoke <code>"
+      issueUsage = ReplyText "Usage: /issue <type> [months <M>] [uses <N>]"
+      bulkUsage = ReplyText "Usage: /bulk <type> [months <M>] count <B>"
+      revokeUsage = ReplyText "Usage: /revoke <code>"
   it "issue defaults" $ p "/issue supporter" `shouldBe` RunCmd (GCIssue BTSupporter 1 1)
   it "issue with months and uses" $ p "/issue legend months 6 uses 50" `shouldBe` RunCmd (GCIssue BTLegend 6 50)
   it "bulk with count" $ p "/bulk supporter count 20" `shouldBe` RunCmd (GCBulk BTSupporter 1 20)
@@ -111,7 +111,7 @@ badgeGroupTests = describe "badge group" $ do
     it "tells a sender below admin that their revoke did not happen" $ do
       code <- newCode
       map (`groupCmdAction` ("/revoke " <> badgeCodeText code)) [GRMember, GRModerator]
-        `shouldBe` replicate 2 (ReplyText "only admins can revoke codes, and this code is now visible to the group - ask an admin to revoke it")
+        `shouldBe` replicate 2 (ReplyText "Only admins can revoke codes. This code is now visible to all members.")
   describe "configured group name and description" $ do
     let cfg name descr = GroupConfig {gDisplayName = name, gDescription = descr}
         profile name descr =
@@ -156,22 +156,20 @@ badgeGroupTests = describe "badge group" $ do
       trackerDecision within t0 `shouldBe` Edit
       trackerDecision past t0 `shouldBe` Repost
   describe "coalescing tracker refreshes" $ do
-    it "keeps one refresh per code, carrying the highest claim" $ do
-      code <- newCode
-      coalesceTrackerRefreshes [GETracker 1 code 1, GETracker 1 code 3, GETracker 2 code 1]
-        `shouldBe` [GETracker 1 code 3, GETracker 2 code 1]
-    it "keeps the highest claim whichever order it queued in" $ do
-      code <- newCode
-      coalesceTrackerRefreshes [GETracker 1 code 3, GETracker 1 code 1] `shouldBe` [GETracker 1 code 3]
+    it "keeps the last refresh of each code" $ do
+      code1 <- newCode
+      code2 <- newCode
+      coalesceTrackerRefreshes [GETracker 1 code1, GETracker 2 code2, GETracker 1 code1]
+        `shouldBe` [GETracker 2 code2, GETracker 1 code1]
     it "keeps every other event, in order" $ do
       code <- newCode
       coalesceTrackerRefreshes
         [ GEInGroup 7 (GACommand GRAdmin "a"),
-          GETracker 1 code 1,
+          GETracker 1 code,
           GEInGroup 7 GAJoined,
-          GETracker 1 code 2
+          GETracker 1 code
         ]
-        `shouldBe` [GEInGroup 7 (GACommand GRAdmin "a"), GEInGroup 7 GAJoined, GETracker 1 code 2]
+        `shouldBe` [GEInGroup 7 (GACommand GRAdmin "a"), GEInGroup 7 GAJoined, GETracker 1 code]
 
 newCode :: IO BadgeCode
 newCode = C.newRandom >>= randomBadgeCode

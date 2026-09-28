@@ -222,7 +222,7 @@ revokeRaw cc args =
 issueCodeAs :: HasCallStack => ChatController -> BadgeType -> Int -> String -> IO BadgeCode
 issueCodeAs cc badgeType months status =
   sendChatCmdStr cc ("//issue " <> T.unpack (textEncode badgeType) <> " " <> show months <> " " <> status) >>= \case
-    Right (CRCustomChatResponse _ response) -> case T.stripPrefix "code " response of
+    Right (CRCustomChatResponse _ response) -> case T.stripPrefix "Code: " response of
       Just c | Just code <- parseBadgeCode c -> pure code
       _ -> error $ "unexpected issue response: " <> T.unpack response
     r -> error $ "issue failed: " <> show (() <$ r)
@@ -831,7 +831,7 @@ testRevokedMultiUseHolderRenews ps =
       code <- issueMultiUseCode cc BTSupporter 3 2
       redeemFirstBadge alice code
       redeemed <- ledgerRows (chatController alice) "badge_ledger"
-      revokeCodeAs cc code `shouldReturn` Right "revoked"
+      revokeCodeAs cc code `shouldReturn` Right "Revoked."
       redeemAsNewPurchase env code >>= (`shouldAnswerError` BSECodeInvalid)
       codeUses cc code `shouldReturn` Just (2, 1)
       -- A holder whose reply was lost retries with the same key and still gets its badge.
@@ -1518,7 +1518,7 @@ testRevokeRedeemedCode ps =
       alice <## "supporter badge - active"
       alice <##. "expires "
       refused <- revokeCodeAs cc code
-      refused `shouldBe` Left "code was redeemed already, so it cannot be revoked"
+      refused `shouldBe` Left "Fully redeemed. It cannot be revoked."
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
       alice <## "badge already redeemed"
 
@@ -1528,23 +1528,23 @@ testRevokeUnknownCode ps =
     g <- C.newRandom
     code <- randomBadgeCode g
     unknown <- revokeCodeAs cc code
-    unknown `shouldBe` Left "no such code"
+    unknown `shouldBe` Left "No such code."
 
 testRevokedCode :: HasCallStack => TestParams -> IO ()
 testRevokedCode ps =
   withBadgeService ps $ \clientCfg _ cc ->
     withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
       paid <- issueCodeAs cc BTSupporter 1 "paid"
-      revokeCodeAs cc paid `shouldReturn` Right "revoked"
+      revokeCodeAs cc paid `shouldReturn` Right "Revoked."
       alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
       alice <## "cannot redeem badge code: badge service error: code_invalid"
-      revokeCodeAs cc paid `shouldReturn` Right "already revoked"
+      revokeCodeAs cc paid `shouldReturn` Right "Already revoked."
 
 testRevokedUnpaidCode :: HasCallStack => TestParams -> IO ()
 testRevokedUnpaidCode ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc} -> do
     code <- issueCodeAs cc BTSupporter 1 "unpaid"
-    revokeCodeAs cc code `shouldReturn` Right "revoked"
+    revokeCodeAs cc code `shouldReturn` Right "Revoked."
     redeemAsNewPurchase env code >>= (`shouldAnswerError` BSECodeInvalid)
 
 testRevokeRejectsTrailingInput :: HasCallStack => TestParams -> IO ()
@@ -1552,10 +1552,10 @@ testRevokeRejectsTrailingInput ps =
   withBadgeService ps $ \_ _ cc -> do
     code <- issueCodeAs cc BTSupporter 1 "paid"
     refused <- revokeRaw cc (formatBadgeCode code <> " junk")
-    -- If the refused call revoked the code anyway, this fails with "already revoked".
-    revokeCodeAs cc code `shouldReturn` Right "revoked"
+    -- If the refused call revoked the code anyway, this fails with "Already revoked.".
+    revokeCodeAs cc code `shouldReturn` Right "Revoked."
     refused `shouldBe` Left badgeCmdUsage
 
 -- The text is spelled out rather than taken from the service, so a change there fails here.
 badgeCmdUsage :: Text
-badgeCmdUsage = "use: //issue supporter|legend|investor [months 1-255] [paid|unpaid|free], or //revoke <code>"
+badgeCmdUsage = "Usage: //issue supporter|legend|investor [months 1-255] [paid|unpaid|free], or //revoke <code>"

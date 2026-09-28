@@ -203,13 +203,13 @@ runBadgeCmd :: ChatController -> ByteString -> IO (Either ChatError ChatResponse
 runBadgeCmd cc cmd
   | Right issueOpts <- A.parseOnly issueCmdP cmd =
       issueBadgeCode cc issueOpts >>= \case
-        Right code -> pure $ Right CRCustomChatResponse {user_ = Nothing, response = "code " <> formatBadgeCode code}
+        Right code -> pure $ Right CRCustomChatResponse {user_ = Nothing, response = "Code: " <> formatBadgeCode code}
         Left _ -> pure $ chatCmdError (T.unpack issueFailedText)
   | Right code <- A.parseOnly revokeCmdP cmd =
       revokeWithTracker cc code <&> \case
         Right response -> Right CRCustomChatResponse {user_ = Nothing, response}
         Left e -> chatCmdError (T.unpack e)
-  | otherwise = pure $ chatCmdError $ "use: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], or //revoke <code>"
+  | otherwise = pure $ chatCmdError $ "Usage: //issue supporter|legend|investor [months 1-" <> show maxMonths <> "] [paid|unpaid|free], or //revoke <code>"
 
 revokeCmdP :: A.Parser BadgeCode
 revokeCmdP = "revoke " *> codeP <* (A.skipSpace *> A.endOfInput)
@@ -355,14 +355,14 @@ redeemCode key cc trackerQ_ purchaseKey masterKey codeText = case parseBadgeCode
                 liftIO (createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType} now) >>= \case
                   Nothing ->
                     readCode now code db >>= \case
-                      Left resp -> pure (resp, Nothing)
-                      Right _ -> logError "badge service: redeeming a code failed, but the code has uses left and is not revoked" $> (errorResponse BSEInternal, Nothing)
-                  Just (purchaseId, claimedCount) -> liftIO $ do
+                      Left resp -> pure (resp, False)
+                      Right _ -> logError "badge service: redeeming a code failed, but the code has uses left and is not revoked" $> (errorResponse BSEInternal, False)
+                  Just purchaseId -> liftIO $ do
                     appendLedgerPlan db purchaseId [granted] $ Just $ issuanceAfter granted signed
                     entries_ <- getLedgerEntries db purchaseId 0
-                    pure (maybe (errorResponse BSEInternal) (credentialResponse (Just $ snd signed) Nothing) entries_, Just claimedCount)
-              let (resp, claimedCount_) = fromRight (errorResponse BSEInternal, Nothing) r
-              when (hasTracker redeemLimit) $ forM_ claimedCount_ $ refreshTracker cc trackerQ_ badgeCodeId code
+                    pure (maybe (errorResponse BSEInternal) (credentialResponse (Just $ snd signed) Nothing) entries_, True)
+              let (resp, claimed) = fromRight (errorResponse BSEInternal, False) r
+              when (claimed && hasTracker redeemLimit) $ refreshTracker cc trackerQ_ badgeCodeId code
               pure resp
   where
     readCode now code db = liftIO $

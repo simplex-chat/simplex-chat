@@ -31,7 +31,7 @@ import BadgeService.Log (logError, logInfo, logWarn)
 import BadgeService.Store (CodeTracker (..), ManagedGroup (..), RevokeResult (..), clearCodeGroupItems, getCodeTracker, getEditableTrackers, getManagedGroup, insertManagedGroup, markOwnerBootstrapped, setCodeGroupItem)
 import BadgeService.Store.Invoices (truncateToSecond)
 import Control.Concurrent.STM (TQueue, atomically, flushTQueue, readTQueue, readTVarIO, writeTQueue)
-import Control.Monad (forM_, forever, mfilter, replicateM, unless, void, when)
+import Control.Monad (forM_, forever, mfilter, replicateM, unless, void)
 import Control.Monad.Except (runExceptT)
 import Data.Either (partitionEithers)
 import Data.Functor (($>), (<&>))
@@ -40,6 +40,7 @@ import Data.List (sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCurrentTime, nominalDay)
@@ -161,10 +162,9 @@ groupLinkText (CCLink cReq sLnk_) = maybe (strEncodeTxt (simplexChatContact cReq
 strEncodeTxt :: StrEncoding a => a -> Text
 strEncodeTxt = safeDecodeUtf8 . strEncode
 
--- GETracker carries the redeem count its claim reached.
 data GroupEvent
   = GEInGroup GroupId GroupAction
-  | GETracker Int64 BadgeCode Int
+  | GETracker Int64 BadgeCode
   deriving (Eq, Show)
 
 data GroupAction
@@ -181,16 +181,15 @@ groupEvent = \case
     | isNothing scope && isNothing itemDeleted && itemLive /= Just True -> Just $ GEInGroup groupId (GACommand (memberRole' m) t)
   _ -> Nothing
 
+-- A refresh reads the code's count when it runs, so the last one queued shows every claim before it.
 coalesceTrackerRefreshes :: [GroupEvent] -> [GroupEvent]
-coalesceTrackerRefreshes evs = snd $ foldr keepOne (highestClaims, []) evs
+coalesceTrackerRefreshes = snd . foldr keepLast (S.empty, [])
   where
-    -- The highest claim decides the exhaustion notice, whatever order the claims were queued in.
-    highestClaims = M.fromListWith max [(badgeCodeId, n) | GETracker badgeCodeId _ n <- evs]
-    keepOne ev (todo, kept) = case ev of
-      GETracker badgeCodeId code _ -> case M.lookup badgeCodeId todo of
-        Just n -> (M.delete badgeCodeId todo, GETracker badgeCodeId code n : kept)
-        Nothing -> (todo, kept)
-      _ -> (todo, ev : kept)
+    keepLast ev (seen, kept) = case ev of
+      GETracker badgeCodeId _
+        | badgeCodeId `S.member` seen -> (seen, kept)
+        | otherwise -> (S.insert badgeCodeId seen, ev : kept)
+      _ -> (seen, ev : kept)
 
 logUncaught :: HasCallStack => IO () -> IO ()
 logUncaught a = a `catchOwn'` withFrozenCallStack (logError . tshow)
@@ -207,7 +206,7 @@ handleGroupEvent cc groupId ev = logUncaught (handle ev)
               RunCmd cmd -> runGroupCmd cc groupId cmd
               ReplyText txt -> void $ sendGroupText cc groupId "command reply" txt
               IgnoreMsg -> pure ()
-      GETracker badgeCodeId code claimedCount -> updateTracker cc groupId badgeCodeId code claimedCount
+      GETracker badgeCodeId code -> updateTracker cc groupId badgeCodeId code
 
 promoteFirstOwner :: ChatController -> GroupInfo -> GroupMember -> IO ()
 promoteFirstOwner cc g@GroupInfo {groupId} member =
@@ -262,7 +261,7 @@ runGroupCmd cc groupId = \case
     issueOneCode cc bt months CPSFree uses >>= \case
       Left _ -> reply issueFailedText
       Right (code, badgeCodeId)
-        | not (hasTracker uses) -> reply ("code " <> formatBadgeCode code)
+        | not (hasTracker uses) -> reply ("Code: " <> formatBadgeCode code)
         | otherwise -> do
             now <- truncateToSecond <$> getCurrentTime
             sendGroupText cc groupId ("tracker, code " <> tshow badgeCodeId <> " is lost") (initialTrackerBody code uses)
@@ -273,7 +272,7 @@ runGroupCmd cc groupId = \case
         issued = map (formatBadgeCode . fst) ok
     reply . T.intercalate "\n" $ case errs of
       [] -> issued
-      _ : _ -> issued <> ["issued " <> tshow (length issued) <> " of " <> tshow count <> ", the rest failed"]
+      _ : _ -> issued <> ["Issued " <> tshow (length issued) <> " of " <> tshow count <> " codes. The remaining codes could not be issued."]
   -- Naming the code tells concurrent revokes apart; the command already made it public.
   GCRevoke code -> do
     outcome <- either id id <$> revokeWithTracker cc code
@@ -292,20 +291,19 @@ initialTrackerBody :: BadgeCode -> Int -> Text
 initialTrackerBody code total = trackerBody code total total Nothing
 
 -- The body is dated by the last redemption, not now, because reconcile rewrites it after a restart.
+-- The code is green only while it can still be redeemed.
 trackerBody :: BadgeCode -> Int -> Int -> Maybe UTCTime -> Text
-trackerBody code remaining total redeemedAt =
-  "!2 " <> formatBadgeCode code <> "!\n" <> maybe "" lastRedeemed redeemedAt <> tshow remaining <> "/" <> tshow total <> " remaining"
+trackerBody code remaining total redeemedAt
+  | remaining > 0 = "!2 " <> formatBadgeCode code <> "!\n" <> tshow remaining <> " of " <> tshow total <> " uses remaining" <> lastUsed
+  | otherwise = formatBadgeCode code <> "\nAll " <> tshow total <> " uses redeemed" <> lastUsed
   where
-    lastRedeemed ts = "Last redeemed: " <> fmtDay ts <> " — "
-
-exhaustedBody :: BadgeCode -> Int -> Text
-exhaustedBody code total = formatBadgeCode code <> " fully redeemed — all " <> tshow total <> " used"
+    lastUsed = maybe "" ((", last used " <>) . fmtTime) redeemedAt
 
 revokedBody :: BadgeCode -> Text
-revokedBody code = formatBadgeCode code <> " revoked — no longer redeemable"
+revokedBody code = formatBadgeCode code <> "\nRevoked, can no longer be redeemed"
 
-fmtDay :: UTCTime -> Text
-fmtDay = T.pack . formatTime defaultTimeLocale "%Y-%m-%d"
+fmtTime :: UTCTime -> Text
+fmtTime = T.pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M UTC"
 
 data TrackerAction = Edit | Repost
   deriving (Eq, Show)
@@ -323,45 +321,34 @@ trackerDecision now sentAt
 data RepostPolicy = MayRepost | EditOnly
 
 -- A deleted or moderated tracker is not reposted, because deleting it does not revoke the code.
--- With MayRepost the result is Nothing when there is nothing to write or the message is gone, so no notice follows.
-setTrackerBody :: ChatController -> GroupId -> Int64 -> RepostPolicy -> (CodeTracker -> Maybe Text) -> IO (Maybe CodeTracker)
+setTrackerBody :: ChatController -> GroupId -> Int64 -> RepostPolicy -> (CodeTracker -> Maybe Text) -> IO ()
 setTrackerBody cc groupId badgeCodeId policy mkBody =
   withDB' "getCodeTracker" cc (`getCodeTracker` badgeCodeId) >>= \case
     Right (Just tracker@CodeTracker {trackerItemId, trackerSentAt}) ->
-      pure (mkBody tracker) $>>= \body -> do
+      forM_ (mkBody tracker) $ \body -> do
         now <- truncateToSecond <$> getCurrentTime
-        let handled = pure (Just tracker)
-            repost =
+        let repost =
               trackerItemText cc groupId trackerItemId >>= \case
-                Nothing -> do
-                  logWarn $ "badge group tracker not reposted, code " <> tshow badgeCodeId <> " is no longer published"
-                  pure Nothing
+                Nothing -> logWarn $ "badge group tracker not reposted, code " <> tshow badgeCodeId <> " is no longer published"
                 -- Past the window every write reposts, so an unchanged body is not posted again.
-                Just current
-                  | current == body -> handled
-                  | otherwise -> do
-                      sendGroupText cc groupId ("tracker repost, code " <> tshow badgeCodeId <> " keeps its old message") body
-                        >>= mapM_ (\i -> withDB' "setCodeGroupItem" cc (\db -> setCodeGroupItem db badgeCodeId i now))
-                      handled
+                Just current ->
+                  unless (current == body) $
+                    sendGroupText cc groupId ("tracker repost, code " <> tshow badgeCodeId <> " keeps its old message") body
+                      >>= mapM_ (\i -> withDB' "setCodeGroupItem" cc (\db -> setCodeGroupItem db badgeCodeId i now))
             -- The core can also refuse an edit inside the window, because it uses the message's own timestamp.
             uneditable = case policy of
               MayRepost -> repost
-              EditOnly -> do
-                logWarn $ "badge group tracker left uncorrected, code " <> tshow badgeCodeId <> " can no longer be edited"
-                handled
+              EditOnly -> logWarn $ "badge group tracker left uncorrected, code " <> tshow badgeCodeId <> " can no longer be edited"
         case trackerDecision now trackerSentAt of
           Edit ->
             sendChatCmd cc (APIUpdateChatItem (ChatRef CTGroup groupId Nothing) trackerItemId False (UpdatedMessage (MCText body) M.empty)) >>= \case
-              Right CRChatItemUpdated {} -> handled
-              Right CRChatItemNotChanged {} -> handled
+              Right CRChatItemUpdated {} -> pure ()
+              Right CRChatItemNotChanged {} -> pure ()
               Left (ChatError CEInvalidChatItemUpdate) -> uneditable
               -- Any other failure may still have applied the edit, so a repost could publish the code twice.
-              -- The notice still follows the claim while the tracker is published.
-              r -> do
-                logError $ "badge group tracker not updated, code " <> tshow badgeCodeId <> ": " <> tshow r
-                ($> tracker) <$> trackerItemText cc groupId trackerItemId
+              r -> logError $ "badge group tracker not updated, code " <> tshow badgeCodeId <> ": " <> tshow r
           Repost -> uneditable
-    _ -> pure Nothing
+    _ -> pure ()
 
 -- A revoke and a redemption can arrive in either order, so a revoked tracker is left alone.
 counterBody :: BadgeCode -> CodeTracker -> Maybe Text
@@ -374,33 +361,28 @@ hasTracker redeemLimit = redeemLimit > singleUse
 
 -- The tracker edit reaches every member, so the group lane runs it off the request path.
 -- Without a lane (--run-cli, or no [group]) it runs here, before the response.
-refreshTracker :: ChatController -> Maybe (TQueue GroupEvent) -> Int64 -> BadgeCode -> Int -> IO ()
-refreshTracker cc trackerQ_ badgeCodeId code claimedCount = case trackerQ_ of
-  Just q -> atomically $ writeTQueue q (GETracker badgeCodeId code claimedCount)
-  Nothing -> logUncaught $ withManagedGroup cc $ \groupId -> updateTracker cc groupId badgeCodeId code claimedCount
+refreshTracker :: ChatController -> Maybe (TQueue GroupEvent) -> Int64 -> BadgeCode -> IO ()
+refreshTracker cc trackerQ_ badgeCodeId code = case trackerQ_ of
+  Just q -> atomically $ writeTQueue q (GETracker badgeCodeId code)
+  Nothing -> logUncaught $ withManagedGroup cc $ \groupId -> updateTracker cc groupId badgeCodeId code
 
--- The notice follows the claim, not the count read now, so queued refreshes post it once.
-updateTracker :: ChatController -> GroupId -> Int64 -> BadgeCode -> Int -> IO ()
-updateTracker cc groupId badgeCodeId code claimedCount =
-  setTrackerBody cc groupId badgeCodeId MayRepost (counterBody code)
-    >>= mapM_ (\CodeTracker {redeemLimit} -> when (claimedCount == redeemLimit) $ postNotice redeemLimit)
-  where
-    postNotice redeemLimit = void $ sendGroupText cc groupId ("notice, code " <> tshow badgeCodeId) (exhaustedBody code redeemLimit)
+updateTracker :: ChatController -> GroupId -> Int64 -> BadgeCode -> IO ()
+updateTracker cc groupId badgeCodeId code = setTrackerBody cc groupId badgeCodeId MayRepost (counterBody code)
 
 -- | Left is a refusal or a failure; both sides are the text to show whoever sent the revoke.
 revokeWithTracker :: ChatController -> BadgeCode -> IO (Either Text Text)
 revokeWithTracker cc code =
   revokeBadgeCode cc code >>= \case
-    -- The message is retired before the answer, so "revoked" never sits beside a live counter.
-    Right (Revoked badgeCodeId) -> Right "revoked" <$ retire badgeCodeId
+    -- The message is retired before the answer, so the answer never sits beside a live counter.
+    Right (Revoked badgeCodeId) -> Right "Revoked." <$ retire badgeCodeId
     -- A repeated revoke repairs a message that an earlier revoke failed to update.
-    Right (AlreadyRevoked badgeCodeId) -> Right "already revoked" <$ retire badgeCodeId
-    Right AlreadyRedeemed -> pure $ Left "code was redeemed already, so it cannot be revoked"
-    Right NoSuchCode -> pure $ Left "no such code"
-    Left _ -> pure $ Left "revoking the code failed"
+    Right (AlreadyRevoked badgeCodeId) -> Right "Already revoked." <$ retire badgeCodeId
+    Right AlreadyRedeemed -> pure $ Left "Fully redeemed. It cannot be revoked."
+    Right NoSuchCode -> pure $ Left "No such code."
+    Left _ -> pure $ Left "The code could not be revoked."
   where
     retire badgeCodeId = logUncaught $ withManagedGroup cc $ \groupId ->
-      void $ setTrackerBody cc groupId badgeCodeId MayRepost (const $ Just $ revokedBody code)
+      setTrackerBody cc groupId badgeCodeId MayRepost (const $ Just $ revokedBody code)
 
 withManagedGroup :: ChatController -> (GroupId -> IO ()) -> IO ()
 withManagedGroup cc action =
@@ -421,7 +403,7 @@ reconcileTracker :: ChatController -> GroupId -> Int64 -> ChatItemId -> IO ()
 reconcileTracker cc groupId badgeCodeId itemId =
   readTrackerCode cc groupId badgeCodeId itemId >>= mapM_ reconcile
   where
-    reconcile (code, current) = void $ setTrackerBody cc groupId badgeCodeId EditOnly (correctedBody code current)
+    reconcile (code, current) = setTrackerBody cc groupId badgeCodeId EditOnly (correctedBody code current)
     -- A crash after a revoke committed can leave its tracker still counting, so a revoked code is retired here.
     correctedBody code current tracker@CodeTracker {revokedAt} =
       mfilter (/= current) $ if isJust revokedAt then Just (revokedBody code) else counterBody code tracker

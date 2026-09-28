@@ -64,7 +64,7 @@ cmdActionP = A.choice (map cmdP [minBound .. maxBound])
     fullArgsP tag = A.char ' ' *> cmdArgsP tag <* A.endOfInput
     -- Without the space check "/issued" would get a usage reply.
     usageEndP = void A.space <|> A.endOfInput
-    usage tag = "use: /" <> cmdName tag <> " " <> cmdParams tag
+    usage tag = "Usage: /" <> cmdName tag <> " " <> cmdParams tag
 
 cmdArgsP :: CmdTag -> A.Parser GroupCmd
 cmdArgsP = \case
@@ -139,4 +139,4 @@ cmdRefusal = \case
   CTIssue -> Nothing
   CTBulk -> Nothing
   -- The sender has just published a code that stays redeemable, so they must learn it was not revoked.
-  CTRevoke -> Just "only admins can revoke codes, and this code is now visible to the group - ask an admin to revoke it"
+  CTRevoke -> Just "Only admins can revoke codes. This code is now visible to all members."

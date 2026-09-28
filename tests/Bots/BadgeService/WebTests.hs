@@ -159,7 +159,7 @@ badgeWebTests = do
     it "refuses a second row and burns the flag per group" testManagedGroupIsSingleRow
   describe "multi-use" $ do
     it "finds a key's own purchase with its newest credential, and none for another key" testKeyPurchaseLookup
-    it "gives concurrent claims exactly the code's uses, each a distinct count" testMultiUseConcurrentClaimsUpToLimit
+    it "gives concurrent claims exactly the code's uses" testMultiUseConcurrentClaimsUpToLimit
     it "refuses a second claim by the same key without using up a use" testSameKeyClaimsOnce
   describe "badge service catalog seed" $ do
     it "writes the compiled-in catalog into an empty database" testSeedWritesTheCatalog
@@ -728,7 +728,7 @@ insertCode :: DBStore -> ByteString -> BadgeCodePaymentStatus -> Int -> UTCTime 
 insertCode st codeHash paymentStatus redeemLimit now =
   withTransaction st $ \db -> insertBadgeCode db codeHash BTSupporter 1 paymentStatus redeemLimit now
 
-claimUse :: DBStore -> Int64 -> UTCTime -> (C.PublicKeyEd25519, BadgeMasterKey) -> IO (Maybe (Int64, Int))
+claimUse :: DBStore -> Int64 -> UTCTime -> (C.PublicKeyEd25519, BadgeMasterKey) -> IO (Maybe Int64)
 claimUse st badgeCodeId now (purchaseKey, masterKey) =
   withTransaction st $ \db ->
     createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey, badgeType = BTSupporter} now
@@ -752,7 +752,7 @@ testKeyPurchaseLookup = withServiceStore $ \st -> do
   let codeHash = digestFixture 41
   badgeCodeId <- insertCode st codeHash CPSFree 2 now
   keys@(k1, mk1) <- newPurchaseKeys
-  Just (purchaseId, _) <- claimUse st badgeCodeId now keys
+  Just purchaseId <- claimUse st badgeCodeId now keys
   withTransaction st (\db -> getCodePurchaseForKey db badgeCodeId k1) >>= \case
     KeyRedeemedUnreadable -> pure ()
     _ -> expectationFailure "expected a purchase with no issuance to be unreadable"
@@ -789,7 +789,7 @@ testMultiUseConcurrentClaimsUpToLimit = withServiceStore $ \st -> do
   badgeCodeId <- insertCode st codeHash CPSFree 3 now
   contenders <- replicateM 6 newPurchaseKeys
   results <- Async.mapConcurrently (claimUse st badgeCodeId now) contenders
-  sort (map snd $ catMaybes results) `shouldBe` [1, 2, 3]
+  length (catMaybes results) `shouldBe` 3
   codeCounts st codeHash `shouldReturn` Just (3, 3)
 
 data StubCall
