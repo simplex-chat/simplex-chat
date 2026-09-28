@@ -461,6 +461,8 @@ struct ContentView: View {
     }
 
     func connectViaUrl_(_ url: URL) {
+        // an open badge link screen may have its request in flight, so a second app link leaves it alone
+        if isAppLink(url) && isBadgeLinkOpen() { return }
         dismissAllSheets() {
             var path = url.path
             if isAppLink(url) {

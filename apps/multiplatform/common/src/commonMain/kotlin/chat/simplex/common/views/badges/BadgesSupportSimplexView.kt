@@ -128,7 +128,9 @@ private fun BuyInBrowserButton(modalManager: ModalManager) {
     onclick = {
       uriHandler.openUriCatching(badgePageUrl)
       // desktop has no scheme to bring the code back, so the code is pasted into this screen, opened beside the browser
-      if (appPlatform.isDesktop) modalManager.showModal { BadgesRedeemCodeView(modalManager) }
+      if (appPlatform.isDesktop && !modalManager.hasModalOpen(ModalViewId.BADGE_REDEEM_CODE)) {
+        modalManager.showModal(id = ModalViewId.BADGE_REDEEM_CODE) { BadgesRedeemCodeView(modalManager) }
+      }
     }
   )
 }

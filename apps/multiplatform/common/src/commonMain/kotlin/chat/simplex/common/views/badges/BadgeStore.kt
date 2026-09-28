@@ -34,7 +34,7 @@ val badgeStoreProductIds: List<BadgeStoreProductId> = BadgeLevel.entries.flatMap
 // learns which invoice a store transaction settles.
 fun newBadgeInvoiceId(): String = UUID.randomUUID().toString()
 
-// the page's app flag rides in the fragment, which never reaches the service; change it to point Buy in browser at another deployment
+// the page's app flag rides in the fragment, which never reaches the service
 val badgePageUrl: String =
   if (appPlatform.isAndroid) "https://badges.simplex.chat/#/tier?app=true"
   else "https://badges.simplex.chat/#/tier?app=desktop"

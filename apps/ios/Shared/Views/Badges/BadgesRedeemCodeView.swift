@@ -230,11 +230,17 @@ struct BadgesRedeemCodeView: View {
     }
 }
 
+private weak var badgeLinkSheet: UIViewController?
+
+func isBadgeLinkOpen() -> Bool {
+    badgeLinkSheet != nil
+}
+
 func openBadgeLink(_ codeText: String) {
     guard let code = parseBadgeCode(codeText) else {
         return showCannotRedeemAlert(NSLocalizedString("This code is not valid.", comment: "alert message"))
     }
-    showAppSheet {
+    badgeLinkSheet = showAppSheet {
         NavigationView {
             BadgesRedeemLinkView(code: code)
                 .modifier(ThemedBackground())
@@ -248,7 +254,7 @@ enum BadgeLinkStep {
     case redeemed
 }
 
-// Any web page or chat message can send a badge link, and a profile holds one badge at a time,
+// Any web page can send a badge link, and a profile holds one badge at a time,
 // so this screen asks before redeeming, names the profile, and offers nothing but the redemption.
 struct BadgesRedeemLinkView: View {
     @EnvironmentObject var theme: AppTheme
@@ -290,7 +296,7 @@ struct BadgesRedeemLinkView: View {
                 .padding(.vertical, 10)
 
                 Button {
-                    dismissAllSheets()
+                    closeIfShowing()
                 } label: {
                     Text("Cancel")
                         .font(.body)
@@ -327,24 +333,37 @@ struct BadgesRedeemLinkView: View {
         .padding(.bottom, 20)
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-        // the outcome closes what is on screen, which after a close here would be some other screen
+        // held open until the outcome, which lands on Your badge or says why the code was refused
         .interactiveDismissDisabled(true)
     }
 
     private func redeemFromLink() {
         // a second tap before the screen changes must not send the code again
         guard step == .confirming else { return }
-        guard let user = chatModel.currentUser else { return dismissAllSheets() }
+        guard let user = chatModel.currentUser else { return closeIfShowing() }
         step = .issuing
         Task {
             let outcome = await redeemBadgeCode(user, code)
             await MainActor.run {
                 switch outcome {
                 case .redeemed: step = .redeemed
-                case let .refused(message): dismissAllSheets { showCannotRedeemAlert(message) }
-                case .cancelled: dismissAllSheets()
+                case let .refused(message): closeIfShowing { showCannotRedeemAlert(message) }
+                case .cancelled: closeIfShowing()
                 }
             }
+        }
+    }
+
+    // An outcome can arrive after this screen was closed or covered: it must not close another screen,
+    // and a covered one goes back to asking, so it is never left locked on the spinner.
+    private func closeIfShowing(then: @escaping () -> Void = {}) {
+        guard let sheet = badgeLinkSheet, let presenter = sheet.presentingViewController else { return then() }
+        // an alert over this screen is its own retry alert, which dismissing from the presenter takes with it
+        if sheet.presentedViewController == nil || sheet.presentedViewController is UIAlertController {
+            presenter.dismiss(animated: true, completion: then)
+        } else {
+            step = .confirming
+            then()
         }
     }
 }

@@ -778,7 +778,8 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
     chatModel.appOpenUrl.value = rhId to uri
   } else if (isAppLink(uri)) {
     // branched on the scheme before the connection dispatch, which an app link must never reach
-    openAppLink(rhId, uri)
+    // an open badge link screen may have its request in flight, so a second app link leaves it alone
+    if (!isBadgeLinkOpen()) openAppLink(rhId, uri)
   } else {
     withBGApi {
       chatModel.appOpenUrlConnecting.value = true
@@ -797,8 +798,10 @@ fun isAppLink(uri: String): Boolean =
 
 // a link type added in a later version reaches this build too, so an unknown path asks for an update
 private fun openAppLink(rhId: Long?, uri: String) {
-  // a link that does not parse is dropped, as iOS never receives one
-  val path = uriCreateOrNull(uri)?.path ?: return
+  // a link that does not parse is dropped, as iOS never receives one; one that parses without
+  // a path, such as simplexchat:badge/code/X, is an unknown link on both platforms
+  val parsed = uriCreateOrNull(uri) ?: return
+  val path = parsed.path ?: ""
   if (path.startsWith(badgeLinkPath)) {
     openBadgeLink(rhId, path.removePrefix(badgeLinkPath))
   } else {

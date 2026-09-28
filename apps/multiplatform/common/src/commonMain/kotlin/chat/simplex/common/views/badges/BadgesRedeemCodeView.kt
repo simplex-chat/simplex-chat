@@ -255,11 +255,16 @@ private fun SubmitButton(enabled: Boolean, onClick: () -> Unit) {
   )
 }
 
+fun isBadgeLinkOpen(): Boolean =
+  ModalManager.end.hasModalOpen(ModalViewId.BADGE_LINK)
+
 fun openBadgeLink(rhId: Long?, codeText: String) {
   val code = parseBadgeCode(codeText)
     ?: return showCannotRedeemAlert(generalGetString(MR.strings.badges_error_invalid_code))
-  ModalManager.end.showCustomModal { close ->
-    BadgesRedeemLinkView(rhId, code, close)
+  ModalManager.end.showCustomModal(id = ModalViewId.BADGE_LINK) { close ->
+    // kept in the modal's data: a modal is composed only while on top, and rotation recreates the activity,
+    // either of which would reset remembered state to Confirming with a request in flight
+    BadgesRedeemLinkView(rhId, code, stateGetOrPut("step") { BadgeLinkStep.Confirming }, close)
   }
 }
 
@@ -269,16 +274,24 @@ enum class BadgeLinkStep {
   Redeemed
 }
 
-// Any web page or chat message can send a badge link, and a profile holds one badge at a time,
+// Any web page can send a badge link, and a profile holds one badge at a time,
 // so this screen asks before redeeming, names the profile, and offers nothing but the redemption.
 @Composable
-fun BadgesRedeemLinkView(rhId: Long?, code: String, close: () -> Unit) {
-  val step = remember { mutableStateOf(BadgeLinkStep.Confirming) }
+fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLinkStep>, close: () -> Unit) {
+  // An outcome can arrive after this screen was closed or covered: it must not close another screen,
+  // and a covered one goes back to asking, so it is never left locked on the spinner.
+  fun closeIfShowing() {
+    if (ModalManager.end.isLastModalOpen(ModalViewId.BADGE_LINK)) {
+      close()
+    } else {
+      step.value = BadgeLinkStep.Confirming
+    }
+  }
 
   fun redeemFromLink() {
     // a second tap before the screen changes must not send the code again
     if (step.value != BadgeLinkStep.Confirming) return
-    val user = chatModel.currentUser.value ?: return close()
+    val user = chatModel.currentUser.value ?: return closeIfShowing()
     step.value = BadgeLinkStep.Issuing
     withBGApi {
       val outcome = redeemBadgeCode(rhId, user, code)
@@ -286,18 +299,18 @@ fun BadgesRedeemLinkView(rhId: Long?, code: String, close: () -> Unit) {
         when (outcome) {
           is BadgeRedeemOutcome.Redeemed -> step.value = BadgeLinkStep.Redeemed
           is BadgeRedeemOutcome.Refused -> {
-            close()
+            closeIfShowing()
             showCannotRedeemAlert(outcome.message)
           }
-          is BadgeRedeemOutcome.Cancelled -> close()
+          is BadgeRedeemOutcome.Cancelled -> closeIfShowing()
         }
       }
     }
   }
 
   when (step.value) {
-    BadgeLinkStep.Confirming -> ModalView(close) { Confirming(onConfirm = ::redeemFromLink, onCancel = close) }
-    // the outcome closes what is on screen, which after a close here would be some other screen
+    BadgeLinkStep.Confirming -> ModalView(close) { Confirming(onConfirm = ::redeemFromLink, onCancel = ::closeIfShowing) }
+    // held open until the outcome, which lands on Your badge or says why the code was refused
     BadgeLinkStep.Issuing -> ModalView(close, enableClose = false) { BeingIssued() }
     BadgeLinkStep.Redeemed -> BadgesView(ModalManager.end, close)
   }
