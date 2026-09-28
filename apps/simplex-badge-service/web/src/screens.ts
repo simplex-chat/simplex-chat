@@ -851,6 +851,7 @@ export function returnToApp(o: ReturnToAppOptions): HTMLElement {
     ),
     button(RETURN_TO_APP, o.onReturn),
   );
+  p.classList.add("ending");
   switch (o.code.kind) {
     case "hidden":
       p.append(el("p", { class: "row-line center" }, button(SHOW_CODE, o.code.onShow, "link")));
