@@ -281,7 +281,8 @@ fun openBadgeLink(rhId: Long?, codeText: String) {
 enum class BadgeLinkStep {
   Confirming,
   Issuing,
-  Redeemed
+  Redeemed,
+  ViewingBadge
 }
 
 // Any web page can send a badge link, and a profile holds one badge at a time,
@@ -318,11 +319,66 @@ fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLink
     }
   }
 
+  // read for the profile the screen names, when it renders, so the two cannot disagree;
+  // core refuses a code while the profile shows a badge
+  val profileHasBadge = BadgeModel.isCurrent(rhId, chatModel.currentUser.value?.userId) && BadgeModel.badgeState.value?.shown == true
+
   when (step.value) {
-    BadgeLinkStep.Confirming -> ModalView(close) { Confirming(onConfirm = ::redeemFromLink, onCancel = ::closeIfShowing) }
+    BadgeLinkStep.Confirming -> ModalView(close) {
+      if (profileHasBadge) {
+        BadgeHeld(onViewBadge = { step.value = BadgeLinkStep.ViewingBadge }, onCancel = ::closeIfShowing)
+      } else {
+        Confirming(onConfirm = ::redeemFromLink, onCancel = ::closeIfShowing)
+      }
+    }
     // held open until the outcome, which lands on Your badge or says why the code was refused
     BadgeLinkStep.Issuing -> ModalView(close, enableClose = false) { BeingIssued() }
-    BadgeLinkStep.Redeemed -> BadgesView(ModalManager.end, close)
+    BadgeLinkStep.Redeemed, BadgeLinkStep.ViewingBadge -> BadgesView(ModalManager.end, close)
+  }
+}
+
+@Composable
+private fun BadgeHeld(onViewBadge: () -> Unit, onCancel: () -> Unit) {
+  ColumnWithScrollBar(
+    Modifier.padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    maxIntrinsicSize = true,
+  ) {
+    Text(
+      stringResource(MR.strings.badges_link_held_title),
+      style = MaterialTheme.typography.h1,
+      fontWeight = FontWeight.Bold,
+      color = MaterialTheme.colors.primary,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth()
+    )
+
+    Text(
+      String.format(stringResource(MR.strings.badges_link_held_profile), chatModel.currentUser.value?.displayName ?: ""),
+      style = MaterialTheme.typography.body1,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth()
+    )
+
+    Text(
+      stringResource(MR.strings.badges_link_held_page),
+      style = MaterialTheme.typography.body1,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth()
+    )
+
+    Spacer(Modifier.weight(1f))
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      OnboardingActionButton(
+        modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+        labelId = MR.strings.badges_link_view_badge,
+        onboarding = null,
+        onclick = onViewBadge
+      )
+      TextButtonBelowOnboardingButton(stringResource(MR.strings.cancel_verb), onCancel)
+    }
   }
 }
 

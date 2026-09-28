@@ -256,6 +256,7 @@ enum BadgeLinkStep {
     case confirming
     case issuing
     case redeemed
+    case viewingBadge
 }
 
 final class BadgeLinkState: ObservableObject {
@@ -267,15 +268,70 @@ final class BadgeLinkState: ObservableObject {
 struct BadgesRedeemLinkView: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
+    @ObservedObject private var badgeModel = BadgeModel.shared
     let code: String
     @ObservedObject var state: BadgeLinkState
 
     var body: some View {
         switch state.step {
-        case .confirming: confirming()
+        case .confirming: if profileHasBadge { badgeHeld() } else { confirming() }
         case .issuing: beingIssued()
-        case .redeemed: BadgesView(showsAsSheet: true)
+        case .redeemed, .viewingBadge: BadgesView(showsAsSheet: true)
         }
+    }
+
+    // read for the profile the screen names, when it renders, so the two cannot disagree;
+    // core refuses a code while the profile shows a badge
+    private var profileHasBadge: Bool {
+        badgeModel.userId == chatModel.currentUser?.userId && badgeModel.badgeState?.shown == true
+    }
+
+    private func badgeHeld() -> some View {
+        VStack(alignment: .center, spacing: 16) {
+            Text("Profile already has a badge")
+                .font(.largeTitle)
+                .bold()
+                .foregroundColor(theme.colors.primary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(String.localizedStringWithFormat(NSLocalizedString("%@ already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "badge link, profile has a badge"), chatModel.currentUser?.displayName ?? ""))
+                .font(.body)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("Your code is still on the page you bought it on, under Show code.")
+                .font(.body)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer()
+
+            VStack(spacing: 10) {
+                Button {
+                    state.step = .viewingBadge
+                } label: {
+                    Text("View your badge")
+                }
+                .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+                .padding(.vertical, 10)
+
+                Button {
+                    closeIfShowing()
+                } label: {
+                    Text("Cancel")
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(theme.colors.primary)
+                }
+                .frame(height: 22)
+            }
+        }
+        .padding(.horizontal, 25)
+        .padding(.top, 48)
+        .padding(.bottom, 20)
+        .frame(maxHeight: .infinity)
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private func confirming() -> some View {
