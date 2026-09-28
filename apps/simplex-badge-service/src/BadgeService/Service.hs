@@ -24,6 +24,7 @@ where
 
 import BadgeService.Catalog (StoreProduct (..), defaultCatalog, storeProduct)
 import BadgeService.Config (BadgeIssuerKey (..), ServiceConfig (..), readServiceConfig)
+import BadgeService.Log (logError, logInfo, logWarn)
 import BadgeService.Options
 import BadgeService.Poller (newPollerEnv, newReadHints, runPoller)
 import BadgeService.Providers.BTCPay (btcpayProvider)
@@ -36,8 +37,6 @@ import BadgeService.Waiters (Waiters, newWaiters)
 import BadgeService.Web.Server (exportWebapp, newWebEnv, runWebListener)
 import Control.Applicative (optional)
 import Control.Concurrent.STM
-import BadgeService.Log (logError, logInfo, logWarn)
-import Control.Exception (SomeAsyncException, SomeException, fromException, throwIO, try)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Aeson as J
@@ -74,7 +73,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsPublicKey)
 import Simplex.Messaging.Encoding.String (TextEncoding, strEncode, textDecode, textEncode)
-import Simplex.Messaging.Util (raceAny_, safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (catchOwn', raceAny_, safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version (isCompatible)
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
@@ -295,15 +294,10 @@ processChatRedeems key env = do
     (ct, msg) <- atomically $ readTQueue $ chatRedeemQ env
     survive "a chat redemption" $ chatRedeem key cc ct msg
 
--- | Asynchronous exceptions are rethrown, since that is how the race stops this thread. The
+-- | Cancellation is rethrown, since that is how the race stops this thread. The
 -- exception itself is not logged: it can quote the request, which carries codes and store receipts.
 survive :: T.Text -> IO () -> IO ()
-survive what action =
-  (try action :: IO (Either SomeException ())) >>= \case
-    Right () -> pure ()
-    Left e -> case fromException e :: Maybe SomeAsyncException of
-      Just _ -> throwIO e
-      Nothing -> logError $ "badge service: " <> what <> " failed; the next one will be handled"
+survive what action = action `catchOwn'` \_ -> logError $ "badge service: " <> what <> " failed; the next one will be handled"
 
 -- | Here the service generates the master key and can link the badge, so [dev] chat_redeem gates this.
 chatRedeem :: BadgeIssuerKey -> ChatController -> Contact -> T.Text -> IO ()
@@ -336,7 +330,9 @@ handleServiceRequest :: BadgeIssuerKey -> StoreVerifier -> ChatController -> Use
 handleServiceRequest key verifier cc User {userId} reqId sigKey reqData = do
   let reqIdT = safeDecodeUtf8 (strEncode reqId)
   logInfo $ "badge service request " <> reqIdT
-  resp <- badgeServiceResponse key verifier cc sigKey reqData
+  resp <-
+    badgeServiceResponse key verifier cc sigKey reqData `catchOwn'` \_ ->
+      logError ("badge service request " <> reqIdT <> " failed") $> errorResponse BSEInternal
   sendChatCmd cc (APISendServiceResponse userId reqId (responseObject resp)) >>= \case
     Right _ -> pure ()
     Left e -> logError $ "badge service response failed for " <> reqIdT <> ": " <> tshow e
@@ -455,6 +451,9 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {provider, provide
       | otherwise ->
           verifyReceipt >>= \case
             Left refusal -> storeRefusalResponse refusal
+            -- the claim was read from the evidence before it was verified, so it must name the transaction the store vouched for
+            Right StoreTransaction {transactionRef}
+              | transactionRef /= providerRef -> storeRefusalResponse $ SRVerifierFailed "verified a transaction other than the one claimed"
             Right StoreTransaction {environment = SETest} -> storeRefusalResponse $ SRInvalid "test purchase"
             -- another key's claim is told only once the store vouched for the receipt, or it would reveal which transactions were credited
             Right tx -> case claim of

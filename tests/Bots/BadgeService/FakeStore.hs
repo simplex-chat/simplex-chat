@@ -28,7 +28,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import Data.Text (Text)
-import Simplex.Chat.PaymentService (ServicePayment (..))
+import Simplex.Chat.PaymentService (ServicePayment (..), googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.FilePath ((</>))
@@ -43,6 +43,7 @@ data FakeStore = FakeStore
     appleLegendJWS :: Text,
     appleSandboxJWS :: Text,
     appleThrowingJWS :: Text,
+    appleMisnamedJWS :: Text,
     pendingSettled :: IORef Bool,
     googleDown :: IORef Bool,
     fakeVerifier :: StoreVerifier
@@ -54,12 +55,15 @@ newFakeStore = do
   appleLegendJWS <- fixtureJWS "transaction-legend.json"
   appleSandboxJWS <- fixtureJWS "transaction-sandbox.json"
   let appleThrowingJWS = unsignedJWS "{\"transactionId\":\"2000000812345679\",\"productId\":\"BADGE_SUPPORTER_01\"}"
+      appleMisnamedJWS = unsignedJWS "{\"transactionId\":\"2000000812345698\",\"productId\":\"BADGE_SUPPORTER_01\"}"
   pendingSettled <- newIORef False
   googleDown <- newIORef False
   let appleReceipts =
-        [ (appleSupporterJWS, appleTransaction "BADGE_SUPPORTER_01" SEProduction 700),
-          (appleLegendJWS, appleTransaction "BADGE_LEGEND_01" SEProduction 7000),
-          (appleSandboxJWS, appleTransaction "BADGE_LEGEND_01" SETest 7000)
+        [ (appleSupporterJWS, appleTransaction "2000000812345671" "BADGE_SUPPORTER_01" SEProduction 700),
+          (appleLegendJWS, appleTransaction "2000000812345672" "BADGE_LEGEND_01" SEProduction 7000),
+          (appleSandboxJWS, appleTransaction "2000000812345673" "BADGE_LEGEND_01" SETest 7000),
+          -- a verifier vouching for another transaction than the one the evidence names
+          (appleMisnamedJWS, appleTransaction "2000000812345671" "BADGE_SUPPORTER_01" SEProduction 700)
         ]
       verifyApple jws
         | jws == appleThrowingJWS = error "fake verifier bug"
@@ -71,14 +75,15 @@ newFakeStore = do
         appleLegendJWS,
         appleSandboxJWS,
         appleThrowingJWS,
+        appleMisnamedJWS,
         pendingSettled,
         googleDown,
         fakeVerifier = StoreVerifier {verifyApple = Just verifyApple, verifyGoogle = Just verifyGoogle, verifyTimeout = 500000}
       }
   where
     fixtureJWS name = unsignedJWS <$> B.readFile (fixtureDir </> name)
-    appleTransaction productId environment cents =
-      StoreTransaction {productId, quantity = 1, environment, paid = Just (CurrencyAmount cents, "USD")}
+    appleTransaction transactionRef productId environment cents =
+      StoreTransaction {transactionRef, productId, quantity = 1, environment, paid = Just (CurrencyAmount cents, "USD")}
 
 googleVerdict :: IORef Bool -> IORef Bool -> Text -> Text -> IO (Either StoreRefusal StoreTransaction)
 googleVerdict pendingSettled googleDown productId token =
@@ -95,7 +100,7 @@ googleVerdict pendingSettled googleDown productId token =
       | token == googleHangingToken -> forever $ threadDelay 1000000
       | otherwise -> pure $ Left $ SRInvalid "not a fake purchase"
   where
-    purchased = StoreTransaction {productId, quantity = 1, environment = SEProduction, paid = Nothing}
+    purchased = StoreTransaction {transactionRef = googlePurchaseRef token, productId, quantity = 1, environment = SEProduction, paid = Nothing}
 
 settlePending :: FakeStore -> IO ()
 settlePending FakeStore {pendingSettled} = writeIORef pendingSettled True

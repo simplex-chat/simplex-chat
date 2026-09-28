@@ -129,6 +129,7 @@ badgeServiceTests = do
     it "should answer a throwing Apple verifier as internal, and a failing or hanging Google one as retryable" testStoreVerifierFailures
     it "should credit a transaction claimed twice at once only once" testStoreClaimRace
     it "should refuse a store with no verifier with no retry, and the client should keep its keys" testPurchaseWithNoVerifier
+    it "should credit nothing when the verified transaction is not the one the evidence names" testStoreVerifiedOtherTransaction
     it "should refuse a store purchase whose purchaseKey is not the verified signer" testStorePurchaseKeyMismatch
     it "should redeem a Play purchase into a badge, and replay it as the same badge" testPurchaseBadge
     it "should redeem an App Store purchase by its JWS" testPurchaseBadgeAppStore
@@ -1559,6 +1560,13 @@ testStoreVerifierFailures ps =
     answer (googlePayment "badge_supporter_01" googleHangingToken) >>= (`shouldSatisfy` \(code, retryAfter) -> code == BSEProviderUnavailable && isJust retryAfter)
     nothingPurchased cc
 
+testStoreVerifiedOtherTransaction :: HasCallStack => TestParams -> IO ()
+testStoreVerifiedOtherTransaction ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = FakeStore {appleMisnamedJWS}} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey SPApple {jws = appleMisnamedJWS}) `shouldReturn` (BSEInternal, Nothing)
+    nothingPurchased cc
+
 testPurchaseWithNoVerifier :: HasCallStack => TestParams -> IO ()
 testPurchaseWithNoVerifier ps =
   withBadgeServiceVerifier ps (const noStoreVerifier) $ \env@BadgeServiceEnv {bsClientCfg, bsController = cc} -> do
@@ -1580,7 +1588,7 @@ testStoreClaimRace ps =
     let claim paymentId purchaseKey masterKey =
           withDB' "claim" cc $ \db ->
             createStorePurchase db NewStorePurchase {paymentId, provider = PPGoogle, providerRef = "ref", paid = Nothing, purchaseKey, masterKey, badgeType = BTSupporter} now
-    -- both past the read before either wrote, as two requests signing at once are
+    -- the second insert meets the first's claim, as a request that read before the first wrote would
     claim "p1" firstKey firstMasterKey >>= (`shouldSatisfy` either (const False) isJust)
     claim "p2" otherKey otherMasterKey `shouldReturn` Right Nothing
     rowCount cc "sx_badge_service_payments" `shouldReturn` 1

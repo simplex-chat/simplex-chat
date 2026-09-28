@@ -10,11 +10,11 @@
 module BadgeTests (badgeTests) where
 
 import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest, survive)
+import BadgeService.StoreReceipts (StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), storeReceipt)
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
-import Control.Exception (SomeAsyncException, SomeException, catch, fromException, throwIO)
-import BadgeService.StoreReceipts (StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), storeReceipt)
 import Control.Concurrent.STM (atomically)
+import Control.Exception (SomeAsyncException, SomeException, catch, fromException, throwIO)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 import Data.Map.Strict (Map)

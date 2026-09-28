@@ -27,7 +27,8 @@ import System.Timeout (timeout)
 
 -- | What a store vouches for about one completed transaction.
 data StoreTransaction = StoreTransaction
-  { productId :: Text,
+  { transactionRef :: Text, -- from what was verified: Apple's transactionId, googlePurchaseRef of the token asked about
+    productId :: Text,
     quantity :: Int,
     environment :: StoreEnvironment,
     paid :: Maybe (CurrencyAmount, Text) -- in minor units; Google's purchase record carries no price
