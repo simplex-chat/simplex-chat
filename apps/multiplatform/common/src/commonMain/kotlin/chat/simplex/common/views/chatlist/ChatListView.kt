@@ -778,8 +778,8 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
     chatModel.appOpenUrl.value = rhId to uri
   } else if (isAppLink(uri)) {
     // branched on the scheme before the connection dispatch, which an app link must never reach
-    // an open badge link screen may have its request in flight, so a second app link leaves it alone
-    if (!isBadgeLinkOpen()) openAppLink(rhId, uri)
+    // an app link must not tear down a redemption in flight
+    if (!isBadgeLinkIssuing()) openAppLink(rhId, uri)
   } else {
     withBGApi {
       chatModel.appOpenUrlConnecting.value = true

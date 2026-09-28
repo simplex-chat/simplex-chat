@@ -255,17 +255,27 @@ private fun SubmitButton(enabled: Boolean, onClick: () -> Unit) {
   )
 }
 
-fun isBadgeLinkOpen(): Boolean =
+// the open screen's own state, not a copy of its step, so the two cannot disagree
+private var badgeLinkStep: MutableState<BadgeLinkStep>? = null
+
+private fun isBadgeLinkOpen(): Boolean =
   ModalManager.end.hasModalOpen(ModalViewId.BADGE_LINK)
 
+fun isBadgeLinkIssuing(): Boolean =
+  isBadgeLinkOpen() && badgeLinkStep?.value == BadgeLinkStep.Issuing
+
 fun openBadgeLink(rhId: Long?, codeText: String) {
+  // a new link replaces a screen that is not issuing, as iOS does by dismissing every sheet before a link
+  if (isBadgeLinkOpen()) ModalManager.end.closeModals()
   val code = parseBadgeCode(codeText)
     ?: return showCannotRedeemAlert(generalGetString(MR.strings.badges_error_invalid_code))
+  // held by the modal, not remembered: a modal is composed only while on top, and rotation recreates the activity,
+  // either of which would reset remembered state to Confirming with a request in flight
+  val step = mutableStateOf(BadgeLinkStep.Confirming)
   ModalManager.end.showCustomModal(id = ModalViewId.BADGE_LINK) { close ->
-    // kept in the modal's data: a modal is composed only while on top, and rotation recreates the activity,
-    // either of which would reset remembered state to Confirming with a request in flight
-    BadgesRedeemLinkView(rhId, code, stateGetOrPut("step") { BadgeLinkStep.Confirming }, close)
+    BadgesRedeemLinkView(rhId, code, step, close)
   }
+  badgeLinkStep = step
 }
 
 enum class BadgeLinkStep {
@@ -281,7 +291,7 @@ fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLink
   // An outcome can arrive after this screen was closed or covered: it must not close another screen,
   // and a covered one goes back to asking, so it is never left locked on the spinner.
   fun closeIfShowing() {
-    if (ModalManager.end.isLastModalOpen(ModalViewId.BADGE_LINK)) {
+    if (badgeLinkStep === step && ModalManager.end.isLastModalOpen(ModalViewId.BADGE_LINK)) {
       close()
     } else {
       step.value = BadgeLinkStep.Confirming
