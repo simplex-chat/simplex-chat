@@ -7,6 +7,7 @@ This file is generated automatically.
 - [APIDeleteMyAddress](#apideletemyaddress)
 - [APIShowMyAddress](#apishowmyaddress)
 - [APISetProfileAddress](#apisetprofileaddress)
+- [APISetUserDomain](#apisetuserdomain)
 - [APISetAddressSettings](#apisetaddresssettings)
 
 [Message commands](#message-commands)
@@ -242,6 +243,53 @@ UserProfileNoChange: User profile was not changed.
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APISetUserDomain
+
+Set or remove SimpleX name of bot address. The name must be registered with the address short link.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- userId: int64
+- simplexDomain: string?
+
+**Syntax**:
+
+```
+/_set domain <userId>[ <simplexDomain>]
+```
+
+```javascript
+'/_set domain ' + userId + (simplexDomain ? ' ' + simplexDomain : '') // JavaScript
+```
+
+```python
+'/_set domain ' + str(userId) + ((' ' + simplexDomain) if simplexDomain is not None else '') # Python
+```
+
+**Responses**:
+
+UserProfileUpdated: User profile updated.
+- type: "userProfileUpdated"
+- user: [User](./TYPES.md#user)
+- fromProfile: [Profile](./TYPES.md#profile)
+- toProfile: [Profile](./TYPES.md#profile)
+- updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
+
+UserProfileNoChange: User profile was not changed.
+- type: "userProfileNoChange"
+- user: [User](./TYPES.md#user)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+**Errors**:
+- SimplexDomainNotReady: The name does not resolve to the address short link.
 
 ---
 

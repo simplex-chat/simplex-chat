@@ -66,7 +66,7 @@ data ServicePaymentDestination
         address :: Text,
         cryptoAmount :: Text
       }
-  deriving (Show)
+  deriving (Eq, Show)
 
 -- confirmed
 data InvoiceStatus = ISOpen | ISPaid | ISExpired

@@ -1,0 +1,18 @@
+{
+  "_fixture": "GET /v1/payment_intents/{id}?expand[]=latest_charge for a paid intent (status succeeded), from Stripe's documented API schema. NOT captured from a live instance; replace `response` with a recorded body and rewrite this line. The fake patches id, status, amount_received and currency; latest_charge.created dates the settlement.",
+  "response": {
+    "id": "pi_test_settled",
+    "object": "payment_intent",
+    "amount": 5400,
+    "amount_received": 5400,
+    "currency": "usd",
+    "status": "succeeded",
+    "latest_charge": {
+      "id": "ch_test_x",
+      "object": "charge",
+      "created": 1700000000,
+      "paid": true,
+      "amount_captured": 5400
+    }
+  }
+}
