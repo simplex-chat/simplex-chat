@@ -391,13 +391,23 @@ struct BadgesRedeemLinkView: View {
             ProgressView().scaleEffect(2)
 
             Spacer()
+
+            Button {
+                closeIfShowing()
+            } label: {
+                Text("Dismiss")
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundColor(theme.colors.primary)
+            }
+            .frame(height: 22)
         }
         .padding(.horizontal, 25)
         .padding(.top, 48)
         .padding(.bottom, 20)
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
-        // held open until the outcome, which lands on Your badge or says why the code was refused
+        // left only by Dismiss; the badge is still added after the screen closes
         .interactiveDismissDisabled(true)
     }
 
@@ -410,7 +420,15 @@ struct BadgesRedeemLinkView: View {
             let outcome = await redeemBadgeCode(user, code)
             await MainActor.run {
                 switch outcome {
-                case .redeemed: state.step = .redeemed
+                case .redeemed:
+                    if !isShowing {
+                        showAlert(
+                            NSLocalizedString("Badge added", comment: "alert title"),
+                            message: String.localizedStringWithFormat(NSLocalizedString("The badge was added to the profile %@.", comment: "alert message"), user.displayName)
+                        )
+                    }
+                    // also when covered, so the screen is never left on the spinner
+                    state.step = .redeemed
                 case let .refused(message): closeIfShowing { showCannotRedeemAlert(message) }
                 case .cancelled: closeIfShowing()
                 }
@@ -418,12 +436,16 @@ struct BadgesRedeemLinkView: View {
         }
     }
 
+    // an alert over this screen still counts: dismissing from the presenter dismisses it too
+    private var isShowing: Bool {
+        guard badgeLinkState === state, let sheet = badgeLinkSheet, sheet.presentingViewController != nil else { return false }
+        return sheet.presentedViewController == nil || sheet.presentedViewController is UIAlertController
+    }
+
     // An outcome can arrive after this screen was closed or covered: it must not close another screen,
     // and a covered one goes back to asking, so it is never left locked on the spinner.
     private func closeIfShowing(then: @escaping () -> Void = {}) {
-        guard badgeLinkState === state, let sheet = badgeLinkSheet, let presenter = sheet.presentingViewController else { return then() }
-        // dismissing from the presenter also dismisses any UIKit alert over this screen
-        if sheet.presentedViewController == nil || sheet.presentedViewController is UIAlertController {
+        if isShowing, let presenter = badgeLinkSheet?.presentingViewController {
             presenter.dismiss(animated: true, completion: then)
         } else {
             state.step = .confirming

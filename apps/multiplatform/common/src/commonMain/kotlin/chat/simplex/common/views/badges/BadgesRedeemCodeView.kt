@@ -289,10 +289,13 @@ enum class BadgeLinkStep {
 // so this screen asks before redeeming, names the profile, and offers nothing but the redemption.
 @Composable
 fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLinkStep>, close: () -> Unit) {
+  fun isShowing(): Boolean =
+    badgeLinkStep === step && ModalManager.end.isLastModalOpen(ModalViewId.BADGE_LINK)
+
   // An outcome can arrive after this screen was closed or covered: it must not close another screen,
   // and a covered one goes back to asking, so it is never left locked on the spinner.
   fun closeIfShowing() {
-    if (badgeLinkStep === step && ModalManager.end.isLastModalOpen(ModalViewId.BADGE_LINK)) {
+    if (isShowing()) {
       close()
     } else {
       step.value = BadgeLinkStep.Confirming
@@ -308,7 +311,16 @@ fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLink
       val outcome = redeemBadgeCode(rhId, user, code)
       withContext(Dispatchers.Main) {
         when (outcome) {
-          is BadgeRedeemOutcome.Redeemed -> step.value = BadgeLinkStep.Redeemed
+          is BadgeRedeemOutcome.Redeemed -> {
+            if (!isShowing()) {
+              AlertManager.shared.showAlertMsg(
+                title = generalGetString(MR.strings.badges_link_added_title),
+                text = String.format(generalGetString(MR.strings.badges_link_added_profile), user.displayName)
+              )
+            }
+            // also when covered, so the screen is never left on the spinner
+            step.value = BadgeLinkStep.Redeemed
+          }
           is BadgeRedeemOutcome.Refused -> {
             closeIfShowing()
             showCannotRedeemAlert(outcome.message)
@@ -331,8 +343,8 @@ fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLink
         Confirming(onConfirm = ::redeemFromLink, onCancel = ::closeIfShowing)
       }
     }
-    // held open until the outcome, which lands on Your badge or says why the code was refused
-    BadgeLinkStep.Issuing -> ModalView(close, enableClose = false) { BeingIssued() }
+    // left only by Dismiss; the badge is still added after the screen closes
+    BadgeLinkStep.Issuing -> ModalView(close, enableClose = false) { BeingIssued(onDismiss = ::closeIfShowing) }
     BadgeLinkStep.Redeemed, BadgeLinkStep.ViewingBadge -> BadgesView(ModalManager.end, close)
   }
 }
@@ -421,7 +433,7 @@ private fun Confirming(onConfirm: () -> Unit, onCancel: () -> Unit) {
 }
 
 @Composable
-private fun BeingIssued() {
+private fun BeingIssued(onDismiss: () -> Unit) {
   ColumnWithScrollBar(
     Modifier.padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -446,5 +458,7 @@ private fun BeingIssued() {
     )
 
     Spacer(Modifier.weight(1f))
+
+    TextButtonBelowOnboardingButton(stringResource(MR.strings.badges_dismiss), onDismiss)
   }
 }
