@@ -65,14 +65,24 @@ private fun storageRoots(): List<File> {
 private fun rootUsage(root: File): RootUsage =
   RootUsage(
     root,
-    root.listFiles().orEmpty()
-      .map { EntryUsage(it.name, treeSize(it)) }
+    rootEntries(root)
+      .map { EntryUsage(it.fileName.toString(), treeSize(it)) }
       .sortedByDescending { it.bytes }
   )
 
-private fun treeSize(entry: File): Long {
+private fun rootEntries(root: File): List<Path> =
+  try {
+    Files.newDirectoryStream(root.toPath()).use { it.toList() }
+  } catch (e: IOException) {
+    Log.e(TAG, "StorageView rootEntries: $e")
+    emptyList()
+  } catch (e: DirectoryIteratorException) {
+    Log.e(TAG, "StorageView rootEntries: $e")
+    emptyList()
+  }
+
+private fun treeSize(path: Path): Long {
   var bytes = 0L
-  val path = try { entry.toPath() } catch (e: InvalidPathException) { Log.e(TAG, "StorageView treeSize: $e"); return 0L }
   Files.walkFileTree(path, object : SimpleFileVisitor<Path>() {
     override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
       bytes += attrs.size()

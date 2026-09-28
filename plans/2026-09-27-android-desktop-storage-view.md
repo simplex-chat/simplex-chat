@@ -45,7 +45,7 @@ Sizes are file lengths (`BasicFileAttributes.size()`). iOS uses allocated size, 
 - On a real 187 MB desktop profile, the walk took 0.8 s and matched `du -sb` minus the 4 KB that `du` also counts for each directory.
 - A desktop AppImage run on a separate test profile showed all three folders, with sizes matching `ls`.
 
-A top-level name that the JVM cannot convert to a `Path` (a non-ASCII name under a non-UTF-8 locale on Linux, e.g. a received file decrypted into `tmpDir`) would make `File.toPath()` throw out of the screen's coroutine; it is logged and shown as 0 bytes instead.
+Top-level entries are listed with `Files.newDirectoryStream` rather than `File.listFiles`, so each name stays a `Path` built from the raw bytes. Going through `String` and back with `File.toPath()` loses names that are not valid in the JVM's file-name encoding (any non-ASCII name under a C locale on Linux, e.g. a received file decrypted into `tmpDir`), which then either throws `InvalidPathException` or points to a file that does not exist. A root that cannot be listed (missing or unreadable) is logged and shown as empty.
 
 ## Not included
 
