@@ -42,7 +42,7 @@ internal sealed interface DesktopInstallation {
 @Volatile
 private var registered = false
 
-fun appLinkSchemeRegistered(): Boolean = registered
+actual fun appLinkSchemeRegistered(): Boolean = registered
 
 fun registerAppLinkScheme() {
   thread(name = "simplex-app-link-scheme", isDaemon = true) {
