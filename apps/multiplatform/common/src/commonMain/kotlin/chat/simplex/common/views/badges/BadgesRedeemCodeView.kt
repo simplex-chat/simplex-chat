@@ -292,15 +292,18 @@ enum class BadgeLinkStep {
 // interrupted request is not resumed, and the code stays on the page that issued the link.
 @Composable
 fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLinkStep>, close: () -> Unit) {
+  fun isOpen(): Boolean =
+    badgeLinkStep === step && isBadgeLinkOpen()
+
   fun isShowing(): Boolean =
-    badgeLinkStep === step && ModalManager.end.isLastModalOpen(ModalViewId.BADGE_LINK)
+    isOpen() && ModalManager.end.isLastModalOpen(ModalViewId.BADGE_LINK)
 
   // An outcome can arrive after this screen was closed or covered: it must not close another screen,
   // and a covered one goes back to asking, so it is never left locked on the spinner.
   fun closeIfShowing() {
     if (isShowing()) {
       close()
-    } else {
+    } else if (isOpen()) {
       step.value = BadgeLinkStep.Confirming
     }
   }
@@ -321,8 +324,8 @@ fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLink
                 text = String.format(generalGetString(MR.strings.badges_link_added_profile), user.displayName)
               )
             }
-            // also when covered, so the screen is never left on the spinner
-            step.value = BadgeLinkStep.Redeemed
+            // a covered screen is not left on the spinner; a closed one is not written to
+            if (isOpen()) step.value = BadgeLinkStep.Redeemed
           }
           is BadgeRedeemOutcome.Refused -> {
             closeIfShowing()

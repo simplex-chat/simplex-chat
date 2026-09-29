@@ -401,8 +401,8 @@ struct BadgesRedeemLinkView: View {
                             message: String.localizedStringWithFormat(NSLocalizedString("The badge was added to the profile %@.", comment: "alert message"), user.displayName)
                         )
                     }
-                    // also when covered, so the screen is never left on the spinner
-                    state.step = .redeemed
+                    // a covered screen is not left on the spinner; a closed one is not written to
+                    if isOpen { state.step = .redeemed }
                 case let .refused(message): closeIfShowing { showCannotRedeemAlert(message) }
                 case .cancelled: closeIfShowing()
                 }
@@ -410,9 +410,13 @@ struct BadgesRedeemLinkView: View {
         }
     }
 
+    private var isOpen: Bool {
+        badgeLinkState === state && badgeLinkSheet?.presentingViewController != nil
+    }
+
     // an alert over this screen still counts: dismissing from the presenter dismisses it too
     private var isShowing: Bool {
-        guard badgeLinkState === state, let sheet = badgeLinkSheet, sheet.presentingViewController != nil else { return false }
+        guard isOpen, let sheet = badgeLinkSheet else { return false }
         return sheet.presentedViewController == nil || sheet.presentedViewController is UIAlertController
     }
 
@@ -422,7 +426,7 @@ struct BadgesRedeemLinkView: View {
         if isShowing, let presenter = badgeLinkSheet?.presentingViewController {
             presenter.dismiss(animated: true, completion: then)
         } else {
-            state.step = .confirming
+            if isOpen { state.step = .confirming }
             then()
         }
     }
