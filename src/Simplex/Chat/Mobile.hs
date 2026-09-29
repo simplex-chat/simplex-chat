@@ -26,6 +26,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor (($>))
 import Data.List (find)
 import qualified Data.List.NonEmpty as L
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
@@ -58,6 +59,7 @@ import Simplex.Messaging.Agent.Protocol (AgentErrorType)
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, reopenDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Entitlement (entitlementIssuerKeys)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..))
@@ -317,7 +319,16 @@ defaultMobileConfig =
   defaultChatConfig
     { confirmMigrations = MCYesUp,
       logLevel = CLLError,
-      deviceNameForRemote = "Mobile"
+      deviceNameForRemote = "Mobile",
+      -- TEST ONLY, DO NOT COMMIT: local badge service and the issuer key it signs with, at index 9.
+      -- Anyone holding the matching secret could mint badges that every client trusts.
+      -- Prelude.error is qualified: APIResult has an `error` field and this module has DuplicateRecordFields.
+      badgePublicKeys =
+        M.insert 9 (either (Prelude.error . ("bad test issuer key: " <>)) id . strDecode $ B.pack "kbK5FntscOKkMdzYt75TnfnBdP-OJUeQeLYHZp3-javAZSMNl9x4G4Ijak4iPcLgD-FUMix1ZH8hjGfH06QDXTsx9ap1HRVryV0WRHzxfgYVQG6Fgn8ulODsbra7Y6dv") $
+          M.mapKeys fromIntegral entitlementIssuerKeys,
+      badgeServiceAddress =
+        Just . either (Prelude.error . ("bad badge service address: " <>)) id . strDecode $
+          B.pack "https://smp4.simplex.im/a#0SOmu5ZDIXBHF9S4t5ECbtRR4CRSBMDAKnw4rssVWo8"
     }
 
 getActiveUser_ :: DBStore -> IO (Maybe User)
