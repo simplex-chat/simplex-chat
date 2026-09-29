@@ -35,9 +35,12 @@ val badgeStoreProductIds: List<BadgeStoreProductId> = BadgeLevel.entries.flatMap
 fun newBadgeInvoiceId(): String = UUID.randomUUID().toString()
 
 // the page's app flag rides in the fragment, which never reaches the service
+// TEST ONLY: pointed at the dev deployment; restore the two lines below before merging
 val badgePageUrl: String =
-  if (appPlatform.isAndroid) "https://badges.simplex.chat/#/tier?app=true"
-  else "https://badges.simplex.chat/#/tier?app=desktop"
+  if (appPlatform.isAndroid) "https://smp7.simplex.im/#/tier?app=true"
+  else "https://smp7.simplex.im/#/tier?app=desktop"
+// if (appPlatform.isAndroid) "https://badges.simplex.chat/#/tier?app=true"
+// else "https://badges.simplex.chat/#/tier?app=desktop"
 
 // what the platform store knows about one product; ProductDetails cannot cross into commonMain
 data class BadgeProduct(

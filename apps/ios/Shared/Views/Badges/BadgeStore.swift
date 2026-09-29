@@ -33,7 +33,9 @@ let badgeProductIds: [String] = BadgeLevel.allCases.flatMap { level in
 func newBadgeInvoiceId() -> UUID { UUID() }
 
 // the page's app flag rides in the fragment, which never reaches the service
-let badgePageUrl = "https://badges.simplex.chat/#/tier?app=true"
+// TEST ONLY: pointed at the dev deployment; restore the line below before merging
+let badgePageUrl = "https://smp7.simplex.im/#/tier?app=true"
+// let badgePageUrl = "https://badges.simplex.chat/#/tier?app=true"
 
 enum BadgePrice {
     case loading
