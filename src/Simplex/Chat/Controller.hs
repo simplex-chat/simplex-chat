@@ -710,7 +710,7 @@ data ChatCommand
 
 data PlanResolveMode
   = PRMAll -- always resolve, also known chats
-  | PRMUnknown -- only resolve if chat is unknown (default)
+  | PRMUnknown -- resolve unknown chats, and names of known chats not resolved within a day (default)
   | PRMNever -- do not resolve links and names, only do local search
   deriving (Eq, Show)
 
@@ -1490,7 +1490,7 @@ data ChatError
   | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
--- why a resolved SimpleX name could not be used (the name itself resolved; in a connection plan, a name with nothing to connect is CPNameNotConnectable)
+-- why a resolved SimpleX name could not be used (the name itself resolved; an unregistered name is the agent's NAME NOT_FOUND)
 data SimplexDomainError
   = SDENoValidLink -- the name's record has no usable contact/channel link
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name

@@ -1,10 +1,9 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Local HTTP names resolver for chat tests, copied from simplexmq's
 -- NamesResolverServer and made dynamic: it answers /v2/resolve/<query> from a
--- mutable name -> NameRecord registry, so a test can resolve a name to the
+-- mutable name -> answer registry, so a test can resolve a name to the
 -- address it just created.
 module NameResolver
   ( NameRegistry,
@@ -12,8 +11,6 @@ module NameResolver
     registerName,
     registerExpiredName,
     registerReservedName,
-    registerReservedLiveName,
-    registerAvailableName,
     unregisterName,
     failNameResolution,
     emptyRecord,
@@ -57,10 +54,9 @@ withNameResolver action = do
         ["v2", "resolve", q] -> answer . M.lookup q <$> readTVarIO reg
         _ -> pure (notFound404, "{}")
       send $ responseLBS st [(hContentType, "application/json")] body
-    answer = \case
-      Just AnswerFails -> (internalServerError500, "{}")
-      Just (AnswerRegistration registration) -> (ok200, J.encode NameResponse {lastBlockTs = Nothing, registration})
-      Nothing -> (ok200, J.encode NameResponse {lastBlockTs = Nothing, registration = NRAvailable {pricing = testPricing 1}})
+    answer (Just AnswerFails) = (internalServerError500, "{}")
+    answer (Just (AnswerRegistration registration)) = (ok200, J.encode NameResponse {lastBlockTs = Nothing, registration})
+    answer Nothing = (ok200, J.encode NameResponse {lastBlockTs = Nothing, registration = NRAvailable {pricing = NamePricing {registrationPrices = M.empty, basePrice = USDCents 1000, minLabelLength = 1}}})
 
 -- | Register a name's domain to resolve to the given record.
 registerName :: NameRegistry -> SimplexNameInfo -> NameRecord -> IO ()
@@ -80,13 +76,6 @@ registerExpiredName reg ni nameRecord = do
 registerReservedName :: NameRegistry -> SimplexNameInfo -> NameReservedReason -> IO ()
 registerReservedName reg ni reservedReason = registerRegistration reg ni NRReserved {reservedReason}
 
--- | A live registration also held back by the registry, which is why it will not free up at expiry.
-registerReservedLiveName :: NameRegistry -> SimplexNameInfo -> NameReservedReason -> NameRecord -> IO ()
-registerReservedLiveName reg ni reason nameRecord =
-  registerRegistration reg ni NRRegistered {expires = Nothing, graceUntil = Nothing, reservedReason_ = Just reason, nameRecord}
-
-registerAvailableName :: NameRegistry -> SimplexNameInfo -> Int -> IO ()
-registerAvailableName reg ni minLen = registerRegistration reg ni NRAvailable {pricing = testPricing minLen}
 
 failNameResolution :: NameRegistry -> SimplexNameInfo -> IO ()
 failNameResolution reg ni = atomically $ modifyTVar' reg $ M.insert (registryKey ni) AnswerFails
@@ -97,9 +86,6 @@ unregisterName reg ni = atomically $ modifyTVar' reg $ M.delete (registryKey ni)
 registryKey :: SimplexNameInfo -> Text
 registryKey SimplexNameInfo {nameDomain = SimplexDomain {nameTLD, domain}} =
   decodeLatin1 $ strEncode (labelHash domain) <> strEncode nameTLD
-
-testPricing :: Int -> NamePricing
-testPricing minLabelLength = NamePricing {registrationPrices = M.empty, basePrice = USDCents 1000, minLabelLength}
 
 contactNameRecord :: Text -> Text -> NameRecord
 contactNameRecord name link = (emptyRecord name) {nrSimplexContact = [link]}

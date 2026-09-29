@@ -7883,7 +7883,7 @@ Query: UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE contact_profiles SET contact_domain_expires_at = datetime('now', '-1 hours')
+Query: UPDATE contact_profiles SET contact_domain_resolved_at = datetime('now'), contact_domain_expires_at = datetime('now', '-1 hours')
 Plan:
 SCAN contact_profiles
 

@@ -1021,7 +1021,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
             TagsOrConnectByName(searchText, searchChatFilteredBySimplexLink, connectNameCandidate) { candidate ->
               TagsView(searchText)
               Divider()
-              ConnectByNameRow(candidate, searchChatFilteredBySimplexLink, close = null)
+              ConnectByNameRow(candidate) { connect(candidate, searchChatFilteredBySimplexLink, cleanup = null) }
             }
             ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
@@ -1030,7 +1030,7 @@ private fun BoxScope.ChatList(searchText: MutableState<TextFieldValue>, listStat
           ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, connectNameCandidate)
           // top toolbar: search bar above, so on desktop the connect row goes above the tags
           TagsOrConnectByName(searchText, searchChatFilteredBySimplexLink, connectNameCandidate) { candidate ->
-            ConnectByNameRow(candidate, searchChatFilteredBySimplexLink, close = null)
+            ConnectByNameRow(candidate) { connect(candidate, searchChatFilteredBySimplexLink, cleanup = null) }
             Divider()
             TagsView(searchText)
           }
@@ -1199,28 +1199,20 @@ private fun TagsOrConnectByName(
   val candidate = connectNameCandidate.value
   when {
     candidate == null -> TagsView(searchText)
-    !appPlatform.isDesktop -> ConnectByNameRow(candidate, searchChatFilteredBySimplexLink, close = null)
+    !appPlatform.isDesktop -> ConnectByNameRow(candidate) { connect(candidate, searchChatFilteredBySimplexLink, cleanup = null) }
     else -> desktopView(candidate)
   }
 }
 
 @Composable
-internal fun ConnectByNameRow(name: String, searchChatFilteredBySimplexLink: MutableState<Set<String>>, close: (() -> Unit)?) {
+internal fun ConnectByNameRow(name: String, onClick: () -> Unit) {
   val view = LocalMultiplatformView()
   Row(
     Modifier
       .fillMaxWidth()
       .clickable {
         hideKeyboard(view)
-        withBGApi {
-          planAndConnect(
-            chatModel.remoteHostId(),
-            name,
-            close = close,
-            filterKnownContact = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
-            filterKnownGroup = { searchChatFilteredBySimplexLink.value = setOf(it.id) },
-          )
-        }
+        onClick()
       }
       .padding(vertical = DEFAULT_PADDING_HALF),
     verticalAlignment = Alignment.CenterVertically

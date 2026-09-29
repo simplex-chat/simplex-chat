@@ -1606,7 +1606,7 @@ processChatCommand cxt nm = \case
             UserContactLink {shortLinkDataSet, connLinkContact = CCLink _ sl_} <- withFastStore (`getUserAddress` user)
             case sl_ of
               Just sl | shortLinkDataSet -> do
-                (NameRecord {nrSimplexContact}, _) <- resolveNameRecord user nm domain
+                NameRecord {nrSimplexContact} <- resolveNameRecord user nm domain
                 unless (nameResolvesTo sl nrSimplexContact) $ throwChatError $ CESimplexDomainNotReady domain SDENoValidLink
                 pure $ Just (CLShort sl)
               _ -> throwCmdError "create the address short link and add it to name"
@@ -2411,21 +2411,21 @@ processChatCommand cxt nm = \case
     let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
     domain <- maybe (throwCmdError "contact has no name to verify") pure contactDomain
     (verified, reason) <- verifyEntityDomain user nm NTContact domain connLink_
-    ct' <- maybe (pure ct) (\(v, expiresAt) -> withFastStore' $ \db -> setContactDomainVerified db user ct v expiresAt) verified
+    ct' <- maybe (pure ct) (\v -> withFastStore' $ \db -> setContactDomainVerified db user ct v Nothing) verified
     pure $ CRContactDomainVerified user ct' reason
   APIVerifyGroupDomain groupId -> withUser $ \user -> do
     g@GroupInfo {groupProfile = GroupProfile {publicGroup}} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
     PublicGroupProfile {groupLink, publicGroupAccess} <- maybe (throwCmdError "not a public group") pure publicGroup
     claim <- maybe (throwCmdError "group has no name to verify") pure $ publicGroupAccess >>= groupDomainClaim
     -- checks the profile link, not the link we joined through (which may have rotated)
-    (verified, reason, expiresAt) <-
+    (verified, reason) <-
       tryAllErrors (resolveNameRecord user nm (claimDomain claim)) >>= \case
-        Right (NameRecord {nrSimplexChannel}, expiresAt)
-          | nameResolvesTo groupLink nrSimplexChannel -> pure (True, Nothing, expiresAt)
-          | otherwise -> pure (False, Just "the name does not resolve to the link in the group profile", expiresAt)
-        Left (ChatErrorAgent {agentError = SMP _ (NAME SMP.NOT_FOUND)}) -> pure (False, Just "the name is not registered", Nothing)
+        Right NameRecord {nrSimplexChannel}
+          | nameResolvesTo groupLink nrSimplexChannel -> pure (True, Nothing)
+          | otherwise -> pure (False, Just "the name does not resolve to the link in the group profile")
+        Left (ChatErrorAgent {agentError = SMP _ (NAME SMP.NOT_FOUND)}) -> pure (False, Just "the name is not registered")
         Left e -> throwError e
-    g' <- withFastStore' $ \db -> setGroupDomainVerified db user g verified expiresAt
+    g' <- withFastStore' $ \db -> setGroupDomainVerified db user g verified Nothing
     pure $ CRGroupDomainVerified user g' reason
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
     ct@Contact {profile = LocalProfile {contactLink}, groupDirectInv} <- withFastStore $ \db -> getContact db cxt user contactId
@@ -3280,7 +3280,7 @@ processChatCommand cxt nm = \case
     processChatCommand cxt nm $ APIListGroups userId (contactId' <$> ct_) search_
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
     gInfo <- withFastStore $ \db -> getGroupInfoKeys db cxt user groupId
-    runUpdateGroupProfile user gInfo p' Nothing
+    runUpdateGroupProfile user gInfo p' False
   UpdateGroupNames gName GroupProfile {displayName, fullName, shortDescr} ->
     updateGroupProfileByName gName $ \p -> p {displayName, fullName, shortDescr}
   ShowGroupProfile gName -> withUser $ \user ->
@@ -3294,11 +3294,11 @@ processChatCommand cxt nm = \case
     case publicGroup of
       Just pg@PublicGroupProfile {groupLink, publicGroupAccess = existingAccess} -> do
         let domainChanged = (claimDomain <$> newClaim) /= (claimDomain <$> (existingAccess >>= groupDomainClaim))
-        verifiedExpiry_ <- forM (if domainChanged then claimDomain <$> newClaim else Nothing) $ \newDomain -> do
-          (NameRecord {nrSimplexChannel}, expiresAt) <- resolveNameRecord user nm newDomain
-          unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexDomainNotReady newDomain SDENoValidLink
-          pure expiresAt
-        runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}} verifiedExpiry_
+        forM_ (claimDomain <$> newClaim) $ \newDomain ->
+          when domainChanged $ do
+            NameRecord {nrSimplexChannel} <- resolveNameRecord user nm newDomain
+            unless (nameResolvesTo groupLink nrSimplexChannel) $ throwChatError $ CESimplexDomainNotReady newDomain SDENoValidLink
+        runUpdateGroupProfile user gInfo p {publicGroup = Just pg {publicGroupAccess = Just access}} (isJust newClaim && domainChanged)
       Nothing -> throwChatError $ CECommandError "not a public group"
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
     gInfo@GroupInfo {groupProfile} <- withFastStore $ \db -> getGroupInfo db cxt user groupId
@@ -4099,8 +4099,8 @@ processChatCommand cxt nm = \case
               void (sendDirectContactMessage user ct' $ XInfo p Nothing) `catchAllErrors` eToView
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
-    runUpdateGroupProfile :: User -> GroupInfoKeys -> GroupProfile -> Maybe (Maybe UTCTime) -> CM ChatResponse
-    runUpdateGroupProfile user (GIK gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} gks) p'@GroupProfile {displayName = n', image = img', memberAdmission = ma'} verifiedExpiry_ = do
+    runUpdateGroupProfile :: User -> GroupInfoKeys -> GroupProfile -> Bool -> CM ChatResponse
+    runUpdateGroupProfile user (GIK gInfo@GroupInfo {businessChat, groupProfile = p@GroupProfile {displayName = n}} gks) p'@GroupProfile {displayName = n', image = img', memberAdmission = ma'} domainVerified = do
       assertUserGroupRole gInfo GROwner
       when (n /= n') $ checkValidName n'
       checkProfileImageSize img'
@@ -4109,7 +4109,7 @@ processChatCommand cxt nm = \case
       -- updateGroupProfile clears domain verification; re-set it when the caller already re-resolved the name
       gInfo' <- withStore $ \db -> do
         g <- updateGroupProfile db user gInfo p'
-        maybe (pure g) (liftIO . setGroupDomainVerified db user g True) verifiedExpiry_
+        if domainVerified then liftIO $ setGroupDomainVerified db user g True Nothing else pure g
       msg <- case businessChat of
         Just BusinessChatInfo {businessId} -> do
           ms <- withStore' $ \db -> getGroupMembers db cxt user gInfo'
@@ -4202,7 +4202,7 @@ processChatCommand cxt nm = \case
             applicable = if channel then groupFeatureInChannel feature else groupFeatureInRegularGroup feature
         unless applicable $
           throwCmdError $ T.unpack (groupFeatureNameText feature) <> " is not available in " <> (if channel then "channels" else "groups")
-      runUpdateGroupProfile user gInfo (update p) Nothing
+      runUpdateGroupProfile user gInfo (update p) False
     withCurrentCall :: ContactId -> (User -> Contact -> Call -> CM (Maybe Call)) -> CM ChatResponse
     withCurrentCall ctId action = do
       (user, ct) <- withStore $ \db -> do
@@ -4506,10 +4506,12 @@ processChatCommand cxt nm = \case
             CM (Maybe ACreatedConnLink, ConnectionPlan)
           shortLinkPlan confirmKnown resolvedPlan knownFresh_ = case nl' of
             CTLink l -> first Just <$> case known_ of
-              Just r@(_, p) | not (resolveMode == PRMAll && knownChat p) -> pure r
-              _ -> do
+              Just r@(_, p)
+                | resolveMode == PRMAll && knownChat p -> confirmKnown Nothing l r
+                | otherwise -> pure r
+              Nothing -> do
                 when (resolveMode == PRMNever) $ throwChatError CENotResolvedLocally
-                linkPlan Nothing l
+                resolvedPlan Nothing l
             CTName ni -> case knownFresh_ of
               Just ((l, p), fresh) | resolveMode == PRMNever || (resolveMode == PRMUnknown && fresh) -> pure (Just l, p)
               Nothing | resolveMode == PRMNever -> throwChatError CENotResolvedLocally
@@ -5138,10 +5140,10 @@ resolveNameRegistration user nm domain =
   registration <$> withAgent (\a -> resolveSimplexName a nm (aUserId user) domain)
 
 -- the resolver now also reports names that are not registered, which stay the agent's NAME NOT_FOUND
-resolveNameRecord :: User -> NetworkRequestMode -> SimplexDomain -> CM (NameRecord, Maybe UTCTime)
+resolveNameRecord :: User -> NetworkRequestMode -> SimplexDomain -> CM NameRecord
 resolveNameRecord user nm domain =
   resolveNameRegistration user nm domain >>= \case
-    reg@NRRegistered {nameRecord} -> pure (nameRecord, nameExpiresAt reg)
+    NRRegistered {nameRecord} -> pure nameRecord
     _ -> throwError $ chatErrorAgent $ SMP "" (NAME SMP.NOT_FOUND)
 
 nameExpiresAt :: NameRegistration -> Maybe UTCTime
@@ -5189,24 +5191,24 @@ setNameWarning w = \case
 
 setAddressChanged :: ConnectionPlan -> ConnectionPlan
 setAddressChanged = \case
-  CPContactAddress (CAPOk cld ov _) nr -> CPContactAddress (CAPOk cld ov True) nr
-  CPGroupLink (GLPOk li gld ov _) nr -> CPGroupLink (GLPOk li gld ov True) nr
+  CPContactAddress (CAPOk cld ov _) w_ -> CPContactAddress (CAPOk cld ov True) w_
+  CPGroupLink (GLPOk li gld ov _) w_ -> CPGroupLink (GLPOk li gld ov True) w_
   p -> p
 
-verifyEntityDomain :: User -> NetworkRequestMode -> SimplexNameType -> SimplexDomainClaim -> Maybe AConnShortLink -> CM (Maybe (Bool, Maybe UTCTime), Maybe Text)
+verifyEntityDomain :: User -> NetworkRequestMode -> SimplexNameType -> SimplexDomainClaim -> Maybe AConnShortLink -> CM (Maybe Bool, Maybe Text)
 verifyEntityDomain user nm nameType SimplexDomainClaim {domain = StrJSON domain, proof = proof_} connLink_ = case (proof_, connLink_) of
   (Nothing, _) -> pure (Nothing, Just "no name proof to verify")
   (_, Nothing) -> pure (Nothing, Just "no connection link to check the name against")
   (Just proof, Just (ACSL SCMContact profileSLnk)) -> do
-    (NameRecord {nrSimplexContact, nrSimplexChannel}, expiresAt) <- resolveNameRecord user nm domain
+    NameRecord {nrSimplexContact, nrSimplexChannel} <- resolveNameRecord user nm domain
     let resolvedLinks = case nameType of
           NTContact -> nrSimplexContact
           NTPublicGroup -> nrSimplexChannel
     if not (nameResolvesTo profileSLnk resolvedLinks)
-      then pure (Just (False, expiresAt), Just "the name does not resolve to this address")
+      then pure (Just False, Just "the name does not resolve to this address")
       else do
         ok <- verifyDomainProof proof profileSLnk
-        pure (Just (ok, expiresAt), if ok then Nothing else Just "the name proof was not signed by this address's owner")
+        pure (Just ok, if ok then Nothing else Just "the name proof was not signed by this address's owner")
   (Just _, Just _) -> pure (Nothing, Just "unexpected connection link type for name verification")
   where
     verifyDomainProof :: SimplexDomainProof -> ShortLinkContact -> CM Bool
@@ -5827,7 +5829,7 @@ sendServiceRequestBytes nm user sendTarget requestTimeout signKey request = do
         _ -> throwCmdError "service request target must be a contact"
       CTDomain d -> resolveDomain d
     resolveDomain d = do
-      (nr, _) <- resolveNameRecord user nm d
+      nr <- resolveNameRecord user nm d
       case firstNameLink CCTContact (nrSimplexContact nr) of
         Just sLnk -> resolveShortLink sLnk
         Nothing -> throwChatError $ CESimplexDomainNotReady d SDENoValidLink

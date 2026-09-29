@@ -97,8 +97,7 @@ struct NewChatSheet: View {
                     ConnectByNameRow(
                         name: candidate,
                         searchFocussed: $searchFocussed,
-                        dismiss: true,
-                        filterKnownContact: { searchChatFilteredBySimplexLink = $0.id }
+                        dismiss: true
                     )
                 }
             }

@@ -920,7 +920,7 @@ struct ChatListSearchBar: View {
 
 // Row shown when the search text is a SimpleX name — in place of the list tags in the chat list, below
 // the search field in the new chat sheet. The @ icon marks a contact name, the tag icon a channel/other
-// name; tapping hides the keyboard and connects online, and a chat found by the name stays filtered in the list.
+// name; tapping hides the keyboard and connects online.
 struct ConnectByNameRow: View {
     @EnvironmentObject var theme: AppTheme
     var name: String

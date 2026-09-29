@@ -15,7 +15,7 @@ import Bots.DirectoryTests
 import ChatClient
 import ChatTests
 import ChatTests.DBUtils
-import ChatTests.Names (chatNamesTests, nameWarningTests)
+import ChatTests.Names (chatNamesTests)
 import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
@@ -83,7 +83,6 @@ main = do
       describe "SimpleX chat view" viewTests
       describe "SimpleX chat protocol" protocolTests
       describe "Valid names" validNameTests
-      describe "Name warnings" nameWarningTests
       describe "Message batching" batchingTests
       describe "Operators" operatorTests
       describe "Random servers" randomServersTests

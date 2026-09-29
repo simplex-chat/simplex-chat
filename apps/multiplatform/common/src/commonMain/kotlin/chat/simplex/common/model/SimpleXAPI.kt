@@ -7455,6 +7455,21 @@ sealed class ConnectionPlan {
 }
 
 @Serializable
+sealed class NameWarning {
+  @Serializable @SerialName("expired") class Expired(val expiredAt: Instant, val graceUntil: Instant? = null): NameWarning()
+  @Serializable @SerialName("ownExpired") class OwnExpired(val expiredAt: Instant, val graceUntil: Instant? = null): NameWarning()
+  @Serializable @SerialName("available") class Available(val price: NamePrice): NameWarning()
+  @Serializable @SerialName("noLongerRegistered") class NoLongerRegistered(val price: NamePrice): NameWarning()
+  @Serializable @SerialName("ownAvailable") class OwnAvailable(val price: NamePrice): NameWarning()
+  @Serializable @SerialName("reservedForCommunity") object ReservedForCommunity: NameWarning()
+  @Serializable @SerialName("notRegistered") object NotRegistered: NameWarning()
+  @Serializable @SerialName("noValidLink") object NoValidLink: NameWarning()
+}
+
+@Serializable
+data class NamePrice(val amount: Long, val years: Int)
+
+@Serializable
 sealed class InvitationLinkPlan {
   @Serializable @SerialName("ok") class Ok(val contactSLinkData_: ContactShortLinkData? = null, val ownerVerification: OwnerVerification? = null): InvitationLinkPlan()
   @Serializable @SerialName("ownLink") object OwnLink: InvitationLinkPlan()

@@ -75,6 +75,7 @@ private fun openNameHowTo(uriHandler: UriHandler) = openBrowserAlert(SIMPLEX_NAM
 private const val SIMPLEX_NAMES_HOWTO_URL = "https://simplex.domains/#testing"
 
 private fun showNameWarningAlert(
+  rhId: Long?,
   domain: SimplexDomain,
   warning: NameWarning,
   openExistingChat: (() -> Unit)?,
@@ -90,12 +91,12 @@ private fun showNameWarningAlert(
     val uriHandler = LocalUriHandler.current
     Column {
       if (action != null) {
-        SectionItemView({ AlertManager.privacySensitive.hideAlert(); action.second(uriHandler) }) {
+        SectionItemView({ dismiss(); action.second(uriHandler) }) {
           Text(action.first, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
       }
       if (openExistingChat != null) {
-        SectionItemView({ AlertManager.privacySensitive.hideAlert(); openExistingChat() }) {
+        SectionItemView({ dismiss(); openExistingChat() }) {
           Text(generalGetString(MR.strings.connect_plan_open_existing_chat), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
       }
@@ -105,7 +106,7 @@ private fun showNameWarningAlert(
     }
   }
   fun alert(title: String, text: String, action: Pair<String, (UriHandler) -> Unit>? = null) {
-    AlertManager.privacySensitive.showAlertDialogButtonsColumn(title = title, text = text, onDismissRequest = { cleanup?.invoke() }, buttons = buttons(action))
+    AlertManager.privacySensitive.showAlertDialogButtonsColumn(title = title, text = text, onDismissRequest = { cleanup?.invoke() }, hostDevice = hostDevice(rhId), buttons = buttons(action))
   }
   val register = generalGetString(MR.strings.simplex_name_register) to { uh: UriHandler -> openNameHowTo(uh) }
   when (warning) {
@@ -172,7 +173,7 @@ private suspend fun planAndConnectTask(
   connectProgressManager.stopConnectProgress()
   if (!inProgress.value) { return completable }
   if (result != null) {
-    val (connectionLink_, planSimplexName, otherSimplexName, connectionPlan) = result
+    val (connectionLink, planSimplexName, otherSimplexName, connectionPlan) = result
     val target = strConnectTarget(shortOrFullLink.trim())
     val linkText = if (target is ConnectTarget.Link) "<br><br><u>${target.linkText}</u>" else ""
     // the name can also resolve to the other kind; its type picks the verb, its short form the label and target
@@ -203,10 +204,10 @@ private suspend fun planAndConnectTask(
         if (filterKnownGroup != null) filterKnownGroup(knownGroup)
         else openExisting = { openKnownGroup(chatModel, rhId, close, knownGroup) }
       }
-      showNameWarningAlert(nameDomain, nameWarning, openExisting, cleanup)
+      showNameWarningAlert(rhId, nameDomain, nameWarning, openExisting, cleanup)
       return completable
     }
-    val connectionLink = connectionLink_ ?: run {
+    if (connectionLink == null) {
       cleanup()
       return completable
     }
@@ -288,7 +289,7 @@ private suspend fun planAndConnectTask(
               connectOtherButton = connectOtherButton,
               connectOtherLink = connectOtherLink,
               addressChanged = connectionPlan.contactAddressPlan.addressChanged,
-              openExistingChat = if (filterKnownContact == null && connectionPlan.contactAddressPlan.addressChanged) openNameChat(rhId, planSimplexName, close, cleanup) else null,
+              openExistingChat = if (filterKnownContact == null && connectionPlan.contactAddressPlan.addressChanged) localNameChat(rhId, planSimplexName)?.let { chat -> { openChat_(chatModel, rhId, close, chat); cleanup() } } else null,
               close,
               cleanup
             )
@@ -350,7 +351,7 @@ private suspend fun planAndConnectTask(
           }
           if (filterKnownContact != null) {
             filterKnownContact(contact)
-            if (planSimplexName != null && otherSimplexName != null && connectOtherButton != null) showOtherNameAlert(rhId, planSimplexName, otherSimplexName, connectOtherButton, close, cleanup)
+            if (otherSimplexName != null && connectOtherButton != null) showOtherNameAlert(rhId, otherSimplexName, connectOtherButton, close, cleanup)
           } else {
             showOpenKnownContactAlert(chatModel, rhId, close, contact, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink)
             cleanup()
@@ -386,7 +387,7 @@ private suspend fun planAndConnectTask(
               connectOtherButton = connectOtherButton,
               connectOtherLink = connectOtherLink,
               addressChanged = connectionPlan.groupLinkPlan.addressChanged,
-              openExistingChat = if (filterKnownGroup == null && connectionPlan.groupLinkPlan.addressChanged) openNameChat(rhId, planSimplexName, close, cleanup) else null,
+              openExistingChat = if (filterKnownGroup == null && connectionPlan.groupLinkPlan.addressChanged) localNameChat(rhId, planSimplexName)?.let { chat -> { openChat_(chatModel, rhId, close, chat); cleanup() } } else null,
               close,
               cleanup
             )
@@ -458,7 +459,7 @@ private suspend fun planAndConnectTask(
           }
           if (filterKnownGroup != null) {
             filterKnownGroup(groupInfo)
-            if (planSimplexName != null && otherSimplexName != null && connectOtherButton != null) showOtherNameAlert(rhId, planSimplexName, otherSimplexName, connectOtherButton, close, cleanup)
+            if (otherSimplexName != null && connectOtherButton != null) showOtherNameAlert(rhId, otherSimplexName, connectOtherButton, close, cleanup)
           } else {
             showOpenKnownGroupAlert(chatModel, rhId, close, groupInfo, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink)
             cleanup()
@@ -885,20 +886,17 @@ fun showPrepareContactAlert(
   )
 }
 
-// a name tapped in a message has no filtered list behind the alert, so the chat the name had is opened from it, if there is one
-private suspend fun openNameChat(rhId: Long?, name: SimplexNameInfo?, close: (() -> Unit)?, cleanup: (() -> Unit)?): (() -> Unit)? {
-  val chat = name?.let { knownChatId(rhId, chatModel.controller.apiConnectPlan(rhId, it.shortStr, PlanResolveMode.PRMNever, inProgress = mutableStateOf(false))) }?.let { chatModel.getChat(it) }
-  return chat?.let { { openChat_(chatModel, rhId, close, it); cleanup?.invoke() } }
-}
+private suspend fun localNameChat(rhId: Long?, name: SimplexNameInfo?): Chat? =
+  name?.let { knownChatId(rhId, chatModel.controller.apiConnectPlan(rhId, it.shortStr, PlanResolveMode.PRMNever, inProgress = mutableStateOf(false))) }?.let { chatModel.getChat(it) }
 
-// a bare name found as a local chat also leads to the other kind, which the user does not have
-private fun showOtherNameAlert(rhId: Long?, planSimplexName: SimplexNameInfo, otherSimplexName: SimplexNameInfo, connectOtherButton: String, close: (() -> Unit)?, cleanup: (() -> Unit)?) {
+private fun showOtherNameAlert(rhId: Long?, otherSimplexName: SimplexNameInfo, connectOtherButton: String, close: (() -> Unit)?, cleanup: (() -> Unit)?) {
   AlertManager.privacySensitive.showAlertDialogButtonsColumn(
     title = String.format(
       generalGetString(if (otherSimplexName.nameType == SimplexNameType.publicGroup) MR.strings.simplex_name_also_leads_to_channel else MR.strings.simplex_name_also_leads_to_contact),
-      planSimplexName.nameDomain.fullDomainName,
+      otherSimplexName.nameDomain.fullDomainName,
       otherSimplexName.shortStr
     ),
+    hostDevice = hostDevice(rhId),
     buttons = {
       Column {
         SectionItemView({
@@ -949,7 +947,7 @@ fun showPrepareGroupAlert(
     ).joinToString("\n").ifEmpty { null },
     confirmText = generalGetString(
       if (isChannel) (if (addressChanged) MR.strings.connect_plan_open_new_channel else MR.strings.connect_plan_open_channel)
-      else (if (addressChanged) MR.strings.connect_plan_open_new_group else MR.strings.connect_plan_open_group)
+      else MR.strings.connect_plan_open_group
     ),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
