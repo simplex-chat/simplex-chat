@@ -143,9 +143,9 @@ Link targets keep today's `PRMUnknown` meaning: a known chat is answered from th
 
 ## 6. What stays an error
 
-`SDEUnknownDomain` stays, for 2g and 4b. It is a mismatch between a resolved link's profile and the name asked for, not a property of the registry answer, so it cannot become a `NameRegistration`. Per the review thread it stays nullary — which name was claimed is not carried, because it is not shown.
+`SDEUnknownDomain` stays, for 2g and 4b. It is a mismatch between a resolved link's profile and the name asked for, not a property of the registry answer, so it cannot become a `NameWarning`. Per the review thread it stays nullary — which name was claimed is not carried, because it is not shown.
 
-`SDENoValidLink` stays. It becomes unreachable from the plan path, since 2f is now `CPNameNotConnectable` and its band-3 twin is `CAPKnown`, but `resolveNameLink`, `verifyEntityDomain` (`:5094`) and `/_set domain` (`:1607`) still raise it.
+`SDENoValidLink` stays for `verifyEntityDomain` and `/_set domain`. The plan path no longer raises it: 2f is `CPNameNotConnectable` with `NWNoValidLink`, and a chat or own name is answered without a warning.
 
 Registry and network failures stay `CPError` (2h). The canvas shows the resolver's own text, which `chatErrorAgent` already carries.
 
@@ -153,13 +153,13 @@ Registry and network failures stay `CPError` (2h). The canvas shows the resolver
 
 ## 7. Decisions taken
 
-1. **The term is dropped from lookup wording, not added to the API.** Adding a term to `NamePricing` means a simplexmq change and a re-pin for one string; hardcoding "2 years" in three clients means three silent lies the day the term moves. Per-year pricing is what the registry actually returns.
+1. **Reversed on 2026-09-28: the price is the 2-year term, computed in core.** `NamePrice {amount, years}` is the registry's per-year price for the label's length times `years = 2`, so the term is in one place and no client hardcodes it (`plans/2026-09-28-name-warnings.md`, N3).
 2. **3c is a `Bool` on the `Ok` plans, not a revived `ownerChanged`.** It carries no owner and needs nothing persisted, so it does not reopen `f3bcd4a16`, and it is all the canvas claims.
 3. **Dateless alerts rather than suppressed ones.** A user on an old router still learns the name expired; only the two dates go.
 4. **Registration does not go through `ConnectionPlan`.** On the sibling canvas, 5a and 5b are the only registration states that would need one — 5a is `CPContactAddress (CAPKnown ct) (Just NRRegistered)`, 5b is `CPContactAddress (CAPOk …) (Just NRRegistered)` — and both are proposed for dropping (`b898b991d`, "suggest to drop 5a & 5b"). With them gone the registration check is a plain name-status call, this API keeps one consumer, and the two surfaces stop competing. Nothing here becomes removable as a result: every field 5a and 5b would have used is independently required by 3b and 3d.
 5. **Consequently the lookup canvas's footer line "registration will always resolve" is obsolete** and should come off the sketch with this change.
 6. **Reversed on review (2026-09-24): the freshness rule is in core, not the UIs.** Kept in the apps it was duplicated, lost on export, and keyed by domain name alone, so it was shared across user profiles and, under remote access, across hosts. §9.
-7. **The constructor is `CPNameNotConnectable`, renamed from `CPSimplexName`.** All five states it carries share one invariant — you cannot connect — and the attached `NameRegistration` says why. Rejected, with reasons, so they are not re-litigated: *`CPUnregisteredSimplexName`* is false for 2b and 2f, which are registered; *`CPNonResolvingName`* is false for 2b, where both `resolveNameRecord` and `resolveNameLink` succeed and the refusal is policy, and it collides with `CENotResolvedLocally` and with 2h, the cases that genuinely do not resolve; *`CPSimplexName`* reads as a sibling of `CPContactAddress` / `CPGroupLink` naming the target kind, but a name that resolves produces those instead. `CPSimplexDomain`, asked for in review on `ea721d33f`, is vague rather than wrong and remains the fallback if the thread is reopened. The ordering follows the file's dominant negation pattern — `<Noun>Not<Predicate>`, 20 constructors including the close sibling `CESimplexDomainNotReady`; a `Non` prefix appears nowhere in `src/`.
+7. **The constructor is `CPNameNotConnectable`, renamed from `CPSimplexName`.** All five states it carries share one invariant — you cannot connect — and the attached `NameWarning` says why. Rejected, with reasons, so they are not re-litigated: *`CPUnregisteredSimplexName`* is false for 2b and 2f, which are registered; *`CPNonResolvingName`* is false for 2b, where both `resolveNameRecord` and `resolveNameLink` succeed and the refusal is policy, and it collides with `CENotResolvedLocally` and with 2h, the cases that genuinely do not resolve; *`CPSimplexName`* reads as a sibling of `CPContactAddress` / `CPGroupLink` naming the target kind, but a name that resolves produces those instead. `CPSimplexDomain`, asked for in review on `ea721d33f`, is vague rather than wrong and remains the fallback if the thread is reopened. The ordering follows the file's dominant negation pattern — `<Noun>Not<Predicate>`, 20 constructors including the close sibling `CESimplexDomainNotReady`; a `Non` prefix appears nowhere in `src/`.
 
 ---
 
@@ -171,7 +171,7 @@ Registry and network failures stay `CPError` (2h). The canvas shows the resolver
 - `CAPOk` / `GLPOk` construction sites take `addressChanged`.
 - Regenerate the client types: `bots/api/TYPES.md:1903-1922`, `packages/simplex-chat-client/types/typescript/src/types.ts`, `packages/simplex-chat-python/src/simplex_chat/types/_types.py` all still describe the three-constructor plan. Note that `bots/src/API/Docs/Commands.hs:142` and both generated clients never emit `resolve=`, which is fine and stays.
 
-**Encoding note for the app work that follows.** `ConnectionPlan` derives through `sumTypeJSON`, which is `_owsf`-tagged on iOS and `type`-tagged elsewhere, but `NameRegistration` derives through `taggedObjectJSON` unconditionally — deliberately, since it is the RNAME payload. So one iOS response mixes both forms: `{"_owsf":"contactAddress","contactAddress":{…,"nameRegistration_":{"type":"registered",…}}}`. The Swift decoder for `NameRegistration` is therefore hand-written for the `type` form, as `MsgChatLink`'s is (#6821) — a protocol type in the same position — and follows it: `private enum CodingKeys`, `forKey: .type`, a `container` binding, and an `"Unknown … type"` error. simplexmq cannot switch to `sumTypeJSON`: that is platform-conditional in the core too, so an iOS build would expect `_owsf` while the relay forwards the resolver's `type` form. Its `reservedReason` is a bare string that may hold anything up to 32 characters (`NRRUnknown`), so both clients need a default branch.
+**Encoding note.** Superseded on 2026-09-28: the plan has `NameWarning`, which is chat's own type and derives through `sumTypeJSON`, so the Swift decoder is synthesized like its neighbours and the hand-written `NameRegistration` decoder is gone.
 
 ---
 
@@ -181,11 +181,11 @@ Review on 2026-09-24 reversed decision 6. Each decision below was taken by the a
 
 1. **Storage.** `contact_profiles.contact_domain_resolved_at` and `contact_domain_expires_at`; `groups.group_domain_resolved_at` and `group_domain_expires_at` — beside `contact_domain_verified` and `group_domain_verified`, which record whether the name checked out; these record when it was last resolved and when its registration expires. `TEXT` in SQLite, `TIMESTAMPTZ` in Postgres, `_at` as in `badge_purchases.expires_at`. One migration per backend.
 2. **Rule.** Under `PRMUnknown`, a known chat reached by a name is re-resolved when `resolved_at` is `NULL` or over a day old, or `expires_at` has passed. `PRMAll` always resolves; `PRMNever` never does. A name with no chat is resolved on every call and nothing is stored; the user's own address is not a chat, so it too is resolved on every call.
-3. **Writes.** Wherever core sets a verification flag after a resolution, it also sets `resolved_at` to now and `expires_at` to the registration's expiry, or `NULL` when the caller does not have it — then only the one-day limit applies until the next resolution. That is `setContactDomainVerified`, `setGroupDomainVerified`, and `createPreparedContact`, which inserts a chat created by name already verified. To supply the expiry, `resolveNameRecord` returns it beside the record, for `/_verify domain` (both kinds) and `APISetPublicGroupAccess` to pass on, and `updateGroupFromLinkData` takes it from its callers, since it must not resolve. One path gains a write: a re-resolution confirming the name still resolves to the known chat, which writes nothing today. It re-sets the flag to `True`, a no-op, since only verified chats are found by name.
+3. **Writes.** Wherever core sets a verification flag after a resolution, it also sets `resolved_at` to now and `expires_at` to the registration's expiry, or `NULL` when the caller does not have it — then only the one-day limit applies until the next resolution. That is `setContactDomainVerified`, `setGroupDomainVerified`, and `createPreparedContact`, which inserts a chat created by name already verified. To supply the expiry, `resolveNameRecord` returns it beside the record, for `/_verify domain` (both kinds) and `APISetPublicGroupAccess` to pass on, and `updateGroupFromLinkData` takes it from its callers, since it must not resolve. Two paths gain a write: a re-resolution confirming the name still resolves to the known chat, and one that answers the chat without a warning because the name no longer has a link of its kind or is not registered (`plans/2026-09-28-name-warnings.md`, N7 and N11). Both re-set the flag to `True`, a no-op, since only verified chats are found by name.
 4. **Moved name.** When re-resolution finds the name resolves elsewhere (3c), nothing is written to the old chat. It stays stale, so each default lookup re-resolves and reports the new address; `resolve=never` still returns the old chat.
 5. **Reading.** A store function reads the two columns for the one chat being planned. `LocalProfile` and `GroupInfo` do not change, so the columns never reach the UIs; loading them there would touch 19 queries in 6 store files and both types' JSON.
 6. **UIs.** Both apps lose the cache — the preference, `SimplexNameResolved`, the local probe before resolving, and the invalidation in `UserAddressView` — and plan a name with the default mode.
-7. **iOS decoding.** Unchanged in substance, per §8.
+7. **iOS decoding.** Superseded, per the note in §8.
 
 **Tests**, in core. A name re-pointed with `registerName` shows whether core queried the registry; a stored time is backdated with `withCCTransaction … DB.execute "UPDATE …"`, as `tests/ChatTests/Groups.hs:8825` does:
 - a fresh known chat is answered from the store: after re-pointing, the default plan still returns the old contact;
@@ -218,8 +218,8 @@ Review on 2026-09-24 reversed decision 6. Each decision below was taken by the a
 - `tests/NameResolver.hs` can answer expired, reserved and available, not only registered-without-dates
 - every row of §4 is produced by core and asserted by a test
 - `CPNameNotConnectable` carries a domain and is returned only when no local chat claims the name
-- `nameRegistration_` is `Just` for every name target the registry was asked about, and `Nothing` for every link target and every known chat answered from the store
-- `PRMAll` re-resolves a known chat, `PRMAllGroups` is removed, `PRMNever` is unchanged, and `PRMUnknown` applies the rule in §9
+- `nameWarning_` is `Just` exactly when the lookup canvas shows an alert (`plans/2026-09-28-name-warnings.md` §3)
+- `PRMAll` re-resolves a known chat and replaces `PRMAllGroups` (`allGroups` still parses), `PRMNever` is unchanged, and `PRMUnknown` applies the rule in §9
 - an expired name never yields a connectable plan, and an absent `expires` is treated as live
 - `resolve=all` on a known chat whose name moved returns an `Ok` plan with `addressChanged = True`
 - `cabal build` and `cabal test` are clean, and the generated client types match

@@ -12,6 +12,7 @@ module NameResolver
     registerName,
     registerExpiredName,
     registerReservedName,
+    registerReservedLiveName,
     registerAvailableName,
     unregisterName,
     failNameResolution,
@@ -78,6 +79,11 @@ registerExpiredName reg ni nameRecord = do
 
 registerReservedName :: NameRegistry -> SimplexNameInfo -> NameReservedReason -> IO ()
 registerReservedName reg ni reservedReason = registerRegistration reg ni NRReserved {reservedReason}
+
+-- | A live registration also held back by the registry, which is why it will not free up at expiry.
+registerReservedLiveName :: NameRegistry -> SimplexNameInfo -> NameReservedReason -> NameRecord -> IO ()
+registerReservedLiveName reg ni reason nameRecord =
+  registerRegistration reg ni NRRegistered {expires = Nothing, graceUntil = Nothing, reservedReason_ = Just reason, nameRecord}
 
 registerAvailableName :: NameRegistry -> SimplexNameInfo -> Int -> IO ()
 registerAvailableName reg ni minLen = registerRegistration reg ni NRAvailable {pricing = testPricing minLen}

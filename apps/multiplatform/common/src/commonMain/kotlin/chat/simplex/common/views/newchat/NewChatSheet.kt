@@ -319,7 +319,7 @@ private fun ModalData.NewChatSheetLayout(
             )
             connectNameCandidate.value?.let { candidate ->
               Divider()
-              ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
+              ConnectByNameRow(candidate, searchChatFilteredBySimplexLink, close = close)
             }
             Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
           }
@@ -410,7 +410,7 @@ private fun ModalData.NewChatSheetLayout(
           )
           connectNameCandidate.value?.let { candidate ->
             Divider()
-            ConnectByNameRow(candidate, searchText, connectNameCandidate, close = close)
+            ConnectByNameRow(candidate, searchChatFilteredBySimplexLink, close = close)
           }
           Divider()
         }

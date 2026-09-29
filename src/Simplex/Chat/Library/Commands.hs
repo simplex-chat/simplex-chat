@@ -4429,7 +4429,8 @@ processChatCommand cxt nm = \case
               Right reg -> do
                 now <- liftIO getSystemSeconds
                 let linkOrWarning ni = serverShortLink <$> nameLinkOrWarning now ni reg
-                    namePlan ni = (\(l, planName, _, p) -> (l, planName, otherName ni, p)) <$> connectPlan user (nameTarget ni) resolveMode sig_ (Just reg)
+                    namePlanWith other ni = (\(l, planName, _, p) -> (l, planName, other, p)) <$> connectPlan user (nameTarget ni) resolveMode sig_ (Just reg)
+                    namePlan ni = namePlanWith (otherName ni) ni
                     otherName SimplexNameInfo {nameType} = case nameType of
                       NTPublicGroup -> newName contactName contact_
                       NTContact -> newName channelName channel_
@@ -4439,7 +4440,7 @@ processChatCommand cxt nm = \case
                 case match_ of
                   Just (ni, _) -> namePlan ni
                   Nothing -> case (linkOrWarning channelName, linkOrWarning contactName) of
-                    (Right _, Right _) -> namePlan channelName `catchAllErrors` \e -> (namePlan contactName `catchAllErrors` \_ -> throwError e)
+                    (Right _, Right _) -> namePlan channelName `catchAllErrors` \e -> (namePlanWith Nothing contactName `catchAllErrors` \_ -> throwError e)
                     (Right _, Left _) -> namePlan channelName
                     (Left _, Right _) -> namePlan contactName
                     (Left w, Left _) -> pure (Nothing, Nothing, Nothing, CPNameNotConnectable d w)
@@ -4514,16 +4515,22 @@ processChatCommand cxt nm = \case
               Nothing | resolveMode == PRMNever -> throwChatError CENotResolvedLocally
               _ ->
                 tryAllErrors (maybe (resolveNameRegistration user nm (nameDomain ni)) pure nameReg_) >>= \case
-                  Left e -> case known_ of
-                    Just r@(_, p) | knownChat p -> pure $ first Just r
-                    _ -> throwError e
+                  Left e -> first Just <$> knownChatOrThrow e
                   Right reg -> do
                     now <- liftIO getSystemSeconds
                     case nameLinkOrWarning now ni reg of
-                      Right l' -> first Just <$> linkPlan (nameExpiresAt reg) (serverShortLink l')
-                      Left w -> pure $ maybe (Nothing, CPNameNotConnectable (nameDomain ni) w) (bimap Just (setNameWarning w)) known_
+                      Right l' -> first Just <$> (linkPlan (nameExpiresAt reg) (serverShortLink l') `catchAllErrors` knownChatOrThrow)
+                      Left w -> case known_ of
+                        Just (l, p) -> do
+                          let p' = setNameWarning w p
+                          when (isNothing $ nameWarning_ p') $ setKnownVerified (nameExpiresAt reg) p'
+                          pure (Just l, p')
+                        Nothing -> pure (Nothing, CPNameNotConnectable (nameDomain ni) w)
             where
               known_ = fst <$> knownFresh_
+              knownChatOrThrow e = case known_ of
+                Just r@(_, p) | knownChat p -> pure r
+                _ -> throwError e
               linkPlan expiresAt l' = case known_ of
                 Just r@(l, _)
                   | knownLinkOf l == Just l' -> confirmKnown expiresAt l' r

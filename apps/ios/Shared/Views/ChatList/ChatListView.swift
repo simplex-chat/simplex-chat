@@ -772,10 +772,10 @@ struct ChatListSearchBar: View {
             if oneHandUI, let candidate = connectNameCandidate {
                 ConnectByNameRow(
                     name: candidate,
-                    searchText: $searchText,
-                    connectNameCandidate: $connectNameCandidate,
                     searchFocussed: $searchFocussed,
-                    dismiss: false
+                    dismiss: false,
+                    filterKnownContact: { searchChatFilteredBySimplexLink = [$0.id] },
+                    filterKnownGroup: { searchChatFilteredBySimplexLink = [$0.id] }
                 )
             } else {
                 ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
@@ -817,10 +817,10 @@ struct ChatListSearchBar: View {
             if !oneHandUI, let candidate = connectNameCandidate {
                 ConnectByNameRow(
                     name: candidate,
-                    searchText: $searchText,
-                    connectNameCandidate: $connectNameCandidate,
                     searchFocussed: $searchFocussed,
-                    dismiss: false
+                    dismiss: false,
+                    filterKnownContact: { searchChatFilteredBySimplexLink = [$0.id] },
+                    filterKnownGroup: { searchChatFilteredBySimplexLink = [$0.id] }
                 )
             }
         }
@@ -920,14 +920,14 @@ struct ChatListSearchBar: View {
 
 // Row shown when the search text is a SimpleX name — in place of the list tags in the chat list, below
 // the search field in the new chat sheet. The @ icon marks a contact name, the tag icon a channel/other
-// name; tapping hides the keyboard, connects online, and clears the field.
+// name; tapping hides the keyboard and connects online, and a chat found by the name stays filtered in the list.
 struct ConnectByNameRow: View {
     @EnvironmentObject var theme: AppTheme
     var name: String
-    @Binding var searchText: String
-    @Binding var connectNameCandidate: String?
     @FocusState.Binding var searchFocussed: Bool
     var dismiss: Bool
+    var filterKnownContact: ((Contact) -> Void)? = nil
+    var filterKnownGroup: ((GroupInfo) -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 4) {
@@ -945,10 +945,8 @@ struct ConnectByNameRow: View {
                 name,
                 theme: theme,
                 dismiss: dismiss,
-                cleanup: {
-                    searchText = ""
-                    connectNameCandidate = nil
-                }
+                filterKnownContact: filterKnownContact,
+                filterKnownGroup: filterKnownGroup
             )
         }
     }

@@ -41,7 +41,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.Set (Set)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
@@ -718,6 +718,7 @@ planResolveModeP :: A.Parser PlanResolveMode
 planResolveModeP =
   A.takeTill (== ' ') >>= \case
     "all" -> pure PRMAll
+    "allGroups" -> pure PRMAll
     "on" -> pure PRMAll
     "unknown" -> pure PRMUnknown
     "off" -> pure PRMUnknown
@@ -1229,15 +1230,15 @@ connectionPlanProceed = \case
     ILPOk {} -> True
     ILPOwnLink -> True
     _ -> False
-  CPContactAddress cap _ -> case cap of
-    CAPOk {} -> True
-    CAPOwnLink -> True
+  CPContactAddress cap w_ -> case cap of
+    CAPOk {addressChanged} -> not addressChanged
+    CAPOwnLink -> isNothing w_
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
     _ -> False
-  CPGroupLink glp _ -> case glp of
-    GLPOk {} -> True
-    GLPOwnLink _ -> True
+  CPGroupLink glp w_ -> case glp of
+    GLPOk {addressChanged} -> not addressChanged
+    GLPOwnLink _ -> isNothing w_
     GLPConnectingConfirmReconnect -> True
     GLPNoRelays _ -> False
     GLPUpdateRequired _ -> False

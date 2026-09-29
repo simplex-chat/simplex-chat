@@ -22,6 +22,8 @@ import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.datetime.*
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 enum class ConnectionLinkType {
   INVITATION, CONTACT, GROUP
@@ -61,7 +63,7 @@ suspend fun planAndConnect(
 }
 
 private fun nameDate(t: Instant): String =
-  t.toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
+  t.toLocalDateTime(TimeZone.currentSystemDefault()).toJavaLocalDateTime().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG))
 
 private fun namePrice(price: NamePrice): String {
   val dollars = "$" + (price.amount / 100).toString() + (if (price.amount % 100 == 0L) "" else ".%02d".format(price.amount % 100))
@@ -110,12 +112,12 @@ private fun showNameWarningAlert(
     is NameWarning.Expired -> alert(
       generalGetString(MR.strings.simplex_name_expired),
       if (warning.graceUntil != null) String.format(generalGetString(MR.strings.simplex_name_expired_desc), nameStr, nameDate(warning.expiredAt), nameDate(warning.graceUntil))
-      else String.format(generalGetString(MR.strings.simplex_name_expired_no_date_desc), nameStr)
+      else String.format(generalGetString(MR.strings.simplex_name_expired_no_date_desc), nameStr, nameDate(warning.expiredAt))
     )
     is NameWarning.OwnExpired -> alert(
       generalGetString(MR.strings.simplex_name_own_expired),
       if (warning.graceUntil != null) String.format(generalGetString(MR.strings.simplex_name_own_expired_desc), nameStr, nameDate(warning.expiredAt), nameDate(warning.graceUntil))
-      else String.format(generalGetString(MR.strings.simplex_name_own_expired_no_date_desc), nameStr),
+      else String.format(generalGetString(MR.strings.simplex_name_own_expired_no_date_desc), nameStr, nameDate(warning.expiredAt)),
       generalGetString(MR.strings.simplex_name_renew) to { uh: UriHandler -> openNameHowTo(uh) }
     )
     is NameWarning.Available -> alert(
@@ -189,9 +191,15 @@ private suspend fun planAndConnectTask(
       val knownGroup = (connectionPlan as? ConnectionPlan.GroupLink)?.groupLinkPlan.let { it as? GroupLinkPlan.Known }?.groupInfo
       var openExisting: (() -> Unit)? = null
       if (knownContact != null) {
+        if (chatModel.getContactChat(knownContact.contactId) == null) {
+          chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Direct(knownContact), chatItems = emptyList()))
+        }
         if (filterKnownContact != null) filterKnownContact(knownContact)
         else openExisting = { openKnownContact(chatModel, rhId, close, knownContact) }
       } else if (knownGroup != null) {
+        if (chatModel.getGroupChat(knownGroup.groupId) == null) {
+          chatModel.chatsContext.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(knownGroup, groupChatScope = null), chatItems = emptyList()))
+        }
         if (filterKnownGroup != null) filterKnownGroup(knownGroup)
         else openExisting = { openKnownGroup(chatModel, rhId, close, knownGroup) }
       }
@@ -280,9 +288,7 @@ private suspend fun planAndConnectTask(
               connectOtherButton = connectOtherButton,
               connectOtherLink = connectOtherLink,
               addressChanged = connectionPlan.contactAddressPlan.addressChanged,
-              openExistingChat = if (filterKnownContact == null && connectionPlan.contactAddressPlan.addressChanged && planSimplexName != null) {
-                { openLocalNameChat(rhId, planSimplexName, close, cleanup) }
-              } else null,
+              openExistingChat = if (filterKnownContact == null && connectionPlan.contactAddressPlan.addressChanged) openNameChat(rhId, planSimplexName, close, cleanup) else null,
               close,
               cleanup
             )
@@ -379,6 +385,8 @@ private suspend fun planAndConnectTask(
               planSimplexName = planSimplexName,
               connectOtherButton = connectOtherButton,
               connectOtherLink = connectOtherLink,
+              addressChanged = connectionPlan.groupLinkPlan.addressChanged,
+              openExistingChat = if (filterKnownGroup == null && connectionPlan.groupLinkPlan.addressChanged) openNameChat(rhId, planSimplexName, close, cleanup) else null,
               close,
               cleanup
             )
@@ -877,20 +885,20 @@ fun showPrepareContactAlert(
   )
 }
 
-// a name tapped in a message has no filtered list behind the alert, so the chat the name had is found and opened here
-private fun openLocalNameChat(rhId: Long?, name: SimplexNameInfo, close: (() -> Unit)?, cleanup: (() -> Unit)?) {
-  withBGApi {
-    val chatId = knownChatId(rhId, chatModel.controller.apiConnectPlan(rhId, name.shortStr, PlanResolveMode.PRMNever, inProgress = mutableStateOf(false)))
-    val chat = chatId?.let { chatModel.getChat(it) }
-    if (chat != null) withContext(Dispatchers.Main) { openChat_(chatModel, rhId, close, chat) }
-    cleanup?.invoke()
-  }
+// a name tapped in a message has no filtered list behind the alert, so the chat the name had is opened from it, if there is one
+private suspend fun openNameChat(rhId: Long?, name: SimplexNameInfo?, close: (() -> Unit)?, cleanup: (() -> Unit)?): (() -> Unit)? {
+  val chat = name?.let { knownChatId(rhId, chatModel.controller.apiConnectPlan(rhId, it.shortStr, PlanResolveMode.PRMNever, inProgress = mutableStateOf(false))) }?.let { chatModel.getChat(it) }
+  return chat?.let { { openChat_(chatModel, rhId, close, it); cleanup?.invoke() } }
 }
 
 // a bare name found as a local chat also leads to the other kind, which the user does not have
 private fun showOtherNameAlert(rhId: Long?, planSimplexName: SimplexNameInfo, otherSimplexName: SimplexNameInfo, connectOtherButton: String, close: (() -> Unit)?, cleanup: (() -> Unit)?) {
   AlertManager.privacySensitive.showAlertDialogButtonsColumn(
-    title = String.format(generalGetString(MR.strings.simplex_name_also_leads_to), planSimplexName.nameDomain.fullDomainName, otherSimplexName.shortStr),
+    title = String.format(
+      generalGetString(if (otherSimplexName.nameType == SimplexNameType.publicGroup) MR.strings.simplex_name_also_leads_to_channel else MR.strings.simplex_name_also_leads_to_contact),
+      planSimplexName.nameDomain.fullDomainName,
+      otherSimplexName.shortStr
+    ),
     buttons = {
       Column {
         SectionItemView({
@@ -916,6 +924,8 @@ fun showPrepareGroupAlert(
   planSimplexName: SimplexNameInfo? = null,
   connectOtherButton: String? = null,
   connectOtherLink: String? = null,
+  addressChanged: Boolean = false,
+  openExistingChat: (() -> Unit)? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
@@ -933,8 +943,14 @@ fun showPrepareGroupAlert(
     },
     nameCaption = planSimplexName?.shortStr,
     subtitle = subscriberCount,
-    information = ownerVerificationMessage(ownerVerification),
-    confirmText = generalGetString(if (isChannel) MR.strings.connect_plan_open_channel else MR.strings.connect_plan_open_group),
+    information = listOfNotNull(
+      if (addressChanged && planSimplexName != null) String.format(generalGetString(MR.strings.simplex_name_channel_changed), planSimplexName.nameDomain.fullDomainName) else null,
+      ownerVerificationMessage(ownerVerification)
+    ).joinToString("\n").ifEmpty { null },
+    confirmText = generalGetString(
+      if (isChannel) (if (addressChanged) MR.strings.connect_plan_open_new_channel else MR.strings.connect_plan_open_channel)
+      else (if (addressChanged) MR.strings.connect_plan_open_new_group else MR.strings.connect_plan_open_group)
+    ),
     onConfirm = {
       AlertManager.privacySensitive.hideAlert()
       withBGApi {
@@ -958,6 +974,8 @@ fun showPrepareGroupAlert(
     },
     connectOtherButton = connectOtherButton,
     onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, cleanup = cleanup) } } },
+    dismissText = generalGetString(if (openExistingChat != null) MR.strings.connect_plan_open_existing_chat else MR.strings.cancel_verb),
+    onDismissButton = openExistingChat,
     onDismiss = {
       cleanup?.invoke()
     }

@@ -18,6 +18,7 @@
   <string name="connect_plan_open_new_chat">Open new chat</string>
   <string name="connect_plan_open_group">Open group</string>
   <string name="connect_plan_open_new_group">Open new group</string>
+  <string name="connect_plan_open_new_channel">Open new channel</string>
   <string name="connect_plan_you_are_observer">You are an observer</string>
   <string name="connect_plan_you_are_member">You are a member</string>
   <string name="connect_plan_you_are_moderator">You are a moderator</string>
@@ -207,10 +208,10 @@
   <!-- SimpleX name lookup - ConnectPlan.kt -->
   <string name="simplex_name_expired">Name expired</string>
   <string name="simplex_name_expired_desc">%1$s expired on %2$s. Its owner can renew it until %3$s.</string>
-  <string name="simplex_name_expired_no_date_desc">%1$s has expired. Its owner can still renew it for a limited time.</string>
+  <string name="simplex_name_expired_no_date_desc">%1$s expired on %2$s.</string>
   <string name="simplex_name_own_expired">Your name has expired</string>
   <string name="simplex_name_own_expired_desc">Your name %1$s expired on %2$s. Renew it before %3$s.</string>
-  <string name="simplex_name_own_expired_no_date_desc">Your name %1$s has expired. Renew it before the grace period ends.</string>
+  <string name="simplex_name_own_expired_no_date_desc">Your name %1$s expired on %2$s.</string>
   <string name="simplex_name_own_available_desc">Your name %1$s is no longer registered. It is available for registration for %2$s.</string>
   <string name="simplex_name_not_registered">Name not registered</string>
   <string name="simplex_name_no_longer_registered">Name no longer registered</string>
@@ -218,7 +219,9 @@
   <string name="simplex_name_price_for_years">%1$s for %2$d years</string>
   <string name="simplex_name_reserved_community_desc">%1$s is reserved for community. Please contact SimpleX Chat if you are interested in using it.</string>
   <string name="simplex_name_address_changed">%1$s now leads to a new address.</string>
-  <string name="simplex_name_also_leads_to">%1$s also leads to %2$s</string>
+  <string name="simplex_name_channel_changed">%1$s now leads to a new channel.</string>
+  <string name="simplex_name_also_leads_to_channel">%1$s also leads to channel %2$s</string>
+  <string name="simplex_name_also_leads_to_contact">%1$s also leads to contact %2$s</string>
   <string name="simplex_name_register">Register</string>
   <string name="simplex_name_re_register">Re-register</string>
   <string name="simplex_name_renew">Renew</string>
