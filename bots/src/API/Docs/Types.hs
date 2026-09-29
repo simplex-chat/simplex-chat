@@ -37,6 +37,7 @@ import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Service
 import Simplex.Chat.Names
+import Simplex.Chat.Wallet (WalletError (..))
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -407,6 +408,7 @@ chatTypesDocsData =
     (sti @UserInfo, STRecord, "", [], "", ""),
     (sti @UserProfileUpdateSummary, STRecord, "", [], "", ""),
     (sti @UserPwdHash, STRecord, "", [], "", ""),
+    (sti @WalletError, STUnion, "WE", [], "", ""),
     (sti @XFTPErrorType, STUnion, "", [], "", ""),
     (sti @XFTPRcvFile, STRecord, "", [], "", ""),
     (sti @XFTPSndFile, STRecord, "", [], "", ""),
@@ -645,6 +647,7 @@ deriving instance Generic UserContactRequest
 deriving instance Generic UserInfo
 deriving instance Generic UserProfileUpdateSummary
 deriving instance Generic UserPwdHash
+deriving instance Generic WalletError
 deriving instance Generic XFTPErrorType
 deriving instance Generic XFTPRcvFile
 deriving instance Generic XFTPSndFile

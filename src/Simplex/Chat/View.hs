@@ -60,6 +60,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
+import Simplex.Chat.Wallet (WalletAddress (..), WalletError (..), WalletInfo (..))
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent (DatabaseDiff (..))
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
@@ -68,6 +69,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.BIP44 (unAccountIndex)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
@@ -195,6 +197,15 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRBadgeRedeemed u badge newBadge _ -> ttyUser u $ if newBadge then "badge redeemed" : viewContactBadge (Just badge) else ["badge already redeemed"]
   CRBadgeState u st -> ttyUser u $ viewUserBadgeState st
   CRBadgeLedger u entries -> ttyUser u $ viewBadgeLedger entries
+  CRWallet u info_ -> ttyUser u $ case info_ of
+    Nothing -> ["no wallet on this device"]
+    Just WalletInfo {accountIndexes, nextAccountIndex} ->
+      let next = maybe "unknown" tshow nextAccountIndex
+          accounts = if null accountIndexes then "no accounts for this profile" else "accounts: " <> T.intercalate ", " (map (tshow . unAccountIndex) accountIndexes)
+       in [plain $ "wallet, next account " <> next <> ", " <> accounts]
+  CRWalletMnemonic u mnemonic -> ttyUser u [plain mnemonic]
+  CRWalletAddress u a -> ttyUser u [walletAddressRow a]
+  CRWalletAccountSecret u a secret -> ttyUser u [walletAddressRow a <> "  " <> plain secret]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRPublicGroupCreationFailed u results -> ttyUser u $ viewPublicGroupCreationFailed results
@@ -1101,6 +1112,10 @@ viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
   ContactRequest _ -> []
   ContactConnection _ -> []
   CInfoInvalidJSON {} -> []
+
+walletAddressRow :: WalletAddress -> StyledString
+walletAddressRow WalletAddress {accountIndex, keyPath, address} =
+  plain $ tshow (unAccountIndex accountIndex) <> "  " <> keyPath <> "  " <> safeDecodeUtf8 (strEncode address)
 
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
@@ -2799,6 +2814,18 @@ viewChatError isCmd logLevel testView = \case
             SDENoValidLink -> "has no valid connection link"
             SDEUnknownDomain -> "is not included in the connection link's profile"
        in [plain $ "SimpleX name " <> strEncode domain <> " " <> reason]
+    CEWallet walletErr ->
+      let reason :: Text
+          reason = case walletErr of
+            WENoMaster -> "this device has no wallet"
+            WEMasterExists -> "this device already has a wallet"
+            WEBadMnemonic -> "not a valid recovery phrase"
+            WEHiddenProfile -> "an account cannot be bound to a hidden profile"
+            WEAccountBound -> "another profile holds this account"
+            WEAccountNotHeld -> "this profile does not hold this account"
+            WECounterUnknown -> "the next account is unknown after an import"
+            WEAccountsExhausted -> "every account index is used"
+       in [plain $ "wallet: " <> reason]
     CENotResolvedLocally -> ["no matching chat found, name resolution is disabled"]
     CEUnsupportedConnReq -> [ "", "Connection link is not supported by the your app version, please ugrade it.", plain updateStr]
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->

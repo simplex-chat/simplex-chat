@@ -69,7 +69,9 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
+import Simplex.Chat.Wallet (WalletAddress, WalletError, WalletInfo)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
+import Simplex.Messaging.Crypto.BIP44 (AccountIndex)
 import Simplex.Messaging.Server.Information (ServerPublicInfo)
 import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
@@ -436,6 +438,13 @@ data ChatCommand
   | APIRejectContact {contactReqId :: Int64, notify :: Bool}
   | APISendServiceRequest {userId :: UserId, sendTarget :: ConnectTarget 'CMContact, requestTimeout :: Maybe NominalDiffTime, signKey :: Maybe (C.StoredPrivateKey 'C.Ed25519), request :: J.Object}
   | APISendServiceResponse {userId :: UserId, requestId :: AgentInvId, responseData :: J.Object}
+  | APIGetWallet {userId :: UserId}
+  | APICreateWallet {mnemonic :: Maybe Text}
+  | APIBindWalletAccount {userId :: UserId, accountIndex_ :: Maybe AccountIndex}
+  | APIGetWalletAddress {accountIndex_ :: Maybe AccountIndex}
+  | APIExportWalletMnemonic
+  | APIExportWalletAccount {userId :: UserId, accountIndex :: AccountIndex}
+  | APIDeleteWallet
   | APISendCallInvitation ContactId CallType
   | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
@@ -871,6 +880,10 @@ data ChatResponse
   | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
   | CRBadgeState {user :: User, badgeState :: Maybe BadgeState}
   | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
+  | CRWallet {user :: User, walletInfo_ :: Maybe WalletInfo}
+  | CRWalletMnemonic {user :: User, mnemonic :: Text}
+  | CRWalletAddress {user :: User, walletAddress :: WalletAddress}
+  | CRWalletAccountSecret {user :: User, walletAddress :: WalletAddress, secret :: Text}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
   | CRGroupsList {user :: User, groups :: [GroupInfo]}
@@ -1511,6 +1524,7 @@ data ChatErrorType
   | CEChatStoreChanged
   | CEInvalidConnReq
   | CESimplexDomainNotReady {simplexDomain :: SimplexDomain, simplexDomainError :: SimplexDomainError}
+  | CEWallet {walletError :: WalletError}
   | CENotResolvedLocally -- a name or link is not a known chat in the local store and online resolution is off (PRMNever)
   | CEUnsupportedConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
