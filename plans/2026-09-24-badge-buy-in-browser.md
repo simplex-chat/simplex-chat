@@ -72,6 +72,8 @@ No deep link. *Buy in browser* opens the page with `app=desktop` and the Redeem 
 
 Optional, off the critical path, and blocking nothing — D1 works without it. Worth investigating on its own; if it lands, desktop joins lane A and D1 becomes the fallback rather than the design.
 
+Done: see `plans/2026-09-28-desktop-deep-links.md`. Desktop joins lane A wherever the scheme is registered, and D1 is the fallback.
+
 Nothing registers a scheme on desktop today. `appOpenUrl` is wired in commonMain with no desktop implementation behind it, and `desktop/build.gradle.kts` declares Deb, Dmg, Msi and Exe with no protocol entry. Registration is per-OS, three separate small jobs: `CFBundleURLTypes` in the bundle plist plus `Desktop.setOpenURIHandler` on macOS, registry keys under `HKCU\Software\Classes` that the installer would have to write on Windows, and a `.desktop` entry with `MimeType=x-scheme-handler/simplexchat` on Linux. None of them covers an unpackaged run, so the fallback stays either way.
 
 Getting the URL to an app that is already running is the part that half exists. `SingleInstance.kt` takes a file lock and uses a watched file to bring the running instance forward on a second launch; carrying a URL means giving that channel a payload rather than inventing IPC for it.

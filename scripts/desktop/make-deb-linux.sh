@@ -48,6 +48,8 @@ dpkg-deb -R ./release/main/deb/simplex*.deb ./extracted
 rm -f ./extracted/opt/*imple*/lib/app/*skiko-awt-runtime-linux*
 sed -i -e '/skiko-awt-runtime-linux/d' ./extracted/opt/*imple*/lib/app/simplex.cfg
 sed -i "/Version/ s/\$/~$VERSION_CODENAME/" ./extracted/DEBIAN/control
+# jpackage's desktop entry passes no URL and handles no MIME type; this registers the simplexchat: scheme
+sed -i -e 's|^Exec=.*|& %u|' -e 's|^MimeType=.*|MimeType=x-scheme-handler/simplexchat;|' ./extracted/opt/*imple*/lib/*.desktop
 find ./extracted/ -exec touch -d "@$SOURCE_DATE_EPOCH" {} +
 
 dpkg-deb --build --root-owner-group --uniform-compression ./extracted ./release/main/deb/simplex_${ARCH}.deb
