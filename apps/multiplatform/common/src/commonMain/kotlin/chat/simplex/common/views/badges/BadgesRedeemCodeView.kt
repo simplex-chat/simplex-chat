@@ -358,7 +358,7 @@ private fun BadgeHeld(onViewBadge: () -> Unit, onCancel: () -> Unit) {
     primary = MR.strings.badges_link_view_badge to onViewBadge,
     textButton = MR.strings.cancel_verb to onCancel
   ) {
-    LinkText(String.format(stringResource(MR.strings.badges_link_held_profile), chatModel.currentUser.value?.displayName ?: ""))
+    LinkText(stringResource(MR.strings.badges_link_held_other_profile))
     LinkText(stringResource(MR.strings.badges_link_held_page))
   }
 }

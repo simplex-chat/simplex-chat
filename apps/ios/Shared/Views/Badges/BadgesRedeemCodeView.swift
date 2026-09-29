@@ -294,8 +294,8 @@ struct BadgesRedeemLinkView: View {
             primary: ("View your badge", { state.step = .viewingBadge }),
             textButton: ("Cancel", { closeIfShowing() })
         ) {
-            linkText(String.localizedStringWithFormat(NSLocalizedString("%@ already has a badge, so nothing was added.", comment: "badge link, profile has a badge"), chatModel.currentUser?.displayName ?? ""))
-            linkText(NSLocalizedString("A different code can be added to another profile, or here once this badge ends — it is still on the page you bought it on, under Show code.", comment: "badge link, profile has a badge"))
+            linkText(NSLocalizedString("A badge can be added to another profile, or here once this badge ends.", comment: "badge link, profile has a badge"))
+            linkText(NSLocalizedString("Its code is on the page you bought it on, under Show code.", comment: "badge link, profile has a badge"))
         }
     }
 
