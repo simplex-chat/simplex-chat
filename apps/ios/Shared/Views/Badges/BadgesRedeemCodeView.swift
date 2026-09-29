@@ -265,6 +265,8 @@ final class BadgeLinkState: ObservableObject {
 
 // Any web page can send a badge link, and a profile holds one badge at a time,
 // so this screen asks before redeeming, names the profile, and offers nothing but the redemption.
+// It is a code redemption with the code hidden, so it inherits the redeem screen's behaviour: an
+// interrupted request is not resumed, and the code stays on the page that issued the link.
 struct BadgesRedeemLinkView: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
