@@ -168,6 +168,10 @@ maxImageSize = 261120 * 2 -- auto-receive on mobiles
 maxProfileImageSize :: Int
 maxProfileImageSize = 12500
 
+-- room for what connection info adds to a checked profile: badge proof, member ids and keys (756 bytes in XContact)
+maxConnInfoOverhead :: Int
+maxConnInfoOverhead = 800
+
 checkProfileImageSize :: Maybe ImageData -> CM ()
 checkProfileImageSize = mapM_ $ \(ImageData t) ->
   let size = T.length t
@@ -184,7 +188,7 @@ checkInfoSize :: String -> ChatMsgEvent 'Json -> CM ()
 checkInfoSize what event = do
   vr <- chatVersionRange
   let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = event}
-  case encodeChatMessage maxEncodedInfoLength info of
+  case encodeChatMessage (maxEncodedInfoLength - maxConnInfoOverhead) info of
     ECMEncoded _ -> pure ()
     ECMLarge -> throwCmdError $ what <> " is too large"
 

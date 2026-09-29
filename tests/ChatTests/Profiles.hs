@@ -14,6 +14,7 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
+import Control.Concurrent.STM (atomically)
 import Control.Monad
 import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
@@ -26,9 +27,11 @@ import qualified Data.Map.Strict as M
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
 import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks, storeCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
+import Simplex.Chat.Library.Commands (maxConnInfoOverhead)
+import Simplex.Chat.Protocol (ChatMessage (..), ChatMsgEvent (XGrpInfo, XInfo), EncodedChatMessage (..), LinkOwnerSig, MsgChatLink (..), MsgContent (..), MsgEncoding (..), encodeChatMessage, maxEncodedInfoLength)
 import Simplex.Chat.Store.Shared (createContact)
-import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..), profileFromName)
+import Simplex.Chat.Types (ConnStatus (..), GroupProfile, GroupRejectionReason (..), ImageData (..), Profile (..), profileFromName)
+import qualified Simplex.Chat.Types as Types
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
@@ -38,7 +41,7 @@ import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Util (decodeJSON, encodeJSON)
+import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
 
@@ -79,6 +82,9 @@ chatProfileTests = do
     describe "business address" $ do
       it "create and connect via business address" testBusinessAddress
       it "update profiles with business address" testBusinessUpdateProfiles
+      it "connect via business address with profiles at size limit" testBusinessAddressProfileSizeLimit
+      it "reject profiles over connection info size limit" testConnInfoSizeChecks
+      it "join group via link with group profile at size limit" testGroupLinkProfileSizeLimit
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -1319,6 +1325,119 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
     concurrently_
       (alice <# "#bob bob_1> hey there")
       (biz <# "#bob bob_1> hey there")
+
+testBusinessAddressProfileSizeLimit :: HasCallStack => TestParams -> IO ()
+testBusinessAddressProfileSizeLimit ps = do
+  Right (pk, sk) <- bbsKeyGen
+  img <- largeProfileImage
+  bizProfile <- profileOfSize maxCheckedInfoSize (businessProfile :: Profile) {image = Just img}
+  bobProfile' <- profileOfSize maxCheckedInfoSize (bobProfile :: Profile) {image = Just img}
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) bizProfile bobProfile' (test sk) ps
+  where
+    test sk biz bob = do
+      -- the badge proof is added to bob's profile in XContact and in the signed XInfo reply
+      addTestBadge bob =<< issueTestBadge sk futureDate
+      biz ##> "/ad"
+      cLink <- getContactLink biz True
+      biz ##> "/auto_accept on business"
+      biz <## "auto_accept on, business"
+      bob ##> ("/c " <> cLink)
+      bob <## "connection request sent!"
+      biz <## "#bob (Bob): accepting business address request..."
+      bob <## "#biz: joining the group..."
+      concurrently_
+        (biz <## "#bob: bob_1 joined the group")
+        (bob <## "#biz: you joined the group")
+      biz #> "#bob hi"
+      bob <# "#biz biz_1> hi"
+      bob #> "#biz hello"
+      biz <# "#bob bob_1> hello"
+
+testConnInfoSizeChecks :: HasCallStack => TestParams -> IO ()
+testConnInfoSizeChecks =
+  testChat aliceProfile $ \alice -> do
+    img <- largeProfileImage
+    p <- profileOfSize (maxCheckedInfoSize + 1) (aliceProfile :: Profile) {image = Just img}
+    alice `send` ("/_profile 1 " <> T.unpack (encodeJSON p))
+    _trimmedCmd1 <- getTermLine alice
+    alice <## "bad chat command: Profile is too large"
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    gp <- groupProfileOfSize (maxCheckedInfoSize + 1) (teamProfile img)
+    alice `send` ("/_group_profile #1 " <> T.unpack (encodeJSON gp))
+    _trimmedCmd2 <- getTermLine alice
+    alice <## "bad chat command: Group profile is too large"
+
+testGroupLinkProfileSizeLimit :: HasCallStack => TestParams -> IO ()
+testGroupLinkProfileSizeLimit =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    img <- largeProfileImage
+    gp@Types.GroupProfile {Types.description = Just welcomeMsg} <- groupProfileOfSize maxCheckedInfoSize (teamProfile img)
+    alice `send` ("/_group 1 " <> T.unpack (encodeJSON gp))
+    _trimmedCmd <- getTermLine alice
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/create link #team"
+    gLink <- getGroupLink alice "team" GRMember True
+    bob ##> ("/c " <> gLink)
+    bob <## "connection request sent!"
+    alice <## "bob (Bob): accepting request to join group #team..."
+    concurrentlyN_
+      [ alice <## "#team: bob joined the group",
+        do
+          bob <## "#team: joining the group..."
+          bob <## "#team: you joined the group"
+          bob <# ("#team alice> " <> T.unpack welcomeMsg)
+      ]
+    alice #> "#team hello"
+    bob <# "#team alice> hello"
+
+-- the largest profile and group profile XInfo and XGrpInfo that pass checkInfoSize
+maxCheckedInfoSize :: Int
+maxCheckedInfoSize = maxEncodedInfoLength - maxConnInfoOverhead
+
+largeProfileImage :: IO ImageData
+largeProfileImage = ImageData . ("data:image/png;base64," <>) . safeDecodeUtf8 <$> genProfileImg
+
+teamProfile :: ImageData -> T.Text -> GroupProfile
+teamProfile img descr =
+  Types.GroupProfile
+    { Types.displayName = "team",
+      Types.fullName = "",
+      Types.shortDescr = Nothing,
+      Types.description = Just descr,
+      Types.image = Just img,
+      Types.publicGroup = Nothing,
+      Types.groupPreferences = Nothing,
+      Types.memberAdmission = Nothing
+    }
+
+-- description is filled with text-like words, so that the encoded XInfo is exactly n bytes
+profileOfSize :: Int -> Profile -> IO Profile
+profileOfSize n p = do
+  let p' = (p :: Profile) {description = Just ""} :: Profile
+  text <- textOfSize $ n - infoSize (XInfo p' Nothing)
+  pure (p' :: Profile) {description = Just text}
+
+groupProfileOfSize :: Int -> (T.Text -> GroupProfile) -> IO GroupProfile
+groupProfileOfSize n withDescr = withDescr <$> textOfSize (n - infoSize (XGrpInfo $ withDescr ""))
+
+infoSize :: ChatMsgEvent 'Json -> Int
+infoSize event = case encodeChatMessage maxBound ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = event} of
+  ECMEncoded s -> B.length s
+  ECMLarge -> error "infoSize: unexpected ECMLarge"
+  where
+    ChatConfig {chatVRange = vr} = testCfg
+
+textOfSize :: Int -> IO T.Text
+textOfSize n = do
+  g <- C.newRandom
+  wordIdxs <- atomically $ B.unpack <$> C.randomBytes n g
+  -- ends with "." as terminal output drops trailing spaces
+  pure $ (<> ".") $ T.take (n - 1) $ T.unwords $ map ((textWords !!) . (`mod` length textWords) . fromEnum) wordIdxs
+  where
+    textWords = ["the", "calculator", "bot", "replies", "with", "results", "of", "each", "operation", "and", "keeps", "history"]
 
 testBusinessUpdateProfiles :: HasCallStack => TestParams -> IO ()
 testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile cathProfile $
