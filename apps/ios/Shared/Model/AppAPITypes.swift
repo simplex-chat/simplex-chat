@@ -1463,15 +1463,6 @@ enum ConnectionPlan: Decodable, Hashable {
     case groupLink(groupLinkPlan: GroupLinkPlan, nameWarning_: NameWarning?)
     case nameNotConnectable(simplexDomain: SimplexDomain, nameWarning: NameWarning)
     case error(chatError: ChatError)
-
-    var nameWarning: NameWarning? {
-        switch self {
-        case let .contactAddress(_, warning): warning
-        case let .groupLink(_, warning): warning
-        case let .nameNotConnectable(_, warning): warning
-        default: nil
-        }
-    }
 }
 
 enum NameWarning: Decodable, Hashable {

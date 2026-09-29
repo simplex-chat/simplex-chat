@@ -7445,13 +7445,6 @@ sealed class ConnectionPlan {
   @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameWarning_: NameWarning? = null): ConnectionPlan()
   @Serializable @SerialName("nameNotConnectable") class NameNotConnectable(val simplexDomain: SimplexDomain, val nameWarning: NameWarning): ConnectionPlan()
   @Serializable @SerialName("error") class Error(val chatError: ChatError): ConnectionPlan()
-
-  fun nameWarning(): NameWarning? = when (this) {
-    is ContactAddress -> nameWarning_
-    is GroupLink -> nameWarning_
-    is NameNotConnectable -> nameWarning
-    else -> null
-  }
 }
 
 @Serializable

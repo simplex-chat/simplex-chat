@@ -76,7 +76,6 @@ registerExpiredName reg ni nameRecord = do
 registerReservedName :: NameRegistry -> SimplexNameInfo -> NameReservedReason -> IO ()
 registerReservedName reg ni reservedReason = registerRegistration reg ni NRReserved {reservedReason}
 
-
 failNameResolution :: NameRegistry -> SimplexNameInfo -> IO ()
 failNameResolution reg ni = atomically $ modifyTVar' reg $ M.insert (registryKey ni) AnswerFails
 

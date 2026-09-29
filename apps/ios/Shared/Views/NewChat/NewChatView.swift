@@ -1344,8 +1344,6 @@ private func showOpenKnownGroupAlert(
     )
 }
 
-private let simplexNamesHowToURL = "https://simplex.domains/#testing"
-
 private func nameDate(_ date: Date) -> String {
     date.formatted(date: .long, time: .omitted)
 }
@@ -1375,7 +1373,7 @@ private func showNameWarningAlert(
             return actions
         })
     }
-    let openHowTo = { openBrowserAlert(uri: simplexNamesHowToURL) }
+    let openHowTo = { openBrowserAlert(uri: "https://simplex.domains/#testing") }
     let register = (title: NSLocalizedString("Register", comment: "alert action"), handler: openHowTo)
     switch warning {
     case let .expired(expiredAt, graceUntil):
@@ -1504,8 +1502,12 @@ func planAndConnect(
                         info.shortStr
                     )
                 }
-                let nameDomain: SimplexDomain? = if case let .nameNotConnectable(simplexDomain, _) = connectionPlan { simplexDomain } else { planSimplexName?.nameDomain }
-                if let nameWarning = connectionPlan.nameWarning, let nameDomain {
+                let (nameDomain, nameWarning): (SimplexDomain?, NameWarning?) = switch connectionPlan {
+                case let .nameNotConnectable(simplexDomain, warning): (simplexDomain, warning)
+                case let .contactAddress(_, warning), let .groupLink(_, warning): (planSimplexName?.nameDomain, warning)
+                default: (nil, nil)
+                }
+                if let nameWarning, let nameDomain {
                     await MainActor.run {
                         var openExisting: (() -> Void)? = nil
                         switch connectionPlan {
@@ -1538,8 +1540,6 @@ func planAndConnect(
                     return
                 }
                 switch connectionPlan {
-                case .nameNotConnectable:
-                    break
                 case let .invitationLink(ilp):
                     switch ilp {
                     case let .ok(contactSLinkData_, ownerVerification):
@@ -1835,6 +1835,8 @@ func planAndConnect(
                             }
                         }
                     }
+                case .nameNotConnectable:
+                    break
                 case let .error(chatError):
                     logger.debug("planAndConnect, .error \(chatErrorString(chatError))")
                     showAskCurrentOrIncognitoProfileSheet(
