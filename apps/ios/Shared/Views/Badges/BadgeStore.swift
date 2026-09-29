@@ -39,7 +39,9 @@ let badgePeriodsForSale: [BadgePeriod] = [.oneMonth]
 func newBadgeInvoiceId() -> UUID { UUID() }
 
 // the page's app flag rides in the fragment, which never reaches the service
-let badgePageUrl = "https://badges.simplex.chat/#/tier?app=true"
+// TEST ONLY: pointed at the dev deployment; restore the line below before merging
+let badgePageUrl = "https://smp7.simplex.im/#/tier?app=true"
+// let badgePageUrl = "https://badges.simplex.chat/#/tier?app=true"
 
 // where the store allows a link out to the badge page: the US for now, a set expected to widen.
 // An unknown storefront does not count, as this decides whether the store sees a link out of the app.
