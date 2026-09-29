@@ -342,7 +342,7 @@ fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLink
   val profileHasBadge = BadgeModel.isCurrent(rhId, chatModel.currentUser.value?.userId) && BadgeModel.badgeState.value?.shown == true
 
   when (step.value) {
-    BadgeLinkStep.Confirming -> ModalView(close) {
+    BadgeLinkStep.Confirming -> ModalView(::closeIfShowing) {
       if (profileHasBadge) {
         BadgeHeld(onViewBadge = { step.value = BadgeLinkStep.ViewingBadge }, onCancel = ::closeIfShowing)
       } else {
