@@ -2446,32 +2446,35 @@ encodeConnInfoPQ pqSup chatMsgEvent = do
   cxt <- chatStoreCxt
   let info = ChatMessage {chatVRange = vr cxt, msgId = Nothing, chatMsgEvent}
   case encodeChatMessage maxEncodedInfoLength info of
-    ECMEncoded connInfo -> case pqSup of
-      PQSupportOn | B.length connInfo > maxCompressedInfoLength -> do
-        let connInfo' = compressedBatchMsgBody_ connInfo
-        when (B.length connInfo' > maxCompressedInfoLength) $ throwChatError $ CEException "large compressed info"
-        pure connInfo'
-      _ -> pure connInfo
+    ECMEncoded connInfo -> compressConnInfoPQ pqSup connInfo
     ECMLarge -> throwChatError $ CEException "large info"
 
 -- conn-info wrapped as a signed element, so the receiver can verify the signature over the body
-encodeSignedConnInfo :: MsgEncodingI e => MsgSigning -> ChatMsgEvent e -> CM ByteString
-encodeSignedConnInfo signing chatMsgEvent = do
+encodeSignedConnInfo :: MsgEncodingI e => PQSupport -> MsgSigning -> ChatMsgEvent e -> CM ByteString
+encodeSignedConnInfo pqSup signing chatMsgEvent = do
   vr <- chatVersionRange
   let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent}
   case encodeChatMessage maxEncodedInfoLength info of
-    ECMEncoded body -> pure $ encodeBatchElement (Just $ signChatMsgBody signing body) body
+    ECMEncoded body -> compressConnInfoPQ pqSup $ encodeBatchElement (Just $ signChatMsgBody signing body) body
     ECMLarge -> throwChatError $ CEException "large signed info"
+
+compressConnInfoPQ :: PQSupport -> ByteString -> CM ByteString
+compressConnInfoPQ pqSup connInfo = case pqSup of
+  PQSupportOn | B.length connInfo > maxCompressedInfoLength -> do
+    let connInfo' = compressedBatchMsgBody_ connInfo
+    when (B.length connInfo' > maxCompressedInfoLength) $ throwChatError $ CEException "large compressed info"
+    pure connInfo'
+  _ -> pure connInfo
 
 -- signed XMember for a relay-group join: proves the joiner holds the member key it asserts, and carries
 -- viaRelay = the target relay's memberId inside the signed body so a sibling relay can't accept a replay
-encodeXMemberConnInfo :: GroupInfoKeys -> MemberId -> Profile -> CM ByteString
-encodeXMemberConnInfo (GIK gInfo@GroupInfo {membership = GroupMember {memberId}} gks) relayMemberId profileToSend =
+encodeXMemberConnInfo :: PQSupport -> GroupInfoKeys -> MemberId -> Profile -> CM ByteString
+encodeXMemberConnInfo pqSup (GIK gInfo@GroupInfo {membership = GroupMember {memberId}} gks) relayMemberId profileToSend =
   let memberPrivKey' = memberPrivKey gks
       xMemberEvt = XMember profileToSend memberId (MemberKey $ C.publicKey memberPrivKey') (Just relayMemberId)
       bindingData = groupBindingData gInfo memberId (C.publicKey memberPrivKey')
       signing = MsgSigning CBGroup bindingData KRMember memberPrivKey'
-   in encodeSignedConnInfo signing xMemberEvt
+   in encodeSignedConnInfo pqSup signing xMemberEvt
 
 deliverMessage :: Connection -> CMEventTag e -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
 deliverMessage conn cmEventTag msgBody msgId = do
@@ -3045,7 +3048,7 @@ allowAgentConnectionAsync user conn@Connection {pqSupport} confId gInfo_ msg = d
         Just gInfo@(GIK g _) | useRelays' g || maxVersion (peerChatVRange conn) >= relayWebCapVersion -> groupMsgSigning False gInfo msg
         _ -> Nothing
   dm <- case signing_ of
-    Just signing -> encodeSignedConnInfo signing msg
+    Just signing -> encodeSignedConnInfo pqSupport signing msg
     Nothing -> encodeConnInfoPQ pqSupport msg
   allowAgentConnectionInfo user conn confId dm
 
