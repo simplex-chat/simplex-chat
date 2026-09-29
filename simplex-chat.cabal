@@ -444,6 +444,7 @@ executable simplex-badge-service
       BadgeService.Store.Invoices
       BadgeService.Store.Migrate
       BadgeService.StoreReceipts
+      BadgeService.StoreReceipts.Mock
       BadgeService.Waiters
       BadgeService.Web.Server
       Paths_simplex_chat
@@ -733,6 +734,7 @@ test-suite simplex-chat-test
       BadgeService.Store.Invoices
       BadgeService.Store.Migrate
       BadgeService.StoreReceipts
+      BadgeService.StoreReceipts.Mock
       BadgeService.Waiters
       BadgeService.Web.Server
       Bots.BadgeService.BTCPayTests

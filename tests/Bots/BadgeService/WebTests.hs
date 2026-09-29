@@ -801,7 +801,8 @@ testServiceConfig staticDir trustForwarded =
       stripe = Nothing,
       poll = PollConfig {pWaitingSeconds = 3, pIdleSeconds = 60},
       issuer = Nothing,
-      devChatRedeem = False
+      devChatRedeem = False,
+      devAcceptUnverifiedStoreReceipts = False
     }
 
 testServeWebappOff :: IO ()

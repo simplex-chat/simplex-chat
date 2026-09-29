@@ -10,7 +10,8 @@
 module BadgeTests (badgeTests) where
 
 import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest, survive)
-import BadgeService.StoreReceipts (StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), storeReceipt)
+import BadgeService.StoreReceipts (StoreEnvironment (..), StoreReceipt (..), StoreRefusal (..), StoreTransaction (..), StoreVerifier (..), storeReceipt)
+import BadgeService.StoreReceipts.Mock (mockStoreVerifier)
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
 import Control.Concurrent.STM (atomically)
@@ -109,6 +110,7 @@ badgeTests = do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
     it "shows a service request in the terminal as its type alone" testShownServiceRequest
     it "refuses a Play product id or token that could name another purchase, before any verifier" testGooglePathStrings
+    it "has the dev mock vouch for the transaction its claim names, as a production purchase" testMockVouchesForClaim
   describe "badge service request loop" $ do
     it "survives a request that throws, and still stops when cancelled" testSurviveRequestFailure
 
@@ -875,6 +877,19 @@ testGooglePathStrings = do
   case storeReceipt calledVerifier SPGoogle {productId = "badge_supporter_01", token = validToken} of
     Just (Right StoreReceipt {provider}) -> provider `shouldBe` PPGoogle
     _ -> expectationFailure "a valid product id and token were refused"
+
+testMockVouchesForClaim :: IO ()
+testMockVouchesForClaim = do
+  let part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
+      signed = T.intercalate "." [part "{\"alg\":\"ES256\"}", part "{\"transactionId\":\"2000000812345671\",\"productId\":\"BADGE_SUPPORTER_01\"}", "c2lnbmVk"]
+      vouchesForClaim payment = case storeReceipt mockStoreVerifier payment of
+        Just (Right StoreReceipt {providerRef, verifyReceipt}) ->
+          verifyReceipt >>= \case
+            Right StoreTransaction {transactionRef, environment} -> (transactionRef, environment) `shouldBe` (providerRef, SEProduction)
+            Left refusal -> expectationFailure ("the mock refused: " <> show refusal)
+        _ -> expectationFailure "refused before the mock was asked"
+  vouchesForClaim SPApple {jws = signed}
+  vouchesForClaim SPGoogle {productId = "badge_supporter_01", token = "fake-play-token.AO-J1Oz9x2kqE7wYt3"}
 
 testSurviveRequestFailure :: IO ()
 testSurviveRequestFailure = do

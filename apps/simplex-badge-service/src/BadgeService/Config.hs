@@ -104,7 +104,9 @@ data ServiceConfig = ServiceConfig
     poll :: PollConfig,
     issuer :: Maybe BadgeIssuerKey,
     -- Local testing only; signs credentials with a master key this service can link.
-    devChatRedeem :: Bool
+    devChatRedeem :: Bool,
+    -- Local testing only; anyone who can reach the service can mint badges with any well-formed receipt.
+    devAcceptUnverifiedStoreReceipts :: Bool
   }
   deriving (Eq, Show)
 
@@ -155,7 +157,7 @@ knownSettings =
     ("btcpay", ["host", "api_key", "store_id", "webhook_secret", "expiry_minutes", "speed_policy", "payment_tolerance"]),
     ("stripe", ["secret_key", "publishable_key", "webhook_secret", "session_minutes"]),
     ("poll", ["waiting_seconds", "idle_seconds"]),
-    ("dev", ["chat_redeem"]),
+    ("dev", ["chat_redeem", "accept_unverified_store_receipts"]),
     ("issuer", ["index", "private_key"])
   ]
 
@@ -189,6 +191,7 @@ parseConfig ini = do
   pWaitingSeconds <- cadence "waiting_seconds" 3
   pIdleSeconds <- cadence "idle_seconds" 60
   devRedeem <- bool "dev" "chat_redeem" False
+  devUnverifiedReceipts <- bool "dev" "accept_unverified_store_receipts" False
   pure
     ServiceConfig
       { listener = ListenerConfig {lHost, lPort, lStaticDir, lServeWebapp, lWebappExportDir, lTrustForwardedFor},
@@ -196,7 +199,8 @@ parseConfig ini = do
         stripe = str,
         poll = PollConfig {pWaitingSeconds, pIdleSeconds},
         issuer = iss,
-        devChatRedeem = devRedeem
+        devChatRedeem = devRedeem,
+        devAcceptUnverifiedStoreReceipts = devUnverifiedReceipts
       }
   where
     hasSection s = s `elem` sections ini

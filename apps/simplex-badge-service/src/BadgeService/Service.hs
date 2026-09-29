@@ -33,6 +33,7 @@ import BadgeService.Store
 import BadgeService.Store.Invoices (seedCatalog, truncateToSecond)
 import BadgeService.Store.Migrate (runBadgeServiceMigrations)
 import BadgeService.StoreReceipts
+import BadgeService.StoreReceipts.Mock (mockStoreVerifier)
 import BadgeService.Waiters (Waiters, newWaiters)
 import BadgeService.Web.Server (exportWebapp, newWebEnv, runWebListener)
 import Control.Applicative (optional)
@@ -131,6 +132,13 @@ readConfigOrExit path =
     Left e -> putStrLn (path <> ": " <> e) >> exitFailure
     Right sc -> pure sc
 
+devStoreVerifier :: Maybe ServiceConfig -> ServiceState -> IO ServiceState
+devStoreVerifier serviceCfg env
+  | maybe False devAcceptUnverifiedStoreReceipts serviceCfg = do
+      logWarn "[dev] accept_unverified_store_receipts is on: any store receipt is accepted without verification"
+      pure env {storeVerifier = mockStoreVerifier}
+  | otherwise = pure env
+
 badgeService :: BadgeServiceOpts -> ChatConfig -> ServiceState -> IO ()
 badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
@@ -144,6 +152,7 @@ badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
             preCmdHook = Just badgeCmdHook
           }
   when devRedeem $ logWarn "[dev] chat_redeem is on: /redeem over chat hands out credentials this service can link"
+  requestEnv <- devStoreVerifier serviceCfg env
   -- The reader must not block, since outputQ carries every chat event.
   simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \_ cc -> do
     lanes <- maybe (pure []) (serviceLanes waiters cc) serviceCfg
@@ -155,7 +164,7 @@ badgeService opts@BadgeServiceOpts {serviceConfigFile} cfg env = do
             (_, Right CEvtNewChatItems {chatItems = AChatItem _ SMDRcv (DirectChat ct) ChatItem {content = mc@CIRcvMsgContent {}} : _})
               | devRedeem -> atomically $ writeTQueue (chatRedeemQ env) (ct, ciContentToText mc)
             _ -> pure (),
-        processQueuedRequests key env
+        processQueuedRequests key requestEnv
       ]
         <> [processChatRedeems key env | devRedeem]
         <> lanes
@@ -186,7 +195,7 @@ badgeServiceCLI :: BadgeServiceOpts -> IO ()
 badgeServiceCLI opts@BadgeServiceOpts {serviceConfigFile} = do
   serviceCfg <- traverse readConfigOrExit serviceConfigFile
   key <- requireIssuerKey opts serviceCfg terminalChatConfig
-  env <- newServiceState
+  env <- newServiceState >>= devStoreVerifier serviceCfg
   let eventHook _cc = \case
         Right (CEvtServiceRequest u reqId sigKey reqData) -> do
           atomically $ writeTQueue (serviceRequestQ env) (u, reqId, sigKey, reqData)
