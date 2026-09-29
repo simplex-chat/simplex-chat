@@ -2503,7 +2503,7 @@ class PendingContactConnection(TypedDict):
     createdAt: str  # ISO-8601 timestamp
     updatedAt: str  # ISO-8601 timestamp
 
-PlanResolveMode = Literal["unknown", "never", "all"]
+PlanResolveMode = Literal["all", "unknown", "never"]
 
 class PrefEnabled(TypedDict):
     forUser: bool

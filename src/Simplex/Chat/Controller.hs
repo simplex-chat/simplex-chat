@@ -709,18 +709,19 @@ data ChatCommand
   deriving (Show)
 
 data PlanResolveMode
-  = PRMUnknown -- only resolve if chat is unknown (default)
+  = PRMAll -- always resolve, also known chats
+  | PRMUnknown -- only resolve if chat is unknown (default)
   | PRMNever -- do not resolve links and names, only do local search
-  | PRMAll -- always resolve, also known chats
   deriving (Eq, Show)
 
 planResolveModeP :: A.Parser PlanResolveMode
 planResolveModeP =
   A.takeTill (== ' ') >>= \case
+    "all" -> pure PRMAll
+    "on" -> pure PRMAll
     "unknown" -> pure PRMUnknown
     "off" -> pure PRMUnknown
     "never" -> pure PRMNever
-    "all" -> pure PRMAll
     _ -> fail "bad PlanResolveMode"
 
 data CommandSource

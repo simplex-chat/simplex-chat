@@ -3277,9 +3277,9 @@ count=<count>
 ## PlanResolveMode
 
 **Enum type**:
+- "all"
 - "unknown"
 - "never"
-- "all"
 
 
 ---

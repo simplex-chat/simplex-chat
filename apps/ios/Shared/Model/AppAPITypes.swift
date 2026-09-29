@@ -1452,9 +1452,9 @@ struct ConnectionPlanResult {
 
 // APIConnectPlan resolution scope; .never is local-store-only (no network), used for per-keystroke name search
 enum PlanResolveMode: String {
+    case all
     case unknown
     case never
-    case all
 }
 
 enum ConnectionPlan: Decodable, Hashable {

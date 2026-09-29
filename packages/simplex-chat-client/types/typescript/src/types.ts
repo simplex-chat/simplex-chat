@@ -3587,9 +3587,9 @@ export interface PendingContactConnection {
 }
 
 export enum PlanResolveMode {
+  All = "all",
   Unknown = "unknown",
   Never = "never",
-  All = "all",
 }
 
 export interface PrefEnabled {
