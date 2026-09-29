@@ -15,8 +15,6 @@ module Simplex.Chat.Wallet
 where
 
 import Control.Concurrent.STM
-import Control.Monad.Except
-import Control.Monad.IO.Class (liftIO)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
@@ -28,7 +26,7 @@ import qualified Simplex.Messaging.Crypto.BIP32 as B32
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import Simplex.Messaging.Crypto.BIP44 (AccountIndex, CoinType (..), bip44Path)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
-import Simplex.Messaging.Eth.Address (Address, addressFromPrivateKey)
+import Simplex.Messaging.Eth.Address (Address, deriveAddress)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 
 type AccountKey = S.Secp256k1PrivateKey
@@ -70,12 +68,10 @@ masterMnemonic :: B32.WalletMaster -> Text
 masterMnemonic = decodeLatin1 . B39.entropyPhrase . B32.masterEntropy
 
 deriveAccount :: TVar ChaChaDRG -> B32.WalletMaster -> AccountIndex -> IO (Either String (AccountKey, WalletAddress))
-deriveAccount g master n = runExceptT $ do
-  k <- B32.xkKey <$> ExceptT (B32.derivePath g (B32.walletMasterKey master) path)
-  a <- liftIO $ addressFromPrivateKey g k
-  pure (k, WalletAddress {accountIndex = n, keyPath = decodeLatin1 $ B32.renderPath path, address = a})
+deriveAccount g master n = fmap account <$> deriveAddress g (B32.walletMasterKey master) path
   where
     path = bip44Path Ethereum n
+    account (xk, a) = (B32.xkKey xk, WalletAddress {accountIndex = n, keyPath = decodeLatin1 $ B32.renderPath path, address = a})
 
 accountSecret :: AccountKey -> Text
 accountSecret k = "0x" <> decodeLatin1 (BAE.convertToBase BAE.Base16 $ S.unPrivateKey k)
