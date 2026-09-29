@@ -589,13 +589,14 @@ In the down migration, member rows are deleted before `file_id` is `NOT NULL` ag
 - Only rows with a group link are matched by `getGroupViaPublicGroupId`.
 - Both claims are overwritten from the link data by `updateRelayGroupKeys`.
 
-**13. Tests** — `ChatTests/Profiles.hs`, `ChatTests/ChatRelays.hs`
+**13. Tests** — `ChatTests/Profiles.hs`, `ChatTests/ChatRelays.hs`, `ChatTests/Groups.hs`
 
 - Direct: the badge is shown after a request to an address with and without ratchet keys, after accepting, after joining a one-time link, after a retried join, and after a profile update.
 - A proof bound to another chat is ignored, and the stored badge is kept.
 - P2p group: the joiner's badge is shown at the host at the request and after `INFO`; an introduced member's badge is shown after the handshake, and not from the introduction; the badge is shown on both sides of an invitation via contact.
 - Invitation via contact: the invitee's badge is stored on the membership at the host, and a later member receives the introduction without it.
 - Channel: the owner's badge is shown at a subscriber and the subscriber's badge at the owner, forwarded by the relay (`testChannelMemberBadges`).
+- Channel: a relay invitation with an owner key that differs from the link data is failed by the relay, and the relay stays invited (`testChannelAddRelayOwnerKeyMismatch`).
 - Link data: the badge is shown from an invitation link under `PHLink`, an address, and an address that gets its first short link.
 
 `PHTest` is still sent by released clients and, through `sndPresHeader`, on a retry of a connection prepared before this change.

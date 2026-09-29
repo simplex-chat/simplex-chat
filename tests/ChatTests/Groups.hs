@@ -304,6 +304,7 @@ chatGroupTests = do
       it "should report relay results when one relay deleted its address" testChannelCreateDeletedRelay
       it "should deliver support scope messages via relay" testChannelSupportScope
       it "should add relay to existing channel" testChannelAddRelay
+      it "should not add relay when the invitation owner key differs from link data" testChannelAddRelayOwnerKeyMismatch
       it "should remove relay from channel" testChannelRemoveRelay
       it "should remove left relay from channel" testChannelRemoveLeftRelay
       describe "relay rejection" $ do
@@ -11187,6 +11188,26 @@ testChannelAddRelay ps =
             alice #> "#team hello"
             [bob, cath] *<# "#team> hello"
             [dan, eve] *<# "#team> hello [>>]"
+
+testChannelAddRelayOwnerKeyMismatch :: HasCallStack => TestParams -> IO ()
+testChannelAddRelayOwnerKeyMismatch ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+        _ <- prepareChannel1Relay "team" alice bob
+        cath ##> "/ad"
+        (cathSLink, _cLink) <- getContactLinks cath True
+        alice ##> ("/relays name=cath " <> cathSLink)
+        alice <## "ok"
+        (otherKey :: C.PublicKeyEd25519, _) <- atomically . C.generateKeyPair =<< C.newRandom
+        withCCTransaction alice $ \db ->
+          DB.execute db "UPDATE group_members SET member_pub_key = ? WHERE member_category = 'user'" (Only otherKey)
+        alice ##> "/_add relays #1 2"
+        alice <## "#team: group relays:"
+        alice <## "  - relay id 1: active"
+        alice <## "  - relay id 2: invited"
+        cath <## "exception: getLinkDataCreateRelayLink: owner key of invitation does not match link data"
+        queryRelayOwnStatus cath 1 `shouldReturn` Just "invited"
 
 testChannelAddRelayWithRoster :: HasCallStack => TestParams -> IO ()
 testChannelAddRelayWithRoster ps =
