@@ -19,9 +19,10 @@ import qualified Data.Text as T
 import ProtocolTests (testGroupProfile)
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
-import Simplex.Chat.Types (GroupProfile (..))
+import Simplex.Chat.Types (B64UrlByteString (..), GroupProfile (..))
 import Simplex.Chat.Controller (CorsOrigin (..))
-import Simplex.Chat.Web (WebChannelPreview (..), WebMessage (..), extractOrigin, removeStaleFiles, writeCorsConfig)
+import Simplex.Chat.Web (WebChannelPreview (..), WebMessage (..), extractOrigin, publicGroupIdFileName, removeStaleFiles, writeCorsConfig)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Util (decodeJSON)
@@ -569,8 +570,9 @@ testWebPreviewChannelDeleted ps =
 testWebPreviewStaleCleanup :: HasCallStack => TestParams -> IO ()
 testWebPreviewStaleCleanup ps = do
   let webDir = tmpPath ps </> "web_stale_unit"
-      activeFile = "abc123.json"
-      staleFile = "AAAA_stale.json"
+      previewFileName s = publicGroupIdFileName (B64UrlByteString $ C.sha256Hash s) <> ".json"
+      activeFile = previewFileName "active"
+      staleFile = previewFileName "stale"
       safeFile = "my.config.json"
   createDirectoryIfMissing True webDir
   writeFile (webDir </> activeFile) "{}"
