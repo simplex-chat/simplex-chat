@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
 
@@ -8,12 +9,20 @@ import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, prepareChannel1Relay)
 import ChatTests.Utils
 import Control.Concurrent.Async (concurrently_)
+import Data.Int (Int64)
+import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
+import Data.Time.Clock (UTCTime)
 import NameResolver
+import Simplex.Chat.Controller (ConnectionPlan (..), ContactAddressPlan (..), NamePrice (..), NameWarning (..))
+import Simplex.Chat.Library.Commands (nameLinkOrWarning, setNameWarning)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Names.Record (NameReservedReason (..))
+import Simplex.Messaging.Encoding.String (strDecode)
+import Simplex.Messaging.Names.Record (NamePricing (..), NameRegistration (..), NameReservedReason (..), USDCents (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), SimplexNameType (..), SimplexTLD (..))
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), roundedToUTCTime)
 import Test.Hspec hiding (it)
 
 chatNamesTests :: SpecWith TestParams
@@ -39,6 +48,8 @@ chatNamesTests = do
     it "known chat, name expired" testPlanKnownNameExpired
     it "known chat, name moved to a new address" testPlanKnownNameAddressChanged
     it "known chat, name now available" testPlanKnownNameAvailable
+    it "known chat and own name, name without link or reserved" testPlanKnownNameReserved
+    it "known chat resolved over a day ago, the request failed" testPlanKnownNameResolverFailed
     it "known chat, resolved over a day ago or past expiry" testPlanKnownNameStale
     it "no local chat, resolved on every call" testPlanNameResolvedEveryCall
     it "own name, live" testPlanOwnNameLive
@@ -126,7 +137,7 @@ testConnectByNameNotFound ps = withSmpServerAndNames $ \_reg ->
       enableNamesRole bob
       bob ##> "/c @nobody.simplex"
       bob <## "SimpleX name nobody.simplex: nothing to connect to"
-      bob <##. "available:"
+      bob <## "SimpleX name nobody.simplex is available: $20 for 2 years"
 
 testSetNameNotOwnAddress :: HasCallStack => TestParams -> IO ()
 testSetNameNotOwnAddress ps = withSmpServerAndNames $ \reg ->
@@ -264,7 +275,13 @@ testConnectByNameChannelAndContact ps = withSmpServerAndNames $ \reg ->
         bob <## "SimpleX name: #team (verified)"
         bob <## "use #team <message> to send messages"
         bob <## "You can also connect to @team.simplex in direct chat"
-        bob <## "registered"
+        registerName reg teamName (contactNameRecord "team.simplex" (T.pack contactLink))
+        withCCTransaction bob $ \db -> DB.execute_ db "UPDATE groups SET group_domain_resolved_at = datetime('now', '-2 days')"
+        bob ##> "/_connect plan 1 team.simplex"
+        bob <## "group link: known group #team"
+        bob <## "SimpleX name: #team (verified)"
+        bob <## "use #team <message> to send messages"
+        bob <## "You can also connect to @team.simplex in direct chat"
   where
     teamName = SimplexNameInfo NTPublicGroup (SimplexDomain TLDSimplex "team" [])
 
@@ -289,6 +306,9 @@ testConnectByNameContactAndChannel ps = withSmpServerAndNames $ \reg ->
         bob <## "contact address: ok to connect"
         _ <- getTermLine bob -- contact short link data (JSON, printed in test view)
         bob <## "You can also join channel #acme"
+        alice ##> "/_connect plan 1 acme.simplex"
+        alice <## "contact address: own address"
+        alice <## "You can also join channel #acme"
   where
     acmeName = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "acme" [])
 
@@ -328,6 +348,18 @@ testConnectByNameBusinessAndChannel ps = withSmpServerAndNames $ \reg ->
         bob ##> "/_connect plan 1 @biz.simplex resolve=never"
         bob <## "business address: known business #alice"
         bob <## "use #alice <message> to send messages"
+        bob ##> "/_connect plan 1 @biz.simplex"
+        bob <## "business address: known business #alice"
+        bob <## "use #alice <message> to send messages"
+        registerExpiredName reg bizName (contactAndChannelNameRecord "biz.simplex" (T.pack contactLink) (T.pack channelLink))
+        bob ##> "/_connect plan 1 @biz.simplex"
+        bob <## "business address: known business #alice"
+        bob <## "use #alice <message> to send messages"
+        withCCTransaction bob $ \db -> DB.execute_ db "UPDATE groups SET group_domain_resolved_at = datetime('now', '-2 days')"
+        bob ##> "/_connect plan 1 @biz.simplex"
+        bob <## "business address: known business #alice"
+        bob <## "use #alice <message> to send messages"
+        bob <##. "SimpleX name biz.simplex expired on "
         -- the business's verified domain survives the handshake and is shown in group info
         bob ##> "/i #alice"
         bob <## "group ID: 1"
@@ -370,14 +402,14 @@ testPlanNameExpired = withAliceName $ \reg shortLink _alice bob -> do
   registerExpiredName reg aliceSimplexName (contactNameRecord "alice.simplex" shortLink)
   bob ##> "/_connect plan 1 @alice.simplex"
   bob <## "SimpleX name alice.simplex: nothing to connect to"
-  bob <##. "registered, expires "
+  bob <##. "SimpleX name alice.simplex expired on "
 
 testPlanNameAvailable :: HasCallStack => TestParams -> IO ()
 testPlanNameAvailable = withAliceName $ \reg _l _alice bob -> do
   registerAvailableName reg sunflower 3
   bob ##> "/_connect plan 1 @sunflower.simplex"
   bob <## "SimpleX name sunflower.simplex: nothing to connect to"
-  bob <## "available: 1000 cents/year, min length 3"
+  bob <## "SimpleX name sunflower.simplex is available: $20 for 2 years"
   where
     sunflower = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "sunflower" [])
 
@@ -386,7 +418,7 @@ testPlanNameReservedCommunity = withAliceName $ \reg _l _alice bob -> do
   registerReservedName reg privacy NRRCommunity
   bob ##> "/_connect plan 1 @privacy.simplex"
   bob <## "SimpleX name privacy.simplex: nothing to connect to"
-  bob <## "reserved: community"
+  bob <## "SimpleX name privacy.simplex is reserved for community"
   where
     privacy = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "privacy" [])
 
@@ -395,7 +427,7 @@ testPlanNameReservedOther = withAliceName $ \reg _l _alice bob -> do
   registerReservedName reg acme NRRTrademark
   bob ##> "/_connect plan 1 @acme.simplex"
   bob <## "SimpleX name acme.simplex: nothing to connect to"
-  bob <## "reserved: trademark"
+  bob <## "SimpleX name acme.simplex is not registered"
   where
     acme = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "acme" [])
 
@@ -404,7 +436,7 @@ testPlanNameNoValidLink = withAliceName $ \reg _l _alice bob -> do
   registerName reg boogaloo (emptyRecord "boogaloo.simplex")
   bob ##> "/_connect plan 1 @boogaloo.simplex"
   bob <## "SimpleX name boogaloo.simplex: nothing to connect to"
-  bob <## "registered"
+  bob <## "SimpleX name boogaloo.simplex has no valid link"
   where
     boogaloo = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "boogaloo" [])
 
@@ -415,7 +447,6 @@ testPlanKnownNameLive = withAliceName $ \_reg _l alice bob -> do
   bob <## "contact address: known contact alice"
   bob <## "SimpleX name: @alice.simplex (verified)"
   bob <## "use @alice <message> to send messages"
-  bob <## "registered"
 
 testPlanKnownNameExpired :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameExpired = withAliceName $ \reg shortLink alice bob -> do
@@ -425,7 +456,7 @@ testPlanKnownNameExpired = withAliceName $ \reg shortLink alice bob -> do
   bob <## "contact address: known contact alice"
   bob <## "SimpleX name: @alice.simplex (verified)"
   bob <## "use @alice <message> to send messages"
-  bob <##. "registered, expires "
+  bob <##. "SimpleX name alice.simplex expired on "
 
 testPlanKnownNameAvailable :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameAvailable = withAliceName $ \reg _l alice bob -> do
@@ -435,7 +466,43 @@ testPlanKnownNameAvailable = withAliceName $ \reg _l alice bob -> do
   bob <## "contact address: known contact alice"
   bob <## "SimpleX name: @alice.simplex (verified)"
   bob <## "use @alice <message> to send messages"
-  bob <## "available: 1000 cents/year, min length 1"
+  bob <## "SimpleX name alice.simplex is no longer registered, available: $20 for 2 years"
+
+testPlanKnownNameReserved :: HasCallStack => TestParams -> IO ()
+testPlanKnownNameReserved = withAliceName $ \reg _l alice bob -> do
+  connectBobByName alice bob
+  registerName reg aliceSimplexName (emptyRecord "alice.simplex")
+  planKnownAlice bob
+  alice ##> "/_connect plan 1 @alice.simplex"
+  alice <## "contact address: own address"
+  registerReservedName reg aliceSimplexName NRRTrademark
+  planKnownAlice bob
+  alice ##> "/_connect plan 1 @alice.simplex"
+  alice <## "contact address: own address"
+  registerReservedName reg aliceSimplexName NRRCommunity
+  planKnownAlice bob
+  bob <## "SimpleX name alice.simplex is reserved for community"
+  alice ##> "/_connect plan 1 @alice.simplex"
+  alice <## "contact address: own address"
+  alice <## "SimpleX name alice.simplex is reserved for community"
+  where
+    planKnownAlice bob = do
+      bob ##> "/_connect plan 1 @alice.simplex resolve=all"
+      bob <## "contact address: known contact alice"
+      bob <## "SimpleX name: @alice.simplex (verified)"
+      bob <## "use @alice <message> to send messages"
+
+testPlanKnownNameResolverFailed :: HasCallStack => TestParams -> IO ()
+testPlanKnownNameResolverFailed = withAliceName $ \reg _l alice bob -> do
+  connectBobByName alice bob
+  failNameResolution reg aliceSimplexName
+  withCCTransaction bob $ \db -> DB.execute_ db "UPDATE contact_profiles SET contact_domain_resolved_at = datetime('now', '-2 days')"
+  bob ##> "/_connect plan 1 @alice.simplex"
+  bob <## "contact address: known contact alice"
+  bob <## "SimpleX name: @alice.simplex (verified)"
+  bob <## "use @alice <message> to send messages"
+  alice ##> "/_connect plan 1 @alice.simplex"
+  alice .<## "smpErr = NAME {nameErr = RESOLVER {resolverErr = \"HTTP 500\"}}}"
 
 testPlanKnownNameStale :: HasCallStack => TestParams -> IO ()
 testPlanKnownNameStale = withAliceName $ \_reg _l alice bob -> do
@@ -443,11 +510,9 @@ testPlanKnownNameStale = withAliceName $ \_reg _l alice bob -> do
   planKnownAlice bob
   withCCTransaction bob $ \db -> DB.execute_ db "UPDATE contact_profiles SET contact_domain_resolved_at = datetime('now', '-2 days')"
   planKnownAlice bob
-  bob <## "registered"
   planKnownAlice bob
   withCCTransaction bob $ \db -> DB.execute_ db "UPDATE contact_profiles SET contact_domain_expires_at = datetime('now', '-1 hours')"
   planKnownAlice bob
-  bob <## "registered"
   planKnownAlice bob
   where
     planKnownAlice bob = do
@@ -464,27 +529,26 @@ testPlanNameResolvedEveryCall = withAliceName $ \reg shortLink _alice bob -> do
   registerExpiredName reg aliceSimplexName (contactNameRecord "alice.simplex" shortLink)
   bob ##> "/_connect plan 1 @alice.simplex"
   bob <## "SimpleX name alice.simplex: nothing to connect to"
-  bob <##. "registered, expires "
+  bob <##. "SimpleX name alice.simplex expired on "
 
 testPlanOwnNameLive :: HasCallStack => TestParams -> IO ()
 testPlanOwnNameLive = withAliceName $ \_reg _l alice _bob -> do
   alice ##> "/_connect plan 1 @alice.simplex resolve=all"
   alice <## "contact address: own address"
-  alice <## "registered"
 
 testPlanOwnNameExpired :: HasCallStack => TestParams -> IO ()
 testPlanOwnNameExpired = withAliceName $ \reg shortLink alice _bob -> do
   registerExpiredName reg aliceSimplexName (contactNameRecord "alice.simplex" shortLink)
   alice ##> "/_connect plan 1 @alice.simplex resolve=all"
   alice <## "contact address: own address"
-  alice <##. "registered, expires "
+  alice <##. "your SimpleX name alice.simplex expired on "
 
 testPlanOwnNameAvailable :: HasCallStack => TestParams -> IO ()
 testPlanOwnNameAvailable = withAliceName $ \reg _l alice _bob -> do
   unregisterName reg aliceSimplexName
   alice ##> "/_connect plan 1 @alice.simplex resolve=all"
   alice <## "contact address: own address"
-  alice <## "available: 1000 cents/year, min length 1"
+  alice <## "your SimpleX name alice.simplex is no longer registered, available: $20 for 2 years"
 
 testPlanNameResolveNever :: HasCallStack => TestParams -> IO ()
 testPlanNameResolveNever = withAliceName $ \_reg _l alice bob -> do
@@ -511,8 +575,17 @@ testPlanKnownNameAddressChanged ps = withSmpServerAndNames $ \reg ->
       cath ##> "/ad"
       (cathLink, _) <- getContactLinks cath True
       registerName reg aliceSimplexName (contactNameRecord "alice.simplex" (T.pack cathLink))
+      bob ##> "/_connect plan 1 @alice.simplex resolve=all"
+      bob <## "contact address: known contact alice"
+      bob <## "SimpleX name: @alice.simplex (verified)"
+      bob <## "use @alice <message> to send messages"
+      alice ##> "/_connect plan 1 @alice.simplex"
+      alice <## "contact address: own address"
       cath ##> "/_set domain 1 alice.simplex"
       cath <## "new contact address set"
+      alice ##> "/_connect plan 1 @alice.simplex"
+      alice <## "contact address: ok to connect, address changed"
+      _ <- getTermLine alice
       bob ##> "/_connect plan 1 @alice.simplex"
       bob <## "contact address: known contact alice"
       bob <## "SimpleX name: @alice.simplex (verified)"
@@ -539,3 +612,47 @@ testPlanNameResolverFailed = withAliceName $ \reg _l _alice bob -> do
   bob .<## "smpErr = NAME {nameErr = RESOLVER {resolverErr = \"HTTP 500\"}}}"
   where
     broken = SimplexNameInfo NTContact (SimplexDomain TLDSimplex "broken" [])
+
+nameWarningTests :: Spec
+nameWarningTests = do
+  it "warning for a name with no local chat" $ \_ -> testNameLinkOrWarning
+  it "warning for own name" $ \_ -> testOwnNameWarning
+
+testNameLinkOrWarning :: IO ()
+testNameLinkOrWarning = do
+  linkOrWarning NTContact (registered Nothing Nothing contactRecord) `shouldBe` Right contactLink
+  linkOrWarning NTContact (registered (Just 1100) Nothing contactRecord) `shouldBe` Right contactLink
+  linkOrWarning NTPublicGroup (registered Nothing Nothing channelRecord) `shouldBe` Right channelLink
+  linkOrWarning NTPublicGroup (registered Nothing Nothing contactRecord) `shouldBe` Left NWNoValidLink
+  linkOrWarning NTContact (NRRegistered Nothing Nothing (Just NRRCommunity) contactRecord) `shouldBe` Right contactLink
+  linkOrWarning NTContact (registered (Just 900) (Just 2000) contactRecord) `shouldBe` Left (NWExpired (utc 900) (Just $ utc 2000))
+  linkOrWarning NTContact (registered (Just 900) Nothing contactRecord) `shouldBe` Left (NWExpired (utc 900) Nothing)
+  linkOrWarning NTContact (NRAvailable $ pricing 5 M.empty) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 2000) 2)
+  linkOrWarning NTContact (NRAvailable $ pricing 3 (M.fromList [(5, USDCents 5000)])) `shouldBe` Left (NWAvailable $ NamePrice (USDCents 10000) 2)
+  linkOrWarning NTContact (NRAvailable $ pricing 6 M.empty) `shouldBe` Left NWNotRegistered
+  linkOrWarning NTContact (NRReserved NRRCommunity) `shouldBe` Left NWReservedForCommunity
+  linkOrWarning NTContact (NRReserved NRRTrademark) `shouldBe` Left NWNotRegistered
+  where
+    linkOrWarning nameType = nameLinkOrWarning (RoundedSystemTime 1000) (SimplexNameInfo nameType (SimplexDomain TLDSimplex "alice" []))
+    registered expires graceUntil = NRRegistered (RoundedSystemTime <$> expires) (RoundedSystemTime <$> graceUntil) Nothing
+    pricing minLabelLength registrationPrices = NamePricing {registrationPrices, basePrice = USDCents 1000, minLabelLength}
+    contactRecord = contactNameRecord "alice.simplex" contactLinkStr
+    channelRecord = channelNameRecord "alice.simplex" channelLinkStr
+    contactLink = either error id $ strDecode $ encodeUtf8 contactLinkStr
+    channelLink = either error id $ strDecode $ encodeUtf8 channelLinkStr
+    contactLinkStr = "https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok"
+    channelLinkStr = "simplex:/c#AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg?h=smp.simplex.im&p=5223&c=1234-w"
+
+testOwnNameWarning :: IO ()
+testOwnNameWarning = do
+  ownWarning (NWExpired (utc 900) Nothing) `shouldBe` Just (NWOwnExpired (utc 900) Nothing)
+  ownWarning (NWAvailable price) `shouldBe` Just (NWOwnAvailable price)
+  ownWarning NWReservedForCommunity `shouldBe` Just NWReservedForCommunity
+  ownWarning NWNotRegistered `shouldBe` Nothing
+  ownWarning NWNoValidLink `shouldBe` Nothing
+  where
+    ownWarning w = nameWarning_ $ setNameWarning w $ CPContactAddress CAPOwnLink Nothing
+    price = NamePrice (USDCents 2000) 2
+
+utc :: Int64 -> UTCTime
+utc = roundedToUTCTime . RoundedSystemTime

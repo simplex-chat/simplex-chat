@@ -7441,15 +7441,15 @@ enum class PlanResolveMode {
 @Serializable
 sealed class ConnectionPlan {
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
-  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameRegistration_: NameRegistration? = null): ConnectionPlan()
-  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameRegistration_: NameRegistration? = null): ConnectionPlan()
-  @Serializable @SerialName("nameNotConnectable") class NameNotConnectable(val simplexDomain: SimplexDomain, val nameRegistration: NameRegistration): ConnectionPlan()
+  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan, val nameWarning_: NameWarning? = null): ConnectionPlan()
+  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan, val nameWarning_: NameWarning? = null): ConnectionPlan()
+  @Serializable @SerialName("nameNotConnectable") class NameNotConnectable(val simplexDomain: SimplexDomain, val nameWarning: NameWarning): ConnectionPlan()
   @Serializable @SerialName("error") class Error(val chatError: ChatError): ConnectionPlan()
 
-  fun nameRegistration(): NameRegistration? = when (this) {
-    is ContactAddress -> nameRegistration_
-    is GroupLink -> nameRegistration_
-    is NameNotConnectable -> nameRegistration
+  fun nameWarning(): NameWarning? = when (this) {
+    is ContactAddress -> nameWarning_
+    is GroupLink -> nameWarning_
+    is NameNotConnectable -> nameWarning
     else -> null
   }
 }

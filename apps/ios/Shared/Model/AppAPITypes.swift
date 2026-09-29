@@ -1459,77 +1459,35 @@ enum PlanResolveMode: String {
 
 enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
-    case contactAddress(contactAddressPlan: ContactAddressPlan, nameRegistration_: NameRegistration?)
-    case groupLink(groupLinkPlan: GroupLinkPlan, nameRegistration_: NameRegistration?)
-    case nameNotConnectable(simplexDomain: SimplexDomain, nameRegistration: NameRegistration)
+    case contactAddress(contactAddressPlan: ContactAddressPlan, nameWarning_: NameWarning?)
+    case groupLink(groupLinkPlan: GroupLinkPlan, nameWarning_: NameWarning?)
+    case nameNotConnectable(simplexDomain: SimplexDomain, nameWarning: NameWarning)
     case error(chatError: ChatError)
 
-    var nameRegistration: NameRegistration? {
+    var nameWarning: NameWarning? {
         switch self {
-        case let .contactAddress(_, reg): reg
-        case let .groupLink(_, reg): reg
-        case let .nameNotConnectable(_, reg): reg
+        case let .contactAddress(_, warning): warning
+        case let .groupLink(_, warning): warning
+        case let .nameNotConnectable(_, warning): warning
         default: nil
         }
     }
 }
 
-enum NameRegistration: Hashable {
-    // held by someone; expires/graceUntil are absent from an older router, which means "not known", not "live forever"
-    case registered(expires: Int64?, graceUntil: Int64?, reservedReason_: String?)
-    case available(pricing: NamePricing)
-    case reserved(reservedReason: String)
-
-    // the registry may add reasons after this version, so any other value is just "not registrable"
-    static let reservedCommunity = "community"
-
-    func expired(_ now: Int64) -> Bool {
-        if case let .registered(expires, _, _) = self, let expires { expires < now } else { false }
-    }
-
-    var reservedForCommunity: Bool {
-        switch self {
-        case let .reserved(reason): reason == NameRegistration.reservedCommunity
-        case let .registered(_, _, reason): reason == NameRegistration.reservedCommunity
-        case .available: false
-        }
-    }
+enum NameWarning: Decodable, Hashable {
+    case expired(expiredAt: Date, graceUntil: Date?)
+    case ownExpired(expiredAt: Date, graceUntil: Date?)
+    case available(price: NamePrice)
+    case noLongerRegistered(price: NamePrice)
+    case ownAvailable(price: NamePrice)
+    case reservedForCommunity
+    case notRegistered
+    case noValidLink
 }
 
-extension NameRegistration: Decodable {
-    private enum CodingKeys: String, CodingKey {
-        case type, expires, graceUntil, reservedReason_, pricing, reservedReason
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let type = try container.decode(String.self, forKey: .type)
-        switch type {
-        case "registered":
-            let expires = try container.decodeIfPresent(Int64.self, forKey: .expires)
-            let graceUntil = try container.decodeIfPresent(Int64.self, forKey: .graceUntil)
-            let reservedReason_ = try container.decodeIfPresent(String.self, forKey: .reservedReason_)
-            self = .registered(expires: expires, graceUntil: graceUntil, reservedReason_: reservedReason_)
-        case "available":
-            let pricing = try container.decode(NamePricing.self, forKey: .pricing)
-            self = .available(pricing: pricing)
-        case "reserved":
-            let reservedReason = try container.decode(String.self, forKey: .reservedReason)
-            self = .reserved(reservedReason: reservedReason)
-        default:
-            throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown NameRegistration type: \(type)")
-        }
-    }
-}
-
-struct NamePricing: Decodable, Hashable {
-    var registrationPrices: [String: Int64]
-    var basePrice: Int64
-    var minLabelLength: Int
-
-    func centsPerYear(_ labelLength: Int) -> Int64 {
-        registrationPrices[String(labelLength)] ?? basePrice
-    }
+struct NamePrice: Decodable, Hashable {
+    var amount: Int64
+    var years: Int
 }
 
 enum InvitationLinkPlan: Decodable, Hashable {

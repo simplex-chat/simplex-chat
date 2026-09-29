@@ -1481,17 +1481,17 @@ class ConnectionPlan_invitationLink(TypedDict):
 class ConnectionPlan_contactAddress(TypedDict):
     type: Literal["contactAddress"]
     contactAddressPlan: "ContactAddressPlan"
-    nameRegistration_: NotRequired["NameRegistration"]
+    nameWarning_: NotRequired["NameWarning"]
 
 class ConnectionPlan_groupLink(TypedDict):
     type: Literal["groupLink"]
     groupLinkPlan: "GroupLinkPlan"
-    nameRegistration_: NotRequired["NameRegistration"]
+    nameWarning_: NotRequired["NameWarning"]
 
 class ConnectionPlan_nameNotConnectable(TypedDict):
     type: Literal["nameNotConnectable"]
     simplexDomain: "SimplexDomain"
-    nameRegistration: "NameRegistration"
+    nameWarning: "NameWarning"
 
 class ConnectionPlan_error(TypedDict):
     type: Literal["error"]
@@ -2372,49 +2372,53 @@ NameErrorType = NameErrorType_NO_RESOLVER | NameErrorType_NOT_FOUND | NameErrorT
 
 NameErrorType_Tag = Literal["NO_RESOLVER", "NOT_FOUND", "RESOLVER"]
 
-class NamePricing(TypedDict):
-    registrationPrices: dict[int, int]  # int : int64
-    basePrice: int  # int64
-    minLabelLength: int  # int
+class NamePrice(TypedDict):
+    amount: int  # int64
+    years: int  # int
 
-class NameRecord(TypedDict):
-    name: str
-    nickname: str
-    website: str
-    location: str
-    simplexContact: list[str]
-    simplexChannel: list[str]
-    eth: NotRequired[str]
-    btc: NotRequired[str]
-    xmr: NotRequired[str]
-    dot: NotRequired[str]
-    owner: str
-    resolver: str
+class NameWarning_expired(TypedDict):
+    type: Literal["expired"]
+    expiredAt: str  # ISO-8601 timestamp
+    graceUntil: NotRequired[str]  # ISO-8601 timestamp
 
-class NameRegistration_registered(TypedDict):
-    type: Literal["registered"]
-    expires: NotRequired[int]  # int64
-    graceUntil: NotRequired[int]  # int64
-    reservedReason_: NotRequired["NameReservedReason"]
-    nameRecord: "NameRecord"
+class NameWarning_ownExpired(TypedDict):
+    type: Literal["ownExpired"]
+    expiredAt: str  # ISO-8601 timestamp
+    graceUntil: NotRequired[str]  # ISO-8601 timestamp
 
-class NameRegistration_available(TypedDict):
+class NameWarning_available(TypedDict):
     type: Literal["available"]
-    pricing: "NamePricing"
+    price: "NamePrice"
 
-class NameRegistration_reserved(TypedDict):
-    type: Literal["reserved"]
-    reservedReason: "NameReservedReason"
+class NameWarning_noLongerRegistered(TypedDict):
+    type: Literal["noLongerRegistered"]
+    price: "NamePrice"
 
-NameRegistration = (
-    NameRegistration_registered
-    | NameRegistration_available
-    | NameRegistration_reserved
+class NameWarning_ownAvailable(TypedDict):
+    type: Literal["ownAvailable"]
+    price: "NamePrice"
+
+class NameWarning_reservedForCommunity(TypedDict):
+    type: Literal["reservedForCommunity"]
+
+class NameWarning_notRegistered(TypedDict):
+    type: Literal["notRegistered"]
+
+class NameWarning_noValidLink(TypedDict):
+    type: Literal["noValidLink"]
+
+NameWarning = (
+    NameWarning_expired
+    | NameWarning_ownExpired
+    | NameWarning_available
+    | NameWarning_noLongerRegistered
+    | NameWarning_ownAvailable
+    | NameWarning_reservedForCommunity
+    | NameWarning_notRegistered
+    | NameWarning_noValidLink
 )
 
-NameRegistration_Tag = Literal["registered", "available", "reserved"]
-
-NameReservedReason = Literal["internal", "trademark", "community"]
+NameWarning_Tag = Literal["expired", "ownExpired", "available", "noLongerRegistered", "ownAvailable", "reservedForCommunity", "notRegistered", "noValidLink"]
 
 class NetworkError_connectError(TypedDict):
     type: Literal["connectError"]

@@ -73,9 +73,8 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NamePricing (..), NameRegistration (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), USDCents (..), UserProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), USDCents (..), UserProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
-import Simplex.Messaging.SystemTime (roundedSeconds)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version hiding (version)
@@ -218,7 +217,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRInvitation u ccLink _ -> ttyUser u $ viewConnReqInvitation showFullLinks ccLink
   CRConnectionIncognitoUpdated u c customUserProfile -> ttyUser u $ viewConnectionIncognitoUpdated c customUserProfile testView
   CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged showFullLinks u c nu c'
-  CRConnectionPlan u connLink _ otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan <> otherSimplexNameNote otherSimplexName <> viewNameRegistration connectionPlan
+  CRConnectionPlan u connLink planSimplexName otherSimplexName connectionPlan -> ttyUser u $ viewConnectionPlan cfg connLink connectionPlan <> otherSimplexNameNote otherSimplexName <> viewNameWarning planSimplexName connectionPlan
   CRNewPreparedChat u (AChat _ (Chat cInfo _ _)) -> ttyUser u $ case cInfo of
     DirectChat ct -> [ttyContact' ct <> ": contact is prepared"]
     GroupChat g _ -> [ttyGroup' g <> ": group is prepared"]
@@ -2235,24 +2234,28 @@ otherSimplexNameNote = \case
   Just ni@(SimplexNameInfo NTContact _) -> [plain $ "You can also connect to " <> shortNameInfoStr ni <> " in direct chat"]
   Nothing -> []
 
-viewNameRegistration :: ConnectionPlan -> [StyledString]
-viewNameRegistration = \case
-  CPContactAddress CAPKnown {} nr_ -> regLine nr_
-  CPContactAddress CAPOwnLink nr_ -> regLine nr_
-  CPGroupLink GLPKnown {} nr_ -> regLine nr_
-  CPGroupLink GLPOwnLink {} nr_ -> regLine nr_
-  CPNameNotConnectable _ reg -> regLine (Just reg)
+viewNameWarning :: Maybe SimplexNameInfo -> ConnectionPlan -> [StyledString]
+viewNameWarning planSimplexName = \case
+  CPContactAddress _ (Just w) -> planNameWarning w
+  CPGroupLink _ (Just w) -> planNameWarning w
+  CPNameNotConnectable d w -> [warningStr d w]
   _ -> []
   where
-    regLine = \case
-      Just NRRegistered {expires, graceUntil, reservedReason_} ->
-        ["registered" <> expiryNote expires graceUntil <> maybe "" ((", reserved: " <>) . plain . textEncode) reservedReason_]
-      Just NRAvailable {pricing = NamePricing {basePrice = USDCents c, minLabelLength}} ->
-        ["available: " <> plain (show c) <> " cents/year, min length " <> plain (show minLabelLength)]
-      Just NRReserved {reservedReason} -> ["reserved: " <> plain (textEncode reservedReason)]
-      Nothing -> []
-    expiryNote expires graceUntil = maybe "" (\e -> ", expires " <> showTime e <> maybe "" ((", grace until " <>) . showTime) graceUntil) expires
-    showTime = plain . show . roundedSeconds
+    planNameWarning w = maybe [] (\SimplexNameInfo {nameDomain} -> [warningStr nameDomain w]) planSimplexName
+    warningStr d = \case
+      NWExpired e g -> name <> " expired on " <> plain (day e) <> maybe "" ((", its owner can renew it until " <>) . plain . day) g
+      NWOwnExpired e g -> "your " <> name <> " expired on " <> plain (day e) <> maybe "" ((", renew it before " <>) . plain . day) g
+      NWAvailable p -> name <> " is available: " <> priceStr p
+      NWNoLongerRegistered p -> name <> " is no longer registered, available: " <> priceStr p
+      NWOwnAvailable p -> "your " <> name <> " is no longer registered, available: " <> priceStr p
+      NWReservedForCommunity -> name <> " is reserved for community"
+      NWNotRegistered -> name <> " is not registered"
+      NWNoValidLink -> name <> " has no valid link"
+      where
+        name = "SimpleX name " <> plain (fullDomainName d)
+    priceStr NamePrice {amount = USDCents c, years} =
+      let (dollars, cents) = c `divMod` 100
+       in plain $ "$" <> tshow dollars <> (if cents == 0 then "" else "." <> T.justifyRight 2 '0' (tshow cents)) <> " for " <> tshow years <> " years"
 
 viewConnectionPlan :: ChatConfig -> Maybe ACreatedConnLink -> ConnectionPlan -> [StyledString]
 viewConnectionPlan ChatConfig {logLevel, testView} _connLink = \case

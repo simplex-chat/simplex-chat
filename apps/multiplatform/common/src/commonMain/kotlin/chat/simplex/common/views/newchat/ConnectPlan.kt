@@ -60,29 +60,25 @@ suspend fun planAndConnect(
   return planAndConnectTask(rhId, shortOrFullLink, linkOwnerSig, close, cleanup, filterKnownContact, filterKnownGroup, inProgress)
 }
 
-private fun nameDate(seconds: Long): String =
-  Instant.fromEpochSeconds(seconds).toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
+private fun nameDate(t: Instant): String =
+  t.toLocalDateTime(TimeZone.currentSystemDefault()).date.toString()
 
-private fun nameCentsPerYear(pricing: NamePricing, domain: SimplexDomain): String {
-  val cents = pricing.centsPerYear(domain.domain.length)
-  return "$" + (cents / 100).toString() + (if (cents % 100 == 0L) "" else ".%02d".format(cents % 100))
+private fun namePrice(price: NamePrice): String {
+  val dollars = "$" + (price.amount / 100).toString() + (if (price.amount % 100 == 0L) "" else ".%02d".format(price.amount % 100))
+  return String.format(generalGetString(MR.strings.simplex_name_price_for_years), dollars, price.years)
 }
 
 private fun openNameHowTo(uriHandler: UriHandler) = openBrowserAlert(SIMPLEX_NAMES_HOWTO_URL, uriHandler)
 
 private const val SIMPLEX_NAMES_HOWTO_URL = "https://simplex.domains/#testing"
 
-private fun showNameRegistrationAlert(
+private fun showNameWarningAlert(
   domain: SimplexDomain,
-  reg: NameRegistration,
-  isOwn: Boolean,
-  notConnectable: Boolean,
-  hasLocalChat: Boolean,
+  warning: NameWarning,
   openExistingChat: (() -> Unit)?,
   cleanup: (() -> Unit)?
-): Boolean {
+) {
   val nameStr = domain.fullDomainName
-  val now = Clock.System.now().epochSeconds
   val ok = generalGetString(MR.strings.ok)
   fun dismiss() {
     AlertManager.privacySensitive.hideAlert()
@@ -109,62 +105,44 @@ private fun showNameRegistrationAlert(
   fun alert(title: String, text: String, action: Pair<String, (UriHandler) -> Unit>? = null) {
     AlertManager.privacySensitive.showAlertDialogButtonsColumn(title = title, text = text, onDismissRequest = { cleanup?.invoke() }, buttons = buttons(action))
   }
-  val expired = reg.expired(now)
-  return when {
-    expired && reg is NameRegistration.Registered -> {
-      val until = reg.graceUntil
-      if (isOwn) {
-        val text = if (until != null)
-          String.format(generalGetString(MR.strings.simplex_name_own_expired_desc), nameStr, nameDate(reg.expires!!), nameDate(until))
-        else String.format(generalGetString(MR.strings.simplex_name_own_expired_no_date_desc), nameStr)
-        alert(generalGetString(MR.strings.simplex_name_own_expired), text, generalGetString(MR.strings.simplex_name_renew) to { uh: UriHandler -> openNameHowTo(uh) })
-      } else {
-        val text = if (until != null)
-          String.format(generalGetString(MR.strings.simplex_name_expired_desc), nameStr, nameDate(reg.expires!!), nameDate(until))
-        else String.format(generalGetString(MR.strings.simplex_name_expired_no_date_desc), nameStr)
-        alert(generalGetString(MR.strings.simplex_name_expired), text)
-      }
-      true
-    }
-    reg is NameRegistration.Available && domain.domain.length >= reg.pricing.minLabelLength -> {
-      val price = nameCentsPerYear(reg.pricing, domain)
-      if (isOwn) {
-        alert(
-          generalGetString(MR.strings.simplex_name_own_expired),
-          String.format(generalGetString(MR.strings.simplex_name_own_available_desc), nameStr, price),
-          generalGetString(MR.strings.simplex_name_re_register) to { uh: UriHandler -> openNameHowTo(uh) }
-        )
-      } else {
-        alert(
-          generalGetString(if (hasLocalChat) MR.strings.simplex_name_no_longer_registered else MR.strings.simplex_name_not_registered),
-          String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, price),
-          generalGetString(MR.strings.simplex_name_register) to { uh: UriHandler -> openNameHowTo(uh) }
-        )
-      }
-      true
-    }
-    reg.reservedForCommunity -> {
-      alert(
-        generalGetString(MR.strings.simplex_name_not_registered),
-        String.format(generalGetString(MR.strings.simplex_name_reserved_community_desc), nameStr),
-        generalGetString(MR.strings.simplex_name_connect_simplex_team) to { uh: UriHandler ->
-          uh.openVerifiedSimplexUri(simplexTeamUri)
-        }
-      )
-      true
-    }
-    (reg is NameRegistration.Reserved || reg is NameRegistration.Available) && !hasLocalChat && !isOwn -> {
-      alert(generalGetString(MR.strings.simplex_name_not_registered), generalGetString(MR.strings.simplex_name_not_found_desc))
-      true
-    }
-    reg is NameRegistration.Registered && notConnectable && !hasLocalChat && !isOwn -> {
-      alert(
-        generalGetString(MR.strings.simplex_name_no_valid_link),
-        String.format(generalGetString(MR.strings.simplex_name_no_valid_link_desc), nameStr)
-      )
-      true
-    }
-    else -> false
+  val register = generalGetString(MR.strings.simplex_name_register) to { uh: UriHandler -> openNameHowTo(uh) }
+  when (warning) {
+    is NameWarning.Expired -> alert(
+      generalGetString(MR.strings.simplex_name_expired),
+      if (warning.graceUntil != null) String.format(generalGetString(MR.strings.simplex_name_expired_desc), nameStr, nameDate(warning.expiredAt), nameDate(warning.graceUntil))
+      else String.format(generalGetString(MR.strings.simplex_name_expired_no_date_desc), nameStr)
+    )
+    is NameWarning.OwnExpired -> alert(
+      generalGetString(MR.strings.simplex_name_own_expired),
+      if (warning.graceUntil != null) String.format(generalGetString(MR.strings.simplex_name_own_expired_desc), nameStr, nameDate(warning.expiredAt), nameDate(warning.graceUntil))
+      else String.format(generalGetString(MR.strings.simplex_name_own_expired_no_date_desc), nameStr),
+      generalGetString(MR.strings.simplex_name_renew) to { uh: UriHandler -> openNameHowTo(uh) }
+    )
+    is NameWarning.Available -> alert(
+      generalGetString(MR.strings.simplex_name_not_registered),
+      String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, namePrice(warning.price)),
+      register
+    )
+    is NameWarning.NoLongerRegistered -> alert(
+      generalGetString(MR.strings.simplex_name_no_longer_registered),
+      String.format(generalGetString(MR.strings.simplex_name_available_desc), nameStr, namePrice(warning.price)),
+      register
+    )
+    is NameWarning.OwnAvailable -> alert(
+      generalGetString(MR.strings.simplex_name_own_expired),
+      String.format(generalGetString(MR.strings.simplex_name_own_available_desc), nameStr, namePrice(warning.price)),
+      generalGetString(MR.strings.simplex_name_re_register) to { uh: UriHandler -> openNameHowTo(uh) }
+    )
+    NameWarning.ReservedForCommunity -> alert(
+      generalGetString(MR.strings.simplex_name_not_registered),
+      String.format(generalGetString(MR.strings.simplex_name_reserved_community_desc), nameStr),
+      generalGetString(MR.strings.simplex_name_connect_simplex_team) to { uh: UriHandler -> uh.openVerifiedSimplexUri(simplexTeamUri) }
+    )
+    NameWarning.NotRegistered -> alert(generalGetString(MR.strings.simplex_name_not_registered), generalGetString(MR.strings.simplex_name_not_found_desc))
+    NameWarning.NoValidLink -> alert(
+      generalGetString(MR.strings.simplex_name_no_valid_link),
+      String.format(generalGetString(MR.strings.simplex_name_no_valid_link_desc), nameStr)
+    )
   }
 }
 
@@ -201,16 +179,14 @@ private suspend fun planAndConnectTask(
       val label = if (it.nameType == SimplexNameType.publicGroup) MR.strings.connect_plan_join_name else MR.strings.connect_plan_connect_to_name
       generalGetString(label).format(it.shortStr)
     }
-    val nameReg = connectionPlan.nameRegistration()
+    val nameWarning = connectionPlan.nameWarning()
     val nameDomain = when (connectionPlan) {
       is ConnectionPlan.NameNotConnectable -> connectionPlan.simplexDomain
       else -> planSimplexName?.nameDomain
     }
-    if (nameReg != null && nameDomain != null) {
+    if (nameWarning != null && nameDomain != null) {
       val knownContact = (connectionPlan as? ConnectionPlan.ContactAddress)?.contactAddressPlan.let { it as? ContactAddressPlan.Known }?.contact
       val knownGroup = (connectionPlan as? ConnectionPlan.GroupLink)?.groupLinkPlan.let { it as? GroupLinkPlan.Known }?.groupInfo
-      val isOwnName = (connectionPlan as? ConnectionPlan.ContactAddress)?.contactAddressPlan is ContactAddressPlan.OwnLink ||
-          (connectionPlan as? ConnectionPlan.GroupLink)?.groupLinkPlan is GroupLinkPlan.OwnLink
       var openExisting: (() -> Unit)? = null
       if (knownContact != null) {
         if (filterKnownContact != null) filterKnownContact(knownContact)
@@ -219,16 +195,8 @@ private suspend fun planAndConnectTask(
         if (filterKnownGroup != null) filterKnownGroup(knownGroup)
         else openExisting = { openKnownGroup(chatModel, rhId, close, knownGroup) }
       }
-      val handled = showNameRegistrationAlert(
-        domain = nameDomain,
-        reg = nameReg,
-        isOwn = isOwnName,
-        notConnectable = connectionPlan is ConnectionPlan.NameNotConnectable,
-        hasLocalChat = knownContact != null || knownGroup != null,
-        openExistingChat = openExisting,
-        cleanup = cleanup
-      )
-      if (handled) return completable
+      showNameWarningAlert(nameDomain, nameWarning, openExisting, cleanup)
+      return completable
     }
     val connectionLink = connectionLink_ ?: run {
       cleanup()
@@ -312,6 +280,9 @@ private suspend fun planAndConnectTask(
               connectOtherButton = connectOtherButton,
               connectOtherLink = connectOtherLink,
               addressChanged = connectionPlan.contactAddressPlan.addressChanged,
+              openExistingChat = if (filterKnownContact == null && connectionPlan.contactAddressPlan.addressChanged && planSimplexName != null) {
+                { openLocalNameChat(rhId, planSimplexName, close, cleanup) }
+              } else null,
               close,
               cleanup
             )
@@ -373,6 +344,7 @@ private suspend fun planAndConnectTask(
           }
           if (filterKnownContact != null) {
             filterKnownContact(contact)
+            if (planSimplexName != null && otherSimplexName != null && connectOtherButton != null) showOtherNameAlert(rhId, planSimplexName, otherSimplexName, connectOtherButton, close, cleanup)
           } else {
             showOpenKnownContactAlert(chatModel, rhId, close, contact, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink)
             cleanup()
@@ -478,6 +450,7 @@ private suspend fun planAndConnectTask(
           }
           if (filterKnownGroup != null) {
             filterKnownGroup(groupInfo)
+            if (planSimplexName != null && otherSimplexName != null && connectOtherButton != null) showOtherNameAlert(rhId, planSimplexName, otherSimplexName, connectOtherButton, close, cleanup)
           } else {
             showOpenKnownGroupAlert(chatModel, rhId, close, groupInfo, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink)
             cleanup()
@@ -856,6 +829,7 @@ fun showPrepareContactAlert(
   connectOtherButton: String? = null,
   connectOtherLink: String? = null,
   addressChanged: Boolean = false,
+  openExistingChat: (() -> Unit)? = null,
   close: (() -> Unit)?,
   cleanup: (() -> Unit)?
 ) {
@@ -895,8 +869,40 @@ fun showPrepareContactAlert(
     },
     connectOtherButton = connectOtherButton,
     onConnectOther = connectOtherLink?.let { link -> { withBGApi { planAndConnect(rhId, link, close = close, cleanup = cleanup) } } },
+    dismissText = generalGetString(if (openExistingChat != null) MR.strings.connect_plan_open_existing_chat else MR.strings.cancel_verb),
+    onDismissButton = openExistingChat,
     onDismiss = {
       cleanup?.invoke()
+    }
+  )
+}
+
+// a name tapped in a message has no filtered list behind the alert, so the chat the name had is found and opened here
+private fun openLocalNameChat(rhId: Long?, name: SimplexNameInfo, close: (() -> Unit)?, cleanup: (() -> Unit)?) {
+  withBGApi {
+    val chatId = knownChatId(rhId, chatModel.controller.apiConnectPlan(rhId, name.shortStr, PlanResolveMode.PRMNever, inProgress = mutableStateOf(false)))
+    val chat = chatId?.let { chatModel.getChat(it) }
+    if (chat != null) withContext(Dispatchers.Main) { openChat_(chatModel, rhId, close, chat) }
+    cleanup?.invoke()
+  }
+}
+
+// a bare name found as a local chat also leads to the other kind, which the user does not have
+private fun showOtherNameAlert(rhId: Long?, planSimplexName: SimplexNameInfo, otherSimplexName: SimplexNameInfo, connectOtherButton: String, close: (() -> Unit)?, cleanup: (() -> Unit)?) {
+  AlertManager.privacySensitive.showAlertDialogButtonsColumn(
+    title = String.format(generalGetString(MR.strings.simplex_name_also_leads_to), planSimplexName.nameDomain.fullDomainName, otherSimplexName.shortStr),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.privacySensitive.hideAlert()
+          withBGApi { planAndConnect(rhId, otherSimplexName.shortStr, close = close, cleanup = cleanup) }
+        }) {
+          Text(connectOtherButton, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({ AlertManager.privacySensitive.hideAlert() }) {
+          Text(generalGetString(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
     }
   )
 }
