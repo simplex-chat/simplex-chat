@@ -231,9 +231,9 @@ token as given. It applies to both run modes, since `--run-cli` answers service 
 the service logs a warning at every start while it is on. Off by default, and only `on`/`off`
 parse.
 
-With it on, anyone who can reach the service address can mint badges by sending a made-up receipt,
-signed with the issuer key, which startup requires to be one clients trust. Turn it on only where
-no one else can reach the service.
+With it on, anyone who can reach the service address can mint badges by sending a made-up receipt.
+That is harmless only while this deployment signs with an issuer key released apps do not carry, so
+they refuse what it signs — never turn it on where the key is one those apps trust.
 
 ## Issuing codes
 
