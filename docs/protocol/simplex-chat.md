@@ -264,7 +264,7 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.direct.inv` message is sent to a group member to propose establishing a direct connection between members, thus creating a contact with another member.
 
-`x.grp.msg.forward` message is sent by inviting member to forward messages between introduced members, while they are connecting.
+`x.grp.msg.forward` message is sent by inviting member to forward messages between introduced members, while they are connecting. This message MUST NOT contain another `x.grp.msg.forward` message.
 
 ### Channels: relay-mediated groups
 
