@@ -31,7 +31,7 @@ import Data.Bitraversable (bitraverse)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import Simplex.Chat.Badges (rowToBadge)
+import Simplex.Chat.Badges (MaybeBadgeProofRow, maybeRowToBadgeProof, rowToBadge)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Groups
@@ -175,23 +175,25 @@ getConnectionEntityKeys db cxt user@User {userId, userContactId} agentConnId = d
                   m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
                   p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
                   m.created_at, m.updated_at,
-                  m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at
+                  m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
+                  bp.badge_proof, bp.badge_pres_header, bp.badge_key_idx, bp.badge_type, bp.badge_expiry, bp.badge_extra
                 FROM group_members m
                 JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
                 JOIN groups g ON g.group_id = m.group_id
                 JOIN group_profiles gp USING (group_profile_id)
                 JOIN group_members mu ON g.group_id = mu.group_id
                 JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+                LEFT JOIN file_badge_proofs bp ON bp.group_member_id = m.group_member_id
                 WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
                   AND mu.member_status NOT IN (?,?,?)
               |]
               (groupMemberId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
       liftIO $ bitraverse (\(g, keysData) -> (,keysData) <$> addGroupChatTags db g) pure gm
-    toGroupAndMember :: UTCTime -> Connection -> GroupInfoRow :. GroupMemberRow -> ((GroupInfo, GroupKeysRow), GroupMember)
-    toGroupAndMember currentTs c (groupInfoRow :. memberRow) =
+    toGroupAndMember :: UTCTime -> Connection -> GroupInfoRow :. GroupMemberRow :. MaybeBadgeProofRow -> ((GroupInfo, GroupKeysRow), GroupMember)
+    toGroupAndMember currentTs c (groupInfoRow :. memberRow :. proofRow) =
       let groupInfo = toGroupInfo currentTs cxt userContactId [] groupInfoRow
           member = toGroupMember currentTs userContactId memberRow
-       in (groupInfo, (member :: GroupMember) {activeConn = Just c})
+       in (groupInfo, (member :: GroupMember) {activeConn = Just c, memberBadgeProof = NoJSON $ maybeRowToBadgeProof proofRow})
     getUserContact_ :: Int64 -> ExceptT StoreError IO UserContact
     getUserContact_ userContactLinkId = ExceptT $ do
       userContact_

@@ -170,10 +170,10 @@ s #==# msg = do
   s ==# msg
 
 testChatPreferences :: Maybe Preferences
-testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing, _json = PrefsJSON Nothing}
+testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing, _json = NoJSON Nothing}
 
 testGroupPreferences :: Maybe GroupPreferences
-testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing, _json = PrefsJSON Nothing}
+testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing, _json = NoJSON Nothing}
 
 testProfile :: Profile
 testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, description = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing}
@@ -337,7 +337,10 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XGrpInv GroupInvitation {fromMember = MemberIdRole (MemberId "\1\2\3\4") GRAdmin, fromMemberKey = Nothing, invitedMember = MemberIdRole (MemberId "\5\6\7\8") GRMember, connRequest = testConnReq, groupProfile = testGroupProfile, business = Nothing, groupLinkId = Just $ GroupLinkId "\1\2\3\4", groupSize = Nothing}
   it "x.grp.acpt without incognito profile" $
     "{\"v\":\"9\",\"event\":\"x.grp.acpt\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
-      #==# XGrpAcpt (MemberId "\1\2\3\4") Nothing
+      #==# XGrpAcpt (MemberId "\1\2\3\4") Nothing Nothing
+  it "x.grp.acpt with profile" $
+    "{\"v\":\"9\",\"event\":\"x.grp.acpt\",\"params\":{\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
+      #==# XGrpAcpt (MemberId "\1\2\3\4") Nothing (Just testProfile)
   it "x.grp.mem.new" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} Nothing

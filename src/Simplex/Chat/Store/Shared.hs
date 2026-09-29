@@ -32,7 +32,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Type.Equality
-import Simplex.Chat.Badges (BadgeRow, badgeToRow, rowToBadge, verifyBadge_)
+import Simplex.Chat.Badges (BadgeRow, MaybeBadgeProofRow, ProofPresHeader, badgeToRow, maybeRowToBadgeProof, rowToBadge)
 import Simplex.Chat.Names (SimplexDomainProof, SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Messages
 import Simplex.Chat.Remote.Types
@@ -413,12 +413,12 @@ setCommandConnId db User {userId} cmdId connId = do
 createContact :: DB.Connection -> StoreCxt -> User -> Profile -> ExceptT StoreError IO ()
 createContact db cxt user profile = do
   currentTs <- liftIO getCurrentTime
-  void $ createContact_ db cxt user profile emptyChatPrefs Nothing "" currentTs
+  void $ createContact_ db cxt user Nothing profile emptyChatPrefs Nothing "" currentTs
 
-createContact_ :: DB.Connection -> StoreCxt -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> ExceptT StoreError IO ContactId
-createContact_ db cxt User {userId} Profile {displayName, fullName, shortDescr, description, image, contactLink, contactDomain, peerType, badge, preferences} ctUserPreferences prepared localAlias currentTs =
+createContact_ :: DB.Connection -> StoreCxt -> User -> Maybe ProofPresHeader -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> UTCTime -> ExceptT StoreError IO ContactId
+createContact_ db cxt User {userId} presHeader_ p@Profile {displayName, fullName, shortDescr, description, image, contactLink, contactDomain, peerType, preferences} ctUserPreferences prepared localAlias currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
-    badgeVerified <- verifyBadge_ (badgeKeys cxt) badge
+    (Profile {badge}, badgeVerified) <- profileBadgeVerified presHeader_ (badgeKeys cxt) Nothing p
     DB.execute
       db
       "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, chat_peer_type, user_id, local_alias, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, contact_domain, contact_domain_proof, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
@@ -588,12 +588,12 @@ getConnReqInv db connId =
       "SELECT conn_req_inv FROM connections WHERE connection_id = ?"
       (Only connId)
 
-getConnReqContact :: DB.Connection -> Int64 -> ExceptT StoreError IO ConnReqContact
+getConnReqContact :: DB.Connection -> Int64 -> ExceptT StoreError IO (ConnReqContact, Maybe ProofPresHeader)
 getConnReqContact db connId =
-  ExceptT . firstRow fromOnly (SEConnectionNotFoundById connId) $
+  ExceptT . firstRow id (SEConnectionNotFoundById connId) $
     DB.query
       db
-      "SELECT via_contact_uri FROM connections WHERE connection_id = ?"
+      "SELECT via_contact_uri, pres_header FROM connections WHERE connection_id = ?"
       (Only connId)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
@@ -693,9 +693,9 @@ type PreparedGroupRow = (Maybe ConnReqContact, Maybe ShortLinkContact, BoolInt, 
 
 type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe MemberId)
 
-type GroupKeysRow = (Maybe C.PrivateKeyEd25519, Maybe C.PublicKeyEd25519, Maybe C.PrivateKeyEd25519)
+type GroupKeysRow = (Maybe C.PrivateKeyEd25519, Maybe C.PublicKeyEd25519, Maybe C.PrivateKeyEd25519, Maybe B64UrlByteString)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Text, Maybe Text, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe VersionRoster, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact, Maybe BoolInt) :. GroupKeysRow :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe GroupType, Maybe ShortLinkContact, Maybe B64UrlByteString) :. PublicGroupAccessRow :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Text, Maybe Text, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe Int64, Maybe VersionRoster, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact, Maybe BoolInt) :. (Maybe C.PrivateKeyEd25519, Maybe C.PublicKeyEd25519, Maybe C.PrivateKeyEd25519) :. GroupMemberRow
 
 type PublicGroupAccessRow = (Maybe Text, Maybe SimplexDomain, Maybe BoolInt, Maybe BoolInt, Maybe SimplexDomainProof)
 
@@ -704,7 +704,7 @@ type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, Ver
 type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Text, Maybe Text) :. BadgeRow :. ContactDomainRow
 
 toGroupInfo :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> (GroupInfo, GroupKeysRow)
-toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri, groupDomainVerified) :. groupKeysRow :. userMemberRow) =
+toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupType_, groupLink_, publicGroupId_) :. accessRow :. (enableNtfs_, sendRcpts, BI favorite, encodedPrefs, receivedPrefs, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, publicMemberCount, rosterVersion, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri, groupDomainVerified) :. (rootPrivKey_, rootPubKey_, memberPrivKey_) :. userMemberRow) =
   let membership = (toGroupMember now userContactId userMemberRow) {memberChatVRange = vr cxt}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       groupPreferences = groupPrefsFromRow encodedPrefs receivedPrefs
@@ -715,7 +715,7 @@ toGroupInfo now cxt userContactId chatTags ((groupId, localDisplayName, displayN
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers, publicMemberCount}
       gInfo = GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, rosterVersion, customData, membersRequireAttention, viaGroupLinkUri, groupDomainVerified = unBI <$> groupDomainVerified}
-   in (gInfo, groupKeysRow)
+   in (gInfo, (rootPrivKey_, rootPubKey_, memberPrivKey_, publicGroupId_))
 
 toGroupInfo_ :: UTCTime -> StoreCxt -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
 toGroupInfo_ now cxt userContactId chatTags row = fst $ toGroupInfo now cxt userContactId chatTags row
@@ -747,7 +747,7 @@ toPublicGroupAccess (groupWebPage, groupDomain_, domainWebPage_, allowEmbedding_
     allowEmbedding = maybe False unBI allowEmbedding_
 
 mkGroupKeys :: DB.Connection -> StoreCxt -> GroupInfo -> GroupKeysRow -> ExceptT StoreError IO GroupKeys
-mkGroupKeys db cxt g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup}, membership} (rootPrivKey, rootPubKey, memberPrivKey_) = do
+mkGroupKeys db cxt g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup}, membership} (rootPrivKey, rootPubKey, memberPrivKey_, publicGroupId) = do
   memberPrivKey <- case memberPrivKey_ of
     Just k -> pure k
     Nothing -> do
@@ -757,7 +757,7 @@ mkGroupKeys db cxt g@GroupInfo {groupId, groupProfile = GroupProfile {publicGrou
     (False, _, _) -> GKGroup {memberPrivKey}
     (True, True, Just groupRootKey) -> GKPublicGroup {groupRootKey, memberPrivKey}
     (True, True, Nothing) -> GKPreparedPublicGroup {memberPrivKey}
-    (True, False, _) -> GKRelayRequest {memberPrivKey}
+    (True, False, _) -> GKRelayRequest {memberPrivKey, publicGroupId}
 
 setUserMemberKey :: DB.Connection -> GroupId -> GroupMemberId -> C.PrivateKeyEd25519 -> ExceptT StoreError IO C.PrivateKeyEd25519
 setUserMemberKey db groupId membershipId newKey = do
@@ -784,6 +784,7 @@ toGroupMember now userContactId ((groupMemberId, groupId, indexInGroup, memberId
       invitedBy = toInvitedBy userContactId invitedById
       activeConn = Nothing
       memberVerifiedCode = SecurityCode <$> memberCode_ <*> memberCodeVerifiedAt_
+      memberBadgeProof = NoJSON Nothing
       memberChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
       supportChat = case supportChatTs_ of
         Just chatTs ->
@@ -810,15 +811,17 @@ groupMemberQuery =
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version,
+      bp.badge_proof, bp.badge_pres_header, bp.badge_key_idx, bp.badge_type, bp.badge_expiry, bp.badge_extra
     FROM group_members m
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
+    LEFT JOIN file_badge_proofs bp ON bp.group_member_id = m.group_member_id
   |]
 
-toContactMember :: UTCTime -> StoreCxt -> User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
-toContactMember now cxt User {userContactId} (memberRow :. connRow) =
-  (toGroupMember now userContactId memberRow) {activeConn = toMaybeConnection cxt connRow}
+toContactMember :: UTCTime -> StoreCxt -> User -> (GroupMemberRow :. MaybeConnectionRow :. MaybeBadgeProofRow) -> GroupMember
+toContactMember now cxt User {userContactId} (memberRow :. connRow :. proofRow) =
+  (toGroupMember now userContactId memberRow) {activeConn = toMaybeConnection cxt connRow, memberBadgeProof = NoJSON $ maybeRowToBadgeProof proofRow}
 
 rowToLocalProfile :: UTCTime -> ProfileRow -> LocalProfile
 rowToLocalProfile now ((profileId, displayName, fullName, shortDescr, description, image, contactLink, peerType, localAlias, encodedPrefs, receivedPrefs) :. badgeRow :. domainRow) =

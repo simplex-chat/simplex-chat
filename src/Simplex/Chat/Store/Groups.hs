@@ -193,6 +193,7 @@ module Simplex.Chat.Store.Groups
     resetMemberContactFields,
     updateMemberProfile,
     updateContactMemberProfile,
+    setMemberBadgeProof,
     getXGrpLinkMemReceived,
     setXGrpLinkMemReceived,
     createNewUnknownGroupMember,
@@ -230,7 +231,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (NominalDiffTime, UTCTime (..), addUTCTime, getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
-import Simplex.Chat.Badges (BadgeRow, badgeToRow, verifyBadge_)
+import Simplex.Chat.Badges (BadgeProof, BadgeProofKind (..), BadgeRow, ProofPresHeader, acceptedProof, badgeProofToRow, badgeToRow)
 import Simplex.Chat.Names (SimplexDomainClaim (..))
 import Simplex.Chat.Messages
 import Simplex.Chat.Operators
@@ -597,7 +598,8 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
         supportChat = Nothing,
         memberPubKey,
         relayLink = Nothing,
-        memberVerifiedCode = Nothing
+        memberVerifiedCode = Nothing,
+        memberBadgeProof = NoJSON Nothing
       }
   where
     memberChatVRange@(VersionRange minV maxV) = vr
@@ -677,7 +679,7 @@ createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile b
       randHostId <- liftIO $ encodedRandomBytes gVar 12
       let memberId = MemberId $ encodeUtf8 groupLDN <> "_unknown_host_" <> randHostId
           hostProfile = profileFromName $ nameFromBS randHostId
-      (localDisplayName, profileId, _) <- createNewMemberProfile_ db cxt user hostProfile currentTs
+      (localDisplayName, profileId, _, _) <- createNewMemberProfile_ db cxt user hostProfile Nothing currentTs
       indexInGroup <- getUpdateNextIndexInGroup_ db groupId
       liftIO $ do
         DB.execute
@@ -834,7 +836,7 @@ updatePreparedUserAndHostMembers'
           |]
           (memberId, memberRole, membershipStatus, currentTs, groupMemberId' membership)
       updateHostMember currentTs = do
-        _ <- updateMemberProfile db cxt user hostMember fromMemberProfile
+        _ <- updateMemberProfile db cxt user hostMember Nothing fromMemberProfile
         let MemberIdRole memberId memberRole = fromMember
             gmId = groupMemberId' hostMember
         liftIO $
@@ -885,7 +887,7 @@ createGroupViaLink'
     (,) <$> getGroupInfo db cxt user groupId <*> getGroupMemberById db cxt user hostMemberId
     where
       insertHost_ currentTs groupId = do
-        (localDisplayName, profileId, _) <- createNewMemberProfile_ db cxt user fromMemberProfile currentTs
+        (localDisplayName, profileId, _, _) <- createNewMemberProfile_ db cxt user fromMemberProfile Nothing currentTs
         let MemberIdRole {memberId, memberRole} = fromMember
         indexInGroup <- getUpdateNextIndexInGroup_ db groupId
         liftIO $ do
@@ -1412,7 +1414,8 @@ createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, 
             supportChat = Nothing,
             memberPubKey = Nothing,
             relayLink = Nothing,
-            memberVerifiedCode = Nothing
+            memberVerifiedCode = Nothing,
+            memberBadgeProof = NoJSON Nothing
           }
       where
         insertMember_ = do
@@ -1713,7 +1716,7 @@ createRelayForOwner :: DB.Connection -> StoreCxt -> TVar ChaChaDRG -> User -> Gr
 createRelayForOwner db cxt gVar user@User {userId, userContactId} GroupInfo {groupId, membership} UserChatRelay {relayProfile = RelayProfile {displayName}} = do
   currentTs <- liftIO getCurrentTime
   let relayProfile = profileFromName displayName
-  (localDisplayName, memProfileId, _) <- createNewMemberProfile_ db cxt user relayProfile currentTs
+  (localDisplayName, memProfileId, _, _) <- createNewMemberProfile_ db cxt user relayProfile Nothing currentTs
   groupMemberId <- createWithRandomId' db gVar $ \memId -> runExceptT $ do
     indexInGroup <- getUpdateNextIndexInGroup_ db groupId
     liftIO $
@@ -1752,7 +1755,7 @@ getCreateRelayForMember db cxt gVar user@User {userId, userContactId} GroupInfo 
       randRelayId <- liftIO $ encodedRandomBytes gVar 12
       let memberId = MemberId $ encodeUtf8 groupLDN <> "_unknown_relay_" <> randRelayId
           relayProfile = profileFromName $ nameFromBS randRelayId
-      (localDisplayName, profileId, _) <- createNewMemberProfile_ db cxt user relayProfile currentTs
+      (localDisplayName, profileId, _, _) <- createNewMemberProfile_ db cxt user relayProfile Nothing currentTs
       indexInGroup <- getUpdateNextIndexInGroup_ db groupId
       groupMemberId <- liftIO $ do
         DB.execute
@@ -1825,7 +1828,7 @@ setRelayLinkAccepted db cxt user m (MemberKey relayKey) profile = do
       WHERE group_member_id = ?
     |]
     (relayKey, currentTs, gmId)
-  void $ updateMemberProfile db cxt user m profile
+  void $ updateMemberProfile db cxt user m Nothing profile
   (,) <$> getGroupMemberById db cxt user gmId <*> getGroupRelayByGMId db gmId
 
 setRelayLinkConfId :: DB.Connection -> GroupMember -> ConfirmationId -> ShortLinkContact -> IO ()
@@ -1884,7 +1887,7 @@ updateRelayMemberData db cxt user m memberId (MemberKey relayKey) profile = do
         WHERE group_member_id = ?
       |]
       (memberId, relayKey, currentTs, groupMemberId' m)
-  void $ updateMemberProfile db cxt user m profile
+  void $ updateMemberProfile db cxt user m Nothing profile
 
 setGroupInProgressDone :: DB.Connection -> GroupInfo -> IO ()
 setGroupInProgressDone db GroupInfo {groupId} = do
@@ -1894,8 +1897,8 @@ setGroupInProgressDone db GroupInfo {groupId} = do
     "UPDATE groups SET creating_in_progress = 0, updated_at = ? WHERE group_id = ?"
     (currentTs, groupId)
 
-createRelayRequestGroup :: DB.Connection -> StoreCxt -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> Int64 -> GroupMemberStatus -> RelayStatus -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createRelayRequestGroup db cxt user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink} invId reqChatVRange initialDelay memberStatus relayStatus = do
+createRelayRequestGroup :: DB.Connection -> StoreCxt -> User -> GroupRelayInvitation -> Maybe ProofPresHeader -> InvitationId -> VersionRangeChat -> Int64 -> GroupMemberStatus -> RelayStatus -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createRelayRequestGroup db cxt user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink, publicGroupId, fromMemberKey} presHeader_ invId reqChatVRange initialDelay memberStatus relayStatus = do
   currentTs <- liftIO getCurrentTime
   -- Create group with placeholder profile
   let Profile {displayName = fromMemberLDN} = fromMemberProfile
@@ -1920,7 +1923,7 @@ createRelayRequestGroup db cxt user@User {userId} GroupRelayInvitation {fromMemb
   g <- getGroupInfo db cxt user groupId
   pure (g, ownerMember)
   where
-    setRelayRequestData_ groupId currentTs =
+    setRelayRequestData_ groupId currentTs = do
       DB.execute
         db
         [sql|
@@ -1934,10 +1937,15 @@ createRelayRequestGroup db cxt user@User {userId} GroupRelayInvitation {fromMemb
           WHERE group_id = ?
         |]
         (Binary invId, groupLink, minVersion reqChatVRange, maxVersion reqChatVRange, initialDelay, currentTs, groupId)
+      forM_ publicGroupId $ \gId ->
+        DB.execute
+          db
+          "UPDATE group_profiles SET public_group_id = ? WHERE group_profile_id = (SELECT group_profile_id FROM groups WHERE group_id = ?)"
+          (gId, groupId)
     insertOwner_ currentTs groupId = do
       let MemberIdRole {memberId, memberRole} = fromMember
           VersionRange minV maxV = reqChatVRange
-      (localDisplayName, profileId, _) <- createNewMemberProfile_ db cxt user fromMemberProfile currentTs
+      (localDisplayName, profileId, Profile {badge}, _) <- createNewMemberProfile_ db cxt user fromMemberProfile presHeader_ currentTs
       indexInGroup <- getUpdateNextIndexInGroup_ db groupId
       liftIO $ do
         DB.execute
@@ -1946,14 +1954,16 @@ createRelayRequestGroup db cxt user@User {userId} GroupRelayInvitation {fromMemb
             INSERT INTO group_members
               ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector,
                 user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
-                peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                peer_chat_min_version, peer_chat_max_version, member_pub_key)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
           ( (groupId, indexInGroup, memberId, memberRole, GCHostMember, memberStatus, Binary B.empty)
               :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
-              :. (minV, maxV)
+              :. (minV, maxV, (\(MemberKey k) -> k) <$> fromMemberKey)
           )
-        insertedRowId db
+        ownerMemberId <- insertedRowId db
+        forM_ badge $ createMemberBadgeProof db ownerMemberId
+        pure ownerMemberId
 
 updateRelayOwnStatusFromTo :: DB.Connection -> GroupInfo -> RelayStatus -> RelayStatus -> IO GroupInfo
 updateRelayOwnStatusFromTo db gInfo@GroupInfo {groupId} fromStatus toStatus = do
@@ -2040,7 +2050,7 @@ getRelayPublishableGroups db User {userId, userContactId} =
   where
     toRow ((gId, pgId) :. accessRow) = (gId, pgId, toPublicGroupAccess accessRow)
 
-getGroupViaPublicGroupId :: DB.Connection -> User -> B64UrlByteString -> IO (Maybe (GroupId, Maybe ShortLinkContact))
+getGroupViaPublicGroupId :: DB.Connection -> User -> B64UrlByteString -> IO (Maybe (GroupId, ShortLinkContact))
 getGroupViaPublicGroupId db User {userId} publicGroupId =
   maybeFirstRow id $
     DB.query
@@ -2049,7 +2059,7 @@ getGroupViaPublicGroupId db User {userId} publicGroupId =
         SELECT g.group_id, gp.group_link
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-        WHERE g.user_id = ? AND gp.public_group_id = ?
+        WHERE g.user_id = ? AND gp.public_group_id = ? AND gp.group_link IS NOT NULL
         LIMIT 1
       |]
       (userId, publicGroupId)
@@ -2066,7 +2076,7 @@ getRelayInactiveGroups db cxt User {userId, userContactId} ttl = do
       )
       (userId, userContactId, RSInactive, cutoffTs)
 
-createJoiningMember :: DB.Connection -> StoreCxt -> TVar ChaChaDRG -> User -> GroupInfo -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupMemberRole -> GroupMemberStatus -> Maybe MemberKey -> ExceptT StoreError IO (GroupMemberId, MemberId)
+createJoiningMember :: DB.Connection -> StoreCxt -> TVar ChaChaDRG -> User -> GroupInfo -> VersionRangeChat -> Profile -> Maybe ProofPresHeader -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupMemberRole -> GroupMemberStatus -> Maybe MemberKey -> ExceptT StoreError IO (GroupMemberId, MemberId)
 createJoiningMember
   db
   cxt
@@ -2074,7 +2084,8 @@ createJoiningMember
   User {userId, userContactId}
   GroupInfo {groupId, membership}
   cReqChatVRange
-  Profile {displayName, fullName, shortDescr, description, image, contactLink, badge, preferences}
+  p@Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences}
+  presHeader_
   cReqXContactId_
   cReqMemberId_
   welcomeMsgId_
@@ -2082,7 +2093,7 @@ createJoiningMember
   memberStatus
   memberKey_ = do
     currentTs <- liftIO getCurrentTime
-    badgeVerified <- liftIO $ verifyBadge_ (badgeKeys cxt) badge
+    (Profile {badge}, badgeVerified) <- liftIO $ profileBadgeVerified presHeader_ (badgeKeys cxt) Nothing p
     ExceptT . withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
       liftIO $
         DB.execute
@@ -2090,7 +2101,7 @@ createJoiningMember
           "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
           ((displayName, fullName, shortDescr, description, image, contactLink, userId, currentTs, currentTs) :. badgeToRow badge badgeVerified :. prefsToRow preferences)
       profileId <- liftIO $ insertedRowId db
-      case cReqMemberId_ of
+      r@(groupMemberId, _) <- case cReqMemberId_ of
         Just memberId -> do
           checkMemberNotExists memberId
           insertMember_ ldn profileId memberId currentTs
@@ -2101,6 +2112,8 @@ createJoiningMember
             insertMember_ ldn profileId (MemberId memId) currentTs
             groupMemberId <- liftIO $ insertedRowId db
             pure (groupMemberId, MemberId memId)
+      liftIO $ forM_ badge $ createMemberBadgeProof db groupMemberId
+      pure r
     where
       VersionRange minV maxV = cReqChatVRange
       -- TODO [relays] relay: TBC communicate rejection
@@ -2416,13 +2429,13 @@ increaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, memb
   pure g {membersRequireAttention = membersRequireAttention + 1}
 
 -- | add new member with profile
-createNewGroupMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> MemberInfo -> GroupMemberCategory -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
-createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profile} memCategory memStatus = do
+createNewGroupMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> GroupMember -> MemberInfo -> Maybe ProofPresHeader -> GroupMemberCategory -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
+createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profile} presHeader_ memCategory memStatus = do
   currentTs <- liftIO getCurrentTime
-  (localDisplayName, memProfileId, badgeVerified) <- createNewMemberProfile_ db cxt user profile currentTs
+  (localDisplayName, memProfileId, memProfile, badgeVerified) <- createNewMemberProfile_ db cxt user profile presHeader_ currentTs
   let newMember =
         NewGroupMember
-          { memInfo,
+          { memInfo = (memInfo :: MemberInfo) {profile = memProfile},
             memCategory,
             memStatus,
             memRestriction = Nothing,
@@ -2434,16 +2447,16 @@ createNewGroupMember db cxt user gInfo invitingMember memInfo@MemberInfo {profil
           }
   createNewMember_ db user gInfo newMember badgeVerified currentTs
 
-createNewMemberProfile_ :: DB.Connection -> StoreCxt -> User -> Profile -> UTCTime -> ExceptT StoreError IO (Text, ProfileId, Maybe Bool)
-createNewMemberProfile_ db cxt User {userId} Profile {displayName, fullName, shortDescr, description, image, contactLink, badge, preferences} createdAt =
+createNewMemberProfile_ :: DB.Connection -> StoreCxt -> User -> Profile -> Maybe ProofPresHeader -> UTCTime -> ExceptT StoreError IO (Text, ProfileId, Profile, Maybe Bool)
+createNewMemberProfile_ db cxt User {userId} p@Profile {displayName, fullName, shortDescr, description, image, contactLink, preferences} presHeader_ createdAt =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
-    badgeVerified <- verifyBadge_ (badgeKeys cxt) badge
+    (p'@Profile {badge}, badgeVerified) <- profileBadgeVerified presHeader_ (badgeKeys cxt) Nothing p
     DB.execute
       db
       "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
       ((displayName, fullName, shortDescr, description, image, contactLink, userId, createdAt, createdAt) :. badgeToRow badge badgeVerified :. prefsToRow preferences)
     profileId <- insertedRowId db
-    pure $ Right (ldn, profileId, badgeVerified)
+    pure $ Right (ldn, profileId, p', badgeVerified)
 
 createNewMember_ :: DB.Connection -> User -> GroupInfo -> NewGroupMember -> Maybe Bool -> UTCTime -> ExceptT StoreError IO GroupMember
 createNewMember_
@@ -2451,7 +2464,7 @@ createNewMember_
   User {userId, userContactId}
   GroupInfo {groupId}
   NewGroupMember
-    { memInfo = MemberInfo memberId memberRole memChatVRange memberProfile memKey,
+    { memInfo = MemberInfo memberId memberRole memChatVRange memberProfile@Profile {badge} memKey,
       memCategory = memberCategory,
       memStatus = memberStatus,
       memRestriction,
@@ -2485,6 +2498,7 @@ createNewMember_
             :. (minV, maxV)
         )
     groupMemberId <- liftIO $ insertedRowId db
+    liftIO $ forM_ badge $ createMemberBadgeProof db groupMemberId
     pure
       GroupMember
         { groupMemberId,
@@ -2509,7 +2523,8 @@ createNewMember_
           supportChat = Nothing,
           memberPubKey,
           relayLink = Nothing,
-          memberVerifiedCode = Nothing
+          memberVerifiedCode = Nothing,
+          memberBadgeProof = NoJSON badge
         }
 
 checkGroupMemberHasItems :: DB.Connection -> User -> GroupMember -> IO (Maybe ChatItemId)
@@ -2614,18 +2629,19 @@ getMemberRelationsVector db GroupMember {groupMemberId} =
       "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
       (Only groupMemberId)
 
-createIntroReMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> MemberInfo -> Maybe MemberRestrictions -> ExceptT StoreError IO GroupMember
+createIntroReMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> MemberInfo -> Maybe ProofPresHeader -> Maybe MemberRestrictions -> ExceptT StoreError IO GroupMember
 createIntroReMember
   db
   cxt
   user
   gInfo
   memInfo@(MemberInfo _ _ _ memberProfile _)
+  presHeader_
   memRestrictions_ = do
     currentTs <- liftIO getCurrentTime
-    (localDisplayName, memProfileId, badgeVerified) <- createNewMemberProfile_ db cxt user memberProfile currentTs
+    (localDisplayName, memProfileId, memberProfile', badgeVerified) <- createNewMemberProfile_ db cxt user memberProfile presHeader_ currentTs
     let memRestriction = restriction <$> memRestrictions_
-        newMember = NewGroupMember {memInfo, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId}
+        newMember = NewGroupMember {memInfo = (memInfo :: MemberInfo) {profile = memberProfile'}, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId}
     createNewMember_ db user gInfo newMember badgeVerified currentTs
 
 createIntroReMemberConn :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionChat -> MemberInfo -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
@@ -3411,16 +3427,17 @@ setMemberContactStartedConnection db Contact {contactId} = do
     "UPDATE contacts SET grp_direct_inv_started_connection = ?, updated_at = ? WHERE contact_id = ?"
     (BI True, currentTs, contactId)
 
-updateMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember
-updateMemberProfile db cxt user@User {userId} m p' = do
+updateMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Maybe ProofPresHeader -> Profile -> ExceptT StoreError IO GroupMember
+updateMemberProfile db cxt user@User {userId} m presHeader_ p = do
   currentTs <- liftIO getCurrentTime
-  badgeVerified <- liftIO $ profileBadgeVerified (badgeKeys cxt) (memberProfile m) p'
+  (p', badgeVerified) <- liftIO $ profileBadgeVerified presHeader_ (badgeKeys cxt) (Just $ memberProfile m) p
   let memberProfile = toLocalProfile profileId p' localAlias currentTs badgeVerified Nothing
-  updateMemberProfile' currentTs badgeVerified memberProfile
+  m' <- updateMemberProfile' currentTs p' badgeVerified memberProfile
+  liftIO $ setMemberBadgeProof db m' presHeader_ p
   where
     GroupMember {groupMemberId, localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
-    Profile {displayName = newName} = p'
-    updateMemberProfile' currentTs badgeVerified memberProfile
+    Profile {displayName = newName} = p
+    updateMemberProfile' currentTs p' badgeVerified memberProfile
       | displayName == newName = do
           liftIO $ updateMemberContactProfileReset_' db userId profileId p' badgeVerified currentTs
           pure m {memberProfile}
@@ -3434,16 +3451,17 @@ updateMemberProfile db cxt user@User {userId} m p' = do
             safeDeleteLDN db user localDisplayName
             pure $ Right m {localDisplayName = ldn, memberProfile}
 
-updateContactMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Contact -> Profile -> ExceptT StoreError IO (GroupMember, Contact)
-updateContactMemberProfile db cxt user@User {userId} m ct@Contact {contactId} p' = do
+updateContactMemberProfile :: DB.Connection -> StoreCxt -> User -> GroupMember -> Contact -> Maybe ProofPresHeader -> Profile -> ExceptT StoreError IO (GroupMember, Contact)
+updateContactMemberProfile db cxt user@User {userId} m ct@Contact {contactId} presHeader_ p = do
   currentTs <- liftIO getCurrentTime
-  badgeVerified <- liftIO $ profileBadgeVerified (badgeKeys cxt) (memberProfile m) p'
+  (p', badgeVerified) <- liftIO $ profileBadgeVerified presHeader_ (badgeKeys cxt) (Just $ memberProfile m) p
   let profile = toLocalProfile profileId p' localAlias currentTs badgeVerified Nothing
-  updateContactMemberProfile' currentTs badgeVerified profile
+  (m', ct') <- updateContactMemberProfile' currentTs p' badgeVerified profile
+  (,ct') <$> liftIO (setMemberBadgeProof db m' presHeader_ p)
   where
     GroupMember {localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
-    Profile {displayName = newName} = p'
-    updateContactMemberProfile' currentTs badgeVerified profile
+    Profile {displayName = newName} = p
+    updateContactMemberProfile' currentTs p' badgeVerified profile
       | displayName == newName = do
           liftIO $ updateMemberContactProfile_' db userId profileId p' badgeVerified currentTs
           pure (m {memberProfile = profile}, ct {profile} :: Contact)
@@ -3452,6 +3470,22 @@ updateContactMemberProfile db cxt user@User {userId} m ct@Contact {contactId} p'
             updateMemberContactProfile_' db userId profileId p' badgeVerified currentTs
             updateContactLDN_ db user contactId localDisplayName ldn currentTs
             pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, ct {localDisplayName = ldn, profile} :: Contact)
+
+setMemberBadgeProof :: DB.Connection -> GroupMember -> Maybe ProofPresHeader -> Profile -> IO GroupMember
+setMemberBadgeProof db m@GroupMember {groupMemberId} presHeader_ Profile {badge} = case badge of
+  Just b | not (acceptedProof presHeader_ b) -> pure m
+  _ -> do
+    DB.execute db "DELETE FROM file_badge_proofs WHERE group_member_id = ?" (Only groupMemberId)
+    forM_ badge $ createMemberBadgeProof db groupMemberId
+    pure m {memberBadgeProof = NoJSON badge}
+
+createMemberBadgeProof :: DB.Connection -> GroupMemberId -> BadgeProof -> IO ()
+createMemberBadgeProof db groupMemberId badge = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "INSERT INTO file_badge_proofs (group_member_id, proof_kind, badge_proof, badge_pres_header, badge_key_idx, badge_type, badge_expiry, badge_extra, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
+    ((groupMemberId, BPKMember) :. badgeProofToRow badge :. (currentTs, currentTs))
 
 getXGrpLinkMemReceived :: DB.Connection -> GroupMemberId -> ExceptT StoreError IO Bool
 getXGrpLinkMemReceived db mId =
@@ -3470,7 +3504,7 @@ createNewUnknownGroupMember :: DB.Connection -> StoreCxt -> User -> GroupInfo ->
 createNewUnknownGroupMember db cxt user@User {userId, userContactId} GroupInfo {groupId} memberId memberName unknownMemberRole = do
   currentTs <- liftIO getCurrentTime
   let memberProfile = profileFromName memberName
-  (localDisplayName, profileId, _) <- createNewMemberProfile_ db cxt user memberProfile currentTs
+  (localDisplayName, profileId, _, _) <- createNewMemberProfile_ db cxt user memberProfile Nothing currentTs
   indexInGroup <- getUpdateNextIndexInGroup_ db groupId
   liftIO $
     DB.execute
@@ -3495,7 +3529,7 @@ createLinkOwnerMember :: DB.Connection -> StoreCxt -> User -> GroupInfo -> Maybe
 createLinkOwnerMember db cxt user@User {userId, userContactId} GroupInfo {groupId} contactId_ memberId ownerKey = do
   currentTs <- liftIO getCurrentTime
   let memberProfile = profileFromName $ nameFromMemberId memberId
-  (localDisplayName, profileId, _) <- createNewMemberProfile_ db cxt user memberProfile currentTs
+  (localDisplayName, profileId, _, _) <- createNewMemberProfile_ db cxt user memberProfile Nothing currentTs
   indexInGroup <- getUpdateNextIndexInGroup_ db groupId
   liftIO $
     DB.execute
@@ -3519,9 +3553,9 @@ createLinkOwnerMember db cxt user@User {userId, userContactId} GroupInfo {groupI
 -- Intro refreshes only profile / status / peer version. Role and key stay owner-authoritative
 -- (the owner-signed roster for members/moderators/admins, link data for owners), so taking either from
 -- an in-band relayed intro would let a compromised relay substitute them.
-updatePreparedChannelMember :: DB.Connection -> StoreCxt -> User -> GroupMember -> MemberInfo -> ExceptT StoreError IO GroupMember
-updatePreparedChannelMember db cxt user@User {userId} member@GroupMember {groupMemberId, memberChatVRange} MemberInfo {v, profile} = do
-  _ <- updateMemberProfile db cxt user member profile
+updatePreparedChannelMember :: DB.Connection -> StoreCxt -> User -> GroupMember -> MemberInfo -> Maybe ProofPresHeader -> ExceptT StoreError IO GroupMember
+updatePreparedChannelMember db cxt user@User {userId} member@GroupMember {groupMemberId, memberChatVRange} MemberInfo {v, profile} presHeader_ = do
+  _ <- updateMemberProfile db cxt user member presHeader_ profile
   currentTs <- liftIO getCurrentTime
   liftIO $
     DB.execute
@@ -3539,9 +3573,9 @@ updatePreparedChannelMember db cxt user@User {userId} member@GroupMember {groupM
   where
     VersionRange minV maxV = maybe memberChatVRange fromChatVRange v
 
-updateUnknownMemberAnnounced :: DB.Connection -> StoreCxt -> User -> GroupMember -> GroupMember -> MemberInfo -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
-updateUnknownMemberAnnounced db cxt user@User {userId} invitingMember unknownMember@GroupMember {groupMemberId, memberChatVRange} MemberInfo {memberRole, v, profile, memberKey} status = do
-  _ <- updateMemberProfile db cxt user unknownMember profile
+updateUnknownMemberAnnounced :: DB.Connection -> StoreCxt -> User -> GroupMember -> GroupMember -> MemberInfo -> Maybe ProofPresHeader -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
+updateUnknownMemberAnnounced db cxt user@User {userId} invitingMember unknownMember@GroupMember {groupMemberId, memberChatVRange} MemberInfo {memberRole, v, profile, memberKey} presHeader_ status = do
+  _ <- updateMemberProfile db cxt user unknownMember presHeader_ profile
   currentTs <- liftIO getCurrentTime
   liftIO $
     DB.execute
@@ -3568,9 +3602,9 @@ updateUnknownMemberAnnounced db cxt user@User {userId} invitingMember unknownMem
 
 -- Like updateUnknownMemberAnnounced but preserves member_role and member_pub_key
 -- (roster-established for moderators/admins; the dissemination carries only the profile).
-updateRosterMemberAnnounced :: DB.Connection -> StoreCxt -> User -> GroupMember -> GroupMember -> MemberInfo -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
-updateRosterMemberAnnounced db cxt user@User {userId} invitingMember unknownMember@GroupMember {groupMemberId, memberChatVRange} MemberInfo {v, profile} status = do
-  _ <- updateMemberProfile db cxt user unknownMember profile
+updateRosterMemberAnnounced :: DB.Connection -> StoreCxt -> User -> GroupMember -> GroupMember -> MemberInfo -> Maybe ProofPresHeader -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
+updateRosterMemberAnnounced db cxt user@User {userId} invitingMember unknownMember@GroupMember {groupMemberId, memberChatVRange} MemberInfo {v, profile} presHeader_ status = do
+  _ <- updateMemberProfile db cxt user unknownMember presHeader_ profile
   currentTs <- liftIO getCurrentTime
   liftIO $
     DB.execute

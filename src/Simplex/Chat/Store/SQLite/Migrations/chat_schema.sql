@@ -390,6 +390,7 @@ CREATE TABLE connections(
   via_short_link_contact BLOB,
   via_contact_uri BLOB,
   relay_test INTEGER NOT NULL DEFAULT 0,
+  pres_header BLOB,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -859,7 +860,7 @@ CREATE TABLE rcv_roster_transfers(
 ) STRICT;
 CREATE TABLE file_badge_proofs(
   badge_proof_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
+  file_id INTEGER REFERENCES files ON DELETE CASCADE,
   proof_kind TEXT NOT NULL,
   badge_proof BLOB NOT NULL,
   badge_pres_header BLOB NOT NULL,
@@ -869,6 +870,8 @@ CREATE TABLE file_badge_proofs(
   badge_extra TEXT NOT NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
+  ,
+  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE
 ) STRICT;
 CREATE TABLE invoices(
   invoice_id TEXT NOT NULL PRIMARY KEY,
@@ -1543,6 +1546,9 @@ CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(
 );
 CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON badge_purchases(
   badge_code_redemption_id
+);
+CREATE UNIQUE INDEX idx_file_badge_proofs_group_member_id ON file_badge_proofs(
+  group_member_id
 );
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
