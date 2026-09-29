@@ -68,7 +68,7 @@ enum class BadgePeriod {
 }
 
 @Composable
-fun BadgesPayView(level: BadgeLevel) {
+fun BadgesHowLongView(level: BadgeLevel) {
   var selectedPeriod by remember { mutableStateOf(BadgePeriod.Monthly) }
   val purchasing = remember { mutableStateOf(false) }
   val clipboard = LocalClipboardManager.current
@@ -82,7 +82,7 @@ fun BadgesPayView(level: BadgeLevel) {
     maxIntrinsicSize = true,
   ) {
     Text(
-      stringResource(level.title),
+      stringResource(MR.strings.badges_how_long_title),
       style = MaterialTheme.typography.h1,
       fontWeight = FontWeight.Bold,
       color = MaterialTheme.colors.primary,
@@ -90,15 +90,15 @@ fun BadgesPayView(level: BadgeLevel) {
       modifier = Modifier.fillMaxWidth()
     )
 
-    BadgeUserPreview(level = level, modifier = Modifier.padding(top = 4.dp))
-
     Text(
-      stringResource(level.tagline),
+      stringResource(level.summary),
       style = MaterialTheme.typography.body1,
-      color = MaterialTheme.colors.onBackground,
+      color = MaterialTheme.colors.secondary,
       textAlign = TextAlign.Center,
-      modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+      modifier = Modifier.fillMaxWidth()
     )
+
+    BadgeUserPreview(level = level, modifier = Modifier.padding(top = 4.dp))
 
     Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
 
@@ -206,7 +206,7 @@ private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: Mutable
         is BadgePurchaseOutcome.Cancelled -> {}
       }
     } catch (e: Exception) {
-      Log.e(TAG, "BadgesPayView.purchase: ${e.stackTraceToString()}")
+      Log.e(TAG, "BadgesHowLongView.purchase: ${e.stackTraceToString()}")
       purchasing.value = false
       AlertManager.shared.showAlertMsg(
         title = generalGetString(MR.strings.badges_purchase_error),

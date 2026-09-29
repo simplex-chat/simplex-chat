@@ -25,6 +25,7 @@
   <string name="connect_plan_you_are_owner">You are an owner</string>
   <string name="error_parsing_uri_title">Invalid link</string>
   <string name="error_parsing_uri_desc">Please check that SimpleX link is correct.</string>
+  <string name="app_link_not_supported">This link is not supported by this app version. Please check for app updates.</string>
 
   <!-- MainActivity.kt -->
   <string name="opening_database">Opening database…</string>
@@ -3152,14 +3153,16 @@
   <string name="badges_price_loading">Loading…</string>
   <string name="badges_price_unavailable">Not available</string>
   <string name="badges_savings">Save %1$s</string>
-  <string name="badges_level_supporter_tagline">Optional profile badge\nand 2GB files</string>
-  <string name="badges_level_legend_tagline">Optional profile badge\nand 5GB files</string>
+  <string name="badges_level_supporter_summary">Supporter: 2 GB files available for 7 days.</string>
+  <string name="badges_level_legend_summary">Legend: 5 GB files available for 21 days.</string>
   <string name="badges_period_one_month">1 month</string>
   <string name="badges_period_monthly">Monthly</string>
   <string name="badges_period_annual">Annual</string>
   <string name="badges_billing_footer_subscribe">Renews on %1$s. Cancel anytime.</string>
   <string name="badges_billing_footer_one_month">Ends on %1$s.</string>
-  <string name="badges_your_level_title">Your level</string>
+  <string name="badges_choose_your_badge_title">Choose your badge</string>
+  <string name="badges_choose_your_badge_lede">Larger files that stay available longer.</string>
+  <string name="badges_how_long_title">How long?</string>
   <string name="badges_support_simplex_title">Support SimpleX</string>
   <string name="badges_support_simplex_body">Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile.</string>
   <string name="badges_why_simplex_is_built">Why SimpleX is built.</string>
@@ -3181,8 +3184,18 @@
   <string name="badges_purchase_pending">Purchase pending</string>
   <string name="badges_purchase_pending_desc">The purchase is awaiting approval. This build does not deliver purchases approved later.</string>
   <string name="badges_purchase_error">Purchase error</string>
-  <string name="badges_get_your_code">Get your code</string>
+  <string name="badges_buy_in_browser">Buy in browser</string>
   <string name="badges_redeem_code_title">Redeem code</string>
+  <string name="badges_link_confirm_title">Add badge to your profile?</string>
+  <string name="badges_link_confirm_profile">The badge will be added to the profile %1$s.</string>
+  <string name="badges_link_add_badge">Add badge</string>
+  <string name="badges_link_held_title">Profile already has a badge</string>
+  <string name="badges_link_held_other_profile">A badge can be added to another profile, or here once this badge ends.</string>
+  <string name="badges_link_held_page">Its code is on the page you bought it on, under Show code.</string>
+  <string name="badges_link_view_badge">View your badge</string>
+  <string name="badges_being_issued">Badge is being issued</string>
+  <string name="badges_link_added_title">Badge added</string>
+  <string name="badges_link_added_profile">The badge was added to the profile %1$s.</string>
   <string name="badges_redeem_code_body">Paste the code you received.</string>
   <string name="badges_redeem_code_placeholder" translatable="false">SB-XXXXX-XXXXX-XXXXX-XXXXX</string>
   <string name="badges_redeem">Redeem</string>
