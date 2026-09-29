@@ -243,6 +243,8 @@ data BadgeServiceErrorCode
   | BSEReceiptInvalid
   | BSEReceiptUsed
   | BSEInternal
+  | BSENameTaken
+  | BSENameNotCovered -- the credit covers longer names only
   | BSEUnknown Text -- forwards-compatible: service is deployed ahead of clients
   deriving (Eq, Show)
 
@@ -332,6 +334,8 @@ instance TextEncoding BadgeServiceErrorCode where
     BSEReceiptInvalid -> "receipt_invalid"
     BSEReceiptUsed -> "receipt_used"
     BSEInternal -> "internal"
+    BSENameTaken -> "name_taken"
+    BSENameNotCovered -> "name_not_covered"
     BSEUnknown t -> t
   textDecode s = Just $ case s of
     "bad_request" -> BSEBadRequest
@@ -351,6 +355,8 @@ instance TextEncoding BadgeServiceErrorCode where
     "receipt_invalid" -> BSEReceiptInvalid
     "receipt_used" -> BSEReceiptUsed
     "internal" -> BSEInternal
+    "name_taken" -> BSENameTaken
+    "name_not_covered" -> BSENameNotCovered
     t -> BSEUnknown t
 
 instance ToJSON BadgeServiceErrorCode where
