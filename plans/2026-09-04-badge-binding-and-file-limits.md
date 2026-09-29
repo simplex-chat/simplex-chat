@@ -463,7 +463,7 @@ The result of each includes `directPresHeader` of the agent binding:
 
 **6. Stored request header**
 
-Migration `M20260924_conn_pres_header`, SQLite and Postgres:
+Migration `M20260925_badge_bindings`, SQLite and Postgres, first statement; the rest is in item 11:
 
 ```sql
 ALTER TABLE connections ADD COLUMN pres_header BLOB;
@@ -520,7 +520,7 @@ ALTER TABLE connections ADD COLUMN pres_header BLOB;
 
 A member's accepted proof is stored on the membership, in `file_badge_proofs`, and forwarded in channel introductions. The badge in the profile row is kept for display.
 
-Migration `M20260925_member_badge_proofs`, SQLite:
+Migration `M20260925_badge_bindings`, after the statement of item 6, SQLite:
 
 ```sql
 PRAGMA writable_schema=1;

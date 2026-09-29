@@ -1,13 +1,15 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20260925_member_badge_proofs where
+module Simplex.Chat.Store.SQLite.Migrations.M20260925_badge_bindings where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20260925_member_badge_proofs :: Query
-m20260925_member_badge_proofs =
+m20260925_badge_bindings :: Query
+m20260925_badge_bindings =
   [sql|
+ALTER TABLE connections ADD COLUMN pres_header BLOB;
+
 PRAGMA writable_schema=1;
 
 UPDATE sqlite_master
@@ -21,8 +23,8 @@ ALTER TABLE file_badge_proofs ADD COLUMN group_member_id INTEGER REFERENCES grou
 CREATE UNIQUE INDEX idx_file_badge_proofs_group_member_id ON file_badge_proofs(group_member_id);
 |]
 
-down_m20260925_member_badge_proofs :: Query
-down_m20260925_member_badge_proofs =
+down_m20260925_badge_bindings :: Query
+down_m20260925_badge_bindings =
   [sql|
 DROP INDEX idx_file_badge_proofs_group_member_id;
 
@@ -37,4 +39,6 @@ SET sql = replace(sql, 'file_id INTEGER REFERENCES files', 'file_id INTEGER NOT 
 WHERE name = 'file_badge_proofs' AND type = 'table';
 
 PRAGMA writable_schema=RESET;
+
+ALTER TABLE connections DROP COLUMN pres_header;
 |]
