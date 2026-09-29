@@ -1,21 +1,26 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module ProtocolTests where
 
+import Control.Concurrent.STM (atomically)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.List (isInfixOf)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
+import qualified Data.Text as T
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
+import Simplex.Chat.Messages.Batch (encodeBatchElement)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -35,6 +40,7 @@ protocolTests = do
   decodeChatMessageTest
   shortLinkDataTests
   batchLimitTests
+  compressToLimitTests
   preferencesJSONTests
 
 preferencesJSONTests :: Spec
@@ -85,6 +91,35 @@ batchLimitTests = describe "Chat message batch limits" $ do
     batchError s = case parseChatMessages s of
       [Left e] -> e
       rs -> "expected a single error, got " <> show (length rs) <> " results"
+
+compressToLimitTests :: Spec
+compressToLimitTests = describe "Compression to size limit" $ do
+  it "keeps a body within the limit uncompressed" $
+    compressToLimit (B.length body) body `shouldBe` Just body
+  it "compresses a body over the limit to exactly the limit" $ do
+    compressToLimit compressedLen body `shouldBe` Just compressed
+    B.length compressed < B.length body `shouldBe` True
+    compressed ==## msg
+  it "fails when the compressed body is still over the limit" $
+    compressToLimit (compressedLen - 1) body `shouldBe` Nothing
+  it "keeps the signature of a compressed signed element" $ do
+    g <- C.newRandom
+    (pubKey, privKey) <- atomically $ C.generateKeyPair @'C.Ed25519 g
+    let signing = MsgSigning {bindingTag = CBGroup, bindingData = "binding", keyRef = KRMember, privKey}
+        element = encodeBatchElement (Just $ signChatMsgBody signing body) body
+    case parseChatMessages <$> compressToLimit (B.length element - 1) element of
+      Just [Right (APMsg _ (ParsedMsg _ (Just SignedMsg {chatBinding, signatures, signedBody}) _))] -> do
+        signedBody `shouldBe` body
+        let verified (MsgSignature _ sig) = C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (encodeChatBinding chatBinding "binding" <> signedBody)
+        all verified signatures `shouldBe` True
+      r -> expectationFailure $ "expected one compressed signed message, got " <> show (length <$> r)
+  where
+    msg = ChatMessage {chatVRange = supportedChatVRange, msgId = Nothing, chatMsgEvent = XMsgNew $ mcSimple (MCText $ T.replicate 2000 "calculator ")}
+    body = case encodeChatMessage maxDecompressedMsgLength msg of
+      ECMEncoded s -> s
+      ECMLarge -> error "compressToLimitTests: unexpected ECMLarge"
+    compressed = compressedBatchMsgBody_ body
+    compressedLen = B.length compressed
 
 srv :: SMPServer
 srv = SMPServer "smp.simplex.im" "5223" (C.KeyHash "\215m\248\251")

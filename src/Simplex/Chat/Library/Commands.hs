@@ -189,8 +189,8 @@ checkInfoSize what event = do
   vr <- chatVersionRange
   let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = event}
   case encodeChatMessage (maxEncodedInfoLength - maxConnInfoOverhead) info of
-    ECMEncoded _ -> pure ()
-    ECMLarge -> throwCmdError $ what <> " is too large"
+    ECMEncoded s | isJust $ compressToLimit (maxEncodedInfoLengthPQ - maxConnInfoOverhead) s -> pure ()
+    _ -> throwCmdError $ what <> " is too large"
 
 imageExtensions :: [String]
 imageExtensions = [".jpg", ".jpeg", ".png", ".gif"]

@@ -2445,8 +2445,8 @@ encodeConnInfoPQ :: MsgEncodingI e => PQSupport -> ChatMsgEvent e -> CM ByteStri
 encodeConnInfoPQ pqSup chatMsgEvent = do
   cxt <- chatStoreCxt
   let info = ChatMessage {chatVRange = vr cxt, msgId = Nothing, chatMsgEvent}
-  case encodeChatMessage maxEncodedInfoLength info of
-    ECMEncoded connInfo -> compressConnInfoPQ pqSup connInfo
+  case encodeChatMessage maxDecompressedMsgLength info of
+    ECMEncoded connInfo -> compressConnInfo pqSup connInfo
     ECMLarge -> throwChatError $ CEException "large info"
 
 -- conn-info wrapped as a signed element, so the receiver can verify the signature over the body
@@ -2454,17 +2454,18 @@ encodeSignedConnInfo :: MsgEncodingI e => PQSupport -> MsgSigning -> ChatMsgEven
 encodeSignedConnInfo pqSup signing chatMsgEvent = do
   vr <- chatVersionRange
   let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent}
-  case encodeChatMessage maxEncodedInfoLength info of
-    ECMEncoded body -> compressConnInfoPQ pqSup $ encodeBatchElement (Just $ signChatMsgBody signing body) body
+  case encodeChatMessage maxDecompressedMsgLength info of
+    ECMEncoded body -> compressConnInfo pqSup $ encodeBatchElement (Just $ signChatMsgBody signing body) body
     ECMLarge -> throwChatError $ CEException "large signed info"
 
-compressConnInfoPQ :: PQSupport -> ByteString -> CM ByteString
-compressConnInfoPQ pqSup connInfo = case pqSup of
-  PQSupportOn | B.length connInfo > maxCompressedInfoLength -> do
-    let connInfo' = compressedBatchMsgBody_ connInfo
-    when (B.length connInfo' > maxCompressedInfoLength) $ throwChatError $ CEException "large compressed info"
-    pure connInfo'
-  _ -> pure connInfo
+compressConnInfo :: PQSupport -> ByteString -> CM ByteString
+compressConnInfo pqSup connInfo =
+  maybe (throwChatError $ CEException "large compressed info") pure $ compressToLimit (maxConnInfoLength pqSup) connInfo
+
+maxConnInfoLength :: PQSupport -> Int
+maxConnInfoLength = \case
+  PQSupportOn -> maxEncodedInfoLengthPQ
+  PQSupportOff -> maxEncodedInfoLength
 
 -- signed XMember for a relay-group join: proves the joiner holds the member key it asserts, and carries
 -- viaRelay = the target relay's memberId inside the signed body so a sibling relay can't accept a replay
@@ -2498,7 +2499,7 @@ deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
 deliverMessagesB :: NonEmpty (Either ChatError ChatMsgReq) -> CM (NonEmpty (Either ChatError ([Int64], PQEncryption)))
 deliverMessagesB msgReqs = do
-  msgReqs' <- if any connSupportsPQ msgReqs then liftIO compressBodies else pure msgReqs
+  msgReqs' <- liftIO $ compressBodies $ if any connSupportsPQ msgReqs then maxEncodedMsgLengthPQ else maxEncodedMsgLength
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent (`sendMessagesB` snd (mapAccumL toAgent Nothing msgReqs'))
   lift . void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
@@ -2506,13 +2507,11 @@ deliverMessagesB msgReqs = do
     connSupportsPQ = \case
       Right (Connection {pqSupport = PQSupportOn}, _, _) -> True
       _ -> False
-    compressBodies =
+    -- one limit for the batch: connections share message bodies via VRRef
+    compressBodies maxLen =
       forME msgReqs $ \(conn, msgFlags, (mbr, msgIds)) -> runExceptT $ do
         mbr' <- case mbr of
-          VRValue i msgBody | B.length msgBody > maxCompressedMsgLength -> do
-            let msgBody' = compressedBatchMsgBody_ msgBody
-            when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
-            pure $ VRValue i msgBody'
+          VRValue i msgBody -> maybe (throwError $ ChatError $ CEException "large compressed message") (pure . VRValue i) $ compressToLimit maxLen msgBody
           v -> pure v
         pure (conn, msgFlags, (mbr', msgIds))
     toAgent prev = \case

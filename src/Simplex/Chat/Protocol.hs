@@ -925,8 +925,8 @@ maxEncodedMsgLength :: Int
 maxEncodedMsgLength = 15602
 
 -- maxEncodedMsgLength - 2222, see e2eEncUserMsgLength in agent
-maxCompressedMsgLength :: Int
-maxCompressedMsgLength = 13380
+maxEncodedMsgLengthPQ :: Int
+maxEncodedMsgLengthPQ = 13380
 
 maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
@@ -962,8 +962,8 @@ rosterBlobP = do
 maxEncodedInfoLength :: Int
 maxEncodedInfoLength = 14694
 
-maxCompressedInfoLength :: Int
-maxCompressedInfoLength = 10968 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
+maxEncodedInfoLengthPQ :: Int
+maxEncodedInfoLengthPQ = 10968 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
@@ -1037,6 +1037,15 @@ parseChatMessages msg = checkBatchLimit $ case B.head msg of
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
+
+-- Nothing when the body is over the limit even after compression
+compressToLimit :: Int -> MsgBody -> Maybe ByteString
+compressToLimit maxLen s
+  | B.length s <= maxLen = Just s
+  | B.length s' <= maxLen = Just s'
+  | otherwise = Nothing
+  where
+    s' = compressedBatchMsgBody_ s
 
 markCompressedBatch :: ByteString -> ByteString
 markCompressedBatch = B.cons 'X'
