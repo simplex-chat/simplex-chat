@@ -477,6 +477,10 @@ footer a:hover { text-decoration: underline; }
 .panel > .primary { margin-top: auto; }
 .panel > .notes { margin-top: auto; }
 .notes + .primary { margin-top: 20px; }
+/* The ending's button keeps the foot position every screen gives it, but the text above it
+   keeps a floor: once Show code fills the screen there is no free space for the auto margin,
+   and the button would otherwise land against the line it follows. */
+.panel.ending > .lede { margin-bottom: 24px; }
 .notes .muted { margin: 4px auto 0; max-width: 480px; }
 /* The checkout's note slot holds one line's height whether or not the line is shown, so choosing a
    method moves nothing above or below it. */
