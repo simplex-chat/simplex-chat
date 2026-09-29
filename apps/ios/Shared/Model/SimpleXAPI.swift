@@ -2196,11 +2196,37 @@ func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: 
     throw r.unexpected
 }
 
+enum BadgePurchaseResponse {
+    case redeemed(user: User, badgeState: BadgeState?)
+    // credited to the profile it was first presented under, which is not the active one and may be hidden
+    case deliveredToOtherProfile
+}
+
+// log: false because a store receipt is a bearer secret, like a badge code - it is in the command.
+// nil when the user cancels the retry alert, which is offered only when retry is set.
+func apiPurchaseBadge(_ userId: Int64, _ payment: ServicePayment, retry: Bool) async throws -> BadgePurchaseResponse? {
+    let cmd = ChatCommand.apiPurchaseBadge(userId: userId, payment: payment)
+    let r: APIResult<ChatResponse2>?
+    if retry {
+        r = await chatApiSendCmdWithRetry(cmd, log: false)
+    } else {
+        let res: APIResult<ChatResponse2> = await chatApiSendCmd(cmd, log: false)
+        r = res
+    }
+    guard let r else { return nil }
+    switch r {
+    case let .result(.badgeRedeemed(user, _, _, badgeState)): return .redeemed(user: user, badgeState: badgeState)
+    case .result(.badgePurchaseDelivered): return .deliveredToOtherProfile
+    default: throw r.unexpected
+    }
+}
+
 // localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
 func redeemErrorText(_ error: Error) -> String {
     if case let .error(.badgeRedeemError(e)) = error as? ChatError {
         switch e {
         case .invalidCode: return NSLocalizedString("This code is not valid.", comment: "alert message")
+        case .invalidReceipt: break
         case .serviceNotConfigured: return NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
         case .badgeActive: return NSLocalizedString("This profile already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "alert message")
         case let .serviceError(code): if let text = badgeServiceErrorText(code) { return text }
@@ -2361,6 +2387,7 @@ func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws
     ChatReceiver.shared.start()
     m.chatRunning = true
     chatLastStartGroupDefault.set(Date.now)
+    Task { await BadgeStore.shared.presentUnfinished() }
 }
 
 func startChatWithTemporaryDatabase(ctrl: chat_ctrl) throws -> User? {

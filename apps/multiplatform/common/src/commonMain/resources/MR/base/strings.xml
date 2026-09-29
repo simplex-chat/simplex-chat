@@ -3165,7 +3165,6 @@
   <string name="badges_support_simplex_title">Support SimpleX</string>
   <string name="badges_support_simplex_body">Get a badge to send larger files (2-5GB) that stay available longer (7-21 days), and to show it on your profile.</string>
   <string name="badges_why_simplex_is_built">Why SimpleX is built.</string>
-  <string name="badges_choose_your_level">Choose your level</string>
   <string name="badges_redeem_code_button">Redeem badge code</string>
   <string name="badges_continue">Continue</string>
   <string name="badges_how_it_works_button">How badges protect your privacy</string>
@@ -3180,9 +3179,15 @@
   <string name="badges_banner_dismiss_message">You can support SimpleX later in Settings.</string>
   <string name="badges_larger_files_longer">Support SimpleX to send larger files that stay available longer</string>
   <string name="badges_purchase_successful">Purchase successful</string>
-  <string name="badges_purchase_pending">Purchase pending</string>
-  <string name="badges_purchase_pending_desc">The purchase is awaiting approval. This build does not deliver purchases approved later.</string>
   <string name="badges_purchase_error">Purchase error</string>
+  <string name="badges_check_your_order_title">Check your order</string>
+  <string name="badges_order_duration">Duration</string>
+  <string name="badges_order_total">Total</string>
+  <string name="badges_charged_by_play">Charged by Google Play to the account on this device.</string>
+  <string name="badges_issuing_title">Issuing your badge</string>
+  <string name="badges_issuing_body">The store has taken the payment. Keeps trying if you close the app.</string>
+  <string name="badges_waiting_for_approval_title">Waiting for approval</string>
+  <string name="badges_waiting_for_approval_body">Nothing has been charged.</string>
   <string name="badges_buy_in_browser">Buy in browser</string>
   <string name="badges_redeem_code_title">Redeem code</string>
   <string name="badges_link_confirm_title">Add badge to your profile?</string>

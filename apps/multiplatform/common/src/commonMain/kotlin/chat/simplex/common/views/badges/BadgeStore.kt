@@ -1,7 +1,17 @@
 package chat.simplex.common.views.badges
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.helpers.AlertManager
+import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.res.MR
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Currency
 import java.util.UUID
@@ -29,6 +39,9 @@ val badgeStoreProductIds: List<BadgeStoreProductId> = BadgeLevel.entries.flatMap
   BadgePeriod.entries.map { badgeStoreProductId(level, it) }
 }
 
+// the only products sent to the badge service: nothing delivers a subscription yet
+val badgeOneTimeProductIds: Set<String> = badgeStoreProductIds.filter { it.basePlanId == null }.map { it.productId }.toSet()
+
 // TODO [badges] replaced by APIGetBadgeInvoice, which creates the invoice row and returns its id.
 // Sent to Play as obfuscatedAccountId and echoed back on the purchase, which is how the service
 // learns which invoice a store transaction settles.
@@ -38,6 +51,16 @@ fun newBadgeInvoiceId(): String = UUID.randomUUID().toString()
 val badgePageUrl: String =
   if (appPlatform.isAndroid) "https://badges.simplex.chat/#/tier?app=true"
   else "https://badges.simplex.chat/#/tier?app=desktop"
+
+// where the store allows a link out to the badge page: the US for now, a set expected to widen.
+// An unknown country does not count, as this decides whether the store sees a link out of the app.
+@Composable
+fun badgeBrowserAllowed(): Boolean {
+  if (androidPlayStoreCountry.value == null) {
+    LaunchedEffect(Unit) { platform.androidLoadPlayStoreCountry() }
+  }
+  return androidPlayStoreCountry.value == "US"
+}
 
 // what the platform store knows about one product; ProductDetails cannot cross into commonMain
 data class BadgeProduct(
@@ -92,6 +115,11 @@ sealed class BadgePurchaseOutcome {
   object Cancelled: BadgePurchaseOutcome()
 }
 
+enum class BadgePurchaseState {
+  Issuing,
+  WaitingForApproval
+}
+
 sealed class BadgeStoreError: Exception() {
   class ProductUnavailable(val productId: String): BadgeStoreError()
   class BillingError(val responseCode: Int, val debugMessage: String): BadgeStoreError()
@@ -111,6 +139,18 @@ object BadgeStore {
   private val state = mutableStateOf(LoadState.NotLoaded)
   // snapshot state so a composable reading only the products still recomposes when they arrive
   private val products = mutableStateOf<Map<BadgeStoreProductId, BadgeProduct>>(emptyMap())
+  // one-time purchases the store holds unfinished: each is a payment taken and not yet credited
+  private val unfinished = mutableStateOf<Set<String>>(emptySet())
+  private val waitingForApproval = mutableStateOf(false)
+  // read and written on the main thread only
+  private val presenting = mutableSetOf<String>()
+
+  val purchaseState: BadgePurchaseState?
+    get() = when {
+      unfinished.value.isNotEmpty() -> BadgePurchaseState.Issuing
+      waitingForApproval.value -> BadgePurchaseState.WaitingForApproval
+      else -> null
+    }
 
   fun price(level: BadgeLevel, period: BadgePeriod): BadgePrice = when (state.value) {
     LoadState.NotLoaded, LoadState.Loading -> BadgePrice.Loading
@@ -154,8 +194,8 @@ object BadgeStore {
   suspend fun purchase(level: BadgeLevel, period: BadgePeriod, invoiceId: String): BadgePurchaseOutcome {
     val id = badgeStoreProductId(level, period)
     if (!products.value.containsKey(id)) throw BadgeStoreError.ProductUnavailable(id.productId)
-    if (useBadgeTestProducts) {
-      return BadgePurchaseOutcome.Purchased(
+    val outcome = if (useBadgeTestProducts) {
+      BadgePurchaseOutcome.Purchased(
         BadgeStoreReceipt(
           token = "test-${UUID.randomUUID()}",
           productId = id.productId,
@@ -164,8 +204,95 @@ object BadgeStore {
           environment = "test products"
         )
       )
+    } else {
+      platform.androidPurchaseBadge(id, invoiceId)
     }
-    return platform.androidPurchaseBadge(id, invoiceId)
+    when (outcome) {
+      // a one-time purchase is finished only once the service answers for it, as an unfinished one
+      // is what the store re-delivers; nothing delivers a subscription, so nothing would finish it later
+      is BadgePurchaseOutcome.Purchased -> if (outcome.receipt.productId !in badgeOneTimeProductIds) finish(outcome.receipt)
+      is BadgePurchaseOutcome.Pending -> withContext(Dispatchers.Main) { waitingForApproval.value = true }
+      is BadgePurchaseOutcome.Cancelled -> {}
+    }
+    return outcome
+  }
+
+  // only the purchase the user started may alert: an answer can reveal a profile other than the one on screen
+  suspend fun presentPurchase(receipt: BadgeStoreReceipt, interactive: Boolean) {
+    val rhId = chatModel.remoteHostId()
+    val userId = chatModel.currentUser.value?.userId ?: return
+    if (!claim(receipt.token)) return
+    try {
+      when (val r = chatModel.controller.apiPurchaseBadge(rhId, userId, ServicePayment.Google(receipt.productId, receipt.token), retry = interactive)) {
+        is BadgePurchaseResult.Redeemed -> {
+          withContext(Dispatchers.Main) {
+            BadgeModel.set(rhId, r.user.userId, r.badgeState)
+            chatModel.updateUser(r.user)
+            if (r.badgeState?.shown == true) appPrefs.supporterBannerShown.set(true)
+          }
+          finish(receipt)
+        }
+        is BadgePurchaseResult.DeliveredToOtherProfile ->
+          finish(receipt)
+        is BadgePurchaseResult.Failed -> {
+          Log.e(TAG, "BadgeStore.presentPurchase: ${r.err?.string}")
+          if (badgeReceiptRefused(r.err)) {
+            finish(receipt)
+            if (interactive) {
+              AlertManager.shared.showAlertMsg(
+                title = generalGetString(MR.strings.badges_purchase_error),
+                text = chatModel.controller.redeemErrorText(r.err)
+              )
+            }
+          }
+        }
+        null -> {}
+      }
+    } finally {
+      withContext(Dispatchers.Main + NonCancellable) { presenting.remove(receipt.token) }
+    }
+  }
+
+  // at launch and on return to the foreground, never on a timer
+  suspend fun presentUnfinished() {
+    if (useBadgeTestProducts || !platform.androidHasPlatformStore) return
+    val purchases = try {
+      platform.androidUnfinishedBadgePurchases()
+    } catch (e: Exception) {
+      Log.e(TAG, "BadgeStore.presentUnfinished: ${e.message}")
+      return
+    }
+    // Play lists a purchase awaiting payment, so unlike on iOS the waiting state is re-found here
+    withContext(Dispatchers.Main) { waitingForApproval.value = purchases.any { it is BadgePurchaseOutcome.Pending } }
+    purchases.forEach { reconcile(it) }
+  }
+
+  suspend fun reconcile(outcome: BadgePurchaseOutcome) {
+    when (outcome) {
+      is BadgePurchaseOutcome.Purchased ->
+        if (outcome.receipt.productId !in badgeOneTimeProductIds) finish(outcome.receipt)
+        else presentPurchase(outcome.receipt, interactive = false)
+      is BadgePurchaseOutcome.Pending -> withContext(Dispatchers.Main) { waitingForApproval.value = true }
+      is BadgePurchaseOutcome.Cancelled -> {}
+    }
+  }
+
+  // one request per purchase: the purchase itself, launch, foreground and the store can each present it
+  private suspend fun claim(token: String): Boolean = withContext(Dispatchers.Main) {
+    if (!presenting.add(token)) return@withContext false
+    unfinished.value += token
+    waitingForApproval.value = false
+    true
+  }
+
+  private suspend fun finish(receipt: BadgeStoreReceipt) {
+    try {
+      if (!useBadgeTestProducts) platform.androidFinishBadgePurchase(receipt)
+      withContext(Dispatchers.Main) { unfinished.value -= receipt.token }
+    } catch (e: Exception) {
+      // still unfinished: the store re-delivers it, and the next answer for it finishes it
+      Log.e(TAG, "BadgeStore.finish: ${e.message}")
+    }
   }
 
   private fun startLoading(): Boolean = when (state.value) {
@@ -189,4 +316,11 @@ private fun compactPrice(product: BadgeProduct): String {
   } catch (e: Exception) {
     product.displayPrice
   }
+}
+
+// the only answers after which the receipt will never be credited, so the store may stop re-delivering it
+private fun badgeReceiptRefused(err: ChatError?): Boolean {
+  val redeemError = ((err as? ChatError.ChatErrorChat)?.errorType as? ChatErrorType.CEBadgeRedeemError)?.badgeRedeemError
+  val code = (redeemError as? BadgeRedeemError.ServiceError)?.serviceError
+  return code is BadgeServiceErrorCode.ReceiptInvalid || code is BadgeServiceErrorCode.ReceiptUsed
 }

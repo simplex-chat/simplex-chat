@@ -17,7 +17,6 @@ struct BadgesSupportSimplexView: View {
     @State private var whyBuiltActive = false
     @State private var howItWorksActive = false
     @State private var chooseLevelActive = false
-    @State private var redeemCodeActive = false
 
     var body: some View {
         GeometryReader { g in
@@ -34,8 +33,6 @@ struct BadgesSupportSimplexView: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
 
-                // TODO [badges] restore whyBuiltButton() when in-app purchase lands: the level screen
-                // returns to the flow and howItWorksButton() moves there, leaving this one alone here.
                 howItWorksButton()
 
                 Spacer(minLength: 0)
@@ -47,10 +44,16 @@ struct BadgesSupportSimplexView: View {
                 Spacer(minLength: 0)
 
                 VStack(spacing: 10) {
-                    buyInBrowserButton()
+                    chooseLevelButton()
                         .padding(.vertical, 10)
-                    redeemCodeButton()
-                        .frame(height: 22)
+                    Group {
+                        if badgeBrowserAllowed {
+                            buyInBrowserButton()
+                        } else {
+                            RedeemCodeButton()
+                        }
+                    }
+                    .frame(height: 22)
                 }
                 .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
             }
@@ -65,13 +68,12 @@ struct BadgesSupportSimplexView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    // the in-app purchase path, kept compiling and uncalled until payments return after the MVP
     private func chooseLevelButton() -> some View {
         ZStack {
             Button {
                 chooseLevelActive = true
             } label: {
-                Text("Choose your level")
+                Text("Choose your badge")
             }
             .buttonStyle(OnboardingButtonStyle(isDisabled: false))
 
@@ -125,7 +127,23 @@ struct BadgesSupportSimplexView: View {
         }
     }
 
-    private func redeemCodeButton() -> some View {
+    private func buyInBrowserButton() -> some View {
+        Button {
+            UIApplication.shared.open(URL(string: badgePageUrl)!)
+        } label: {
+            Text("Buy in browser")
+                .font(.body)
+                .fontWeight(.medium)
+                .foregroundColor(theme.colors.primary)
+        }
+    }
+}
+
+struct RedeemCodeButton: View {
+    @EnvironmentObject var theme: AppTheme
+    @State private var redeemCodeActive = false
+
+    var body: some View {
         ZStack {
             Button {
                 redeemCodeActive = true
@@ -145,15 +163,6 @@ struct BadgesSupportSimplexView: View {
             .frame(width: 1, height: 1)
             .hidden()
         }
-    }
-
-    private func buyInBrowserButton() -> some View {
-        Button {
-            UIApplication.shared.open(URL(string: badgePageUrl)!)
-        } label: {
-            Text("Buy in browser")
-        }
-        .buttonStyle(OnboardingButtonStyle(isDisabled: false))
     }
 }
 

@@ -1,0 +1,134 @@
+package chat.simplex.common.views.badges
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.compose.stringResource
+import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingActionButton
+import chat.simplex.res.MR
+
+@Composable
+fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: ModalManager) {
+  val purchasing = remember { mutableStateOf(false) }
+
+  LaunchedEffect(Unit) { BadgeStore.load() }
+  CloseWhenPurchaseInFlight(modalManager)
+
+  ColumnWithScrollBar(
+    Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    maxIntrinsicSize = true,
+  ) {
+    Text(
+      stringResource(MR.strings.badges_check_your_order_title),
+      style = MaterialTheme.typography.h1,
+      fontWeight = FontWeight.Bold,
+      color = MaterialTheme.colors.primary,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth()
+    )
+
+    Column(Modifier.fillMaxWidth().padding(top = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+      OrderRow(MR.strings.badges_your_badge, stringResource(level.title))
+      OrderRow(MR.strings.badges_order_duration, stringResource(period.label))
+      OrderRow(MR.strings.badges_order_total, period.priceText(BadgeStore.price(level, period)))
+    }
+
+    Text(
+      stringResource(MR.strings.badges_charged_by_play),
+      style = MaterialTheme.typography.body2,
+      color = MaterialTheme.colors.secondary,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth()
+    )
+
+    Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      PayButton(level, period, purchasing)
+      BadgeBillingFooter(period)
+    }
+  }
+}
+
+@Composable
+private fun OrderRow(title: StringResource, value: String) {
+  Row(Modifier.fillMaxWidth()) {
+    Text(stringResource(title), style = MaterialTheme.typography.body1, color = MaterialTheme.colors.secondary)
+    Spacer(Modifier.weight(1f))
+    Text(value, style = MaterialTheme.typography.body1)
+  }
+}
+
+@Composable
+private fun PayButton(level: BadgeLevel, period: BadgePeriod, purchasing: MutableState<Boolean>) {
+  val price = BadgeStore.price(level, period)
+  val (labelId, labelArg) = period.payLabel(price)
+  OnboardingActionButton(
+    modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+    labelId = labelId,
+    labelArg = labelArg,
+    onboarding = null,
+    enabled = price.canPurchase && !purchasing.value,
+    onclick = { purchase(level, period, purchasing) }
+  )
+}
+
+private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: MutableState<Boolean>) {
+  val invoiceId = newBadgeInvoiceId()
+  purchasing.value = true
+  // not withBGApi: the purchase waits for the user in the Play sheet and would block chat API calls
+  withLongRunningApi {
+    try {
+      val outcome = BadgeStore.purchase(level, period, invoiceId)
+      if (outcome is BadgePurchaseOutcome.Purchased) {
+        if (outcome.receipt.productId !in badgeOneTimeProductIds) {
+          showPurchasedAlert(outcome.receipt, invoiceId)
+        } else {
+          BadgeStore.presentPurchase(outcome.receipt, interactive = true)
+        }
+      }
+      purchasing.value = false
+    } catch (e: Exception) {
+      Log.e(TAG, "BadgesCheckOrderView.purchase: ${e.stackTraceToString()}")
+      purchasing.value = false
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.badges_purchase_error),
+        text = e.toString()
+      )
+    }
+  }
+}
+
+// TODO [badges] store integration diagnostics - replaced by the issued badge once subscriptions are delivered.
+private fun showPurchasedAlert(receipt: BadgeStoreReceipt, invoiceId: String) {
+  val returnedInvoice = when (receipt.invoiceId) {
+    null -> "none"
+    invoiceId -> "yes"
+    else -> "mismatch: ${receipt.invoiceId}"
+  }
+  val lines = mutableListOf(
+    "Product: ${receipt.productId}",
+    "Invoice: $invoiceId",
+    "Invoice returned by Google: $returnedInvoice",
+    "Order: ${receipt.orderId ?: "none"}"
+  )
+  if (receipt.environment != null) lines.add("Environment: ${receipt.environment}")
+  val summary = lines.joinToString("\n")
+  Log.d(TAG, "badge purchase succeeded\n$summary")
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.badges_purchase_successful),
+    text = summary
+  )
+}

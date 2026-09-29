@@ -826,6 +826,7 @@ public enum ChatErrorType: Decodable, Hashable {
 
 public enum BadgeRedeemError: Decodable, Hashable {
     case invalidCode
+    case invalidReceipt
     case serviceNotConfigured
     case badgeActive
     case serviceError(serviceError: BadgeServiceErrorCode)
@@ -846,6 +847,7 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
     case paymentNotEntitled
     case paymentPending
     case providerUnavailable
+    case providerNotConfigured
     case rateLimited
     case codeInvalid
     case codeUsed
@@ -867,6 +869,7 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
         case .paymentNotEntitled: "payment_not_entitled"
         case .paymentPending: "payment_pending"
         case .providerUnavailable: "provider_unavailable"
+        case .providerNotConfigured: "provider_not_configured"
         case .rateLimited: "rate_limited"
         case .codeInvalid: "code_invalid"
         case .codeUsed: "code_used"
@@ -890,6 +893,7 @@ public enum BadgeServiceErrorCode: Decodable, Hashable {
         case "payment_not_entitled": self = .paymentNotEntitled
         case "payment_pending": self = .paymentPending
         case "provider_unavailable": self = .providerUnavailable
+        case "provider_not_configured": self = .providerNotConfigured
         case "rate_limited": self = .rateLimited
         case "code_invalid": self = .codeInvalid
         case "code_used": self = .codeUsed
@@ -912,7 +916,7 @@ public func badgeServiceErrorText(_ code: BadgeServiceErrorCode) -> String? {
     case .unknownPurchaseKey: NSLocalizedString("The badge service does not recognize this badge.", comment: "alert message")
     case .internalError: NSLocalizedString("The badge service reported an internal error.", comment: "alert message")
     case .badRequest, .unknownOfferId, .offerDisabled, .offerMismatch, .productUnavailable,
-         .paymentNotEntitled, .paymentPending, .providerUnavailable, .receiptInvalid, .receiptUsed, .unknown: nil
+         .paymentNotEntitled, .paymentPending, .providerUnavailable, .providerNotConfigured, .receiptInvalid, .receiptUsed, .unknown: nil
     }
 }
 

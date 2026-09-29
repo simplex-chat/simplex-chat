@@ -13,6 +13,7 @@ import chat.simplex.common.views.badges.BadgeProduct
 import chat.simplex.common.views.badges.BadgePurchaseOutcome
 import chat.simplex.common.views.badges.BadgeStoreError
 import chat.simplex.common.views.badges.BadgeStoreProductId
+import chat.simplex.common.views.badges.BadgeStoreReceipt
 import kotlinx.coroutines.Job
 import java.io.Closeable
 
@@ -44,6 +45,8 @@ interface PlatformInterface {
     return emptyList()
   }
   suspend fun androidPurchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurchaseOutcome = throw BadgeStoreError.StoreUnavailable
+  suspend fun androidFinishBadgePurchase(receipt: BadgeStoreReceipt) {}
+  suspend fun androidUnfinishedBadgePurchases(): List<BadgePurchaseOutcome> = emptyList()
   val androidApiLevel: Int? get() = null
   // The build distributed via Google Play, which has to follow its policies
   val androidIsPlayStoreBuild: Boolean get() = false

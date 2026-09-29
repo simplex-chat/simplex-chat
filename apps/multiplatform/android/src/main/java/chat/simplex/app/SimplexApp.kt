@@ -28,7 +28,9 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.badges.BadgeProduct
 import chat.simplex.common.views.badges.BadgePurchaseOutcome
+import chat.simplex.common.views.badges.BadgeStore
 import chat.simplex.common.views.badges.BadgeStoreProductId
+import chat.simplex.common.views.badges.BadgeStoreReceipt
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.database.deleteOldChatArchive
 import chat.simplex.common.views.helpers.*
@@ -113,6 +115,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
                 }
               }.onFailure { Log.e(TAG, it.stackTraceToString()) }
             }
+            BadgeStore.presentUnfinished()
           }
         }
         Lifecycle.Event.ON_RESUME -> {
@@ -351,6 +354,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override suspend fun androidLoadBadgeProducts(oneTimeIds: List<BadgeStoreProductId>, subscriptionIds: List<BadgeStoreProductId>): List<BadgeProduct> = loadBadgeProducts(oneTimeIds, subscriptionIds)
 
       override suspend fun androidPurchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurchaseOutcome = purchaseBadge(id, invoiceId)
+
+      override suspend fun androidFinishBadgePurchase(receipt: BadgeStoreReceipt) = finishBadgePurchase(receipt)
+
+      override suspend fun androidUnfinishedBadgePurchases(): List<BadgePurchaseOutcome> = unfinishedBadgePurchases()
 
       @SuppressLint("SourceLockedOrientationActivity")
       @Composable

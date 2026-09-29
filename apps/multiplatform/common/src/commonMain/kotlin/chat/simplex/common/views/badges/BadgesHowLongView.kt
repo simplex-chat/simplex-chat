@@ -10,9 +10,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.ClipboardManager
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -68,12 +65,11 @@ enum class BadgePeriod {
 }
 
 @Composable
-fun BadgesHowLongView(level: BadgeLevel) {
+fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager) {
   var selectedPeriod by remember { mutableStateOf(BadgePeriod.Monthly) }
-  val purchasing = remember { mutableStateOf(false) }
-  val clipboard = LocalClipboardManager.current
 
   LaunchedEffect(Unit) { BadgeStore.load() }
+  CloseWhenPurchaseInFlight(modalManager)
 
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
@@ -115,20 +111,25 @@ fun BadgesHowLongView(level: BadgeLevel) {
 
     Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
 
-    // Replicates TextButtonBelowOnboardingButton spacing (7.5dp outer + 5dp inner) without a
-    // TextButton so the footer has no hover/click affordance.
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      PayButton(level, selectedPeriod, purchasing, clipboard)
-      Box(Modifier.padding(top = 7.5.dp, bottom = 7.5.dp).padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(
-          stringResource(billingFooter(selectedPeriod)).format(stubBillingDate()),
-          Modifier.padding(vertical = 5.dp),
-          style = MaterialTheme.typography.body2,
-          color = MaterialTheme.colors.secondary,
-          textAlign = TextAlign.Center
-        )
-      }
+      ContinueButton(level, selectedPeriod, modalManager)
+      BadgeBillingFooter(selectedPeriod)
     }
+  }
+}
+
+// Replicates TextButtonBelowOnboardingButton spacing (7.5dp outer + 5dp inner) without a
+// TextButton so the footer has no hover/click affordance.
+@Composable
+fun BadgeBillingFooter(period: BadgePeriod) {
+  Box(Modifier.padding(top = 7.5.dp, bottom = 7.5.dp).padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Text(
+      stringResource(billingFooter(period)).format(stubBillingDate()),
+      Modifier.padding(vertical = 5.dp),
+      style = MaterialTheme.typography.body2,
+      color = MaterialTheme.colors.secondary,
+      textAlign = TextAlign.Center
+    )
   }
 }
 
@@ -173,76 +174,15 @@ private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: B
 private fun savingsPercent(level: BadgeLevel, period: BadgePeriod): Int? =
   if (period == BadgePeriod.Annual) BadgeStore.annualSavings(level) else null
 
-// TODO [badges] on desktop and the foss build there is no store, so every price is Unavailable and
-// this button stays disabled - it will offer Stripe/crypto payment instead
 @Composable
-private fun PayButton(level: BadgeLevel, selectedPeriod: BadgePeriod, purchasing: MutableState<Boolean>, clipboard: ClipboardManager) {
-  val price = BadgeStore.price(level, selectedPeriod)
-  val (labelId, labelArg) = selectedPeriod.payLabel(price)
+private fun ContinueButton(level: BadgeLevel, selectedPeriod: BadgePeriod, modalManager: ModalManager) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-    labelId = labelId,
-    labelArg = labelArg,
+    labelId = MR.strings.badges_continue,
     onboarding = null,
-    enabled = price.canPurchase && !purchasing.value,
-    onclick = { purchase(level, selectedPeriod, purchasing, clipboard) }
-  )
-}
-
-private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: MutableState<Boolean>, clipboard: ClipboardManager) {
-  val invoiceId = newBadgeInvoiceId()
-  purchasing.value = true
-  // not withBGApi: the purchase waits for the user in the Play sheet and would block chat API calls
-  withLongRunningApi {
-    try {
-      val outcome = BadgeStore.purchase(level, period, invoiceId)
-      purchasing.value = false
-      when (outcome) {
-        is BadgePurchaseOutcome.Purchased -> showPurchasedAlert(outcome.receipt, invoiceId, clipboard)
-        is BadgePurchaseOutcome.Pending -> AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.badges_purchase_pending),
-          text = generalGetString(MR.strings.badges_purchase_pending_desc)
-        )
-        is BadgePurchaseOutcome.Cancelled -> {}
-      }
-    } catch (e: Exception) {
-      Log.e(TAG, "BadgesHowLongView.purchase: ${e.stackTraceToString()}")
-      purchasing.value = false
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.badges_purchase_error),
-        text = e.toString()
-      )
+    onclick = {
+      modalManager.showModal { BadgesCheckOrderView(level, selectedPeriod, modalManager) }
     }
-  }
-}
-
-// TODO [badges] store integration diagnostics - replaced by the issued badge once the service lands.
-private fun showPurchasedAlert(receipt: BadgeStoreReceipt, invoiceId: String, clipboard: ClipboardManager) {
-  val returnedInvoice = when (receipt.invoiceId) {
-    null -> "none"
-    invoiceId -> "yes"
-    else -> "mismatch: ${receipt.invoiceId}"
-  }
-  val lines = mutableListOf(
-    "Product: ${receipt.productId}",
-    "Invoice: $invoiceId",
-    "Invoice returned by Google: $returnedInvoice",
-    "Order: ${receipt.orderId ?: "none"}"
-  )
-  if (receipt.environment != null) lines.add("Environment: ${receipt.environment}")
-  lines.add("Token: ${receipt.token.length} bytes")
-  val summary = lines.joinToString("\n")
-  Log.d(TAG, "badge purchase succeeded\n$summary")
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.badges_purchase_successful),
-    text = summary,
-    confirmText = "Copy token",
-    onConfirm = {
-      clipboard.setText(AnnotatedString(receipt.token))
-      showToast(generalGetString(MR.strings.copied))
-    },
-    dismissText = generalGetString(MR.strings.ok),
-    parseHtml = false
   )
 }
 

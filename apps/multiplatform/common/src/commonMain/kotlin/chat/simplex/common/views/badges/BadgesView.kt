@@ -2,6 +2,7 @@ package chat.simplex.common.views.badges
 
 import androidx.compose.animation.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import chat.simplex.common.model.BadgeModel
 import chat.simplex.common.model.BadgeState
 import chat.simplex.common.platform.chatModel
@@ -19,13 +20,30 @@ fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
 
   // the card look is a modal setting, so the modal is composed here to follow the screen shown
   ModalView(close, cardScreen = shownBadge != null) {
-    AnimatedContent(targetState = shownBadge, transitionSpec = { fadeIn() with fadeOut() }, contentKey = { it != null }) { badgeState ->
+    AnimatedContent(
+      targetState = shownBadge to BadgeStore.purchaseState,
+      transitionSpec = { fadeIn() with fadeOut() },
+      contentKey = { (badgeState, purchaseState) -> (badgeState != null) to purchaseState }
+    ) { (badgeState, purchaseState) ->
       if (badgeState != null) {
         BadgesYourBadgeView(badgeState, modalManager)
+      } else if (purchaseState != null) {
+        // holds the purchase screens' slot, so a consumable cannot be bought twice
+        BadgesPurchaseStateView(purchaseState)
       } else {
         BadgesSupportSimplexView(modalManager)
       }
     }
+  }
+}
+
+// only the top modal is composed, so each purchase screen closes itself in turn, as iOS pops them
+// when Support SimpleX gives way to the purchase in flight
+@Composable
+fun CloseWhenPurchaseInFlight(modalManager: ModalManager) {
+  val inFlight = BadgeStore.purchaseState != null
+  LaunchedEffect(inFlight) {
+    if (inFlight) modalManager.closeModal()
   }
 }
 

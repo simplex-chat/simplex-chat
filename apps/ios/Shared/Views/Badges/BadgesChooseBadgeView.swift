@@ -50,7 +50,6 @@ struct BadgesChooseBadgeView: View {
     @ObservedObject private var store = BadgeStore.shared
     @State private var selectedLevel: BadgeLevel = .supporter
     @State private var continueActive = false
-    @State private var howItWorksActive = false
 
     var body: some View {
         GeometryReader { g in
@@ -91,8 +90,15 @@ struct BadgesChooseBadgeView: View {
                     VStack(spacing: 10) {
                         continueButton()
                             .padding(.vertical, 10)
-                        howItWorksButton()
-                            .frame(height: 22)
+                        // redeeming a code is here only when Support SimpleX offers the browser instead
+                        Group {
+                            if badgeBrowserAllowed {
+                                RedeemCodeButton()
+                            } else {
+                                Color.clear
+                            }
+                        }
+                        .frame(height: 22)
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
@@ -152,29 +158,6 @@ struct BadgesChooseBadgeView: View {
 
             NavigationLink(isActive: $continueActive) {
                 BadgesHowLongView(level: selectedLevel)
-                    .modifier(ThemedBackground())
-            } label: {
-                EmptyView()
-            }
-            .frame(width: 1, height: 1)
-            .hidden()
-        }
-    }
-
-    private func howItWorksButton() -> some View {
-        ZStack {
-            Button {
-                howItWorksActive = true
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "info.circle")
-                    Text("How badges protect your privacy").fontWeight(.medium)
-                }
-                .font(.body)
-            }
-
-            NavigationLink(isActive: $howItWorksActive) {
-                BadgesHowItWorksView()
                     .modifier(ThemedBackground())
             } label: {
                 EmptyView()

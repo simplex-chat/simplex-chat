@@ -55,8 +55,6 @@ fun BadgesSupportSimplexView(modalManager: ModalManager) {
       modifier = Modifier.fillMaxWidth()
     )
 
-    // TODO [badges] restore WhyBuiltButton() when in-app purchase lands: the level screen
-    // returns to the flow and HowItWorksButton() moves there, leaving this one alone here.
     HowItWorksButton(modalManager)
 
     Spacer(Modifier.weight(1f))
@@ -66,18 +64,26 @@ fun BadgesSupportSimplexView(modalManager: ModalManager) {
     Spacer(Modifier.weight(1f))
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      BuyInBrowserButton(modalManager)
-      RedeemCodeButton(modalManager)
+      if (platform.androidHasPlatformStore) {
+        ChooseLevelButton(modalManager)
+        if (badgeBrowserAllowed()) {
+          BuyInBrowserTextButton()
+        } else {
+          RedeemCodeButton(modalManager)
+        }
+      } else {
+        BuyInBrowserButton(modalManager)
+        RedeemCodeButton(modalManager)
+      }
     }
   }
 }
 
-// the in-app purchase path, kept compiling and uncalled until payments return after the MVP
 @Composable
 private fun ChooseLevelButton(modalManager: ModalManager) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-    labelId = MR.strings.badges_choose_your_level,
+    labelId = MR.strings.badges_choose_your_badge_title,
     onboarding = null,
     onclick = {
       modalManager.showModal { BadgesChooseBadgeView(modalManager) }
@@ -111,10 +117,19 @@ private fun HowItWorksButton(modalManager: ModalManager) {
 }
 
 @Composable
-private fun RedeemCodeButton(modalManager: ModalManager) {
+fun RedeemCodeButton(modalManager: ModalManager) {
   TextButtonBelowOnboardingButton(
     text = stringResource(MR.strings.badges_redeem_code_button),
     onClick = { modalManager.showModal { BadgesRedeemCodeView(modalManager) } }
+  )
+}
+
+@Composable
+private fun BuyInBrowserTextButton() {
+  val uriHandler = LocalUriHandler.current
+  TextButtonBelowOnboardingButton(
+    text = stringResource(MR.strings.badges_buy_in_browser),
+    onClick = { uriHandler.openUriCatching(badgePageUrl) }
   )
 }
 
