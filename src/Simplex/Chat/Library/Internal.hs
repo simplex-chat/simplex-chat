@@ -1615,8 +1615,8 @@ updatePublicGroupData user gInfo gks
   | otherwise = pure gInfo
 
 -- must not resolve names here: a background link-data refresh would leak channel membership to the resolver
-updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> Maybe SimplexDomain -> CM (GroupInfo, Bool)
-updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData} resolvedDomain_
+updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> Maybe SimplexDomain -> Maybe UTCTime -> CM (GroupInfo, Bool)
+updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData} resolvedDomain_ expiresAt
   | profileChanged || countChanged || verifyResolved = do
       cxt <- chatStoreCxt
       withStore $ \db -> do
@@ -1625,7 +1625,7 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
           Just PublicGroupData {publicMemberCount} | countChanged ->
             setPublicMemberCount db cxt user g publicMemberCount
           _ -> pure g
-        g'' <- if verifyResolved then liftIO $ setGroupDomainVerified db user g' True else pure g'
+        g'' <- if verifyResolved then liftIO $ setGroupDomainVerified db user g' True expiresAt else pure g'
         pure (g'', profileChanged)
   | otherwise = pure (gInfo, False)
   where
@@ -1637,13 +1637,13 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
     newClaim = groupClaim groupProfile
     verifyResolved = isJust resolvedDomain_ && resolvedDomain_ == newClaim
 
-updateContactFromLinkData :: User -> Contact -> Profile -> CM Contact
-updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} linkProfile@Profile {contactDomain = newClaim}
+updateContactFromLinkData :: User -> Contact -> Profile -> Maybe UTCTime -> CM Contact
+updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} linkProfile@Profile {contactDomain = newClaim} expiresAt
   | profileChanged || verifyChanged = do
       cxt <- chatStoreCxt
       withFastStore $ \db -> do
         ct' <- updateContactProfile db cxt user ct linkProfile
-        if verifyChanged then liftIO $ setContactDomainVerified db user ct' True else pure ct'
+        if verifyChanged then liftIO $ setContactDomainVerified db user ct' True expiresAt else pure ct'
   | otherwise = pure ct
   where
     profileChanged = fromLocalProfile profile /= linkProfile

@@ -2120,10 +2120,11 @@ export type ConnectionPlan =
   | ConnectionPlan.InvitationLink
   | ConnectionPlan.ContactAddress
   | ConnectionPlan.GroupLink
+  | ConnectionPlan.NameNotConnectable
   | ConnectionPlan.Error
 
 export namespace ConnectionPlan {
-  export type Tag = "invitationLink" | "contactAddress" | "groupLink" | "error"
+  export type Tag = "invitationLink" | "contactAddress" | "groupLink" | "nameNotConnectable" | "error"
 
   interface Interface {
     type: Tag
@@ -2137,11 +2138,19 @@ export namespace ConnectionPlan {
   export interface ContactAddress extends Interface {
     type: "contactAddress"
     contactAddressPlan: ContactAddressPlan
+    nameWarning_?: NameWarning
   }
 
   export interface GroupLink extends Interface {
     type: "groupLink"
     groupLinkPlan: GroupLinkPlan
+    nameWarning_?: NameWarning
+  }
+
+  export interface NameNotConnectable extends Interface {
+    type: "nameNotConnectable"
+    simplexDomain: SimplexDomain
+    nameWarning: NameWarning
   }
 
   export interface Error extends Interface {
@@ -2201,6 +2210,7 @@ export namespace ContactAddressPlan {
     type: "ok"
     contactSLinkData_?: ContactShortLinkData
     ownerVerification?: OwnerVerification
+    addressChanged: boolean
   }
 
   export interface OwnLink extends Interface {
@@ -2841,6 +2851,7 @@ export namespace GroupLinkPlan {
     groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
     ownerVerification?: OwnerVerification
+    addressChanged: boolean
   }
 
   export interface OwnLink extends Interface {
@@ -3387,6 +3398,76 @@ export namespace NameErrorType {
   }
 }
 
+export interface NamePrice {
+  amount: number // int64
+  years: number // int
+}
+
+export type NameWarning = 
+  | NameWarning.Expired
+  | NameWarning.OwnExpired
+  | NameWarning.Available
+  | NameWarning.NoLongerRegistered
+  | NameWarning.OwnAvailable
+  | NameWarning.ReservedForCommunity
+  | NameWarning.NotRegistered
+  | NameWarning.NoValidLink
+
+export namespace NameWarning {
+  export type Tag = 
+    | "expired"
+    | "ownExpired"
+    | "available"
+    | "noLongerRegistered"
+    | "ownAvailable"
+    | "reservedForCommunity"
+    | "notRegistered"
+    | "noValidLink"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Expired extends Interface {
+    type: "expired"
+    expiredAt: string // ISO-8601 timestamp
+    graceUntil?: string // ISO-8601 timestamp
+  }
+
+  export interface OwnExpired extends Interface {
+    type: "ownExpired"
+    expiredAt: string // ISO-8601 timestamp
+    graceUntil?: string // ISO-8601 timestamp
+  }
+
+  export interface Available extends Interface {
+    type: "available"
+    price: NamePrice
+  }
+
+  export interface NoLongerRegistered extends Interface {
+    type: "noLongerRegistered"
+    price: NamePrice
+  }
+
+  export interface OwnAvailable extends Interface {
+    type: "ownAvailable"
+    price: NamePrice
+  }
+
+  export interface ReservedForCommunity extends Interface {
+    type: "reservedForCommunity"
+  }
+
+  export interface NotRegistered extends Interface {
+    type: "notRegistered"
+  }
+
+  export interface NoValidLink extends Interface {
+    type: "noValidLink"
+  }
+}
+
 export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
@@ -3506,7 +3587,7 @@ export interface PendingContactConnection {
 }
 
 export enum PlanResolveMode {
-  AllGroups = "allGroups",
+  All = "all",
   Unknown = "unknown",
   Never = "never",
 }

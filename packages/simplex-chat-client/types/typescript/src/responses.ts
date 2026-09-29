@@ -207,7 +207,7 @@ export namespace CR {
   export interface ConnectionPlan extends Interface {
     type: "connectionPlan"
     user: T.User
-    connLink: T.CreatedConnLink
+    connLink?: T.CreatedConnLink
     planSimplexName?: T.SimplexNameInfo
     otherSimplexName?: T.SimplexNameInfo
     connectionPlan: T.ConnectionPlan

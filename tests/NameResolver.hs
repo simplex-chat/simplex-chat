@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -9,6 +10,12 @@ module NameResolver
   ( NameRegistry,
     withNameResolver,
     registerName,
+    registerExpiredName,
+    registerReservedName,
+    registerAvailableName,
+    unregisterName,
+    failNameResolution,
+    emptyRecord,
     contactNameRecord,
     channelNameRecord,
     contactAndChannelNameRecord,
@@ -22,37 +29,71 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
-import Network.HTTP.Types (hContentType, notFound404, ok200)
+import Network.HTTP.Types (hContentType, internalServerError500, notFound404, ok200)
 import Network.Wai (Application, pathInfo, responseLBS)
 import qualified Network.Wai.Handler.Warp as Warp
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord (..), NameRegistration (..), NameResponse (..), USDCents (..))
+import Simplex.Messaging.Names.Record (NamePricing (..), NameRecord (..), NameRegistration (..), NameReservedReason, NameResponse (..), USDCents (..))
 import Simplex.Messaging.Server.Names (NamesConfig (..))
 import Simplex.Messaging.SimplexName (SimplexDomain (..), SimplexNameInfo (..), labelHash)
+import Simplex.Messaging.SystemTime (RoundedSystemTime (..), getSystemSeconds)
 
-type NameRegistry = TVar (Map Text NameRecord)
+data TestNameAnswer = AnswerRegistration NameRegistration | AnswerFails
+
+type NameRegistry = TVar (Map Text TestNameAnswer)
 
 -- | Run an action with a local resolver on a free port and its registry (keyed
 -- by the query the resolver looks the name up by).
-withNameResolver :: (Int -> TVar (Map Text NameRecord) -> IO a) -> IO a
+withNameResolver :: (Int -> NameRegistry -> IO a) -> IO a
 withNameResolver action = do
   reg <- newTVarIO M.empty
   Warp.withApplication (pure (app reg)) $ \port -> action port reg
   where
-    app :: TVar (Map Text NameRecord) -> Application
+    app :: NameRegistry -> Application
     app reg req send = do
       (st, body) <- case pathInfo req of
         ["health"] -> pure (ok200, "{}")
-        ["v2", "resolve", q] -> (\r -> (ok200, J.encode $ nameResponse r)) . M.lookup q <$> readTVarIO reg
+        ["v2", "resolve", q] -> answer . M.lookup q <$> readTVarIO reg
         _ -> pure (notFound404, "{}")
       send $ responseLBS st [(hContentType, "application/json")] body
-    nameResponse (Just nameRecord) = NameResponse {lastBlockTs = Nothing, registration = NRRegistered {expires = Nothing, graceUntil = Nothing, reservedReason_ = Nothing, nameRecord}}
-    nameResponse Nothing = NameResponse {lastBlockTs = Nothing, registration = NRAvailable {pricing = NamePricing {registrationPrices = M.empty, basePrice = USDCents 1000, minLabelLength = 1}}}
+    answer = \case
+      Just AnswerFails -> (internalServerError500, "{}")
+      Just (AnswerRegistration registration) -> (ok200, J.encode NameResponse {lastBlockTs = Nothing, registration})
+      Nothing -> (ok200, J.encode NameResponse {lastBlockTs = Nothing, registration = NRAvailable {pricing = testPricing 1}})
 
 -- | Register a name's domain to resolve to the given record.
-registerName :: TVar (Map Text NameRecord) -> SimplexNameInfo -> NameRecord -> IO ()
-registerName reg SimplexNameInfo {nameDomain = SimplexDomain {nameTLD, domain}} r =
-  atomically $ modifyTVar' reg $ M.insert (decodeLatin1 $ strEncode (labelHash domain) <> strEncode nameTLD) r
+registerName :: NameRegistry -> SimplexNameInfo -> NameRecord -> IO ()
+registerName reg ni nameRecord =
+  registerRegistration reg ni NRRegistered {expires = Nothing, graceUntil = Nothing, reservedReason_ = Nothing, nameRecord}
+
+registerRegistration :: NameRegistry -> SimplexNameInfo -> NameRegistration -> IO ()
+registerRegistration reg ni r = atomically $ modifyTVar' reg $ M.insert (registryKey ni) (AnswerRegistration r)
+
+registerExpiredName :: NameRegistry -> SimplexNameInfo -> NameRecord -> IO ()
+registerExpiredName reg ni nameRecord = do
+  RoundedSystemTime now <- getSystemSeconds
+  let expires = Just $ RoundedSystemTime (now - 86400)
+      graceUntil = Just $ RoundedSystemTime (now + 30 * 86400)
+  registerRegistration reg ni NRRegistered {expires, graceUntil, reservedReason_ = Nothing, nameRecord}
+
+registerReservedName :: NameRegistry -> SimplexNameInfo -> NameReservedReason -> IO ()
+registerReservedName reg ni reservedReason = registerRegistration reg ni NRReserved {reservedReason}
+
+registerAvailableName :: NameRegistry -> SimplexNameInfo -> Int -> IO ()
+registerAvailableName reg ni minLen = registerRegistration reg ni NRAvailable {pricing = testPricing minLen}
+
+failNameResolution :: NameRegistry -> SimplexNameInfo -> IO ()
+failNameResolution reg ni = atomically $ modifyTVar' reg $ M.insert (registryKey ni) AnswerFails
+
+unregisterName :: NameRegistry -> SimplexNameInfo -> IO ()
+unregisterName reg ni = atomically $ modifyTVar' reg $ M.delete (registryKey ni)
+
+registryKey :: SimplexNameInfo -> Text
+registryKey SimplexNameInfo {nameDomain = SimplexDomain {nameTLD, domain}} =
+  decodeLatin1 $ strEncode (labelHash domain) <> strEncode nameTLD
+
+testPricing :: Int -> NamePricing
+testPricing minLabelLength = NamePricing {registrationPrices = M.empty, basePrice = USDCents 1000, minLabelLength}
 
 contactNameRecord :: Text -> Text -> NameRecord
 contactNameRecord name link = (emptyRecord name) {nrSimplexContact = [link]}

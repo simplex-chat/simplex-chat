@@ -52,6 +52,7 @@ module Simplex.Chat.Store.Direct
     getContactIdByName,
     updateContactProfile,
     setContactDomainVerified,
+    getContactDomainResolution,
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
@@ -410,7 +411,7 @@ createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId verifie
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
   ct <- getContact db cxt user =<< createContact_ db cxt user p ctUserPreferences prepared "" currentTs
-  liftIO $ maybe (pure ct) (setContactDomainVerified db user ct) verified_
+  liftIO $ maybe (pure ct) (\v -> setContactDomainVerified db user ct v Nothing) verified_
 
 updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO Contact
 updatePreparedContactUser
@@ -590,16 +591,25 @@ updateContactProfile db cxt user@User {userId} c p' = do
             clearVerificationIfClaimChanged
             pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
 
-setContactDomainVerified :: DB.Connection -> User -> Contact -> Bool -> IO Contact
-setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p} verified = do
+setContactDomainVerified :: DB.Connection -> User -> Contact -> Bool -> Maybe UTCTime -> IO Contact
+setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p} verified expiresAt = do
+  currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
-      UPDATE contact_profiles SET contact_domain_verified = ?
+      UPDATE contact_profiles SET contact_domain_verified = ?, contact_domain_resolved_at = ?, contact_domain_expires_at = ?
       WHERE contact_profile_id IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
     |]
-    (BI verified, userId, contactId)
+    (BI verified, currentTs, expiresAt, userId, contactId)
   pure (ct {profile = p {contactDomainVerified = Just verified}} :: Contact)
+
+getContactDomainResolution :: DB.Connection -> User -> Contact -> IO (Maybe (UTCTime, Maybe UTCTime))
+getContactDomainResolution db User {userId} Contact {profile = LocalProfile {profileId}} =
+  maybeFirstRow id $
+    DB.query
+      db
+      "SELECT contact_domain_resolved_at, contact_domain_expires_at FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ? AND contact_domain_resolved_at IS NOT NULL"
+      (userId, profileId)
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
 updateContactUserPreferences db user@User {userId} c@Contact {contactId} userPreferences = do

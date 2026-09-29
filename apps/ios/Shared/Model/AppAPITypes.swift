@@ -853,7 +853,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case invitation(user: UserRef, connLinkInvitation: CreatedConnLink, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
-    case connectionPlan(user: UserRef, connLink: CreatedConnLink, planSimplexName: SimplexNameInfo?, otherSimplexName: SimplexNameInfo?, connectionPlan: ConnectionPlan)
+    case connectionPlan(user: UserRef, connLink: CreatedConnLink?, planSimplexName: SimplexNameInfo?, otherSimplexName: SimplexNameInfo?, connectionPlan: ConnectionPlan)
     case newPreparedChat(user: UserRef, chat: ChatData)
     case contactUserChanged(user: UserRef, fromContact: Contact, newUser: UserRef, toContact: Contact)
     case groupUserChanged(user: UserRef, fromGroup: GroupInfo, newUser: UserRef, toGroup: GroupInfo)
@@ -1444,7 +1444,7 @@ enum OwnerVerification: Decodable, Hashable {
 }
 
 struct ConnectionPlanResult {
-    var connLink: CreatedConnLink
+    var connLink: CreatedConnLink?
     var planSimplexName: SimplexNameInfo?
     var otherSimplexName: SimplexNameInfo?
     var connectionPlan: ConnectionPlan
@@ -1452,16 +1452,42 @@ struct ConnectionPlanResult {
 
 // APIConnectPlan resolution scope; .never is local-store-only (no network), used for per-keystroke name search
 enum PlanResolveMode: String {
-    case allGroups
+    case all
     case unknown
     case never
 }
 
 enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
-    case contactAddress(contactAddressPlan: ContactAddressPlan)
-    case groupLink(groupLinkPlan: GroupLinkPlan)
+    case contactAddress(contactAddressPlan: ContactAddressPlan, nameWarning_: NameWarning?)
+    case groupLink(groupLinkPlan: GroupLinkPlan, nameWarning_: NameWarning?)
+    case nameNotConnectable(simplexDomain: SimplexDomain, nameWarning: NameWarning)
     case error(chatError: ChatError)
+
+    var nameWarning: NameWarning? {
+        switch self {
+        case let .contactAddress(_, warning): warning
+        case let .groupLink(_, warning): warning
+        case let .nameNotConnectable(_, warning): warning
+        default: nil
+        }
+    }
+}
+
+enum NameWarning: Decodable, Hashable {
+    case expired(expiredAt: Date, graceUntil: Date?)
+    case ownExpired(expiredAt: Date, graceUntil: Date?)
+    case available(price: NamePrice)
+    case noLongerRegistered(price: NamePrice)
+    case ownAvailable(price: NamePrice)
+    case reservedForCommunity
+    case notRegistered
+    case noValidLink
+}
+
+struct NamePrice: Decodable, Hashable {
+    var amount: Int64
+    var years: Int
 }
 
 enum InvitationLinkPlan: Decodable, Hashable {
@@ -1472,7 +1498,7 @@ enum InvitationLinkPlan: Decodable, Hashable {
 }
 
 enum ContactAddressPlan: Decodable, Hashable {
-    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?)
+    case ok(contactSLinkData_: ContactShortLinkData?, ownerVerification: OwnerVerification?, addressChanged: Bool)
     case ownLink
     case connectingConfirmReconnect
     case connectingProhibit(contact: Contact)
@@ -1487,7 +1513,7 @@ public struct GroupShortLinkInfo: Decodable, Hashable {
 }
 
 enum GroupLinkPlan: Decodable, Hashable {
-    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?)
+    case ok(groupSLinkInfo_: GroupShortLinkInfo?, groupSLinkData_: GroupShortLinkData?, ownerVerification: OwnerVerification?, addressChanged: Bool)
     case ownLink(groupInfo: GroupInfo)
     case connectingConfirmReconnect
     case connectingProhibit(groupInfo_: GroupInfo?)
