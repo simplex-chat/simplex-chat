@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -57,10 +58,44 @@ private fun formatBadgeCodeInput(s: String): String {
   return groups.joinToString("-")
 }
 
+sealed class BadgeRedeemOutcome {
+  object Redeemed: BadgeRedeemOutcome()
+  class Refused(val message: String): BadgeRedeemOutcome()
+  object Cancelled: BadgeRedeemOutcome()
+}
+
+// sets the badge before returning, so a caller that dismisses on Redeemed lands on Your Badge
+// instead of showing the switch from Support. Cancelled when the user cancels the retry alert.
+suspend fun redeemBadgeCode(rhId: Long?, user: User, code: String): BadgeRedeemOutcome =
+  when (val result = chatModel.controller.apiRedeemBadgeCode(rhId, user.userId, code)) {
+    null -> BadgeRedeemOutcome.Cancelled
+    is BadgeRedeemResult.Redeemed -> withContext(Dispatchers.Main) {
+      val badgeState = result.badgeState
+      BadgeModel.set(rhId, user.userId, badgeState)
+      chatModel.updateUser(result.user)
+      if (badgeState != null && !badgeState.shown) {
+        // a replay adds no purchase; a fresh code's badge can be retired on arrival
+        BadgeRedeemOutcome.Refused(
+          generalGetString(if (result.newBadge) MR.strings.badges_error_badge_ended else MR.strings.badges_error_code_used)
+        )
+      } else {
+        appPrefs.supporterBannerShown.set(true)
+        BadgeRedeemOutcome.Redeemed
+      }
+    }
+    is BadgeRedeemResult.Failed -> {
+      Log.e(TAG, "apiRedeemBadgeCode: ${result.err?.string}")
+      BadgeRedeemOutcome.Refused(chatModel.controller.redeemErrorText(result.err))
+    }
+  }
+
+fun showCannotRedeemAlert(message: String) {
+  AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.badges_error_title), text = message)
+}
+
 @Composable
 fun BadgesRedeemCodeView(modalManager: ModalManager) {
   val rhId = remember { chatModel.remoteHostId() }
-  val supporterBannerShown = remember { appPrefs.supporterBannerShown }
   val code = remember { mutableStateOf(TextFieldValue("")) }
   val canonicalCode = remember { mutableStateOf<String?>(null) }
   val submitting = remember { mutableStateOf(false) }
@@ -78,37 +113,13 @@ fun BadgesRedeemCodeView(modalManager: ModalManager) {
     val user = chatModel.currentUser.value ?: return
     submitting.value = true
     withBGApi {
-      when (val result = chatModel.controller.apiRedeemBadgeCode(rhId, user.userId, sending)) {
-        null -> withContext(Dispatchers.Main) { submitting.value = false }
-        is BadgeRedeemResult.Redeemed -> {
-          val badgeState = result.badgeState
-          withContext(Dispatchers.Main) {
-            submitting.value = false
-            // set before dismissing: BadgesView then switches Support to Your Badge while this screen
-            // still covers it, so the pop lands on Your Badge instead of showing the switch
-            BadgeModel.set(rhId, user.userId, badgeState)
-            chatModel.updateUser(result.user)
-            if (badgeState != null && !badgeState.shown) {
-              // a replay adds no purchase; a fresh code's badge can be retired on arrival
-              AlertManager.shared.showAlertMsg(
-                title = generalGetString(MR.strings.badges_error_title),
-                text = generalGetString(if (result.newBadge) MR.strings.badges_error_badge_ended else MR.strings.badges_error_code_used)
-              )
-            } else {
-              supporterBannerShown.set(true)
-              modalManager.closeModal()
-            }
-          }
-        }
-        is BadgeRedeemResult.Failed -> {
-          Log.e(TAG, "apiRedeemBadgeCode: ${result.err?.string}")
-          withContext(Dispatchers.Main) {
-            submitting.value = false
-            AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.badges_error_title),
-              text = chatModel.controller.redeemErrorText(result.err)
-            )
-          }
+      val outcome = redeemBadgeCode(rhId, user, sending)
+      withContext(Dispatchers.Main) {
+        submitting.value = false
+        when (outcome) {
+          is BadgeRedeemOutcome.Redeemed -> modalManager.closeModal()
+          is BadgeRedeemOutcome.Refused -> showCannotRedeemAlert(outcome.message)
+          is BadgeRedeemOutcome.Cancelled -> {}
         }
       }
     }
@@ -242,5 +253,195 @@ private fun SubmitButton(enabled: Boolean, onClick: () -> Unit) {
     onboarding = null,
     enabled = enabled,
     onclick = onClick
+  )
+}
+
+// the open screen's own state, not a copy of its step, so the two cannot disagree
+private var badgeLinkStep: MutableState<BadgeLinkStep>? = null
+
+private fun isBadgeLinkOpen(): Boolean =
+  ModalManager.end.hasModalOpen(ModalViewId.BADGE_LINK)
+
+fun isBadgeLinkIssuing(): Boolean =
+  isBadgeLinkOpen() && badgeLinkStep?.value == BadgeLinkStep.Issuing
+
+fun openBadgeLink(rhId: Long?, codeText: String) {
+  val code = parseBadgeCode(codeText)
+    ?: return showCannotRedeemAlert(generalGetString(MR.strings.badges_error_invalid_code))
+  // opens over the chat list, as iOS dismisses every sheet before a link
+  ModalManager.closeAllModalsEverywhere()
+  // held by the modal, not remembered: a modal is composed only while on top, and rotation recreates the activity,
+  // either of which would reset remembered state to Confirming with a request in flight
+  val step = mutableStateOf(BadgeLinkStep.Confirming)
+  ModalManager.end.showCustomModal(id = ModalViewId.BADGE_LINK) { close ->
+    BadgesRedeemLinkView(rhId, code, step, close)
+  }
+  badgeLinkStep = step
+}
+
+enum class BadgeLinkStep {
+  Confirming,
+  Issuing,
+  Redeemed,
+  ViewingBadge
+}
+
+// Any web page can send a badge link, and a profile holds one badge at a time,
+// so this screen asks before redeeming, names the profile, and offers nothing but the redemption.
+// It is a code redemption with the code hidden, so it inherits the redeem screen's behaviour: an
+// interrupted request is not resumed, and the code stays on the page that issued the link.
+@Composable
+fun BadgesRedeemLinkView(rhId: Long?, code: String, step: MutableState<BadgeLinkStep>, close: () -> Unit) {
+  fun isOpen(): Boolean =
+    badgeLinkStep === step && isBadgeLinkOpen()
+
+  fun isShowing(): Boolean =
+    isOpen() && ModalManager.end.isLastModalOpen(ModalViewId.BADGE_LINK)
+
+  // An outcome can arrive after this screen was closed or covered: it must not close another screen,
+  // and a covered one goes back to asking, so it is never left locked on the spinner.
+  fun closeIfShowing() {
+    if (isShowing()) {
+      close()
+    } else if (isOpen()) {
+      step.value = BadgeLinkStep.Confirming
+    }
+  }
+
+  fun redeemFromLink() {
+    // a second tap before the screen changes must not send the code again
+    if (step.value != BadgeLinkStep.Confirming) return
+    val user = chatModel.currentUser.value ?: return closeIfShowing()
+    step.value = BadgeLinkStep.Issuing
+    withBGApi {
+      val outcome = redeemBadgeCode(rhId, user, code)
+      withContext(Dispatchers.Main) {
+        when (outcome) {
+          is BadgeRedeemOutcome.Redeemed -> {
+            if (!isShowing()) {
+              AlertManager.shared.showAlertMsg(
+                title = generalGetString(MR.strings.badges_link_added_title),
+                text = String.format(generalGetString(MR.strings.badges_link_added_profile), user.displayName)
+              )
+            }
+            // a covered screen is not left on the spinner; a closed one is not written to
+            if (isOpen()) step.value = BadgeLinkStep.Redeemed
+          }
+          is BadgeRedeemOutcome.Refused -> {
+            closeIfShowing()
+            showCannotRedeemAlert(outcome.message)
+          }
+          is BadgeRedeemOutcome.Cancelled -> closeIfShowing()
+        }
+      }
+    }
+  }
+
+  // read for the profile the screen names, when it renders, so the two cannot disagree;
+  // core refuses a code while the profile shows a badge
+  val profileHasBadge = BadgeModel.isCurrent(rhId, chatModel.currentUser.value?.userId) && BadgeModel.badgeState.value?.shown == true
+
+  when (step.value) {
+    BadgeLinkStep.Confirming -> ModalView(::closeIfShowing) {
+      if (profileHasBadge) {
+        BadgeHeld(onViewBadge = { step.value = BadgeLinkStep.ViewingBadge }, onCancel = ::closeIfShowing)
+      } else {
+        Confirming(onConfirm = ::redeemFromLink, onCancel = ::closeIfShowing)
+      }
+    }
+    BadgeLinkStep.Issuing -> ModalView(::closeIfShowing) { BeingIssued(onDismiss = ::closeIfShowing) }
+    BadgeLinkStep.Redeemed, BadgeLinkStep.ViewingBadge -> BadgesView(ModalManager.end, close)
+  }
+}
+
+// the screen cannot tell a repeated link for the badge it shows from a code for another badge,
+// so it asserts neither
+@Composable
+private fun BadgeHeld(onViewBadge: () -> Unit, onCancel: () -> Unit) {
+  LinkStep(
+    MR.strings.badges_link_held_title,
+    primary = MR.strings.badges_link_view_badge to onViewBadge,
+    textButton = MR.strings.cancel_verb to onCancel
+  ) {
+    LinkText(stringResource(MR.strings.badges_link_held_other_profile))
+    LinkText(stringResource(MR.strings.badges_link_held_page))
+  }
+}
+
+@Composable
+private fun Confirming(onConfirm: () -> Unit, onCancel: () -> Unit) {
+  LinkStep(
+    MR.strings.badges_link_confirm_title,
+    primary = MR.strings.badges_link_add_badge to onConfirm,
+    textButton = MR.strings.cancel_verb to onCancel
+  ) {
+    LinkText(String.format(stringResource(MR.strings.badges_link_confirm_profile), chatModel.currentUser.value?.displayName ?: ""))
+  }
+}
+
+// leaving does not cancel: the badge is still added after the screen closes
+@Composable
+private fun BeingIssued(onDismiss: () -> Unit) {
+  LinkStep(MR.strings.badges_being_issued, textButton = MR.strings.badges_dismiss to onDismiss) {
+    Spacer(Modifier.weight(1f))
+    CircularProgressIndicator(
+      Modifier.size(30.dp),
+      color = MaterialTheme.colors.secondary,
+      strokeWidth = 3.dp
+    )
+  }
+}
+
+// with no primary, the text button takes its place, so a button does not move between steps
+@Composable
+private fun LinkStep(
+  title: StringResource,
+  primary: Pair<StringResource, () -> Unit>? = null,
+  textButton: Pair<StringResource, () -> Unit>,
+  content: @Composable ColumnScope.() -> Unit
+) {
+  ColumnWithScrollBar(
+    Modifier.padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
+    verticalArrangement = Arrangement.spacedBy(16.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    maxIntrinsicSize = true,
+  ) {
+    Text(
+      stringResource(title),
+      style = MaterialTheme.typography.h1,
+      fontWeight = FontWeight.Bold,
+      color = MaterialTheme.colors.primary,
+      textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth()
+    )
+
+    content()
+
+    Spacer(Modifier.weight(1f))
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      if (primary != null) {
+        OnboardingActionButton(
+          modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+          labelId = primary.first,
+          onboarding = null,
+          onclick = primary.second
+        )
+        TextButtonBelowOnboardingButton(stringResource(textButton.first), textButton.second)
+      } else {
+        TextButtonBelowOnboardingButton(stringResource(textButton.first), textButton.second)
+        TextButtonBelowOnboardingButton("", null)
+      }
+    }
+  }
+}
+
+@Composable
+private fun LinkText(text: String) {
+  Text(
+    text,
+    style = MaterialTheme.typography.body1,
+    textAlign = TextAlign.Center,
+    modifier = Modifier.fillMaxWidth()
   )
 }

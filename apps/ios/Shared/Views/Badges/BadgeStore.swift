@@ -32,6 +32,9 @@ let badgeProductIds: [String] = BadgeLevel.allCases.flatMap { level in
 // which is how the service learns which invoice a store transaction settles.
 func newBadgeInvoiceId() -> UUID { UUID() }
 
+// the page's app flag rides in the fragment, which never reaches the service
+let badgePageUrl = "https://badges.simplex.chat/#/tier?app=true"
+
 enum BadgePrice {
     case loading
     case price(String)

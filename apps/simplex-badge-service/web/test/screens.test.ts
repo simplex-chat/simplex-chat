@@ -706,8 +706,8 @@ domTest("screens: the return-to-app ending opens on the tick, offers the link an
   assert.equal(p.children[0], p.all("div.tick")[0], "the payment went through, and this is the first thing that says so");
   assert.equal(p.all("div.tick")[0]!.textContent, "✓");
   assert.equal(p.all("h1")[0]!.textContent, "Paid");
-  assert.ok(p.textContent.includes("Opening SimpleX to add your badge."));
-  assert.ok(p.textContent.includes("If nothing happens, use the button."));
+  assert.ok(p.textContent.includes("Your badge is ready."));
+  assert.ok(p.textContent.includes("Return to SimpleX to add it."));
   assertNoCode(p, "the return-to-app ending");
   p.all("button.primary").find((b) => b.textContent === screens.RETURN_TO_APP)!.click();
   p.all("button.link").find((b) => b.textContent === screens.SHOW_CODE)!.click();

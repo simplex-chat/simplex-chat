@@ -70,6 +70,15 @@
 
         <data android:scheme="simplex" />
       </intent-filter>
+      <!-- open simplexchat:/ app URI -->
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+
+        <data android:scheme="simplexchat" />
+      </intent-filter>
       <intent-filter android:autoVerify="true">
         <action android:name="android.intent.action.VIEW" />
 
