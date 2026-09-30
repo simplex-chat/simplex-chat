@@ -27,6 +27,7 @@ extension ChatLike {
             case .history: p.history.on
             case .support: p.support.on
             case .reports: p.reports.on
+            case .signMessages: p.signMessages.on
             }
         } else {
             return true

@@ -34,4 +34,8 @@ describe("ciBotCommand", () => {
     const ci = {content: {type: "rcvDeleted"}} as T.ChatItem
     expect(ciBotCommand(ci)).toBeUndefined()
   })
+
+  it("keeps multi-line params", () => {
+    expect(ciBotCommand(rcvText("/review line1\nline2"))).toEqual({keyword: "review", params: "line1\nline2"})
+  })
 })

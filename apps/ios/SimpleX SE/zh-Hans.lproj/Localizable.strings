@@ -95,7 +95,7 @@
 "Slow network?" = "网络速度慢？";
 
 /* No comment provided by engineer. */
-"Unknown database error: %@" = "未知数据库错误： %@";
+"Unknown database error: %@" = "未知数据库错误：%@";
 
 /* No comment provided by engineer. */
 "Unsupported format" = "不支持的格式";
@@ -105,4 +105,7 @@
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "数据库密码错误";
+
+/* No comment provided by engineer. */
+"You can allow sharing in Your privacy / SimpleX Lock settings." = "你可以在“你的隐私”/“SimpleX 锁定”设置中允许共享。";
 

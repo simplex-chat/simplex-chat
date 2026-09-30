@@ -11,8 +11,7 @@
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Directory.Store
-  ( DirectoryLog (..),
-    GroupReg (..),
+  ( GroupReg (..),
     GroupRegStatus (..),
     UserGroupRegId,
     GroupApprovalId,
@@ -20,9 +19,6 @@ module Directory.Store
     DirectoryMemberAcceptance (..),
     DirectoryStatus (..),
     ProfileCondition (..),
-    DirectoryLogRecord (..),
-    openDirectoryLog,
-    readDirectoryLogData,
     addGroupRegStore,
     insertGroupReg,
     delGroupReg,
@@ -37,12 +33,13 @@ module Directory.Store
     getAllGroupRegs_,
     getDuplicateGroupRegs,
     getGroupReg,
-    getGroupAndReg,
+    getGroupAndRegLink,
     listLastGroups,
     listPendingGroups,
     getAllListedGroups,
     getAllListedGroups_,
     searchListedGroups,
+    verifiedGroupDomain,
     groupRegStatusText,
     pendingApproval,
     groupRemoved,
@@ -52,17 +49,11 @@ module Directory.Store
     basicJoinFilter,
     moderateJoinFilter,
     strongJoinFilter,
+    newGroupJoinFilter,
     groupDBError,
-    logGCreate,
-    logGDelete,
-    logGUpdateOwner,
-    logGUpdateStatus,
-    logGUpdatePromotion,
   )
 where
 
-import Control.Applicative ((<|>))
-import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Data.Aeson ((.:), (.=))
@@ -70,32 +61,28 @@ import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.ByteString.Char8 (ByteString)
-import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
-import Data.List (sortOn)
-import Data.Map (Map)
-import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Data.Time.Clock.System (systemEpochDay)
 import Directory.Search
-import Directory.Util
+import Simplex.Chat.Bot.Store
 import Simplex.Chat.Controller
+import Simplex.Chat.Names (claimDomain)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Groups
-import Simplex.Chat.Store.Shared (groupInfoQueryFields, groupInfoQueryFrom)
+import Simplex.Chat.Store.Shared (GroupKeysRow, groupInfoQueryFields, groupInfoQueryFrom, mkGroupKeys, toGroupInfo_)
 import Simplex.Chat.Types
+import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), SimplexDomain)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 import Simplex.Messaging.Util (eitherToMaybe, firstRow, maybeFirstRow', safeDecodeUtf8)
-import System.IO (BufferMode (..), Handle, IOMode (..), hSetBuffering, openFile)
 
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
@@ -104,10 +91,6 @@ import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
-
-data DirectoryLog = DirectoryLog
-  { directoryLogFile :: Maybe Handle
-  }
 
 data GroupReg = GroupReg
   { dbGroupId :: GroupId,
@@ -164,6 +147,16 @@ strongJoinFilter =
       makeObserver = Nothing
     }
 
+-- Default applied to newly registered groups: a captcha challenge is required
+-- from every joining member unless the owner changes it with /filter.
+newGroupJoinFilter :: DirectoryMemberAcceptance
+newGroupJoinFilter =
+  DirectoryMemberAcceptance
+    { rejectNames = Nothing,
+      passCaptcha = Just PCAll,
+      makeObserver = Nothing
+    }
+
 type UserGroupRegId = Int64
 
 type GroupApprovalId = Int64
@@ -210,6 +203,11 @@ grDirectoryStatus = \case
   GRSSuspendedBadRoles -> DSReserved
   GRSRemoved -> DSRemoved
   _ -> DSRegistered
+
+verifiedGroupDomain :: GroupInfo -> Maybe SimplexDomain
+verifiedGroupDomain GroupInfo {groupProfile = GroupProfile {publicGroup}, groupDomainVerified}
+  | groupDomainVerified == Just True = claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)
+  | otherwise = Nothing
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "PC") ''ProfileCondition)
 
@@ -311,12 +309,17 @@ getGroupReg_ db gId =
       |]
       (Only gId)
 
-getGroupAndReg :: ChatController -> User -> GroupId -> IO (Either String (GroupInfo, GroupReg))
-getGroupAndReg cc user@User {userId, userContactId} gId =
-  withDB "getGroupAndReg" cc $ \db -> do
+getGroupAndRegLink :: ChatController -> User -> GroupId -> IO (Either String (GroupInfoKeys, GroupReg, Maybe GroupLink))
+getGroupAndRegLink cc user@User {userId, userContactId} gId =
+  withDB "getGroupAndRegLink" cc $ \db -> do
     currentTs <- liftIO getCurrentTime
-    ExceptT $ firstRow (toGroupInfoReg currentTs (storeCxt cc) user) ("group " ++ show gId ++ " not found") $
-      DB.query db (groupReqQuery <> " AND g.group_id = ?") (userId, userContactId, gId)
+    (g, gksData, gr, gLink_) <-
+      ExceptT $ firstRow (toGroupInfoKeysRegLink currentTs cxt user) ("group " ++ show gId ++ " not found") $
+        DB.query db (groupReqQuery <> " AND g.group_id = ?") (userId, userContactId, gId)
+    gks <- withExceptT groupDBError $ mkGroupKeys db cxt g gksData
+    pure (GIK g gks, gr, gLink_)
+  where
+    cxt = storeCxt cc
 
 getUserGroupReg :: ChatController -> User -> ContactId -> UserGroupRegId -> IO (Either String (GroupInfo, GroupReg))
 getUserGroupReg cc user@User {userId, userContactId} ctId ugrId =
@@ -338,12 +341,10 @@ getAllListedGroups cc user = withDB' "getAllListedGroups" cc $ \db -> getAllList
 getAllListedGroups_ :: DB.Connection -> StoreCxt -> User -> IO [(GroupInfo, GroupReg, Maybe GroupLink)]
 getAllListedGroups_ db cxt user@User {userId, userContactId} = do
   currentTs <- getCurrentTime
-  DB.query db (groupReqQuery <> " AND r.group_reg_status = ?") (userId, userContactId, GRSActive)
-    >>= mapM (withGroupLink . toGroupInfoReg currentTs cxt user)
-  where
-    withGroupLink (g, gr) = (g,gr,) . eitherToMaybe <$> runExceptT (getGroupLink db user g)
+  map (toGroupInfoRegLink currentTs cxt user)
+    <$> DB.query db (groupReqQuery <> " AND r.group_reg_status = ?") (userId, userContactId, GRSActive)
 
-searchListedGroups :: ChatController -> User -> SearchType -> Maybe GroupId -> Int -> IO (Either String ([(GroupInfo, GroupReg)], Int))
+searchListedGroups :: ChatController -> User -> SearchType -> Maybe GroupId -> Int -> IO (Either String ([(GroupInfo, GroupReg, Maybe GroupLink)], Int))
 searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pageSize =
   withDB' "searchListedGroups" cc $ \db -> do
     currentTs <- getCurrentTime
@@ -374,19 +375,23 @@ searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pa
           orderBy = " ORDER BY r.created_at DESC, r.group_reg_id ASC "
       STSearch search -> case lastGroup_ of
         Nothing -> do
-          gs <- groups currentTs $ DB.query db (listedGroupQuery <> searchCond <> orderBy <> " LIMIT ?") (userId, userContactId, GRSActive, s, s, s, s, pageSize)
-          n <- count $ DB.query db (countQuery' <> searchCond) (GRSActive, s, s, s, s)
+          gs <- groups currentTs $ DB.query db (listedGroupQuery <> searchCond <> orderBy <> " LIMIT ?") ((userId, userContactId, GRSActive, s, s, s, s) :. (sDomain, pageSize))
+          n <- count $ DB.query db (countQuery' <> searchCond) (GRSActive, s, s, s, s, sDomain)
           pure (gs, n)
         Just gId -> do
-          gs <- groups currentTs $ DB.query db (listedGroupQuery <> " AND r.group_id > ? " <> searchCond <> orderBy <> " LIMIT ?") (userId, userContactId, GRSActive, gId, s, s, s, s, pageSize)
-          n <- count $ DB.query db (countQuery' <> " AND r.group_id > ? " <> searchCond) (GRSActive, gId, s, s, s, s)
+          gs <- groups currentTs $ DB.query db (listedGroupQuery <> " AND r.group_id > ? " <> searchCond <> orderBy <> " LIMIT ?") ((userId, userContactId, GRSActive, gId, s, s, s, s) :. (sDomain, pageSize))
+          n <- count $ DB.query db (countQuery' <> " AND r.group_id > ? " <> searchCond) (GRSActive, gId, s, s, s, s, sDomain)
           pure (gs, n)
         where
           s = T.toLower search
+          -- a bare "#"/"@" maps to "#", matching no stored domain (domains are stored unprefixed)
+          sDomain = case T.uncons s of
+            Just (c, rest) | c == '#' || c == '@' -> if T.null rest then "#" else rest
+            _ -> s
           countQuery' = countQuery <> " JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id WHERE r.group_reg_status = ? "
           orderBy = " ORDER BY g.summary_current_members_count DESC, r.group_reg_id ASC "
   where
-    groups currentTs = (map (toGroupInfoReg currentTs (storeCxt cc) user) <$>)
+    groups currentTs = (map (toGroupInfoRegLink currentTs (storeCxt cc) user) <$>)
     count = maybeFirstRow' 0 fromOnly
     listedGroupQuery = groupReqQuery <> " AND r.group_reg_status = ? "
     countQuery = "SELECT COUNT(1) FROM groups g JOIN sx_directory_group_regs r ON g.group_id = r.group_id "
@@ -396,6 +401,7 @@ searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pa
           OR LOWER(gp.full_name) LIKE '%' || ? || '%'
           OR LOWER(gp.short_descr) LIKE '%' || ? || '%'
           OR LOWER(gp.description) LIKE '%' || ? || '%'
+          OR (LOWER(gp.group_domain) LIKE '%' || ? || '%' AND g.group_domain_verified = 1)
         )
       |]
 
@@ -432,9 +438,17 @@ listPendingGroups cc user@User {userId, userContactId} count =
     n <- maybeFirstRow' 0 fromOnly $ DB.query_ db "SELECT COUNT(1) FROM sx_directory_group_regs WHERE group_reg_status LIKE 'pending_approval%'"
     pure (gs, n)
 
-toGroupInfoReg :: UTCTime -> StoreCxt -> User -> (GroupInfoRow :. GroupRegRow) -> (GroupInfo, GroupReg)
-toGroupInfoReg currentTs cxt User {userContactId} (groupRow :. grRow) =
-  (toGroupInfo currentTs cxt userContactId [] groupRow, rowToGroupReg grRow)
+toGroupInfoReg :: UTCTime -> StoreCxt -> User -> (GroupInfoRow :. GroupRegRow :. GroupLinkRow) -> (GroupInfo, GroupReg)
+toGroupInfoReg currentTs cxt user row = let (g, gr, _) = toGroupInfoRegLink currentTs cxt user row in (g, gr)
+
+toGroupInfoRegLink :: UTCTime -> StoreCxt -> User -> (GroupInfoRow :. GroupRegRow :. GroupLinkRow) -> (GroupInfo, GroupReg, Maybe GroupLink)
+toGroupInfoRegLink currentTs cxt User {userContactId} (groupRow :. grRow :. linkRow) =
+  (toGroupInfo_ currentTs cxt userContactId [] groupRow, rowToGroupReg grRow, toMaybeGroupLink linkRow)
+
+toGroupInfoKeysRegLink :: UTCTime -> StoreCxt -> User -> (GroupInfoRow :. GroupRegRow :. GroupLinkRow) -> (GroupInfo, GroupKeysRow, GroupReg, Maybe GroupLink)
+toGroupInfoKeysRegLink currentTs cxt User {userContactId} (groupRow :. grRow :. linkRow) =
+  let (g, gksData) = toGroupInfo currentTs cxt userContactId [] groupRow
+   in (g, gksData, rowToGroupReg grRow, toMaybeGroupLink linkRow)
 
 type GroupRegRow = (GroupId, UserGroupRegId, ContactId, Maybe GroupMemberId, GroupRegStatus, BoolInt, UTCTime)
 
@@ -442,94 +456,31 @@ rowToGroupReg :: GroupRegRow -> GroupReg
 rowToGroupReg (dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, BI promoted, createdAt) =
   GroupReg {dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted, createdAt}
 
+type GroupLinkRow = (Maybe Int64, Maybe ConnReqContact, Maybe ShortLinkContact, Maybe BoolInt, Maybe BoolInt, Maybe GroupLinkId, Maybe GroupMemberRole)
+
+toMaybeGroupLink :: GroupLinkRow -> Maybe GroupLink
+toMaybeGroupLink (Just userContactLinkId, Just cReq, shortLink, slDataSet, slLarge, Just groupLinkId, mRole_) =
+  Just
+    GroupLink
+      { userContactLinkId,
+        connLinkContact = CCLink cReq shortLink,
+        shortLinkDataSet = boolInt slDataSet,
+        shortLinkLargeDataSet = BoolDef $ boolInt slLarge,
+        groupLinkId,
+        acceptMemberRole = fromMaybe GRMember mRole_
+      }
+  where
+    boolInt = maybe False (\(BI b) -> b)
+toMaybeGroupLink _ = Nothing
+
+-- group with its registration and its join link (user_contact_links) in one query
 groupReqQuery :: Query
-groupReqQuery = groupInfoQueryFields <> groupRegFields <> groupInfoQueryFrom <> groupRegFromCond
+groupReqQuery = groupInfoQueryFields <> groupRegFields <> groupLinkFields <> groupInfoQueryFrom <> groupLinkJoin <> groupRegFromCond
   where
     groupRegFields = ", r.group_id, r.user_group_reg_id, r.contact_id, r.owner_member_id, r.group_reg_status, r.group_promoted, r.created_at "
+    groupLinkFields = ", uc.user_contact_link_id, uc.conn_req_contact, uc.short_link_contact, uc.short_link_data_set, uc.short_link_large_data_set, uc.group_link_id, uc.group_link_member_role "
+    groupLinkJoin = " LEFT JOIN user_contact_links uc ON uc.group_id = g.group_id AND uc.user_id = g.user_id "
     groupRegFromCond = " JOIN sx_directory_group_regs r ON r.group_id = g.group_id WHERE g.user_id = ? AND mu.contact_id = ? "
-
-data DirectoryLogRecord
-  = GRCreate GroupReg
-  | GRDelete GroupId
-  | GRUpdateStatus GroupId GroupRegStatus
-  | GRUpdatePromotion GroupId Bool
-  | GRUpdateOwner GroupId GroupMemberId
-
-data DLRTag
-  = GRCreate_
-  | GRDelete_
-  | GRUpdateStatus_
-  | GRUpdatePromotion_
-  | GRUpdateOwner_
-
-logDLR :: DirectoryLog -> DirectoryLogRecord -> IO ()
-logDLR st r = forM_ (directoryLogFile st) $ \h -> B.hPutStrLn h (strEncode r)
-
-logGCreate :: DirectoryLog -> GroupReg -> IO ()
-logGCreate st = logDLR st . GRCreate
-
-logGDelete :: DirectoryLog -> GroupId -> IO ()
-logGDelete st = logDLR st . GRDelete
-
-logGUpdateStatus :: DirectoryLog -> GroupId -> GroupRegStatus -> IO ()
-logGUpdateStatus st gId = logDLR st . GRUpdateStatus gId
-
-logGUpdatePromotion :: DirectoryLog -> GroupId -> Bool -> IO ()
-logGUpdatePromotion st gId = logDLR st . GRUpdatePromotion gId
-
-logGUpdateOwner :: DirectoryLog -> GroupId -> GroupMemberId -> IO ()
-logGUpdateOwner st gId = logDLR st . GRUpdateOwner gId
-
-instance StrEncoding DLRTag where
-  strEncode = \case
-    GRCreate_ -> "GCREATE"
-    GRDelete_ -> "GDELETE"
-    GRUpdateStatus_ -> "GSTATUS"
-    GRUpdatePromotion_ -> "GPROMOTE"
-    GRUpdateOwner_ -> "GOWNER"
-  strP =
-    A.takeTill (== ' ') >>= \case
-      "GCREATE" -> pure GRCreate_
-      "GDELETE" -> pure GRDelete_
-      "GSTATUS" -> pure GRUpdateStatus_
-      "GPROMOTE" -> pure GRUpdatePromotion_
-      "GOWNER" -> pure GRUpdateOwner_
-      _ -> fail "invalid DLRTag"
-
-instance StrEncoding DirectoryLogRecord where
-  strEncode = \case
-    GRCreate gr -> strEncode (GRCreate_, gr)
-    GRDelete gId -> strEncode (GRDelete_, gId)
-    GRUpdateStatus gId grStatus -> strEncode (GRUpdateStatus_, gId, grStatus)
-    GRUpdatePromotion gId promoted -> strEncode (GRUpdatePromotion_, gId, promoted)
-    GRUpdateOwner gId grOwnerId -> strEncode (GRUpdateOwner_, gId, grOwnerId)
-  strP =
-    strP_ >>= \case
-      GRCreate_ -> GRCreate <$> strP
-      GRDelete_ -> GRDelete <$> strP
-      GRUpdateStatus_ -> GRUpdateStatus <$> A.decimal <*> _strP
-      GRUpdatePromotion_ -> GRUpdatePromotion <$> A.decimal <*> _strP
-      GRUpdateOwner_ -> GRUpdateOwner <$> A.decimal <* A.space <*> A.decimal
-
-instance StrEncoding GroupReg where
-  strEncode GroupReg {dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted} =
-    B.unwords $
-      [ "group_id=" <> strEncode dbGroupId,
-        "user_group_id=" <> strEncode userGroupRegId,
-        "contact_id=" <> strEncode dbContactId,
-        "owner_member_id=" <> strEncode dbOwnerMemberId,
-        "status=" <> strEncode groupRegStatus
-      ]
-        <> ["promoted=" <> strEncode promoted | promoted]
-  strP = do
-    dbGroupId <- "group_id=" *> strP_
-    userGroupRegId <- "user_group_id=" *> strP_
-    dbContactId <- "contact_id=" *> strP_
-    dbOwnerMemberId <- "owner_member_id=" *> strP_
-    groupRegStatus <- "status=" *> strP
-    promoted <- (" promoted=" *> strP) <|> pure False
-    let createdAt = UTCTime systemEpochDay 0
-    pure GroupReg {dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted, createdAt}
 
 instance StrEncoding GroupRegStatus where
   strEncode = \case
@@ -556,40 +507,3 @@ instance StrEncoding GroupRegStatus where
 instance ToField GroupRegStatus where toField = toField . safeDecodeUtf8 . strEncode
 
 instance FromField GroupRegStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
-
-openDirectoryLog :: Maybe FilePath -> IO DirectoryLog
-openDirectoryLog = \case
-  Just f -> DirectoryLog . Just <$> openLogFile f
-  Nothing -> pure $ DirectoryLog Nothing
-  where
-    openLogFile f = do
-      h <- openFile f AppendMode
-      hSetBuffering h LineBuffering
-      pure h
-
-readDirectoryLogData :: FilePath -> IO [GroupReg]
-readDirectoryLogData f =
-  sortOn dbGroupId . M.elems
-    <$> (foldM processDLR M.empty . B.lines =<< B.readFile f)
-  where
-    processDLR :: Map GroupId GroupReg -> ByteString -> IO (Map GroupId GroupReg)
-    processDLR m l = case strDecode l of
-      Left e -> m <$ putStrLn ("Error parsing log record: " <> e <> ", " <> B.unpack (B.take 80 l))
-      Right r -> case r of
-        GRCreate gr@GroupReg {dbGroupId = gId} -> do
-          when (isJust $ M.lookup gId m) $
-            putStrLn $
-              "Warning: duplicate group with ID " <> show gId <> ", group replaced."
-          pure $ M.insert gId gr m
-        GRDelete gId -> case M.lookup gId m of
-          Just _ -> pure $ M.delete gId m
-          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", deletion ignored.")
-        GRUpdateStatus gId groupRegStatus -> case M.lookup gId m of
-          Just gr -> pure $ M.insert gId gr {groupRegStatus} m
-          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", status update ignored.")
-        GRUpdatePromotion gId promoted -> case M.lookup gId m of
-          Just gr -> pure $ M.insert gId gr {promoted} m
-          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", promotion update ignored.")
-        GRUpdateOwner gId grOwnerId -> case M.lookup gId m of
-          Just gr -> pure $ M.insert gId gr {dbOwnerMemberId = Just grOwnerId} m
-          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", owner update ignored.")

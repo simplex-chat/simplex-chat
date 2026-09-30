@@ -6,14 +6,31 @@ This is a guide to contributing to the develop of the SimpleX android and deskto
 
 This is the **Kotlin Multiplatform (KMP)** mobile and desktop client for SimpleX Chat, sharing code between Android and Desktop (JVM) platforms using Compose Multiplatform for UI.
 
+## Setup
+
+The desktop app builds nanohttpd from a submodule, Android does not use it. Before building
+the desktop app on a fresh checkout:
+
+```bash
+git submodule update --init --recursive
+```
+
 ## Build Commands
 
 ```bash
-# Android debug APK
-./gradlew assembleDebug
+# Android debug APK, assembleGoogleDebug builds the flavor with the Play Billing dependency
+./gradlew assembleFossDebug
 
-# Android release APK
-./gradlew assembleRelease
+# Android release APK, distributed via F-Droid and GitHub
+./gradlew assembleFossRelease
+
+# Android app bundle, distributed via Google Play, includes Play Billing
+./gradlew bundleGoogleRelease
+
+# Always name the flavor for releases. The aggregate tasks (build, assemble, assembleRelease,
+# bundle, bundleRelease) fail on purpose: they would package a release APK with Play Billing,
+# or an app bundle without it.
+# The fdroiddata recipe defaults to assembleRelease and must be changed to assembleFossRelease.
 
 # Desktop distribution (current OS)
 ./gradlew :desktop:packageDistributionForCurrentOS
@@ -22,7 +39,7 @@ This is the **Kotlin Multiplatform (KMP)** mobile and desktop client for SimpleX
 ./gradlew desktopTest
 
 # Run Android instrumented tests (requires connected device/emulator)
-./gradlew connectedAndroidTest
+./gradlew connectedFossDebugAndroidTest
 
 # Build native libraries for all platforms
 ./gradlew common:cmakeBuild -PcrossCompile

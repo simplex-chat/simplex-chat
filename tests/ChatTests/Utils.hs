@@ -23,7 +23,8 @@ import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), mkStoreCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), storeCxt)
+import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
@@ -88,7 +89,7 @@ serviceProfile :: Profile
 serviceProfile = mkProfile "service_user" "Service user" Nothing
 
 mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
-mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing}
+mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, description = Nothing, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs, badge = Nothing, contactDomain = Nothing}
 
 it :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 it name test =
@@ -123,12 +124,12 @@ skip = before_ . pendingWith
 versionTestMatrix2 :: (HasCallStack => Bool -> Bool -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix2 runTest = do
   it "current" $ testChat2 aliceProfile bobProfile (runTest True True)
-  it "prev" $ runTestCfg2 testCfgVPrev testCfgVPrev (runTest False True)
-  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest False True)
-  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest False True)
-  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest False False)
-  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest False True)
-  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest False False)
+  it "prev" $ runTestCfg2 testCfgVPrev testCfgVPrev (runTest True True)
+  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest True True)
+  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest True True)
+  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest True False)
+  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest True True)
+  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest True False)
 
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix3 runTest = do
@@ -241,7 +242,9 @@ genProfileImg = do
   g <- C.newRandom
   atomically $ B64.encode <$> C.randomBytes lrgLen g
   where
-    lrgLen = maxEncodedInfoLength * 3 `div` 4 - 420
+    -- raw bytes that base64-encode to fit maxProfileImageSize when prefixed with "data:image/png;base64,"
+    lrgLen = (maxProfileImageSize - imagePrefixLen) * 3 `div` 4 - 1
+    imagePrefixLen = 22
 
 -- PQ combinators /
 
@@ -312,17 +315,17 @@ groupFeatures'' dir = ((1, "chat banner"), Nothing, Nothing) : ((dir, e2eeInfoNo
 
 groupFeatures_ :: Int -> Bool -> [((Int, String), Maybe (Int, String), Maybe String)]
 groupFeatures_ dir isChannel =
-  [ ((dir, "Disappearing messages: off"), Nothing, Nothing),
-    ((dir, "Direct messages: on"), Nothing, Nothing),
-    ((dir, "Full deletion: off"), Nothing, Nothing),
-    ((dir, "Message reactions: on"), Nothing, Nothing),
-    ((dir, "Voice messages: on"), Nothing, Nothing),
-    ((dir, "Files and media: on"), Nothing, Nothing),
-    ((dir, "SimpleX links: on"), Nothing, Nothing),
-    ((dir, "Member reports: on"), Nothing, Nothing),
-    ((dir, "Recent history: on"), Nothing, Nothing),
-    ((dir, "Chat with admins: " <> (if isChannel then "off" else "on")), Nothing, Nothing)
-  ]
+  [((dir, "Disappearing messages: off"), Nothing, Nothing)]
+    <> [((dir, "Direct messages: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Full deletion: off"), Nothing, Nothing)]
+    <> [((dir, "Message reactions: on"), Nothing, Nothing)]
+    <> [((dir, "Voice messages: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Files and media: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "SimpleX links: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Member reports: on"), Nothing, Nothing) | not isChannel]
+    <> [((dir, "Recent history: on"), Nothing, Nothing)]
+    <> [((dir, "Chat with admins: " <> (if isChannel then "off" else "on")), Nothing, Nothing)]
+    <> [((dir, "Sign messages: off"), Nothing, Nothing) | isChannel]
 
 businessGroupFeatures :: [(Int, String)]
 businessGroupFeatures = map (\(a, _, _) -> a) $ businessGroupFeatures'' 0
@@ -557,6 +560,12 @@ dropPartialReceipt_ msg = case splitAt 2 msg of
   ("% ", text) -> Just text
   _ -> Nothing
 
+getForOldClientsLine :: HasCallStack => TestCC -> String -> IO String
+getForOldClientsLine cc prefix =
+  timeout 500000 (getTermLine cc) >>= \case
+    Just line -> dropLinePrefix prefix line
+    Nothing -> pure ""
+
 getInvitation :: HasCallStack => TestCC -> IO String
 getInvitation cc = do
   (_, fullInv) <- getInvitations cc
@@ -589,8 +598,7 @@ getContactLink cc created = do
 getContactLinks :: HasCallStack => TestCC -> Bool -> IO (String, String)
 getContactLinks cc created = do
   shortLink <- getContactLink_ cc created
-  line <- getTermLine' (Just "full contact link line") cc
-  fullLink <- dropLinePrefix "The contact link for old clients: " line
+  fullLink <- getForOldClientsLine cc "The contact link for old clients: "
   pure (shortLink, fullLink)
 
 getContactLinkNoShortLink :: HasCallStack => TestCC -> Bool -> IO String
@@ -621,8 +629,7 @@ getGroupLink cc gName mRole created = do
 getGroupLinks :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO (String, String)
 getGroupLinks cc gName mRole created = do
   shortLink <- getGroupLink_ cc gName mRole created
-  line <- getTermLine' (Just "full group link line") cc
-  fullLink <- dropLinePrefix "The group link for old clients: " line
+  fullLink <- getForOldClientsLine cc "The group link for old clients: "
   pure (shortLink, fullLink)
 
 getGroupLinkNoShortLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
@@ -702,10 +709,10 @@ getCtConn cc contactId = getTestCCContact cc contactId >>= maybe (fail "no conne
 
 getTestCCContact :: TestCC -> ContactId -> IO Contact
 getTestCCContact cc contactId = do
-  let TestCC {chatController = ChatController {config}} = cc
+  let TestCC {chatController} = cc
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
-      runExceptT (getContact db (mkStoreCxt config) user contactId) >>= either (fail . show) pure
+      runExceptT (getContact db (storeCxt chatController) user contactId) >>= either (fail . show) pure
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do
@@ -738,7 +745,7 @@ connectUsers_ cc1 cc2 noShortLink = do
     (cc1 <## (name2 <> ": contact is connected"))
 
 showName :: TestCC -> IO String
-showName (TestCC ChatController {currentUser} _ _ _ _ _) = do
+showName TestCC {chatController = ChatController {currentUser}} = do
   Just User {localDisplayName, profile = LocalProfile {fullName, shortDescr}} <- readTVarIO currentUser
   pure . T.unpack $ viewName localDisplayName <> optionalFullName localDisplayName fullName shortDescr
 

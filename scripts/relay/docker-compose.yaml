@@ -1,0 +1,87 @@
+name: simplex-chat-relay
+
+services:
+  relay:
+    build:
+      context: .
+      args:
+        CHAT_REF: ${CHAT_REF:-88df79d1e26921c7d1835fc8484fade596356fb6}
+    image: chat-relay:latest                 # set your image/registry name
+    container_name: chat-relay
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      RELAY_NAME: ${RELAY_NAME}
+      RELAY_WEB_DOMAIN: ${RELAY_WEB_DOMAIN}
+      RELAY_ADDRESS_SERVER: ${RELAY_ADDRESS_SERVER:-}
+      # Empty values fall back to the entrypoint defaults.
+      RELAY_RTS_OPTS: ${RELAY_RTS_OPTS:-}
+      RELAY_POOL_SIZE: ${RELAY_POOL_SIZE:-}
+      RELAY_QUEUE_SIZE: ${RELAY_QUEUE_SIZE:-}
+      # Password is passed as PGPASSWORD to keep it out of argv.
+      DB_CONN: postgresql://${POSTGRES_USER}@db:5432/${POSTGRES_DB}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - /var/www/relay-web-channels:/var/www/relay-web-channels
+      - ./out:/out
+    restart: unless-stopped
+
+  metrics:
+    image: burningalchemist/sql_exporter:latest
+    container_name: chat-relay-metrics
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Percent-encode the password if it contains URL-reserved characters.
+      SQLEXPORTER_TARGET_DSN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+    volumes:
+      - ./sql_exporter.yml:/etc/sql_exporter/sql_exporter.yml:ro
+    command: ["-config.file=/etc/sql_exporter/sql_exporter.yml"]
+    ports:
+      - "127.0.0.1:9399:9399"
+    restart: unless-stopped
+
+  db:
+    image: postgres:18
+    container_name: chat-relay-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    shm_size: 256mb                          # parallel workers need more than the 64 MB default
+    volumes:
+      # PG18+ keeps PGDATA in a version-specific subdirectory of this volume.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Tuning for ~5 GB RAM / 4 cores. Match to the actual server.
+    command:
+      - postgres
+      - --max_connections=100
+      - --shared_buffers=1280MB
+      - --effective_cache_size=3840MB
+      - --maintenance_work_mem=320MB
+      - --checkpoint_completion_target=0.9
+      - --wal_buffers=16MB
+      - --default_statistics_target=100
+      - --random_page_cost=1.1
+      - --effective_io_concurrency=200
+      - --work_mem=6301kB
+      - --huge_pages=off
+      - --jit=off
+      - --wal_compression=lz4
+      - --min_wal_size=1GB
+      - --max_wal_size=4GB
+      - --max_worker_processes=4
+      - --max_parallel_workers_per_gather=2
+      - --max_parallel_workers=4
+      - --max_parallel_maintenance_workers=2
+    restart: unless-stopped
+
+volumes:
+  pgdata:

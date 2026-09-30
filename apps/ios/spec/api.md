@@ -534,7 +534,8 @@ func chatApiSendCmdWithRetry<R: ChatAPIResult>(    // SimpleXAPI.swift L127
     bgTask: Bool = true,
     bgDelay: Double? = nil,
     inProgress: BoxedValue<Bool>? = nil,
-    retryNum: Int32 = 0
+    retryNum: Int32 = 0,
+    log: Bool = true
 ) async -> APIResult<R>?
 ```
 

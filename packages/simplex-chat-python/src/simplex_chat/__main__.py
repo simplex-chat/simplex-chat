@@ -26,7 +26,7 @@ def main(argv: list[str] | None = None) -> int:
         path = _native._resolve_libs_dir(args.backend)
         print(f"libsimplex installed at: {path}")
         return 0
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - a CLI: report any failure, don't traceback
         print(f"install failed: {e}", file=sys.stderr)
         return 1
 

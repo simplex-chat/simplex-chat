@@ -12,10 +12,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.helpers.*
@@ -27,6 +29,7 @@ import chat.simplex.common.views.chat.chatViewScrollState
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
+import kotlin.math.roundToInt
 
 @Composable
 fun CIImageView(
@@ -35,7 +38,6 @@ fun CIImageView(
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
   smallView: Boolean,
-  senderProfile: LocalProfile?,
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
@@ -80,7 +82,11 @@ fun CIImageView(
           is CIFileStatus.SndCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           is CIFileStatus.SndError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           is CIFileStatus.SndWarning -> fileIcon(painterResource(MR.images.ic_warning_filled), MR.strings.icon_descr_file)
-          is CIFileStatus.RcvInvitation -> fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_asked_to_receive)
+          is CIFileStatus.RcvInvitation ->
+            if (file.expired && fileSizeValid(file))
+              fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+            else
+              fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_asked_to_receive)
           is CIFileStatus.RcvAccepted -> fileIcon(painterResource(MR.images.ic_more_horiz), MR.strings.icon_descr_waiting_for_image)
           is CIFileStatus.RcvTransfer -> progressIndicator()
           is CIFileStatus.RcvComplete -> {}
@@ -108,7 +114,7 @@ fun CIImageView(
           onClick = onClick
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, imageBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
       contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
     )
   }
@@ -132,7 +138,7 @@ fun CIImageView(
             onClick = onClick
           )
           .onRightClick { showMenu.value = true }
-          .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+          .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
       )
     } else {
@@ -143,7 +149,7 @@ fun CIImageView(
           onClick = {}
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentAlignment = Alignment.Center
       ) {
         imageView(previewBitmap, onClick = {
@@ -176,44 +182,51 @@ fun CIImageView(
       .then(
         if (!smallView) {
           val w = if (previewBitmap.width * 0.97 <= previewBitmap.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
-          Modifier.width(w).aspectRatio((previewBitmap.width.toFloat() / previewBitmap.height.toFloat()).coerceIn(1f / 2.33f, 2.33f))
+          // Height follows the measured (clamped) width, not nominal w, else wide images get an empty strip below.
+          Modifier.width(w).layout { measurable, constraints ->
+            val width = constraints.maxWidth.coerceAtMost(w.roundToPx().coerceAtLeast(0))
+            val height = (width * (previewBitmap.height.toFloat() / previewBitmap.width.toFloat()).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
+            val placeable = measurable.measure(Constraints.fixed(width, height))
+            layout(width, height) { placeable.place(0, 0) }
+          }
         } else Modifier
       )
       .desktopModifyBlurredState(!smallView, blurred, showMenu),
     contentAlignment = Alignment.TopEnd
   ) {
     val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember { mutableStateOf(null) }
-    if (chatModel.connectedToRemote()) {
-      LaunchedEffect(file, CIFile.cachedRemoteFileRequests.toList()) {
-        withBGApi {
+    // Hidden media is not worth reading, decoding at full size and caching.
+    val revealed = !blurHidesMedia(!smallView, blurred)
+    if (revealed) {
+      if (chatModel.connectedToRemote()) {
+        LaunchedEffect(file, CIFile.cachedRemoteFileRequests.toList()) {
+          withBGApi {
+            if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
+              res.value = imageAndFilePath(file)
+            }
+          }
+        }
+      } else {
+        LaunchedEffect(file) {
           if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
-            res.value = imageAndFilePath(file)
+            res.value = withContext(Dispatchers.IO) { imageAndFilePath(file) }
           }
         }
       }
-    } else {
-      LaunchedEffect(file) {
-        if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
-          res.value = withContext(Dispatchers.IO) { imageAndFilePath(file) }
-        }
-      }
     }
-    val loaded = res.value
+    val loaded = if (revealed) res.value else null
     if (loaded != null && file != null) {
       val (imageBitmap, data, _) = loaded
-      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })
+      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, blurred, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })
     } else {
       imageView(previewBitmap, onClick = {
         if (file != null) {
           when {
             file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted ->
-              if (fileSizeValid(file, senderProfile)) {
-                receiveFile(file.fileId)
+              if (file.fileProhibited != null) {
+                showProhibitedFileAlert(file, file.fileProhibited)
               } else {
-                AlertManager.shared.showAlertMsg(
-                  generalGetString(MR.strings.large_file),
-                  String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol, senderProfile)))
-                )
+                receiveFile(file.fileId)
               }
             file.fileStatus is CIFileStatus.RcvAccepted ->
               when (file.fileProtocol) {
@@ -230,7 +243,7 @@ fun CIImageView(
                 FileProtocol.LOCAL -> {}
               }
             file.fileStatus is CIFileStatus.RcvError ->
-              showFileErrorAlert(file.fileStatus.rcvFileError)
+              showFileErrorAlert(file.fileStatus.rcvFileError, file)
             file.fileStatus is CIFileStatus.RcvWarning ->
               showFileErrorAlert(file.fileStatus.rcvFileError, temporary = true)
             file.fileStatus is CIFileStatus.SndError ->
@@ -272,5 +285,6 @@ expect fun SimpleAndAnimatedImageView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   smallView: Boolean,
+  blurred: State<Boolean>,
   ImageView: @Composable (painter: Painter, onClick: () -> Unit) -> Unit
 )

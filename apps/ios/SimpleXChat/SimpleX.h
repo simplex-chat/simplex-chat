@@ -27,6 +27,8 @@ extern char *chat_parse_server(char *str);
 extern char *chat_parse_uri(char *str, int safe);
 extern char *chat_password_hash(char *pwd, char *salt);
 extern char *chat_valid_name(char *name);
+// returns the canonical form of a badge code, or an empty string if it does not parse
+extern char *chat_parse_badge_code(char *code);
 extern int chat_json_length(char *str);
 extern char *chat_encrypt_media(chat_ctrl ctl, char *key, char *frame, int len);
 extern char *chat_decrypt_media(char *key, char *frame, int len);

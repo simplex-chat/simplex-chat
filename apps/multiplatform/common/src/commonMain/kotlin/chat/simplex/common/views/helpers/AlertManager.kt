@@ -291,10 +291,14 @@ class AlertManager {
     profileFullName: String,
     profileImage: @Composable () -> Unit,
     profileBadge: LocalBadge? = null,
+    nameCaption: String? = null,
     subtitle: String? = null,
     information: String? = null,
+    secondaryInformation: Boolean = false,
     confirmText: String? = generalGetString(MR.strings.connect_plan_open_chat),
     onConfirm: (() -> Unit)? = null,
+    connectOtherButton: String? = null,
+    onConnectOther: (() -> Unit)? = null,
     dismissText: String = generalGetString(MR.strings.cancel_verb),
     onDismiss: (() -> Unit)? = null,
   ) {
@@ -337,6 +341,17 @@ class AlertManager {
                   modifier = Modifier.fillMaxWidth()
                 )
 
+                if (nameCaption != null) {
+                  Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                  Text(
+                    nameCaption,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.secondary,
+                    maxLines = 1,
+                    modifier = Modifier.fillMaxWidth()
+                  )
+                }
                 if (profileFullName.isNotEmpty() && profileFullName != profileName) {
                   Spacer(Modifier.height(DEFAULT_PADDING_HALF))
                   Text(
@@ -364,6 +379,7 @@ class AlertManager {
                     information,
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.body2,
+                    color = if (secondaryInformation) MaterialTheme.colors.secondary else Color.Unspecified,
                     maxLines = 3,
                     modifier = Modifier.fillMaxWidth()
                   )
@@ -386,6 +402,14 @@ class AlertManager {
                     hideAlert()
                   }, Modifier.focusRequester(focusRequester)) {
                     Text(confirmText)
+                  }
+                }
+                if (connectOtherButton != null && onConnectOther != null) {
+                  TextButton(onClick = {
+                    onConnectOther.invoke()
+                    hideAlert()
+                  }) {
+                    Text(connectOtherButton)
                   }
                 }
                 TextButton(onClick = {

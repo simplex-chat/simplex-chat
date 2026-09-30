@@ -25,6 +25,7 @@ import chat.simplex.common.views.chat.chatViewScrollState
 import dev.icerock.moko.resources.StringResource
 import java.io.File
 import java.net.URI
+import kotlin.math.roundToInt
 
 @Composable
 fun CIVideoView(
@@ -34,16 +35,28 @@ fun CIVideoView(
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
   smallView: Boolean = false,
-  senderProfile: LocalProfile?,
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
+  val preview = remember(image) { base64ToBitmap(image) }
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
+      .then(
+        if (!smallView) {
+          val w = if (preview.width * 0.97 <= preview.height) videoViewFullWidth(LocalWindowWidth()) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH
+          // Size the media box from the preview aspect ratio (as CIImageView does), else the unprepared player surface
+          // expands to PriorityLayout's max height and shows as a black strip; height tracks the clamped width (#7223).
+          Modifier.width(w).layout { measurable, constraints ->
+            val width = constraints.maxWidth.coerceAtMost(w.roundToPx().coerceAtLeast(0))
+            val height = (width * (preview.height.toFloat() / preview.width.toFloat()).coerceAtMost(2.33f)).roundToInt().coerceAtMost(constraints.maxHeight)
+            val placeable = measurable.measure(Constraints.fixed(width, height))
+            layout(width, height) { placeable.place(0, 0) }
+          }
+        } else Modifier
+      )
       .desktopModifyBlurredState(!smallView, blurred, showMenu),
     contentAlignment = Alignment.TopEnd
   ) {
-    val preview = remember(image) { base64ToBitmap(image) }
     val filePath = remember(file, CIFile.cachedRemoteFileRequests.toList()) { mutableStateOf(getLoadedFilePath(file)) }
     val sizeMultiplier = if (smallView) 0.38f else 1f
     if (chatModel.connectedToRemote()) {
@@ -85,7 +98,7 @@ fun CIVideoView(
           if (file != null) {
             when (file.fileStatus) {
               CIFileStatus.RcvInvitation, CIFileStatus.RcvAborted ->
-                receiveFileIfValidSize(file, senderProfile, receiveFile)
+                receiveFileIfValidSize(file, receiveFile)
               CIFileStatus.RcvAccepted ->
                 when (file.fileProtocol) {
                   FileProtocol.XFTP ->
@@ -115,7 +128,7 @@ fun CIVideoView(
           DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(duration * 1000L) }, remember { mutableStateOf(0L) }/*, soundEnabled*/)
         }
         if (showDownloadButton(file?.fileStatus) && !blurred.value && file != null) {
-          PlayButton(error = false, sizeMultiplier, { showMenu.value = true }) { receiveFileIfValidSize(file, senderProfile, receiveFile) }
+          PlayButton(error = false, sizeMultiplier, { showMenu.value = true }) { receiveFileIfValidSize(file, receiveFile) }
         }
       }
     }
@@ -408,7 +421,7 @@ fun VideoPreviewImageView(
         onClick = onClick
       )
       .onRightClick(onLongClick)
-      .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
+      .privacyBlur(!smallView, preview, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
     contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
   )
 }
@@ -511,7 +524,11 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
               showFileErrorAlert(file.fileStatus.sndFileError, temporary = true)
             }
           )
-        is CIFileStatus.RcvInvitation -> fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_video_asked_to_receive)
+        is CIFileStatus.RcvInvitation ->
+          if (file.expired && fileSizeValid(file))
+            fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+          else
+            fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_video_asked_to_receive)
         is CIFileStatus.RcvAccepted -> fileIcon(painterResource(MR.images.ic_more_horiz), MR.strings.icon_descr_waiting_for_video)
         is CIFileStatus.RcvTransfer ->
           if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
@@ -527,7 +544,7 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
             painterResource(MR.images.ic_close),
             MR.strings.icon_descr_file,
             onClick = {
-              showFileErrorAlert(file.fileStatus.rcvFileError)
+              showFileErrorAlert(file.fileStatus.rcvFileError, file)
             }
           )
         is CIFileStatus.RcvWarning ->
@@ -547,14 +564,11 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
 private fun showDownloadButton(status: CIFileStatus?): Boolean =
   status is CIFileStatus.RcvInvitation || status is CIFileStatus.RcvAborted
 
-private fun receiveFileIfValidSize(file: CIFile, senderProfile: LocalProfile?, receiveFile: (Long) -> Unit) {
-  if (fileSizeValid(file, senderProfile)) {
-    receiveFile(file.fileId)
+private fun receiveFileIfValidSize(file: CIFile, receiveFile: (Long) -> Unit) {
+  if (file.fileProhibited != null) {
+    showProhibitedFileAlert(file, file.fileProhibited)
   } else {
-    AlertManager.shared.showAlertMsg(
-      generalGetString(MR.strings.large_file),
-      String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol, senderProfile)))
-    )
+    receiveFile(file.fileId)
   }
 }
 

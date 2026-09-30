@@ -18,6 +18,7 @@ import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import java.io.*
 import java.net.URI
@@ -27,6 +28,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.Executors
 import kotlin.math.*
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 
 private val singleThreadDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
@@ -110,9 +113,6 @@ fun annotatedStringResource(id: StringResource, vararg args: Any?): AnnotatedStr
   }
 }
 
-@Composable
-expect fun SetupClipboardListener()
-
 // maximum image file size to be auto-accepted
 // Spec: spec/services/files.md#MAX_IMAGE_SIZE
 const val MAX_IMAGE_SIZE: Long = 261_120 // 255KB
@@ -126,9 +126,12 @@ const val MAX_FILE_SIZE_SMP: Long = 8000000
 
 const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 
-// raised XFTP receive limits for files from a sender with a supporter badge (also investor) or a legend badge
+// raised XFTP limits for a user with a supporter badge (also investor) or a legend badge
 const val MAX_FILE_SIZE_XFTP_SUPPORTER: Long = 2_147_483_648 // 2GB
 const val MAX_FILE_SIZE_XFTP_LEGEND: Long = 5_368_709_120 // 5GB
+
+// a badge raises the limit at send for this long after its expiry, shorter than the receiver's grace
+val BADGE_SND_GRACE_INTERVAL: Duration = 1.days
 
 const val MAX_FILE_SIZE_LOCAL: Long = Long.MAX_VALUE
 
@@ -256,6 +259,7 @@ expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
 
 fun saveFileFromUri(
   uri: URI,
+  maxBytes: Long,
   withAlertOnException: Boolean = true,
   hiddenFileNamePrefix: String? = null
 ): CryptoFile? {
@@ -277,7 +281,7 @@ fun saveFileFromUri(
       val destFile = File(getAppFilePath(destFileName))
       if (encrypted) {
         createTmpFileAndDelete { tmpFile ->
-          Files.copy(inputStream, tmpFile.toPath())
+          copyInputStreamToFile(inputStream, tmpFile, maxBytes)
           try {
             val args = encryptCryptoFile(tmpFile.absolutePath, destFile.absolutePath)
             CryptoFile(destFileName, args)
@@ -288,7 +292,7 @@ fun saveFileFromUri(
           }
         }
       } else {
-        Files.copy(inputStream, destFile.toPath())
+        copyInputStreamToFile(inputStream, destFile, maxBytes)
         CryptoFile.plain(destFileName)
       }
     } else {
@@ -297,11 +301,41 @@ fun saveFileFromUri(
 
       null
     }
+  } catch (e: FileTooLargeException) {
+    Log.e(TAG, "Util.kt saveFileFromUri file too large: ${e.message}")
+    if (withAlertOnException) {
+      AlertManager.shared.showAlertMsg(
+        generalGetString(MR.strings.large_file),
+        String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxBytes))
+      )
+    }
+    null
   } catch (e: Exception) {
     Log.e(TAG, "Util.kt saveFileFromUri error: ${e.stackTraceToString()}")
     if (withAlertOnException) showWrongUriAlert()
 
     null
+  }
+}
+
+class FileTooLargeException(maxBytes: Long) : IOException("file exceeds $maxBytes bytes")
+
+fun copyInputStreamToFile(inputStream: InputStream, destFile: File, maxBytes: Long) {
+  try {
+    destFile.outputStream().use { output ->
+      val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+      var copied = 0L
+      while (true) {
+        val read = inputStream.read(buffer)
+        if (read < 0) break
+        if (copied > maxBytes - read) throw FileTooLargeException(maxBytes)
+        output.write(buffer, 0, read)
+        copied += read
+      }
+    }
+  } catch (e: Throwable) {
+    destFile.delete()
+    throw e
   }
 }
 
@@ -446,26 +480,50 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   return fileCount to bytes
 }
 
+fun badgeMaxFileSize(badge: LocalBadge): Long =
+  if (badge.badge.badgeType == BadgeType.Legend) MAX_FILE_SIZE_XFTP_LEGEND else MAX_FILE_SIZE_XFTP_SUPPORTER
+
+// a badge raises the limit at send until one day past its expiry, as the core applies it
+fun badgeActiveForSend(badge: LocalBadge): Boolean =
+  badge.status == BadgeStatus.Active && badge.badge.badgeExpiry + BADGE_SND_GRACE_INTERVAL >= Clock.System.now()
+
+// in incognito chats and above the largest badge's limit no badge applies, so badgeIssue is not used
+fun largeFileMessage(fileSize: Long, incognito: Boolean = false, badgeIssue: String = ""): String =
+  if (incognito) {
+    String.format(generalGetString(MR.strings.large_file_incognito), formatBytes(MAX_FILE_SIZE_XFTP))
+  } else if (fileSize > MAX_FILE_SIZE_XFTP_LEGEND) {
+    String.format(generalGetString(MR.strings.max_file_size_with_badge), formatBytes(MAX_FILE_SIZE_XFTP_LEGEND), generalGetString(MR.strings.legend_badge))
+  } else {
+    val supporter = fileSize <= MAX_FILE_SIZE_XFTP_SUPPORTER
+    val message = String.format(
+      generalGetString(MR.strings.large_file_requires_badge),
+      generalGetString(if (supporter) MR.strings.supporter_badge else MR.strings.legend_badge),
+      formatBytes(if (supporter) MAX_FILE_SIZE_XFTP else MAX_FILE_SIZE_XFTP_SUPPORTER)
+    )
+    if (badgeIssue.isEmpty()) message else message + " " + badgeIssue
+  }
+
+// the badge lapsed, and while active it would have allowed this file
+fun expiredBadgeReason(fileSize: Long, senderProfile: LocalProfile?): String {
+  val badge = senderProfile?.localBadge
+  return if (badge != null && !badgeActiveForSend(badge) && badgeMaxFileSize(badge) >= fileSize) {
+    generalGetString(MR.strings.your_badge_expired)
+  } else ""
+}
+
 fun getMaxFileSize(fileProtocol: FileProtocol, senderProfile: LocalProfile? = null): Long = when (fileProtocol) {
   FileProtocol.SMP -> MAX_FILE_SIZE_SMP
   FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
-  // a sender's active badge raises the XFTP limit: legend to 5GB, any other (supporter/investor) to 2GB
   FileProtocol.XFTP -> {
     val badge = senderProfile?.localBadge
-    if (badge == null || badge.status != BadgeStatus.Active) MAX_FILE_SIZE_XFTP
-    else if (badge.badge.badgeType == BadgeType.Legend) MAX_FILE_SIZE_XFTP_LEGEND
-    else MAX_FILE_SIZE_XFTP_SUPPORTER
+    if (badge != null && badgeActiveForSend(badge)) badgeMaxFileSize(badge) else MAX_FILE_SIZE_XFTP
   }
 }
 
-// the profile of whoever sent a received chat item - the group member, or the direct chat's contact
-fun ciSenderProfile(ci: ChatItem, chatInfo: ChatInfo): LocalProfile? = when (val dir = ci.chatDir) {
-  is CIDirection.GroupRcv -> dir.groupMember.memberProfile
-  is CIDirection.DirectRcv -> (chatInfo as? ChatInfo.Direct)?.contact?.profile
-  else -> null
-}
-
 expect suspend fun getBitmapFromVideo(uri: URI, timestamp: Long? = null, random: Boolean = true, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration
+
+// Whether the file really contains a video track. Reads container metadata only, without decoding a frame.
+expect suspend fun hasVideoTrack(uri: URI): Boolean
 
 fun showWrongUriAlert() {
   AlertManager.shared.showAlertMsg(

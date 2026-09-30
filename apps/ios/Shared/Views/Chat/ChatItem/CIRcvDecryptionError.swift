@@ -185,9 +185,8 @@ struct CIRcvDecryptionError: View {
                 }
             } catch let error {
                 logger.error("syncMemberConnection apiSyncGroupMemberRatchet error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error synchronizing connection")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error synchronizing connection", comment: ""))
                 }
             }
         }
@@ -202,9 +201,8 @@ struct CIRcvDecryptionError: View {
                 }
             } catch let error {
                 logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error synchronizing connection")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error synchronizing connection", comment: ""))
                 }
             }
         }

@@ -13,6 +13,8 @@ import SimpleXChat
 
 let simplexTeamURL = URL(string: "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im")!
 
+let simplexNewsURL = URL(string: "simplex:/c#grcfG3ulVI4Sh6ow33qBsmSk7uEy3gRSl2KkJ5ER6tA?h=smp18.simplex.im")!
+
 let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
 
 let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? String
@@ -32,6 +34,9 @@ let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages" // unused. Use GROUP_D
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews" // deprecated, moved to app group
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
 let DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS = "privacyShowChatPreviews"
+let DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES = "privacyVerifySimplexNames"
+let DEFAULT_PRIVACY_SHOW_SIGNATURE = "privacyShowSignature"
+let DEFAULT_PRIVACY_SHOW_FILE_ENCRYPTION = "privacyShowEncryption"
 let DEFAULT_PRIVACY_SAVE_LAST_DRAFT = "privacySaveLastDraft"
 let DEFAULT_PRIVACY_PROTECT_SCREEN = "privacyProtectScreen"
 let DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET = "privacyDeliveryReceiptsSet"
@@ -53,9 +58,14 @@ let DEFAULT_CHAT_ITEM_ROUNDNESS = "chatItemRoundness"
 let DEFAULT_CHAT_ITEM_TAIL = "chatItemTail"
 let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
 let DEFAULT_ADDRESS_CREATION_CARD_SHOWN = "addressCreationCardShown"
+let DEFAULT_SUPPORTER_BANNER_SHOWN = "supporterBannerShown"
+let DEFAULT_SUPPORTER_BANNER_TAPPED = "supporterBannerTapped"
+let DEFAULT_GET_STAKE_BANNER_TAPPED = "getStakeBannerTapped"
+let DEFAULT_GET_STAKE_BANNER_DISMISSED = "getStakeBannerDismissed"
 let DEFAULT_TOOLBAR_MATERIAL = "toolbarMaterial"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
+let DEFAULT_SIGN_MESSAGE_ALERT_SHOWN = "signMessageAlertShown"
 let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
 let DEFAULT_SHOW_MUTE_PROFILE_ALERT = "showMuteProfileAlert"
 let DEFAULT_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT = "showReportsInSupportChatAlert"
@@ -99,6 +109,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
     DEFAULT_PRIVACY_SIMPLEX_LINK_MODE: SimpleXLinkMode.description.rawValue,
     DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS: true,
+    DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES: false,
     DEFAULT_PRIVACY_SAVE_LAST_DRAFT: true,
     DEFAULT_PRIVACY_PROTECT_SCREEN: false,
     DEFAULT_PRIVACY_DELIVERY_RECEIPTS_SET: false,
@@ -112,9 +123,14 @@ let appDefaults: [String: Any] = [
     DEFAULT_CHAT_ITEM_TAIL: true,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
     DEFAULT_ADDRESS_CREATION_CARD_SHOWN: false,
+    DEFAULT_SUPPORTER_BANNER_SHOWN: false,
+    DEFAULT_SUPPORTER_BANNER_TAPPED: false,
+    DEFAULT_GET_STAKE_BANNER_TAPPED: false,
+    DEFAULT_GET_STAKE_BANNER_DISMISSED: false,
     DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.defaultMaterial,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
+    DEFAULT_SIGN_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
     DEFAULT_SHOW_MUTE_PROFILE_ALERT: true,
     DEFAULT_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT: true,
@@ -142,7 +158,12 @@ let hintDefaults = [
     DEFAULT_LA_NOTICE_SHOWN,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN,
     DEFAULT_ADDRESS_CREATION_CARD_SHOWN,
+    DEFAULT_SUPPORTER_BANNER_SHOWN,
+    DEFAULT_SUPPORTER_BANNER_TAPPED,
+    DEFAULT_GET_STAKE_BANNER_TAPPED,
+    DEFAULT_GET_STAKE_BANNER_DISMISSED,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN,
+    DEFAULT_SIGN_MESSAGE_ALERT_SHOWN,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE,
     DEFAULT_SHOW_MUTE_PROFILE_ALERT,
     DEFAULT_SHOW_REPORTS_IN_SUPPORT_CHAT_ALERT,
@@ -334,6 +355,22 @@ struct SettingsView: View {
                 }
             }
 
+            Section {
+                NavigationLink {
+                    BadgesView()
+                        .modifier(ThemedBackground())
+                } label: {
+                    let badgeType = chatModel.currentUser?.profile.localBadge?.badge.badgeType ?? .supporter
+                    ZStack(alignment: .leading) {
+                        Image(badgeImageName(badgeType))
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                        Text("Supporter perks").padding(.leading, indent)
+                    }
+                }
+            }
+
             Section(header: Text("Advanced settings").foregroundColor(theme.colors.secondary)) {
                 NavigationLink {
                     NetworkAndServers()
@@ -368,9 +405,20 @@ struct SettingsView: View {
                 NavigationLink {
                     VersionView()
                         .navigationBarTitle("App version")
-                        .modifier(ThemedBackground())
+                        .modifier(ThemedBackground(grouped: true))
                 } label: {
                     Text(verbatim: "v\(appVersion ?? "?")")
+                }
+            }
+
+            if isInUS {
+                Section(header: Text("You can now invest in SimpleX Chat").foregroundColor(theme.colors.secondary)) {
+                    NavigationLink {
+                        GetStakeView(fromSettings: true, showFirstImage: true)
+                            .navigationBarTitle("", displayMode: .inline)
+                    } label: {
+                        settingsRow("dollarsign.circle", color: theme.colors.secondary) { Text("Crowdfunding on Wefunder") }
+                    }
                 }
             }
         }
@@ -416,6 +464,15 @@ struct SettingsView: View {
             }
 
             Section(header: Text("Contact").foregroundColor(theme.colors.secondary)) {
+                settingsRow("antenna.radiowaves.left.and.right", color: theme.colors.secondary) {
+                    Button("Follow SimpleX Network News") {
+                        dismiss()
+                        DispatchQueue.main.async {
+                            ChatModel.shared.appOpenUrl = simplexNewsURL
+                        }
+                    }
+                }
+                .disabled(chatModel.chatRunning != true)
                 settingsRow("number", color: theme.colors.secondary) {
                     Button("Send questions and ideas") {
                         dismiss()

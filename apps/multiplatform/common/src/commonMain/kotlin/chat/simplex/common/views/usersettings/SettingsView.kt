@@ -22,16 +22,18 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
-import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.BadgesView
 import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.migration.MigrateFromDeviceView
+import chat.simplex.common.views.onboarding.GetStakeView
 import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
+import chat.simplex.common.views.onboarding.crowdfundingAvailable
 import chat.simplex.common.views.usersettings.networkAndServers.NetworkAndServersView
 import chat.simplex.res.MR
 
@@ -72,6 +74,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, close: (
 val simplexTeamUri =
   "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im"
 
+val simplexNewsUri =
+  "simplex:/c#grcfG3ulVI4Sh6ow33qBsmSk7uEy3gRSl2KkJ5ER6tA?h=smp18.simplex.im"
+
 @Composable
 fun SettingsLayout(
   stopped: Boolean,
@@ -102,6 +107,18 @@ fun SettingsLayout(
     }
     SectionDividerSpaced()
 
+    SectionView {
+      // Direct showModal (no settings / cardScreen flags) — settings-style card chrome would render
+      // a gray top bar / back button that badges views don't want (they have their own inline titles).
+      SectionItemView(click = { ModalManager.start.showCustomModal { close -> BadgesView(ModalManager.start, close) } }) {
+        val badgeType = chatModel.currentUser.value?.profile?.localBadge?.badge?.badgeType ?: BadgeType.Supporter
+        Image(painterResource(badgeImage(badgeType)), stringResource(MR.strings.supporter_perks), Modifier.size(24.dp))
+        TextIconSpaced()
+        Text(stringResource(MR.strings.supporter_perks))
+      }
+    }
+    SectionDividerSpaced()
+
     SectionView(stringResource(MR.strings.advanced_settings)) {
       SettingsActionItem(painterResource(MR.images.ic_wifi_tethering), stringResource(MR.strings.network_and_servers), showCustomModal { _, close -> NetworkAndServersView(close) }, disabled = stopped)
       if (appPlatform == AppPlatform.ANDROID) {
@@ -110,6 +127,17 @@ fun SettingsLayout(
       SettingsActionItem(painterResource(MR.images.ic_videocam), stringResource(MR.strings.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
       AppShutdownItem()
       AppVersionItem(showVersion)
+    }
+
+    if (crowdfundingAvailable()) {
+      SectionDividerSpaced()
+      SectionView(stringResource(MR.strings.v7_0_invest)) {
+        SettingsActionItem(
+          painterResource(MR.images.ic_redeem),
+          stringResource(MR.strings.v7_0_crowdfunding),
+          { ModalManager.start.showModalCloseable(cardScreen = true) { close -> GetStakeView(showFirstImage = true, close = close) } }
+        )
+      }
     }
     SectionBottomSpacer()
   }
@@ -136,6 +164,7 @@ fun HelpAndSupportView(
 
     SectionView(stringResource(MR.strings.settings_section_title_contact)) {
       if (!chatModel.desktopNoUserNoRemote) {
+        SettingsActionItem(painterResource(MR.images.ic_bigtop_updates), stringResource(MR.strings.follow_simplex_network_news), { uriHandler.openVerifiedSimplexUri(simplexNewsUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
         SettingsActionItem(painterResource(MR.images.ic_tag), stringResource(MR.strings.chat_with_the_founder), { uriHandler.openVerifiedSimplexUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
       }
       SettingsActionItem(painterResource(MR.images.ic_mail), stringResource(MR.strings.send_us_an_email), { uriHandler.openUriCatching("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary)
@@ -143,7 +172,7 @@ fun HelpAndSupportView(
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_support_project)) {
-      if (!BuildConfigCommon.ANDROID_BUNDLE) {
+      if (!platform.androidIsPlayStoreBuild) {
         ContributeItem(uriHandler)
       }
       if (appPlatform.isAndroid) {

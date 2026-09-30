@@ -30,13 +30,13 @@ To create a group use the `/g <group>` command. You can then invite contacts to 
 
 **Please note:** Groups are not stored on any server; they are maintained as a list of members in the app database. Sending a message to the group sends a message to each member of the group.
 
-![simplex-chat](../images/groups.gif)
+![simplex-chat](/images/groups.gif)
 
 ### File transfer
 
 Sharing files is simple! To send a file to a contact, use the `/f @<contact> <file_path>` command. The recipient will have to accept before the file is sent.
 
-![simplex-chat](../images/files.gif)
+![simplex-chat](/images/files.gif)
 
 ## We're always looking for help!
 

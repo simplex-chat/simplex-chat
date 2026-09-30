@@ -38,6 +38,21 @@ import Simplex.Chat.Store.Postgres.Migrations.M20260530_client_services
 import Simplex.Chat.Store.Postgres.Migrations.M20260531_member_removed_at
 import Simplex.Chat.Store.Postgres.Migrations.M20260601_relay_sent_web_domain
 import Simplex.Chat.Store.Postgres.Migrations.M20260602_group_roster
+import Simplex.Chat.Store.Postgres.Migrations.M20260603_simplex_name
+import Simplex.Chat.Store.Postgres.Migrations.M20260629_roster_catchup
+import Simplex.Chat.Store.Postgres.Migrations.M20260707_file_digest
+import Simplex.Chat.Store.Postgres.Migrations.M20260714_member_security_code
+import Simplex.Chat.Store.Postgres.Migrations.M20260715_profile_description
+import Simplex.Chat.Store.Postgres.Migrations.M20260716_signed_history
+import Simplex.Chat.Store.Postgres.Migrations.M20260720_server_roles
+import Simplex.Chat.Store.Postgres.Migrations.M20260723_contact_request_rejection
+import Simplex.Chat.Store.Postgres.Migrations.M20260813_auto_accept_group_invitations
+import Simplex.Chat.Store.Postgres.Migrations.M20260822_forward_link
+import Simplex.Chat.Store.Postgres.Migrations.M20260828_file_expiry
+import Simplex.Chat.Store.Postgres.Migrations.M20260904_file_badges
+import Simplex.Chat.Store.Postgres.Migrations.M20260915_user_badges
+import Simplex.Chat.Store.Postgres.Migrations.M20260918_badge_issue_errors
+import Simplex.Chat.Store.Postgres.Migrations.M20260923_preferences_json
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -75,7 +90,22 @@ schemaMigrations =
     ("20260530_client_services", m20260530_client_services, Just down_m20260530_client_services),
     ("20260531_member_removed_at", m20260531_member_removed_at, Just down_m20260531_member_removed_at),
     ("20260601_relay_sent_web_domain", m20260601_relay_sent_web_domain, Just down_m20260601_relay_sent_web_domain),
-    ("20260602_group_roster", m20260602_group_roster, Just down_m20260602_group_roster)
+    ("20260602_group_roster", m20260602_group_roster, Just down_m20260602_group_roster),
+    ("20260603_simplex_name", m20260603_simplex_name, Just down_m20260603_simplex_name),
+    ("20260629_roster_catchup", m20260629_roster_catchup, Just down_m20260629_roster_catchup),
+    ("20260707_file_digest", m20260707_file_digest, Just down_m20260707_file_digest),
+    ("20260714_member_security_code", m20260714_member_security_code, Just down_m20260714_member_security_code),
+    ("20260715_profile_description", m20260715_profile_description, Just down_m20260715_profile_description),
+    ("20260716_signed_history", m20260716_signed_history, Just down_m20260716_signed_history),
+    ("20260720_server_roles", m20260720_server_roles, Just down_m20260720_server_roles),
+    ("20260723_contact_request_rejection", m20260723_contact_request_rejection, Just down_m20260723_contact_request_rejection),
+    ("20260813_auto_accept_group_invitations", m20260813_auto_accept_group_invitations, Just down_m20260813_auto_accept_group_invitations),
+    ("20260822_forward_link", m20260822_forward_link, Just down_m20260822_forward_link),
+    ("20260828_file_expiry", m20260828_file_expiry, Just down_m20260828_file_expiry),
+    ("20260904_file_badges", m20260904_file_badges, Just down_m20260904_file_badges),
+    ("20260915_user_badges", m20260915_user_badges, Just down_m20260915_user_badges),
+    ("20260918_badge_issue_errors", m20260918_badge_issue_errors, Just down_m20260918_badge_issue_errors),
+    ("20260923_preferences_json", m20260923_preferences_json, Just down_m20260923_preferences_json)
   ]
 
 -- | The list of migrations in ascending order by date

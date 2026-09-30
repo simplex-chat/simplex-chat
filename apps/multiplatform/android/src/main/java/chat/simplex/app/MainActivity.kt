@@ -1,6 +1,5 @@
 package chat.simplex.app
 
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.*
@@ -8,7 +7,6 @@ import android.view.View
 import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.ui.platform.ClipboardManager
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.getUserIdFromIntent
@@ -21,7 +19,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.*
 import java.lang.ref.WeakReference
 
 class MainActivity: FragmentActivity() {
@@ -73,17 +70,6 @@ class MainActivity: FragmentActivity() {
   override fun onResume() {
     super.onResume()
     AppLock.recheckAuthState()
-    withApi {
-      delay(1000)
-      if (!isAppOnForeground) return@withApi
-      /**
-       * When the app calls [ClipboardManager.shareText] and a user copies text in clipboard, Android denies
-       * access to clipboard because the app considered in background.
-       * This will ensure that the app will get the event on resume
-       * */
-      val service = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-      chatModel.clipboardHasText.value = service.hasPrimaryClip()
-    }
   }
 
   override fun onPause() {

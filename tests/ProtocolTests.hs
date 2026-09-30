@@ -1,13 +1,19 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module ProtocolTests where
 
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Char8 as B
+import Data.List (isInfixOf)
+import qualified Data.List.NonEmpty as L
+import Data.Maybe (fromMaybe)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
 import Simplex.Chat.Protocol
@@ -15,8 +21,10 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Compression (compress1)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
+import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Protocol (EntityId (..), supportedSMPClientVRange)
 import Simplex.Messaging.ServiceScheme
 import Simplex.Messaging.Version
@@ -26,6 +34,71 @@ protocolTests :: Spec
 protocolTests = do
   decodeChatMessageTest
   shortLinkDataTests
+  batchLimitTests
+  forwardDepthTests
+  preferencesJSONTests
+
+preferencesJSONTests :: Spec
+preferencesJSONTests = describe "preferences JSON" $ do
+  it "stores no JSON when preferences encode to what was received" $ do
+    ps <- prefs "{\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"no\"}}"
+    storedJSON ps `shouldBe` Nothing
+  it "stores no JSON when group preferences encode to what was received" $ do
+    ps <- groupPrefs "{\"voice\":{\"enable\":\"on\"},\"reactions\":{\"enable\":\"off\"}}"
+    storedJSON ps `shouldBe` Nothing
+  it "stores JSON with a preference that is not defined" $ do
+    let s = "{\"voice\":{\"enable\":\"on\"},\"polls\":{\"enable\":\"on\"}}"
+    ps <- groupPrefs s
+    storedJSON ps `shouldBe` Just (object s)
+    J.toJSON ps `shouldBe` object "{\"voice\":{\"enable\":\"on\"}}"
+  it "stores JSON with a field that is not defined in a preference" $ do
+    let s = "{\"voice\":{\"enable\":\"on\",\"exceptRole\":\"observer\"}}"
+    ps <- groupPrefs s
+    storedJSON ps `shouldBe` Just (object s)
+  it "reads the received preferences from the stored JSON" $
+    groupPrefsFromRow (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"off\"}}")
+      `shouldBe` groupPrefs_ "{\"voice\":{\"enable\":\"off\"}}"
+  it "reads the stored preferences when the received JSON does not parse" $
+    groupPrefsFromRow (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"sometimes\"}}")
+      `shouldBe` groupPrefs_ "{\"voice\":{\"enable\":\"on\"}}"
+  where
+    prefs :: ByteString -> IO Preferences
+    prefs = either fail pure . J.eitherDecodeStrict'
+    groupPrefs :: ByteString -> IO GroupPreferences
+    groupPrefs = either fail pure . J.eitherDecodeStrict'
+    groupPrefs_ :: ByteString -> Maybe GroupPreferences
+    groupPrefs_ = J.decodeStrict'
+    storedJSON ps = J.decodeStrictText =<< snd (prefsToRow $ Just ps) :: Maybe J.Value
+    object :: ByteString -> J.Value
+    object s = fromMaybe (error $ "not JSON: " <> B.unpack s) $ J.decodeStrict' s
+
+batchLimitTests :: Spec
+batchLimitTests = describe "Chat message batch limits" $ do
+  it "parses a JSON batch at the element count limit" $
+    length (parseChatMessages $ jsonBatch maxBatchElementCount) `shouldBe` maxBatchElementCount
+  it "rejects a JSON batch above the element count limit" $
+    batchError (jsonBatch $ maxBatchElementCount + 1) `shouldSatisfy` isInfixOf "too many messages in batch"
+  it "rejects compressed blocks that together exceed the element count limit" $
+    batchError (compressedBatch 2 maxBatchElementCount) `shouldSatisfy` isInfixOf "too many messages in batch"
+  where
+    jsonBatch n = "[" <> B.intercalate "," (replicate n "{}") <> "]"
+    compressedBatch k n = markCompressedBatch . smpEncode . L.fromList $ replicate k (compress1 $ jsonBatch n)
+    batchError s = case parseChatMessages s of
+      [Left e] -> e
+      rs -> "expected a single error, got " <> show (length rs) <> " results"
+
+forwardDepthTests :: Spec
+forwardDepthTests = describe "Chat message forward depth limit" $ do
+  it "parses x.grp.msg.forward at the depth limit" $
+    chatMsgToBody (nestedFwd maxFwdDepth) ==## nestedFwd maxFwdDepth
+  it "rejects x.grp.msg.forward above the depth limit" $
+    case parseChatMessages $ chatMsgToBody $ nestedFwd $ maxFwdDepth + 1 of
+      [Left e] -> e `shouldSatisfy` isInfixOf "forward depth exceeds limit"
+      _ -> expectationFailure "single parse error expected"
+  where
+    nestedFwd :: Int -> ChatMessage 'Json
+    nestedFwd 0 = ChatMessage chatInitialVRange Nothing $ XMsgNew $ mcSimple $ MCText "hello"
+    nestedFwd n = ChatMessage chatInitialVRange Nothing $ XGrpMsgForward (GrpMsgForward FwdChannel $ systemToUTCTime $ MkSystemTime 1 1) (nestedFwd $ n - 1)
 
 srv :: SMPServer
 srv = SMPServer "smp.simplex.im" "5223" (C.KeyHash "\215m\248\251")
@@ -58,6 +131,16 @@ testE2ERatchetParams = E2ERatchetParamsUri supportedE2EEncryptVRange testDhPubKe
 
 testConnReq :: ConnectionRequestUri 'CMInvitation
 testConnReq = CRInvitationUri connReqData testE2ERatchetParams
+
+testForwardLink :: ForwardLink
+testForwardLink =
+  ForwardLink
+    { displayName = "team",
+      groupLink = CSLContact SLSSimplex CCTChannel srv (LinkKey "\1\2\3\4\5\6\7\8\1\2\3\4\5\6\7\8\1\2\3\4\5\6\7\8\1\2\3\4\5\6\7\8"),
+      publicGroupId = B64UrlByteString "\1\2\3\4",
+      memberId = Just $ MemberId "\1\2\3\4",
+      msgId = SharedMsgId "\5\6\7\8"
+    }
 
 quotedMsg :: QuotedMsg
 quotedMsg =
@@ -101,13 +184,13 @@ s #==# msg = do
   s ==# msg
 
 testChatPreferences :: Maybe Preferences
-testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing}
+testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing, _json = PrefsJSON Nothing}
 
 testGroupPreferences :: Maybe GroupPreferences
-testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, commands = Nothing}
+testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing, _json = PrefsJSON Nothing}
 
 testProfile :: Profile
-testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing}
+testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, description = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing}
 
 testGroupProfile :: GroupProfile
 testGroupProfile = GroupProfile {displayName = "team", fullName = "Team", description = Nothing, shortDescr = Nothing, image = Nothing, publicGroup = Nothing, groupPreferences = testGroupPreferences, memberAdmission = Nothing}
@@ -128,206 +211,212 @@ shortLinkDataTests = describe "Short link data encoding/decoding" $ do
           { direct = True,
             owners = [],
             relays = [],
-            userData = encodeShortLinkData (value :: String)
+            userData = encodeShortLinkData (value :: String),
+            ratchetKeys = Nothing
           }
 
 decodeChatMessageTest :: Spec
 decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.msg.new simple text" $
-    "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
+    "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       #==# XMsgNew (mcSimple (MCText "hello"))
   it "x.msg.new simple text - timed message TTL" $
-    "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"ttl\":3600}}"
+    "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"ttl\":3600}}"
       #==# XMsgNew ((mcSimple (MCText "hello")) {ttl = Just 3600})
   it "x.msg.new simple text - live message" $
-    "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"live\":true}}"
+    "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"live\":true}}"
       #==# XMsgNew ((mcSimple (MCText "hello")) {live = Just True})
   it "x.msg.new simple link" $
-    "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"
+    "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"https://simplex.chat\",\"type\":\"link\",\"preview\":{\"description\":\"SimpleX Chat\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA\",\"title\":\"SimpleX Chat\",\"uri\":\"https://simplex.chat\"}}}}"
       #==# XMsgNew (mcSimple (MCLink "https://simplex.chat" $ LinkPreview {uri = "https://simplex.chat", title = "SimpleX Chat", description = "SimpleX Chat", image = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgA", content = Nothing}))
   it "x.msg.new simple image" $
-    "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}}"
+    "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}}"
       #==# XMsgNew (mcSimple (MCImage "" $ ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="))
   it "x.msg.new simple image with text" $
-    "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"here's an image\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}}"
+    "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"here's an image\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}}"
       #==# XMsgNew (mcSimple (MCImage "here's an image" $ ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="))
   it "x.msg.new chat message" $
-    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello")))
   it "x.msg.new chat message with chat version range" $
-    "{\"v\":\"1-19\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
+    "{\"v\":\"9-21\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       ##==## ChatMessage supportedChatVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello")))
   it "x.msg.new quote" $
-    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
       ##==## ChatMessage
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         (XMsgNew (mcQuote quotedMsg (MCText "hello to you too")))
   it "x.msg.new quote - timed message TTL" $
-    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}},\"ttl\":3600}}"
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}},\"ttl\":3600}}"
       ##==## ChatMessage
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         (XMsgNew ((mcQuote quotedMsg (MCText "hello to you too")) {ttl = Just 3600}))
   it "x.msg.new quote - live message" $
-    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}},\"live\":true}}"
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}},\"live\":true}}"
       ##==## ChatMessage
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         (XMsgNew ((mcQuote quotedMsg (MCText "hello to you too")) {live = Just True}))
   it "x.msg.new forward" $
-    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true}}"
-      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ mcForward (MCText "hello"))
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true}}"
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ mcForward Nothing (MCText "hello"))
   it "x.msg.new forward - timed message TTL" $
-    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"ttl\":3600}}"
-      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward (MCText "hello")) {ttl = Just 3600})
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"ttl\":3600}}"
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward Nothing (MCText "hello")) {ttl = Just 3600})
   it "x.msg.new forward - live message" $
-    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"live\":true}}"
-      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward (MCText "hello")) {live = Just True})
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"live\":true}}"
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward Nothing (MCText "hello")) {live = Just True})
+  it "x.msg.new forward with channel link" $
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"forwardLink\":{\"displayName\":\"team\",\"groupLink\":\"simplex:/c#AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg?h=smp.simplex.im&p=5223&c=1234-w\",\"publicGroupId\":\"AQIDBA==\",\"memberId\":\"AQIDBA==\",\"msgId\":\"BQYHCA==\"}}}"
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ mcForward (Just testForwardLink) (MCText "hello"))
+  it "x.msg.new forward with channel link without author" $
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"forwardLink\":{\"displayName\":\"team\",\"groupLink\":\"simplex:/c#AQIDBAUGBwgBAgMEBQYHCAECAwQFBgcIAQIDBAUGBwg?h=smp.simplex.im&p=5223&c=1234-w\",\"publicGroupId\":\"AQIDBA==\",\"msgId\":\"BQYHCA==\"}}}"
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ mcForward (Just (testForwardLink {memberId = Nothing} :: ForwardLink)) (MCText "hello"))
   it "x.msg.new simple text with file" $
-    "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
-      #==# XMsgNew ((mcSimple (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}})
+    "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
+      #==# XMsgNew ((mcSimple (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}})
   it "x.msg.new simple file with file" $
-    "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"type\":\"file\"},\"file\":{\"fileSize\":12345,\"fileName\":\"file.txt\"}}}"
-      #==# XMsgNew ((mcSimple (MCFile "")) {file = Just FileInvitation {fileName = "file.txt", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}})
+    "{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"type\":\"file\"},\"file\":{\"fileSize\":12345,\"fileName\":\"file.txt\"}}}"
+      #==# XMsgNew ((mcSimple (MCFile "")) {file = Just FileInvitation {fileName = "file.txt", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}})
   it "x.msg.new quote with file" $
-    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
       ##==## ChatMessage
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         ( XMsgNew
             (mcQuote quotedMsg (MCText "hello to you too"))
-              {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}}
+              {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}}
         )
   it "x.msg.new report" $
-    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"reason\":\"spam\",\"type\":\"report\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"reason\":\"spam\",\"type\":\"report\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
       ##==## ChatMessage
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         (XMsgNew (mcQuote quotedMsg (MCReport "" RRSpam)))
   it "x.msg.new forward with file" $
-    "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"},\"forward\":true}}"
-      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}})
+    "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"},\"forward\":true}}"
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ (mcForward Nothing (MCText "hello")) {file = Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}})
   it "x.msg.update" $
-    "{\"v\":\"1\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
+    "{\"v\":\"9\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") [] Nothing Nothing Nothing Nothing
   it "x.msg.del" $
-    "{\"v\":\"1\",\"event\":\"x.msg.del\",\"params\":{\"msgId\":\"AQIDBA==\"}}"
+    "{\"v\":\"9\",\"event\":\"x.msg.del\",\"params\":{\"msgId\":\"AQIDBA==\"}}"
       #==# XMsgDel (SharedMsgId "\1\2\3\4") Nothing Nothing False
   it "x.msg.deleted" $
-    "{\"v\":\"1\",\"event\":\"x.msg.deleted\",\"params\":{}}"
+    "{\"v\":\"9\",\"event\":\"x.msg.deleted\",\"params\":{}}"
       #==# XMsgDeleted
   it "x.file" $
-    "{\"v\":\"1\",\"event\":\"x.file\",\"params\":{\"file\":{\"fileConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
-      #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Just testConnReq, fileInline = Nothing, fileDescr = Nothing}
+    "{\"v\":\"9\",\"event\":\"x.file\",\"params\":{\"file\":{\"fileConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
+      #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Just testConnReq, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}
   it "x.file without file invitation" $
-    "{\"v\":\"1\",\"event\":\"x.file\",\"params\":{\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
-      #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}
+    "{\"v\":\"9\",\"event\":\"x.file\",\"params\":{\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
+      #==# XFile FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing, fileBadge = Nothing}
   it "x.file.acpt" $
-    "{\"v\":\"1\",\"event\":\"x.file.acpt\",\"params\":{\"fileName\":\"photo.jpg\"}}"
+    "{\"v\":\"9\",\"event\":\"x.file.acpt\",\"params\":{\"fileName\":\"photo.jpg\"}}"
       #==# XFileAcpt "photo.jpg"
   it "x.file.acpt.inv" $
-    "{\"v\":\"1\",\"event\":\"x.file.acpt.inv\",\"params\":{\"msgId\":\"AQIDBA==\",\"fileName\":\"photo.jpg\",\"fileConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}"
+    "{\"v\":\"9\",\"event\":\"x.file.acpt.inv\",\"params\":{\"msgId\":\"AQIDBA==\",\"fileName\":\"photo.jpg\",\"fileConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}"
       #==# XFileAcptInv (SharedMsgId "\1\2\3\4") (Just testConnReq) "photo.jpg"
   it "x.file.acpt.inv" $
-    "{\"v\":\"1\",\"event\":\"x.file.acpt.inv\",\"params\":{\"msgId\":\"AQIDBA==\",\"fileName\":\"photo.jpg\"}}"
+    "{\"v\":\"9\",\"event\":\"x.file.acpt.inv\",\"params\":{\"msgId\":\"AQIDBA==\",\"fileName\":\"photo.jpg\"}}"
       #==# XFileAcptInv (SharedMsgId "\1\2\3\4") Nothing "photo.jpg"
   it "x.file.cancel" $
-    "{\"v\":\"1\",\"event\":\"x.file.cancel\",\"params\":{\"msgId\":\"AQIDBA==\"}}"
+    "{\"v\":\"9\",\"event\":\"x.file.cancel\",\"params\":{\"msgId\":\"AQIDBA==\"}}"
       #==# XFileCancel (SharedMsgId "\1\2\3\4")
   it "x.info" $
-    "{\"v\":\"1\",\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
-      #==# XInfo testProfile
+    "{\"v\":\"9\",\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
+      #==# XInfo testProfile Nothing
   it "x.info with empty full name" $
-    "{\"v\":\"1\",\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"\",\"displayName\":\"alice\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
-      #==# XInfo Profile {displayName = "alice", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = testChatPreferences, badge = Nothing}
+    "{\"v\":\"9\",\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"\",\"displayName\":\"alice\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
+      #==# XInfo Profile {displayName = "alice", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing} Nothing
   it "x.contact with xContactId" $
-    "{\"v\":\"1\",\"event\":\"x.contact\",\"params\":{\"contactReqId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
-      #==# XContact testProfile (Just $ XContactId "\1\2\3\4") Nothing Nothing
+    "{\"v\":\"9\",\"event\":\"x.contact\",\"params\":{\"contactReqId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
+      #==# XContact testProfile Nothing (Just $ XContactId "\1\2\3\4") Nothing Nothing
   it "x.contact without XContactId" $
-    "{\"v\":\"1\",\"event\":\"x.contact\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
-      #==# XContact testProfile Nothing Nothing Nothing
+    "{\"v\":\"9\",\"event\":\"x.contact\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
+      #==# XContact testProfile Nothing Nothing Nothing Nothing
   it "x.contact with content null" $
-    "{\"v\":\"1\",\"event\":\"x.contact\",\"params\":{\"content\":null,\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
-      ==# XContact testProfile Nothing Nothing Nothing
+    "{\"v\":\"9\",\"event\":\"x.contact\",\"params\":{\"content\":null,\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
+      ==# XContact testProfile Nothing Nothing Nothing Nothing
   it "x.contact with content" $
-    "{\"v\":\"1\",\"event\":\"x.contact\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
-      ==# XContact testProfile Nothing Nothing (Just (SharedMsgId "\1\2\3\4", MCText {text = "hello"}))
+    "{\"v\":\"9\",\"event\":\"x.contact\",\"params\":{\"msgId\":\"AQIDBA==\",\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
+      ==# XContact testProfile Nothing Nothing Nothing (Just (SharedMsgId "\1\2\3\4", MCText {text = "hello"}))
   it "x.grp.inv" $
-    "{\"v\":\"1\",\"event\":\"x.grp.inv\",\"params\":{\"groupInvitation\":{\"connRequest\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"invitedMember\":{\"memberRole\":\"member\",\"memberId\":\"BQYHCA==\"},\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\",\"groupPreferences\":{\"reactions\":{\"enable\":\"on\"},\"voice\":{\"enable\":\"on\"}}},\"fromMember\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\"}}}}"
-      #==# XGrpInv GroupInvitation {fromMember = MemberIdRole (MemberId "\1\2\3\4") GRAdmin, invitedMember = MemberIdRole (MemberId "\5\6\7\8") GRMember, connRequest = testConnReq, groupProfile = testGroupProfile, business = Nothing, groupLinkId = Nothing, groupSize = Nothing}
+    "{\"v\":\"9\",\"event\":\"x.grp.inv\",\"params\":{\"groupInvitation\":{\"connRequest\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"invitedMember\":{\"memberRole\":\"member\",\"memberId\":\"BQYHCA==\"},\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\",\"groupPreferences\":{\"reactions\":{\"enable\":\"on\"},\"voice\":{\"enable\":\"on\"}}},\"fromMember\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\"}}}}"
+      #==# XGrpInv GroupInvitation {fromMember = MemberIdRole (MemberId "\1\2\3\4") GRAdmin, fromMemberKey = Nothing, invitedMember = MemberIdRole (MemberId "\5\6\7\8") GRMember, connRequest = testConnReq, groupProfile = testGroupProfile, business = Nothing, groupLinkId = Nothing, groupSize = Nothing}
   it "x.grp.inv with group link id" $
-    "{\"v\":\"1\",\"event\":\"x.grp.inv\",\"params\":{\"groupInvitation\":{\"connRequest\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"invitedMember\":{\"memberRole\":\"member\",\"memberId\":\"BQYHCA==\"},\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\",\"groupPreferences\":{\"reactions\":{\"enable\":\"on\"},\"voice\":{\"enable\":\"on\"}}},\"fromMember\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\"}, \"groupLinkId\":\"AQIDBA==\"}}}"
-      #==# XGrpInv GroupInvitation {fromMember = MemberIdRole (MemberId "\1\2\3\4") GRAdmin, invitedMember = MemberIdRole (MemberId "\5\6\7\8") GRMember, connRequest = testConnReq, groupProfile = testGroupProfile, business = Nothing, groupLinkId = Just $ GroupLinkId "\1\2\3\4", groupSize = Nothing}
+    "{\"v\":\"9\",\"event\":\"x.grp.inv\",\"params\":{\"groupInvitation\":{\"connRequest\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"invitedMember\":{\"memberRole\":\"member\",\"memberId\":\"BQYHCA==\"},\"groupProfile\":{\"fullName\":\"Team\",\"displayName\":\"team\",\"groupPreferences\":{\"reactions\":{\"enable\":\"on\"},\"voice\":{\"enable\":\"on\"}}},\"fromMember\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\"}, \"groupLinkId\":\"AQIDBA==\"}}}"
+      #==# XGrpInv GroupInvitation {fromMember = MemberIdRole (MemberId "\1\2\3\4") GRAdmin, fromMemberKey = Nothing, invitedMember = MemberIdRole (MemberId "\5\6\7\8") GRMember, connRequest = testConnReq, groupProfile = testGroupProfile, business = Nothing, groupLinkId = Just $ GroupLinkId "\1\2\3\4", groupSize = Nothing}
   it "x.grp.acpt without incognito profile" $
-    "{\"v\":\"1\",\"event\":\"x.grp.acpt\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
-      #==# XGrpAcpt (MemberId "\1\2\3\4")
+    "{\"v\":\"9\",\"event\":\"x.grp.acpt\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
+      #==# XGrpAcpt (MemberId "\1\2\3\4") Nothing
   it "x.grp.mem.new" $
-    "{\"v\":\"1\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.new with member chat version range" $
-    "{\"v\":\"1\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"1-19\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-21\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.intro" $
-    "{\"v\":\"1\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.intro with member chat version range" $
-    "{\"v\":\"1\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"1-19\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-21\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.intro with member restrictions" $
-    "{\"v\":\"1\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberRestrictions\":{\"restriction\":\"blocked\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberRestrictions\":{\"restriction\":\"blocked\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} (Just MemberRestrictions {restriction = MRSBlocked})
   it "x.grp.mem.inv" $
-    "{\"v\":\"1\",\"event\":\"x.grp.mem.inv\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberIntro\":{\"directConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.inv\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberIntro\":{\"directConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}}"
       #==# XGrpMemInv (MemberId "\1\2\3\4") IntroInvitation {groupConnReq = testConnReq, directConnReq = Just testConnReq}
   it "x.grp.mem.inv w/t directConnReq" $
-    "{\"v\":\"1\",\"event\":\"x.grp.mem.inv\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberIntro\":{\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.inv\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberIntro\":{\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}}"
       #==# XGrpMemInv (MemberId "\1\2\3\4") IntroInvitation {groupConnReq = testConnReq, directConnReq = Nothing}
   it "x.grp.mem.fwd" $
-    "{\"v\":\"1\",\"event\":\"x.grp.mem.fwd\",\"params\":{\"memberIntro\":{\"directConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.fwd\",\"params\":{\"memberIntro\":{\"directConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemFwd MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} IntroInvitation {groupConnReq = testConnReq, directConnReq = Just testConnReq}
   it "x.grp.mem.fwd with member chat version range and w/t directConnReq" $
-    "{\"v\":\"1\",\"event\":\"x.grp.mem.fwd\",\"params\":{\"memberIntro\":{\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"1-19\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.fwd\",\"params\":{\"memberIntro\":{\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-21\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemFwd MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing} IntroInvitation {groupConnReq = testConnReq, directConnReq = Nothing}
   it "x.grp.mem.info" $
-    "{\"v\":\"1\",\"event\":\"x.grp.mem.info\",\"params\":{\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.info\",\"params\":{\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
       #==# XGrpMemInfo (MemberId "\1\2\3\4") testProfile
   it "x.grp.mem.con" $
-    "{\"v\":\"1\",\"event\":\"x.grp.mem.con\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.con\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
       #==# XGrpMemCon (MemberId "\1\2\3\4")
   it "x.grp.mem.con.all" $
-    "{\"v\":\"1\",\"event\":\"x.grp.mem.con.all\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.con.all\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
       #==# XGrpMemConAll (MemberId "\1\2\3\4")
   it "x.grp.mem.del" $
-    "{\"v\":\"1\",\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.del\",\"params\":{\"memberId\":\"AQIDBA==\"}}"
       #==# XGrpMemDel (MemberId "\1\2\3\4") False Nothing
   it "x.grp.leave" $
-    "{\"v\":\"1\",\"event\":\"x.grp.leave\",\"params\":{}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.leave\",\"params\":{}}"
       ==# XGrpLeave
   it "x.grp.del" $
-    "{\"v\":\"1\",\"event\":\"x.grp.del\",\"params\":{}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.del\",\"params\":{}}"
       ==# XGrpDel
   it "x.grp.direct.inv" $
-    "{\"v\":\"1\",\"event\":\"x.grp.direct.inv\",\"params\":{\"connReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.direct.inv\",\"params\":{\"connReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       #==# XGrpDirectInv testConnReq (Just $ MCText "hello") Nothing
   it "x.grp.direct.inv without content" $
-    "{\"v\":\"1\",\"event\":\"x.grp.direct.inv\",\"params\":{\"connReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2-3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.direct.inv\",\"params\":{\"connReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}"
       #==# XGrpDirectInv testConnReq Nothing Nothing
-  -- it "x.grp.msg.forward"
-  --   $ "{\"v\":\"1\",\"event\":\"x.grp.msg.forward\",\"params\":{\"msgForward\":{\"memberId\":\"AQIDBA==\",\"msg\":\"{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}\",\"msgTs\":\"1970-01-01T00:00:01.000000001Z\"}}}"
-  --   #==# XGrpMsgForward
-  --     (MemberId "\1\2\3\4")
-  --     (ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello"))))
-  --     (systemToUTCTime $ MkSystemTime 1 1)
+  it "x.grp.msg.forward" $
+    "{\"v\":\"9\",\"event\":\"x.grp.msg.forward\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberName\":\"alice\",\"msg\":{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}},\"msgTs\":\"1970-01-01T00:00:01.000000001Z\"}}"
+      #==# XGrpMsgForward
+        (GrpMsgForward (FwdMember (MemberId "\1\2\3\4") "alice") (systemToUTCTime $ MkSystemTime 1 1))
+        (ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello"))))
   it "x.info.probe" $
-    "{\"v\":\"1\",\"event\":\"x.info.probe\",\"params\":{\"probe\":\"AQIDBA==\"}}"
+    "{\"v\":\"9\",\"event\":\"x.info.probe\",\"params\":{\"probe\":\"AQIDBA==\"}}"
       #==# XInfoProbe (Probe "\1\2\3\4")
   it "x.info.probe.check" $
-    "{\"v\":\"1\",\"event\":\"x.info.probe.check\",\"params\":{\"probeHash\":\"AQIDBA==\"}}"
+    "{\"v\":\"9\",\"event\":\"x.info.probe.check\",\"params\":{\"probeHash\":\"AQIDBA==\"}}"
       #==# XInfoProbeCheck (ProbeHash "\1\2\3\4")
   it "x.info.probe.ok" $
-    "{\"v\":\"1\",\"event\":\"x.info.probe.ok\",\"params\":{\"probe\":\"AQIDBA==\"}}"
+    "{\"v\":\"9\",\"event\":\"x.info.probe.ok\",\"params\":{\"probe\":\"AQIDBA==\"}}"
       #==# XInfoProbeOk (Probe "\1\2\3\4")
   it "x.ok" $
-    "{\"v\":\"1\",\"event\":\"x.ok\",\"params\":{}}"
+    "{\"v\":\"9\",\"event\":\"x.ok\",\"params\":{}}"
       ==# XOk

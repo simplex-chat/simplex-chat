@@ -131,7 +131,12 @@ struct ComposeState {
     }
 
     var memberMentions: [String: Int64] {
-        self.mentions.compactMapValues { $0.memberRef?.groupMemberId }
+        var result: [String: Int64] = [:]
+        for ft in parsedMessage {
+            if result.count >= MAX_NUMBER_OF_MENTIONS { break }
+            if case let .mention(name) = ft.format, let id = mentions[name]?.memberRef?.groupMemberId { result[name] = id }
+        }
+        return result
     }
 
     var editing: Bool {
@@ -330,6 +335,18 @@ enum UploadContent: Equatable {
             return .video(image: image, url: url, duration: duration)
         }
         return nil
+    }
+}
+
+// A badge only helps below the largest badge's limit, and not in incognito chats, so outside that
+// the alert is informational as before.
+func showLargeFileAlert(_ fileSize: Int64, incognito: Bool, senderProfile: LocalProfile?) {
+    let title = NSLocalizedString("Large file!", comment: "file alert title")
+    let message = largeFileMessage(fileSize, incognito: incognito, badgeIssue: expiredBadgeReason(fileSize, senderProfile))
+    if !incognito && fileSize <= MAX_FILE_SIZE_XFTP_LEGEND && noShownBadge() {
+        showAlert(title, message: message) { [supportSimpleXAlertAction, okAlertAction] }
+    } else {
+        showAlert(title, message: message)
     }
 }
 
@@ -663,11 +680,7 @@ struct ComposeView: View {
                         fileSize <= maxFileSize {
                         composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent, file: fileURL))
                     } else {
-                        let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: maxFileSize, countStyle: .binary)
-                        AlertManager.shared.showAlertMsg(
-                            title: "Large file!",
-                            message: "Currently maximum supported file size is \(prettyMaxFileSize)."
-                        )
+                        showLargeFileAlert(Int64(fileSize ?? 0), incognito: sendIncognito, senderProfile: sendProfile)
                     }
                 } catch {
                     logger.error("ComposeView fileImporter error \(error.localizedDescription)")
@@ -1039,6 +1052,10 @@ struct ComposeView: View {
                     sendMessage(ttl: ttl)
                     resetLinkPreview()
                 },
+                sendSignedMessage: {
+                    sendMessage(ttl: nil, sign: true)
+                    resetLinkPreview()
+                },
                 sendLiveMessage: chat.chatInfo.chatType != .local ? sendLiveMessage : nil,
                 updateLiveMessage: updateLiveMessage,
                 cancelLiveMessage: {
@@ -1058,6 +1075,7 @@ struct ComposeView: View {
                 finishVoiceMessageRecording: finishVoiceMessageRecording,
                 allowVoiceMessagesToContact: allowVoiceMessagesToContact,
                 timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
+                showSign: chat.chatInfo.groupInfo?.useRelays == true,
                 onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
                 keyboardVisible: $keyboardVisible,
                 keyboardHiddenDate: $keyboardHiddenDate,
@@ -1256,11 +1274,14 @@ struct ComposeView: View {
         }
     }
 
-    private var maxFileSize: Int64 {
-        // the user's active badge raises the limit, but not in incognito chats where no badge is presented
-        let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
-        return getMaxFileSize(.xftp, incognito ? nil : chatModel.currentUser?.profile)
+    // no badge is presented in incognito chats, so it does not raise the limit there
+    private var sendIncognito: Bool {
+        chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
     }
+
+    private var sendProfile: LocalProfile? { sendIncognito ? nil : chatModel.currentUser?.profile }
+
+    private var maxFileSize: Int64 { getMaxFileSize(.xftp, sendProfile) }
 
     // Spec: spec/client/compose.md#sendLiveMessage
     private func sendLiveMessage() async {
@@ -1456,16 +1477,16 @@ struct ComposeView: View {
     }
 
     // Spec: spec/client/compose.md#sendMessage
-    private func sendMessage(ttl: Int?) {
+    private func sendMessage(ttl: Int?, sign: Bool = false) {
         logger.debug("ChatView sendMessage")
         Task {
             logger.debug("ChatView sendMessage: in Task")
-            _ = await sendMessageAsync(nil, live: false, ttl: ttl)
+            _ = await sendMessageAsync(nil, live: false, ttl: ttl, sign: sign)
         }
     }
 
     // Spec: spec/client/compose.md#sendMessageAsync
-    private func sendMessageAsync(_ text: String?, live: Bool, ttl: Int?) async -> ChatItem? {
+    private func sendMessageAsync(_ text: String?, live: Bool, ttl: Int?, sign: Bool = false) async -> ChatItem? {
         var sent: ChatItem?
         let msgText = text ?? composeState.message
         let liveMessage = composeState.liveMessage
@@ -1478,7 +1499,7 @@ struct ComposeView: View {
             // Composed text is send as a reply to the last forwarded item
             sent = await forwardItems(chatItems, fromChatInfo, ttl).last
             if !composeState.message.isEmpty {
-                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl, mentions: mentions)
+                _ = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl, mentions: mentions, sign: sign)
             }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
@@ -1494,13 +1515,13 @@ struct ComposeView: View {
 
             switch (composeState.preview) {
             case .noPreview:
-                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
+                sent = await send(.text(msgText), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
             case .linkPreview:
-                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
+                sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
             case let .chatLinkPreview(chatLink, ownerSig):
                 let linkStr = chatLink.connLinkStr
                 let text = msgText.isEmpty ? linkStr : msgText + "\n" + linkStr
-                sent = await send(.chat(text: text, chatLink: chatLink, ownerSig: ownerSig), quoted: quoted, live: live, ttl: ttl, mentions: mentions)
+                sent = await send(.chat(text: text, chatLink: chatLink, ownerSig: ownerSig), quoted: quoted, live: live, ttl: ttl, mentions: mentions, sign: sign)
             case let .mediaPreviews(media):
                 // TODO: CHECK THIS
                 let last = media.count - 1
@@ -1522,15 +1543,15 @@ struct ComposeView: View {
                 if msgs.isEmpty {
                     msgs = [ComposedMessage(quotedItemId: quoted, msgContent: .text(msgText))]
                 }
-                sent = await send(msgs, live: live, ttl: ttl).last
+                sent = await send(msgs, live: live, ttl: ttl, sign: sign).last
 
             case let .voicePreview(recordingFileName, duration):
                 stopPlayback.toggle()
                 let file = voiceCryptoFile(recordingFileName)
-                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl, mentions: mentions)
+                sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl, mentions: mentions, sign: sign)
             case let .filePreview(_, file):
                 if let savedFile = saveFileFromURL(file) {
-                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl, mentions: mentions)
+                    sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl, mentions: mentions, sign: sign)
                 }
             }
         }
@@ -1538,7 +1559,7 @@ struct ComposeView: View {
             let wasForwarding = composeState.forwarding
             clearState(live: live)
             if wasForwarding,
-               chatModel.draftChatId == chat.chatInfo.id,
+               chatModel.draftChatId == draftChatId(chat.chatInfo.id, chat.chatInfo.groupChatScope()),
                let draft = chatModel.draft {
                 composeState = draft
             }
@@ -1664,15 +1685,16 @@ struct ComposeView: View {
             )
         }
 
-        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?, mentions: [String: Int64]) async -> ChatItem? {
+        func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?, mentions: [String: Int64], sign: Bool = false) async -> ChatItem? {
             await send(
                 [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc, mentions: mentions)],
                 live: live,
-                ttl: ttl
+                ttl: ttl,
+                sign: sign
             ).first
         }
 
-        func send(_ msgs: [ComposedMessage], live: Bool, ttl: Int?) async -> [ChatItem] {
+        func send(_ msgs: [ComposedMessage], live: Bool, ttl: Int?, sign: Bool = false) async -> [ChatItem] {
             if let chatItems = chat.chatInfo.chatType == .local
                 ? await apiCreateChatItems(noteFolderId: chat.chatInfo.apiId, composedMessages: msgs)
                 : await apiSendMessages(
@@ -1682,6 +1704,7 @@ struct ComposeView: View {
                     sendAsGroup: chat.chatInfo.sendAsGroup,
                     live: live,
                     ttl: ttl,
+                    sign: sign,
                     composedMessages: msgs
                 ) {
                 await MainActor.run {
@@ -1839,12 +1862,12 @@ struct ComposeView: View {
     // Spec: spec/client/compose.md#saveCurrentDraft
     private func saveCurrentDraft() {
         chatModel.draft = composeState
-        chatModel.draftChatId = chat.id
+        chatModel.draftChatId = draftChatId(chat.id, chat.chatInfo.groupChatScope())
     }
 
     // Spec: spec/client/compose.md#clearCurrentDraft
     private func clearCurrentDraft() {
-        if chatModel.draftChatId == chat.id {
+        if chatModel.draftChatId == draftChatId(chat.id, chat.chatInfo.groupChatScope()) {
             chatModel.draft = nil
             chatModel.draftChatId = nil
         }

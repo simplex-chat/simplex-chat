@@ -3,7 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from simplex_chat._native import _cache_root, _resolve_libs_dir, _download
+from simplex_chat._native import _cache_root, _download, _resolve_libs_dir
+from simplex_chat._version import LIBS_VERSION
 
 
 def test_cache_root_linux(tmp_path, monkeypatch):
@@ -41,7 +42,7 @@ def test_resolve_downloads_when_missing(tmp_path, monkeypatch):
 
     monkeypatch.setattr("simplex_chat._native._download", fake_download)
     libs_dir = _resolve_libs_dir("sqlite")
-    assert libs_dir == tmp_path / "simplex-chat" / "v6.5.2" / "sqlite"
+    assert libs_dir == tmp_path / "simplex-chat" / f"v{LIBS_VERSION}" / "sqlite"
     assert called["backend"] == "sqlite"
     assert (libs_dir / "libsimplex.so").exists()
 
@@ -49,7 +50,7 @@ def test_resolve_downloads_when_missing(tmp_path, monkeypatch):
 def test_resolve_uses_cache_on_second_call(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
     monkeypatch.setattr("sys.platform", "linux")
-    cached = tmp_path / "simplex-chat" / "v6.5.2" / "sqlite"
+    cached = tmp_path / "simplex-chat" / f"v{LIBS_VERSION}" / "sqlite"
     cached.mkdir(parents=True)
     (cached / "libsimplex.so").touch()
     # Should NOT call _download — use the cached file.
@@ -90,3 +91,13 @@ def test_atomic_install(tmp_path, monkeypatch):
     _download(target, "sqlite")
     assert (target / "libsimplex.so").read_text() == "fake-so"
     assert (target / "libHS-stub.so").read_text() == "fake-hs"
+
+
+def test_libc_on_windows_is_ucrt(monkeypatch):
+    loaded: list[str | None] = []
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr("ctypes.CDLL", lambda name: loaded.append(name))
+    from simplex_chat import _native
+
+    _native._load_libc()
+    assert loaded == ["ucrtbase"]

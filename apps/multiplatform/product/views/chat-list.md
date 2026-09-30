@@ -115,6 +115,7 @@ Each chat type provides specific dropdown menu items:
 | One-hand UI card (`ToggleChatListCard`) | `oneHandUICardShown == false` | Dismissible card introducing bottom toolbar mode with toggle switch |
 | Address creation card (`AddressCreationCard`) | `addressCreationCardShown == false` | Prompts user to create a SimpleX address; tappable card opens `UserAddressLearnMore` |
 | FAB (new chat button) | Standard mode, search empty, chat running | `FloatingActionButton` at bottom-right, pencil icon, opens `NewChatSheet` |
+| Crowdfunding banner (`GetStakeBanner`) | `crowdfundingAvailable()` and not dismissed | Gradient card above the chats, and below the onboarding cards when there are no conversations; opens `GetStakeView`. The dismiss X appears once the banner has been tapped and there is at least one chat; dismissing hides it until hints are reset |
 
 ### Empty States
 
@@ -134,3 +135,4 @@ Each chat type provides specific dropdown menu items:
 | `ChatPreviewView.kt` | `views/chatlist/ChatPreviewView.kt` |
 | `UserPicker.kt` | `views/chatlist/UserPicker.kt` |
 | `TagListView.kt` | `views/chatlist/TagListView.kt` |
+| `GetStakeBanner.kt` | `views/chatlist/GetStakeBanner.kt` |

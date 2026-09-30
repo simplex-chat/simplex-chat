@@ -568,7 +568,7 @@ data class ThemeModeOverride (
         background = if (colors.background?.colorFromReadableHex() != c.background) colors.background else null,
         surface = if (colors.surface?.colorFromReadableHex() != c.surface) colors.surface else null,
         title = if (colors.title?.colorFromReadableHex() != ac.title) colors.title else null,
-        primaryVariant2 = if (colors.primaryVariant2?.colorFromReadableHex() != ac.primaryVariant2) colors.primary else null,
+        primaryVariant2 = if (colors.primaryVariant2?.colorFromReadableHex() != ac.primaryVariant2) colors.primaryVariant2 else null,
         sentMessage = if (colors.sentMessage?.colorFromReadableHex() != ac.sentMessage) colors.sentMessage else null,
         sentQuote = if (colors.sentQuote?.colorFromReadableHex() != ac.sentQuote) colors.sentQuote else null,
         receivedMessage = if (colors.receivedMessage?.colorFromReadableHex() != ac.receivedMessage) colors.receivedMessage else null,

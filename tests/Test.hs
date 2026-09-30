@@ -3,11 +3,21 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
+import Bots.BadgeService.BTCPayTests
+import Bots.BadgeService.BotTests
+import Bots.BadgeService.CatalogTests
+import Bots.BadgeService.ConfigTests
+import Bots.BadgeService.GroupIntegrationTests
+import Bots.BadgeService.GroupTests
+import Bots.BadgeService.StripeTests
+import Bots.BadgeService.WaitersTests
+import Bots.BadgeService.WebTests
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
 import ChatTests
 import ChatTests.DBUtils
+import ChatTests.Names (chatNamesTests)
 import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
@@ -62,6 +72,14 @@ main = do
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
       describe "Supporter badges" badgeTests
+      describe "SimpleX badge service" $ do
+        badgeConfigTests
+        badgeWebTests
+        badgeCatalogTests
+        badgeGroupTests
+        badgeWaitersTests
+        badgeBTCPayTests
+        badgeStripeTests
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
       describe "Member relations" memberRelationsTests
@@ -71,6 +89,10 @@ main = do
       describe "Message batching" batchingTests
       describe "Operators" operatorTests
       describe "Random servers" randomServersTests
+#if !defined(dbPostgres)
+      around (tmpTestBracket chatQueryStats agentQueryStats) $ describe "names tests" chatNamesTests
+      around (tmpTestBracket chatQueryStats agentQueryStats) $ xdescribe'' "SimpleX Directory names" directoryNameTests
+#endif
 #if defined(dbPostgres)
       createdDropDb . around testBracket
 #else
@@ -83,6 +105,9 @@ main = do
           describe "SimpleX chat client" chatTests
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           xdescribe'' "SimpleX Directory service bot" directoryServiceTests
+          xdescribe'' "SimpleX badge service e2e" $ do
+            badgeServiceTests
+            describe "managed group" badgeGroupIntegrationTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           xdescribe'' "Save query plans" saveQueryPlans
@@ -96,6 +121,8 @@ main = do
 #else
     testBracket chatQueryStats agentQueryStats test =
       withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats, printOutput = False}
+    tmpTestBracket chatQueryStats agentQueryStats test =
+      tmpBracket $ \tmpPath -> test TestParams {tmpPath, chatQueryStats, agentQueryStats, printOutput = False}
 #endif
     tmpBracket test = do
       t <- getSystemTime

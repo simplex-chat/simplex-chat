@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Literal
 
 from . import _native, core, util
 from .core import MigrationConfirmation
-from .types import CC, CEvt, CR, T
+from .types import CC, CR, CEvt, T
 
 # Mirrors Node `ConnReqType` enum (api.ts:15-18) — the two possible outcomes
 # of `api_connect` / `api_connect_active_user` depending on the link kind.
@@ -39,7 +41,7 @@ def _db_to_migrate_args(db: Db) -> tuple[str, str, _native.Backend]:
     raise TypeError(f"Unknown db: {db!r}")
 
 
-class ChatCommandError(Exception):
+class ChatCommandError(core.ChatError):
     """A chat command returned an unexpected response type.
 
     `response` is the raw wire response; `response_type` exposes its `type`
@@ -65,17 +67,20 @@ class ChatApi:
     def __init__(self, ctrl: int):
         self._ctrl: int | None = ctrl
         self._started = False
+        self._recv_executor: ThreadPoolExecutor | None = None
 
     @classmethod
     async def init(
         cls,
         db: Db,
         confirm: MigrationConfirmation = MigrationConfirmation.YES_UP,
-    ) -> "ChatApi":
+        queue_size: int | None = None,
+    ) -> ChatApi:
         path_or_prefix, key_or_conn, backend = _db_to_migrate_args(db)
         # Trigger lazy lib load with the right backend BEFORE chat_migrate_init.
-        _native.lib_for(backend)
-        ctrl = await core.chat_migrate_init(path_or_prefix, key_or_conn, confirm)
+        # It may download ~100 MB, so it must not block the event loop.
+        await asyncio.to_thread(_native.lib_for, backend)
+        ctrl = await core.chat_migrate_init(path_or_prefix, key_or_conn, confirm, queue_size)
         return cls(ctrl)
 
     @property
@@ -96,8 +101,12 @@ class ChatApi:
         return self._started
 
     async def start_chat(self) -> None:
+        # serviceRequests is off: a bot answers its own address, it does not
+        # serve requests routed to it as a service.
         r = await self.send_chat_cmd(
-            CC.StartChat_cmd_string({"mainApp": True, "enableSndFiles": True})
+            CC.StartChat_cmd_string(
+                {"mainApp": True, "enableSndFiles": True, "serviceRequests": False}
+            )
         )
         if r.get("type") not in ("chatStarted", "chatRunning"):
             raise ChatCommandError("error starting chat", r)
@@ -110,6 +119,14 @@ class ChatApi:
         self._started = False
 
     async def close(self) -> None:
+        """Stop the chat and close its store; the store stays open if stopping fails."""
+        # a running controller keeps using the database connections that closing frees
+        await self.stop_chat()
+        if self._recv_executor is not None:
+            # Waits for a receive already in flight (up to wait_us) so the store
+            # never closes underneath one; run off-loop since shutdown blocks.
+            await asyncio.to_thread(self._recv_executor.shutdown, wait=True)
+            self._recv_executor = None
         await core.chat_close_store(self.ctrl)
         self._ctrl = None
         self._started = False
@@ -118,7 +135,14 @@ class ChatApi:
         return await core.chat_send_cmd(self.ctrl, cmd)
 
     async def recv_chat_event(self, wait_us: int = 500_000) -> CEvt.ChatEvent | None:
-        return await core.chat_recv_msg_wait(self.ctrl, wait_us)
+        ctrl = self.ctrl  # raises before touching the executor if close() was called
+        if self._recv_executor is None:
+            # A receive blocks for up to wait_us almost back to back, so it would
+            # otherwise pin one of the default executor's few worker threads.
+            self._recv_executor = ThreadPoolExecutor(
+                max_workers=1, thread_name_prefix="simplex-recv"
+            )
+        return await core.chat_recv_msg_wait(ctrl, wait_us, self._recv_executor)
 
     # ------------------------------------------------------------------ #
     # Address commands
@@ -142,12 +166,7 @@ class ChatApi:
                 return r["contactLink"]
             raise ChatCommandError("error loading user address", r)
         except core.ChatAPIError as e:
-            ce = e.chat_error
-            if (
-                ce is not None
-                and ce.get("type") == "errorStore"
-                and ce.get("storeError", {}).get("type") == "userContactLinkNotFound"
-            ):
+            if e.store_error_type == "userContactLinkNotFound":
                 return None
             raise
 
@@ -159,6 +178,8 @@ class ChatApi:
         )
         if r["type"] == "userProfileUpdated":
             return r["updateSummary"]
+        if r["type"] == "userProfileNoChange":
+            return {"updateSuccesses": 0, "updateFailures": 0, "changedContacts": []}
         raise ChatCommandError("error setting profile address", r)
 
     async def api_set_address_settings(self, user_id: int, settings: T.AddressSettings) -> None:
@@ -193,6 +214,7 @@ class ChatApi:
                     "sendRef": send_ref,
                     "composedMessages": messages,
                     "liveMessage": live_message,
+                    "signMessages": False,
                 }
             )
         )
@@ -235,6 +257,8 @@ class ChatApi:
             )
         )
         if r["type"] == "chatItemUpdated":
+            return r["chatItem"]["chatItem"]
+        if r["type"] == "chatItemNotChanged":
             return r["chatItem"]["chatItem"]
         raise ChatCommandError("error updating chat item", r)
 
@@ -302,6 +326,8 @@ class ChatApi:
         )
         if r["type"] == "rcvFileAccepted":
             return r["chatItem"]
+        if r["type"] == "rcvFileAcceptedSndCancelled":
+            raise ChatCommandError("file cancelled by sender", r)
         raise ChatCommandError("error receiving file", r)
 
     async def api_cancel_file(self, file_id: int) -> None:
@@ -466,7 +492,7 @@ class ChatApi:
     ) -> tuple[T.ConnectionPlan, T.CreatedConnLink]:
         r = await self.send_chat_cmd(
             CC.APIConnectPlan_cmd_string(
-                {"userId": user_id, "connectionLink": connection_link, "resolveKnown": False}
+                {"userId": user_id, "connectTarget": connection_link, "resolveMode": "unknown"}
             )
         )
         if r["type"] == "connectionPlan":
@@ -477,17 +503,18 @@ class ChatApi:
         self,
         user_id: int,
         incognito: bool,
-        prepared_link: T.CreatedConnLink | None = None,
+        prepared_link: T.CreatedConnLink,
     ) -> ConnReqType:
-        args: CC.APIConnect = {"userId": user_id, "incognito": incognito}
-        if prepared_link is not None:
-            args["preparedLink_"] = prepared_link
-        r = await self.send_chat_cmd(CC.APIConnect_cmd_string(args))
+        r = await self.send_chat_cmd(
+            CC.APIConnect_cmd_string(
+                {"userId": user_id, "incognito": incognito, "preparedLink_": prepared_link}
+            )
+        )
         return self._handle_connect_result(r)
 
     async def api_connect_active_user(self, conn_link: str) -> ConnReqType:
         r = await self.send_chat_cmd(
-            CC.Connect_cmd_string({"incognito": False, "connLink_": conn_link})
+            CC.Connect_cmd_string({"incognito": False, "connTarget_": conn_link})
         )
         return self._handle_connect_result(r)
 
@@ -509,8 +536,10 @@ class ChatApi:
         raise ChatCommandError("error accepting contact request", r)
 
     async def api_reject_contact_request(self, contact_req_id: int) -> None:
+        # notify is not rendered into the command string, so the core reads its
+        # own default of off; this only keeps the argument type satisfied.
         r = await self.send_chat_cmd(
-            CC.APIRejectContact_cmd_string({"contactReqId": contact_req_id})
+            CC.APIRejectContact_cmd_string({"contactReqId": contact_req_id, "notify": False})
         )
         if r["type"] != "contactRequestRejected":
             raise ChatCommandError("error rejecting contact request", r)
@@ -606,6 +635,28 @@ class ChatApi:
         if r["type"] != "cmdOk":
             raise ChatCommandError("error setting contact custom data", r)
 
+    async def api_merge_contact_custom_data(
+        self, contact: T.Contact, key: str, value: object | None
+    ) -> None:
+        """Set or drop one key of a contact's custom data, keeping the rest.
+
+        The set command replaces the whole column. `value=None` removes `key`.
+        """
+        await self.api_set_contact_custom_data(
+            contact["contactId"], util.merged_custom_data(contact.get("customData"), key, value)
+        )
+
+    async def api_merge_group_custom_data(
+        self, group: T.GroupInfo, key: str, value: object | None
+    ) -> None:
+        """Set or drop one key of a group's custom data, keeping the rest.
+
+        See `api_merge_contact_custom_data`.
+        """
+        await self.api_set_group_custom_data(
+            group["groupId"], util.merged_custom_data(group.get("customData"), key, value)
+        )
+
     async def api_set_auto_accept_member_contacts(self, user_id: int, on_off: bool) -> None:
         r = await self.send_chat_cmd(
             CC.APISetUserAutoAcceptMemberContacts_cmd_string({"userId": user_id, "onOff": on_off})
@@ -631,17 +682,12 @@ class ChatApi:
                 return r["user"]
             raise ChatCommandError("unexpected response", r)
         except core.ChatAPIError as e:
-            ce = e.chat_error
-            if (
-                ce is not None
-                and ce.get("type") == "error"
-                and ce.get("errorType", {}).get("type") == "noActiveUser"
-            ):
+            if e.error_type == "noActiveUser":
                 return None
             raise
 
     async def api_create_active_user(self, profile: T.Profile | None = None) -> T.User:
-        new_user: T.NewUser = {"pastTimestamp": False, "userChatRelay": False}
+        new_user: T.NewUser = {"pastTimestamp": False, "userChatRelay": False, "clientService": False}
         if profile is not None:
             new_user["profile"] = profile
         r = await self.send_chat_cmd(CC.CreateActiveUser_cmd_string({"newUser": new_user}))
@@ -718,3 +764,13 @@ class ChatApi:
         if r["type"] == "newMemberContactSentInv":
             return r["contact"]
         raise ChatCommandError("error sending member contact invitation", r)
+
+    async def api_accept_member_contact(self, contact_id: int) -> T.Contact:
+        """Accept a direct connection a group member opened with us.
+
+        The core rejects a second accept with "connection already started".
+        """
+        r = await self.send_chat_cmd(f"/_accept member contact @{contact_id}")
+        if r["type"] == "memberContactAccepted":
+            return r["contact"]
+        raise ChatCommandError("error accepting member contact", r)

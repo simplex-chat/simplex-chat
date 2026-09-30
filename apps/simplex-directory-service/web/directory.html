@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimpleX Directory</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      background: #fff;
+      color: #111;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body { background: #061f38; color: #f0f0f0; }
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+      color: #0053d0;
+      margin: 0 0 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      h1 { color: #70f0f9; }
+    }
+
+    p { margin: 0 0 8px; }
+
+    a { color: #0053d0; }
+    @media (prefers-color-scheme: dark) { a { color: #70f0f9; } }
+
+    /* ── Directory entries ── */
+    #directory .entry {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      padding: 16px;
+      word-break: break-word;
+    }
+
+    #directory .entry a {
+      order: -1;
+      object-fit: cover;
+      margin-right: 16px;
+      margin-bottom: 16px;
+    }
+
+    #directory .entry a img {
+      min-width: 104px;
+      min-height: 104px;
+      width: 104px;
+      height: 104px;
+      border-radius: 24px;
+    }
+
+    #directory .entry h2 { margin: 0 0 5px; }
+    #directory .entry p  { margin: 0 0 5px; }
+
+    #directory .entry .secret {
+      filter: blur(5px);
+      cursor: pointer;
+      transition: filter 0.1s ease;
+      user-select: none;
+    }
+    #directory .entry .secret.visible { filter: none; user-select: auto; }
+
+    #directory .entry .read-more {
+      color: #0053d0;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    #directory .entry .read-less { color: darkgray; cursor: pointer; }
+
+    .dark #directory .entry .read-more { color: #70f0f9; }
+
+    #directory .entry .red     { color: #dd0000; }
+    #directory .entry .green   { color: #20bd3d; }
+    #directory .entry .blue    { color: #0053d0; }
+    #directory .entry .cyan    { color: #0ac4d1; }
+    #directory .entry .yellow  { color: #debd00; }
+    #directory .entry .magenta { color: magenta; }
+
+    #directory .entry .small-text { font-size: 0.8em; color: #888; }
+
+    .dark #directory .entry .small-text { color: #999; }
+    .dark #directory .entry .green      { color: #4dda67; }
+    .dark #directory .entry .blue       { color: #00a2ff; }
+    .dark #directory .entry .cyan       { color: #70f0f9; }
+    .dark #directory .entry .yellow     { color: #ffd700; }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+      margin-top: 20px;
+      padding: 10px 0;
+    }
+
+    .pagination button {
+      padding: 8px 12px;
+      border: none;
+      background: transparent;
+      color: #374151;
+      cursor: pointer;
+      border-radius: 50%;
+      font-size: 14px;
+      min-width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+    }
+    .dark .pagination button { color: #70f0f9; }
+    .pagination button:hover  { background: #f3f4f6; }
+    .dark .pagination button:hover { background: #0b2a50; }
+    .pagination button.active { font-weight: bold; color: #0b2a59; }
+    .dark .pagination button.active { color: #70f0f9; }
+    .pagination button.text-btn { border-radius: 20px; min-width: auto; height: 40px; padding: 8px 16px; }
+    .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    @media (max-width: 768px) {
+      .pagination { gap: 2px; padding: 8px 0; }
+      .pagination button { font-size: 12px; min-width: 32px; height: 32px; padding: 4px 8px; }
+      .pagination button.text-btn { padding: 4px 8px; height: 32px; border-radius: 16px; font-size: 12px; }
+    }
+    @media (max-width: 480px) {
+      .pagination button:not(.text-btn):not(.active):not(.neighbor) { display: none; }
+      .pagination button.active, .pagination button.neighbor { display: flex; }
+    }
+
+    /* ── Search ── */
+    .search-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    #search {
+      flex-grow: 1;
+      width: 100%;
+      max-width: 540px;
+      padding: 8px 12px 8px 32px;
+      font-size: 15px;
+      font-family: inherit;
+      border: none;
+      border-radius: 10px;
+      background-color: #fff;
+      color: #000;
+      outline: solid 1px #f2f2ff;
+      transition: background-color 0.2s, box-shadow 0.2s;
+      background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGcgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZT0iIzg4ODg4OCI+CjxjaXJjbGUgY3g9IjEwLjUiIGN5PSIxMC41IiByPSI3LjUiIC8+CjxsaW5lIHgxPSIxNiIgeTE9IjE2IiB4Mj0iMjEiIHkyPSIyMSIgLz4KPC9nPgo8L3N2Zz4=');
+      background-position: 8px center;
+      background-repeat: no-repeat;
+      background-size: 18px;
+    }
+    #search::placeholder { color: #8e8e93; }
+
+    .dark #search {
+      background-color: #0b2a50;
+      color: #fff;
+      background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGcgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZT0iI2JiYmJiYiI+CjxjaXJjbGUgY3g9IjEwLjUiIGN5PSIxMC41IiByPSI3LjUiIC8+CjxsaW5lIHgxPSIxNiIgeTE9IjE2IiB4Mj0iMjEiIHkyPSIyMSIgLz4KPC9nPgo8L3N2Zz4=');
+      outline: none;
+    }
+    .dark #search::placeholder { color: #8e8e93; }
+
+    #top-pagination { margin-bottom: 0; }
+  </style>
+</head>
+<body>
+  <script>
+    // Mirror system dark-mode preference into the .dark class used by directory.js
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.body.classList.add('dark');
+    }
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      document.body.classList.toggle('dark', e.matches);
+    });
+  </script>
+
+  <div class="container">
+    <h1>SimpleX Directory</h1>
+    <p>Communities you can join via <a href="https://simplex.chat/downloads" target="_blank">SimpleX Chat</a>.</p>
+    <p>Also available as a <a href="https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok" target="_blank">SimpleX chat bot</a>.</p>
+    <div class="search-container">
+      <input id="search" autocomplete="off">
+      <div id="top-pagination" class="pagination">
+        <button class="text-btn live">Active</button>
+        <button class="text-btn new">New</button>
+        <button class="text-btn top">All</button>
+      </div>
+    </div>
+    <div id="directory" style="min-height: 200px;"></div>
+    <div id="bottom-pagination" class="pagination"></div>
+  </div>
+
+  <script>
+    const isMobile = {
+      Android: () => navigator.userAgent.match(/Android/i),
+      iOS: () => navigator.userAgent.match(/iPhone|iPad|iPod/i),
+      any: () => navigator.userAgent.match(/Android|iPhone|iPad|iPod/i)
+    };
+  </script>
+  <script src="directory.js"></script>
+</body>
+</html>

@@ -194,11 +194,13 @@ toTypeInfo tr =
     primitiveToLower st@(ST t ps) = let t' = fstToLower t in if t' `elem` primitiveTypes then ST t' ps else st
     stringTypes =
       [ "AConnectionLink",
+        "AConnectTarget",
         "AProtocolType",
         "AgentConnId",
         "AgentInvId",
         "AgentRcvFileId",
         "AgentSndFileId",
+        "AppVersion",
         "BadgeMasterKey",
         "B64UrlByteString",
         "BBSProof",
@@ -215,11 +217,14 @@ toTypeInfo tr =
         "Text",
         "MREmojiChar",
         "PrivateKey",
+        "ProofPresHeader",
         "PublicKey",
         "ProtocolServer",
+        "RCSignedInvitation",
         "SbKey",
         "SharedMsgId",
         "Signature",
+        "StrJSON",
         "TransportHost",
         "UIColor",
         "UserPwd",
@@ -237,7 +242,8 @@ toTypeInfo tr =
       [ "FullDeleteGroupPreference",
         "ReactionsGroupPreference",
         "ReportsGroupPreference",
-        "HistoryGroupPreference"
+        "HistoryGroupPreference",
+        "SignMessagesGroupPreference"
       ]
     roleGroupPrefTypes =
       [ "DirectMessagesGroupPreference",

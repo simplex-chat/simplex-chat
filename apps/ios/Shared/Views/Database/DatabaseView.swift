@@ -252,6 +252,11 @@ struct DatabaseView: View {
             runChatToggleView()
         }
         .modifier(ThemedBackground(grouped: true))
+        .overlay {
+            if progressIndicator {
+                ProgressView().scaleEffect(2)
+            }
+        }
     }
 
     private func databaseAlert(_ alertItem: DatabaseAlert) -> Alert {

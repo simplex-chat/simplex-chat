@@ -11,22 +11,32 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Logger.Simple
 import Control.Monad
+import Control.Monad.Except (runExceptT)
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
+import Data.ByteString.Builder (toLazyByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
+import Data.Word (Word32)
 import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), versionNumber)
+import Simplex.Chat.Files (safeFileNameStr)
 import Simplex.Chat.Library.Commands (parseChatCommand)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
-import Simplex.Chat.Remote (remoteFilesFolder)
+import Simplex.Chat.Remote (remoteFilesFolder, validRemoteFileName)
+import Simplex.Chat.Remote.Protocol (encryptEncodeHTTP2Body, parseDecryptHTTP2Body, remoteStoreFile)
 import Simplex.Chat.Remote.Types
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
+import Simplex.Messaging.Encoding (smpEncode)
 import Simplex.Messaging.Encoding.String (strEncode)
+import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Transport (TSbChainKeys (..))
+import Simplex.Messaging.Transport.HTTP2 (HTTP2BodyChunk (..), getHTTP2Body)
 import Simplex.Messaging.Util
 import Simplex.RemoteControl.Types (RCCtrlAddress (..))
-import System.FilePath ((</>))
+import System.FilePath (takeFileName, (</>))
 import Test.Hspec hiding (it)
 import UnliftIO
 import UnliftIO.Concurrent
@@ -40,10 +50,61 @@ remoteTests = describe "Remote" $ do
         `shouldSatisfy` \case
           Right (StartRemoteHost Nothing (Just (RCCtrlAddress _ "Ethernet 2")) (Just 12345)) -> True
           _ -> False
+  describe "stored file name" $ do
+    it "rejects names with directory components" $ \_ ->
+      filter validRemoteFileName ["../x", "../../etc/passwd", "/etc/cron.d/x", "a/b", "x/", "", ".", ".."]
+        `shouldBe` []
+    it "accepts bare file names" $ \_ ->
+      filter (not . validRemoteFileName) ["test.pdf", "test_1.pdf", ".hidden", "a b.tar.gz"]
+        `shouldBe` []
+    it "sanitizes any name to a real file name" $ \_ ->
+      filter (not . sanitized) fileNames `shouldBe` []
+    it "sanitizes to a name with no directory components" $ \_ ->
+      filter (not . bareName) fileNames `shouldBe` []
+  describe "skipped keys" $ do
+    it "keeps the most recent skipped keys" $ \_ -> do
+      (_, pk) <- atomically . C.generateKeyPair =<< C.newRandom
+      let (ck, _) = C.sbcInit "" ("secret" :: B.ByteString)
+      sndCounter <- newTVarIO 0
+      rcvCounter <- newTVarIO 0
+      sndKey <- newTVarIO ck
+      rcvKey <- newTVarIO ck
+      skippedKeys <- newTVarIO M.empty
+      let rc = RemoteCrypto {sessionCode = "", sndCounter, rcvCounter, chainKeys = TSbChainKeys {sndKey, rcvKey}, skippedKeys, signatures = RSSign pk pk, compression = False}
+          receive corrId = eitherToMaybe <$> atomically (getRemoteRcvKeys rc corrId)
+      sent <- replicateM 1280 $ atomically $ getRemoteSndKeys rc
+      let sentKeys = M.fromList [(corrId, (cmdKN, fileKN)) | (corrId, cmdKN, fileKN) <- sent]
+      forM_ [256, 512 .. 1280] $ \corrId -> receive corrId `shouldReturn` M.lookup corrId sentKeys
+      M.size <$> readTVarIO skippedKeys `shouldReturn` 1024
+      receive 251 `shouldReturn` Nothing
+      receive 252 `shouldReturn` M.lookup 252 sentKeys
+  describe "body size limit" $ do
+    it "rejects encrypted body above limit without reading it" $ \_ -> do
+      rc <- testRemoteCrypto
+      chunks <- newIORef [smpEncode (1 :: Word32, 1025 :: Word32), "body"]
+      r <- parseDecryptChunks 1024 rc chunks
+      r `shouldSatisfy` \case
+        Left RPEInvalidSize -> True
+        _ -> False
+      readIORef chunks `shouldReturn` ["body"]
+    it "rejects decompressed body above limit" $ \_ -> do
+      rc <- testRemoteCrypto
+      (corrId, cmdKN, _) <- atomically $ getRemoteSndKeys rc
+      Right encBody <- runExceptT $ encryptEncodeHTTP2Body corrId cmdKN rc $ LB.replicate 1025 'a'
+      chunks <- newIORef $ LB.toChunks $ toLazyByteString encBody
+      r <- parseDecryptChunks 1024 rc chunks
+      r `shouldSatisfy` \case
+        Left (RPEInvalidBody _) -> True
+        _ -> False
   xdescribe "No compression" $ aroundWith (. ((False, False),)) runRemoteTests
   xdescribe "Mobile offers compression" $ aroundWith (. ((True, False),)) runRemoteTests
   xdescribe "Desktop offers compression" $ aroundWith (. ((False, True),)) runRemoteTests
   describe "With compression" $ aroundWith (. ((True, True),)) runRemoteTests
+  where
+    fileNames :: [FilePath]
+    fileNames = ["", ".", "..", "...", "../x", "../../etc/passwd", "/etc/cron.d/x", "a/b", "x/", "test.pdf", ".hidden", "a b.tar.gz"]
+    sanitized n = let n' = safeFileNameStr n in n' /= "" && n' /= "." && n' /= ".."
+    bareName n = let n' = safeFileNameStr n in n' == takeFileName n'
 
 runRemoteTests :: SpecWith ((Bool, Bool), TestParams)
 runRemoteTests = do
@@ -243,8 +304,9 @@ remoteStoreFileTest =
       contactBob desktop bob
 
       rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
-      desktopHostStore <- case M.lookup (RHId 1) rhs of
-        Just (_, RHSessionConnected {storePath}) -> pure $ desktopHostFiles </> storePath </> remoteFilesFolder
+      (rhClient, desktopHostStore) <- case M.lookup (RHId 1) rhs of
+        Just (_, RHSessionConnected {rhClient, storePath}) ->
+          pure (rhClient, desktopHostFiles </> storePath </> remoteFilesFolder)
         _ -> fail "Host session 1 should be started"
       desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
       desktop <## "file test.pdf stored on remote host 1"
@@ -260,6 +322,17 @@ remoteStoreFileTest =
       Just cfArgs@(CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine desktop
       chatReadFile (mobileFiles </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
       chatReadFile (desktopHostStore </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
+
+      -- the host rejects a traversal name before draining the attachment; only calling the protocol
+      -- directly can put such a name on the wire, as /store remote file sanitizes it controller-side
+      runExceptT (remoteStoreFile rhClient "tests/fixtures/test.pdf" "../x") >>= \case
+        Left (RPEInvalidBody _) -> pure ()
+        r -> fail $ "expected RPEInvalidBody, got " <> show r
+      doesFileExist "./tests/tmp/x" `shouldReturn` False
+      -- the undrained attachment did not break the session
+      desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
+      desktop <## "file test_3.pdf stored on remote host 1"
+      B.readFile (mobileFiles </> "test_3.pdf") `shouldReturn` src
 
       removeFile (desktopHostStore </> "test_1.pdf")
       removeFile (desktopHostStore </> "test_2.pdf")
@@ -634,3 +707,28 @@ eventually retries action =
     Left err | retries == 0 -> throwIO err
     Left _ -> eventually (retries - 1) action
     Right r -> pure r
+
+newtype TestBody = TestBody (IORef [B.ByteString])
+
+instance HTTP2BodyChunk TestBody where
+  getBodyChunk (TestBody chunks) = atomicModifyIORef' chunks $ \case
+    c : cs -> (cs, c)
+    [] -> ([], "")
+  getBodySize _ = Nothing
+
+testRemoteCrypto :: IO RemoteCrypto
+testRemoteCrypto = do
+  drg <- C.newRandom
+  (_, idPrivKey) <- atomically $ C.generateKeyPair drg
+  (_, sessPrivKey) <- atomically $ C.generateKeyPair drg
+  let (chainKey, _) = C.sbcInit "" ("secret" :: B.ByteString)
+  chainKeys <- TSbChainKeys <$> newTVarIO chainKey <*> newTVarIO chainKey
+  sndCounter <- newTVarIO 0
+  rcvCounter <- newTVarIO 0
+  skippedKeys <- TM.emptyIO
+  pure RemoteCrypto {sessionCode = "", sndCounter, rcvCounter, chainKeys, skippedKeys, signatures = RSSign {idPrivKey, sessPrivKey}, compression = True}
+
+parseDecryptChunks :: Int -> RemoteCrypto -> IORef [B.ByteString] -> IO (Either RemoteProtocolError ())
+parseDecryptChunks maxSize rc chunks = do
+  body <- getHTTP2Body (TestBody chunks) 0
+  runExceptT . void $ parseDecryptHTTP2Body maxSize rc (TestBody chunks) body

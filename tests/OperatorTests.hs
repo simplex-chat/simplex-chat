@@ -23,7 +23,7 @@ import Simplex.Chat.Operators.Presets
 import Simplex.Chat.Protocol (RelayProfile (..), mkRelayProfile)
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
-import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..), allRoles)
+import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol
@@ -33,14 +33,15 @@ operatorTests :: Spec
 operatorTests = describe "managing server operators" $ do
   validateServersTest
   updatedServersTest
+  perServerRolesTest
 
 validateServersTest :: Spec
 validateServersTest = describe "validate user servers" $ do
   it "should pass valid user servers" $ validateUserServers [valid] [] `shouldBe` ([], [])
   it "should fail without servers" $ do
-    validateUserServers [invalidNoServers] [] `shouldBe` ([USENoServers aSMP Nothing], [])
-    validateUserServers [invalidDisabled] [] `shouldBe` ([USENoServers aSMP Nothing], [])
-    validateUserServers [invalidDisabledOp] [] `shouldBe` ([USENoServers aSMP Nothing, USENoServers aXFTP Nothing], [USWNoChatRelays Nothing])
+    validateUserServers [invalidNoServers] [] `shouldBe` ([USENoServers aSMP Nothing], [USWNoNamesServers Nothing])
+    validateUserServers [invalidDisabled] [] `shouldBe` ([USENoServers aSMP Nothing], [USWNoNamesServers Nothing])
+    validateUserServers [invalidDisabledOp] [] `shouldBe` ([USENoServers aSMP Nothing, USENoServers aXFTP Nothing], [USWNoChatRelays Nothing, USWNoNamesServers Nothing])
   it "should fail without servers with storage role" $ do
     validateUserServers [invalidNoStorage] [] `shouldBe` ([USEStorageMissing aSMP Nothing], [])
   it "should fail with duplicate host" $ do
@@ -121,6 +122,84 @@ updatedServersTest = describe "validate user servers" $ do
     relayName' (AUCR _ UserChatRelay {relayProfile = RelayProfile {displayName}}) = displayName
     PresetServers {operators} = presetServers defaultChatConfig
     customRelayAddr = either error id $ strDecode "https://relay.example.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"
+
+perServerRolesTest :: Spec
+perServerRolesTest = describe "per-server roles" $ do
+  describe "agentServerCfgs resolution" $ do
+    it "self-hosted server keeps its per-server roles" $
+      case agentServerCfgs SPSMP opDomains [selfHostedSMP (ServerRolesOverride (Just True) (Just False) (Just True))] of
+        [ServerCfg {operator, roles}] -> do
+          operator `shouldBe` Nothing
+          rolesTuple roles `shouldBe` (True, False, True)
+        cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
+    it "self-hosted server without roles falls back to default roles" $
+      case agentServerCfgs SPSMP opDomains [selfHostedSMP emptyServerRolesOverride] of
+        [ServerCfg {operator, roles}] -> do
+          operator `shouldBe` Nothing
+          rolesTuple roles `shouldBe` (True, True, False)
+        cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
+    it "self-hosted partial override keeps defaults for unset roles" $
+      case agentServerCfgs SPSMP opDomains [selfHostedSMP (ServerRolesOverride Nothing Nothing (Just True))] of
+        [ServerCfg {operator, roles}] -> do
+          operator `shouldBe` Nothing
+          rolesTuple roles `shouldBe` (True, True, True)
+        cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
+    it "self-hosted explicit No overrides a default-yes role" $
+      case agentServerCfgs SPSMP opDomains [selfHostedSMP (ServerRolesOverride (Just False) Nothing Nothing)] of
+        [ServerCfg {operator, roles}] -> do
+          operator `shouldBe` Nothing
+          rolesTuple roles `shouldBe` (False, True, False)
+        cfgs -> expectationFailure $ "expected one self-hosted ServerCfg, got: " <> show cfgs
+    it "operator-matched server without override inherits operator roles" $
+      -- operator roles are all on; no override -> all inherited, including names
+      case agentServerCfgs SPSMP opDomains [opMatchedSMP emptyServerRolesOverride] of
+        [ServerCfg {operator, roles}] -> do
+          operator `shouldBe` Just 1
+          rolesTuple roles `shouldBe` (True, True, True)
+        cfgs -> expectationFailure $ "expected one operator-matched ServerCfg, got: " <> show cfgs
+    it "operator-matched server applies its override over operator roles" $
+      -- operator roles are all on; override turns storage/names off, proxy inherits (on)
+      case agentServerCfgs SPSMP opDomains [opMatchedSMP (ServerRolesOverride (Just False) Nothing (Just False))] of
+        [ServerCfg {operator, roles}] -> do
+          operator `shouldBe` Just 1
+          rolesTuple roles `shouldBe` (False, True, False)
+        cfgs -> expectationFailure $ "expected one operator-matched ServerCfg, got: " <> show cfgs
+    it "two self-hosted servers resolve their three roles independently" $
+      -- agentServerCfgs preserves input order
+      let a = (newUserServer "smp://abcd@self.example.com" :: NewUserServer 'PSMP) {roles = ServerRolesOverride (Just False) (Just True) (Just True)}
+          b = (newUserServer "smp://abcd@self2.example.com" :: NewUserServer 'PSMP) {roles = ServerRolesOverride (Just True) (Just False) Nothing}
+       in case agentServerCfgs SPSMP opDomains [a, b] of
+            [ServerCfg {operator = opA, roles = rolesA}, ServerCfg {operator = opB, roles = rolesB}] -> do
+              (opA, opB) `shouldBe` (Nothing, Nothing)
+              rolesTuple rolesA `shouldBe` (False, True, True)
+              rolesTuple rolesB `shouldBe` (True, False, False)
+            cfgs -> expectationFailure $ "expected two self-hosted ServerCfgs, got: " <> show cfgs
+  describe "validateUserServers per-server names coverage" $ do
+    it "self-hosted-only user without names servers warns USWNoNamesServers" $ do
+      let (_errs, warns) = validateUserServers [selfHostedUser emptyServerRolesOverride] []
+      warns `shouldSatisfy` elem (USWNoNamesServers Nothing)
+    it "self-hosted user with a names server does not warn USWNoNamesServers" $ do
+      let (_errs, warns) = validateUserServers [selfHostedUser (ServerRolesOverride Nothing Nothing (Just True))] []
+      warns `shouldSatisfy` notElem (USWNoNamesServers Nothing)
+  where
+    testOp = operatorSimpleXChat {operatorId = DBEntityId 1}
+    opDomains = operatorDomains [testOp]
+    -- host matches no operator domain -> self-hosted
+    selfHostedSMP :: ServerRolesOverride -> NewUserServer 'PSMP
+    selfHostedSMP r = (newUserServer "smp://abcd@self.example.com" :: NewUserServer 'PSMP) {roles = r}
+    -- host matches operator domain simplex.im
+    opMatchedSMP :: ServerRolesOverride -> NewUserServer 'PSMP
+    opMatchedSMP r = (newUserServer "smp://abcd@smp8.simplex.im" :: NewUserServer 'PSMP) {roles = r}
+    selfHostedUser :: ServerRolesOverride -> UpdatedUserOperatorServers
+    selfHostedUser r =
+      UpdatedUserOperatorServers
+        { operator = Nothing,
+          smpServers = [AUS SDBNew $ selfHostedSMP r],
+          xftpServers = [],
+          chatRelays = []
+        }
+    rolesTuple :: ServerRoles -> (Bool, Bool, Bool)
+    rolesTuple ServerRoles {storage, proxy, names} = (storage, proxy, names)
 
 deriving instance Eq User
 

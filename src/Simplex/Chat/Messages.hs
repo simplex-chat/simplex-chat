@@ -55,7 +55,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, sumTypeJSON)
-import Simplex.Messaging.Protocol (BlockingInfo, MsgBody)
+import Simplex.Messaging.Protocol (BlockingInfo, MsgBody, XFTPServer)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection
@@ -417,6 +417,13 @@ toChatInfo = \case
   CDLocalSnd l -> LocalChat l
   CDLocalRcv l -> LocalChat l
 
+signMessagesRequired :: ChatDirection c d -> Bool
+signMessagesRequired = \case
+  CDChannelRcv g _ -> groupFeatureAllowed SGFSignMessages g
+  CDGroupRcv g _ _ -> groupFeatureAllowed SGFSignMessages g
+  CDGroupSnd g _ -> groupFeatureAllowed SGFSignMessages g
+  _ -> False
+
 contactChatDeleted :: ChatDirection c d -> Bool
 contactChatDeleted = \case
   CDDirectSnd Contact {chatDeleted} -> chatDeleted
@@ -517,7 +524,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     editable :: Bool,
     forwardedByMember :: Maybe GroupMemberId,
     showGroupAsSender :: ShowGroupAsSender,
-    msgSigned :: Maybe MsgSigStatus,
+    msgVerified :: Maybe MsgVerified,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -525,12 +532,12 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 
 type ShowGroupAsSender = Bool
 
-mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgSigStatus -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgSigned createdAt updatedAt =
+mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> Bool -> Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> Bool -> Maybe MsgVerified -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender msgVerified createdAt updatedAt =
   let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
       hasLink = BoolDef hasLink_
-   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, hasLink, deletable, editable, forwardedByMember, showGroupAsSender, msgSigned, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, userMention, hasLink, deletable, editable, forwardedByMember, showGroupAsSender, msgVerified, createdAt, updatedAt}
 
 deletable' :: forall c d. ChatTypeI c => CIContent d -> Maybe (CIDeleted c) -> UTCTime -> NominalDiffTime -> UTCTime -> Bool
 deletable' itemContent itemDeleted itemTs allowedInterval currentTs =
@@ -561,7 +568,7 @@ dummyMeta itemId ts itemText =
       editable = False,
       forwardedByMember = Nothing,
       showGroupAsSender = False,
-      msgSigned = Nothing,
+      msgVerified = Nothing,
       createdAt = ts,
       updatedAt = ts
     }
@@ -680,7 +687,9 @@ data CIFile (d :: MsgDirection) = CIFile
     fileSize :: Integer,
     fileSource :: Maybe CryptoFile, -- local file path with optional key and nonce
     fileStatus :: CIFileStatus d,
-    fileProtocol :: FileProtocol
+    fileProtocol :: FileProtocol,
+    fileExpires :: Maybe UTCTime,
+    fileProhibited :: Maybe FileProhibited
   }
   deriving (Show)
 
@@ -1172,6 +1181,8 @@ data RcvMessage = RcvMessage
     chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
     msgSigned :: Maybe MsgSigStatus,
+    signedMsg_ :: Maybe SignedMsg,
+    signedByGMId_ :: Maybe GroupMemberId,
     forwardedByMember :: Maybe GroupMemberId
   }
 
@@ -1310,13 +1321,15 @@ itemDeletedTs = \case
 data CIForwardedFrom
   = CIFFUnknown
   | CIFFContact {chatName :: Text, msgDir :: MsgDirection, contactId :: Maybe ContactId, chatItemId :: Maybe ChatItemId}
-  | CIFFGroup {chatName :: Text, msgDir :: MsgDirection, groupId :: Maybe GroupId, chatItemId :: Maybe ChatItemId}
+  | CIFFGroup {chatName :: Text, msgDir :: MsgDirection, groupId :: Maybe GroupId, chatItemId :: Maybe ChatItemId, memberId :: Maybe MemberId, sharedMsgId_ :: Maybe SharedMsgId, groupType :: Maybe GroupType}
+  | CIFFGroupLink {chatName :: Text, msgDir :: MsgDirection, groupLink :: ShortLinkContact, publicGroupId :: B64UrlByteString, memberId :: Maybe MemberId, sharedMsgId :: SharedMsgId, groupType :: Maybe GroupType}
   deriving (Show)
 
 data CIForwardedFromTag
   = CIFFUnknown_
   | CIFFContact_
   | CIFFGroup_
+  | CIFFGroupLink_
 
 instance FromField CIForwardedFromTag where fromField = fromTextField_ textDecode
 
@@ -1327,16 +1340,19 @@ instance TextEncoding CIForwardedFromTag where
     "unknown" -> Just CIFFUnknown_
     "contact" -> Just CIFFContact_
     "group" -> Just CIFFGroup_
+    "groupLink" -> Just CIFFGroupLink_
     _ -> Nothing
   textEncode = \case
     CIFFUnknown_ -> "unknown"
     CIFFContact_ -> "contact"
     CIFFGroup_ -> "group"
+    CIFFGroupLink_ -> "groupLink"
 
 data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion],
     memberDeliveryStatuses :: Maybe (NonEmpty MemberDeliveryStatus),
-    forwardedFromChatItem :: Maybe AChatItem
+    forwardedFromChatItem :: Maybe AChatItem,
+    fileXftpServers :: [XFTPServer]
   }
   deriving (Show)
 

@@ -211,7 +211,7 @@ markdownP = mconcat <$> A.many' fragmentP
         Just c -> case c of
           ' ' -> unmarked <$> A.takeWhile (== ' ')
           '+' -> phoneP <|> wordP
-          '*' -> formattedP '*' Bold
+          '*' -> boldP <|> formattedP '*' Bold
           '_' -> formattedP '_' Italic
           '~' -> formattedP '~' StrikeThrough
           '`' -> formattedP '`' Snippet
@@ -233,6 +233,12 @@ markdownP = mconcat <$> A.many' fragmentP
       | T.null s || T.head s == ' ' || T.last s == ' ' =
           unmarked $ c `T.cons` s `T.snoc` c
       | otherwise = markdown f s
+    boldP :: Parser Markdown
+    boldP = do
+      s <- A.string "**" *> A.takeTill (== '*') <* A.string "**"
+      if T.null s || T.head s == ' ' || T.last s == ' '
+        then fail "not bold"
+        else pure $ markdown Bold s
     secretP :: Parser Markdown
     secretP = secret <$?> ((,,) <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile1 (== '#'))
     secret :: (Text, Text, Text) -> Either String Markdown
@@ -349,7 +355,7 @@ markdownP = mconcat <$> A.many' fragmentP
     simplexUriFormat :: Maybe Text -> AConnectionLink -> Format
     simplexUriFormat showText = \case
       ACL m (CLFull cReq) -> case cReq of
-        CRContactUri crData -> SimplexLink showText (linkType' crData) cLink $ uriHosts crData
+        CRContactUri crData _ -> SimplexLink showText (linkType' crData) cLink $ uriHosts crData
         CRInvitationUri crData _ -> SimplexLink showText XLInvitation cLink $ uriHosts crData
         where
           cLink = ACL m $ CLFull $ simplexConnReqUri cReq
@@ -512,11 +518,11 @@ displayNameTextP_ = (,"") <$> quoted '\'' <|> splitPunctuation <$> takeNameTill 
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
 
 commandTextP :: Parser (Text, Text)
-commandTextP = do
-  (cmd, punct) <- displayNameTextP_
-  case T.words cmd of
-    (keyword : _) | T.all (\c -> isAlpha c || isDigit c || c == '_') keyword -> pure (cmd, punct)
-    _ -> fail "invalid command keyword"
+commandTextP = commandText <$> displayNameTextP_
+  where
+    commandText (cmd, punct)
+      | T.null cmd = (punct, "")
+      | otherwise = (cmd, punct)
 
 splitPunctuation :: Text -> (Text, Text)
 splitPunctuation s = (T.dropWhileEnd isPunctuation s, T.takeWhileEnd isPunctuation s)

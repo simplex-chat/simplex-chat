@@ -15,6 +15,7 @@ struct VerifyCodeView: View {
     @State var connectionCode: String?
     @State var connectionVerified: Bool
     var verify: (String?) -> (Bool, String)?
+    var verificationText: LocalizedStringKey? = nil
     @State private var showCodeError = false
 
     var body: some View {
@@ -44,7 +45,7 @@ struct VerifyCodeView: View {
                     Text("\(displayName) is not verified").textCase(.none)
                 }
             } footer: {
-                Text("To verify end-to-end encryption with your contact compare (or scan) the code on your devices.")
+                Text(verificationText ?? "To verify end-to-end encryption with your contact compare (or scan) the code on your devices.")
             }
 
             Section {

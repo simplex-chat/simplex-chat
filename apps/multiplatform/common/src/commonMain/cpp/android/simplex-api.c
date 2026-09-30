@@ -67,6 +67,7 @@ extern char *chat_parse_server(const char *str);
 extern char *chat_parse_uri(const char *str, const int safe);
 extern char *chat_password_hash(const char *pwd, const char *salt);
 extern char *chat_valid_name(const char *name);
+extern char *chat_parse_badge_code(const char *code);
 extern int chat_json_length(const char *str);
 extern char *chat_write_file(chat_ctrl ctrl, const char *path, char *ptr, int length);
 extern char *chat_read_file(const char *path, const char *key, const char *nonce);
@@ -170,6 +171,14 @@ Java_chat_simplex_common_platform_CoreKt_chatValidName(JNIEnv *env, jclass clazz
     const char *_name = (*env)->GetStringUTFChars(env, name, JNI_FALSE);
     jstring res = (*env)->NewStringUTF(env, chat_valid_name(_name));
     (*env)->ReleaseStringUTFChars(env, name, _name);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatParseBadgeCode(JNIEnv *env, jclass clazz, jstring code) {
+    const char *_code = (*env)->GetStringUTFChars(env, code, JNI_FALSE);
+    jstring res = (*env)->NewStringUTF(env, chat_parse_badge_code(_code));
+    (*env)->ReleaseStringUTFChars(env, code, _code);
     return res;
 }
 

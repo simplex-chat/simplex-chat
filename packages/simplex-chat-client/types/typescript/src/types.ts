@@ -66,6 +66,7 @@ export type AgentErrorType =
   | AgentErrorType.NTF
   | AgentErrorType.XFTP
   | AgentErrorType.FILE
+  | AgentErrorType.NO_NAME_SERVERS
   | AgentErrorType.PROXY
   | AgentErrorType.RCP
   | AgentErrorType.BROKER
@@ -84,6 +85,7 @@ export namespace AgentErrorType {
     | "NTF"
     | "XFTP"
     | "FILE"
+    | "NO_NAME_SERVERS"
     | "PROXY"
     | "RCP"
     | "BROKER"
@@ -136,6 +138,10 @@ export namespace AgentErrorType {
     fileErr: FileErrorType
   }
 
+  export interface NO_NAME_SERVERS extends Interface {
+    type: "NO_NAME_SERVERS"
+  }
+
   export interface PROXY extends Interface {
     type: "PROXY"
     proxyServer: string
@@ -182,13 +188,55 @@ export namespace AgentErrorType {
   }
 }
 
+export type AgentServiceError = 
+  | AgentServiceError.Rejected
+  | AgentServiceError.Timeout
+  | AgentServiceError.NoPendingRequest
+  | AgentServiceError.NotDRAddress
+  | AgentServiceError.BadSignature
+
+export namespace AgentServiceError {
+  export type Tag = "rejected" | "timeout" | "noPendingRequest" | "notDRAddress" | "badSignature"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Rejected extends Interface {
+    type: "rejected"
+    rejectReason: string
+  }
+
+  export interface Timeout extends Interface {
+    type: "timeout"
+  }
+
+  export interface NoPendingRequest extends Interface {
+    type: "noPendingRequest"
+  }
+
+  export interface NotDRAddress extends Interface {
+    type: "notDRAddress"
+  }
+
+  export interface BadSignature extends Interface {
+    type: "badSignature"
+  }
+}
+// Remote controller app version range (min and max as version strings).
+
+export interface AppVersionRange {
+  minVersion: string
+  maxVersion: string
+}
+
 export interface AutoAccept {
   acceptIncognito: boolean
 }
 
 export interface BadgeInfo {
   badgeType: BadgeType
-  badgeExpiry?: string // ISO-8601 timestamp
+  badgeExpiry: string // ISO-8601 timestamp
   badgeExtra: string
 }
 
@@ -197,6 +245,80 @@ export interface BadgeProof {
   presHeader: string
   proof: string
   badgeInfo: BadgeInfo
+}
+
+export type BadgeRedeemError = 
+  | BadgeRedeemError.InvalidCode
+  | BadgeRedeemError.ServiceNotConfigured
+  | BadgeRedeemError.BadgeActive
+  | BadgeRedeemError.ServiceError
+  | BadgeRedeemError.InvalidResponse
+  | BadgeRedeemError.UnknownKeyIndex
+  | BadgeRedeemError.CredentialNotVerified
+
+export namespace BadgeRedeemError {
+  export type Tag = 
+    | "invalidCode"
+    | "serviceNotConfigured"
+    | "badgeActive"
+    | "serviceError"
+    | "invalidResponse"
+    | "unknownKeyIndex"
+    | "credentialNotVerified"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface InvalidCode extends Interface {
+    type: "invalidCode"
+  }
+
+  export interface ServiceNotConfigured extends Interface {
+    type: "serviceNotConfigured"
+  }
+
+  export interface BadgeActive extends Interface {
+    type: "badgeActive"
+  }
+
+  export interface ServiceError extends Interface {
+    type: "serviceError"
+    serviceError: BadgeServiceErrorCode
+  }
+
+  export interface InvalidResponse extends Interface {
+    type: "invalidResponse"
+    message: string
+  }
+
+  export interface UnknownKeyIndex extends Interface {
+    type: "unknownKeyIndex"
+  }
+
+  export interface CredentialNotVerified extends Interface {
+    type: "credentialNotVerified"
+  }
+}
+
+export enum BadgeServiceErrorCode {
+  Bad_request = "bad_request",
+  Unsupported_version = "unsupported_version",
+  Unknown_purchase_key = "unknown_purchase_key",
+  Unknown_offer_id = "unknown_offer_id",
+  Offer_disabled = "offer_disabled",
+  Offer_mismatch = "offer_mismatch",
+  Product_unavailable = "product_unavailable",
+  Payment_not_entitled = "payment_not_entitled",
+  Payment_pending = "payment_pending",
+  Provider_unavailable = "provider_unavailable",
+  Rate_limited = "rate_limited",
+  Code_invalid = "code_invalid",
+  Code_used = "code_used",
+  Code_expired = "code_expired",
+  Receipt_invalid = "receipt_invalid",
+  Receipt_used = "receipt_used",
+  Internal = "internal",
 }
 
 export enum BadgeStatus {
@@ -283,6 +405,7 @@ export interface BusinessChatInfo {
   chatType: BusinessChatType
   businessId: string
   customerId: string
+  businessDomain?: SimplexDomainClaim
 }
 
 export enum BusinessChatType {
@@ -649,6 +772,8 @@ export interface CIFile {
   fileSource?: CryptoFile
   fileStatus: CIFileStatus
   fileProtocol: FileProtocol
+  fileExpires?: string // ISO-8601 timestamp
+  fileProhibited?: FileProhibited
 }
 
 export type CIFileStatus = 
@@ -760,10 +885,14 @@ export namespace CIFileStatus {
   }
 }
 
-export type CIForwardedFrom = CIForwardedFrom.Unknown | CIForwardedFrom.Contact | CIForwardedFrom.Group
+export type CIForwardedFrom = 
+  | CIForwardedFrom.Unknown
+  | CIForwardedFrom.Contact
+  | CIForwardedFrom.Group
+  | CIForwardedFrom.GroupLink
 
 export namespace CIForwardedFrom {
-  export type Tag = "unknown" | "contact" | "group"
+  export type Tag = "unknown" | "contact" | "group" | "groupLink"
 
   interface Interface {
     type: Tag
@@ -787,6 +916,20 @@ export namespace CIForwardedFrom {
     msgDir: MsgDirection
     groupId?: number // int64
     chatItemId?: number // int64
+    memberId?: string
+    sharedMsgId_?: string
+    groupType?: GroupType
+  }
+
+  export interface GroupLink extends Interface {
+    type: "groupLink"
+    chatName: string
+    msgDir: MsgDirection
+    groupLink: string
+    publicGroupId: string
+    memberId?: string
+    sharedMsgId: string
+    groupType?: GroupType
   }
 }
 
@@ -835,7 +978,7 @@ export interface CIMeta {
   editable: boolean
   forwardedByMember?: number // int64
   showGroupAsSender: boolean
-  msgSigned?: MsgSigStatus
+  msgVerified?: MsgVerified
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
 }
@@ -1036,6 +1179,8 @@ export type ChatErrorType =
   | ChatErrorType.ChatNotStopped
   | ChatErrorType.ChatStoreChanged
   | ChatErrorType.InvalidConnReq
+  | ChatErrorType.SimplexDomainNotReady
+  | ChatErrorType.NotResolvedLocally
   | ChatErrorType.UnsupportedConnReq
   | ChatErrorType.ConnReqMessageProhibited
   | ChatErrorType.ContactNotReady
@@ -1082,6 +1227,7 @@ export type ChatErrorType =
   | ChatErrorType.AgentVersion
   | ChatErrorType.AgentNoSubResult
   | ChatErrorType.CommandError
+  | ChatErrorType.BadgeRedeemError
   | ChatErrorType.AgentCommandError
   | ChatErrorType.InvalidFileDescription
   | ChatErrorType.ConnectionIncognitoChangeProhibited
@@ -1113,6 +1259,8 @@ export namespace ChatErrorType {
     | "chatNotStopped"
     | "chatStoreChanged"
     | "invalidConnReq"
+    | "simplexDomainNotReady"
+    | "notResolvedLocally"
     | "unsupportedConnReq"
     | "connReqMessageProhibited"
     | "contactNotReady"
@@ -1159,6 +1307,7 @@ export namespace ChatErrorType {
     | "agentVersion"
     | "agentNoSubResult"
     | "commandError"
+    | "badgeRedeemError"
     | "agentCommandError"
     | "invalidFileDescription"
     | "connectionIncognitoChangeProhibited"
@@ -1265,6 +1414,16 @@ export namespace ChatErrorType {
 
   export interface InvalidConnReq extends Interface {
     type: "invalidConnReq"
+  }
+
+  export interface SimplexDomainNotReady extends Interface {
+    type: "simplexDomainNotReady"
+    simplexDomain: SimplexDomain
+    simplexDomainError: SimplexDomainError
+  }
+
+  export interface NotResolvedLocally extends Interface {
+    type: "notResolvedLocally"
   }
 
   export interface UnsupportedConnReq extends Interface {
@@ -1493,6 +1652,11 @@ export namespace ChatErrorType {
     message: string
   }
 
+  export interface BadgeRedeemError extends Interface {
+    type: "badgeRedeemError"
+    badgeRedeemError: BadgeRedeemError
+  }
+
   export interface AgentCommandError extends Interface {
     type: "agentCommandError"
     message: string
@@ -1623,6 +1787,7 @@ export namespace ChatListQuery {
 export enum ChatPeerType {
   Human = "human",
   Bot = "bot",
+  Business = "business",
 }
 // Used in API commands. Chat scope can only be passed with groups.
 
@@ -2000,6 +2165,7 @@ export interface Contact {
   chatTs?: string // ISO-8601 timestamp
   preparedContact?: PreparedContact
   contactRequestId?: number // int64
+  contactRequest?: UserContactRequestRef
   contactGroupMemberId?: number // int64
   contactGrpInvSent: boolean
   groupDirectInv?: GroupDirectInvitation
@@ -2072,6 +2238,7 @@ export enum ContactStatus {
   Active = "active",
   Deleted = "deleted",
   DeletedByUser = "deletedByUser",
+  Rejected = "rejected",
 }
 
 export type ContactUserPref = ContactUserPref.Contact | ContactUserPref.User
@@ -2131,6 +2298,13 @@ export interface CryptoFileArgs {
   fileKey: string
   fileNonce: string
 }
+// Remote controller application info.
+
+export interface CtrlAppInfo {
+  appVersionRange: AppVersionRange
+  deviceName: string
+  compression: boolean
+}
 
 export interface DroppedMsg {
   brokerTs: string // ISO-8601 timestamp
@@ -2157,6 +2331,7 @@ export type ErrorType =
   | ErrorType.LARGE_MSG
   | ErrorType.EXPIRED
   | ErrorType.INTERNAL
+  | ErrorType.NAME
   | ErrorType.DUPLICATE_
 
 export namespace ErrorType {
@@ -2175,6 +2350,7 @@ export namespace ErrorType {
     | "LARGE_MSG"
     | "EXPIRED"
     | "INTERNAL"
+    | "NAME"
     | "DUPLICATE_"
 
   interface Interface {
@@ -2239,6 +2415,11 @@ export namespace ErrorType {
 
   export interface INTERNAL extends Interface {
     type: "INTERNAL"
+  }
+
+  export interface NAME extends Interface {
+    type: "NAME"
+    nameErr: NameErrorType
   }
 
   export interface DUPLICATE_ extends Interface {
@@ -2341,6 +2522,12 @@ export interface FileInvitation {
   fileConnReq?: string
   fileInline?: InlineFileMode
   fileDescr?: FileDescr
+  fileBadge?: BadgeProof
+}
+
+export interface FileProhibited {
+  maxSize: number // int64
+  badgeStatus?: BadgeStatus
 }
 
 export enum FileProtocol {
@@ -2502,6 +2689,7 @@ export interface FullGroupPreferences {
   support: SupportGroupPreference
   sessions: RoleGroupPreference
   comments: CommentsGroupPreference
+  signMessages: GroupPreference
   commands: ChatBotCommand[]
 }
 
@@ -2576,6 +2764,7 @@ export enum GroupFeature {
   Support = "support",
   Sessions = "sessions",
   Comments = "comments",
+  SignMessages = "signMessages",
 }
 
 export enum GroupFeatureEnabled {
@@ -2607,13 +2796,7 @@ export interface GroupInfo {
   rosterVersion?: number // int64
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
-  groupKeys?: GroupKeys
-}
-
-export interface GroupKeys {
-  publicGroupId: string
-  groupRootKey: GroupRootKey
-  memberPrivKey: string
+  groupDomainVerified?: boolean
 }
 
 export interface GroupLink {
@@ -2716,6 +2899,7 @@ export interface GroupMember {
   supportChat?: GroupSupportChat
   memberPubKey?: string
   relayLink?: string
+  memberVerifiedCode?: SecurityCode
 }
 
 export interface GroupMemberAdmission {
@@ -2784,6 +2968,7 @@ export interface GroupPreferences {
   support?: SupportGroupPreference
   sessions?: RoleGroupPreference
   comments?: CommentsGroupPreference
+  signMessages?: GroupPreference
   commands?: ChatBotCommand[]
 }
 
@@ -2805,26 +2990,6 @@ export interface GroupRelay {
   relayStatus: RelayStatus
   relayLink?: string
   relayCap: RelayCapabilities
-}
-
-export type GroupRootKey = GroupRootKey.Private | GroupRootKey.Public
-
-export namespace GroupRootKey {
-  export type Tag = "private" | "public"
-
-  interface Interface {
-    type: Tag
-  }
-
-  export interface Private extends Interface {
-    type: "private"
-    rootPrivKey: string
-  }
-
-  export interface Public extends Interface {
-    type: "public"
-    rootPubKey: string
-  }
 }
 
 export interface GroupShortLinkData {
@@ -2978,12 +3143,15 @@ export interface LocalProfile {
   displayName: string
   fullName: string
   shortDescr?: string
+  description?: string
   image?: string
   contactLink?: string
   preferences?: Preferences
   peerType?: ChatPeerType
   localBadge?: LocalBadge
   localAlias: string
+  contactDomain?: SimplexDomainClaim
+  contactDomainVerified?: boolean
 }
 
 export enum MemberCriteria {
@@ -3177,6 +3345,48 @@ export enum MsgSigStatus {
   SignedNoKey = "signedNoKey",
 }
 
+export type MsgVerified = MsgVerified.Signed | MsgVerified.SigMissing
+
+export namespace MsgVerified {
+  export type Tag = "signed" | "sigMissing"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Signed extends Interface {
+    type: "signed"
+    sigStatus: MsgSigStatus
+  }
+
+  export interface SigMissing extends Interface {
+    type: "sigMissing"
+  }
+}
+
+export type NameErrorType = NameErrorType.NO_RESOLVER | NameErrorType.NOT_FOUND | NameErrorType.RESOLVER
+
+export namespace NameErrorType {
+  export type Tag = "NO_RESOLVER" | "NOT_FOUND" | "RESOLVER"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface NO_RESOLVER extends Interface {
+    type: "NO_RESOLVER"
+  }
+
+  export interface NOT_FOUND extends Interface {
+    type: "NOT_FOUND"
+  }
+
+  export interface RESOLVER extends Interface {
+    type: "RESOLVER"
+    resolverErr: string
+  }
+}
+
 export type NetworkError = 
   | NetworkError.ConnectError
   | NetworkError.TLSError
@@ -3295,6 +3505,12 @@ export interface PendingContactConnection {
   updatedAt: string // ISO-8601 timestamp
 }
 
+export enum PlanResolveMode {
+  AllGroups = "allGroups",
+  Unknown = "unknown",
+  Never = "never",
+}
+
 export interface PrefEnabled {
   forUser: boolean
   forContact: boolean
@@ -3330,11 +3546,13 @@ export interface Profile {
   displayName: string
   fullName: string
   shortDescr?: string
+  description?: string
   image?: string
   contactLink?: string
   preferences?: Preferences
   peerType?: ChatPeerType
   badge?: BadgeProof
+  contactDomain?: SimplexDomainClaim
 }
 
 export type ProxyClientError = 
@@ -3395,7 +3613,7 @@ export namespace ProxyError {
 
 export interface PublicGroupAccess {
   groupWebPage?: string
-  groupDomain?: string
+  groupDomainClaim?: SimplexDomainClaim
   domainWebPage: boolean
   allowEmbedding: boolean
 }
@@ -3640,6 +3858,7 @@ export interface RcvFileTransfer {
   fileId: number // int64
   xftpRcvFile?: XFTPRcvFile
   fileInvitation: FileInvitation
+  fileProhibited?: FileProhibited
   fileStatus: RcvFileStatus
   fileType: FileType
   rcvFileInline?: InlineFileMode
@@ -3802,6 +4021,11 @@ export interface RelayCapabilities {
   webDomain?: string
 }
 
+export interface RelayConnectionResult {
+  relayMember: GroupMember
+  relayError?: ChatError
+}
+
 export interface RelayProfile {
   displayName: string
   fullName: string
@@ -3817,6 +4041,87 @@ export enum RelayStatus {
   Active = "active",
   Inactive = "inactive",
   Rejected = "rejected",
+}
+
+export interface RemoteCtrlInfo {
+  remoteCtrlId: number // int64
+  ctrlDeviceName: string
+  sessionState?: RemoteCtrlSessionState
+}
+
+export type RemoteCtrlSessionState = 
+  | RemoteCtrlSessionState.Starting
+  | RemoteCtrlSessionState.Searching
+  | RemoteCtrlSessionState.Connecting
+  | RemoteCtrlSessionState.PendingConfirmation
+  | RemoteCtrlSessionState.Connected
+
+export namespace RemoteCtrlSessionState {
+  export type Tag = 
+    | "starting"
+    | "searching"
+    | "connecting"
+    | "pendingConfirmation"
+    | "connected"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Starting extends Interface {
+    type: "starting"
+  }
+
+  export interface Searching extends Interface {
+    type: "searching"
+  }
+
+  export interface Connecting extends Interface {
+    type: "connecting"
+  }
+
+  export interface PendingConfirmation extends Interface {
+    type: "pendingConfirmation"
+    sessionCode: string
+  }
+
+  export interface Connected extends Interface {
+    type: "connected"
+    sessionCode: string
+  }
+}
+
+export type RemoteCtrlStopReason = 
+  | RemoteCtrlStopReason.DiscoveryFailed
+  | RemoteCtrlStopReason.ConnectionFailed
+  | RemoteCtrlStopReason.SetupFailed
+  | RemoteCtrlStopReason.Disconnected
+
+export namespace RemoteCtrlStopReason {
+  export type Tag = "discoveryFailed" | "connectionFailed" | "setupFailed" | "disconnected"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface DiscoveryFailed extends Interface {
+    type: "discoveryFailed"
+    chatError: ChatError
+  }
+
+  export interface ConnectionFailed extends Interface {
+    type: "connectionFailed"
+    chatError: ChatError
+  }
+
+  export interface SetupFailed extends Interface {
+    type: "setupFailed"
+    chatError: ChatError
+  }
+
+  export interface Disconnected extends Interface {
+    type: "disconnected"
+  }
 }
 
 export enum ReportReason {
@@ -3840,6 +4145,7 @@ export type SMPAgentError =
   | SMPAgentError.A_CRYPTO
   | SMPAgentError.A_DUPLICATE
   | SMPAgentError.A_QUEUE
+  | SMPAgentError.A_SERVICE
 
 export namespace SMPAgentError {
   export type Tag = 
@@ -3850,6 +4156,7 @@ export namespace SMPAgentError {
     | "A_CRYPTO"
     | "A_DUPLICATE"
     | "A_QUEUE"
+    | "A_SERVICE"
 
   interface Interface {
     type: Tag
@@ -3857,6 +4164,7 @@ export namespace SMPAgentError {
 
   export interface A_MESSAGE extends Interface {
     type: "A_MESSAGE"
+    messageErr: string
   }
 
   export interface A_PROHIBITED extends Interface {
@@ -3887,6 +4195,11 @@ export namespace SMPAgentError {
     type: "A_QUEUE"
     queueErr: string
   }
+
+  export interface A_SERVICE extends Interface {
+    type: "A_SERVICE"
+    serviceError: AgentServiceError
+  }
 }
 
 export interface SecurityCode {
@@ -3898,6 +4211,41 @@ export interface SimplePreference {
   allow: FeatureAllowed
 }
 
+export interface SimplexDomain {
+  nameTLD: SimplexTLD
+  domain: string
+  subDomain: string[]
+}
+
+export interface SimplexDomainClaim {
+  domain: string
+  proof?: SimplexDomainProof
+}
+
+export type SimplexDomainError = SimplexDomainError.NoValidLink | SimplexDomainError.UnknownDomain
+
+export namespace SimplexDomainError {
+  export type Tag = "noValidLink" | "unknownDomain"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface NoValidLink extends Interface {
+    type: "noValidLink"
+  }
+
+  export interface UnknownDomain extends Interface {
+    type: "unknownDomain"
+  }
+}
+
+export interface SimplexDomainProof {
+  linkOwnerId?: string
+  presHeader: string
+  signature: string
+}
+
 export enum SimplexLinkType {
   Contact = "contact",
   Invitation = "invitation",
@@ -3906,15 +4254,9 @@ export enum SimplexLinkType {
   Relay = "relay",
 }
 
-export interface SimplexNameDomain {
-  nameTLD: SimplexTLD
-  domain: string
-  subDomain: string[]
-}
-
 export interface SimplexNameInfo {
   nameType: SimplexNameType
-  nameDomain: SimplexNameDomain
+  nameDomain: SimplexDomain
 }
 
 export enum SimplexNameType {
@@ -4881,6 +5223,7 @@ export interface User {
   sendRcptsContacts: boolean
   sendRcptsSmallGroups: boolean
   autoAcceptMemberContacts: boolean
+  autoAcceptGroupInvitations: boolean
   userMemberProfileUpdatedAt?: string // ISO-8601 timestamp
   userChatRelay: boolean
   clientService: boolean
@@ -4928,6 +5271,12 @@ export interface UserContactRequest {
   pqSupport: boolean
   welcomeSharedMsgId?: string
   requestSharedMsgId?: string
+  rejectionSupported: boolean
+}
+
+export interface UserContactRequestRef {
+  contactRequestId: number // int64
+  rejectionSupported: boolean
 }
 
 export interface UserInfo {

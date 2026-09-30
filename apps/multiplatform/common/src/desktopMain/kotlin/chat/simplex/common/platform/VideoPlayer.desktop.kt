@@ -7,7 +7,10 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import org.jetbrains.compose.videoplayer.SkiaBitmapVideoSurface
-import uk.co.caprica.vlcj.media.VideoOrientation
+import uk.co.caprica.vlcj.media.Media
+import uk.co.caprica.vlcj.media.MediaEventAdapter
+import uk.co.caprica.vlcj.media.MediaParsedStatus
+import uk.co.caprica.vlcj.media.ParseFlag
 import uk.co.caprica.vlcj.player.base.*
 import uk.co.caprica.vlcj.player.component.CallbackMediaPlayerComponent
 import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent
@@ -228,7 +231,18 @@ actual class VideoPlayer actual constructor(
       player.media().startPaused(uri.toFile().absolutePath)
       val snap = withTimeoutOrNull(1500L) {
         while (surface.bitmap.value == null) delay(50)
-        surface.bitmap.value!!.toAwtImage()
+        // The render callback installs pixels into the surface bitmap on the event thread, so read it
+        // there too - converting off that thread races a resize on format renegotiation and segfaults
+        // inside skia while reading pixels of the previous, smaller buffer
+        val holder = java.util.concurrent.atomic.AtomicReference<BufferedImage?>(null)
+        // invokeAndWait rethrows whatever the conversion threw, wrapped, and the callers of this have
+        // no handler; a frame that cannot be converted is a missing preview, not a failed send
+        try {
+          javax.swing.SwingUtilities.invokeAndWait { holder.set(surface.bitmap.value?.toAwtImage()) }
+        } catch (e: Exception) {
+          Log.e(TAG, "getBitmapFromVideo snapshot failed: ${e.stackTraceToString()}")
+        }
+        holder.get()
       }
       val orientation = player.media().info().videoTracks().firstOrNull()?.orientation()
       if (orientation == null) {
@@ -238,21 +252,50 @@ actual class VideoPlayer actual constructor(
 
         return@withContext VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
       }
-      val preview: ImageBitmap? = when (orientation) {
-        VideoOrientation.TOP_LEFT -> snap
-        VideoOrientation.TOP_RIGHT -> snap?.flip(false, true)
-        VideoOrientation.BOTTOM_LEFT -> snap?.flip(true, false)
-        VideoOrientation.BOTTOM_RIGHT -> snap?.rotate(180.0)
-        VideoOrientation.LEFT_TOP -> snap  /* Transposed */
-        VideoOrientation.LEFT_BOTTOM -> snap?.rotate(-90.0)
-        VideoOrientation.RIGHT_TOP -> snap?.rotate(90.0)
-        VideoOrientation.RIGHT_BOTTOM -> snap /* Anti-transposed */
-        else -> snap
-      }?.toComposeImageBitmap()
+      // vlc applies the display matrix before the frame reaches the video surface, so the snapshot
+      // arrives upright; orienting it again here would undo that
+      val preview: ImageBitmap? = snap?.toComposeImageBitmap()
       val duration = player.duration.toLong()
       player.stop()
       putHelperPlayer(mediaComponent)
       return@withContext VideoPlayerInterface.PreviewAndDuration(preview = preview, timestamp = 0L, duration = duration)
+    }
+
+    // Parsing a local container header takes a few dozen ms, this is only a guard against a stuck parse
+    private const val PARSE_TIMEOUT_MS = 3000L
+
+    // Reads container metadata to tell whether there is a video track at all, without decoding a frame.
+    // libvlc signals the end of parsing with an event, so no polling or frame-decoding budget is needed.
+    suspend fun hasVideoTrack(uri: URI): Boolean = withContext(previewThread.asCoroutineDispatcher()) {
+      if (!uri.toFile().exists()) return@withContext false
+      val media = try {
+        vlcPreviewFactory.media().newMedia(uri.toFile().absolutePath)
+      } catch (e: Exception) {
+        Log.e(TAG, "hasVideoTrack unable to create media: ${e.stackTraceToString()}")
+        null
+      } ?: return@withContext false
+      try {
+        val parsed = CompletableDeferred<MediaParsedStatus?>()
+        media.events().addMediaEventListener(object: MediaEventAdapter() {
+          // vlcj maps an unknown status int to null, and a null here would throw on its event thread
+          override fun mediaParsedChanged(parsedMedia: Media?, newStatus: MediaParsedStatus?) {
+            parsed.complete(newStatus)
+          }
+        })
+        if (!media.parsing().parse(PARSE_TIMEOUT_MS.toInt(), ParseFlag.PARSE_LOCAL)) {
+          return@withContext false
+        }
+        if (withTimeoutOrNull(PARSE_TIMEOUT_MS) { parsed.await() } != MediaParsedStatus.DONE) {
+          media.parsing().stop()
+          return@withContext false
+        }
+        media.info().videoTracks().isNotEmpty()
+      } catch (e: Exception) {
+        Log.e(TAG, "hasVideoTrack error: ${e.stackTraceToString()}")
+        false
+      } finally {
+        media.release()
+      }
     }
 
     val playerThread = Executors.newSingleThreadExecutor()

@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -29,12 +30,14 @@ fun VerifyCodeView(
   connectionVerified: Boolean,
   verify: suspend (String?) -> Pair<Boolean, String>?,
   close: () -> Unit,
+  verifyDescription: StringResource = MR.strings.to_verify_compare,
 ) {
   if (connectionCode != null) {
     VerifyCodeLayout(
       displayName,
       connectionCode,
       connectionVerified,
+      verifyDescription,
       verifyCode = { newCode ->
         val res = verify(newCode)
         if (res != null) {
@@ -54,6 +57,7 @@ private fun VerifyCodeLayout(
   displayName: String,
   connectionCode: String,
   connectionVerified: Boolean,
+  verifyDescription: StringResource,
   verifyCode: suspend (String?) -> Boolean,
 ) {
   ColumnWithScrollBar(Modifier.padding(horizontal = DEFAULT_PADDING)) {
@@ -90,7 +94,7 @@ private fun VerifyCodeLayout(
     }
 
     Text(
-      generalGetString(MR.strings.to_verify_compare),
+      generalGetString(verifyDescription),
       Modifier.padding(bottom = DEFAULT_PADDING)
     )
 

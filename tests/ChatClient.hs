@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -23,22 +24,23 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), WebPreviewConfig (..), defaultSimpleNetCfg)
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), ChatResponse (..), WebPreviewConfig (..), defaultSimpleNetCfg)
 import Simplex.Chat.Core
 import Simplex.Chat.Library.Commands
+import Simplex.Chat.Operators
 import Simplex.Chat.Options
 import Simplex.Chat.Options.DB
-import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion)
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
-import Simplex.Chat.Terminal.Output (newChatTerminal)
+import Simplex.Chat.Terminal.Output (WithTerminal (..), newChatTerminal)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.FileTransfer.Description (kb, mb)
@@ -48,26 +50,27 @@ import Simplex.FileTransfer.Server.Store
 import Simplex.FileTransfer.Transport (alpnSupportedXFTPhandshakes, supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
-import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
+import Simplex.Messaging.Agent.Protocol (supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
+import Simplex.Messaging.Agent.Store.Entity (SDBStored (..))
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
-import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
-import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import Simplex.Messaging.Protocol (sndAuthKeySMPClientVersion)
+import Simplex.Messaging.Protocol (ProtocolType (..))
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
+import NameResolver (NameRegistry, resolverNamesConfig, withNameResolver)
 import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (ServerCredentials (..), mkTransportServerConfig)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
+import System.FilePath ((</>))
 import qualified System.Terminal as C
-import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
+import System.Terminal.Internal (Command (..), Terminal (..), VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
 import Test.Hspec (Expectation, HasCallStack, shouldReturn)
 #if defined(dbPostgres)
@@ -79,7 +82,6 @@ import Data.ByteArray (ScrubbedBytes)
 import qualified Data.Map.Strict as M
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
-import System.FilePath ((</>))
 #endif
 
 #if defined(dbPostgres)
@@ -117,11 +119,14 @@ testOpts =
       optFilesFolder = Nothing,
       optTempDirectory = Nothing,
       showReactions = True,
+      showFullLinks = True,
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = True,
-      createBot = Nothing
+      createBot = Nothing,
+      userDisplayName = Nothing,
+      userImageFile = Nothing
     }
 
 testCoreOpts :: CoreChatOpts
@@ -152,9 +157,12 @@ testCoreOpts =
       logAgent = Nothing,
       logFile = Nothing,
       tbqSize = 16,
+      maxChats = 5000,
       deviceName = Nothing,
       chatRelay = False,
       webPreviewConfig = Nothing,
+      chatRelayServer = Nothing,
+      headless = False,
       highlyAvailable = False,
       yesToUpMigrations = False,
       migrationBackupPath = Nothing,
@@ -163,6 +171,12 @@ testCoreOpts =
 
 relayTestOpts :: ChatOpts
 relayTestOpts = testOpts {coreOptions = testCoreOpts {chatRelay = True}}
+
+testOptsNoFullLinks :: ChatOpts
+testOptsNoFullLinks = testOpts {showFullLinks = False}
+
+relayTestOptsNoFullLinks :: ChatOpts
+relayTestOptsNoFullLinks = relayTestOpts {showFullLinks = False}
 
 relayWebTestOpts :: Text -> FilePath -> Maybe FilePath -> ChatOpts
 relayWebTestOpts webDomain webDir webCorsFile = testOpts {coreOptions = testCoreOpts {chatRelay = True, webPreviewConfig = Just WebPreviewConfig {webDomain, webJsonDir = webDir, webCorsFile, webUpdateInterval = 300, webPreviewItemCount = 50}}}
@@ -176,19 +190,38 @@ termSettings :: VirtualTerminalSettings
 termSettings =
   VirtualTerminalSettings
     { virtualType = "xterm",
-      virtualWindowSize = pure C.Size {height = 24, width = 6000},
+      virtualWindowSize = pure C.Size {height = 24, width = 7500},
       virtualEvent = retry,
       virtualInterrupt = retry
     }
 
 data TestCC = TestCC
   { chatController :: ChatController,
-    virtualTerminal :: VirtualTerminal,
     chatAsync :: Async (),
-    termAsync :: Async (),
     termQ :: TQueue String,
     printOutput :: Bool
   }
+
+data TestTerminal = TestTerminal VirtualTerminal (TQueue String)
+
+instance Terminal TestTerminal where
+  termType (TestTerminal t _) = termType t
+  termEvent (TestTerminal t _) = termEvent t
+  termInterrupt (TestTerminal t _) = termInterrupt t
+  termCommand (TestTerminal t q) c = do
+    case c of
+      PutLn -> atomically $ do
+        C.Position {row} <- readTVar $ virtualCursor t
+        rows <- readTVar $ virtualWindow t
+        writeTQueue q $ dropWhileEnd (== ' ') $ rows !! row
+      _ -> pure ()
+    termCommand t c
+  termFlush (TestTerminal t _) = termFlush t
+  termGetWindowSize (TestTerminal t _) = termGetWindowSize t
+  termGetCursorPosition (TestTerminal t _) = termGetCursorPosition t
+
+instance WithTerminal TestTerminal where
+  withTerm t = ($ t)
 
 aCfg :: AgentConfig
 aCfg = (agentConfig defaultChatConfig) {tbqSize = 16}
@@ -202,13 +235,6 @@ testAgentCfg =
   where
     RetryInterval2 {riFast, riSlow} = messageRetryInterval aCfg
 
-testAgentCfgNoShortLinks :: AgentConfig
-testAgentCfgNoShortLinks =
-  testAgentCfg
-    { smpClientVRange = mkVersionRange (Version 1) sndAuthKeySMPClientVersion, -- v3
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion (Version 14)} -- before shortLinksSMPVersion
-    }
-
 testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
@@ -221,33 +247,21 @@ testCfg =
       confirmMigrations = MCYesUp
     }
 
-testCfgNoShortLinks :: ChatConfig
-testCfgNoShortLinks = testCfg {agentConfig = testAgentCfgNoShortLinks}
-
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
   testAgentCfg
     { smpClientVRange = prevRange $ smpClientVRange testAgentCfg,
       smpAgentVRange = prevRange supportedSMPAgentVRange,
-      e2eEncryptVRange = prevRange supportedE2EEncryptVRange,
+      -- e2eEncryptVRange = prevRange supportedE2EEncryptVRange,
       smpCfg = (smpCfg testAgentCfg) {serverVRange = prevRange $ serverVRange $ smpCfg testAgentCfg}
-    }
-
-testAgentCfgVNext :: AgentConfig
-testAgentCfgVNext =
-  testAgentCfg
-    { smpClientVRange = nextRange $ smpClientVRange testAgentCfg,
-      smpAgentVRange = mkVersionRange duplexHandshakeSMPAgentVersion $ max pqdrSMPAgentVersion currentSMPAgentVersion,
-      e2eEncryptVRange = mkVersionRange CR.kdfX3DHE2EEncryptVersion $ max CR.pqRatchetE2EEncryptVersion CR.currentE2EEncryptVersion,
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = nextRange $ serverVRange $ smpCfg testAgentCfg}
     }
 
 testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
     { smpClientVRange = v1Range,
-      smpAgentVRange = versionToRange duplexHandshakeSMPAgentVersion,
-      e2eEncryptVRange = versionToRange CR.kdfX3DHE2EEncryptVersion,
+      smpAgentVRange = versionToRange (Version 6),
+      e2eEncryptVRange = versionToRange(Version 3),
       smpCfg = (smpCfg testAgentCfg) {serverVRange = versionToRange minClientSMPRelayVersion}
     }
 
@@ -258,17 +272,10 @@ testCfgVPrev =
       agentConfig = testAgentCfgVPrev
     }
 
-testCfgVNext :: ChatConfig
-testCfgVNext =
-  testCfg
-    { chatVRange = mkVersionRange initialChatVersion $ max pqEncryptionCompressionVersion currentChatVersion,
-      agentConfig = testAgentCfgVNext
-    }
-
 testCfgV1 :: ChatConfig
 testCfgV1 =
   testCfg
-    { chatVRange = v1Range,
+    { chatVRange = chatInitialVRange,
       agentConfig = testAgentCfgV1
     }
 
@@ -293,13 +300,13 @@ createTestChat ps cfg opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {cha
   insertUser agentStore
   ts <- getCurrentTime
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecordAt db' (AgentUserId 1) chatRelay clientService profile True ts
-  startTestChat_ ps db cfg opts user
+  startTestChat_ ps db cfg opts dbPrefix user
 
 startTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> IO TestCC
 startTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix = do
   Right db@ChatDatabase {chatStore} <- createDatabase ps coreOptions dbPrefix
   Just user <- find activeUser <$> withTransaction chatStore getUsers
-  startTestChat_ ps db cfg opts user
+  startTestChat_ ps db cfg opts dbPrefix user
 
 createDatabase :: TestParams -> CoreChatOpts -> String -> IO (Either MigrationError ChatDatabase)
 #if defined(dbPostgres)
@@ -316,31 +323,33 @@ insertUser :: DBStore -> IO ()
 insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users (user_id) VALUES (1)")
 #endif
 
-startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
-startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}} user = do
-  t <- withVirtualTerminal termSettings pure
+startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> String -> User -> IO TestCC
+startTestChat_ TestParams {tmpPath, printOutput} db cfg opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}} dbPrefix user = do
+  termQ <- newTQueueIO
+  t <- withVirtualTerminal termSettings $ pure . (`TestTerminal` termQ)
   ct <- newChatTerminal t opts
   Right cc <- newChatController db (Just user) cfg opts False
-  void $ execChatCommand' (SetTempFolder "tests/tmp/tmp") 0 `runReaderT` cc
+  void $ execChatCommand' (SetTempFolder (tmpPath </> dbPrefix)) 0 `runReaderT` cc
   chatAsync <- async $ runSimplexChat cfg opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
-  termQ <- newTQueueIO
-  termAsync <- async $ readTerminalOutput t termQ
-  pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ, printOutput}
+  pure TestCC {chatController = cc, chatAsync, termQ, printOutput}
 
 stopTestChat :: TestParams -> TestCC -> IO ()
-stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}, chatAsync, termAsync} = do
-  stopChatController cc
-  uninterruptibleCancel termAsync
-  uninterruptibleCancel chatAsync
-  liftIO $ disposeAgentClient smpAgent
+stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}, chatAsync} = do
+  stopped <- async $ do
+    stopChatController cc
+    cancel chatAsync
+    disposeAgentClient smpAgent
+  r <- timeout 60000000 $ wait stopped
 #if !defined(dbPostgres)
   chatStats <- withConnection chatStore $ readTVarIO . DB.slow
   atomically $ modifyTVar' (chatQueryStats ps) $ M.unionWith combineStats chatStats
   agentStats <- withConnection (agentClientStore smpAgent) $ readTVarIO . DB.slow
   atomically $ modifyTVar' (agentQueryStats ps) $ M.unionWith combineStats agentStats
 #endif
-  closeDBStore chatStore
+  case r of
+    Just () -> closeDBStore chatStore
+    Nothing -> putStrLn "stopTestChat: chat did not stop in 60 seconds"
   threadDelay 200000
 #if !defined(dbPostgres)
   where
@@ -393,35 +402,33 @@ withTestChatOpts :: HasCallStack => TestParams -> ChatOpts -> String -> (HasCall
 withTestChatOpts ps = withTestChatCfgOpts ps testCfg
 
 withTestChatCfgOpts :: HasCallStack => TestParams -> ChatConfig -> ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatCfgOpts ps cfg opts dbPrefix = bracket (startTestChat ps cfg opts dbPrefix) (\cc -> cc <// 100000 >> stopTestChat ps cc)
+withTestChatCfgOpts ps cfg opts dbPrefix runTest =
+  bracket (startTestChat ps cfg opts dbPrefix) (stopTestChat ps) (\cc -> runTest cc >>= ((cc <// 100000) $>))
 
 -- enable output for specific test.
 -- usage: withTestOutput $ testChat2 aliceProfile bobProfile $ \alice bob -> do ...
 withTestOutput :: HasCallStack => (HasCallStack => TestParams -> IO ()) -> TestParams -> IO ()
 withTestOutput test ps = test ps {printOutput = True}
 
-readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
-readTerminalOutput t termQ = do
-  let w = virtualWindow t
-  winVar <- atomically $ newTVar . init =<< readTVar w
-  forever . atomically $ do
-    win <- readTVar winVar
-    win' <- init <$> readTVar w
-    if win' == win
-      then retry
-      else do
-        let diff = getDiff win' win
-        forM_ diff $ writeTQueue termQ
-        writeTVar winVar win'
+-- Opt the client's SMP servers into name resolution (self-hosted servers default names off).
+enableNamesRole :: HasCallStack => TestCC -> IO ()
+enableNamesRole TestCC {chatController = cc} = do
+  r <- execChatCommand' (APIGetUserServers 1) 0 `runReaderT` cc
+  case r of
+    Right (CRUserServers _ uoss) -> do
+      r' <- execChatCommand' (APISetUserServers 1 (L.fromList (map toUpdated uoss))) 0 `runReaderT` cc
+      either (fail . show) (const $ pure ()) r'
+    Right other -> fail $ "enableNamesRole: unexpected response " <> show other
+    Left e -> fail $ "enableNamesRole: APIGetUserServers failed " <> show e
   where
-    getDiff :: [String] -> [String] -> [String]
-    getDiff win win' = getDiff_ 1 (length win) win win'
-    getDiff_ :: Int -> Int -> [String] -> [String] -> [String]
-    getDiff_ n len win' win =
-      let diff = drop (len - n) win'
-       in if drop n win <> diff == win'
-            then map (dropWhileEnd (== ' ')) diff
-            else getDiff_ (n + 1) len win' win
+    toUpdated UserOperatorServers {operator, smpServers, xftpServers, chatRelays} =
+      UpdatedUserOperatorServers
+        { operator,
+          smpServers = map (AUS SDBStored . enableNames) smpServers,
+          xftpServers = map (AUS SDBStored) xftpServers,
+          chatRelays = map (AUCR SDBStored) chatRelays
+        }
+    enableNames srv@UserServer {roles} = (srv :: UserServer 'PSMP) {roles = (roles :: ServerRolesOverride) {names = Just True}}
 
 withTmpFiles :: IO () -> IO ()
 withTmpFiles =
@@ -431,16 +438,15 @@ withTmpFiles =
 
 testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStack => [TestCC] -> IO ()) -> TestParams -> IO ()
 testChatN cfg opts ps test params =
-  bracket (getTestCCs $ zip ps [1 ..]) endTests test
+  bracket (getTestCCs $ zip ps [1 ..]) (mapConcurrently_ $ stopTestChat params) $ \tcs -> do
+    test tcs
+    mapConcurrently_ (<// 100000) tcs
   where
     useClientServices = False
     -- useClientServices = True
     getTestCCs :: [(Profile, Int)] -> IO [TestCC]
     getTestCCs [] = pure []
     getTestCCs ((p, db) : envs') = (:) <$> createTestChat params cfg opts (show db) useClientServices p <*> getTestCCs envs'
-    endTests tcs = do
-      mapConcurrently_ (<// 100000) tcs
-      mapConcurrently_ (stopTestChat params) tcs
 
 (<//) :: HasCallStack => TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
@@ -466,7 +472,7 @@ getTermLine' expected cc@TestCC {printOutput} =
       error $ name <> ": no output for 5 seconds" <> expectedMsg
 
 userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _ _) =
+userName TestCC {chatController = ChatController {currentUser}} =
   maybe "no current user" (\User {localDisplayName} -> T.unpack localDisplayName) <$> readTVarIO currentUser
 
 testChat :: HasCallStack => Profile -> (HasCallStack => TestCC -> IO ()) -> TestParams -> IO ()
@@ -586,6 +592,8 @@ smpServerCfg =
       smpAgentCfg = defaultSMPClientAgentConfig,
       allowSMPProxy = True,
       serverClientConcurrency = 16,
+      serverResolverConcurrency = 1000,
+      namesConfig = Nothing,
       information = Nothing,
       startOptions = StartOptions {maintenance = False, compactLog = False, logLevel = LogError, skipWarnings = False, confirmMigrations = MCYesUp}
     }
@@ -598,6 +606,13 @@ withSmpServer = withSmpServer' smpServerCfg
 
 withSmpServer' :: ServerConfig STMMsgStore -> IO a -> IO a
 withSmpServer' cfg = serverBracket (\started -> runSMPServerBlocking started cfg Nothing)
+
+-- | SMP server with a local names resolver attached; the action gets the resolver
+-- registry to map names to the addresses it creates.
+withSmpServerAndNames :: (NameRegistry -> IO a) -> IO a
+withSmpServerAndNames action =
+  withNameResolver $ \port reg ->
+    withSmpServer' smpServerCfg {namesConfig = Just (resolverNamesConfig port)} (action reg)
 
 xftpTestPort :: ServiceName
 xftpTestPort = "7002"
@@ -619,7 +634,9 @@ xftpServerConfig =
       newFileBasicAuth = Nothing,
       controlPortUserAuth = Nothing,
       controlPortAdminAuth = Nothing,
-      fileExpiration = Just defaultFileExpiration,
+      fileExpiration = defaultFileExpiration,
+      fileStorageEntitlements = mempty,
+      entitlementKeys = mempty,
       fileTimeout = 10000000,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
       xftpCredentials =
@@ -631,6 +648,7 @@ xftpServerConfig =
       httpCredentials = Nothing,
       webStaticPath = Nothing,
       xftpServerVRange = supportedFileServerVRange,
+      information = Nothing,
       logStatsInterval = Nothing,
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",

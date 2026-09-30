@@ -12,10 +12,13 @@ import SimpleXChat
 struct UserProfile: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var ss: SaveableSettings
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
     @State private var profile = Profile(displayName: "", fullName: "")
     @State private var currentProfileHash: Int?
+    @State private var loaded = false
     @State private var shortDescr = ""
+    @State private var description = ""
     // Modals
     @State private var showChooseSource = false
     @State private var showImagePicker = false
@@ -54,6 +57,13 @@ struct UserProfile: View {
                         }
                     }
                 }
+                NavigationLink {
+                    ProfileDescriptionEditor(description: $description)
+                        .navigationTitle("Description")
+                        .modifier(ThemedBackground(grouped: true))
+                } label: {
+                    Text(description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Add description" : "Edit description")
+                }
             } footer: {
                 Text("Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.")
             }
@@ -64,7 +74,8 @@ struct UserProfile: View {
                 }
                 .disabled(
                     currentProfileHash == profile.hashValue &&
-                    (profile.shortDescr ?? "") == shortDescr.trimmingCharacters(in: .whitespaces)
+                    (profile.shortDescr ?? "") == shortDescr.trimmingCharacters(in: .whitespaces) &&
+                    (profile.description ?? "") == description.trimmingCharacters(in: .whitespacesAndNewlines)
                 )
                 Button(action: saveProfile) {
                     Text("Save (and notify contacts)")
@@ -74,19 +85,13 @@ struct UserProfile: View {
         }
         // Lifecycle
         .onAppear {
-            getCurrentProfile()
-        }
-        .onDisappear {
-            if canSaveProfile {
-                showAlert(
-                    title: NSLocalizedString("Save your profile?", comment: "alert title"),
-                    message: NSLocalizedString("Your profile was changed. If you save it, the updated profile will be sent to all your contacts.", comment: "alert message"),
-                    buttonTitle: NSLocalizedString("Save (and notify contacts)", comment: "alert button"),
-                    buttonAction: saveProfile,
-                    cancelButton: true
-                )
+            // load once — returning from the description editor re-fires onAppear and would discard edits
+            if !loaded {
+                getCurrentProfile()
+                loaded = true
             }
         }
+        .onChange(of: editSnapshot) { _ in updateProfileSaver() }
         .onChange(of: chosenImage) { image in
             Task {
                 let resized: String? = if let image {
@@ -138,7 +143,8 @@ struct UserProfile: View {
     private var canSaveProfile: Bool {
         (
             currentProfileHash != profile.hashValue ||
-            (chatModel.currentUser?.profile.shortDescr ?? "") != shortDescr.trimmingCharacters(in: .whitespaces)
+            (chatModel.currentUser?.profile.shortDescr ?? "") != shortDescr.trimmingCharacters(in: .whitespaces) ||
+            (chatModel.currentUser?.profile.description ?? "") != description.trimmingCharacters(in: .whitespacesAndNewlines)
         ) &&
         profile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
         validDisplayName(profile.displayName) &&
@@ -151,10 +157,14 @@ struct UserProfile: View {
             do {
                 profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
                 profile.shortDescr = shortDescr.trimmingCharacters(in: .whitespaces)
+                let d = description.trimmingCharacters(in: .whitespacesAndNewlines)
+                profile.description = d.isEmpty ? nil : d
                 if let (newProfile, _) = try await apiUpdateProfile(profile: profile) {
                     await MainActor.run {
                         chatModel.updateCurrentUser(newProfile)
                         getCurrentProfile()
+                        // onChange(editSnapshot) won't fire when saved values equal typed, so clear the pending dismiss-save here
+                        ss.profileSave = nil
                     }
                 } else {
                     alert = .duplicateUserError
@@ -170,6 +180,34 @@ struct UserProfile: View {
             profile = fromLocalProfile(user.profile)
             currentProfileHash = profile.hashValue
             shortDescr = profile.shortDescr ?? ""
+            description = profile.description ?? ""
+        }
+    }
+
+    private var editSnapshot: [String] {
+        [profile.displayName, profile.fullName, profile.image ?? "", shortDescr, description]
+    }
+
+    private func updateProfileSaver() {
+        guard loaded, canSaveProfile else {
+            ss.profileSave = nil
+            return
+        }
+        var edited = profile
+        edited.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
+        edited.shortDescr = shortDescr.trimmingCharacters(in: .whitespaces)
+        let d = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        edited.description = d.isEmpty ? nil : d
+        ss.profileSave = {
+            Task {
+                do {
+                    if let (newProfile, _) = try await apiUpdateProfile(profile: edited) {
+                        await MainActor.run { ChatModel.shared.updateCurrentUser(newProfile) }
+                    }
+                } catch {
+                    logger.error("UserProfile save on dismiss error: \(responseError(error))")
+                }
+            }
         }
     }
 }
@@ -233,5 +271,45 @@ func editImageButton(action: @escaping () -> Void) -> some View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: 48)
+    }
+}
+
+struct ProfileDescriptionEditor: View {
+    @EnvironmentObject var theme: AppTheme
+    @Binding var description: String
+    @FocusState private var keyboardVisible: Bool
+
+    var body: some View {
+        List {
+            Section {
+                if #available(iOS 16.0, *) {
+                    TextField("Enter description (optional)", text: $description, axis: .vertical)
+                        .lineLimit(6...12)
+                        .focused($keyboardVisible)
+                } else {
+                    // iOS 15 has no vertically-growing TextField (axis:) — fixed-height editor instead
+                    ZStack {
+                        Group {
+                            if description.isEmpty {
+                                TextEditor(text: Binding.constant(NSLocalizedString("Enter description (optional)", comment: "placeholder")))
+                                    .foregroundColor(theme.colors.secondary)
+                                    .disabled(true)
+                            }
+                            TextEditor(text: $description)
+                                .focused($keyboardVisible)
+                        }
+                        .padding(.horizontal, -5)
+                        .padding(.top, -8)
+                        .frame(height: 130, alignment: .topLeading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            }
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                keyboardVisible = true
+            }
+        }
     }
 }

@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -88,6 +89,7 @@ fun ProtocolServerView(
       ProtocolServerLayout(
         draftServer,
         serverProtocol,
+        userServers,
         testing.value,
         testServer = {
           testing.value = true
@@ -120,6 +122,7 @@ fun ProtocolServerView(
 private fun ProtocolServerLayout(
   server: MutableState<UserServer>,
   serverProtocol: ServerProtocol,
+  userServers: MutableState<List<UserOperatorServers>>,
   testing: Boolean,
   testServer: () -> Unit,
   onDelete: () -> Unit,
@@ -130,7 +133,7 @@ private fun ProtocolServerLayout(
     if (server.value.preset) {
       PresetServer(server, testing, testServer)
     } else {
-      CustomServer(server, testing, testServer, onDelete)
+      CustomServer(server, testing, testServer, onDelete, serverProtocol, userServers)
     }
     SectionBottomSpacer()
   }
@@ -164,15 +167,11 @@ fun CustomServer(
   testing: Boolean,
   testServer: () -> Unit,
   onDelete: (() -> Unit)?,
+  serverProtocol: ServerProtocol? = null,
+  userServers: MutableState<List<UserOperatorServers>>? = null
 ) {
   val serverAddress = remember { mutableStateOf(server.value.server) }
-  val valid = remember {
-    derivedStateOf {
-      with(parseServerAddress(serverAddress.value)) {
-        this?.valid == true
-      }
-    }
-  }
+  val valid = remember { derivedStateOf { parseServerAddress(serverAddress.value)?.valid == true } }
   SectionView(
     stringResource(MR.strings.smp_servers_your_server_address),
     icon = painterResource(MR.images.ic_error),
@@ -196,12 +195,50 @@ fun CustomServer(
 
   UseServerSection(server, valid.value, testing, testServer, onDelete)
 
+  val op = remember(server.value.server) { serverProtocolAndOperator(server.value, userServers?.value ?: listOf())?.second }
+  if (serverProtocol == ServerProtocol.SMP && server.value.enabled && (!server.value.preset || server.value.roles != ServerRolesOverride())) {
+    SectionDividerSpaced()
+    ServerRolesSection(server, op?.smpRoles ?: ServerRoles.noOperatorDefault)
+  }
+
   if (valid.value) {
     SectionDividerSpaced()
     SectionView(stringResource(MR.strings.smp_servers_add_to_another_device)) {
       QRCode(serverAddress.value, small = true)
     }
   }
+}
+
+@Composable
+private fun ServerRolesSection(server: MutableState<UserServer>, inherited: ServerRoles) {
+  SectionView(stringResource(MR.strings.operator_use_for_messages)) {
+    RoleDropDown(stringResource(MR.strings.operator_use_for_messages_receiving), server.value.roles.storage, defaultOn = inherited.storage) {
+      server.value = server.value.copy(roles = server.value.roles.copy(storage = it))
+    }
+    RoleDropDown(stringResource(MR.strings.operator_use_for_messages_private_routing), server.value.roles.proxy, defaultOn = inherited.proxy) {
+      server.value = server.value.copy(roles = server.value.roles.copy(proxy = it))
+    }
+    RoleDropDown(stringResource(MR.strings.operator_use_for_names), server.value.roles.names, defaultOn = inherited.names) {
+      server.value = server.value.copy(roles = server.value.roles.copy(names = it))
+    }
+  }
+}
+
+@Composable
+private fun RoleDropDown(title: String, value: Boolean?, defaultOn: Boolean, onSelected: (Boolean?) -> Unit) {
+  val values = remember(defaultOn, appPrefs.appLanguage.state.value) {
+    listOf(
+      null to String.format(generalGetString(MR.strings.chat_preferences_default), generalGetString(if (defaultOn) MR.strings.chat_preferences_yes else MR.strings.chat_preferences_no)),
+      true to generalGetString(MR.strings.chat_preferences_yes),
+      false to generalGetString(MR.strings.chat_preferences_no)
+    )
+  }
+  ExposedDropDownSettingRow(
+    title,
+    values,
+    rememberUpdatedState(value),
+    onSelected = onSelected
+  )
 }
 
 @Composable

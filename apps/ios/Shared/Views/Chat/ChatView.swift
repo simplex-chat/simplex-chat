@@ -780,7 +780,7 @@ struct ChatView: View {
             }
             updateAvailableContent()
         }
-        if chatModel.draftChatId == cInfo.id && !composeState.forwarding,
+        if chatModel.draftChatId == draftChatId(cInfo.id, cInfo.groupChatScope()) && !composeState.forwarding,
            let draft = chatModel.draft {
             composeState = draft
         }
@@ -1005,7 +1005,6 @@ struct ChatView: View {
         @EnvironmentObject var theme: AppTheme
         @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
         @Binding @ObservedObject var chat: Chat
-        @State private var showSecrets: Set<Int> = []
 
         var body: some View {
             let v = VStack(spacing: 8) {
@@ -1028,13 +1027,16 @@ struct ChatView: View {
                         .frame(maxWidth: 260)
                 }
 
-                if let shortDescr = chat.chatInfo.shortDescr {
-                    let r = markdownText(shortDescr, textStyle: .subheadline, showSecrets: showSecrets, backgroundColor: theme.colors.background)
-                    msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets, centered: true, smallFont: true)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(4)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal)
+                ProfileDescriptionView(shortDescr: chat.chatInfo.shortDescr, description: chat.chatInfo.profileDescription)
+                    .padding(.horizontal)
+
+                switch chat.chatInfo {
+                case let .direct(contact):
+                    contactSimplexNameView(contact, verifiable: false)
+                case let .group(groupInfo, _):
+                    groupSimplexNameView(groupInfo, verifiable: false)
+                default:
+                    EmptyView()
                 }
 
                 if let chatContext {
@@ -1717,6 +1719,7 @@ struct ChatView: View {
         @State private var showArchivingReports = false
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
+        @State private var chatItemInfoItem: ChatItem?
         @State private var msgWidth: CGFloat = 0
         @State private var touchInProgress: Bool = false
 
@@ -2228,8 +2231,9 @@ struct ChatView: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
+                    chatItemInfoItem = nil
                 }) {
-                    ChatItemInfoView(ci: ci, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, chatItemInfo: $chatItemInfo)
+                    ChatItemInfoView(ci: chatItemInfoItem ?? ci, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, chatItemInfo: $chatItemInfo)
                 }
         }
 
@@ -2318,7 +2322,7 @@ struct ChatView: View {
                     } else {
                         saveButton(file: fileSource)
                     }
-                } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file, ciSenderProfile(ci, chat.chatInfo)) {
+                } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file) {
                     downloadButton(file: file)
                 }
                 if ci.meta.editable && !mc.isVoice && !live {
@@ -2572,8 +2576,9 @@ struct ChatView: View {
                 Task {
                     do {
                         let cInfo = chat.chatInfo
-                        let ciInfo = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemId: ci.id)
+                        let (aci, ciInfo) = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemId: ci.id)
                         await MainActor.run {
+                            chatItemInfoItem = aci.chatItem
                             chatItemInfo = ciInfo
                         }
                         if case let .group(gInfo, _) = chat.chatInfo {

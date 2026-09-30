@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -34,11 +35,29 @@ import Data.Time.Format.ISO8601 (iso8601Show)
 import Directory.Store
 import Simplex.Chat.Markdown
 import Simplex.Chat.Types
+import Simplex.Chat.View (simplexChatContact)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 import System.Directory
 import System.FilePath
+
+-- the line the directory recommends adding to the group welcome message
+groupLinkLine :: Text -> Text -> Text
+groupLinkLine name link = groupLinkLinePrefix name <> link
+
+groupLinkLinePrefix :: Text -> Text
+groupLinkLinePrefix name = "Link to join the group " <> name <> ": "
+
+matchesGroupLink :: CreatedLinkContact -> FormattedText -> Bool
+matchesGroupLink (CCLink cReq sLnk_) = \case
+  FormattedText (Just SimplexLink {simplexUri = ACL SCMContact cLink}) _ -> case cLink of
+    CLFull cReq' -> sameConnReqContact cReq' cReq
+    CLShort sLnk' -> maybe False (sameShortLinkContact sLnk') sLnk_
+  _ -> False
+
+descriptionContainsLink :: CreatedLinkContact -> Text -> Bool
+descriptionContainsLink gLink = maybe False (any (matchesGroupLink gLink)) . parseMaybeMarkdownList
 
 directoryDataPath :: String
 directoryDataPath = "data"
@@ -70,6 +89,7 @@ $(JQ.deriveJSON defaultJSON ''PublicLink)
 data DirectoryEntry = DirectoryEntry
   { entryType :: DirectoryEntryType,
     displayName :: Text,
+    simplexName :: Maybe Text,
     groupLink :: PublicLink,
     shortDescr :: Maybe MarkdownList,
     welcomeMessage :: Maybe MarkdownList,
@@ -97,7 +117,7 @@ recentRoundedTime roundTo now t
        in Just $ systemToUTCTime $ MkSystemTime secs 0
 
 groupDirectoryEntry :: UTCTime -> GroupInfo -> Maybe GroupLink -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
-groupDirectoryEntry now GroupInfo {groupProfile, chatTs, createdAt, groupSummary} gLink_ =
+groupDirectoryEntry now g@GroupInfo {groupProfile, chatTs, createdAt, groupSummary} gLink_ =
   let GroupProfile {displayName, shortDescr, description, image, memberAdmission, publicGroup} = groupProfile
       gt = (\PublicGroupProfile {groupType} -> groupType) <$> publicGroup
       entryType = DETGroup gt memberAdmission groupSummary
@@ -106,12 +126,19 @@ groupDirectoryEntry now GroupInfo {groupProfile, chatTs, createdAt, groupSummary
           let gtStr = case gt' of GTChannel -> "channel"; _ -> "group"
               linkLine = "Link to join the " <> gtStr <> " " <> displayName <> ": " <> decodeUtf8 (strEncode sLnk)
            in Just $ maybe linkLine (<> "\n\n" <> linkLine) description
-        Nothing -> description
+        Nothing -> case connLinkContact <$> gLink_ of
+          Just gLink@(CCLink cReq sLnk_)
+            | not (maybe False (descriptionContainsLink gLink) description) ->
+                let linkText = maybe (strEncode $ simplexChatContact cReq) strEncode sLnk_
+                    linkLine = groupLinkLine displayName $ decodeUtf8 linkText
+                 in Just $ maybe linkLine (<> "\n\n" <> linkLine) description
+          _ -> description
       entry groupLink =
         let de =
               DirectoryEntry
                 { entryType,
                   displayName,
+                  simplexName = shortNameInfoStr . SimplexNameInfo NTPublicGroup <$> verifiedGroupDomain g,
                   groupLink,
                   shortDescr = toFormattedText <$> shortDescr,
                   welcomeMessage = toFormattedText <$> description',

@@ -105,8 +105,7 @@ fun MainScreen()
 When onboarding is complete:
 
 1. Shows "advertise lock" alert if conditions met (not shown before, LA not enabled, >3 chats, no active call).
-2. Sets up clipboard listener.
-3. Routes to `AndroidScreen` or `DesktopScreen` based on platform.
+2. Routes to `AndroidScreen` or `DesktopScreen` based on platform.
 
 ### Overlay Layers (bottom of MainScreen)
 
@@ -303,7 +302,7 @@ object AppLock {
 
 ### Lock Delay
 
-The `laLockDelay` preference controls how long after backgrounding the app requires re-authentication. When `laLockDelay == 0`, screen rotation triggers a 3-second grace period (line ~270) to prevent unnecessary re-auth.
+The `laLockDelay` preference controls how long after backgrounding the app requires re-authentication. When `laLockDelay == 0`, screen rotation triggers a 3-second grace period (line ~270) to prevent unnecessary re-auth. A call counts as activity: `recheckAuthState()` is a no-op while `showCallView` is true, and `CallManager.endCall()` resets `enteredBackground`, so the delay is counted from the end of the call.
 
 ### Lock Modes
 

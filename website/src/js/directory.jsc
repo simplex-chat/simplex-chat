@@ -107,8 +107,22 @@ function filterEntries(mode, s) {
       || (entry.displayName || '').toLowerCase().includes(query)
       || includesQuery(entry.shortDescr, query)
       || includesQuery(entry.welcomeMessage, query)
+      || simplexNameIncludesQuery(entry.simplexName, query)
     )
   );
+}
+
+function simplexNameIncludesQuery(name, query) {
+  if (!name) return false;
+  const q = normalizeSimplexName(query);
+  return q !== '' && normalizeSimplexName(name).includes(q);
+}
+
+function normalizeSimplexName(s) {
+  s = s.toLowerCase();
+  if (s.startsWith('#') || s.startsWith('@')) s = s.slice(1);
+  if (s.endsWith('.simplex')) s = s.slice(0, -'.simplex'.length);
+  return s;
 }
 
 function includesQuery(field, query) {
@@ -215,7 +229,7 @@ function displayEntries(entries) {
 
   for (let entry of entries) {
     try {
-      const { entryType, displayName, groupLink, shortDescr, welcomeMessage, imageFile } = entry;
+      const { entryType, displayName, simplexName, groupLink, shortDescr, welcomeMessage, imageFile } = entry;
       const entryDiv = document.createElement('div');
       entryDiv.className = 'entry w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#0B2A59] mb-8';
 
@@ -226,6 +240,13 @@ function displayEntries(entries) {
       nameElement.textContent = displayName;
       nameElement.className = 'text-grey-black dark:text-white !text-lg md:!text-xl font-bold';
       textContainer.appendChild(nameElement);
+
+      if (simplexName) {
+        const simplexNameElement = document.createElement('p');
+        simplexNameElement.textContent = simplexName;
+        simplexNameElement.className = 'text-sm font-medium';
+        textContainer.appendChild(simplexNameElement);
+      }
 
       const welcomeMessageHTML = welcomeMessage ? renderMarkdown(welcomeMessage) : undefined;
       const shortDescrHTML = shortDescr ? renderMarkdown(shortDescr) : undefined;

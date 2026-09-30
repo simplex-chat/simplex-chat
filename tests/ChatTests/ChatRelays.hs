@@ -8,7 +8,7 @@ module ChatTests.ChatRelays where
 import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Groups (memberJoinChannel, memberJoinChannel', prepareChannel, prepareChannel', prepareChannel1Relay, setupRelay)
-import ChatTests.Profiles (addTestBadge, issueTestBadge, testBadgeKeys)
+import ChatTests.Profiles (addTestBadge, futureDate, issueTestBadge, testBadgeKeys)
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import qualified Data.Aeson as J
@@ -19,9 +19,10 @@ import qualified Data.Text as T
 import ProtocolTests (testGroupProfile)
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Protocol (LinkOwnerSig, MsgChatLink (..), MsgContent (..))
-import Simplex.Chat.Types (GroupProfile (..))
+import Simplex.Chat.Types (B64UrlByteString (..), GroupProfile (..))
 import Simplex.Chat.Controller (CorsOrigin (..))
-import Simplex.Chat.Web (WebChannelPreview (..), WebMessage (..), extractOrigin, removeStaleFiles, writeCorsConfig)
+import Simplex.Chat.Web (WebChannelPreview (..), WebMessage (..), extractOrigin, publicGroupIdFileName, removeStaleFiles, writeCorsConfig)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (bbsKeyGen)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Util (decodeJSON)
@@ -67,8 +68,8 @@ testChannelMemberBadges ps = do
   withNewTestChatCfgOpts ps cfg testOpts "alice" aliceProfile $ \alice ->
     withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob ->
       withNewTestChatCfgOpts ps cfg testOpts "cath" cathProfile $ \cath -> do
-        addTestBadge alice =<< issueTestBadge sk Nothing
-        addTestBadge cath =<< issueTestBadge sk Nothing
+        addTestBadge alice =<< issueTestBadge sk futureDate
+        addTestBadge cath =<< issueTestBadge sk futureDate
         (shortLink, fullLink) <- prepareChannel1Relay "team" alice bob
         memberJoinChannel "team" [bob] [alice] shortLink fullLink cath
         -- a channel message lets the relay-forwarded member profiles settle on both sides
@@ -81,13 +82,13 @@ testChannelMemberBadges ps = do
         alice <## "group ID: 1"
         alice <##. "member ID: "
         alice <## "supporter badge - active"
-        alice <## "no expiry"
+        alice <## "expires 2100-01-01"
         alice <## "member not connected"
         cath ##> "/i #team alice"
         cath <## "group ID: 1"
         cath <##. "member ID: "
         cath <## "supporter badge - active"
-        cath <## "no expiry"
+        cath <## "expires 2100-01-01"
         cath <## "member not connected"
 
 testGetSetChatRelays :: HasCallStack => TestParams -> IO ()
@@ -569,8 +570,9 @@ testWebPreviewChannelDeleted ps =
 testWebPreviewStaleCleanup :: HasCallStack => TestParams -> IO ()
 testWebPreviewStaleCleanup ps = do
   let webDir = tmpPath ps </> "web_stale_unit"
-      activeFile = "abc123.json"
-      staleFile = "AAAA_stale.json"
+      previewFileName s = publicGroupIdFileName (B64UrlByteString $ C.sha256Hash s) <> ".json"
+      activeFile = previewFileName "active"
+      staleFile = previewFileName "stale"
       safeFile = "my.config.json"
   createDirectoryIfMissing True webDir
   writeFile (webDir </> activeFile) "{}"

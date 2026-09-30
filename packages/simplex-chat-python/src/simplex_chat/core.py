@@ -9,19 +9,50 @@ from __future__ import annotations
 import asyncio
 import ctypes
 import json
+from concurrent.futures import Executor
 from enum import StrEnum
 from typing import Any, TypedDict
 
 from . import _native
-from .types import T, CR, CEvt
+from .types import CR, CEvt, T
 
 
-class ChatAPIError(Exception):
+class ChatError(Exception):
+    """Base class for every failure of a chat command.
+
+    Catch this for both `ChatAPIError` and `api.ChatCommandError`.
+    """
+
+
+class ChatAPIError(ChatError):
     """Raised when chat_send_cmd / chat_recv_msg_wait returns a chat error."""
 
     def __init__(self, message: str, chat_error: T.ChatError | None = None):
         super().__init__(message)
         self.chat_error = chat_error
+
+    @property
+    def error_type(self) -> str | None:
+        """Tag of the nested `errorType`, e.g. `noActiveUser`, or None."""
+        return self._nested("errorType").get("type")
+
+    @property
+    def store_error_type(self) -> str | None:
+        """Tag of the nested `storeError`, e.g. `duplicateName`, or None."""
+        return self._nested("storeError").get("type")
+
+    @property
+    def command_error(self) -> str | None:
+        """What the core says the caller did wrong, or None.
+
+        The only part of a `commandError` worth reading: the tag says nothing.
+        """
+        error = self._nested("errorType")
+        return error.get("message") if error.get("type") == "commandError" else None
+
+    def _nested(self, key: str) -> dict[str, Any]:
+        nested = (self.chat_error or {}).get(key)  # type: ignore[attr-defined]
+        return nested if isinstance(nested, dict) else {}
 
 
 class ChatInitError(Exception):
@@ -72,7 +103,9 @@ async def chat_send_cmd(ctrl: int, cmd: str) -> CR.ChatResponse:
     raise ChatAPIError(f"invalid chat command result: {raw[:200]}")
 
 
-async def chat_recv_msg_wait(ctrl: int, wait_us: int = 500_000) -> CEvt.ChatEvent | None:
+async def chat_recv_msg_wait(
+    ctrl: int, wait_us: int = 500_000, executor: Executor | None = None
+) -> CEvt.ChatEvent | None:
     def _call() -> str:
         # On timeout, the C side returns a non-NULL pointer to a single NUL byte
         # (see Mobile.hs `fromMaybe ""`), so `_read_and_free` returns "" — no
@@ -80,7 +113,10 @@ async def chat_recv_msg_wait(ctrl: int, wait_us: int = 500_000) -> CEvt.ChatEven
         ptr = _native.lib().chat_recv_msg_wait(ctrl, wait_us)
         return _read_and_free(ptr)
 
-    raw = await asyncio.to_thread(_call)
+    if executor is None:
+        raw = await asyncio.to_thread(_call)
+    else:
+        raw = await asyncio.get_running_loop().run_in_executor(executor, _call)
     if not raw:
         return None
     parsed = json.loads(raw)
@@ -92,17 +128,29 @@ async def chat_recv_msg_wait(ctrl: int, wait_us: int = 500_000) -> CEvt.ChatEven
     raise ChatAPIError(f"invalid chat event: {raw[:200]}")
 
 
-async def chat_migrate_init(db_path: str, db_key: str, confirm: MigrationConfirmation) -> int:
-    """Initialize chat controller. Returns opaque ctrl pointer as Python int."""
+async def chat_migrate_init(
+    db_path: str,
+    db_key: str,
+    confirm: MigrationConfirmation,
+    queue_size: int | None = None,
+) -> int:
+    """Initialize chat controller. Returns opaque ctrl pointer as Python int.
+
+    `queue_size` is the size of internal queues; the core default is used when None.
+    """
+    # ctypes silently wraps ints that do not fit C int.
+    if queue_size is not None and ctypes.c_int(queue_size).value != queue_size:
+        raise ValueError(f"queue_size {queue_size} does not fit C int")
+
+    init_queue = _native.migrate_init_queue() if queue_size is not None else None
 
     def _call() -> tuple[int, str]:
         ctrl = ctypes.c_void_p()
-        ptr = _native.lib().chat_migrate_init(
-            db_path.encode("utf-8"),
-            db_key.encode("utf-8"),
-            confirm.encode("utf-8"),
-            ctypes.byref(ctrl),
-        )
+        args = (db_path.encode("utf-8"), db_key.encode("utf-8"), confirm.encode("utf-8"))
+        if init_queue is None:
+            ptr = _native.lib().chat_migrate_init(*args, ctypes.byref(ctrl))
+        else:
+            ptr = init_queue(*args, queue_size, ctypes.byref(ctrl))
         return (ctrl.value or 0, _read_and_free(ptr))
 
     ctrl_val, raw = await asyncio.to_thread(_call)

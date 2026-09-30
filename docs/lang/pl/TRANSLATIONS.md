@@ -39,7 +39,7 @@ Kroki są następujące:
 
 2. Niektóre ciągi nie wymagają tłumaczenia, ale nadal trzeba je skopiować - w interfejsie użytkownika weblate znajduje się odpowiedni przycisk:
 
-<img src="./images/weblate_1.png" alt="weblate: copy source to translation" width="100%">
+<img src="/docs/images/weblate_1.png" alt="weblate: copy source to translation" width="100%">
 
 3. Weblate posiada również automatyczne sugestie, które mogą przyspieszyć ten proces. Czasami mogą być używane w niezmienionej formie, a czasami wymagają edycji - kliknij, aby użyć ich w tłumaczeniach.
 
@@ -68,7 +68,7 @@ My wtedy:
 
 Serdecznie dziękujemy! To ogromny wysiłek i wielka pomoc dla rozwoju sieci SimpleX.
 
-<img src="./images/weblate_2.png" alt="weblate: automatic suggestions" width="100%">
+<img src="/docs/images/weblate_2.png" alt="weblate: automatic suggestions" width="100%">
 
 ## Częste błędy w tłumaczeniu
 

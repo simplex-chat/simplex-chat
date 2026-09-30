@@ -112,7 +112,6 @@ struct ChatInfoView: View {
     @State private var sendReceiptsUserDefault = true
     @State private var progressIndicator = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @State private var showSecrets: Set<Int> = []
 
     enum ChatInfoViewAlert: Identifiable {
         case clearChatAlert
@@ -283,8 +282,9 @@ struct ChatInfoView: View {
                                         }
                                     } catch let e {
                                         logger.error("apiContactQueueInfo error: \(responseError(e))")
-                                        let a = getErrorAlert(e, "Error")
-                                        await MainActor.run { alert = .error(title: a.title, error: a.message) }
+                                        await MainActor.run {
+                                            showErrorAlert(e, NSLocalizedString("Error", comment: ""))
+                                        }
                                     }
                                 }
                             }
@@ -334,7 +334,7 @@ struct ChatInfoView: View {
             case .syncConnectionForceAlert:
                 return syncConnectionForceAlert({
                     Task {
-                        if let stats = await syncContactConnection(contact, force: true, showAlert: { alert = .someAlert(alert: $0) }) {
+                        if let stats = await syncContactConnection(contact, force: true) {
                             connectionStats = stats
                             dismiss()
                         }
@@ -392,13 +392,8 @@ struct ChatInfoView: View {
                     .lineLimit(3)
                     .padding(.bottom, 2)
             }
-            if let descr = cInfo.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), descr != "" {
-                let r = markdownText(descr, textStyle: .subheadline, showSecrets: showSecrets, backgroundColor: theme.colors.background)
-                msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets, centered: true, smallFont: true)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(4)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            contactSimplexNameView(contact) { contact = $0 }
+            ProfileDescriptionView(shortDescr: cInfo.shortDescr, description: cInfo.profileDescription)
         }
         .frame(maxWidth: .infinity, alignment: .center)
     }
@@ -521,7 +516,7 @@ struct ChatInfoView: View {
     private func synchronizeConnectionButton() -> some View {
         Button {
             Task {
-                if let stats = await syncContactConnection(contact, force: false, showAlert: { alert = .someAlert(alert: $0) }) {
+                if let stats = await syncContactConnection(contact, force: false) {
                     connectionStats = stats
                     dismiss()
                 }
@@ -598,9 +593,8 @@ struct ChatInfoView: View {
                 }
             } catch let error {
                 logger.error("switchContactAddress apiSwitchContact error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error changing address")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error changing address", comment: ""))
                 }
             }
         }
@@ -616,9 +610,8 @@ struct ChatInfoView: View {
                 }
             } catch let error {
                 logger.error("abortSwitchContactAddress apiAbortSwitchContact error: \(responseError(error))")
-                let a = getErrorAlert(error, "Error aborting address change")
                 await MainActor.run {
-                    alert = .error(title: a.title, error: a.message)
+                    showErrorAlert(error, NSLocalizedString("Error aborting address change", comment: ""))
                 }
             }
         }
@@ -728,7 +721,7 @@ struct ChatTTLOption: View {
     }
 }
 
-func syncContactConnection(_ contact: Contact, force: Bool, showAlert: (SomeAlert) -> Void) async -> ConnectionStats? {
+func syncContactConnection(_ contact: Contact, force: Bool) async -> ConnectionStats? {
     do {
         let stats = try apiSyncContactRatchet(contact.apiId, force)
         await MainActor.run {
@@ -737,14 +730,8 @@ func syncContactConnection(_ contact: Contact, force: Bool, showAlert: (SomeAler
         return stats
     } catch let error {
         logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")
-        let a = getErrorAlert(error, "Error synchronizing connection")
         await MainActor.run {
-            showAlert(
-                SomeAlert(
-                    alert: mkAlert(title: a.title, message: a.message),
-                    id: "syncContactConnection error"
-                )
-            )
+            showErrorAlert(error, NSLocalizedString("Error synchronizing connection", comment: ""))
         }
         return nil
     }
@@ -824,7 +811,7 @@ private struct CallButton: View {
                                 message: Text("Connection requires encryption renegotiation."),
                                 primaryButton: .default(Text("Fix")) {
                                     Task {
-                                        if let stats = await syncContactConnection(contact, force: false, showAlert: showAlert) {
+                                        if let stats = await syncContactConnection(contact, force: false) {
                                             connectionStats = stats
                                         }
                                     }
@@ -1359,6 +1346,150 @@ private func deleteNotReadyContact(
         ),
         id: "deleteNotReadyContact"
     ))
+}
+
+@ViewBuilder func contactSimplexNameView(_ contact: Contact, verifiable: Bool = true, onUpdate: ((Contact) -> Void)? = nil) -> some View {
+    if let domain = contact.profile.contactDomain,
+       contact.profile.contactDomainVerified != nil || domain.proof != nil {
+        SimplexNameView(
+            simplexName: "@\(domain.domain)",
+            verified: contact.profile.contactDomainVerified,
+            verify: {
+                do {
+                    let (ct, reason) = try await apiVerifyContactDomain(contact.contactId)
+                    await MainActor.run {
+                        ChatModel.shared.updateContact(ct)
+                        onUpdate?(ct)
+                    }
+                    return (ct.profile.contactDomainVerified, reason)
+                } catch {
+                    logger.error("apiVerifyContactDomain: \(responseError(error))")
+                    return nil
+                }
+            },
+            verifiable: verifiable
+        )
+    }
+}
+
+@ViewBuilder func groupSimplexNameView(_ groupInfo: GroupInfo, verifiable: Bool = true, onUpdate: ((GroupInfo) -> Void)? = nil) -> some View {
+    if groupInfo.businessChat == nil {
+        if let access = groupInfo.groupProfile.publicGroup?.publicGroupAccess,
+           let domain = access.groupDomainClaim?.shortName,
+           groupInfo.groupDomainVerified != nil || access.groupDomainClaim?.proof != nil {
+            SimplexNameView(
+                simplexName: "#\(domain)",
+                verified: groupInfo.groupDomainVerified,
+                verify: {
+                    do {
+                        let (gInfo, reason) = try await apiVerifyGroupDomain(groupInfo.groupId)
+                        await MainActor.run {
+                            ChatModel.shared.updateGroup(gInfo)
+                            onUpdate?(gInfo)
+                        }
+                        return (gInfo.groupDomainVerified, reason)
+                    } catch {
+                        logger.error("apiVerifyGroupDomain: \(responseError(error))")
+                        return nil
+                    }
+                },
+                verifiable: verifiable
+            )
+        }
+    } else if let claim = groupInfo.businessChat?.businessDomain,
+              groupInfo.groupDomainVerified != nil || claim.proof != nil {
+        // A business presents as a contact, so the name retains its .simplex suffix; it cannot be re-verified.
+        SimplexNameView(
+            simplexName: "@\(claim.domain)",
+            verified: groupInfo.groupDomainVerified,
+            verify: { nil },
+            verifiable: false
+        )
+    }
+}
+
+struct SimplexNameView: View {
+    @EnvironmentObject var theme: AppTheme
+    @AppStorage(DEFAULT_PRIVACY_VERIFY_SIMPLEX_NAMES) var autoVerify = false
+    let simplexName: String
+    let verified: Bool?
+    let verify: () async -> (Bool?, String?)?
+    var verifiable: Bool = true
+    @State private var inFlight = false
+    @State private var showSpinner = false
+
+    var body: some View {
+        content
+            .padding(.bottom, 2)
+            .onAppear { if verifiable && autoVerify && verified == nil { runVerify(manual: false) } }
+    }
+
+    private var nameText: Text {
+        Text(simplexName)
+            .font(.subheadline)
+            .foregroundColor(verified == true ? theme.colors.primary : theme.colors.secondary)
+    }
+
+    // Size the inline check/cross to the name's cap height so it reads like a capital letter, not an oversized glyph.
+    private var iconFont: Font { .system(size: UIFont.preferredFont(forTextStyle: .subheadline).capHeight) }
+
+    @ViewBuilder private var content: some View {
+        if showSpinner {
+            HStack(spacing: 6) {
+                nameText
+                ProgressView()
+            }
+        } else if verified == true {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                nameText
+                Image(systemName: "checkmark").font(iconFont).foregroundColor(theme.colors.primary)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                UIPasteboard.general.string = simplexName
+                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+            }
+        } else if !verifiable {
+            nameText
+        } else if verified == false {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                nameText
+                Image(systemName: "xmark").font(iconFont).foregroundColor(.red)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - $0.height * 0.15 }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { runVerify(manual: true) }
+        } else {
+            HStack(spacing: 6) {
+                nameText
+                Button { runVerify(manual: true) } label: {
+                    Text("Verify name").font(.subheadline).foregroundColor(theme.colors.primary)
+                }
+            }
+        }
+    }
+
+    private func runVerify(manual: Bool) {
+        if inFlight { return }
+        inFlight = true
+        // delay the spinner so a fast result on appear doesn't flash it
+        Task {
+            try? await Task.sleep(nanoseconds: 300_000000)
+            await MainActor.run { if inFlight { showSpinner = true } }
+        }
+        Task {
+            let res = await verify()
+            await MainActor.run {
+                inFlight = false
+                showSpinner = false
+                // show the reason on a manual run, or on an inconclusive auto run (state stayed nil)
+                if let (newV, reason) = res, let reason, manual || newV == nil {
+                    showAlert(NSLocalizedString("SimpleX name not verified", comment: "alert title"), message: reason)
+                }
+            }
+        }
+    }
 }
 
 struct ChatInfoView_Previews: PreviewProvider {

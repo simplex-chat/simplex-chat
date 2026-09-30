@@ -24,6 +24,7 @@ import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URI
 
@@ -39,10 +40,10 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
     var profile by remember { mutableStateOf(user.profile.toProfile()) }
     UserProfileLayout(
       profile = profile,
-      close,
-      saveProfile = { displayName, fullName, shortDescr, image ->
+      close = close,
+      saveProfile = { displayName, fullName, shortDescr, description, image ->
         withBGApi {
-          val updatedProfile = profile.copy(displayName = displayName.trim(), fullName = fullName.trim(), shortDescr = shortDescr.trim().ifEmpty { null }, image = image)
+          val updatedProfile = profile.copy(displayName = displayName.trim(), fullName = fullName.trim(), shortDescr = shortDescr.trim().ifEmpty { null }, description = description.trim().ifEmpty { null }, image = image)
           val updated = chatModel.controller.apiUpdateProfile(user.remoteHostId, updatedProfile)
           if (updated != null) {
             val (newProfile, _) = updated
@@ -60,12 +61,13 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
 fun UserProfileLayout(
   profile: Profile,
   close: () -> Unit,
-  saveProfile: (String, String, String, String?) -> Unit,
+  saveProfile: (String, String, String, String, String?) -> Unit,
 ) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val displayName = remember { mutableStateOf(profile.displayName) }
   val fullName = remember { mutableStateOf(profile.fullName) }
   val shortDescr = remember { mutableStateOf(profile.shortDescr ?: "") }
+  val description = remember { mutableStateOf(profile.description ?: "") }
   val chosenImage = rememberSaveable { mutableStateOf<URI?>(null) }
   val profileImage = rememberSaveable { mutableStateOf(profile.image) }
   val scope = rememberCoroutineScope()
@@ -73,6 +75,8 @@ fun UserProfileLayout(
   val keyboardState by getKeyboardState()
   var savedKeyboardState by remember { mutableStateOf(keyboardState) }
   val focusRequester = remember { FocusRequester() }
+  val descrFocusRequester = remember { FocusRequester() }
+  var editingDescription by remember { mutableStateOf(false) }
     ModalBottomSheetLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
       sheetContent = {
@@ -86,19 +90,75 @@ fun UserProfileLayout(
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
-      val dataUnchanged =
+      fun dataUnchanged(): Boolean =
         displayName.value.trim() == profile.displayName &&
             fullName.value.trim() == profile.fullName &&
             shortDescr.value.trim() == (profile.shortDescr ?: "") &&
+            description.value.trim() == (profile.description ?: "") &&
             profile.image == profileImage.value
-      val closeWithAlert = {
-        if (dataUnchanged || !canSaveProfile(displayName.value, shortDescr.value, profile)) {
-          close()
-        } else {
-          showUnsavedChangesAlert({ saveProfile(displayName.value, fullName.value, shortDescr.value, profileImage.value) }, close)
+      fun onClose(close: () -> Unit): Boolean = if (dataUnchanged() || !canSaveProfile(displayName.value, shortDescr.value, profile)) {
+        chatModel.centerPanelBackgroundClickHandler = null
+        close()
+        false
+      } else {
+        showUnsavedChangesAlert(
+          {
+            chatModel.centerPanelBackgroundClickHandler = null
+            saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value)
+          },
+          {
+            chatModel.centerPanelBackgroundClickHandler = null
+            close()
+          }
+        )
+        true
+      }
+      DisposableEffect(Unit) {
+        onDispose { chatModel.centerPanelBackgroundClickHandler = null }
+      }
+      LaunchedEffect(Unit) {
+        chatModel.centerPanelBackgroundClickHandler = {
+          onClose(close = { ModalManager.start.closeModals() })
         }
       }
-      ModalView(close = closeWithAlert) {
+      LaunchedEffect(editingDescription) {
+        if (editingDescription) {
+          delay(200)
+          descrFocusRequester.requestFocus()
+        }
+      }
+      ModalView(close = if (editingDescription) ({ editingDescription = false }) else ({ onClose(close) })) {
+        if (editingDescription) {
+          // app bar is top (default) or bottom (one-handed) — mirror ColumnWithScrollBar's spacers
+          // so the entry area never runs under the app bar, keyboard, or system bars
+          val oneHandUI = remember { ChatController.appPrefs.oneHandUI.state }
+          Column(Modifier.fillMaxSize().imePadding().padding(horizontal = DEFAULT_PADDING)) {
+            if (oneHandUI.value) {
+              Spacer(Modifier.padding(top = DEFAULT_PADDING + 5.dp).windowInsetsTopHeight(WindowInsets.statusBars))
+            } else {
+              Spacer(Modifier.statusBarsPadding().padding(top = AppBarHeight * fontSizeSqrtMultiplier))
+            }
+            AppBarTitle(stringResource(MR.strings.profile_description__field), withPadding = false)
+            // weight goes on the Box (a direct Column child); TextEditor forwards its modifier
+            // to the inner BasicTextField, where weight would be ignored
+            Box(Modifier.weight(1f, fill = false).padding(bottom = DEFAULT_PADDING)) {
+              TextEditor(
+                description,
+                Modifier.heightIn(min = 140.dp),
+                placeholder = stringResource(MR.strings.enter_description_optional),
+                contentPadding = PaddingValues(),
+                focusRequester = descrFocusRequester,
+                maxLines = Int.MAX_VALUE
+              )
+            }
+            if (oneHandUI.value) {
+              Spacer(Modifier.navigationBarsPadding().padding(bottom = AppBarHeight * fontSizeSqrtMultiplier))
+            } else {
+              Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.systemBars))
+            }
+          }
+          return@ModalView
+        }
         ColumnWithScrollBar(
           Modifier
             .padding(horizontal = DEFAULT_PADDING),
@@ -168,8 +228,15 @@ fun UserProfileLayout(
             ProfileNameField(shortDescr)
 
             Spacer(Modifier.height(DEFAULT_PADDING))
-            val enabled = !dataUnchanged && canSaveProfile(displayName.value, shortDescr.value, profile)
-            val saveModifier: Modifier = Modifier.clickable(enabled) { saveProfile(displayName.value, fullName.value, shortDescr.value, profileImage.value) }
+            Text(
+              stringResource(if (description.value.isBlank()) MR.strings.add_description else MR.strings.edit_description),
+              color = MaterialTheme.colors.primary,
+              modifier = Modifier.clickable { editingDescription = true }
+            )
+
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            val enabled = !dataUnchanged() && canSaveProfile(displayName.value, shortDescr.value, profile)
+            val saveModifier: Modifier = Modifier.clickable(enabled) { saveProfile(displayName.value, fullName.value, shortDescr.value, description.value, profileImage.value) }
             val saveColor: Color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
             Text(
               stringResource(MR.strings.save_and_notify_contacts),
@@ -248,7 +315,7 @@ fun PreviewUserProfileLayoutEditOff() {
     UserProfileLayout(
       profile = Profile.sampleData,
       close = {},
-      saveProfile = { _, _, _, _ -> }
+      saveProfile = { _, _, _, _, _ -> }
     )
   }
 }
@@ -264,7 +331,7 @@ fun PreviewUserProfileLayoutEditOn() {
     UserProfileLayout(
       profile = Profile.sampleData,
       close = {},
-      saveProfile = { _, _, _, _ -> }
+      saveProfile = { _, _, _, _, _ -> }
     )
   }
 }

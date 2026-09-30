@@ -20,7 +20,7 @@ import Data.Char (isUpper, toLower, toUpper)
 import Data.List (find, mapAccumL, sortOn)
 import qualified Data.List.NonEmpty as L
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import qualified Data.Set as S
 import Data.Text (Text)
 import GHC.Generics
@@ -34,7 +34,9 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
-import Simplex.Chat.Badges (BadgeInfo (..), BadgeProof (..), BadgeStatus (..), BadgeType (..), JSONBadge (..))
+import Simplex.Chat.Badges
+import Simplex.Chat.Badges.Service
+import Simplex.Chat.Names
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
@@ -45,9 +47,10 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Client
 import Simplex.Messaging.Crypto.File
 import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
-import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NetworkError (..), ProxyError (..))
+import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NetworkError (..), ProxyError (..))
 import Simplex.Messaging.Protocol.Types (ClientNotice (..))
 import Simplex.Messaging.Transport
+import Simplex.Chat.Remote.Types (CtrlAppInfo (..))
 import Simplex.RemoteControl.Types
 import System.Console.ANSI.Types (Color (..))
 
@@ -174,11 +177,15 @@ normalizeConsName pfx consName
 
 -- making chatDir optional because clients use CIDirection? instead of CIQDirection (the type is replaced in Types.hs)
 ciQuoteType :: SumTypeInfo
-ciQuoteType =
-  let st@(STI _ records) = sti @(CIQuote 'CTDirect)
-      optChatDir f@(FieldInfo n t) = if n == "chatDir" then FieldInfo n (TIOptional t) else f
-      updateRecord (RecordTypeInfo name fields) = RecordTypeInfo name $ map optChatDir fields
-   in st {recordTypes = map updateRecord records} -- need to map even though there is one constructor in this type
+ciQuoteType = updateFields mkOptional $ sti @(CIQuote 'CTDirect)
+  where
+    mkOptional = map (\f@(FieldInfo n t) -> if n == "chatDir" then FieldInfo n (TIOptional t) else f)
+
+removeField :: String -> SumTypeInfo -> SumTypeInfo
+removeField n = updateFields $ mapMaybe (\f@(FieldInfo n' _) -> if n == n' then Nothing else Just f)
+   
+updateFields :: ([FieldInfo] -> [FieldInfo]) -> SumTypeInfo -> SumTypeInfo
+updateFields f st@(STI _ records) = st {recordTypes = map (\(RecordTypeInfo name fields) -> RecordTypeInfo name $ f fields) records}
 
 -- type info, JSON encoding, constructor prefix, removed constructors, string encoding for commands, description
 chatTypesDocsData :: [(SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Expr, Text)]
@@ -197,6 +204,7 @@ chatTypesDocsData =
     -- (STI "JSONObject" [], STRecord, "", [], "Arbitrary JSON object."),
     -- (STI "UTCTime" [], STRecord, "", [], "Timestampe in ISO8601 format as string."),
     (STI "VersionRange" [RecordTypeInfo "VersionRange" [FieldInfo "minVersion" (ti TInt), FieldInfo "maxVersion" (ti TInt)]], STRecord, "", [], "", ""),
+    (STI "UserContactRequestRef" [RecordTypeInfo "UserContactRequestRef" [FieldInfo "contactRequestId" (ti TInt64), FieldInfo "rejectionSupported" (ti TBool)]], STRecord, "", [], "", ""),
     (sti @(ChatItem 'CTDirect 'MDSnd), STRecord, "", [], "", ""),
     (sti @(CIFile 'MDSnd), STRecord, "", [], "", ""),
     (sti @(CIMeta 'CTDirect 'MDSnd), STRecord, "", [], "", ""),
@@ -208,8 +216,12 @@ chatTypesDocsData =
     (sti @AddressSettings, STRecord, "", [], "", ""),
     (sti @AgentCryptoError, STUnion, "", ["RATCHET_EARLIER", "RATCHET_SKIPPED"], "", ""), -- TODO add fields to types
     (sti @AgentErrorType, STUnion, "", [], "", ""),
+    (sti @AgentServiceError, STUnion, "ASE", [], "", ""),
+    (STI "AppVersionRange" [RecordTypeInfo "AppVersionRange" [FieldInfo "minVersion" (TIType (ST TString [])), FieldInfo "maxVersion" (TIType (ST TString []))]], STRecord, "", [], "", "Remote controller app version range (min and max as version strings)."),
     (sti @AutoAccept, STRecord, "", [], "", ""),
     (sti @BadgeProof, STRecord, "", [], "", ""),
+    (sti @BadgeRedeemError, STUnion, "BRE", [], "", ""),
+    (sti @BadgeServiceErrorCode, STEnum' (consSep "BSE" '_'), "", ["BSEUnknown"], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),
     (sti @BlockingReason, STEnum, "BR", [], "", ""),
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
@@ -223,7 +235,7 @@ chatTypesDocsData =
     (sti @BadgeType, STEnum, "BT", ["BTUnknown"], "", ""),
     (sti @ChatFeature, STEnum, "CF", [], "", ""),
     (sti @ChatItemDeletion, STRecord, "", [], "", "Message deletion result."),
-    (sti @ChatPeerType, STEnum, "CPT", [], "", ""),
+    (sti @ChatPeerType, STEnum, "CPT", ["CPTUnknown"], "", ""),
     (sti @ChatRef, STRecord, "", [], Param "chatType" <> Param "chatId" <> Optional "" (Param "$0") "chatScope", "Used in API commands. Chat scope can only be passed with groups."),
     (sti @ChatSettings, STRecord, "", [], "", ""),
     (sti @ChatStats, STRecord, "", [], "", ""),
@@ -240,6 +252,7 @@ chatTypesDocsData =
     (sti @CIReactionCount, STRecord, "", [], "", ""),
     (sti @CITimed, STRecord, "", [], "", ""),
     (sti @ClientNotice, STRecord, "", [], "", ""),
+    (sti @CtrlAppInfo, STRecord, "", [], "", "Remote controller application info."),
     (sti @Color, STEnum, "", [], "", ""),
     (sti @CommandError, STUnion, "", [], "", ""),
     (sti @CommandErrorType, STUnion, "", [], "", ""),
@@ -267,6 +280,7 @@ chatTypesDocsData =
     (sti @FileError, STUnion, "FileErr", [], "", ""),
     (sti @FileErrorType, STUnion, "", [], "", ""),
     (sti @FileInvitation, STRecord, "", [], "", ""),
+    (sti @FileProhibited, STRecord, "", [], "", ""),
     (sti @FileProtocol, STEnum' (consLower "FP"), "", [], "", ""),
     (sti @FileStatus, STEnum, "FS", [], "", ""),
     (sti @FileTransferMeta, STRecord, "", [], "", ""),
@@ -281,8 +295,6 @@ chatTypesDocsData =
     (sti @GroupFeature, STEnum, "GF", [], "", ""),
     (sti @GroupFeatureEnabled, STEnum, "FE", [], "", ""),
     (sti @GroupInfo, STRecord, "", [], "", ""),
-    (sti @GroupKeys, STRecord, "", [], "", ""),
-    (sti @GroupRootKey, STUnion, "GRK", [], "", ""),
     (sti @GroupLink, STRecord, "", [], "", ""),
     (sti @GroupLinkOwner, STRecord, "", [], "", ""),
     (sti @GroupLinkPlan, STUnion, "GLP", [], "", ""),
@@ -294,7 +306,7 @@ chatTypesDocsData =
     (sti @GroupMemberSettings, STRecord, "", [], "", ""),
     (sti @GroupMemberStatus, STEnum' ((\case "group_deleted" -> "deleted"; "intro_invited" -> "intro-inv"; s -> s) . consSep "GSMem" '_'), "", [], "", ""),
     (sti @GroupPreference, STRecord, "", [], "", ""),
-    (sti @GroupPreferences, STRecord, "", [], "", ""),
+    (removeField "_json" $ sti @GroupPreferences, STRecord, "", [], "", ""),
     (sti @GroupProfile, STRecord, "", [], "", ""),
     (sti @GroupRelay, STRecord, "", [], "", ""),
     (sti @GroupShortLinkData, STRecord, "", [], "", ""),
@@ -321,13 +333,16 @@ chatTypesDocsData =
     (sti @MsgReaction, STUnion, "MR", [], "", ""),
     (sti @MsgReceiptStatus, STEnum, "MR", [], "", ""),
     (sti @MsgSigStatus, STEnum, "MSS", [], "", ""),
+    (sti @MsgVerified, STUnion, "MV", [], "", ""),
+    (sti @NameErrorType, STUnion, "", [], "", ""),
     (sti @NetworkError, STUnion, "NE", [], "", ""),
     (sti @NewUser, STRecord, "", [], "", ""),
     (sti @NoteFolder, STRecord, "", [], "", ""),
     (sti @OwnerVerification, STUnion, "OV", [], "", ""),
     (sti @PendingContactConnection, STRecord, "", [], "", ""),
+    (sti @PlanResolveMode, STEnum, "PRM", [], "", ""),
     (sti @PrefEnabled, STRecord, "", [], "", ""),
-    (sti @Preferences, STRecord, "", [], "", ""),
+    (removeField "_json" $ sti @Preferences, STRecord, "", [], "", ""),
     (sti @PreparedContact, STRecord, "", [], "", ""),
     (sti @GroupDirectInvitation, STRecord, "", [], "", ""),
     (sti @PreparedGroup, STRecord, "", [], "", ""),
@@ -347,14 +362,21 @@ chatTypesDocsData =
     (sti @RcvGroupEvent, STUnion, "RGE", [], "", ""),
     (sti @RcvMsgError, STUnion, "RME", [], "", ""),
     (sti @RelayCapabilities, STRecord, "", [], "", ""),
+    (sti @RelayConnectionResult, STRecord, "", [], "", ""),
     (sti @RelayProfile, STRecord, "", [], "", ""),
     (sti @RelayStatus, STEnum, "RS", [], "", ""),
+    (sti @RemoteCtrlInfo, STRecord, "", [], "", ""),
+    (sti @RemoteCtrlSessionState, STUnion, "RCS", [], "", ""),
+    (sti @RemoteCtrlStopReason, STUnion, "RCSR", [], "", ""),
     (sti @ReportReason, STEnum' (dropPfxSfx "RR" ""), "", ["RRUnknown"], "", ""),
     (sti @RoleGroupPreference, STRecord, "", [], "", ""),
     (sti @SecurityCode, STRecord, "", [], "", ""),
     (sti @SimplePreference, STRecord, "", [], "", ""),
+    (sti @SimplexDomain, STRecord, "", [], "", ""),
+    (sti @SimplexDomainClaim, STRecord, "", [], "", ""),
+    (sti @SimplexDomainError, STUnion, "SDE", [], "", ""),
+    (sti @SimplexDomainProof, STRecord, "", [], "", ""),
     (sti @SimplexLinkType, STEnum, "XL", [], "", ""),
-    (sti @SimplexNameDomain, STRecord, "", [], "", ""),
     (sti @SimplexNameInfo, STRecord, "", [], "", ""),
     (sti @SimplexNameType, STEnum, "NT", [], "", ""),
     (sti @SimplexTLD, STEnum, "TLD", [], "", ""),
@@ -428,8 +450,11 @@ deriving instance Generic AddRelayResult
 deriving instance Generic AddressSettings
 deriving instance Generic AgentCryptoError
 deriving instance Generic AgentErrorType
+deriving instance Generic AgentServiceError
 deriving instance Generic AutoAccept
 deriving instance Generic BadgeProof
+deriving instance Generic BadgeRedeemError
+deriving instance Generic BadgeServiceErrorCode
 deriving instance Generic BlockingInfo
 deriving instance Generic BlockingReason
 deriving instance Generic BrokerErrorType
@@ -460,6 +485,7 @@ deriving instance Generic CIMentionMember
 deriving instance Generic CIReactionCount
 deriving instance Generic CITimed
 deriving instance Generic ClientNotice
+deriving instance Generic CtrlAppInfo
 deriving instance Generic Color
 deriving instance Generic CommandError
 deriving instance Generic CommandErrorType
@@ -487,6 +513,7 @@ deriving instance Generic FileDescr
 deriving instance Generic FileError
 deriving instance Generic FileErrorType
 deriving instance Generic FileInvitation
+deriving instance Generic FileProhibited
 deriving instance Generic FileProtocol
 deriving instance Generic FileStatus
 deriving instance Generic FileTransferMeta
@@ -501,8 +528,6 @@ deriving instance Generic GroupChatScopeInfo
 deriving instance Generic GroupFeature
 deriving instance Generic GroupFeatureEnabled
 deriving instance Generic GroupInfo
-deriving instance Generic GroupKeys
-deriving instance Generic GroupRootKey
 deriving instance Generic GroupLink
 deriving instance Generic GroupLinkOwner
 deriving instance Generic GroupLinkPlan
@@ -548,11 +573,14 @@ deriving instance Generic MsgFilter
 deriving instance Generic MsgReaction
 deriving instance Generic MsgReceiptStatus
 deriving instance Generic MsgSigStatus
+deriving instance Generic MsgVerified
+deriving instance Generic NameErrorType
 deriving instance Generic NetworkError
 deriving instance Generic NewUser
 deriving instance Generic NoteFolder
 deriving instance Generic OwnerVerification
 deriving instance Generic PendingContactConnection
+deriving instance Generic PlanResolveMode
 deriving instance Generic PrefEnabled
 deriving instance Generic Preferences
 deriving instance Generic PreparedContact
@@ -574,12 +602,19 @@ deriving instance Generic RcvFileTransfer
 deriving instance Generic RcvGroupEvent
 deriving instance Generic RcvMsgError
 deriving instance Generic RelayCapabilities
+deriving instance Generic RelayConnectionResult
 deriving instance Generic RelayProfile
 deriving instance Generic RelayStatus
+deriving instance Generic RemoteCtrlInfo
+deriving instance Generic RemoteCtrlSessionState
+deriving instance Generic RemoteCtrlStopReason
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
+deriving instance Generic SimplexDomain
+deriving instance Generic SimplexDomainClaim
+deriving instance Generic SimplexDomainError
+deriving instance Generic SimplexDomainProof
 deriving instance Generic SimplexLinkType
-deriving instance Generic SimplexNameDomain
 deriving instance Generic SimplexNameInfo
 deriving instance Generic SimplexNameType
 deriving instance Generic SimplexTLD

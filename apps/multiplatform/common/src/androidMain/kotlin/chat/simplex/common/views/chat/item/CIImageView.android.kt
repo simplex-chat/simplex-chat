@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat.item
 import android.os.Build.VERSION.SDK_INT
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.State
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
@@ -24,6 +25,7 @@ actual fun SimpleAndAnimatedImageView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   smallView: Boolean,
+  blurred: State<Boolean>, // coil drives the animation itself here, so there is nothing to pause
   ImageView: @Composable (painter: Painter, onClick: () -> Unit) -> Unit
 ) {
   val context = LocalContext.current

@@ -21,6 +21,7 @@ revision: 13.08.2025
 - [Why cannot I delete messages I sent from my contact's device?](#why-cannot-i-delete-messages-i-sent-from-my-contacts-device)
 - [What do group roles mean?](#what-do-group-roles-mean)
 - [I don't want to share a web link or a QR code. How can I connect?](#i-dont-want-to-share-a-web-link-or-a-qr-code-how-can-i-connect)
+- [How to change servers to my own](#how-to-change-servers-to-my-own)
 
 [Troubleshooting](#troubleshooting)
 - [I do not receive messages or message notifications](#i-do-not-receive-messages-or-message-notifications)
@@ -174,6 +175,16 @@ You can replace the server part of the link (e.g., `https://smp18.simplex.im/`) 
 For example, this link: `https://smp18.simplex.im/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ`
 
 becomes: `simplex:/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ?h=smp18.simplex.im`
+
+### How to change servers to my own?
+
+Add your server in Settings -> Network & servers -> Your servers. If you have multiple profiles, you need to add your server in every profile.
+After that, disable all preset servers. If you have multiple profiles, you must first add your server to all profiles for this option to be available.
+
+To resolve SimpleX public names, if your server does not support it, you may leave preset servers enabled only for resolving the public names.
+
+Please note: configured servers only determine which servers will be used for the new connections (members/contacts). Previously created connections don't switch automatically. You can manually switch all existing contacts and small/important groups (each member needs to be switched), and then leave and re-join all large groups.
+You can switch contacts/members manually to another server by going to their profile and clicking on "Change receiving address", note that the current server must be online for the address change to work.
 
 ## Troubleshooting
 
