@@ -78,10 +78,7 @@ getRemoteRcvKeys RemoteCrypto {rcvCounter, chainKeys = TSbChainKeys {rcvKey}, sk
           Right <$> getKeys
     maxSkip = 256
     maxSkippedKeys = 1024
-    getKeys = (,) <$> nextKeys <*> nextKeys
-    nextKeys = do
-      (kn, ck) <- C.sbcHkdf <$> readTVar rcvKey
-      kn <$ (writeTVar rcvKey $! ck)
+    getKeys = (,) <$> stateTVar rcvKey C.sbcHkdf <*> stateTVar rcvKey C.sbcHkdf
     skipKeys !cId =
       when (cId < corrId) $ do
         keys <- getKeys
