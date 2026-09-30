@@ -2438,7 +2438,6 @@ batchSendConnMessagesB mode _user conn msgFlags msgs_ = do
 batchSndMessagesJSON :: BatchMode -> NonEmpty (Either ChatError SndMessage) -> [Either ChatError MsgBatch]
 batchSndMessagesJSON mode = batchMessages mode maxEncodedMsgLength . L.toList
 
--- compresses conn info over the envelope size, which is smaller with PQ encryption
 compressConnInfo :: PQSupport -> MsgBody -> CM MsgBody
 compressConnInfo pqSup connInfo
   | B.length connInfo <= maxLen = pure connInfo

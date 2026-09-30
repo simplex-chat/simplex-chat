@@ -924,7 +924,6 @@ $(JQ.deriveJSON defaultJSON ''MsgContainer)
 maxEncodedMsgLength :: Int
 maxEncodedMsgLength = 15602
 
--- maxEncodedMsgLength for a connection with PQ encryption, which has a smaller envelope
 -- maxEncodedMsgLength - 2222, see e2eEncUserMsgLength in agent
 maxEncodedMsgLengthPQ :: Int
 maxEncodedMsgLengthPQ = 13380
@@ -966,7 +965,6 @@ rosterBlobP = do
 maxEncodedInfoLength :: Int
 maxEncodedInfoLength = 14694
 
--- maxEncodedInfoLength for a connection with PQ encryption, which has a smaller envelope
 maxEncodedInfoLengthPQ :: Int
 maxEncodedInfoLengthPQ = 10968 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
 
