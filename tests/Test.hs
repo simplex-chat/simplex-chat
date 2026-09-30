@@ -7,6 +7,8 @@ import Bots.BadgeService.BTCPayTests
 import Bots.BadgeService.BotTests
 import Bots.BadgeService.CatalogTests
 import Bots.BadgeService.ConfigTests
+import Bots.BadgeService.GroupIntegrationTests
+import Bots.BadgeService.GroupTests
 import Bots.BadgeService.StripeTests
 import Bots.BadgeService.WaitersTests
 import Bots.BadgeService.WebTests
@@ -74,6 +76,7 @@ main = do
         badgeConfigTests
         badgeWebTests
         badgeCatalogTests
+        badgeGroupTests
         badgeWaitersTests
         badgeBTCPayTests
         badgeStripeTests
@@ -102,7 +105,9 @@ main = do
           describe "SimpleX chat client" chatTests
           xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
           xdescribe'' "SimpleX Directory service bot" directoryServiceTests
-          xdescribe'' "SimpleX badge service e2e" badgeServiceTests
+          xdescribe'' "SimpleX badge service e2e" $ do
+            badgeServiceTests
+            describe "managed group" badgeGroupIntegrationTests
           describe "Remote session" remoteTests
 #if !defined(dbPostgres)
           xdescribe'' "Save query plans" saveQueryPlans
