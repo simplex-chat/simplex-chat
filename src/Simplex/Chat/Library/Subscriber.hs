@@ -1247,7 +1247,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId chatV pqSup
                       let incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
                       profileToSend <- presentUserBadge user incognitoProfile $ userProfileInGroup user gInfo incognitoProfile
-                      dm <- encodeXMemberConnInfo g relayMemberId profileToSend
+                      dm <- encodeXMemberConnInfo pqSup g relayMemberId profileToSend
                       subMode <- chatReadVar subscriptionMode
                       (cmdId, connId') <- prepareAgentJoin user (Just conn) True cReq
                       joinAgentConnectionAsync cmdId True connId' True cReq dm subMode
