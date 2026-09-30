@@ -59,7 +59,7 @@ struct StorageView: View {
     private func confirmDeleteTempFiles() {
         showAlert(
             NSLocalizedString("Delete temp data?", comment: "alert title"),
-            message: NSLocalizedString("Files being sent or received will never complete. Videos in unsent drafts will be lost.", comment: "alert message"),
+            message: NSLocalizedString("Files being sent or received will never complete. Videos in unsent drafts will be sent without the file.", comment: "alert message"),
             actions: {[
                 UIAlertAction(title: NSLocalizedString("Delete", comment: "alert action"), style: .destructive) { _ in
                     deleteTempFiles()
