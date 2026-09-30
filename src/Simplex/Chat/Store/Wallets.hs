@@ -19,11 +19,12 @@ module Simplex.Chat.Store.Wallets
 where
 
 import Control.Monad.Except
-import Data.Bifunctor (first)
 import Control.Monad.IO.Class (liftIO)
+import Data.Bifunctor (first)
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
+import Data.Maybe (isNothing)
 import Data.Word (Word32)
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Wallet (WalletError (..))
@@ -93,7 +94,7 @@ getUserAccounts db userId sId =
       db
       [sql|
         SELECT account_index FROM wallet_accounts
-        WHERE wallet_seed_id = ? AND user_id = ? AND account_index IS NOT NULL
+        WHERE wallet_seed_id = ? AND user_id = ?
         ORDER BY account_index
       |]
       (sId, userId)
@@ -105,15 +106,33 @@ accountUser db sId n =
     DB.query db "SELECT user_id FROM wallet_accounts WHERE wallet_seed_id = ? AND account_index = ?" (sId, n)
 
 bindAccount :: DB.Connection -> UserId -> Maybe AccountIndex -> ExceptT StoreError IO (Either WalletError (WalletEntropy, AccountIndex))
-bindAccount db userId accountIdx_ = resolveAccount_ db accountIdx_ >>= either (pure . Left) (liftIO . bind)
-  where
-    bind (Wallet {walletId, entropy}, n) = do
-      held <-
-        accountUser db walletId n >>= \case
-          Just (Just heldBy) -> pure $ heldBy == userId
-          Just Nothing -> setAccountUser db userId walletId n
-          Nothing -> True <$ insertAccount db userId walletId n
-      if held then Right (entropy, n) <$ raiseNextAccount db walletId n else pure $ Left WEAccountBound
+bindAccount db userId accountIdx_ =
+  getWallet db >>= \case
+    Nothing -> pure $ Left WENoMaster
+    Just Wallet {walletId, entropy, nextAccountIndex} -> liftIO $ case accountIdx_ of
+      Nothing
+        | isNothing nextAccountIndex -> pure $ Left WECounterUnknown
+        | otherwise -> takeNextAccount db walletId >>= maybe (pure $ Left WEAccountsExhausted) (\n -> Right (entropy, n) <$ insertAccount db userId walletId n)
+      Just n -> do
+        held <-
+          accountUser db walletId n >>= \case
+            Just (Just heldBy) -> pure $ heldBy == userId
+            Just Nothing -> setAccountUser db userId walletId n
+            Nothing -> True <$ insertAccount db userId walletId n
+        if held then Right (entropy, n) <$ raiseNextAccount db walletId n else pure $ Left WEAccountBound
+
+-- | Moves the counter in one statement, so concurrent binds get different accounts.
+takeNextAccount :: DB.Connection -> SeedId -> IO (Maybe AccountIndex)
+takeNextAccount db sId =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        UPDATE wallet_seeds SET next_account_index = next_account_index + 1
+        WHERE wallet_seed_id = ? AND next_account_index < 2147483648
+        RETURNING next_account_index - 1
+      |]
+      (Only sId)
 
 setAccountUser :: DB.Connection -> UserId -> SeedId -> AccountIndex -> IO Bool
 setAccountUser db userId sId n =

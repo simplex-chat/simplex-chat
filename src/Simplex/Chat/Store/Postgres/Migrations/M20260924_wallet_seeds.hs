@@ -19,7 +19,7 @@ CREATE TABLE wallet_seeds (
 CREATE TABLE wallet_accounts (
   wallet_account_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   wallet_seed_id BIGINT NOT NULL REFERENCES wallet_seeds ON DELETE CASCADE,
-  account_index BIGINT CHECK (account_index BETWEEN 0 AND 2147483647),
+  account_index BIGINT NOT NULL CHECK (account_index BETWEEN 0 AND 2147483647),
   user_id BIGINT REFERENCES users ON DELETE SET NULL
 );
 

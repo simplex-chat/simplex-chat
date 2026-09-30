@@ -18,7 +18,7 @@ CREATE TABLE wallet_seeds (
 CREATE TABLE wallet_accounts (
   wallet_account_id INTEGER PRIMARY KEY AUTOINCREMENT,
   wallet_seed_id INTEGER NOT NULL REFERENCES wallet_seeds ON DELETE CASCADE,
-  account_index INTEGER CHECK (account_index BETWEEN 0 AND 2147483647),
+  account_index INTEGER NOT NULL CHECK (account_index BETWEEN 0 AND 2147483647),
   user_id INTEGER REFERENCES users ON DELETE SET NULL
 ) STRICT;
 

@@ -1733,7 +1733,7 @@ ALTER TABLE test_chat_schema.users ALTER COLUMN user_id ADD GENERATED ALWAYS AS 
 CREATE TABLE test_chat_schema.wallet_accounts (
     wallet_account_id bigint NOT NULL,
     wallet_seed_id bigint NOT NULL,
-    account_index bigint,
+    account_index bigint NOT NULL,
     user_id bigint,
     CONSTRAINT wallet_accounts_account_index_check CHECK (((account_index >= 0) AND (account_index <= 2147483647)))
 );

@@ -3512,11 +3512,11 @@ SEARCH groups USING INDEX idx_groups_relay_request_group_link (user_id=? AND rel
 
 Query: 
         SELECT account_index FROM wallet_accounts
-        WHERE wallet_seed_id = ? AND user_id = ? AND account_index IS NOT NULL
+        WHERE wallet_seed_id = ? AND user_id = ?
         ORDER BY account_index
       
 Plan:
-SEARCH wallet_accounts USING INDEX idx_wallet_accounts_wallet_seed_id_account_index (wallet_seed_id=? AND account_index>?)
+SEARCH wallet_accounts USING INDEX idx_wallet_accounts_wallet_seed_id_account_index (wallet_seed_id=?)
 
 Query: 
         SELECT agent_conn_id
@@ -4423,6 +4423,14 @@ Query:
       
 Plan:
 SEARCH wallet_accounts USING INDEX idx_wallet_accounts_wallet_seed_id_account_index (wallet_seed_id=? AND account_index=?)
+
+Query: 
+        UPDATE wallet_seeds SET next_account_index = next_account_index + 1
+        WHERE wallet_seed_id = ? AND next_account_index < 2147483648
+        RETURNING next_account_index - 1
+      
+Plan:
+SEARCH wallet_seeds USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         WITH user_groups AS MATERIALIZED (

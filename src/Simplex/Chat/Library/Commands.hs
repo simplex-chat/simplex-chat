@@ -6719,12 +6719,8 @@ chatCommandP =
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
     accountIndexP = do
-      ds <- A.lookAhead $ A.takeWhile1 isDigit
-      when (B.length (B.dropWhile (== '0') ds) > 10) tooLarge
-      i <- A.decimal
-      if i <= toInteger (maxBound :: Word32) then either fail pure $ mkAccountIndex (fromInteger i) else tooLarge
-      where
-        tooLarge = fail "account index too large"
+      i <- A.decimal :: Parser Integer
+      if i < 2147483648 then either fail pure $ mkAccountIndex (fromInteger i) else fail "account index too large"
 
 displayNameP :: Parser Text
 displayNameP = safeDecodeUtf8 <$> displayNameP_
