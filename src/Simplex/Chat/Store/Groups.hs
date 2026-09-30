@@ -47,6 +47,7 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
     setGroupDomainVerified,
+    getNameChats,
     getGroupDomainResolution,
     updateGroupPreferences,
     updateGroupProfileFromMember,
@@ -2754,6 +2755,20 @@ setGroupDomainVerified db User {userId} g@GroupInfo {groupId, businessChat} veri
     "UPDATE groups SET group_domain_verified = ?, group_domain_resolved_at = ?, group_domain_expires_at = ? WHERE user_id = ? AND group_id = ?"
     (BI verified, currentTs, expiresAt, userId, groupId)
   pure g {groupDomainVerified = Just verified}
+
+getNameChats :: DB.Connection -> StoreCxt -> User -> SimplexNameType -> SimplexDomain -> IO ([Contact], [GroupInfo])
+getNameChats db cxt user@User {userId} nameType domain = do
+  cts <- case nameType of
+    NTContact -> ids "SELECT ct.contact_id FROM contacts ct JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id WHERE ct.user_id = ? AND cp.contact_domain = ? AND ct.deleted = 0" >>= fmap rights . mapM (runExceptT . getContact db cxt user)
+    NTPublicGroup -> pure []
+  gs <- ids (groupsQuery <> businessCond) >>= fmap rights . mapM (runExceptT . getGroupInfo db cxt user)
+  pure (cts, gs)
+  where
+    ids q = map fromOnly <$> DB.query db q (userId, domain)
+    groupsQuery = "SELECT g.group_id FROM groups g JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id WHERE g.user_id = ? AND gp.group_domain = ?"
+    businessCond = case nameType of
+      NTContact -> " AND g.business_chat IS NOT NULL"
+      NTPublicGroup -> " AND g.business_chat IS NULL"
 
 getGroupDomainResolution :: DB.Connection -> User -> GroupInfo -> IO (Maybe (UTCTime, Maybe UTCTime))
 getGroupDomainResolution db User {userId} GroupInfo {groupId} =

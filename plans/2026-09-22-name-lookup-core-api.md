@@ -26,7 +26,7 @@ The only UI work here is removing the name cache both apps kept (§9). This is t
 
 As of `db779eff4`, #7525 was a declaration-only sketch: it added `nameRegistration_`, `CPSimplexName` (renamed `CPNameNotConnectable` in `54bc83d80`) and `PRMAll` to `Controller.hs` and changed two arities, but no producer was written and no consumer was updated, so **the branch did not compile**. `resolveNameRecord` (`Commands.hs:5082-5088`) collapsed every non-`NRRegistered` answer into `NAME NOT_FOUND`, so expiry, price and reserved-reason — the substance of nine of the sixteen states — never left core.
 
-The declared types were close to right. Twelve states mapped onto them as they stood, and of the four that did not, three are settled by wording or by `NameWarning` (§4, §7). The work was therefore mostly **producer**: stop discarding the registration, consult the existing by-name store lookups when the registry yields no usable link, and attach a warning to whichever plan comes out, as `nameWarning_ :: Maybe NameWarning` in place of the declared `nameRegistration_`. Two fields were genuinely missing (`addressChanged` and `existingChat_`, for 3c) and one constructor needed its domain (`CPNameNotConnectable`, so the UI can print the bare name the canvas shows).
+The declared types were close to right. Twelve states mapped onto them as they stood, and of the four that did not, three are settled by wording or by `NameWarning` (§4, §7). The work was therefore mostly **producer**: stop discarding the registration, consult the existing by-name store lookups when the registry yields no usable link, and attach a warning to whichever plan comes out, as `nameWarning_ :: Maybe NameWarning` in place of the declared `nameRegistration_`. Two fields were genuinely missing for 3c (`addressChanged`, and the local chat to open, now `localChats` on the response, N32 of the name warnings plan) and one constructor needed its domain (`CPNameNotConnectable`, so the UI can print the bare name the canvas shows).
 
 `getContactToConnect` / `getGroupToConnect` (`Direct.hs:802`, `Groups.hs:1090`) and `getUserContactLinkViaTarget` already accept `CTName` and query by domain. The by-name lookup that `CPNameNotConnectable`'s own precondition needs therefore exists — the `CTDomain` branch reached it, but when it found nothing and the registry gave no usable link, it threw instead of answering.
 
@@ -62,11 +62,11 @@ The changes are to the types in `Controller.hs`, including `PlanResolveMode`, an
 
 `planSimplexName` cannot serve here. It is a `SimplexNameInfo`, which needs a `nameType`, and an unregistered name has none — today's code invents one by trying `NTPublicGroup` then `NTContact` (`Commands.hs:4432-4434`), which is arbitrary and becomes visible the moment the UI renders it. The canvas writes every band-2 body as a bare name (`sunflower.simplex is available…`, `bakery.simplex expired on…`), never `@`/`#`, so the UI wants `fullDomainName`, not `shortStr`.
 
-**`CAPOk` and `GLPOk` gain `addressChanged :: Bool` and `existingChat_ :: Maybe AChatInfo`.**
+**`CAPOk` and `GLPOk` gain `addressChanged :: Bool`.** The local chat to open is the first of `CRConnectionPlan`'s `localChats` (N32 of `plans/2026-09-28-name-warnings.md`).
 
 ```haskell
-| CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool, existingChat_ :: Maybe AChatInfo}
-| GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool, existingChat_ :: Maybe AChatInfo}
+| CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool}
+| GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool}
 ```
 
 `addressChanged` is true when the name resolved to a link that differs from the one held by the local chat, own address or own channel that claims this name. This is state 3c and nothing else expresses it: both "a link you do not have" and "a link that replaced yours" are `CAPOk` today. It states that the address moved and not who moved it, which is exactly what the canvas claims ("Only the address change is known, not who made it") and is the narrow form of the `nameOwnerChanged` field dropped in `f3bcd4a16` — no owner identity is carried, stored or compared.

@@ -774,8 +774,7 @@ struct ChatListSearchBar: View {
                     name: candidate,
                     searchFocussed: $searchFocussed,
                     dismiss: false,
-                    filterKnownContact: { searchChatFilteredBySimplexLink = [$0.id] },
-                    filterKnownGroup: { searchChatFilteredBySimplexLink = [$0.id] }
+                    filterChats: filterChats
                 )
             } else {
                 ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
@@ -819,8 +818,7 @@ struct ChatListSearchBar: View {
                     name: candidate,
                     searchFocussed: $searchFocussed,
                     dismiss: false,
-                    filterKnownContact: { searchChatFilteredBySimplexLink = [$0.id] },
-                    filterKnownGroup: { searchChatFilteredBySimplexLink = [$0.id] }
+                    filterChats: filterChats
                 )
             }
         }
@@ -858,17 +856,13 @@ struct ChatListSearchBar: View {
                         nameSearchTask = Task { @MainActor in
                             try? await Task.sleep(nanoseconds: 300_000_000)
                             if Task.isCancelled { return }
-                            // a bare name can be a contact or a channel: search both and keep every match
-                            let targets = candidate.hasPrefix("@") || candidate.hasPrefix("#") ? [candidate] : ["@\(candidate)", "#\(candidate)"]
-                            var ids: [String] = []
-                            for name in targets {
-                                let plan = await apiConnectPlan(connLink: name, resolveMode: .never, inProgress: BoxedValue(false))
-                                if Task.isCancelled { return }
-                                if let id = knownChatId(plan) { ids.append(id) }
+                            let result = await apiConnectPlan(connLink: candidate, resolveMode: .never, inProgress: BoxedValue(false))
+                            if Task.isCancelled { return }
+                            if let result {
+                                addMissingChats(result.localChats)
+                                _ = filterChats(result.localChats)
+                                if !result.offerLookup { connectNameCandidate = nil }
                             }
-                            searchChatFilteredBySimplexLink = Set(ids)
-                            // drop the row only when every searched type is already known locally
-                            if ids.count == targets.count { connectNameCandidate = nil }
                         }
                     } else if t != "" {
                         searchFocussed = true
@@ -912,9 +906,13 @@ struct ChatListSearchBar: View {
                 searchText = ""
                 searchFocussed = false
             },
-            filterKnownContact: { searchChatFilteredBySimplexLink = [$0.id] },
-            filterKnownGroup: { searchChatFilteredBySimplexLink = [$0.id] }
+            filterChats: filterChats
         )
+    }
+
+    private func filterChats(_ chats: [ChatInfo]) -> Bool {
+        searchChatFilteredBySimplexLink = Set(chats.map { $0.id })
+        return true
     }
 }
 
@@ -926,8 +924,7 @@ struct ConnectByNameRow: View {
     var name: String
     @FocusState.Binding var searchFocussed: Bool
     var dismiss: Bool
-    var filterKnownContact: ((Contact) -> Void)? = nil
-    var filterKnownGroup: ((GroupInfo) -> Void)? = nil
+    var filterChats: (([ChatInfo]) -> Bool)? = nil
 
     var body: some View {
         HStack(spacing: 4) {
@@ -945,8 +942,7 @@ struct ConnectByNameRow: View {
                 name,
                 theme: theme,
                 dismiss: dismiss,
-                filterKnownContact: filterKnownContact,
-                filterKnownGroup: filterKnownGroup
+                filterChats: filterChats
             )
         }
     }
@@ -963,36 +959,6 @@ private func isNameLabel(_ s: String) -> Bool {
 }
 
 // On-device candidate for connecting by SimpleX name: the string sent to the core to resolve it.
-// The chat id a local (.never) search resolved to — a contact, business, or channel — or nil on a miss.
-// A name-resolved chat may be prepared in the store but not yet listed, so add it so the filter can surface it.
-@MainActor
-func knownChatId(_ result: ConnectionPlanResult?) -> String? {
-    guard let plan = result?.connectionPlan else { return nil }
-    let m = ChatModel.shared
-    switch plan {
-    case let .contactAddress(contactAddressPlan, _):
-        if case let .known(contact) = contactAddressPlan {
-            if m.getContactChat(contact.contactId) == nil {
-                m.addChat(Chat(chatInfo: .direct(contact: contact), chatItems: []))
-            }
-            return contact.id
-        }
-        return nil
-    case let .groupLink(groupLinkPlan, _):
-        switch groupLinkPlan {
-        case .known(let groupInfo), .ownLink(let groupInfo):
-            if m.getGroupChat(groupInfo.groupId) == nil {
-                m.addChat(Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: []))
-            }
-            return groupInfo.id
-        default:
-            return nil
-        }
-    default:
-        return nil
-    }
-}
-
 // Mirrors the domain grammar (nameLabelP/mkDomain in SimplexName.hs): an optional @/# prefix, then
 // dot-separated ASCII labels; a dotless word is completed with the default top-level part. Returns
 // the string to send (keeping @/# so the type is preserved), or nil when the text is not a name.

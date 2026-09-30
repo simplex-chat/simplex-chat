@@ -447,7 +447,11 @@ struct ContactsListSearchBar: View {
                 searchText = ""
                 searchFocussed = false
             },
-            filterKnownContact: { searchChatFilteredBySimplexLink = $0.id }
+            filterChats: { chats in
+                guard chats.allSatisfy({ $0.contact != nil }) else { return false }
+                searchChatFilteredBySimplexLink = chats.first?.id
+                return true
+            }
         )
     }
 }

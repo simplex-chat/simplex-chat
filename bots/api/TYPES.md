@@ -1930,7 +1930,6 @@ Ok:
 - contactSLinkData_: [ContactShortLinkData](#contactshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
 - addressChanged: bool
-- existingChat_: [ChatInfo](#chatinfo)?
 
 OwnLink:
 - type: "ownLink"
@@ -2542,7 +2541,6 @@ Ok:
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 - ownerVerification: [OwnerVerification](#ownerverification)?
 - addressChanged: bool
-- existingChat_: [ChatInfo](#chatinfo)?
 
 OwnLink:
 - type: "ownLink"
