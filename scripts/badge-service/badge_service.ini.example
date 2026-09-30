@@ -42,5 +42,7 @@ idle_seconds = 60
 index = 1
 private_key = replace-me
 
+; local testing only: signs a credential for anyone who sends /redeem <code> over chat,
+; with a master key this service generates and can therefore link
 [dev]
-chat_redeem = on
+chat_redeem = off
