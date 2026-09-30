@@ -46,7 +46,7 @@ struct StorageView: View {
                         .disabled(!stopped)
                 }
                 if !stopped {
-                    Text("Stop chat in Database settings to delete temp data.")
+                    Text("Stop chat in Settings → Chat data → Database passphrase & export to delete temp data.")
                         .font(.footnote)
                         .foregroundColor(theme.colors.secondary)
                 }
@@ -57,15 +57,17 @@ struct StorageView: View {
     }
 
     private func confirmDeleteTempFiles() {
-        AlertManager.shared.showAlert(Alert(
-            title: Text("Delete temp data?"),
-            message: Text("File transfers in progress will fail."),
-            primaryButton: .destructive(Text("Delete")) {
-                deleteTempFiles()
-                loadFiles()
-            },
-            secondaryButton: .cancel()
-        ))
+        showAlert(
+            NSLocalizedString("Delete temp data?", comment: "alert title"),
+            message: NSLocalizedString("Files being sent or received will never complete. Videos in unsent drafts will be lost.", comment: "alert message"),
+            actions: {[
+                UIAlertAction(title: NSLocalizedString("Delete", comment: "alert action"), style: .destructive) { _ in
+                    deleteTempFiles()
+                    loadFiles()
+                },
+                cancelAlertAction
+            ]}
+        )
     }
 
     private func traverseFiles(in dir: URL) -> [String: Int64] {
