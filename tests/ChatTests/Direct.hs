@@ -1493,12 +1493,15 @@ testMaintenanceModeWithFiles ps = withXFTPServer $ do
       alice <## "chat stopped"
       alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
       alice <## "ok"
+      let exportedDBs = [tmpPath ps <> "/alice_chat.db.exported", tmpPath ps <> "/alice_agent.db.exported"]
+      forM_ exportedDBs $ \f -> B.writeFile f ""
       alice ##> "/_db delete"
       alice <## "ok"
       -- cannot start chat after delete
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
       doesDirectoryExist "./tests/tmp/alice_files" `shouldReturn` False
+      forM_ exportedDBs $ \f -> doesFileExist f `shouldReturn` False
       alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
       alice <## "ok"
       B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src

@@ -31,7 +31,7 @@ val connections = ArrayList<WebSocket>()
 actual fun ActiveCallView() {
   val scope = rememberCoroutineScope()
   WebRTCController(chatModel.callCommand) { apiMsg ->
-    Log.d(TAG, "received from WebRTCController: $apiMsg")
+    Log.d(TAG, "received from WebRTCController: ${apiMsg.resp.javaClass.simpleName}")
     val call = chatModel.activeCall.value
     if (call != null) {
       Log.d(TAG, "has active call $call")
@@ -202,7 +202,7 @@ fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (
         }
         while (callCommand.isNotEmpty()) {
           val cmd = callCommand.removeFirstOrNull()
-          Log.d(TAG, "WebRTCController LaunchedEffect executing $cmd")
+          Log.d(TAG, "WebRTCController LaunchedEffect executing ${cmd?.javaClass?.simpleName}")
           if (cmd != null) {
             processCommand(cmd)
           }
@@ -289,7 +289,7 @@ class MyWebSocket(val onResponse: (WVAPIMessage) -> Unit, handshakeRequest: IHTT
       // onResponse(message.textPayload)
       onResponse(json.decodeFromString(message.textPayload))
     } catch (e: Exception) {
-      Log.e(TAG, "failed parsing browser message: $message")
+      Log.e(TAG, "failed parsing browser message")
     }
   }
 

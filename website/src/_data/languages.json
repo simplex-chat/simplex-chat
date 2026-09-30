@@ -23,21 +23,24 @@
             "name": "Čeština",
             "flag": "/img/flags/cs.svg",
             "enabled": true,
-            "home": true
+            "home": true,
+            "why": true
         },
         {
             "label": "de",
             "name": "Deutsch",
             "flag": "/img/flags/de.svg",
             "enabled": true,
-            "home": true
+            "home": true,
+            "why": true
         },
         {
             "label": "es",
             "name": "Español",
             "flag": "/img/flags/es.svg",
             "enabled": true,
-            "home": true
+            "home": true,
+            "why": true
         },
         {
             "label": "fi",
@@ -50,7 +53,8 @@
             "name": "Français",
             "flag": "/img/flags/fr.svg",
             "enabled": true,
-            "home": true
+            "home": true,
+            "why": true
         },
         {
             "label": "he",
@@ -64,21 +68,24 @@
             "name": "Magyar",
             "flag": "/img/flags/hu.svg",
             "enabled": true,
-            "home": true
+            "home": true,
+            "why": true
         },
         {
             "label": "id",
             "name": "Indonesia",
             "flag": "/img/flags/id.svg",
             "enabled": true,
-            "home": true
+            "home": true,
+            "why": true
         },
         {
             "label": "it",
             "name": "Italiano",
             "flag": "/img/flags/it.svg",
             "enabled": true,
-            "home": true
+            "home": true,
+            "why": true
         },
         {
             "label": "ja",
@@ -98,7 +105,8 @@
             "name": "Polski",
             "flag": "/img/flags/pl.svg",
             "enabled": true,
-            "home": true
+            "home": true,
+            "why": true
         },
         {
             "label": "pt_BR",
@@ -117,7 +125,8 @@
             "label": "zh_Hans",
             "name": "简体中文",
             "flag": "/img/flags/cn.svg",
-            "enabled": true
+            "enabled": true,
+            "why": true
         },
         {
             "label": "nb_NO",
