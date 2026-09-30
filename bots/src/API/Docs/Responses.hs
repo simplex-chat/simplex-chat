@@ -135,7 +135,6 @@ undocumentedResponses =
     "CRArchiveExported",
     "CRArchiveImported",
     "CRBadgeLedger",
-    "CRBadgePurchaseDelivered",
     "CRBadgeRedeemed",
     "CRBadgeState",
     "CRBroadcastSent",
