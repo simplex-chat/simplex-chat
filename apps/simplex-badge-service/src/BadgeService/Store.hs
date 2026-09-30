@@ -7,11 +7,17 @@
 
 module BadgeService.Store
   ( IssuedCode (..),
-    CodeRedemption (..),
-    RedeemedCode (..),
+    KeyRedemption (..),
+    KeyPurchase (..),
     NewCodePurchase (..),
     ServicePurchase (..),
+    ManagedGroup (..),
+    getManagedGroup,
+    insertManagedGroup,
+    clearCodeGroupItems,
+    markOwnerBootstrapped,
     getBadgeCode,
+    getCodePurchaseForKey,
     purchaseKeyExists,
     getPurchaseByKey,
     getLedgerTip,
@@ -21,13 +27,21 @@ module BadgeService.Store
     appendLedgerPlan,
     createCodePurchase,
     insertBadgeCode,
+    setCodeGroupItem,
+    CodeTracker (..),
+    getCodeTracker,
+    getEditableTrackers,
+    RevokeResult (..),
+    revokeCode,
   )
 where
 
+import BadgeService.Store.Invoices (executeChanging)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges (BadgeCredential, BadgeMasterKey (..), BadgeType)
@@ -35,7 +49,7 @@ import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementEntry (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus, BadgePurchaseStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
-import Simplex.Messaging.Agent.Store.DB (Binary (..))
+import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow')
@@ -52,24 +66,23 @@ data IssuedCode = IssuedCode
   { badgeCodeId :: Int64,
     badgeType :: BadgeType,
     months :: Int,
-    redemption :: CodeRedemption
+    paymentStatus :: BadgeCodePaymentStatus,
+    revokedAt :: Maybe UTCTime,
+    expiresAt :: Maybe UTCTime,
+    redeemLimit :: Int,
+    redeemCount :: Int
   }
 
--- A code that has a purchase is spent, even if its credential cannot be read. Treating that as
--- an unredeemed code would issue a second credential for it.
-data CodeRedemption
-  = CodeUnredeemed
-  | CodeRedeemed RedeemedCode
-  | CodeRedeemedUnreadable
+data KeyRedemption
+  = KeyUnredeemed
+  | KeyRedeemed KeyPurchase
+  | KeyRedeemedUnreadable
 
-data RedeemedCode = RedeemedCode
+data KeyPurchase = KeyPurchase
   { badgePurchaseId :: Int64,
-    purchaseKey :: C.PublicKeyEd25519,
     credential :: BadgeCredential
   }
 
--- Its rows and issuance are appended by 'appendLedgerPlan' in the same transaction: a code marked
--- redeemed while another write failed would be spent with no credential, and nothing reissues it.
 data NewCodePurchase = NewCodePurchase
   { badgeCodeId :: Int64,
     purchaseKey :: C.PublicKeyEd25519,
@@ -83,29 +96,81 @@ data ServicePurchase = ServicePurchase
     badgeType :: BadgeType
   }
 
+data ManagedGroup = ManagedGroup
+  { mgGroupId :: Int64,
+    mgGroupLink :: Text,
+    mgOwnerBootstrapped :: Bool
+  }
+  deriving (Eq)
+
+-- The join link is a bearer secret, so it is left out.
+instance Show ManagedGroup where
+  show ManagedGroup {mgGroupId, mgOwnerBootstrapped} = "managed group " <> show mgGroupId <> ", owner set up: " <> show mgOwnerBootstrapped
+
+getManagedGroup :: DB.Connection -> IO (Maybe ManagedGroup)
+getManagedGroup db =
+  maybeFirstRow toGroup $
+    DB.query_ db "SELECT group_id, group_link, owner_bootstrapped FROM sx_badge_service_group LIMIT 1"
+  where
+    toGroup (mgGroupId, mgGroupLink, BI mgOwnerBootstrapped) = ManagedGroup {mgGroupId, mgGroupLink, mgOwnerBootstrapped}
+
+-- getManagedGroup reads with no ordering, so a second row would change which group is used.
+insertManagedGroup :: DB.Connection -> Int64 -> Text -> UTCTime -> IO ()
+insertManagedGroup db gid link now =
+  DB.execute
+    db
+    [sql|
+      INSERT INTO sx_badge_service_group (group_id, group_link, owner_bootstrapped, created_at)
+      SELECT ?,?,0,? WHERE NOT EXISTS (SELECT 1 FROM sx_badge_service_group)
+    |]
+    (gid, link, now)
+
+-- A tracker's item id is only found in the group it was posted to, so a new group starts with none.
+clearCodeGroupItems :: DB.Connection -> IO ()
+clearCodeGroupItems db =
+  DB.execute_ db "UPDATE sx_badge_service_badge_codes SET group_item_id = NULL, group_item_sent_at = NULL WHERE group_item_id IS NOT NULL"
+
+markOwnerBootstrapped :: DB.Connection -> Int64 -> IO Bool
+markOwnerBootstrapped db gid =
+  (> 0)
+    <$> executeChanging
+      db
+      "UPDATE sx_badge_service_group SET owner_bootstrapped = 1 WHERE group_id = ? AND owner_bootstrapped = 0"
+      (Only gid)
+
 getBadgeCode :: DB.Connection -> ByteString -> IO (Maybe IssuedCode)
 getBadgeCode db codeHash =
   maybeFirstRow toCode $
     DB.query
       db
       [sql|
-        SELECT c.badge_code_id, c.badge_type, c.months, p.badge_purchase_id, p.purchase_key, i.credential
-        FROM sx_badge_service_badge_codes c
-        LEFT JOIN sx_badge_service_badge_purchases p ON p.badge_code_id = c.badge_code_id
-        LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
-        WHERE c.code_hash = ?
-        ORDER BY i.period_end DESC
-        LIMIT 1
+        SELECT badge_code_id, badge_type, months, code_payment_status, revoked_at, expires_at, redeem_limit, redeem_count
+        FROM sx_badge_service_badge_codes
+        WHERE code_hash = ?
       |]
       (Only (Binary codeHash))
   where
-    toCode (badgeCodeId, badgeType, months, purchaseId_, purchaseKey_, credential_) =
-      IssuedCode {badgeCodeId, badgeType, months, redemption = codeRedemption purchaseId_ purchaseKey_ credential_}
-    codeRedemption purchaseId_ purchaseKey_ credential_ = case (purchaseId_, purchaseKey_) of
-      (Just badgePurchaseId, Just purchaseKey) -> case decodeCredential =<< credential_ of
-        Just credential -> CodeRedeemed RedeemedCode {badgePurchaseId, purchaseKey, credential}
-        Nothing -> CodeRedeemedUnreadable
-      _ -> CodeUnredeemed
+    toCode (badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, redeemLimit, redeemCount) =
+      IssuedCode {badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, redeemLimit, redeemCount}
+
+getCodePurchaseForKey :: DB.Connection -> Int64 -> C.PublicKeyEd25519 -> IO KeyRedemption
+getCodePurchaseForKey db badgeCodeId key =
+  maybeFirstRow' KeyUnredeemed toRedemption $
+    DB.query
+      db
+      [sql|
+        SELECT p.badge_purchase_id, i.credential
+        FROM sx_badge_service_badge_purchases p
+        LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
+        WHERE p.badge_code_id = ? AND p.purchase_key = ?
+        ORDER BY i.period_end DESC
+        LIMIT 1
+      |]
+      (badgeCodeId, key)
+  where
+    toRedemption (badgePurchaseId, credential_) = case decodeCredential =<< credential_ of
+      Just credential -> KeyRedeemed KeyPurchase {badgePurchaseId, credential}
+      Nothing -> KeyRedeemedUnreadable
     decodeCredential (Binary bs) = J.decodeStrict' bs
 
 purchaseKeyExists :: DB.Connection -> C.PublicKeyEd25519 -> IO Bool
@@ -113,7 +178,6 @@ purchaseKeyExists db key =
   maybeFirstRow' False (\(Only (_ :: Int64)) -> True) $
     DB.query db "SELECT badge_purchase_id FROM sx_badge_service_badge_purchases WHERE purchase_key = ?" (Only key)
 
--- | The only route from a command to a purchase, so a client cannot name one it cannot sign for.
 getPurchaseByKey :: DB.Connection -> C.PublicKeyEd25519 -> IO (Maybe ServicePurchase)
 getPurchaseByKey db key =
   maybeFirstRow toPurchase $
@@ -144,8 +208,6 @@ getLedgerTip db purchaseId =
       |]
       (Only purchaseId)
 
--- | The uuid is the client's claim about its last held entry, so the lookup is scoped to its own
--- purchase - an entry_id taken from another ledger would silently skip rows of this one.
 getLedgerEntryId :: DB.Connection -> Int64 -> Text -> IO (Maybe Int64)
 getLedgerEntryId db purchaseId entryUuid =
   maybeFirstRow fromOnly $
@@ -154,8 +216,7 @@ getLedgerEntryId db purchaseId entryUuid =
       "SELECT entry_id FROM sx_badge_service_badge_ledger WHERE badge_purchase_id = ? AND entry_uuid = ?"
       (purchaseId, entryUuid)
 
--- | 0 for the whole ledger, as entry_id starts at 1. 'Nothing' when a stored row has a type this
--- version cannot represent, rather than sending it changed into another.
+-- | 0 returns the whole ledger, as entry_id starts at 1.
 getLedgerEntries :: DB.Connection -> Int64 -> Int64 -> IO (Maybe [StatementEntry])
 getLedgerEntries db purchaseId afterEntryId =
   mapM toEntry
@@ -175,7 +236,6 @@ toEntry (entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, 
   (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince = Nothing, createdAt, entryType})
     <$> entryTypeFromColumns entryType_ credit_ debit_
 
--- | Answers a repeat inside an issued month, rather than signing the same content twice.
 getCurrentIssuance :: DB.Connection -> Int64 -> UTCTime -> IO (Maybe BadgeCredential)
 getCurrentIssuance db purchaseId now = do
   rs <-
@@ -192,10 +252,7 @@ getCurrentIssuance db purchaseId now = do
     [Only (Binary bs)] -> J.decodeStrict' bs
     _ -> Nothing
 
--- | The issuance is the entry that spends the month and the one before it, which give the period.
--- TODO [badges] also write the reference columns - payment_id, charge_id, from_purchase_id,
--- to_purchase_id - for the entry types that carry one. Only the tag is written today, so a
--- payment, charge, transferIn, upgrade or transferOut row would be stored without its reference.
+-- TODO write the reference columns (payment_id, charge_id, from_purchase_id, to_purchase_id) for entry types that carry one; only the tag is written today.
 appendLedgerPlan :: DB.Connection -> Int64 -> [StatementEntry] -> Maybe (StatementEntry, StatementEntry, BadgeCredential) -> IO ()
 appendLedgerPlan db purchaseId rows issuance_ = do
   mapM_ appendRow rows
@@ -210,8 +267,6 @@ appendLedgerPlan db purchaseId rows issuance_ = do
             (issuance_id, badge_purchase_id, entry_id, badge_type, period_start, period_end, expiry, credential, created_at)
           VALUES (?,?,?,?,?,?,?,?,?)
         |]
-        -- the issued entry's uuid is the issuance id: one issuance per such entry, and entry uuids
-        -- are already unique across the ledger, so nothing has to be drawn for it
         ( (entryId, purchaseId, rowId, balanceBadgeType)
             :. (balanceStartTs previous, periodEnd, endOfMondayAfter periodEnd, Binary (LB.toStrict $ J.encode credential), createdAt)
         )
@@ -229,28 +284,101 @@ appendLedgerPlan db purchaseId rows issuance_ = do
         ((entryId, purchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, createdAt, createdAt, entryTypeT, creditType, debitType))
       insertedRowId db
 
--- redeemed_at is stamped here, so this must share a transaction with the credential's rows:
--- a code marked spent without one can never be reissued
-createCodePurchase :: DB.Connection -> NewCodePurchase -> UTCTime -> IO Int64
+-- The claim takes one use before adding the purchase, so a concurrent revoke or redemption waits on this row and sees the new count.
+-- Run it in the credential's transaction.
+createCodePurchase :: DB.Connection -> NewCodePurchase -> UTCTime -> IO (Maybe Int64)
 createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do
-  DB.execute
-    db
-    [sql|
-      INSERT INTO sx_badge_service_badge_purchases
-        (purchase_key, master_key, initial_badge_type, current_badge_type, status, badge_code_id, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?)
-    |]
-    (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, badgeCodeId, now, now)
-  purchaseId <- insertedRowId db
-  DB.execute db "UPDATE sx_badge_service_badge_codes SET redeemed_at = ? WHERE badge_code_id = ?" (now, badgeCodeId)
-  pure purchaseId
+  claimed <-
+    executeChanging
+      db
+      "UPDATE sx_badge_service_badge_codes SET redeem_count = redeem_count + 1, redeemed_at = ? WHERE badge_code_id = ? AND redeem_count < redeem_limit AND revoked_at IS NULL"
+      (now, badgeCodeId)
+  if claimed == 0
+    then pure Nothing
+    else do
+      DB.execute
+        db
+        [sql|
+          INSERT INTO sx_badge_service_badge_purchases
+            (purchase_key, master_key, initial_badge_type, current_badge_type, status, badge_code_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?)
+        |]
+        (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, badgeCodeId, now, now)
+      Just <$> insertedRowId db
 
-insertBadgeCode :: DB.Connection -> ByteString -> BadgeType -> Int -> BadgeCodePaymentStatus -> UTCTime -> IO ()
-insertBadgeCode db codeHash badgeType months paymentStatus now =
+-- | Revoked and AlreadyRevoked carry the code id, so the caller can retire the code's group tracker,
+-- or repair one an earlier revoke left live.
+data RevokeResult = Revoked Int64 | AlreadyRevoked Int64 | AlreadyRedeemed | NoSuchCode
+  deriving (Eq, Show)
+
+-- | A code with no uses left can't be revoked, because every badge it grants was already given out.
+revokeCode :: DB.Connection -> ByteString -> UTCTime -> IO RevokeResult
+revokeCode db codeHash now = do
+  revoked <-
+    executeChanging
+      db
+      "UPDATE sx_badge_service_badge_codes SET revoked_at = ? WHERE code_hash = ? AND revoked_at IS NULL AND redeem_count < redeem_limit"
+      (now, Binary codeHash)
+  -- The result is read in the same transaction as the UPDATE, so the row it answers about is the row that changed.
+  maybeFirstRow' NoSuchCode (result revoked) $
+    DB.query db "SELECT badge_code_id, revoked_at FROM sx_badge_service_badge_codes WHERE code_hash = ?" (Only (Binary codeHash))
+  where
+    result :: Int -> (Int64, Maybe UTCTime) -> RevokeResult
+    result revoked (badgeCodeId, revokedAt)
+      | revoked > 0 = Revoked badgeCodeId
+      | isJust revokedAt = AlreadyRevoked badgeCodeId
+      | otherwise = AlreadyRedeemed
+
+insertBadgeCode :: DB.Connection -> ByteString -> BadgeType -> Int -> BadgeCodePaymentStatus -> Int -> UTCTime -> IO Int64
+insertBadgeCode db codeHash badgeType months paymentStatus redeemLimit now = do
   DB.execute
     db
     [sql|
-      INSERT INTO sx_badge_service_badge_codes (code_hash, badge_type, months, code_payment_status, created_at)
-      VALUES (?,?,?,?,?)
+      INSERT INTO sx_badge_service_badge_codes (code_hash, badge_type, months, code_payment_status, redeem_limit, created_at)
+      VALUES (?,?,?,?,?,?)
     |]
-    (Binary codeHash, badgeType, months, paymentStatus, now)
+    (Binary codeHash, badgeType, months, paymentStatus, redeemLimit, now)
+  insertedRowId db
+
+setCodeGroupItem :: DB.Connection -> Int64 -> Int64 -> UTCTime -> IO ()
+setCodeGroupItem db badgeCodeId itemId sentAt =
+  DB.execute
+    db
+    "UPDATE sx_badge_service_badge_codes SET group_item_id = ?, group_item_sent_at = ? WHERE badge_code_id = ?"
+    (itemId, sentAt, badgeCodeId)
+
+data CodeTracker = CodeTracker
+  { trackerItemId :: Int64,
+    trackerSentAt :: UTCTime,
+    redeemLimit :: Int,
+    redeemCount :: Int,
+    revokedAt :: Maybe UTCTime,
+    redeemedAt :: Maybe UTCTime
+  }
+
+getCodeTracker :: DB.Connection -> Int64 -> IO (Maybe CodeTracker)
+getCodeTracker db badgeCodeId =
+  maybeFirstRow toTracker $
+    DB.query
+      db
+      [sql|
+        SELECT group_item_id, group_item_sent_at, redeem_limit, redeem_count, revoked_at, redeemed_at
+        FROM sx_badge_service_badge_codes
+        WHERE badge_code_id = ? AND group_item_id IS NOT NULL AND group_item_sent_at IS NOT NULL
+      |]
+      (Only badgeCodeId)
+  where
+    toTracker (trackerItemId, trackerSentAt, redeemLimit, redeemCount, revokedAt, redeemedAt) =
+      CodeTracker {trackerItemId, trackerSentAt, redeemLimit, redeemCount, revokedAt, redeemedAt}
+
+getEditableTrackers :: DB.Connection -> UTCTime -> IO [(Int64, Int64)]
+getEditableTrackers db sentAfter =
+  DB.query
+    db
+    [sql|
+      SELECT badge_code_id, group_item_id
+      FROM sx_badge_service_badge_codes
+      WHERE group_item_id IS NOT NULL AND group_item_sent_at > ?
+      ORDER BY badge_code_id
+    |]
+    (Only sentAfter)

@@ -13,12 +13,15 @@ module Simplex.Chat.Core
   )
 where
 
+import Control.Concurrent (forkIO)
+import Control.Exception (mask, onException, throwTo)
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as B
 import Data.List (find)
+import Data.Maybe (isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -42,6 +45,7 @@ import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
 import Text.Read (readMaybe)
 import UnliftIO.Async
+import UnliftIO.Exception (finally)
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
 simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {dbOptions, logAgent, yesToUpMigrations, migrationBackupPath, maintenance}, createBot, userDisplayName, userImageFile} chat =
@@ -89,12 +93,16 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
 runSimplexChat :: ChatConfig -> ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
 runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay, chatRelayServer, headless, maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
-  | otherwise = do
+  | otherwise = flip finally (stopChatController cc) $ do
       a1 <- runReaderT (startChatController True True False) cc
       when (chatRelay && not testView) $ askCreateRelayAddress cc u chatRelayServer headless
       forM_ (postStartHook chatHooks) ($ cc)
-      a2 <- async $ chat u cc
-      waitEither_ a1 a2
+      -- throwTo waits while the callback is masked, so an outside interrupt cancels it from a forked thread.
+      -- A /_stop sent from the callback ends a1 first, which leaves the callback running.
+      mask $ \restore -> do
+        a2 <- asyncWithUnmask $ \unmask -> unmask (chat u cc)
+        let cancelCallback = poll a1 >>= \r -> when (isNothing r) $ void $ forkIO $ throwTo (asyncThreadId a2) AsyncCancelled
+        restore (waitEither_ a1 a2) `onException` cancelCallback
 
 sendChatCmdStr :: ChatController -> String -> IO (Either ChatError ChatResponse)
 sendChatCmdStr cc s = runReaderT (execChatCommand CSLocal (encodeUtf8 $ T.pack s) 0) cc
