@@ -61,6 +61,23 @@ remoteTests = describe "Remote" $ do
       filter (not . sanitized) fileNames `shouldBe` []
     it "sanitizes to a name with no directory components" $ \_ ->
       filter (not . bareName) fileNames `shouldBe` []
+  describe "skipped keys" $ do
+    it "keeps the most recent skipped keys" $ \_ -> do
+      (_, pk) <- atomically . C.generateKeyPair =<< C.newRandom
+      let (ck, _) = C.sbcInit "" ("secret" :: B.ByteString)
+      sndCounter <- newTVarIO 0
+      rcvCounter <- newTVarIO 0
+      sndKey <- newTVarIO ck
+      rcvKey <- newTVarIO ck
+      skippedKeys <- newTVarIO M.empty
+      let rc = RemoteCrypto {sessionCode = "", sndCounter, rcvCounter, chainKeys = TSbChainKeys {sndKey, rcvKey}, skippedKeys, signatures = RSSign pk pk, compression = False}
+          receive corrId = eitherToMaybe <$> atomically (getRemoteRcvKeys rc corrId)
+      sent <- replicateM 1280 $ atomically $ getRemoteSndKeys rc
+      let sentKeys = M.fromList [(corrId, (cmdKN, fileKN)) | (corrId, cmdKN, fileKN) <- sent]
+      forM_ [256, 512 .. 1280] $ \corrId -> receive corrId `shouldReturn` M.lookup corrId sentKeys
+      M.size <$> readTVarIO skippedKeys `shouldReturn` 1024
+      receive 251 `shouldReturn` Nothing
+      receive 252 `shouldReturn` M.lookup 252 sentKeys
   describe "body size limit" $ do
     it "rejects encrypted body above limit without reading it" $ \_ -> do
       rc <- testRemoteCrypto
