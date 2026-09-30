@@ -10,31 +10,62 @@ import SwiftUI
 import SimpleXChat
 
 struct StorageView: View {
+    @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @State var appGroupFiles: [String: Int64] = [:]
     @State var documentsFiles: [String: Int64] = [:]
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading) {
-                directoryView("App group:", appGroupFiles)
+                directoryView("App group:", getGroupContainerDirectory(), appGroupFiles)
                 if !documentsFiles.isEmpty {
-                    directoryView("Documents:", documentsFiles)
+                    directoryView("Documents:", getDocumentsDirectory(), documentsFiles)
                 }
             }
         }
         .padding()
-        .onAppear {
-            appGroupFiles = traverseFiles(in: getGroupContainerDirectory())
-            documentsFiles = traverseFiles(in: getDocumentsDirectory())
-        }
+        .onAppear(perform: loadFiles)
+    }
+
+    private func loadFiles() {
+        appGroupFiles = traverseFiles(in: getGroupContainerDirectory())
+        documentsFiles = traverseFiles(in: getDocumentsDirectory())
     }
 
     @ViewBuilder
-    private func directoryView(_ name: LocalizedStringKey, _ contents: [String: Int64]) -> some View {
+    private func directoryView(_ name: LocalizedStringKey, _ dir: URL, _ contents: [String: Int64]) -> some View {
         Text(name).font(.headline)
         ForEach(Array(contents), id: \.key) { (key, value) in
-            Text(key).bold() + Text(verbatim: "   ") + Text((ByteCountFormatter.string(fromByteCount: value, countStyle: .binary)))
+            let sizeText = Text(key).bold() + Text(verbatim: "   ") + Text((ByteCountFormatter.string(fromByteCount: value, countStyle: .binary)))
+            if dir.appendingPathComponent(key).path == getTempFilesDirectory().path {
+                let stopped = m.chatRunning == false
+                HStack {
+                    sizeText
+                    Button("Delete temp data", role: .destructive, action: confirmDeleteTempFiles)
+                        .disabled(!stopped)
+                }
+                if !stopped {
+                    Text("Stop chat in Database settings to delete temp data.")
+                        .font(.footnote)
+                        .foregroundColor(theme.colors.secondary)
+                }
+            } else {
+                sizeText
+            }
         }
+    }
+
+    private func confirmDeleteTempFiles() {
+        AlertManager.shared.showAlert(Alert(
+            title: Text("Delete temp data?"),
+            message: Text("File transfers in progress will fail."),
+            primaryButton: .destructive(Text("Delete")) {
+                deleteTempFiles()
+                loadFiles()
+            },
+            secondaryButton: .cancel()
+        ))
     }
 
     private func traverseFiles(in dir: URL) -> [String: Int64] {
