@@ -53,7 +53,7 @@ chatNamesTests = do
     it "known chat and own name, name without link or reserved, stored as resolved" testPlanKnownNameReserved
     it "known chat and own name, the request failed" testPlanKnownNameResolverFailed
     it "known chat, the name's new link cannot be fetched" testPlanKnownNameLinkFailed
-    it "own channel expired, joined channel moved to a new channel" testPlanChannelNameMoved
+    it "own channel expired, joined channel moved to a new channel, new channel joined" testPlanChannelNameMoved
     it "known chat, resolved over a day ago or past expiry" testPlanKnownNameStale
     it "no local chat, resolved on every call" testPlanNameResolvedEveryCall
     it "own name, expired" testPlanOwnNameExpired
@@ -396,18 +396,17 @@ withAliceName test ps = withSmpServerAndNames $ \reg ->
   where
     setup reg alice bob = do
       mapM_ enableNamesRole [alice, bob]
-      aliceRecord <- setAliceName reg alice
-      test reg aliceRecord alice bob
+      (shortLink, _) <- setAliceName reg alice
+      test reg (contactNameRecord "alice.simplex" (T.pack shortLink)) alice bob
 
-setAliceName :: HasCallStack => NameRegistry -> TestCC -> IO NameRecord
+setAliceName :: HasCallStack => NameRegistry -> TestCC -> IO (String, String)
 setAliceName reg alice = do
   alice ##> "/ad"
-  (shortLink, _) <- getContactLinks alice True
-  let aliceRecord = contactNameRecord "alice.simplex" (T.pack shortLink)
-  registerName reg aliceSimplexName aliceRecord
+  links@(shortLink, _) <- getContactLinks alice True
+  registerName reg aliceSimplexName (contactNameRecord "alice.simplex" (T.pack shortLink))
   alice ##> "/_set domain 1 alice.simplex"
   alice <## "new contact address set"
-  pure aliceRecord
+  pure links
 
 knownAlicePlan :: HasCallStack => TestCC -> IO ()
 knownAlicePlan bob = do
@@ -454,11 +453,7 @@ testPrepareNameNotClaimed ps = withSmpServerAndNames $ \reg ->
   where
     test reg alice bob = do
       mapM_ enableNamesRole [alice, bob]
-      alice ##> "/ad"
-      (shortLink, fullLink) <- getContactLinks alice True
-      registerName reg aliceSimplexName (contactNameRecord "alice.simplex" (T.pack shortLink))
-      alice ##> "/_set domain 1 alice.simplex"
-      alice <## "new contact address set"
+      (shortLink, fullLink) <- setAliceName reg alice
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "contact address: ok to connect"
       contactSLinkData <- getTermLine bob
@@ -635,18 +630,13 @@ testPlanKnownNameNewChatOpened ps = withSmpServerAndNames $ \reg ->
       mapM_ enableNamesRole [alice, bob, cath]
       _ <- setAliceName reg alice
       connectBobByName alice bob
-      cath ##> "/ad"
-      (cathLink, cathFullLink) <- getContactLinks cath True
-      registerName reg aliceSimplexName (contactNameRecord "alice.simplex" (T.pack cathLink))
-      cath ##> "/_set domain 1 alice.simplex"
-      cath <## "new contact address set"
+      (cathLink, cathFullLink) <- setAliceName reg cath
       bob ##> "/_connect plan 1 @alice.simplex resolve=all"
       bob <## "contact address: ok to connect, address changed"
       contactSLinkData <- getTermLine bob
       bob ##> ("/_prepare contact 1 " <> cathFullLink <> " " <> cathLink <> " domain=alice.simplex " <> contactSLinkData)
       bob <## "cath: contact is prepared"
-      failNameResolution reg aliceSimplexName
-      bob ##> "/_connect plan 1 @alice.simplex"
+      bob ##> "/_connect plan 1 @alice.simplex resolve=never"
       bob <## "contact address: known prepared contact cath"
       bob <## "SimpleX name: @alice.simplex (verified)"
 

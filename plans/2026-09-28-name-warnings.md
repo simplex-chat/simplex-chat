@@ -26,14 +26,14 @@ The canvas was reviewed against this model on 2026-09-28, story by story (§4).
 - **`NameWarning` replaces `NameRegistration` in the plan.** `CPContactAddress` and `CPGroupLink` have `nameWarning_ :: Maybe NameWarning`, and `CPNameNotConnectable` has `nameWarning :: NameWarning`. An app shows an alert exactly when the plan has a warning. It does not compare dates, lengths or registrations.
 - **Two pure functions decide the warning.** One computes a registration's link, or the warning when nothing is local. The other maps that warning to the one for the user's own name or for a chat. Both are tested directly.
 - **A typed name (`@d`, `#d`) is planned for its kind only.**
-  - A chat at the name's link is confirmed.
-  - A chat, own address or own channel at another link gives the new link's plan with `addressChanged` (3c).
-  - Nothing local gives the new link's plan (2a).
-- **A bare name (`d`) is planned for both kinds.**
+  - A chat at the name's live link is confirmed.
+  - A chat, own address or own channel at another link gives the new link's plan with `addressChanged` (3c), unless the new link does not claim the name or, for a chat, cannot be fetched (N12, N19).
+  - Nothing local gives the plan for the name's live link (2a), or `SDEUnknownDomain` if that link's profile does not claim the name (2g).
+- **A bare name (`d`) is looked up for both kinds and planned for one.**
   - It looks up both kinds locally and resolves the name once.
-  - It plans the kind that matches locally (the channel first), otherwise the kind the name has a link for.
-  - It offers the other kind when the name has a link of it that the user does not have.
-- **The local lookup of each kind also returns whether the chat's name was resolved within a day.** It reads this where it finds the chat: the contact's resolution for a contact, the group's for a business chat or channel. No function checks freshness for both kinds.
+  - It plans the kind that matches locally (the channel first), otherwise the kind the name has a live link for.
+  - It offers the other kind when the name has a live link of it at which nothing is local, except after the channel failed (N22).
+- **The local lookup of each kind also returns whether the chat's name was resolved within a day.** It reads this where it finds the chat: the contact's resolution for a contact, the group's for a business chat or channel. No function reads a contact's and a group's freshness together; the two lookups share `gPlan`, which reads the group's resolution for a business chat or channel, and the `resolvedRecently` predicate.
 - **Accepted:**
   - An answer for a chat can be up to a day old.
   - Removing the link of a chat's kind from the name is not reported.
@@ -113,11 +113,11 @@ The match is what the channel kind's local lookup found, else what the contact k
 | `resolve=never` | the match, or `CENotResolvedLocally` |
 | default mode, and the match is a fresh chat | the chat, from the store |
 | any other match: own, a chat that is not fresh, or `resolve=all` | the resolved registration, planned as the typed name of the match's kind (the rows above) |
-| nothing local | the channel's plan if the name has a live channel link, falling back to the contact kind if it fails; otherwise the contact kind's plan if the name has a live contact link; otherwise not connectable with the "nothing" row's warning; a failed request is an error |
+| nothing local | the channel's plan if the name has a live channel link, falling back to the contact kind if it fails and the name has a live contact link; otherwise the contact kind's plan if the name has a live contact link; otherwise not connectable with the "nothing" row's warning; a failed request is an error |
 
-When the name is resolved and has a live link of the kind not planned, `otherSimplexName` is that kind's name, unless the user has a chat, own address or own channel of that kind at that link. The plan's screen shows it:
-- the second button of 2a, 3c and 4a;
-- 3e for a chat or own channel (new).
+When the name is resolved and has a live link of the kind not planned, `otherSimplexName` is that kind's name, unless the user has a chat, own address or own channel of that kind at that link, or the channel was planned and failed (N22). The plan's screen shows it:
+- the second button of 2a, 3c and 4a, and, from a message, of a chat's or own channel's alert;
+- 3e for a chat or own channel, from search (new).
 
 ## 4. Changes against today
 
@@ -126,12 +126,12 @@ When the name is resolved and has a live link of the kind not planned, `otherSim
 | # | Story | Today | New |
 |---|---|---|---|
 | 1 | The name is live and also reserved for community, whatever is local | the community alert instead of the plan | the plan, as for any live name |
-| 4 | Bare name; a chat that is not fresh; the name also leads to the other kind at a link the user has no chat at (e.g. channel `#bakery`, the name now has only a contact link; or contact `@bakery`, the name has both) | the channel's plan if the name has a channel link, else the contact's; the local chat is shown only as the other kind's button, if at all | the local chat, and 3e: "bakery.simplex also leads to …", with Join channel or Connect |
+| 4 | Bare name; a chat that is not fresh; the name also leads to the other kind at a link the user has no chat at (e.g. channel `#bakery`, the name now has only a contact link; or contact `@bakery`, the name has both) | the channel's plan if the name has a channel link, else the contact's; the local chat is shown only as the other kind's button, if at all | the local chat; from search, 3e: "bakery.simplex also leads to …", with Join channel or Connect; from a message, the chat's alert with that button |
 | 7 | A chat; the name leads to a new link whose profile does not claim the name | the "Unconfirmed name" error alert | the chat, no alert |
 | 8 | A chat that is not fresh; the request fails | the "SimpleX name error" alert | the chat, no alert |
 | 9 | A chat; the name leads to a new link; from a message | 3c with Open new chat, Cancel | 3c with Open new chat, Open existing chat (opens the plan's `existingChat_`), and no Cancel |
 | 10 | A chat; the name is available | "Name no longer registered", "from $X per year" | the same alert, "$Y for 2 years" |
-| 11 | Own address or channel; the name leads to another link | "Connect to yourself?", or the own channel | 3c: "alice.simplex now leads to a new address", as for a chat, including 9 |
+| 11 | Own address or channel; the name leads to another link | "Connect to yourself?", or the own channel | 3c: "alice.simplex now leads to a new address", as for a chat, including 9 for the own channel (N20) |
 | 14 | Own; the name is available | "Your name has expired", "from $X per year" | the same alert, "$Y for 2 years" |
 | 15 | Bare name; own address; the name also has a channel link the user has no chat at | the channel's join sheet | "Connect to yourself?" (4a) with Join channel |
 
@@ -204,11 +204,11 @@ Each returns the plan for what it finds, and whether it is fresh. It reads the c
 4. Resolve the registration once. If the request fails, answer with the match if it is a chat, or fail.
 5. Plan the kind:
    - the match's kind, if there is a match;
-   - otherwise the channel if the name has a live channel link, falling back to the contact kind if that fails;
+   - otherwise the channel if the name has a live channel link, falling back to the contact kind if that fails and the name has a live contact link;
    - otherwise the contact kind if the name has a live contact link.
 
    It is planned as the typed name, passing the registration. With no kind to plan, answer `CPNameNotConnectable d` with the "nothing" warning.
-6. Set `otherSimplexName` to the other kind's name if the name has a live link of it, unless the local lookup of that kind found something at that link.
+6. Set `otherSimplexName` to the other kind's name if the name has a live link of it, unless the local lookup of that kind found something at that link, or the channel failed (N22).
 
 ## 7. CLI
 
@@ -227,29 +227,29 @@ A missing `graceUntil` drops the second clause of the expiry lines. `otherSimple
 
 ## 8. Apps
 
-- **Alert.** `showNameRegistrationAlert` becomes a plain `case` from `NameWarning` to title, message and action (Renew, Register, Re-register, Connect to SimpleX team). It keeps "Open existing chat" when the plan has a chat (1d).
+- **Alert.** `showNameRegistrationAlert` becomes `showNameWarningAlert`, a plain `case` from `NameWarning` to title, message and action (Renew, Register, Re-register, Connect to SimpleX team). It keeps "Open existing chat" when the plan has a chat (1d).
 - **Flow.** `planAndConnect` shows the alert when the plan has a warning. Otherwise:
-  - a plan for a chat or own channel (`CAPKnown`, `GLPKnown`, `GLPOwnLink`) with `otherSimplexName` shows 3e (N14);
+  - a plan for a chat or own channel (`CAPKnown`, `GLPKnown`, `GLPOwnLink`) with `otherSimplexName` shows 3e from search (N14, N17); from a message, the chat's or own channel's alert carries the other kind's button;
   - every other plan proceeds as today.
 
   There is no `isOwn`, `notConnectable`, `hasLocalChat`, expiry or length logic in either app.
 - **3c from a message.** The buttons are Open new chat (Open new channel) and Open existing chat, with no Cancel. Open existing chat opens the plan's `existingChat_`, which core leaves empty for the own address, so it gets Cancel (N20).
-- **Name search.** The "Connect to" row passes the filters, as a pasted link does (N17).
+- **Name search.** The chat list's "Connect to" row passes the filters, as a pasted link does (N17). The new chat sheet's row passes none, so it behaves as from a message.
 - **Types.** Kotlin and Swift get `NameWarning` and `NamePrice` in place of `NameRegistration` and `NamePricing`. The hand-written Swift decoder for `NameRegistration` goes away: `NameWarning` is chat's own type and derives like its neighbours.
-- **Strings.** The price strings change from "from %s per year" to "%s for %d years". 3e needs a title, a message and its buttons.
+- **Strings.** The price strings change from "from %s per year" to "%s for %d years". 3e needs a title; its buttons reuse "Join channel %s" / "Connect to %s" and OK.
 
 ## 9. Canvas changes
 
 - **2a, 3c, 4a:** the other kind's button is shown for bare names only.
-- **3c:** also applies to the own address and channel. From a message, it shows Open new chat and Open existing chat, with no Cancel.
-- **3e (new):** a bare name matches a chat or own channel, and the name also leads to the other kind: "bakery.simplex also leads to channel #bakery.simplex", Join channel, OK. From a message it also shows Open existing chat.
+- **3c:** also applies to the own address and channel. From a message, it shows Open new chat and Open existing chat, with no Cancel; for the own address, Cancel (N20).
+- **3e (new):** from search, a bare name matches a chat or own channel, and the name also leads to the other kind: "bakery.simplex also leads to channel #bakery", Join channel #bakery, OK. From a message, the chat's or own channel's alert shows the other kind's button instead.
 - **Prices:** "$X for 2 years", computed from the registry's price. The amounts on the canvas are examples.
-- **3a:** unchanged: "Still leads to your chat, or not found, no valid link, another name, or the request failed" matches §3.
+- **3a:** "Still leads to your chat, or not found, no valid link, another name, its new link fails, or the request failed" matches §3 and N19.
 
 ## 10. What goes away
 
 - `nameRegistration_` on `CPContactAddress`/`CPGroupLink`, `nameRegistration` on `CPNameNotConnectable`, and `setPlanRegistration`.
-- The `PRMUnknown` equation with `resolvedRecently`.
+- The `PRMUnknown` equation; `resolvedRecently` stays as the local lookups' predicate.
 - The pre-resolve branch of `CTShortContact`, `resolveNameLink`, `nameHasLink` and `nameExpired`.
 - `viewNameRegistration`, replaced by `viewNameWarning`.
 - In both apps: the decisions in `showNameRegistrationAlert`, `NameRegistration.expired`, `reservedForCommunity`, `centsPerYear`, `nameCentsPerYear`, and the Swift `NameRegistration` decoder.
@@ -274,7 +274,7 @@ Decided:
 | N12 | The new link does not claim the name, with a chat or own | the local one, no alert |
 | N15 | The request failed | with a chat: the chat, no alert; with own or nothing: the error alert |
 | N16 | Where the bare name's lookups and freshness are | the two local lookups move to the equation's `where` and return freshness; the bare name path uses both |
-| N17 | Name search ("Connect to" row) | behaves as the canvas's search (1c): it passes the filters, so found chats stay filtered, dismissing keeps the search, 3c shows Cancel and 3e is the alert |
+| N17 | Name search (the chat list's "Connect to" row) | behaves as the canvas's search (1c): it passes the filters, so found chats stay filtered, dismissing keeps the search, 3c shows Cancel and 3e is the alert |
 | N18 | `/c` when the name moved (3c) or the own name has a warning | the plan is shown instead of connecting (`connectionPlanProceed`) |
 | N19 | A chat, and the name's link data cannot be fetched | the chat, no alert, as N15 |
 | N20 | 3c for the own address from a message | Cancel: there is no chat to open |
@@ -300,7 +300,7 @@ Decided:
   - a chat and own with a name not registered (no warning);
   - a business chat, fresh and not fresh;
   - a bare name with a fresh chat (no resolution).
-- **Unchanged:** the freshness tests (§9 of the lookup plan) pass as they are.
+- **Changed:** the freshness tests (§9 of the lookup plan) assert the warning lines; `testPlanKnownNameStale` detects re-resolution by an expired registration.
 
 ## 13. Order of work
 
