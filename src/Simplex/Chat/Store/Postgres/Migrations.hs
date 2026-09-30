@@ -107,7 +107,7 @@ schemaMigrations =
     ("20260915_user_badges", m20260915_user_badges, Just down_m20260915_user_badges),
     ("20260918_badge_issue_errors", m20260918_badge_issue_errors, Just down_m20260918_badge_issue_errors),
     ("20260923_preferences_json", m20260923_preferences_json, Just down_m20260923_preferences_json),
-    ("20260924_wallet_seeds", m20260924_wallet_seeds, Nothing)
+    ("20260924_wallet_seeds", m20260924_wallet_seeds, Just down_m20260924_wallet_seeds)
   ]
 
 -- | The list of migrations in ascending order by date

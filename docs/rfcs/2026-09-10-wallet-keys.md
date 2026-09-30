@@ -13,7 +13,7 @@ Out of scope of this doc: buying a name, the names protocol, the registrar, sign
 1. Every key the device uses is derivable again from the master phrase alone.
 2. Giving away one account key gives away that account and nothing else, whatever else the recipient has.
 3. No extended public key links two accounts.
-4. Key material is generated or imported only by an explicit command, never at startup; reading the wallet row re-derives the master key to check it, and account keys are derived only by the command that uses them.
+4. Key material is generated or imported only by an explicit command, never at startup, and keys are derived only by the command that uses them.
 5. A hidden profile owns nothing on chain, so nothing on chain is linked to it.
 
 The master phrase derives every account and an account secret controls one account; no export covers anything in between, such as "this profile's accounts", because the profile is not an input to the derivation.
@@ -124,7 +124,6 @@ What the scan finds is unbound, and the user attaches each account to a profile 
 CREATE TABLE wallet_seeds (
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
   entropy BLOB NOT NULL CHECK (length(entropy) IN (16, 20, 24, 28, 32)),
-  master BLOB NOT NULL CHECK (length(master) = 64),
   next_account_index INTEGER CHECK (next_account_index BETWEEN 0 AND 2147483648), -- null means not known yet
   single_seed INTEGER NOT NULL DEFAULT 1
 ) STRICT;
@@ -141,9 +140,9 @@ CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_a
 CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 ```
 
-The master entropy, 32 bytes when generated and 16 to 32 bytes when imported, is stored with the BIP-32 master key it derives, the 32-byte private key followed by the 32-byte chain code. Reading the row recomputes the master key from the entropy and rejects a row where the two do not match, so a wallet read from the database always derives accounts. An account key is never stored, because the master key and an account index derive it whenever it is required. So `wallet_accounts` contains what derivation cannot produce: which account indexes are recorded on the device and which profile each belongs to. A row with no `user_id` is an account no profile holds, which is the result of deleting a chat profile and what a scan writes.
+The master entropy, 32 bytes when generated and 16 to 32 bytes when imported, is the only key material stored. `create` derives the first account before storing the entropy, so stored entropy is known to derive keys. Neither the master key nor an account key is stored, because the entropy and an account index derive them whenever they are required. So `wallet_accounts` contains what derivation cannot produce: which account indexes are recorded on the device and which profile each belongs to. A row with no `user_id` is an account no profile holds, which is the result of deleting a chat profile and what a scan writes.
 
-`users` is not changed: the mapping is stored in the account row, and the index on `user_id` is not unique, because a profile can hold any number of accounts. One seed per device is enforced by `single_seed` and the unique index on it, which a later change removes with a `DROP INDEX` and a `DROP COLUMN`; it is a named index rather than an inline `UNIQUE` because SQLite cannot drop an inline constraint without rebuilding the table. Deleting the master deletes its account rows, because an account index without its entropy derives nothing. The migration has no down migration, because a down migration would delete the master entropy, which may have no other copy. A down migration runs when an older app opens a newer database and the user confirms "Downgrade and open chat", and the backup made then is overwritten by the next upgrade. Without a down migration the older app reports that the database is newer than the app, and changes nothing.
+`users` is not changed: the mapping is stored in the account row, and the index on `user_id` is not unique, because a profile can hold any number of accounts. One seed per device is enforced by `single_seed` and the unique index on it, which a later change removes with a `DROP INDEX` and a `DROP COLUMN`; it is a named index rather than an inline `UNIQUE` because SQLite cannot drop an inline constraint without rebuilding the table. Deleting the master deletes its account rows, because an account index without its entropy derives nothing. The down migration drops both tables, which deletes the master entropy; it runs only when the user confirms "Downgrade and open chat" in an older app.
 
 A null `account_index` marks an account whose key was imported rather than derived. The master phrase does not recover such an account, and the schema must not suggest that it does. Importing one is not implemented here; the column is nullable now so that a row written later is read correctly. That feature also requires storage for the imported secret and an optional link to a seed, because such an account belongs to no seed and must not be deleted with one; on SQLite, making `wallet_seed_id` nullable rebuilds the table.
 
@@ -154,7 +153,7 @@ A null `account_index` marks an account whose key was imported rather than deriv
 - **A wallet the master phrase is imported into.** Enumerating BIP-44 accounts computes account extended public keys, and some wallets send them to a vendor, which gives that vendor every account on the device at once, across every profile. That is what an account for each name otherwise prevents.
 - **Whoever answers the recovery scan.** Receives every address the scan derives from the phrase, in one sequence of requests, so it can link every account on the device, across profiles, and recognise addresses that own nothing yet, which is where future accounts will be. `address` derives an address for any index directly from the master, so a caller can enumerate hidden profiles' addresses too. This is the largest privacy cost of the design.
 - **A paired device.** Wallet commands are allowed from a paired device like other chat commands: `export master` returns the whole wallet, `create mnemonic=` on a device that has no seed imports a phrase that the paired device sends, and `delete` deletes the master entropy, which may have no other copy.
-- **Someone reading the logs.** The core logs no command and no response, so a phrase passed to `create` is not written to any log. On Postgres the client inlines parameters into the statement text, so server-side statement logging records the inserted entropy and master key.
+- **Someone reading the logs.** The core logs no command and no response, so a phrase passed to `create` is not written to any log. On Postgres the client inlines parameters into the statement text, so server-side statement logging records the inserted entropy.
 - **A page open in the user's browser.** The websocket server in `apps/simplex-chat/Server.hs`, which runs only with `--chat-server-port` and listens on 127.0.0.1, accepts any local connection, requires no token and checks no `Origin`, and websockets are not bound by the same origin policy, so any page loaded while that server runs can send `export master` and read the response. It also prints every command it receives, that phrase included. Both are properties of that server, which this change makes a more valuable target, and closing them requires changes to that server rather than to the wallet.
 
 ## Known limits
@@ -176,7 +175,6 @@ A null `account_index` marks an account whose key was imported rather than deriv
 - `src/Simplex/Chat/Store/Wallets.hs`, the two tables.
 - `src/Simplex/Chat/Store/SQLite/Migrations/M20260924_wallet_seeds.hs` and the corresponding Postgres migration.
 - `tests/WalletTests.hs`.
-- `tests/SchemaDump.hs` and `tests/PostgresSchemaDump.hs`, which selected the migrations to test as every migration after the last one without a down migration, and now select every migration from the first one that has a down migration, applying any that has none.
 - Derivation uses the `BIP32`, `BIP39`, `Secp256k1` and `Eth.Address` modules from simplexmq (simplex-chat/simplexmq#1843) and adds no dependency to this package.
 
 ## What is verified

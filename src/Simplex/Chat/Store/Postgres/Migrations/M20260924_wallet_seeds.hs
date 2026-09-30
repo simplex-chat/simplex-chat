@@ -12,7 +12,6 @@ m20260924_wallet_seeds =
 CREATE TABLE wallet_seeds (
   wallet_seed_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   entropy BYTEA NOT NULL CHECK (length(entropy) IN (16, 20, 24, 28, 32)),
-  master BYTEA NOT NULL CHECK (length(master) = 64),
   next_account_index BIGINT CHECK (next_account_index BETWEEN 0 AND 2147483648),
   single_seed SMALLINT NOT NULL DEFAULT 1
 );
@@ -29,4 +28,13 @@ CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_a
 CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 |]
 
--- no down migration, see the SQLite migration
+down_m20260924_wallet_seeds :: Text
+down_m20260924_wallet_seeds =
+  [r|
+DROP INDEX idx_wallet_accounts_user_id;
+DROP INDEX idx_wallet_accounts_wallet_seed_id_account_index;
+DROP INDEX idx_wallet_seeds_single_seed;
+
+DROP TABLE wallet_accounts;
+DROP TABLE wallet_seeds;
+|]

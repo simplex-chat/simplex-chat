@@ -11,7 +11,6 @@ m20260924_wallet_seeds =
 CREATE TABLE wallet_seeds (
   wallet_seed_id INTEGER PRIMARY KEY AUTOINCREMENT,
   entropy BLOB NOT NULL CHECK (length(entropy) IN (16, 20, 24, 28, 32)),
-  master BLOB NOT NULL CHECK (length(master) = 64),
   next_account_index INTEGER CHECK (next_account_index BETWEEN 0 AND 2147483648),
   single_seed INTEGER NOT NULL DEFAULT 1
 ) STRICT;
@@ -28,4 +27,13 @@ CREATE UNIQUE INDEX idx_wallet_accounts_wallet_seed_id_account_index ON wallet_a
 CREATE INDEX idx_wallet_accounts_user_id ON wallet_accounts(user_id);
 |]
 
--- No down migration: it would delete the master entropy, which may have no other copy.
+down_m20260924_wallet_seeds :: Query
+down_m20260924_wallet_seeds =
+  [sql|
+DROP INDEX idx_wallet_accounts_user_id;
+DROP INDEX idx_wallet_accounts_wallet_seed_id_account_index;
+DROP INDEX idx_wallet_seeds_single_seed;
+
+DROP TABLE wallet_accounts;
+DROP TABLE wallet_seeds;
+|]

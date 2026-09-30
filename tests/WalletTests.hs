@@ -16,7 +16,6 @@ import qualified Data.Text as T
 import Data.Word (Word32)
 import Simplex.Chat.Wallet (AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccount, entropyFromMnemonic, masterMnemonic)
 import qualified Simplex.Messaging.Crypto as C
-import qualified Simplex.Messaging.Crypto.BIP32 as B32
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import Simplex.Messaging.Crypto.BIP44 (mkAccountIndex)
 import qualified Simplex.Messaging.Crypto.Secp256k1 as S
@@ -31,13 +30,13 @@ testPhrase12 = T.unwords $ replicate 11 "abandon" <> ["about"]
 testPhrase24 :: Text
 testPhrase24 = T.unwords $ replicate 23 "abandon" <> ["art"]
 
-walletMaster :: Text -> B32.WalletMaster
-walletMaster phrase = either error id $ B32.mkWalletMaster (either error id $ B39.parsePhrase phrase)
+walletEntropy :: Text -> B39.WalletEntropy
+walletEntropy = either error id . B39.parsePhrase
 
 walletAccount :: Text -> Word32 -> IO (AccountKey, WalletAddress)
 walletAccount phrase n = do
   g <- C.newRandom
-  either error id <$> deriveAccount g (walletMaster phrase) (either error id $ mkAccountIndex n)
+  either error id <$> deriveAccount g (walletEntropy phrase) (either error id $ mkAccountIndex n)
 
 addressFromSecret :: String -> IO String
 addressFromSecret secret = do
@@ -74,7 +73,7 @@ walletDerivationTests = do
     (keyPath . snd <$> walletAccount testPhrase12 0) `shouldReturn` "m/44'/60'/0'/0/0"
     (keyPath . snd <$> walletAccount testPhrase12 7) `shouldReturn` "m/44'/60'/7'/0/0"
   Hspec.it "round-trips the phrase it was imported from" $
-    masterMnemonic (walletMaster testPhrase24) `shouldBe` testPhrase24
+    masterMnemonic (walletEntropy testPhrase24) `shouldBe` testPhrase24
   Hspec.it "accepts a phrase of any BIP-39 length with a valid checksum" $ do
     entropyFromMnemonic testPhrase24 `shouldSatisfy` isRight
     entropyFromMnemonic testPhrase12 `shouldSatisfy` isRight

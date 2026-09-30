@@ -65,7 +65,7 @@ import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIss
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Wallet (AccountKey, WalletAddress, WalletError (..), WalletInfo (..), accountSecret, deriveAccount, entropyFromMnemonic, masterMnemonic, newWalletMaster)
+import Simplex.Chat.Wallet (AccountKey, WalletAddress, WalletError (..), WalletInfo (..), accountSecret, deriveAccount, entropyFromMnemonic, masterMnemonic, newEntropy)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -116,7 +116,7 @@ import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
-import Simplex.Messaging.Crypto.BIP32 (WalletMaster, mkWalletMaster)
+import Simplex.Messaging.Crypto.BIP39 (WalletEntropy)
 import Simplex.Messaging.Crypto.BIP44 (AccountIndex, mkAccountIndex)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -1507,25 +1507,28 @@ processChatCommand cxt nm = \case
     wallet_ <- withFastStore getWallet
     when (isJust wallet_) $ throwWalletError WEMasterExists
     -- the counter starts at 1 for a generated seed, leaving account 0 to other wallets, and is unknown for an imported one
-    (master, nextAccount) <- case mnemonic_ of
-      Nothing -> (,Just 1) <$> (liftDerivation . newWalletMaster =<< asks random)
-      Just phrase -> (,Nothing) <$> (liftDerivation . pure . mkWalletMaster =<< liftWallet (entropyFromMnemonic phrase))
-    created <- withFastStore' $ \db -> createWallet db master nextAccount
+    (entropy, nextAccount) <- case mnemonic_ of
+      Nothing -> (,Just 1) <$> (liftIO . newEntropy =<< asks random)
+      Just phrase -> (,Nothing) <$> liftWallet (entropyFromMnemonic phrase)
+    -- derive the first account before storing, so stored entropy derives keys
+    firstAccount <- liftEitherWith (ChatError . CEInternalError) $ mkAccountIndex $ fromMaybe 0 nextAccount
+    void $ walletAccount entropy firstAccount
+    created <- withFastStore' $ \db -> createWallet db entropy nextAccount
     unless created $ throwWalletError WEMasterExists
     pure $ CRWallet user (Just $ WalletInfo [] nextAccount)
   APIBindWalletAccount userId accountIdx_ -> withUserId userId $ \user@User {viewPwdHash} -> do
     when (isJust viewPwdHash) $ throwWalletError WEHiddenProfile
-    (master, n) <- withWalletStore $ \db -> bindAccount db userId accountIdx_
-    CRWalletAddress user . snd <$> walletAccount master n
+    (entropy, n) <- withWalletStore $ \db -> bindAccount db userId accountIdx_
+    CRWalletAddress user . snd <$> walletAccount entropy n
   APIGetWalletAddress accountIdx_ -> withUser $ \user -> do
-    (master, n) <- withWalletStore (`resolveAccount` accountIdx_)
-    CRWalletAddress user . snd <$> walletAccount master n
+    (entropy, n) <- withWalletStore (`resolveAccount` accountIdx_)
+    CRWalletAddress user . snd <$> walletAccount entropy n
   APIExportWalletMnemonic -> withUser $ \user -> do
-    Wallet {walletMaster} <- withFastStore getWallet >>= maybe (throwWalletError WENoMaster) pure
-    pure $ CRWalletMnemonic user (masterMnemonic walletMaster)
+    Wallet {entropy} <- withFastStore getWallet >>= maybe (throwWalletError WENoMaster) pure
+    pure $ CRWalletMnemonic user (masterMnemonic entropy)
   APIExportWalletAccount userId n -> withUserId userId $ \user -> do
-    master <- withWalletStore $ \db -> heldAccount db userId n
-    (k, a) <- walletAccount master n
+    entropy <- withWalletStore $ \db -> heldAccount db userId n
+    (k, a) <- walletAccount entropy n
     pure $ CRWalletAccountSecret user a (accountSecret k)
   APIDeleteWallet -> withUser_ $ do
     deleted <- withFastStore' deleteWallet
@@ -6034,10 +6037,10 @@ liftWallet = liftEitherWith (ChatError . CEWallet)
 withWalletStore :: (DB.Connection -> ExceptT StoreError IO (Either WalletError a)) -> CM a
 withWalletStore action = liftWallet =<< withFastStore action
 
-walletAccount :: WalletMaster -> AccountIndex -> CM (AccountKey, WalletAddress)
-walletAccount master n = do
+walletAccount :: WalletEntropy -> AccountIndex -> CM (AccountKey, WalletAddress)
+walletAccount entropy n = do
   g <- asks random
-  liftDerivation $ deriveAccount g master n
+  liftDerivation $ deriveAccount g entropy n
 
 liftDerivation :: IO (Either String a) -> CM a
 liftDerivation = liftError' (ChatError . CEInternalError)

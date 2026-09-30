@@ -30,8 +30,7 @@ import Simplex.Chat.Wallet (WalletError (..))
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Crypto.BIP32 (WalletMaster, masterBytes, masterEntropy, parseWalletMaster)
-import Simplex.Messaging.Crypto.BIP39 (unEntropy)
+import Simplex.Messaging.Crypto.BIP39 (WalletEntropy, mkEntropy, unEntropy)
 import Simplex.Messaging.Crypto.BIP44 (AccountIndex, mkAccountIndex, unAccountIndex)
 import Simplex.Messaging.Util (liftEitherWith)
 
@@ -47,37 +46,37 @@ type SeedId = Int64
 
 data Wallet = Wallet
   { walletId :: SeedId,
-    walletMaster :: WalletMaster,
+    entropy :: WalletEntropy,
     nextAccountIndex :: Maybe Word32
   }
 
 getWallet :: DB.Connection -> ExceptT StoreError IO (Maybe Wallet)
 getWallet db =
-  liftIO (maybeFirstRow id $ DB.query_ db "SELECT wallet_seed_id, entropy, master, next_account_index FROM wallet_seeds ORDER BY wallet_seed_id LIMIT 1")
+  liftIO (maybeFirstRow id $ DB.query_ db "SELECT wallet_seed_id, entropy, next_account_index FROM wallet_seeds ORDER BY wallet_seed_id LIMIT 1")
     >>= mapM toWallet
   where
-    toWallet :: (SeedId, ByteString, ByteString, Maybe Word32) -> ExceptT StoreError IO Wallet
-    toWallet (walletId, entropy, master, nextAccountIndex) =
-      liftEitherWith SEInternalError $ (\walletMaster -> Wallet {walletId, walletMaster, nextAccountIndex}) <$> parseWalletMaster (BA.convert entropy) (BA.convert master)
+    toWallet :: (SeedId, ByteString, Maybe Word32) -> ExceptT StoreError IO Wallet
+    toWallet (walletId, entBytes, nextAccountIndex) =
+      liftEitherWith SEInternalError $ (\entropy -> Wallet {walletId, entropy, nextAccountIndex}) <$> mkEntropy (BA.convert entBytes)
 
-createWallet :: DB.Connection -> WalletMaster -> Maybe Word32 -> IO Bool
-createWallet db master nextAccount =
+createWallet :: DB.Connection -> WalletEntropy -> Maybe Word32 -> IO Bool
+createWallet db entropy nextAccount =
   rowReturned $
     DB.query
       db
       [sql|
-        INSERT INTO wallet_seeds (entropy, master, next_account_index) VALUES (?, ?, ?)
+        INSERT INTO wallet_seeds (entropy, next_account_index) VALUES (?, ?)
         ON CONFLICT (single_seed) DO NOTHING
         RETURNING wallet_seed_id
       |]
-      (DB.Binary (BA.convert (unEntropy $ masterEntropy master) :: ByteString), DB.Binary (BA.convert (masterBytes master) :: ByteString), nextAccount)
+      (DB.Binary (BA.convert (unEntropy entropy) :: ByteString), nextAccount)
 
 deleteWallet :: DB.Connection -> IO Bool
 deleteWallet db =
   rowReturned $ DB.query_ db "DELETE FROM wallet_seeds RETURNING wallet_seed_id"
 
-resolveAccount :: DB.Connection -> Maybe AccountIndex -> ExceptT StoreError IO (Either WalletError (WalletMaster, AccountIndex))
-resolveAccount db accountIdx_ = fmap (first walletMaster) <$> resolveAccount_ db accountIdx_
+resolveAccount :: DB.Connection -> Maybe AccountIndex -> ExceptT StoreError IO (Either WalletError (WalletEntropy, AccountIndex))
+resolveAccount db accountIdx_ = fmap (first entropy) <$> resolveAccount_ db accountIdx_
 
 resolveAccount_ :: DB.Connection -> Maybe AccountIndex -> ExceptT StoreError IO (Either WalletError (Wallet, AccountIndex))
 resolveAccount_ db accountIdx_ =
@@ -105,16 +104,16 @@ accountUser db sId n =
   maybeFirstRow fromOnly $
     DB.query db "SELECT user_id FROM wallet_accounts WHERE wallet_seed_id = ? AND account_index = ?" (sId, n)
 
-bindAccount :: DB.Connection -> UserId -> Maybe AccountIndex -> ExceptT StoreError IO (Either WalletError (WalletMaster, AccountIndex))
+bindAccount :: DB.Connection -> UserId -> Maybe AccountIndex -> ExceptT StoreError IO (Either WalletError (WalletEntropy, AccountIndex))
 bindAccount db userId accountIdx_ = resolveAccount_ db accountIdx_ >>= either (pure . Left) (liftIO . bind)
   where
-    bind (Wallet {walletId, walletMaster}, n) = do
+    bind (Wallet {walletId, entropy}, n) = do
       held <-
         accountUser db walletId n >>= \case
           Just (Just heldBy) -> pure $ heldBy == userId
           Just Nothing -> setAccountUser db userId walletId n
           Nothing -> True <$ insertAccount db userId walletId n
-      if held then Right (walletMaster, n) <$ raiseNextAccount db walletId n else pure $ Left WEAccountBound
+      if held then Right (entropy, n) <$ raiseNextAccount db walletId n else pure $ Left WEAccountBound
 
 setAccountUser :: DB.Connection -> UserId -> SeedId -> AccountIndex -> IO Bool
 setAccountUser db userId sId n =
@@ -128,11 +127,11 @@ setAccountUser db userId sId n =
       |]
       (userId, sId, n)
 
-heldAccount :: DB.Connection -> UserId -> AccountIndex -> ExceptT StoreError IO (Either WalletError WalletMaster)
+heldAccount :: DB.Connection -> UserId -> AccountIndex -> ExceptT StoreError IO (Either WalletError WalletEntropy)
 heldAccount db userId n =
   getWallet db >>= \case
     Nothing -> pure $ Left WENoMaster
-    Just Wallet {walletId, walletMaster} -> liftIO $ (\held -> if held == Just (Just userId) then Right walletMaster else Left WEAccountNotHeld) <$> accountUser db walletId n
+    Just Wallet {walletId, entropy} -> liftIO $ (\held -> if held == Just (Just userId) then Right entropy else Left WEAccountNotHeld) <$> accountUser db walletId n
 
 raiseNextAccount :: DB.Connection -> SeedId -> AccountIndex -> IO ()
 raiseNextAccount db sId n =

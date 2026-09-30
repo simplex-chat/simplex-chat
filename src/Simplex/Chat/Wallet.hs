@@ -6,7 +6,7 @@ module Simplex.Chat.Wallet
     WalletAddress (..),
     WalletInfo (..),
     WalletError (..),
-    newWalletMaster,
+    newEntropy,
     entropyFromMnemonic,
     masterMnemonic,
     deriveAccount,
@@ -58,17 +58,19 @@ data WalletError
 masterStrength :: B39.EntropyStrength
 masterStrength = B39.ES256
 
-newWalletMaster :: TVar ChaChaDRG -> IO (Either String B32.WalletMaster)
-newWalletMaster g = B32.mkWalletMaster <$> atomically (B39.randomEntropy masterStrength g)
+newEntropy :: TVar ChaChaDRG -> IO B39.WalletEntropy
+newEntropy = atomically . B39.randomEntropy masterStrength
 
 entropyFromMnemonic :: Text -> Either WalletError B39.WalletEntropy
 entropyFromMnemonic = first (const WEBadMnemonic) . B39.parsePhrase
 
-masterMnemonic :: B32.WalletMaster -> Text
-masterMnemonic = decodeLatin1 . B39.entropyPhrase . B32.masterEntropy
+masterMnemonic :: B39.WalletEntropy -> Text
+masterMnemonic = decodeLatin1 . B39.entropyPhrase
 
-deriveAccount :: TVar ChaChaDRG -> B32.WalletMaster -> AccountIndex -> IO (Either String (AccountKey, WalletAddress))
-deriveAccount g master n = fmap account <$> deriveAddress g (B32.walletMasterKey master) path
+deriveAccount :: TVar ChaChaDRG -> B39.WalletEntropy -> AccountIndex -> IO (Either String (AccountKey, WalletAddress))
+deriveAccount g entropy n = case B32.masterKey (B39.entropySeed entropy "") of
+  Left e -> pure $ Left e
+  Right master -> fmap account <$> deriveAddress g master path
   where
     path = bip44Path Ethereum n
     account (xk, a) = (B32.xkKey xk, WalletAddress {accountIndex = n, keyPath = decodeLatin1 $ B32.renderPath path, address = a})
