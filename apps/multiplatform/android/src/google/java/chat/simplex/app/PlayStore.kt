@@ -125,8 +125,11 @@ private val badgePurchasesUpdatedListener = PurchasesUpdatedListener { result, p
     return@PurchasesUpdatedListener
   }
   when {
-    result.responseCode == BillingClient.BillingResponseCode.OK && purchases != null ->
-      pending.complete(purchases.firstNotNullOfOrNull(::badgePurchaseOutcome) ?: BadgePurchaseOutcome.Cancelled)
+    result.responseCode == BillingClient.BillingResponseCode.OK && purchases != null -> {
+      val outcomes = purchases.mapNotNull(::badgePurchaseOutcome)
+      pending.complete(outcomes.firstOrNull() ?: BadgePurchaseOutcome.Cancelled)
+      withLongRunningApi { outcomes.drop(1).forEach { BadgeStore.reconcile(it) } }
+    }
     result.responseCode == BillingClient.BillingResponseCode.USER_CANCELED ->
       pending.complete(BadgePurchaseOutcome.Cancelled)
     else ->

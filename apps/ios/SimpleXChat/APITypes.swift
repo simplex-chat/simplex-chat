@@ -915,8 +915,10 @@ public func badgeServiceErrorText(_ code: BadgeServiceErrorCode) -> String? {
     case .unsupportedVersion: NSLocalizedString("This app version is too old for the badge service. Please update the app.", comment: "alert message")
     case .unknownPurchaseKey: NSLocalizedString("The badge service does not recognize this badge.", comment: "alert message")
     case .internalError: NSLocalizedString("The badge service reported an internal error.", comment: "alert message")
+    case .receiptInvalid: NSLocalizedString("The store did not confirm this purchase.", comment: "alert message")
+    case .receiptUsed: NSLocalizedString("This purchase was already credited to a badge on another device or profile.", comment: "alert message")
     case .badRequest, .unknownOfferId, .offerDisabled, .offerMismatch, .productUnavailable,
-         .paymentNotEntitled, .paymentPending, .providerUnavailable, .providerNotConfigured, .receiptInvalid, .receiptUsed, .unknown: nil
+         .paymentNotEntitled, .paymentPending, .providerUnavailable, .providerNotConfigured, .unknown: nil
     }
 }
 

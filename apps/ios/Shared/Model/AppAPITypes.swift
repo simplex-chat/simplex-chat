@@ -1095,7 +1095,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case badgeRedeemed(user: User, redeemedBadge: LocalBadge, newBadge: Bool, badgeState: BadgeState?)
     case badgePurchaseDelivered(user: User)
     case badgeInvoice(user: UserRef, invoiceId: String)
-    case badgeState(user: UserRef, badgeState: BadgeState?, storePurchases: [BadgeStorePurchase])
+    case badgeState(user: UserRef, badgeState: BadgeState?, storePurchases: [BadgeStorePurchase]?)
     case badgeLedger(user: UserRef, badgeLedger: [StatementEntry])
 
     var responseType: String {
@@ -1207,9 +1207,9 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
         case let .appSettings(appSettings): return String(describing: appSettings)
         case let .badgeRedeemed(u, redeemedBadge, newBadge, badgeState): return withUser(u, "redeemedBadge: \(String(describing: redeemedBadge))\nnewBadge: \(newBadge)\nbadgeState: \(String(describing: badgeState))")
-        case .badgePurchaseDelivered: return noDetails
+        case let .badgePurchaseDelivered(u): return withUser(u, noDetails)
         case let .badgeInvoice(u, invoiceId): return withUser(u, invoiceId)
-        case let .badgeState(u, badgeState, storePurchases): return withUser(u, "\(String(describing: badgeState))\nstorePurchases: \(String(describing: storePurchases))")
+        case let .badgeState(u, badgeState, storePurchases): return withUser(u, "\(String(describing: badgeState))\nstorePurchases: \(String(describing: storePurchases ?? []))")
         case let .badgeLedger(u, badgeLedger): return withUser(u, String(describing: badgeLedger))
         }
     }

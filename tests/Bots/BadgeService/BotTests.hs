@@ -144,6 +144,10 @@ badgeServiceTests = do
     it "should credit a receipt naming an unknown invoice to the presenting profile" testInvoiceUnknown
     it "should reopen a closed record for a late receipt, and credit it" testInvoiceReopened
     it "should close only a record no receipt has reached" testInvoiceClose
+    it "should refuse an invoice with no service configured or while a badge is held, creating no record" testInvoiceRefusedBeforeCharge
+    it "should refuse a receipt for an invoice while a badge is held, keeping the record for a retry" testInvoiceWhileBadgeHeld
+    it "should not close another profile's invoice" testInvoiceCloseOtherProfile
+    it "should list only the asking profile's open store purchases" testInvoiceStateOtherProfile
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -1818,6 +1822,59 @@ testInvoiceClose ps =
       alice <## "badge redeemed"
       alice <## "supporter badge - active"
       alice <##. "expires "
+
+testInvoiceRefusedBeforeCharge :: HasCallStack => TestParams -> IO ()
+testInvoiceRefusedBeforeCharge ps = do
+  withNewTestChatCfg ps testCfg {badgeServiceAddress = Nothing} "bob" bobProfile $ \bob -> do
+    bob ##> "/_badge invoice 1"
+    bob <## "cannot redeem badge code: badge service not configured"
+    storeReceiptRows (chatController bob) `shouldReturn` []
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      code <- issueCode cc BTSupporter 1
+      redeemFirstBadge alice code
+      alice ##> "/_badge invoice 1"
+      alice <## "cannot redeem badge code: badge already active"
+      storeReceiptRows (chatController alice) `shouldReturn` []
+
+testInvoiceWhileBadgeHeld :: HasCallStack => TestParams -> IO ()
+testInvoiceWhileBadgeHeld ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      invoiceId <- createInvoice alice 1
+      code <- issueCode cc BTSupporter 1
+      redeemFirstBadge alice code
+      alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
+      alice <## "cannot redeem badge code: badge already active"
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True, False)]
+      rowCount cc "sx_badge_service_payments" `shouldReturn` 0
+
+testInvoiceCloseOtherProfile :: HasCallStack => TestParams -> IO ()
+testInvoiceCloseOtherProfile ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      invoiceId <- createInvoice alice 1
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> ("/_badge invoice close 2 " <> invoiceId)
+      alice <## "ok"
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), False, False)]
+
+testInvoiceStateOtherProfile :: HasCallStack => TestParams -> IO ()
+testInvoiceStateOtherProfile ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      _ <- createInvoice alice 1
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> "/_hide user 1 \"password\""
+      alice <## "user alice:"
+      alice <## "messages are hidden (use /tail to view)"
+      alice <## "profile is hidden"
+      invoiceId <- createInvoice alice 2
+      alice ##> "/_badge state 2"
+      alice <## ("store purchase open: invoice " <> invoiceId)
+      (alice </)
 
 createInvoice :: HasCallStack => TestCC -> Int -> IO String
 createInvoice cc userId = do

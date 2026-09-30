@@ -66,7 +66,7 @@ enum class BadgePeriod {
 
 @Composable
 fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager) {
-  var selectedPeriod by remember { mutableStateOf(BadgePeriod.Monthly) }
+  var selectedPeriod by remember { mutableStateOf(if (BadgePeriod.Monthly in badgePeriodsForSale) BadgePeriod.Monthly else BadgePeriod.OneMonth) }
 
   LaunchedEffect(Unit) { BadgeStore.load() }
   CloseWhenPurchaseInFlight(modalManager)
@@ -98,15 +98,15 @@ fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager) {
 
     Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
 
-    // IntrinsicSize.Max + fillMaxHeight on children so all three cards match the tallest one -
+    // IntrinsicSize.Max + fillMaxHeight on children so the cards all match the tallest one -
     // only Annual carries a savings line, and prices wrap at large fonts.
     Row(
       Modifier.fillMaxWidth().height(IntrinsicSize.Max),
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-      PeriodCard(level, BadgePeriod.OneMonth, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
-      PeriodCard(level, BadgePeriod.Monthly, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
-      PeriodCard(level, BadgePeriod.Annual, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
+      badgePeriodsForSale.forEach { period ->
+        PeriodCard(level, period, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
+      }
     }
 
     Spacer(Modifier.weight(1f).heightIn(min = 8.dp))

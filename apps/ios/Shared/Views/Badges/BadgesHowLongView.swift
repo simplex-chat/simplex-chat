@@ -64,7 +64,7 @@ struct BadgesHowLongView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
     let level: BadgeLevel
-    @State private var selectedPeriod: BadgePeriod = .monthly
+    @State private var selectedPeriod: BadgePeriod = badgePeriodsForSale.contains(.monthly) ? .monthly : .oneMonth
     @State private var continueActive = false
 
     var body: some View {
@@ -89,12 +89,10 @@ struct BadgesHowLongView: View {
 
                     Spacer(minLength: 20)
 
-                    // fixedSize + maxHeight on the cards so all three match the tallest one -
+                    // fixedSize + maxHeight on the cards so they all match the tallest one -
                     // only Annual carries a savings line, and prices wrap at large fonts
                     HStack(alignment: .top, spacing: 12) {
-                        periodCard(.oneMonth)
-                        periodCard(.monthly)
-                        periodCard(.annual)
+                        ForEach(badgePeriodsForSale) { periodCard($0) }
                     }
                     .fixedSize(horizontal: false, vertical: true)
 

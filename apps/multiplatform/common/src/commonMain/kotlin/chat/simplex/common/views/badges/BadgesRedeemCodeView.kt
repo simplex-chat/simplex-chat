@@ -99,6 +99,7 @@ fun BadgesRedeemCodeView(modalManager: ModalManager) {
   val code = remember { mutableStateOf(TextFieldValue("")) }
   val canonicalCode = remember { mutableStateOf<String?>(null) }
   val submitting = remember { mutableStateOf(false) }
+  CloseWhenPurchaseInFlight(modalManager)
 
   // when the text is unchanged, the field's own value is kept: it carries the cursor position and the
   // keyboard's composition state, which BasicTextField loses unless they are passed back to it

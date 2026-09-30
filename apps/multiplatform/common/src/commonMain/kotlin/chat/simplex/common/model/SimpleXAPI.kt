@@ -674,7 +674,7 @@ object ChatController {
       val (badgeState, storePurchases) = apiGetBadgeState(rhId, userId)
       withContext(Dispatchers.Main) {
         BadgeModel.set(rhId, userId, badgeState)
-        BadgeStore.setStorePurchases(userId, storePurchases)
+        BadgeStore.setStorePurchases(rhId, userId, storePurchases)
       }
     } catch (e: Exception) {
       Log.e(TAG, "loadBadgeState: ${e.message}")
@@ -6933,7 +6933,7 @@ sealed class CR {
   @Serializable @SerialName("badgeRedeemed") class BadgeRedeemed(val user: User, val redeemedBadge: LocalBadge, val newBadge: Boolean, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgePurchaseDelivered") class BadgePurchaseDelivered(val user: User): CR()
   @Serializable @SerialName("badgeInvoice") class BadgeInvoice(val user: UserRef, val invoiceId: String): CR()
-  @Serializable @SerialName("badgeState") class BadgeStateR(val user: UserRef, val badgeState: BadgeState?, val storePurchases: List<BadgeStorePurchase>): CR()
+  @Serializable @SerialName("badgeState") class BadgeStateR(val user: UserRef, val badgeState: BadgeState?, val storePurchases: List<BadgeStorePurchase> = emptyList()): CR()
   @Serializable @SerialName("badgeLedger") class BadgeLedger(val user: UserRef, val badgeLedger: List<StatementEntry>): CR()
   @Serializable @SerialName("badgeChanged") class BadgeChanged(val user: User, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeAlert") class BadgeAlertR(val user: UserRef, val badgeAlert: BadgeAlert): CR()
@@ -7468,6 +7468,8 @@ fun badgeServiceErrorText(code: BadgeServiceErrorCode): String? = when (code) {
   is BadgeServiceErrorCode.UnsupportedVersion -> generalGetString(MR.strings.badges_error_unsupported_version)
   is BadgeServiceErrorCode.UnknownPurchaseKey -> generalGetString(MR.strings.badges_error_unknown_purchase)
   is BadgeServiceErrorCode.Internal -> generalGetString(MR.strings.badges_error_service_internal)
+  is BadgeServiceErrorCode.ReceiptInvalid -> generalGetString(MR.strings.badges_error_receipt_invalid)
+  is BadgeServiceErrorCode.ReceiptUsed -> generalGetString(MR.strings.badges_error_receipt_used)
   else -> null
 }
 

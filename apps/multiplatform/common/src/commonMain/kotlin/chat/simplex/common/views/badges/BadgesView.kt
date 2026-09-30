@@ -37,8 +37,8 @@ fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
   }
 }
 
-// only the top modal is composed, so each purchase screen closes itself in turn, as iOS pops them
-// when Support SimpleX gives way to the purchase in flight
+// each purchase screen closes itself when it recomposes with a purchase in flight, as iOS pops them
+// when Support SimpleX gives way to it
 @Composable
 fun CloseWhenPurchaseInFlight(modalManager: ModalManager) {
   val inFlight = BadgeStore.purchaseState(chatModel.currentUser.value?.userId) != null

@@ -31,6 +31,9 @@ let badgeProductIds: [String] = BadgeLevel.allCases.flatMap { level in
 // the only products sent to the badge service: nothing delivers a subscription yet
 let badgeOneTimeProductIds: Set<String> = Set(BadgeLevel.allCases.map { badgeProductId($0, .oneMonth) })
 
+// subscriptions are for sale once renewals are delivered
+let badgePeriodsForSale: [BadgePeriod] = [.oneMonth]
+
 // A subscription's id only: core mints a one-time purchase's, and a subscription is never sent to core.
 // Apple requires a UUID - it is sent as appAccountToken and echoed back in the signed transaction.
 func newBadgeInvoiceId() -> UUID { UUID() }
@@ -247,12 +250,15 @@ final class BadgeStore: ObservableObject {
             }
         } catch let error {
             logger.error("BadgeStore.presentPurchase: \(responseError(error))")
-            if badgeReceiptRefused(error) {
-                await finish(receipt)
-                if interactive {
-                    await MainActor.run {
-                        showAlert(NSLocalizedString("Purchase error", comment: "alert title"), message: redeemErrorText(error))
-                    }
+            let refused = badgeReceiptRefused(error)
+            if refused { await finish(receipt) }
+            if interactive {
+                let text = redeemErrorText(error)
+                await MainActor.run {
+                    showAlert(
+                        NSLocalizedString("Purchase error", comment: "alert title"),
+                        message: refused ? text : text + "\n\n" + NSLocalizedString("The purchase will be retried, and the badge will arrive.", comment: "alert message")
+                    )
                 }
             }
         }
@@ -272,8 +278,8 @@ final class BadgeStore: ObservableObject {
         await MainActor.run { reconciledOnce = true }
     }
 
-    // A record left new by an app that stopped before the store answered: no transaction names it, so
-    // nothing was paid. No other record is ever closed for being absent.
+    // A record no held transaction names and no purchase here waits on. If the store still charges for one,
+    // as when this runs between an invoice's creation and its purchase starting, the receipt reopens it.
     private func closeAbandoned(_ held: Set<String>) async {
         guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else { return }
         await loadBadgeStateAsync(userId)
@@ -315,6 +321,9 @@ final class BadgeStore: ObservableObject {
             await receipt.transaction.finish()
         } else if receipt.signatureVerified {
             await presentPurchase(receipt, interactive: false)
+        } else if let invoiceId = receipt.echoedInvoiceId,
+                  let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) {
+            await closeInvoice(userId, invoiceId)
         }
     }
 

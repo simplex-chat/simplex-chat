@@ -3565,6 +3565,8 @@ processChatCommand cxt nm = \case
   APIRedeemBadgeCode userId codeText -> withUserId userId $ \user -> redeemBadgeCode nm user codeText
   APIPurchaseBadge userId echoedInvoiceId payment -> withUserId userId $ \user -> purchaseBadge nm user echoedInvoiceId payment
   APICreateBadgeInvoice userId -> withUserId userId $ \user -> do
+    void badgeServiceTarget
+    refuseWhileBadgeHeld user
     g <- asks random
     now <- liftIO getCurrentTime
     invoiceId <- UUID.toText <$> liftIO V4.nextRandom
@@ -5231,7 +5233,7 @@ presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadg
 redeemBadgeCode :: NetworkRequestMode -> User -> Text -> CM ChatResponse
 redeemBadgeCode nm user@User {userId} codeText = do
   code <- maybe (throwRedeemError BREInvalidCode) pure $ parseBadgeCode codeText
-  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+  sendTarget <- badgeServiceTarget
   g <- asks random
   now <- liftIO getCurrentTime
   let codeSent = badgeCodeText code
@@ -5257,7 +5259,7 @@ redeemBadgeCode nm user@User {userId} codeText = do
 purchaseBadge :: NetworkRequestMode -> User -> Maybe Text -> ServicePayment -> CM ChatResponse
 purchaseBadge nm presentingUser echoedInvoiceId payment = do
   txRef <- maybe (throwRedeemError BREInvalidReceipt) pure $ storeTransactionRef payment
-  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+  sendTarget <- badgeServiceTarget
   g <- asks random
   now <- liftIO getCurrentTime
   user@User {userId} <- withStore $ \db -> liftIO (attachBadgeStoreReceipt db echoedInvoiceId txRef) >>= maybe (pure presentingUser) (getUser db)
@@ -5290,8 +5292,14 @@ storeTransactionRef = \case
 stashBadgeKeys :: User -> Maybe BadgeStash -> (DB.Connection -> IO BadgeStash) -> CM BadgeStash
 stashBadgeKeys user stash_ createStash = do
   replaying <- maybe (pure False) (\s -> withStore' $ \db -> isJust <$> getStashBadgePurchase db s) stash_
-  unless replaying $ whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
+  unless replaying $ refuseWhileBadgeHeld user
   maybe (withStore' createStash) pure stash_
+
+badgeServiceTarget :: CM (ConnectTarget 'CMContact)
+badgeServiceTarget = asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+
+refuseWhileBadgeHeld :: User -> CM ()
+refuseWhileBadgeHeld user = whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
 
 -- | A refusal for which stashDead holds drops the stash; any other, and a timeout, keep it.
 requestStashedBadge :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> BadgeStash -> BadgeServiceCommand -> (BadgeServiceErrorCode -> Bool) -> CM (Maybe User, ChatResponse)

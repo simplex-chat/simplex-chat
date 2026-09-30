@@ -2196,7 +2196,7 @@ func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: 
     throw r.unexpected
 }
 
-enum BadgePurchaseResponse {
+enum BadgePurchaseResult {
     case redeemed(user: User, badgeState: BadgeState?)
     // credited to the profile it was first presented under, which is not the active one and may be hidden
     case deliveredToOtherProfile
@@ -2204,7 +2204,7 @@ enum BadgePurchaseResponse {
 
 // log: false because a store receipt is a bearer secret, like a badge code - it is in the command.
 // nil when the user cancels the retry alert, which is offered only when retry is set.
-func apiPurchaseBadge(_ userId: Int64, _ echoedInvoiceId: String?, _ payment: ServicePayment, retry: Bool) async throws -> BadgePurchaseResponse? {
+func apiPurchaseBadge(_ userId: Int64, _ echoedInvoiceId: String?, _ payment: ServicePayment, retry: Bool) async throws -> BadgePurchaseResult? {
     let cmd = ChatCommand.apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, payment: payment)
     let r: APIResult<ChatResponse2>?
     if retry {
@@ -2250,13 +2250,13 @@ func redeemErrorText(_ error: Error) -> String {
 
 func apiGetBadgeState(_ userId: Int64) async throws -> (badgeState: BadgeState?, storePurchases: [BadgeStorePurchase]) {
     let r: ChatResponse2 = try await chatSendCmd(.apiGetBadgeState(userId: userId))
-    if case let .badgeState(_, badgeState, storePurchases) = r { return (badgeState, storePurchases) }
+    if case let .badgeState(_, badgeState, storePurchases) = r { return (badgeState, storePurchases ?? []) }
     throw r.unexpected
 }
 
 func apiGetBadgeStateSync(_ userId: Int64) throws -> (badgeState: BadgeState?, storePurchases: [BadgeStorePurchase]) {
     let r: ChatResponse2 = try chatSendCmdSync(.apiGetBadgeState(userId: userId))
-    if case let .badgeState(_, badgeState, storePurchases) = r { return (badgeState, storePurchases) }
+    if case let .badgeState(_, badgeState, storePurchases) = r { return (badgeState, storePurchases ?? []) }
     throw r.unexpected
 }
 
