@@ -134,6 +134,7 @@ badgeServiceTests = do
     it "should redeem a Play purchase into a badge, and replay it as the same badge" testPurchaseBadge
     it "should redeem an App Store purchase by its JWS" testPurchaseBadgeAppStore
     it "should drop the keys of a receipt refused for good, and keep them while it is pending" testPurchaseStash
+    it "should keep the keys of a Play token the service will not send to Play" testPurchaseUnsentPlayToken
     it "should refuse a store purchase while a badge is held, before anything is sent" testPurchaseWhileBadgeHeld
     it "should answer a receipt presented under a second profile as the profile that bought it" testPurchaseSameReceiptOtherProfile
     it "should deliver a purchase first presented under another profile to that profile" testPurchaseStrandedUnderOtherProfile
@@ -315,10 +316,10 @@ testRedeemUnknownCode ps =
       g <- C.newRandom
       unknown <- randomBadgeCode g
       alice ##> ("/_redeem_badge_code 1 " <> codeArg unknown)
-      alice <## "cannot get badge:badge service error: code_invalid"
+      alice <## "cannot get badge: badge service error: code_invalid"
       -- a failed check character is refused before anything leaves the device
       alice ##> "/_redeem_badge_code 1 SB-00000-00000-00000-00001"
-      alice <## "cannot get badge:invalid code"
+      alice <## "cannot get badge: invalid code"
       -- sent straight to the service, past the client's own check, the two are one answer
       (_, redeemPriv) <- atomically $ C.generateKeyPair g :: IO (C.KeyPair 'C.Ed25519)
       redeemDirect alice bsLink redeemPriv (T.unpack $ badgeCodeText unknown)
@@ -369,7 +370,7 @@ testRedeemSecondCode ps =
       alice <## "supporter badge - active"
       alice <##. "expires "
       alice ##> ("/_redeem_badge_code 1 " <> codeArg legend)
-      alice <## "cannot get badge:badge already active"
+      alice <## "cannot get badge: badge already active"
       alice ##> "/p"
       showActiveUser alice "alice (Alice, * supporter)"
       alice ##> "/create user alisa"
@@ -391,7 +392,7 @@ testRedeemSameCodeOtherProfile ps =
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       alice ##> ("/_redeem_badge_code 2 " <> codeArg code)
-      alice <## "cannot get badge:badge service error: code_used"
+      alice <## "cannot get badge: badge service error: code_used"
       alice ##> "/p"
       showActiveUser alice "alisa"
       alice ##> "/user alice"
@@ -1306,7 +1307,7 @@ testRedeemUnpaidCode ps =
     withNewTestChatCfg ps clientCfg "alice" aliceProfile $ \alice -> do
       unpaid <- issueCodeAs cc BTSupporter 1 "unpaid"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg unpaid)
-      alice <## "cannot get badge:badge service error: payment_pending"
+      alice <## "cannot get badge: badge service error: payment_pending"
       paid <- issueCodeAs cc BTSupporter 1 "paid"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
       alice <## "badge redeemed"
@@ -1323,7 +1324,7 @@ testExpiredCode ps =
       withDB' "markCodePaid" cc (\db -> markCodePaid db (badgeCodeHash code) (addUTCTime (-60) now))
         `shouldReturn` Right ()
       alice ##> ("/_redeem_badge_code 1 " <> codeArg code)
-      alice <## "cannot get badge:badge service error: code_expired"
+      alice <## "cannot get badge: badge service error: code_expired"
 
 testRedeemedBeforeTheDeadline :: HasCallStack => TestParams -> IO ()
 testRedeemedBeforeTheDeadline ps =
@@ -1377,7 +1378,7 @@ testRevokedCode ps =
       paid <- issueCodeAs cc BTSupporter 1 "paid"
       revokeCodeAs cc paid `shouldReturn` "revoked"
       alice ##> ("/_redeem_badge_code 1 " <> codeArg paid)
-      alice <## "cannot get badge:badge service error: code_invalid"
+      alice <## "cannot get badge: badge service error: code_invalid"
       second <- revokeCodeAs cc paid
       second `shouldSatisfy` T.isInfixOf "revoked already"
 
@@ -1575,7 +1576,7 @@ testPurchaseWithNoVerifier ps =
     nothingPurchased cc
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
-      alice <## "cannot get badge:badge service error: provider_not_configured"
+      alice <## "cannot get badge: badge service error: provider_not_configured"
       -- not yet rather than never, so the keys stay for the retry once a verifier is deployed
       rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 1
 
@@ -1646,17 +1647,17 @@ testPurchaseStash ps =
       let stashes = rowCount (chatController alice) "badge_store_receipts"
       -- the store does not vouch for it, so the keys stashed for it can never be credited
       alice ##> ("/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" "not-a-purchase"))
-      alice <## "cannot get badge:badge service error: receipt_invalid"
+      alice <## "cannot get badge: badge service error: receipt_invalid"
       stashes `shouldReturn` 0
       -- no store transaction to key a stash by, so nothing is stashed or sent
       alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = "not.a-jws"})
-      alice <## "cannot get badge:invalid store receipt"
+      alice <## "cannot get badge: invalid store receipt"
       stashes `shouldReturn` 0
       nothingPurchased cc
       -- pending keeps the keys, and the settled purchase is credited to them, once
       let unsettled = "/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" googlePendingToken)
       alice ##> unsettled
-      alice <## "cannot get badge:badge service error: payment_pending"
+      alice <## "cannot get badge: badge service error: payment_pending"
       stashes `shouldReturn` 1
       settlePending store
       alice ##> unsettled
@@ -1666,6 +1667,15 @@ testPurchaseStash ps =
       stashes `shouldReturn` 1
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
 
+testPurchaseUnsentPlayToken :: HasCallStack => TestParams -> IO ()
+testPurchaseUnsentPlayToken ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      alice ##> ("/_badge purchase 1 " <> paymentArg (googlePayment "badge_supporter_01" "token/other"))
+      alice <## "cannot get badge: badge service error: provider_unavailable"
+      rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 1
+      nothingPurchased cc
+
 testPurchaseWhileBadgeHeld :: HasCallStack => TestParams -> IO ()
 testPurchaseWhileBadgeHeld ps =
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
@@ -1673,7 +1683,7 @@ testPurchaseWhileBadgeHeld ps =
       code <- issueCode cc BTSupporter 1
       redeemFirstBadge alice code
       alice ##> ("/_badge purchase 1 " <> paymentArg supporterPlay)
-      alice <## "cannot get badge:badge already active"
+      alice <## "cannot get badge: badge already active"
       rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 0
       rowCount cc "sx_badge_service_payments" `shouldReturn` 0
 
@@ -1700,7 +1710,7 @@ testPurchaseStrandedUnderOtherProfile ps =
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       let unsettled userId = "/_badge purchase " <> show (userId :: Int) <> " " <> paymentArg (googlePayment "badge_supporter_01" googlePendingToken)
       alice ##> unsettled 1
-      alice <## "cannot get badge:badge service error: payment_pending"
+      alice <## "cannot get badge: badge service error: payment_pending"
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       settlePending store
@@ -1719,7 +1729,7 @@ testPurchaseDeliveredToHiddenProfile ps =
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       let unsettled userId = "/_badge purchase " <> show (userId :: Int) <> " " <> paymentArg (googlePayment "badge_supporter_01" googlePendingToken)
       alice ##> unsettled 1
-      alice <## "cannot get badge:badge service error: payment_pending"
+      alice <## "cannot get badge: badge service error: payment_pending"
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       alice ##> "/_hide user 1 \"password\""

@@ -109,7 +109,8 @@ badgeTests = do
   describe "store purchases" $ do
     it "keys a purchase by the store's transaction id, not by the evidence signed over it" testStoreTransactionRef
     it "shows a service request in the terminal as its type alone" testShownServiceRequest
-    it "refuses a Play product id or token that could name another purchase, before any verifier" testGooglePathStrings
+    it "refuses for good a Play product id that could name another purchase, before any verifier" testGoogleProductIdPath
+    it "does not send a Play token that could name another purchase, and leaves it retryable" testGoogleTokenPath
     it "has the dev mock vouch for the transaction its claim names, as a production purchase" testMockVouchesForClaim
   describe "badge service request loop" $ do
     it "survives a request that throws, and still stops when cancelled" testSurviveRequestFailure
@@ -865,18 +866,28 @@ testShownServiceRequest = do
   shown BSCPurchaseBadge {masterKey = mk, payment = SPApple {jws = "a.b.c"}, upgrade = Nothing} `shouldBe` typeOnly "purchaseBadge"
   shown BSCRedeemBadgeCode {masterKey = mk, code = "SB-00000-00000-00000-00001"} `shouldBe` typeOnly "redeemBadgeCode"
 
-testGooglePathStrings :: IO ()
-testGooglePathStrings = do
-  let calledVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Just $ \_ _ -> error "verifier called", verifyTimeout = 500000}
-      refused productId token = case storeReceipt calledVerifier SPGoogle {productId, token} of
+testGoogleProductIdPath :: IO ()
+testGoogleProductIdPath = do
+  let refused productId = case storeReceipt uncalledVerifier SPGoogle {productId, token = validPlayToken} of
         Just (Left SRInvalid {}) -> True
         _ -> False
-      validToken = "fake-play-token.AO-J1Oz9x2kqE7wYt3"
-  mapM_ (\p -> refused p validToken `shouldBe` True) ["badge_legend_01/tokens/other?", "badge_legend_01?x", "badge_legend_01#x", "..", "../badge_legend_01", "Badge_legend_01", ""]
-  mapM_ (\t -> refused "badge_supporter_01" t `shouldBe` True) ["a/b", "../x", "t?x", "t#x", "t x", ""]
-  case storeReceipt calledVerifier SPGoogle {productId = "badge_supporter_01", token = validToken} of
+  mapM_ (\p -> refused p `shouldBe` True) ["badge_legend_01/tokens/other?", "badge_legend_01?x", "badge_legend_01#x", "..", "../badge_legend_01", "Badge_legend_01", ""]
+  case storeReceipt uncalledVerifier SPGoogle {productId = "badge_supporter_01", token = validPlayToken} of
     Just (Right StoreReceipt {provider}) -> provider `shouldBe` PPGoogle
     _ -> expectationFailure "a valid product id and token were refused"
+
+testGoogleTokenPath :: IO ()
+testGoogleTokenPath = do
+  let unsent token = case storeReceipt uncalledVerifier SPGoogle {productId = "badge_supporter_01", token} of
+        Just (Left SRUnreachable {}) -> True
+        _ -> False
+  mapM_ (\t -> unsent t `shouldBe` True) ["a/b", "../x", "t?x", "t#x", "t x", ""]
+
+uncalledVerifier :: StoreVerifier
+uncalledVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Just $ \_ _ -> error "verifier called", verifyTimeout = 500000}
+
+validPlayToken :: T.Text
+validPlayToken = "fake-play-token.AO-J1Oz9x2kqE7wYt3"
 
 testMockVouchesForClaim :: IO ()
 testMockVouchesForClaim = do

@@ -78,7 +78,9 @@ storeReceipt StoreVerifier {verifyApple, verifyGoogle, verifyTimeout} = \case
   SPGoogle {productId, token}
     -- the claim is the token's hash, so neither string may name any purchase but the one it claims,
     -- whatever path a verifier builds from them
-    | not (googleProductId productId && googleToken token) -> Just $ Left $ SRInvalid "not a Play product id and token"
+    | not (googleProductId productId) -> Just $ Left $ SRInvalid "not a Play product id"
+    -- Play documents no token grammar, so this is our guess, and refusing to ask Play is not its verdict
+    | not (googleToken token) -> Just $ Left $ SRUnreachable "a Play token this service will not send"
     | otherwise -> Just $ Right $ StoreReceipt PPGoogle (googlePurchaseRef token) $ maybe unconfigured (\verify -> online $ verify productId token) verifyGoogle
   SPInvoice {} -> Nothing
   SPReceipt {} -> Nothing
