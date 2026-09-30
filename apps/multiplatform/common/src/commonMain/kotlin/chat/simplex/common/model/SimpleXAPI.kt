@@ -941,7 +941,7 @@ object ChatController {
       val r = json.decodeFromString<API>(rStr)
       if (log) {
         Log.d(TAG, "sendCmd response type ${r.responseType}")
-        if (r is API.Result && (r.res is CR.Response || r.res is CR.Invalid)) {
+        if (r is API.Result && ((r.res is CR.Response && !r.res.type.startsWith("call")) || r.res is CR.Invalid)) {
           Log.d(TAG, "sendCmd response json $rStr")
         }
         chatModel.addTerminalItem(TerminalItem.resp(rhId, r))
@@ -958,7 +958,7 @@ object ChatController {
     } else {
       val r = json.decodeFromString<API>(rStr)
       Log.d(TAG, "chatRecvMsg: ${r.responseType}")
-      if (r is API.Result && (r.res is CR.Response || r.res is CR.Invalid)) Log.d(TAG, "chatRecvMsg json: $rStr")
+      if (r is API.Result && ((r.res is CR.Response && !r.res.type.startsWith("call")) || r.res is CR.Invalid)) Log.d(TAG, "chatRecvMsg json: $rStr")
       r
     }
   }
@@ -3367,10 +3367,9 @@ object ChatController {
         // TODO askConfirmation?
         // TODO check encryption is compatible
         withCall(r, r.contact) { call ->
-          chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, sharedKey = r.sharedKey)
+          chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, hasSharedKey = r.sharedKey != null)
           val useRelay = appPrefs.webrtcPolicyRelay.get()
           val iceServers = getIceServers()
-          Log.d(TAG, ".callOffer iceServers $iceServers")
           chatModel.callCommand.add(WCallCommand.Offer(
             offer = r.offer.rtcSession,
             iceCandidates = r.offer.rtcIceCandidates,
@@ -7215,9 +7214,9 @@ sealed class CR {
     is SndStandaloneFileComplete -> withUser(user, rcvURIs.size.toString())
     is SndFileError -> withUser(user, "errorMessage: ${json.encodeToString(errorMessage)}\nchatItem: ${json.encodeToString(chatItem_)}")
     is SndFileWarning -> withUser(user, "errorMessage: ${json.encodeToString(errorMessage)}\nchatItem: ${json.encodeToString(chatItem_)}")
-    is CallInvitations -> "callInvitations: ${json.encodeToString(callInvitations)}"
-    is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
-    is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
+    is CallInvitations -> "callInvitations: ${json.encodeToString(callInvitations.map { it.copy(sharedKey = null) })}"
+    is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: ${callInvitation.callType}"
+    is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
     is CallAnswer -> withUser(user, "contact: ${contact.id}\nanswer: ${json.encodeToString(answer)}")
     is CallExtraInfo -> withUser(user, "contact: ${contact.id}\nextraInfo: ${json.encodeToString(extraInfo)}")
     is CallEnded -> withUser(user, "contact: ${contact.id}")

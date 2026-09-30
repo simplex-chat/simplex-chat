@@ -51,13 +51,12 @@ class CallManager(val chatModel: ChatModel) {
         callUUID = invitation.callUUID,
         callState = CallState.InvitationAccepted,
         initialCallType = invitation.callType.media,
-        sharedKey = invitation.sharedKey,
+        hasSharedKey = invitation.sharedKey != null,
         androidCallState = platform.androidCreateActiveCallState()
       )
       showCallView.value = true
       val useRelay = controller.appPrefs.webrtcPolicyRelay.get()
       val iceServers = getIceServers()
-      Log.d(TAG, "answerIncomingCall iceServers: $iceServers")
       callCommand.add(WCallCommand.Start(
         media = invitation.callType.media,
         aesKey = invitation.sharedKey,
