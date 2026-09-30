@@ -745,7 +745,7 @@ connectUsers_ cc1 cc2 noShortLink = do
     (cc1 <## (name2 <> ": contact is connected"))
 
 showName :: TestCC -> IO String
-showName (TestCC ChatController {currentUser} _ _ _ _ _) = do
+showName TestCC {chatController = ChatController {currentUser}} = do
   Just User {localDisplayName, profile = LocalProfile {fullName, shortDescr}} <- readTVarIO currentUser
   pure . T.unpack $ viewName localDisplayName <> optionalFullName localDisplayName fullName shortDescr
 

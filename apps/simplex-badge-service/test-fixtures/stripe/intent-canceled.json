@@ -1,0 +1,12 @@
+{
+  "_fixture": "GET /v1/payment_intents/{id} for a canceled intent (status canceled), from Stripe's documented API schema. NOT captured from a live instance; replace `response` with a recorded body and rewrite this line. A canceled intent captured nothing, so amount_received is zero.",
+  "response": {
+    "id": "pi_test_canceled",
+    "object": "payment_intent",
+    "amount": 5400,
+    "amount_received": 0,
+    "currency": "usd",
+    "status": "canceled",
+    "latest_charge": null
+  }
+}

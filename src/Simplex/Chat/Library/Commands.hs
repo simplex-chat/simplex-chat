@@ -1594,7 +1594,8 @@ processChatCommand cxt nm = \case
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
-  APISetUserDomain userId domain_ -> withUserId userId $ \user@User {profile = p@LocalProfile {contactLink, contactDomain}} ->
+  APISetUserDomain userId strDomain_ -> withUserId userId $ \user@User {profile = p@LocalProfile {contactLink, contactDomain}} -> do
+    let domain_ = unStrJSON <$> strDomain_
     if (claimDomain <$> contactDomain) == domain_
       then pure $ CRUserProfileNoChange user
       else do
@@ -1721,7 +1722,7 @@ processChatCommand cxt nm = \case
               Just _ -> do
                 let chatV = initialChatVersion
                 subMode <- chatReadVar subscriptionMode
-                connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+                (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
                 conn@Connection {connId = testCId} <- withFastStore $ \db ->
                   createRelayTestConnection db cxt user connId ConnPrepared chatV subMode
                 challenge <- drgRandomBytes 32
@@ -2426,7 +2427,8 @@ processChatCommand cxt nm = \case
     g' <- withFastStore' $ \db -> setGroupDomainVerified db user g verified
     pure $ CRGroupDomainVerified user g' reason
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
-    ct@Contact {profile = LocalProfile {contactLink}} <- withFastStore $ \db -> getContact db cxt user contactId
+    ct@Contact {profile = LocalProfile {contactLink}, groupDirectInv} <- withFastStore $ \db -> getContact db cxt user contactId
+    when (isJust groupDirectInv) $ throwCmdError "contact is a member contact request"
     ccLink <- case contactLink of
       Just (CLFull cReq) -> pure $ CCLink cReq Nothing
       Just (CLShort sLnk) -> do
@@ -2844,7 +2846,7 @@ processChatCommand cxt nm = \case
           dm <- encodeConnInfo $ XGrpAcpt membershipMemId (Just $ groupMemberKey gks)
           agentConnId <- case memberConn fromMember of
             Nothing -> do
-              agentConnId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
+              (agentConnId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
               let chatV = vr cxt `peerConnChatVersion` peerChatVRange
               void $ withFastStore' $ \db -> createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
               pure agentConnId
@@ -3398,7 +3400,7 @@ processChatCommand cxt nm = \case
             -- possible improvement: use agent connRequestAgentVersion to determine pqSupport here;
             -- for joinPreparedConn below - same + encodeConnInfoPQ;
             -- same for auto-accept on xGrpDirectInv
-            acId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+            (acId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
             conn <- withStore $ \db -> do
               connId <- liftIO $ createMemberContactConn db user acId Nothing gInfo mConn ConnPrepared contactId subMode
               getConnectionById db cxt user connId
@@ -3757,7 +3759,7 @@ processChatCommand cxt nm = \case
     withMemberName gName mName cmd = withUser $ \user ->
       getGroupAndMemberId user gName mName >>= processChatCommand cxt nm . uncurry cmd
     getConnectionCode :: ConnId -> CM Text
-    getConnectionCode connId = verificationCode <$> withAgent (`getConnectionRatchetAdHash` connId)
+    getConnectionCode connId = verificationCode . codeAD <$> withAgent (`getConnectionVerifyCodes` connId)
     getChannelMemberCode :: GroupInfo -> GroupMember -> CM Text
     getChannelMemberCode GroupInfo {membership} m =
       case (memberPubKey membership, memberPubKey m) of
@@ -3818,7 +3820,7 @@ processChatCommand cxt nm = \case
               joinNewConn chatV = do
                 -- [incognito] generate profile to send
                 incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-                connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
+                (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
                 let ccLink = CCLink cReq $ serverShortLink <$> sLnk_
                 conn <- withFastStore' $ \db -> createDirectConnection' db userId connId ccLink contactId_ ConnPrepared incognitoProfile subMode chatV pqSup'
                 joinPreparedConn conn incognitoProfile
@@ -3873,13 +3875,13 @@ processChatCommand cxt nm = \case
         relayMemberId_ = case preparedEntity_ of
           Just (PCEGroup (GIK gInfo _) m) | useRelays' gInfo -> Just (memberId' m)
           _ -> Nothing
-        joinPreparedConn' xContactId_ conn@Connection {customUserProfileId} gInfo_ = do
+        joinPreparedConn' xContactId_ conn@Connection {connId, customUserProfileId} gInfo_ = do
           when (incognito /= isJust customUserProfileId) $ throwCmdError "incognito mode is different from prepared connection"
           -- TODO [relays] member: refactor joinContact and up avoiding parallel ifs, xContactId is not used
           xContactId <- mkXContactId xContactId_
-          localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
+          (cReq', localIncognitoProfile) <- withFastStore $ \db -> (,) <$> getConnReqContact db connId <*> forM customUserProfileId (getProfileById db userId)
           let incognitoProfile = fromLocalProfile <$> localIncognitoProfile
-          conn' <- joinContact user conn cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ PQSupportOn
+          conn' <- joinContact user conn cReq' incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ relayMemberId_ PQSupportOn
           pure $ CVRSentInvitation conn' incognitoProfile
         connect' groupLinkId xContactId_ gInfo_ = do
           let inGroup = isJust groupLinkId
@@ -3912,13 +3914,13 @@ processChatCommand cxt nm = \case
             void $ joinContact user conn cReq incognitoProfile newXContactId Nothing Nothing Nothing Nothing pqSup
             ct' <- withStore $ \db -> getContact db cxt user contactId
             pure $ CRSentInvitationToContact user ct' incognitoProfile
-          Just conn@Connection {connStatus, xContactId = xContactId_, customUserProfileId} -> case connStatus of
+          Just conn@Connection {connId, connStatus, xContactId = xContactId_, customUserProfileId} -> case connStatus of
             ConnPrepared -> do
               when (incognito /= isJust customUserProfileId) $ throwCmdError "incognito mode is different from prepared connection"
               xContactId <- mkXContactId xContactId_
-              localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
+              (cReq', localIncognitoProfile) <- withFastStore $ \db -> (,) <$> getConnReqContact db connId <*> forM customUserProfileId (getProfileById db userId)
               let incognitoProfile = fromLocalProfile <$> localIncognitoProfile
-              void $ joinContact user conn cReq incognitoProfile xContactId Nothing Nothing Nothing Nothing PQSupportOn
+              void $ joinContact user conn cReq' incognitoProfile xContactId Nothing Nothing Nothing Nothing PQSupportOn
               ct' <- withStore $ \db -> getContact db cxt user contactId
               pure $ CRSentInvitationToContact user ct' incognitoProfile
             _ -> throwCmdError "contact already has connection"
@@ -3965,7 +3967,7 @@ processChatCommand cxt nm = \case
         Nothing -> throwChatError CEInvalidConnReq
         Just _ -> do
           let chatV = initialChatVersion
-          connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup
+          (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup
           pure (connId, chatV)
     mkXContactId :: Maybe XContactId -> CM XContactId
     mkXContactId = maybe (XContactId <$> drgRandomBytes 16) pure
@@ -3979,7 +3981,7 @@ processChatCommand cxt nm = \case
       dm <- case gInfo_ of
         Just (Just gInfo@(GIK g gks))
           | useRelays' g -> case relayMemberId_ of
-              Just relayMemberId -> encodeXMemberConnInfo gInfo relayMemberId profileToSend
+              Just relayMemberId -> encodeXMemberConnInfo pqSup gInfo relayMemberId profileToSend
               Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
           | otherwise -> encodeConnInfoPQ pqSup $ XContact profileToSend (Just $ groupMemberKey gks) (Just xContactId) welcomeSharedMsgId msg_
         _ ->
@@ -4304,7 +4306,7 @@ processChatCommand cxt nm = \case
               let chatV = initialChatVersion
               gVar <- asks random
               subMode <- chatReadVar subscriptionMode
-              connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+              (connId, _) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
               (relayMember, conn, groupRelay) <- withFastStore $ \db -> do
                 relayMember <- createRelayForOwner db cxt gVar user gInfo relay
                 groupRelay <- createGroupRelayRecord db gInfo relayMember relay
@@ -4707,7 +4709,7 @@ processChatCommand cxt nm = \case
       SRDirect contactId -> do
         ct <- withFastStore $ \db -> getContact db cxt u contactId
         forM (contactConn ct) $ \conn ->
-          (CBDirect,) <$> withAgent (`getConnectionRatchetAdHash` aConnId conn)
+          (CBDirect,) . codeAD <$> withAgent (`getConnectionVerifyCodes` aConnId conn)
       SRGroup toGroupId _ asGroup -> do
         GroupInfo {groupProfile = GroupProfile {publicGroup}, membership = m} <- withFastStore $ \db -> getGroupInfo db cxt u toGroupId
         pure $ mkBinding m <$> publicGroup
@@ -6122,7 +6124,7 @@ chatCommandP =
       "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
       "/_call get" $> APIGetCallInvitations,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
-      "/_set domain " *> (APISetUserDomain <$> A.decimal <*> optional (A.space *> strP)),
+      "/_set domain " *> (APISetUserDomain <$> A.decimal <*> optional (A.space *> (StrJSON <$> strP))),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias #" *> (APISetGroupAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),

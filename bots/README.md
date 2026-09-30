@@ -43,7 +43,7 @@ To distinguish SimpleX user profile as a bot, set its `peerType` property to `"b
 
 ### Configure bot commands
 
-Bot commands are messages that start from `/` character. Normally, they would consist of lowercase latin letters, but commands can use any letters, digits and underscores. Commands can have parameters.
+Bot commands are messages that start from `/` character. Normally, they would consist of lowercase latin letters, but commands can use any characters, including symbols such as `/+` or `/-`. Commands can have parameters.
 
 All commands in messages will be highlighted in the chats with the bot, and when users tap them, they will be instantly sent. If the message has a single line and starts from `/` character, the whole message will be highlighted. Otherwise, if command is included as part of the message, it will be highlighted until the first space after `/` character: e.g., `/list` command in Directory service shows user's groups.
 

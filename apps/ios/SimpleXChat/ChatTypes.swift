@@ -2500,7 +2500,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     }
 
     public var isContactCard: Bool {
-        (activeConn == nil || activeConn?.connStatus == .prepared) && profile.contactLink != nil && active && preparedContact == nil && contactRequestId == nil
+        (activeConn == nil || activeConn?.connStatus == .prepared) && profile.contactLink != nil && active && preparedContact == nil && contactRequestId == nil && groupDirectInv == nil
     }
 
     @inline(__always)
@@ -3894,6 +3894,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
             case .memberCreatedContact: return false
             case .memberProfileUpdated: return false
             case .newMemberPendingReview: return true
+            case .msgBadSignature: return false
             }
         case .sndGroupEvent: return false
         case .rcvConnEvent: return false
@@ -6065,6 +6066,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
     case memberCreatedContact
     case memberProfileUpdated(fromProfile: Profile, toProfile: Profile)
     case newMemberPendingReview
+    case msgBadSignature
 
     var text: String { text(isChannel: false) }
 
@@ -6100,6 +6102,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
         case .memberCreatedContact: return NSLocalizedString("requested connection", comment: "rcv group event chat item")
         case let .memberProfileUpdated(fromProfile, toProfile): return profileUpdatedText(fromProfile, toProfile)
         case .newMemberPendingReview: return NSLocalizedString("New member wants to join the group.", comment: "rcv group event chat item")
+        case .msgBadSignature: return NSLocalizedString("message rejected: bad signature", comment: "rcv group event chat item")
         }
     }
 

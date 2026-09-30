@@ -269,6 +269,7 @@ object AppLock {
   fun elapsedRealtime(): Long = System.nanoTime() / 1_000_000
 
   fun recheckAuthState() {
+    if (ChatModel.showCallView.value) return
     val enteredBackgroundVal = enteredBackground.value
     val delay = ChatController.appPrefs.laLockDelay.get()
     if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= delay * 1000) {

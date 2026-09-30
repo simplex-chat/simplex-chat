@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -12,6 +13,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.List (isInfixOf)
 import qualified Data.List.NonEmpty as L
+import Data.Maybe (fromMaybe)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
 import Simplex.Chat.Protocol
@@ -33,6 +35,42 @@ protocolTests = do
   decodeChatMessageTest
   shortLinkDataTests
   batchLimitTests
+  forwardDepthTests
+  preferencesJSONTests
+
+preferencesJSONTests :: Spec
+preferencesJSONTests = describe "preferences JSON" $ do
+  it "stores no JSON when preferences encode to what was received" $ do
+    ps <- prefs "{\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"no\"}}"
+    storedJSON ps `shouldBe` Nothing
+  it "stores no JSON when group preferences encode to what was received" $ do
+    ps <- groupPrefs "{\"voice\":{\"enable\":\"on\"},\"reactions\":{\"enable\":\"off\"}}"
+    storedJSON ps `shouldBe` Nothing
+  it "stores JSON with a preference that is not defined" $ do
+    let s = "{\"voice\":{\"enable\":\"on\"},\"polls\":{\"enable\":\"on\"}}"
+    ps <- groupPrefs s
+    storedJSON ps `shouldBe` Just (object s)
+    J.toJSON ps `shouldBe` object "{\"voice\":{\"enable\":\"on\"}}"
+  it "stores JSON with a field that is not defined in a preference" $ do
+    let s = "{\"voice\":{\"enable\":\"on\",\"exceptRole\":\"observer\"}}"
+    ps <- groupPrefs s
+    storedJSON ps `shouldBe` Just (object s)
+  it "reads the received preferences from the stored JSON" $
+    groupPrefsFromRow (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"off\"}}")
+      `shouldBe` groupPrefs_ "{\"voice\":{\"enable\":\"off\"}}"
+  it "reads the stored preferences when the received JSON does not parse" $
+    groupPrefsFromRow (Just "{\"voice\":{\"enable\":\"on\"}}") (Just "{\"voice\":{\"enable\":\"sometimes\"}}")
+      `shouldBe` groupPrefs_ "{\"voice\":{\"enable\":\"on\"}}"
+  where
+    prefs :: ByteString -> IO Preferences
+    prefs = either fail pure . J.eitherDecodeStrict'
+    groupPrefs :: ByteString -> IO GroupPreferences
+    groupPrefs = either fail pure . J.eitherDecodeStrict'
+    groupPrefs_ :: ByteString -> Maybe GroupPreferences
+    groupPrefs_ = J.decodeStrict'
+    storedJSON ps = J.decodeStrictText =<< snd (prefsToRow $ Just ps) :: Maybe J.Value
+    object :: ByteString -> J.Value
+    object s = fromMaybe (error $ "not JSON: " <> B.unpack s) $ J.decodeStrict' s
 
 batchLimitTests :: Spec
 batchLimitTests = describe "Chat message batch limits" $ do
@@ -48,6 +86,19 @@ batchLimitTests = describe "Chat message batch limits" $ do
     batchError s = case parseChatMessages s of
       [Left e] -> e
       rs -> "expected a single error, got " <> show (length rs) <> " results"
+
+forwardDepthTests :: Spec
+forwardDepthTests = describe "Chat message forward depth limit" $ do
+  it "parses x.grp.msg.forward at the depth limit" $
+    chatMsgToBody (nestedFwd maxFwdDepth) ==## nestedFwd maxFwdDepth
+  it "rejects x.grp.msg.forward above the depth limit" $
+    case parseChatMessages $ chatMsgToBody $ nestedFwd $ maxFwdDepth + 1 of
+      [Left e] -> e `shouldSatisfy` isInfixOf "forward depth exceeds limit"
+      _ -> expectationFailure "single parse error expected"
+  where
+    nestedFwd :: Int -> ChatMessage 'Json
+    nestedFwd 0 = ChatMessage chatInitialVRange Nothing $ XMsgNew $ mcSimple $ MCText "hello"
+    nestedFwd n = ChatMessage chatInitialVRange Nothing $ XGrpMsgForward (GrpMsgForward FwdChannel $ systemToUTCTime $ MkSystemTime 1 1) (nestedFwd $ n - 1)
 
 srv :: SMPServer
 srv = SMPServer "smp.simplex.im" "5223" (C.KeyHash "\215m\248\251")
@@ -133,10 +184,10 @@ s #==# msg = do
   s ==# msg
 
 testChatPreferences :: Maybe Preferences
-testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing}
+testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing, _json = PrefsJSON Nothing}
 
 testGroupPreferences :: Maybe GroupPreferences
-testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing}
+testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, support = Nothing, sessions = Nothing, comments = Nothing, signMessages = Nothing, commands = Nothing, _json = PrefsJSON Nothing}
 
 testProfile :: Profile
 testProfile = Profile {displayName = "alice", fullName = "Alice", shortDescr = Nothing, description = Nothing, image = Just (ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="), peerType = Nothing, contactLink = Nothing, preferences = testChatPreferences, badge = Nothing, contactDomain = Nothing}
@@ -188,7 +239,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello")))
   it "x.msg.new chat message with chat version range" $
-    "{\"v\":\"9-20\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
+    "{\"v\":\"9-21\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       ##==## ChatMessage supportedChatVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello")))
   it "x.msg.new quote" $
     "{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
@@ -305,13 +356,13 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.new with member chat version range" $
-    "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-20\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.new\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-21\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemNew MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.intro" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.intro with member chat version range" $
-    "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-20\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-21\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemIntro MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing} Nothing
   it "x.grp.mem.intro with member restrictions" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.intro\",\"params\":{\"memberRestrictions\":{\"restriction\":\"blocked\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
@@ -326,7 +377,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
     "{\"v\":\"9\",\"event\":\"x.grp.mem.fwd\",\"params\":{\"memberIntro\":{\"directConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\",\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemFwd MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Nothing, profile = testProfile, memberKey = Nothing} IntroInvitation {groupConnReq = testConnReq, directConnReq = Just testConnReq}
   it "x.grp.mem.fwd with member chat version range and w/t directConnReq" $
-    "{\"v\":\"9\",\"event\":\"x.grp.mem.fwd\",\"params\":{\"memberIntro\":{\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-20\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
+    "{\"v\":\"9\",\"event\":\"x.grp.mem.fwd\",\"params\":{\"memberIntro\":{\"groupConnReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"},\"memberInfo\":{\"memberRole\":\"admin\",\"memberId\":\"AQIDBA==\",\"v\":\"9-21\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}}"
       #==# XGrpMemFwd MemberInfo {memberId = MemberId "\1\2\3\4", memberRole = GRAdmin, v = Just $ ChatVersionRange supportedChatVRange, profile = testProfile, memberKey = Nothing} IntroInvitation {groupConnReq = testConnReq, directConnReq = Nothing}
   it "x.grp.mem.info" $
     "{\"v\":\"9\",\"event\":\"x.grp.mem.info\",\"params\":{\"memberId\":\"AQIDBA==\",\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\",\"preferences\":{\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"}}}}}"
@@ -352,12 +403,11 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.grp.direct.inv without content" $
     "{\"v\":\"9\",\"event\":\"x.grp.direct.inv\",\"params\":{\"connReq\":\"simplex:/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-4%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D3%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}"
       #==# XGrpDirectInv testConnReq Nothing Nothing
-  -- it "x.grp.msg.forward"
-  --   $ "{\"v\":\"9\",\"event\":\"x.grp.msg.forward\",\"params\":{\"msgForward\":{\"memberId\":\"AQIDBA==\",\"msg\":\"{\"v\":\"9\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}\",\"msgTs\":\"1970-01-01T00:00:01.000000001Z\"}}}"
-  --   #==# XGrpMsgForward
-  --     (MemberId "\1\2\3\4")
-  --     (ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello"))))
-  --     (systemToUTCTime $ MkSystemTime 1 1)
+  it "x.grp.msg.forward" $
+    "{\"v\":\"9\",\"event\":\"x.grp.msg.forward\",\"params\":{\"memberId\":\"AQIDBA==\",\"memberName\":\"alice\",\"msg\":{\"v\":\"9\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}},\"msgTs\":\"1970-01-01T00:00:01.000000001Z\"}}"
+      #==# XGrpMsgForward
+        (GrpMsgForward (FwdMember (MemberId "\1\2\3\4") "alice") (systemToUTCTime $ MkSystemTime 1 1))
+        (ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (mcSimple (MCText "hello"))))
   it "x.info.probe" $
     "{\"v\":\"9\",\"event\":\"x.info.probe\",\"params\":{\"probe\":\"AQIDBA==\"}}"
       #==# XInfoProbe (Probe "\1\2\3\4")

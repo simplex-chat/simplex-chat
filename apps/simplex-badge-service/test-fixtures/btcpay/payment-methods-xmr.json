@@ -1,0 +1,29 @@
+{
+  "_fixture": "GET /api/v1/stores/{storeId}/invoices/{invoiceId}/payment-methods -- InvoicePaymentMethodDataModel[] for the Monero PLUGIN, from the same documented shape. NOT captured from a live instance -- the plugin is the likeliest of these files to diverge, XMR coming from btcpayserver-monero-plugin rather than BTCPay itself, and the likeliest to need replacing with a recorded body. `totalPaid` is deliberately NOT equal to `paymentMethodPaid`.",
+  "response": [
+    {
+      "paymentMethodId": "XMR-CHAIN",
+      "currency": "XMR",
+      "destination": "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A",
+      "paymentLink": "monero:44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A?tx_amount=0.32095000",
+      "rate": "168.25",
+      "paymentMethodPaid": "0.32095000",
+      "totalPaid": "9.99999999",
+      "due": "0.00000000",
+      "amount": "0.32095000",
+      "networkFee": "0.00000500",
+      "activated": true,
+      "payments": [
+        {
+          "id": "6f2c1b0a9e8d7c6b5a4938271605f4e3d2c1b0a9e8d7c6b5a4938271605f4e3d",
+          "receivedDate": 1700003600,
+          "value": "0.32095000",
+          "fee": "0.00000000",
+          "status": "Settled",
+          "destination": "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A"
+        }
+      ],
+      "additionalData": {}
+    }
+  ]
+}
