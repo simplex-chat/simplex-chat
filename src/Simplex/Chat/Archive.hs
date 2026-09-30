@@ -124,11 +124,13 @@ deleteStorage = do
   fs <- lift storageFiles
   liftIO $ closeDBStore `withStores` fs
   remove `withDBs` fs
+  removeExported `withDBs` fs
   mapM_ removeDir $ filesPath fs
   mapM_ removeDir $ assetsPath fs
   mapM_ removeDir =<< chatReadVar tempDirectory
   where
     remove f = whenM (doesFileExist f) $ removeFile f
+    removeExported f = remove $ f <> ".exported"
     removeDir d = whenM (doesDirectoryExist d) $ removePathForcibly d
 
 data StorageFiles = StorageFiles

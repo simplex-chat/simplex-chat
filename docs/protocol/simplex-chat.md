@@ -90,7 +90,7 @@ The syntax of compressed message is defined by the following ABNF notation:
 compressedMessage = %s"X" 1*15780 OCTET; compressed message data
 ```
 
-Compressed message is required to fit into 13388 bytes, accounting for agent overhead (see Protocol's maxCompressedMsgLength).
+Compressed message is required to fit into 15602 bytes, or into 13380 bytes for a connection with PQ encryption, accounting for agent overhead (see Protocol's maxEncodedMsgLength and maxEncodedMsgLengthPQ).
 
 The actual JSON message is required to fit into 15610 bytes, accounting for group message forwarding (x.grp.msg.forward) overhead (see Protocol's maxEncodedMsgLength).
 
@@ -264,7 +264,7 @@ Currently members can have one of four roles - `owner`, `admin`, `member` and `o
 
 `x.grp.direct.inv` message is sent to a group member to propose establishing a direct connection between members, thus creating a contact with another member.
 
-`x.grp.msg.forward` message is sent by inviting member to forward messages between introduced members, while they are connecting.
+`x.grp.msg.forward` message is sent by inviting member to forward messages between introduced members, while they are connecting. This message MUST NOT contain another `x.grp.msg.forward` message.
 
 ### Channels: relay-mediated groups
 
