@@ -238,12 +238,13 @@ final class BadgeStore: ObservableObject {
             switch try await apiPurchaseBadge(userId, receipt.echoedInvoiceId, .apple(jws: receipt.jws), retry: interactive) {
             case let .redeemed(user, badgeState):
                 await MainActor.run {
-                    BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
-                    ChatModel.shared.updateUser(user)
-                    if badgeState?.shown == true { UserDefaults.standard.set(true, forKey: DEFAULT_SUPPORTER_BANNER_SHOWN) }
+                    // finished below whichever profile was credited, as it is paid for; only the profile on screen shows it
+                    if active(user) {
+                        BadgeModel.shared.set(userId: user.userId, badgeState: badgeState)
+                        ChatModel.shared.updateUser(user)
+                        if badgeState?.shown == true { UserDefaults.standard.set(true, forKey: DEFAULT_SUPPORTER_BANNER_SHOWN) }
+                    }
                 }
-                await finish(receipt)
-            case .deliveredToOtherProfile:
                 await finish(receipt)
             case nil:
                 break

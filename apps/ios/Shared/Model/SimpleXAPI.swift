@@ -2198,8 +2198,6 @@ func apiRedeemBadgeCode(_ userId: Int64, _ code: String) async throws -> (user: 
 
 enum BadgePurchaseResult {
     case redeemed(user: User, badgeState: BadgeState?)
-    // credited to the profile it was first presented under, which is not the active one and may be hidden
-    case deliveredToOtherProfile
 }
 
 // log: false because a store receipt is a bearer secret, like a badge code - it is in the command.
@@ -2216,7 +2214,6 @@ func apiPurchaseBadge(_ userId: Int64, _ echoedInvoiceId: String?, _ payment: Se
     guard let r else { return nil }
     switch r {
     case let .result(.badgeRedeemed(user, _, _, badgeState)): return .redeemed(user: user, badgeState: badgeState)
-    case .result(.badgePurchaseDelivered): return .deliveredToOtherProfile
     default: throw r.unexpected
     }
 }

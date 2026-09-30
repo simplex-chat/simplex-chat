@@ -280,14 +280,15 @@ object BadgeStore {
       when (val r = chatModel.controller.apiPurchaseBadge(rhId, userId, receipt.invoiceId, ServicePayment.Google(receipt.productId, receipt.token), retry = interactive)) {
         is BadgePurchaseResult.Redeemed -> {
           withContext(Dispatchers.Main) {
-            BadgeModel.set(rhId, r.user.userId, r.badgeState)
-            chatModel.updateUser(r.user)
-            if (r.badgeState?.shown == true) appPrefs.supporterBannerShown.set(true)
+            // finished below whichever profile was credited, as it is paid for; only the profile on screen shows it
+            if (chatModel.controller.activeUser(rhId, r.user)) {
+              BadgeModel.set(rhId, r.user.userId, r.badgeState)
+              chatModel.updateUser(r.user)
+              if (r.badgeState?.shown == true) appPrefs.supporterBannerShown.set(true)
+            }
           }
           finish(receipt)
         }
-        is BadgePurchaseResult.DeliveredToOtherProfile ->
-          finish(receipt)
         is BadgePurchaseResult.Failed -> {
           Log.e(TAG, "BadgeStore.presentPurchase: ${r.err?.string}")
           val refused = badgeReceiptRefused(r.err)

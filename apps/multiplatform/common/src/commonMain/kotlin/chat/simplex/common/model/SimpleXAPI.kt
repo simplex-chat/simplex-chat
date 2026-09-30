@@ -595,7 +595,6 @@ object ChatController {
     val r = (if (retry) sendCmdWithRetry(rh, cmd, log = false) else sendCmd(rh, cmd, log = false)) ?: return null
     return when {
       r is API.Result && r.res is CR.BadgeRedeemed -> BadgePurchaseResult.Redeemed(r.res.user.updateRemoteHostId(rh), r.res.badgeState)
-      r is API.Result && r.res is CR.BadgePurchaseDelivered -> BadgePurchaseResult.DeliveredToOtherProfile
       r is API.Error -> BadgePurchaseResult.Failed(r.err)
       else -> {
         // the response type alone - it names a case or a JSON key, never the service's message
@@ -3657,7 +3656,7 @@ object ChatController {
     getUserChatData(null)
   }
 
-  private fun activeUser(rhId: Long?, user: UserLike): Boolean =
+  fun activeUser(rhId: Long?, user: UserLike): Boolean =
     rhId == chatModel.remoteHostId() && user.userId == chatModel.currentUser.value?.userId
 
   private fun withCall(r: CR, contact: Contact, perform: (Call) -> Unit) {
@@ -3924,8 +3923,6 @@ data class BadgeStorePurchase(val invoiceId: String? = null, val transactionRef:
 
 sealed class BadgePurchaseResult {
   class Redeemed(val user: User, val badgeState: BadgeState?): BadgePurchaseResult()
-  // credited to the profile it was first presented under, which is not the active one and may be hidden
-  object DeliveredToOtherProfile: BadgePurchaseResult()
   // err is null for a response of an unexpected type, which is logged where it is received
   class Failed(val err: ChatError?): BadgePurchaseResult()
 }
@@ -6931,7 +6928,6 @@ sealed class CR {
   // badges
   // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
   @Serializable @SerialName("badgeRedeemed") class BadgeRedeemed(val user: User, val redeemedBadge: LocalBadge, val newBadge: Boolean, val badgeState: BadgeState?): CR()
-  @Serializable @SerialName("badgePurchaseDelivered") class BadgePurchaseDelivered(val user: User): CR()
   @Serializable @SerialName("badgeInvoice") class BadgeInvoice(val user: UserRef, val invoiceId: String): CR()
   @Serializable @SerialName("badgeState") class BadgeStateR(val user: UserRef, val badgeState: BadgeState?, val storePurchases: List<BadgeStorePurchase> = emptyList()): CR()
   @Serializable @SerialName("badgeLedger") class BadgeLedger(val user: UserRef, val badgeLedger: List<StatementEntry>): CR()
@@ -7124,7 +7120,6 @@ sealed class CR {
     is ArchiveImported -> "archiveImported"
     is AppSettingsR -> "appSettings"
     is BadgeRedeemed -> "badgeRedeemed"
-    is BadgePurchaseDelivered -> "badgePurchaseDelivered"
     is BadgeInvoice -> "badgeInvoice"
     is BadgeStateR -> "badgeState"
     is BadgeLedger -> "badgeLedger"
@@ -7334,7 +7329,6 @@ sealed class CR {
     is ArchiveImported -> "${archiveErrors.map { it.string } }"
     is AppSettingsR -> json.encodeToString(appSettings)
     is BadgeRedeemed -> withUser(user, "redeemedBadge: ${json.encodeToString(redeemedBadge)}\nnewBadge: $newBadge\nbadgeState: ${json.encodeToString(badgeState)}")
-    is BadgePurchaseDelivered -> withUser(user, noDetails())
     is BadgeInvoice -> withUser(user, invoiceId)
     is BadgeStateR -> withUser(user, "${json.encodeToString(badgeState)}\nstorePurchases: ${json.encodeToString(storePurchases)}")
     is BadgeLedger -> withUser(user, json.encodeToString(badgeLedger))
