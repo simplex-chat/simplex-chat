@@ -687,10 +687,7 @@ object ChatController {
       }
       apiStartChat()
       appPrefs.chatStopped.set(false)
-      if (appPrefs.encryptionStartedAt.get() != null) {
-        deleteDatabaseBackups()
-        appPrefs.encryptionStartedAt.set(null)
-      }
+      deleteDatabaseBackups()
     } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat $e")
       throw e

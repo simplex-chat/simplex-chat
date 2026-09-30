@@ -188,7 +188,7 @@ fun DatabaseErrorView(
           title = generalGetString(MR.strings.restore_database_alert_title),
           text = generalGetString(MR.strings.restore_database_alert_desc),
           confirmText = generalGetString(MR.strings.restore_database_alert_confirm),
-          onConfirm = { restoreDb(restoreDbFromBackup) },
+          onConfirm = { restoreDb(restoreDbFromBackup, appPreferences) },
           destructive = true,
         )
       }
@@ -265,13 +265,14 @@ private fun shouldShowRestoreDbButton(prefs: AppPreferences): Boolean {
       startedAt.toEpochMilliseconds() - safeDiffInTime <= filesAgent.lastModified()
 }
 
-private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>) {
+private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPreferences) {
   val filesChatBase = dataDir.absolutePath + File.separator + chatDatabaseFileName
   val filesAgentBase = dataDir.absolutePath + File.separator + agentDatabaseFileName
   try {
     Files.copy(Path("$filesChatBase.bak"), Path(filesChatBase), StandardCopyOption.REPLACE_EXISTING)
     Files.copy(Path("$filesAgentBase.bak"), Path(filesAgentBase), StandardCopyOption.REPLACE_EXISTING)
     restoreDbFromBackup.value = false
+    prefs.encryptionStartedAt.set(null)
   } catch (e: Exception) {
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.database_restore_error), e.stackTraceToString())
   }

@@ -434,6 +434,7 @@ suspend fun encryptDatabase(
       m.controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
     }
     val error = m.controller.apiStorageEncryption(currentKey.value, newKey.value)
+    appPrefs.encryptionStartedAt.set(null)
     val sqliteError = ((error as? ChatError.ChatErrorDatabase)?.databaseError as? DatabaseError.ErrorExport)?.sqliteError
     when {
       sqliteError is SQLiteError.ErrorNotADatabase -> {
