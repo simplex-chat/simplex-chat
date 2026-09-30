@@ -873,7 +873,6 @@ data ChatResponse
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
   | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
-  | CRBadgePurchaseDelivered {user :: User} -- credited, but to another profile, which is not disclosed: it may be hidden
   | CRBadgeInvoice {user :: User, invoiceId :: Text}
   | CRBadgeState {user :: User, badgeState :: Maybe BadgeState, storePurchases :: [BadgeStorePurchase]}
   | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}

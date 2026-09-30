@@ -193,7 +193,6 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, showFullLinks, te
   CRServiceReplyAccepted u (AgentConnId cId) -> ttyUser u [plain $ "service reply accepted, connection id: " <> safeDecodeUtf8 (strEncode cId)]
   -- the badge is only shown when it is the one now on the profile; a replayed code's badge may not be
   CRBadgeRedeemed u badge newBadge _ -> ttyUser u $ if newBadge then "badge redeemed" : viewContactBadge (Just badge) else ["badge already redeemed"]
-  CRBadgePurchaseDelivered u -> ttyUser u ["badge purchase delivered to another profile"]
   CRBadgeInvoice u invoiceId -> ttyUser u ["badge invoice: " <> plain invoiceId]
   CRBadgeState u st storePurchases -> ttyUser u $ viewUserBadgeState st <> map viewBadgeStorePurchase storePurchases
   CRBadgeLedger u entries -> ttyUser u $ viewBadgeLedger entries

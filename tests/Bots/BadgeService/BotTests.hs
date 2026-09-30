@@ -1709,7 +1709,7 @@ testPurchaseSameReceiptOtherProfile ps =
       showActiveUser alice "alisa"
       -- the store transaction is the device's, so it stays with the profile it was bought under
       alice ##> ("/_badge purchase 2 " <> paymentArg supporterPlay)
-      alice <## "badge purchase delivered to another profile"
+      alice <## "[user: alice] badge already redeemed"
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
       alice ##> "/p"
       showActiveUser alice "alisa"
@@ -1726,7 +1726,9 @@ testPurchaseStrandedUnderOtherProfile ps =
       settlePending store
       -- presented again under whichever profile is active, the purchase reaches the keys alice stashed
       alice ##> unsettled 2
-      alice <## "badge purchase delivered to another profile"
+      alice <## "[user: alice] badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
       (alice </)
       rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 1
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
@@ -1747,9 +1749,8 @@ testPurchaseDeliveredToHiddenProfile ps =
       alice <## "messages are hidden (use /tail to view)"
       alice <## "profile is hidden"
       settlePending store
-      -- the answer names only the presenting profile, and nothing printed names the hidden one
+      -- the answer is the hidden owner's, so the view prints none of it
       alice ##> unsettled 2
-      alice <## "badge purchase delivered to another profile"
       (alice </)
       alice ##> "/user alice password"
       showActiveUser alice "alice (Alice, * supporter)"
