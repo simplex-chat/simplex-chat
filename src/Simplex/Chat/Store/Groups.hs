@@ -2797,11 +2797,14 @@ updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} 
     (ps, currentTs, userId, groupId)
   pure (g :: GroupInfo) {groupProfile = p {groupPreferences = Just ps}, fullGroupPreferences = mergeGroupPreferences $ Just ps}
 
-updateGroupProfileFromMember :: DB.Connection -> User -> GroupInfo -> Profile -> ExceptT StoreError IO GroupInfo
-updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName = n, fullName = fn, shortDescr = sd, description = descr, image = img} = do
-  p <- getGroupProfile -- to avoid any race conditions with UI
+updateGroupProfileFromMember :: DB.Connection -> User -> GroupInfo -> BusinessChatType -> Profile -> ExceptT StoreError IO GroupInfo
+updateGroupProfileFromMember db user g@GroupInfo {groupId} chatType Profile {displayName = n, fullName = fn, shortDescr = sd, description = descr, image = img} = do
+  p@GroupProfile {description = gDescr} <- getGroupProfile -- to avoid any race conditions with UI
   let g' = g {groupProfile = p} :: GroupInfo
-      p' = p {displayName = n, fullName = fn, shortDescr = sd, description = descr, image = img} :: GroupProfile
+      descr' = case chatType of
+        BCBusiness -> descr
+        BCCustomer -> gDescr
+      p' = p {displayName = n, fullName = fn, shortDescr = sd, description = descr', image = img} :: GroupProfile
   updateGroupProfile db user g' p'
   where
     getGroupProfile =
