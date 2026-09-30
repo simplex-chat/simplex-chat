@@ -23,7 +23,6 @@
     <string name="accept_connection_request__question">接受连接请求？</string>
     <string name="accept_contact_incognito_button">接受隐身聊天</string>
     <string name="v4_2_group_links_desc">管理员可以创建链接以加入群。</string>
-    <string name="smp_servers_preset_add">添加预设服务器</string>
     <string name="connect_via_link">通过链接连接</string>
     <string name="display_name_connection_established">已建立连接</string>
     <string name="connection_local_display_name">连接 %1$d</string>
@@ -64,7 +63,6 @@
     <string name="connect_via_invitation_link">通过一次性链接进行连接？</string>
     <string name="connect_via_contact_link">通过联系人地址进行连接？</string>
     <string name="connect_via_group_link">加入群？</string>
-    <string name="connect_via_link_or_qr">通过群链接/二维码连接</string>
     <string name="always_use_relay">总是通过中继连接</string>
     <string name="allow_your_contacts_irreversibly_delete">允许你的联系人不不可逆地删除已发送消息。（24小时）</string>
     <string name="chat_preferences_contact_allows">联系人允许</string>
@@ -169,13 +167,11 @@
     <string name="only_group_owners_can_change_prefs">只有群主可以改变群偏好设置。</string>
     <string name="save_preferences_question">保存偏好设置？</string>
     <string name="set_group_preferences">设置群偏好设置</string>
-    <string name="privacy_redefined">重新定义隐私</string>
     <string name="v4_3_improved_privacy_and_security">改进的隐私和安全</string>
     <string name="incognito">隐身聊天</string>
     <string name="joining_group">加入群中</string>
     <string name="join_group_incognito_button">加入隐身聊天</string>
     <string name="settings_section_title_incognito">隐身模式</string>
-    <string name="tap_to_start_new_chat">点击开始一个新聊天</string>
     <string name="incognito_random_profile">你的随机资料</string>
     <string name="description_via_contact_address_link_incognito">通过联系地址链接隐身</string>
     <string name="description_via_group_link_incognito">通过群链接隐身</string>
@@ -223,7 +219,6 @@
     <string name="colored_text">彩色</string>
     <string name="callstate_connected">已连接</string>
     <string name="connect_button">连接</string>
-    <string name="connect_via_link_verb">连接</string>
     <string name="choose_file">文件</string>
     <string name="network_session_mode_user">聊天资料</string>
     <string name="v4_5_transport_isolation_descr">按聊天资料（默认）或按连接（BETA）。</string>
@@ -269,10 +264,7 @@
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 桌面：通过 <b>扫描二维码</b> 从应用程序扫描显示的二维码。]]></string>
     <string name="delete_pending_connection__question">删除待定连接？</string>
     <string name="how_to_use_markdown">如何使用 markdown</string>
-    <string name="create_profile_button">创建</string>
     <string name="display_name_cannot_contain_whitespace">显示名不能包含空格。</string>
-    <string name="decentralized">分散式</string>
-    <string name="immune_to_spam_and_abuse">不受垃圾和骚扰消息影响</string>
     <string name="encrypted_video_call">端到端加密视频通话</string>
     <string name="ignore">忽视</string>
     <string name="incoming_video_call">视频通话来电</string>
@@ -326,7 +318,6 @@
     <string name="create_group_link">创建群链接</string>
     <string name="create_group">创建私密群</string>
     <string name="button_create_group_link">创建链接</string>
-    <string name="share_one_time_link">创建一次性邀请链接</string>
     <string name="smp_server_test_create_queue">创建队列</string>
     <string name="create_secret_group_title">创建私密群</string>
     <string name="v4_5_multiple_chat_profiles_descr">不同的名字、头像和传输隔离。</string>
@@ -398,7 +389,6 @@
     <string name="error_setting_network_config">更新网络配置错误</string>
     <string name="error_deleting_contact_request">删除联系人请求错误</string>
     <string name="error_saving_group_profile">保存群资料错误</string>
-    <string name="error_saving_smp_servers">保存 SMP 服务器错误</string>
     <string name="error_saving_ICE_servers">保存 ICE 服务器错误</string>
     <string name="error_sending_message">发送消息错误</string>
     <string name="simplex_link_mode_full">完整链接</string>
@@ -433,7 +423,6 @@
     <string name="alert_title_group_invitation_expired">邀请已过期！</string>
     <string name="live_message">实时消息！</string>
     <string name="image_descr_link_preview">链接预览图片</string>
-    <string name="invalid_QR_code">无效的二维码</string>
     <string name="onboarding_notifications_mode_subtitle">它如何影响电量</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">它可能在以下情况发生： \n1. 消息在发送客户端 2 天后或在服务器上 30 天后过期。 \n2. 消息解密失败，因为你或你的联系人使用了旧的数据库备份。 \n3.连接被破坏。</string>
     <string name="leave_group_question">离开群？</string>
@@ -484,7 +473,6 @@
     <string name="text_field_set_contact_placeholder">设置联系人姓名……</string>
     <string name="callstate_received_answer">已收到回复……</string>
     <string name="callstate_received_confirmation">已受到确认……</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">仅客户端设备存储用户个人资料、联系人、群和消息。</string>
     <string name="video_call_no_encryption">视频通话（非端到端加密）</string>
     <string name="onboarding_notifications_mode_periodic">定期</string>
     <string name="onboarding_notifications_mode_title">私密通知</string>
@@ -556,7 +544,6 @@
     <string name="icon_descr_call_rejected">拒接来电</string>
     <string name="call_connection_peer_to_peer">点对点</string>
     <string name="error_with_info">错误：%s</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[如果你不能亲自见面，你可以 <b>扫描视频通话中的二维码</b>，或者你的联系人可以分享邀请链接。]]></string>
     <string name="your_calls">你的通话</string>
     <string name="call_connection_via_relay">通过中继</string>
     <string name="callstatus_missed">未接来电</string>
@@ -564,13 +551,11 @@
     <string name="v4_3_voice_messages">语音消息</string>
     <string name="voice_messages">语音消息</string>
     <string name="ntf_channel_calls">SimpleX Chat 通话</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[如果你不能亲自见面，<b>在视频通话</b>中出示二维码，或分享链接。]]></string>
     <string name="your_chat_profiles">你的聊天资料</string>
     <string name="icon_descr_call_missed">未接来电</string>
     <string name="icon_descr_call_pending_sent">待定来电</string>
     <string name="connection_error_auth_desc">你的联系人删除了此链接，或者其为已使用的一次性链接。\n要进行连接，请你的联系人创建新链接。</string>
     <string name="you_are_already_connected_to_vName_via_this_link">你已经连接到 %1$s。</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">你的聊天资料将被发送 \n给你的联系人</string>
     <string name="users_delete_with_connections">资料和服务器连接</string>
     <string name="update_network_settings_question">更新网络设置？</string>
     <string name="only_you_can_delete_messages">只有你可以不可逆地删除消息（你的联系人可以将它们标记为删除）。（24小时）</string>
@@ -619,7 +604,6 @@
     <string name="ttl_month">%d 月</string>
     <string name="ttl_sec">%d 秒</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">确保 WebRTC ICE 服务器地址格式正确、每行分开且不重复。</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">确保 SMP 服务器地址格式正确、每行分开且不重复。</string>
     <string name="markdown_help">Markdown 帮助</string>
     <string name="mark_code_verified">标记为已验证</string>
     <string name="make_private_connection">建立私密连接</string>
@@ -674,7 +658,6 @@
     <string name="sender_cancelled_file_transfer">发送人已取消文件传输。</string>
     <string name="share_verb">分享</string>
     <string name="send_live_message">发送实时消息</string>
-    <string name="this_text_is_available_in_settings">此文本在设置中可用</string>
     <string name="icon_descr_received_msg_status_unread">未读</string>
     <string name="saved_ICE_servers_will_be_removed">保存的 WebRTC ICE 服务器将被删除。</string>
     <string name="is_verified">%s 已验证</string>
@@ -684,7 +667,6 @@
     <string name="save_and_notify_contact">保存并通知联系人</string>
     <string name="save_and_notify_contacts">保存并通知联系人</string>
     <string name="reject">拒绝</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">为了保护隐私，SimpleX 对你的每一个联系人使用不同的 ID。</string>
     <string name="network_option_tcp_connection_timeout">TCP 连接超时</string>
     <string name="feature_received_prohibited">收到，禁止</string>
     <string name="accept_feature_set_1_day">设定1天</string>
@@ -692,7 +674,6 @@
     <string name="simplex_link_mode_browser_warning">在浏览器中打开链接可能会降低连接的隐私和安全性。SimpleX 上不受信任的链接将显示为红色。</string>
     <string name="restore_database_alert_desc">恢复数据库备份后请输入之前的密码。 此操作无法撤消。</string>
     <string name="contact_developers">请更新应用程序并联系开发者。</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">任何人都可以托管服务器。</string>
     <string name="paste_button">粘贴</string>
     <string name="network_option_ping_count">PING 次数</string>
     <string name="prohibit_sending_voice">禁止发送语音消息。</string>
@@ -711,28 +692,22 @@
     <string name="ntf_channel_messages">SimpleX 消息</string>
     <string name="is_not_verified">%s 未验证</string>
     <string name="v4_5_italian_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
-    <string name="first_platform_without_user_ids">没有用户标识符。</string>
     <string name="group_is_decentralized">完全去中心化 - 仅对成员可见。</string>
     <string name="image_decoding_exception_desc">图像无法解码。 请尝试不同的图像或联系开发者。</string>
     <string name="theme">主题</string>
     <string name="delete_files_and_media_desc">此操作无法撤消——所有接收和发送的文件和媒体都将被删除。 低分辨率图片将保留。</string>
     <string name="member_role_will_be_changed_with_invitation">角色将更改为%s。 该成员将收到新的邀请。</string>
     <string name="enable_automatic_deletion_message">此操作无法撤消——早于所选的发送和接收的消息将被删除。 这可能需要几分钟时间。</string>
-    <string name="this_QR_code_is_not_a_link">此二维码不是链接！</string>
     <string name="switch_receiving_address_desc">接收地址将变更到不同的服务器。地址更改将在发件人上线后完成。</string>
-    <string name="this_link_is_not_a_valid_connection_link">此链接不是有效的连接链接！</string>
     <string name="to_start_a_new_chat_help_header">开始新的聊天</string>
     <string name="to_verify_compare">要与你的联系人验证端到端加密，请比较（或扫描）你设备上的代码。</string>
     <string name="unmute_chat">取消静音</string>
-    <string name="update_network_session_mode_question">更新传输隔离模式？</string>
-    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">（从剪贴板扫描或粘贴）</string>
     <string name="smp_server_test_secure_queue">保护队列</string>
     <string name="reveal_verb">揭示</string>
     <string name="la_notice_turn_on">打开</string>
     <string name="icon_descr_sent_msg_status_send_failed">发送失败</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">未经授权发送</string>
     <string name="images_limit_title">太多图片！</string>
-    <string name="icon_descr_server_status_pending">待办的</string>
     <string name="switch_receiving_address_question">更改接收地址？</string>
     <string name="ask_your_contact_to_enable_voice">请让你的联系人启用发送语音消息。</string>
     <string name="icon_descr_record_voice_message">录制语音消息</string>
@@ -741,22 +716,17 @@
     <string name="send_verb">发送</string>
     <string name="send_live_message_desc">发送实时消息——它会在你键入时为收件人更新</string>
     <string name="add_contact_or_create_group">开始新聊天</string>
-    <string name="to_share_with_your_contact">（与你的联系人分享）</string>
     <string name="to_connect_via_link_title">通过链接连接</string>
     <string name="set_contact_name">设置联系人姓名</string>
     <string name="connection_you_accepted_will_be_cancelled">你接受的连接将被取消！</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">你与之共享此链接的联系人将无法连接！</string>
     <string name="show_QR_code">显示二维码</string>
     <string name="chat_with_the_founder">发送问题和想法</string>
-    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">保护你的隐私和安全的消息传递和应用程序平台。</string>
     <string name="strikethrough_text">删去</string>
-    <string name="people_can_connect_only_via_links_you_share">你决定谁可以连接。</string>
-    <string name="next_generation_of_private_messaging">下一代私密通讯软件</string>
     <string name="paste_the_link_you_received">粘贴你收到的链接</string>
     <string name="alert_title_skipped_messages">已跳过消息</string>
     <string name="settings_section_title_support">支持 SimpleX Chat</string>
     <string name="send_link_previews">发送链接预览</string>
-    <string name="settings_section_title_socks">SOCKS 代理</string>
     <string name="stop_chat_question">停止聊天程序？</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">停止聊天以便导出、导入或删除聊天数据库。在聊天停止期间，你将无法收发消息。</string>
     <string name="restore_database">恢复数据库备份</string>
@@ -774,7 +744,6 @@
     <string name="share_invitation_link">分享一次性链接</string>
     <string name="this_string_is_not_a_connection_link">此字符串不是连接链接！</string>
     <string name="send_us_an_email">给我们发电子邮件</string>
-    <string name="smp_servers">SMP 服务器</string>
     <string name="sending_files_not_yet_supported">尚不支持发送文件</string>
     <string name="trying_to_connect_to_server_to_receive_messages">尝试连接到用于从该连接接收消息的服务器。</string>
     <string name="receiving_files_not_yet_supported">尚不支持接收文件</string>
@@ -786,7 +755,6 @@
     <string name="simplex_link_group">SimpleX 群链接</string>
     <string name="simplex_link_mode">SimpleX 链接</string>
     <string name="sender_may_have_deleted_the_connection_request">发送人已删除连接请求。</string>
-    <string name="smp_servers_preset_server">预设服务器</string>
     <string name="image_descr_qr_code">二维码</string>
     <string name="network_session_mode_transport_isolation">传输隔离</string>
     <string name="share_link">分享链接</string>
@@ -810,8 +778,6 @@
     <string name="reset_color">重置颜色</string>
     <string name="v4_5_reduced_battery_usage">减少电池使用量</string>
     <string name="v4_5_private_filenames_descr">为了保护时区，图像/语音文件使用 UTC。</string>
-    <string name="use_chat">使用聊天</string>
-    <string name="read_more_in_github_with_link"><![CDATA[在我们的 <font color="#0088ff">GitHub 存储库</font> 中阅读更多内容。]]></string>
     <string name="auth_open_chat_console">打开聊天控制台</string>
     <string name="auth_stop_chat">停止聊天程序</string>
     <string name="toast_permission_denied">权限被拒绝！</string>
@@ -833,7 +799,6 @@
     <string name="view_security_code">查看安全码</string>
     <string name="voice_message_with_duration">语音消息 (%1$s)</string>
     <string name="waiting_for_image">等待图像中</string>
-    <string name="welcome">欢迎！</string>
     <string name="personal_welcome">欢迎 %1$s！</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">当你的联系人设备在线时，你将可以连接，请稍等或稍后查看！</string>
     <string name="rate_the_app">评价此应用程序</string>
@@ -856,7 +821,6 @@
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">当你启动应用或在应用程序驻留后台超过30 秒后，你将需要进行身份验证。</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[你可以 <font color="#0088ff"> 连接到  SimpleX Chat  开发者提出任何问题并接收更新 </font>。]]></string>
     <string name="you_accepted_connection">你已接受连接</string>
-    <string name="your_SMP_servers">你的 SMP 服务器</string>
     <string name="integrity_msg_skipped">%1$d 条已跳过消息</string>
     <string name="ttl_s">%ds</string>
     <string name="whats_new">更新内容</string>
@@ -874,11 +838,9 @@
     <string name="your_simplex_contact_address">你的 SimpleX 地址</string>
     <string name="install_simplex_chat_for_terminal">为终端安装 SimpleX Chat</string>
     <string name="use_simplex_chat_servers__question">使用 SimpleX Chat 服务器？</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">我们不会在服务器上存储你的任何联系人或消息（一旦发送）。</string>
     <string name="webrtc_ice_servers">WebRTC ICE 服务器</string>
     <string name="relay_server_protects_ip">中继服务器保护你的 IP 地址，但它可以观察通话的持续时间。</string>
     <string name="relay_server_if_necessary">中继服务器仅在必要时使用。其他人可能会观察到你的IP地址。</string>
-    <string name="your_ice_servers">你的 ICE 服务器</string>
     <string name="icon_descr_video_off">视频关闭</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">你可以通过应用设置/数据库或重启应用开始聊天。</string>
     <string name="snd_group_event_changed_member_role">你将 %s 的角色更改为 %s</string>
@@ -886,19 +848,16 @@
     <string name="snd_conn_event_switch_queue_phase_completed">你已更改地址</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">你可以共享链接或二维码——任何人都可以加入该群。如果你稍后将其删除，你不会失去该群的成员。</string>
     <string name="conn_level_desc_indirect">间接（%1$s）</string>
-    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[你也可以通过点击链接进行连接。 如果它在浏览器中打开，请单击<b>在移动应用程序中打开</b>按钮。]]></string>
     <string name="app_name">SimpleX</string>
     <string name="you_will_join_group">你将连接到所有群成员。</string>
     <string name="description_via_group_link">通过群链接</string>
     <string name="description_via_one_time_link">通过一次性链接</string>
     <string name="description_via_contact_address_link">通过联系地址链接</string>
     <string name="simplex_link_mode_browser">通过浏览器</string>
-    <string name="smp_servers_your_server">你的服务器</string>
     <string name="network_use_onion_hosts_prefer">当可用时</string>
     <string name="network_use_onion_hosts">使用 .onion 主机</string>
     <string name="your_ICE_servers">你的 ICE 服务器</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
-    <string name="you_control_your_chat">你的聊天由你掌控！</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">你可以使用 markdown 来编排消息格式：</string>
     <string name="ttl_h">%dh</string>
     <string name="ttl_days">%d 天</string>
@@ -1012,20 +971,14 @@
     <string name="video_will_be_received_when_contact_completes_uploading">视频将在你的联系人完成上传后收到。</string>
     <string name="error_xftp_test_server_auth">服务器需要授权来上传，检查密码。</string>
     <string name="smp_server_test_upload_file">上传文件</string>
-    <string name="xftp_servers">XFTP 服务器</string>
-    <string name="your_XFTP_servers">你的 XFTP 服务器</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[如果 SOCKS 代理不支持它们，请将 <i>Use .onion hosts</i> 设置为否。]]></string>
     <string name="network_socks_toggle_use_socks_proxy">使用 SOCKS 代理</string>
     <string name="port_verb">端口</string>
     <string name="smp_server_test_delete_file">删除文件</string>
     <string name="smp_server_test_compare_file">对比文件</string>
     <string name="host_verb">主机</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">确保 XFTP 服务器地址格式正确、行分隔且不重复。</string>
     <string name="smp_server_test_create_file">创建文件</string>
     <string name="smp_server_test_download_file">下载文件</string>
-    <string name="error_loading_smp_servers">加载 SMP 服务器错误</string>
-    <string name="error_loading_xftp_servers">加载 XFTP 服务器错误</string>
-    <string name="error_saving_xftp_servers">保存 SMP 服务器时出错</string>
     <string name="network_proxy_port">端口 %d</string>
     <string name="network_socks_proxy_settings">SOCKS 代理设置</string>
     <string name="la_lock_mode">SimpleX 锁定模式</string>
@@ -1079,8 +1032,6 @@
     <string name="revoke_file__message">文件将从服务器中删除。</string>
     <string name="revoke_file__confirm">吊销</string>
     <string name="audio_video_calls">音频/视频通话</string>
-    <string name="available_in_v51">"
-\n在 v5.1 版本中可用"</string>
     <string name="v5_0_app_passcode">应用程序密码</string>
     <string name="v5_0_polish_interface">波兰语界面</string>
     <string name="v5_0_polish_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
@@ -1127,10 +1078,8 @@
     <string name="info_row_disappears_at">消失于</string>
     <string name="error_setting_address">设置地址错误</string>
     <string name="customize_theme_title">自定义主题</string>
-    <string name="create_address_and_let_people_connect">创建一个地址，让人们与你联系。</string>
     <string name="create_simplex_address">创建 SimpleX 地址</string>
     <string name="enter_welcome_message_optional">输入欢迎消息……（可选）</string>
-    <string name="dont_create_address">不创建地址</string>
     <string name="enter_welcome_message">输入欢迎消息……</string>
     <string name="dark_theme">深色主题</string>
     <string name="export_theme">导出主题</string>
@@ -1169,10 +1118,8 @@
     <string name="opening_database">打开数据库中……</string>
     <string name="auth_open_chat_profiles">更改聊天资料</string>
     <string name="scan_qr_to_connect_to_contact">你的联系人可以扫描二维码或使用应用程序中的链接来建立连接。</string>
-    <string name="you_can_share_your_address">你可以将你的地址作为链接或二维码共享——任何人都可以连接到你。</string>
     <string name="if_you_cant_meet_in_person">如果你不能亲自见面，可以在视频通话中展示二维码，或分享链接。</string>
     <string name="learn_more">了解更多</string>
-    <string name="you_can_accept_or_reject_connection">当人们请求连接时，你可以接受或拒绝它。</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">如果你以后删除你的地址，你不会丢失你的联系人。</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[在<font color="#0088ff">用户指南</font>中阅读更多。]]></string>
     <string name="theme_colors_section_title">界面颜色</string>
@@ -1185,7 +1132,6 @@
     <string name="email_invite_body">你好！
 \n用 SimpleX Chat 与我联系：%s</string>
     <string name="email_invite_subject">让我们一起在 SimpleX Chat 里聊天</string>
-    <string name="you_can_create_it_later">你可以以后创建它</string>
     <string name="share_address">分享地址…</string>
     <string name="you_can_share_this_address_with_your_contacts">你可以与你的联系人分享该地址，让他们与 %s 联系。</string>
     <string name="group_welcome_preview">预览</string>
@@ -1262,7 +1208,6 @@
     <string name="snd_conn_event_ratchet_sync_started">与 %s 协调加密中…</string>
     <string name="in_developing_desc">该功能还没支持。请尝试下一个版本。</string>
     <string name="turn_off_battery_optimization_button">允许</string>
-    <string name="connect_via_link_incognito">隐身连接</string>
     <string name="connect_via_member_address_alert_title">确认发起私聊？</string>
     <string name="delivery">发送</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
@@ -1334,7 +1279,6 @@
     <string name="settings_section_title_delivery_receipts">将送达回执发送给</string>
     <string name="error_enabling_delivery_receipts">启用已读回执时出错！</string>
     <string name="passphrase_will_be_saved_in_settings">更改密码或重启应用后，密码将以明文形式保存在设置中。</string>
-    <string name="paste_the_link_you_received_to_connect_with_your_contact">粘贴你收到的链接以与你的联系人联系…</string>
     <string name="send_receipts">送达回执</string>
     <string name="no_selected_chat">没有选中的聊天</string>
     <string name="conn_event_ratchet_sync_ok">可以加密</string>
@@ -1501,7 +1445,6 @@
     <string name="moderated_items_description">%2$s 审核了 %1$d 条消息</string>
     <string name="error_showing_content">显示内容出错</string>
     <string name="error_showing_message">显示消息出错</string>
-    <string name="you_can_make_address_visible_via_settings">你可以通过设置让它对你的 SimpleX 联系人可见。</string>
     <string name="recent_history_is_not_sent_to_new_members">未发送历史消息给新成员。</string>
     <string name="retry_verb">重试</string>
     <string name="camera_not_available">相机不可用</string>
@@ -1763,7 +1706,6 @@
     <string name="network_smp_proxy_fallback_allow">是</string>
     <string name="network_smp_proxy_fallback_prohibit">不</string>
     <string name="network_smp_proxy_fallback_allow_description">当你的服务器或目标服务器不支持私密路由时直接发送消息。</string>
-    <string name="update_network_smp_proxy_fallback_question">备用消息路由</string>
     <string name="private_routing_show_message_status">显示消息状态</string>
     <string name="private_routing_explanation">为了保护你的 IP 地址，私密路由使用你的 SMP 服务器来传送消息。</string>
     <string name="settings_section_title_private_message_routing">私密消息路由</string>
@@ -1776,7 +1718,6 @@
     <string name="network_smp_proxy_fallback_prohibit_description">不直接发送消息，即便你的服务器或目标服务器不支持私密路由。</string>
     <string name="snd_error_proxy_relay">转发服务器：%1$s
 \n目标服务器错误：%2$s</string>
-    <string name="update_network_smp_proxy_mode_question">消息路由模式</string>
     <string name="file_not_approved_title">未知服务器！</string>
     <string name="file_not_approved_descr">没有 Tor 或 VPN，这些 XFTP 中继可以看到你的 IP 地址：
 \n%1$s.</string>
@@ -1785,7 +1726,6 @@
     <string name="settings_section_title_files">文件</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">应用将请求确认来自未知服务器的下载（.onion 或启用 SOCKS 代理时除外）。</string>
     <string name="settings_section_title_user_theme">个人资料主题</string>
-    <string name="chat_list_always_visible">在新窗口中显示聊天列表</string>
     <string name="chat_theme_apply_to_all_modes">所有颜色模式</string>
     <string name="chat_theme_apply_to_mode">应用到</string>
     <string name="theme_black">黑</string>
@@ -1852,8 +1792,6 @@
     <string name="private_routing_error">私密路由出错</string>
     <string name="message_forwarded_title">已转发的消息</string>
     <string name="message_forwarded_desc">尚无直接连接，消息由管理员转发。</string>
-    <string name="smp_servers_other">其他 SMP 服务器</string>
-    <string name="xftp_servers_other">其他 XFTP 服务器</string>
     <string name="scan_paste_link">粘贴链接/扫描</string>
     <string name="subscription_percentage">显示百分比</string>
     <string name="member_info_member_inactive">不活跃</string>
@@ -1934,8 +1872,6 @@
     <string name="servers_info_subscriptions_total">总计</string>
     <string name="chunks_uploaded">块已上传</string>
     <string name="subscription_results_ignored">订阅被忽略</string>
-    <string name="smp_servers_configured">已配置的 SMP 服务器</string>
-    <string name="xftp_servers_configured">已配置的 XFTP 服务器</string>
     <string name="current_user">当前个人资料</string>
     <string name="servers_info_transport_sessions_section_header">传输会话</string>
     <string name="servers_info_uploaded">已上传</string>
@@ -1944,7 +1880,6 @@
     <string name="member_inactive_title">成员不活跃</string>
     <string name="member_inactive_desc">如果成员变得活跃，可能会在之后传输消息。</string>
     <string name="servers_info_messages_sent">发送的消息</string>
-    <string name="open_server_settings_button">打开服务器设置</string>
     <string name="app_check_for_updates">检查更新</string>
     <string name="app_check_for_updates_notice_title">检查更新</string>
     <string name="app_check_for_updates_notice_disable">停用</string>
@@ -1994,10 +1929,8 @@
     <string name="cant_call_member_alert_title">无法呼叫群成员</string>
     <string name="cant_send_message_to_member_alert_title">无法给群成员发消息</string>
     <string name="confirm_delete_contact_question">确认删除联系人？</string>
-    <string name="info_view_connect_button">连接</string>
     <string name="action_button_add_members">邀请</string>
     <string name="no_filtered_contacts">没有过滤的联系人</string>
-    <string name="info_view_open_button">打开</string>
     <string name="info_view_search_button">搜索</string>
     <string name="cant_call_member_send_message_alert_text">发送消息来开启通话。</string>
     <string name="you_can_still_send_messages_to_contact">你可以发消息给来自已存档联系人的 %1$s。</string>
@@ -2123,11 +2056,7 @@
     <string name="or_to_share_privately">或者私下分享</string>
     <string name="onboarding_choose_server_operators">服务器运营方</string>
     <string name="onboarding_network_operators">网络运营方</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">30 天后将接受已启用的运营方的条款。</string>
     <string name="onboarding_network_operators_continue">继续</string>
-    <string name="onboarding_network_operators_review_later">稍后审阅</string>
-    <string name="onboarding_select_network_operators_to_use">选择要使用的网络运营方。</string>
-    <string name="onboarding_network_operators_update">更新</string>
     <string name="onboarding_network_operators_configure_via_settings">你可以通过设置配置服务器。</string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[将接受运营方的条款: <b>%s</b>.]]></string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">将于下列日期自动接受已启用的运营方的条款：%s。</string>
@@ -2137,7 +2066,6 @@
     <string name="operator_info_title">网络运营方</string>
     <string name="operator">运营方</string>
     <string name="operator_servers_title">%s 台服务器</string>
-    <string name="operator_website">网站</string>
     <string name="operator_conditions_failed_to_load">无法加载当前条款文本，你可以通过此链接审阅条款：</string>
     <string name="use_servers_of_operator_x">使用 %s</string>
     <string name="operator_use_operator_toggle_description">使用服务器</string>
@@ -2180,7 +2108,6 @@
     <string name="operators_conditions_accepted_for"><![CDATA[接受了运营方的条款: <b>%s</b>.]]></string>
     <string name="v6_2_network_decentralization_enable_flux">在“网络&amp;服务器”设置中启用 Flux，更好地保护元数据隐私。</string>
     <string name="error_accepting_operator_conditions">接受条款出错</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">为了更好的元数据隐私。</string>
     <string name="error_adding_server">添加服务器出错</string>
     <string name="no_media_servers_configured">无媒体和文件服务器。</string>
     <string name="error_updating_server_title">更新服务器出错</string>
@@ -2189,14 +2116,11 @@
     <string name="v6_2_improved_chat_navigation_descr">- 在第一条未读消息上打开聊天.\n- 跳转到引用的消息.</string>
     <string name="operator_review_conditions">审阅条款</string>
     <string name="simplex_address_or_1_time_link">SimpleX 地址或一次性链接？</string>
-    <string name="address_creation_instruction">要稍后创建 SimpleX 地址，请在菜单中轻按“创建 SimpleX 地址”</string>
     <string name="xftp_servers_per_user">当前聊天资料的新文件服务器</string>
     <string name="message_deleted_or_not_received_error_desc">此消息被删除或尚未收到。</string>
     <string name="connection_error_quota_desc">连接达到了未送达消息上限，你的联系人可能处于离线状态。</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">为了防止链接被替换，你可以比较联系人安全代码。</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">你可以在“网络和服务器”设置中配置运营方。</string>
     <string name="operator_conditions_accepted_on">接受运营方条款的日期：%s</string>
-    <string name="remote_hosts_section">远程移动设备</string>
     <string name="chat_archive">或者导入存档文件</string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>小米设备</b>：请在系统设置中开启“自动启动”让通知正常工作。]]></string>
     <string name="maximum_message_size_title">消息太大！</string>
@@ -2204,7 +2128,6 @@
     <string name="maximum_message_size_reached_non_text">请减小消息大小或删除媒体并再次发送。</string>
     <string name="add_your_team_members_to_conversations">将你的团队成员加入对话。</string>
     <string name="business_address">企业地址</string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[All messages and files are sent <b>端到端加密</b>，私信具备后量子密码安全性。]]></string>
     <string name="onboarding_notifications_mode_off_desc_short">无后台服务</string>
     <string name="onboarding_notifications_mode_periodic_desc_short">每 10 分钟检查消息</string>
     <string name="how_it_helps_privacy">它如何帮助隐私</string>
@@ -2294,7 +2217,6 @@
     <string name="report_reason_spam">垃圾信息</string>
     <string name="report_archive_alert_title">存档举报？</string>
     <string name="report_reason_alert_title">举报理由？</string>
-    <string name="report_archive_alert_desc">将为你存档该举报。</string>
     <string name="report_item_archived_by">存档了 %s 的举报</string>
     <string name="chat_list_group_reports">举报</string>
     <string name="group_reports_active_one">1 个举报</string>
@@ -2324,7 +2246,6 @@
     <string name="network_smp_web_port_footer">未指定端口时，使用 TCP 端口 %1$s。</string>
     <string name="network_smp_web_port_toggle">使用 web 端口</string>
     <string name="mute_all_chat">全部静音</string>
-    <string name="unread_mentions">取消提及的已读状态</string>
     <string name="max_group_mentions_per_message_reached">每条消息最多提及 %1$s 名成员！</string>
     <string name="report_archive_alert_desc_all">将为你存档所有举报。</string>
     <string name="report_archive_alert_title_all">存档所有举报？</string>
@@ -2450,7 +2371,6 @@
     <string name="compose_view_send_contact_request_alert_question">发送联络请求？</string>
     <string name="compose_view_send_request">发送请求</string>
     <string name="compose_view_send_request_without_message">发送无消息请求</string>
-    <string name="sent_to_your_contact_after_connection">连接后发送给你的联系人。</string>
     <string name="share_group_profile_via_link">升级群链接？</string>
     <string name="share_profile_via_link_alert_confirm">升级</string>
     <string name="share_profile_via_link">升级地址？</string>
@@ -2504,7 +2424,6 @@
     <string name="connect_use_incognito_profile">使用隐身个人资料</string>
     <string name="v6_4_1_welcome_contacts">欢迎联系人👋</string>
     <string name="rcv_direct_event_group_inv_link_received">来自%1$s群的连接请求</string>
-    <string name="this_setting_is_for_your_current_profile">此设置用于当前个人资料</string>
     <string name="settings_section_title_contact_requests_from_groups">群内的联络请求</string>
     <string name="member_is_deleted_cant_accept_request">成员被删除——无法接受请求</string>
     <string name="allow_files_and_media_only_if">只有你的联系人允许的情况下才允许文件和媒体。</string>
@@ -2536,7 +2455,6 @@
     <string name="remove_member_delete_messages_confirmation">移除并删除消息</string>
     <string name="content_filter_all_messages">所有消息</string>
     <string name="content_filter_files">文件</string>
-    <string name="content_filter_menu_item">筛选器</string>
     <string name="content_filter_images">图片</string>
     <string name="content_filter_links">链接</string>
     <string name="placeholder_search_files">搜索文件</string>
@@ -2567,7 +2485,6 @@
     <string name="chat_banner_channel">频道</string>
     <string name="info_row_channel">频道</string>
     <string name="channel_link">频道链接</string>
-    <string name="button_channel_members">频道成员</string>
     <string name="channel_display_name_field">频道名</string>
     <string name="delete_channel_for_all_subscribers_cannot_undo_warning">将为所有订阅者删除频道 —— 此操作无法撤销！</string>
     <string name="delete_channel_for_self_cannot_undo_warning">将为你删除频道 —— 此操作无法撤销！</string>
@@ -2597,7 +2514,6 @@
     <string name="enter_relay_name">输入中继名…</string>
     <string name="error_adding_relay">添加中继出错</string>
     <string name="error_creating_channel">创建频道出错</string>
-    <string name="error_opening_channel">打开频道出错</string>
     <string name="relay_conn_status_failed">失败</string>
     <string name="relay_status_failed">失败</string>
     <string name="relay_test_step_get_link">获取链接</string>
@@ -2614,7 +2530,6 @@
     <string name="no_chat_relays_enabled">未启用聊天中继。</string>
     <string name="not_all_relays_connected">不是所有中继均已连接</string>
     <string name="connect_plan_open_channel">打开频道</string>
-    <string name="connect_plan_open_new_channel">打开新频道</string>
     <string name="member_info_section_title_owner">所有者</string>
     <string name="channel_members_section_owners">所有者和贡献者</string>
     <string name="preset_relay_address">预设中继地址</string>
@@ -2792,7 +2707,6 @@
     <string name="one_hand_ui_top_bar">顶部栏</string>
     <string name="cancel_channel_alert_msg">你的新频道 %1$s 已连接到 %3$d 个中继中的 %2$d 个中继。\n如果取消，频道将被删除 —— 你可以再次创建它。</string>
     <string name="last_active_relay_warning">这是上次活跃的中继。删除它会阻止给订阅者传送消息。</string>
-    <string name="add_button">添加</string>
     <string name="add_relay_button">添加中继</string>
     <string name="add_relays_title">添加中继</string>
     <string name="button_cancel_and_delete_channel">取消并删除频道</string>
@@ -2831,12 +2745,9 @@
     <string name="channel_owner_count_plural">%1$d 名所有者</string>
     <string name="channel_owners_contributors_count">%1$d 名所有者和贡献者</string>
     <string name="badge_supported_simplex">%1$s 支持过 SimpleX Chat。该徽章已于 %2$s 过期。</string>
-    <string name="settings_section_title_about">关于</string>
     <string name="badge_unknown_key_title">无法验证徽章</string>
     <string name="channel_webpage">频道网页</string>
     <string name="chat_data">聊天数据</string>
-    <string name="channel_name_requires_newer_app_version">通过频道名连接需要更新的应用版本。</string>
-    <string name="contact_name_requires_newer_app_version">通过联系人名称连接需要更新的应用版本。</string>
     <string name="settings_section_title_contact">联系人</string>
     <string name="group_member_role_member_channel">贡献者</string>
     <string name="copy_code">复制代码</string>
@@ -2847,7 +2758,6 @@
     <string name="webpage_url_footer">它将展示给订阅者并用来允许加载预览。</string>
     <string name="more_privacy">更多隐私</string>
     <string name="embed_only_your_page">只有您上面的页面可以显示预览。</string>
-    <string name="please_upgrade_the_app">请升级应用</string>
     <string name="badge_invested">%s 给 SimpleX Chat 众筹投过钱。</string>
     <string name="badge_supports_simplex">%s 支持 SimpleX Chat。</string>
     <string name="group_member_role_observer_channel">订阅者</string>
@@ -2855,12 +2765,9 @@
     <string name="member_role_will_be_changed_with_notification_channel">该角色将更改为 "%s"。频道中的每个人都会收到通知。</string>
     <string name="badge_unverified_desc">此徽章无法被验证，可能不是真的。</string>
     <string name="group_link_requires_newer_version">此群组需要更新版本的应用。要加入请更新应用。</string>
-    <string name="unsupported_channel_name">不支持的频道名</string>
-    <string name="unsupported_contact_name">不支持的联系人名</string>
     <string name="badge_unverified_title">未验证的徽章</string>
     <string name="relays_no_web_support">所用的聊天中继不支持网页。</string>
     <string name="webpage_code">网页代码</string>
-    <string name="badge_support_from_v7">从 v7 版本起您可以支持 SimpleX。</string>
     <string name="advanced_options">高级选项</string>
     <string name="advanced_settings">高级设置</string>
     <string name="allow_anyone_to_embed">允许任何人嵌入</string>
@@ -2879,7 +2786,6 @@
     <string name="simplex_name_no_valid_link">无有效链接</string>
     <string name="simplex_name_resolver_error_desc">解析错误：%1$s</string>
     <string name="set_simplex_name">设置 SimpleX 名称</string>
-    <string name="simplex_name">SimpleX 名称</string>
     <string name="simplex_name_error">SimpleX 名称错误</string>
     <string name="simplex_name_not_verified">SimpleX 名称未验证</string>
     <string name="simplex_name_no_valid_link_desc">SimpleX 名称 %1$s 已注册但没有有效链接。</string>

@@ -81,6 +81,14 @@ chatCommandsDocsData =
         ("APIDeleteMyAddress", [], "Delete bot address.", ["CRUserContactLinkDeleted", "CRChatCmdError"], [], Just UNBackground, "/_delete_address " <> Param "userId"),
         ("APIShowMyAddress", [], "Get bot address and settings.", ["CRUserContactLink", "CRChatCmdError"], [], Nothing, "/_show_address " <> Param "userId"),
         ("APISetProfileAddress", [], "Add address to bot profile.", ["CRUserProfileUpdated", "CRUserProfileNoChange", "CRChatCmdError"], [], Just UNInteractive, "/_profile_address " <> Param "userId" <> " " <> OnOff "enable"),
+        ( "APISetUserDomain",
+          [],
+          "Set or remove SimpleX name of bot address. The name must be registered with the address short link.",
+          ["CRUserProfileUpdated", "CRUserProfileNoChange", "CRChatCmdError"],
+          [TD "CESimplexDomainNotReady" "The name does not resolve to the address short link"],
+          Just UNInteractive,
+          "/_set domain " <> Param "userId" <> Optional "" (" " <> Param "$0") "simplexDomain"
+        ),
         ("APISetAddressSettings", [], "Set bot address settings.", ["CRUserContactLinkUpdated", "CRChatCmdError"], [], Just UNInteractive, "/_address_settings " <> Param "userId" <> OnOffParam "pq_ratchet" "pqRatchet" Nothing <> " " <> Json "settings")
       ]
     ),
@@ -140,7 +148,7 @@ chatCommandsDocsData =
       [ ("APIAddContact", [], "Create 1-time invitation link.", ["CRInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False)),
         -- `Maybe` in `connectTarget :: Maybe ConnectTarget` is used to signal parse failure to the runtime (the handler returns CEInvalidConnReq on Nothing); it is NOT API-level optionality. The parameter is required from callers.
         ("APIConnectPlan", [], "Determine SimpleX link type and if the bot is already connected via this link or name.", ["CRConnectionPlan", "CRChatCmdError"], [], Just UNInteractive, "/_connect plan " <> Param "userId" <> " " <> Param "connectTarget"),
-        ("APIConnect", [], "Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> Optional "" (" " <> Param "$0") "preparedLink_"),
+        ("APIConnect", [], "Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False) <> Optional "" (" " <> Param "$0") "preparedLink_"),
         ("Connect", [], "Connect via SimpleX link or name as string in the active user profile.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRConnectionPlan", "CRSentInvitationToContact", "CRStartedConnectionToContact", "CRStartedConnectionToGroup", "CRChatCmdError"], [], Just UNInteractive, "/connect" <> Optional "" (" " <> Param "$0") "connTarget_"),
         ("APIAcceptContact", ["incognito"], "Accept contact request.", ["CRAcceptingContactRequest", "CRChatCmdError"], [], Just UNInteractive, "/_accept " <> Param "contactReqId"),
         ("APIRejectContact", [], "Reject contact request. The user who sent the request is **not notified**.", ["CRContactRequestRejected", "CRChatCmdError"], [], Nothing, "/_reject " <> Param "contactReqId")
@@ -342,6 +350,7 @@ undocumentedCommands =
   [ "APIAbortSwitchContact",
     "APIAbortSwitchGroupMember",
     "APIAcceptConditions",
+    "APIAckBadgeAlert",
     "APIActivateChat",
     "APIAddGroupShortLink",
     "APIAddMyAddressShortLink",
@@ -377,6 +386,8 @@ undocumentedCommands =
     "APIExportArchive",
     "APIForwardChatItems",
     "APIGetAppSettings",
+    "APIGetBadgeLedger",
+    "APIGetBadgeState",
     "APIGetCallInvitations",
     "APIGetChat",
     "APIGetChatContentTypes",
@@ -404,6 +415,7 @@ undocumentedCommands =
     "APIPlanForwardChatItems",
     "APIPrepareContact",
     "APIPrepareGroup",
+    "APIRedeemBadgeCode",
     "APIRegisterToken",
     "APIRejectCall",
     "APIReorderChatTags",
@@ -434,7 +446,6 @@ undocumentedCommands =
     "APISetServerOperators",
     "APISetUserContactReceipts",
     "APISetUserGroupReceipts",
-    "APISetUserDomain",
     "APISetUserServers",
     "APISetUserUIThemes",
     "APIStandaloneFileInfo",

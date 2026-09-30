@@ -45,10 +45,11 @@ import kotlinx.coroutines.*
 fun GroupMemberInfoView(
   rhId: Long?,
   groupInfo: GroupInfo,
-  member: GroupMember,
+  groupMember: GroupMember,
   scrollToItemId: MutableState<Long?>,
-  connectionStats: ConnectionStats?,
-  connectionCode: String?,
+  connStats: MutableState<ConnectionStats?>,
+  connectionCode: State<String?>,
+  connectionLoaded: State<Boolean>,
   chatModel: ChatModel,
   openedFromSupportChat: Boolean,
   groupRelay: GroupRelay? = null,
@@ -60,7 +61,10 @@ fun GroupMemberInfoView(
   }
   BackHandler(onBack = close)
   val chat = chatModel.chats.value.firstOrNull { ch -> ch.id == chatModel.chatId.value && ch.remoteHostId == rhId }
-  val connStats = remember { mutableStateOf(connectionStats) }
+  // the passed member is shown until the loaded one is added to the model, so that the profile opens without waiting for the core
+  val member = remember(groupMember.groupMemberId) {
+    derivedStateOf { chatModel.getGroupMember(groupMember.groupMemberId) ?: groupMember }
+  }.value
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   var progressIndicator by remember { mutableStateOf(false) }
   val scope = rememberCoroutineScope()
@@ -91,7 +95,8 @@ fun GroupMemberInfoView(
       connStats,
       newRole,
       developerTools,
-      connectionCode,
+      connectionCode.value,
+      connectionLoaded.value,
       groupRelay = groupRelay,
       getContactChat = { chatModel.getContactChat(it) },
       openDirectChat = { contactId ->
@@ -101,6 +106,7 @@ fun GroupMemberInfoView(
         }
       },
       createMemberContact = {
+        val connectionStats = connStats.value
         if (member.sendMsgEnabled) {
           withBGApi {
             progressIndicator = true
@@ -209,7 +215,7 @@ fun GroupMemberInfoView(
           remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
             VerifyCodeView(
               mem.displayName,
-              connectionCode,
+              connectionCode.value,
               mem.verified,
               verify = { code ->
                 chatModel.controller.apiVerifyGroupMember(rhId, mem.groupId, mem.groupMemberId, code)?.let { r ->
@@ -368,6 +374,7 @@ fun GroupMemberInfoLayout(
   newRole: MutableState<GroupMemberRole>,
   developerTools: Boolean,
   connectionCode: String?,
+  connectionLoaded: Boolean,
   groupRelay: GroupRelay? = null,
   getContactChat: (Long) -> Chat?,
   openDirectChat: (Long) -> Unit,
@@ -538,22 +545,23 @@ fun GroupMemberInfoLayout(
       SectionDividerSpaced()
     }
 
+    val memberConnected = member.memberActive || (groupInfo.useRelays && member.memberCurrent)
     val showMemberSupportChat = !openedFromSupportChat &&
       groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
       member.memberRole != GroupMemberRole.Relay &&
       ((groupInfo.fullGroupPreferences.support.on && member.memberRole < GroupMemberRole.Moderator)
         || member.supportChat != null)
-    val canVerifyCode = connectionCode != null && member.memberRole != GroupMemberRole.Relay
+    // the same condition decides whether the code is requested, so the row is shown disabled until it arrives
+    val canVerifyCode = member.memberRole != GroupMemberRole.Relay && (connectionCode != null || !connectionLoaded)
     val canSyncConn = cStats != null && cStats.ratchetSyncAllowed
 
-    if ((member.memberActive || (groupInfo.useRelays && member.memberCurrent))
-        && (showMemberSupportChat || canVerifyCode || canSyncConn)) {
+    if (memberConnected && (showMemberSupportChat || canVerifyCode || canSyncConn)) {
       SectionView {
         if (showMemberSupportChat) {
           SupportChatButton()
         }
         if (canVerifyCode) {
-          VerifyCodeButton(member.verified, verifyClicked)
+          VerifyCodeButton(member.verified, verifyClicked, disabled = connectionCode == null)
         }
         if (canSyncConn) {
           SynchronizeConnectionButton(syncMemberConnection)
@@ -654,6 +662,20 @@ fun GroupMemberInfoLayout(
         if (sndServers.isNotEmpty()) {
           SimplexServers(stringResource(MR.strings.sending_via), sndServers)
         }
+      }
+    } else if (!connectionLoaded && memberConnected) {
+      SectionDividerSpaced()
+      SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
+        // the status is set from the same receiving queues as the servers below, so it is reserved with them
+        SectionItemView {
+          Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(stringResource(MR.strings.network_status))
+            Icon(painterResource(MR.images.ic_info), stringResource(MR.strings.network_status), tint = MaterialTheme.colors.secondary)
+          }
+        }
+        SwitchAddressButton(disabled = true, switchAddress = {})
+        SimplexServers(stringResource(MR.strings.receiving_via), emptyList())
+        SimplexServers(stringResource(MR.strings.sending_via), emptyList())
       }
     }
 
@@ -1117,6 +1139,7 @@ fun PreviewGroupMemberInfoLayout() {
       newRole = remember { mutableStateOf(GroupMemberRole.Member) },
       developerTools = false,
       connectionCode = "123",
+      connectionLoaded = true,
       getContactChat = { Chat.sampleData },
       openDirectChat = {},
       createMemberContact = {},

@@ -397,9 +397,11 @@ fun CenterPartOfScreen() {
   }
   when (currentChatId.value) {
     null -> {
-      if (shouldShowOnboarding()) {
+      if (rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
+        ModalManager.center.showInView()
+      } else if (shouldShowOnboarding()) {
         ConnectOnboardingView()
-      } else if (!rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
+      } else {
         Box(
           Modifier
             .fillMaxSize()
@@ -408,8 +410,6 @@ fun CenterPartOfScreen() {
         ) {
           Text(stringResource(if (chatModel.desktopNoUserNoRemote) MR.strings.no_connected_mobile else MR.strings.no_selected_chat))
         }
-      } else {
-        ModalManager.center.showInView()
       }
     }
     else -> ChatView(chatsCtx = chatModel.chatsContext, currentChatId) {}

@@ -8,4 +8,4 @@
 
 > **MigrationError** = [`MEUpgrade`](core.MigrationError.Interface.MEUpgrade.md) \| [`MEDowngrade`](core.MigrationError.Interface.MEDowngrade.md) \| [`MigrationError`](core.MigrationError.Interface.MigrationError.md)
 
-Defined in: [src/core.ts:157](../src/core.ts#L157)
+Defined in: [src/core.ts:165](../src/core.ts#L165)

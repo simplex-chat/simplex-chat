@@ -20,7 +20,7 @@ import Data.Char (isUpper, toLower, toUpper)
 import Data.List (find, mapAccumL, sortOn)
 import qualified Data.List.NonEmpty as L
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import qualified Data.Set as S
 import Data.Text (Text)
 import GHC.Generics
@@ -35,6 +35,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Store.Entity (DBStored (..))
 import Simplex.Chat.Badges
+import Simplex.Chat.Badges.Service
 import Simplex.Chat.Names
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -49,7 +50,6 @@ import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
 import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NameErrorType (..), NetworkError (..), ProxyError (..))
 import Simplex.Messaging.Protocol.Types (ClientNotice (..))
 import Simplex.Messaging.Transport
-import Simplex.Chat.Remote.AppVersion (AppVersion, AppVersionRange)
 import Simplex.Chat.Remote.Types (CtrlAppInfo (..))
 import Simplex.RemoteControl.Types
 import System.Console.ANSI.Types (Color (..))
@@ -177,11 +177,15 @@ normalizeConsName pfx consName
 
 -- making chatDir optional because clients use CIDirection? instead of CIQDirection (the type is replaced in Types.hs)
 ciQuoteType :: SumTypeInfo
-ciQuoteType =
-  let st@(STI _ records) = sti @(CIQuote 'CTDirect)
-      optChatDir f@(FieldInfo n t) = if n == "chatDir" then FieldInfo n (TIOptional t) else f
-      updateRecord (RecordTypeInfo name fields) = RecordTypeInfo name $ map optChatDir fields
-   in st {recordTypes = map updateRecord records} -- need to map even though there is one constructor in this type
+ciQuoteType = updateFields mkOptional $ sti @(CIQuote 'CTDirect)
+  where
+    mkOptional = map (\f@(FieldInfo n t) -> if n == "chatDir" then FieldInfo n (TIOptional t) else f)
+
+removeField :: String -> SumTypeInfo -> SumTypeInfo
+removeField n = updateFields $ mapMaybe (\f@(FieldInfo n' _) -> if n == n' then Nothing else Just f)
+   
+updateFields :: ([FieldInfo] -> [FieldInfo]) -> SumTypeInfo -> SumTypeInfo
+updateFields f st@(STI _ records) = st {recordTypes = map (\(RecordTypeInfo name fields) -> RecordTypeInfo name $ f fields) records}
 
 -- type info, JSON encoding, constructor prefix, removed constructors, string encoding for commands, description
 chatTypesDocsData :: [(SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Expr, Text)]
@@ -216,6 +220,8 @@ chatTypesDocsData =
     (STI "AppVersionRange" [RecordTypeInfo "AppVersionRange" [FieldInfo "minVersion" (TIType (ST TString [])), FieldInfo "maxVersion" (TIType (ST TString []))]], STRecord, "", [], "", "Remote controller app version range (min and max as version strings)."),
     (sti @AutoAccept, STRecord, "", [], "", ""),
     (sti @BadgeProof, STRecord, "", [], "", ""),
+    (sti @BadgeRedeemError, STUnion, "BRE", [], "", ""),
+    (sti @BadgeServiceErrorCode, STEnum' (consSep "BSE" '_'), "", ["BSEUnknown"], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),
     (sti @BlockingReason, STEnum, "BR", [], "", ""),
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
@@ -289,8 +295,6 @@ chatTypesDocsData =
     (sti @GroupFeature, STEnum, "GF", [], "", ""),
     (sti @GroupFeatureEnabled, STEnum, "FE", [], "", ""),
     (sti @GroupInfo, STRecord, "", [], "", ""),
-    (sti @GroupKeys, STRecord, "", [], "", ""),
-    (sti @GroupRootKey, STUnion, "GRK", [], "", ""),
     (sti @GroupLink, STRecord, "", [], "", ""),
     (sti @GroupLinkOwner, STRecord, "", [], "", ""),
     (sti @GroupLinkPlan, STUnion, "GLP", [], "", ""),
@@ -302,7 +306,7 @@ chatTypesDocsData =
     (sti @GroupMemberSettings, STRecord, "", [], "", ""),
     (sti @GroupMemberStatus, STEnum' ((\case "group_deleted" -> "deleted"; "intro_invited" -> "intro-inv"; s -> s) . consSep "GSMem" '_'), "", [], "", ""),
     (sti @GroupPreference, STRecord, "", [], "", ""),
-    (sti @GroupPreferences, STRecord, "", [], "", ""),
+    (removeField "_json" $ sti @GroupPreferences, STRecord, "", [], "", ""),
     (sti @GroupProfile, STRecord, "", [], "", ""),
     (sti @GroupRelay, STRecord, "", [], "", ""),
     (sti @GroupShortLinkData, STRecord, "", [], "", ""),
@@ -338,7 +342,7 @@ chatTypesDocsData =
     (sti @PendingContactConnection, STRecord, "", [], "", ""),
     (sti @PlanResolveMode, STEnum, "PRM", [], "", ""),
     (sti @PrefEnabled, STRecord, "", [], "", ""),
-    (sti @Preferences, STRecord, "", [], "", ""),
+    (removeField "_json" $ sti @Preferences, STRecord, "", [], "", ""),
     (sti @PreparedContact, STRecord, "", [], "", ""),
     (sti @GroupDirectInvitation, STRecord, "", [], "", ""),
     (sti @PreparedGroup, STRecord, "", [], "", ""),
@@ -347,7 +351,6 @@ chatTypesDocsData =
     (sti @ProxyError, STUnion, "", [], "", ""),
     (sti @PublicGroupAccess, STRecord, "", [], "", ""),
     (sti @PublicGroupData, STRecord, "", [], "", ""),
-    (sti @PublicGroupKeys, STRecord, "", [], "", ""),
     (sti @PublicGroupProfile, STRecord, "", [], "", ""),
     (sti @RatchetSyncState, STEnum, "RS", [], "", ""),
     (sti @RCErrorType, STUnion, "RCE", [], "", ""),
@@ -450,6 +453,8 @@ deriving instance Generic AgentErrorType
 deriving instance Generic AgentServiceError
 deriving instance Generic AutoAccept
 deriving instance Generic BadgeProof
+deriving instance Generic BadgeRedeemError
+deriving instance Generic BadgeServiceErrorCode
 deriving instance Generic BlockingInfo
 deriving instance Generic BlockingReason
 deriving instance Generic BrokerErrorType
@@ -523,8 +528,6 @@ deriving instance Generic GroupChatScopeInfo
 deriving instance Generic GroupFeature
 deriving instance Generic GroupFeatureEnabled
 deriving instance Generic GroupInfo
-deriving instance Generic GroupKeys
-deriving instance Generic GroupRootKey
 deriving instance Generic GroupLink
 deriving instance Generic GroupLinkOwner
 deriving instance Generic GroupLinkPlan
@@ -588,7 +591,6 @@ deriving instance Generic ProxyClientError
 deriving instance Generic ProxyError
 deriving instance Generic PublicGroupAccess
 deriving instance Generic PublicGroupData
-deriving instance Generic PublicGroupKeys
 deriving instance Generic PublicGroupProfile
 deriving instance Generic RatchetSyncState
 deriving instance Generic RCErrorType

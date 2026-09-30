@@ -9,8 +9,6 @@
     <string name="connect_use_incognito_profile">Použiť inkognito profil</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Váš profil bude odoslaný kontaktu, od ktorého ste obdržali tento odkaz.</string>
     <string name="you_will_join_group">Pripojíte sa ku všetkým členom skupiny.</string>
-    <string name="connect_via_link_verb">Pripojiť sa</string>
-    <string name="connect_via_link_incognito">Spojiť sa inkognito</string>
     <string name="connect_plan_open_chat">Otvoriť chat</string>
     <string name="connect_plan_join_name">Pripojiť sa na kanál %s</string>
     <string name="connect_plan_open_new_chat">Otvoriť nový chat</string>
@@ -72,7 +70,6 @@
     <string name="abort_switch_receiving_address_confirm">Prerušiť</string>
     <string name="abort_switch_receiving_address">Prerušiť zmenu adresy</string>
     <string name="abort_switch_receiving_address_question">Prerušiť zmenu adresy?</string>
-    <string name="settings_section_title_about">O aplikácii</string>
     <string name="onboarding_network_about_operators">O operátoroch</string>
     <string name="about_simplex">O SimpleX</string>
     <string name="learn_more_about_address">O adrese SimpleX</string>
@@ -82,7 +79,6 @@
     <string name="network_enable_socks_info">Pristupovať k serverom cez SOCKS proxy na porte %d? Pred povolením tejto možnosti musí byť spustená proxy.</string>
     <string name="relay_status_active">aktívne</string>
     <string name="servers_info_subscriptions_connections_subscribed">aktívne spojenia</string>
-    <string name="add_button">Pridať</string>
     <string name="add_contact_tab">Pridať kontakt</string>
     <string name="v7_0_channels_contributors">Pridať prispievateľov.</string>
     <string name="add_description">Pridať opis</string>
@@ -94,7 +90,6 @@
     <string name="color_secondary_variant">Ďalšie sekundárne</string>
     <string name="chat_list_add_list">Pridať zoznam</string>
     <string name="compose_view_add_message">Pridať správu</string>
-    <string name="smp_servers_preset_add">Pridať prednastavené servery</string>
     <string name="users_add">Pridať profil</string>
     <string name="add_relay_button">Pridať relé</string>
     <string name="add_relays_title">Pridať relé</string>
@@ -130,7 +125,6 @@
     <string name="chat_theme_apply_to_all_modes">Všetky farebné režimy</string>
     <string name="v5_1_self_destruct_passcode_descr">Všetky dáta sa pri zadaní vymažú.</string>
     <string name="content_filter_all_messages">Všetky správy</string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Všetky správy a súbory sú odoslané s <b>end-to-end šifrovaním</b>, s post-quantovým zabezpečením v priamych správach.]]></string>
     <string name="block_member_desc">Všetky nové správy od %s budú skryté!</string>
     <string name="block_members_desc">Všetky nové správy od týchto členov budú skryté!</string>
     <string name="turn_off_battery_optimization_button">Povoliť</string>
@@ -187,7 +181,6 @@
     <string name="app_version_name">Verzia aplikácie: v%s</string>
     <string name="archive_verb">Archivovať</string>
     <string name="deleted_chats">Archivované kontakty</string>
-    <string name="available_in_v51">\nDostupné vo verzii v5.1</string>
     <string name="back">Späť</string>
     <string name="color_background">Pozadie</string>
     <string name="notifications_mode_service_desc">Služba na pozadí je vždy spustená - notifikácie budú zobrazené hneď ako budú správy k dispozícii.</string>
@@ -222,7 +215,6 @@
     <string name="icon_descr_cancel_file_preview">Zrušiť náhľad súboru</string>
     <string name="feature_cancelled_item">zrušené %s</string>
     <string name="migrate_from_device_cancel_migration">Zrušiť migráciu</string>
-    <string name="create_profile_button">Vytvoriť</string>
     <string name="create_address_button">Vytvoriť</string>
     <string name="create_1_time_link">Vytvoriť jednorazový odkaz</string>
     <string name="create_address">Vytvoriť adresu</string>
@@ -232,7 +224,6 @@
     <string name="create_group_link">Vytvoriť odkaz na skupinu</string>
     <string name="button_create_group_link">Vytvoriť odkaz</string>
     <string name="create_list">Vytvoriť zoznam</string>
-    <string name="share_one_time_link">Vytvoriť jednorazovú pozvánku</string>
     <string name="create_profile">Vytvoriť profil</string>
     <string name="create_another_profile_button">Vytvoriť profil</string>
     <string name="create_group">Vytvoriť tajnú skupinu</string>
@@ -258,7 +249,6 @@
     <string name="ttl_d">%dd</string>
     <string name="ttl_day">%d deň</string>
     <string name="ttl_days">%d dní</string>
-    <string name="decentralized">Decentralizovaná</string>
     <string name="delete_verb">Vymazať</string>
     <string name="delete_contact_menu_action">Vymazať</string>
     <string name="accept_contact_button">Prijať</string>
@@ -298,7 +288,6 @@
     <string name="allow_your_contacts_to_send_files_and_media">Povoliť vašim kontaktom odosielať súbory a média.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Povoliť vašim kontaktom posielať hlasové správy.</string>
     <string name="report_archive_alert_desc_all">Všetky hlásenia budú pre vás archivované.</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Servery môže prevádzkovať ktokoľvek.</string>
     <string name="v5_3_new_interface_languages_descr">arabčina, bulharčina, fínčina, hebrejčina, thajčina a ukrajinčina - vďaka používateľom a Weblate.</string>
     <string name="report_archive_alert_title_all">Archivovať všetky hlásenia?</string>
     <string name="migrate_from_device_archive_and_upload">Archivovať a nahrať</string>
@@ -367,7 +356,6 @@
     <string name="channel_no_active_relays_try_later">Kanál nemá žiadne aktívne relé. Prosím, skúste sa pripojiť neskôr.</string>
     <string name="chat_link_channel">Odkaz kanálu</string>
     <string name="channel_link">Odkaz kanálu</string>
-    <string name="button_channel_members">Členovia kanálu</string>
     <string name="channel_display_name_field">Názov kanálu</string>
     <string name="channel_preferences">Vlastnosti kanálu</string>
     <string name="chat_list_channels">Kanály</string>
@@ -469,8 +457,6 @@
     <string name="operator_conditions_accepted_on">Podmienky prijaté dňa: %s.</string>
     <string name="operators_conditions_accepted_for"><![CDATA[Podmienky sú prijaté pre operátora(y): <b>%s</b>.]]></string>
     <string name="operator_conditions_of_use">Podmienky používania</string>
-    <string name="smp_servers_configured">Nastavené SMP servery</string>
-    <string name="xftp_servers_configured">Nastavené XFTP servery</string>
     <string name="configure_relays">Nastaviť relé</string>
     <string name="confirm_verb">Potvrdiť</string>
     <string name="confirm_delete_contact_question">Potvrdiť vymazanie kontaktu?</string>
@@ -523,7 +509,6 @@
     <string name="core_version">Verzia jadra: v%s</string>
     <string name="settings_message_shape_corner">Roh</string>
     <string name="correct_name_to">Opraviť meno na %s?</string>
-    <string name="create_address_and_let_people_connect">Vytvoriť adresu, aby sa s vami ľudia mohli spojiť.</string>
     <string name="create_chat_profile">Vytvoriť chatový profil</string>
     <string name="created">Vytvorený</string>
     <string name="v5_3_new_desktop_app_descr">Vytvoriť nový profil v počítačovej aplikácii. 💻</string>
@@ -753,7 +738,6 @@
     <string name="icon_descr_close_button">Tlačidlo zavrieť</string>
     <string name="v4_4_verify_connection_security_desc">Porovnajte bezpečnostné kódy s vašimi kontaktmi.</string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Podmienky už boli prijaté pre tohto/týchto operátora(ov): <b>%s</b>.]]></string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Podmienky budú prijaté pre povolených operátorov po 30 dňoch.</string>
     <string name="operator_conditions_will_be_accepted_for_some"><![CDATA[Podmienky budú prijaté pre operátor(y): <b>%s</b>.]]></string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[Podmienky budú prijaté pre operátora(y): <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_accepted_on">Podmienky budú prijaté dňa: %s.</string>
@@ -914,7 +898,6 @@
     <string name="ttl_mth">%dmes</string>
     <string name="disable_sending_recent_history">Neposielať históriu novým členom.</string>
     <string name="disable_sending_recent_history_channel">Neposielať históriu novým odberateľom.</string>
-    <string name="dont_create_address">Nevytvárať adresu</string>
     <string name="dont_enable_receipts">Nepovoliť</string>
     <string name="v6_3_organize_chat_lists_descr">Nenechajte si ujsť dôležité správy.</string>
     <string name="dont_show_again">Znova nezobrazovať</string>
@@ -1124,7 +1107,6 @@
     <string name="files_and_media_section">Súbory a médiá</string>
     <string name="share_text_file_status">Status súboru: %s</string>
     <string name="revoke_file__message">Súbor bude vymazaný zo serverov.</string>
-    <string name="content_filter_menu_item">Filter</string>
     <string name="sync_connection_confirm">Opraviť</string>
     <string name="fix_connection_confirm">Opraviť</string>
     <string name="fix_connection">Opraviť pripojenie</string>
@@ -1299,11 +1281,8 @@
     <string name="error_forwarding_messages">Chyba pri preposielaní správ</string>
     <string name="error_initializing_web_view_wrong_arch">Chyba inicializácie WebView. Ujistite sa, že máte nainštalovaní WebView ktorý podporuje architektúru arm64.\nChyba: %s</string>
     <string name="error_loading_chat_tags">Chyba pri načítavaní zoznamov chatov</string>
-    <string name="error_loading_smp_servers">Chyba pri načítavaní SMP serverov</string>
-    <string name="error_loading_xftp_servers">Chyba pri načítavaní XFTP serverov</string>
     <string name="error_marking_member_support_chat_read">Chyba pri označovaní ako prečítané</string>
     <string name="unable_to_open_browser_title">Chyba pri otváraní prehliadača</string>
-    <string name="error_opening_channel">Chyba pri otváraní kanálu</string>
     <string name="error_preparing_contact">Chyba pri otváraní chatu</string>
     <string name="error_preparing_group">Chyba pri otváraní skupiny</string>
     <string name="error_rejecting_contact_request">Chyba pri odmietaní žiadosti o kontakt</string>
@@ -1337,8 +1316,6 @@
     <string name="failed_to_save_servers">Chyba pri ukladaní serverov</string>
     <string name="prefs_error_saving_settings">Chyba pri ukladaní nastavení</string>
     <string name="migrate_from_device_error_saving_settings">Chyba pri ukladaní nastavení</string>
-    <string name="error_saving_smp_servers">Chyba pri ukladaní SMP serverov</string>
-    <string name="error_saving_xftp_servers">Chyba pri ukladaní XFTP serverov</string>
     <string name="error_updating_chat_tags">Chyba pri aktualizovaní zoznamu chatov</string>
     <string name="error_updating_link_for_group">Chyba pri aktualizovaní odkazu skupiny</string>
     <string name="error_setting_network_config">Chyba pri aktualizovaní konfigurácie siete</string>
@@ -1357,7 +1334,6 @@
     <string name="invalid_contact_link">Neplatný odkaz!</string>
     <string name="invalid_message_format">neplatný formát správy</string>
     <string name="invalid_name">Neplatné meno!</string>
-    <string name="invalid_QR_code">Neplatný QR kód</string>
     <string name="invalid_qr_code">Neplatný QR kód</string>
     <string name="invalid_relay_address">Neplatná adresa relé!</string>
     <string name="invalid_relay_name">Neplatná meno relé!</string>
@@ -1388,7 +1364,6 @@
     <string name="chat_link_one_time">Jednorazový odkaz</string>
     <string name="images_limit_desc">Naraz sa dá poslať iba 10 obrázkov</string>
     <string name="videos_limit_desc">Naraz sa dá poslať iba 10 videí</string>
-    <string name="info_view_open_button">otvoriť</string>
     <string name="open_verb">Otvoriť</string>
     <string name="rcv_group_event_open_chat">Otvoriť</string>
     <string name="turn_off_system_restriction_button">Otvoriť nastavenia aplikácie</string>
@@ -1400,8 +1375,6 @@
     <string name="open_database_folder">Otvoriť priečinok databázy</string>
     <string name="open_external_link_title">Otvoriť externý odkaz?</string>
     <string name="privacy_chat_list_open_full_web_link">Otvoriť celý odkaz</string>
-    <string name="connect_plan_open_new_channel">Otvoriť nový kanál</string>
-    <string name="open_server_settings_button">Otvoriť nastavenia serveru</string>
     <string name="permissions_open_settings">Otvoriť nastavenia</string>
     <string name="open_simplex_chat_to_accept_call">Otvorte SimpleX Chat na prijatie hovoru</string>
     <string name="privacy_chat_list_open_web_link_question">Otvoriť webový odkaz?</string>
@@ -1409,8 +1382,6 @@
     <string name="or_scan_qr_code">Alebo naskenovať QR kód</string>
     <string name="or_paste_archive_link">Alebo vložiť odkaz archívu</string>
     <string name="file_error">Chyba súboru</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Ak sa nemôžte stretnúť osobne, môžete <b>naskenovať QR kód vo video hovore</b>, alebo váš kontakt môže zdieľať pozvánku.]]></string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Ak sa nemôžte stretnúť osobne, <b>ukážte QR kód vo video hovore</b>, alebo zdieľajte odkaz.]]></string>
     <string name="if_you_cant_meet_in_person">Ak sa nemôžte stretnúť osobne, ukážte QR kód vo video hovore, alebo zdieľajte odkaz.</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Ak ste dostali SimpleX Chat pozvánku, môžete ju otvoriť v prehliadači:</string>
     <string name="incorrect_code">Nesprávny bezpečnostný kód</string>
@@ -1453,8 +1424,6 @@
     <string name="save_auto_accept_settings">Uložiť nastavenia SimpleX adresy</string>
     <string name="save_simplex_name_question">Uložiť SimpleX meno?</string>
     <string name="save_welcome_message_question">Uložiť uvítaciu správu?</string>
-    <string name="your_SMP_servers">Vaše SMP servery</string>
-    <string name="your_XFTP_servers">Vaše XFTP servery</string>
     <string name="your_ICE_servers">Vaše ICE servery</string>
     <string name="enter_one_ICE_server_per_line">ICE servery (jeden na riadok)</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Ujistite sa, že adresy WebRTC ICE serverov sú v správnom formáte, oddelené na riadkoch a nie sú duplikované.</string>

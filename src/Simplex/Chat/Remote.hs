@@ -75,11 +75,11 @@ remoteFilesFolder = "simplex_v1_files"
 
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
-minRemoteCtrlVersion = AppVersion [7, 0, 0, 11]
+minRemoteCtrlVersion = AppVersion [7, 1, 0, 5]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion
-minRemoteHostVersion = AppVersion [7, 0, 0, 11]
+minRemoteHostVersion = AppVersion [7, 1, 0, 5]
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version
@@ -517,7 +517,7 @@ handleRemoteCommand execCC encryption remoteOutputQ HTTP2Request {request, reqBo
   where
     parseRequest :: ExceptT RemoteProtocolError IO (C.SbKeyNonce, GetChunk, RemoteCommand)
     parseRequest = do
-      (rfKN, header, getNext) <- parseDecryptHTTP2Body encryption request reqBody
+      (rfKN, header, getNext) <- parseDecryptHTTP2Body maxCommandBodySize encryption request reqBody
       (rfKN,getNext,) <$> liftEitherWith RPEInvalidJSON (J.eitherDecodeStrict header)
     replyError = reply . RRChatResponse . RRError
     processCommand :: User -> C.SbKeyNonce -> GetChunk -> RemoteCommand -> CM ()

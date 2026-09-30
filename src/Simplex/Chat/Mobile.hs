@@ -12,6 +12,7 @@ module Simplex.Chat.Mobile where
 
 import Control.Concurrent.STM
 import Control.Exception (SomeException, catch)
+import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Aeson (ToJSON (..))
@@ -27,6 +28,7 @@ import Data.List (find)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word8)
 import Foreign.C.String
 import Foreign.C.Types (CInt (..))
@@ -34,7 +36,9 @@ import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke)
 import GHC.IO.Encoding (setFileSystemEncoding, setForeignEncoding, setLocaleEncoding)
+import Numeric.Natural (Natural)
 import Simplex.Chat
+import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList, parseUri, sanitizeUri)
@@ -71,6 +75,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 data DBMigrationResult
   = DBMOk
   | DBMInvalidConfirmation
+  | DBMInvalidQueueSize
   | DBMErrorNotADatabase {dbFile :: String}
   | DBMErrorMigration {dbFile :: String, migrationError :: MigrationError}
   | DBMErrorSQL {dbFile :: String, migrationSQLError :: String}
@@ -111,6 +116,8 @@ foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString 
 
 foreign export ccall "chat_migrate_init_key" cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> CInt -> Ptr (StablePtr ChatController) -> IO CJSONString
 
+foreign export ccall "chat_migrate_init_queue" cChatMigrateInitQueue :: CString -> CString -> CString -> CInt -> Ptr (StablePtr ChatController) -> IO CJSONString
+
 foreign export ccall "chat_close_store" cChatCloseStore :: StablePtr ChatController -> IO CString
 
 foreign export ccall "chat_reopen_store" cChatReopenStore :: StablePtr ChatController -> IO CString
@@ -137,6 +144,8 @@ foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CStrin
 
 foreign export ccall "chat_valid_name" cChatValidName :: CString -> IO CString
 
+foreign export ccall "chat_parse_badge_code" cChatParseBadgeCode :: CString -> IO CString
+
 foreign export ccall "chat_json_length" cChatJsonLength :: CString -> IO CInt
 
 foreign export ccall "chat_badge_keygen" cChatBadgeKeygen :: IO CJSONString
@@ -162,7 +171,14 @@ cChatMigrateInit fp key conf = cChatMigrateInitKey fp key 0 conf 0
 
 -- For postgres first param is schema prefix, second param is database connection string.
 cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> CInt -> Ptr (StablePtr ChatController) -> IO CJSONString
-cChatMigrateInitKey fp key keepKey conf background ctrl = do
+cChatMigrateInitKey fp key keepKey conf background = cChatMigrateInit_ fp key (keepKey /= 0) conf (background /= 0) mobileQueueSize
+
+-- | queueSize is the size of internal queues, same as terminal option --queue-size
+cChatMigrateInitQueue :: CString -> CString -> CString -> CInt -> Ptr (StablePtr ChatController) -> IO CJSONString
+cChatMigrateInitQueue fp key conf queueSize = cChatMigrateInit_ fp key False conf False (fromIntegral queueSize)
+
+cChatMigrateInit_ :: CString -> CString -> Bool -> CString -> Bool -> Int -> Ptr (StablePtr ChatController) -> IO CJSONString
+cChatMigrateInit_ fp key keepKey conf background queueSize ctrl = do
   -- ensure we are set to UTF-8; iOS does not have locale, and will default to
   -- US-ASCII all the time.
   setLocaleEncoding utf8
@@ -172,7 +188,7 @@ cChatMigrateInitKey fp key keepKey conf background ctrl = do
   chatDbOpts <- mobileDbOpts fp key
   confirm <- peekCAString conf
   r <-
-    chatMigrateInitKey chatDbOpts (keepKey /= 0) confirm (background /= 0) >>= \case
+    chatMigrateInitKey chatDbOpts keepKey confirm background queueSize >>= \case
       Right cc -> (newStablePtr cc >>= poke ctrl) $> DBMOk
       Left e -> pure e
   newCStringFromLazyBS $ J.encode r
@@ -240,12 +256,21 @@ cChatPasswordHash cPwd cSalt = do
 cChatValidName :: CString -> IO CString
 cChatValidName cName = newCString . mkValidName =<< peekCString cName
 
+-- | canonical form of a code that passes its check character, empty string if it does not parse
+cChatParseBadgeCode :: CString -> IO CString
+cChatParseBadgeCode cCode = do
+  code <- safeDecodeUtf8 <$> B.packCString cCode
+  newCStringFromBS $ maybe "" (encodeUtf8 . badgeCodeText) $ parseBadgeCode code
+
 -- | returns length of JSON encoded string
 cChatJsonLength :: CString -> IO CInt
 cChatJsonLength s = fromIntegral . subtract 2 . LB.length . J.encode . safeDecodeUtf8 <$> B.packCString s
 
-mobileChatOpts :: ChatDbOpts -> ChatOpts
-mobileChatOpts dbOptions =
+mobileQueueSize :: Int
+mobileQueueSize = 4096
+
+mobileChatOpts :: ChatDbOpts -> Natural -> ChatOpts
+mobileChatOpts dbOptions tbqSize =
   ChatOpts
     { coreOptions =
         CoreChatOpts
@@ -258,7 +283,7 @@ mobileChatOpts dbOptions =
             logServerHosts = True,
             logAgent = Nothing,
             logFile = Nothing,
-            tbqSize = 4096,
+            tbqSize,
             maxChats = 5000,
             deviceName = Nothing,
             chatRelay = False,
@@ -303,18 +328,19 @@ getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
 chatMigrateInit dbFilePrefix dbKey confirm = do
   let chatDBOpts = ChatDbOpts {dbFilePrefix, dbKey, trackQueries = DB.TQSlow 5000, vacuumOnMigration = True}
-  chatMigrateInitKey chatDBOpts False confirm False
+  chatMigrateInitKey chatDBOpts False confirm False mobileQueueSize
 #endif
 
-chatMigrateInitKey :: ChatDbOpts -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
-chatMigrateInitKey chatDbOpts keepKey confirm backgroundMode = runExceptT $ do
+chatMigrateInitKey :: ChatDbOpts -> Bool -> String -> Bool -> Int -> IO (Either DBMigrationResult ChatController)
+chatMigrateInitKey chatDbOpts keepKey confirm backgroundMode queueSize = runExceptT $ do
+  unless (queueSize > 0) $ throwError DBMInvalidQueueSize
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
   let migrationConfig = MigrationConfig confirmMigrations (Just "")
   chatStore <- migrate createChatStore (toDBOpts chatDbOpts chatSuffix keepKey chatDBFunctions) migrationConfig
   agentStore <- migrate createAgentStore (toDBOpts chatDbOpts agentSuffix keepKey []) migrationConfig
   ExceptT $ initialize chatStore ChatDatabase {chatStore, agentStore}
   where
-    opts = mobileChatOpts $ removeDbKey chatDbOpts
+    opts = mobileChatOpts (removeDbKey chatDbOpts) (fromIntegral queueSize)
     initialize st db = do
       user_ <- liftIO $ getActiveUser_ st
       first DBMAgentError <$> newChatController db user_ defaultMobileConfig opts backgroundMode

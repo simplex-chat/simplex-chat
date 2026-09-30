@@ -22,8 +22,9 @@ import chat.simplex.res.MR
 fun PasscodeEntry(
   password: MutableState<String>,
   vertical: Boolean,
+  modifier: Modifier = Modifier,
 ) {
-  Column(horizontalAlignment = Alignment.CenterHorizontally) {
+  Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     PasscodeView(password)
     BoxWithConstraints {
       if (vertical) {

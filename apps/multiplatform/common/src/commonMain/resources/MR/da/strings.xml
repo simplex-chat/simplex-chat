@@ -66,7 +66,6 @@
     <string name="color_secondary_variant">Yderligere sekundær</string>
     <string name="chat_list_add_list">Tilføj liste</string>
     <string name="compose_view_add_message">Tilføj besked</string>
-    <string name="smp_servers_preset_add">Tilføj forudindstillede servere</string>
     <string name="users_add">Tilføj profil</string>
     <string name="address_section_title">Adresse</string>
     <string name="abort_switch_receiving_address_desc">Adresseændringen bliver annulleret. Den gamle modtageradresse bliver brugt.</string>
@@ -101,8 +100,6 @@
     <string name="connect_use_new_incognito_profile">Brug ny inkognito -profil</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Din profil sendes til den kontakt, du har modtaget dette link fra.</string>
     <string name="you_will_join_group">Du opretter forbindelse til alle gruppemedlemmer.</string>
-    <string name="connect_via_link_verb">Forbinde</string>
-    <string name="connect_via_link_incognito">Tilslut inkognito</string>
     <string name="users_delete_all_chats_deleted">Alle chats og meddelelser slettes - dette kan ikke fortrydes!</string>
     <string name="delete_chat_list_warning">Alle chats fjernes fra listen %s, og listen slettes</string>
     <string name="chat_theme_apply_to_all_modes">Alle farvetilstande</string>
@@ -156,7 +153,6 @@
     <string name="connect__a_new_random_profile_will_be_shared">En ny tilfældig profil deles.</string>
     <string name="report_reason_other">En anden grund</string>
     <string name="answer_call">Svaropkald</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Alle kan være vært for servere.</string>
     <string name="settings_section_title_app">App</string>
     <string name="onboarding_notifications_mode_service_desc_short">App løber altid i baggrunden</string>
     <string name="app_version_code">App Build: %s</string>
@@ -241,12 +237,6 @@
     <string name="report_reason_illegal">Upassende indhold</string>
     <string name="report_reason_community">Overtrædelse af retningslinjer for fællesskabet</string>
     <string name="report_reason_profile">Upassende profil</string>
-    <string name="error_saving_smp_servers">Fejl under lagring af SMP-servere</string>
-    <string name="error_saving_xftp_servers">Fejl ved lagring af XFTP-servere</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Sørg for, at SMP-serveradresserne er i korrekt format, linjeseparerede og ikke duplikerede.</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Sørg for, at XFTP-serveradresserne er i korrekt format, linjeseparerede og ikke duplikerede.</string>
-    <string name="error_loading_smp_servers">Fejl ved indlæsning af SMP-servere</string>
-    <string name="error_loading_xftp_servers">Fejl ved indlæsning af XFTP-servere</string>
     <string name="error_setting_network_config">Fejl ved opdatering af netværkskonfigurationen</string>
     <string name="failed_to_parse_chat_title">Chatten kunne ikke indlæses</string>
     <string name="failed_to_parse_chats_title">Kunne ikke indlæse chats</string>
@@ -438,7 +428,6 @@
     <string name="report_archive_alert_title">Arkivér rapport?</string>
     <string name="report_archive_alert_title_nth">Arkivér %d rapporter?</string>
     <string name="report_archive_alert_title_all">Arkivér alle rapporter?</string>
-    <string name="report_archive_alert_desc">Rapporten vil blive arkiveret for dig.</string>
     <string name="report_archive_for_me">For mig</string>
     <string name="report_archive_for_all_moderators">Til alle moderatorer</string>
     <string name="ci_status_other_error">Fejl: %1$s</string>
@@ -521,8 +510,6 @@
     <string name="icon_descr_sent_msg_status_send_failed">afsendelse mislykkedes</string>
     <string name="icon_descr_received_msg_status_unread">ulæst</string>
     <string name="personal_welcome">Velkommen %1$s!</string>
-    <string name="welcome">Velkomst!</string>
-    <string name="this_text_is_available_in_settings">Denne tekst er tilgængelig i indstillinger</string>
     <string name="your_chats">Chats</string>
     <string name="toolbar_settings">Indstillinger</string>
     <string name="contact_connection_pending">forbinder…</string>
@@ -532,7 +519,6 @@
     <string name="group_preview_join_as">Deltag som %s</string>
     <string name="group_preview_rejected">afvist</string>
     <string name="group_connection_pending">forbinder…</string>
-    <string name="tap_to_start_new_chat">Tryk for at starte en ny chat</string>
     <string name="chat_with_developers">Chat med udviklerne</string>
     <string name="you_have_no_chats">Du har ingen chats</string>
     <string name="loading_chats">Indlæser chats…</string>
@@ -547,7 +533,6 @@
     <string name="contact_should_accept">kontakten skal acceptere…</string>
     <string name="connect_with_contact_name_question">Forbinde med %1$s?</string>
     <string name="search_or_paste_simplex_link">Søg eller indsæt SimpleX-link</string>
-    <string name="address_creation_instruction">Tryk på Opret SimpleX-adresse i menuen for at oprette den senere.</string>
     <string name="no_selected_chat">Ingen chat valgt</string>
     <string name="selected_chat_items_nothing_selected">Intet er valgt</string>
     <string name="selected_chat_items_selected_n">Valgte %d</string>
@@ -679,8 +664,6 @@
     <string name="change_automatic_chat_deletion_message">Denne handling kan ikke fortrydes - beskeder sendt og modtaget i denne chat tidligere end valgt vil blive slettet.</string>
     <string name="disable_automatic_deletion">Deaktiver sletning af beskeder</string>
     <string name="chat_ttl_options_footer">Slet chatbeskeder fra din enhed.</string>
-    <string name="info_view_connect_button">forbinde</string>
-    <string name="info_view_open_button">åbn</string>
     <string name="info_view_message_button">besked</string>
     <string name="info_view_call_button">opkald</string>
     <string name="info_view_search_button">søg</string>
@@ -703,7 +686,6 @@
     <string name="icon_descr_server_status_connected">Forbundet</string>
     <string name="icon_descr_server_status_disconnected">Afbrudt</string>
     <string name="icon_descr_server_status_error">Fejl</string>
-    <string name="icon_descr_server_status_pending">Indtil</string>
     <string name="switch_receiving_address_question">Ændre modtageradresse?</string>
     <string name="switch_receiving_address_desc">Modtageradressen vil blive ændret til en anden server. Adresseændringen vil blive gennemført, når afsenderen er online.</string>
     <string name="sync_connection_force_question">Genforhandle kryptering?</string>
@@ -754,7 +736,6 @@
     <string name="auto_accept_contact">Auto-accept</string>
     <string name="v4_2_auto_accept_contact_requests">Auto-accept-kontaktanmodninger</string>
     <string name="auto_accept_images">Auto-accept-billeder</string>
-    <string name="available_in_v51">\nFås i v5.1</string>
     <string name="back">Tilbage</string>
     <string name="color_background">Baggrund</string>
     <string name="bad_desktop_address">Dårlig skrivebordsadresse</string>
@@ -828,7 +809,6 @@
     <string name="cant_send_message_to_member_alert_title">Kan ikke sende besked til gruppemedlem</string>
     <string name="v6_4_1_new_interface_languages_descr">Katalansk, indonesisk, rumænsk og vietnamesisk - takket være vores brugere!</string>
     <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[1-gang link kan bruges <i>med kun en kontakt</i> - Del personligt eller via enhver messenger.]]></string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Alle meddelelser og filer sendes <b>ende-til-ende krypteret</b> med sikkerhed efter kvantet i direkte meddelelser.]]></string>
     <string name="network_session_mode_user_description"><![CDATA[En separat TCP -forbindelse (og SOCKS -legitimationsoplysning) vil blive brugt <b>for hver chatprofil, du har i appen</b>.]]></string>
     <string name="network_session_mode_entity_description"><![CDATA[En separat TCP -forbindelse (og SOCKS -legitimationsoplysninger) vil blive brugt <b>til hvert kontakt- og gruppemedlem</b>.\n<b> Bemærk </b>: Hvis du har mange forbindelser, kan dit batteri og trafikforbrug være væsentligt højere, og nogle forbindelser kan mislykkes.]]></string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Tilføj kontakt</b>: Sådan opretter du et nyt invitationslink eller opretter forbindelse via et link, du har modtaget.]]></string>
@@ -874,7 +854,6 @@
     <string name="channel_owner_count_singular">%1$d ejer</string>
     <string name="channel_owner_count_plural">%1$d ejere</string>
     <string name="relay_status_active">aktiv</string>
-    <string name="add_button">Tilføj</string>
     <string name="add_relay_button">Tilføj relay</string>
     <string name="add_relays_title">Tilføj relays</string>
     <string name="relay_bar_owner_no_delivery">Tilføj relays for at genoprette beskedleveringen.</string>
@@ -894,7 +873,6 @@
     <string name="channel_subscriber_count_singular">%1$d abonnent</string>
     <string name="channel_subscriber_count_plural">%1$d abonnenter</string>
     <string name="badge_supported_simplex">%1$s støttede SimpleX Chat. Mærket udløb den %2$s.</string>
-    <string name="settings_section_title_about">Om</string>
     <string name="relay_status_accepted">accepteret</string>
     <string name="v7_0_channels_contributors">Tilføj bidragsydere.</string>
     <string name="add_description">Tilføj beskrivelse</string>
@@ -925,11 +903,6 @@
     <string name="network_error_unknown_ca">Fingeraftrykket i serveradressen matcher ikke certifikatet: %1$s.</string>
     <string name="proxy_destination_error_unknown_ca">Fingeraftrykket i destinations-serveradressen matcher ikke certifikatet: %1$s.</string>
     <string name="error_marking_member_support_chat_read">Fejl ved markering som læst</string>
-    <string name="unsupported_channel_name">Ikke-understøttet navn på kanal</string>
-    <string name="unsupported_contact_name">Ikke-understøttet navn på kontakt</string>
-    <string name="channel_name_requires_newer_app_version">Forbindelse gennem kanal-navnet kræver en nyere version af appen.</string>
-    <string name="contact_name_requires_newer_app_version">Forbindelse gennem kontakt-navnet kræver en nyere version af appen.</string>
-    <string name="please_upgrade_the_app">Opgrader appen.</string>
     <string name="simplex_name_error">Fejl i SimpleX-navn</string>
     <string name="simplex_name_no_servers_desc">Ingen af dine servere er sat op til at slå SimpleX-navne op. Konfigurer serverne, eller anvend et forbindelseslink.</string>
     <string name="simplex_name_not_found">Navn ikke fundet</string>
