@@ -871,7 +871,7 @@ data ChatResponse
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
   | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
-  | CRBadgePurchaseDelivered {user :: User} -- delivered to the profile it was first presented under, which may be hidden
+  | CRBadgePurchaseDelivered {user :: User} -- credited, but to another profile, which is not disclosed: it may be hidden
   | CRBadgeState {user :: User, badgeState :: Maybe BadgeState}
   | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
@@ -1482,9 +1482,10 @@ data SimplexDomainError
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
   deriving (Eq, Show)
 
+-- | Why acquiring a badge failed, for a code and for a store purchase alike.
 data BadgeRedeemError
   = BREInvalidCode -- format or check character
-  | BREInvalidReceipt -- names no store transaction
+  | BREInvalidReceipt -- names no transaction, or is not a store payment
   | BREServiceNotConfigured
   | BREBadgeActive
   | BREServiceError {serviceError :: BadgeServiceErrorCode}
