@@ -73,10 +73,7 @@ private fun rootUsage(root: File): RootUsage =
 private fun rootEntries(root: File): List<Path> =
   try {
     Files.newDirectoryStream(root.toPath()).use { it.toList() }
-  } catch (e: IOException) {
-    Log.e(TAG, "StorageView rootEntries: $e")
-    emptyList()
-  } catch (e: DirectoryIteratorException) {
+  } catch (e: Exception) {
     Log.e(TAG, "StorageView rootEntries: $e")
     emptyList()
   }
