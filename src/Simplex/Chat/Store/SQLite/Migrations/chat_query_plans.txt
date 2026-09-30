@@ -4401,6 +4401,26 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        UPDATE groups SET group_domain_verified = 0
+        WHERE user_id = ? AND group_domain_verified = 1
+          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE group_domain = ?)
+       AND business_chat IS NOT NULL
+Plan:
+SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=? AND group_profile_id=?)
+LIST SUBQUERY 1
+SCAN group_profiles
+
+Query: 
+        UPDATE groups SET group_domain_verified = 0
+        WHERE user_id = ? AND group_domain_verified = 1
+          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE group_domain = ?)
+       AND business_chat IS NULL
+Plan:
+SEARCH groups USING INDEX sqlite_autoindex_groups_2 (user_id=? AND group_profile_id=?)
+LIST SUBQUERY 1
+SCAN group_profiles
+
+Query: 
         WITH user_groups AS MATERIALIZED (
           SELECT g.group_id
           FROM groups g
@@ -7551,6 +7571,11 @@ Query: SELECT g.inv_queue_info FROM groups g WHERE g.group_id = ? AND g.user_id 
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT gp.group_domain FROM groups g JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id WHERE g.user_id = ? AND g.group_id = ? AND gp.group_domain IS NOT NULL
+Plan:
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT group_domain_resolved_at, group_domain_expires_at FROM groups WHERE user_id = ? AND group_id = ? AND group_domain_resolved_at IS NOT NULL
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
@@ -7890,6 +7915,10 @@ SCAN contact_profiles
 Query: UPDATE contact_profiles SET contact_domain_resolved_at = datetime('now', '-2 days')
 Plan:
 SCAN contact_profiles
+
+Query: UPDATE contact_profiles SET contact_domain_verified = 0 WHERE user_id = ? AND contact_domain = ? AND contact_domain_verified = 1
+Plan:
+SEARCH contact_profiles USING INDEX idx_contact_profiles_user_id (user_id=?)
 
 Query: UPDATE contact_profiles SET image = ? WHERE display_name = ?
 Plan:

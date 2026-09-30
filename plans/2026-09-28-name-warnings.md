@@ -117,7 +117,7 @@ The match is what the channel kind's local lookup found, else what the contact k
 
 When the name is resolved and has a live link of the kind not planned, `otherSimplexName` is that kind's name, unless the user has a chat, own address or own channel of that kind at that link. The plan's screen shows it:
 - the second button of 2a, 3c and 4a;
-- 3e for a chat (new).
+- 3e for a chat or own channel (new).
 
 ## 4. Changes against today
 
@@ -229,7 +229,7 @@ A missing `graceUntil` drops the second clause of the expiry lines. `otherSimple
 
 - **Alert.** `showNameRegistrationAlert` becomes a plain `case` from `NameWarning` to title, message and action (Renew, Register, Re-register, Connect to SimpleX team). It keeps "Open existing chat" when the plan has a chat (1d).
 - **Flow.** `planAndConnect` shows the alert when the plan has a warning. Otherwise:
-  - a plan for a chat (`CAPKnown`, `GLPKnown`) with `otherSimplexName` shows 3e (N14);
+  - a plan for a chat or own channel (`CAPKnown`, `GLPKnown`, `GLPOwnLink`) with `otherSimplexName` shows 3e (N14);
   - every other plan proceeds as today.
 
   There is no `isOwn`, `notConnectable`, `hasLocalChat`, expiry or length logic in either app.
@@ -285,7 +285,7 @@ Decided:
 | N25 | Dates in the alerts | one long localized format in both apps |
 | N26 | Bot clients | `connLink` is optional in Python and Node; `resolve=allGroups` still parses |
 | N13 | Own name reserved for community after its registration ended | `NWReservedForCommunity`, 2d's alert |
-| N14 | What shows 3e | the app, for a chat's plan with `otherSimplexName` |
+| N14 | What shows 3e | the app, for a chat's or own channel's plan with `otherSimplexName` |
 
 ## 12. Tests
 
