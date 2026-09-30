@@ -2449,7 +2449,7 @@ compressToLimit maxLen s
 compressConnInfo :: PQSupport -> MsgBody -> CM MsgBody
 compressConnInfo pqSup = compressToLimit $ case pqSup of
   PQSupportOn -> maxEncodedInfoLengthPQ
-  _ -> maxEncodedInfoLength
+  PQSupportOff -> maxEncodedInfoLength
 
 encodeConnInfo :: MsgEncodingI e => ChatMsgEvent e -> CM ByteString
 encodeConnInfo = encodeConnInfoPQ PQSupportOff
@@ -2508,7 +2508,7 @@ deliverMessagesB msgReqs = do
   lift . void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
-    -- bodies are shared between connections, so any connection with PQ support reduces the limit for all
+    -- group sends share bodies between connections via VRRef, so the smallest limit applies to the batch
     maxLen = if any connSupportsPQ msgReqs then maxEncodedMsgLengthPQ else maxEncodedMsgLength
     connSupportsPQ = \case
       Right (Connection {pqSupport = PQSupportOn}, _, _) -> True
