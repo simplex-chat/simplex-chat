@@ -928,7 +928,7 @@ window.addEventListener('click',(e)=>{
 <p>The syntax of compressed message is defined by the following ABNF notation:</p>
 <pre><code class="language-abnf">compressedMessage = %s&quot;X&quot; 1*15780 OCTET; compressed message data
 </code></pre>
-<p>Compressed message is required to fit into 13388 bytes, accounting for agent overhead (see Protocol's maxCompressedMsgLength).</p>
+<p>Compressed message is required to fit into 15602 bytes, or into 13380 bytes for a connection with PQ encryption, accounting for agent overhead (see Protocol's maxEncodedMsgLength and maxEncodedMsgLengthPQ).</p>
 <p>The actual JSON message is required to fit into 15610 bytes, accounting for group message forwarding (x.grp.msg.forward) overhead (see Protocol's maxEncodedMsgLength).</p>
 <h3 id="binary-format-for-sending-files" tabindex="-1">Binary format for sending files</h3>
 <blockquote>
