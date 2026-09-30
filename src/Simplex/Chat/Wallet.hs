@@ -55,11 +55,8 @@ data WalletError
   | WEAccountsExhausted
   deriving (Eq, Show)
 
-masterStrength :: B39.EntropyStrength
-masterStrength = B39.ES256
-
 newEntropy :: TVar ChaChaDRG -> IO B39.WalletEntropy
-newEntropy = atomically . B39.randomEntropy masterStrength
+newEntropy = atomically . B39.randomEntropy B39.ES256
 
 entropyFromMnemonic :: Text -> Either WalletError B39.WalletEntropy
 entropyFromMnemonic = first (const WEBadMnemonic) . B39.parsePhrase

@@ -1510,9 +1510,8 @@ processChatCommand cxt nm = \case
     (entropy, nextAccount) <- case mnemonic_ of
       Nothing -> (,Just 1) <$> (liftIO . newEntropy =<< asks random)
       Just phrase -> (,Nothing) <$> liftWallet (entropyFromMnemonic phrase)
-    -- derive the first account before storing, so stored entropy derives keys
-    firstAccount <- liftEitherWith (ChatError . CEInternalError) $ mkAccountIndex $ fromMaybe 0 nextAccount
-    void $ walletAccount entropy firstAccount
+    -- derive the first account before storing, so stored entropy is valid for derivation
+    void $ walletAccount entropy =<< liftDerivation (pure $ mkAccountIndex $ fromMaybe 0 nextAccount)
     created <- withFastStore' $ \db -> createWallet db entropy nextAccount
     unless created $ throwWalletError WEMasterExists
     pure $ CRWallet user (Just $ WalletInfo [] nextAccount)
@@ -6720,7 +6719,7 @@ chatCommandP =
     char_ = optional . A.char
     accountIndexP = do
       i <- A.decimal :: Parser Integer
-      if i < 2147483648 then either fail pure $ mkAccountIndex (fromInteger i) else fail "account index too large"
+      if i <= toInteger (maxBound :: Word32) then either fail pure $ mkAccountIndex (fromInteger i) else fail "account index too large"
 
 displayNameP :: Parser Text
 displayNameP = safeDecodeUtf8 <$> displayNameP_

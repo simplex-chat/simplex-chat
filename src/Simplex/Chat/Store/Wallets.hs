@@ -6,8 +6,7 @@
 {-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Store.Wallets
-  ( SeedId,
-    Wallet (..),
+  ( Wallet (..),
     getWallet,
     createWallet,
     deleteWallet,
@@ -77,13 +76,10 @@ deleteWallet db =
   rowReturned $ DB.query_ db "DELETE FROM wallet_seeds RETURNING wallet_seed_id"
 
 resolveAccount :: DB.Connection -> Maybe AccountIndex -> ExceptT StoreError IO (Either WalletError (WalletEntropy, AccountIndex))
-resolveAccount db accountIdx_ = fmap (first entropy) <$> resolveAccount_ db accountIdx_
-
-resolveAccount_ :: DB.Connection -> Maybe AccountIndex -> ExceptT StoreError IO (Either WalletError (Wallet, AccountIndex))
-resolveAccount_ db accountIdx_ =
+resolveAccount db accountIdx_ =
   getWallet db >>= \case
     Nothing -> pure $ Left WENoMaster
-    Just w@Wallet {nextAccountIndex} -> pure $ (w,) <$> maybe next Right accountIdx_
+    Just Wallet {entropy, nextAccountIndex} -> pure $ (entropy,) <$> maybe next Right accountIdx_
       where
         next = maybe (Left WECounterUnknown) (first (const WEAccountsExhausted) . mkAccountIndex) nextAccountIndex
 
@@ -121,7 +117,6 @@ bindAccount db userId accountIdx_ =
             Nothing -> True <$ insertAccount db userId walletId n
         if held then Right (entropy, n) <$ raiseNextAccount db walletId n else pure $ Left WEAccountBound
 
--- | Moves the counter in one statement, so concurrent binds get different accounts.
 takeNextAccount :: DB.Connection -> SeedId -> IO (Maybe AccountIndex)
 takeNextAccount db sId =
   maybeFirstRow fromOnly $
