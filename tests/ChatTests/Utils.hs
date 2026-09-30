@@ -246,6 +246,19 @@ genProfileImg = do
     lrgLen = (maxProfileImageSize - imagePrefixLen) * 3 `div` 4 - 1
     imagePrefixLen = 22
 
+-- the least compressible JSON text, n bytes in UTF-8: random ASCII without markdown and 2-byte characters in equal shares
+incompressibleText :: Int -> IO T.Text
+incompressibleText n = do
+  g <- C.newRandom
+  rnd <- atomically $ C.randomBytes (3 * n) g
+  pure $ T.pack $ chars n $ map fromEnum $ B.unpack rnd
+  where
+    chars k (r1 : r2 : r3 : rest)
+      | k >= 2 && even r1 = toEnum (0xA0 + (r2 * 256 + r3) `mod` 0x760) : chars (k - 2) rest
+      | k >= 1 = asciiChars !! (r2 `mod` length asciiChars) : chars (k - 1) rest
+    chars _ _ = []
+    asciiChars = ['0' .. '9'] <> ['A' .. 'Z'] <> ['a' .. 'z'] <> ",.;-+=%&()'?<>{}|"
+
 -- PQ combinators /
 
 chat :: String -> [(Int, String)]

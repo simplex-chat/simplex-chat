@@ -29,7 +29,7 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr', foldrM)
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, foldl')
+import Data.List (find)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import qualified Data.IntSet as IS
@@ -4299,7 +4299,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                       sendLoop bucketSize cursorGMId_ senderVec overflowWithIds inBodySenders extBody activeSenders = do
                         mems <- withStore' $ \db -> getGroupMembersByCursor db cxt user gInfo cursorGMId_ singleSenderGMId_ bucketSize
                         unless (null mems) $ do
-                          let msgReqs = buildMsgReqs mems
+                          msgReqs <- liftEither $ buildMsgReqs mems
                           unless (null msgReqs) $ void $ withAgent (`sendMessages` msgReqs)
                           -- Mark only (sender, recipient) pairs where the bit was MRNew —
                           -- skip recipients already MRIntroduced (steady-case savings).
@@ -4320,19 +4320,21 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                         where
                           -- First recipient needing body i carries VRValue (Just i); rest use VRRef i.
                           -- First piece per connection: aConnId; rest: empty (agent convention).
-                          buildMsgReqs :: [GroupMember] -> [MsgReq]
-                          buildMsgReqs mems = reverse . snd $ foldl' addRecipient (IS.empty, []) mems
+                          buildMsgReqs :: [GroupMember] -> Either ChatError [MsgReq]
+                          buildMsgReqs mems = reverse . snd <$> foldM addRecipient (IS.empty, []) mems
                             where
+                              pqSup = connsPQSupport $ mapMaybe (fmap snd . readyMemberConn) mems
                               addRecipient acc r = case readyMemberConn r of
-                                Just (_, conn) -> snd $ foldl' (addPiece conn) (0 :: Int, acc) (recipientBodyPieces r)
-                                Nothing -> acc
-                              addPiece conn (k, (issued, reqs)) (bid, msgBody) =
-                                let vor
-                                      | IS.member bid issued = VRRef bid
-                                      | otherwise = VRValue (Just bid) msgBody
-                                    issued' = IS.insert bid issued
+                                Just (_, conn) -> snd <$> foldM (addPiece conn) (0 :: Int, acc) (recipientBodyPieces r)
+                                Nothing -> pure acc
+                              addPiece conn (k, (issued, reqs)) (bid, msgBody) = do
+                                vor <-
+                                  if IS.member bid issued
+                                    then pure $ VRRef bid
+                                    else VRValue (Just bid) <$> compressPayload APMessage pqSup msgBody
+                                let issued' = IS.insert bid issued
                                     connId = if k == 0 then aConnId conn else B.empty
-                                 in (k + 1, (issued', (connId, PQEncOff, MsgFlags False, vor) : reqs))
+                                pure (k + 1, (issued', (connId, PQEncOff, MsgFlags False, vor) : reqs))
                               recipientBodyPieces r =
                                 [(i, b) | (i, (b, ss)) <- overflowWithIds, any missing ss]
                                   <> [if any missing inBodySenders then (1, extBody) else (0, body)]
@@ -4386,13 +4388,14 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                   && maxVersion (memberChatVRange m) >= groupKnockingVersion
               where
                 deliver :: ByteString -> [GroupMember] -> CM ()
-                deliver msgBody mems =
+                deliver msgBody mems = do
                   let mConns = mapMaybe (fmap snd . readyMemberConn) mems
-                      msgReqs = foldMemConns mConns
-                   in void $ withAgent (`sendMessages` msgReqs)
+                  case compressPayload APMessage (connsPQSupport mConns) msgBody of
+                    Left e -> toView $ CEvtChatErrors [e]
+                    Right msgBody' -> void $ withAgent (`sendMessages` foldMemConns msgBody' mConns)
                   where
-                    foldMemConns :: [Connection] -> [MsgReq]
-                    foldMemConns mConns = snd $ foldr' addReq (lastMemIdx_, []) mConns
+                    foldMemConns :: ByteString -> [Connection] -> [MsgReq]
+                    foldMemConns sentBody mConns = snd $ foldr' addReq (lastMemIdx_, []) mConns
                       where
                         lastMemIdx_ = let len = length mConns in if len > 1 then Just len else Nothing
                         addReq :: Connection -> (Maybe Int, [MsgReq]) -> (Maybe Int, [MsgReq])
@@ -4401,8 +4404,8 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                           where
                             req = (aConnId conn, PQEncOff, MsgFlags False, vrValue_)
                             vrValue_ = case memIdx_ of
-                              Nothing -> VRValue Nothing msgBody -- sending to one member, do not reference body
-                              Just 1 -> VRValue (Just 1) msgBody
+                              Nothing -> VRValue Nothing sentBody -- sending to one member, do not reference body
+                              Just 1 -> VRValue (Just 1) sentBody
                               Just _ -> VRRef 1
 
 -- Single worker processes all relay requests (XGrpRelayInv).

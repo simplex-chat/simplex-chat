@@ -2,8 +2,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -15,7 +15,6 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Concurrent.STM (atomically)
 import Control.Monad
 import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
@@ -28,18 +27,19 @@ import qualified Data.Map.Strict as M
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
 import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks, storeCxt)
 import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
-import Simplex.Chat.Library.Commands (maxConnInfoOverhead)
-import Simplex.Chat.Protocol (ChatMessage (..), ChatMsgEvent (XGrpInfo, XInfo), EncodedChatMessage (..), LinkOwnerSig, MsgChatLink (..), MsgContent (..), MsgEncoding (..), encodeChatMessage, maxEncodedInfoLength)
+import Simplex.Chat.Library.Commands (maxProfileInfoLength)
+import Simplex.Chat.Protocol (ChatMessage (..), ChatMsgEvent (XGrpInfo, XInfo), LinkOwnerSig, MsgChatLink (..), MsgContent (..), MsgEncoding (..), chatMsgToBody)
 import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), GroupProfile, GroupRejectionReason (..), ImageData (..), Profile (..), profileFromName)
 import qualified Simplex.Chat.Types as Types
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey, BBSSecretKey, bbsKeyGen)
-import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOn)
+import Simplex.Messaging.Crypto.Ratchet (pattern PQSupportOff, pattern PQSupportOn)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
@@ -55,6 +55,10 @@ chatProfileTests = do
     it "member profile description is redacted for members without a direct contact" testMemberDescriptionRedacted
     it "update user profile with image" testUpdateProfileImage
     it "reject profile image that is too large" testSetProfileImageTooLarge
+    it "reject profiles over connection info size limit" testConnInfoSizeChecks
+    it "update profile saved under a larger size limit" testProfileSavedUnderLargerLimit
+    it "send profile update at size limit to PQ contact" testProfileUpdateSizeLimit
+    it "join group via link with group profile at size limit" testGroupLinkProfileSizeLimit
     it "set profile image from file" testSetProfileImageFromFile
     it "use multiword profile names" testMultiWordProfileNames
     it "auto-accept group invitations" testAutoAcceptGroupInvitations
@@ -85,9 +89,6 @@ chatProfileTests = do
       it "create and connect via business address" testBusinessAddress
       it "update profiles with business address" testBusinessUpdateProfiles
       it "connect via business address with profiles at size limit" testBusinessAddressProfileSizeLimit
-      it "reject profiles over connection info size limit" testConnInfoSizeChecks
-      it "join group via link with group profile at size limit" testGroupLinkProfileSizeLimit
-      it "send profile update at size limit to PQ contact" testProfileUpdateSizeLimit
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
@@ -531,6 +532,127 @@ testSetProfileImageTooLarge =
             unless (take (length errPrefix) l == errPrefix) expectError
       expectError
       (bob </)
+
+testConnInfoSizeChecks :: HasCallStack => TestParams -> IO ()
+testConnInfoSizeChecks =
+  testChat aliceProfile $ \alice -> do
+    rejected alice "Profile" . ("/_profile 1 " <>) . encodeJSON =<< profileOfSize compressibleText (maxProfileSize + 1) aliceProfile
+    rejected alice "Profile" . ("/_profile 1 " <>) . encodeJSON =<< profileOfSize incompressibleText belowMaxProfileSize aliceProfile
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    rejected alice "Group profile" . ("/_group_profile #1 " <>) . encodeJSON =<< teamProfileOfSize compressibleText (maxProfileSize + 1)
+    rejected alice "Group profile" . ("/_group_profile #1 " <>) . encodeJSON =<< teamProfileOfSize incompressibleText belowMaxProfileSize
+  where
+    -- fits the size limit without compression, but not the PQ limit after compression
+    belowMaxProfileSize = maxProfileSize - 100
+    rejected cc what cmd = do
+      sendLong cc $ T.unpack cmd
+      cc <## ("bad chat command: " <> what <> " is too large")
+
+testProfileSavedUnderLargerLimit :: HasCallStack => TestParams -> IO ()
+testProfileSavedUnderLargerLimit ps = do
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    alice ##> "/ad"
+    _ <- getContactLink alice True
+    descr <- compressibleText maxProfileSize
+    withCCTransaction alice $ \db ->
+      DB.execute db "UPDATE contact_profiles SET description = ? WHERE display_name = ?" (descr, "alice" :: T.Text)
+  withTestChat ps "alice" $ \alice -> do
+    alice <## "subscribed 1 connections on server localhost"
+    alice ##> "/da"
+    alice <## "Your chat address is deleted - accepted contacts will remain connected."
+    alice <## "To create a new chat address use /ad"
+    alice ##> "/p alice Alice Smith"
+    alice <## "bad chat command: Profile is too large"
+
+-- with the badge, the profile update is over the PQ message limit, so it has to be compressed
+testProfileUpdateSizeLimit :: HasCallStack => TestParams -> IO ()
+testProfileUpdateSizeLimit ps = do
+  Right (pk, sk) <- bbsKeyGen
+  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
+  where
+    test sk alice bob = do
+      connectUsers alice bob
+      alice `pqSupportForCt` 2 `shouldReturn` PQSupportOn
+      addTestBadge alice =<< issueTestBadge sk futureDate
+      p@Profile {description = Just descr} <- profileOfSize compressibleText maxProfileSize aliceProfile
+      sendLong alice $ "/_profile 1 " <> T.unpack (encodeJSON p)
+      alice <## ("user description changed to " <> T.unpack descr <> " (your 1 contacts are notified)")
+      bob <## ("contact alice updated description: " <> T.unpack descr)
+      -- the badge is kept, so the update carried the badge proof
+      alice #> "@bob hi"
+      bob <# "alice *> hi"
+
+testGroupLinkProfileSizeLimit :: HasCallStack => TestParams -> IO ()
+testGroupLinkProfileSizeLimit =
+  testChat2 aliceProfile {displayName = T.pack hostName} bobProfile $ \alice bob -> do
+    gp@Types.GroupProfile {Types.description = Just welcomeMsg} <- teamProfileOfSize compressibleText maxProfileSize
+    sendLong alice $ "/_group 1 " <> T.unpack (encodeJSON gp)
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/create link #team"
+    gLink <- getGroupLink alice "team" GRMember True
+    bob ##> ("/c " <> gLink)
+    bob <## "connection request sent!"
+    alice <## "bob (Bob): accepting request to join group #team..."
+    concurrentlyN_
+      [ alice <## "#team: bob joined the group",
+        do
+          bob <## "#team: joining the group..."
+          bob <## "#team: you joined the group"
+          bob <# ("#team " <> hostName <> "> " <> T.unpack welcomeMsg)
+      ]
+    alice #> "#team hello"
+    bob <# ("#team " <> hostName <> "> hello")
+  where
+    -- XGrpLinkInv adds the host name, taking it over the limit without PQ, so it has to be compressed
+    hostName = replicate 1000 'a'
+
+maxProfileSize :: Int
+maxProfileSize = maxProfileInfoLength PQSupportOff
+
+-- the virtual terminal echoes a long command as one wrapped line
+sendLong :: TestCC -> String -> IO ()
+sendLong cc cmd = do
+  cc `send` cmd
+  void $ getTermLine cc
+
+-- the description fills the profile with a large image, so that the encoded XInfo is exactly n bytes
+profileOfSize :: (Int -> IO T.Text) -> Int -> Profile -> IO Profile
+profileOfSize genText n p = do
+  img <- largeProfileImage
+  let p' = (p :: Profile) {image = Just img, description = Just ""}
+  text <- genText $ n - infoSize (XInfo p' Nothing)
+  pure (p' :: Profile) {description = Just text}
+
+teamProfileOfSize :: (Int -> IO T.Text) -> Int -> IO GroupProfile
+teamProfileOfSize genText n = do
+  img <- largeProfileImage
+  let withDescr descr =
+        Types.GroupProfile
+          { Types.displayName = "team",
+            Types.fullName = "",
+            Types.shortDescr = Nothing,
+            Types.description = Just descr,
+            Types.image = Just img,
+            Types.publicGroup = Nothing,
+            Types.groupPreferences = Nothing,
+            Types.memberAdmission = Nothing
+          }
+  withDescr <$> genText (n - infoSize (XGrpInfo $ withDescr ""))
+
+largeProfileImage :: IO ImageData
+largeProfileImage = ImageData . ("data:image/png;base64," <>) . safeDecodeUtf8 <$> genProfileImg
+
+infoSize :: ChatMsgEvent 'Json -> Int
+infoSize = B.length . chatMsgToBody . ChatMessage vr Nothing
+  where
+    ChatConfig {chatVRange = vr} = testCfg
+
+-- ends with "." as terminal output drops trailing spaces
+compressibleText :: Int -> IO T.Text
+compressibleText n = pure $ T.take (n - 1) (T.replicate n "calculator ") <> "."
 
 testSetProfileImageFromFile :: HasCallStack => TestParams -> IO ()
 testSetProfileImageFromFile ps = testChat aliceProfile test ps
@@ -1334,9 +1456,8 @@ testBusinessAddress = testChat3 businessProfile aliceProfile {fullName = "Alice 
 testBusinessAddressProfileSizeLimit :: HasCallStack => TestParams -> IO ()
 testBusinessAddressProfileSizeLimit ps = do
   Right (pk, sk) <- bbsKeyGen
-  img <- largeProfileImage
-  bizProfile <- profileOfSize textOfSize maxCheckedInfoSize (businessProfile :: Profile) {image = Just img}
-  bobProfile'@Profile {description = Just bobDescr} <- profileOfSize textOfSize maxCheckedInfoSize (bobProfile :: Profile) {image = Just img}
+  bizProfile <- profileOfSize compressibleText maxProfileSize businessProfile
+  bobProfile'@Profile {description = Just bobDescr} <- profileOfSize compressibleText maxProfileSize bobProfile
   testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) bizProfile bobProfile' (test sk bobDescr) ps
   where
     test sk bobDescr biz bob = do
@@ -1367,130 +1488,7 @@ testBusinessAddressProfileSizeLimit ps = do
       biz <## "receiving messages via: localhost"
       biz <## "sending messages via: localhost"
       biz <## "connection not verified, use /code command to see security code"
-      biz <##. "peer chat protocol version range: "
-
-testConnInfoSizeChecks :: HasCallStack => TestParams -> IO ()
-testConnInfoSizeChecks =
-  testChat aliceProfile $ \alice -> do
-    img <- largeProfileImage
-    p <- profileOfSize textOfSize (maxCheckedInfoSize + 1) (aliceProfile :: Profile) {image = Just img}
-    alice `send` ("/_profile 1 " <> T.unpack (encodeJSON p))
-    _trimmedCmd1 <- getTermLine alice
-    alice <## "bad chat command: Profile is too large"
-    -- within the raw limit, but over the PQ limit after compression
-    pRandom <- profileOfSize randomTextOfSize (maxCheckedInfoSize - 100) (aliceProfile :: Profile) {image = Just img}
-    alice `send` ("/_profile 1 " <> T.unpack (encodeJSON pRandom))
-    _trimmedCmd2 <- getTermLine alice
-    alice <## "bad chat command: Profile is too large"
-    alice ##> "/g team"
-    alice <## "group #team is created"
-    alice <## "to add members use /a team <name> or /create link #team"
-    gp <- groupProfileOfSize textOfSize (maxCheckedInfoSize + 1) (teamProfile img)
-    alice `send` ("/_group_profile #1 " <> T.unpack (encodeJSON gp))
-    _trimmedCmd3 <- getTermLine alice
-    alice <## "bad chat command: Group profile is too large"
-    gpRandom <- groupProfileOfSize randomTextOfSize (maxCheckedInfoSize - 100) (teamProfile img)
-    alice `send` ("/_group_profile #1 " <> T.unpack (encodeJSON gpRandom))
-    _trimmedCmd4 <- getTermLine alice
-    alice <## "bad chat command: Group profile is too large"
-
--- the host name is repeated in XGrpLinkInv, so it has to be compressed to fit without PQ
-testGroupLinkProfileSizeLimit :: HasCallStack => TestParams -> IO ()
-testGroupLinkProfileSizeLimit =
-  testChat2 (aliceProfile :: Profile) {displayName = T.pack hostName} bobProfile $ \alice bob -> do
-    img <- largeProfileImage
-    gp@Types.GroupProfile {Types.description = Just welcomeMsg} <- groupProfileOfSize textOfSize maxCheckedInfoSize (teamProfile img)
-    alice `send` ("/_group 1 " <> T.unpack (encodeJSON gp))
-    _trimmedCmd <- getTermLine alice
-    alice <## "group #team is created"
-    alice <## "to add members use /a team <name> or /create link #team"
-    alice ##> "/create link #team"
-    gLink <- getGroupLink alice "team" GRMember True
-    bob ##> ("/c " <> gLink)
-    bob <## "connection request sent!"
-    alice <## "bob (Bob): accepting request to join group #team..."
-    concurrentlyN_
-      [ alice <## "#team: bob joined the group",
-        do
-          bob <## "#team: joining the group..."
-          bob <## "#team: you joined the group"
-          bob <# ("#team " <> hostName <> "> " <> T.unpack welcomeMsg)
-      ]
-    alice #> "#team hello"
-    bob <# ("#team " <> hostName <> "> hello")
-  where
-    hostName = concat $ replicate 200 "alice"
-
--- with the badge, the profile update is over the PQ message limit, so it has to be compressed
-testProfileUpdateSizeLimit :: HasCallStack => TestParams -> IO ()
-testProfileUpdateSizeLimit ps = do
-  Right (pk, sk) <- bbsKeyGen
-  testChatCfg2 (testCfg {badgePublicKeys = testBadgeKeys pk}) aliceProfile bobProfile (test sk) ps
-  where
-    test sk alice bob = do
-      connectUsers alice bob
-      alice `pqSupportForCt` 2 `shouldReturn` PQSupportOn
-      addTestBadge alice =<< issueTestBadge sk futureDate
-      img <- largeProfileImage
-      p@Profile {description = Just descr} <- profileOfSize textOfSize maxCheckedInfoSize (aliceProfile :: Profile) {image = Just img}
-      alice `send` ("/_profile 1 " <> T.unpack (encodeJSON p))
-      _trimmedCmd <- getTermLine alice
-      alice <## ("user description changed to " <> T.unpack descr <> " (your 1 contacts are notified)")
-      bob <## ("contact alice updated description: " <> T.unpack descr)
-      -- the badge is kept, so the update carried the badge proof
-      alice #> "@bob hi"
-      bob <# "alice *> hi"
-
--- the largest profile and group profile XInfo and XGrpInfo that pass checkInfoSize
-maxCheckedInfoSize :: Int
-maxCheckedInfoSize = maxEncodedInfoLength - maxConnInfoOverhead
-
-largeProfileImage :: IO ImageData
-largeProfileImage = ImageData . ("data:image/png;base64," <>) . safeDecodeUtf8 <$> genProfileImg
-
-teamProfile :: ImageData -> T.Text -> GroupProfile
-teamProfile img descr =
-  Types.GroupProfile
-    { Types.displayName = "team",
-      Types.fullName = "",
-      Types.shortDescr = Nothing,
-      Types.description = Just descr,
-      Types.image = Just img,
-      Types.publicGroup = Nothing,
-      Types.groupPreferences = Nothing,
-      Types.memberAdmission = Nothing
-    }
-
--- description is filled with generated text, so that the encoded XInfo is exactly n bytes
-profileOfSize :: (Int -> IO T.Text) -> Int -> Profile -> IO Profile
-profileOfSize genText n p = do
-  let p' = (p :: Profile) {description = Just ""} :: Profile
-  text <- genText $ n - infoSize (XInfo p' Nothing)
-  pure (p' :: Profile) {description = Just text}
-
-groupProfileOfSize :: (Int -> IO T.Text) -> Int -> (T.Text -> GroupProfile) -> IO GroupProfile
-groupProfileOfSize genText n withDescr = withDescr <$> genText (n - infoSize (XGrpInfo $ withDescr ""))
-
-infoSize :: ChatMsgEvent 'Json -> Int
-infoSize event = case encodeChatMessage maxBound ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = event} of
-  ECMEncoded s -> B.length s
-  ECMLarge -> error "infoSize: unexpected ECMLarge"
-  where
-    ChatConfig {chatVRange = vr} = testCfg
-
-textOfSize :: Int -> IO T.Text
-textOfSize n = do
-  g <- C.newRandom
-  wordIdxs <- atomically $ B.unpack <$> C.randomBytes n g
-  -- ends with "." as terminal output drops trailing spaces
-  pure $ (<> ".") $ T.take (n - 1) $ T.unwords $ map ((textWords !!) . (`mod` length textWords) . fromEnum) wordIdxs
-  where
-    textWords = ["the", "calculator", "bot", "replies", "with", "results", "of", "each", "operation", "and", "keeps", "history"]
-
-randomTextOfSize :: Int -> IO T.Text
-randomTextOfSize n = do
-  g <- C.newRandom
-  T.pack . take n . B.unpack . strEncode <$> atomically (C.randomBytes n g)
+      biz <## currentChatVRangeInfo
 
 testBusinessUpdateProfiles :: HasCallStack => TestParams -> IO ()
 testBusinessUpdateProfiles = testChat4 businessProfile aliceProfile bobProfile cathProfile $

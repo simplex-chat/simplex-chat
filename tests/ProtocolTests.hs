@@ -11,6 +11,7 @@
 module ProtocolTests where
 
 import Control.Concurrent.STM (atomically)
+import Control.Monad (forM_)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -19,7 +20,8 @@ import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
-import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
+import Simplex.Chat.Controller (ChatError)
+import Simplex.Chat.Library.Internal (AgentPayload (..), compressToLimit, decodeLinkUserData, encodeShortLinkData, maxPayloadLength)
 import Simplex.Chat.Messages.Batch (encodeBatchElement)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
@@ -30,6 +32,7 @@ import Simplex.Messaging.Compression (compress1)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
 import Simplex.Messaging.Encoding (smpEncode)
+import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Protocol (EntityId (..), supportedSMPClientVRange)
 import Simplex.Messaging.ServiceScheme
 import Simplex.Messaging.Version
@@ -41,6 +44,7 @@ protocolTests = do
   shortLinkDataTests
   batchLimitTests
   compressToLimitTests
+  payloadLimitTests
   forwardDepthTests
   preferencesJSONTests
 
@@ -96,19 +100,19 @@ batchLimitTests = describe "Chat message batch limits" $ do
 compressToLimitTests :: Spec
 compressToLimitTests = describe "Compression to size limit" $ do
   it "keeps a body within the limit uncompressed" $
-    compressToLimit (B.length body) body `shouldBe` Just body
-  it "compresses a body over the limit to exactly the limit" $ do
-    compressToLimit compressedLen body `shouldBe` Just compressed
-    B.length compressed < B.length body `shouldBe` True
+    compressed_ (B.length body) body `shouldBe` Just body
+  it "compresses a body over the limit" $ do
+    compressed_ (B.length compressed) body `shouldBe` Just compressed
+    B.length compressed `shouldSatisfy` (< B.length body)
     compressed ==## msg
   it "fails when the compressed body is still over the limit" $
-    compressToLimit (compressedLen - 1) body `shouldBe` Nothing
+    compressed_ (B.length compressed - 1) body `shouldBe` Nothing
   it "keeps the signature of a compressed signed element" $ do
     g <- C.newRandom
     (pubKey, privKey) <- atomically $ C.generateKeyPair @'C.Ed25519 g
     let signing = MsgSigning {bindingTag = CBGroup, bindingData = "binding", keyRef = KRMember, privKey}
         element = encodeBatchElement (Just $ signChatMsgBody signing body) body
-    case parseChatMessages <$> compressToLimit (B.length element - 1) element of
+    case parseChatMessages <$> compressed_ (B.length element - 1) element of
       Just [Right (APMsg _ (ParsedMsg _ (Just SignedMsg {chatBinding, signatures, signedBody}) _))] -> do
         signedBody `shouldBe` body
         let verified (MsgSignature _ sig) = C.verify (C.APublicVerifyKey C.SEd25519 pubKey) sig (encodeChatBinding chatBinding "binding" <> signedBody)
@@ -116,11 +120,26 @@ compressToLimitTests = describe "Compression to size limit" $ do
       r -> expectationFailure $ "expected one compressed signed message, got " <> show (length <$> r)
   where
     msg = ChatMessage {chatVRange = supportedChatVRange, msgId = Nothing, chatMsgEvent = XMsgNew $ mcSimple (MCText $ T.replicate 2000 "calculator ")}
-    body = case encodeChatMessage maxDecompressedMsgLength msg of
-      ECMEncoded s -> s
-      ECMLarge -> error "compressToLimitTests: unexpected ECMLarge"
+    body = chatMsgToBody msg
     compressed = compressedBatchMsgBody_ body
-    compressedLen = B.length compressed
+    compressed_ maxLen = either (const Nothing) Just . compressToLimit @(Either ChatError) maxLen
+
+payloadLimitTests :: Spec
+payloadLimitTests = describe "Agent payload limits" $
+  forM_ ([("PQ", PQSupportOn), ("no PQ", PQSupportOff)] :: [(String, PQSupport)]) $ \(name, pqSup) -> do
+    it ("message limit is the agent message capacity, " <> name) $ do
+      let fits n = C.canPad (B.length $ smpEncode $ AgentMessage (APrivHeader 1 msgHash) (A_MSG $ B.replicate n 'a')) (e2eEncAgentMsgLength pqSup)
+          maxLen = maxPayloadLength APMessage pqSup
+      (fits maxLen, fits (maxLen + 1)) `shouldBe` (True, False)
+    it ("connection info limit fits the confirmation with a reply queue, " <> name) $ do
+      let reply = smpEncode $ AgentConnInfoReply (replyQueue L.:| []) (B.replicate (maxPayloadLength APConnInfo pqSup) 'a')
+      C.canPad (B.length reply) (e2eEncConnInfoLength pqSup) `shouldBe` True
+  where
+    msgHash = B.replicate 32 'h'
+    -- a preset server with an onion host
+    replyQueue = case strDecode "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion/yKZevnQxYm6-D8UA4Qk7k-FZ_5z23Fhk#/?v=1-4&dh=MCowBQYDK2VuAyEAl4HKmQHRwoMlOkLEYSLSLE9_NB_XnTheQ4171WCx5DQ%3D&q=c" of
+      Right (SMPQueueUri vr addr) -> SMPQueueInfo (maxVersion vr) addr
+      Left e -> error e
 
 forwardDepthTests :: Spec
 forwardDepthTests = describe "Chat message forward depth limit" $ do

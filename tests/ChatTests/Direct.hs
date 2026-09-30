@@ -43,7 +43,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (encodeJSON, safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.Mem.Weak (deRefWeak)
@@ -78,6 +78,8 @@ chatDirectTests = do
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
+    it "reject message that cannot be sent with PQ" testRejectIncompressibleMessage
+    it "send messages that cannot be batched with PQ" testIncompressibleMessagesBatch
     it "initial chat pagination" testChatPaginationInitial
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
@@ -1019,6 +1021,35 @@ testLargeMessage =
       alice <## "user profile is changed to alice2 (your 1 contacts are notified)"
       bob <## "contact alice changed to alice2"
       bob <## "use @alice2 <message> to send messages"
+
+-- fits the message size limit, but not the PQ limit after compression
+testRejectIncompressibleMessage :: HasCallStack => TestParams -> IO ()
+testRejectIncompressibleMessage =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      text <- incompressibleText 15400
+      alice `send` ("@bob " <> T.unpack text)
+      _trimmedCmd <- getTermLine alice
+      alice <## "chat db error: SELargeMsg"
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+
+-- in one batch the two messages would be over the PQ limit after compression
+testIncompressibleMessagesBatch :: HasCallStack => TestParams -> IO ()
+testIncompressibleMessagesBatch =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      text1 <- incompressibleText 7500
+      text2 <- incompressibleText 7500
+      let composed t = J.object ["msgContent" J..= J.object ["type" J..= ("text" :: T.Text), "text" J..= t]]
+      alice `send` ("/_send @2 json " <> T.unpack (encodeJSON [composed text1, composed text2]))
+      _trimmedCmd <- getTermLine alice
+      alice <# ("@bob " <> T.unpack text1)
+      alice <# ("@bob " <> T.unpack text2)
+      bob <# ("alice> " <> T.unpack text1)
+      bob <# ("alice> " <> T.unpack text2)
 
 testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =

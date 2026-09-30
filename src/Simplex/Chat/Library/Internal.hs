@@ -34,7 +34,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
 import Data.Containers.ListUtils (nubOrd)
-import Data.Either (partitionEithers, rights)
+import Data.Either (isRight, partitionEithers, rights)
 import Data.Fixed (div')
 import Data.Foldable (foldr')
 import Data.Functor (($>))
@@ -1406,8 +1406,9 @@ sendHistory user gInfo@GroupInfo {membership} m@GroupMember {activeConn = Just c
   welcomeEl <- welcomeElement
   let (batches, dropped) = batchElements maxEncodedMsgLength (fwdEls <> maybe [] (: []) welcomeEl)
   when (dropped > 0) $ toView $ CEvtChatErrors [ChatError $ CEInternalError ("sendHistory: dropped " <> show dropped <> " oversized history messages")]
-  forM_ batches $ \body ->
-    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
+  forM_ batches $ \body -> case compressPayload APMessage (connPQSupport conn) body of
+    Left e -> toView $ CEvtChatErrors [e]
+    Right body' -> void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body')]
   where
     welcomeElement :: CM (Maybe ByteString)
     welcomeElement = case descrEvent_ of
@@ -2309,8 +2310,13 @@ createSndMessages idsEvents = do
     createMsg db g vr (connOrGroupId, msgSigning_, evnt) = runExceptT $ do
       withExceptT ChatErrorStore $ createNewSndMessage db g connOrGroupId evnt msgSigning_ encodeMessage
       where
-        encodeMessage sharedMsgId =
-          encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
+        encodeMessage sharedMsgId = case encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt} of
+          ECMEncoded body | SJson <- encoding @e, not (fitsPQ body) -> ECMLarge
+          r -> r
+        -- rejected before it is saved, as it could not be sent to connections with PQ support
+        fitsPQ body =
+          let element = encodeBatchElement ((`signChatMsgBody` body) <$> msgSigning_) body
+           in isRight $ compressPayload @(Either ChatError) APMessage PQSupportOn element
 
 groupMsgSigning :: Bool -> GroupInfoKeys -> ChatMsgEvent e -> Maybe MsgSigning
 groupMsgSigning sign (GIK gInfo@GroupInfo {membership = GroupMember {memberId}} gks) evt
@@ -2414,7 +2420,7 @@ batchSendConnMessages gInfo user conn msgFlags msgs =
 
 batchSendConnMessagesB :: BatchMode -> User -> Connection -> MsgFlags -> NonEmpty (Either ChatError SndMessage) -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
 batchSendConnMessagesB mode _user conn msgFlags msgs_ = do
-  let batched_ = batchSndMessagesJSON mode msgs_
+  let batched_ = batchSndMessagesJSON mode (connPQSupport conn) msgs_
   case L.nonEmpty batched_ of
     Just batched' -> do
       let msgReqs = L.map (fmap msgBatchReq_) batched'
@@ -2435,8 +2441,8 @@ batchSendConnMessagesB mode _user conn msgFlags msgs_ = do
     findLastPQEnc :: NonEmpty (Either ChatError ([Int64], PQEncryption)) -> Maybe PQEncryption
     findLastPQEnc = foldr' (\x acc -> case x of Right (_, pqEnc) -> Just pqEnc; Left _ -> acc) Nothing
 
-batchSndMessagesJSON :: BatchMode -> NonEmpty (Either ChatError SndMessage) -> [Either ChatError MsgBatch]
-batchSndMessagesJSON mode = batchMessages mode maxEncodedMsgLength . L.toList
+batchSndMessagesJSON :: BatchMode -> PQSupport -> NonEmpty (Either ChatError SndMessage) -> [Either ChatError MsgBatch]
+batchSndMessagesJSON mode pqSup = batchMessages mode (maxPayloadLength APMessage pqSup) . L.toList
 
 encodeConnInfo :: MsgEncodingI e => ChatMsgEvent e -> CM ByteString
 encodeConnInfo = encodeConnInfoPQ PQSupportOff
@@ -2445,8 +2451,8 @@ encodeConnInfoPQ :: MsgEncodingI e => PQSupport -> ChatMsgEvent e -> CM ByteStri
 encodeConnInfoPQ pqSup chatMsgEvent = do
   cxt <- chatStoreCxt
   let info = ChatMessage {chatVRange = vr cxt, msgId = Nothing, chatMsgEvent}
-  case encodeChatMessage maxDecompressedMsgLength info of
-    ECMEncoded connInfo -> compressConnInfo pqSup connInfo
+  case encodeChatMessage maxEncodedMsgLength info of
+    ECMEncoded connInfo -> compressPayload APConnInfo pqSup connInfo
     ECMLarge -> throwChatError $ CEException "large info"
 
 -- conn-info wrapped as a signed element, so the receiver can verify the signature over the body
@@ -2454,18 +2460,44 @@ encodeSignedConnInfo :: MsgEncodingI e => PQSupport -> MsgSigning -> ChatMsgEven
 encodeSignedConnInfo pqSup signing chatMsgEvent = do
   vr <- chatVersionRange
   let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent}
-  case encodeChatMessage maxDecompressedMsgLength info of
-    ECMEncoded body -> compressConnInfo pqSup $ encodeBatchElement (Just $ signChatMsgBody signing body) body
+  case encodeChatMessage maxEncodedMsgLength info of
+    ECMEncoded body -> compressPayload APConnInfo pqSup $ encodeBatchElement (Just $ signChatMsgBody signing body) body
     ECMLarge -> throwChatError $ CEException "large signed info"
 
-compressConnInfo :: PQSupport -> ByteString -> CM ByteString
-compressConnInfo pqSup connInfo =
-  maybe (throwChatError $ CEException "large compressed info") pure $ compressToLimit (maxConnInfoLength pqSup) connInfo
+-- the agent pads connection info and messages to fixed sizes, smaller when the connection supports PQ
+data AgentPayload = APConnInfo | APMessage
 
-maxConnInfoLength :: PQSupport -> Int
-maxConnInfoLength = \case
-  PQSupportOn -> maxEncodedInfoLengthPQ
-  PQSupportOff -> maxEncodedInfoLength
+maxPayloadLength :: AgentPayload -> PQSupport -> Int
+maxPayloadLength = \case
+  APConnInfo -> subtract connInfoEnvelopeLength . e2eEncConnInfoLength
+  APMessage -> subtract msgEnvelopeLength . e2eEncAgentMsgLength
+
+-- confirmation header with one reply queue (189 bytes for a preset server with an onion host) and padding length
+connInfoEnvelopeLength :: Int
+connInfoEnvelopeLength = 300
+
+-- message header (tag, message ID, previous message hash, tag) and padding length
+msgEnvelopeLength :: Int
+msgEnvelopeLength = 45
+
+compressPayload :: MonadError ChatError m => AgentPayload -> PQSupport -> MsgBody -> m MsgBody
+compressPayload payload = compressToLimit . maxPayloadLength payload
+
+-- compresses only a body over the limit
+compressToLimit :: MonadError ChatError m => Int -> MsgBody -> m MsgBody
+compressToLimit maxLen s
+  | B.length s <= maxLen = pure s
+  | B.length s' <= maxLen = pure s'
+  | otherwise = throwError $ ChatError $ CEException $ "large compressed payload: " <> show (B.length s') <> " > " <> show maxLen
+  where
+    s' = compressedBatchMsgBody_ s
+
+connPQSupport :: Connection -> PQSupport
+connPQSupport Connection {pqSupport} = pqSupport
+
+-- connections sharing message bodies via VRRef need the limit of any of them with PQ support
+connsPQSupport :: [Connection] -> PQSupport
+connsPQSupport = PQSupport . any (supportPQ . connPQSupport)
 
 -- signed XMember for a relay-group join: proves the joiner holds the member key it asserts, and carries
 -- viaRelay = the target relay's memberId inside the signed body so a sibling relay can't accept a replay
@@ -2499,19 +2531,16 @@ deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
 deliverMessagesB :: NonEmpty (Either ChatError ChatMsgReq) -> CM (NonEmpty (Either ChatError ([Int64], PQEncryption)))
 deliverMessagesB msgReqs = do
-  msgReqs' <- liftIO $ compressBodies $ if any connSupportsPQ msgReqs then maxEncodedMsgLengthPQ else maxEncodedMsgLength
+  msgReqs' <- liftIO compressBodies
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent (`sendMessagesB` snd (mapAccumL toAgent Nothing msgReqs'))
   lift . void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
-    connSupportsPQ = \case
-      Right (Connection {pqSupport = PQSupportOn}, _, _) -> True
-      _ -> False
-    -- one limit for the batch: connections share message bodies via VRRef
-    compressBodies maxLen =
+    pqSup = connsPQSupport [conn | Right (conn, _, _) <- L.toList msgReqs]
+    compressBodies =
       forME msgReqs $ \(conn, msgFlags, (mbr, msgIds)) -> runExceptT $ do
         mbr' <- case mbr of
-          VRValue i msgBody -> maybe (throwError $ ChatError $ CEException "large compressed message") (pure . VRValue i) $ compressToLimit maxLen msgBody
+          VRValue i msgBody -> VRValue i <$> compressPayload APMessage pqSup msgBody
           v -> pure v
         pure (conn, msgFlags, (mbr', msgIds))
     toAgent prev = \case
@@ -2720,8 +2749,10 @@ sendGroupSignedMessages_ gInfo@GroupInfo {groupId} recipientMembers signedEvents
     prepareMsgReqs msgFlags msgs (toSendBin, toSendJson) =
       batchReqs 1 BMBinary toSendBin <> batchReqs 2 BMJson toSendJson
       where
+        -- deliverMessagesB compresses the batches with the same limit
+        pqSup = connsPQSupport $ map snd $ toSendBin <> toSendJson
         batchReqs _ _ [] = ([], [])
-        batchReqs n mode toSend' = case L.nonEmpty (batchSndMessagesJSON mode msgs) of
+        batchReqs n mode toSend' = case L.nonEmpty (batchSndMessagesJSON mode pqSup msgs) of
           Just batched -> foldMembers (n * (length batched + length msgs)) msgBatchMBR batched toSend'
           Nothing -> ([], [])
         foldMembers :: forall a. Int -> (Maybe Int -> Int -> a -> (ValueOrRef MsgBody, [MessageId])) -> NonEmpty (Either ChatError a) -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
@@ -2827,9 +2858,10 @@ sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} c
 -- Send pre-encoded forwarded message preserving original signature
 sendFwdMemberMessage :: GroupMember -> GrpMsgForward -> VerifiedMsg 'Json -> CM ()
 sendFwdMemberMessage member fwd verifiedMsg =
-  forM_ (readyMemberConn member) $ \(_, conn) -> do
-    let body = encodeBinaryBatch [encodeFwdElement fwd verifiedMsg]
-    void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
+  forM_ (readyMemberConn member) $ \(_, conn) ->
+    case compressPayload APMessage (connPQSupport conn) $ encodeBinaryBatch [encodeFwdElement fwd verifiedMsg] of
+      Left e -> toView $ CEvtChatErrors [e]
+      Right body -> void $ withAgent $ \a -> sendMessages a [(aConnId conn, PQEncOff, MsgFlags False, VRValue Nothing body)]
 
 -- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupInfo -> GroupMember -> Connection -> CM ()

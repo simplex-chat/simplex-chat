@@ -30,7 +30,7 @@ import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Ord (Down (..))
 import Data.Word (Word8)
-import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
+import Simplex.Chat.Controller (ChatError)
 import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
@@ -55,7 +55,7 @@ data MsgBatch = MsgBatch ByteString [SndMessage]
 -- BMBinary mode: Binary format =<count>(<len:2><body>)*
 -- Preserves original errors in the list.
 -- If a single element is passed, it is returned as is.
--- If an element exceeds maxLen, it is returned as ChatError.
+-- An element over maxLen is sent alone, to be compressed or rejected by the sender.
 -- Elements are encoded with signature prefix via encodeBatchElement.
 batchMessages :: BatchMode -> Int -> [Either ChatError SndMessage] -> [Either ChatError MsgBatch]
 batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
@@ -64,14 +64,12 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
     addToBatch (Left err) acc = (Left err : addBatch acc, [], [], 0, 0) -- step over original error
     addToBatch (Right msg@SndMessage {msgBody, signedMsg_}) acc@(batches, bodies, msgs, len, n)
       | n' <= maxBatchElementCount && batchLen mode len' n' <= maxLen = (batches, body : bodies, msg : msgs, len', n')
-      | msgLen <= maxLen = (addBatch acc, [body], [msg], msgLen, 1)
-      | otherwise = (errLarge msg : addBatch acc, [], [], 0, 0)
+      | otherwise = (addBatch acc, [body], [msg], msgLen, 1)
       where
         body = encodeBatchElement (if mode == BMBinary then signedMsg_ else Nothing) msgBody
         msgLen = B.length body
         len' = len + msgLen
         n' = n + 1
-        errLarge SndMessage {msgId} = Left $ ChatError $ CEInternalError ("large message " <> show msgId)
     addBatch :: ([Either ChatError MsgBatch], [ByteString], [SndMessage], Int, Int) -> [Either ChatError MsgBatch]
     addBatch (batches, bodies, msgs, _, n)
       | n == 0 = batches
