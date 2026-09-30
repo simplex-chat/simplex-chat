@@ -42,9 +42,9 @@ data StoreEnvironment = SEProduction | SETest
 
 -- | The reasons are for the service's log alone and must never quote the receipt.
 data StoreRefusal
-  = SRInvalid Text -- the store does not vouch for it: forged, malformed, another app's, unknown or refunded
+  = SRInvalid Text -- a verdict that cannot change, and the client consumes the purchase: forged, malformed, another app's, refunded
   | SRPending -- a real purchase the store has not settled; it may yet
-  | SRUnreachable Text -- the store was not asked, or did not answer
+  | SRUnreachable Text -- no verdict: the store was not asked, did not answer, or does not know the token (a Play 404 may be lag)
   | SRVerifierFailed Text -- a bug, not the store's answer
   | SRNotConfigured -- no verifier for this store is deployed; the purchase may be real
   deriving (Eq, Show)
@@ -78,7 +78,9 @@ storeReceipt StoreVerifier {verifyApple, verifyGoogle, verifyTimeout} = \case
   SPGoogle {productId, token}
     -- the claim is the token's hash, so neither string may name any purchase but the one it claims,
     -- whatever path a verifier builds from them
-    | not (googleProductId productId && googleToken token) -> Just $ Left $ SRInvalid "not a Play product id and token"
+    | not (googleProductId productId) -> Just $ Left $ SRInvalid "not a Play product id"
+    -- Play documents no token grammar, so this is our guess, and refusing to ask Play is not its verdict
+    | not (googleToken token) -> Just $ Left $ SRUnreachable "a Play token this service will not send"
     | otherwise -> Just $ Right $ StoreReceipt PPGoogle (googlePurchaseRef token) $ maybe unconfigured (\verify -> online $ verify productId token) verifyGoogle
   SPInvoice {} -> Nothing
   SPReceipt {} -> Nothing

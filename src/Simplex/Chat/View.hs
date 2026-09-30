@@ -2880,7 +2880,7 @@ viewChatError isCmd logLevel testView = \case
             BREInvalidResponse m -> "invalid service response: " <> m
             BREUnknownKeyIndex -> "credential names an unknown badge key index"
             BRECredentialNotVerified -> "credential does not verify against configured key"
-       in ["cannot redeem badge code: " <> plain reason]
+       in ["cannot get badge: " <> plain reason]
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]
