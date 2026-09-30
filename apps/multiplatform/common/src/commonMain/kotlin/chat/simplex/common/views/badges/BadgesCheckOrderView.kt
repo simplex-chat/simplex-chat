@@ -80,24 +80,19 @@ private fun PayButton(level: BadgeLevel, period: BadgePeriod, purchasing: Mutabl
     labelId = labelId,
     labelArg = labelArg,
     onboarding = null,
-    enabled = price.canPurchase && !purchasing.value,
+    enabled = price.canPurchase && !purchasing.value && BadgeStore.canBuy(chatModel.currentUser.value?.userId),
     onclick = { purchase(level, period, purchasing) }
   )
 }
 
 private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: MutableState<Boolean>) {
-  val invoiceId = newBadgeInvoiceId()
   purchasing.value = true
   // not withBGApi: the purchase waits for the user in the Play sheet and would block chat API calls
   withLongRunningApi {
     try {
-      val outcome = BadgeStore.purchase(level, period, invoiceId)
-      if (outcome is BadgePurchaseOutcome.Purchased) {
-        if (outcome.receipt.productId !in badgeOneTimeProductIds) {
-          showPurchasedAlert(outcome.receipt, invoiceId)
-        } else {
-          BadgeStore.presentPurchase(outcome.receipt, interactive = true)
-        }
+      val (outcome, invoiceId) = BadgeStore.purchase(level, period)
+      if (outcome is BadgePurchaseOutcome.Purchased && outcome.receipt.productId !in badgeOneTimeProductIds) {
+        showPurchasedAlert(outcome.receipt, invoiceId)
       }
       purchasing.value = false
     } catch (e: Exception) {

@@ -85,6 +85,7 @@ private fun ChooseLevelButton(modalManager: ModalManager) {
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.badges_choose_your_badge_title,
     onboarding = null,
+    enabled = BadgeStore.canBuy(chatModel.currentUser.value?.userId),
     onclick = {
       modalManager.showModal { BadgesChooseBadgeView(modalManager) }
     }

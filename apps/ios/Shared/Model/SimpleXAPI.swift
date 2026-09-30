@@ -2204,8 +2204,8 @@ enum BadgePurchaseResponse {
 
 // log: false because a store receipt is a bearer secret, like a badge code - it is in the command.
 // nil when the user cancels the retry alert, which is offered only when retry is set.
-func apiPurchaseBadge(_ userId: Int64, _ payment: ServicePayment, retry: Bool) async throws -> BadgePurchaseResponse? {
-    let cmd = ChatCommand.apiPurchaseBadge(userId: userId, payment: payment)
+func apiPurchaseBadge(_ userId: Int64, _ echoedInvoiceId: String?, _ payment: ServicePayment, retry: Bool) async throws -> BadgePurchaseResponse? {
+    let cmd = ChatCommand.apiPurchaseBadge(userId: userId, echoedInvoiceId: echoedInvoiceId, payment: payment)
     let r: APIResult<ChatResponse2>?
     if retry {
         r = await chatApiSendCmdWithRetry(cmd, log: false)
@@ -2219,6 +2219,16 @@ func apiPurchaseBadge(_ userId: Int64, _ payment: ServicePayment, retry: Bool) a
     case .result(.badgePurchaseDelivered): return .deliveredToOtherProfile
     default: throw r.unexpected
     }
+}
+
+func apiCreateBadgeInvoice(_ userId: Int64) async throws -> String {
+    let r: ChatResponse2 = try await chatSendCmd(.apiCreateBadgeInvoice(userId: userId))
+    if case let .badgeInvoice(_, invoiceId) = r { return invoiceId }
+    throw r.unexpected
+}
+
+func apiCloseBadgeInvoice(_ userId: Int64, _ invoiceId: String) async throws {
+    try await sendCommandOkResp(.apiCloseBadgeInvoice(userId: userId, invoiceId: invoiceId))
 }
 
 // localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
@@ -2238,15 +2248,15 @@ func redeemErrorText(_ error: Error) -> String {
     return String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "alert message"), responseError(error))
 }
 
-func apiGetBadgeState(_ userId: Int64) async throws -> BadgeState? {
+func apiGetBadgeState(_ userId: Int64) async throws -> (badgeState: BadgeState?, storePurchases: [BadgeStorePurchase]) {
     let r: ChatResponse2 = try await chatSendCmd(.apiGetBadgeState(userId: userId))
-    if case let .badgeState(_, badgeState) = r { return badgeState }
+    if case let .badgeState(_, badgeState, storePurchases) = r { return (badgeState, storePurchases) }
     throw r.unexpected
 }
 
-func apiGetBadgeStateSync(_ userId: Int64) throws -> BadgeState? {
+func apiGetBadgeStateSync(_ userId: Int64) throws -> (badgeState: BadgeState?, storePurchases: [BadgeStorePurchase]) {
     let r: ChatResponse2 = try chatSendCmdSync(.apiGetBadgeState(userId: userId))
-    if case let .badgeState(_, badgeState) = r { return badgeState }
+    if case let .badgeState(_, badgeState, storePurchases) = r { return (badgeState, storePurchases) }
     throw r.unexpected
 }
 
@@ -2258,7 +2268,7 @@ func apiGetBadgeLedger(_ userId: Int64, _ badgePurchaseId: Int64) async throws -
 
 func apiAckBadgeAlert(_ userId: Int64, _ badgePurchaseId: Int64, _ alertKind: BadgeAlertKind, snooze: Bool, episode: String) async throws -> BadgeState? {
     let r: ChatResponse2 = try await chatSendCmd(.apiAckBadgeAlert(userId: userId, badgePurchaseId: badgePurchaseId, alertKind: alertKind, snooze: snooze, episode: episode))
-    if case let .badgeState(_, badgeState) = r { return badgeState }
+    if case let .badgeState(_, badgeState, _) = r { return badgeState }
     throw r.unexpected
 }
 
@@ -2454,17 +2464,21 @@ func getUserChatData() throws {
 private func loadBadgeState() {
     do {
         let userId = try currentUserId("loadBadgeState")
-        let badgeState = try apiGetBadgeStateSync(userId)
+        let (badgeState, storePurchases) = try apiGetBadgeStateSync(userId)
         BadgeModel.shared.set(userId: userId, badgeState: badgeState)
+        BadgeStore.shared.setStorePurchases(userId, storePurchases)
     } catch let error {
         logger.error("loadBadgeState: \(responseError(error))")
     }
 }
 
-private func loadBadgeStateAsync(_ userId: Int64) async {
+func loadBadgeStateAsync(_ userId: Int64) async {
     do {
-        let badgeState = try await apiGetBadgeState(userId)
-        await MainActor.run { BadgeModel.shared.set(userId: userId, badgeState: badgeState) }
+        let (badgeState, storePurchases) = try await apiGetBadgeState(userId)
+        await MainActor.run {
+            BadgeModel.shared.set(userId: userId, badgeState: badgeState)
+            BadgeStore.shared.setStorePurchases(userId, storePurchases)
+        }
     } catch let error {
         logger.error("loadBadgeState: \(responseError(error))")
     }

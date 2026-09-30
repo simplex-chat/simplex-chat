@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct BadgesCheckOrderView: View {
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var chatModel: ChatModel
     @ObservedObject private var store = BadgeStore.shared
     let level: BadgeLevel
     let period: BadgePeriod
@@ -75,7 +76,7 @@ struct BadgesCheckOrderView: View {
 
     private func payButton() -> some View {
         let price = store.price(level, period)
-        let disabled = !price.canPurchase || purchasing
+        let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId)
         return Button {
             purchase()
         } label: {
@@ -86,11 +87,11 @@ struct BadgesCheckOrderView: View {
     }
 
     private func purchase() {
-        let invoiceId = newBadgeInvoiceId()
         purchasing = true
         Task {
             do {
-                if case let .purchased(receipt) = try await store.purchase(level, period, invoiceId: invoiceId) {
+                let (outcome, invoiceId) = try await store.purchase(level, period)
+                if case let .purchased(receipt) = outcome {
                     if !badgeOneTimeProductIds.contains(receipt.productId) {
                         await MainActor.run { showPurchasedAlert(receipt, invoiceId) }
                     } else if !receipt.signatureVerified {
@@ -98,13 +99,11 @@ struct BadgesCheckOrderView: View {
                             alert = SomeAlert(
                                 alert: mkAlert(
                                     title: "Cannot verify this purchase",
-                                    message: "The store returned a transaction that Apple has not signed. Nothing has been bought."
+                                    message: "The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store."
                                 ),
                                 id: "badgePurchaseUnverified"
                             )
                         }
-                    } else {
-                        await store.presentPurchase(receipt, interactive: true)
                     }
                 }
                 await MainActor.run { purchasing = false }

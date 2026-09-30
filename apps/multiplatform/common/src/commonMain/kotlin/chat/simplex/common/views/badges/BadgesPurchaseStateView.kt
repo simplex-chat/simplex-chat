@@ -54,10 +54,12 @@ private val BadgePurchaseState.title: StringResource
   get() = when (this) {
     BadgePurchaseState.Issuing -> MR.strings.badges_issuing_title
     BadgePurchaseState.WaitingForApproval -> MR.strings.badges_waiting_for_approval_title
+    BadgePurchaseState.Checking -> MR.strings.badges_checking_title
   }
 
 private val BadgePurchaseState.message: StringResource
   get() = when (this) {
     BadgePurchaseState.Issuing -> MR.strings.badges_issuing_body
     BadgePurchaseState.WaitingForApproval -> MR.strings.badges_waiting_for_approval_body
+    BadgePurchaseState.Checking -> MR.strings.badges_checking_body
   }

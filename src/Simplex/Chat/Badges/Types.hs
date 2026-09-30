@@ -30,6 +30,7 @@ module Simplex.Chat.Badges.Types
     BadgeAlert (..),
     BadgeAlertPrice (..),
     BadgeState (..),
+    BadgeStorePurchase (..),
   ) where
 
 import Control.Applicative ((<|>))
@@ -282,6 +283,14 @@ data BadgeState = BadgeState
   }
   deriving (Show)
 
+-- | A store purchase this profile started or presented, neither credited nor closed. Neither
+-- reference is a secret: Apple's is the transaction id, Google's is a hash of the token.
+data BadgeStorePurchase = BadgeStorePurchase
+  { invoiceId :: Maybe Text,
+    transactionRef :: Maybe Text
+  }
+  deriving (Show)
+
 instance TextEncoding BadgePurchaseStatus where
   textEncode = \case
     PSAcquiring -> "acquiring"
@@ -413,3 +422,5 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "BIF") ''BadgeIssueFailure)
 $(JQ.deriveJSON defaultJSON ''BadgeIssueError)
 
 $(JQ.deriveJSON defaultJSON ''BadgeState)
+
+$(JQ.deriveJSON defaultJSON ''BadgeStorePurchase)

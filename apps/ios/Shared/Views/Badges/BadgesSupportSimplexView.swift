@@ -11,6 +11,8 @@ import SimpleXChat
 
 struct BadgesSupportSimplexView: View {
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var chatModel: ChatModel
+    @ObservedObject private var store = BadgeStore.shared
     // set true when presented as a sheet root (from the chat-list banner) — that path doesn't
     // reserve nav-bar space like a NavigationLink push does, so the title lands too close to the top
     var showsAsSheet: Bool = false
@@ -69,13 +71,15 @@ struct BadgesSupportSimplexView: View {
     }
 
     private func chooseLevelButton() -> some View {
-        ZStack {
+        let disabled = !store.canBuy(chatModel.currentUser?.userId)
+        return ZStack {
             Button {
                 chooseLevelActive = true
             } label: {
                 Text("Choose your badge")
             }
-            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+            .buttonStyle(OnboardingButtonStyle(isDisabled: disabled))
+            .disabled(disabled)
 
             NavigationLink(isActive: $chooseLevelActive) {
                 BadgesChooseBadgeView()

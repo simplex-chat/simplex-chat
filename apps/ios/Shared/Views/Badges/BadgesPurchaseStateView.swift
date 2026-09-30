@@ -44,6 +44,7 @@ struct BadgesPurchaseStateView: View {
         switch purchaseState {
         case .issuing: "Issuing your badge"
         case .waitingForApproval: "Waiting for approval"
+        case .checking: "Checking your purchase"
         }
     }
 
@@ -51,6 +52,7 @@ struct BadgesPurchaseStateView: View {
         switch purchaseState {
         case .issuing: "The store has taken the payment. Keeps trying if you close the app."
         case .waitingForApproval: "Nothing has been charged."
+        case .checking: "The store has not confirmed a purchase yet."
         }
     }
 }

@@ -36,6 +36,7 @@ import Data.Char (toLower)
 import Data.Either (isLeft, isRight)
 import Data.Int (Int64)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
+import Data.List (stripPrefix)
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust, isNothing)
 import Data.String (fromString)
@@ -138,6 +139,11 @@ badgeServiceTests = do
     it "should answer a receipt presented under a second profile as the profile that bought it" testPurchaseSameReceiptOtherProfile
     it "should deliver a purchase first presented under another profile to that profile" testPurchaseStrandedUnderOtherProfile
     it "should deliver a purchase to a hidden profile without naming it" testPurchaseDeliveredToHiddenProfile
+    it "should credit a receipt to the profile that created its invoice, and answer the presenter as delivered" testInvoiceOtherProfile
+    it "should resolve the same receipt to the same record, and replay its credential" testInvoiceSameReceiptTwice
+    it "should credit a receipt naming an unknown invoice to the presenting profile" testInvoiceUnknown
+    it "should reopen a closed record for a late receipt, and credit it" testInvoiceReopened
+    it "should close only a record no receipt has reached" testInvoiceClose
 
 badgeProfile :: Profile
 badgeProfile = Profile {displayName = "SimpleX Badges", fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing, badge = Nothing, contactDomain = Nothing}
@@ -1733,3 +1739,99 @@ testPurchaseDeliveredToHiddenProfile ps =
       (alice </)
       alice ##> "/user alice password"
       showActiveUser alice "alice (Alice, * supporter)"
+
+testInvoiceOtherProfile :: HasCallStack => TestParams -> IO ()
+testInvoiceOtherProfile ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      invoiceId <- createInvoice alice 1
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> purchaseWithInvoice 2 invoiceId supporterPlay
+      alice <## "badge purchase delivered to another profile"
+      (alice </)
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True, False)]
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice, * supporter)"
+
+testInvoiceSameReceiptTwice :: HasCallStack => TestParams -> IO ()
+testInvoiceSameReceiptTwice ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      invoiceId <- createInvoice alice 1
+      alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
+      alice <## "badge already redeemed"
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True, False)]
+      rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+
+testInvoiceUnknown :: HasCallStack => TestParams -> IO ()
+testInvoiceUnknown ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      -- a reinstall or a second device: the store echoes an invoice this database never created
+      let unknown = "0b6a5e6c-4f3e-4d51-9f55-3a0f7c2f9e11"
+      alice ##> purchaseWithInvoice 2 unknown supporterPlay
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      storeReceiptRows (chatController alice) `shouldReturn` [(2, Just (T.pack unknown), True, False)]
+
+testInvoiceReopened :: HasCallStack => TestParams -> IO ()
+testInvoiceReopened ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      invoiceId <- createInvoice alice 1
+      alice ##> ("/_badge invoice close 1 " <> invoiceId)
+      alice <## "ok"
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), False, True)]
+      alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True, False)]
+
+testInvoiceClose :: HasCallStack => TestParams -> IO ()
+testInvoiceClose ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsStore = store} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      invoiceId <- createInvoice alice 1
+      alice ##> "/_badge state 1"
+      alice <## ("store purchase open: invoice " <> invoiceId)
+      alice ##> ("/_badge invoice close 1 " <> invoiceId)
+      alice <## "ok"
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), False, True)]
+      -- the late receipt finds the closed record, so a presented record exists and cannot be closed
+      let unsettled = googlePayment "badge_supporter_01" googlePendingToken
+      alice ##> purchaseWithInvoice 1 invoiceId unsettled
+      alice <## "cannot redeem badge code: badge service error: payment_pending"
+      alice ##> ("/_badge invoice close 1 " <> invoiceId)
+      alice <## "ok"
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True, False)]
+      settlePending store
+      alice ##> purchaseWithInvoice 1 invoiceId unsettled
+      alice <## "badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
+
+createInvoice :: HasCallStack => TestCC -> Int -> IO String
+createInvoice cc userId = do
+  cc ##> ("/_badge invoice " <> show userId)
+  line <- getTermLine cc
+  maybe (error $ "expected an invoice, got " <> line) pure $ stripPrefix "badge invoice: " line
+
+purchaseWithInvoice :: Int -> String -> ServicePayment -> String
+purchaseWithInvoice userId invoiceId payment = "/_badge purchase " <> show userId <> " invoice=" <> invoiceId <> " " <> paymentArg payment
+
+-- | Each store purchase record's profile, invoice id, whether a receipt reached it, and whether it is closed.
+storeReceiptRows :: ChatController -> IO [(Int64, Maybe Text, Bool, Bool)]
+storeReceiptRows ChatController {chatStore} =
+  withTransaction chatStore $ \db ->
+    DB.query_ db $
+      "SELECT user_id, invoice_id, transaction_ref IS NOT NULL, closed_at IS NOT NULL "
+        <> "FROM badge_store_receipts ORDER BY badge_store_receipt_id"

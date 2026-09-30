@@ -21,6 +21,9 @@ module Simplex.Chat.Store.Badges
     getBadgeCodeRedemption,
     createBadgeCodeRedemption,
     getBadgeStoreReceiptUserId,
+    attachBadgeStoreReceipt,
+    closeBadgeStoreInvoice,
+    getOpenBadgeStorePurchases,
     getBadgeStoreReceipt,
     createBadgeStoreReceipt,
     deleteBadgeStash,
@@ -36,6 +39,7 @@ module Simplex.Chat.Store.Badges
 where
 
 import Control.Concurrent.STM (TVar, atomically)
+import Control.Monad (forM, forM_, join)
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
@@ -47,7 +51,7 @@ import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..))
+import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), BadgeStorePurchase (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (UserId)
@@ -114,6 +118,47 @@ getBadgeStoreReceiptUserId db StoreTransactionRef {provider, transactionRef} =
   maybeFirstRow fromOnly $
     DB.query db "SELECT user_id FROM badge_store_receipts WHERE provider = ? AND transaction_ref = ?" (provider, transactionRef)
 
+-- | The profile a receipt belongs to, attaching it to the record created when Buy was tapped. A
+-- transaction already attached stays with its record, whose keys the service may have credited.
+attachBadgeStoreReceipt :: DB.Connection -> Maybe Text -> StoreTransactionRef -> IO (Maybe UserId)
+attachBadgeStoreReceipt db invoiceId_ txRef@StoreTransactionRef {provider, transactionRef} =
+  getBadgeStoreReceiptUserId db txRef >>= \case
+    Just userId -> pure $ Just userId
+    Nothing -> fmap join . forM invoiceId_ $ \invoiceId -> do
+      userId_ <-
+        maybeFirstRow fromOnly $
+          DB.query db "SELECT user_id FROM badge_store_receipts WHERE invoice_id = ? AND transaction_ref IS NULL" (Only invoiceId)
+      -- a closed record is reopened: new keys for a paid transaction would be refused as receipt_used,
+      -- and the badge the old keys were credited with would be lost
+      forM_ userId_ $ \_ ->
+        DB.execute
+          db
+          "UPDATE badge_store_receipts SET provider = ?, transaction_ref = ?, closed_at = NULL WHERE invoice_id = ?"
+          (provider, transactionRef, invoiceId)
+      pure userId_
+
+-- | Only a record no receipt has reached can be closed.
+closeBadgeStoreInvoice :: DB.Connection -> User -> Text -> UTCTime -> IO ()
+closeBadgeStoreInvoice db User {userId} invoiceId now =
+  DB.execute
+    db
+    "UPDATE badge_store_receipts SET closed_at = ? WHERE user_id = ? AND invoice_id = ? AND transaction_ref IS NULL"
+    (now, userId, invoiceId)
+
+getOpenBadgeStorePurchases :: DB.Connection -> User -> IO [BadgeStorePurchase]
+getOpenBadgeStorePurchases db User {userId} =
+  map (uncurry BadgeStorePurchase)
+    <$> DB.query
+      db
+      [sql|
+        SELECT r.invoice_id, r.transaction_ref
+        FROM badge_store_receipts r
+        WHERE r.user_id = ? AND r.closed_at IS NULL
+          AND NOT EXISTS (SELECT 1 FROM badge_purchases p WHERE p.badge_store_receipt_id = r.badge_store_receipt_id)
+        ORDER BY r.badge_store_receipt_id
+      |]
+      (Only userId)
+
 getBadgeStoreReceipt :: DB.Connection -> User -> StoreTransactionRef -> IO (Maybe BadgeStash)
 getBadgeStoreReceipt db User {userId} StoreTransactionRef {provider, transactionRef} =
   maybeFirstRow (toBadgeStash BSRStoreReceipt) $
@@ -126,17 +171,24 @@ getBadgeStoreReceipt db User {userId} StoreTransactionRef {provider, transaction
       |]
       (userId, provider, transactionRef)
 
-createBadgeStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> StoreTransactionRef -> UTCTime -> IO BadgeStash
-createBadgeStoreReceipt db g User {userId} StoreTransactionRef {provider, transactionRef} now = do
+-- | An invoice id another record already holds is not repeated: the record is then keyed by its transaction alone.
+createBadgeStoreReceipt :: DB.Connection -> TVar ChaChaDRG -> User -> Maybe Text -> Maybe StoreTransactionRef -> UTCTime -> IO BadgeStash
+createBadgeStoreReceipt db g User {userId} invoiceId_ txRef_ now = do
   (purchaseKey, purchasePrivKey) <- atomically $ C.generateKeyPair g
   masterKey@(BadgeMasterKey mk) <- generateMasterKey g
+  invoiceId' <- fmap join . forM invoiceId_ $ \invoiceId -> do
+    taken <- DB.query db "SELECT badge_store_receipt_id FROM badge_store_receipts WHERE invoice_id = ?" (Only invoiceId) :: IO [Only Int64]
+    pure $ if null taken then Just invoiceId else Nothing
+  let (provider_, transactionRef_) = case txRef_ of
+        Just StoreTransactionRef {provider, transactionRef} -> (Just provider, Just transactionRef)
+        Nothing -> (Nothing, Nothing)
   DB.execute
     db
     [sql|
-      INSERT INTO badge_store_receipts (user_id, provider, transaction_ref, purchase_key, purchase_priv_key, master_key, created_at)
-      VALUES (?,?,?,?,?,?,?)
+      INSERT INTO badge_store_receipts (user_id, invoice_id, provider, transaction_ref, purchase_key, purchase_priv_key, master_key, created_at)
+      VALUES (?,?,?,?,?,?,?,?)
     |]
-    (userId, provider, transactionRef, purchaseKey, purchasePrivKey, Binary mk, now)
+    ((userId, invoiceId', provider_, transactionRef_) :. (purchaseKey, purchasePrivKey, Binary mk, now))
   storeReceiptId <- insertedRowId db
   pure BadgeStash {stashRef = BSRStoreReceipt storeReceiptId, purchaseKey, purchasePrivKey, masterKey}
 

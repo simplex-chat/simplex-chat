@@ -21,7 +21,7 @@ fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
   // the card look is a modal setting, so the modal is composed here to follow the screen shown
   ModalView(close, cardScreen = shownBadge != null) {
     AnimatedContent(
-      targetState = shownBadge to BadgeStore.purchaseState,
+      targetState = shownBadge to BadgeStore.purchaseState(chatModel.currentUser.value?.userId),
       transitionSpec = { fadeIn() with fadeOut() },
       contentKey = { (badgeState, purchaseState) -> (badgeState != null) to purchaseState }
     ) { (badgeState, purchaseState) ->
@@ -41,7 +41,7 @@ fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
 // when Support SimpleX gives way to the purchase in flight
 @Composable
 fun CloseWhenPurchaseInFlight(modalManager: ModalManager) {
-  val inFlight = BadgeStore.purchaseState != null
+  val inFlight = BadgeStore.purchaseState(chatModel.currentUser.value?.userId) != null
   LaunchedEffect(inFlight) {
     if (inFlight) modalManager.closeModal()
   }
