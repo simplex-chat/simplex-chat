@@ -1489,6 +1489,8 @@ testMaintenanceModeWithFiles ps = withXFTPServer $ do
 
       threadDelay 500000
 
+      let backupDBs = [tmpPath ps <> "/alice_chat.db.bak", tmpPath ps <> "/alice_agent.db.bak"]
+      forM_ backupDBs $ \f -> B.writeFile f ""
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
@@ -1505,6 +1507,7 @@ testMaintenanceModeWithFiles ps = withXFTPServer $ do
       alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
       alice <## "ok"
       B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
+      forM_ backupDBs $ \f -> doesFileExist f `shouldReturn` False
     -- works after full restart
     withTestChat ps "alice" $ \alice -> testChatWorking alice bob
 

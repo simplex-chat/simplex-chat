@@ -32,6 +32,7 @@ import chat.simplex.common.views.chat.item.contentModerationPostLink
 import chat.simplex.common.views.chat.item.showContentBlockedAlert
 import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
+import chat.simplex.common.views.database.deleteDatabaseBackups
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
@@ -686,6 +687,10 @@ object ChatController {
       }
       apiStartChat()
       appPrefs.chatStopped.set(false)
+      if (appPrefs.encryptionStartedAt.get() != null) {
+        deleteDatabaseBackups()
+        appPrefs.encryptionStartedAt.set(null)
+      }
     } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat $e")
       throw e
