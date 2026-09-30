@@ -66,6 +66,18 @@ func getAppDirectory() -> URL {
     : getDocumentsDirectory()
 }
 
+public func excludeAppDataFromBackup() {
+    var values = URLResourceValues()
+    values.isExcludedFromBackup = true
+    for var dir in [getGroupContainerDirectory(), getDocumentsDirectory()] {
+        do {
+            try dir.setResourceValues(values)
+        } catch {
+            logger.error("FileUtils.excludeAppDataFromBackup error: \(error.localizedDescription)")
+        }
+    }
+}
+
 // Spec: spec/database.md#DB_FILE_PREFIX
 let DB_FILE_PREFIX = "simplex_v1"
 
