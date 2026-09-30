@@ -2744,8 +2744,11 @@ updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName,
       safeDeleteLDN db user localDisplayName
 
 setGroupDomainVerified :: DB.Connection -> User -> GroupInfo -> Bool -> Maybe UTCTime -> IO GroupInfo
-setGroupDomainVerified db User {userId} g@GroupInfo {groupId} verified expiresAt = do
+setGroupDomainVerified db User {userId} g@GroupInfo {groupId, businessChat} verified expiresAt = do
   currentTs <- getCurrentTime
+  when verified $ do
+    domain_ <- maybeFirstRow fromOnly $ DB.query db "SELECT gp.group_domain FROM groups g JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id WHERE g.user_id = ? AND g.group_id = ? AND gp.group_domain IS NOT NULL" (userId, groupId)
+    forM_ domain_ $ unverifyNameChats db userId (if isJust businessChat then NTContact else NTPublicGroup)
   DB.execute
     db
     "UPDATE groups SET group_domain_verified = ?, group_domain_resolved_at = ?, group_domain_expires_at = ? WHERE user_id = ? AND group_id = ?"

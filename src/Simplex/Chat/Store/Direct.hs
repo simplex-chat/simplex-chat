@@ -52,6 +52,7 @@ module Simplex.Chat.Store.Direct
     getContactIdByName,
     updateContactProfile,
     setContactDomainVerified,
+    unverifyNameChats,
     getContactDomainResolution,
     updateContactUserPreferences,
     updateContactAlias,
@@ -112,11 +113,11 @@ import Data.Type.Equality
 import Simplex.Chat.Badges (badgeToRow)
 import Simplex.Chat.Messages
 import Simplex.Chat.Store.Shared
-import Simplex.Chat.Names (SimplexDomainClaim (..))
+import Simplex.Chat.Names (SimplexDomainClaim (..), claimDomain)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), SConnectionMode (..), SimplexNameInfo (..), UserId)
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), SConnectionMode (..), SimplexDomain, SimplexNameInfo (..), SimplexNameType (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -592,8 +593,9 @@ updateContactProfile db cxt user@User {userId} c p' = do
             pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
 
 setContactDomainVerified :: DB.Connection -> User -> Contact -> Bool -> Maybe UTCTime -> IO Contact
-setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p} verified expiresAt = do
+setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p@LocalProfile {contactDomain}} verified expiresAt = do
   currentTs <- getCurrentTime
+  when verified $ forM_ contactDomain $ unverifyNameChats db userId NTContact . claimDomain
   DB.execute
     db
     [sql|
@@ -602,6 +604,21 @@ setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p} ve
     |]
     (BI verified, currentTs, expiresAt, userId, contactId)
   pure (ct {profile = p {contactDomainVerified = Just verified}} :: Contact)
+
+unverifyNameChats :: DB.Connection -> UserId -> SimplexNameType -> SimplexDomain -> IO ()
+unverifyNameChats db userId nameType domain = case nameType of
+  NTContact -> do
+    DB.execute db "UPDATE contact_profiles SET contact_domain_verified = 0 WHERE user_id = ? AND contact_domain = ? AND contact_domain_verified = 1" (userId, domain)
+    unverifyGroups " AND business_chat IS NOT NULL"
+  NTPublicGroup -> unverifyGroups " AND business_chat IS NULL"
+  where
+    unverifyGroups businessCond = DB.execute db (unverifyGroupsQuery <> businessCond) (userId, domain)
+    unverifyGroupsQuery =
+      [sql|
+        UPDATE groups SET group_domain_verified = 0
+        WHERE user_id = ? AND group_domain_verified = 1
+          AND group_profile_id IN (SELECT group_profile_id FROM group_profiles WHERE group_domain = ?)
+      |]
 
 getContactDomainResolution :: DB.Connection -> User -> Contact -> IO (Maybe (UTCTime, Maybe UTCTime))
 getContactDomainResolution db User {userId} Contact {profile = LocalProfile {profileId}} =

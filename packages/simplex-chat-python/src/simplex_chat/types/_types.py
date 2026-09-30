@@ -1537,6 +1537,7 @@ class ContactAddressPlan_ok(TypedDict):
     contactSLinkData_: NotRequired["ContactShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
     addressChanged: bool
+    existingChat_: NotRequired["ChatInfo"]
 
 class ContactAddressPlan_ownLink(TypedDict):
     type: Literal["ownLink"]
@@ -1984,6 +1985,7 @@ class GroupLinkPlan_ok(TypedDict):
     groupSLinkData_: NotRequired["GroupShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
     addressChanged: bool
+    existingChat_: NotRequired["ChatInfo"]
 
 class GroupLinkPlan_ownLink(TypedDict):
     type: Literal["ownLink"]

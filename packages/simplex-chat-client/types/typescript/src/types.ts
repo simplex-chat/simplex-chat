@@ -2211,6 +2211,7 @@ export namespace ContactAddressPlan {
     contactSLinkData_?: ContactShortLinkData
     ownerVerification?: OwnerVerification
     addressChanged: boolean
+    existingChat_?: ChatInfo
   }
 
   export interface OwnLink extends Interface {
@@ -2852,6 +2853,7 @@ export namespace GroupLinkPlan {
     groupSLinkData_?: GroupShortLinkData
     ownerVerification?: OwnerVerification
     addressChanged: boolean
+    existingChat_?: ChatInfo
   }
 
   export interface OwnLink extends Interface {

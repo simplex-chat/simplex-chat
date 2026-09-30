@@ -1426,10 +1426,12 @@ private func showNameWarningAlert(
     }
 }
 
-private func nameChatId(_ name: SimplexNameInfo?) async -> ChatId? {
-    guard let name else { return nil }
-    let plan = await apiConnectPlan(connLink: name.shortStr, resolveMode: .never, inProgress: BoxedValue(false))
-    return await MainActor.run { knownChatId(plan) }
+@MainActor private func nameChatId(_ chatInfo: ChatInfo?) -> ChatId? {
+    guard let chatInfo else { return nil }
+    if ChatModel.shared.getChat(chatInfo.id) == nil {
+        ChatModel.shared.addChat(Chat(chatInfo: chatInfo, chatItems: []))
+    }
+    return chatInfo.id
 }
 
 private func showOtherNameAlert(_ otherSimplexName: SimplexNameInfo, connectOtherButton: String, theme: AppTheme, dismiss: Bool, cleanup: (() -> Void)?) {
@@ -1605,10 +1607,10 @@ func planAndConnect(
                     }
                 case let .contactAddress(cap, _):
                     switch cap {
-                    case let .ok(contactSLinkData_, ownerVerification, addressChanged):
+                    case let .ok(contactSLinkData_, ownerVerification, addressChanged, existingChat_):
                         if let contactSLinkData = contactSLinkData_ {
                             logger.debug("planAndConnect, .contactAddress, .ok, short link data present")
-                            let existingChatId = await nameChatId(filterKnownContact == nil && addressChanged ? planSimplexName : nil)
+                            let existingChatId = await nameChatId(filterKnownContact == nil ? existingChat_ : nil)
                             await MainActor.run {
                                 showPrepareContactAlert(
                                     connectionLink: connectionLink,
@@ -1699,10 +1701,10 @@ func planAndConnect(
                     }
                 case let .groupLink(glp, _):
                     switch glp {
-                    case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification, addressChanged):
+                    case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification, addressChanged, existingChat_):
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
-                            let existingChatId = await nameChatId(filterKnownGroup == nil && addressChanged ? planSimplexName : nil)
+                            let existingChatId = await nameChatId(filterKnownGroup == nil ? existingChat_ : nil)
                             await MainActor.run {
                                 showPrepareGroupAlert(
                                     connectionLink: connectionLink,

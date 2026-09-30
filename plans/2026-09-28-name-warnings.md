@@ -129,7 +129,7 @@ When the name is resolved and has a live link of the kind not planned, `otherSim
 | 4 | Bare name; a chat that is not fresh; the name also leads to the other kind at a link the user has no chat at (e.g. channel `#bakery`, the name now has only a contact link; or contact `@bakery`, the name has both) | the channel's plan if the name has a channel link, else the contact's; the local chat is shown only as the other kind's button, if at all | the local chat, and 3e: "bakery.simplex also leads to …", with Join channel or Connect |
 | 7 | A chat; the name leads to a new link whose profile does not claim the name | the "Unconfirmed name" error alert | the chat, no alert |
 | 8 | A chat that is not fresh; the request fails | the "SimpleX name error" alert | the chat, no alert |
-| 9 | A chat; the name leads to a new link; from a message | 3c with Open new chat, Cancel | 3c with Open new chat, Open existing chat (opens the chat that the name's local lookup finds), and no Cancel |
+| 9 | A chat; the name leads to a new link; from a message | 3c with Open new chat, Cancel | 3c with Open new chat, Open existing chat (opens the plan's `existingChat_`), and no Cancel |
 | 10 | A chat; the name is available | "Name no longer registered", "from $X per year" | the same alert, "$Y for 2 years" |
 | 11 | Own address or channel; the name leads to another link | "Connect to yourself?", or the own channel | 3c: "alice.simplex now leads to a new address", as for a chat, including 9 |
 | 14 | Own; the name is available | "Your name has expired", "from $X per year" | the same alert, "$Y for 2 years" |
@@ -191,7 +191,7 @@ Each returns the plan for what it finds, and whether it is fresh. It reads the c
 5. `nameLinkOrWarning` gives either:
    - **a link L:**
      - own at L is answered as found, and a chat at L is confirmed (`setContactDomainVerified`, `setGroupDomainVerified`, or the channel's refresh from its link data);
-     - otherwise the plan for L, with `addressChanged` if something was local; if L's profile does not claim the name and something was local, answer with it instead;
+     - otherwise the plan for L, with `addressChanged` and `existingChat_` (the local chat or own channel) if something was local; if L's profile does not claim the name and something was local, answer with it instead;
    - **a warning:** the local plan with `setNameWarning`, or `CPNameNotConnectable d` with the warning.
 
 **A link target** keeps today's steps: a local chat is answered, and `resolve=all` refreshes a known channel from its link data.
@@ -233,7 +233,7 @@ A missing `graceUntil` drops the second clause of the expiry lines. `otherSimple
   - every other plan proceeds as today.
 
   There is no `isOwn`, `notConnectable`, `hasLocalChat`, expiry or length logic in either app.
-- **3c from a message.** The buttons are Open new chat (Open new channel) and Open existing chat, with no Cancel. Open existing chat is offered only when the name's local lookup (`resolve=never`) finds a chat, so the own address gets Cancel (N20).
+- **3c from a message.** The buttons are Open new chat (Open new channel) and Open existing chat, with no Cancel. Open existing chat opens the plan's `existingChat_`, which core leaves empty for the own address, so it gets Cancel (N20).
 - **Name search.** The "Connect to" row passes the filters, as a pasted link does (N17).
 - **Types.** Kotlin and Swift get `NameWarning` and `NamePrice` in place of `NameRegistration` and `NamePricing`. The hand-written Swift decoder for `NameRegistration` goes away: `NameWarning` is chat's own type and derives like its neighbours.
 - **Strings.** The price strings change from "from %s per year" to "%s for %d years". 3e needs a title, a message and its buttons.
@@ -269,7 +269,7 @@ Decided:
 | N7 | The name no longer has a link of a chat's or own's kind | not reported |
 | N8 | The other kind | offered for bare names only, unless the user has a chat, own address or own channel of that kind at its link |
 | N9 | Own address or channel at another link than the name's | 3c, as for a chat |
-| N10 | 3c from a message | Open new chat, and Open existing chat (the chat found by the name's local lookup), no Cancel |
+| N10 | 3c from a message | Open new chat, and Open existing chat (the plan's `existingChat_`), no Cancel |
 | N11 | Not registered (reserved for another reason, or too short), with a chat or own | not reported |
 | N12 | The new link does not claim the name, with a chat or own | the local one, no alert |
 | N15 | The request failed | with a chat: the chat, no alert; with own or nothing: the error alert |

@@ -176,6 +176,7 @@ toTypeInfo tr =
       "PQEncryption" -> ST TBool []
       "PQSupport" -> ST TBool []
       "ACreatedConnLink" -> ST "CreatedConnLink" []
+      "AChatInfo" -> ST "ChatInfo" []
       "UserChatRelay'" -> ST "UserChatRelay" []
       "CChatItem" -> ST "ChatItem" []
       "FormatColor" -> ST "Color" []
