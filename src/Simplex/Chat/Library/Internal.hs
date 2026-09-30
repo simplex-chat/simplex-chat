@@ -2438,16 +2438,18 @@ batchSendConnMessagesB mode _user conn msgFlags msgs_ = do
 batchSndMessagesJSON :: BatchMode -> NonEmpty (Either ChatError SndMessage) -> [Either ChatError MsgBatch]
 batchSndMessagesJSON mode = batchMessages mode maxEncodedMsgLength . L.toList
 
-compressConnInfo :: PQSupport -> MsgBody -> CM MsgBody
-compressConnInfo pqSup connInfo
-  | B.length connInfo <= maxLen = pure connInfo
-  | B.length connInfo' <= maxLen = pure connInfo'
-  | otherwise = throwChatError $ CEException "large compressed info"
+compressToLimit :: MonadError ChatError m => Int -> MsgBody -> m MsgBody
+compressToLimit maxLen s
+  | B.length s <= maxLen = pure s
+  | B.length s' <= maxLen = pure s'
+  | otherwise = throwError $ ChatError $ CEException "large compressed body"
   where
-    maxLen = case pqSup of
-      PQSupportOn -> maxEncodedInfoLengthPQ
-      _ -> maxEncodedInfoLength
-    connInfo' = compressedBatchMsgBody_ connInfo
+    s' = compressedBatchMsgBody_ s
+
+compressConnInfo :: PQSupport -> MsgBody -> CM MsgBody
+compressConnInfo pqSup = compressToLimit $ case pqSup of
+  PQSupportOn -> maxEncodedInfoLengthPQ
+  _ -> maxEncodedInfoLength
 
 encodeConnInfo :: MsgEncodingI e => ChatMsgEvent e -> CM ByteString
 encodeConnInfo = encodeConnInfoPQ PQSupportOff
@@ -2501,21 +2503,20 @@ deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
 deliverMessagesB :: NonEmpty (Either ChatError ChatMsgReq) -> CM (NonEmpty (Either ChatError ([Int64], PQEncryption)))
 deliverMessagesB msgReqs = do
-  msgReqs' <- if any connSupportsPQ msgReqs then liftIO compressBodies else pure msgReqs
+  msgReqs' <- liftIO compressBodies
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent (`sendMessagesB` snd (mapAccumL toAgent Nothing msgReqs'))
   lift . void $ withStoreBatch' $ \db -> map (updatePQSndEnabled db) (rights . L.toList $ sent)
   lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
+    -- bodies are shared between connections, so any connection with PQ support reduces the limit for all
+    maxLen = if any connSupportsPQ msgReqs then maxEncodedMsgLengthPQ else maxEncodedMsgLength
     connSupportsPQ = \case
       Right (Connection {pqSupport = PQSupportOn}, _, _) -> True
       _ -> False
     compressBodies =
       forME msgReqs $ \(conn, msgFlags, (mbr, msgIds)) -> runExceptT $ do
         mbr' <- case mbr of
-          VRValue i msgBody | B.length msgBody > maxEncodedMsgLengthPQ -> do
-            let msgBody' = compressedBatchMsgBody_ msgBody
-            when (B.length msgBody' > maxEncodedMsgLengthPQ) $ throwError $ ChatError $ CEException "large compressed message"
-            pure $ VRValue i msgBody'
+          VRValue i msgBody -> VRValue i <$> compressToLimit maxLen msgBody
           v -> pure v
         pure (conn, msgFlags, (mbr', msgIds))
     toAgent prev = \case
