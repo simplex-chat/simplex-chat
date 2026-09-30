@@ -57,9 +57,11 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import qualified Simplex.FileTransfer.Description as FD
+import Simplex.Messaging.Agent.Protocol (e2eEncAgentMsgLength, e2eEncConnInfoLength)
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1, decompressedSize)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.Ratchet (PQSupport, pattern PQSupportOn)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
@@ -924,9 +926,21 @@ $(JQ.deriveJSON defaultJSON ''MsgContainer)
 maxEncodedMsgLength :: Int
 maxEncodedMsgLength = 15602
 
--- maxEncodedMsgLength - 2222, see e2eEncUserMsgLength in agent
+-- The agent pads messages and connection info to fixed sizes, smaller when the connection supports PQ.
+-- Both limits below subtract from the agent capacity what the agent wraps around the payload.
+
+-- message header ('M' tag, sender id, previous message hash, A_MSG tag) and padding length
+msgEnvelopeLength :: Int
+msgEnvelopeLength = 45
+
+-- confirmation header ('D' tag, one reply queue) and padding length;
+-- payloadLimitTests checks the reserve against a preset server with an onion host
+connInfoEnvelopeLength :: Int
+connInfoEnvelopeLength = 300
+
+-- only the limit with PQ is used: batches are capped at maxEncodedMsgLength, below the capacity without PQ
 maxCompressedMsgLength :: Int
-maxCompressedMsgLength = 13380
+maxCompressedMsgLength = e2eEncAgentMsgLength PQSupportOn - msgEnvelopeLength
 
 maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
@@ -960,13 +974,8 @@ rosterBlobP = do
   when (n > maxGroupRosterSize) $ fail "roster: too many entries"
   A.count n smpP
 
--- maxEncodedMsgLength - delta between MSG and INFO + 100 (returned for forward overhead)
--- delta between MSG and INFO = e2eEncUserMsgLength (no PQ) - e2eEncConnInfoLength (no PQ) = 1008
-maxEncodedInfoLength :: Int
-maxEncodedInfoLength = 14694
-
-maxCompressedInfoLength :: Int
-maxCompressedInfoLength = 10968 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
+maxCompressedInfoLength :: PQSupport -> Int
+maxCompressedInfoLength pqSup = e2eEncConnInfoLength pqSup - connInfoEnvelopeLength
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 

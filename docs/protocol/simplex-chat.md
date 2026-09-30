@@ -90,7 +90,7 @@ The syntax of compressed message is defined by the following ABNF notation:
 compressedMessage = %s"X" 1*15780 OCTET; compressed message data
 ```
 
-Compressed message is required to fit into 13388 bytes, accounting for agent overhead (see Protocol's maxCompressedMsgLength).
+A message to a connection with post-quantum encryption is compressed when it is over 13573 bytes, and the compressed message is required to fit into that size, accounting for agent overhead (see Protocol's maxCompressedMsgLength).
 
 The actual JSON message is required to fit into 15610 bytes, accounting for group message forwarding (x.grp.msg.forward) overhead (see Protocol's maxEncodedMsgLength).
 
