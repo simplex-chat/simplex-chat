@@ -50,6 +50,10 @@ private let CHAT_DB_BAK: String = "_chat.db.bak"
 
 private let AGENT_DB_BAK: String = "_agent.db.bak"
 
+private let CHAT_DB_EXPORTED: String = "_chat.db.exported"
+
+private let AGENT_DB_EXPORTED: String = "_agent.db.exported"
+
 // Spec: spec/database.md#getDocumentsDirectory
 public func getDocumentsDirectory() -> URL {
     FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -113,6 +117,8 @@ public func deleteAppDatabaseAndFiles() {
     }
     try? fm.removeItem(atPath: dbPath + CHAT_DB_BAK)
     try? fm.removeItem(atPath: dbPath + AGENT_DB_BAK)
+    try? fm.removeItem(atPath: dbPath + CHAT_DB_EXPORTED)
+    try? fm.removeItem(atPath: dbPath + AGENT_DB_EXPORTED)
     try? fm.removeItem(at: getTempFilesDirectory())
     try? fm.removeItem(at: getMigrationTempFilesDirectory())
     try? fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
@@ -210,6 +216,8 @@ public func removeLegacyDatabaseAndFiles() -> Bool {
     let r2 = nil != (try? fm.removeItem(atPath: dbPath.path + CHAT_DB))
     try? fm.removeItem(atPath: dbPath.path + AGENT_DB_BAK)
     try? fm.removeItem(atPath: dbPath.path + CHAT_DB_BAK)
+    try? fm.removeItem(atPath: dbPath.path + AGENT_DB_EXPORTED)
+    try? fm.removeItem(atPath: dbPath.path + CHAT_DB_EXPORTED)
     try? fm.removeItem(at: appFiles)
     return r1 && r2
 }
