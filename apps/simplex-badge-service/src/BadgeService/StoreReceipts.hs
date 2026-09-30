@@ -42,9 +42,9 @@ data StoreEnvironment = SEProduction | SETest
 
 -- | The reasons are for the service's log alone and must never quote the receipt.
 data StoreRefusal
-  = SRInvalid Text -- the store does not vouch for it: forged, malformed, another app's, unknown or refunded
+  = SRInvalid Text -- a verdict that cannot change, and the client consumes the purchase: forged, malformed, another app's, refunded
   | SRPending -- a real purchase the store has not settled; it may yet
-  | SRUnreachable Text -- the store was not asked, or did not answer
+  | SRUnreachable Text -- no verdict: the store was not asked, did not answer, or does not know the token (a Play 404 may be lag)
   | SRVerifierFailed Text -- a bug, not the store's answer
   | SRNotConfigured -- no verifier for this store is deployed; the purchase may be real
   deriving (Eq, Show)
