@@ -242,7 +242,7 @@ A missing `graceUntil` drops the second clause of the expiry lines. `otherSimple
 
 - **2a, 3c, 4a:** the other kind's button is shown for bare names only.
 - **3c:** also applies to the own address and channel. From a message, it shows Open new chat and Open existing chat, with no Cancel.
-- **3e (new):** a bare name matches a chat, and the name also leads to the other kind: "bakery.simplex also leads to channel #bakery.simplex", Join channel, OK. From a message it also shows Open existing chat.
+- **3e (new):** a bare name matches a chat or own channel, and the name also leads to the other kind: "bakery.simplex also leads to channel #bakery.simplex", Join channel, OK. From a message it also shows Open existing chat.
 - **Prices:** "$X for 2 years", computed from the registry's price. The amounts on the canvas are examples.
 - **3a:** unchanged: "Still leads to your chat, or not found, no valid link, another name, or the request failed" matches §3.
 

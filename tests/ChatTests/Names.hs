@@ -34,6 +34,7 @@ chatNamesTests :: SpecWith TestParams
 chatNamesTests = do
   it "connect by resolved name" testConnectByName
   it "connect by name not claimed in link profile is rejected" testConnectByNameNotClaimed
+  it "prepare with a name not claimed in link profile is not verified" testPrepareNameNotClaimed
   it "connect by name to a known contact not claimed in profile is rejected" testConnectByNameKnownContactNotClaimed
   it "connect by unregistered name reports it is available" testConnectByNameNotFound
   it "set name not resolving to own address is rejected" testSetNameNotOwnAddress
@@ -446,6 +447,25 @@ setContactNamesStale cc = withCCTransaction cc $ \db -> DB.execute_ db "UPDATE c
 
 setGroupNamesStale :: TestCC -> IO ()
 setGroupNamesStale cc = withCCTransaction cc $ \db -> DB.execute_ db "UPDATE groups SET group_domain_resolved_at = datetime('now', '-2 days')"
+
+testPrepareNameNotClaimed :: HasCallStack => TestParams -> IO ()
+testPrepareNameNotClaimed ps = withSmpServerAndNames $ \reg ->
+  testChat2 aliceProfile bobProfile (test reg) ps
+  where
+    test reg alice bob = do
+      mapM_ enableNamesRole [alice, bob]
+      alice ##> "/ad"
+      (shortLink, fullLink) <- getContactLinks alice True
+      registerName reg aliceSimplexName (contactNameRecord "alice.simplex" (T.pack shortLink))
+      alice ##> "/_set domain 1 alice.simplex"
+      alice <## "new contact address set"
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "contact address: ok to connect"
+      contactSLinkData <- getTermLine bob
+      bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " domain=bob.simplex " <> contactSLinkData)
+      bob <## "alice: contact is prepared"
+      bob ##> "/_connect plan 1 @alice.simplex resolve=never"
+      bob <## "no matching chat found, name resolution is disabled"
 
 testPlanNameReservedOther :: HasCallStack => TestParams -> IO ()
 testPlanNameReservedOther = withAliceName $ \reg _r _alice bob -> do

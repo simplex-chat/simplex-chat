@@ -1426,14 +1426,6 @@ private func showNameWarningAlert(
     }
 }
 
-@MainActor private func nameChatId(_ chatInfo: ChatInfo?) -> ChatId? {
-    guard let chatInfo else { return nil }
-    if ChatModel.shared.getChat(chatInfo.id) == nil {
-        ChatModel.shared.addChat(Chat(chatInfo: chatInfo, chatItems: []))
-    }
-    return chatInfo.id
-}
-
 private func showOtherNameAlert(_ otherSimplexName: SimplexNameInfo, connectOtherButton: String, theme: AppTheme, dismiss: Bool, cleanup: (() -> Void)?) {
     showAlert(
         String.localizedStringWithFormat(
@@ -1610,7 +1602,6 @@ func planAndConnect(
                     case let .ok(contactSLinkData_, ownerVerification, addressChanged, existingChat_):
                         if let contactSLinkData = contactSLinkData_ {
                             logger.debug("planAndConnect, .contactAddress, .ok, short link data present")
-                            let existingChatId = await nameChatId(filterKnownContact == nil ? existingChat_ : nil)
                             await MainActor.run {
                                 showPrepareContactAlert(
                                     connectionLink: connectionLink,
@@ -1620,7 +1611,7 @@ func planAndConnect(
                                     connectOtherButton: connectOtherButton,
                                     connectOtherLink: connectOtherLink,
                                     addressChanged: addressChanged,
-                                    openExistingChat: existingChatId.map { chatId in { openKnownChat(chatId, dismiss: dismiss, cleanup: cleanup) } },
+                                    openExistingChat: (filterKnownContact == nil ? existingChat_ : nil).map { chatInfo in { openKnownChat(chatInfo.id, dismiss: dismiss, cleanup: cleanup) } },
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1704,7 +1695,6 @@ func planAndConnect(
                     case let .ok(groupShortLinkInfo_, groupSLinkData_, ownerVerification, addressChanged, existingChat_):
                         if let groupSLinkData = groupSLinkData_ {
                             logger.debug("planAndConnect, .groupLink, .ok, short link data present")
-                            let existingChatId = await nameChatId(filterKnownGroup == nil ? existingChat_ : nil)
                             await MainActor.run {
                                 showPrepareGroupAlert(
                                     connectionLink: connectionLink,
@@ -1715,7 +1705,7 @@ func planAndConnect(
                                     connectOtherButton: connectOtherButton,
                                     connectOtherLink: connectOtherLink,
                                     addressChanged: addressChanged,
-                                    openExistingChat: existingChatId.map { chatId in { openKnownChat(chatId, dismiss: dismiss, cleanup: cleanup) } },
+                                    openExistingChat: (filterKnownGroup == nil ? existingChat_ : nil).map { chatInfo in { openKnownChat(chatInfo.id, dismiss: dismiss, cleanup: cleanup) } },
                                     theme: theme,
                                     dismiss: dismiss,
                                     cleanup: cleanup
@@ -1739,16 +1729,20 @@ func planAndConnect(
                         await MainActor.run {
                             if let f = filterKnownGroup {
                                 f(groupInfo)
+                                if let otherSimplexName = result.otherSimplexName, let connectOtherButton {
+                                    showOtherNameAlert(otherSimplexName, connectOtherButton: connectOtherButton, theme: theme, dismiss: dismiss, cleanup: cleanup)
+                                }
+                            } else {
+                                showOwnGroupLinkConfirmConnectSheet(
+                                    groupInfo: groupInfo,
+                                    connectionLink: connectionLink,
+                                    connectionPlan: connectionPlan,
+                                    connectOtherButton: connectOtherButton,
+                                    onConnectOther: connectOtherLink.map { link in { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup) } },
+                                    dismiss: dismiss,
+                                    cleanup: cleanup
+                                )
                             }
-                            showOwnGroupLinkConfirmConnectSheet(
-                                groupInfo: groupInfo,
-                                connectionLink: connectionLink,
-                                connectionPlan: connectionPlan,
-                                connectOtherButton: connectOtherButton,
-                                onConnectOther: connectOtherLink.map { link in { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup) } },
-                                dismiss: dismiss,
-                                cleanup: cleanup
-                            )
                         }
                     case .connectingConfirmReconnect:
                         logger.debug("planAndConnect, .groupLink, .connectingConfirmReconnect")

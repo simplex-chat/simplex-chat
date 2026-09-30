@@ -2181,6 +2181,8 @@ processChatCommand cxt nm = \case
   APIConnectPlan _ Nothing _ _ -> throwChatError CEInvalidConnReq
   APIPrepareContact userId accLink verifiedDomain contactSLinkData -> withUserId userId $ \user -> do
     let ContactShortLinkData {profile, message, business} = contactSLinkData
+        Profile {contactDomain} = profile
+        domain_ = if verifiedDomain == (claimDomain <$> contactDomain) then verifiedDomain else Nothing
     welcomeSharedMsgId <- forM message $ \_ -> getSharedMsgId
     case accLink of
       ACCL SCMContact ccLink
@@ -2189,7 +2191,7 @@ processChatCommand cxt nm = \case
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
             gVar <- asks random
-            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing verifiedDomain
+            (gInfo, hostMember_) <- withStore $ \db -> createPreparedGroup db gVar cxt user groupProfile True ccLink welcomeSharedMsgId False GRMember Nothing domain_
             hostMember <- maybe (throwCmdError "no host member") pure hostMember_
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
@@ -2202,7 +2204,7 @@ processChatCommand cxt nm = \case
                   _ -> Chat cInfo [] emptyChatStats
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
       ACCL _ (CCLink cReq _) -> do
-        ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink welcomeSharedMsgId (True <$ verifiedDomain)
+        ct <- withStore $ \db -> createPreparedContact db cxt user profile accLink welcomeSharedMsgId (True <$ domain_)
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing Nothing (Just epochStart)
         let cd = CDDirectRcv ct
             createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing Nothing
@@ -2215,9 +2217,10 @@ processChatCommand cxt nm = \case
               _ -> Chat cInfo [] emptyChatStats
         pure $ CRNewPreparedChat user $ AChat SCTDirect chat
   APIPrepareGroup userId ccLink direct verifiedDomain groupSLinkData -> withUserId userId $ \user -> do
-    let GroupShortLinkData {groupProfile = GroupProfile {description}} = groupSLinkData
+    let GroupShortLinkData {groupProfile = GroupProfile {description, publicGroup}} = groupSLinkData
+        domain_ = if verifiedDomain == (claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)) then verifiedDomain else Nothing
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
-    (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId verifiedDomain
+    (gInfo, hostMember_) <- preparedGroupFromLink user ccLink direct groupSLinkData welcomeSharedMsgId domain_
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing Nothing (Just epochStart)
     let cd = maybe (CDChannelRcv gInfo Nothing) (CDGroupRcv gInfo Nothing) hostMember_
         cInfo = GroupChat gInfo Nothing

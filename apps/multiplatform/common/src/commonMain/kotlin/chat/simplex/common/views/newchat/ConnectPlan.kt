@@ -290,7 +290,7 @@ private suspend fun planAndConnectTask(
               connectOtherButton = connectOtherButton,
               connectOtherLink = connectOtherLink,
               addressChanged = connectionPlan.contactAddressPlan.addressChanged,
-              openExistingChat = if (filterKnownContact == null) localNameChat(rhId, connectionPlan.contactAddressPlan.existingChat_)?.let { chat -> { openChat_(chatModel, rhId, close, chat); cleanup() } } else null,
+              openExistingChat = if (filterKnownContact == null) connectionPlan.contactAddressPlan.existingChat_?.let { chatInfo -> { openChat_(chatModel, rhId, close, Chat(remoteHostId = rhId, chatInfo = chatInfo, chatItems = emptyList())); cleanup() } } else null,
               close,
               cleanup
             )
@@ -388,7 +388,7 @@ private suspend fun planAndConnectTask(
               connectOtherButton = connectOtherButton,
               connectOtherLink = connectOtherLink,
               addressChanged = connectionPlan.groupLinkPlan.addressChanged,
-              openExistingChat = if (filterKnownGroup == null) localNameChat(rhId, connectionPlan.groupLinkPlan.existingChat_)?.let { chat -> { openChat_(chatModel, rhId, close, chat); cleanup() } } else null,
+              openExistingChat = if (filterKnownGroup == null) connectionPlan.groupLinkPlan.existingChat_?.let { chatInfo -> { openChat_(chatModel, rhId, close, Chat(remoteHostId = rhId, chatInfo = chatInfo, chatItems = emptyList())); cleanup() } } else null,
               close,
               cleanup
             )
@@ -410,6 +410,7 @@ private suspend fun planAndConnectTask(
           val groupInfo = connectionPlan.groupLinkPlan.groupInfo
           if (filterKnownGroup != null) {
             filterKnownGroup(groupInfo)
+            if (otherSimplexName != null && connectOtherButton != null) showOtherNameAlert(rhId, otherSimplexName, connectOtherButton, close, cleanup)
           } else {
             ownGroupLinkConfirmConnect(chatModel, rhId, connectionLink, linkText, connectionPlan, groupInfo, close, cleanup, planSimplexName = planSimplexName, connectOtherButton = connectOtherButton, connectOtherLink = connectOtherLink)
           }
@@ -887,9 +888,6 @@ fun showPrepareContactAlert(
     }
   )
 }
-
-private suspend fun localNameChat(rhId: Long?, chatInfo: ChatInfo?): Chat? =
-  chatInfo?.let { chatModel.getChat(it.id) ?: Chat(remoteHostId = rhId, chatInfo = it, chatItems = emptyList()).also { chat -> chatModel.chatsContext.addChat(chat) } }
 
 private fun showOtherNameAlert(rhId: Long?, otherSimplexName: SimplexNameInfo, connectOtherButton: String, close: (() -> Unit)?, cleanup: (() -> Unit)?) {
   AlertManager.privacySensitive.showAlertDialogButtonsColumn(
