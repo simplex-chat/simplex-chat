@@ -33,12 +33,14 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.badges.openBadgesView
 import chat.simplex.common.views.chat.group.hostFromRelayLink
 import chat.simplex.common.views.chat.group.relayConnStatus
 import chat.simplex.common.views.chat.item.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.RelayProgressIndicator
 import chat.simplex.common.views.newchat.RelayStatusIndicator
+import chat.simplex.common.views.newchat.noShownBadge
 import chat.simplex.common.views.newchat.relayDisplayName
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -115,7 +117,8 @@ data class ComposeState(
   val useLinkPreviews: Boolean,
   val mentions: MentionedMembers = emptyMap(),
   // the max file size the user may attach, raised by their active badge unless the chat is incognito; kept in sync on chat switch
-  val maxFileSize: Long = getMaxFileSize(FileProtocol.XFTP)
+  val maxFileSize: Long = getMaxFileSize(FileProtocol.XFTP),
+  val sendIncognito: Boolean = false
 ) {
   constructor(editingItem: ChatItem, liveMessage: LiveMessage? = null, useLinkPreviews: Boolean): this(
     ComposeMessage(
@@ -319,6 +322,24 @@ private fun isVideoUri(uri: URI): Boolean {
 
 private fun isWebmUri(uri: URI): Boolean = getFileName(uri)?.lowercase()?.endsWith(".webm") == true
 
+// A badge only helps below the largest badge's limit, and not in incognito chats, so outside that
+// the alert is informational as before.
+fun showLargeFileAlert(fileSize: Long, incognito: Boolean, senderProfile: LocalProfile?) {
+  val title = generalGetString(MR.strings.large_file)
+  val text = largeFileMessage(fileSize, incognito, expiredBadgeReason(fileSize, senderProfile))
+  if (!incognito && fileSize <= MAX_FILE_SIZE_XFTP_LEGEND && noShownBadge()) {
+    AlertManager.shared.showAlertDialog(
+      title = title,
+      text = text,
+      confirmText = generalGetString(MR.strings.ok),
+      dismissText = generalGetString(MR.strings.badges_support_simplex_title),
+      onDismiss = ::openBadgesView
+    )
+  } else {
+    AlertManager.shared.showAlertMsg(title, text)
+  }
+}
+
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
   if (uri != null) {
     val maxFileSize = value.maxFileSize
@@ -329,10 +350,7 @@ fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
         value = value.copy(message = if (text != null) ComposeMessage(text) else value.message, preview = ComposePreview.FilePreview(fileName, uri))
       }
     } else if (fileSize != null) {
-      AlertManager.shared.showAlertMsg(
-        generalGetString(MR.strings.large_file),
-        String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
-      )
+      showLargeFileAlert(fileSize, value.sendIncognito, chatModel.currentUser.value?.profile)
     } else {
       showWrongUriAlert()
     }
@@ -358,10 +376,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
             UploadContent.AnimatedImage(uri)
           } else {
             bitmap = null
-            AlertManager.shared.showAlertMsg(
-              generalGetString(MR.strings.large_file),
-              String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
-            )
+            showLargeFileAlert(fileSize ?: 0, value.sendIncognito, chatModel.currentUser.value?.profile)
             null
           }
         } else if (bitmap != null) {
@@ -1420,7 +1435,10 @@ fun ComposeView(
   // keep the attach size limit in sync with the chat: the user's active badge raises it, but not in incognito chats where no badge is presented
   LaunchedEffect(chat.chatInfo) {
     val incognito = if (chat.chatInfo.profileChangeProhibited) chat.chatInfo.incognito else chatModel.controller.appPrefs.incognito.get()
-    composeState.value = composeState.value.copy(maxFileSize = getMaxFileSize(FileProtocol.XFTP, if (incognito) null else chatModel.currentUser.value?.profile))
+    composeState.value = composeState.value.copy(
+      maxFileSize = getMaxFileSize(FileProtocol.XFTP, if (incognito) null else chatModel.currentUser.value?.profile),
+      sendIncognito = incognito
+    )
   }
   if (appPlatform.isDesktop) {
     // the same ComposeView is reused when switching chats, so `chat` captured by onDispose would be the chat opened first, not the current one

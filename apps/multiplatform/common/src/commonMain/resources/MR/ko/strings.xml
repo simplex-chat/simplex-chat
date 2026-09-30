@@ -31,7 +31,6 @@
     <string name="icon_descr_cancel_live_message">라이브 메시지 취소</string>
     <string name="choose_file">파일</string>
     <string name="confirm_verb">확인</string>
-    <string name="connect_via_link_or_qr">링크 / QR 코드로 연결</string>
     <string name="copied">클립보드로 복사됨</string>
     <string name="create_group">비밀 그룹 생성</string>
     <string name="accept_contact_button">수락</string>
@@ -42,7 +41,6 @@
     <string name="clear_chat_question">채팅을 지우겠습니까\?</string>
     <string name="connection_request_sent">연결 요청이 전송되었습니다!</string>
     <string name="connect_via_link">링크로 연결</string>
-    <string name="smp_servers_preset_add">프리셋 서버 추가</string>
     <string name="smp_servers_add">서버 추가</string>
     <string name="chat_console">채팅 콘솔</string>
     <string name="smp_servers_check_address">서버 주소를 확인 후 다시 시도해 주세요.</string>
@@ -62,7 +60,6 @@
     <string name="colored_text">색깔</string>
     <string name="confirm_password">암호 확인</string>
     <string name="callstatus_connecting">전화 연결 중…</string>
-    <string name="create_profile_button">생성</string>
     <string name="create_profile">프로필 생성</string>
     <string name="callstatus_error">통화 오류</string>
     <string name="callstate_connected">연결됨</string>
@@ -128,7 +125,6 @@
     <string name="v4_6_chinese_spanish_interface">중국어 및 스페인어 인터페이스</string>
     <string name="about_simplex">SimpleX에 대하여</string>
     <string name="accept">수락</string>
-    <string name="share_one_time_link">일회용 초대 링크 생성</string>
     <string name="create_address">주소 생성</string>
     <string name="chat_item_ttl_day">1일</string>
     <string name="about_simplex_chat">SimpleX Chat에 대하여</string>
@@ -184,7 +180,6 @@
     <string name="chat_is_stopped_indication">채팅이 멈춤</string>
     <string name="chat_preferences">채팅 설정</string>
     <string name="chat_with_developers">개발자와 채팅</string>
-    <string name="connect_via_link_verb">연결</string>
     <string name="display_name_connecting">연결 중…</string>
     <string name="icon_descr_close_button">닫기 버튼</string>
     <string name="connect_button">연결</string>
@@ -221,7 +216,6 @@
     <string name="delete_address">주소 삭제</string>
     <string name="delete_address__question">주소를 삭제할까요\?</string>
     <string name="delete_image">이미지 삭제</string>
-    <string name="decentralized">탈중앙화</string>
     <string name="settings_developer_tools">개발자 도구</string>
     <string name="settings_section_title_device">기기</string>
     <string name="database_passphrase">데이터베이스 암호</string>
@@ -357,7 +351,6 @@
     <string name="callstatus_missed">부재 중 전화</string>
     <string name="chat_item_ttl_none">사용 안 함</string>
     <string name="chat_with_the_founder">질문이나 아이디어 보내기</string>
-    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(스캔하거나 클립보드에서 붙여넣기)</string>
     <string name="contact_sent_large_file">대화 상대가 현재 지원되는 최대 크기(%1$s)보다 큰 파일을 보냈습니다.</string>
     <string name="display_name_invited_to_connect">초대를 받았어요.</string>
     <string name="failed_to_create_user_title">프로필 생성 오류!</string>
@@ -369,8 +362,6 @@
     <string name="description_via_contact_address_link_incognito">상대의 연락처 링크로 익명 연결</string>
     <string name="description_via_contact_address_link">상대의 연락처 링크로 연결</string>
     <string name="description_via_one_time_link_incognito">일회용 링크로 익명 연결</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">SMP 서버 주소가 올바른 형식이고 줄로 구분되어 있고 중복이 없는지 확인해 주세요.</string>
-    <string name="error_saving_smp_servers">SMP 서버 저장 오류</string>
     <string name="error_setting_network_config">네트워크 설정 업데이트 오류</string>
     <string name="failed_to_active_user_title">프로필 변경 오류!</string>
     <string name="failed_to_create_user_duplicate_desc">동일한 표시 이름을 가진 채팅 프로필이 있어요. 다른 이름을 선택해 주세요.</string>
@@ -516,7 +507,6 @@
     <string name="icon_descr_sent_msg_status_send_failed">보내기 실패</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">비인증 전송</string>
     <string name="icon_descr_help">도움말</string>
-    <string name="first_platform_without_user_ids">개인을 식별할 수 있는 어떠한 정보(임의의 숫자 포함)도 없는 첫 번째 플랫폼. 단순히 약속이 아니라 프로그램 설계상 완전한 익명성을 제공해요.</string>
     <string name="icon_descr_call_rejected">거절된 전화</string>
     <string name="icon_descr_call_pending_sent">대기 중인 전화</string>
     <string name="icon_descr_call_missed">부재중 전화</string>
@@ -526,7 +516,6 @@
     <string name="icon_descr_server_status_error">오류</string>
     <string name="how_to_use_simplex_chat">사용법</string>
     <string name="icon_descr_email">이메일</string>
-    <string name="icon_descr_server_status_pending">대기 중</string>
     <string name="icon_descr_settings">설정</string>
     <string name="icon_descr_waiting_for_image">이미지 기다리는 중</string>
     <string name="image_decoding_exception_desc">이미지를 디코딩할 수 없어요. 다른 이미지를 시도하거나 개발자에게 문의해 주세요.</string>
@@ -535,7 +524,6 @@
     <string name="images_limit_desc">동시에 최대 10개까지만 이미지를 보낼 수 있어요.</string>
     <string name="images_limit_title">이미지 수가 너무 많아요!</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">거절해도 상대에게 알림이 전송되지 않아요.</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[직접 만날 수 없다면 <b>영상 통화에서 QR 코드를 보여주거나</b> 링크를 공유해 주세요.]]></string>
     <string name="icon_descr_video_call">영상 통화</string>
     <string name="icon_descr_video_off">영상 끄기</string>
     <string name="icon_descr_speaker_on">스피커 켜기</string>
@@ -547,13 +535,11 @@
     <string name="image_will_be_received_when_contact_completes_uploading">대화 상대가 업로드를 완료하면 이미지가 수신될 거예요.</string>
     <string name="image_descr_profile_image">프로필 이미지</string>
     <string name="incognito_info_allows">하나의 프로필로 여러 사람과 연락할 필요 없이 무수히 많은 익명 프로필로 연락할 수 있어요.</string>
-    <string name="immune_to_spam_and_abuse">스팸 방지</string>
     <string name="ignore">무시하기</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">SimpleX Chat 초대 링크를 받으면 브라우저에서 참여할 수 있어요 :</string>
     <string name="image_descr_link_preview">링크 미리보기 이미지</string>
     <string name="image_descr_qr_code">QR 코드</string>
     <string name="icon_descr_simplex_team">SimpleX 팀</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[직접 만날 수 없다면 <b>영상 통화에서 QR 코드를 스캔</b>하거나 상대에게 초대 링크를 공유할 수 있어요.]]></string>
     <string name="icon_descr_video_snd_complete">동영상 보내짐</string>
     <string name="icon_descr_video_asked_to_receive">동영상 수신 요청됨</string>
     <string name="icon_descr_waiting_for_video">동영상 기다리는 중</string>
@@ -588,7 +574,6 @@
     <string name="incoming_video_call">영상 통화 옴</string>
     <string name="invalid_migration_confirmation">잘못된 이전 확인</string>
     <string name="join_group_incognito_button">익명 모드로 참여</string>
-    <string name="invalid_QR_code">잘못된 QR 코드</string>
     <string name="incorrect_code">잘못된 보안 코드!</string>
     <string name="invalid_contact_link">잘못된 링크!</string>
     <string name="marked_deleted_description">삭제됨으로 표시됨</string>
@@ -657,7 +642,6 @@
     <string name="network_use_onion_hosts_prefer_desc">사용 가능한 경우 Onion 호스트가 사용될 거예요.</string>
     <string name="network_use_onion_hosts_no_desc">Onion 호스트가 사용되지 않을 거예요.</string>
     <string name="network_session_mode_transport_isolation">전송 격리</string>
-    <string name="next_generation_of_private_messaging">차세대 사생활 보호 메시징</string>
     <string name="new_passphrase">새 암호…</string>
     <string name="network_option_enable_tcp_keep_alive">TCP 연결 유지 활성화</string>
     <string name="new_in_version">%s의 새로운 기능</string>
@@ -683,7 +667,6 @@
     <string name="ok">OK</string>
     <string name="reject_contact_button">거절</string>
     <string name="password_to_show">비밀번호 표시</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[사용자 디바이스에만 <b>2계층 종단 간 암호화</b> 로 전송된 사용자 프로필, 연락처, 그룹 및 메시지를 저장되어요.]]></string>
     <string name="privacy_and_security">개인 정보 보호 및 보안</string>
     <string name="notifications_will_be_hidden">알림은 앱이 중지되기 전까지만 전달될 거예요!</string>
     <string name="only_you_can_send_disappearing">당신만 사라지는 메시지를 보낼 수 있습니다.</string>
@@ -708,10 +691,7 @@
     <string name="one_time_link">일회성 초대 링크</string>
     <string name="paste_button">붙여넣기</string>
     <string name="profile_is_only_shared_with_your_contacts">프로필은 대화 상대들하고만 공유됩니다.</string>
-    <string name="privacy_redefined">프라이버시의 재정의</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">누구나 서버를 호스팅할 수 있습니다.</string>
     <string name="onboarding_notifications_mode_off">앱이 실행 중일 때</string>
-    <string name="read_more_in_github_with_link"><![CDATA[자세한 내용은 <font color="#0088ff">GitHub</font> 에서 확인해 주세요.]]></string>
     <string name="relay_server_protects_ip">릴레이 서버는 IP 주소를 숨겨주지만, 통화 시간을 관찰 할 수 있어요.</string>
     <string name="rcv_group_event_invited_via_your_group_link">그룹 링크로 초대</string>
     <string name="onboarding_notifications_mode_subtitle">설정을 통해 나중에 변경할 수 있어요.</string>
@@ -728,7 +708,6 @@
     <string name="paste_the_link_you_received">받은 링크 붙여넣기</string>
     <string name="relay_server_if_necessary">릴레이 서버는 필요한 경우에만 사용되어요. 릴레이 서버가 사용되지 않으면 제3자가 내 IP 주소를 관찰할 수 있어요.</string>
     <string name="open_chat">채팅 열기</string>
-    <string name="people_can_connect_only_via_links_you_share">공유한 링크를 통해서만 나에게 연결할 수 있어요.</string>
     <string name="rcv_group_event_updated_group_profile">그룹 프로필 업데이트됨</string>
     <string name="profile_password">프로필 비밀번호</string>
     <string name="reveal_verb">보이기</string>
@@ -824,7 +803,6 @@
     <string name="settings_section_title_help">도움말</string>
     <string name="settings_section_title_settings">설정</string>
     <string name="send_link_previews">링크 미리보기 보내기</string>
-    <string name="settings_section_title_socks">SOCKS 프록시</string>
     <string name="settings_section_title_support">SimpleX Chat 도와주기</string>
     <string name="settings_section_title_you">나</string>
     <string name="settings_experimental_features">실험적 기능</string>
@@ -832,7 +810,6 @@
     <string name="set_contact_name">연락처 이름 설정</string>
     <string name="send_us_an_email">개발자에게 이메일 보내기</string>
     <string name="smp_servers_enter_manually">서버를 수동으로 입력</string>
-    <string name="smp_servers_preset_server">미리 설정된 서버</string>
     <string name="smp_servers_save">서버 저장하기</string>
     <string name="smp_servers_test_servers">서버 테스트하기</string>
     <string name="smp_servers_per_user">현재 채팅 프로필의 새로운 연결을 위한 서버</string>
@@ -843,9 +820,7 @@
     <string name="settings_section_title_incognito">익명 모드</string>
     <string name="settings_section_title_experimenta">실험적</string>
     <string name="set_password_to_export">내보낼 암호 설정</string>
-    <string name="smp_servers">SMP 서버</string>
     <string name="smp_servers_preset_address">미리 설정된 서버 주소</string>
-    <string name="smp_servers_your_server">내 서버</string>
     <string name="smp_servers_your_server_address">내 서버 주소</string>
     <string name="snd_group_event_member_deleted">%1$s을(를) 강퇴했어요.</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">채팅 데이터베이스를 내보내기, 가져오기 또는 삭제 하려면 채팅 기능을 중지해 주세요. 채팅 기능이 중지된 동안에는 메시지를 주고받을 수 없어요.</string>
@@ -862,8 +837,6 @@
     <string name="empty_chat_profile_is_created">제공된 이름을 가진 빈 채팅 프로필이 생성되고, 앱이 정상적으로 열립니다.</string>
     <string name="share_text_database_id">데이터베이스 ID: %d</string>
     <string name="audio_video_calls">음성/영상 통화</string>
-    <string name="available_in_v51">"
-\nv5.1에서 사용 가능"</string>
     <string name="allow_calls_only_if">대화 상대가 허용하는 경우에만 통화를 허용합니다.</string>
     <string name="v5_1_self_destruct_passcode_descr">입력하면 모든 데이터가 삭제됩니다.</string>
     <string name="v5_1_better_messages">더 나은 메시지</string>
@@ -881,7 +854,6 @@
     <string name="send_disappearing_message_custom_time">사용자 설정 기간</string>
     <string name="disappearing_message">사라지는 메시지</string>
     <string name="send_disappearing_message">사라지는 메시지 전송</string>
-    <string name="create_address_and_let_people_connect">다른 사용자와 연결할 수 있도록 주소를 만듭니다.</string>
     <string name="customize_theme_title">커스텀 테마</string>
     <string name="auto_accept_contact">자동 수락</string>
     <string name="change_self_destruct_mode">자체 소멸 모드 변경</string>
@@ -1012,7 +984,6 @@
     <string name="v5_3_discover_join_groups_descr">- 디렉터리 서비스(베타)에 연결하세요!\n- 전송 알림(최대 20명).\n- 더 빠르고 안정적입니다.</string>
     <string name="migrate_from_device_cancel_migration">이전 취소</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">이전하려는 데이터베이스의 암호를 기억하고 있는지 확인합니다.</string>
-    <string name="connect_via_link_incognito">익명 모드로 연결</string>
     <string name="app_check_for_updates_beta">베타</string>
     <string name="la_app_passcode">앱 패스코드</string>
     <string name="chat_database_exported_continue">계속</string>
@@ -1050,12 +1021,10 @@
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>그룹 생성</b>: 새로운 그룹을 생성합니다.]]></string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>연락처 추가</b> : 새 초대 링크를 만들거나 받은 링크를 통해 연결합니다.]]></string>
     <string name="clear_note_folder_question">개인 메모를 지우시겠습니까?</string>
-    <string name="xftp_servers_configured">XFTP 서버 구성</string>
     <string name="v6_0_your_contacts_descr">나중에 채팅할 수 있도록 연락처를 보관합니다.</string>
     <string name="connected_desktop">연결된 데스크톱</string>
     <string name="chunks_uploaded">일괄 업로드됨</string>
     <string name="deleted_chats">보관된 연락처</string>
-    <string name="smp_servers_configured">SMP 서버 구성</string>
     <string name="create_chat_profile">채팅 프로필 생성</string>
     <string name="cant_call_member_alert_title">그룹 멤버에 전화를 걸 수 없음</string>
     <string name="multicast_connect_automatically">자동 연결</string>
@@ -1080,13 +1049,11 @@
     <string name="migrate_from_device_confirm_upload">업로드 확인</string>
     <string name="connected_to_mobile">모바일에 연결</string>
     <string name="connected_mobile">연결된 모바일</string>
-    <string name="info_view_connect_button">연결</string>
     <string name="cant_send_message_to_member_alert_title">그룹 멤버에게 메시지를 보낼 수 없음</string>
     <string name="receipts_contacts_title_enable">전송 알림을 활성화하시겠습니까?</string>
     <string name="conn_event_ratchet_sync_ok">암호화 OK</string>
     <string name="desktop_device">데스크톱</string>
     <string name="possible_slow_function_desc">기능 처리 시간이: %1$d 초 이상: %2$s</string>
-    <string name="dont_create_address">주소를 만들지 않음</string>
     <string name="devices">기기</string>
     <string name="files_and_media_prohibited">파일 및 미디어 금지됨!</string>
     <string name="creating_link">링크 생성 중…</string>
@@ -1192,7 +1159,6 @@
     <string name="v5_0_large_files_support_descr">상대가 온라인 상태가 될 때까지 기다릴 필요가 없습니다!</string>
     <string name="v5_4_block_group_members">그룹 멤버 차단</string>
     <string name="current_user">현재 프로필</string>
-    <string name="error_loading_smp_servers">SMP 서버를 로드하는 중 오류</string>
     <string name="error_deleting_note_folder">개인 메모를 삭제하는 동안 오류</string>
     <string name="migrate_from_device_error_deleting_database">데이터베이스를 삭제하는 동안 오류</string>
     <string name="remote_ctrl_disconnected_with_reason">다음과 같은 이유로 끊어졌습니다: %s</string>
@@ -1200,7 +1166,6 @@
     <string name="error_showing_desktop_notification">알림을 표시하는 동안 오류가 발생하였으니, 개발자에게 문의하십시오.</string>
     <string name="la_minutes">%d 분</string>
     <string name="marked_deleted_items_description">%d 개의 메시지가 삭제됨</string>
-    <string name="error_saving_xftp_servers">XFTP 서버를 저장하는 중 오류</string>
     <string name="disable_notifications_button">알림 비활성화</string>
     <string name="la_enter_app_passcode">패스코드 입력</string>
     <string name="error_setting_address">주소를 설정하는 중 오류</string>
@@ -1228,7 +1193,6 @@
     <string name="self_destruct">자체 소멸</string>
     <string name="enter_welcome_message_optional">환영 메시지 입력…(선택사항)</string>
     <string name="error_initializing_web_view_wrong_arch">WebView를 초기화하는 중 오류가 발생했습니다. WebView가 설치되어 있고 지원되는 아키텍처가 arm64인지 확인합니다.\n오류: %s</string>
-    <string name="error_loading_xftp_servers">XFTP 서버를 로드하는 중 오류가 발생했습니다.</string>
     <string name="error_loading_details">세부 정보를 로드하는 중 오류</string>
     <string name="servers_info_reset_stats_alert_error_title">통계를 재설정하는 중 오류</string>
     <string name="v5_2_disappear_one_message_descr">대화에서 비활성화 된 경우에도 마찬가지입니다.</string>
@@ -1379,7 +1343,6 @@
     <string name="app_check_for_updates_installed_successfully_title">성공적으로 설치됨</string>
     <string name="app_check_for_updates_button_install">업데이트 설치</string>
     <string name="theme_colors_section_title">인터페이스 색상</string>
-    <string name="update_network_smp_proxy_fallback_question">메시지 라우팅 대체</string>
     <string name="group_members_can_add_message_reactions">그룹 멤버가 메시지 반응을 추가할 수 있습니다.</string>
     <string name="settings_section_title_message_shape">메시지 모양</string>
     <string name="message_queue_info">메시지 대기열 정보</string>
@@ -1395,7 +1358,6 @@
     <string name="v4_3_improved_server_configuration">향상된 서버 구성</string>
     <string name="compose_message_placeholder">메시지</string>
     <string name="message_servers">메시지 서버</string>
-    <string name="update_network_smp_proxy_mode_question">메시지 라우팅 모드</string>
     <string name="email_invite_body">안녕하세요!\nSimpleX Chat 초대장이 도착했습니다: %s</string>
     <string name="agent_internal_error_title">내부 오류</string>
     <string name="invalid_name">잘못된 이름입니다!</string>
@@ -1426,7 +1388,6 @@
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[그룹 링크입니다 <b>%1$s</b>!]]></string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[두 기기에서 동일한 데이터베이스를<b> 사용해서는 안 됩니다</b>.]]></string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[<font color="#0088ff">사용자 가이드</font>에서 확인하세요.]]></string>
-    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[링크를 클릭하여 연결할 수도 있습니다. 브라우저에서 열리면<b> 모바일 앱에서 열기 </b>버튼을 클릭합니다.]]></string>
     <string name="operator">운영자</string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[운영자(들)의 이용 약관이 수락될 것입니다: <b>%s</b>.]]></string>
     <string name="operator_conditions_accepted_on">약관 수락 날짜: %s.</string>
@@ -1469,9 +1430,7 @@
     <string name="operator_conditions_failed_to_load">현재 약관 텍스트를 로드할 수 없습니다, 다음 링크를 통해 약관을 검토할 수 있습니다:</string>
     <string name="operator_conditions_of_use">사용 약관</string>
     <string name="v6_2_network_decentralization_enable_flux">Flux 활성화</string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[모든 메시지와 파일은 쪽지에서 포스트 퀀텀 보안을 사용하여 <b>종단 간 암호화</b>로 전송됩니다.]]></string>
     <string name="onboarding_notifications_mode_service_desc_short">앱이 항상 백그라운드에서 실행</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">활성화된 운영자에 대한 약관은 30일 후에 수락됩니다.</string>
     <string name="button_add_team_members">팀 멤버 추가하기</string>
     <string name="button_add_friends">친구 추가</string>
     <string name="delete_chat_for_all_members_cannot_undo_warning">모든 멤버에게서 채팅이 삭제됩니다 - 이 결정은 되돌릴 수 없습니다!</string>

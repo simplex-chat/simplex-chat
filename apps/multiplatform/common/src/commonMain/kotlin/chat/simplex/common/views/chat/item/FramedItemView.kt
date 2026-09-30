@@ -219,7 +219,7 @@ fun FramedItemView(
 
   @Composable
   fun ciFileView(ci: ChatItem, text: String) {
-    CIFileView(ci.file, ci.meta, chatTTL, showViaProxy, showTimestamp, showMenu, false, ciSenderProfile(ci, chatInfo), receiveFile)
+    CIFileView(ci.file, ci.meta, chatTTL, showViaProxy, showTimestamp, showMenu, false, receiveFile)
     if (text != "" || ci.meta.isLive) {
       CIMarkdownText(chatsCtx, ci, chat, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy,  showTimestamp = showTimestamp)
     }
@@ -364,7 +364,7 @@ fun FramedItemView(
           } else {
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
-                CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, false, ciSenderProfile(ci, chatInfo), receiveFile)
+                CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, false, receiveFile)
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {
@@ -372,7 +372,7 @@ fun FramedItemView(
                 }
               }
               is MsgContent.MCVideo -> {
-                CIVideoView(image = mc.image, mc.duration, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, smallView = false, senderProfile = ciSenderProfile(ci, chatInfo), receiveFile = receiveFile)
+                CIVideoView(image = mc.image, mc.duration, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, smallView = false, receiveFile = receiveFile)
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {

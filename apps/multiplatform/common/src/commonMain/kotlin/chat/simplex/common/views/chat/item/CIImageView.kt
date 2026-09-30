@@ -38,7 +38,6 @@ fun CIImageView(
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
   smallView: Boolean,
-  senderProfile: LocalProfile?,
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
@@ -84,7 +83,7 @@ fun CIImageView(
           is CIFileStatus.SndError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
           is CIFileStatus.SndWarning -> fileIcon(painterResource(MR.images.ic_warning_filled), MR.strings.icon_descr_file)
           is CIFileStatus.RcvInvitation ->
-            if (file.expired && fileSizeValid(file, senderProfile))
+            if (file.expired && fileSizeValid(file))
               fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
             else
               fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_asked_to_receive)
@@ -115,7 +114,7 @@ fun CIImageView(
           onClick = onClick
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, imageBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
       contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
     )
   }
@@ -139,7 +138,7 @@ fun CIImageView(
             onClick = onClick
           )
           .onRightClick { showMenu.value = true }
-          .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+          .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
       )
     } else {
@@ -150,7 +149,7 @@ fun CIImageView(
           onClick = {}
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, previewBitmap, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentAlignment = Alignment.Center
       ) {
         imageView(previewBitmap, onClick = {
@@ -196,22 +195,26 @@ fun CIImageView(
     contentAlignment = Alignment.TopEnd
   ) {
     val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember { mutableStateOf(null) }
-    if (chatModel.connectedToRemote()) {
-      LaunchedEffect(file, CIFile.cachedRemoteFileRequests.toList()) {
-        withBGApi {
+    // Hidden media is not worth reading, decoding at full size and caching.
+    val revealed = !blurHidesMedia(!smallView, blurred)
+    if (revealed) {
+      if (chatModel.connectedToRemote()) {
+        LaunchedEffect(file, CIFile.cachedRemoteFileRequests.toList()) {
+          withBGApi {
+            if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
+              res.value = imageAndFilePath(file)
+            }
+          }
+        }
+      } else {
+        LaunchedEffect(file) {
           if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
-            res.value = imageAndFilePath(file)
+            res.value = withContext(Dispatchers.IO) { imageAndFilePath(file) }
           }
         }
       }
-    } else {
-      LaunchedEffect(file) {
-        if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
-          res.value = withContext(Dispatchers.IO) { imageAndFilePath(file) }
-        }
-      }
     }
-    val loaded = res.value
+    val loaded = if (revealed) res.value else null
     if (loaded != null && file != null) {
       val (imageBitmap, data, _) = loaded
       SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, blurred, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })
@@ -220,13 +223,10 @@ fun CIImageView(
         if (file != null) {
           when {
             file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted ->
-              if (fileSizeValid(file, senderProfile)) {
-                receiveFile(file.fileId)
+              if (file.fileProhibited != null) {
+                showProhibitedFileAlert(file, file.fileProhibited)
               } else {
-                AlertManager.shared.showAlertMsg(
-                  generalGetString(MR.strings.large_file),
-                  String.format(generalGetString(MR.strings.contact_sent_large_file), formatBytes(getMaxFileSize(file.fileProtocol, senderProfile)))
-                )
+                receiveFile(file.fileId)
               }
             file.fileStatus is CIFileStatus.RcvAccepted ->
               when (file.fileProtocol) {

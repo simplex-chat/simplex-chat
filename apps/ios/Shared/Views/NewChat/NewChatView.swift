@@ -776,6 +776,7 @@ struct ScannerInView: View {
     let processQRCode: (_ resp: Result<ScanResult, ScanError>) -> Void
     @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
     var scanMode: ScanMode = .continuous
+    var placeholderBackground = Color(uiColor: .secondarySystemGroupedBackground)
 
     var body: some View {
         Group {
@@ -814,7 +815,7 @@ struct ScannerInView: View {
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                        .fill(placeholderBackground)
                 )
                 .padding(.horizontal)
                 .listRowBackground(Color.clear)

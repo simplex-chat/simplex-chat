@@ -28,7 +28,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime, nominalDay)
-import Simplex.Chat.Badges (badgeServerCredential)
+import Simplex.Chat.Badges (badgeServerCredential, defaultFileSizeLimits)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
@@ -53,6 +53,7 @@ import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConf
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Entitlement (entitlementIssuerKeys)
+import Simplex.Messaging.Encoding.String (strDecode)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolType (..), SProtocolType (..), SubscriptionMode (..), UserProtocol)
 import qualified Simplex.Messaging.TMap as TM
 import qualified UnliftIO.Exception as E
@@ -68,6 +69,9 @@ defaultChatConfig =
           },
       chatVRange = supportedChatVRange,
       badgePublicKeys = M.mapKeys fromIntegral entitlementIssuerKeys,
+      badgeServiceAddress = Just $ either error id $ strDecode "https://smp5.simplex.im/a#ooSNWlEZTO2RPE0Ff5ZoybAs5zEhWLMlQrXesnhaZHM",
+      badgeCurrentTime = getCurrentTime,
+      badgeRetryInterval = RetryInterval {initialInterval = 30_000000, increaseAfter = 0, maxInterval = 3600_000000},
       confirmMigrations = MCConsole,
       -- this property should NOT use operator = Nothing
       -- non-operator servers can be passed via options
@@ -102,10 +106,12 @@ defaultChatConfig =
       shortLinkPresetServers = allPresetServers,
       presetDomains = [".simplex.im", ".simplexonflux.com"],
       tbqSize = 1024,
+      maxChats = 5000,
       fileChunkSize = 15780, -- do not change
       xftpDescrPartSize = 14000,
       inlineFiles = defaultInlineFilesConfig,
       autoAcceptFileSize = 0,
+      fileSizeLimits = defaultFileSizeLimits,
       showReactions = False,
       showFullLinks = False,
       showReceipts = False,
@@ -146,11 +152,11 @@ newChatController
   ChatDatabase {chatStore, agentStore}
   user
   cfg@ChatConfig {agentConfig = aCfg, presetServers, inlineFiles, deviceNameForRemote, confirmMigrations}
-  ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, deviceName, webPreviewConfig, highlyAvailable, yesToUpMigrations}, optFilesFolder, optTempDirectory, showReactions, showFullLinks, allowInstantFiles, autoAcceptFileSize}
+  ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, maxChats, deviceName, webPreviewConfig, highlyAvailable, yesToUpMigrations}, optFilesFolder, optTempDirectory, showReactions, showFullLinks, allowInstantFiles, autoAcceptFileSize}
   backgroundMode = do
     let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
         confirmMigrations' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
-        config = cfg {logLevel, showReactions, showFullLinks, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, presetServers = presetServers', inlineFiles = inlineFiles', autoAcceptFileSize, webPreviewConfig, highlyAvailable, confirmMigrations = confirmMigrations'}
+        config = cfg {logLevel, showReactions, showFullLinks, tbqSize, maxChats, subscriptionEvents = logConnections, hostEvents = logServerHosts, presetServers = presetServers', inlineFiles = inlineFiles', autoAcceptFileSize, webPreviewConfig, highlyAvailable, confirmMigrations = confirmMigrations'}
     randomPresetServers <- chooseRandomServers presetServers'
     let rndSrvs = L.toList randomPresetServers
         operatorWithId (i, op) = (\o -> o {operatorId = DBEntityId i}) <$> pOperator op
@@ -188,6 +194,8 @@ newChatController
         deliveryTaskWorkers <- TM.emptyIO
         deliveryJobWorkers <- TM.emptyIO
         relayRequestWorkers <- TM.emptyIO
+        badgeWorkers <- TM.emptyIO
+        badgeSeq <- newTVarIO 0
         relayGroupLinkChecksAsync <- newTVarIO Nothing
         webPreviewState <- forM webPreviewConfig $ \_ -> newWebPreviewState
         chatRelayTests <- TM.emptyIO
@@ -234,6 +242,8 @@ newChatController
               deliveryTaskWorkers,
               deliveryJobWorkers,
               relayRequestWorkers,
+              badgeWorkers,
+              badgeSeq,
               relayGroupLinkChecksAsync,
               webPreviewState,
               chatRelayTests,

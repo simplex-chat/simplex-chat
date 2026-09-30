@@ -23,6 +23,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
@@ -32,7 +33,10 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.GetStakeBanner
+import chat.simplex.common.views.chatlist.openGetStake
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.crowdfundingAvailable
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.res.MR
 import kotlinx.coroutines.launch
@@ -42,12 +46,25 @@ import kotlin.math.sin
 private const val CARD_HEIGHT_RATIO = 0.75f
 private const val GRADIENT_ANGLE_RAD = 80.0 * Math.PI / 180.0
 
+// the onboarding cards replace the whole chat list, and the support-ended banner lives in the
+// list - a lapsed supporter is not a newcomer, and must be told even with no conversations yet
 @Composable
 fun shouldShowOnboarding(): Boolean {
   val addressCreationCardShown = remember { appPrefs.addressCreationCardShown.state }
   val chats = chatModel.chats.value
-  return !addressCreationCardShown.value && chats.isNotEmpty() && !hasConversations(chats)
+  return !addressCreationCardShown.value && chats.isNotEmpty() && !hasConversations(chats) && !supportEnded() && !badgeIssueFailed()
 }
+
+fun supportEnded(): Boolean =
+  BadgeModel.alert.value?.kind == BadgeAlertKind.SupportEnded && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
+
+fun badgeIssueFailed(): Boolean =
+  BadgeModel.alert.value?.kind == BadgeAlertKind.IssueFailed && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
+
+// false until the badge state loads: if the pitch rendered before that, it would lock the slot, and a supporter's badge
+// arriving a moment later would hide it, leaving the slot empty for the session
+fun noShownBadge(): Boolean =
+  BadgeModel.badgeState.value?.shown != true && BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)
 
 fun hasConversations(chats: List<Chat>): Boolean =
   chats.any { chat ->
@@ -407,6 +424,28 @@ fun ConnectOnboardingView() {
     }
   }
 
+  val getStakeBannerDismissed = remember { appPrefs.getStakeBannerDismissed.state }
+  val showGetStakeBanner = chatModel.bannerSlotFree(ChatListBanner.GetStake) && crowdfundingAvailable() && !getStakeBannerDismissed.value
+  // on desktop the pages span the window, but the banner keeps the width it has in the chat list
+  val bannerMaxWidth = if (appPlatform.isDesktop) DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier else Dp.Unspecified
+  val content = @Composable {
+    Column(Modifier.fillMaxSize()) {
+      Box(Modifier.weight(1f).fillMaxWidth()) {
+        pager()
+      }
+      if (showGetStakeBanner) {
+        SideEffect { chatModel.chatListBanner = ChatListBanner.GetStake }
+        Box(Modifier.align(Alignment.CenterHorizontally).widthIn(max = bannerMaxWidth).padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = 8.dp)) {
+          GetStakeBanner(
+            showDismiss = false,
+            onTap = cardClickOverride ?: { openGetStake(if (appPlatform.isDesktop) ModalManager.center else ModalManager.start) },
+            onDismiss = {}
+          )
+        }
+      }
+    }
+  }
+
   if (appPlatform.isDesktop) {
     val maxContentWidth = DEFAULT_WINDOW_WIDTH - DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier
     Box(
@@ -414,12 +453,12 @@ fun ConnectOnboardingView() {
       contentAlignment = Alignment.Center
     ) {
       Box(Modifier.widthIn(max = maxContentWidth).fillMaxHeight()) {
-        pager()
+        content()
       }
     }
   } else {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-      pager()
+      content()
     }
   }
 }

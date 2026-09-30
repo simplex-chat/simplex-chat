@@ -15,18 +15,21 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_)
-import Control.Monad (forM_, void)
+import Control.Concurrent.Async (concurrently_, poll)
+import Control.Monad (forM_, void, (>=>))
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.List (intercalate, stripPrefix)
+import Data.List (intercalate, isPrefixOf, stripPrefix)
+import qualified Data.Map.Strict as M
+import Data.Maybe (isJust, isNothing)
 import qualified Data.Text as T
+import GHC.Conc (ThreadStatus (..), threadStatus)
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), PresetServers (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServers (..))
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -35,7 +38,7 @@ import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkTimeout (..))
-import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM (atomically, readTVarIO)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
@@ -43,6 +46,7 @@ import Simplex.Messaging.Transport
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
+import System.Mem.Weak (deRefWeak)
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
@@ -101,8 +105,9 @@ chatDirectTests = do
     it "connect, fully asynchronous (when clients are never simultaneously online)" $ testFullAsyncFast
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
-#if !defined(dbPostgres)
   describe "maintenance mode" $ do
+    it "stop chat stops all threads, start chat restarts them" testStopStartChat
+#if !defined(dbPostgres)
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
     it "encrypt/decrypt database" testDatabaseEncryption
@@ -278,7 +283,8 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
         { agentConfig =
             testAgentCfg
               { quotaExceededTimeout = 1,
-                messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
+                messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval},
+                persistErrorInterval = 0
               }
         }
     opts' =
@@ -1345,18 +1351,69 @@ testNegotiateCall =
     alice ##> "/_call status @2 connected"
     alice <## "ok"
     threadDelay 100000
-    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: in progress (00:00)")])
+    alice #$> ("/_get chat @2 count=100", callChat, chatFeatures <> [(1, "outgoing call: in progress")])
     bob ##> "/_call status @2 connected"
     bob <## "ok"
     threadDelay 100000
-    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: in progress (00:00)")])
+    bob #$> ("/_get chat @2 count=100", callChat, chatFeatures <> [(0, "incoming call: in progress")])
     -- either party can end the call
     bob ##> "/_call end @2"
     bob <## "ok"
     threadDelay 100000
-    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: ended (00:00)")])
+    bob #$> ("/_get chat @2 count=100", callChat, chatFeatures <> [(0, "incoming call: ended")])
     alice <## "call with bob ended"
-    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: ended (00:00)")])
+    alice #$> ("/_get chat @2 count=100", callChat, chatFeatures <> [(1, "outgoing call: ended")])
+  where
+    callChat = map (fmap noDuration) . chat
+    noDuration s = case words s of
+      ws@(_ : _) | "(0" `isPrefixOf` last ws -> unwords $ init ws
+      _ -> s
+
+testStopStartChat :: HasCallStack => TestParams -> IO ()
+testStopStartChat ps =
+  withNewTestChat ps "bob" bobProfile $ \bob ->
+    withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
+      connectUsers alice bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      alice #$> ("/_ttl 1 4", id, "ok")
+      alice ##> "/_set prefs @2 {\"timedMessages\": {\"allow\": \"yes\", \"ttl\": 2}}"
+      alice <## "you updated preferences for bob:"
+      alice <## "Disappearing messages: enabled (you allow: yes (2 sec), contact allows: yes)"
+      bob <## "alice updated preferences for you:"
+      bob <## "Disappearing messages: enabled (you allow: yes (2 sec), contact allows: yes (2 sec))"
+      alice #> "@bob hi timed"
+      bob <# "alice> hi timed"
+      let ChatController {agentAsync, cleanupManagerAsync, expireCIThreads, timedItemThreads} = chatController alice
+      Just (a1, Just a2) <- readTVarIO agentAsync
+      Just cleanupA <- readTVarIO cleanupManagerAsync
+      [Just expireA] <- M.elems <$> readTVarIO expireCIThreads
+      [Just timedTId] <- mapM (readTVarIO >=> maybe (pure Nothing) deRefWeak) . M.elems =<< readTVarIO timedItemThreads
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      forM_ [a1, a2, cleanupA, expireA] $ \a -> isJust <$> poll a `shouldReturn` True
+      threadDelay 100000
+      threadStatus timedTId `shouldReturn` ThreadFinished
+      isNothing <$> readTVarIO agentAsync `shouldReturn` True
+      isNothing <$> readTVarIO cleanupManagerAsync `shouldReturn` True
+      M.null <$> readTVarIO expireCIThreads `shouldReturn` True
+      M.null <$> readTVarIO timedItemThreads `shouldReturn` True
+      alice ##> "/_start"
+      alice <## "chat started"
+      alice <## "subscribed 1 connections on server localhost"
+      bob #> "@alice hello"
+      alice <# "bob> hello"
+      alice <### ["timed message deleted: hi timed", "timed message deleted: hello"]
+      bob <### ["timed message deleted: hi timed", "timed message deleted: hello"]
+      threadDelay 3000000
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner")])
+      Just (a1', _) <- readTVarIO agentAsync
+      (a1' == a1) `shouldBe` False
+      Just cleanupA' <- readTVarIO cleanupManagerAsync
+      (cleanupA' == cleanupA) `shouldBe` False
+      M.keys <$> readTVarIO expireCIThreads `shouldReturn` [1]
+  where
+    cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testMaintenanceMode :: HasCallStack => TestParams -> IO ()
 testMaintenanceMode ps = do
@@ -1436,12 +1493,15 @@ testMaintenanceModeWithFiles ps = withXFTPServer $ do
       alice <## "chat stopped"
       alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
       alice <## "ok"
+      let exportedDBs = [tmpPath ps <> "/alice_chat.db.exported", tmpPath ps <> "/alice_agent.db.exported"]
+      forM_ exportedDBs $ \f -> B.writeFile f ""
       alice ##> "/_db delete"
       alice <## "ok"
       -- cannot start chat after delete
       alice ##> "/_start"
       alice <## "error: chat store changed, please restart chat"
       doesDirectoryExist "./tests/tmp/alice_files" `shouldReturn` False
+      forM_ exportedDBs $ \f -> doesFileExist f `shouldReturn` False
       alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
       alice <## "ok"
       B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
@@ -3060,13 +3120,15 @@ testMsgDecryptError ps =
     withTestChat ps "bob" $ \bob -> do
       bob <## "subscribed 1 connections on server localhost"
       alice #> "@bob hello again"
-      bob <# "alice> skipped message ID 9..11"
+      bob <# "alice> skipped message ID 7..9"
       bob <# "alice> hello again"
       bob #> "@alice received!"
       alice <# "bob> received!"
 
 setupDesynchronizedRatchet :: HasCallStack => TestParams -> TestCC -> IO ()
 setupDesynchronizedRatchet ps alice = do
+  alice ##> "/set receipts all off"
+  alice <## "ok"
   copyDb "bob" "bob_old"
   withTestChat ps "bob" $ \bob -> do
     bob <## "subscribed 1 connections on server localhost"

@@ -50,7 +50,7 @@ import Data.Time.Clock.System (systemToUTCTime, utcToSystemTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Data.Word (Word16, Word32)
-import Simplex.Chat.Badges (LocalBadge)
+import Simplex.Chat.Badges (BadgeProof, LocalBadge)
 import Simplex.Chat.Call
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types
@@ -86,12 +86,13 @@ import Simplex.Messaging.Version hiding (version)
 -- 17 - allow host voice messages during member approval regardless of group voice setting (2026-02-10)
 -- 18 - relay web capabilities (2026-05-31)
 -- 19 - group roster (2026-06-18)
+-- 20 - p2p group member keys for signing (2026-07-26)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 19
+currentChatVersion = VersionChat 21
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -134,6 +135,13 @@ relayWebCapVersion = VersionChat 18
 -- a relay below this version is published without the handshake (it can't ack a roster)
 groupRosterVersion :: VersionChat
 groupRosterVersion = VersionChat 19
+
+-- members sign messages in p2p groups; member keys are distributed for verification
+groupMemberKeyVersion :: VersionChat
+groupMemberKeyVersion = VersionChat 20
+
+anyTextCommandsVersion :: VersionChat
+anyTextCommandsVersion = VersionChat 21
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -446,7 +454,7 @@ signChatMsgBody MsgSigning {bindingTag, bindingData, keyRef, privKey} msgBody =
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
-  XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr, fileExpires :: Maybe UTCTime} -> ChatMsgEvent 'Json
+  XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr, fileExpires :: Maybe UTCTime, fileBadge :: Maybe BadgeProof} -> ChatMsgEvent 'Json
   XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, mentions :: Map MemberName MsgMention, ttl :: Maybe Int, live :: Maybe Bool, scope :: Maybe MsgScope, asGroup :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDel :: {msgId :: SharedMsgId, memberId :: Maybe MemberId, scope :: Maybe MsgScope, onlyHistory :: Bool} -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
@@ -455,15 +463,15 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileAcpt :: String -> ChatMsgEvent 'Json -- direct file protocol
   XFileAcptInv :: SharedMsgId -> Maybe ConnReqInvitation -> String -> ChatMsgEvent 'Json
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
-  XInfo :: Profile -> ChatMsgEvent 'Json
-  XContact :: {profile :: Profile, contactReqId :: Maybe XContactId, welcomeMsgId :: Maybe SharedMsgId, requestMsg :: Maybe (SharedMsgId, MsgContent)} -> ChatMsgEvent 'Json
+  XInfo :: {profile :: Profile, memberKey :: Maybe MemberKey} -> ChatMsgEvent 'Json
+  XContact :: {profile :: Profile, memberKey :: Maybe MemberKey, contactReqId :: Maybe XContactId, welcomeMsgId :: Maybe SharedMsgId, requestMsg :: Maybe (SharedMsgId, MsgContent)} -> ChatMsgEvent 'Json
   XMember :: {profile :: Profile, newMemberId :: MemberId, newMemberKey :: MemberKey, viaRelay :: Maybe MemberId} -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
-  XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
+  XGrpAcpt :: MemberId -> Maybe MemberKey -> ChatMsgEvent 'Json
   XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
-  XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
+  XGrpLinkMem :: Profile -> Maybe MemberKey -> ChatMsgEvent 'Json
   XGrpLinkAcpt :: GroupAcceptance -> GroupMemberRole -> MemberId -> ChatMsgEvent 'Json
   XGrpRelayInv :: GroupRelayInvitation -> ChatMsgEvent 'Json
   XGrpRelayAcpt :: ShortLinkContact -> RelayCapabilities -> ChatMsgEvent 'Json
@@ -522,7 +530,7 @@ isForwardedGroupMsg ev = case ev of
   XMsgDel {} -> True
   XMsgReact {} -> True
   XFileCancel _ -> True
-  XInfo _ -> True
+  XInfo {} -> True
   XGrpRelayNew _ -> True
   XGrpMemNew {} -> True
   XGrpMemRole {} -> True
@@ -917,8 +925,8 @@ maxEncodedMsgLength :: Int
 maxEncodedMsgLength = 15602
 
 -- maxEncodedMsgLength - 2222, see e2eEncUserMsgLength in agent
-maxCompressedMsgLength :: Int
-maxCompressedMsgLength = 13380
+maxEncodedMsgLengthPQ :: Int
+maxEncodedMsgLengthPQ = 13380
 
 maxDecompressedMsgLength :: Int
 maxDecompressedMsgLength = 65536
@@ -926,6 +934,9 @@ maxDecompressedMsgLength = 65536
 -- Applies to all batch formats; 255 is the maximum for the 1-byte count in the binary batch format.
 maxBatchElementCount :: Int
 maxBatchElementCount = 255
+
+maxFwdDepth :: Int
+maxFwdDepth = 1
 
 -- Defensive entry-count bound for the roster blob parser (rosterBlobP) and the
 -- promotion cap over the promoted (member/moderator/admin) set.
@@ -954,8 +965,8 @@ rosterBlobP = do
 maxEncodedInfoLength :: Int
 maxEncodedInfoLength = 14694
 
-maxCompressedInfoLength :: Int
-maxCompressedInfoLength = 10968 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
+maxEncodedInfoLengthPQ :: Int
+maxEncodedInfoLengthPQ = 10968 -- maxEncodedInfoLength - 3726, see e2eEncConnInfoLength in agent
 
 data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
@@ -1248,15 +1259,15 @@ toCMEventTag msg = case msg of
   XFileAcpt _ -> XFileAcpt_
   XFileAcptInv {} -> XFileAcptInv_
   XFileCancel _ -> XFileCancel_
-  XInfo _ -> XInfo_
+  XInfo {} -> XInfo_
   XContact {} -> XContact_
   XMember {} -> XMember_
   XDirectDel -> XDirectDel_
   XGrpInv _ -> XGrpInv_
-  XGrpAcpt _ -> XGrpAcpt_
+  XGrpAcpt {} -> XGrpAcpt_
   XGrpLinkInv _ -> XGrpLinkInv_
   XGrpLinkReject _ -> XGrpLinkReject_
-  XGrpLinkMem _ -> XGrpLinkMem_
+  XGrpLinkMem {} -> XGrpLinkMem_
   XGrpLinkAcpt {} -> XGrpLinkAcpt_
   XGrpRelayInv _ -> XGrpRelayInv_
   XGrpRelayAcpt {} -> XGrpRelayAcpt_
@@ -1342,6 +1353,7 @@ requiresSignature = \case
   XGrpRelayNew_ -> True
   XGrpRoster_ -> True
   XInfo_ -> True
+  XGrpLinkMem_ -> True
   _ -> False
 
 -- | Content events a member may sign (XMsgNew opt-in; XMsgUpdate/XMsgDel when the target was signed).
@@ -1378,8 +1390,8 @@ appBinaryToCM AppMessageBinary {msgId, tag, body} = do
     msg = \case
       BFileChunk_ -> BFileChunk <$> (SharedMsgId <$> smpP) <*> (unIFC <$> smpP)
 
-appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
-appJsonToCM AppMessageJson {v, msgId, event, params} = do
+appJsonToCM :: Int -> AppMessageJson -> Either String (ChatMessage 'Json)
+appJsonToCM fwdDepth AppMessageJson {v, msgId, event, params} = do
   eventTag <- strDecode $ encodeUtf8 event
   chatMsgEvent <- msg eventTag
   pure ChatMessage {chatVRange = maybe chatInitialVRange fromChatVRange v, msgId, chatMsgEvent}
@@ -1391,7 +1403,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
     msg :: CMEventTag 'Json -> Either String (ChatMsgEvent 'Json)
     msg = \case
       XMsgNew_ -> XMsgNew <$> JT.parseEither parseJSON (J.Object params)
-      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr" <*> opt "fileExpires"
+      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr" <*> opt "fileExpires" <*> opt "fileBadge"
       XMsgUpdate_ -> do
         msgId' <- p "msgId"
         content <- p "content"
@@ -1408,22 +1420,23 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> opt "fileConnReq" <*> p "fileName"
       XFileCancel_ -> XFileCancel <$> p "msgId"
-      XInfo_ -> XInfo <$> p "profile"
+      XInfo_ -> XInfo <$> p "profile" <*> opt "memberKey"
       XContact_ -> do
         profile <- p "profile"
+        memberKey <- opt "memberKey"
         contactReqId <- opt "contactReqId"
         welcomeMsgId <- opt "welcomeMsgId"
         reqMsgId <- opt "msgId"
         reqContent <- opt "content"
         let requestMsg = (,) <$> reqMsgId <*> reqContent
-        pure XContact {profile, contactReqId, welcomeMsgId, requestMsg}
+        pure XContact {profile, memberKey, contactReqId, welcomeMsgId, requestMsg}
       XMember_ -> XMember <$> p "profile" <*> p "newMemberId" <*> p "newMemberKey" <*> opt "viaRelay"
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
-      XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
+      XGrpAcpt_ -> XGrpAcpt <$> p "memberId" <*> opt "memberKey"
       XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
       XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
-      XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
+      XGrpLinkMem_ -> XGrpLinkMem <$> p "profile" <*> opt "memberKey"
       XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "acceptance" <*> p "role" <*> p "memberId"
       XGrpRelayInv_ -> XGrpRelayInv <$> p "groupRelayInvitation"
       XGrpRelayAcpt_ -> XGrpRelayAcpt <$> p "relayLink" <*> (fromMaybe defaultRelayCapabilities <$> opt "relayCap")
@@ -1453,11 +1466,12 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpRosterAck_ -> XGrpRosterAck <$> p "version" <*> opt "error"
       XGrpRosterRequest_ -> XGrpRosterRequest <$> opt "version"
       XGrpMsgForward_ -> do
+        when (fwdDepth >= maxFwdDepth) $ Left "forward depth exceeds limit"
         fwdSender <- opt "memberId" >>= \case
           Just memberId -> FwdMember memberId . fromMaybe "" <$> opt "memberName"
           Nothing -> pure FwdChannel
         fwdBrokerTs <- p "msgTs"
-        XGrpMsgForward (GrpMsgForward {fwdSender, fwdBrokerTs}) <$> p "msg"
+        XGrpMsgForward (GrpMsgForward {fwdSender, fwdBrokerTs}) <$> (appJsonToCM (fwdDepth + 1) =<< p "msg")
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -1482,7 +1496,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XMsgNew mc -> case toJSON mc of
         J.Object obj -> obj
         _ -> JM.empty
-      XMsgFileDescr msgId' fileDescr fileExpires -> o $ ("fileExpires" .=? fileExpires) ["msgId" .= msgId', "fileDescr" .= fileDescr]
+      XMsgFileDescr msgId' fileDescr fileExpires fileBadge -> o $ ("fileExpires" .=? fileExpires) $ ("fileBadge" .=? fileBadge) ["msgId" .= msgId', "fileDescr" .= fileDescr]
       XMsgUpdate {msgId = msgId', content, mentions, ttl, live, scope, asGroup} -> o $ ("asGroup" .=? asGroup) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("scope" .=? scope) $ ("mentions" .=? nonEmptyMap mentions) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId scope onlyHistory -> o $ ("memberId" .=? memberId) $ ("scope" .=? scope) $ ("onlyHistory" .=? justTrue onlyHistory) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
@@ -1491,15 +1505,15 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XFileAcptInv sharedMsgId fileConnReq fileName -> o $ ("fileConnReq" .=? fileConnReq) ["msgId" .= sharedMsgId, "fileName" .= fileName]
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
-      XInfo profile -> o ["profile" .= profile]
-      XContact {profile, contactReqId, welcomeMsgId, requestMsg} -> o $ ("contactReqId" .=? contactReqId) $ ("welcomeMsgId" .=? welcomeMsgId) $ ("msgId" .=? (fst <$> requestMsg)) $ ("content" .=? (snd <$> requestMsg)) $ ["profile" .= profile]
+      XInfo {profile, memberKey} -> o $ ("memberKey" .=? memberKey) ["profile" .= profile]
+      XContact {profile, memberKey, contactReqId, welcomeMsgId, requestMsg} -> o $ ("contactReqId" .=? contactReqId) $ ("welcomeMsgId" .=? welcomeMsgId) $ ("msgId" .=? (fst <$> requestMsg)) $ ("content" .=? (snd <$> requestMsg)) $ ("memberKey" .=? memberKey) $ ["profile" .= profile]
       XMember {profile, newMemberId, newMemberKey, viaRelay} -> o $ ("viaRelay" .=? viaRelay) ["profile" .= profile, "newMemberId" .= newMemberId, "newMemberKey" .= newMemberKey]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
-      XGrpAcpt memId -> o ["memberId" .= memId]
+      XGrpAcpt memId memberKey -> o $ ("memberKey" .=? memberKey) ["memberId" .= memId]
       XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
       XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]
-      XGrpLinkMem profile -> o ["profile" .= profile]
+      XGrpLinkMem profile memberKey -> o $ ("memberKey" .=? memberKey) ["profile" .= profile]
       XGrpLinkAcpt acceptance role memberId -> o ["acceptance" .= acceptance, "role" .= role, "memberId" .= memberId]
       XGrpRelayInv groupRelayInv -> o ["groupRelayInvitation" .= groupRelayInv]
       XGrpRelayAcpt relayLink relayCap -> o ["relayLink" .= relayLink, "relayCap" .= relayCap]
@@ -1570,7 +1584,7 @@ instance ToJSON (ChatMessage 'Json) where
   toJSON = (\(AMJson msg) -> toJSON msg) . chatToAppMessage
 
 instance FromJSON (ChatMessage 'Json) where
-  parseJSON v = appJsonToCM <$?> parseJSON v
+  parseJSON v = appJsonToCM 0 <$?> parseJSON v
 
 instance FromField (ChatMessage 'Json) where
   fromField = blobFieldDecoder J.eitherDecodeStrict'

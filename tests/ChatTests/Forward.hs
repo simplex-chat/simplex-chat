@@ -128,7 +128,7 @@ testForwardChannelLinkRemoved ps =
           cath ##> "/set links #club off"
           cath <## "updated group preferences:"
           cath <## "SimpleX links: off"
-          dan <## "cath updated group #club:"
+          dan <## "cath updated group #club: (signed)"
           dan <## "updated group preferences:"
           dan <## "SimpleX links: off"
           alice #> "#team hi"

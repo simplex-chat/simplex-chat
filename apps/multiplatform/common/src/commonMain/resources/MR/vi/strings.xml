@@ -30,7 +30,6 @@
     <string name="send_disappearing_message_30_seconds">30 giây</string>
     <string name="accept_connection_request__question">Chấp nhận yêu cầu kết nối?</string>
     <string name="accept_contact_incognito_button">Chấp nhận bằng hồ sơ ẩn danh</string>
-    <string name="smp_servers_preset_add">Thêm các máy chủ được cài sẵn</string>
     <string name="smp_servers_add_to_another_device">Thêm vào một thiết bị khác</string>
     <string name="callstatus_accepted">cuộc gọi được chấp nhận</string>
     <string name="conn_event_ratchet_sync_started">đồng ý mã hóa…</string>
@@ -138,8 +137,6 @@
     <string name="bad_desktop_address">Địa chỉ máy tính xấu</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Thêm liên hệ</b>: để tạo đường dẫn mời mới, hoặc kết nối qua đường dẫn bạn nhận được.]]></string>
     <string name="integrity_msg_bad_hash">hàm băm tin nhắn xấu</string>
-    <string name="available_in_v51">"
-\nCó sẵn ở v5.1"</string>
     <string name="auto_accept_contact">Tự động chấp nhận</string>
     <string name="back">Quay về</string>
     <string name="auto_accept_images">Tự động chấp nhận hình ảnh</string>
@@ -277,7 +274,6 @@
     <string name="icon_descr_server_status_connected">Đã kết nối</string>
     <string name="callstate_connected">đã kết nối</string>
     <string name="connect_via_member_address_alert_title">Kết nối trực tiếp?</string>
-    <string name="connect_via_link_verb">Kết nối</string>
     <string name="rcv_group_event_member_connected">đã kết nối</string>
     <string name="multicast_connect_automatically">Tự động kết nối</string>
     <string name="server_connected">đã kết nối</string>
@@ -293,7 +289,6 @@
     <string name="group_member_status_connecting">đang kết nối</string>
     <string name="group_connection_pending">đang kết nối…</string>
     <string name="callstate_connecting">đang kết nối…</string>
-    <string name="connect_via_link_incognito">Kết nối ẩn danh</string>
     <string name="server_connecting">đang kết nối</string>
     <string name="connected_to_desktop">Đã kết nối tới máy tính</string>
     <string name="group_member_status_announced">đang kết nối (đã được thông báo)</string>
@@ -302,7 +297,6 @@
     <string name="group_member_status_intro_invitation">đang kết nối (lời mời giới thiệu)</string>
     <string name="remote_ctrl_error_bad_state">Kết nối tới máy tính đang ở trong tình trạng không tốt</string>
     <string name="remote_host_was_disconnected_title">Kết nối đã bị ngắt</string>
-    <string name="connect_via_link_or_qr">Kết nối qua đường dẫn / mã QR</string>
     <string name="connect_plan_connect_to_yourself">Kết nối tới chính bạn?</string>
     <string name="connection_request_sent">Yêu cầu kết nối đã được gửi!</string>
     <string name="connect_via_link">Kết nối qua đường dẫn</string>
@@ -340,7 +334,6 @@
     <string name="status_contact_has_no_e2e_encryption">liên hệ không có bảo mật đầu cuối</string>
     <string name="contact_preferences">Tùy chọn liên hệ</string>
     <string name="copy_verb">Sao chép</string>
-    <string name="create_profile_button">Tạo</string>
     <string name="contacts_can_mark_messages_for_deletion">Liên hệ có thể đánh dấu tin nhắn để xóa; bạn vẫn sẽ có thể xem được chúng.</string>
     <string name="icon_descr_context">Biểu tượng ngữ cảnh</string>
     <string name="continue_to_next_step">Tiếp tục</string>
@@ -353,7 +346,6 @@
     <string name="v5_3_new_desktop_app_descr">Tạo hồ sơ mới trong ứng dụng trên máy tính. 💻</string>
     <string name="cannot_share_message_alert_title">Không thể gửi tin nhắn</string>
     <string name="smp_server_test_create_file">Tạo tệp</string>
-    <string name="create_address_and_let_people_connect">Tạo một địa chỉ để cho mọi người kết nối với bạn.</string>
     <string name="create_group_link">Tạo đường dẫn nhóm</string>
     <string name="button_create_group_link">Tạo đường dẫn</string>
     <string name="info_row_created_at">Được tạo ra tại</string>
@@ -370,7 +362,6 @@
     <string name="dark_mode_colors">Các màu chế độ tối</string>
     <string name="theme_dark">Tối</string>
     <string name="agent_critical_error_title">Lỗi nghiêm trọng</string>
-    <string name="share_one_time_link">Tạo đường dẫn lời mời dùng một lần</string>
     <string name="creating_link">Đang tạo đường dẫn…</string>
     <string name="create_profile">Tạo hồ sơ</string>
     <string name="v5_1_custom_themes_descr">Tùy chỉnh và chia sẻ các chủ đề màu sắc.</string>
@@ -419,7 +410,6 @@
     <string name="users_delete_question">Xóa hồ sơ trò chuyện?</string>
     <string name="delete_messages__question">Xóa %d tin nhắn?</string>
     <string name="delete_address">Xóa địa chỉ</string>
-    <string name="decentralized">Phi tập trung</string>
     <string name="delete_verb">Xóa</string>
     <string name="migrate_from_device_delete_database_from_device">Xóa cơ sở dữ liệu khỏi thiết bị này</string>
     <string name="delete_after">Xóa sau</string>
@@ -482,8 +472,6 @@
     <string name="app_check_for_updates_beta">Beta</string>
     <string name="app_check_for_updates">Kiểm tra cập nhật</string>
     <string name="servers_info_sessions_connecting">Đang kết nối</string>
-    <string name="smp_servers_configured">Các máy chủ SMP đã được cấu hình</string>
-    <string name="xftp_servers_configured">Các máy chủ XFTP đã được cấu hình</string>
     <string name="app_check_for_updates_download_completed_title">Bản cập nhật ứng dụng đã được tải xuống</string>
     <string name="app_check_for_updates_notice_title">Kiểm tra cập nhật</string>
     <string name="servers_info_sessions_connected">Đã kết nối</string>
@@ -537,7 +525,6 @@
     <string name="member_info_member_disabled">đã bị tắt</string>
     <string name="disappearing_messages_are_prohibited">Tin nhắn tự xóa bị cấm.</string>
     <string name="info_view_call_button">gọi</string>
-    <string name="info_view_connect_button">kết nối</string>
     <string name="delete_contact_cannot_undo_warning">Liên hệ sẽ bị xóa - điều này không thể hoàn tác!</string>
     <string name="conversation_deleted">Cuộc trò chuyện đã bị xóa!</string>
     <string name="privacy_media_blur_radius">Làm mờ đa phương tiện</string>
@@ -556,7 +543,6 @@
     <string name="v6_0_connection_servers_status">Kiểm soát mạng của bạn</string>
     <string name="v6_0_connection_servers_status_descr">Kết nối và trạng thái máy chủ.</string>
     <string name="network_settings_title">Cài đặt nâng cao</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Bất kỳ ai cũng có thể tạo máy chủ.</string>
     <string name="chat_database_exported_continue">Tiếp tục</string>
     <string name="v6_0_connect_faster_descr">Kết nối nhanh hơn với bạn bè.</string>
     <string name="chat_database_exported_title">Cơ sở dữ liệu trò chuyện đã được xuất</string>
@@ -588,7 +574,6 @@
     <string name="display_name_cannot_contain_whitespace">Tên hiển thị không thể chứa khoảng trắng.</string>
     <string name="discover_on_network">Khám phá qua mạng cục bộ</string>
     <string name="migrate_to_device_download_failed">Tải về không thành công</string>
-    <string name="dont_create_address">Không tạo địa chỉ</string>
     <string name="dont_show_again">Không hiển thị lại</string>
     <string name="smp_server_test_download_file">Tải về tệp tin</string>
     <string name="migrate_to_device_downloading_archive">Đang tải về kho lưu trữ</string>
@@ -712,8 +697,6 @@
     <string name="error_receiving_file">Lỗi nhận tệp</string>
     <string name="error_saving_group_profile">Lỗi lưu hồ sơ nhóm</string>
     <string name="error_saving_file">Lỗi lưu tệp</string>
-    <string name="error_loading_smp_servers">Lỗi tải máy chủ SMP</string>
-    <string name="error_loading_xftp_servers">Lỗi tải máy chủ XFTP</string>
     <string name="servers_info_reconnect_server_error">Lỗi kết nối lại máy chủ</string>
     <string name="servers_info_reconnect_servers_error">Lỗi kết nối lại máy chủ</string>
     <string name="servers_info_sessions_errors">Lỗi</string>
@@ -722,8 +705,6 @@
     <string name="error_showing_message">lỗi hiển thị tin nhắn</string>
     <string name="error_showing_content">lỗi hiển thị nội dung</string>
     <string name="error_saving_ICE_servers">Lỗi lưu máy chủ ICE</string>
-    <string name="error_saving_xftp_servers">Lỗi lưu máy chủ XFTP</string>
-    <string name="error_saving_smp_servers">Lỗi lưu máy chủ SMP</string>
     <string name="error_sending_message">Lỗi gửi tin nhắn</string>
     <string name="error_starting_chat">Lỗi khởi động kết nối trò chuyện</string>
     <string name="error_stopping_chat">Lỗi dừng kết nối trò chuyện</string>
@@ -896,7 +877,6 @@
     <string name="v6_1_forward_many_messages_descr">Chuyển tiếp tối đa 20 tin nhắn cùng một lúc.</string>
     <string name="how_to_use_your_servers">Cách sử dụng máy chủ của bạn</string>
     <string name="v5_5_new_interface_languages">Giao diện Hungary và Thổ Nhĩ Kỳ</string>
-    <string name="immune_to_spam_and_abuse">Miễn nhiễm với tin nhắn rác</string>
     <string name="import_database_question">Nhập cơ sở dữ liệu trò chuyện?</string>
     <string name="if_you_enter_self_destruct_code">Nếu bạn nhập mã tự hủy của mình khi mở ứng dụng:</string>
     <string name="enter_one_ICE_server_per_line">Máy chủ ICE (một dòng mỗi máy)</string>
@@ -910,10 +890,8 @@
     <string name="image_descr">Hình ảnh</string>
     <string name="image_saved">Hình ảnh đã được lưu vào Thư viện</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Nếu bạn nhận được đường dẫn mời SimpleX Chat, bạn có thể mở nó trong trình duyệt của mình:</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Nếu bạn không thể gặp mặt trực tiếp, bạn có thể <b>quét mã QR trong cuộc gọi video</b>, hoặc liên hệ của bạn có thể chia sẻ một đường dẫn mời.]]></string>
     <string name="network_disable_socks_info">Nếu bạn xác nhận, các máy chủ truyền tin nhắn sẽ có thể biết địa chỉ IP, và nhà cung cấp của bạn - máy chủ nào mà bạn đang kết nối.</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Nếu bạn chọn từ chối người gửi sẽ KHÔNG được thông báo.</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Nếu bạn không thể gặp mặt trực tiếp, <b>cho liên hệ của bạn xem mã QR trong cuộc gọi video</b>, hoặc chia sẻ đường dẫn.]]></string>
     <string name="import_database_confirmation">Nhập</string>
     <string name="ignore">Bỏ qua</string>
     <string name="member_info_member_inactive">không hoạt động</string>
@@ -964,7 +942,6 @@
     <string name="failed_to_create_user_invalid_title">Tên hiển thị không hợp lệ!</string>
     <string name="invalid_connection_link">Đường dẫn kết nối không hợp lệ</string>
     <string name="service_notifications">Thông báo tức thời!</string>
-    <string name="invalid_QR_code">Mã QR không hợp lệ</string>
     <string name="icon_descr_instant_notifications">Thông báo tức thời</string>
     <string name="service_notifications_disabled">Thông báo tức thời đã bị tắt!</string>
     <string name="non_content_uri_alert_title">Đường dẫn tệp không hợp lệ</string>
@@ -978,8 +955,6 @@
     <string name="icon_descr_add_members">Mời thành viên</string>
     <string name="info_row_local_name">Tên cục bộ</string>
     <string name="message_delivery_warning_title">Cảnh báo chuyển gửi tin nhắn</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Đảm bảo địa chỉ máy chủ SMP ở đúng định dạng, dòng được phân tách và không bị trùng lặp.</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Đảm bảo địa chỉ máy chủ XFTP ở đúng định dạng, dòng được phân tách và không bị trùng lặp.</string>
     <string name="link_a_mobile">Liên kết với điện thoại</string>
     <string name="member_inactive_title">Thành viên không hoạt động</string>
     <string name="message_forwarded_title">Tin nhắn đã được chuyển tiếp</string>
@@ -1007,7 +982,6 @@
     <string name="v5_2_disappear_one_message">Làm cho một tin nhắn biến mất</string>
     <string name="live_message">Tin nhắn động!</string>
     <string name="keep_unused_invitation_question">Giữ lại lời mời chưa sử dụng?</string>
-    <string name="update_network_smp_proxy_fallback_question">Dự phòng định tuyến tin nhắn</string>
     <string name="invite_friends">Mời bạn bè</string>
     <string name="mark_code_verified">Đánh dấu đã xác thực</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Điều này có thể xảy ra khi:\n1. Tin nhắn hết hạn sau 2 ngày trên máy gửi hoặc sau 30 ngày trên máy chủ.\n2. Quá trình giải mã tin nhắn thất bại do bạn hoặc liên hệ của bạn sử dụng bản sao lưu cơ sở dữ liệu cũ.\n3. Kết nối bị xâm phạm.</string>
@@ -1052,7 +1026,6 @@
     <string name="settings_section_title_messages">Tin nhắn và tệp</string>
     <string name="message_deletion_prohibited_in_chat">Việc xóa tin nhắn mà không thể phục hồi là bị cấm.</string>
     <string name="v5_5_join_group_conversation">Tham gia vào các cuộc trò chuyện nhóm</string>
-    <string name="update_network_smp_proxy_mode_question">Chế độ định tuyến tin nhắn</string>
     <string name="email_invite_subject">Hãy trò chuyện trên SimpleX Chat</string>
     <string name="italic_text">in nghiêng</string>
     <string name="onboarding_notifications_mode_subtitle">Nó ảnh hưởng đến pin như thế nào</string>
@@ -1175,7 +1148,6 @@
     <string name="chat_preferences_on">bật</string>
     <string name="forward_alert_title_nothing_to_forward">Không có gì để chuyển tiếp!</string>
     <string name="shutdown_alert_desc">Thông báo sẽ dừng hoạt động cho đến khi bạn khởi động lại ứng dụng</string>
-    <string name="first_platform_without_user_ids">Không có thông tin định danh người dùng.</string>
     <string name="item_info_no_text">không có văn bản</string>
     <string name="feature_off">tắt</string>
     <string name="chat_preferences_off">tắt</string>`
@@ -1198,7 +1170,6 @@
     <string name="ok">OK</string>
     <string name="only_delete_conversation">Chỉ xóa cuộc trò chuyện</string>
     <string name="only_you_can_send_voice">Chỉ bạn mới có thể gửi tin nhắn thoại.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Chỉ thiết bị cuối mới lưu trữ các hồ sơ người dùng, liên hệ, nhóm, và tin nhắn</string>
     <string name="only_group_owners_can_enable_voice">Chỉ chủ nhóm mới có thể bật tính năng tin nhắn thoại.</string>
     <string name="only_you_can_send_disappearing">Chỉ bạn mới có thể gửi tin nhắn tự xóa.</string>
     <string name="one_time_link">Đường dẫn lời mời dùng một lần</string>
@@ -1225,7 +1196,6 @@
     <string name="network_use_onion_hosts_prefer_desc">Dịch vụ onion sẽ được sử dụng khi có sẵn.</string>
     <string name="only_your_contact_can_send_voice">Chỉ liên hệ của bạn mới có thể gửi tin nhắn thoại.</string>
     <string name="group_member_role_owner">chủ sở hữu</string>
-    <string name="open_server_settings_button">Mở cài đặt máy chủ</string>
     <string name="simplex_link_mode_browser_warning">Mở đường dẫn trong trình duyệt có thể làm giảm sự riêng tư và bảo mật của kết nối. Đường dẫn SimpleX không đáng tin cậy sẽ được đánh dấu màu đỏ.</string>
     <string name="only_your_contact_can_delete">Chỉ liên hệ của bạn mới có thể xóa tin nhắn mà không thể phục hồi (bạn có thể đánh dấu chúng để xóa). (24 giờ)</string>
     <string name="turn_off_system_restriction_button">Mở cài đặt ứng dụng</string>
@@ -1235,7 +1205,6 @@
     <string name="opening_database">Đang mở cơ sở dữ liệu…</string>
     <string name="or_show_this_qr_code">Hoặc hiển thị mã này</string>
     <string name="only_your_contact_can_make_calls">Chỉ liên hệ của bạn mới có thể thực hiện cuộc gọi.</string>
-    <string name="info_view_open_button">mở</string>
     <string name="v5_4_more_things_descr">- tùy chọn thông báo khi xóa liên hệ.\n- tên hồ sơ với dấu cách.\n- và hơn thế nữa!</string>
     <string name="permissions_open_settings">Mở cài đặt</string>
     <string name="migrate_from_device_or_share_this_file_link">Hoặc chia sẻ đường dẫn tệp này một cách an toàn.</string>
@@ -1252,14 +1221,10 @@
     <string name="connect_plan_open_group">Mở nhóm</string>
     <string name="other_label">khác</string>
     <string name="other_errors">các lỗi khác</string>
-    <string name="smp_servers_other">Các máy chủ SMP khác</string>
-    <string name="xftp_servers_other">Các máy chủ XFTP khác</string>
-    <string name="paste_the_link_you_received_to_connect_with_your_contact">Dán đường dẫn mà bạn nhận được để kết nối với liên hệ của bạn…</string>
     <string name="paste_link">Dán đường dẫn</string>
     <string name="network_proxy_password">Mật khẩu</string>
     <string name="onboarding_notifications_mode_periodic">Định kỳ</string>
     <string name="servers_info_subscriptions_connections_pending">Đang chờ xử lý</string>
-    <string name="icon_descr_server_status_pending">Đang chờ xử lý</string>
     <string name="restore_passphrase_not_found_desc">Không tìm thấy mật khẩu trong Keystore, vui lòng nhập thủ công. Điều này có thể xảy ra nếu bạn khôi phục dữ liệu ứng dụng bằng một công cụ sao lưu. Nếu không phải như vậy, xin vui lòng liên hệ với nhà phát triển.</string>
     <string name="past_member_vName">Thành viên trước đây %1$s</string>
     <string name="v5_5_simpler_connect_ui">Dán đường dẫn để kết nối!</string>
@@ -1305,14 +1270,12 @@
     <string name="v4_5_message_draft_descr">Lưu lại bản nháp tin nhắn cuối cùng, với các tệp đính kèm.</string>
     <string name="migrate_to_device_database_init">Đang chuẩn bị tải xuống</string>
     <string name="contact_developers">Xin vui lòng cập nhật ứng dụng và liên lạc với các nhà phát triển.</string>
-    <string name="smp_servers_preset_server">Máy chủ cài sẵn</string>
     <string name="please_try_later">Xin vui lòng thử lại sau.</string>
     <string name="group_welcome_preview">Xem trước</string>
     <string name="store_passphrase_securely">Xin vui lòng lưu trữ mật khẩu một cách an toàn, bạn sẽ KHÔNG thể thay đổi nếu bạn làm mất nó.</string>
     <string name="v5_0_polish_interface">Giao diện tiếng Ba Lan</string>
     <string name="app_check_for_updates_installed_successfully_desc">Xin vui lòng khởi động lại ứng dụng.</string>
     <string name="servers_info_previously_connected_servers_section_header">Các máy chủ đã kết nối trước đó</string>
-    <string name="privacy_redefined">Định hình lại sự riêng tư</string>
     <string name="privacy_and_security">Quyền riêng tư &amp; bảo mật</string>
     <string name="profile_update_will_be_sent_to_contacts">Bản cập nhật hồ sơ sẽ được gửi đến các liên hệ của bạn.</string>
     <string name="prohibit_message_reactions">Cấm thả cảm xúc tin nhắn.</string>
@@ -1363,7 +1326,6 @@
     <string name="address_settings">Cài đặt địa chỉ</string>
     <string name="operators_conditions_accepted_for"><![CDATA[Các điều kiện được chấp nhận với (các) nhà cung cấp: <b>%s</b>.]]></string>
     <string name="operator_conditions_accepted_for_some"><![CDATA[Các điều kiện đã được chấp nhận rồi đối với (các) nhà cung cấp sau: <b>%s</b>.]]></string>
-    <string name="read_more_in_github_with_link"><![CDATA[Đọc thêm tại <font color="#0088ff">Kho lưu trữ GitHub của chúng tôi</font>.]]></string>
     <string name="operator_same_conditions_will_be_applied"><![CDATA[Các điều kiện tương tự sẽ áp dụng cho nhà cung cấp <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Các điều kiện tương tự sẽ áp dụng cho (các) nhà cung cấp <b>%s</b>.]]></string>
     <string name="operators_conditions_will_also_apply"><![CDATA[Các điều kiện này cũng sẽ áp dụng cho: <b>%s</b>.]]></string>
@@ -1378,7 +1340,6 @@
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Bạn đã ở trong nhóm <b>%1$s</b> rồi.]]></string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Đây là đường dẫn của bạn cho nhóm <b>%1$s</b>!]]></string>
     <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Bạn đã tham gia nhóm <b>%1$s</b> rồi.]]></string>
-    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Bạn cũng có thể kết nối bằng cách nhấp vào đường dẫn. Nếu nó mở trong trình duyệt, nhấp vào nút<b>Mở trong ứng dụng di động</b>.]]></string>
     <string name="onboarding_choose_server_operators">Các bên vận hành máy chủ</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Bạn có thể <font color="#0088ff">kết nối với các nhà phát triển SimpleX Chat để hỏi bất kỳ câu hỏi nào và nhận thông tin cập nhật</font>.]]></string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Bạn <b>không được</b> sử dụng cùng một cơ sở dữ liệu trên hai thiết .]]></string>
@@ -1387,7 +1348,6 @@
     <string name="errors_in_servers_configuration">Lỗi trong cấu hình máy chủ.</string>
     <string name="connection_security">Bảo mật kết nối</string>
     <string name="create_1_time_link">Tạo đường dẫn dùng một lần</string>
-    <string name="onboarding_network_operators_conditions_will_be_accepted">Các điều kiện sẽ được chấp nhận với các nhà cung cấp được cho phép sau 30 ngày.</string>
     <string name="onboarding_network_operators_continue">Tiếp tục</string>
     <string name="operator_conditions_failed_to_load">Không thể tải văn bản về các điều kiện hiện tại, bạn có thể xem xét các điều kiện thông qua đường dẫn này:</string>
     <string name="operator_conditions_of_use">Các điều kiện sử dụng</string>
@@ -1408,7 +1368,6 @@
     <string name="connect_plan_chat_already_exists">Cuộc trò chuyện đã tồn tại!</string>
     <string name="button_add_friends">Thêm bạn bè</string>
     <string name="display_name_accepted_invitation">đã chấp nhận lời mời</string>
-    <string name="all_message_and_files_e2e_encrypted"><![CDATA[Tất cả các tin nhắn và tệp gửi đi đều được <b>mã hóa đầu cuối</b>, với bảo mật sau ượng tử trong các tin nhắn trực tiếp.]]></string>
     <string name="onboarding_network_about_operators">Giới thiệu về các nhà cung cấp</string>
     <string name="add_your_team_members_to_conversations">Thêm các thành viên nhóm của bạn vào các cuộc trò chuyện.</string>
     <string name="business_address">Địa chỉ doanh nghiệp</string>
@@ -1421,7 +1380,6 @@
     <string name="invite_to_chat_button">Mời để trò chuyện</string>
     <string name="button_leave_chat">Rời cuộc trò chuyện</string>
     <string name="operator_use_for_messages_private_routing">Cho định tuyến riêng tư</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">để bảo mật siêu dữ liệu tốt hơn.</string>
     <string name="v6_2_improved_chat_navigation">Đã cải thiện điều hướng trò chuyện</string>
     <string name="button_delete_chat">Xóa cuộc trò chuyện</string>
     <string name="for_social_media">Cho mạng xã hội</string>
@@ -1532,7 +1490,6 @@
     <string name="refresh_qr_code">Làm mới</string>
     <string name="v4_5_reduced_battery_usage">Đã giảm mức sử dụng pin</string>
     <string name="reject_contact_button">Từ chối</string>
-    <string name="remote_hosts_section">Các thiết bị di động từ xa</string>
     <string name="remove_passphrase">Xóa</string>
     <string name="remove_member_confirmation">Xóa</string>
     <string name="button_remove_member">Xóa thành viên</string>
@@ -1616,8 +1573,6 @@
     <string name="selected_chat_items_selected_n">Đã chọn %d</string>
     <string name="compose_send_direct_message_to_connect">Gửi tin nhắn trực tiếp để kết nối</string>
     <string name="compose_save_messages_n">Đang lưu %1$s tin nhắn</string>
-    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(quét hoặc dán từ bảng nháp)</string>
-    <string name="onboarding_select_network_operators_to_use">Chọn các bên vận hành mạng lưới để sử dụng.</string>
     <string name="button_send_direct_message">Gửi tin nhắn trực tiếp</string>
     <string name="save_welcome_message_question">Lưu lời chào?</string>
     <string name="icon_descr_sent_msg_status_send_failed">gửi thất bại</string>
@@ -1628,7 +1583,6 @@
     <string name="save_list">Lưu danh sách</string>
     <string name="retry_verb">Thử lại</string>
     <string name="save_and_notify_contact">Lưu và thông báo tới liên hệ</string>
-    <string name="onboarding_network_operators_review_later">Xem xét lại sau</string>
     <string name="rcv_conn_event_verification_code_reset">mã bảo mật đã thay đổi</string>
     <string name="save_group_profile">Lưu hồ sơ nhóm</string>
     <string name="network_options_save_and_reconnect">Lưu và kết nối lại</string>
@@ -1750,7 +1704,6 @@
     <string name="terminal_always_visible">Hiển thị bảng điều khiển trong cửa sổ mới</string>
     <string name="error_creating_report">Lỗi tạo báo cáo</string>
     <string name="share_message">Chia sẻ tin nhắn…</string>
-    <string name="chat_list_always_visible">Hiển thị danh sách trò chuyện trong cửa sổ mới</string>
     <string name="notification_preview_mode_contact_desc">Chỉ hiển thị liên hệ</string>
     <string name="share_this_1_time_link">Chia sẻ đường dẫn dùng 1 lần này</string>
     <string name="share_with_contacts">Chia sẻ với các liên hệ</string>
@@ -1827,7 +1780,6 @@
     <string name="icon_descr_speaker_on">Loa ngoài bật</string>
     <string name="icon_descr_sound_muted">Âm thanh đã bị tắt</string>
     <string name="app_check_for_updates_stable">Ổn định</string>
-    <string name="settings_section_title_socks">Proxy SOCKS</string>
     <string name="receipts_section_groups">Các nhóm nhỏ (tối đa 20 thành viên)</string>
     <string name="non_fatal_errors_occured_during_import">Một vài lỗi không nghiêm trọng đã xảy ra trong lúc nhập:</string>
     <string name="icon_descr_speaker_off">Loa ngoài tắt</string>
@@ -1853,7 +1805,6 @@
     <string name="chat_database_exported_not_all_files">Một số tệp đã không được xuất</string>
     <string name="audio_device_speaker">Loa ngoài</string>
     <string name="start_chat_question">Bắt đầu kết nối trò chuyện?</string>
-    <string name="smp_servers">Các máy chủ SMP</string>
     <string name="migrate_from_device_start_chat">Bắt đầu kết nối trò chuyện</string>
     <string name="report_reason_spam">Tin nhắn rác</string>
     <string name="privacy_media_blur_radius_strong">Mạnh</string>
@@ -1902,7 +1853,6 @@
     <string name="la_mode_system">Hệ thống</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Xin gửi lời cảm ơn tới các người dùng đã góp công qua Weblate!</string>
     <string name="contact_tap_to_connect">Nhấn để Kết nối</string>
-    <string name="address_creation_instruction">Nhấn Tạo địa chỉ SimpleX ở menu để tạo sau.</string>
     <string name="group_invitation_tap_to_join_incognito">Nhấn để tham gia một cách ẩn danh</string>
     <string name="theme_system">Hệ thống</string>
     <string name="v6_1_better_calls_descr">Chuyển đổi âm thanh và video trong lúc gọi.</string>
@@ -1913,12 +1863,10 @@
     <string name="thank_you_for_installing_simplex">Cảm ơn bạn đã cài đặt SimpleX Chat!</string>
     <string name="smp_servers_test_server">Kiểm tra máy chủ</string>
     <string name="smp_servers_test_servers">Kiểm tra các máy chủ</string>
-    <string name="tap_to_start_new_chat">Nhấn để bắt đầu một cuộc trò chuyện mới</string>
     <string name="tap_to_paste_link">Nhấn để dán đường dẫn</string>
     <string name="settings_message_shape_tail">Đuôi</string>
     <string name="switch_verb">Chuyển đổi</string>
     <string name="connection_error_quota_desc">Kết nối đã chạm giới hạn của các tin nhắn chưa được gửi đi, liên hệ của bạn có thể đang ngoại tuyến.</string>
-    <string name="next_generation_of_private_messaging">Tương lai của nhắn tin</string>
     <string name="image_decoding_exception_desc">Hình ảnh không thể được giải mã. Xin vui lòng thử lại với một hình ảnh khác hoặc liên lạc với các nhà phát triển.</string>
     <string name="moderate_messages_will_be_deleted_warning">Các tin nhắn sẽ bị xóa cho tất cả các thành viên.</string>
     <string name="sync_connection_force_desc">Mã hóa đang hoạt động và thỏa thuận mã hóa mới là không bắt buộc. Nó có thể dẫn đến các lỗi kết nối!</string>
@@ -1966,7 +1914,6 @@
     <string name="in_developing_desc">Tính năng này chưa được hỗ trợ. Hãy thử bản phát hành tiếp theo.</string>
     <string name="v5_2_message_delivery_receipts_descr">Dấu tick thứ hai mà chúng ta từng thiếu! ✅</string>
     <string name="xftp_servers_per_user">Những máy chủ cho tệp mới của hồ sơ trò chuyện hiện tại của bạn</string>
-    <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Nền tảng ứng dụng và nhắn tin bảo vệ sự riêng tư và bảo mật của bạn.</string>
     <string name="v6_2_network_decentralization_descr">Bên vận hành được cài sẵn thứ hai trong ứng dụng!</string>
     <string name="member_role_will_be_changed_with_notification_chat">Chức vụ sẽ được đổi thành %s. Tất cả mọi người trong cuộc trò chuyện sẽ được thông báo.</string>
     <string name="the_text_you_pasted_is_not_a_link">Văn bản bạn vừa dán không phải là một đường dẫn SimpleX.</string>
@@ -1977,13 +1924,9 @@
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Bản lưu trữ cơ sở dữ liệu đã được tải lên sẽ bị xóa vĩnh viễn khỏi các máy chủ.</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Việc này không thể được hoàn tác - hồ sơ, các liên hệ, tin nhắn và tệp của bạn sẽ biến mất mà không thể khôi phục.</string>
     <string name="smp_servers_per_user">Những máy chủ cho các kết nối mới của hồ sơ trò chuyện hiện tại của bạn</string>
-    <string name="report_archive_alert_desc">Báo cáo sẽ được lưu trữ cho bạn.</string>
     <string name="message_deleted_or_not_received_error_desc">Tin nhắn này đã bị xóa hoặc vẫn chưa được nhận.</string>
-    <string name="this_QR_code_is_not_a_link">Mã QR này không phải là một đường dẫn!</string>
-    <string name="this_link_is_not_a_valid_connection_link">Đường dẫn này không phải là một đường dẫn kết nối hợp lệ!</string>
     <string name="remote_ctrl_error_timeout">Thời gian chờ đã hết trong khi kết nối tới máy tính</string>
     <string name="open_port_in_firewall_desc">Để cho phép một ứng dụng di động kết nối tới máy tính, mở cổng này trong tường lửa của bạn, nếu bạn có bật nó lên</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Để bảo vệ sự riêng tư của bạn, SimpleX sử dụng các ID riêng biệt cho mỗi liên hệ bạn có.</string>
     <string name="enter_passphrase_notification_desc">Để nhận thông báo, xin vui lòng nhập mật khẩu cơ sở dữ liệu</string>
     <string name="images_limit_title">Quá nhiều ảnh!</string>
     <string name="videos_limit_title">Quá nhiều video!</string>
@@ -1997,7 +1940,6 @@
     <string name="color_title">Tiêu đề</string>
     <string name="v5_3_simpler_incognito_mode_descr">Chuyển đổi ẩn danh khi kết nối.</string>
     <string name="v4_5_private_filenames_descr">Để bảo vệ múi giờ, các tệp hình ảnh/âm thanh sử dụng UTC.</string>
-    <string name="this_text_is_available_in_settings">Văn bản này có sẵn trong cài đặt</string>
     <string name="app_check_for_updates_notice_desc">Để được thông báo về các bản phát hành mới, bật kiểm tra định kỳ cho các phiên bản Ổn định hoặc Beta.</string>
     <string name="v5_4_block_group_members_descr">Để ẩn các tin nhắn không mong muốn.</string>
     <string name="to_reveal_profile_enter_password">Để tiết lộ hồ sơ ẩn của bạn, nhập đầy đủ mật khẩu vào trường tìm kiếm trong trang Các hồ sơ trò chuyện của bạn.</string>
@@ -2026,7 +1968,6 @@
     <string name="servers_info_transport_sessions_section_header">Các phiên truyền tải</string>
     <string name="file_not_approved_title">Các máy chủ không xác định!</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">gửi mà không được cho phép</string>
-    <string name="to_share_with_your_contact">(để chia sẻ với liên hệ của bạn)</string>
     <string name="user_unhide">Bỏ ẩn</string>
     <string name="la_notice_turn_on">Bật</string>
     <string name="servers_info_subscriptions_total">Tổng</string>
@@ -2040,7 +1981,6 @@
     <string name="recent_history_is_sent_to_new_members">Tối đa tới 100 tin nhắn cuối cùng là được gửi tới các thành viên mới.</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_entity">Sử dụng các thông tin đăng nhập proxy khác cho mỗi kết nối.</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_user">Sử dụng các thông tin đăng nhập proxy khác nhau cho mỗi hồ sơ.</string>
-    <string name="update_network_session_mode_question">Cập nhật chế độ cách ly truyền tải?</string>
     <string name="unlink_desktop_question">Hủy liên kết máy tính?</string>
     <string name="smp_server_test_upload_file">Tải lên tệp</string>
     <string name="app_check_for_updates_update_available">Có bản cập nhật: %s</string>
@@ -2067,7 +2007,6 @@
     <string name="v6_0_upgrade_app">Nâng cấp ứng dụng một cách tự động</string>
     <string name="servers_info_uploaded">Đã tải lên</string>
     <string name="update_network_settings_confirmation">Cập nhật</string>
-    <string name="onboarding_network_operators_update">Cập nhật</string>
     <string name="auth_unlock">Mở khóa</string>
     <string name="v4_4_verify_connection_security">Xác minh bảo mật kết nối</string>
     <string name="operator_use_for_files">Sử dụng cho các tệp</string>
@@ -2089,7 +2028,6 @@
     <string name="connect_use_new_incognito_profile">Sử dụng hồ sơ ẩn danh mới</string>
     <string name="simplex_link_connection">qua %1$s</string>
     <string name="network_socks_toggle_use_socks_proxy">Sử dụng proxy SOCKS</string>
-    <string name="use_chat">Sử dụng SimpleX Chat</string>
     <string name="smp_servers_use_server_for_new_conn">Sử dụng cho các kết nối mới</string>
     <string name="smp_servers_use_server">Sử dụng máy chủ</string>
     <string name="network_enable_socks">Sử dụng proxy SOCKS?</string>
@@ -2130,8 +2068,6 @@
     <string name="video_call_no_encryption">cuộc gọi video (không được mã hóa đầu cuối)</string>
     <string name="description_via_contact_address_link">qua đường dẫn địa chỉ liên lạc</string>
     <string name="video_descr">Video</string>
-    <string name="we_do_not_store_contacts_or_messages_on_servers">Chúng tôi không lưu bất kỳ liên hệ hay tin nhắn nào của bạn (một khi đã được gửi) trên các máy chủ.</string>
-    <string name="operator_website">Website</string>
     <string name="personal_welcome">Xin chào %1$s!</string>
     <string name="network_use_onion_hosts_prefer">Khi có sẵn</string>
     <string name="voice_messages_prohibited">Các tin nhắn thoại bị cấm!</string>
@@ -2146,7 +2082,6 @@
     <string name="color_wallpaper_background">Màu nền hình nền</string>
     <string name="waiting_for_desktop">Đang chờ máy tính…</string>
     <string name="waiting_for_mobile_to_connect">Đang chờ di động để kết nối:</string>
-    <string name="welcome">Xin chào!</string>
     <string name="waiting_for_video">Đang chờ video</string>
     <string name="contact_wants_to_connect_with_you">muốn kết nối với bạn!</string>
     <string name="waiting_for_file">Đang chờ tệp</string>
@@ -2179,19 +2114,15 @@
     <string name="disable_automatic_deletion">Tắt tính năng xóa tin nhắn</string>
     <string name="text_field_set_chat_placeholder">Đặt tên cuộc trò chuyện…</string>
     <string name="file_not_approved_descr">Không có Tor hoặc VPN, địa chỉ IP của bạn sẽ bị lộ ra cho các relay XFTP sau đây:\n%1$s.</string>
-    <string name="xftp_servers">Các máy chủ XFTP</string>
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Khi có nhiều hơn một bên vận hành được kích hoạt, không ai trong số họ có siêu dữ liệu để biết được ai trò chuyện với ai.</string>
     <string name="v5_5_private_notes_descr">Với các tệp và đa phương tiện được mã hóa.</string>
     <string name="v5_5_message_delivery_descr">Mức sử dụng pin đã được giảm xuống.</string>
     <string name="v5_8_message_delivery_descr">Mức sử dụng pin đã được giảm xuống.</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Với lời chào tùy chọn.</string>
-    <string name="you_can_accept_or_reject_connection">Khi mọi người gửi yêu cầu kết nối, bạn có thể chấp nhận hoặc từ chối nó.</string>
     <string name="file_error_auth">Khóa sai hoặc địa chỉ khối tệp không xác định - khả năng cao tệp đã bị xóa.</string>
     <string name="chat_item_ttl_year">1 năm</string>
     <string name="change_automatic_chat_deletion_message">Việc này không thể được hoàn tác - các tin nhắn đã được gửi và nhận trong cuộc trò chuyện này sớm hơn thời gian được chọn sẽ bị xóa.</string>
     <string name="chat_preferences_yes">có</string>
-    <string name="you_can_make_address_visible_via_settings">Bạn có thể hiển thị nó cho các liên hệ SimpleX của mình thông qua Cài đặt.</string>
-    <string name="you_can_create_it_later">Bạn có thể tạo nó sau</string>
     <string name="one_hand_ui_change_instruction">Bạn có thể thay đổi nói trong cài đặt Giao diện.</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Bạn đang tham gia nhóm thông qua đường dẫn này.</string>
     <string name="you_can_enable_delivery_receipts_later">Bạn có thể bật vào lúc sau thông qua Cài đặt</string>
@@ -2204,7 +2135,6 @@
     <string name="you_are_already_connected_to_vName_via_this_link">Bạn đã kết nối với %1$s rồi.</string>
     <string name="chat_preferences_you_allow">Bạn cho phép</string>
     <string name="servers_info_proxied_servers_section_footer">Bạn không được kết nối với các máy chủ này. Định tuyến riêng tư được sử dụng để gửi tin nhắn tới chúng.</string>
-    <string name="onboarding_network_operators_conditions_you_can_configure">Bạn có thể định cấu hình các bên vận hành trong cài đặt Mạng &amp; máy chủ.</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Bạn đang kết nối thông qua đường dẫn dùng một lần này!</string>
     <string name="migrate_from_device_try_again">Bạn có thể thử một lần nữa.</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Bạn được mời vào nhóm. Tham gia để kết nối với các thành viên nhóm.</string>
@@ -2243,9 +2173,7 @@
     <string name="snd_conn_event_switch_queue_phase_completed">bạn đã thay đổi địa chỉ</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Bạn đã yêu cầu kết nối thông qua địa chỉ này rồi!</string>
     <string name="you_invited_a_contact">Bạn đã mời một liên hệ</string>
-    <string name="you_can_share_your_address">Bạn có thể chia sẻ địa chỉ của mình dưới dạng một đường dẫn hoặc mã QR - bất kỳ ai cũng có thể kết nối với bạn.</string>
     <string name="you_can_view_invitation_link_again">Bạn có thể xem đường dẫn mời lần nữa trong chi tiết kết nối.</string>
-    <string name="you_control_your_chat">Bạn kiểm soát cuộc trò chuyện của mình!</string>
     <string name="observer_cant_send_message_title">bạn là quan sát viên</string>
     <string name="you_can_share_this_address_with_your_contacts">Bạn có thể chia sẻ địa chỉ này với các liên hệ của mình để họ kết nối với %s.</string>
     <string name="you_need_to_allow_to_send_voice">Bạn cần cho phép liên hệ của mình gửi tin nhắn thoại để có thể gửi cho họ.</string>
@@ -2254,7 +2182,6 @@
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">bạn đã thay đổi địa chỉ cho %s</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Bạn có thể sử dụng markdown để định dạng tin nhắn:</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Bạn có thể bắt đầu kết nối trò chuyện thông qua phần Cài đặt / Cơ sở dữ liệu ở trên ứng dụng hoặc bằng cách khởi động lại ứng dụng.</string>
-    <string name="people_can_connect_only_via_links_you_share">Bạn quyết định ai có thể kết nối tới.</string>
     <string name="your_chat_database">Cơ sở dữ liệu trò chuyện của bạn</string>
     <string name="your_privacy">Sự riêng tư của bạn</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Cơ sở dữ liệu trò chuyện hiện tại của bạn sẽ bị XÓA và THAY THẾ bằng cái được nhập vào.\nViệc này không thể được hoàn tác - hồ sơ, các liên hệ, tin nhắn và tệp của bạn sẽ biến mất mà không thể khôi phục.</string>
@@ -2263,7 +2190,6 @@
     <string name="your_profile_is_stored_on_your_device">Hồ sơ, các liên hệ và những tin nhắn đã được gửi của bạn được lưu trữ trên thiết bị bạn dùng.</string>
     <string name="v4_3_irreversible_message_deletion_desc">Các liên hệ của bạn có thể cho phép xóa tin nhắn hoàn toàn.</string>
     <string name="appearance_zoom">Thu phóng</string>
-    <string name="your_SMP_servers">Các máy chủ SMP của bạn</string>
     <string name="description_you_shared_one_time_link">Bạn đã chia sẻ đường dẫn dùng một lần</string>
     <string name="group_main_profile_sent">Hồ sơ trò chuyện của bạn sẽ được gửi tới các thành viên nhóm</string>
     <string name="your_current_profile">Hồ sơ hiện tại của bạn</string>
@@ -2273,7 +2199,6 @@
     <string name="you_sent_group_invitation">Bạn đã gửi lời mời nhóm</string>
     <string name="you_rejected_group_invitation">Bạn đã từ chối lời mời nhóm</string>
     <string name="snd_group_event_member_unblocked">bạn đã bỏ chặn %s</string>
-    <string name="your_chat_profile_will_be_sent_to_your_contact">Hồ sơ trò chuyện của bạn sẽ được gửi\ntới liên hệ của bạn</string>
     <string name="description_you_shared_one_time_link_incognito">bạn đã chia sẻ đường dẫn ẩn danh dùng một lần</string>
     <string name="your_simplex_contact_address">Địa chỉ SimpleX của bạn</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Liên hệ của bạn cần phải trực tuyến để cho kết nối hoàn thành.\nBạn có thể hủy kết nối này và xóa liên hệ (và thử lại sau với một đường dẫn mới).</string>
@@ -2282,7 +2207,6 @@
     <string name="chat_main_profile_sent">Hồ sơ trò chuyện của bạn sẽ được gửi tới các thành viên có liên lạc</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Bạn sẽ được kết nối khi yêu cầu kết nối của bạn được chấp nhận, xin vui lòng đợi hoặc kiểm tra sau!</string>
     <string name="connect__your_profile_will_be_shared">Hồ sơ %1$s sẽ được chia sẻ.</string>
-    <string name="your_XFTP_servers">Các máy chủ XFTP của bạn</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Hồ sơ của bạn sẽ được gửi tới liên hệ mà bạn đã nhận từ người đó đường dẫn này.</string>
     <string name="you_will_join_group">Bạn sẽ kết nối với tất cả các thành viên nhóm.</string>
     <string name="non_content_uri_alert_text">Bạn đã chia sẻ một đường dẫn tệp không hợp lệ. Báo cáo vấn đề tới các nhà phát triển ứng dụng.</string>
@@ -2296,9 +2220,7 @@
     <string name="contact_list_header_title">Các liên hệ của bạn</string>
     <string name="your_chat_profiles">Các hồ sơ trò chuyện của bạn</string>
     <string name="your_settings">Cài đặt của bạn</string>
-    <string name="smp_servers_your_server">Máy chủ của bạn</string>
     <string name="smp_servers_your_server_address">Địa chỉ máy chủ của bạn</string>
-    <string name="your_ice_servers">Các máy chủ ICE của bạn</string>
     <string name="network_proxy_auth_mode_username_password">Thông tin định danh của bạn có thể bị gửi mà không được mã hóa.</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Hồ sơ của bạn được lưu trên thiết bị bạn dùng và chỉ được chia sẻ với các liên hệ bạn có. Các máy chủ SimpleX không thể xem hồ sơ của bạn.</string>
     <string name="switching_profile_error_message">Kết nối của bạn đã bị chuyển tới %s nhưng một lỗi không mong muốn đã xảy ra trong khi chuyển hướng bạn đến hồ sơ.</string>
@@ -2310,7 +2232,6 @@
     <string name="network_smp_web_port_toggle">Sử dụng cổng web</string>
     <string name="max_group_mentions_per_message_reached">Bạn có thể nhắc đến tối đa là %1$s thành viên trong một tin nhắn!</string>
     <string name="mute_all_chat">Tắt thông báo tất cả</string>
-    <string name="unread_mentions">Những lời nhắc chưa đọc</string>
     <string name="group_members_can_send_reports">Các thành viên có thể báo cáo tin nhắn tới các kiểm duyệt viên.</string>
     <string name="report_archive_alert_desc_all">Tất cả các báo cáo sẽ được lưu trữ cho bạn.</string>
     <string name="report_archive_alert_title_all">Lưu trữ tất cả báo cáo?</string>
@@ -2442,8 +2363,6 @@
     <string name="relay_conn_status_connected">đã kết nối</string>
     <string name="v6_4_connect_faster">Kết nối nhanh hơn 🚀</string>
     <string name="relay_conn_status_connecting">đang kết nối</string>
-    <string name="channel_name_requires_newer_app_version">Kết nối bằng tên kênh yêu cầu phiên bản ứng dụng mới hơn</string>
-    <string name="contact_name_requires_newer_app_version">Kết nối bằng tên liên hệ yêu cầu phiên bản ứng dụng mới hơn.</string>
     <string name="info_row_connection_failed">Kết nối thất bại</string>
     <string name="connect_via_link_or_qr_code">Kết nối bằng đường dẫn hoặc mã QR</string>
     <string name="settings_section_title_contact">Liên hệ</string>
@@ -2465,7 +2384,6 @@
     <string name="error_creating_channel">Lỗi tạo kênh</string>
     <string name="error_deleting_message">Lỗi khi xoá tin nhắn</string>
     <string name="error_marking_member_support_chat_read">Lỗi khi đánh dấu \"đã xem\"</string>
-    <string name="error_opening_channel">Lỗi mở kênh</string>
     <string name="error_preparing_contact">Lỗi khi mở đoạn chat</string>
     <string name="error_preparing_group">Lỗi khi mở nhóm</string>
     <string name="error_rejecting_contact_request">Lỗi khi từ chối lời mời kết nối</string>
@@ -2481,13 +2399,11 @@
     <string name="let_someone_connect_to_you">Để ai đó kết nối với bạn</string>
     <string name="action_button_channel_link">Đường dẫn</string>
     <string name="loading_profile">Đang tải hồ sơ…</string>
-    <string name="settings_section_title_about">Giới thiệu</string>
     <string name="accept_contact_request">Đồng ý yêu cầu kết nối</string>
     <string name="chat_banner_accept_contact_request">Đồng ý yêu cầu kết nối</string>
     <string name="relay_status_accepted">đã chấp nhận</string>
     <string name="relay_status_acknowledged_roster">danh sách đã xác nhận</string>
     <string name="relay_status_active">đang hoạt động</string>
-    <string name="add_button">Thêm mới</string>
     <string name="compose_view_add_message">Thêm tin nhắn</string>
     <string name="add_relay_button">Thêm thiết bị</string>
     <string name="add_relays_title">Thêm mới thiết bị</string>

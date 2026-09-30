@@ -115,8 +115,8 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: 
                 INSERT INTO groups
                   (group_profile_id, local_display_name, inv_queue_info, user_id, enable_ntfs,
-                   created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, business_member_id, customer_member_id)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                   created_at, updated_at, chat_ts, user_member_profile_sent_at, member_priv_key, business_chat, business_member_id, customer_member_id)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
               
 Plan:
 
@@ -124,7 +124,7 @@ Query:
                 SELECT
                   -- Contact
                   ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-                  cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
+                  cp.preferences, cp.preferences_json, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
                   ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
                   ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                   cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx, cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
@@ -149,7 +149,7 @@ Query:
                   -- GroupInfo
                   g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
                   gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-                  g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
+                  g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.preferences_json, gp.member_admission,
                   g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
                   g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
                   g.business_chat, g.business_member_id, g.customer_member_id,
@@ -160,13 +160,13 @@ Query:
                   mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
                   mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
                   -- GroupInfo {membership = GroupMember {memberProfile}}
-                  pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+                  pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
                   pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
                   mu.created_at, mu.updated_at,
                   mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at,
                   -- from GroupMember
                   m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-                  m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+                  m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
                   p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
                   m.created_at, m.updated_at,
                   m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at
@@ -288,8 +288,8 @@ SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
               INSERT INTO group_members
                 ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by,
-                  user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                  user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, created_at, updated_at)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             
 Plan:
 SEARCH rcv_roster_transfers USING COVERING INDEX idx_rcv_roster_transfers_from_member_id (from_member_id=?)
@@ -395,8 +395,8 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: 
               INSERT INTO groups
                 (group_profile_id, local_display_name, user_id, enable_ntfs,
-                  created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat)
-              VALUES (?,?,?,?,?,?,?,?,?)
+                  created_at, updated_at, chat_ts, user_member_profile_sent_at, business_chat, member_priv_key)
+              VALUES (?,?,?,?,?,?,?,?,?,?)
             
 Plan:
 
@@ -405,7 +405,7 @@ Query:
                 cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
                 cr.contact_id, cr.business_group_id, cr.user_contact_link_id, cr.rejection_supported,
                 cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
-                cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+                cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences, p.preferences_json,
                 cr.created_at, cr.updated_at,
                 cr.peer_chat_min_version, cr.peer_chat_max_version,
                 p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified
@@ -528,10 +528,11 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
               UPDATE group_profiles
-              SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
+              SET preferences = ?, preferences_json = ?,
+                  display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?,
                   group_type = ?, group_link = ?,
                   group_web_page = ?, group_domain = CASE WHEN ? THEN ? ELSE group_domain END, domain_web_page = ?, allow_embedding = ?, group_domain_proof = ?,
-                  preferences = ?, member_admission = ?, updated_at = ?
+                  member_admission = ?, updated_at = ?
               WHERE group_profile_id IN (
                 SELECT group_profile_id
                 FROM groups
@@ -733,7 +734,7 @@ Plan:
 Query: 
             SELECT
               c.contact_profile_id, c.local_display_name, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, c.contact_used, c.contact_status, c.enable_ntfs, c.send_rcpts, c.favorite,
-              p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.conn_full_link_to_connect, c.conn_short_link_to_connect, c.welcome_shared_msg_id, c.request_shared_msg_id, c.contact_request_id, cr2.rejection_supported,
+              p.preferences, p.preferences_json, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.conn_full_link_to_connect, c.conn_short_link_to_connect, c.welcome_shared_msg_id, c.request_shared_msg_id, c.contact_request_id, cr2.rejection_supported,
               c.contact_group_member_id, c.contact_grp_inv_sent, c.grp_direct_inv_link, c.grp_direct_inv_from_group_id, c.grp_direct_inv_from_group_member_id, c.grp_direct_inv_from_member_conn_id, c.grp_direct_inv_started_connection,
               c.ui_themes, c.chat_deleted, c.custom_data, c.chat_item_ttl,
               p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx,
@@ -1053,7 +1054,7 @@ Query:
               -- GroupMember
               m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
               m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
-              p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+              p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
               p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
               m.created_at, m.updated_at,
               m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at
@@ -1204,6 +1205,30 @@ Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
 
 Query: 
+          INSERT INTO badge_issuances (issuance_id, badge_purchase_id, entry_id, badge_type, period_start, period_end, expiry, credential, created_at)
+          VALUES (?,?,?,?,?,?,?,?,?)
+          ON CONFLICT (badge_purchase_id, entry_id) DO NOTHING
+        
+Plan:
+
+Query: 
+          INSERT INTO badge_ledger
+            (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
+             was_paused_since, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type,
+             entry_type_unknown, entry_type_value, balance_checked)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          ON CONFLICT (entry_uuid) DO NOTHING
+        
+Plan:
+
+Query: 
+          INSERT INTO badge_purchases
+            (user_id, purchase_key, purchase_priv_key, master_key, initial_badge_type, current_badge_type, status, badge_code_redemption_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?)
+        
+Plan:
+
+Query: 
           INSERT INTO chat_item_reactions
             (contact_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
             VALUES (?,?,?,?,?,?)
@@ -1303,8 +1328,8 @@ Query:
             (display_name, full_name, short_descr, description, image,
              group_type, group_link, public_group_id,
              group_web_page, group_domain, domain_web_page, allow_embedding, group_domain_proof,
-             user_id, preferences, member_admission, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             user_id, member_admission, created_at, updated_at, preferences, preferences_json)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 
@@ -1312,8 +1337,8 @@ Query:
           INSERT INTO groups
             (group_profile_id, local_display_name, user_id, enable_ntfs,
               created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id,
-              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status, public_member_count)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status, public_member_count, member_priv_key)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 
@@ -1357,7 +1382,7 @@ Query:
             i.fwd_from_group_type, i.fwd_from_group_link, i.fwd_from_public_group_id, i.fwd_from_member_id, i.fwd_from_shared_msg_id,
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed,
             -- CIFile
-            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at
+            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at, f.file_max_size, f.file_badge_status
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           WHERE i.user_id = ? AND i.note_folder_id = ? AND i.chat_item_id = ?
@@ -1375,13 +1400,13 @@ Query:
             i.fwd_from_group_type, i.fwd_from_group_link, i.fwd_from_public_group_id, i.fwd_from_member_id, i.fwd_from_shared_msg_id,
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed,
             -- CIFile
-            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at,
+            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at, f.file_max_size, f.file_badge_status,
             -- CIMeta forwardedByMember, showGroupAsSender
             i.forwarded_by_group_member_id, i.show_group_as_sender,
             -- GroupMember
             m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
             m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
-            p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+            p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
             p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
             m.created_at, m.updated_at,
             m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -1390,14 +1415,14 @@ Query:
             -- quoted GroupMember
             rm.group_member_id, rm.group_id, rm.index_in_group, rm.member_id, rm.peer_chat_min_version, rm.peer_chat_max_version, rm.member_role, rm.member_category,
             rm.member_status, rm.show_messages, rm.member_restriction, rm.invited_by, rm.invited_by_group_member_id, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
-            rp.display_name, rp.full_name, rp.short_descr, rp.description, rp.image, rp.contact_link, rp.chat_peer_type, rp.local_alias, rp.preferences,
+            rp.display_name, rp.full_name, rp.short_descr, rp.description, rp.image, rp.contact_link, rp.chat_peer_type, rp.local_alias, rp.preferences, rp.preferences_json,
             rp.badge_proof, rp.badge_pres_header, rp.badge_expiry, rp.badge_type, rp.badge_verified, rp.badge_extra, rp.badge_master_key, rp.badge_signature, rp.badge_key_idx, rp.contact_domain, rp.contact_domain_proof, rp.contact_domain_verified,
             rm.created_at, rm.updated_at,
             rm.support_chat_ts, rm.support_chat_items_unread, rm.support_chat_items_member_attention, rm.support_chat_items_mentions, rm.support_chat_last_msg_from_member_ts, rm.member_pub_key, rm.relay_link, rm.member_security_code, rm.member_security_code_verified_at,
             -- deleted by GroupMember
             dbm.group_member_id, dbm.group_id, dbm.index_in_group, dbm.member_id, dbm.peer_chat_min_version, dbm.peer_chat_max_version, dbm.member_role, dbm.member_category,
             dbm.member_status, dbm.show_messages, dbm.member_restriction, dbm.invited_by, dbm.invited_by_group_member_id, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
-            dbp.display_name, dbp.full_name, dbp.short_descr, dbp.description, dbp.image, dbp.contact_link, dbp.chat_peer_type, dbp.local_alias, dbp.preferences,
+            dbp.display_name, dbp.full_name, dbp.short_descr, dbp.description, dbp.image, dbp.contact_link, dbp.chat_peer_type, dbp.local_alias, dbp.preferences, dbp.preferences_json,
             dbp.badge_proof, dbp.badge_pres_header, dbp.badge_expiry, dbp.badge_type, dbp.badge_verified, dbp.badge_extra, dbp.badge_master_key, dbp.badge_signature, dbp.badge_key_idx, dbp.contact_domain, dbp.contact_domain_proof, dbp.contact_domain_verified,
             dbm.created_at, dbm.updated_at,
             dbm.support_chat_ts, dbm.support_chat_items_unread, dbm.support_chat_items_member_attention, dbm.support_chat_items_mentions, dbm.support_chat_last_msg_from_member_ts, dbm.member_pub_key, dbm.relay_link, dbm.member_security_code, dbm.member_security_code_verified_at
@@ -1432,7 +1457,7 @@ Query:
             i.fwd_from_group_type, i.fwd_from_group_link, i.fwd_from_public_group_id, i.fwd_from_member_id, i.fwd_from_shared_msg_id,
             i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link, i.msg_signed,
             -- CIFile
-            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at,
+            f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol, f.file_expires_at, f.file_max_size, f.file_badge_status,
             -- DirectQuote
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
           FROM chat_items i
@@ -1449,7 +1474,7 @@ Query:
           SELECT
             -- Contact
             ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
+            cp.preferences, cp.preferences_json, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
             ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
             ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
             cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
@@ -1504,6 +1529,15 @@ Query:
 Plan:
 SEARCH connections USING INDEX idx_connections_via_contact_uri_hash (user_id=? AND via_contact_uri_hash=?)
 USE TEMP B-TREE FOR ORDER BY
+
+Query: 
+          SELECT badge_purchase_id FROM badge_purchases
+          WHERE user_id = ? AND purchase_priv_key IS NOT NULL
+          ORDER BY badge_purchase_id DESC
+          LIMIT 1
+        
+Plan:
+SEARCH badge_purchases USING INDEX idx_badge_purchases_user (user_id=?)
 
 Query: 
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
@@ -1721,7 +1755,8 @@ Query:
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
             f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
             f.file_path, f.file_crypto_key, f.file_crypto_nonce, r.file_inline, r.rcv_file_inline,
-            r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays, g.local_display_name, f.file_type, f.file_digest
+            r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays, g.local_display_name, f.file_type, f.file_digest,
+            f.file_max_size, f.file_badge_status
           FROM rcv_files r
           JOIN files f USING (file_id)
           LEFT JOIN contacts cs ON cs.contact_id = f.contact_id
@@ -1835,6 +1870,15 @@ Query:
         
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+          UPDATE groups
+          SET member_priv_key = COALESCE(member_priv_key, ?), updated_at = ?
+          WHERE group_id = ?
+          RETURNING member_priv_key
+        
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           UPDATE groups
@@ -2006,9 +2050,23 @@ Plan:
 
 Query: 
         SELECT
+          (SELECT prev.balance_start_ts FROM badge_ledger prev
+           WHERE prev.badge_purchase_id = issued.badge_purchase_id AND prev.entry_id < issued.entry_id
+           ORDER BY prev.entry_id DESC LIMIT 1),
+          issued.balance_start_ts
+        FROM badge_ledger issued
+        WHERE issued.badge_purchase_id = ? AND issued.entry_id = ?
+      
+Plan:
+SEARCH issued USING INTEGER PRIMARY KEY (rowid=?)
+CORRELATED SCALAR SUBQUERY 1
+SEARCH prev USING INDEX idx_badge_ledger_purchase (badge_purchase_id=? AND entry_id<?)
+
+Query: 
+        SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
+          cp.preferences, cp.preferences_json, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
           ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
           ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
           cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx,
@@ -2097,7 +2155,7 @@ Query:
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
           cr.contact_id, cr.business_group_id, cr.user_contact_link_id, cr.rejection_supported,
           cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
-          cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+          cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences, p.preferences_json,
           cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version,
           p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified
@@ -2127,7 +2185,7 @@ Query:
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
           cr.contact_id, cr.business_group_id, cr.user_contact_link_id, cr.rejection_supported,
           cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
-          cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+          cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences, p.preferences_json,
           cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version,
           p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified
@@ -2157,7 +2215,7 @@ Query:
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
           cr.contact_id, cr.business_group_id, cr.user_contact_link_id, cr.rejection_supported,
           cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
-          cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+          cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences, p.preferences_json,
           cr.created_at, cr.updated_at,
           cr.peer_chat_min_version, cr.peer_chat_max_version,
           p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified
@@ -3464,6 +3522,14 @@ Plan:
 SEARCH connections USING INDEX idx_connections_to_subscribe (user_id=?)
 
 Query: 
+        SELECT badge_code_redemption_id, purchase_key, purchase_priv_key, master_key
+        FROM badge_code_redemptions
+        WHERE user_id = ? AND code = ?
+      
+Plan:
+SEARCH badge_code_redemptions USING INDEX sqlite_autoindex_badge_code_redemptions_1 (user_id=? AND code=?)
+
+Query: 
         SELECT c.agent_conn_id
         FROM connections c
         JOIN contacts ct ON ct.contact_id = c.contact_id
@@ -3700,13 +3766,23 @@ Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT cp.contact_profile_id, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, cp.preferences, -- , ct.user_preferences
+        SELECT cp.contact_profile_id, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, cp.preferences, cp.preferences_json, -- , ct.user_preferences
           cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx, cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified
         FROM contact_profiles cp
         WHERE cp.user_id = ? AND cp.contact_profile_id = ?
       
 Plan:
 SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        SELECT credential FROM badge_issuances
+        WHERE badge_purchase_id = ?
+        ORDER BY period_end DESC
+        LIMIT 1
+      
+Plan:
+SEARCH badge_issuances USING INDEX idx_badge_issuances_purchase_entry (badge_purchase_id=?)
+USE TEMP B-TREE FOR ORDER BY
 
 Query: 
         SELECT ct.contact_id
@@ -3753,12 +3829,23 @@ SEARCH f USING PRIMARY KEY (file_id=?)
 SEARCH d USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT display_name, full_name, short_descr, description, image, contact_link, chat_peer_type, contact_domain, preferences
+        SELECT display_name, full_name, short_descr, description, image, contact_link, chat_peer_type, contact_domain, preferences, preferences_json
         FROM contact_profiles
         WHERE user_id = ?
       
 Plan:
 SEARCH contact_profiles USING INDEX idx_contact_profiles_user_id (user_id=?)
+
+Query: 
+        SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
+               was_paused_since, service_created_at, entry_type, entry_credit_type, entry_debit_type, entry_type_value
+        FROM badge_ledger
+        WHERE badge_purchase_id = ?
+        ORDER BY entry_id DESC
+        LIMIT 1
+      
+Plan:
+SEARCH badge_ledger USING INDEX idx_badge_ledger_purchase (badge_purchase_id=?)
 
 Query: 
         SELECT f.file_id
@@ -3863,7 +3950,7 @@ Query:
         SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image,
                gp.group_type, gp.group_link, gp.public_group_id,
                gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-               gp.preferences, gp.member_admission
+               gp.preferences, gp.preferences_json, gp.member_admission
         FROM group_profiles gp
         JOIN groups g ON gp.group_profile_id = g.group_profile_id
         WHERE g.group_id = ?
@@ -3948,6 +4035,18 @@ Plan:
 SCAN group_members
 
 Query: 
+        SELECT l.entry_uuid, l.change_months, l.balance_months, l.balance_start_ts, l.balance_anchor_ts, l.balance_badge_type,
+               l.was_paused_since, l.service_created_at, l.entry_type, l.entry_credit_type, l.entry_debit_type, l.entry_type_value
+        FROM badge_ledger l
+        JOIN badge_purchases p ON p.badge_purchase_id = l.badge_purchase_id
+        WHERE l.badge_purchase_id = ? AND p.user_id = ?
+        ORDER BY l.entry_id
+      
+Plan:
+SEARCH p USING COVERING INDEX idx_badge_purchases_user (user_id=? AND rowid=?)
+SEARCH l USING INDEX idx_badge_ledger_purchase (badge_purchase_id=?)
+
+Query: 
         SELECT m.group_member_id
         FROM group_members m
         JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
@@ -3961,6 +4060,19 @@ SEARCH m USING INDEX idx_group_members_user_id (user_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        SELECT p.badge_purchase_id, p.purchase_key, p.purchase_priv_key, p.master_key, p.current_badge_type,
+               (CASE WHEN u.shown_badge_id = p.badge_purchase_id THEN 1 ELSE 0 END),
+               p.alert_acked_kind, p.alert_acked_episode, p.alert_snooze_until,
+               p.issue_failed_since, p.issue_error_at, p.issue_error, p.next_wake_at
+        FROM badge_purchases p
+        JOIN users u ON u.user_id = p.user_id
+        WHERE p.badge_purchase_id = ? AND p.purchase_priv_key IS NOT NULL
+      
+Plan:
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH u USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
         SELECT pgm.message_id, m.shared_msg_id, m.msg_body, m.msg_chat_binding, m.msg_signatures
         FROM pending_group_messages pgm
         JOIN messages m USING (message_id)
@@ -3971,6 +4083,14 @@ Plan:
 SEARCH pgm USING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 USE TEMP B-TREE FOR ORDER BY
+
+Query: 
+        SELECT proof_kind, badge_proof, badge_pres_header, badge_key_idx, badge_type, badge_expiry, badge_extra
+        FROM file_badge_proofs
+        WHERE file_id = ?
+      
+Plan:
+SEARCH file_badge_proofs USING INDEX idx_file_badge_proofs_file_id_kind (file_id=?)
 
 Query: 
         SELECT r.contact_id, g.group_id, r.group_member_id
@@ -4187,6 +4307,14 @@ LIST SUBQUERY 1
 SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
 
 Query: 
+        UPDATE contact_profiles
+        SET badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?, updated_at = ?
+        WHERE user_id = ? AND contact_profile_id = ?
+      
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
         UPDATE group_members
         SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
         WHERE user_id = ? AND group_id = ? AND group_member_id = ?
@@ -4296,6 +4424,17 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_to_subscribe (user_id=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ug USING AUTOMATIC COVERING INDEX (group_id=?)
+
+Query: 
+      DELETE FROM badge_code_redemptions
+      WHERE badge_code_redemption_id = ?
+        AND NOT EXISTS (SELECT 1 FROM badge_purchases WHERE badge_code_redemption_id = ?)
+    
+Plan:
+SEARCH badge_code_redemptions USING INTEGER PRIMARY KEY (rowid=?)
+SCALAR SUBQUERY 1
+SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_code_redemption (badge_code_redemption_id=?)
+SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_code_redemption (badge_code_redemption_id=?)
 
 Query: 
       DELETE FROM chat_items
@@ -4763,6 +4902,7 @@ Plan:
 SEARCH files USING INDEX idx_files_user_id (user_id=?)
 LIST SUBQUERY 1
 SEARCH chat_items USING COVERING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=? AND note_folder_id=?)
+SEARCH file_badge_proofs USING COVERING INDEX idx_file_badge_proofs_file_id_kind (file_id=?)
 SEARCH extra_xftp_file_descriptions USING COVERING INDEX idx_extra_xftp_file_descriptions_file_id (file_id=?)
 SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_file_id (file_id=?)
@@ -4781,6 +4921,12 @@ SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
 LIST SUBQUERY 1
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH groups USING COVERING INDEX idx_groups_group_profile_id (group_profile_id=?)
+
+Query: 
+      INSERT INTO badge_code_redemptions (user_id, code, purchase_key, purchase_priv_key, master_key, created_at)
+      VALUES (?,?,?,?,?,?)
+    
+Plan:
 
 Query: 
       INSERT INTO calls
@@ -4894,6 +5040,20 @@ Query:
 Plan:
 
 Query: 
+      INSERT INTO file_badge_proofs (file_id, proof_kind, badge_proof, badge_pres_header, badge_key_idx, badge_type, badge_expiry, badge_extra, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?)
+      ON CONFLICT (file_id, proof_kind) DO UPDATE SET
+        badge_proof = excluded.badge_proof,
+        badge_pres_header = excluded.badge_pres_header,
+        badge_key_idx = excluded.badge_key_idx,
+        badge_type = excluded.badge_type,
+        badge_expiry = excluded.badge_expiry,
+        badge_extra = excluded.badge_extra,
+        updated_at = excluded.updated_at
+    
+Plan:
+
+Query: 
       INSERT INTO files
         ( user_id, note_folder_id,
           file_name, file_path, file_size,
@@ -4993,6 +5153,14 @@ Plan:
 SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH s USING COVERING INDEX idx_snd_files_file_id (file_id=?) LEFT-JOIN
 SEARCH r USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
+      UPDATE badge_purchases
+      SET issue_failed_since = COALESCE(issue_failed_since, ?), issue_error_at = ?, issue_error = ?
+      WHERE badge_purchase_id = ?
+    
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE chat_items
@@ -5172,14 +5340,6 @@ SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE contact_profiles
-      SET badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?, updated_at = ?
-      WHERE user_id = ? AND contact_profile_id = ?
-    
-Plan:
-SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      UPDATE contact_profiles
       SET contact_link = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     
@@ -5188,25 +5348,7 @@ SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?
-      WHERE user_id = ? AND contact_profile_id = ?
-    
-Plan:
-SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?,
-          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
-          contact_domain = ?, contact_domain_proof = ?
-      WHERE user_id = ? AND contact_profile_id = ?
-    
-Plan:
-SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, contact_link = NULL, preferences = NULL, updated_at = ?,
+      SET display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, contact_link = NULL, preferences = NULL, preferences_json = NULL, updated_at = ?,
           badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
           contact_domain = ?, contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
@@ -5227,6 +5369,26 @@ SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
       UPDATE contact_profiles
       SET local_alias = ?, updated_at = ?
+      WHERE user_id = ? AND contact_profile_id = ?
+    
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE contact_profiles
+      SET preferences = ?, preferences_json = ?,
+          display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, contact_link = ?, chat_peer_type = ?, updated_at = ?
+      WHERE user_id = ? AND contact_profile_id = ?
+    
+Plan:
+SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE contact_profiles
+      SET preferences = ?, preferences_json = ?,
+          display_name = ?, full_name = ?, short_descr = ?, description = ?, image = ?, contact_link = ?, chat_peer_type = ?, updated_at = ?,
+          badge_proof = ?, badge_pres_header = ?, badge_expiry = ?, badge_type = ?, badge_verified = ?, badge_extra = ?, badge_master_key = ?, badge_signature = ?, badge_key_idx = ?,
+          contact_domain = ?, contact_domain_proof = ?
       WHERE user_id = ? AND contact_profile_id = ?
     
 Plan:
@@ -5344,7 +5506,7 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE group_profiles
-      SET preferences = ?, updated_at = ?
+      SET preferences = ?, preferences_json = ?, updated_at = ?
       WHERE group_profile_id IN (
         SELECT group_profile_id
         FROM groups
@@ -5578,7 +5740,7 @@ Query:
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
       gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-      g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
+      g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.preferences_json, gp.member_admission,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
@@ -5588,7 +5750,7 @@ Query:
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
       pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
       mu.created_at, mu.updated_at,
       mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
@@ -5616,7 +5778,7 @@ Query:
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
       gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-      g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
+      g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.preferences_json, gp.member_admission,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
@@ -5626,7 +5788,7 @@ Query:
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
       pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
       mu.created_at, mu.updated_at,
       mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
@@ -5647,7 +5809,7 @@ Query:
       -- GroupInfo
       g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_type, gp.group_link, gp.public_group_id,
       gp.group_web_page, gp.group_domain, gp.domain_web_page, gp.allow_embedding, gp.group_domain_proof,
-      g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
+      g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.preferences_json, gp.member_admission,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
@@ -5657,7 +5819,7 @@ Query:
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      pu.display_name, pu.full_name, pu.short_descr, pu.description, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences, pu.preferences_json,
       pu.badge_proof, pu.badge_pres_header, pu.badge_expiry, pu.badge_type, pu.badge_verified, pu.badge_extra, pu.badge_master_key, pu.badge_signature, pu.badge_key_idx, pu.contact_domain, pu.contact_domain_proof, pu.contact_domain_verified,
       mu.created_at, mu.updated_at,
       mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts, mu.member_pub_key, mu.relay_link, mu.member_security_code, mu.member_security_code_verified_at
@@ -5678,7 +5840,7 @@ Query:
       cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
       cr.contact_id, cr.business_group_id, cr.user_contact_link_id, cr.rejection_supported,
       cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
-      cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+      cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences, p.preferences_json,
       cr.created_at, cr.updated_at,
       cr.peer_chat_min_version, cr.peer_chat_max_version,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx,
@@ -5695,7 +5857,7 @@ Query:
       cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
       cr.contact_id, cr.business_group_id, cr.user_contact_link_id, cr.rejection_supported,
       cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
-      cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+      cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences, p.preferences_json,
       cr.created_at, cr.updated_at,
       cr.peer_chat_min_version, cr.peer_chat_max_version,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx,
@@ -5710,7 +5872,7 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5738,7 +5900,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5759,7 +5921,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5779,7 +5941,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5799,7 +5961,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5819,7 +5981,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5839,7 +6001,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5859,7 +6021,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5879,7 +6041,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5899,7 +6061,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5919,7 +6081,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5939,7 +6101,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5959,7 +6121,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5979,7 +6141,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -5999,7 +6161,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 Query: 
     SELECT
       m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences, p.preferences_json,
       p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key, m.relay_link, m.member_security_code, m.member_security_code_verified_at,
@@ -6704,6 +6866,7 @@ SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 Query: DELETE FROM files WHERE roster_transfer_id = ?
 Plan:
 SEARCH files USING COVERING INDEX idx_files_roster_transfer_id (roster_transfer_id=?)
+SEARCH file_badge_proofs USING COVERING INDEX idx_file_badge_proofs_file_id_kind (file_id=?)
 SEARCH extra_xftp_file_descriptions USING COVERING INDEX idx_extra_xftp_file_descriptions_file_id (file_id=?)
 SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_file_id (file_id=?)
@@ -6712,6 +6875,7 @@ SEARCH files USING COVERING INDEX idx_files_redirect_file_id (redirect_file_id=?
 Query: DELETE FROM files WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH files USING INDEX idx_files_contact_id (contact_id=?)
+SEARCH file_badge_proofs USING COVERING INDEX idx_file_badge_proofs_file_id_kind (file_id=?)
 SEARCH extra_xftp_file_descriptions USING COVERING INDEX idx_extra_xftp_file_descriptions_file_id (file_id=?)
 SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_file_id (file_id=?)
@@ -6720,6 +6884,7 @@ SEARCH files USING COVERING INDEX idx_files_redirect_file_id (redirect_file_id=?
 Query: DELETE FROM files WHERE user_id = ? AND group_id = ? AND file_type = ?
 Plan:
 SEARCH files USING INDEX idx_files_group_id (group_id=?)
+SEARCH file_badge_proofs USING COVERING INDEX idx_file_badge_proofs_file_id_kind (file_id=?)
 SEARCH extra_xftp_file_descriptions USING COVERING INDEX idx_extra_xftp_file_descriptions_file_id (file_id=?)
 SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_file_id (file_id=?)
@@ -6944,6 +7109,8 @@ SEARCH connections USING COVERING INDEX idx_connections_user_contact_link_id (us
 Query: DELETE FROM users WHERE user_id = ?
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH badge_code_redemptions USING COVERING INDEX idx_badge_code_redemptions_user (user_id=?)
+SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_user (user_id=?)
 SEARCH chat_relays USING COVERING INDEX idx_chat_relays_user_id (user_id=?)
 SEARCH chat_tags USING COVERING INDEX idx_chat_tags_user_id (user_id=?)
 SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
@@ -6978,6 +7145,11 @@ Plan:
 Query: INSERT INTO app_settings (app_settings) VALUES (?)
 Plan:
 
+Query: INSERT INTO badge_ledger (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts,  balance_badge_type, service_created_at, created_at, entry_type, entry_credit_type,  entry_type_unknown, entry_type_value) SELECT 'unknown-entry', badge_purchase_id, 0, balance_months, balance_start_ts, balance_anchor_ts,  balance_badge_type, service_created_at, created_at, 'credit', 'grant', 1, '{"type":"grant"}' FROM badge_ledger ORDER BY entry_id DESC LIMIT 1
+Plan:
+SCAN badge_ledger
+SEARCH badge_issuances USING COVERING INDEX idx_badge_issuances_entry (entry_id=?)
+
 Query: INSERT INTO chat_item_mentions (chat_item_id, group_id, member_id, display_name) VALUES (?, ?, ?, ?)
 Plan:
 
@@ -6988,15 +7160,15 @@ Query: INSERT INTO contact_profiles (display_name, full_name, short_descr, descr
 Plan:
 SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
 
-Query: INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, chat_peer_type, user_id, local_alias, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, contact_domain, contact_domain_proof) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, chat_peer_type, user_id, local_alias, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, contact_domain, contact_domain_proof, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
 
-Query: INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, local_alias, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
 
-Query: INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, local_alias, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
 
@@ -7023,22 +7195,22 @@ Plan:
 Query: INSERT INTO files (contact_id, group_id, user_id, file_name, file_path, file_crypto_key, file_crypto_nonce, file_size, chunk_size, redirect_file_id, agent_snd_file_id, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO files (user_id, contact_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_max_size, file_badge_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 
 Query: INSERT INTO files (user_id, file_name, file_path, file_size, chunk_size, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_type, shared_msg_id, created_at, updated_at, file_digest) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_type, shared_msg_id, created_at, updated_at, file_digest, file_max_size, file_badge_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 
 Query: INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, file_inline, ci_file_status, protocol, file_type, shared_msg_id, roster_transfer_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO group_profiles (display_name, full_name, short_descr, description, image, user_id, preferences, member_admission, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO group_profiles (display_name, full_name, short_descr, description, image, user_id, member_admission, created_at, updated_at, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO group_profiles (display_name, full_name, short_descr, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)
+Query: INSERT INTO group_profiles (display_name, full_name, short_descr, image, user_id, created_at, updated_at, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?)
 Plan:
 
 Query: INSERT INTO group_snd_item_statuses (chat_item_id, group_member_id, group_snd_item_status) VALUES (?,?,?)
@@ -7165,6 +7337,10 @@ Query: SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv 
 Plan:
 SEARCH connections USING INDEX idx_connections_conn_req_inv (user_id=? AND conn_req_inv=?)
 
+Query: SELECT alert_acked_kind, alert_acked_episode FROM badge_purchases
+Plan:
+SCAN badge_purchases
+
 Query: SELECT app_settings FROM app_settings
 Plan:
 SCAN app_settings
@@ -7177,12 +7353,36 @@ Query: SELECT auth_err_counter FROM connections WHERE user_id = ? AND connection
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT badge_expiry, contact_profile_id FROM contact_profiles WHERE badge_proof IS NOT NULL ORDER BY contact_profile_id
+Plan:
+SCAN contact_profiles
+
+Query: SELECT badge_expiry, contact_profile_id FROM contact_profiles WHERE badge_signature IS NOT NULL ORDER BY contact_profile_id
+Plan:
+SCAN contact_profiles
+
+Query: SELECT badge_purchase_id FROM badge_purchases WHERE badge_code_redemption_id = ?
+Plan:
+SEARCH badge_purchases USING COVERING INDEX idx_badge_purchases_code_redemption (badge_code_redemption_id=?)
+
+Query: SELECT balance_checked FROM badge_ledger ORDER BY entry_id
+Plan:
+SCAN badge_ledger
+
 Query: SELECT c.agent_conn_id FROM connections c JOIN group_members m ON m.group_member_id = c.group_member_id WHERE m.local_display_name = ?
 Plan:
 SCAN m USING COVERING INDEX idx_group_members_user_id_local_display_name
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?)
 
 Query: SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_support' ORDER BY chat_item_id DESC LIMIT 1
+Plan:
+SCAN chat_items
+
+Query: SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND item_text LIKE '!2 SB-8H8V3-PF8CV-PQMA2-A54M3!%'
+Plan:
+SCAN chat_items
+
+Query: SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND item_text LIKE '!2 SB-Y14GX-Z83KW-0E3PK-DEN7X!%'
 Plan:
 SCAN chat_items
 
@@ -7310,6 +7510,24 @@ Query: SELECT count(1) FROM pending_group_messages
 Plan:
 SCAN pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id
 
+Query: SELECT entry_id FROM badge_ledger WHERE badge_purchase_id = ? AND entry_uuid = ?
+Plan:
+SEARCH badge_ledger USING INDEX idx_badge_ledger_uuid (entry_uuid=?)
+
+Query: SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_badge_type, COALESCE(entry_credit_type, entry_debit_type) FROM badge_ledger ORDER BY entry_id
+Plan:
+SCAN badge_ledger
+
+Query: SELECT expiry, badge_purchase_id FROM badge_issuances ORDER BY period_end
+Plan:
+SCAN badge_issuances
+USE TEMP B-TREE FOR ORDER BY
+
+Query: SELECT expiry, badge_purchase_id FROM badge_issuances ORDER BY period_end DESC LIMIT 1
+Plan:
+SCAN badge_issuances
+USE TEMP B-TREE FOR ORDER BY
+
 Query: SELECT file_id FROM files WHERE user_id = ? AND redirect_file_id = ?
 Plan:
 SEARCH files USING INDEX idx_files_redirect_file_id (redirect_file_id=?)
@@ -7378,6 +7596,10 @@ Query: SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1
 Plan:
 SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
 
+Query: SELECT issue_failed_since, issue_error FROM badge_purchases
+Plan:
+SCAN badge_purchases
+
 Query: SELECT last_insert_rowid()
 Plan:
 SCAN CONSTANT ROW
@@ -7398,7 +7620,19 @@ Query: SELECT member_id FROM group_members WHERE member_role = ? LIMIT 1
 Plan:
 SCAN group_members
 
+Query: SELECT member_priv_key FROM groups
+Plan:
+SCAN groups
+
 Query: SELECT member_pub_key FROM group_members WHERE local_display_name = ?
+Plan:
+SCAN group_members
+
+Query: SELECT member_pub_key FROM group_members WHERE member_category = 'host'
+Plan:
+SCAN group_members
+
+Query: SELECT member_pub_key FROM group_members WHERE member_category = 'user'
 Plan:
 SCAN group_members
 
@@ -7449,6 +7683,10 @@ SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
 Query: SELECT note_folder_id FROM note_folders WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
+
+Query: SELECT purchase_key FROM badge_code_redemptions
+Plan:
+SCAN badge_code_redemptions
 
 Query: SELECT quota_err_counter FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
@@ -7502,6 +7740,10 @@ Query: SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? A
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT service_created_at, balance_start_ts FROM badge_ledger ORDER BY entry_id
+Plan:
+SCAN badge_ledger
+
 Query: SELECT shared_msg_id FROM chat_items WHERE shared_msg_id IS NOT NULL ORDER BY chat_item_id DESC LIMIT 1
 Plan:
 SCAN chat_items
@@ -7509,6 +7751,14 @@ SCAN chat_items
 Query: SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1
 Plan:
 SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT shown_badge_id FROM users WHERE user_id = ?
+Plan:
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT shown_badge_id, user_id FROM users WHERE user_id = 1
+Plan:
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT stored_roster_version FROM groups WHERE group_id = ?
 Plan:
@@ -7530,6 +7780,10 @@ Query: SELECT user_id FROM users WHERE local_display_name = ?
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_2 (local_display_name=?)
 
+Query: SELECT via_contact_uri FROM connections WHERE connection_id = ?
+Plan:
+SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT via_contact_uri, via_contact_uri_hash FROM connections WHERE connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
@@ -7537,6 +7791,18 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_purchases SET alert_acked_kind = ?, alert_acked_episode = ?, alert_snooze_until = ? WHERE badge_purchase_id = ? AND user_id = ?
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_purchases SET issue_failed_since = NULL, issue_error_at = NULL, issue_error = NULL WHERE badge_purchase_id = ?
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?
+Plan:
+SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ? AND include_in_history = 1
 Plan:
@@ -7601,6 +7867,14 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1
 Plan:
 SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE contact_profiles SET badge_expiry = ? WHERE badge_proof IS NOT NULL
+Plan:
+SCAN contact_profiles
+
+Query: UPDATE contact_profiles SET badge_expiry = ? WHERE badge_signature IS NOT NULL
+Plan:
+SCAN contact_profiles
 
 Query: UPDATE contact_profiles SET contact_domain = ?, updated_at = ? WHERE user_id = ? AND contact_profile_id = ?
 Plan:
@@ -7754,6 +8028,14 @@ Query: UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_m
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE group_members SET member_pub_key = NULL WHERE member_category = 'host'
+Plan:
+SCAN group_members
+
+Query: UPDATE group_members SET member_pub_key = NULL WHERE member_category = 'user'
+Plan:
+SCAN group_members
+
 Query: UPDATE group_members SET member_relations_vector = set_member_vector_new_relation(member_relations_vector, ?, ?, ?), updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -7846,6 +8128,10 @@ Query: UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = 
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE groups SET member_priv_key = NULL
+Plan:
+SCAN groups
+
 Query: UPDATE groups SET members_require_attention=1 WHERE group_id=?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
@@ -7866,7 +8152,7 @@ Query: UPDATE groups SET request_shared_msg_id = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE groups SET root_pub_key = ?, member_priv_key = ?, updated_at = ? WHERE group_id = ?
+Query: UPDATE groups SET root_pub_key = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -7983,6 +8269,14 @@ Plan:
 SCAN users
 
 Query: UPDATE users SET send_rcpts_small_groups = ? WHERE user_id = ?
+Plan:
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE users SET shown_badge_id = ? WHERE user_id = ?
+Plan:
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE users SET shown_badge_id = NULL WHERE user_id = ? AND shown_badge_id = ?
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 

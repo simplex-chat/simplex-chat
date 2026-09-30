@@ -91,11 +91,12 @@ createOrUpdateContactRequest
             pure $ RSAcceptedRequest cr (REContact ct)
           Nothing ->
             liftIO (getAcceptedBusinessChat xContactId) >>= \case
-              Just gInfo@GroupInfo {businessChat = Just BusinessChatInfo {customerId}} -> do
+              Just (gInfo@GroupInfo {businessChat = Just BusinessChatInfo {customerId}}, keysData) -> do
                 clientMember <- getGroupMemberByMemberId db cxt user gInfo customerId
                 cr <- liftIO $ getContactRequestByXContactId xContactId
-                pure $ RSAcceptedRequest cr (REBusinessChat gInfo clientMember)
-              Just GroupInfo {businessChat = Nothing} -> throwError SEInvalidBusinessChatContactRequest
+                gks <- mkGroupKeys db cxt gInfo keysData
+                pure $ RSAcceptedRequest cr (REBusinessChat (GIK gInfo gks) clientMember)
+              Just (GroupInfo {businessChat = Nothing}, _) -> throwError SEInvalidBusinessChatContactRequest
               -- 2) if no legacy accepted contact or business chat was found, next we try to find an existing request
               Nothing ->
                 liftIO (getContactRequestByXContactId xContactId) >>= \case
@@ -115,7 +116,7 @@ createOrUpdateContactRequest
                 SELECT
                   -- Contact
                   ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.description, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-                  cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
+                  cp.preferences, cp.preferences_json, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id, cr2.rejection_supported,
                   ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
                   ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                   cp.badge_proof, cp.badge_pres_header, cp.badge_expiry, cp.badge_type, cp.badge_verified, cp.badge_extra, cp.badge_master_key, cp.badge_signature, cp.badge_key_idx, cp.contact_domain, cp.contact_domain_proof, cp.contact_domain_verified,
@@ -131,7 +132,7 @@ createOrUpdateContactRequest
               |]
               (userId, xContactId)
         mapM (addDirectChatTags db) ct_
-      getAcceptedBusinessChat :: XContactId -> IO (Maybe GroupInfo)
+      getAcceptedBusinessChat :: XContactId -> IO (Maybe (GroupInfo, GroupKeysRow))
       getAcceptedBusinessChat xContactId = do
         currentTs <- getCurrentTime
         g_ <-
@@ -140,7 +141,7 @@ createOrUpdateContactRequest
               db
               (groupInfoQuery <> " WHERE g.business_xcontact_id = ? AND g.user_id = ? AND mu.contact_id = ?")
               (xContactId, userId, userContactId)
-        mapM (addGroupChatTags db) g_
+        forM g_ $ \(g, keysData) -> (,keysData) <$> addGroupChatTags db g
       getContactRequestByXContactId :: XContactId -> IO (Maybe UserContactRequest)
       getContactRequestByXContactId xContactId = do
         currentTs <- getCurrentTime
@@ -152,7 +153,7 @@ createOrUpdateContactRequest
                 cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
                 cr.contact_id, cr.business_group_id, cr.user_contact_link_id, cr.rejection_supported,
                 cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.description, p.image, p.contact_link, p.chat_peer_type, p.local_alias, cr.xcontact_id,
-                cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+                cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences, p.preferences_json,
                 cr.created_at, cr.updated_at,
                 cr.peer_chat_min_version, cr.peer_chat_max_version,
                 p.badge_proof, p.badge_pres_header, p.badge_expiry, p.badge_type, p.badge_verified, p.badge_extra, p.badge_master_key, p.badge_signature, p.badge_key_idx, p.contact_domain, p.contact_domain_proof, p.contact_domain_verified
@@ -171,8 +172,8 @@ createOrUpdateContactRequest
           liftIO $
             DB.execute
               db
-              "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, local_alias, preferences, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-              ((displayName, fullName, shortDescr, description, image, contactLink, userId) :. ("" :: LocalAlias, preferences, currentTs, currentTs) :. badgeToRow badge badgeVerified)
+              "INSERT INTO contact_profiles (display_name, full_name, short_descr, description, image, contact_link, user_id, local_alias, created_at, updated_at, badge_proof, badge_pres_header, badge_expiry, badge_type, badge_verified, badge_extra, badge_master_key, badge_signature, badge_key_idx, preferences, preferences_json) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+              ((displayName, fullName, shortDescr, description, image, contactLink, userId) :. ("" :: LocalAlias, currentTs, currentTs) :. badgeToRow badge badgeVerified :. prefsToRow preferences)
           profileId <- liftIO $ insertedRowId db
           liftIO $
             DB.execute
@@ -214,7 +215,7 @@ createOrUpdateContactRequest
                 pure $ RSCurrentRequest Nothing ucr (Just $ REContact ct)
               createBusinessChat = do
                 let groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs $ preferences' user
-                (gInfo@GroupInfo {groupId}, clientMember) <-
+                (gInfo@(GIK GroupInfo {groupId} _), clientMember) <-
                   createBusinessRequestGroup db cxt gVar user cReqChatVRange profile profileId ldn groupPreferences
                 liftIO $
                   DB.execute
@@ -302,11 +303,12 @@ createOrUpdateContactRequest
             ct <- getContact db cxt user contactId
             pure $ Just (REContact ct)
           (Nothing, Just businessGroupId) -> do
-            gInfo <- getGroupInfo db cxt user businessGroupId
+            (gInfo, keysData) <- getGroupInfoRow db cxt user businessGroupId
             case gInfo of
               GroupInfo {businessChat = Just BusinessChatInfo {customerId}} -> do
                 clientMember <- getGroupMemberByMemberId db cxt user gInfo customerId
-                pure $ Just (REBusinessChat gInfo clientMember)
+                gks <- mkGroupKeys db cxt gInfo keysData
+                pure $ Just (REBusinessChat (GIK gInfo gks) clientMember)
               _ -> throwError SEInvalidBusinessChatContactRequest
           (Nothing, Nothing) -> pure Nothing
           _ -> throwError $ SEInvalidContactRequestEntity contactRequestId

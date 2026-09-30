@@ -23,7 +23,7 @@ import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), mkStoreCxt)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), storeCxt)
 import Simplex.Chat.Library.Commands (maxProfileImageSize)
 import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
@@ -709,10 +709,10 @@ getCtConn cc contactId = getTestCCContact cc contactId >>= maybe (fail "no conne
 
 getTestCCContact :: TestCC -> ContactId -> IO Contact
 getTestCCContact cc contactId = do
-  let TestCC {chatController = ChatController {config}} = cc
+  let TestCC {chatController} = cc
   withCCTransaction cc $ \db ->
     withCCUser cc $ \user ->
-      runExceptT (getContact db (mkStoreCxt config) user contactId) >>= either (fail . show) pure
+      runExceptT (getContact db (storeCxt chatController) user contactId) >>= either (fail . show) pure
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do
@@ -745,7 +745,7 @@ connectUsers_ cc1 cc2 noShortLink = do
     (cc1 <## (name2 <> ": contact is connected"))
 
 showName :: TestCC -> IO String
-showName (TestCC ChatController {currentUser} _ _ _ _ _) = do
+showName TestCC {chatController = ChatController {currentUser}} = do
   Just User {localDisplayName, profile = LocalProfile {fullName, shortDescr}} <- readTVarIO currentUser
   pure . T.unpack $ viewName localDisplayName <> optionalFullName localDisplayName fullName shortDescr
 

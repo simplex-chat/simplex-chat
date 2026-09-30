@@ -148,8 +148,9 @@ for os_pair in ${oses}; do
         -t "${container_name}" \
         sh -c 'rm -rf ./dist-newstyle ./apps/multiplatform'
 
-    # Also restore git to previous state
+    # Also restore git to previous state + re-initialize submodules
     git reset --hard && git clean -dfx
+    git submodule update --init --recursive
 
     # Stop containers, delete images
     docker stop "${container_name}"

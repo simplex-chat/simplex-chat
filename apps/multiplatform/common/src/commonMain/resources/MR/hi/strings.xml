@@ -34,7 +34,6 @@
     <string name="accept_connection_request__question">संबंध अनुरोध स्वीकार करें\?</string>
     <string name="callstatus_accepted">स्वीकृत कॉल</string>
     <string name="accept_contact_incognito_button">गुप्त स्वीकार करें</string>
-    <string name="smp_servers_preset_add">पूर्वनिर्धारित सर्वर जोड़ें</string>
     <string name="users_add">प्रोफ़ाइल जोड़ें</string>
     <string name="smp_servers_add">सर्वर जोड़े</string>
     <string name="notifications_mode_service">हमेशा बने रहें</string>
@@ -51,7 +50,6 @@
     <string name="colored_text">रंगीन</string>
     <string name="callstate_connected">जुड़े हुए</string>
     <string name="smp_server_test_connect">जुडिये</string>
-    <string name="connect_via_link_verb">जुडिये</string>
     <string name="server_connected">जुड़े हुए</string>
     <string name="group_member_role_owner">स्वामी</string>
     <string name="group_member_status_connected">जुड़े हुए</string>
@@ -63,7 +61,6 @@
     <string name="snd_group_event_user_left">आप चले गए</string>
     <string name="unknown_error">अज्ञात त्रुटि</string>
     <string name="chat_preferences_you_allow">आप आज्ञा दें</string>
-    <string name="welcome">स्वागत!</string>
     <string name="la_notice_turn_on">चालू करो</string>
     <string name="unknown_message_format">अज्ञात संदेश प्रारूप</string>
     <string name="personal_welcome">स्वागत %1$s!</string>
@@ -166,7 +163,6 @@
     <string name="set_contact_name">संपर्क नाम सेट करें</string>
     <string name="icon_descr_email">ईमेल</string>
     <string name="callstate_received_answer">जवाब मिला…</string>
-    <string name="use_chat">चैट का प्रयोग करें</string>
     <string name="error_with_info">गलती: %s</string>
     <string name="delete_messages_after">संदेशों को बाद में हटाएं</string>
     <string name="image_descr">छवि</string>
@@ -212,7 +208,6 @@
     <string name="simplex_link_mode_description">विवरण</string>
     <string name="notifications_mode_off_desc">ऐप केवल तभी सूचनाएं प्राप्त कर सकता है जब वह चल रहा हो, कोई पृष्ठभूमि सेवा प्रारंभ नहीं की जाएगी</string>
     <string name="edit_verb">संपादन करना</string>
-    <string name="decentralized">विकेन्द्रीकृत</string>
     <string name="icon_descr_call_ended">कॉल समाप्त</string>
     <string name="icon_descr_call_progress">कॉल चल रहा है</string>
     <string name="auto_accept_images">छवियों को स्वत: स्वीकार करें</string>
@@ -227,7 +222,6 @@
     <string name="chat_console">चैट कंसोल</string>
     <string name="all_your_contacts_will_remain_connected">आपके सभी संपर्क जुड़े रहेंगे।</string>
     <string name="network_session_mode_user">चैट प्रोफ़ाइल</string>
-    <string name="create_profile_button">बनाएं</string>
     <string name="callstatus_error">कॉल त्रुटि</string>
     <string name="callstatus_in_progress">कॉल चल रहा है</string>
     <string name="always_use_relay">हमेशा रिले का प्रयोग करें</string>
@@ -278,7 +272,6 @@
     <string name="chat_preferences_on">चालू</string>
     <string name="la_lock_mode_system">प्रणाली प्रमाणीकरण</string>
     <string name="la_mode_system">प्रणाली</string>
-    <string name="your_SMP_servers">आपका एसएमपी सर्वर</string>
     <string name="messages_section_title">संदेशों</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">सदस्य को समूह से निकाल दिया जाएगा - इसे पूर्ववत नहीं किया जा सकता!</string>
     <string name="member_info_section_title_member">सदस्य</string>
@@ -296,7 +289,6 @@
     <string name="connect_use_incognito_profile">गुप्त प्रोफ़ाइल का उपयोग करें</string>
     <string name="profile_will_be_sent_to_contact_sending_link">आपकी प्रोफ़ाइल उस संपर्क को भेजी जाएगी जिससे आपको यह लिंक प्राप्त हुआ है।</string>
     <string name="you_will_join_group">आप सभी ग्रुप मेंबर्स से कनेक्ट होंगे।</string>
-    <string name="connect_via_link_incognito">इनकॉग्निटो कनेक्ट करें</string>
     <string name="connect_plan_open_chat">चैट खोलें</string>
     <string name="connect_plan_open_new_group">नया ग्रुप खोलें</string>
     <string name="error_parsing_uri_title">यह लिंक मान्य नहीं है</string>

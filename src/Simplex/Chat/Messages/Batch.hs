@@ -67,7 +67,7 @@ batchMessages mode maxLen = addBatch . foldr addToBatch ([], [], [], 0, 0)
       | msgLen <= maxLen = (addBatch acc, [body], [msg], msgLen, 1)
       | otherwise = (errLarge msg : addBatch acc, [], [], 0, 0)
       where
-        body = encodeBatchElement signedMsg_ msgBody
+        body = encodeBatchElement (if mode == BMBinary then signedMsg_ else Nothing) msgBody
         msgLen = B.length body
         len' = len + msgLen
         n' = n + 1

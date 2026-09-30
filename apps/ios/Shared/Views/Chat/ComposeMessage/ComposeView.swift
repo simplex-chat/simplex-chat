@@ -338,6 +338,18 @@ enum UploadContent: Equatable {
     }
 }
 
+// A badge only helps below the largest badge's limit, and not in incognito chats, so outside that
+// the alert is informational as before.
+func showLargeFileAlert(_ fileSize: Int64, incognito: Bool, senderProfile: LocalProfile?) {
+    let title = NSLocalizedString("Large file!", comment: "file alert title")
+    let message = largeFileMessage(fileSize, incognito: incognito, badgeIssue: expiredBadgeReason(fileSize, senderProfile))
+    if !incognito && fileSize <= MAX_FILE_SIZE_XFTP_LEGEND && noShownBadge() {
+        showAlert(title, message: message) { [supportSimpleXAlertAction, okAlertAction] }
+    } else {
+        showAlert(title, message: message)
+    }
+}
+
 // Spec: spec/client/compose.md#ComposeView
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -668,11 +680,7 @@ struct ComposeView: View {
                         fileSize <= maxFileSize {
                         composeState = composeState.copy(preview: .filePreview(fileName: fileURL.lastPathComponent, file: fileURL))
                     } else {
-                        let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: maxFileSize, countStyle: .binary)
-                        AlertManager.shared.showAlertMsg(
-                            title: "Large file!",
-                            message: "Currently maximum supported file size is \(prettyMaxFileSize)."
-                        )
+                        showLargeFileAlert(Int64(fileSize ?? 0), incognito: sendIncognito, senderProfile: sendProfile)
                     }
                 } catch {
                     logger.error("ComposeView fileImporter error \(error.localizedDescription)")
@@ -1266,11 +1274,14 @@ struct ComposeView: View {
         }
     }
 
-    private var maxFileSize: Int64 {
-        // the user's active badge raises the limit, but not in incognito chats where no badge is presented
-        let incognito = chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
-        return getMaxFileSize(.xftp, incognito ? nil : chatModel.currentUser?.profile)
+    // no badge is presented in incognito chats, so it does not raise the limit there
+    private var sendIncognito: Bool {
+        chat.chatInfo.profileChangeProhibited ? chat.chatInfo.incognito : incognitoDefault
     }
+
+    private var sendProfile: LocalProfile? { sendIncognito ? nil : chatModel.currentUser?.profile }
+
+    private var maxFileSize: Int64 { getMaxFileSize(.xftp, sendProfile) }
 
     // Spec: spec/client/compose.md#sendLiveMessage
     private func sendLiveMessage() async {

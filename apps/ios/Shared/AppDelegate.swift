@@ -123,6 +123,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
     private func prepareForLaunch() {
         try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
+        excludeAppDataFromBackup()
     }
 
     static func keepScreenOn(_ on: Bool) {
