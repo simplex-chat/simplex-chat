@@ -35,7 +35,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, isRight, partitionEithers, rights)
+import Data.Either (fromRight, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Functor.Identity (Identity (..), runIdentity)
@@ -173,34 +173,20 @@ checkProfileImageSize = mapM_ $ \(ImageData t) ->
   let size = T.length t
    in when (size > maxProfileImageSize) $ throwCmdError $ "Profile image is too large " <> show size
 
--- room for what connection info adds to a checked profile: badge proof, member ids and keys (756 bytes in XContact)
-maxConnInfoOverhead :: Int
-maxConnInfoOverhead = 800
-
-maxProfileInfoLength :: PQSupport -> Int
-maxProfileInfoLength pqSup = maxCompressedInfoLength pqSup - maxConnInfoOverhead
-
 checkProfileSize :: Profile -> CM ()
 checkProfileSize p = checkInfoSize "Profile" (XInfo p Nothing)
 
 checkGroupProfileSize :: GroupProfile -> CM ()
 checkGroupProfileSize p = checkInfoSize "Group profile" (XGrpInfo p)
 
--- a profile saved under an earlier size limit can still be updated if it does not grow
-encodesLarger :: J.ToJSON a => a -> a -> Bool
-encodesLarger p p' = LB.length (J.encode p') > LB.length (J.encode p)
-
--- validates that the profile update event fits into the connection info sent to peers,
--- including a connection that supports PQ, where it has to be compressed
+-- validates that the profile update event fits into the connection info sent to peers
 checkInfoSize :: String -> ChatMsgEvent 'Json -> CM ()
 checkInfoSize what event = do
   vr <- chatVersionRange
   let info = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = event}
-  case encodeChatMessage (maxProfileInfoLength PQSupportOff) info of
-    ECMEncoded s -> unless (isRight $ compressToLimit @(Either ChatError) (maxProfileInfoLength PQSupportOn) s) tooLarge
-    ECMLarge -> tooLarge
-  where
-    tooLarge = throwCmdError $ what <> " is too large"
+  case encodeChatMessage maxEncodedInfoLength info of
+    ECMEncoded _ -> pure ()
+    ECMLarge -> throwCmdError $ what <> " is too large"
 
 imageExtensions :: [String]
 imageExtensions = [".jpg", ".jpeg", ".png", ".gif"]
@@ -4024,7 +4010,7 @@ processChatCommand cxt nm = \case
       | otherwise = do
           when (n /= n') $ checkValidName n'
           checkProfileImageSize img'
-          when (encodesLarger (fromLocalProfile p) p') $ checkProfileSize p'
+          checkProfileSize p'
           -- read contacts before user update to correctly merge preferences
           contacts <- withFastStore' $ \db -> getUserContacts db cxt user
           user' <- updateUser
@@ -4117,7 +4103,7 @@ processChatCommand cxt nm = \case
       assertUserGroupRole gInfo GROwner
       when (n /= n') $ checkValidName n'
       checkProfileImageSize img'
-      when (encodesLarger p p') $ checkGroupProfileSize p'
+      checkGroupProfileSize p'
       when (useRelays' gInfo && isJust (ma' >>= review)) $ throwCmdError "Admission review is not supported in channels"
       -- updateGroupProfile clears domain verification; re-set it when the caller already re-resolved the name
       gInfo' <- withStore $ \db -> do
