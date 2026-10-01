@@ -71,11 +71,15 @@ func getAppDirectory() -> URL {
 }
 
 public func excludeAppDataFromBackup(_ exclude: Bool) {
+    setExcludedFromBackup([getGroupContainerDirectory()], exclude)
+    excludeNonAppDataFromBackup()
+}
+
+public func excludeNonAppDataFromBackup() {
     let dbPath = getAppDatabasePath().path
     func existing(_ paths: [String]) -> [URL] {
         paths.filter { FileManager.default.fileExists(atPath: $0) }.map { URL(fileURLWithPath: $0) }
     }
-    setExcludedFromBackup([getGroupContainerDirectory()], exclude)
     setExcludedFromBackup(existing([dbPath + CHAT_DB, dbPath + AGENT_DB]), false)
     setExcludedFromBackup([getDocumentsDirectory()] + existing([getTempFilesDirectory().path, dbPath + CHAT_DB_BAK, dbPath + AGENT_DB_BAK]), true)
 }
