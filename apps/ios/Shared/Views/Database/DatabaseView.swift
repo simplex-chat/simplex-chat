@@ -558,6 +558,7 @@ struct DatabaseView: View {
                 progressIndicator.wrappedValue = true
             }
             do {
+                excludeAppDataFromBackup(true)
                 try await apiDeleteStorage()
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                 do {
