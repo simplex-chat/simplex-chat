@@ -538,13 +538,13 @@ struct MigrateToDevice: View {
     private func importArchive(_ archivePath: String) {
         Task {
             do {
+                excludeAppDataFromBackup(true)
                 if !hasChatCtrl() {
                     chatInitControllerRemovingDatabases()
                 } else if ChatModel.shared.chatRunning == true {
                     // cannot delete storage if chat is running
                     try await stopChatAsync()
                 }
-                excludeAppDataFromBackup(true)
                 try await apiDeleteStorage()
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                 do {
