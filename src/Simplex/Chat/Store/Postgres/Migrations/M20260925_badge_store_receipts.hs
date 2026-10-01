@@ -12,12 +12,14 @@ m20260925_badge_store_receipts =
 CREATE TABLE badge_store_receipts(
   badge_store_receipt_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
-  provider TEXT NOT NULL,
-  transaction_ref TEXT NOT NULL,
+  invoice_id TEXT UNIQUE,
+  provider TEXT,
+  transaction_ref TEXT,
   purchase_key BYTEA NOT NULL,
   purchase_priv_key BYTEA NOT NULL,
   master_key BYTEA NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
+  closed_at TIMESTAMPTZ,
   UNIQUE(provider, transaction_ref)
 );
 

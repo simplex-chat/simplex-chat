@@ -3563,11 +3563,23 @@ processChatCommand cxt nm = \case
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
   AddBadge cred -> withUser $ \user -> addUserBadge user cred >> ok user
   APIRedeemBadgeCode userId codeText -> withUserId userId $ \user -> redeemBadgeCode nm user codeText
-  APIPurchaseBadge userId payment -> withUserId userId $ \user -> purchaseBadge nm user payment
+  APIPurchaseBadge userId echoedInvoiceId payment -> withUserId userId $ \user -> purchaseBadge nm user echoedInvoiceId payment
+  APICreateBadgeInvoice userId -> withUserId userId $ \user -> do
+    void badgeServiceTarget
+    refuseWhileBadgeHeld user
+    g <- asks random
+    now <- liftIO getCurrentTime
+    invoiceId <- UUID.toText <$> liftIO V4.nextRandom
+    _ <- withStore' $ \db -> createBadgeStoreReceipt db g user (Just invoiceId) Nothing now
+    pure $ CRBadgeInvoice user invoiceId
+  APICloseBadgeInvoice userId invoiceId -> withUserId userId $ \user -> do
+    now <- liftIO getCurrentTime
+    withStore' $ \db -> closeBadgeStoreInvoice db user invoiceId now
+    ok user
   APIGetBadgeState userId -> withUserId' userId $ \user -> do
     -- the read also signals the worker, whose results follow as CEvtBadgeChanged
     lift $ startBadgeWork user
-    CRBadgeState user <$> getUserBadgeState user
+    badgeStateResponse user
   APIGetBadgeLedger userId badgePurchaseId -> withUserId userId $ \user ->
     CRBadgeLedger user <$> withStore' (\db -> getBadgeLedger db user badgePurchaseId)
   APIAckBadgeAlert userId badgePurchaseId alertKind snooze episode -> withUserId userId $ \user -> do
@@ -3576,7 +3588,7 @@ processChatCommand cxt nm = \case
     withStore' $ \db -> setBadgeAlertAcked db user badgePurchaseId alertKind episode snoozeUntil
     -- after the write, so the pass it signals arms a wake for the snooze rather than raising again
     lift $ startBadgeWork user
-    CRBadgeState user <$> getUserBadgeState user
+    badgeStateResponse user
   SetBotCommands commands -> withUser $ \user@User {profile} -> do
     let LocalProfile {preferences} = profile
         prefs = Just (fromMaybe emptyChatPrefs preferences :: Preferences) {commands = Just commands}
@@ -5221,7 +5233,7 @@ presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadg
 redeemBadgeCode :: NetworkRequestMode -> User -> Text -> CM ChatResponse
 redeemBadgeCode nm user@User {userId} codeText = do
   code <- maybe (throwRedeemError BREInvalidCode) pure $ parseBadgeCode codeText
-  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+  sendTarget <- badgeServiceTarget
   g <- asks random
   now <- liftIO getCurrentTime
   let codeSent = badgeCodeText code
@@ -5244,16 +5256,16 @@ redeemBadgeCode nm user@User {userId} codeText = do
 
 -- | The app presents a purchase until this returns its badge, under whichever profile is active; the
 -- stash stays with the profile it was first presented under, so every retry is the signer first credited.
-purchaseBadge :: NetworkRequestMode -> User -> ServicePayment -> CM ChatResponse
-purchaseBadge nm presentingUser payment = do
+purchaseBadge :: NetworkRequestMode -> User -> Maybe Text -> ServicePayment -> CM ChatResponse
+purchaseBadge nm presentingUser echoedInvoiceId payment = do
   txRef <- maybe (throwRedeemError BREInvalidReceipt) pure $ storeTransactionRef payment
-  sendTarget <- asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+  sendTarget <- badgeServiceTarget
   g <- asks random
   now <- liftIO getCurrentTime
-  user@User {userId} <- withStore $ \db -> liftIO (getBadgeStoreReceiptUserId db txRef) >>= maybe (pure presentingUser) (getUser db)
+  user@User {userId} <- withStore $ \db -> liftIO (attachBadgeStoreReceipt db echoedInvoiceId txRef) >>= maybe (pure presentingUser) (getUser db)
   (present_, purchased) <- withEntityLock "badgePurchase" (CLBadgeUser userId) $ do
     stash_ <- withStore' $ \db -> getBadgeStoreReceipt db user txRef
-    stash@BadgeStash {masterKey} <- stashBadgeKeys user stash_ $ \db -> createBadgeStoreReceipt db g user txRef now
+    stash@BadgeStash {masterKey} <- stashBadgeKeys user stash_ $ \db -> createBadgeStoreReceipt db g user echoedInvoiceId (Just txRef) now
     requestStashedBadge nm user sendTarget stash BSCPurchaseBadge {masterKey, payment, upgrade = Nothing} terminalReceiptError
   -- outside the badge lock: the chat lock must not be taken under it
   mapM_ presentUserBadgeToContacts present_
@@ -5278,8 +5290,14 @@ storeTransactionRef = \case
 stashBadgeKeys :: User -> Maybe BadgeStash -> (DB.Connection -> IO BadgeStash) -> CM BadgeStash
 stashBadgeKeys user stash_ createStash = do
   replaying <- maybe (pure False) (\s -> withStore' $ \db -> isJust <$> getStashBadgePurchase db s) stash_
-  unless replaying $ whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
+  unless replaying $ refuseWhileBadgeHeld user
   maybe (withStore' createStash) pure stash_
+
+badgeServiceTarget :: CM (ConnectTarget 'CMContact)
+badgeServiceTarget = asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+
+refuseWhileBadgeHeld :: User -> CM ()
+refuseWhileBadgeHeld user = whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
 
 -- | A refusal for which stashDead holds drops the stash; any other, and a timeout, keep it.
 requestStashedBadge :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> BadgeStash -> BadgeServiceCommand -> (BadgeServiceErrorCode -> Bool) -> CM (Maybe User, ChatResponse)
@@ -5479,6 +5497,12 @@ emitBadgeAlert user emitted p@UserBadgePurchase {alertSnoozeUntil} shownCred now
     let occurrence = Just (kind, episode, alertSnoozeUntil)
     raised <- atomically $ stateTVar emitted (,occurrence)
     when (raised /= occurrence) $ toView $ CEvtBadgeAlert user alert
+
+-- | Scoped to one profile, so another profile's store purchase, which may be hidden, never shows under it.
+badgeStateResponse :: User -> CM ChatResponse
+badgeStateResponse user = do
+  badgeState <- getUserBadgeState user
+  CRBadgeState user badgeState <$> withStore' (`getOpenBadgeStorePurchases` user)
 
 -- | Read from stored rows alone; the worker's results follow as CEvtBadgeChanged.
 getUserBadgeState :: User -> CM (Maybe BadgeState)
@@ -6150,7 +6174,9 @@ chatCommandP =
       "/_reject " *> (APIRejectContact <$> A.decimal <*> (" notify=" *> onOffP <|> pure False)),
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_redeem_badge_code " *> (APIRedeemBadgeCode <$> A.decimal <* A.space <*> textP),
-      "/_badge purchase " *> (APIPurchaseBadge <$> A.decimal <* A.space <*> jsonP),
+      "/_badge purchase " *> (APIPurchaseBadge <$> A.decimal <*> optional (" invoice=" *> (safeDecodeUtf8 <$> A.takeTill (== ' '))) <* A.space <*> jsonP),
+      "/_badge invoice close " *> (APICloseBadgeInvoice <$> A.decimal <* A.space <*> textP),
+      "/_badge invoice " *> (APICreateBadgeInvoice <$> A.decimal),
       "/_badge state " *> (APIGetBadgeState <$> A.decimal),
       "/_badge ledger " *> (APIGetBadgeLedger <$> A.decimal <* A.space <*> A.decimal),
       "/_badge ack " *> (APIAckBadgeAlert <$> A.decimal <* A.space <*> A.decimal <* A.space <*> badgeAlertKindP <* A.space <*> onOffP <* A.space <*> textP),

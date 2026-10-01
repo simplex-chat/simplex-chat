@@ -58,6 +58,7 @@ fun BadgesChooseBadgeView(modalManager: ModalManager) {
   var selectedLevel by remember { mutableStateOf(BadgeLevel.Supporter) }
 
   LaunchedEffect(Unit) { BadgeStore.load() }
+  CloseWhenPurchaseInFlight(modalManager)
 
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
@@ -108,11 +109,12 @@ fun BadgesChooseBadgeView(modalManager: ModalManager) {
     // the action button (matches onboarding pattern where its own 7.5dp top padding is the gap).
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       ContinueButton(selectedLevel, modalManager)
-      TextButtonBelowOnboardingButton(
-        text = stringResource(MR.strings.badges_how_it_works_button),
-        icon = painterResource(MR.images.ic_info),
-        onClick = { modalManager.showModal { BadgesHowItWorksView() } }
-      )
+      // redeeming a code is here only when Support SimpleX offers the browser instead
+      if (badgeBrowserAllowed()) {
+        RedeemCodeButton(modalManager)
+      } else {
+        TextButtonBelowOnboardingButton("", null)
+      }
     }
   }
 }
@@ -154,7 +156,7 @@ private fun ContinueButton(selectedLevel: BadgeLevel, modalManager: ModalManager
     labelId = MR.strings.badges_continue,
     onboarding = null,
     onclick = {
-      modalManager.showModal { BadgesHowLongView(selectedLevel) }
+      modalManager.showModal { BadgesHowLongView(selectedLevel, modalManager) }
     }
   )
 }
