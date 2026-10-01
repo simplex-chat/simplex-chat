@@ -10,7 +10,7 @@
 module BadgeTests (badgeTests) where
 
 import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest, survive)
-import BadgeService.StoreReceipts (StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), VerifiedStoreTransaction (..), storeReceipt)
+import BadgeService.StoreReceipts (StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), VerifiedStoreTransaction (..), toStoreReceipt)
 import BadgeService.StoreReceipts.Mock (mockStoreVerifier)
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
@@ -867,17 +867,17 @@ testShownServiceRequest = do
 
 testGoogleProductIdPath :: IO ()
 testGoogleProductIdPath = do
-  let refused productId = case storeReceipt uncalledVerifier SPGoogle {productId, token = validPlayToken} of
+  let refused productId = case toStoreReceipt uncalledVerifier SPGoogle {productId, token = validPlayToken} of
         Just (Left SRInvalid {}) -> True
         _ -> False
   mapM_ (\p -> refused p `shouldBe` True) ["badge_legend_01/tokens/other?", "badge_legend_01?x", "badge_legend_01#x", "..", "../badge_legend_01", "Badge_legend_01", ""]
-  case storeReceipt uncalledVerifier SPGoogle {productId = "badge_supporter_01", token = validPlayToken} of
+  case toStoreReceipt uncalledVerifier SPGoogle {productId = "badge_supporter_01", token = validPlayToken} of
     Just (Right StoreReceipt {txRef = StoreTransactionRef {provider}}) -> provider `shouldBe` PPGoogle
     _ -> expectationFailure "a valid product id and token were refused"
 
 testGoogleTokenPath :: IO ()
 testGoogleTokenPath = do
-  let unsent token = case storeReceipt uncalledVerifier SPGoogle {productId = "badge_supporter_01", token} of
+  let unsent token = case toStoreReceipt uncalledVerifier SPGoogle {productId = "badge_supporter_01", token} of
         Just (Left SRUnreachable {}) -> True
         _ -> False
   mapM_ (\t -> unsent t `shouldBe` True) ["a/b", "../x", "t?x", "t#x", "t x", ""]
@@ -892,7 +892,7 @@ testMockVouchesForClaim :: IO ()
 testMockVouchesForClaim = do
   let part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
       signed = T.intercalate "." [part "{\"alg\":\"ES256\"}", part "{\"transactionId\":\"2000000812345671\",\"productId\":\"BADGE_SUPPORTER_01\"}", "c2lnbmVk"]
-      vouchesForClaim payment = case storeReceipt mockStoreVerifier payment of
+      vouchesForClaim payment = case toStoreReceipt mockStoreVerifier payment of
         Just (Right StoreReceipt {txRef = StoreTransactionRef {transactionRef = providerRef}, verifyReceipt}) ->
           verifyReceipt >>= \case
             Right VerifiedStoreTransaction {transactionRef, testPurchase} -> (transactionRef, testPurchase) `shouldBe` (providerRef, False)

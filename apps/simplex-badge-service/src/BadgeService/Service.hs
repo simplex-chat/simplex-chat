@@ -375,7 +375,7 @@ badgeServiceResponse key verifier cc sigKey reqData = case J.fromJSON (J.Object 
           Just k -> redeemCode key cc k masterKey code
           Nothing -> pure $ errorResponse BSEBadRequest
         BSCPurchaseBadge {masterKey, payment, upgrade}
-          | Just receipt_ <- storeReceipt verifier payment -> case (purchaseKey, upgrade) of
+          | Just receipt_ <- toStoreReceipt verifier payment -> case (purchaseKey, upgrade) of
               (Just k, Nothing) -> either storeRefusalResponse (purchaseWithReceipt key cc k masterKey) receipt_
               -- store upgrades are not built, and ignoring one would credit its months at the discounted price
               (Just _, Just _) -> pure $ errorResponse BSEBadRequest

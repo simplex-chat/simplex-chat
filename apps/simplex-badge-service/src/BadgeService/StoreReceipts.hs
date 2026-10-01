@@ -9,7 +9,7 @@ module BadgeService.StoreReceipts
     StoreVerifier (..),
     StoreReceipt (..),
     noStoreVerifier,
-    storeReceipt,
+    toStoreReceipt,
   )
 where
 
@@ -66,8 +66,8 @@ noStoreVerifier = StoreVerifier {verifyApple = Nothing, verifyGoogle = Nothing, 
 
 -- | Nothing for a payment no store made. Exceptions are not logged, since they can quote the receipt
 -- or, from Google, a URL holding the token.
-storeReceipt :: StoreVerifier -> ServicePayment -> Maybe (Either StoreRefusal StoreReceipt)
-storeReceipt StoreVerifier {verifyApple, verifyGoogle, verifyTimeout} = \case
+toStoreReceipt :: StoreVerifier -> ServicePayment -> Maybe (Either StoreRefusal StoreReceipt)
+toStoreReceipt StoreVerifier {verifyApple, verifyGoogle, verifyTimeout} = \case
   SPApple {jws} -> Just $ case appleTransactionId jws of
     Nothing -> Left $ SRInvalid "names no transaction"
     Just ref -> Right $ StoreReceipt (StoreTransactionRef PPApple ref) $ maybe unconfigured (\verify -> offline $ first SRInvalid $ verify jws) verifyApple
