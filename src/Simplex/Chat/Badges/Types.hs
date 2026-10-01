@@ -30,7 +30,7 @@ module Simplex.Chat.Badges.Types
     BadgeAlert (..),
     BadgeAlertPrice (..),
     BadgeState (..),
-    BadgeStorePurchase (..),
+    OpenStorePurchase (..),
   ) where
 
 import Control.Applicative ((<|>))
@@ -286,7 +286,7 @@ data BadgeState = BadgeState
 -- | One of a profile's open store purchases, neither credited nor closed. The app matches invoiceId
 -- against the transactions its store still holds; transactionRef is set once a receipt arrived.
 -- Neither reference is a secret: Apple's is the transaction id, Google's is a hash of the token.
-data BadgeStorePurchase = BadgeStorePurchase
+data OpenStorePurchase = OpenStorePurchase
   { invoiceId :: Maybe Text,
     transactionRef :: Maybe Text
   }
@@ -424,4 +424,4 @@ $(JQ.deriveJSON defaultJSON ''BadgeIssueError)
 
 $(JQ.deriveJSON defaultJSON ''BadgeState)
 
-$(JQ.deriveJSON defaultJSON ''BadgeStorePurchase)
+$(JQ.deriveJSON defaultJSON ''OpenStorePurchase)

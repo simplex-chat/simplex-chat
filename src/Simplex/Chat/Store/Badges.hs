@@ -23,7 +23,7 @@ module Simplex.Chat.Store.Badges
     getBadgeStoreReceiptUserId,
     attachBadgeStoreReceipt,
     closeBadgeStoreInvoice,
-    getOpenBadgeStorePurchases,
+    getOpenStorePurchases,
     getBadgeStoreReceipt,
     createBadgeStoreReceipt,
     deleteBadgeStash,
@@ -51,7 +51,7 @@ import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
-import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), BadgeStorePurchase (..))
+import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), OpenStorePurchase (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (UserId)
@@ -145,9 +145,9 @@ closeBadgeStoreInvoice db User {userId} invoiceId now =
     "UPDATE badge_store_receipts SET closed_at = ? WHERE user_id = ? AND invoice_id = ? AND transaction_ref IS NULL"
     (now, userId, invoiceId)
 
-getOpenBadgeStorePurchases :: DB.Connection -> User -> IO [BadgeStorePurchase]
-getOpenBadgeStorePurchases db User {userId} =
-  map (uncurry BadgeStorePurchase)
+getOpenStorePurchases :: DB.Connection -> User -> IO [OpenStorePurchase]
+getOpenStorePurchases db User {userId} =
+  map (uncurry OpenStorePurchase)
     <$> DB.query
       db
       [sql|

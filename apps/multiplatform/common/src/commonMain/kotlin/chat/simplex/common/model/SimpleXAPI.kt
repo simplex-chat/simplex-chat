@@ -632,7 +632,7 @@ object ChatController {
     return "${generalGetString(MR.strings.error_prefix)}: ${err?.string ?: generalGetString(MR.strings.badges_error_unknown)}"
   }
 
-  suspend fun apiGetBadgeState(rh: Long?, userId: Long): Pair<BadgeState?, List<BadgeStorePurchase>> {
+  suspend fun apiGetBadgeState(rh: Long?, userId: Long): Pair<BadgeState?, List<OpenStorePurchase>> {
     val r = sendCmd(rh, CC.ApiGetBadgeState(userId))
     if (r is API.Result && r.res is CR.BadgeStateR) return r.res.badgeState to r.res.storePurchases
     throw Exception("apiGetBadgeState: unexpected ${r.responseType}")
@@ -3919,7 +3919,7 @@ sealed class BadgeRedeemResult {
 }
 
 @Serializable
-data class BadgeStorePurchase(val invoiceId: String? = null, val transactionRef: String? = null)
+data class OpenStorePurchase(val invoiceId: String? = null, val transactionRef: String? = null)
 
 sealed class BadgePurchaseResult {
   class Redeemed(val user: User, val badgeState: BadgeState?): BadgePurchaseResult()
@@ -6929,7 +6929,7 @@ sealed class CR {
   // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
   @Serializable @SerialName("badgeRedeemed") class BadgeRedeemed(val user: User, val redeemedBadge: LocalBadge, val newBadge: Boolean, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeInvoice") class BadgeInvoice(val user: UserRef, val invoiceId: String): CR()
-  @Serializable @SerialName("badgeState") class BadgeStateR(val user: UserRef, val badgeState: BadgeState?, val storePurchases: List<BadgeStorePurchase> = emptyList()): CR()
+  @Serializable @SerialName("badgeState") class BadgeStateR(val user: UserRef, val badgeState: BadgeState?, val storePurchases: List<OpenStorePurchase> = emptyList()): CR()
   @Serializable @SerialName("badgeLedger") class BadgeLedger(val user: UserRef, val badgeLedger: List<StatementEntry>): CR()
   @Serializable @SerialName("badgeChanged") class BadgeChanged(val user: User, val badgeState: BadgeState?): CR()
   @Serializable @SerialName("badgeAlert") class BadgeAlertR(val user: UserRef, val badgeAlert: BadgeAlert): CR()

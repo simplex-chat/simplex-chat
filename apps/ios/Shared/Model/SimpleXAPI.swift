@@ -2245,13 +2245,13 @@ func redeemErrorText(_ error: Error) -> String {
     return String.localizedStringWithFormat(NSLocalizedString("Error: %@", comment: "alert message"), responseError(error))
 }
 
-func apiGetBadgeState(_ userId: Int64) async throws -> (badgeState: BadgeState?, storePurchases: [BadgeStorePurchase]) {
+func apiGetBadgeState(_ userId: Int64) async throws -> (badgeState: BadgeState?, storePurchases: [OpenStorePurchase]) {
     let r: ChatResponse2 = try await chatSendCmd(.apiGetBadgeState(userId: userId))
     if case let .badgeState(_, badgeState, storePurchases) = r { return (badgeState, storePurchases ?? []) }
     throw r.unexpected
 }
 
-func apiGetBadgeStateSync(_ userId: Int64) throws -> (badgeState: BadgeState?, storePurchases: [BadgeStorePurchase]) {
+func apiGetBadgeStateSync(_ userId: Int64) throws -> (badgeState: BadgeState?, storePurchases: [OpenStorePurchase]) {
     let r: ChatResponse2 = try chatSendCmdSync(.apiGetBadgeState(userId: userId))
     if case let .badgeState(_, badgeState, storePurchases) = r { return (badgeState, storePurchases ?? []) }
     throw r.unexpected

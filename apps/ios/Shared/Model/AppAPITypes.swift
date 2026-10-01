@@ -756,7 +756,7 @@ enum ServicePayment: Encodable {
     }
 }
 
-struct BadgeStorePurchase: Decodable {
+struct OpenStorePurchase: Decodable {
     var invoiceId: String?
     var transactionRef: String?
 }
@@ -1094,7 +1094,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     // the full user, not UserRef: its profile carries the badge that setUserBadge just stored
     case badgeRedeemed(user: User, redeemedBadge: LocalBadge, newBadge: Bool, badgeState: BadgeState?)
     case badgeInvoice(user: UserRef, invoiceId: String)
-    case badgeState(user: UserRef, badgeState: BadgeState?, storePurchases: [BadgeStorePurchase]?)
+    case badgeState(user: UserRef, badgeState: BadgeState?, storePurchases: [OpenStorePurchase]?)
     case badgeLedger(user: UserRef, badgeLedger: [StatementEntry])
 
     var responseType: String {

@@ -5502,7 +5502,7 @@ emitBadgeAlert user emitted p@UserBadgePurchase {alertSnoozeUntil} shownCred now
 badgeStateResponse :: User -> CM ChatResponse
 badgeStateResponse user = do
   badgeState <- getUserBadgeState user
-  CRBadgeState user badgeState <$> withStore' (`getOpenBadgeStorePurchases` user)
+  CRBadgeState user badgeState <$> withStore' (`getOpenStorePurchases` user)
 
 -- | Read from stored rows alone; the worker's results follow as CEvtBadgeChanged.
 getUserBadgeState :: User -> CM (Maybe BadgeState)
