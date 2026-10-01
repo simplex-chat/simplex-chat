@@ -143,7 +143,7 @@ fun ChatView(
       )
     }
     val attachmentOption = rememberSaveable { mutableStateOf<AttachmentOption?>(null) }
-    val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+    val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden, skipHalfExpanded = true)
     val scope = rememberCoroutineScope()
     val selectedChatItems = rememberSaveable { mutableStateOf(null as Set<Long>?) }
     val showCommandsMenu = rememberSaveable { mutableStateOf(false) }
