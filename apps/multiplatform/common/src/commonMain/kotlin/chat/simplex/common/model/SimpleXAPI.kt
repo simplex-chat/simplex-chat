@@ -607,6 +607,7 @@ object ChatController {
   suspend fun apiCreateBadgeInvoice(rh: Long?, userId: Long): String {
     val r = sendCmd(rh, CC.ApiCreateBadgeInvoice(userId))
     if (r is API.Result && r.res is CR.BadgeInvoice) return r.res.invoiceId
+    if (r is API.Error) throw BadgeStoreError.InvoiceRefused(r.err)
     throw Exception("apiCreateBadgeInvoice: unexpected ${r.responseType}")
   }
 
@@ -617,13 +618,15 @@ object ChatController {
   }
 
   // localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
-  fun redeemErrorText(err: ChatError?): String {
+  fun redeemErrorText(err: ChatError?, purchase: Boolean): String {
     if (err is ChatError.ChatErrorChat && err.errorType is ChatErrorType.CEBadgeRedeemError) {
       when (val e = err.errorType.badgeRedeemError) {
         is BadgeRedeemError.InvalidCode -> return generalGetString(MR.strings.badges_error_invalid_code)
         is BadgeRedeemError.InvalidReceipt -> {}
-        is BadgeRedeemError.ServiceNotConfigured -> return generalGetString(MR.strings.badges_error_service_not_configured)
-        is BadgeRedeemError.BadgeActive -> return generalGetString(MR.strings.badges_error_already_active)
+        is BadgeRedeemError.ServiceNotConfigured ->
+          return generalGetString(if (purchase) MR.strings.badges_error_service_not_configured_purchase else MR.strings.badges_error_service_not_configured)
+        is BadgeRedeemError.BadgeActive ->
+          return generalGetString(if (purchase) MR.strings.badges_error_already_active_purchase else MR.strings.badges_error_already_active)
         is BadgeRedeemError.ServiceError -> badgeServiceErrorText(e.serviceError)?.let { return it }
         is BadgeRedeemError.InvalidResponse -> return String.format(generalGetString(MR.strings.badges_error_bad_service_response), e.message)
         is BadgeRedeemError.UnknownKeyIndex, is BadgeRedeemError.CredentialNotVerified -> return generalGetString(MR.strings.badges_error_credential_not_verified)

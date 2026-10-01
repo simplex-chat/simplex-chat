@@ -258,7 +258,7 @@ final class BadgeStore: ObservableObject {
             logger.error("BadgeStore.presentPurchase: \(responseError(error))")
             let refused = badgeReceiptRefused(error)
             if refused { await finish(receipt) }
-            let text = redeemErrorText(error)
+            let text = redeemErrorText(error, purchase: true)
             alertText = refused ? text : text + "\n\n" + NSLocalizedString("The purchase will be retried, and the badge will arrive.", comment: "alert message")
         }
         await loadCurrentBadgeState()

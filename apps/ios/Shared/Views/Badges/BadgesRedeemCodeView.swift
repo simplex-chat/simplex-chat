@@ -59,7 +59,7 @@ func redeemBadgeCode(_ user: User, _ code: String) async -> BadgeRedeemOutcome {
         }
     } catch let error {
         logger.error("apiRedeemBadgeCode: \(responseError(error))")
-        return .refused(message: redeemErrorText(error))
+        return .refused(message: redeemErrorText(error, purchase: false))
     }
 }
 

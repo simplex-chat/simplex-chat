@@ -114,7 +114,7 @@ struct BadgesCheckOrderView: View {
                     alert = SomeAlert(
                         alert: Alert(
                             title: Text("Purchase error"),
-                            message: Text(verbatim: String(describing: error))
+                            message: Text(verbatim: redeemErrorText(error, purchase: true))
                         ),
                         id: "badgePurchaseError"
                     )

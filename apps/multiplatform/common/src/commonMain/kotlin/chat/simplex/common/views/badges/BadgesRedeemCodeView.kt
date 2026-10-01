@@ -85,7 +85,7 @@ suspend fun redeemBadgeCode(rhId: Long?, user: User, code: String): BadgeRedeemO
     }
     is BadgeRedeemResult.Failed -> {
       Log.e(TAG, "apiRedeemBadgeCode: ${result.err?.string}")
-      BadgeRedeemOutcome.Refused(chatModel.controller.redeemErrorText(result.err))
+      BadgeRedeemOutcome.Refused(chatModel.controller.redeemErrorText(result.err, purchase = false))
     }
   }
 

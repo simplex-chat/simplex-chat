@@ -2229,13 +2229,19 @@ func apiCloseBadgeInvoice(_ userId: Int64, _ invoiceId: String) async throws {
 }
 
 // localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
-func redeemErrorText(_ error: Error) -> String {
+func redeemErrorText(_ error: Error, purchase: Bool) -> String {
     if case let .error(.badgeRedeemError(e)) = error as? ChatError {
         switch e {
         case .invalidCode: return NSLocalizedString("This code is not valid.", comment: "alert message")
         case .invalidReceipt: break
-        case .serviceNotConfigured: return NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
-        case .badgeActive: return NSLocalizedString("This profile already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "alert message")
+        case .serviceNotConfigured:
+            return purchase
+                ? NSLocalizedString("This app version cannot buy badges.", comment: "alert message")
+                : NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
+        case .badgeActive:
+            return purchase
+                ? NSLocalizedString("This profile already has a badge. The purchase will be added when this badge ends.", comment: "alert message")
+                : NSLocalizedString("This profile already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "alert message")
         case let .serviceError(code): if let text = badgeServiceErrorText(code) { return text }
         case let .invalidResponse(message):
             return String.localizedStringWithFormat(NSLocalizedString("The badge service sent an unexpected response: %@", comment: "alert message"), message)
