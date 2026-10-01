@@ -1824,7 +1824,7 @@ testInvoiceClose ps =
       -- the late receipt finds the closed record, so a presented record exists and cannot be closed
       let unsettled = googlePayment "badge_supporter_01" googlePendingToken
       alice ##> purchaseWithInvoice 1 invoiceId unsettled
-      alice <## "cannot redeem badge code: badge service error: payment_pending"
+      alice <## "cannot get badge: badge service error: payment_pending"
       alice ##> ("/_badge invoice close 1 " <> invoiceId)
       alice <## "ok"
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True, False)]
@@ -1838,14 +1838,14 @@ testInvoiceRefusedBeforeCharge :: HasCallStack => TestParams -> IO ()
 testInvoiceRefusedBeforeCharge ps = do
   withNewTestChatCfg ps testCfg {badgeServiceAddress = Nothing} "bob" bobProfile $ \bob -> do
     bob ##> "/_badge invoice 1"
-    bob <## "cannot redeem badge code: badge service not configured"
+    bob <## "cannot get badge: badge service not configured"
     storeReceiptRows (chatController bob) `shouldReturn` []
   withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       code <- issueCode cc BTSupporter 1
       redeemFirstBadge alice code
       alice ##> "/_badge invoice 1"
-      alice <## "cannot redeem badge code: badge already active"
+      alice <## "cannot get badge: badge already active"
       storeReceiptRows (chatController alice) `shouldReturn` []
 
 testInvoiceWhileBadgeHeld :: HasCallStack => TestParams -> IO ()
@@ -1856,7 +1856,7 @@ testInvoiceWhileBadgeHeld ps =
       code <- issueCode cc BTSupporter 1
       redeemFirstBadge alice code
       alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
-      alice <## "cannot redeem badge code: badge already active"
+      alice <## "cannot get badge: badge already active"
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True, False)]
       rowCount cc "sx_badge_service_payments" `shouldReturn` 0
 
