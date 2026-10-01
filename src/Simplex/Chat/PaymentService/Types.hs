@@ -79,8 +79,7 @@ instance FromField PaymentProvider where fromField = fromTextField_ textDecode
 
 instance ToField PaymentProvider where toField = toField . textEncode
 
--- | A store and its own id for one transaction. The evidence is not the key: the store may sign it
--- again, and a retry of the same purchase has to find the same stash.
+-- | The stable name of one store transaction, by which a retry resolves to the same row.
 data StoreTransactionRef = StoreTransactionRef {provider :: PaymentProvider, transactionRef :: Text}
   deriving (Eq, Show)
 
