@@ -2240,7 +2240,7 @@ func redeemErrorText(_ error: Error, purchase: Bool) -> String {
                 : NSLocalizedString("This app version cannot redeem badge codes.", comment: "alert message")
         case .badgeActive:
             return purchase
-                ? NSLocalizedString("This profile already has a badge. The purchase will be added when this badge ends.", comment: "alert message")
+                ? NSLocalizedString("This profile already has a badge.", comment: "alert message")
                 : NSLocalizedString("This profile already has a badge. Redeem the code on another profile, or once this badge ends.", comment: "alert message")
         case let .serviceError(code): if let text = badgeServiceErrorText(code) { return text }
         case let .invalidResponse(message):

@@ -3213,7 +3213,7 @@
   <string name="badges_error_service_not_configured">This app version cannot redeem badge codes.</string>
   <string name="badges_error_service_not_configured_purchase">This app version cannot buy badges.</string>
   <string name="badges_error_already_active">This profile already has a badge. Redeem the code on another profile, or once this badge ends.</string>
-  <string name="badges_error_already_active_purchase">This profile already has a badge. The purchase will be added when this badge ends.</string>
+  <string name="badges_error_already_active_purchase">This profile already has a badge.</string>
   <string name="badges_error_code_invalid">This code was not recognized.</string>
   <string name="badges_error_code_used">This code has already been used.</string>
   <string name="badges_error_code_expired">This code has expired.</string>
