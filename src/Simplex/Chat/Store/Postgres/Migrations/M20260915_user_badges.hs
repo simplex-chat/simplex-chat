@@ -152,7 +152,7 @@ DROP TABLE @badge_prices;
 |]
 
 {- TODO [badges] deferred draft schema for paid purchases, subscriptions, upgrades and transfers.
-The service alone already has @badge_purchases.payment_id and @badge_ledger.payment_id (its 20260925_badge_store_receipts).
+The service added @badge_purchases.payment_id and @badge_ledger.payment_id in its 20260925_badge_store_receipts, so they left this draft; the client's stay deferred with the rest, as nothing writes its @payments yet.
 
 CREATE TABLE @subscription_charges(
   charge_id TEXT NOT NULL PRIMARY KEY,
