@@ -299,12 +299,14 @@ ALTER TABLE test_chat_schema.badge_purchases ALTER COLUMN badge_purchase_id ADD 
 CREATE TABLE test_chat_schema.badge_store_receipts (
     badge_store_receipt_id bigint NOT NULL,
     user_id bigint NOT NULL,
-    provider text NOT NULL,
-    transaction_ref text NOT NULL,
+    invoice_id text,
+    provider text,
+    transaction_ref text,
     purchase_key bytea NOT NULL,
     purchase_priv_key bytea NOT NULL,
     master_key bytea NOT NULL,
-    created_at timestamp with time zone NOT NULL
+    created_at timestamp with time zone NOT NULL,
+    closed_at timestamp with time zone
 );
 
 
@@ -1815,6 +1817,11 @@ ALTER TABLE ONLY test_chat_schema.badge_purchases
 
 ALTER TABLE ONLY test_chat_schema.badge_purchases
     ADD CONSTRAINT badge_purchases_purchase_key_key UNIQUE (purchase_key);
+
+
+
+ALTER TABLE ONLY test_chat_schema.badge_store_receipts
+    ADD CONSTRAINT badge_store_receipts_invoice_id_key UNIQUE (invoice_id);
 
 
 
