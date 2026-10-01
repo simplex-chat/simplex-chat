@@ -144,6 +144,7 @@ data StoreProduct = StoreProduct
 
 -- | A receipt proves only the product paid for, so the badge comes from here, never from the client.
 -- Mirrors the one-time SKUs of BadgeStore.swift and .kt; subscriptions wait until renewals add months.
+-- Not part of the seeded catalog above, which exists to pin prices this service sets: a store sets its own.
 storeProduct :: PaymentProvider -> Text -> Maybe StoreProduct
 storeProduct provider productId = case (provider, productId) of
   (PPApple, "BADGE_SUPPORTER_01") -> Just $ StoreProduct BTSupporter 1
