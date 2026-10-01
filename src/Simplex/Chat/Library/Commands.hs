@@ -3566,7 +3566,7 @@ processChatCommand cxt nm = \case
   APIRedeemBadgeCode userId codeText -> withUserId userId $ \user -> redeemBadgeCode nm user codeText
   APIPurchaseBadge userId echoedInvoiceId payment -> withUserId userId $ \user -> purchaseBadge nm user echoedInvoiceId payment
   APICreateBadgeInvoice userId -> withUserId userId $ \user -> do
-    void badgeServiceTarget
+    void requireBadgeService
     refuseWhileBadgeHeld user
     g <- asks random
     now <- liftIO getCurrentTime
@@ -5234,16 +5234,16 @@ presentUserBadgeToContacts user'@User {userId, profile = LocalProfile {localBadg
 redeemBadgeCode :: NetworkRequestMode -> User -> Text -> CM ChatResponse
 redeemBadgeCode nm user@User {userId} codeText = do
   code <- maybe (throwRedeemError BREInvalidCode) pure $ parseBadgeCode codeText
-  sendTarget <- badgeServiceTarget
+  sendTarget <- requireBadgeService
   g <- asks random
   now <- liftIO getCurrentTime
   let codeSent = badgeCodeText code
   -- the guard, the request and the write are one section: without it two codes redeemed at once
   -- both pass the guard and are both spent, for one badge
   (present_, redeemed) <- withEntityLock "badgeRedeem" (CLBadgeUser userId) $ do
-    redemption_ <- withStore' $ \db -> getBadgeCodeRedemption db user codeSent
-    redemption@BadgeStash {masterKey} <- stashBadgeKeys user redemption_ $ \db -> createBadgeCodeRedemption db g user codeSent now
-    requestStashedBadge nm user sendTarget redemption BSCRedeemBadgeCode {masterKey, code = codeSent} terminalCodeError
+    stash_ <- withStore' $ \db -> getBadgeCodeRedemption db user codeSent
+    stash@BadgeStash {masterKey} <- stashBadgeKeys user stash_ $ \db -> createBadgeCodeRedemption db g user codeSent now
+    redeemBadgeStash nm user sendTarget stash BSCRedeemBadgeCode {masterKey, code = codeSent} terminalCodeError
   -- outside the badge lock: the chat lock must not be taken under it
   mapM_ presentUserBadgeToContacts present_
   pure redeemed
@@ -5260,14 +5260,14 @@ redeemBadgeCode nm user@User {userId} codeText = do
 purchaseBadge :: NetworkRequestMode -> User -> Maybe Text -> ServicePayment -> CM ChatResponse
 purchaseBadge nm presentingUser echoedInvoiceId payment = do
   txRef <- maybe (throwRedeemError BREInvalidReceipt) pure $ storeTransactionRef payment
-  sendTarget <- badgeServiceTarget
+  sendTarget <- requireBadgeService
   g <- asks random
   now <- liftIO getCurrentTime
   user@User {userId} <- withStore $ \db -> liftIO (attachBadgeStoreReceipt db echoedInvoiceId txRef) >>= maybe (pure presentingUser) (getUser db)
   (present_, purchased) <- withEntityLock "badgePurchase" (CLBadgeUser userId) $ do
     stash_ <- withStore' $ \db -> getBadgeStoreReceipt db user txRef
     stash@BadgeStash {masterKey} <- stashBadgeKeys user stash_ $ \db -> createBadgeStoreReceipt db g user echoedInvoiceId (Just txRef) now
-    requestStashedBadge nm user sendTarget stash BSCPurchaseBadge {masterKey, payment, upgrade = Nothing} terminalReceiptError
+    redeemBadgeStash nm user sendTarget stash BSCPurchaseBadge {masterKey, payment, upgrade = Nothing} terminalReceiptError
   -- outside the badge lock: the chat lock must not be taken under it
   mapM_ presentUserBadgeToContacts present_
   pure purchased
@@ -5294,15 +5294,15 @@ stashBadgeKeys user stash_ createStash = do
   unless replaying $ refuseWhileBadgeHeld user
   maybe (withStore' createStash) pure stash_
 
-badgeServiceTarget :: CM (ConnectTarget 'CMContact)
-badgeServiceTarget = asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
+requireBadgeService :: CM (ConnectTarget 'CMContact)
+requireBadgeService = asks (badgeServiceAddress . config) >>= maybe (throwRedeemError BREServiceNotConfigured) pure
 
 refuseWhileBadgeHeld :: User -> CM ()
 refuseWhileBadgeHeld user = whenM (withStore' (`userHasBadge` user)) $ throwRedeemError BREBadgeActive
 
--- | A refusal for which stashDead holds drops the stash; any other, and a timeout, keep it.
-requestStashedBadge :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> BadgeStash -> BadgeServiceCommand -> (BadgeServiceErrorCode -> Bool) -> CM (Maybe User, ChatResponse)
-requestStashedBadge nm user sendTarget stash@BadgeStash {purchaseKey, purchasePrivKey} request stashDead = do
+-- | One attempt to turn a stash into a badge, dropping the stash only on a refusal no retry can fix.
+redeemBadgeStash :: NetworkRequestMode -> User -> ConnectTarget 'CMContact -> BadgeStash -> BadgeServiceCommand -> (BadgeServiceErrorCode -> Bool) -> CM (Maybe User, ChatResponse)
+redeemBadgeStash nm user sendTarget stash@BadgeStash {purchaseKey, purchasePrivKey} request stashDead = do
   let req = BadgeServiceRequest {version = currentBadgeServiceVersion, purchaseKey = Just purchaseKey, request}
   respBytes <- sendServiceRequestBytes nm user sendTarget Nothing (Just purchasePrivKey) req
   respData <- either (const $ throwRedeemError $ BREInvalidResponse "not JSON") pure $ J.eitherDecodeStrict' respBytes
