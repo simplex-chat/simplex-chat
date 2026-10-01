@@ -494,7 +494,7 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTran
                 Nothing ->
                   liftIO (getStorePaymentCredit db provider providerRef >>= creditedResponse db BSEReceiptUsed purchaseKey) >>= \case
                     Left resp -> pure resp
-                    Right () -> logError "badge service: claiming a store payment failed, but it funds no purchase" $> errorResponse BSEInternal
+                    Right () -> logError ("badge service: a payment for " <> providerRef <> " exists but funds no purchase") $> errorResponse BSEInternal
                 Just purchaseId -> liftIO $ firstMonthResponse db purchaseId (Just paymentId) firstMonth
             pure $ fromRight (errorResponse BSEInternal) r
 
