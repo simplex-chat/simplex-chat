@@ -30,7 +30,7 @@ import System.Timeout (timeout)
 data VerifiedStoreTransaction = VerifiedStoreTransaction
   { transactionRef :: Text, -- from what was verified: Apple's transactionId, googlePurchaseRef of the token asked about
     productId :: Text,
-    quantity :: Int,
+    quantity :: Int, -- as the store reported it; the service refuses any but 1, as the apps never buy more
     -- costs the buyer nothing: Apple's Sandbox, which a public TestFlight build buys in, and Google's license testers
     testPurchase :: Bool,
     paid :: Maybe (CurrencyAmount, Text) -- in minor units; Google's purchase record carries no price
@@ -46,8 +46,8 @@ data StoreRefusal
   | SRNotConfigured -- no verifier for this store is deployed; the purchase may be real
   deriving (Eq, Show)
 
--- | Not a Provider: a receipt is presented once as proof, with nothing to create, watch or cancel.
--- Apple is checked offline, so its verifier is pure and cannot be unreachable; only Google is asked.
+-- | Apple signs its receipt and ships the certificate chain in it, so it is verified with no network
+-- call; a Play token is opaque and must be asked about, which is why only that field is in IO.
 data StoreVerifier = StoreVerifier
   { verifyApple :: Maybe (Text -> Either Text VerifiedStoreTransaction), -- the JWS; Left is why Apple did not sign it
     verifyGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)), -- the product id and the token

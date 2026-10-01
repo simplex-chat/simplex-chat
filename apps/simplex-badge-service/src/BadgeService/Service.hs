@@ -464,6 +464,8 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTran
             -- the claim was read from the evidence before it was verified, so it must name the transaction the store vouched for
             Right VerifiedStoreTransaction {transactionRef}
               | transactionRef /= providerRef -> storeRefusalResponse $ SRVerifierFailed "verified a transaction other than the one claimed"
+            Right VerifiedStoreTransaction {quantity}
+              | quantity /= 1 -> storeRefusalResponse $ SRVerifierFailed $ "verified a quantity of " <> tshow quantity
             Right VerifiedStoreTransaction {testPurchase = True} -> storeRefusalResponse $ SRInvalid "test purchase"
             -- another key's claim is told only once the store vouched for the receipt, or it would reveal which transactions were credited
             Right tx -> case claim of
@@ -478,11 +480,11 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTran
         Right (Left resp) -> resp
         _ -> errorResponse BSEInternal
     -- the product is read only for a receipt not yet credited, so retiring it leaves its replays answered
-    newPurchase VerifiedStoreTransaction {productId, quantity, paid} = case storeProduct provider productId of
+    newPurchase VerifiedStoreTransaction {productId, paid} = case storeProduct provider productId of
       Nothing -> pure $ errorResponse BSEProductUnavailable
       Just StoreProduct {badgeType, months} -> do
         now <- badgeNow cc
-        signFirstMonth key cc masterKey badgeType (months * quantity) (SCPayment Nothing) now >>= \case
+        signFirstMonth key cc masterKey badgeType months (SCPayment Nothing) now >>= \case
           Left resp -> pure resp
           Right firstMonth -> do
             paymentId <- randomId cc

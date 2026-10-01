@@ -131,6 +131,7 @@ badgeServiceTests = do
     it "should credit a transaction claimed twice at once only once" testStoreClaimRace
     it "should refuse a store with no verifier with no retry, and the client should keep its keys" testPurchaseWithNoVerifier
     it "should credit nothing when the verified transaction is not the one the evidence names" testStoreVerifiedOtherTransaction
+    it "should refuse a verified quantity other than one as internal, and the client should keep its keys" testStoreQuantityRefused
     it "should refuse a store purchase whose purchaseKey is not the verified signer" testStorePurchaseKeyMismatch
     it "should redeem a Play purchase into a badge, and replay it as the same badge" testPurchaseBadge
     it "should redeem an App Store purchase by its JWS" testPurchaseBadgeAppStore
@@ -1576,6 +1577,18 @@ testStoreVerifiedOtherTransaction ps =
   withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsController = cc, bsStore = FakeStore {appleMisnamedJWS}} -> do
     (purchaseKey, masterKey) <- newPurchaseKeys
     refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey SPApple {jws = appleMisnamedJWS}) `shouldReturn` (BSEInternal, Nothing)
+    nothingPurchased cc
+
+testStoreQuantityRefused :: HasCallStack => TestParams -> IO ()
+testStoreQuantityRefused ps =
+  withBadgeServiceEnv ps $ \env@BadgeServiceEnv {bsClientCfg, bsController = cc, bsStore = FakeStore {appleQuantityJWS}} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    refusalOf <$> serviceCmd env purchaseKey (purchaseCmd masterKey SPApple {jws = appleQuantityJWS}) `shouldReturn` (BSEInternal, Nothing)
+    nothingPurchased cc
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      alice ##> ("/_badge purchase 1 " <> paymentArg SPApple {jws = appleQuantityJWS})
+      alice <## "cannot get badge: badge service error: internal"
+      rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 1
     nothingPurchased cc
 
 testPurchaseWithNoVerifier :: HasCallStack => TestParams -> IO ()

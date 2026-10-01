@@ -44,6 +44,7 @@ data FakeStore = FakeStore
     appleSandboxJWS :: Text,
     appleThrowingJWS :: Text,
     appleMisnamedJWS :: Text,
+    appleQuantityJWS :: Text,
     pendingSettled :: IORef Bool,
     googleDown :: IORef Bool,
     fakeVerifier :: StoreVerifier
@@ -56,6 +57,7 @@ newFakeStore = do
   appleSandboxJWS <- fixtureJWS "transaction-sandbox.json"
   let appleThrowingJWS = unsignedJWS "{\"transactionId\":\"2000000812345679\",\"productId\":\"BADGE_SUPPORTER_01\"}"
       appleMisnamedJWS = unsignedJWS "{\"transactionId\":\"2000000812345698\",\"productId\":\"BADGE_SUPPORTER_01\"}"
+      appleQuantityJWS = unsignedJWS "{\"transactionId\":\"2000000812345697\",\"productId\":\"BADGE_SUPPORTER_01\"}"
   pendingSettled <- newIORef False
   googleDown <- newIORef False
   let appleReceipts =
@@ -63,7 +65,8 @@ newFakeStore = do
           (appleLegendJWS, appleTransaction "2000000812345672" "BADGE_LEGEND_01" False 7000),
           (appleSandboxJWS, appleTransaction "2000000812345673" "BADGE_LEGEND_01" True 7000),
           -- a verifier vouching for another transaction than the one the evidence names
-          (appleMisnamedJWS, appleTransaction "2000000812345671" "BADGE_SUPPORTER_01" False 700)
+          (appleMisnamedJWS, appleTransaction "2000000812345671" "BADGE_SUPPORTER_01" False 700),
+          (appleQuantityJWS, (appleTransaction "2000000812345697" "BADGE_SUPPORTER_01" False 1400) {quantity = 2})
         ]
       verifyApple jws
         | jws == appleThrowingJWS = error "fake verifier bug"
@@ -76,6 +79,7 @@ newFakeStore = do
         appleSandboxJWS,
         appleThrowingJWS,
         appleMisnamedJWS,
+        appleQuantityJWS,
         pendingSettled,
         googleDown,
         fakeVerifier = StoreVerifier {verifyApple = Just verifyApple, verifyGoogle = Just verifyGoogle, verifyTimeout = 500000}
