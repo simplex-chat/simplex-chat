@@ -22,9 +22,9 @@ The app group container is included in backup when the toggle is on and `iCloudB
 | the database is not encrypted | Database is not encrypted. Set passphrase to enable iCloud backup. |
 | the database uses the initial random passphrase | Database is encrypted using a random passphrase. Set passphrase to enable iCloud backup. |
 
-`excludeAppDataFromBackup(_:)` always excludes the Documents directory (legacy database, exported archives, migration files), `temp_files` (decrypted copies of files) and the `.bak` copies of the database (made by the core on passphrase changes and migrations, possibly unencrypted or with an old passphrase). It clears the attribute on the database files, because restoring a backup in `DatabaseErrorView` copies them from the excluded `.bak` files with `FileManager.copyItem`, which keeps the attribute.
+`excludeAppDataFromBackup(_:)` always excludes the Documents directory (legacy database, exported archives, migration files), `temp_files` (decrypted copies of files) and the `.bak` copies of the database (made by the core on passphrase changes and migrations, possibly unencrypted or with an old passphrase). It clears the attribute on the database files, because restoring a backup in `DatabaseErrorView` copies them from the excluded `.bak` files with `FileManager.copyItem`, which keeps the attribute; the rule is applied right after the restore.
 
-The rule is applied when the database is opened (after the file paths are set, as the core re-creates `temp_files`), after a passphrase change, when the toggle changes, and at launch from the stored flags (skipped while the device is locked, as they cannot be read).
+The rule is applied when the database is opened (after the file paths are set, as the core re-creates `temp_files`), after a passphrase change, when the toggle changes, and at launch, before the database is opened: it is treated as encrypted when the passphrase is not stored in the keychain (it was set by the user) or a key is stored there, as `chatMigrateInit` opens it with that key — importing an archive removes the stored key, so an unencrypted import stays excluded even if the database then fails to open. This is skipped while the device is locked, as the stored flags cannot be read.
 
 ## Accepted gaps
 

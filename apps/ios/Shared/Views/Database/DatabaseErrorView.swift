@@ -263,6 +263,7 @@ struct DatabaseErrorView: View {
     private func restoreDb() {
         do {
             try restoreBackup()
+            updateAppDataBackup()
             showRestoreDbButton = false
             encryptionStartedDefault.set(false)
         } catch {

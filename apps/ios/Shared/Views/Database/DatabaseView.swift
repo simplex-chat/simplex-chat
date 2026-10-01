@@ -62,7 +62,8 @@ func updateAppDataBackup() {
 @MainActor
 func updateAppDataBackupOnLaunch() {
     if UIApplication.shared.isProtectedDataAvailable {
-        excludeAppDataFromBackup(!iCloudBackupDefault.get() || dbContainerGroupDefault.get() != .group || initialRandomDBPassphraseGroupDefault.get())
+        let dbEncrypted = !storeDBPassphraseGroupDefault.get() || kcDatabasePassword.get()?.isEmpty == false
+        excludeAppDataFromBackup(!iCloudBackupDefault.get() || iCloudBackupBlock(dbEncrypted) != nil)
     }
 }
 
