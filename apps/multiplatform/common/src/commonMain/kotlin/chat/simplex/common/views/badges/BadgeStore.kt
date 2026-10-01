@@ -128,6 +128,7 @@ sealed class BadgeStoreError: Exception() {
   class BillingError(val responseCode: Int, val debugMessage: String): BadgeStoreError()
   object StoreUnavailable: BadgeStoreError()
   object NoActiveProfile: BadgeStoreError()
+  class InvoiceRefused(val err: ChatError): BadgeStoreError()
 
   override val message: String
     get() = when (this) {
@@ -135,6 +136,7 @@ sealed class BadgeStoreError: Exception() {
       is BillingError -> "billingError(responseCode: $responseCode, $debugMessage)"
       is StoreUnavailable -> "storeUnavailable"
       is NoActiveProfile -> "noActiveProfile"
+      is InvoiceRefused -> "invoiceRefused(${err.string})"
     }
 }
 
@@ -171,7 +173,7 @@ object BadgeStore {
   }
 
   fun canBuy(userId: Long?): Boolean =
-    reconciledOnce.value && buying.value.isEmpty() && purchaseState(userId) == null
+    platform.androidHasPlatformStore && reconciledOnce.value && buying.value.isEmpty() && purchaseState(userId) == null
 
   fun setStorePurchases(rhId: Long?, userId: Long, purchases: List<OpenStorePurchase>) {
     storePurchases.value = Triple(rhId, userId, purchases)
@@ -296,7 +298,7 @@ object BadgeStore {
           Log.e(TAG, "BadgeStore.presentPurchase: ${r.err?.string}")
           val refused = badgeReceiptRefused(r.err)
           if (refused) finish(receipt)
-          val text = chatModel.controller.redeemErrorText(r.err)
+          val text = chatModel.controller.redeemErrorText(r.err, purchase = true)
           alertText = if (refused) text else text + "\n\n" + generalGetString(MR.strings.badges_purchase_will_retry)
         }
         null -> {}
