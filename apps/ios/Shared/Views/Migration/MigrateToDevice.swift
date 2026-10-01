@@ -544,6 +544,7 @@ struct MigrateToDevice: View {
                     // cannot delete storage if chat is running
                     try await stopChatAsync()
                 }
+                excludeAppDataFromBackup(true)
                 try await apiDeleteStorage()
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                 do {

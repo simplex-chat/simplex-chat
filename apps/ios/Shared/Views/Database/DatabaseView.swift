@@ -713,6 +713,7 @@ func stopChatAsync() async throws {
 }
 
 func deleteChatAsync() async throws {
+    excludeAppDataFromBackup(true)
     try await apiDeleteStorage()
     _ = kcDatabasePassword.remove()
     storeDBPassphraseGroupDefault.set(true)

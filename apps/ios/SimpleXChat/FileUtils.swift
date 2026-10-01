@@ -71,8 +71,8 @@ func getAppDirectory() -> URL {
 }
 
 public func excludeAppDataFromBackup(_ exclude: Bool) {
-    setExcludedFromBackup([getGroupContainerDirectory()], exclude)
     excludeNonAppDataFromBackup()
+    setExcludedFromBackup([getGroupContainerDirectory()], exclude)
 }
 
 public func excludeNonAppDataFromBackup() {
