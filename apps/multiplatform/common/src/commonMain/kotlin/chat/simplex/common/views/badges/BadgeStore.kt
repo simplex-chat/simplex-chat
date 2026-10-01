@@ -147,7 +147,7 @@ object BadgeStore {
   // one-time purchases the store holds unfinished: each is a payment taken and not yet credited
   private val unfinished = mutableStateOf<Map<String, BadgeStoreReceipt>>(emptyMap())
   // core's open store purchases for the profile they were read for: core knows whose a purchase is
-  private val storePurchases = mutableStateOf<Triple<Long?, Long, List<BadgeStorePurchase>>?>(null)
+  private val storePurchases = mutableStateOf<Triple<Long?, Long, List<OpenStorePurchase>>?>(null)
   // invoices whose purchase this session is still waiting on the store for
   private val buying = mutableStateOf<Set<String>>(emptySet())
   // by invoice id, so a pending purchase shows only under the profile whose record it names
@@ -172,13 +172,12 @@ object BadgeStore {
 
   fun canBuy(userId: Long?): Boolean =
     reconciledOnce.value && buying.value.isEmpty() && purchaseState(userId) == null
-        && openStorePurchases(userId).none { it.transactionRef == null }
 
-  fun setStorePurchases(rhId: Long?, userId: Long, purchases: List<BadgeStorePurchase>) {
+  fun setStorePurchases(rhId: Long?, userId: Long, purchases: List<OpenStorePurchase>) {
     storePurchases.value = Triple(rhId, userId, purchases)
   }
 
-  private fun openStorePurchases(userId: Long?): List<BadgeStorePurchase> {
+  private fun openStorePurchases(userId: Long?): List<OpenStorePurchase> {
     val (rhId, readFor, purchases) = storePurchases.value ?: return emptyList()
     return if (rhId == chatModel.remoteHostId() && readFor == userId) purchases else emptyList()
   }

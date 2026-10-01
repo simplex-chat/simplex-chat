@@ -105,7 +105,7 @@ final class BadgeStore: ObservableObject {
     // one-time transactions the store holds unfinished: each is a payment taken and not yet credited
     @Published private var unfinished: [UInt64: BadgeStoreReceipt] = [:]
     // core's open store purchases for the profile they were read for: core knows whose a purchase is
-    @Published private var storePurchases: (userId: Int64, purchases: [BadgeStorePurchase])? = nil
+    @Published private var storePurchases: (userId: Int64, purchases: [OpenStorePurchase])? = nil
     // invoices whose purchase this session is still waiting on the store for
     @Published private var buying: Set<String> = []
     // kept for this run only: StoreKit lists no deferred purchase, and a declined one delivers nothing
@@ -130,14 +130,13 @@ final class BadgeStore: ObservableObject {
 
     func canBuy(_ userId: Int64?) -> Bool {
         reconciledOnce && buying.isEmpty && purchaseState(userId) == nil
-            && !openStorePurchases(userId).contains(where: { $0.transactionRef == nil })
     }
 
-    func setStorePurchases(_ userId: Int64, _ purchases: [BadgeStorePurchase]) {
+    func setStorePurchases(_ userId: Int64, _ purchases: [OpenStorePurchase]) {
         storePurchases = (userId, purchases)
     }
 
-    private func openStorePurchases(_ userId: Int64?) -> [BadgeStorePurchase] {
+    private func openStorePurchases(_ userId: Int64?) -> [OpenStorePurchase] {
         guard let storePurchases, storePurchases.userId == userId else { return [] }
         return storePurchases.purchases
     }
