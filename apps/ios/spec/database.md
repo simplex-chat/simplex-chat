@@ -76,7 +76,13 @@ The container choice is stored in `dbContainerGroupDefault` (`GroupDefaults`).
 
 ### Backup Exclusion
 
-`isExcludedFromBackup` is set on both containers by [`excludeAppDataFromBackup()`](../SimpleXChat/FileUtils.swift#L69-L79), which is called from [`prepareForLaunch()`](../Shared/AppDelegate.swift#L124-L127) on each app launch. Files that the app, NSE and SE create or replace in these directories later are excluded as well.
+[`excludeAppDataFromBackup(_:)`](../SimpleXChat/FileUtils.swift#L73-L81) sets `isExcludedFromBackup` on the app group container as requested, clears it on the database files (`FileManager.copyItem` in `restoreBackup()` copies it from the `.bak` files), and always sets it on the Documents directory (legacy database, exported archives, migration files), `temp_files` (decrypted copies of files) and the `.bak` copies of the database (made by the core on passphrase changes and migrations, possibly unencrypted or with an old passphrase).
+
+The app group container is included in backup when the "Enable iCloud backup" toggle in "Database passphrase & export" is on (`DEFAULT_ICLOUD_BACKUP`, on by default) and [`iCloudBackupBlock`](../Shared/Views/Database/DatabaseView.swift) returns `nil`: the database is in the app group container, encrypted, and its passphrase was set by the user, not the initial random one. Otherwise the toggle is disabled and shown off, and its footer states the reason. The keychain passphrase is stored with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, so on another device the user has to enter it after a restore.
+
+[`updateAppDataBackup()`](../Shared/Views/Database/DatabaseView.swift) applies the rule in [`initializeChat`](../Shared/Model/SimpleXAPI.swift) after the database is opened and the file paths are set (the core re-creates `temp_files` then), after a passphrase change in [`DatabaseEncryptionView`](../Shared/Views/Database/DatabaseEncryptionView.swift) (the core makes new `.bak` copies), and when the toggle changes. [`prepareForLaunch()`](../Shared/AppDelegate.swift#L124-L127) applies it with `updateAppDataBackupOnLaunch()` without the encryption check, as the database is not open yet; while protected data is unavailable it does nothing, keeping the last applied state.
+
+Accepted gaps: after deleting or importing a database, the previous decision stays until the app restarts; `.bak` copies made during a passphrase change or migration, and `temp_files` re-created by the NSE or SE, are excluded only at the next update; files in `app_files` are backed up as stored (unencrypted when "Encrypt local files" is off).
 
 ---
 

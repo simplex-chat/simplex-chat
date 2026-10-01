@@ -42,6 +42,30 @@ enum DatabaseAlert: Identifiable {
     }
 }
 
+enum ICloudBackupBlock {
+    case databaseInDocuments
+    case databaseNotEncrypted
+    case randomPassphrase
+}
+
+func iCloudBackupBlock(_ dbEncrypted: Bool?) -> ICloudBackupBlock? {
+    if dbContainerGroupDefault.get() != .group { return .databaseInDocuments }
+    if dbEncrypted != true { return .databaseNotEncrypted }
+    if initialRandomDBPassphraseGroupDefault.get() { return .randomPassphrase }
+    return nil
+}
+
+func updateAppDataBackup() {
+    excludeAppDataFromBackup(!iCloudBackupDefault.get() || iCloudBackupBlock(ChatModel.shared.chatDbEncrypted) != nil)
+}
+
+@MainActor
+func updateAppDataBackupOnLaunch() {
+    if UIApplication.shared.isProtectedDataAvailable {
+        excludeAppDataFromBackup(!iCloudBackupDefault.get() || dbContainerGroupDefault.get() != .group || initialRandomDBPassphraseGroupDefault.get())
+    }
+}
+
 // Spec: spec/database.md#DatabaseView
 struct DatabaseView: View {
     @EnvironmentObject var m: ChatModel
@@ -55,6 +79,7 @@ struct DatabaseView: View {
     @State private var progressIndicator = false
     @AppStorage(DEFAULT_CHAT_ARCHIVE_NAME) private var chatArchiveName: String?
     @AppStorage(DEFAULT_CHAT_ARCHIVE_TIME) private var chatArchiveTime: Double = 0
+    @AppStorage(DEFAULT_ICLOUD_BACKUP) private var iCloudBackup = true
     @State private var dbContainer = dbContainerGroupDefault.get()
     @State private var legacyDatabase = hasLegacyDatabase()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
@@ -158,6 +183,14 @@ struct DatabaseView: View {
         }
     }
 
+    private func iCloudBackupBlockText(_ block: ICloudBackupBlock) -> Text {
+        switch block {
+        case .databaseInDocuments: return Text("Database is not migrated yet. Migrate it when the app restarts.")
+        case .databaseNotEncrypted: return Text("Database is not encrypted. Set passphrase to enable iCloud backup.")
+        case .randomPassphrase: return Text("Database is encrypted using a random passphrase. Set passphrase to enable iCloud backup.")
+        }
+    }
+
     private func runChatToggleView() -> some View {
         Section {
             let stopped = m.chatRunning == false
@@ -238,6 +271,25 @@ struct DatabaseView: View {
                 .foregroundColor(theme.colors.secondary)
             }
             .disabled(progressIndicator)
+
+            let backupBlock = iCloudBackupBlock(m.chatDbEncrypted)
+            Section {
+                settingsRow("icloud", color: theme.colors.secondary) {
+                    Toggle("Enable iCloud backup", isOn: Binding(
+                        get: { backupBlock == nil && iCloudBackup },
+                        set: { iCloudBackup = $0; updateAppDataBackup() }
+                    ))
+                }
+                .disabled(backupBlock != nil)
+            } header: {
+                Text("Chat backup")
+                    .foregroundColor(theme.colors.secondary)
+            } footer: {
+                if let backupBlock {
+                    iCloudBackupBlockText(backupBlock)
+                        .foregroundColor(theme.colors.secondary)
+                }
+            }
 
             if case .group = dbContainer, legacyDatabase {
                 Section(header: Text("Old database").foregroundColor(theme.colors.secondary)) {

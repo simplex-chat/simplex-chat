@@ -2269,6 +2269,7 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
         encryptionStartedDefault.set(false)
     }
     try apiSetAppFilePaths(filesFolder: getAppFilesDirectory().path, tempFolder: getTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path)
+    updateAppDataBackup()
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
