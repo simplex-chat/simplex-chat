@@ -99,7 +99,7 @@ withChatTerm ChatTerminal {termDevice = TerminalDevice t} action = withTerm t $ 
 
 newChatTerminal :: WithTerminal t => t -> ChatOpts -> IO ChatTerminal
 newChatTerminal t opts = do
-  termSize <- withTerm t . runTerminalT $ getWindowSize
+  termSize <- fixZeroSize <$> (withTerm t . runTerminalT $ getWindowSize)
   let lastRow = height termSize - 1
   termState <- newTVarIO mkTermState
   liveMessageState <- newTVarIO Nothing
@@ -121,6 +121,11 @@ newChatTerminal t opts = do
         activeTo,
         currentRemoteUsers
       }
+  where
+    -- getWindowSize reports zero dimensions in non-TTY terminals (e.g. emacs eshell),
+    -- which caused "divide by zero" in line layout (see issue #5548)
+    fixZeroSize Size {height = h, width = w} = Size {height = nonZero 24 h, width = nonZero 80 w}
+    nonZero d n = if n > 0 then n else d
 
 mkTermState :: TerminalState
 mkTermState =
