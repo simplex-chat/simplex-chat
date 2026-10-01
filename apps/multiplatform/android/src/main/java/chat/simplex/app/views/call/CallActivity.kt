@@ -36,6 +36,7 @@ import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.AcceptCallAction
+import chat.simplex.common.AppLock
 import chat.simplex.common.helpers.applyAppLocale
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
@@ -342,7 +343,10 @@ fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatMo
       chatModel.activeCallInvitation.value = null
       ntfManager.cancelCallNotification()
     },
-    acceptCall = { cm.acceptIncomingCall(invitation = invitation) },
+    acceptCall = {
+      AppLock.recheckAuthState()
+      cm.acceptIncomingCall(invitation = invitation)
+    },
     openApp = {
       val intent = Intent(context, MainActivity::class.java)
         .setAction(NtfManager.OpenChatAction)
