@@ -280,7 +280,7 @@ struct DatabaseView: View {
             Section {
                 settingsRow("icloud", color: theme.colors.secondary) {
                     Toggle("Enable iCloud backup", isOn: Binding(
-                        get: { backupBlock == nil && iCloudBackup },
+                        get: { appDataIncludedInBackup() },
                         set: { iCloudBackup = $0; updateAppDataBackup() }
                     ))
                 }
@@ -289,11 +289,11 @@ struct DatabaseView: View {
                 Text("Chat backup")
                     .foregroundColor(theme.colors.secondary)
             } footer: {
-                if let backupBlock {
-                    iCloudBackupBlockText(backupBlock)
-                        .foregroundColor(theme.colors.secondary)
-                } else if m.chatDbChanged {
+                if m.chatDbChanged {
                     Text("Database needs to be reopened. Start chat to change iCloud backup.")
+                        .foregroundColor(theme.colors.secondary)
+                } else if let backupBlock {
+                    iCloudBackupBlockText(backupBlock)
                         .foregroundColor(theme.colors.secondary)
                 }
             }
@@ -558,6 +558,7 @@ struct DatabaseView: View {
                 progressIndicator.wrappedValue = true
             }
             do {
+                await MainActor.run { ChatModel.shared.chatDbChanged = true }
                 excludeAppDataFromBackup(true)
                 try await apiDeleteStorage()
                 try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
@@ -713,6 +714,7 @@ func stopChatAsync() async throws {
 }
 
 func deleteChatAsync() async throws {
+    await MainActor.run { ChatModel.shared.chatDbChanged = true }
     excludeAppDataFromBackup(true)
     try await apiDeleteStorage()
     _ = kcDatabasePassword.remove()

@@ -75,6 +75,10 @@ public func excludeAppDataFromBackup(_ exclude: Bool) {
     setExcludedFromBackup([getGroupContainerDirectory()], exclude)
 }
 
+public func appDataIncludedInBackup() -> Bool {
+    (try? getGroupContainerDirectory().resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup) == false
+}
+
 public func excludeNonAppDataFromBackup() {
     let dbPath = getAppDatabasePath().path
     func existing(_ paths: [String]) -> [URL] {
