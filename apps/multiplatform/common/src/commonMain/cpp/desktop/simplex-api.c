@@ -64,6 +64,7 @@ jstring decode_to_utf8_string(JNIEnv *env, char *string) {
     (*env)->DeleteLocalRef(env, bb);
     (*env)->DeleteLocalRef(env, charset);
     (*env)->DeleteLocalRef(env, cb);
+    free(string);
     return res;
 }
 
@@ -239,6 +240,7 @@ Java_chat_simplex_common_platform_CoreKt_chatReadFile(JNIEnv *env, jclass clazz,
         arr = (*env)->NewByteArray(env, len);
         (*env)->SetByteArrayRegion(env, arr, 0, len, res + 1);
     }
+    free(res);
 
     jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/Object"), NULL);
     jobject statusObj = (*env)->NewObject(env, (*env)->FindClass(env, "java/lang/Integer"),
