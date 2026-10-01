@@ -5,6 +5,9 @@ module Simplex.Chat.Store.SQLite.Migrations.M20260925_badge_store_receipts where
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
+-- | invoice_id is null for a receipt this install did not start — a reinstall, a restored database, or the
+-- same store account on another device. provider and transaction_ref are null until a receipt arrives, and
+-- distinct NULLs let several rows await one at once.
 m20260925_badge_store_receipts :: Query
 m20260925_badge_store_receipts =
   [sql|

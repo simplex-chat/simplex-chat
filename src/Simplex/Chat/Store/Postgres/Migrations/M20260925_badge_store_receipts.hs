@@ -6,6 +6,9 @@ module Simplex.Chat.Store.Postgres.Migrations.M20260925_badge_store_receipts whe
 import Data.Text (Text)
 import Text.RawString.QQ (r)
 
+-- | invoice_id is null for a receipt this install did not start — a reinstall, a restored database, or the
+-- same store account on another device. provider and transaction_ref are null until a receipt arrives, and
+-- distinct NULLs let several rows await one at once.
 m20260925_badge_store_receipts :: Text
 m20260925_badge_store_receipts =
   [r|
