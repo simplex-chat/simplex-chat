@@ -1462,6 +1462,7 @@ func planAndConnect(
                 let connectionPlan = result.connectionPlan
                 let planSimplexName = result.planSimplexName
                 let localChats = result.localChats
+                let otherFilter: (([ChatInfo]) -> Bool)? = filterChats.map { f in { chats in f(localChats + chats) } }
                 await MainActor.run { addMissingChats(localChats) }
                 // the name can also resolve to the other kind; its type picks the verb, its short form the label and target
                 let connectOtherLink = result.otherSimplexName?.shortStr
@@ -1569,7 +1570,7 @@ func planAndConnect(
                                     planSimplexName: planSimplexName,
                                     connectOtherButton: connectOtherButton,
                                     connectOtherLink: connectOtherLink,
-                                    filterChats: filterChats,
+                                    filterChats: otherFilter,
                                     addressChanged: addressChanged,
                                     openExistingChat: openExisting,
                                     theme: theme,
@@ -1599,7 +1600,7 @@ func planAndConnect(
                                 connectionLink: connectionLink,
                                 connectionPlan: connectionPlan,
                                 connectOtherButton: connectOtherButton,
-                                onConnectOther: connectOtherLink.map { link in { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: filterChats) } },
+                                onConnectOther: connectOtherLink.map { link in { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: otherFilter) } },
                                 dismiss: dismiss,
                                 cleanup: cleanup
                             )
@@ -1613,7 +1614,7 @@ func planAndConnect(
                                 connectionLink: connectionLink,
                                 connectionPlan: connectionPlan,
                                 connectOtherButton: connectOtherButton,
-                                onConnectOther: connectOtherLink.map { link in { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: filterChats) } },
+                                onConnectOther: connectOtherLink.map { link in { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: otherFilter) } },
                                 dismiss: dismiss,
                                 cleanup: cleanup
                             )
@@ -1622,7 +1623,7 @@ func planAndConnect(
                         logger.debug("planAndConnect, .contactAddress, .connectingProhibit")
                         await MainActor.run {
                             if filterChats?(localChats) != true {
-                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss, planSimplexName: planSimplexName, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink, filterChats: filterChats)
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss, planSimplexName: planSimplexName, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink, filterChats: otherFilter)
                             }
                         }
                     case let .known(contact):
@@ -1630,17 +1631,21 @@ func planAndConnect(
                         await MainActor.run {
                             if filterChats?(localChats) == true {
                                 if let otherSimplexName = result.otherSimplexName, let connectOtherButton {
-                                    showOtherNameAlert(otherSimplexName, connectOtherButton: connectOtherButton, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: filterChats)
+                                    showOtherNameAlert(otherSimplexName, connectOtherButton: connectOtherButton, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: otherFilter)
                                 }
                             } else {
-                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss, planSimplexName: planSimplexName, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink, filterChats: filterChats)
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss, planSimplexName: planSimplexName, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink, filterChats: otherFilter)
                             }
                         }
                     case let .contactViaAddress(contact):
                         logger.debug("planAndConnect, .contactAddress, .contactViaAddress")
                         await MainActor.run {
-                            if filterChats?(localChats) != true {
-                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss, planSimplexName: planSimplexName, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink, filterChats: filterChats)
+                            if filterChats?(localChats) == true {
+                                if let otherSimplexName = result.otherSimplexName, let connectOtherButton {
+                                    showOtherNameAlert(otherSimplexName, connectOtherButton: connectOtherButton, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: otherFilter)
+                                }
+                            } else {
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss, planSimplexName: planSimplexName, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink, filterChats: otherFilter)
                             }
                         }
                     }
@@ -1662,7 +1667,7 @@ func planAndConnect(
                                     planSimplexName: planSimplexName,
                                     connectOtherButton: connectOtherButton,
                                     connectOtherLink: connectOtherLink,
-                                    filterChats: filterChats,
+                                    filterChats: otherFilter,
                                     addressChanged: addressChanged,
                                     openExistingChat: openExisting,
                                     theme: theme,
@@ -1688,7 +1693,7 @@ func planAndConnect(
                         await MainActor.run {
                             if filterChats?(localChats) == true {
                                 if let otherSimplexName = result.otherSimplexName, let connectOtherButton {
-                                    showOtherNameAlert(otherSimplexName, connectOtherButton: connectOtherButton, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: filterChats)
+                                    showOtherNameAlert(otherSimplexName, connectOtherButton: connectOtherButton, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: otherFilter)
                                 }
                             } else {
                                 showOwnGroupLinkConfirmConnectSheet(
@@ -1697,7 +1702,7 @@ func planAndConnect(
                                     connectionPlan: connectionPlan,
                                     planSimplexName: planSimplexName,
                                     connectOtherButton: connectOtherButton,
-                                    onConnectOther: connectOtherLink.map { link in { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: filterChats) } },
+                                    onConnectOther: connectOtherLink.map { link in { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: otherFilter) } },
                                     dismiss: dismiss,
                                     cleanup: cleanup
                                 )
@@ -1712,7 +1717,7 @@ func planAndConnect(
                                 connectionLink: connectionLink,
                                 connectionPlan: connectionPlan,
                                 connectOtherButton: connectOtherButton,
-                                onConnectOther: connectOtherLink.map { link in { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: filterChats) } },
+                                onConnectOther: connectOtherLink.map { link in { planAndConnect(link, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: otherFilter) } },
                                 dismiss: dismiss,
                                 cleanup: cleanup
                             )
@@ -1727,10 +1732,10 @@ func planAndConnect(
                         await MainActor.run {
                             if filterChats?(localChats) == true {
                                 if let otherSimplexName = result.otherSimplexName, let connectOtherButton {
-                                    showOtherNameAlert(otherSimplexName, connectOtherButton: connectOtherButton, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: filterChats)
+                                    showOtherNameAlert(otherSimplexName, connectOtherButton: connectOtherButton, theme: theme, dismiss: dismiss, cleanup: cleanup, filterChats: otherFilter)
                                 }
                             } else {
-                                showOpenKnownGroupAlert(groupInfo, theme: theme, dismiss: dismiss, planSimplexName: planSimplexName, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink, filterChats: filterChats)
+                                showOpenKnownGroupAlert(groupInfo, theme: theme, dismiss: dismiss, planSimplexName: planSimplexName, connectOtherButton: connectOtherButton, connectOtherLink: connectOtherLink, filterChats: otherFilter)
                             }
                         }
                     case let .noRelays(groupSLinkData_):

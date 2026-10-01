@@ -49,6 +49,7 @@ module Simplex.Chat.Store.Groups
     setGroupDomainVerified,
     getNameChats,
     getGroupDomainResolution,
+    setGroupDomainStale,
     updateGroupPreferences,
     updateGroupProfileFromMember,
     getGroupIdByName,
@@ -2777,6 +2778,10 @@ getGroupDomainResolution db User {userId} GroupInfo {groupId} =
       db
       "SELECT group_domain_resolved_at, group_domain_expires_at FROM groups WHERE user_id = ? AND group_id = ? AND group_domain_resolved_at IS NOT NULL"
       (userId, groupId)
+
+setGroupDomainStale :: DB.Connection -> User -> GroupInfo -> IO ()
+setGroupDomainStale db User {userId} GroupInfo {groupId} =
+  DB.execute db "UPDATE groups SET group_domain_resolved_at = NULL WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
 -- A business group has no publicGroup claim, so the domain it was connected by (from its address) is written
 -- directly to group_domain and marked verified, so it is found by the local name search (getGroupToConnect).

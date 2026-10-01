@@ -54,6 +54,7 @@ module Simplex.Chat.Store.Direct
     setContactDomainVerified,
     unverifyNameChats,
     getContactDomainResolution,
+    setContactDomainStale,
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
@@ -627,6 +628,10 @@ getContactDomainResolution db User {userId} Contact {profile = LocalProfile {pro
       db
       "SELECT contact_domain_resolved_at, contact_domain_expires_at FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ? AND contact_domain_resolved_at IS NOT NULL"
       (userId, profileId)
+
+setContactDomainStale :: DB.Connection -> User -> Contact -> IO ()
+setContactDomainStale db User {userId} Contact {profile = LocalProfile {profileId}} =
+  DB.execute db "UPDATE contact_profiles SET contact_domain_resolved_at = NULL WHERE user_id = ? AND contact_profile_id = ?" (userId, profileId)
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
 updateContactUserPreferences db user@User {userId} c@Contact {contactId} userPreferences = do

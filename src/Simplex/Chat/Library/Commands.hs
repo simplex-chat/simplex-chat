@@ -2418,7 +2418,7 @@ processChatCommand cxt nm = \case
     let connLink_ = preparedContact >>= \PreparedContact {connLinkToConnect = ACCL m (CCLink _ sLnk_)} -> ACSL m <$> sLnk_
     domain <- maybe (throwCmdError "contact has no name to verify") pure contactDomain
     (verified, reason) <- verifyEntityDomain user nm NTContact domain connLink_
-    ct' <- maybe (pure ct) (\v -> withFastStore' $ \db -> setContactDomainVerified db user ct v Nothing) verified
+    ct' <- maybe (pure ct) (\v -> withFastStore' $ \db -> setContactDomainVerified db user ct v Nothing <* setContactDomainStale db user ct) verified
     when (verified == Just True) $ nameChatsUpdated user NTContact $ claimDomain domain
     pure $ CRContactDomainVerified user ct' reason
   APIVerifyGroupDomain groupId -> withUser $ \user -> do
@@ -2433,7 +2433,7 @@ processChatCommand cxt nm = \case
           | otherwise -> pure (False, Just "the name does not resolve to the link in the group profile")
         Left (ChatErrorAgent {agentError = SMP _ (NAME SMP.NOT_FOUND)}) -> pure (False, Just "the name is not registered")
         Left e -> throwError e
-    g' <- withFastStore' $ \db -> setGroupDomainVerified db user g verified Nothing
+    g' <- withFastStore' $ \db -> setGroupDomainVerified db user g verified Nothing <* setGroupDomainStale db user g
     when verified $ nameChatsUpdated user NTPublicGroup $ claimDomain claim
     pure $ CRGroupDomainVerified user g' reason
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
@@ -4428,9 +4428,9 @@ processChatCommand cxt nm = \case
         channel_ <- knownGroupPlans user $ CTName channelName
         contact_ <- knownContactPlans user $ CTName contactName
         let match_ = (channelName,) <$> channel_ <|> (contactName,) <$> contact_
-            bothLocal = isJust channel_ && isJust contact_
+            allFresh = maybe False snd channel_ && maybe False snd contact_
         case match_ of
-          Just (ni, ((l, p), fresh)) | resolveMode == PRMNever || (resolveMode == PRMUnknown && fresh && bothLocal) -> pure (Just l, Just ni, Nothing, p)
+          Just (ni, ((l, p), _)) | resolveMode == PRMNever || (resolveMode == PRMUnknown && allFresh) -> pure (Just l, Just ni, Nothing, p)
           Nothing | resolveMode == PRMNever -> throwChatError CENotResolvedLocally
           _ ->
             tryAllErrors (resolveNameRegistration user nm d) >>= \case
@@ -4453,11 +4453,25 @@ processChatCommand cxt nm = \case
                       CPGroupLink GLPNoRelays {} _ -> True
                       CPGroupLink GLPUpdateRequired {} _ -> True
                       _ -> False
+                    otherKindResolved ((l, p), _) = case linkOrWarning contactName of
+                      Right l'
+                        | isLinkOf l' l -> confirmOther p
+                        | otherwise -> withFastStore' $ \db -> case p of
+                            CPContactAddress (CAPKnown ct') _ -> setContactDomainStale db user ct'
+                            CPGroupLink (GLPKnown g _ _ _) _ -> setGroupDomainStale db user g
+                            _ -> pure ()
+                      Left w | isNothing $ nameWarning_ $ setNameWarning w p -> confirmOther p
+                      _ -> pure ()
+                    confirmOther = \case
+                      CPContactAddress (CAPKnown ct') _ -> withFastStore' (\db -> void $ setContactDomainVerified db user ct' True (nameExpiresAt reg)) >> nameChatsUpdated user NTContact d
+                      CPGroupLink (GLPKnown g _ _ _) _ -> withFastStore' (\db -> void $ setGroupDomainVerified db user g True (nameExpiresAt reg)) >> nameChatsUpdated user NTContact d
+                      _ -> pure ()
+                when (isJust channel_) $ forM_ contact_ otherKindResolved
                 case match_ of
                   Just (ni, _) -> namePlan ni
                   Nothing -> case (linkOrWarning channelName, linkOrWarning contactName) of
                     (Right _, Right _) ->
-                      (namePlan channelName >>= \r -> if unjoinable r then contactPlanOr (pure r) else pure r)
+                      (namePlan channelName >>= \r@(l, n, _, p) -> if unjoinable r then contactPlanOr (pure (l, n, Nothing, p)) else pure r)
                         `catchAllErrors` \e -> contactPlanOr (throwError e)
                     (Right _, Left _) -> namePlan channelName
                     (Left _, Right _) -> namePlan contactName
@@ -4570,9 +4584,13 @@ processChatCommand cxt nm = \case
               resolvedGroupPlan expiresAt l' = do
                 (fd, cData@(ContactLinkData _ UserContactData {direct, owners, relays}), cReq) <- getShortLinkConnReq' nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+                let linkClaim = (\GroupShortLinkData {groupProfile = GroupProfile {publicGroup}} -> claimDomain <$> (publicGroup >>= publicGroupAccess >>= groupDomainClaim)) =<< groupSLinkData_
+                    unjoinable plan = do
+                      forM_ simplexName_ $ \SimplexNameInfo {nameDomain} -> unless (linkClaim == Just nameDomain) $ throwChatError $ CESimplexDomainNotReady nameDomain SDEUnknownDomain
+                      pure (con l' cReq, CPGroupLink (plan groupSLinkData_) Nothing)
                 if
-                  | not direct && unsupportedGroupType groupSLinkData_ -> pure (con l' cReq, CPGroupLink (GLPUpdateRequired groupSLinkData_) Nothing)
-                  | not direct && null relays -> pure (con l' cReq, CPGroupLink (GLPNoRelays groupSLinkData_) Nothing)
+                  | not direct && unsupportedGroupType groupSLinkData_ -> unjoinable GLPUpdateRequired
+                  | not direct && null relays -> unjoinable GLPNoRelays
                   | otherwise -> do
                       let FixedLinkData {linkEntityId, rootKey} = fd
                           linkInfo = GroupShortLinkInfo {direct, groupRelays = relays, publicGroupId = B64UrlByteString <$> linkEntityId}
