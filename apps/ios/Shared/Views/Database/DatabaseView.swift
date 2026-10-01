@@ -284,13 +284,16 @@ struct DatabaseView: View {
                         set: { iCloudBackup = $0; updateAppDataBackup() }
                     ))
                 }
-                .disabled(backupBlock != nil)
+                .disabled(backupBlock != nil || m.chatDbChanged)
             } header: {
                 Text("Chat backup")
                     .foregroundColor(theme.colors.secondary)
             } footer: {
                 if let backupBlock {
                     iCloudBackupBlockText(backupBlock)
+                        .foregroundColor(theme.colors.secondary)
+                } else if m.chatDbChanged {
+                    Text("Database needs to be reopened. Start chat to change iCloud backup.")
                         .foregroundColor(theme.colors.secondary)
                 }
             }
