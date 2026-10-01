@@ -660,7 +660,7 @@ data ChatCommand
   | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg file
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
   | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
-  | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, payment :: ServicePayment} -- redeem an App Store or Google Play purchase for a badge
+  | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, payment :: ServicePayment} -- redeem an App Store or Google Play purchase; without an invoice id, as for one this install did not start, it is credited by transaction reference
   | APICreateBadgeInvoice {userId :: UserId} -- the record of a store purchase, created before the store charges; answers the id the store echoes
   | APICloseBadgeInvoice {userId :: UserId, invoiceId :: Text} -- a store purchase that came to nothing
   | APIGetBadgeState {userId :: UserId} -- the user's badges, their balances and any current alert
