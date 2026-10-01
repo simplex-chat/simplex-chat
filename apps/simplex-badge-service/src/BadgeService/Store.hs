@@ -8,13 +8,13 @@
 
 module BadgeService.Store
   ( IssuedCode (..),
-    FundingClaim (..),
-    ClaimedPurchase (..),
+    FundingCredit (..),
+    CreditedPurchase (..),
     NewCodePurchase (..),
     NewStorePurchase (..),
     ServicePurchase (..),
     getBadgeCode,
-    getStorePaymentClaim,
+    getStorePaymentCredit,
     purchaseKeyExists,
     getPurchaseByKey,
     getLedgerTip,
@@ -64,15 +64,15 @@ data IssuedCode = IssuedCode
     paymentStatus :: BadgeCodePaymentStatus,
     revokedAt :: Maybe UTCTime,
     expiresAt :: Maybe UTCTime,
-    redemption :: FundingClaim
+    redemption :: FundingCredit
   }
 
-data FundingClaim
-  = Unclaimed
-  | Claimed ClaimedPurchase
-  | ClaimedUnreadable
+data FundingCredit
+  = Uncredited
+  | Credited CreditedPurchase
+  | CreditedUnreadable
 
-data ClaimedPurchase = ClaimedPurchase
+data CreditedPurchase = CreditedPurchase
   { badgePurchaseId :: Int64,
     purchaseKey :: C.PublicKeyEd25519,
     credential :: BadgeCredential
@@ -119,11 +119,11 @@ getBadgeCode db codeHash =
       (Only (Binary codeHash))
   where
     toCode (badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, purchaseId_, purchaseKey_, credential_) =
-      IssuedCode {badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, redemption = fundingClaim purchaseId_ purchaseKey_ credential_}
+      IssuedCode {badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, redemption = fundingCredit purchaseId_ purchaseKey_ credential_}
 
-getStorePaymentClaim :: DB.Connection -> PaymentProvider -> Text -> IO FundingClaim
-getStorePaymentClaim db provider providerRef =
-  maybeFirstRow' Unclaimed (\(purchaseId, purchaseKey, credential_) -> fundingClaim (Just purchaseId) (Just purchaseKey) credential_) $
+getStorePaymentCredit :: DB.Connection -> PaymentProvider -> Text -> IO FundingCredit
+getStorePaymentCredit db provider providerRef =
+  maybeFirstRow' Uncredited (\(purchaseId, purchaseKey, credential_) -> fundingCredit (Just purchaseId) (Just purchaseKey) credential_) $
     DB.query
       db
       [sql|
@@ -137,12 +137,12 @@ getStorePaymentClaim db provider providerRef =
       |]
       (textEncode provider, providerRef)
 
-fundingClaim :: Maybe Int64 -> Maybe C.PublicKeyEd25519 -> Maybe (Binary ByteString) -> FundingClaim
-fundingClaim purchaseId_ purchaseKey_ credential_ = case (purchaseId_, purchaseKey_) of
+fundingCredit :: Maybe Int64 -> Maybe C.PublicKeyEd25519 -> Maybe (Binary ByteString) -> FundingCredit
+fundingCredit purchaseId_ purchaseKey_ credential_ = case (purchaseId_, purchaseKey_) of
   (Just badgePurchaseId, Just purchaseKey) -> case decodeCredential =<< credential_ of
-    Just credential -> Claimed ClaimedPurchase {badgePurchaseId, purchaseKey, credential}
-    Nothing -> ClaimedUnreadable
-  _ -> Unclaimed
+    Just credential -> Credited CreditedPurchase {badgePurchaseId, purchaseKey, credential}
+    Nothing -> CreditedUnreadable
+  _ -> Uncredited
   where
     decodeCredential (Binary bs) = J.decodeStrict' bs
 

@@ -443,7 +443,7 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
           -- Redeeming an unpaid code would issue a free badge, so unpaid is refused.
           | CPSUnpaid <- paymentStatus -> pure $ Left $ errorResponse BSEPaymentPending
           | otherwise ->
-              claimedResponse db BSECodeUsed purchaseKey redemption >>= \case
+              creditedResponse db BSECodeUsed purchaseKey redemption >>= \case
                 Left resp -> pure $ Left resp
                 Right ()
                   | maybe False (now >=) expiresAt -> pure $ Left $ errorResponse BSECodeExpired
@@ -453,11 +453,11 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
 -- nothing is written until the credential is signed.
 purchaseWithReceipt :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeMasterKey -> StoreReceipt -> IO BadgeServiceResponse
 purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTransactionRef {provider, transactionRef = providerRef}, verifyReceipt} =
-  withDB' "getStorePayment" cc (\db -> getStorePaymentClaim db provider providerRef) >>= \case
+  withDB' "getStorePayment" cc (\db -> getStorePaymentCredit db provider providerRef) >>= \case
     Left _ -> pure $ errorResponse BSEInternal
-    Right claim
+    Right credit
       -- only the key it credited can ask, and it is told only what it was given, so the store is not asked
-      | claimedBy claim -> answerClaim claim
+      | creditedBy credit -> answerCredit credit
       | otherwise ->
           verifyReceipt >>= \case
             Left refusal -> storeRefusalResponse refusal
@@ -467,16 +467,16 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTran
             Right VerifiedStoreTransaction {quantity}
               | quantity /= 1 -> storeRefusalResponse $ SRVerifierFailed $ "verified a quantity of " <> tshow quantity
             Right VerifiedStoreTransaction {testPurchase = True} -> storeRefusalResponse $ SRInvalid "test purchase"
-            -- another key's claim is told only once the store vouched for the receipt, or it would reveal which transactions were credited
-            Right tx -> case claim of
-              Unclaimed -> newPurchase tx
-              _ -> answerClaim claim
+            -- another key's credit is told only once the store vouched for the receipt, or it would reveal which transactions were credited
+            Right tx -> case credit of
+              Uncredited -> newPurchase tx
+              _ -> answerCredit credit
   where
-    claimedBy = \case
-      Claimed ClaimedPurchase {purchaseKey = k} -> k == purchaseKey
+    creditedBy = \case
+      Credited CreditedPurchase {purchaseKey = k} -> k == purchaseKey
       _ -> False
-    answerClaim claim =
-      withDB' "answerStoreClaim" cc (\db -> claimedResponse db BSEReceiptUsed purchaseKey claim) <&> \case
+    answerCredit credit =
+      withDB' "answerStoreCredit" cc (\db -> creditedResponse db BSEReceiptUsed purchaseKey credit) <&> \case
         Right (Left resp) -> resp
         _ -> errorResponse BSEInternal
     -- the product is read only for a receipt not yet credited, so retiring it leaves its replays answered
@@ -492,7 +492,7 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTran
               liftIO (createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey, badgeType} now) >>= \case
                 -- Credited to another key, or to this one by a request that ran alongside it, while signing.
                 Nothing ->
-                  liftIO (getStorePaymentClaim db provider providerRef >>= claimedResponse db BSEReceiptUsed purchaseKey) >>= \case
+                  liftIO (getStorePaymentCredit db provider providerRef >>= creditedResponse db BSEReceiptUsed purchaseKey) >>= \case
                     Left resp -> pure resp
                     Right () -> logError "badge service: claiming a store payment failed, but it funds no purchase" $> errorResponse BSEInternal
                 Just purchaseId -> liftIO $ firstMonthResponse db purchaseId (Just paymentId) firstMonth
@@ -507,11 +507,11 @@ storeRefusalResponse = \case
   SRVerifierFailed reason -> logError ("store receipt not verified: " <> reason) $> errorResponse BSEInternal
   SRNotConfigured -> logWarn "store receipt refused: no verifier for this store is configured" $> errorResponse BSEProviderNotConfigured
 
-claimedResponse :: DB.Connection -> BadgeServiceErrorCode -> C.PublicKeyEd25519 -> FundingClaim -> IO (Either BadgeServiceResponse ())
-claimedResponse db usedCode purchaseKey = \case
-  Unclaimed -> pure $ Right ()
-  ClaimedUnreadable -> pure $ Left $ errorResponse BSEInternal
-  Claimed ClaimedPurchase {purchaseKey = k, badgePurchaseId, credential}
+creditedResponse :: DB.Connection -> BadgeServiceErrorCode -> C.PublicKeyEd25519 -> FundingCredit -> IO (Either BadgeServiceResponse ())
+creditedResponse db usedCode purchaseKey = \case
+  Uncredited -> pure $ Right ()
+  CreditedUnreadable -> pure $ Left $ errorResponse BSEInternal
+  Credited CreditedPurchase {purchaseKey = k, badgePurchaseId, credential}
     | k /= purchaseKey -> pure $ Left $ errorResponse usedCode
     | otherwise ->
         maybe (Left $ errorResponse BSEInternal) (Left . credentialResponse (Just credential) Nothing)
