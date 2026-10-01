@@ -139,7 +139,8 @@ data StoredPayment = StoredPayment
   deriving (Show)
 
 -- to review
--- PFApple and PFGoogle hold much what the service's VerifiedStoreTransaction does; the two are reconciled when this is built out.
+-- TODO [badges] reconcile PFApple and PFGoogle with the badge service's VerifiedStoreTransaction,
+-- which is what a store attested rather than a payment recorded here, when this is built out.
 data PaymentFunding
   = PFInvoice
       { invoiceId :: InvoiceId,

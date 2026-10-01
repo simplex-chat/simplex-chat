@@ -25,7 +25,8 @@ import Simplex.Messaging.Util (catchOwn')
 import System.Timeout (timeout)
 
 -- | What a store vouches for about one completed transaction.
--- PaymentFunding's PFApple and PFGoogle hold much the same; the two are reconciled when PaymentFunding is built out.
+-- TODO [badges] reconcile with PaymentFunding's PFApple and PFGoogle, which record a payment the
+-- service stored rather than what a store attested, when PaymentFunding is built out.
 data VerifiedStoreTransaction = VerifiedStoreTransaction
   { transactionRef :: Text, -- from what was verified: Apple's transactionId, googlePurchaseRef of the token asked about
     productId :: Text,
