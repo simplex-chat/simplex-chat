@@ -46,3 +46,6 @@ private_key = replace-me
 ; with a master key this service generates and can therefore link
 [dev]
 chat_redeem = off
+; local testing only, in both run modes: accepts any well-formed App Store or Play receipt without
+; verifying it, so anyone who can reach this service can mint badges
+accept_unverified_store_receipts = off
