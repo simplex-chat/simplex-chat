@@ -18,7 +18,7 @@ import Simplex.Messaging.Util (eitherToMaybe)
 mockStoreVerifier :: StoreVerifier
 mockStoreVerifier = noStoreVerifier {verifyApple = Just mockApple, verifyGoogle = Just mockGoogle}
 
-mockApple :: Text -> Either Text StoreTransaction
+mockApple :: Text -> Either Text VerifiedStoreTransaction
 mockApple signed = case T.splitOn "." signed of
   [_, payload, _] -> do
     o <- case J.decodeStrict' =<< eitherToMaybe (B64U.decodeUnpadded $ encodeUtf8 payload) of
@@ -31,11 +31,11 @@ mockApple signed = case T.splitOn "." signed of
     Right $ vouched transactionRef productId
   _ -> Left "not three dot-separated parts"
 
-mockGoogle :: Text -> Text -> IO (Either StoreRefusal StoreTransaction)
+mockGoogle :: Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
 mockGoogle productId token = pure $ Right $ vouched (googlePurchaseRef token) productId
 
-vouched :: Text -> Text -> StoreTransaction
+vouched :: Text -> Text -> VerifiedStoreTransaction
 vouched transactionRef productId =
-  -- not SETest, though nothing was paid: a test purchase is refused as receipt_invalid, which is
+  -- not a test purchase, though nothing was paid: a test purchase is refused as receipt_invalid, which is
   -- terminal and drops the client's keys, so every dev purchase would fail for good
-  StoreTransaction {transactionRef, productId, quantity = 1, environment = SEProduction, paid = Nothing}
+  VerifiedStoreTransaction {transactionRef, productId, quantity = 1, testPurchase = False, paid = Nothing}

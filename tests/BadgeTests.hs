@@ -10,7 +10,7 @@
 module BadgeTests (badgeTests) where
 
 import BadgeService.Service (badgeErrorRetryAfter, shownServiceRequest, survive)
-import BadgeService.StoreReceipts (StoreEnvironment (..), StoreReceipt (..), StoreRefusal (..), StoreTransaction (..), StoreVerifier (..), storeReceipt)
+import BadgeService.StoreReceipts (StoreReceipt (..), StoreRefusal (..), StoreVerifier (..), VerifiedStoreTransaction (..), storeReceipt)
 import BadgeService.StoreReceipts.Mock (mockStoreVerifier)
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar, takeMVar)
@@ -39,8 +39,7 @@ import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..), badgeRetryInterval, chatErrorAgent)
 import Simplex.Chat.Library.Commands (badgeErrorRetry, badgeFailureTransient, badgeIssueFailure, badgeRetryAfter, badgeServiceErrorText, badgeStalledInterval, storeTransactionRef)
 import Simplex.Chat.PaymentService (ServicePayment (..))
-import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..))
-import Simplex.Chat.Store.Badges (StoreTransactionRef (..))
+import Simplex.Chat.PaymentService.Types (InvoiceId (..), PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (..), AgentServiceError (..), SMPAgentError (..))
 import Simplex.Messaging.Agent.RetryInterval (RetryInterval (..), nextRetryDelay)
 import Simplex.Messaging.Crypto.BBS
@@ -843,14 +842,14 @@ testStoreTransactionRef = do
       part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
       apple = storeTransactionRef . SPApple
   -- the store may sign the same transaction again, and a retry must find the keys it stashed
-  apple (jws "2000000812345671" "c2lnbmVkIG9uY2U") `shouldBe` Just (StoreTransactionRef "apple" "2000000812345671")
+  apple (jws "2000000812345671" "c2lnbmVkIG9uY2U") `shouldBe` Just (StoreTransactionRef PPApple "2000000812345671")
   apple (jws "2000000812345671" "c2lnbmVkIGFnYWlu") `shouldBe` apple (jws "2000000812345671" "c2lnbmVkIG9uY2U")
   apple (jws "2000000812345672" "c2lnbmVkIG9uY2U") `shouldNotBe` apple (jws "2000000812345671" "c2lnbmVkIG9uY2U")
   apple "not.a-jws" `shouldBe` Nothing
   apple (T.intercalate "." [part "{}", part "{\"productId\":\"BADGE_SUPPORTER_01\"}", "sig"]) `shouldBe` Nothing
   -- a Play token is a bearer secret, so it is kept only as its hash
   let google = storeTransactionRef SPGoogle {productId = "badge_supporter_01", token = "play-token"}
-  google `shouldSatisfy` maybe False (\(StoreTransactionRef provider ref) -> provider == "google" && ref /= "play-token")
+  google `shouldSatisfy` maybe False (\(StoreTransactionRef provider ref) -> provider == PPGoogle && ref /= "play-token")
   google `shouldBe` storeTransactionRef SPGoogle {productId = "badge_supporter_01", token = "play-token"}
   storeTransactionRef SPInvoice {invoiceId = InvoiceId "inv"} `shouldBe` Nothing
 
@@ -873,7 +872,7 @@ testGoogleProductIdPath = do
         _ -> False
   mapM_ (\p -> refused p `shouldBe` True) ["badge_legend_01/tokens/other?", "badge_legend_01?x", "badge_legend_01#x", "..", "../badge_legend_01", "Badge_legend_01", ""]
   case storeReceipt uncalledVerifier SPGoogle {productId = "badge_supporter_01", token = validPlayToken} of
-    Just (Right StoreReceipt {provider}) -> provider `shouldBe` PPGoogle
+    Just (Right StoreReceipt {txRef = StoreTransactionRef {provider}}) -> provider `shouldBe` PPGoogle
     _ -> expectationFailure "a valid product id and token were refused"
 
 testGoogleTokenPath :: IO ()
@@ -894,9 +893,9 @@ testMockVouchesForClaim = do
   let part = safeDecodeUtf8 . B64U.encodeUnpadded . encodeUtf8
       signed = T.intercalate "." [part "{\"alg\":\"ES256\"}", part "{\"transactionId\":\"2000000812345671\",\"productId\":\"BADGE_SUPPORTER_01\"}", "c2lnbmVk"]
       vouchesForClaim payment = case storeReceipt mockStoreVerifier payment of
-        Just (Right StoreReceipt {providerRef, verifyReceipt}) ->
+        Just (Right StoreReceipt {txRef = StoreTransactionRef {transactionRef = providerRef}, verifyReceipt}) ->
           verifyReceipt >>= \case
-            Right StoreTransaction {transactionRef, environment} -> (transactionRef, environment) `shouldBe` (providerRef, SEProduction)
+            Right VerifiedStoreTransaction {transactionRef, testPurchase} -> (transactionRef, testPurchase) `shouldBe` (providerRef, False)
             Left refusal -> expectationFailure ("the mock refused: " <> show refusal)
         _ -> expectationFailure "refused before the mock was asked"
   vouchesForClaim SPApple {jws = signed}

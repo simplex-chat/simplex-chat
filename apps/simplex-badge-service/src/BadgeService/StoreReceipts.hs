@@ -4,8 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module BadgeService.StoreReceipts
-  ( StoreTransaction (..),
-    StoreEnvironment (..),
+  ( VerifiedStoreTransaction (..),
     StoreRefusal (..),
     StoreVerifier (..),
     StoreReceipt (..),
@@ -21,23 +20,20 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionId, googlePurchaseRef)
-import Simplex.Chat.PaymentService.Types (CurrencyAmount, PaymentProvider (..))
+import Simplex.Chat.PaymentService.Types (CurrencyAmount, PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Messaging.Util (catchOwn')
 import System.Timeout (timeout)
 
 -- | What a store vouches for about one completed transaction.
-data StoreTransaction = StoreTransaction
+-- PaymentFunding's PFApple and PFGoogle hold much the same; the two are reconciled when PaymentFunding is built out.
+data VerifiedStoreTransaction = VerifiedStoreTransaction
   { transactionRef :: Text, -- from what was verified: Apple's transactionId, googlePurchaseRef of the token asked about
     productId :: Text,
     quantity :: Int,
-    environment :: StoreEnvironment,
+    -- costs the buyer nothing: Apple's Sandbox, which a public TestFlight build buys in, and Google's license testers
+    testPurchase :: Bool,
     paid :: Maybe (CurrencyAmount, Text) -- in minor units; Google's purchase record carries no price
   }
-  deriving (Eq, Show)
-
--- | A test purchase costs the buyer nothing: Apple's Sandbox, which a public TestFlight build buys
--- in, and Google's license testers.
-data StoreEnvironment = SEProduction | SETest
   deriving (Eq, Show)
 
 -- | The reasons are for the service's log alone and must never quote the receipt.
@@ -52,17 +48,16 @@ data StoreRefusal
 -- | Not a Provider: a receipt is presented once as proof, with nothing to create, watch or cancel.
 -- Apple is checked offline, so its verifier is pure and cannot be unreachable; only Google is asked.
 data StoreVerifier = StoreVerifier
-  { verifyApple :: Maybe (Text -> Either Text StoreTransaction), -- the JWS; Left is why Apple did not sign it
-    verifyGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal StoreTransaction)), -- the product id and the token
+  { verifyApple :: Maybe (Text -> Either Text VerifiedStoreTransaction), -- the JWS; Left is why Apple did not sign it
+    verifyGoogle :: Maybe (Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)), -- the product id and the token
     -- microseconds; requests are answered one at a time, so a verifier that does not finish holds up every other one
     verifyTimeout :: Int
   }
 
 -- | A store payment, named by the store's own reference before anything is verified.
 data StoreReceipt = StoreReceipt
-  { provider :: PaymentProvider,
-    providerRef :: Text,
-    verifyReceipt :: IO (Either StoreRefusal StoreTransaction)
+  { txRef :: StoreTransactionRef,
+    verifyReceipt :: IO (Either StoreRefusal VerifiedStoreTransaction)
   }
 
 noStoreVerifier :: StoreVerifier
@@ -74,14 +69,14 @@ storeReceipt :: StoreVerifier -> ServicePayment -> Maybe (Either StoreRefusal St
 storeReceipt StoreVerifier {verifyApple, verifyGoogle, verifyTimeout} = \case
   SPApple {jws} -> Just $ case appleTransactionId jws of
     Nothing -> Left $ SRInvalid "names no transaction"
-    Just ref -> Right $ StoreReceipt PPApple ref $ maybe unconfigured (\verify -> offline $ first SRInvalid $ verify jws) verifyApple
+    Just ref -> Right $ StoreReceipt (StoreTransactionRef PPApple ref) $ maybe unconfigured (\verify -> offline $ first SRInvalid $ verify jws) verifyApple
   SPGoogle {productId, token}
     -- the claim is the token's hash, so neither string may name any purchase but the one it claims,
     -- whatever path a verifier builds from them
     | not (googleProductId productId) -> Just $ Left $ SRInvalid "not a Play product id"
     -- Play documents no token grammar, so this is our guess, and refusing to ask Play is not its verdict
     | not (googleToken token) -> Just $ Left $ SRUnreachable "a Play token this service will not send"
-    | otherwise -> Just $ Right $ StoreReceipt PPGoogle (googlePurchaseRef token) $ maybe unconfigured (\verify -> online $ verify productId token) verifyGoogle
+    | otherwise -> Just $ Right $ StoreReceipt (StoreTransactionRef PPGoogle (googlePurchaseRef token)) $ maybe unconfigured (\verify -> online $ verify productId token) verifyGoogle
   SPInvoice {} -> Nothing
   SPReceipt {} -> Nothing
   where

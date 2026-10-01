@@ -9,7 +9,6 @@
 module Simplex.Chat.Store.Badges
   ( BadgeStash (..),
     BadgeStashRef (..),
-    StoreTransactionRef (..),
     UserBadgePurchase (..),
     getUserBadgePurchase,
     getBadgePurchase,
@@ -52,6 +51,7 @@ import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
 import Simplex.Chat.Badges.Types (BadgeAlertKind, BadgeIssueError (..), BadgeIssueFailure, BadgePurchaseStatus (..), OpenStorePurchase (..))
+import Simplex.Chat.PaymentService.Types (StoreTransactionRef (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (UserId)
@@ -79,11 +79,6 @@ data BadgeStash = BadgeStash
   }
 
 data BadgeStashRef = BSRCodeRedemption Int64 | BSRStoreReceipt Int64
-
--- | A store and its own id for one transaction. The evidence is not the key: the store may sign it
--- again, and a retry of the same purchase has to find the same stash.
-data StoreTransactionRef = StoreTransactionRef {provider :: Text, transactionRef :: Text}
-  deriving (Eq, Show)
 
 getBadgeCodeRedemption :: DB.Connection -> User -> Text -> IO (Maybe BadgeStash)
 getBadgeCodeRedemption db User {userId} code =

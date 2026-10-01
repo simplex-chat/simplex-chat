@@ -1,6 +1,9 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.PaymentService.Types
@@ -8,6 +11,7 @@ module Simplex.Chat.PaymentService.Types
     InvoiceId (..),
     PaymentId (..),
     PaymentProvider (..),
+    StoreTransactionRef (..),
     CardProvider (..),
     CryptoCurrency (..),
     ServicePaymentMethod (..),
@@ -26,7 +30,16 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Data.Word (Word32)
+import Simplex.Messaging.Agent.Store.DB (fromTextField_)
+import Simplex.Messaging.Encoding.String (TextEncoding (..))
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, taggedObjectJSON)
+#if defined(dbPostgres)
+import Database.PostgreSQL.Simple.FromField (FromField (..))
+import Database.PostgreSQL.Simple.ToField (ToField (..))
+#else
+import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple.ToField (ToField (..))
+#endif
 
 -- USD etc. are in minor units, following Stripe etc. convention
 newtype CurrencyAmount = CurrencyAmount Word32
@@ -43,6 +56,32 @@ newtype PaymentId = PaymentId Text
 
 -- confirmed
 data PaymentProvider = PPApple | PPGoogle | PPStripe | PPCrypto | PPCode | PPReceipt
+  deriving (Eq, Show)
+
+instance TextEncoding PaymentProvider where
+  textEncode = \case
+    PPApple -> "apple"
+    PPGoogle -> "google"
+    PPStripe -> "stripe"
+    PPCrypto -> "crypto"
+    PPCode -> "code"
+    PPReceipt -> "receipt"
+  textDecode = \case
+    "apple" -> Just PPApple
+    "google" -> Just PPGoogle
+    "stripe" -> Just PPStripe
+    "crypto" -> Just PPCrypto
+    "code" -> Just PPCode
+    "receipt" -> Just PPReceipt
+    _ -> Nothing
+
+instance FromField PaymentProvider where fromField = fromTextField_ textDecode
+
+instance ToField PaymentProvider where toField = toField . textEncode
+
+-- | A store and its own id for one transaction. The evidence is not the key: the store may sign it
+-- again, and a retry of the same purchase has to find the same stash.
+data StoreTransactionRef = StoreTransactionRef {provider :: PaymentProvider, transactionRef :: Text}
   deriving (Eq, Show)
 
 data CardProvider = CPStripe
@@ -100,6 +139,7 @@ data StoredPayment = StoredPayment
   deriving (Show)
 
 -- to review
+-- PFApple and PFGoogle hold much what the service's VerifiedStoreTransaction does; the two are reconciled when this is built out.
 data PaymentFunding
   = PFInvoice
       { invoiceId :: InvoiceId,

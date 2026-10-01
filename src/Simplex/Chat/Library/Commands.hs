@@ -77,6 +77,7 @@ import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
 import Simplex.Chat.Options
 import Simplex.Chat.PaymentService (ServicePayment (..), appleTransactionId, googlePurchaseRef)
+import Simplex.Chat.PaymentService.Types (PaymentProvider (..), StoreTransactionRef (..))
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote
@@ -5280,8 +5281,8 @@ purchaseBadge nm presentingUser echoedInvoiceId payment = do
 -- | The same reference the service claims a transaction by, read without verifying anything.
 storeTransactionRef :: ServicePayment -> Maybe StoreTransactionRef
 storeTransactionRef = \case
-  SPApple {jws} -> StoreTransactionRef "apple" <$> appleTransactionId jws
-  SPGoogle {token} -> Just $ StoreTransactionRef "google" $ googlePurchaseRef token
+  SPApple {jws} -> StoreTransactionRef PPApple <$> appleTransactionId jws
+  SPGoogle {token} -> Just $ StoreTransactionRef PPGoogle $ googlePurchaseRef token
   SPInvoice {} -> Nothing
   SPReceipt {} -> Nothing
 

@@ -59,11 +59,11 @@ newFakeStore = do
   pendingSettled <- newIORef False
   googleDown <- newIORef False
   let appleReceipts =
-        [ (appleSupporterJWS, appleTransaction "2000000812345671" "BADGE_SUPPORTER_01" SEProduction 700),
-          (appleLegendJWS, appleTransaction "2000000812345672" "BADGE_LEGEND_01" SEProduction 7000),
-          (appleSandboxJWS, appleTransaction "2000000812345673" "BADGE_LEGEND_01" SETest 7000),
+        [ (appleSupporterJWS, appleTransaction "2000000812345671" "BADGE_SUPPORTER_01" False 700),
+          (appleLegendJWS, appleTransaction "2000000812345672" "BADGE_LEGEND_01" False 7000),
+          (appleSandboxJWS, appleTransaction "2000000812345673" "BADGE_LEGEND_01" True 7000),
           -- a verifier vouching for another transaction than the one the evidence names
-          (appleMisnamedJWS, appleTransaction "2000000812345671" "BADGE_SUPPORTER_01" SEProduction 700)
+          (appleMisnamedJWS, appleTransaction "2000000812345671" "BADGE_SUPPORTER_01" False 700)
         ]
       verifyApple jws
         | jws == appleThrowingJWS = error "fake verifier bug"
@@ -82,10 +82,10 @@ newFakeStore = do
       }
   where
     fixtureJWS name = unsignedJWS <$> B.readFile (fixtureDir </> name)
-    appleTransaction transactionRef productId environment cents =
-      StoreTransaction {transactionRef, productId, quantity = 1, environment, paid = Just (CurrencyAmount cents, "USD")}
+    appleTransaction transactionRef productId testPurchase cents =
+      VerifiedStoreTransaction {transactionRef, productId, quantity = 1, testPurchase, paid = Just (CurrencyAmount cents, "USD")}
 
-googleVerdict :: IORef Bool -> IORef Bool -> Text -> Text -> IO (Either StoreRefusal StoreTransaction)
+googleVerdict :: IORef Bool -> IORef Bool -> Text -> Text -> IO (Either StoreRefusal VerifiedStoreTransaction)
 googleVerdict pendingSettled googleDown productId token =
   readIORef googleDown >>= \case
     True -> pure $ Left $ SRUnreachable "fake store is down"
@@ -100,7 +100,7 @@ googleVerdict pendingSettled googleDown productId token =
       | token == googleHangingToken -> forever $ threadDelay 1000000
       | otherwise -> pure $ Left $ SRInvalid "not a fake purchase"
   where
-    purchased = StoreTransaction {transactionRef = googlePurchaseRef token, productId, quantity = 1, environment = SEProduction, paid = Nothing}
+    purchased = VerifiedStoreTransaction {transactionRef = googlePurchaseRef token, productId, quantity = 1, testPurchase = False, paid = Nothing}
 
 settlePending :: FakeStore -> IO ()
 settlePending FakeStore {pendingSettled} = writeIORef pendingSettled True

@@ -30,7 +30,7 @@ module BadgeService.Store
   )
 where
 
-import BadgeService.Store.Invoices (executeChanging, paymentStatusText, providerText)
+import BadgeService.Store.Invoices (executeChanging, paymentStatusText)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -46,6 +46,7 @@ import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow')
 
 #if defined(dbPostgres)
@@ -134,7 +135,7 @@ getStorePaymentClaim db provider providerRef =
         ORDER BY i.period_end DESC
         LIMIT 1
       |]
-      (providerText provider, providerRef)
+      (textEncode provider, providerRef)
 
 fundingClaim :: Maybe Int64 -> Maybe C.PublicKeyEd25519 -> Maybe (Binary ByteString) -> FundingClaim
 fundingClaim purchaseId_ purchaseKey_ credential_ = case (purchaseId_, purchaseKey_) of
@@ -297,7 +298,7 @@ createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid,
         VALUES (?,?,?,?,?,?,?,?)
         ON CONFLICT (provider, provider_ref) DO NOTHING
       |]
-      (paymentId, providerText provider, providerRef, (\(CurrencyAmount a) -> a) . fst <$> paid, snd <$> paid, paymentStatusText PSSettled, now, now)
+      (paymentId, textEncode provider, providerRef, (\(CurrencyAmount a) -> a) . fst <$> paid, snd <$> paid, paymentStatusText PSSettled, now, now)
   if claimed == 0
     then pure Nothing
     else do

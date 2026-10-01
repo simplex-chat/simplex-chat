@@ -66,6 +66,7 @@ import Simplex.Chat.Core (sendChatCmd, simplexChatCore)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent (..), SMsgDirection (..), ciContentToText)
 import Simplex.Chat.Options (printDbOpts)
+import Simplex.Chat.PaymentService.Types (StoreTransactionRef (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Terminal.Main (simplexChatCLI')
 import Simplex.Chat.Types (AgentInvId (..), Contact, User (..))
@@ -451,7 +452,7 @@ redeemCode key cc purchaseKey masterKey codeText = case parseBadgeCode codeText 
 -- | Every refusal is answered before anything is written, so it leaves the receipt unclaimed; and
 -- nothing is written until the credential is signed.
 purchaseWithReceipt :: BadgeIssuerKey -> ChatController -> C.PublicKeyEd25519 -> BadgeMasterKey -> StoreReceipt -> IO BadgeServiceResponse
-purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {provider, providerRef, verifyReceipt} =
+purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {txRef = StoreTransactionRef {provider, transactionRef = providerRef}, verifyReceipt} =
   withDB' "getStorePayment" cc (\db -> getStorePaymentClaim db provider providerRef) >>= \case
     Left _ -> pure $ errorResponse BSEInternal
     Right claim
@@ -461,9 +462,9 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {provider, provide
           verifyReceipt >>= \case
             Left refusal -> storeRefusalResponse refusal
             -- the claim was read from the evidence before it was verified, so it must name the transaction the store vouched for
-            Right StoreTransaction {transactionRef}
+            Right VerifiedStoreTransaction {transactionRef}
               | transactionRef /= providerRef -> storeRefusalResponse $ SRVerifierFailed "verified a transaction other than the one claimed"
-            Right StoreTransaction {environment = SETest} -> storeRefusalResponse $ SRInvalid "test purchase"
+            Right VerifiedStoreTransaction {testPurchase = True} -> storeRefusalResponse $ SRInvalid "test purchase"
             -- another key's claim is told only once the store vouched for the receipt, or it would reveal which transactions were credited
             Right tx -> case claim of
               Unclaimed -> newPurchase tx
@@ -477,7 +478,7 @@ purchaseWithReceipt key cc purchaseKey masterKey StoreReceipt {provider, provide
         Right (Left resp) -> resp
         _ -> errorResponse BSEInternal
     -- the product is read only for a receipt not yet credited, so retiring it leaves its replays answered
-    newPurchase StoreTransaction {productId, quantity, paid} = case storeProduct provider productId of
+    newPurchase VerifiedStoreTransaction {productId, quantity, paid} = case storeProduct provider productId of
       Nothing -> pure $ errorResponse BSEProductUnavailable
       Just StoreProduct {badgeType, months} -> do
         now <- badgeNow cc
