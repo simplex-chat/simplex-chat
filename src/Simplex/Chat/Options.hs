@@ -28,7 +28,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Numeric.Natural (Natural)
 import Options.Applicative
-import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), WebPreviewConfig (..), updateStr, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
 import Simplex.Messaging.Client (HostMode (..), SMPWebPortServers (..), SocksMode (..), textToHostMode)
 import Simplex.Messaging.Encoding.String
@@ -70,19 +70,15 @@ data CoreChatOpts = CoreChatOpts
     maxChats :: Int,
     deviceName :: Maybe Text,
     chatRelay :: Bool,
-    webPreviewConfig :: Maybe WebPreviewConfig,
-    chatRelayServer :: Maybe SMPServerWithAuth,
-    headless :: Bool,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool,
     migrationBackupPath :: Maybe FilePath,
-    maintenance :: Bool    
+    maintenance :: Bool
   }
 
 data CreateBotOpts = CreateBotOpts
   { botDisplayName :: Text,
-    allowFiles :: Bool,
-    clientService :: Bool
+    allowFiles :: Bool
   }
 
 data ChatCmdLog = CCLAll | CCLMessages | CCLNone
