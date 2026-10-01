@@ -58,7 +58,7 @@ fun BadgesChooseBadgeView(modalManager: ModalManager) {
   var selectedLevel by remember { mutableStateOf(BadgeLevel.Supporter) }
 
   LaunchedEffect(Unit) { BadgeStore.load() }
-  CloseWhenPurchaseInFlight(modalManager)
+  CloseWhenSupportGivesWay(modalManager)
 
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),

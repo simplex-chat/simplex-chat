@@ -237,7 +237,7 @@ data BadgeServiceErrorCode
   | BSEPaymentNotEntitled
   | BSEPaymentPending
   | BSEProviderUnavailable
-  | BSEProviderNotConfigured
+  | BSEProviderNotConfigured -- no verifier deployed: a dev service, not the store failing to answer
   | BSERateLimited
   | BSECodeInvalid
   | BSECodeUsed
@@ -283,8 +283,9 @@ data BadgeState = BadgeState
   }
   deriving (Show)
 
--- | A store purchase this profile started or presented, neither credited nor closed. Neither
--- reference is a secret: Apple's is the transaction id, Google's is a hash of the token.
+-- | One of a profile's open store purchases, neither credited nor closed. The app matches invoiceId
+-- against the transactions its store still holds; transactionRef is set once a receipt arrived.
+-- Neither reference is a secret: Apple's is the transaction id, Google's is a hash of the token.
 data BadgeStorePurchase = BadgeStorePurchase
   { invoiceId :: Maybe Text,
     transactionRef :: Maybe Text

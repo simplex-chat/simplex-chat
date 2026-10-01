@@ -985,12 +985,14 @@ CREATE TABLE badge_code_redemptions(
 CREATE TABLE badge_store_receipts(
   badge_store_receipt_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  provider TEXT NOT NULL,
-  transaction_ref TEXT NOT NULL,
+  invoice_id TEXT UNIQUE,
+  provider TEXT,
+  transaction_ref TEXT,
   purchase_key BLOB NOT NULL,
   purchase_priv_key BLOB NOT NULL,
   master_key BLOB NOT NULL,
   created_at TEXT NOT NULL,
+  closed_at TEXT,
   UNIQUE(provider, transaction_ref)
 ) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(

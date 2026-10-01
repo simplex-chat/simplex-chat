@@ -2481,6 +2481,12 @@ func loadBadgeStateAsync(_ userId: Int64) async {
     }
 }
 
+func loadCurrentBadgeState() async {
+    if let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) {
+        await loadBadgeStateAsync(userId)
+    }
+}
+
 private func getUserChatDataAsync(keepingChatId: String?) async throws {
     let m = ChatModel.shared
     let tm = ChatTagsModel.shared

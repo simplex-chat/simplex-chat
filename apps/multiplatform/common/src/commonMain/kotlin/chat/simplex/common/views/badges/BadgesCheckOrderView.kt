@@ -22,7 +22,7 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
   val purchasing = remember { mutableStateOf(false) }
 
   LaunchedEffect(Unit) { BadgeStore.load() }
-  CloseWhenPurchaseInFlight(modalManager)
+  CloseWhenSupportGivesWay(modalManager)
 
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),

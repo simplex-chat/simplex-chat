@@ -138,7 +138,7 @@ private val badgePurchasesUpdatedListener = PurchasesUpdatedListener { result, p
 }
 
 private fun badgePurchaseOutcome(purchase: Purchase): BadgePurchaseOutcome? = when (purchase.purchaseState) {
-  Purchase.PurchaseState.PENDING -> BadgePurchaseOutcome.Pending
+  Purchase.PurchaseState.PENDING -> BadgePurchaseOutcome.Pending(purchase.accountIdentifiers?.obfuscatedAccountId)
   Purchase.PurchaseState.PURCHASED -> BadgePurchaseOutcome.Purchased(
     BadgeStoreReceipt(
       token = purchase.purchaseToken,

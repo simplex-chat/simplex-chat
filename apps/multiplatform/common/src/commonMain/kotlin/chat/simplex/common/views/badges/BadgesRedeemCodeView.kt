@@ -99,7 +99,7 @@ fun BadgesRedeemCodeView(modalManager: ModalManager) {
   val code = remember { mutableStateOf(TextFieldValue("")) }
   val canonicalCode = remember { mutableStateOf<String?>(null) }
   val submitting = remember { mutableStateOf(false) }
-  CloseWhenPurchaseInFlight(modalManager)
+  CloseWhenSupportGivesWay(modalManager)
 
   // when the text is unchanged, the field's own value is kept: it carries the cursor position and the
   // keyboard's composition state, which BasicTextField loses unless they are passed back to it
@@ -118,7 +118,8 @@ fun BadgesRedeemCodeView(modalManager: ModalManager) {
       withContext(Dispatchers.Main) {
         submitting.value = false
         when (outcome) {
-          is BadgeRedeemOutcome.Redeemed -> modalManager.closeModal()
+          // a shown badge closes this screen itself, and a second close would take the screen beneath
+          is BadgeRedeemOutcome.Redeemed -> if (currentShownBadge() == null) modalManager.closeModal()
           is BadgeRedeemOutcome.Refused -> showCannotRedeemAlert(outcome.message)
           is BadgeRedeemOutcome.Cancelled -> {}
         }

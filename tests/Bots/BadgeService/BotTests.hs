@@ -140,7 +140,7 @@ badgeServiceTests = do
     it "should answer a receipt presented under a second profile as the profile that bought it" testPurchaseSameReceiptOtherProfile
     it "should deliver a purchase first presented under another profile to that profile" testPurchaseStrandedUnderOtherProfile
     it "should deliver a purchase to a hidden profile without naming it" testPurchaseDeliveredToHiddenProfile
-    it "should credit a receipt to the profile that created its invoice, and answer the presenter as delivered" testInvoiceOtherProfile
+    it "should credit a receipt to the profile that created its invoice, and answer as that profile" testInvoiceOtherProfile
     it "should resolve the same receipt to the same record, and replay its credential" testInvoiceSameReceiptTwice
     it "should credit a receipt naming an unknown invoice to the presenting profile" testInvoiceUnknown
     it "should reopen a closed record for a late receipt, and credit it" testInvoiceReopened
@@ -1763,7 +1763,9 @@ testInvoiceOtherProfile ps =
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       alice ##> purchaseWithInvoice 2 invoiceId supporterPlay
-      alice <## "badge purchase delivered to another profile"
+      alice <## "[user: alice] badge redeemed"
+      alice <## "supporter badge - active"
+      alice <##. "expires "
       (alice </)
       storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True, False)]
       alice ##> "/user alice"

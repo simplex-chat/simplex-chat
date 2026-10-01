@@ -12,11 +12,7 @@ import chat.simplex.common.views.helpers.ModalView
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
-  val shownBadge: BadgeState? = run {
-    if (!BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)) return@run null
-    val badgeState = BadgeModel.badgeState.value
-    if (badgeState != null && badgeState.shown) badgeState else null
-  }
+  val shownBadge = currentShownBadge()
 
   // the card look is a modal setting, so the modal is composed here to follow the screen shown
   ModalView(close, cardScreen = shownBadge != null) {
@@ -37,13 +33,19 @@ fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
   }
 }
 
-// each purchase screen closes itself when it recomposes with a purchase in flight, as iOS pops them
-// when Support SimpleX gives way to it
+fun currentShownBadge(): BadgeState? {
+  if (!BadgeModel.isCurrent(chatModel.remoteHostId(), chatModel.currentUser.value?.userId)) return null
+  val badgeState = BadgeModel.badgeState.value
+  return if (badgeState != null && badgeState.shown) badgeState else null
+}
+
+// each purchase screen closes itself when it recomposes with a purchase in flight or a badge shown, as iOS
+// pops them when Support SimpleX gives way to either
 @Composable
-fun CloseWhenPurchaseInFlight(modalManager: ModalManager) {
-  val inFlight = BadgeStore.purchaseState(chatModel.currentUser.value?.userId) != null
-  LaunchedEffect(inFlight) {
-    if (inFlight) modalManager.closeModal()
+fun CloseWhenSupportGivesWay(modalManager: ModalManager) {
+  val gaveWay = BadgeStore.purchaseState(chatModel.currentUser.value?.userId) != null || currentShownBadge() != null
+  LaunchedEffect(gaveWay) {
+    if (gaveWay) modalManager.closeModal()
   }
 }
 
