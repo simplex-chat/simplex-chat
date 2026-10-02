@@ -130,6 +130,7 @@ badgeServiceTests = do
     it "should answer a throwing Apple verifier as internal, and a failing or hanging Google one as retryable" testStoreVerifierFailures
     it "should credit a transaction claimed twice at once only once" testStoreClaimRace
     it "should answer a request that lost the claim race with the credential the winner was given" testStorePurchaseRace
+    it "should refuse as receipt_used a key that lost the claim race to another key, crediting nothing" testStorePurchaseRaceOtherKey
     it "should refuse a store with no verifier with no retry, and the client should keep its keys" testPurchaseWithNoVerifier
     it "should credit nothing when the verified transaction is not the one the evidence names" testStoreVerifiedOtherTransaction
     it "should refuse a verified quantity other than one as internal, and the client should keep its keys" testStoreQuantityRefused
@@ -1635,6 +1636,26 @@ testStorePurchaseRace ps = do
     storePayments cc `shouldReturn` [("google", Nothing, Nothing, 1)]
     rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
 
+testStorePurchaseRaceOtherKey :: HasCallStack => TestParams -> IO ()
+testStorePurchaseRaceOtherKey ps = do
+  hook <- newIORef (pure ())
+  withBadgeServiceVerifier ps (googleVerifierWithHook hook) $ \env@BadgeServiceEnv {bsController = cc} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    (otherKey, otherMasterKey) <- newPurchaseKeys
+    winner <- newIORef Nothing
+    -- another key presents the same purchase while the first is with the store, and is credited first
+    writeIORef hook $ serviceCmd env otherKey (purchaseCmd otherMasterKey supporterPlay) >>= writeIORef winner . Just
+    raced <- serviceCmd env purchaseKey $ purchaseCmd masterKey supporterPlay
+    refusalOf raced `shouldBe` (BSEReceiptUsed, Nothing)
+    Just credited <- readIORef winner
+    masterKeyOf credited `shouldBe` Just otherMasterKey
+    ledger <- ledgerRows cc "sx_badge_service_badge_ledger"
+    replayed <- serviceCmd env otherKey $ purchaseCmd otherMasterKey supporterPlay
+    credentialOf replayed `shouldBe` credentialOf credited
+    ledgerRows cc "sx_badge_service_badge_ledger" `shouldReturn` ledger
+    storePayments cc `shouldReturn` [("google", Nothing, Nothing, 1)]
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+
 testStorePurchaseKeyMismatch :: HasCallStack => TestParams -> IO ()
 testStorePurchaseKeyMismatch ps =
   withBadgeService ps $ \clientCfg bsLink cc ->
@@ -1722,6 +1743,8 @@ testPurchaseStashReceiptUsed ps =
         rowCount (chatController bob) "badge_store_receipts" `shouldReturn` 0
         rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 1
         rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+        bob ##> "/p"
+        showActiveUser bob "bob (Bob)"
 
 testPurchaseUnsentPlayToken :: HasCallStack => TestParams -> IO ()
 testPurchaseUnsentPlayToken ps =
