@@ -15,6 +15,20 @@ struct BadgesPurchaseStateView: View {
     var showsAsSheet: Bool = false
 
     var body: some View {
+        GeometryReader { g in
+            ScrollView {
+                content
+                    .padding(.horizontal, 25)
+                    .padding(.top, showsAsSheet ? 48 : 0)
+                    .padding(.bottom, 20)
+                    .frame(minHeight: g.size.height)
+            }
+        }
+        .frame(maxHeight: .infinity)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var content: some View {
         VStack(alignment: .center, spacing: 16) {
             Text(title)
                 .font(.largeTitle)
@@ -49,11 +63,6 @@ struct BadgesPurchaseStateView: View {
                     .frame(height: 22)
             }
         }
-        .padding(.horizontal, 25)
-        .padding(.top, showsAsSheet ? 48 : 0)
-        .padding(.bottom, 20)
-        .frame(maxHeight: .infinity)
-        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var title: LocalizedStringKey {
