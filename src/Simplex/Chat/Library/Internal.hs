@@ -507,6 +507,7 @@ cancelFilesInProgress user filesInfo = do
   lift $ agentXFTPDeleteRcvFiles xrfIds
   where
     fileEnded CIFileInfo {fileStatus} = case fileStatus of
+      Just (AFS SMDRcv (CIFSRcvError e)) | e == fwdFileUnavailableError -> False
       Just (AFS _ status) -> ciFileEnded status
       Nothing -> True
     getFT :: DB.Connection -> CIFileInfo -> IO (Either ChatError FileTransfer)
@@ -924,12 +925,26 @@ markFwdFilesUnavailable user m = do
   acis <- withStore $ \db -> do
     fileIds <- liftIO $ getForwardedRcvFilesWithoutDescr db user m
     forM fileIds $ \fileId -> do
-      liftIO $ updateCIFileStatus db user fileId (CIFSRcvError fwdFileUnavailableError)
+      liftIO $ setFwdRcvFileUnavailable db user fileId
       lookupChatItemByFileId db cxt user fileId
   forM_ (catMaybes acis) $ toView . CEvtChatItemUpdated user
 
-fwdFileUnavailableError :: FileError
-fwdFileUnavailableError = FileErrOther "file was sent before you connected to the sender"
+-- The author sent the message directly too, so it has the file transfer for the user and will send the description.
+unmarkFwdFileUnavailable :: User -> GroupId -> SharedMsgId -> CM ()
+unmarkFwdFileUnavailable user@User {userId} groupId sharedMsgId = do
+  cxt <- chatStoreCxt
+  aci_ <- withStore' $ \db -> fmap eitherToMaybe . runExceptT $ do
+    fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
+    aci <- getChatItemByFileId db cxt user fileId
+    if isFwdFileUnavailable aci
+      then do
+        RcvFileTransfer {fileStatus} <- getRcvFileTransfer db user fileId
+        liftIO $ updateCIFileStatus db user fileId $ case fileStatus of
+          RFSAccepted _ -> CIFSRcvAccepted
+          _ -> CIFSRcvInvitation
+        Just <$> getChatItemByFileId db cxt user fileId
+      else pure Nothing
+  forM_ (join aci_) $ toView . CEvtChatItemUpdated user
 
 isFwdFileUnavailable :: AChatItem -> Bool
 isFwdFileUnavailable = \case
@@ -2908,6 +2923,9 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
           fm <- withStore $ \db -> getGroupMember db cxt user groupId forwardedByGroupMemberId
           forM_ (memberConn fm) $ \fmConn ->
             void $ sendDirectMemberMessage fmConn (XGrpMemCon amMemId) groupId
+          case (chatMsgEvent, sharedMsgId_) of
+            (XMsgNew {}, Just sharedMsgId) -> unmarkFwdFileUnavailable user groupId sharedMsgId `catchAllErrors` eToView
+            _ -> pure ()
           throwError e
         _ -> throwError e
   pure (am', conn', msg)

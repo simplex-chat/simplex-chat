@@ -39,23 +39,29 @@ If the two members connect between sending the file and completing its upload, t
    - were not cancelled, with status `new` or `accepted`,
    - have a chat item with `forwarded_by_group_member_id` set,
    - have no description part (no row, or part 0).
-2. `markFwdFilesUnavailable` (`Library/Internal.hs`) sets these files to `CIFSRcvError (FileErrOther "file was sent before you connected to the sender")` and sends `CEvtChatItemUpdated`. The apps already show this error state ("Error: …" on iOS). Only the item's file status changes: `rcv_files` status and `cancelled` are kept.
+2. `markFwdFilesUnavailable` (`Library/Internal.hs`) sets these files to `CIFSRcvError (FileErrOther "file was sent before you connected to the sender")` and sends `CEvtChatItemUpdated`. The apps already show this error state ("Error: …" on iOS). `rcv_files` status and `cancelled` are kept, so a later description can still be processed. `to_receive` is cleared, so `startReceiveUserFiles` (iOS files flagged by the notification service) does not accept the file again and overwrite the error with "accepted".
 3. It is called in `Subscriber.hs` when the connection with an introduced member (`GCPreMember`/`GCPostMember`) becomes ready, next to `notifyMemberConnected`, in regular groups only (not `useRelays'`). Errors are reported and do not interrupt the connection handling.
-4. Revive in `processFDMessage`, for when the host forwarded the description concurrently with the connection report:
+4. Revive in `processFDMessage`, when a description arrives after marking:
    - accepted file: the existing `receiveViaCompleteFD` → `startReceivingFile` path sets the item status to receiving;
    - file not accepted (`RFSNew`) and marked unavailable: when the description completes, the status is reset to an invitation (`resetRcvCIFileStatus`), so the user can receive it.
+5. Unmark when the author's direct copy of the forwarded `x.msg.new` arrives after the connection (`saveGroupRcvMsg`, duplicate forwarded message). The author sent to the user directly only if its connection was ready (`ConnSndReady` is enough) when sending, so it has the transfer record and will send the description when the upload completes, possibly much later. The item status goes back to accepted or invitation, matching `rcv_files` status.
+6. `cancelFilesInProgress` does not treat this error as ended, so deleting or moderating the item still cancels the file, as it did before marking; otherwise a description arriving afterwards would start receiving the file of a deleted item.
 
 ## Why the connection moment
 
 - Before the connection, the receiver cannot tell whether a description will follow. Forwarded descriptions are normal: the host forwards its own description to unconnected members, and group history sends a forwarded invitation followed by forwarded description parts. `GrpMsgForward` carries no marker that would tell history from live forwarding.
-- After the connection, the author's messages come directly. A description for a file forwarded before the connection can still arrive only in the short race where the host forwarded it before processing `x.grp.mem.con`. The revive covers that.
-- History is sent by the host after `introduceToAll`, on the same connection to the new member. The new member therefore processes history, including description parts, before it can connect with the introduced authors, which takes several round trips through the host.
+- After the connection, the author's messages come directly, and a description for a file forwarded before the connection can still arrive in two cases:
+  - the host forwarded it before processing `x.grp.mem.con` (its delivery job reads member relations when it runs, so with the host offline this can take long) — the revive covers it;
+  - the author's side of the connection was ready before the user's (`ConnSndReady`), so it sent the file directly as well as via the host, and will send the description directly when the upload completes — the direct duplicate unmarks the file (change 5), and the revive covers the description.
+- History is sent by the host after `introduceToAll`, on the same connection to the new member, and only for files with a complete description (`invCompleteDescr`). Usually it is processed before the new member connects with the introduced authors, which takes several round trips through the host, but this is not guaranteed for long history split into many batches. If the connection comes between a history invitation and its description, the revive covers it.
 
 ## Limitations
 
 - The file is not delivered: the user sees an error instead of an endless wait. Delivering it needs option 2 or 3.
 - A forwarded invitation that arrives after the receiver's own connection to the author is already ready (forwarded by the host before it learned of the connection, delivered late) is not marked, and keeps waiting as before. This is a smaller window than the one fixed here.
 - Files from authors whose connection was ready before this change are not revisited: marking happens only when a connection becomes ready.
+- A multi-part description of which only some parts were forwarded before the host stopped forwarding (`part_no > 0`, incomplete) is not marked, and keeps waiting as before. This needs a description longer than one part (very large files) and the connection report to be processed between the parts.
+- A file the revive resets to an invitation is not auto-received: apps auto-receive only new items.
 
 ## Compatibility
 
