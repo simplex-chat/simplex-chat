@@ -79,11 +79,10 @@ struct BadgesCheckOrderView: View {
     private func orderRow(_ title: LocalizedStringKey, _ value: Text) -> some View {
         HStack {
             Text(title)
-                .fontWeight(.medium)
                 .foregroundColor(theme.colors.secondary)
             Spacer()
             value
-                .fontWeight(.semibold)
+                .fontWeight(.medium)
         }
         .font(.body)
         .padding(.vertical, 8)

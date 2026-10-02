@@ -83,9 +83,9 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
 @Composable
 private fun OrderRow(title: StringResource, value: String) {
   Row(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-    Text(stringResource(title), style = MaterialTheme.typography.body1, fontWeight = FontWeight.Medium, color = MaterialTheme.colors.secondary)
+    Text(stringResource(title), style = MaterialTheme.typography.body1, color = MaterialTheme.colors.secondary)
     Spacer(Modifier.weight(1f))
-    Text(value, style = MaterialTheme.typography.body1, fontWeight = FontWeight.SemiBold)
+    Text(value, style = MaterialTheme.typography.body1, fontWeight = FontWeight.Medium)
   }
 }
 
