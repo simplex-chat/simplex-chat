@@ -317,7 +317,7 @@ object BadgeStore {
     }
   }
 
-  // at launch and on return to the foreground, never on a timer
+  // at launch, on return to the foreground and on a profile switch, never on a timer
   suspend fun presentUnfinished() {
     try {
       if (useBadgeTestProducts || !platform.androidHasPlatformStore) return

@@ -268,7 +268,7 @@ final class BadgeStore: ObservableObject {
         }
     }
 
-    // at launch and on return to the foreground, never on a timer
+    // at launch, on return to the foreground and on a profile switch, never on a timer
     func presentUnfinished() async {
         await listenForTransactions()
         var held: Set<String> = []
