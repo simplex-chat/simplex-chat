@@ -144,11 +144,11 @@ private fun LevelCard(level: BadgeLevel, selectedLevel: BadgeLevel, modifier: Mo
       modifier = Modifier.size(60.dp)
     )
     Text(stringResource(level.title), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+    Text(BadgePeriod.Monthly.priceText(BadgeStore.price(level, BadgePeriod.Monthly)), style = MaterialTheme.typography.body1, textAlign = TextAlign.Center)
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
       Text(stringResource(level.fileSize), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
       Text(stringResource(level.fileStorage), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
     }
-    Text(BadgePeriod.Monthly.priceText(BadgeStore.price(level, BadgePeriod.Monthly)), style = MaterialTheme.typography.body1, textAlign = TextAlign.Center)
   }
 }
 

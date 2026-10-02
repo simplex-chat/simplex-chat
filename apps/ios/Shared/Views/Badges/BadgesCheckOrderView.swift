@@ -35,16 +35,13 @@ struct BadgesCheckOrderView: View {
                         orderRow("Duration", Text(period.label))
                         Divider()
                             .padding(.top, 8)
-                        orderRow("Total", period.priceText(store.price(level, period, compact: false)), total: true)
+                            .padding(.bottom, 6)
+                        orderRow("Total", period.priceText(store.price(level, period, compact: false)))
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
                     .background(Color(uiColor: .secondarySystemGroupedBackground))
                     .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color(uiColor: .secondarySystemFill), lineWidth: 1)
-                    )
                     .padding(.top, 20)
 
                     Spacer(minLength: 20)
@@ -79,18 +76,17 @@ struct BadgesCheckOrderView: View {
         .alert(item: $alert) { $0.alert }
     }
 
-    private func orderRow(_ title: LocalizedStringKey, _ value: Text, total: Bool = false) -> some View {
+    private func orderRow(_ title: LocalizedStringKey, _ value: Text) -> some View {
         HStack {
             Text(title)
-                .fontWeight(total ? .semibold : .medium)
-                .foregroundColor(total ? nil : theme.colors.secondary)
+                .fontWeight(.medium)
+                .foregroundColor(theme.colors.secondary)
             Spacer()
             value
                 .fontWeight(.semibold)
         }
-        .font(total ? .title3 : .body)
-        .padding(.top, total ? 14 : 8)
-        .padding(.bottom, 8)
+        .font(.body)
+        .padding(.vertical, 8)
     }
 
     private func payButton() -> some View {

@@ -1,7 +1,6 @@
 package chat.simplex.common.views.badges
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -9,7 +8,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -29,7 +27,7 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
   CloseWhenSupportGivesWay(modalManager)
 
   ColumnWithScrollBar(
-    Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
+    Modifier.padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     maxIntrinsicSize = true,
@@ -49,13 +47,12 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
         .padding(top = 20.dp)
         .clip(RoundedCornerShape(16.dp))
         .background(sectionCardColor())
-        .border(1.dp, MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f), RoundedCornerShape(16.dp))
         .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
       OrderRow(MR.strings.badges_your_badge, stringResource(level.title))
       OrderRow(MR.strings.badges_order_duration, stringResource(period.label))
-      Divider(Modifier.padding(top = 8.dp))
-      OrderRow(MR.strings.badges_order_total, period.priceText(BadgeStore.price(level, period, compact = false)), total = true)
+      Divider(Modifier.padding(top = 8.dp, bottom = 6.dp))
+      OrderRow(MR.strings.badges_order_total, period.priceText(BadgeStore.price(level, period, compact = false)))
     }
 
     Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
@@ -84,17 +81,11 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
 }
 
 @Composable
-private fun OrderRow(title: StringResource, value: String, total: Boolean = false) {
-  val style = if (total) MaterialTheme.typography.h3 else MaterialTheme.typography.body1
-  Row(Modifier.fillMaxWidth().padding(top = if (total) 14.dp else 8.dp, bottom = 8.dp)) {
-    Text(
-      stringResource(title),
-      style = style,
-      fontWeight = if (total) FontWeight.SemiBold else FontWeight.Medium,
-      color = if (total) Color.Unspecified else MaterialTheme.colors.secondary
-    )
+private fun OrderRow(title: StringResource, value: String) {
+  Row(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Text(stringResource(title), style = MaterialTheme.typography.body1, fontWeight = FontWeight.Medium, color = MaterialTheme.colors.secondary)
     Spacer(Modifier.weight(1f))
-    Text(value, style = style, fontWeight = FontWeight.SemiBold)
+    Text(value, style = MaterialTheme.typography.body1, fontWeight = FontWeight.SemiBold)
   }
 }
 

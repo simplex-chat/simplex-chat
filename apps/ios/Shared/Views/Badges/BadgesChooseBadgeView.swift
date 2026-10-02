@@ -130,15 +130,15 @@ struct BadgesChooseBadgeView: View {
                 Text(level.title)
                     .font(.title3)
                     .fontWeight(.bold)
+                BadgePeriod.monthly.priceText(store.price(level, .monthly))
+                    .font(.body)
                 VStack(spacing: 2) {
                     Text(level.fileSize)
                     Text(level.fileStorage)
                 }
                 .font(.subheadline)
                 .foregroundColor(theme.colors.secondary)
-                BadgePeriod.monthly.priceText(store.price(level, .monthly))
-                    .font(.body)
-                    .padding(.bottom, 20)
+                .padding(.bottom, 20)
             }
             .multilineTextAlignment(.center)
             .padding(.horizontal, 12)

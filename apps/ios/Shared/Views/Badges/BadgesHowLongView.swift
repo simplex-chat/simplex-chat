@@ -138,12 +138,11 @@ struct BadgesHowLongView: View {
                     .foregroundColor(isSelected ? theme.colors.primary : theme.colors.secondary)
                     .opacity(forSale ? 1 : 0.4)
                 Text(period.label)
-                    .font(.body)
+                    .font(.subheadline)
                 period.priceText(store.price(level, period))
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                if forSale, let percent = savingsPercent(period) {
-                    Text("Save \(percent)%")
+                    .font(.headline)
+                if let percent = savingsPercent(period) {
+                    Text("\(percent)% off")
                         .font(.footnote)
                         .foregroundColor(isSelected ? theme.colors.primary : theme.colors.secondary)
                 }
@@ -179,7 +178,7 @@ struct BadgesHowLongView: View {
 
             NavigationLink(isActive: $continueActive) {
                 BadgesCheckOrderView(level: level, period: selectedPeriod)
-                    .modifier(ThemedBackground())
+                    .modifier(ThemedBackground(grouped: true))
             } label: {
                 EmptyView()
             }

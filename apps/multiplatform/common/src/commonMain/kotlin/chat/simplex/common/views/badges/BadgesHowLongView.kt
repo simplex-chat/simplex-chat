@@ -168,10 +168,10 @@ private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: B
       tint = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
       modifier = Modifier.size(32.dp).alpha(if (forSale) 1f else 0.4f)
     )
-    Text(stringResource(period.label), style = MaterialTheme.typography.body1, color = textColor, textAlign = TextAlign.Center)
-    Text(period.priceText(BadgeStore.price(level, period)), style = MaterialTheme.typography.h3, fontWeight = FontWeight.SemiBold, color = textColor, textAlign = TextAlign.Center)
+    Text(stringResource(period.label), style = MaterialTheme.typography.body2, color = textColor, textAlign = TextAlign.Center)
+    Text(period.priceText(BadgeStore.price(level, period)), style = MaterialTheme.typography.body1, fontWeight = FontWeight.SemiBold, color = textColor, textAlign = TextAlign.Center)
     val percent = savingsPercent(level, period)
-    if (forSale && percent != null) {
+    if (percent != null) {
       Text(
         stringResource(MR.strings.badges_savings).format("${percent}%"),
         style = MaterialTheme.typography.body2,
@@ -192,7 +192,7 @@ private fun ContinueButton(level: BadgeLevel, selectedPeriod: BadgePeriod, modal
     labelId = MR.strings.badges_continue,
     onboarding = null,
     onclick = {
-      modalManager.showModal { BadgesCheckOrderView(level, selectedPeriod, modalManager) }
+      modalManager.showModal(cardScreen = true) { BadgesCheckOrderView(level, selectedPeriod, modalManager) }
     }
   )
 }
