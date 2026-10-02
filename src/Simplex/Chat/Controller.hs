@@ -41,7 +41,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.Set (Set)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.String
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
@@ -93,7 +93,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), XFTPServer)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), MsgId, NMsgMeta (..), NtfServer, ProtocolType (..), QueueId, SMPMsgMeta (..), SubscriptionMode (..), USDCents, XFTPServer)
 import Simplex.Messaging.Session (SessionVar)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
@@ -709,16 +709,17 @@ data ChatCommand
   deriving (Show)
 
 data PlanResolveMode
-  = PRMAllGroups -- resolve all known groups and all unknown chats
-  | PRMUnknown -- only resolve if chat is unknown (default)
+  = PRMAll -- always resolve, also known chats
+  | PRMUnknown -- resolve unknown chats, and names of known chats not resolved within a day (default)
   | PRMNever -- do not resolve links and names, only do local search
   deriving (Eq, Show)
 
 planResolveModeP :: A.Parser PlanResolveMode
 planResolveModeP =
   A.takeTill (== ' ') >>= \case
-    "allGroups" -> pure PRMAllGroups
-    "on" -> pure PRMAllGroups
+    "all" -> pure PRMAll
+    "allGroups" -> pure PRMAll
+    "on" -> pure PRMAll
     "unknown" -> pure PRMUnknown
     "off" -> pure PRMUnknown
     "never" -> pure PRMNever
@@ -884,7 +885,7 @@ data ChatResponse
   | CRInvitation {user :: User, connLinkInvitation :: CreatedLinkInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRConnectionUserChanged {user :: User, fromConnection :: PendingContactConnection, toConnection :: PendingContactConnection, newUser :: User}
-  | CRConnectionPlan {user :: User, connLink :: ACreatedConnLink, planSimplexName :: Maybe SimplexNameInfo, otherSimplexName :: Maybe SimplexNameInfo, connectionPlan :: ConnectionPlan}
+  | CRConnectionPlan {user :: User, connLink :: Maybe ACreatedConnLink, planSimplexName :: Maybe SimplexNameInfo, otherSimplexName :: Maybe SimplexNameInfo, connectionPlan :: ConnectionPlan, localChats :: [AChatInfo], offerLookup :: Bool}
   | CRNewPreparedChat {user :: User, chat :: AChat}
   | CRContactUserChanged {user :: User, fromContact :: Contact, newUser :: User, toContact :: Contact}
   | CRGroupUserChanged {user :: User, fromGroup :: GroupInfo, newUser :: User, toGroup :: GroupInfo}
@@ -1151,10 +1152,25 @@ data ChatDeleteMode
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
-  | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
-  | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
+  | CPContactAddress {contactAddressPlan :: ContactAddressPlan, nameWarning_ :: Maybe NameWarning}
+  | CPGroupLink {groupLinkPlan :: GroupLinkPlan, nameWarning_ :: Maybe NameWarning}
+  | CPNameNotConnectable {simplexDomain :: SimplexDomain, nameWarning :: NameWarning}
   | CPError {chatError :: ChatError}
   deriving (Show)
+
+data NameWarning
+  = NWExpired {expiredAt :: UTCTime, graceUntil :: Maybe UTCTime}
+  | NWOwnExpired {expiredAt :: UTCTime, graceUntil :: Maybe UTCTime}
+  | NWAvailable {price :: NamePrice}
+  | NWNoLongerRegistered {price :: NamePrice}
+  | NWOwnAvailable {price :: NamePrice}
+  | NWReservedForCommunity
+  | NWNotRegistered
+  | NWNoValidLink
+  deriving (Eq, Show)
+
+data NamePrice = NamePrice {amount :: USDCents, years :: Int}
+  deriving (Eq, Show)
 
 data InvitationLinkPlan
   = ILPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification}
@@ -1164,7 +1180,7 @@ data InvitationLinkPlan
   deriving (Show)
 
 data ContactAddressPlan
-  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification}
+  = CAPOk {contactSLinkData_ :: Maybe ContactShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool}
   | CAPOwnLink
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
@@ -1173,7 +1189,7 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification}
+  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData, ownerVerification :: Maybe OwnerVerification, addressChanged :: Bool}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
@@ -1214,19 +1230,20 @@ connectionPlanProceed = \case
     ILPOk {} -> True
     ILPOwnLink -> True
     _ -> False
-  CPContactAddress cap -> case cap of
-    CAPOk {} -> True
-    CAPOwnLink -> True
+  CPContactAddress cap w_ -> case cap of
+    CAPOk {addressChanged} -> not addressChanged
+    CAPOwnLink -> isNothing w_
     CAPConnectingConfirmReconnect -> True
     CAPContactViaAddress _ -> True
     _ -> False
-  CPGroupLink glp -> case glp of
-    GLPOk {} -> True
-    GLPOwnLink _ -> True
+  CPGroupLink glp w_ -> case glp of
+    GLPOk {addressChanged} -> not addressChanged
+    GLPOwnLink _ -> isNothing w_
     GLPConnectingConfirmReconnect -> True
     GLPNoRelays _ -> False
     GLPUpdateRequired _ -> False
     _ -> False
+  CPNameNotConnectable {} -> False
   CPError _ -> True
 
 data ForwardConfirmation
@@ -1859,6 +1876,10 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SQLite") ''SQLiteError)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
+
+$(JQ.deriveJSON defaultJSON ''NamePrice)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NW") ''NameWarning)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
 

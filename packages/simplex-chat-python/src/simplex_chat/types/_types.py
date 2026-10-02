@@ -1481,10 +1481,17 @@ class ConnectionPlan_invitationLink(TypedDict):
 class ConnectionPlan_contactAddress(TypedDict):
     type: Literal["contactAddress"]
     contactAddressPlan: "ContactAddressPlan"
+    nameWarning_: NotRequired["NameWarning"]
 
 class ConnectionPlan_groupLink(TypedDict):
     type: Literal["groupLink"]
     groupLinkPlan: "GroupLinkPlan"
+    nameWarning_: NotRequired["NameWarning"]
+
+class ConnectionPlan_nameNotConnectable(TypedDict):
+    type: Literal["nameNotConnectable"]
+    simplexDomain: "SimplexDomain"
+    nameWarning: "NameWarning"
 
 class ConnectionPlan_error(TypedDict):
     type: Literal["error"]
@@ -1494,10 +1501,11 @@ ConnectionPlan = (
     ConnectionPlan_invitationLink
     | ConnectionPlan_contactAddress
     | ConnectionPlan_groupLink
+    | ConnectionPlan_nameNotConnectable
     | ConnectionPlan_error
 )
 
-ConnectionPlan_Tag = Literal["invitationLink", "contactAddress", "groupLink", "error"]
+ConnectionPlan_Tag = Literal["invitationLink", "contactAddress", "groupLink", "nameNotConnectable", "error"]
 
 class Contact(TypedDict):
     contactId: int  # int64
@@ -1528,6 +1536,7 @@ class ContactAddressPlan_ok(TypedDict):
     type: Literal["ok"]
     contactSLinkData_: NotRequired["ContactShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
+    addressChanged: bool
 
 class ContactAddressPlan_ownLink(TypedDict):
     type: Literal["ownLink"]
@@ -1974,6 +1983,7 @@ class GroupLinkPlan_ok(TypedDict):
     groupSLinkInfo_: NotRequired["GroupShortLinkInfo"]
     groupSLinkData_: NotRequired["GroupShortLinkData"]
     ownerVerification: NotRequired["OwnerVerification"]
+    addressChanged: bool
 
 class GroupLinkPlan_ownLink(TypedDict):
     type: Literal["ownLink"]
@@ -2362,6 +2372,54 @@ NameErrorType = NameErrorType_NO_RESOLVER | NameErrorType_NOT_FOUND | NameErrorT
 
 NameErrorType_Tag = Literal["NO_RESOLVER", "NOT_FOUND", "RESOLVER"]
 
+class NamePrice(TypedDict):
+    amount: int  # int64
+    years: int  # int
+
+class NameWarning_expired(TypedDict):
+    type: Literal["expired"]
+    expiredAt: str  # ISO-8601 timestamp
+    graceUntil: NotRequired[str]  # ISO-8601 timestamp
+
+class NameWarning_ownExpired(TypedDict):
+    type: Literal["ownExpired"]
+    expiredAt: str  # ISO-8601 timestamp
+    graceUntil: NotRequired[str]  # ISO-8601 timestamp
+
+class NameWarning_available(TypedDict):
+    type: Literal["available"]
+    price: "NamePrice"
+
+class NameWarning_noLongerRegistered(TypedDict):
+    type: Literal["noLongerRegistered"]
+    price: "NamePrice"
+
+class NameWarning_ownAvailable(TypedDict):
+    type: Literal["ownAvailable"]
+    price: "NamePrice"
+
+class NameWarning_reservedForCommunity(TypedDict):
+    type: Literal["reservedForCommunity"]
+
+class NameWarning_notRegistered(TypedDict):
+    type: Literal["notRegistered"]
+
+class NameWarning_noValidLink(TypedDict):
+    type: Literal["noValidLink"]
+
+NameWarning = (
+    NameWarning_expired
+    | NameWarning_ownExpired
+    | NameWarning_available
+    | NameWarning_noLongerRegistered
+    | NameWarning_ownAvailable
+    | NameWarning_reservedForCommunity
+    | NameWarning_notRegistered
+    | NameWarning_noValidLink
+)
+
+NameWarning_Tag = Literal["expired", "ownExpired", "available", "noLongerRegistered", "ownAvailable", "reservedForCommunity", "notRegistered", "noValidLink"]
+
 class NetworkError_connectError(TypedDict):
     type: Literal["connectError"]
     connectError: str
@@ -2445,7 +2503,7 @@ class PendingContactConnection(TypedDict):
     createdAt: str  # ISO-8601 timestamp
     updatedAt: str  # ISO-8601 timestamp
 
-PlanResolveMode = Literal["allGroups", "unknown", "never"]
+PlanResolveMode = Literal["all", "unknown", "never"]
 
 class PrefEnabled(TypedDict):
     forUser: bool

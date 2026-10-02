@@ -772,10 +772,9 @@ struct ChatListSearchBar: View {
             if oneHandUI, let candidate = connectNameCandidate {
                 ConnectByNameRow(
                     name: candidate,
-                    searchText: $searchText,
-                    connectNameCandidate: $connectNameCandidate,
                     searchFocussed: $searchFocussed,
-                    dismiss: false
+                    dismiss: false,
+                    filterChats: filterChats
                 )
             } else {
                 ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
@@ -817,10 +816,9 @@ struct ChatListSearchBar: View {
             if !oneHandUI, let candidate = connectNameCandidate {
                 ConnectByNameRow(
                     name: candidate,
-                    searchText: $searchText,
-                    connectNameCandidate: $connectNameCandidate,
                     searchFocussed: $searchFocussed,
-                    dismiss: false
+                    dismiss: false,
+                    filterChats: filterChats
                 )
             }
         }
@@ -858,17 +856,13 @@ struct ChatListSearchBar: View {
                         nameSearchTask = Task { @MainActor in
                             try? await Task.sleep(nanoseconds: 300_000_000)
                             if Task.isCancelled { return }
-                            // a bare name can be a contact or a channel: search both and keep every match
-                            let targets = candidate.hasPrefix("@") || candidate.hasPrefix("#") ? [candidate] : ["@\(candidate)", "#\(candidate)"]
-                            var ids: [String] = []
-                            for name in targets {
-                                let plan = await apiConnectPlan(connLink: name, resolveMode: .never, inProgress: BoxedValue(false))
-                                if Task.isCancelled { return }
-                                if let id = knownChatId(plan) { ids.append(id) }
+                            let result = await apiConnectPlan(connLink: candidate, resolveMode: .never, inProgress: BoxedValue(false))
+                            if Task.isCancelled { return }
+                            if let result {
+                                addMissingChats(result.localChats)
+                                _ = filterChats(result.localChats)
+                                if !result.offerLookup { connectNameCandidate = nil }
                             }
-                            searchChatFilteredBySimplexLink = Set(ids)
-                            // drop the row only when every searched type is already known locally
-                            if ids.count == targets.count { connectNameCandidate = nil }
                         }
                     } else if t != "" {
                         searchFocussed = true
@@ -912,22 +906,25 @@ struct ChatListSearchBar: View {
                 searchText = ""
                 searchFocussed = false
             },
-            filterKnownContact: { searchChatFilteredBySimplexLink = [$0.id] },
-            filterKnownGroup: { searchChatFilteredBySimplexLink = [$0.id] }
+            filterChats: filterChats
         )
+    }
+
+    private func filterChats(_ chats: [ChatInfo]) -> Bool {
+        searchChatFilteredBySimplexLink = Set(chats.map { $0.id })
+        return true
     }
 }
 
 // Row shown when the search text is a SimpleX name — in place of the list tags in the chat list, below
 // the search field in the new chat sheet. The @ icon marks a contact name, the tag icon a channel/other
-// name; tapping hides the keyboard, connects online, and clears the field.
+// name; tapping hides the keyboard and connects online.
 struct ConnectByNameRow: View {
     @EnvironmentObject var theme: AppTheme
     var name: String
-    @Binding var searchText: String
-    @Binding var connectNameCandidate: String?
     @FocusState.Binding var searchFocussed: Bool
     var dismiss: Bool
+    var filterChats: (([ChatInfo]) -> Bool)? = nil
 
     var body: some View {
         HStack(spacing: 4) {
@@ -945,10 +942,7 @@ struct ConnectByNameRow: View {
                 name,
                 theme: theme,
                 dismiss: dismiss,
-                cleanup: {
-                    searchText = ""
-                    connectNameCandidate = nil
-                }
+                filterChats: filterChats
             )
         }
     }
@@ -965,36 +959,6 @@ private func isNameLabel(_ s: String) -> Bool {
 }
 
 // On-device candidate for connecting by SimpleX name: the string sent to the core to resolve it.
-// The chat id a local (.never) search resolved to — a contact, business, or channel — or nil on a miss.
-// A name-resolved chat may be prepared in the store but not yet listed, so add it so the filter can surface it.
-@MainActor
-func knownChatId(_ result: ConnectionPlanResult?) -> String? {
-    guard let plan = result?.connectionPlan else { return nil }
-    let m = ChatModel.shared
-    switch plan {
-    case let .contactAddress(contactAddressPlan):
-        if case let .known(contact) = contactAddressPlan {
-            if m.getContactChat(contact.contactId) == nil {
-                m.addChat(Chat(chatInfo: .direct(contact: contact), chatItems: []))
-            }
-            return contact.id
-        }
-        return nil
-    case let .groupLink(groupLinkPlan):
-        switch groupLinkPlan {
-        case .known(let groupInfo), .ownLink(let groupInfo):
-            if m.getGroupChat(groupInfo.groupId) == nil {
-                m.addChat(Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: nil), chatItems: []))
-            }
-            return groupInfo.id
-        default:
-            return nil
-        }
-    default:
-        return nil
-    }
-}
-
 // Mirrors the domain grammar (nameLabelP/mkDomain in SimplexName.hs): an optional @/# prefix, then
 // dot-separated ASCII labels; a dotless word is completed with the default top-level part. Returns
 // the string to send (keeping @/# so the type is preserved), or nil when the text is not a name.

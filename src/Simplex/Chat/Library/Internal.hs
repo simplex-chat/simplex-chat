@@ -1615,18 +1615,20 @@ updatePublicGroupData user gInfo gks
   | otherwise = pure gInfo
 
 -- must not resolve names here: a background link-data refresh would leak channel membership to the resolver
-updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> Maybe SimplexDomain -> CM (GroupInfo, Bool)
-updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData} resolvedDomain_
+updateGroupFromLinkData :: User -> GroupInfo -> GroupShortLinkData -> Maybe SimplexDomain -> Maybe UTCTime -> CM (GroupInfo, Bool)
+updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = GroupSummary {publicMemberCount = localCount}} GroupShortLinkData {groupProfile, publicGroupData} resolvedDomain_ expiresAt
   | profileChanged || countChanged || verifyResolved = do
       cxt <- chatStoreCxt
-      withStore $ \db -> do
+      g'' <- withStore $ \db -> do
         g <- if profileChanged then updateGroupProfile db user gInfo groupProfile else pure gInfo
         g' <- case publicGroupData of
           Just PublicGroupData {publicMemberCount} | countChanged ->
             setPublicMemberCount db cxt user g publicMemberCount
           _ -> pure g
-        g'' <- if verifyResolved then liftIO $ setGroupDomainVerified db user g' True else pure g'
-        pure (g'', profileChanged)
+        if verifyResolved then liftIO $ setGroupDomainVerified db user g' True expiresAt else pure g'
+      toView $ CEvtGroupUpdated user gInfo g'' Nothing Nothing
+      when verifyResolved $ forM_ newClaim $ nameChatsUpdated user NTPublicGroup
+      pure (g'', profileChanged)
   | otherwise = pure (gInfo, False)
   where
     profileChanged = p /= groupProfile
@@ -1637,18 +1639,28 @@ updateGroupFromLinkData user gInfo@GroupInfo {groupProfile = p, groupSummary = G
     newClaim = groupClaim groupProfile
     verifyResolved = isJust resolvedDomain_ && resolvedDomain_ == newClaim
 
-updateContactFromLinkData :: User -> Contact -> Profile -> CM Contact
-updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} linkProfile@Profile {contactDomain = newClaim}
+updateContactFromLinkData :: User -> Contact -> Profile -> Maybe UTCTime -> CM Contact
+updateContactFromLinkData user ct@Contact {profile = profile@LocalProfile {contactDomain = prevClaim, contactDomainVerified}} linkProfile@Profile {contactDomain = newClaim} expiresAt
   | profileChanged || verifyChanged = do
       cxt <- chatStoreCxt
-      withFastStore $ \db -> do
+      ct'' <- withFastStore $ \db -> do
         ct' <- updateContactProfile db cxt user ct linkProfile
-        if verifyChanged then liftIO $ setContactDomainVerified db user ct' True else pure ct'
+        if verifyChanged then liftIO $ setContactDomainVerified db user ct' True expiresAt else pure ct'
+      toView $ CEvtContactUpdated user ct ct''
+      when verifyChanged $ forM_ newClaim $ nameChatsUpdated user NTContact . claimDomain
+      pure ct''
   | otherwise = pure ct
   where
     profileChanged = fromLocalProfile profile /= linkProfile
     claimChanged = (claimDomain <$> prevClaim) /= (claimDomain <$> newClaim)
     verifyChanged = contactDomainVerified /= Just True || claimChanged
+
+nameChatsUpdated :: User -> SimplexNameType -> SimplexDomain -> CM ()
+nameChatsUpdated user nameType domain = do
+  cxt <- chatStoreCxt
+  (cts, gs) <- withStore' $ \db -> getNameChats db cxt user nameType domain
+  forM_ cts $ \ct -> toView $ CEvtContactUpdated user ct ct
+  forM_ gs $ \g -> toView $ CEvtGroupUpdated user g g Nothing Nothing
 
 -- TODO [relays] owner: set owners on updating link data (multi-owner)
 groupLinkData :: GroupInfoKeys -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
