@@ -184,11 +184,11 @@ object BadgeStore {
     return if (rhId == chatModel.remoteHostId() && readFor == userId) purchases else emptyList()
   }
 
-  fun price(level: BadgeLevel, period: BadgePeriod): BadgePrice = when (state.value) {
+  fun price(level: BadgeLevel, period: BadgePeriod, compact: Boolean = true): BadgePrice = when (state.value) {
     LoadState.NotLoaded, LoadState.Loading -> BadgePrice.Loading
     LoadState.Loaded, LoadState.Failed -> {
       val p = products.value[badgeStoreProductId(level, period)]
-      if (p != null) BadgePrice.Price(compactPrice(p)) else BadgePrice.Unavailable
+      if (p != null) BadgePrice.Price(if (compact) compactPrice(p) else p.displayPrice) else BadgePrice.Unavailable
     }
   }
 

@@ -33,6 +33,14 @@ enum BadgePeriod: String, CaseIterable, Identifiable {
         }
     }
 
+    var months: Int {
+        switch self {
+        case .oneMonth: 1
+        case .monthly: 1
+        case .annual: 12
+        }
+    }
+
     func priceText(_ price: BadgePrice) -> Text {
         switch price {
         case .loading: return Text(verbatim: "…")
@@ -92,7 +100,7 @@ struct BadgesHowLongView: View {
                     // fixedSize + maxHeight on the cards so they all match the tallest one -
                     // only Annual carries a savings line, and prices wrap at large fonts
                     HStack(alignment: .top, spacing: 12) {
-                        ForEach(badgePeriodsForSale) { periodCard($0) }
+                        ForEach(BadgePeriod.allCases) { periodCard($0) }
                     }
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -118,6 +126,7 @@ struct BadgesHowLongView: View {
 
     private func periodCard(_ period: BadgePeriod) -> some View {
         let isSelected = period == selectedPeriod
+        let forSale = badgePeriodsForSale.contains(period)
         return Button {
             selectedPeriod = period
         } label: {
@@ -127,17 +136,19 @@ struct BadgesHowLongView: View {
                     .scaledToFit()
                     .frame(width: 32, height: 32)
                     .foregroundColor(isSelected ? theme.colors.primary : theme.colors.secondary)
+                    .opacity(forSale ? 1 : 0.4)
                 Text(period.label)
-                    .font(.title3)
-                    .fontWeight(.bold)
-                period.priceText(store.price(level, period))
                     .font(.body)
+                period.priceText(store.price(level, period))
+                    .font(.title3)
+                    .fontWeight(.semibold)
                 if let percent = savingsPercent(period) {
                     Text("Save \(percent)%")
                         .font(.footnote)
                         .foregroundColor(isSelected ? theme.colors.primary : theme.colors.secondary)
                 }
             }
+            .foregroundColor(forSale ? nil : theme.colors.secondary)
             .multilineTextAlignment(.center)
             .padding(.vertical, 25)
             .padding(.horizontal, 12)
@@ -150,6 +161,7 @@ struct BadgesHowLongView: View {
             )
         }
         .buttonStyle(.plain)
+        .disabled(!forSale)
     }
 
     private func savingsPercent(_ period: BadgePeriod) -> Int? {
@@ -191,10 +203,10 @@ struct BadgeBillingFooter: View {
     }
 
     private var billingFooter: LocalizedStringKey {
-        // TODO [badges] source the actual date from the purchase state machine when wired.
-        var comps = DateComponents(); comps.year = 2026; comps.month = 7; comps.day = 22
-        let stubDate = Calendar.current.date(from: comps) ?? Date()
-        let date = DateFormatter.localizedString(from: stubDate, dateStyle: .long, timeStyle: .none)
+        // TODO [badges] from now only because a purchase is refused while a badge is held (refuseWhileBadgeHeld);
+        // a top-up must count from the end of the existing balance
+        let endDate = Calendar.current.date(byAdding: .month, value: period.months, to: Date()) ?? Date()
+        let date = DateFormatter.localizedString(from: endDate, dateStyle: .long, timeStyle: .none)
         switch period {
         case .monthly, .annual: return "Renews on \(date). Cancel anytime."
         case .oneMonth: return "Ends on \(date)."

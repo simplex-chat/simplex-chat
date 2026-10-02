@@ -2,10 +2,13 @@ package chat.simplex.common.views.badges
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -39,19 +42,19 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
       modifier = Modifier.fillMaxWidth()
     )
 
-    Column(Modifier.fillMaxWidth().padding(top = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(
+      Modifier
+        .fillMaxWidth()
+        .padding(top = 20.dp)
+        .clip(RoundedCornerShape(16.dp))
+        .background(sectionCardColor())
+        .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
       OrderRow(MR.strings.badges_your_badge, stringResource(level.title))
       OrderRow(MR.strings.badges_order_duration, stringResource(period.label))
-      OrderRow(MR.strings.badges_order_total, period.priceText(BadgeStore.price(level, period)))
+      Divider(Modifier.padding(top = 8.dp))
+      OrderRow(MR.strings.badges_order_total, period.priceText(BadgeStore.price(level, period, compact = false)), total = true)
     }
-
-    Text(
-      stringResource(MR.strings.badges_charged_by_play),
-      style = MaterialTheme.typography.body2,
-      color = MaterialTheme.colors.secondary,
-      textAlign = TextAlign.Center,
-      modifier = Modifier.fillMaxWidth()
-    )
 
     Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
 
@@ -63,17 +66,23 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
 }
 
 @Composable
-private fun OrderRow(title: StringResource, value: String) {
-  Row(Modifier.fillMaxWidth()) {
-    Text(stringResource(title), style = MaterialTheme.typography.body1, color = MaterialTheme.colors.secondary)
+private fun OrderRow(title: StringResource, value: String, total: Boolean = false) {
+  val style = if (total) MaterialTheme.typography.h3 else MaterialTheme.typography.body1
+  Row(Modifier.fillMaxWidth().padding(top = if (total) 14.dp else 8.dp, bottom = 8.dp)) {
+    Text(
+      stringResource(title),
+      style = style,
+      fontWeight = if (total) FontWeight.SemiBold else FontWeight.Medium,
+      color = if (total) Color.Unspecified else MaterialTheme.colors.secondary
+    )
     Spacer(Modifier.weight(1f))
-    Text(value, style = MaterialTheme.typography.body1)
+    Text(value, style = style, fontWeight = FontWeight.SemiBold)
   }
 }
 
 @Composable
 private fun PayButton(level: BadgeLevel, period: BadgePeriod, purchasing: MutableState<Boolean>) {
-  val price = BadgeStore.price(level, period)
+  val price = BadgeStore.price(level, period, compact = false)
   val (labelId, labelArg) = period.payLabel(price)
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),

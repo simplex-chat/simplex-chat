@@ -30,18 +30,18 @@ struct BadgesCheckOrderView: View {
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    VStack(spacing: 12) {
+                    VStack(spacing: 0) {
                         orderRow("Your badge", Text(level.title))
                         orderRow("Duration", Text(period.label))
-                        orderRow("Total", period.priceText(store.price(level, period)))
+                        Divider()
+                            .padding(.top, 8)
+                        orderRow("Total", period.priceText(store.price(level, period, compact: false)), total: true)
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Color(uiColor: .secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
                     .padding(.top, 20)
-
-                    Text("Charged by the App Store to the account on this device.")
-                        .font(.footnote)
-                        .foregroundColor(theme.colors.secondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
 
                     Spacer(minLength: 20)
 
@@ -64,18 +64,22 @@ struct BadgesCheckOrderView: View {
         .alert(item: $alert) { $0.alert }
     }
 
-    private func orderRow(_ title: LocalizedStringKey, _ value: Text) -> some View {
+    private func orderRow(_ title: LocalizedStringKey, _ value: Text, total: Bool = false) -> some View {
         HStack {
             Text(title)
-                .foregroundColor(theme.colors.secondary)
+                .fontWeight(total ? .semibold : .medium)
+                .foregroundColor(total ? nil : theme.colors.secondary)
             Spacer()
             value
+                .fontWeight(.semibold)
         }
-        .font(.body)
+        .font(total ? .title3 : .body)
+        .padding(.top, total ? 14 : 8)
+        .padding(.bottom, 8)
     }
 
     private func payButton() -> some View {
-        let price = store.price(level, period)
+        let price = store.price(level, period, compact: false)
         let disabled = !price.canPurchase || purchasing || !store.canBuy(chatModel.currentUser?.userId)
         return Button {
             purchase()

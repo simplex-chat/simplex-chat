@@ -141,11 +141,11 @@ final class BadgeStore: ObservableObject {
         return storePurchases.purchases
     }
 
-    func price(_ level: BadgeLevel, _ period: BadgePeriod) -> BadgePrice {
+    func price(_ level: BadgeLevel, _ period: BadgePeriod, compact: Bool = true) -> BadgePrice {
         switch state {
         case .notLoaded, .loading: return .loading
         case .loaded, .failed:
-            if let p = products[badgeProductId(level, period)] { return .price(compactPrice(p)) }
+            if let p = products[badgeProductId(level, period)] { return .price(compact ? compactPrice(p) : p.displayPrice) }
             return .unavailable
         }
     }

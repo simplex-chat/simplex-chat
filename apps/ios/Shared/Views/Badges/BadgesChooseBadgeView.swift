@@ -23,10 +23,17 @@ enum BadgeLevel: String, CaseIterable, Identifiable {
         }
     }
 
-    var filesDescription: LocalizedStringKey {
+    var fileSize: LocalizedStringKey {
         switch self {
-        case .supporter: "Send 2GB files"
-        case .legend: "Send 5GB files"
+        case .supporter: "Files up to 2 GB"
+        case .legend: "Files up to 5 GB"
+        }
+    }
+
+    var fileStorage: LocalizedStringKey {
+        switch self {
+        case .supporter: "Stored for 7 days"
+        case .legend: "Stored for 21 days"
         }
     }
 
@@ -68,12 +75,8 @@ struct BadgesChooseBadgeView: View {
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    BadgeUserPreview(level: selectedLevel) {
-                        Image(systemName: "chevron.down")
-                            .font(.body)
-                            .foregroundColor(theme.colors.primary)
-                    }
-                    .padding(.top, 4)
+                    BadgeUserPreview(level: selectedLevel)
+                        .padding(.top, 4)
 
                     Spacer(minLength: 20)
 
@@ -127,9 +130,12 @@ struct BadgesChooseBadgeView: View {
                 Text(level.title)
                     .font(.title3)
                     .fontWeight(.bold)
-                Text(level.filesDescription)
-                    .font(.subheadline)
-                    .foregroundColor(theme.colors.secondary)
+                VStack(spacing: 2) {
+                    Text(level.fileSize)
+                    Text(level.fileStorage)
+                }
+                .font(.subheadline)
+                .foregroundColor(theme.colors.secondary)
                 BadgePeriod.monthly.priceText(store.price(level, .monthly))
                     .font(.body)
                     .padding(.bottom, 20)

@@ -34,10 +34,16 @@ enum class BadgeLevel {
       Legend -> MR.strings.badges_level_legend
     }
 
-  val filesDescription: StringResource
+  val fileSize: StringResource
     get() = when (this) {
-      Supporter -> MR.strings.badges_level_supporter_files
-      Legend -> MR.strings.badges_level_legend_files
+      Supporter -> MR.strings.badges_level_supporter_file_size
+      Legend -> MR.strings.badges_level_legend_file_size
+    }
+
+  val fileStorage: StringResource
+    get() = when (this) {
+      Supporter -> MR.strings.badges_level_supporter_file_storage
+      Legend -> MR.strings.badges_level_legend_file_storage
     }
 
   val summary: StringResource
@@ -83,13 +89,7 @@ fun BadgesChooseBadgeView(modalManager: ModalManager) {
       modifier = Modifier.fillMaxWidth()
     )
 
-    BadgeUserPreview(level = selectedLevel, modifier = Modifier.padding(top = 4.dp)) {
-      Icon(
-        painterResource(MR.images.ic_keyboard_arrow_down),
-        contentDescription = null,
-        tint = MaterialTheme.colors.primary
-      )
-    }
+    BadgeUserPreview(level = selectedLevel, modifier = Modifier.padding(top = 4.dp))
 
     Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
 
@@ -144,7 +144,10 @@ private fun LevelCard(level: BadgeLevel, selectedLevel: BadgeLevel, modifier: Mo
       modifier = Modifier.size(60.dp)
     )
     Text(stringResource(level.title), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-    Text(stringResource(level.filesDescription), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+      Text(stringResource(level.fileSize), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+      Text(stringResource(level.fileStorage), style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary, textAlign = TextAlign.Center)
+    }
     Text(BadgePeriod.Monthly.priceText(BadgeStore.price(level, BadgePeriod.Monthly)), style = MaterialTheme.typography.body1, textAlign = TextAlign.Center)
   }
 }

@@ -9,7 +9,9 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,6 +42,13 @@ enum class BadgePeriod {
       OneMonth -> MR.strings.badges_period_one_month
       Monthly -> MR.strings.badges_period_monthly
       Annual -> MR.strings.badges_period_annual
+    }
+
+  val months: Int
+    get() = when (this) {
+      OneMonth -> 1
+      Monthly -> 1
+      Annual -> 12
     }
 
   @Composable
@@ -104,7 +113,7 @@ fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager) {
       Modifier.fillMaxWidth().height(IntrinsicSize.Max),
       horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-      badgePeriodsForSale.forEach { period ->
+      BadgePeriod.entries.forEach { period ->
         PeriodCard(level, period, selectedPeriod, Modifier.weight(1f).fillMaxHeight()) { selectedPeriod = it }
       }
     }
@@ -124,7 +133,7 @@ fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager) {
 fun BadgeBillingFooter(period: BadgePeriod) {
   Box(Modifier.padding(top = 7.5.dp, bottom = 7.5.dp).padding(horizontal = 16.dp, vertical = 8.dp)) {
     Text(
-      stringResource(billingFooter(period)).format(stubBillingDate()),
+      stringResource(billingFooter(period)).format(billingDate(period)),
       Modifier.padding(vertical = 5.dp),
       style = MaterialTheme.typography.body2,
       color = MaterialTheme.colors.secondary,
@@ -136,6 +145,8 @@ fun BadgeBillingFooter(period: BadgePeriod) {
 @Composable
 private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: BadgePeriod, modifier: Modifier, onSelect: (BadgePeriod) -> Unit) {
   val isSelected = period == selectedPeriod
+  val forSale = period in badgePeriodsForSale
+  val textColor = if (forSale) Color.Unspecified else MaterialTheme.colors.secondary
   val borderColor = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f)
   // Light: transparent so card matches page background. Dark: subtle gray tint for visible contrast.
   val cardBackground = if (isInDarkTheme()) MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
@@ -146,7 +157,7 @@ private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: B
       .clip(shape)
       .background(cardBackground, shape)
       .border(2.dp, borderColor, shape)
-      .clickable { onSelect(period) }
+      .clickable(enabled = forSale) { onSelect(period) }
       .padding(vertical = 20.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -155,10 +166,10 @@ private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: B
       painterResource(period.icon),
       contentDescription = null,
       tint = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-      modifier = Modifier.size(32.dp)
+      modifier = Modifier.size(32.dp).alpha(if (forSale) 1f else 0.4f)
     )
-    Text(stringResource(period.label), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-    Text(period.priceText(BadgeStore.price(level, period)), style = MaterialTheme.typography.body1, textAlign = TextAlign.Center)
+    Text(stringResource(period.label), style = MaterialTheme.typography.body1, color = textColor, textAlign = TextAlign.Center)
+    Text(period.priceText(BadgeStore.price(level, period)), style = MaterialTheme.typography.h3, fontWeight = FontWeight.SemiBold, color = textColor, textAlign = TextAlign.Center)
     val percent = savingsPercent(level, period)
     if (percent != null) {
       Text(
@@ -191,9 +202,10 @@ private fun billingFooter(period: BadgePeriod): StringResource = when (period) {
   BadgePeriod.OneMonth -> MR.strings.badges_billing_footer_one_month
 }
 
-// TODO [badges] source the actual date from the purchase state machine when wired.
-private fun stubBillingDate(): String {
-  val date = java.time.LocalDate.of(2026, 7, 22)
+// TODO [badges] from now only because a purchase is refused while a badge is held (refuseWhileBadgeHeld);
+// a top-up must count from the end of the existing balance
+private fun billingDate(period: BadgePeriod): String {
+  val date = java.time.LocalDate.now().plusMonths(period.months.toLong())
   val formatter = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.LONG)
   return date.format(formatter)
 }

@@ -3142,8 +3142,10 @@
   <string name="badge_unknown_key_desc">The badge is signed with a key that this version of the app does not recognize. Update the app to verify this badge.</string>
   <string name="badges_level_supporter">Supporter</string>
   <string name="badges_level_legend">Legend</string>
-  <string name="badges_level_supporter_files">Send 2GB files</string>
-  <string name="badges_level_legend_files">Send 5GB files</string>
+  <string name="badges_level_supporter_file_size">Files up to 2 GB</string>
+  <string name="badges_level_supporter_file_storage">Stored for 7 days</string>
+  <string name="badges_level_legend_file_size">Files up to 5 GB</string>
+  <string name="badges_level_legend_file_storage">Stored for 21 days</string>
   <string name="badges_price_monthly">%1$s/month</string>
   <string name="badges_price_annual">%1$s/year</string>
   <string name="badges_pay_monthly">Pay %1$s/month</string>
@@ -3184,7 +3186,6 @@
   <string name="badges_check_your_order_title">Check your order</string>
   <string name="badges_order_duration">Duration</string>
   <string name="badges_order_total">Total</string>
-  <string name="badges_charged_by_play">Charged by Google Play to the account on this device.</string>
   <string name="badges_issuing_title">Issuing your badge</string>
   <string name="badges_issuing_body">The store has taken the payment. Keeps trying if you close the app.</string>
   <string name="badges_waiting_for_approval_title">Waiting for approval</string>
