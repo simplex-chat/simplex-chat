@@ -10,6 +10,7 @@ import SwiftUI
 
 struct BadgesPurchaseStateView: View {
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.dismiss) private var dismiss
     let purchaseState: BadgePurchaseState
     var showsAsSheet: Bool = false
 
@@ -32,6 +33,21 @@ struct BadgesPurchaseStateView: View {
             ProgressView().scaleEffect(2)
 
             Spacer()
+
+            VStack(spacing: 10) {
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Dismiss")
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundColor(theme.colors.primary)
+                        .padding()
+                }
+                .padding(.vertical, 10)
+                Color.clear
+                    .frame(height: 22)
+            }
         }
         .padding(.horizontal, 25)
         .padding(.top, showsAsSheet ? 48 : 0)

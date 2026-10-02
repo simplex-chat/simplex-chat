@@ -384,7 +384,8 @@ private fun Confirming(onConfirm: () -> Unit, onCancel: () -> Unit) {
 // leaving does not cancel: the badge is still added after the screen closes
 @Composable
 private fun BeingIssued(onDismiss: () -> Unit) {
-  LinkStep(MR.strings.badges_being_issued, textButton = MR.strings.badges_dismiss to onDismiss) {
+  LinkStep(MR.strings.badges_issuing_title, textButton = MR.strings.badges_dismiss to onDismiss) {
+    LinkText(stringResource(MR.strings.badges_link_issuing_profile))
     Spacer(Modifier.weight(1f))
     CircularProgressIndicator(
       Modifier.size(30.dp),

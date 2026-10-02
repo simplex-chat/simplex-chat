@@ -313,7 +313,8 @@ struct BadgesRedeemLinkView: View {
 
     // leaving does not cancel: the badge is still added after the screen closes
     private func beingIssued() -> some View {
-        linkStep("Badge is being issued", textButton: ("Dismiss", { closeIfShowing() })) {
+        linkStep("Issuing your badge", textButton: ("Dismiss", { closeIfShowing() })) {
+            linkText(NSLocalizedString("The badge will be added to this profile.", comment: "badge link, being issued"))
             Spacer()
             ProgressView().scaleEffect(2)
         }

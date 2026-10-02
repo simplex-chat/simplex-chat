@@ -12,10 +12,11 @@ import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
 import chat.simplex.res.MR
 
 @Composable
-fun BadgesPurchaseStateView(purchaseState: BadgePurchaseState) {
+fun BadgesPurchaseStateView(purchaseState: BadgePurchaseState, onDismiss: () -> Unit) {
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -47,6 +48,11 @@ fun BadgesPurchaseStateView(purchaseState: BadgePurchaseState) {
     )
 
     Spacer(Modifier.weight(1f))
+
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      TextButtonBelowOnboardingButton(stringResource(MR.strings.badges_dismiss), onDismiss)
+      TextButtonBelowOnboardingButton("", null)
+    }
   }
 }
 

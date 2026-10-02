@@ -3202,7 +3202,7 @@
   <string name="badges_link_held_other_profile">A badge can be added to another profile, or here once this badge ends.</string>
   <string name="badges_link_held_page">Its code is on the page you bought it on, under Show code.</string>
   <string name="badges_link_view_badge">View your badge</string>
-  <string name="badges_being_issued">Badge is being issued</string>
+  <string name="badges_link_issuing_profile">The badge will be added to this profile.</string>
   <string name="badges_link_added_title">Badge added</string>
   <string name="badges_link_added_profile">The badge was added to the profile %1$s.</string>
   <string name="badges_redeem_code_body">Paste the code you received.</string>
