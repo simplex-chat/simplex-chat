@@ -2867,7 +2867,8 @@ processChatCommand cxt nm = \case
         Nothing -> throwChatError $ CEContactNotActive ct
   APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> do
     (g@(GIK gInfo _), m) <- withFastStore $ \db -> (,) <$> getGroupInfoKeys db cxt user groupId <*> getGroupMemberById db cxt user gmId
-    assertUserGroupRole gInfo $ max GRModerator role
+    -- same rule as role change (moderators grant up to member); pending member's role is a stand-in, so treat it as member
+    assertUserGroupRole gInfo $ roleRequiredToChange GRMember role
     case memberStatus m of
       GSMemPendingApproval | memberCategory m == GCInviteeMember -> do -- only host can approve
         let GroupInfo {groupProfile = GroupProfile {memberAdmission}} = gInfo
@@ -2946,6 +2947,8 @@ processChatCommand cxt nm = \case
         throwCmdError "can't change role of multiple members when admins selected, or new role is admin"
       when anyPending $ throwCmdError "can't change role of members pending approval"
       when (anyRelay || newRole == GRRelay) $ throwCmdError "relay role can't be changed"
+      -- TODO [multi-owner] allow once owners are added via link data - until then promoted owner would lack link authority
+      when (useRelays' gInfo && newRole == GROwner) $ throwCmdError "owner role can't be assigned in channels"
       -- TODO allow moderators (needs UI) - relay is rejected above (anyRelay), so drop the GRAdmin floor:
       -- TODO   assertUserGroupRole gInfo (roleRequiredToChange maxRole newRole)
       assertUserGroupRole gInfo $ maximum ([GRAdmin, maxRole, newRole] :: [GroupMemberRole])
@@ -3981,7 +3984,7 @@ processChatCommand cxt nm = \case
       dm <- case gInfo_ of
         Just (Just gInfo@(GIK g gks))
           | useRelays' g -> case relayMemberId_ of
-              Just relayMemberId -> encodeXMemberConnInfo gInfo relayMemberId profileToSend
+              Just relayMemberId -> encodeXMemberConnInfo pqSup gInfo relayMemberId profileToSend
               Nothing -> throwChatError $ CEInternalError "relay group join without target relay memberId"
           | otherwise -> encodeConnInfoPQ pqSup $ XContact profileToSend (Just $ groupMemberKey gks) (Just xContactId) welcomeSharedMsgId msg_
         _ ->
