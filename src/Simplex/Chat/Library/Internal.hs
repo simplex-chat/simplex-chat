@@ -917,8 +917,8 @@ resetRcvCIFileStatus user fileId ciFileStatus = do
 
 -- The sender sends file descriptions only to the members it was connected to when it sent the file,
 -- and the host stops forwarding the sender's messages once the members connect,
--- so a description that was not forwarded before connection will never arrive.
--- The file is not cancelled: if the host forwarded the description concurrently, it is still received.
+-- so a description that was not forwarded before connection usually does not arrive.
+-- The file is not cancelled, so a description that still arrives is received.
 markFwdFilesUnavailable :: User -> GroupMember -> CM ()
 markFwdFilesUnavailable user m = do
   cxt <- chatStoreCxt
