@@ -129,6 +129,7 @@ badgeServiceTests = do
     it "should replay a receipt to its own key while the store is down, and to no other" testStoreReplayWhileStoreDown
     it "should answer a throwing Apple verifier as internal, and a failing or hanging Google one as retryable" testStoreVerifierFailures
     it "should credit a transaction claimed twice at once only once" testStoreClaimRace
+    it "should answer a request that lost the claim race with the credential the winner was given" testStorePurchaseRace
     it "should refuse a store with no verifier with no retry, and the client should keep its keys" testPurchaseWithNoVerifier
     it "should credit nothing when the verified transaction is not the one the evidence names" testStoreVerifiedOtherTransaction
     it "should refuse a verified quantity other than one as internal, and the client should keep its keys" testStoreQuantityRefused
@@ -136,6 +137,7 @@ badgeServiceTests = do
     it "should redeem a Play purchase into a badge, and replay it as the same badge" testPurchaseBadge
     it "should redeem an App Store purchase by its JWS" testPurchaseBadgeAppStore
     it "should drop the keys of a receipt refused for good, and keep them while it is pending" testPurchaseStash
+    it "should drop the keys of a receipt credited to another key" testPurchaseStashReceiptUsed
     it "should keep the keys of a Play token the service will not send to Play" testPurchaseUnsentPlayToken
     it "should refuse a store purchase while a badge is held, before anything is sent" testPurchaseWhileBadgeHeld
     it "should answer a receipt presented under a second profile as the profile that bought it" testPurchaseSameReceiptOtherProfile
@@ -1618,6 +1620,21 @@ testStoreClaimRace ps =
     rowCount cc "sx_badge_service_payments" `shouldReturn` 1
     rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
 
+testStorePurchaseRace :: HasCallStack => TestParams -> IO ()
+testStorePurchaseRace ps = do
+  hook <- newIORef (pure ())
+  withBadgeServiceVerifier ps (googleVerifierWithHook hook) $ \env@BadgeServiceEnv {bsController = cc} -> do
+    (purchaseKey, masterKey) <- newPurchaseKeys
+    winner <- newIORef Nothing
+    -- the same purchase is presented again while the first is with the store, and credited first
+    writeIORef hook $ serviceCmd env purchaseKey (purchaseCmd masterKey supporterPlay) >>= writeIORef winner . Just
+    raced <- serviceCmd env purchaseKey $ purchaseCmd masterKey supporterPlay
+    Just credited <- readIORef winner
+    credentialOf credited `shouldSatisfy` isJust
+    credentialOf raced `shouldBe` credentialOf credited
+    storePayments cc `shouldReturn` [("google", Nothing, Nothing, 1)]
+    rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+
 testStorePurchaseKeyMismatch :: HasCallStack => TestParams -> IO ()
 testStorePurchaseKeyMismatch ps =
   withBadgeService ps $ \clientCfg bsLink cc ->
@@ -1689,6 +1706,22 @@ testPurchaseStash ps =
       alice <##. "expires "
       stashes `shouldReturn` 1
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
+
+testPurchaseStashReceiptUsed :: HasCallStack => TestParams -> IO ()
+testPurchaseStashReceiptUsed ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsController = cc} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg ps bsClientCfg "bob" bobProfile $ \bob -> do
+        let purchase = "/_badge purchase 1 " <> paymentArg supporterPlay
+        alice ##> purchase
+        alice <## "badge redeemed"
+        alice <## "supporter badge - active"
+        alice <##. "expires "
+        bob ##> purchase
+        bob <## "cannot get badge: badge service error: receipt_used"
+        rowCount (chatController bob) "badge_store_receipts" `shouldReturn` 0
+        rowCount (chatController alice) "badge_store_receipts" `shouldReturn` 1
+        rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
 
 testPurchaseUnsentPlayToken :: HasCallStack => TestParams -> IO ()
 testPurchaseUnsentPlayToken ps =

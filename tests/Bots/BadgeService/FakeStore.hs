@@ -2,10 +2,12 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Bots.BadgeService.FakeStore
   ( FakeStore (..),
     newFakeStore,
+    googleVerifierWithHook,
     settlePending,
     setGoogleDown,
     googleSupporterToken,
@@ -26,7 +28,7 @@ import qualified Data.Aeson as J
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
-import Data.IORef (IORef, newIORef, readIORef, writeIORef)
+import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef, writeIORef)
 import Data.Text (Text)
 import Simplex.Chat.PaymentService (ServicePayment (..), googlePurchaseRef)
 import Simplex.Chat.PaymentService.Types (CurrencyAmount (..))
@@ -105,6 +107,16 @@ googleVerdict pendingSettled googleDown productId token =
       | otherwise -> pure $ Left $ SRInvalid "not a fake purchase"
   where
     purchased = VerifiedStoreTransaction {transactionRef = googlePurchaseRef token, productId, quantity = 1, testPurchase = False, paid = Nothing}
+
+-- | The fake store, running the hook's action once, inside the first Google verification, before it answers.
+googleVerifierWithHook :: IORef (IO ()) -> FakeStore -> StoreVerifier
+googleVerifierWithHook hook FakeStore {fakeVerifier = v@StoreVerifier {verifyGoogle}} =
+  v {verifyGoogle = hooked <$> verifyGoogle, verifyTimeout = 10000000}
+  where
+    hooked verify productId token = do
+      action <- atomicModifyIORef' hook (pure (),)
+      action
+      verify productId token
 
 settlePending :: FakeStore -> IO ()
 settlePending FakeStore {pendingSettled} = writeIORef pendingSettled True
