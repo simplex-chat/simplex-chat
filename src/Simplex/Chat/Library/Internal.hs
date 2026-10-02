@@ -914,6 +914,28 @@ resetRcvCIFileStatus user fileId ciFileStatus = do
       updateRcvFileAgentId db fileId Nothing
     lookupChatItemByFileId db cxt user fileId
 
+-- The sender sends file descriptions only to the members it was connected to when it sent the file,
+-- and the host stops forwarding the sender's messages once the members connect,
+-- so a description that was not forwarded before connection will never arrive.
+-- The file is not cancelled: if the host forwarded the description concurrently, it is still received.
+markFwdFilesUnavailable :: User -> GroupMember -> CM ()
+markFwdFilesUnavailable user m = do
+  cxt <- chatStoreCxt
+  acis <- withStore $ \db -> do
+    fileIds <- liftIO $ getForwardedRcvFilesWithoutDescr db user m
+    forM fileIds $ \fileId -> do
+      liftIO $ updateCIFileStatus db user fileId (CIFSRcvError fwdFileUnavailableError)
+      lookupChatItemByFileId db cxt user fileId
+  forM_ (catMaybes acis) $ toView . CEvtChatItemUpdated user
+
+fwdFileUnavailableError :: FileError
+fwdFileUnavailableError = FileErrOther "file was sent before you connected to the sender"
+
+isFwdFileUnavailable :: AChatItem -> Bool
+isFwdFileUnavailable = \case
+  AChatItem _ SMDRcv _ ChatItem {file = Just CIFile {fileStatus = CIFSRcvError e}} -> e == fwdFileUnavailableError
+  _ -> False
+
 receiveViaURI :: User -> FileDescriptionURI -> CryptoFile -> CM RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
   fileId <- withStore $ \db -> createRcvStandaloneFileTransfer db userId cf fileSize chunkSize

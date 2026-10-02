@@ -969,6 +969,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
             notifyMemberConnected gInfo m Nothing
+            unless (useRelays' gInfo) $ markFwdFilesUnavailable user m `catchAllErrors` eToView
             let memCategory = memberCategory m
                 connectedIncognito = memberIncognito membership
             when (memCategory == GCPreMember) $
@@ -1994,6 +1995,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         case prohibited_ of
           Nothing -> case (fileStatus, xftpRcvFile) of
             (RFSAccepted _, Just XFTPRcvFile {userApprovedRelays}) -> receiveViaCompleteFD user fileId rfd fileSize userApprovedRelays cryptoArgs
+            (RFSNew, _) | fileDescrComplete && isFwdFileUnavailable aci -> do
+              aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+              forM_ aci_ $ toView . CEvtChatItemUpdated user
             _ -> pure ()
           -- the file may already be accepted, so it is reset to an invitation the apps refuse by its prohibition
           Just prohibited -> do

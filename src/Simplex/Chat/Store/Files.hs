@@ -52,6 +52,7 @@ module Simplex.Chat.Store.Files
     createRcvStandaloneFileTransfer,
     appendRcvFD,
     getRcvFileDescrByRcvFileId,
+    getForwardedRcvFilesWithoutDescr,
     getRcvFileDescrBySndFileId,
     updateRcvFileAgentId,
     getRcvFileTransferById,
@@ -650,6 +651,24 @@ getRcvFileDescrByRcvFileId_ db fileId =
         LIMIT 1
       |]
       (Only fileId)
+
+getForwardedRcvFilesWithoutDescr :: DB.Connection -> User -> GroupMember -> IO [FileTransferId]
+getForwardedRcvFilesWithoutDescr db User {userId} GroupMember {groupId, groupMemberId} =
+  map fromOnly
+    <$> DB.query
+      db
+      [sql|
+        SELECT f.file_id
+        FROM files f
+        JOIN rcv_files r ON r.file_id = f.file_id
+        JOIN chat_items i ON i.chat_item_id = f.chat_item_id
+        LEFT JOIN xftp_file_descriptions d ON d.file_descr_id = r.file_descr_id
+        WHERE f.user_id = ? AND f.group_id = ? AND r.group_member_id = ?
+          AND f.protocol = ? AND COALESCE(f.cancelled, 0) = 0 AND r.file_status IN (?,?)
+          AND i.forwarded_by_group_member_id IS NOT NULL
+          AND (d.file_descr_id IS NULL OR d.file_descr_part_no = 0)
+      |]
+      (userId, groupId, groupMemberId, FPXFTP, FSNew, FSAccepted)
 
 getRcvFileDescrBySndFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO RcvFileDescr
 getRcvFileDescrBySndFileId db fileId = do
