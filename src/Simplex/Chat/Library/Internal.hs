@@ -840,6 +840,16 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
         rcvSize = max (toInteger encSize) redirectSize
         -- 10 MB margin: encryption and chunk-size rounding make the transfer larger than the advertised size
         maxRcvSize = min expectedFileSize (toInteger FD.maxFileSizeHard) + toInteger (FD.mb 10 :: Int64)
+    -- TODO re-enable redirects with relay checks
+    when (isJust redirect) $ do
+      cxt <- chatStoreCxt
+      aci_ <- withStore $ \db -> do
+        liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ FileErrOther "redirect not allowed")
+        lookupChatItemByFileId db cxt user fileId
+      forM_ aci_ $ \aci -> do
+        cleanupACIFile aci
+        toView $ CEvtChatItemUpdated user aci
+      throwChatError $ CEInvalidFileDescription "redirect not allowed"
     when (rcvSize > maxRcvSize) $ throwChatError $ CEFileRcvChunk "declared file size exceeds the file invitation size"
     if userApprovedRelays
       then receive' rd True
