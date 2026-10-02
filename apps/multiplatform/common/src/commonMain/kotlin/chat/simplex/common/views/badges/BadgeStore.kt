@@ -99,6 +99,9 @@ data class BadgeStoreReceipt(
 // receipt says so.
 const val useBadgeTestProducts = false
 
+// test products stand in for a store, so the lane is offered without one
+val badgeStoreAvailable: Boolean get() = useBadgeTestProducts || platform.androidHasPlatformStore
+
 private fun testProduct(level: BadgeLevel, period: BadgePeriod, priceMicros: Long) =
   BadgeProduct(badgeStoreProductId(level, period), "\$${priceMicros / 1_000_000}.00", priceMicros, "USD")
 
@@ -161,7 +164,7 @@ object BadgeStore {
   private val presenting = mutableMapOf<String, Boolean>()
 
   fun purchaseState(userId: Long?): BadgePurchaseState? {
-    if (!platform.androidHasPlatformStore) return null
+    if (!badgeStoreAvailable) return null
     val purchases = openStorePurchases(userId)
     val held = unfinished.value.values.mapNotNull { it.invoiceId }.toSet()
     return when {
@@ -173,7 +176,7 @@ object BadgeStore {
   }
 
   fun canBuy(userId: Long?): Boolean =
-    platform.androidHasPlatformStore && reconciledOnce.value && buying.value.isEmpty() && purchaseState(userId) == null
+    badgeStoreAvailable && reconciledOnce.value && buying.value.isEmpty() && purchaseState(userId) == null
 
   fun setStorePurchases(rhId: Long?, userId: Long, purchases: List<OpenStorePurchase>) {
     storePurchases.value = Triple(rhId, userId, purchases)

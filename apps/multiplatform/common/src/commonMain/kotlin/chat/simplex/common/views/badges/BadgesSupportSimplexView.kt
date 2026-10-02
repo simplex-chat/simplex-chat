@@ -64,7 +64,7 @@ fun BadgesSupportSimplexView(modalManager: ModalManager) {
     Spacer(Modifier.weight(1f))
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      if (platform.androidHasPlatformStore) {
+      if (badgeStoreAvailable) {
         ChooseLevelButton(modalManager)
         if (badgeBrowserAllowed()) {
           BuyInBrowserTextButton()
