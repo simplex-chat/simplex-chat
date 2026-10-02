@@ -41,7 +41,10 @@ fun currentShownBadge(): BadgeState? {
   return if (badgeState != null && badgeState.shown) badgeState else null
 }
 
-// runs in the screen on top, the only one composed, and closes every screen above the badges modal in one go
+// The badges modal shows the purchase state itself, so screens pushed over it have to go once a purchase
+// appears. Only the top one is composed, so this runs there, closing them in one effect because a close per
+// recomposition restarts showInView's transition, and stopping on a depth because closeModal defers removal.
+// TODO [badges] ModalManager has no close-above and records no parentage; with either, the depth goes away.
 @Composable
 fun CloseWhenSupportGivesWay(modalManager: ModalManager, unwindToDepth: Int) {
   val gaveWay = BadgeStore.purchaseState(chatModel.currentUser.value?.userId) != null || currentShownBadge() != null
