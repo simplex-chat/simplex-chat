@@ -1996,7 +1996,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           Nothing -> case (fileStatus, xftpRcvFile) of
             (RFSAccepted _, Just XFTPRcvFile {userApprovedRelays}) -> receiveViaCompleteFD user fileId rfd fileSize userApprovedRelays cryptoArgs
             (RFSNew, _) | fileDescrComplete && isFwdFileUnavailable aci -> do
-              aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+              aci_ <- withStore $ \db -> unmarkFwdFile db cxt user fileId
               forM_ aci_ $ toView . CEvtChatItemUpdated user
             _ -> pure ()
           -- the file may already be accepted, so it is reset to an invitation the apps refuse by its prohibition

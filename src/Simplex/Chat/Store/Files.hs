@@ -53,6 +53,7 @@ module Simplex.Chat.Store.Files
     appendRcvFD,
     getRcvFileDescrByRcvFileId,
     getForwardedRcvFilesWithoutDescr,
+    fwdFileUnavailableError,
     setGroupMsgReceivedDirectly,
     getRcvFileDescrBySndFileId,
     updateRcvFileAgentId,
@@ -668,13 +669,16 @@ getForwardedRcvFilesWithoutDescr db User {userId} GroupMember {groupId, groupMem
           AND f.protocol = ? AND COALESCE(f.cancelled, 0) = 0 AND r.file_status IN (?,?)
           AND i.forwarded_by_group_member_id IS NOT NULL
           AND (d.file_descr_id IS NULL OR d.file_descr_part_no = 0)
-          AND EXISTS (
+          AND NOT EXISTS (
             SELECT 1 FROM messages m
             WHERE m.group_id = f.group_id AND m.shared_msg_id = i.shared_msg_id
-              AND m.forwarded_by_group_member_id IS NOT NULL
+              AND m.author_group_member_id = r.group_member_id AND m.forwarded_by_group_member_id IS NULL
           )
       |]
       (userId, groupId, groupMemberId, FPXFTP, FSNew, FSAccepted)
+
+fwdFileUnavailableError :: FileError
+fwdFileUnavailableError = FileErrOther "file was sent before you connected to the sender"
 
 setGroupMsgReceivedDirectly :: DB.Connection -> GroupId -> GroupMemberId -> SharedMsgId -> IO ()
 setGroupMsgReceivedDirectly db groupId authorGroupMemberId sharedMsgId =
@@ -803,8 +807,8 @@ acceptRcvFT_ :: DB.Connection -> User -> FileTransferId -> FilePath -> Bool -> M
 acceptRcvFT_ db User {userId} fileId filePath userApprovedRelays rcvFileInline currentTs = do
   DB.execute
     db
-    "UPDATE files SET file_path = ?, ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?"
-    (filePath, CIFSRcvAccepted, currentTs, userId, fileId)
+    "UPDATE files SET file_path = ?, ci_file_status = CASE WHEN ci_file_status = ? THEN ci_file_status ELSE ? END, updated_at = ? WHERE user_id = ? AND file_id = ?"
+    (filePath, CIFSRcvError fwdFileUnavailableError, CIFSRcvAccepted, currentTs, userId, fileId)
   DB.execute
     db
     "UPDATE rcv_files SET user_approved_relays = ?, rcv_file_inline = ?, file_status = ?, updated_at = ? WHERE file_id = ?"

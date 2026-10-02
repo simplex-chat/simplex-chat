@@ -786,16 +786,9 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
       (ci, rfd) <- withStore $ \db -> do
         -- marking file as accepted and reading description in the same transaction
         -- to prevent race condition with appending description
-        unavailable <- isFwdFileUnavailable <$> getChatItemByFileId db cxt user fileId
         ci <- xftpAcceptRcvFT db cxt user fileId filePath userApproved
-        ci' <-
-          if unavailable
-            then do
-              liftIO $ updateCIFileStatus db user fileId (CIFSRcvError fwdFileUnavailableError)
-              getChatItemByFileId db cxt user fileId
-            else pure ci
         rfd <- getRcvFileDescrByRcvFileId db fileId
-        pure (ci', rfd)
+        pure (ci, rfd)
       receiveViaCompleteFD user fileId rfd fileSize userApproved cryptoArgs
       pure ci
     (Nothing, Just _fileConnReq) -> throwChatError $ CEException "accepting file via a separate connection is deprecated"
@@ -942,21 +935,23 @@ fwdMsgReceivedDirectly user@User {userId} groupId authorGroupMemberId sharedMsgI
   cxt <- chatStoreCxt
   aci_ <- withStore' $ \db -> do
     setGroupMsgReceivedDirectly db groupId authorGroupMemberId sharedMsgId
-    fmap eitherToMaybe . runExceptT $ do
+    fmap (join . eitherToMaybe) . runExceptT $ do
       fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
-      aci <- getChatItemByFileId db cxt user fileId
-      if isFwdFileUnavailable aci
-        then do
-          RcvFileTransfer {fileStatus} <- getRcvFileTransfer db user fileId
-          liftIO $ updateCIFileStatus db user fileId $ case fileStatus of
-            RFSAccepted _ -> CIFSRcvAccepted
-            _ -> CIFSRcvInvitation
-          Just <$> getChatItemByFileId db cxt user fileId
-        else pure Nothing
-  forM_ (join aci_) $ toView . CEvtChatItemUpdated user
+      unmarkFwdFile db cxt user fileId
+  forM_ aci_ $ toView . CEvtChatItemUpdated user
 
-fwdFileUnavailableError :: FileError
-fwdFileUnavailableError = FileErrOther "file was sent before you connected to the sender"
+-- status is checked in the same transaction, as the file can be accepted concurrently
+unmarkFwdFile :: DB.Connection -> StoreCxt -> User -> FileTransferId -> ExceptT StoreError IO (Maybe AChatItem)
+unmarkFwdFile db cxt user fileId = do
+  aci <- getChatItemByFileId db cxt user fileId
+  if isFwdFileUnavailable aci
+    then do
+      RcvFileTransfer {fileStatus} <- getRcvFileTransfer db user fileId
+      liftIO $ updateCIFileStatus db user fileId $ case fileStatus of
+        RFSAccepted _ -> CIFSRcvAccepted
+        _ -> CIFSRcvInvitation
+      Just <$> getChatItemByFileId db cxt user fileId
+    else pure Nothing
 
 isFwdFileUnavailable :: AChatItem -> Bool
 isFwdFileUnavailable = \case
