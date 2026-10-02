@@ -918,7 +918,7 @@ resetRcvCIFileStatus user fileId ciFileStatus = do
 -- The sender sends file descriptions only to the members it was connected to when it sent the file,
 -- and the host stops forwarding the sender's messages once the members connect,
 -- so a description that was not forwarded before connection usually does not arrive.
--- The file is not cancelled, so a description that still arrives is received.
+-- The file is not cancelled, so a description that still arrives is processed.
 markFwdFilesUnavailable :: User -> GroupMember -> CM ()
 markFwdFilesUnavailable user m = do
   cxt <- chatStoreCxt
@@ -929,7 +929,7 @@ markFwdFilesUnavailable user m = do
       lookupChatItemByFileId db cxt user fileId
     forM_ aci_ $ toView . CEvtChatItemUpdated user
 
--- The author also sent the message directly, so it has the file transfer for the user and will send the description.
+-- The author also sent the message directly, so it has the file transfer for the user and should send the description.
 fwdMsgReceivedDirectly :: User -> GroupId -> GroupMemberId -> SharedMsgId -> CM ()
 fwdMsgReceivedDirectly user@User {userId} groupId authorGroupMemberId sharedMsgId = do
   cxt <- chatStoreCxt

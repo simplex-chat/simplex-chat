@@ -661,11 +661,11 @@ getForwardedRcvFilesWithoutDescr db User {userId} GroupMember {groupId, groupMem
       db
       [sql|
         SELECT f.file_id
-        FROM files f
-        JOIN rcv_files r ON r.file_id = f.file_id
+        FROM rcv_files r
+        CROSS JOIN files f
         JOIN chat_items i ON i.chat_item_id = f.chat_item_id
         LEFT JOIN xftp_file_descriptions d ON d.file_descr_id = r.file_descr_id
-        WHERE f.user_id = ? AND f.group_id = ? AND r.group_member_id = ?
+        WHERE f.file_id = r.file_id AND f.user_id = ? AND f.group_id = ? AND r.group_member_id = ?
           AND f.protocol = ? AND COALESCE(f.cancelled, 0) = 0 AND r.file_status IN (?,?)
           AND i.forwarded_by_group_member_id IS NOT NULL
           AND (d.file_descr_id IS NULL OR d.file_descr_part_no = 0)
