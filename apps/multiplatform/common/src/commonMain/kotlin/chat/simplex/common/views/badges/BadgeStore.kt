@@ -50,9 +50,12 @@ val badgePeriodsForSale: List<BadgePeriod> = listOf(BadgePeriod.OneMonth)
 fun newBadgeInvoiceId(): String = UUID.randomUUID().toString()
 
 // the page's app flag rides in the fragment, which never reaches the service
+// TEST ONLY: pointed at the dev deployment; restore the two lines below before merging
 val badgePageUrl: String =
-  if (appPlatform.isAndroid) "https://badges.simplex.chat/#/tier?app=true"
-  else "https://badges.simplex.chat/#/tier?app=desktop"
+  if (appPlatform.isAndroid) "https://smp7.simplex.im/#/tier?app=true"
+  else "https://smp7.simplex.im/#/tier?app=desktop"
+// if (appPlatform.isAndroid) "https://badges.simplex.chat/#/tier?app=true"
+// else "https://badges.simplex.chat/#/tier?app=desktop"
 
 // where the store allows a link out to the badge page: the US for now, a set expected to widen.
 // An unknown country does not count, as this decides whether the store sees a link out of the app.
