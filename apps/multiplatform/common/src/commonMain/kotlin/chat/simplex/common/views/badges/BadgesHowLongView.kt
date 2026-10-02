@@ -171,7 +171,7 @@ private fun PeriodCard(level: BadgeLevel, period: BadgePeriod, selectedPeriod: B
     Text(stringResource(period.label), style = MaterialTheme.typography.body1, color = textColor, textAlign = TextAlign.Center)
     Text(period.priceText(BadgeStore.price(level, period)), style = MaterialTheme.typography.h3, fontWeight = FontWeight.SemiBold, color = textColor, textAlign = TextAlign.Center)
     val percent = savingsPercent(level, period)
-    if (percent != null) {
+    if (forSale && percent != null) {
       Text(
         stringResource(MR.strings.badges_savings).format("${percent}%"),
         style = MaterialTheme.typography.body2,

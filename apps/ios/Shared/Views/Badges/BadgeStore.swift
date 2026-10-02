@@ -66,7 +66,6 @@ struct BadgeStoreReceipt {
     let productId: String
     let transactionId: UInt64
     let invoiceId: UUID?
-    let environment: String?
     let signatureVerified: Bool
     let transaction: Transaction
 
@@ -185,17 +184,16 @@ final class BadgeStore: ObservableObject {
     }
 
     // A one-time purchase has its core record before the store charges, and every store outcome reaches it.
-    func purchase(_ level: BadgeLevel, _ period: BadgePeriod) async throws -> (outcome: BadgePurchaseOutcome, invoiceId: UUID) {
+    func purchase(_ level: BadgeLevel, _ period: BadgePeriod) async throws -> BadgePurchaseOutcome {
         let productId = badgeProductId(level, period)
         guard let product = await MainActor.run(body: { products[productId] }) else {
             throw BadgeStoreError.productUnavailable(productId: productId)
         }
         // a subscription is never sent to core, so nothing would ever finish it later
         guard badgeOneTimeProductIds.contains(productId) else {
-            let invoiceId = newBadgeInvoiceId()
-            let outcome = try await storePurchase(product, invoiceId)
+            let outcome = try await storePurchase(product, newBadgeInvoiceId())
             if case let .purchased(receipt) = outcome { await receipt.transaction.finish() }
-            return (outcome, invoiceId)
+            return outcome
         }
         guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else {
             throw BadgeStoreError.noActiveProfile
@@ -213,7 +211,7 @@ final class BadgeStore: ObservableObject {
             case .pending: break
             }
             await MainActor.run { _ = buying.remove(invoice) }
-            return (outcome, invoiceId)
+            return outcome
         } catch let error {
             await closeInvoice(userId, invoice)
             await MainActor.run { _ = buying.remove(invoice) }
@@ -376,14 +374,11 @@ private func storeReceipt(_ verification: VerificationResult<Transaction>) -> Ba
     case let .verified(t): (t, true)
     case let .unverified(t, _): (t, false)
     }
-    var environment: String? = nil
-    if #available(iOS 16.0, *) { environment = t.environment.rawValue }
     return BadgeStoreReceipt(
         jws: verification.jwsRepresentation,
         productId: t.productID,
         transactionId: t.id,
         invoiceId: t.appAccountToken,
-        environment: environment,
         signatureVerified: signatureVerified,
         transaction: t
     )

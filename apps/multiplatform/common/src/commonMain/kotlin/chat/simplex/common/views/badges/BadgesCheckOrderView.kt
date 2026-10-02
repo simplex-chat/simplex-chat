@@ -1,6 +1,7 @@
 package chat.simplex.common.views.badges
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -48,6 +49,7 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
         .padding(top = 20.dp)
         .clip(RoundedCornerShape(16.dp))
         .background(sectionCardColor())
+        .border(1.dp, MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.92f), RoundedCornerShape(16.dp))
         .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
       OrderRow(MR.strings.badges_your_badge, stringResource(level.title))
@@ -61,6 +63,22 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       PayButton(level, period, purchasing)
       BadgeBillingFooter(period)
+    }
+  }
+
+  if (purchasing.value) {
+    Box(
+      Modifier.fillMaxSize(),
+      contentAlignment = Alignment.Center
+    ) {
+      Surface(Modifier.size(50.dp), color = MaterialTheme.colors.background.copy(0.9f), contentColor = LocalContentColor.current, shape = RoundedCornerShape(50)){}
+      CircularProgressIndicator(
+        Modifier
+          .padding(horizontal = 2.dp)
+          .size(30.dp),
+        color = MaterialTheme.colors.secondary,
+        strokeWidth = 3.dp
+      )
     }
   }
 }
@@ -99,10 +117,7 @@ private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: Mutable
   // not withBGApi: the purchase waits for the user in the Play sheet and would block chat API calls
   withLongRunningApi {
     try {
-      val (outcome, invoiceId) = BadgeStore.purchase(level, period)
-      if (outcome is BadgePurchaseOutcome.Purchased && outcome.receipt.productId !in badgeOneTimeProductIds) {
-        showPurchasedAlert(outcome.receipt, invoiceId)
-      }
+      BadgeStore.purchase(level, period)
       purchasing.value = false
     } catch (e: Exception) {
       Log.e(TAG, "BadgesCheckOrderView.purchase: ${e.stackTraceToString()}")
@@ -114,26 +129,4 @@ private fun purchase(level: BadgeLevel, period: BadgePeriod, purchasing: Mutable
       )
     }
   }
-}
-
-// TODO [badges] store integration diagnostics - replaced by the issued badge once subscriptions are delivered.
-private fun showPurchasedAlert(receipt: BadgeStoreReceipt, invoiceId: String) {
-  val returnedInvoice = when (receipt.invoiceId) {
-    null -> "none"
-    invoiceId -> "yes"
-    else -> "mismatch: ${receipt.invoiceId}"
-  }
-  val lines = mutableListOf(
-    "Product: ${receipt.productId}",
-    "Invoice: $invoiceId",
-    "Invoice returned by Google: $returnedInvoice",
-    "Order: ${receipt.orderId ?: "none"}"
-  )
-  if (receipt.environment != null) lines.add("Environment: ${receipt.environment}")
-  val summary = lines.joinToString("\n")
-  Log.d(TAG, "badge purchase succeeded\n$summary")
-  AlertManager.shared.showAlertMsg(
-    title = generalGetString(MR.strings.badges_purchase_successful),
-    text = summary
-  )
 }

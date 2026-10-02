@@ -142,7 +142,7 @@ struct BadgesHowLongView: View {
                 period.priceText(store.price(level, period))
                     .font(.title3)
                     .fontWeight(.semibold)
-                if let percent = savingsPercent(period) {
+                if forSale, let percent = savingsPercent(period) {
                     Text("Save \(percent)%")
                         .font(.footnote)
                         .foregroundColor(isSelected ? theme.colors.primary : theme.colors.secondary)

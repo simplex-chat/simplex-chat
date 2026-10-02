@@ -143,7 +143,6 @@ private fun badgePurchaseOutcome(purchase: Purchase): BadgePurchaseOutcome? = wh
     BadgeStoreReceipt(
       token = purchase.purchaseToken,
       productId = purchase.products.firstOrNull() ?: "",
-      orderId = purchase.orderId,
       invoiceId = purchase.accountIdentifiers?.obfuscatedAccountId
     )
   )

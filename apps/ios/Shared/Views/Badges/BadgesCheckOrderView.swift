@@ -41,6 +41,10 @@ struct BadgesCheckOrderView: View {
                     .padding(.vertical, 12)
                     .background(Color(uiColor: .secondarySystemGroupedBackground))
                     .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color(uiColor: .secondarySystemFill), lineWidth: 1)
+                    )
                     .padding(.top, 20)
 
                     Spacer(minLength: 20)
@@ -56,6 +60,17 @@ struct BadgesCheckOrderView: View {
                 .padding(.top, 0)
                 .padding(.bottom, 20)
                 .frame(minHeight: g.size.height)
+            }
+        }
+        .overlay {
+            if purchasing {
+                ZStack {
+                    Circle()
+                        .fill(.white)
+                        .opacity(0.7)
+                        .frame(width: 56, height: 56)
+                    ProgressView().scaleEffect(2)
+                }
             }
         }
         .frame(maxHeight: .infinity)
@@ -94,20 +109,15 @@ struct BadgesCheckOrderView: View {
         purchasing = true
         Task {
             do {
-                let (outcome, invoiceId) = try await store.purchase(level, period)
-                if case let .purchased(receipt) = outcome {
-                    if !badgeOneTimeProductIds.contains(receipt.productId) {
-                        await MainActor.run { showPurchasedAlert(receipt, invoiceId) }
-                    } else if !receipt.signatureVerified {
-                        await MainActor.run {
-                            alert = SomeAlert(
-                                alert: mkAlert(
-                                    title: "Cannot verify this purchase",
-                                    message: "The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store."
-                                ),
-                                id: "badgePurchaseUnverified"
-                            )
-                        }
+                if case let .purchased(receipt) = try await store.purchase(level, period), !receipt.signatureVerified {
+                    await MainActor.run {
+                        alert = SomeAlert(
+                            alert: mkAlert(
+                                title: "Cannot verify this purchase",
+                                message: "The store returned a transaction that Apple has not signed. SimpleX cannot verify this purchase with the App Store."
+                            ),
+                            id: "badgePurchaseUnverified"
+                        )
                     }
                 }
                 await MainActor.run { purchasing = false }
@@ -125,34 +135,6 @@ struct BadgesCheckOrderView: View {
                 }
             }
         }
-    }
-
-    // TODO [badges] store integration diagnostics - replaced by the issued badge once subscriptions are delivered.
-    private func showPurchasedAlert(_ receipt: BadgeStoreReceipt, _ invoiceId: UUID) {
-        let returnedInvoice: String
-        if let returned = receipt.invoiceId {
-            returnedInvoice = returned == invoiceId ? "yes" : "mismatch: \(returned.uuidString)"
-        } else {
-            returnedInvoice = "none"
-        }
-        var lines = [
-            "Product: \(receipt.productId)",
-            "Invoice: \(invoiceId.uuidString)",
-            "Invoice returned by Apple: \(returnedInvoice)",
-            "Transaction: \(receipt.transactionId)"
-        ]
-        if let environment = receipt.environment { lines.append("Environment: \(environment)") }
-        lines.append("Signature: \(receipt.signatureVerified ? "verified" : "unverified")")
-        let summary = lines.joined(separator: "\n")
-        // logged as well as shown: the alert races StoreKit's own sheets, the log always lands
-        logger.debug("badge purchase succeeded\n\(summary)")
-        alert = SomeAlert(
-            alert: Alert(
-                title: Text("Purchase successful"),
-                message: Text(verbatim: summary)
-            ),
-            id: "badgePurchased"
-        )
     }
 }
 

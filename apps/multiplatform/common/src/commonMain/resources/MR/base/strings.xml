@@ -3180,14 +3180,13 @@
   <string name="badges_banner_subtitle">Get badge + better files</string>
   <string name="badges_banner_dismiss_message">You can support SimpleX later in Settings.</string>
   <string name="badges_larger_files_longer">Support SimpleX to send larger files that stay available longer</string>
-  <string name="badges_purchase_successful">Purchase successful</string>
   <string name="badges_purchase_error">Purchase error</string>
   <string name="badges_purchase_will_retry">The purchase will be retried, and the badge will arrive.</string>
   <string name="badges_check_your_order_title">Check your order</string>
   <string name="badges_order_duration">Duration</string>
   <string name="badges_order_total">Total</string>
   <string name="badges_issuing_title">Issuing your badge</string>
-  <string name="badges_issuing_body">The store has taken the payment. Keeps trying if you close the app.</string>
+  <string name="badges_issuing_body">Your payment is complete. The badge will be added to this profile.</string>
   <string name="badges_waiting_for_approval_title">Waiting for approval</string>
   <string name="badges_waiting_for_approval_body">Nothing has been charged.</string>
   <string name="badges_checking_title">Checking your purchase</string>

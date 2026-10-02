@@ -50,7 +50,7 @@ struct BadgesPurchaseStateView: View {
 
     private var message: LocalizedStringKey {
         switch purchaseState {
-        case .issuing: "The store has taken the payment. Keeps trying if you close the app."
+        case .issuing: "Your payment is complete. The badge will be added to this profile."
         case .waitingForApproval: "Nothing has been charged."
         case .checking: "The store has not confirmed a purchase yet."
         }

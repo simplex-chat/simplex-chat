@@ -88,10 +88,7 @@ data class BadgeStoreReceipt(
   // the token the badge service verifies with the Publisher API
   val token: String,
   val productId: String,
-  val orderId: String?,
-  val invoiceId: String?,
-  // only set for test products - a real Play purchase has no environment to report
-  val environment: String? = null
+  val invoiceId: String?
 )
 
 // TODO [badges] Play Billing has no offline product configuration. Set to true to price the screens
@@ -224,15 +221,14 @@ object BadgeStore {
   }
 
   // A one-time purchase has its core record before the store charges, and every store outcome reaches it.
-  suspend fun purchase(level: BadgeLevel, period: BadgePeriod): Pair<BadgePurchaseOutcome, String> {
+  suspend fun purchase(level: BadgeLevel, period: BadgePeriod): BadgePurchaseOutcome {
     val id = badgeStoreProductId(level, period)
     if (!products.value.containsKey(id)) throw BadgeStoreError.ProductUnavailable(id.productId)
     // a subscription is never sent to core, so nothing would ever finish it later
     if (id.productId !in badgeOneTimeProductIds) {
-      val invoiceId = newBadgeInvoiceId()
-      val outcome = storePurchase(id, invoiceId)
+      val outcome = storePurchase(id, newBadgeInvoiceId())
       if (outcome is BadgePurchaseOutcome.Purchased) finish(outcome.receipt)
-      return outcome to invoiceId
+      return outcome
     }
     val rhId = chatModel.remoteHostId()
     val userId = chatModel.currentUser.value?.userId ?: throw BadgeStoreError.NoActiveProfile
@@ -247,7 +243,7 @@ object BadgeStore {
         is BadgePurchaseOutcome.Cancelled -> closeInvoice(userId, invoiceId)
         is BadgePurchaseOutcome.Pending -> {}
       }
-      return outcome to invoiceId
+      return outcome
     } catch (e: Exception) {
       closeInvoice(userId, invoiceId)
       throw e
@@ -262,9 +258,7 @@ object BadgeStore {
         BadgeStoreReceipt(
           token = "test-${UUID.randomUUID()}",
           productId = id.productId,
-          orderId = null,
-          invoiceId = invoiceId,
-          environment = "test products"
+          invoiceId = invoiceId
         )
       )
     } else {
