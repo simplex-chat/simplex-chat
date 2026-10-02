@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,24 +18,13 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
 import chat.simplex.res.MR
-import kotlinx.coroutines.delay
 
 @Composable
-fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: ModalManager) {
+fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: ModalManager, unwindToDepth: Int) {
   val purchasing = remember { mutableStateOf(false) }
-  var progressByTimeout by rememberSaveable { mutableStateOf(false) }
-
-  LaunchedEffect(purchasing.value) {
-    progressByTimeout = if (purchasing.value) {
-      delay(1000)
-      purchasing.value
-    } else {
-      false
-    }
-  }
 
   LaunchedEffect(Unit) { BadgeStore.load() }
-  CloseWhenSupportGivesWay(modalManager)
+  CloseWhenSupportGivesWay(modalManager, unwindToDepth)
 
   ColumnWithScrollBar(
     Modifier.padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
@@ -72,21 +60,6 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
       PayButton(level, period, purchasing)
       BadgeBillingFooter(period)
-    }
-  }
-
-  if (progressByTimeout) {
-    Box(
-      Modifier.fillMaxSize(),
-      contentAlignment = Alignment.Center
-    ) {
-      CircularProgressIndicator(
-        Modifier
-          .padding(horizontal = 2.dp)
-          .size(30.dp),
-        color = MaterialTheme.colors.secondary,
-        strokeWidth = 3.dp
-      )
     }
   }
 }

@@ -74,11 +74,11 @@ enum class BadgePeriod {
 }
 
 @Composable
-fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager) {
+fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager, unwindToDepth: Int) {
   var selectedPeriod by remember { mutableStateOf(if (BadgePeriod.Monthly in badgePeriodsForSale) BadgePeriod.Monthly else BadgePeriod.OneMonth) }
 
   LaunchedEffect(Unit) { BadgeStore.load() }
-  CloseWhenSupportGivesWay(modalManager)
+  CloseWhenSupportGivesWay(modalManager, unwindToDepth)
 
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
@@ -121,7 +121,7 @@ fun BadgesHowLongView(level: BadgeLevel, modalManager: ModalManager) {
     Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      ContinueButton(level, selectedPeriod, modalManager)
+      ContinueButton(level, selectedPeriod, modalManager, unwindToDepth)
       BadgeBillingFooter(selectedPeriod)
     }
   }
@@ -186,13 +186,13 @@ private fun savingsPercent(level: BadgeLevel, period: BadgePeriod): Int? =
   if (period == BadgePeriod.Annual) BadgeStore.annualSavings(level) else null
 
 @Composable
-private fun ContinueButton(level: BadgeLevel, selectedPeriod: BadgePeriod, modalManager: ModalManager) {
+private fun ContinueButton(level: BadgeLevel, selectedPeriod: BadgePeriod, modalManager: ModalManager, unwindToDepth: Int) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.badges_continue,
     onboarding = null,
     onclick = {
-      modalManager.showModal(cardScreen = true) { BadgesCheckOrderView(level, selectedPeriod, modalManager) }
+      modalManager.showModal(cardScreen = true) { BadgesCheckOrderView(level, selectedPeriod, modalManager, unwindToDepth) }
     }
   )
 }

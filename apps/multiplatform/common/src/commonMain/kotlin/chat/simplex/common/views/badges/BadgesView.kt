@@ -3,6 +3,7 @@ package chat.simplex.common.views.badges
 import androidx.compose.animation.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import chat.simplex.common.model.BadgeModel
 import chat.simplex.common.model.BadgeState
 import chat.simplex.common.platform.chatModel
@@ -13,6 +14,7 @@ import chat.simplex.common.views.helpers.ModalView
 @Composable
 fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
   val shownBadge = currentShownBadge()
+  val unwindToDepth = remember { modalManager.openModalCount() }
 
   // the card look is a modal setting, so the modal is composed here to follow the screen shown
   ModalView(close, cardScreen = shownBadge != null) {
@@ -27,7 +29,7 @@ fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
         // holds the purchase screens' slot, so a consumable cannot be bought twice
         BadgesPurchaseStateView(purchaseState, onDismiss = close)
       } else {
-        BadgesSupportSimplexView(modalManager)
+        BadgesSupportSimplexView(modalManager, unwindToDepth)
       }
     }
   }
@@ -39,13 +41,12 @@ fun currentShownBadge(): BadgeState? {
   return if (badgeState != null && badgeState.shown) badgeState else null
 }
 
-// each purchase screen closes itself when it recomposes with a purchase in flight or a badge shown, as iOS
-// pops them when Support SimpleX gives way to either
+// runs in the screen on top, the only one composed, and closes every screen above the badges modal in one go
 @Composable
-fun CloseWhenSupportGivesWay(modalManager: ModalManager) {
+fun CloseWhenSupportGivesWay(modalManager: ModalManager, unwindToDepth: Int) {
   val gaveWay = BadgeStore.purchaseState(chatModel.currentUser.value?.userId) != null || currentShownBadge() != null
   LaunchedEffect(gaveWay) {
-    if (gaveWay) modalManager.closeModal()
+    if (gaveWay) while (modalManager.openModalCount() > unwindToDepth) modalManager.closeModal()
   }
 }
 

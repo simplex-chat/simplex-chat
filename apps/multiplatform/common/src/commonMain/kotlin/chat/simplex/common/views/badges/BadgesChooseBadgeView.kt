@@ -60,11 +60,11 @@ enum class BadgeLevel {
 }
 
 @Composable
-fun BadgesChooseBadgeView(modalManager: ModalManager) {
+fun BadgesChooseBadgeView(modalManager: ModalManager, unwindToDepth: Int) {
   var selectedLevel by remember { mutableStateOf(BadgeLevel.Supporter) }
 
   LaunchedEffect(Unit) { BadgeStore.load() }
-  CloseWhenSupportGivesWay(modalManager)
+  CloseWhenSupportGivesWay(modalManager, unwindToDepth)
 
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
@@ -108,10 +108,10 @@ fun BadgesChooseBadgeView(modalManager: ModalManager) {
     // Nested Column with no spacing so the TextButtonBelowOnboardingButton sits directly under
     // the action button (matches onboarding pattern where its own 7.5dp top padding is the gap).
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      ContinueButton(selectedLevel, modalManager)
+      ContinueButton(selectedLevel, modalManager, unwindToDepth)
       // redeeming a code is here only when Support SimpleX offers the browser instead
       if (badgeBrowserAllowed()) {
-        RedeemCodeButton(modalManager)
+        RedeemCodeButton(modalManager, unwindToDepth)
       } else {
         TextButtonBelowOnboardingButton("", null)
       }
@@ -153,13 +153,13 @@ private fun LevelCard(level: BadgeLevel, selectedLevel: BadgeLevel, modifier: Mo
 }
 
 @Composable
-private fun ContinueButton(selectedLevel: BadgeLevel, modalManager: ModalManager) {
+private fun ContinueButton(selectedLevel: BadgeLevel, modalManager: ModalManager, unwindToDepth: Int) {
   OnboardingActionButton(
     modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
     labelId = MR.strings.badges_continue,
     onboarding = null,
     onclick = {
-      modalManager.showModal { BadgesHowLongView(selectedLevel, modalManager) }
+      modalManager.showModal { BadgesHowLongView(selectedLevel, modalManager, unwindToDepth) }
     }
   )
 }

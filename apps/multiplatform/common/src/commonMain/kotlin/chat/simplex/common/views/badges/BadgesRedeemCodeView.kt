@@ -94,12 +94,12 @@ fun showCannotRedeemAlert(message: String) {
 }
 
 @Composable
-fun BadgesRedeemCodeView(modalManager: ModalManager) {
+fun BadgesRedeemCodeView(modalManager: ModalManager, unwindToDepth: Int) {
   val rhId = remember { chatModel.remoteHostId() }
   val code = remember { mutableStateOf(TextFieldValue("")) }
   val canonicalCode = remember { mutableStateOf<String?>(null) }
   val submitting = remember { mutableStateOf(false) }
-  CloseWhenSupportGivesWay(modalManager)
+  CloseWhenSupportGivesWay(modalManager, unwindToDepth)
 
   // when the text is unchanged, the field's own value is kept: it carries the cursor position and the
   // keyboard's composition state, which BasicTextField loses unless they are passed back to it
