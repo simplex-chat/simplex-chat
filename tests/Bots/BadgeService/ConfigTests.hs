@@ -50,6 +50,10 @@ badgeConfigTests = describe "badge service config" $ do
   it "reads chat_redeem = on" testDevRedeemOn
   it "reads chat_redeem = off" testDevRedeemOff
   it "refuses a chat_redeem that is not on or off" testDevRedeemNotBoolean
+  it "verifies store receipts when the dev section is absent" testDevUnverifiedReceiptsAbsent
+  it "reads accept_unverified_store_receipts = on" testDevUnverifiedReceiptsOn
+  it "reads accept_unverified_store_receipts = off" testDevUnverifiedReceiptsOff
+  it "refuses an accept_unverified_store_receipts that is not on or off" testDevUnverifiedReceiptsNotBoolean
 
 fullIni :: T.Text
 fullIni =
@@ -364,6 +368,26 @@ testDevRedeemNotBoolean :: IO ()
 testDevRedeemNotBoolean = withDev "chat_redeem = true\n" $ \r -> case r of
   Left e -> e `shouldContain` "chat_redeem"
   Right _ -> expectationFailure "only on and off are accepted, so a typo cannot silently disarm the gate"
+
+testDevUnverifiedReceiptsAbsent :: IO ()
+testDevUnverifiedReceiptsAbsent = withIni fullIni $ \p -> do
+  Right cfg <- readServiceConfig p
+  devAcceptUnverifiedStoreReceipts cfg `shouldBe` False
+
+testDevUnverifiedReceiptsOn :: IO ()
+testDevUnverifiedReceiptsOn = withDev "accept_unverified_store_receipts = on\n" $ \r -> case r of
+  Right cfg -> devAcceptUnverifiedStoreReceipts cfg `shouldBe` True
+  Left e -> expectationFailure ("[dev] accept_unverified_store_receipts = on is legal: " <> e)
+
+testDevUnverifiedReceiptsOff :: IO ()
+testDevUnverifiedReceiptsOff = withDev "accept_unverified_store_receipts = off\n" $ \r -> case r of
+  Right cfg -> devAcceptUnverifiedStoreReceipts cfg `shouldBe` False
+  Left e -> expectationFailure ("[dev] accept_unverified_store_receipts = off is legal: " <> e)
+
+testDevUnverifiedReceiptsNotBoolean :: IO ()
+testDevUnverifiedReceiptsNotBoolean = withDev "accept_unverified_store_receipts = yes\n" $ \r -> case r of
+  Left e -> e `shouldContain` "accept_unverified_store_receipts"
+  Right _ -> expectationFailure "only on and off are accepted, so a typo cannot silently arm the mock"
 
 withDev :: T.Text -> (Either String ServiceConfig -> IO a) -> IO a
 withDev keys act = withIni (fullIni <> "[dev]\n" <> keys) $ \p -> readServiceConfig p >>= act

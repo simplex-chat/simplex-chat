@@ -33,6 +33,14 @@ enum BadgePeriod: String, CaseIterable, Identifiable {
         }
     }
 
+    var months: Int {
+        switch self {
+        case .oneMonth: 1
+        case .monthly: 1
+        case .annual: 12
+        }
+    }
+
     func priceText(_ price: BadgePrice) -> Text {
         switch price {
         case .loading: return Text(verbatim: "…")
@@ -64,10 +72,8 @@ struct BadgesHowLongView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject private var store = BadgeStore.shared
     let level: BadgeLevel
-    @State private var selectedPeriod: BadgePeriod = .monthly
-    @State private var purchasing = false
-    // presented from this view, not AlertManager: its host is behind the sheet these views open in
-    @State private var alert: SomeAlert?
+    @State private var selectedPeriod: BadgePeriod = badgePeriodsForSale.contains(.monthly) ? .monthly : .oneMonth
+    @State private var continueActive = false
 
     var body: some View {
         GeometryReader { g in
@@ -91,26 +97,19 @@ struct BadgesHowLongView: View {
 
                     Spacer(minLength: 20)
 
-                    // fixedSize + maxHeight on the cards so all three match the tallest one -
+                    // fixedSize + maxHeight on the cards so they all match the tallest one -
                     // only Annual carries a savings line, and prices wrap at large fonts
                     HStack(alignment: .top, spacing: 12) {
-                        periodCard(.oneMonth)
-                        periodCard(.monthly)
-                        periodCard(.annual)
+                        ForEach(BadgePeriod.allCases) { periodCard($0) }
                     }
                     .fixedSize(horizontal: false, vertical: true)
 
                     Spacer(minLength: 20)
 
                     VStack(spacing: 10) {
-                        payButton()
+                        continueButton()
                             .padding(.vertical, 10)
-                        Text(billingFooter)
-                            .font(.footnote)
-                            .foregroundColor(theme.colors.secondary)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(height: 22)
+                        BadgeBillingFooter(period: selectedPeriod)
                     }
                     .padding(.bottom, g.safeAreaInsets.bottom == 0 ? 20 : 0)
                 }
@@ -123,11 +122,11 @@ struct BadgesHowLongView: View {
         .frame(maxHeight: .infinity)
         .navigationBarTitleDisplayMode(.inline)
         .task { await store.load() }
-        .alert(item: $alert) { $0.alert }
     }
 
     private func periodCard(_ period: BadgePeriod) -> some View {
         let isSelected = period == selectedPeriod
+        let forSale = badgePeriodsForSale.contains(period)
         return Button {
             selectedPeriod = period
         } label: {
@@ -137,17 +136,18 @@ struct BadgesHowLongView: View {
                     .scaledToFit()
                     .frame(width: 32, height: 32)
                     .foregroundColor(isSelected ? theme.colors.primary : theme.colors.secondary)
+                    .opacity(forSale ? 1 : 0.4)
                 Text(period.label)
-                    .font(.title3)
-                    .fontWeight(.bold)
+                    .font(.subheadline)
                 period.priceText(store.price(level, period))
-                    .font(.body)
+                    .font(.headline)
                 if let percent = savingsPercent(period) {
-                    Text("Save \(percent)%")
+                    Text("\(percent)% off")
                         .font(.footnote)
                         .foregroundColor(isSelected ? theme.colors.primary : theme.colors.secondary)
                 }
             }
+            .foregroundColor(forSale ? nil : theme.colors.secondary)
             .multilineTextAlignment(.center)
             .padding(.vertical, 25)
             .padding(.horizontal, 12)
@@ -160,99 +160,53 @@ struct BadgesHowLongView: View {
             )
         }
         .buttonStyle(.plain)
+        .disabled(!forSale)
     }
 
     private func savingsPercent(_ period: BadgePeriod) -> Int? {
         period == .annual ? store.annualSavings(level) : nil
     }
 
-    private func payButton() -> some View {
-        let price = store.price(level, selectedPeriod)
-        let disabled = !price.canPurchase || purchasing
-        return Button {
-            purchase()
-        } label: {
-            selectedPeriod.payText(price)
-        }
-        .buttonStyle(OnboardingButtonStyle(isDisabled: disabled))
-        .disabled(disabled)
-    }
-
-    private func purchase() {
-        let period = selectedPeriod
-        let invoiceId = newBadgeInvoiceId()
-        purchasing = true
-        Task {
-            do {
-                let outcome = try await store.purchase(level, period, invoiceId: invoiceId)
-                await MainActor.run {
-                    purchasing = false
-                    switch outcome {
-                    case let .purchased(receipt): showPurchasedAlert(receipt, invoiceId)
-                    case .pending:
-                        alert = SomeAlert(
-                            alert: mkAlert(
-                                title: "Purchase pending",
-                                message: "The purchase is awaiting approval. This build does not deliver purchases approved later."
-                            ),
-                            id: "badgePurchasePending"
-                        )
-                    case .cancelled: break
-                    }
-                }
-            } catch let error {
-                logger.error("BadgesHowLongView.purchase: \(String(describing: error))")
-                await MainActor.run {
-                    purchasing = false
-                    alert = SomeAlert(
-                        alert: Alert(
-                            title: Text("Purchase error"),
-                            message: Text(verbatim: String(describing: error))
-                        ),
-                        id: "badgePurchaseError"
-                    )
-                }
+    private func continueButton() -> some View {
+        ZStack {
+            Button {
+                continueActive = true
+            } label: {
+                Text("Continue")
             }
+            .buttonStyle(OnboardingButtonStyle(isDisabled: false))
+
+            NavigationLink(isActive: $continueActive) {
+                BadgesCheckOrderView(level: level, period: selectedPeriod)
+                    .modifier(ThemedBackground(grouped: true))
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
         }
     }
+}
 
-    // TODO [badges] store integration diagnostics - replaced by the issued badge once the service lands.
-    private func showPurchasedAlert(_ receipt: BadgeStoreReceipt, _ invoiceId: UUID) {
-        let returnedInvoice: String
-        if let returned = receipt.invoiceId {
-            returnedInvoice = returned == invoiceId ? "yes" : "mismatch: \(returned.uuidString)"
-        } else {
-            returnedInvoice = "none"
-        }
-        var lines = [
-            "Product: \(receipt.productId)",
-            "Invoice: \(invoiceId.uuidString)",
-            "Invoice returned by Apple: \(returnedInvoice)",
-            "Transaction: \(receipt.transactionId)"
-        ]
-        if let environment = receipt.environment { lines.append("Environment: \(environment)") }
-        lines.append("Signature: \(receipt.signatureVerified ? "verified" : "unverified")")
-        lines.append("Token: \(receipt.jws.count) bytes")
-        let summary = lines.joined(separator: "\n")
-        // logged as well as shown: the alert races StoreKit's own sheets, the log always lands
-        logger.debug("badge purchase succeeded\n\(summary)")
-        alert = SomeAlert(
-            alert: Alert(
-                title: Text("Purchase successful"),
-                message: Text(verbatim: summary),
-                primaryButton: .default(Text(verbatim: "Copy token")) { UIPasteboard.general.string = receipt.jws },
-                secondaryButton: .cancel(Text("Ok"))
-            ),
-            id: "badgePurchased"
-        )
+struct BadgeBillingFooter: View {
+    @EnvironmentObject var theme: AppTheme
+    let period: BadgePeriod
+
+    var body: some View {
+        Text(billingFooter)
+            .font(.footnote)
+            .foregroundColor(theme.colors.secondary)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(height: 22)
     }
 
     private var billingFooter: LocalizedStringKey {
-        // TODO [badges] source the actual date from the purchase state machine when wired.
-        var comps = DateComponents(); comps.year = 2026; comps.month = 7; comps.day = 22
-        let stubDate = Calendar.current.date(from: comps) ?? Date()
-        let date = DateFormatter.localizedString(from: stubDate, dateStyle: .long, timeStyle: .none)
-        switch selectedPeriod {
+        // TODO [badges] from now only because a purchase is refused while a badge is held (refuseWhileBadgeHeld);
+        // a top-up must count from the end of the existing balance
+        let endDate = Calendar.current.date(byAdding: .month, value: period.months, to: Date()) ?? Date()
+        let date = DateFormatter.localizedString(from: endDate, dateStyle: .long, timeStyle: .none)
+        switch period {
         case .monthly, .annual: return "Renews on \(date). Cancel anytime."
         case .oneMonth: return "Ends on \(date)."
         }

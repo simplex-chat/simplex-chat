@@ -101,6 +101,7 @@ struct SimpleXApp: App {
                                             if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
                                                 await updateCallInvitations()
                                             }
+                                            Task { await BadgeStore.shared.presentUnfinished() }
                                             if let url = chatModel.appOpenUrlLater {
                                                 await MainActor.run {
                                                     chatModel.appOpenUrlLater = nil

@@ -5,6 +5,7 @@ import chat.simplex.common.views.badges.BadgeProduct
 import chat.simplex.common.views.badges.BadgePurchaseOutcome
 import chat.simplex.common.views.badges.BadgeStoreError
 import chat.simplex.common.views.badges.BadgeStoreProductId
+import chat.simplex.common.views.badges.BadgeStoreReceipt
 
 // Play Billing is only in the google flavor, so the Play country stays unknown here
 fun loadPlayStoreCountry() {}
@@ -22,3 +23,8 @@ suspend fun loadBadgeProducts(oneTimeIds: List<BadgeStoreProductId>, subscriptio
 @Suppress("UNUSED_PARAMETER")
 suspend fun purchaseBadge(id: BadgeStoreProductId, invoiceId: String): BadgePurchaseOutcome =
   throw BadgeStoreError.StoreUnavailable
+
+@Suppress("UNUSED_PARAMETER")
+suspend fun finishBadgePurchase(receipt: BadgeStoreReceipt) {}
+
+suspend fun unfinishedBadgePurchases(): List<BadgePurchaseOutcome> = emptyList()

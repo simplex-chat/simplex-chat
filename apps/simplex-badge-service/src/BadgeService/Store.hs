@@ -4,14 +4,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
 
 module BadgeService.Store
   ( IssuedCode (..),
-    CodeRedemption (..),
-    RedeemedCode (..),
+    FundingCredit (..),
+    CreditedPurchase (..),
     NewCodePurchase (..),
+    NewStorePurchase (..),
     ServicePurchase (..),
     getBadgeCode,
+    getStorePaymentCredit,
     purchaseKeyExists,
     getPurchaseByKey,
     getLedgerTip,
@@ -20,13 +23,14 @@ module BadgeService.Store
     getCurrentIssuance,
     appendLedgerPlan,
     createCodePurchase,
+    createStorePurchase,
     insertBadgeCode,
     RevokeResult (..),
     revokeCode,
   )
 where
 
-import BadgeService.Store.Invoices (executeChanging)
+import BadgeService.Store.Invoices (executeChanging, paymentStatusText)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -35,12 +39,14 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Badges (BadgeCredential, BadgeMasterKey (..), BadgeType)
 import Simplex.Chat.Badges.Ledger
-import Simplex.Chat.Badges.Service (StatementEntry (..))
+import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementEntry (..), StatementEntryType (..))
 import Simplex.Chat.Badges.Types (BadgeCodePaymentStatus, BadgePurchaseStatus (..))
+import Simplex.Chat.PaymentService.Types (CurrencyAmount (..), InvoiceId (..), PaymentProvider, PaymentStatus (..))
 import Simplex.Chat.Store.Shared (insertedRowId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (maybeFirstRow, maybeFirstRow')
 
 #if defined(dbPostgres)
@@ -58,15 +64,15 @@ data IssuedCode = IssuedCode
     paymentStatus :: BadgeCodePaymentStatus,
     revokedAt :: Maybe UTCTime,
     expiresAt :: Maybe UTCTime,
-    redemption :: CodeRedemption
+    redemption :: FundingCredit
   }
 
-data CodeRedemption
-  = CodeUnredeemed
-  | CodeRedeemed RedeemedCode
-  | CodeRedeemedUnreadable
+data FundingCredit
+  = Uncredited
+  | Credited CreditedPurchase
+  | CreditedUnreadable
 
-data RedeemedCode = RedeemedCode
+data CreditedPurchase = CreditedPurchase
   { badgePurchaseId :: Int64,
     purchaseKey :: C.PublicKeyEd25519,
     credential :: BadgeCredential
@@ -74,6 +80,16 @@ data RedeemedCode = RedeemedCode
 
 data NewCodePurchase = NewCodePurchase
   { badgeCodeId :: Int64,
+    purchaseKey :: C.PublicKeyEd25519,
+    masterKey :: BadgeMasterKey,
+    badgeType :: BadgeType
+  }
+
+data NewStorePurchase = NewStorePurchase
+  { paymentId :: Text,
+    provider :: PaymentProvider,
+    providerRef :: Text,
+    paid :: Maybe (CurrencyAmount, Text),
     purchaseKey :: C.PublicKeyEd25519,
     masterKey :: BadgeMasterKey,
     badgeType :: BadgeType
@@ -103,12 +119,31 @@ getBadgeCode db codeHash =
       (Only (Binary codeHash))
   where
     toCode (badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, purchaseId_, purchaseKey_, credential_) =
-      IssuedCode {badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, redemption = codeRedemption purchaseId_ purchaseKey_ credential_}
-    codeRedemption purchaseId_ purchaseKey_ credential_ = case (purchaseId_, purchaseKey_) of
-      (Just badgePurchaseId, Just purchaseKey) -> case decodeCredential =<< credential_ of
-        Just credential -> CodeRedeemed RedeemedCode {badgePurchaseId, purchaseKey, credential}
-        Nothing -> CodeRedeemedUnreadable
-      _ -> CodeUnredeemed
+      IssuedCode {badgeCodeId, badgeType, months, paymentStatus, revokedAt, expiresAt, redemption = fundingCredit purchaseId_ purchaseKey_ credential_}
+
+getStorePaymentCredit :: DB.Connection -> PaymentProvider -> Text -> IO FundingCredit
+getStorePaymentCredit db provider providerRef =
+  maybeFirstRow' Uncredited (\(purchaseId, purchaseKey, credential_) -> fundingCredit (Just purchaseId) (Just purchaseKey) credential_) $
+    DB.query
+      db
+      [sql|
+        SELECT p.badge_purchase_id, p.purchase_key, i.credential
+        FROM sx_badge_service_payments pay
+        JOIN sx_badge_service_badge_purchases p ON p.payment_id = pay.payment_id
+        LEFT JOIN sx_badge_service_badge_issuances i ON i.badge_purchase_id = p.badge_purchase_id
+        WHERE pay.provider = ? AND pay.provider_ref = ?
+        ORDER BY i.period_end DESC
+        LIMIT 1
+      |]
+      (textEncode provider, providerRef)
+
+fundingCredit :: Maybe Int64 -> Maybe C.PublicKeyEd25519 -> Maybe (Binary ByteString) -> FundingCredit
+fundingCredit purchaseId_ purchaseKey_ credential_ = case (purchaseId_, purchaseKey_) of
+  (Just badgePurchaseId, Just purchaseKey) -> case decodeCredential =<< credential_ of
+    Just credential -> Credited CreditedPurchase {badgePurchaseId, purchaseKey, credential}
+    Nothing -> CreditedUnreadable
+  _ -> Uncredited
+  where
     decodeCredential (Binary bs) = J.decodeStrict' bs
 
 purchaseKeyExists :: DB.Connection -> C.PublicKeyEd25519 -> IO Bool
@@ -137,11 +172,12 @@ getLedgerTip db purchaseId =
     DB.query
       db
       [sql|
-        SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
-               entry_type, entry_credit_type, entry_debit_type, service_created_at
-        FROM sx_badge_service_badge_ledger
-        WHERE badge_purchase_id = ?
-        ORDER BY entry_id DESC
+        SELECT l.entry_uuid, l.change_months, l.balance_months, l.balance_start_ts, l.balance_anchor_ts, l.balance_badge_type,
+               l.entry_type, l.entry_credit_type, l.entry_debit_type, l.service_created_at, l.payment_id, pay.invoice_id
+        FROM sx_badge_service_badge_ledger l
+        LEFT JOIN sx_badge_service_payments pay ON pay.payment_id = l.payment_id
+        WHERE l.badge_purchase_id = ?
+        ORDER BY l.entry_id DESC
         LIMIT 1
       |]
       (Only purchaseId)
@@ -161,18 +197,19 @@ getLedgerEntries db purchaseId afterEntryId =
     <$> DB.query
       db
       [sql|
-        SELECT entry_uuid, change_months, balance_months, balance_start_ts, balance_anchor_ts, balance_badge_type,
-               entry_type, entry_credit_type, entry_debit_type, service_created_at
-        FROM sx_badge_service_badge_ledger
-        WHERE badge_purchase_id = ? AND entry_id > ?
-        ORDER BY entry_id
+        SELECT l.entry_uuid, l.change_months, l.balance_months, l.balance_start_ts, l.balance_anchor_ts, l.balance_badge_type,
+               l.entry_type, l.entry_credit_type, l.entry_debit_type, l.service_created_at, l.payment_id, pay.invoice_id
+        FROM sx_badge_service_badge_ledger l
+        LEFT JOIN sx_badge_service_payments pay ON pay.payment_id = l.payment_id
+        WHERE l.badge_purchase_id = ? AND l.entry_id > ?
+        ORDER BY l.entry_id
       |]
       (purchaseId, afterEntryId)
 
-toEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType, Text, Maybe Text, Maybe Text, UTCTime) -> Maybe StatementEntry
-toEntry (entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, entryType_, credit_, debit_, createdAt) =
+toEntry :: (Text, Int, Int, UTCTime, UTCTime, BadgeType, Text, Maybe Text, Maybe Text, UTCTime) :. (Maybe Text, Maybe Text) -> Maybe StatementEntry
+toEntry ((entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, entryType_, credit_, debit_, createdAt) :. (paymentId_, invoiceId_)) =
   (\entryType -> StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, wasPausedSince = Nothing, createdAt, entryType})
-    <$> entryTypeFromColumns entryType_ credit_ debit_
+    <$> entryTypeFromColumns ((InvoiceId <$> invoiceId_) <$ paymentId_) entryType_ credit_ debit_
 
 getCurrentIssuance :: DB.Connection -> Int64 -> UTCTime -> IO (Maybe BadgeCredential)
 getCurrentIssuance db purchaseId now = do
@@ -190,9 +227,10 @@ getCurrentIssuance db purchaseId now = do
     [Only (Binary bs)] -> J.decodeStrict' bs
     _ -> Nothing
 
--- TODO write the reference columns (payment_id, charge_id, from_purchase_id, to_purchase_id) for entry types that carry one; only the tag is written today.
-appendLedgerPlan :: DB.Connection -> Int64 -> [StatementEntry] -> Maybe (StatementEntry, StatementEntry, BadgeCredential) -> IO ()
-appendLedgerPlan db purchaseId rows issuance_ = do
+-- | creditPaymentId_ names the payment behind a payment credit among the rows.
+-- TODO write the other reference columns (charge_id, from_purchase_id, to_purchase_id) for entry types that carry one; only the tag is written today.
+appendLedgerPlan :: DB.Connection -> Int64 -> Maybe Text -> [StatementEntry] -> Maybe (StatementEntry, StatementEntry, BadgeCredential) -> IO ()
+appendLedgerPlan db purchaseId creditPaymentId_ rows issuance_ = do
   mapM_ appendRow rows
   case issuance_ of
     Nothing -> pure ()
@@ -211,15 +249,18 @@ appendLedgerPlan db purchaseId rows issuance_ = do
   where
     appendRow StatementEntry {entryId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs, balanceBadgeType, createdAt, entryType} = do
       let (entryTypeT, creditType, debitType) = entryTypeColumns entryType
+          paymentId_ = case entryType of
+            SECredit SCPayment {} -> creditPaymentId_
+            _ -> Nothing
       DB.execute
         db
         [sql|
           INSERT INTO sx_badge_service_badge_ledger
             (entry_uuid, badge_purchase_id, change_months, balance_months, balance_start_ts, balance_anchor_ts,
-             balance_badge_type, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+             balance_badge_type, service_created_at, created_at, entry_type, entry_credit_type, entry_debit_type, payment_id)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((entryId, purchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, createdAt, createdAt, entryTypeT, creditType, debitType))
+        ((entryId, purchaseId, changeMonths, balanceMonths, balanceStartTs, balanceAnchorTs) :. (balanceBadgeType, createdAt, createdAt, entryTypeT, creditType, debitType, paymentId_))
       insertedRowId db
 
 -- redeemed_at is stamped here, so this must run in the same transaction as the credential rows.
@@ -243,6 +284,32 @@ createCodePurchase db NewCodePurchase {badgeCodeId, purchaseKey, masterKey = Bad
           VALUES (?,?,?,?,?,?,?,?)
         |]
         (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, badgeCodeId, now, now)
+      Just <$> insertedRowId db
+
+-- | In the transaction of the credential rows. The payment's unique (provider, provider_ref) is the
+-- claim: a transaction presented twice at once, or under another key, inserts nothing the second time.
+createStorePurchase :: DB.Connection -> NewStorePurchase -> UTCTime -> IO (Maybe Int64)
+createStorePurchase db NewStorePurchase {paymentId, provider, providerRef, paid, purchaseKey, masterKey = BadgeMasterKey mk, badgeType} now = do
+  claimed <-
+    executeChanging
+      db
+      [sql|
+        INSERT INTO sx_badge_service_payments (payment_id, provider, provider_ref, amount, currency, status, created_at, updated_at)
+        VALUES (?,?,?,?,?,?,?,?)
+        ON CONFLICT (provider, provider_ref) DO NOTHING
+      |]
+      (paymentId, textEncode provider, providerRef, (\(CurrencyAmount a) -> a) . fst <$> paid, snd <$> paid, paymentStatusText PSSettled, now, now)
+  if claimed == 0
+    then pure Nothing
+    else do
+      DB.execute
+        db
+        [sql|
+          INSERT INTO sx_badge_service_badge_purchases
+            (purchase_key, master_key, initial_badge_type, current_badge_type, status, payment_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?)
+        |]
+        (purchaseKey, Binary mk, badgeType, badgeType, PSIssued, paymentId, now, now)
       Just <$> insertedRowId db
 
 data RevokeResult = Revoked | AlreadyRevoked | AlreadyRedeemed | NoSuchCode

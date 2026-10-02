@@ -85,7 +85,8 @@ import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyM
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Badges (BadgeCredential, FileSizeLimits, LocalBadge)
 import Simplex.Chat.Badges.Service (BadgeServiceErrorCode, StatementEntry)
-import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeState (..))
+import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind, BadgeState (..), OpenStorePurchase (..))
+import Simplex.Chat.PaymentService (ServicePayment)
 import Simplex.Messaging.Crypto.BBS (BBSPublicKey)
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -659,6 +660,9 @@ data ChatCommand
   | UpdateProfileImageFromFile FilePath -- set profile image from a .png/.jpg/.jpeg file
   | AddBadge BadgeCredential -- attach an issued badge credential (testing; credential from `simplex-chat badge sign`)
   | APIRedeemBadgeCode {userId :: UserId, code :: Text} -- redeem a badge code with the configured badge service
+  | APIPurchaseBadge {userId :: UserId, echoedInvoiceId :: Maybe Text, payment :: ServicePayment} -- redeem an App Store or Google Play purchase; without an invoice id, as for one this install did not start, it is credited by transaction reference
+  | APICreateBadgeInvoice {userId :: UserId} -- the record of a store purchase, created before the store charges; answers the id the store echoes
+  | APICloseBadgeInvoice {userId :: UserId, invoiceId :: Text} -- a store purchase that came to nothing
   | APIGetBadgeState {userId :: UserId} -- the user's badges, their balances and any current alert
   | APIGetBadgeLedger {userId :: UserId, badgePurchaseId :: Int64} -- the purchase's ledger, oldest first
   -- episode is last because it is free text: it is the value that makes one occurrence of an
@@ -869,7 +873,8 @@ data ChatResponse
   | CRServiceResponse {user :: User, responseData :: J.Object}
   | CRServiceReplyAccepted {user :: User, connectionId :: AgentConnId}
   | CRBadgeRedeemed {user :: User, redeemedBadge :: LocalBadge, newBadge :: Bool, badgeState :: Maybe BadgeState}
-  | CRBadgeState {user :: User, badgeState :: Maybe BadgeState}
+  | CRBadgeInvoice {user :: User, invoiceId :: Text}
+  | CRBadgeState {user :: User, badgeState :: Maybe BadgeState, storePurchases :: [OpenStorePurchase]}
   | CRBadgeLedger {user :: User, badgeLedger :: [StatementEntry]}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool, msgSigned :: Bool}
@@ -1479,8 +1484,10 @@ data SimplexDomainError
   | SDEUnknownDomain -- the resolved link's profile has no name, or a different name
   deriving (Eq, Show)
 
+-- | Why acquiring a badge failed, for a code and for a store purchase alike.
 data BadgeRedeemError
   = BREInvalidCode -- format or check character
+  | BREInvalidReceipt -- names no transaction, or is not a store payment
   | BREServiceNotConfigured
   | BREBadgeActive
   | BREServiceError {serviceError :: BadgeServiceErrorCode}

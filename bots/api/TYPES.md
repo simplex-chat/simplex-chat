@@ -441,6 +441,9 @@ Remote controller app version range (min and max as version strings).
 InvalidCode:
 - type: "invalidCode"
 
+InvalidReceipt:
+- type: "invalidReceipt"
+
 ServiceNotConfigured:
 - type: "serviceNotConfigured"
 
@@ -477,6 +480,7 @@ CredentialNotVerified:
 - "payment_not_entitled"
 - "payment_pending"
 - "provider_unavailable"
+- "provider_not_configured"
 - "rate_limited"
 - "code_invalid"
 - "code_used"

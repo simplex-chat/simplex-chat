@@ -17,7 +17,8 @@ badgeServiceSchemaMigrations = sortOn name $ map migration schemaMigrations
 
 schemaMigrations :: [(String, Text, Maybe Text)]
 schemaMigrations =
-  [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema)
+  [ ("20260915_badge_service_schema", m20260915_badge_service_schema, Just down_m20260915_badge_service_schema),
+    ("20260925_badge_store_receipts", m20260925_badge_store_receipts, Just down_m20260925_badge_store_receipts)
   ]
 
 -- | The client tables share this database, so the service tables are the same names behind a prefix.
@@ -107,6 +108,44 @@ DROP INDEX @idx_badge_purchases_code;
       servicePrefix
       [r|
 DROP TABLE @badge_codes;
+|]
+
+m20260925_badge_store_receipts :: Text
+m20260925_badge_store_receipts =
+  withPrefix
+    servicePrefix
+    -- The unique provider_ref is what makes one store transaction fund one purchase: presented twice
+    -- at once, or under two keys, only one insert of its payment succeeds.
+    [r|
+DROP INDEX @idx_payments_provider_ref;
+
+CREATE UNIQUE INDEX @idx_payments_provider_ref ON @payments(provider, provider_ref);
+
+ALTER TABLE @badge_purchases ADD COLUMN payment_id TEXT REFERENCES @payments;
+
+CREATE UNIQUE INDEX @idx_badge_purchases_payment ON @badge_purchases(payment_id);
+
+ALTER TABLE @badge_ledger ADD COLUMN payment_id TEXT REFERENCES @payments;
+
+CREATE INDEX @idx_badge_ledger_payment ON @badge_ledger(payment_id);
+|]
+
+down_m20260925_badge_store_receipts :: Text
+down_m20260925_badge_store_receipts =
+  withPrefix
+    servicePrefix
+    [r|
+DROP INDEX @idx_badge_ledger_payment;
+
+ALTER TABLE @badge_ledger DROP COLUMN payment_id;
+
+DROP INDEX @idx_badge_purchases_payment;
+
+ALTER TABLE @badge_purchases DROP COLUMN payment_id;
+
+DROP INDEX @idx_payments_provider_ref;
+
+CREATE INDEX @idx_payments_provider_ref ON @payments(provider, provider_ref);
 |]
 
 {- TODO [badges] deferred with the draft in M20260915_user_badges, service only.

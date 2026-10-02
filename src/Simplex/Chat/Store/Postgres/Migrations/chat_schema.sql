@@ -279,13 +279,40 @@ CREATE TABLE test_chat_schema.badge_purchases (
     issue_failed_since timestamp with time zone,
     issue_error_at timestamp with time zone,
     issue_error text,
-    next_wake_at timestamp with time zone
+    next_wake_at timestamp with time zone,
+    badge_store_receipt_id bigint
 );
 
 
 
 ALTER TABLE test_chat_schema.badge_purchases ALTER COLUMN badge_purchase_id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME test_chat_schema.badge_purchases_badge_purchase_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE test_chat_schema.badge_store_receipts (
+    badge_store_receipt_id bigint NOT NULL,
+    user_id bigint NOT NULL,
+    invoice_id text,
+    provider text,
+    transaction_ref text,
+    purchase_key bytea NOT NULL,
+    purchase_priv_key bytea NOT NULL,
+    master_key bytea NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    closed_at timestamp with time zone
+);
+
+
+
+ALTER TABLE test_chat_schema.badge_store_receipts ALTER COLUMN badge_store_receipt_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.badge_store_receipts_badge_store_receipt_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -1793,6 +1820,21 @@ ALTER TABLE ONLY test_chat_schema.badge_purchases
 
 
 
+ALTER TABLE ONLY test_chat_schema.badge_store_receipts
+    ADD CONSTRAINT badge_store_receipts_invoice_id_key UNIQUE (invoice_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.badge_store_receipts
+    ADD CONSTRAINT badge_store_receipts_pkey PRIMARY KEY (badge_store_receipt_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.badge_store_receipts
+    ADD CONSTRAINT badge_store_receipts_provider_transaction_ref_key UNIQUE (provider, transaction_ref);
+
+
+
 ALTER TABLE ONLY test_chat_schema.calls
     ADD CONSTRAINT calls_pkey PRIMARY KEY (call_id);
 
@@ -2192,7 +2234,15 @@ CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON test_chat_schema.badg
 
 
 
+CREATE UNIQUE INDEX idx_badge_purchases_store_receipt ON test_chat_schema.badge_purchases USING btree (badge_store_receipt_id);
+
+
+
 CREATE INDEX idx_badge_purchases_user ON test_chat_schema.badge_purchases USING btree (user_id);
+
+
+
+CREATE INDEX idx_badge_store_receipts_user ON test_chat_schema.badge_store_receipts USING btree (user_id);
 
 
 
@@ -2995,7 +3045,17 @@ ALTER TABLE ONLY test_chat_schema.badge_purchases
 
 
 ALTER TABLE ONLY test_chat_schema.badge_purchases
+    ADD CONSTRAINT badge_purchases_badge_store_receipt_id_fkey FOREIGN KEY (badge_store_receipt_id) REFERENCES test_chat_schema.badge_store_receipts(badge_store_receipt_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.badge_purchases
     ADD CONSTRAINT badge_purchases_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.badge_store_receipts
+    ADD CONSTRAINT badge_store_receipts_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
 
 
 

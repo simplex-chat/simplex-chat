@@ -30,7 +30,7 @@ where
 import BadgeService.Config (PollConfig (..))
 import BadgeService.Orders (decide, settleOrder)
 import BadgeService.Providers (ListPass (..), PaymentSignal (..), Provider (..), ProviderError (..), Received (..), expiresItself, settleWindow)
-import BadgeService.Store.Invoices (InvoiceRow (..), OverdueInvoice (..), expireOverdue, getInvoiceByProviderRef, overdueInvoices, providerText, unpaidRefs)
+import BadgeService.Store.Invoices (InvoiceRow (..), OverdueInvoice (..), expireOverdue, getInvoiceByProviderRef, overdueInvoices, unpaidRefs)
 import BadgeService.Waiters (Waiters, publish, waitingCount, waitingCountSTM)
 import Control.Concurrent.STM
 import Control.Exception (SomeAsyncException, SomeException, fromException, throwIO, try)
@@ -47,6 +47,7 @@ import Data.Time.Clock (NominalDiffTime, UTCTime, addUTCTime, diffUTCTime, getCu
 import Numeric.Natural (Natural)
 import Simplex.Chat.PaymentService.Types (InvoiceStatus (..), PaymentProvider)
 import Simplex.Messaging.Agent.Store.Common (DBStore)
+import Simplex.Messaging.Encoding.String (textEncode)
 import Simplex.Messaging.Util (tshow)
 
 -- | Allows for our clock running ahead of the provider's; an expired invoice can still be marked paid.
@@ -145,7 +146,7 @@ readsPerPass = 25
 
 coveringProvider :: PollerEnv -> UTCTime -> (Text, Text) -> IO (Maybe Provider)
 coveringProvider env@PollerEnv {peProviders} now (provider, ref) =
-  case find ((== provider) . providerText . pProvider) peProviders of
+  case find ((== provider) . textEncode . pProvider) peProviders of
     Just p -> pure (Just p)
     Nothing -> do
       due <- dueToWarn env now ("no provider for " <> provider)

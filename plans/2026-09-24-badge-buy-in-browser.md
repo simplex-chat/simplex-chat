@@ -80,7 +80,7 @@ Getting the URL to an app that is already running is the part that half exists. 
 
 The browser lane needs nothing. The store lane needs `purchaseBadge` to accept a store receipt and verify it — Apple's JWS offline, Google's token through the Publisher API, per `docs/protocol/badges-rpc.md`. No provider adapter for either exists today.
 
-Two properties matter more than the plumbing. It must be idempotent per signing key, since the app will retry. And an unknown or invalid token must be a plain refusal, not a retryable error — Android has no local verification, so tampered clients will send junk tokens as a matter of course, and a retryable answer would leave the worker grinding on one that can never become valid.
+Two properties matter more than the plumbing. It must be idempotent per signing key, since the app will retry. And only a store's verdict about a purchase may be a plain refusal: the client consumes a purchase answered `receipt_invalid`, so a store that has merely not answered — or that does not yet know a token it has just issued — must be answered retryably, or a paid badge is thrown away. Junk tokens from tampered clients are the cheap side of that trade: each costs one request per client trigger, nothing loops on the service, and Play refunds an unacknowledged purchase after three days. `docs/protocol/badges-rpc.md` has the classes.
 
 `badges-rpc.md` also specifies `getBadgeCatalog` and `getBadgeInvoice`. Neither is needed by anything here and neither should be built: the page owns the catalog and the invoice.
 
