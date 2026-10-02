@@ -28,6 +28,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.badges.BadgeStore
+import chat.simplex.common.views.badges.BadgeStoreError
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.item.contentModerationPostLink
 import chat.simplex.common.views.chat.item.showContentBlockedAlert
