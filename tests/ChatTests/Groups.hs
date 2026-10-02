@@ -38,7 +38,7 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Messages.Batch (encodeBinaryBatch, encodeFwdElement)
 import Simplex.Chat.Messages.CIContent (publicGroupNoE2EText)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XMsgUpdate, XMsgNew, XMsgDel), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), mcSimple, msgContentText)
+import Simplex.Chat.Protocol (ChatMessage (ChatMessage), ChatMsgEvent (XGrpMemNew, XGrpMsgForward, XMsgUpdate, XMsgNew, XMsgDel), EncodedChatMessage (..), FwdSender (FwdMember, FwdChannel), GrpMsgForward (GrpMsgForward), MsgContainer (..), MsgMention (..), MsgContent (..), VerifiedMsg (VMUnsigned), encodeChatMessage, maxEncodedMsgLength, mcSimple, msgContentText)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), getRelation, setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
@@ -189,6 +189,7 @@ chatGroupTests = do
     it "forward member removal (x.grp.mem.del)" testGroupMsgForwardMemberRemoval
     it "forward admin removal (x.grp.mem.del, relay forwards it was removed)" testGroupMsgForwardAdminRemoval
     it "forward group deletion (x.grp.del)" testGroupMsgForwardGroupDeletion
+    it "reject forwarded messages from member without forwarding role (x.grp.msg.forward)" testGroupMsgForwardFromMemberRejected
   describe "group history" $ do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
@@ -5866,6 +5867,30 @@ testGroupMsgForwardGroupDeletion =
       bob <## "to create: /g <name>"
       cath ##> "/groups"
       cath <## "#team (group deleted, delete local copy: /d #team)"
+
+testGroupMsgForwardFromMemberRejected :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardFromMemberRejected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
+      aliceMemId <- memberIdByName cath "alice"
+      connId <- relayConnIdToMember cath "bob"
+      ts <- getCurrentTime
+      let ChatController {smpAgent = cathAgent} = chatController cath
+          fwd = GrpMsgForward (FwdMember aliceMemId "alice") ts
+          forgedMsg text = ChatMessage chatInitialVRange Nothing (XMsgNew $ mcSimple (MCText text))
+          sendBody body = do
+            sent <- runExceptT $ sendMessages cathAgent [(connId, PQEncOff, MsgFlags False, vrValue body)]
+            either (fail . show) (const $ pure ()) sent
+      sendBody $ encodeBinaryBatch [encodeFwdElement fwd (VMUnsigned $ forgedMsg "forged element")]
+      bob <## "error: x.grp.msg.forward: forwarding member is not a relay"
+      case encodeChatMessage maxEncodedMsgLength (ChatMessage chatInitialVRange Nothing (XGrpMsgForward fwd $ forgedMsg "forged event")) of
+        ECMEncoded body -> sendBody body
+        ECMLarge -> fail "x.grp.msg.forward exceeds maximum message size"
+      bob <## "error: x.grp.msg.forward: forwarding member is not a relay"
+      bob #$> ("/_get chat #1 count=100 search=forged", chat, [])
+      cath #> "#team hello"
+      [alice, bob] *<# "#team cath> hello"
 
 testGroupHistory :: HasCallStack => TestParams -> IO ()
 testGroupHistory =

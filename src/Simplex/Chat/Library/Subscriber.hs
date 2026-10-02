@@ -1029,8 +1029,9 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               case fwd_ of
                 Just fwd | SJson <- enc -> do
                   logInfo $ "group fwd=" <> tshow tag <> " " <> eInfo
-                  xGrpMsgForward (GIK gInfo' gks) scopeInfo m' fwd parsedMsg brokerTs
-                    `catchAllErrors` \e -> eToView e
+                  withGrpFwdRelay gInfo' m' $
+                    xGrpMsgForward (GIK gInfo' gks) scopeInfo m' fwd parsedMsg brokerTs
+                      `catchAllErrors` \e -> eToView e
                   pure newDeliveryTasks
                 -- direct JSON and binary messages; binary events don't produce delivery tasks
                 _ -> do
@@ -1105,7 +1106,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               XGrpRosterRequest reqVer -> Nothing <$ xGrpRosterRequest (GIK gInfo' gks) m'' reqVer
               -- TODO [knocking] why don't we forward these messages?
               XGrpDirectInv connReq mContent_ msgScope -> memberCanSend (Just m'') msgScope $ Nothing <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
-              XGrpMsgForward fwd msg' -> Nothing <$ xGrpMsgForward (GIK gInfo' gks) Nothing m'' fwd (ParsedMsg Nothing Nothing msg') brokerTs
+              XGrpMsgForward fwd msg' -> Nothing <$ withGrpFwdRelay gInfo' m'' (xGrpMsgForward (GIK gInfo' gks) Nothing m'' fwd (ParsedMsg Nothing Nothing msg') brokerTs)
               XInfoProbe probe -> Nothing <$ xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> Nothing <$ xInfoProbeCheck (COMGroupMember m'') probeHash
               XInfoProbeOk probe -> Nothing <$ xInfoProbeOk (COMGroupMember m'') probe
@@ -3758,6 +3759,11 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       | useRelays' gInfo = isRelay m
       | otherwise = memberRole' m >= GRAdmin
 
+    withGrpFwdRelay :: GroupInfo -> GroupMember -> CM () -> CM ()
+    withGrpFwdRelay gInfo m action
+      | isMemberGrpFwdRelay gInfo m = action
+      | otherwise = messageError "x.grp.msg.forward: forwarding member is not a relay"
+
     unknownMemberRole :: GroupInfo -> CM GroupMemberRole
     unknownMemberRole gInfo
       | useRelays' gInfo = asks $ channelSubscriberRole . config
@@ -3928,8 +3934,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     xGrpMsgForward :: GroupInfoKeys -> Maybe GroupChatScopeInfo -> GroupMember -> GrpMsgForward -> ParsedMsg 'Json -> UTCTime -> CM ()
-    xGrpMsgForward g@(GIK gInfo _) scopeInfo m@GroupMember {localDisplayName} GrpMsgForward {fwdSender, fwdBrokerTs = msgTs} parsedMsg@(ParsedMsg _ _ chatMsg@ChatMessage {chatMsgEvent}) brokerTs = do
-      unless (isMemberGrpFwdRelay gInfo m) $ throwChatError (CEGroupContactRole localDisplayName)
+    xGrpMsgForward g@(GIK gInfo _) scopeInfo m GrpMsgForward {fwdSender, fwdBrokerTs = msgTs} parsedMsg@(ParsedMsg _ _ chatMsg@ChatMessage {chatMsgEvent}) brokerTs =
       case fwdSender of
         FwdMember memberId memberName -> do
           unknownRole <- unknownMemberRole gInfo
