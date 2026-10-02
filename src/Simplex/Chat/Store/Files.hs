@@ -53,8 +53,7 @@ module Simplex.Chat.Store.Files
     appendRcvFD,
     getRcvFileDescrByRcvFileId,
     getForwardedRcvFilesWithoutDescr,
-    fwdFileUnavailableError,
-    setFwdRcvFileUnavailable,
+    setGroupMsgReceivedDirectly,
     getRcvFileDescrBySndFileId,
     updateRcvFileAgentId,
     getRcvFileTransferById,
@@ -669,18 +668,20 @@ getForwardedRcvFilesWithoutDescr db User {userId} GroupMember {groupId, groupMem
           AND f.protocol = ? AND COALESCE(f.cancelled, 0) = 0 AND r.file_status IN (?,?)
           AND i.forwarded_by_group_member_id IS NOT NULL
           AND (d.file_descr_id IS NULL OR d.file_descr_part_no = 0)
+          AND EXISTS (
+            SELECT 1 FROM messages m
+            WHERE m.group_id = f.group_id AND m.shared_msg_id = i.shared_msg_id
+              AND m.forwarded_by_group_member_id IS NOT NULL
+          )
       |]
       (userId, groupId, groupMemberId, FPXFTP, FSNew, FSAccepted)
 
-fwdFileUnavailableError :: FileError
-fwdFileUnavailableError = FileErrOther "file was sent before you connected to the sender"
-
--- to_receive is reset so that the file is not accepted again by startReceiveUserFiles
-setFwdRcvFileUnavailable :: DB.Connection -> User -> FileTransferId -> IO ()
-setFwdRcvFileUnavailable db user fileId = do
-  updateCIFileStatus db user fileId (CIFSRcvError fwdFileUnavailableError)
-  currentTs <- getCurrentTime
-  DB.execute db "UPDATE rcv_files SET to_receive = NULL, updated_at = ? WHERE file_id = ?" (currentTs, fileId)
+setGroupMsgReceivedDirectly :: DB.Connection -> GroupId -> GroupMemberId -> SharedMsgId -> IO ()
+setGroupMsgReceivedDirectly db groupId authorGroupMemberId sharedMsgId =
+  DB.execute
+    db
+    "UPDATE messages SET forwarded_by_group_member_id = NULL WHERE group_id = ? AND shared_msg_id = ? AND author_group_member_id = ?"
+    (groupId, sharedMsgId, authorGroupMemberId)
 
 getRcvFileDescrBySndFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO RcvFileDescr
 getRcvFileDescrBySndFileId db fileId = do
