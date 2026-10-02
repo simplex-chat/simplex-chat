@@ -3,6 +3,7 @@ package chat.simplex.common.platform
 import android.annotation.SuppressLint
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyInfo
 import android.security.keystore.KeyProperties
 import android.security.keystore.StrongBoxUnavailableException
 import chat.simplex.common.views.helpers.AlertManager
@@ -68,6 +69,23 @@ internal class Cryptor: CryptorInterface {
   override fun deleteKey(alias: String) {
     if (!keyStore.containsAlias(alias)) return
     keyStore.deleteEntry(alias)
+  }
+
+  override fun keyStorage(alias: String): KeyStorage? {
+    val secretKey = getSecretKey(alias) ?: return null
+    val keyInfo = SecretKeyFactory.getInstance(secretKey.algorithm, "AndroidKeyStore").getKeySpec(secretKey, KeyInfo::class.java) as KeyInfo
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      when (keyInfo.securityLevel) {
+        KeyProperties.SECURITY_LEVEL_STRONGBOX -> KeyStorage.StrongBox
+        KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT -> KeyStorage.TrustedEnvironment
+        KeyProperties.SECURITY_LEVEL_SOFTWARE -> KeyStorage.Software
+        else -> null
+      }
+    } else {
+      // isInsideSecureHardware does not distinguish StrongBox, which createSecretKey only requests on API 31+
+      @Suppress("DEPRECATION")
+      if (keyInfo.isInsideSecureHardware) KeyStorage.TrustedEnvironment else KeyStorage.Software
+    }
   }
 
   private fun createSecretKey(alias: String): SecretKey? {

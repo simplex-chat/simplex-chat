@@ -38,6 +38,8 @@ object DatabaseUtils {
       passphrase.set(null)
       initVector.set(null)
     }
+
+    fun storage(): KeyStorage? = cryptor.keyStorage(alias)
   }
 
   fun hasAtLeastOneDatabase(rootDir: String): Boolean =
