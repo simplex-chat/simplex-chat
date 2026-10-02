@@ -474,12 +474,13 @@ suspend fun encryptDatabase(
         if (migration) {
           appPreferences.storeDBPassphrase.set(useKeychain.value)
         }
-        resetFormAfterEncryption(m, initialRandomDBPassphrase, currentKey, newKey, confirmNewKey, storedKey, useKeychain.value)
         if (useKeychain.value) {
           DatabaseUtils.ksDatabasePassword.set(new)
         } else {
           removePassphraseFromKeyChain(useKeychain, storedKey, migration)
         }
+        // DatabaseEncryptionView reads key storage when storedKey changes, so storedKey is updated after the key is saved
+        resetFormAfterEncryption(m, initialRandomDBPassphrase, currentKey, newKey, confirmNewKey, storedKey, useKeychain.value)
         operationEnded(m, progressIndicator) {
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.database_encrypted))
         }
