@@ -917,8 +917,11 @@ public func badgeServiceErrorText(_ code: BadgeServiceErrorCode) -> String? {
     case .internalError: NSLocalizedString("The badge service reported an internal error.", comment: "alert message")
     case .receiptInvalid: NSLocalizedString("The store did not confirm this purchase.", comment: "alert message")
     case .receiptUsed: NSLocalizedString("This purchase was already credited to a badge on another device or profile.", comment: "alert message")
-    case .badRequest, .unknownOfferId, .offerDisabled, .offerMismatch, .productUnavailable,
-         .paymentNotEntitled, .paymentPending, .providerUnavailable, .providerNotConfigured, .unknown: nil
+    case .paymentPending: NSLocalizedString("The payment has not been confirmed yet.", comment: "alert message")
+    case .providerUnavailable: NSLocalizedString("The store could not be reached.", comment: "alert message")
+    case .providerNotConfigured: NSLocalizedString("Badges cannot be bought in the app yet.", comment: "alert message")
+    case .productUnavailable: NSLocalizedString("This badge is not on sale.", comment: "alert message")
+    case .badRequest, .unknownOfferId, .offerDisabled, .offerMismatch, .paymentNotEntitled, .unknown: nil
     }
 }
 

@@ -259,7 +259,7 @@ final class BadgeStore: ObservableObject {
             let refused = badgeReceiptRefused(error)
             if refused { await finish(receipt) }
             let text = redeemErrorText(error, purchase: true)
-            alertText = refused ? text : text + "\n\n" + NSLocalizedString("The purchase will be retried, and the badge will arrive.", comment: "alert message")
+            alertText = refused || retryCannotCredit(error) ? text : text + "\n\n" + NSLocalizedString("The purchase will be retried, and the badge will arrive.", comment: "alert message")
         }
         await loadCurrentBadgeState()
         let userWaiting = await MainActor.run { presenting.removeValue(forKey: receipt.transactionId) == true }
@@ -392,4 +392,13 @@ private func badgeReceiptRefused(_ error: Error) -> Bool {
         return code == .receiptInvalid || code == .receiptUsed
     }
     return false
+}
+
+private func retryCannotCredit(_ error: Error) -> Bool {
+    guard case let .error(.badgeRedeemError(e)) = error as? ChatError else { return false }
+    switch e {
+    case .badgeActive, .serviceNotConfigured: return true
+    case let .serviceError(code): return code == .providerNotConfigured || code == .productUnavailable
+    default: return false
+    }
 }

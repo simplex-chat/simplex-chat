@@ -789,6 +789,7 @@ object ChatController {
     chatModel.users.clear()
     chatModel.users.addAll(users)
     getUserChatData(rhId, keepingChatId = keepingChatId)
+    withLongRunningApi { BadgeStore.presentUnfinished() }
     val invitation = chatModel.callInvitations.values.firstOrNull { inv -> inv.user.userId == toUserId }
     if (invitation != null && currentUser != null) {
       chatModel.callManager.reportNewIncomingCall(invitation.copy(user = currentUser))
@@ -7468,6 +7469,10 @@ fun badgeServiceErrorText(code: BadgeServiceErrorCode): String? = when (code) {
   is BadgeServiceErrorCode.Internal -> generalGetString(MR.strings.badges_error_service_internal)
   is BadgeServiceErrorCode.ReceiptInvalid -> generalGetString(MR.strings.badges_error_receipt_invalid)
   is BadgeServiceErrorCode.ReceiptUsed -> generalGetString(MR.strings.badges_error_receipt_used)
+  is BadgeServiceErrorCode.PaymentPending -> generalGetString(MR.strings.badges_error_payment_pending)
+  is BadgeServiceErrorCode.ProviderUnavailable -> generalGetString(MR.strings.badges_error_provider_unavailable)
+  is BadgeServiceErrorCode.ProviderNotConfigured -> generalGetString(MR.strings.badges_error_provider_not_configured)
+  is BadgeServiceErrorCode.ProductUnavailable -> generalGetString(MR.strings.badges_error_product_unavailable)
   else -> null
 }
 

@@ -2425,6 +2425,7 @@ private func changeActiveUser_(_ userId: Int64, viewPwd: String?) throws {
     m.currentUser = try apiSetActiveUser(userId, viewPwd: viewPwd)
     m.users = try listUsers()
     try getUserChatData()
+    Task { await BadgeStore.shared.presentUnfinished() }
 }
 
 func changeActiveUserAsync_(_ userId: Int64?, viewPwd: String?, keepingChatId: String? = nil) async throws {
@@ -2440,6 +2441,7 @@ func changeActiveUserAsync_(_ userId: Int64?, viewPwd: String?, keepingChatId: S
         m.users = users
     }
     try await getUserChatDataAsync(keepingChatId: keepingChatId)
+    Task { await BadgeStore.shared.presentUnfinished() }
     await MainActor.run {
         if let currentUser = currentUser, var (_, invitation) = ChatModel.shared.callInvitations.first(where: { _, inv in inv.user.userId == userId }) {
             invitation.user = currentUser

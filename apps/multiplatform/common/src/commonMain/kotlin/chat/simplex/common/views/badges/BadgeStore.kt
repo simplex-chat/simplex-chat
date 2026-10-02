@@ -9,6 +9,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -299,10 +300,14 @@ object BadgeStore {
           val refused = badgeReceiptRefused(r.err)
           if (refused) finish(receipt)
           val text = chatModel.controller.redeemErrorText(r.err, purchase = true)
-          alertText = if (refused) text else text + "\n\n" + generalGetString(MR.strings.badges_purchase_will_retry)
+          alertText = if (refused || retryCannotCredit(r.err)) text else text + "\n\n" + generalGetString(MR.strings.badges_purchase_will_retry)
         }
         null -> {}
       }
+    } catch (e: Exception) {
+      if (e is CancellationException) throw e
+      Log.e(TAG, "BadgeStore.presentPurchase: ${e.stackTraceToString()}")
+      alertText = "${generalGetString(MR.strings.error_prefix)}: ${e.message ?: e}" + "\n\n" + generalGetString(MR.strings.badges_purchase_will_retry)
     } finally {
       withContext(NonCancellable) { chatModel.controller.loadBadgeState(chatModel.remoteHostId()) }
       userWaiting = withContext(Dispatchers.Main + NonCancellable) { presenting.remove(receipt.token) == true }
@@ -419,3 +424,10 @@ private fun badgeReceiptRefused(err: ChatError?): Boolean {
   val code = (redeemError as? BadgeRedeemError.ServiceError)?.serviceError
   return code is BadgeServiceErrorCode.ReceiptInvalid || code is BadgeServiceErrorCode.ReceiptUsed
 }
+
+private fun retryCannotCredit(err: ChatError?): Boolean =
+  when (val e = ((err as? ChatError.ChatErrorChat)?.errorType as? ChatErrorType.CEBadgeRedeemError)?.badgeRedeemError) {
+    is BadgeRedeemError.BadgeActive, is BadgeRedeemError.ServiceNotConfigured -> true
+    is BadgeRedeemError.ServiceError -> e.serviceError is BadgeServiceErrorCode.ProviderNotConfigured || e.serviceError is BadgeServiceErrorCode.ProductUnavailable
+    else -> false
+  }
