@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,10 +19,21 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingActionButton
 import chat.simplex.res.MR
+import kotlinx.coroutines.delay
 
 @Composable
 fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: ModalManager) {
   val purchasing = remember { mutableStateOf(false) }
+  var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+
+  LaunchedEffect(purchasing.value) {
+    progressByTimeout = if (purchasing.value) {
+      delay(1000)
+      purchasing.value
+    } else {
+      false
+    }
+  }
 
   LaunchedEffect(Unit) { BadgeStore.load() }
   CloseWhenSupportGivesWay(modalManager)
@@ -63,12 +75,11 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
     }
   }
 
-  if (BadgeStore.purchaseState(chatModel.currentUser.value?.userId) == BadgePurchaseState.Issuing) {
+  if (progressByTimeout) {
     Box(
       Modifier.fillMaxSize(),
       contentAlignment = Alignment.Center
     ) {
-      Surface(Modifier.size(50.dp), color = MaterialTheme.colors.background.copy(0.9f), contentColor = LocalContentColor.current, shape = RoundedCornerShape(50)){}
       CircularProgressIndicator(
         Modifier
           .padding(horizontal = 2.dp)

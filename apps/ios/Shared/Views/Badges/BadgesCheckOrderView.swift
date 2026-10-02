@@ -16,6 +16,7 @@ struct BadgesCheckOrderView: View {
     let level: BadgeLevel
     let period: BadgePeriod
     @State private var purchasing = false
+    @State private var progressByTimeout = false
     // presented from this view, not AlertManager: its host is behind the sheet these views open in
     @State private var alert: SomeAlert?
 
@@ -60,14 +61,17 @@ struct BadgesCheckOrderView: View {
             }
         }
         .overlay {
-            if store.purchaseState(chatModel.currentUser?.userId) == .issuing {
-                ZStack {
-                    Circle()
-                        .fill(.white)
-                        .opacity(0.7)
-                        .frame(width: 56, height: 56)
-                    ProgressView().scaleEffect(2)
+            if progressByTimeout {
+                ProgressView().scaleEffect(2)
+            }
+        }
+        .onChange(of: purchasing) { _ in
+            if purchasing {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    progressByTimeout = purchasing
                 }
+            } else {
+                progressByTimeout = false
             }
         }
         .frame(maxHeight: .infinity)
