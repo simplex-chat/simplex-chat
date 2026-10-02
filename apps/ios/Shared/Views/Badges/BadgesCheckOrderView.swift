@@ -60,7 +60,7 @@ struct BadgesCheckOrderView: View {
             }
         }
         .overlay {
-            if purchasing {
+            if store.purchaseState(chatModel.currentUser?.userId) == .issuing {
                 ZStack {
                     Circle()
                         .fill(.white)

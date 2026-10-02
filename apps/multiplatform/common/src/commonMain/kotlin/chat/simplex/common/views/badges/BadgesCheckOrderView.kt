@@ -63,7 +63,7 @@ fun BadgesCheckOrderView(level: BadgeLevel, period: BadgePeriod, modalManager: M
     }
   }
 
-  if (purchasing.value) {
+  if (BadgeStore.purchaseState(chatModel.currentUser.value?.userId) == BadgePurchaseState.Issuing) {
     Box(
       Modifier.fillMaxSize(),
       contentAlignment = Alignment.Center

@@ -78,7 +78,7 @@ struct BadgesChooseBadgeView: View {
                     BadgeUserPreview(level: selectedLevel)
                         .padding(.top, 4)
 
-                    Spacer(minLength: 20)
+                    Spacer(minLength: 12)
 
                     // fixedSize + maxHeight on the cards so both match the taller one when a
                     // store price wraps in one of them
@@ -88,7 +88,7 @@ struct BadgesChooseBadgeView: View {
                     }
                     .fixedSize(horizontal: false, vertical: true)
 
-                    Spacer(minLength: 20)
+                    Spacer(minLength: 12)
 
                     VStack(spacing: 10) {
                         continueButton()
@@ -125,8 +125,8 @@ struct BadgesChooseBadgeView: View {
                 Image(badgeImageName(level.badgeType))
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 60, height: 60)
-                    .padding(.top, 20)
+                    .frame(width: 44, height: 44)
+                    .padding(.top, 16)
                 Text(level.title)
                     .font(.title3)
                     .fontWeight(.bold)
@@ -138,7 +138,7 @@ struct BadgesChooseBadgeView: View {
                 }
                 .font(.subheadline)
                 .foregroundColor(theme.colors.secondary)
-                .padding(.bottom, 20)
+                .padding(.bottom, 16)
             }
             .multilineTextAlignment(.center)
             .padding(.horizontal, 12)

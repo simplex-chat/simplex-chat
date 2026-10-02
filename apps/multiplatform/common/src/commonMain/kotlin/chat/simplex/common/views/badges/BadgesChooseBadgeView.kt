@@ -91,7 +91,7 @@ fun BadgesChooseBadgeView(modalManager: ModalManager) {
 
     BadgeUserPreview(level = selectedLevel, modifier = Modifier.padding(top = 4.dp))
 
-    Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
+    Spacer(Modifier.weight(1f).heightIn(min = 12.dp))
 
     // IntrinsicSize.Max + fillMaxHeight on children so both cards match the taller card's height
     // when 2-line labels at large fonts would otherwise size them differently.
@@ -103,7 +103,7 @@ fun BadgesChooseBadgeView(modalManager: ModalManager) {
       LevelCard(BadgeLevel.Legend, selectedLevel, Modifier.weight(1f).fillMaxHeight()) { selectedLevel = it }
     }
 
-    Spacer(Modifier.weight(1f).heightIn(min = 20.dp))
+    Spacer(Modifier.weight(1f).heightIn(min = 12.dp))
 
     // Nested Column with no spacing so the TextButtonBelowOnboardingButton sits directly under
     // the action button (matches onboarding pattern where its own 7.5dp top padding is the gap).
@@ -133,7 +133,7 @@ private fun LevelCard(level: BadgeLevel, selectedLevel: BadgeLevel, modifier: Mo
       .background(cardBackground, shape)
       .border(2.dp, borderColor, shape)
       .clickable { onSelect(level) }
-      .padding(vertical = 20.dp, horizontal = 12.dp),
+      .padding(vertical = 16.dp, horizontal = 12.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
@@ -141,7 +141,7 @@ private fun LevelCard(level: BadgeLevel, selectedLevel: BadgeLevel, modifier: Mo
       painterResource(badgeImage(level.badgeType)),
       contentDescription = null,
       contentScale = ContentScale.Fit,
-      modifier = Modifier.size(60.dp)
+      modifier = Modifier.size(44.dp)
     )
     Text(stringResource(level.title), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
     Text(BadgePeriod.Monthly.priceText(BadgeStore.price(level, BadgePeriod.Monthly)), style = MaterialTheme.typography.body1, textAlign = TextAlign.Center)
