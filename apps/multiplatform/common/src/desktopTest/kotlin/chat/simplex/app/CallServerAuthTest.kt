@@ -34,6 +34,23 @@ class CallServerAuthTest {
   }
 
   @Test
+  fun testWebSocketUpgradeRejectedFromOtherOrigin() {
+    assertEquals(401, requestStatus(webSocketUpgrade(path = "/?token=$token", origin = "http://example.com")))
+  }
+
+  @Test
+  fun testSecondWebSocketUpgradeRejected() {
+    assertEquals(101, requestStatus(webSocketUpgrade(path = "/?token=$token")))
+    assertEquals(401, requestStatus(webSocketUpgrade(path = "/?token=$token")))
+  }
+
+  @Test
+  fun testWebSocketUpgradeAcceptedAfterWrongToken() {
+    assertEquals(401, requestStatus(webSocketUpgrade(path = "/?token=wrong")))
+    assertEquals(101, requestStatus(webSocketUpgrade(path = "/?token=$token")))
+  }
+
+  @Test
   fun testCallPageRejectedWithoutToken() {
     assertEquals(401, requestStatus(get(path = "/simplex/call/")))
   }
@@ -46,10 +63,11 @@ class CallServerAuthTest {
 
   private fun get(path: String): List<String> = listOf("GET $path HTTP/1.1", "Host: localhost:$port")
 
-  private fun webSocketUpgrade(path: String): List<String> =
+  private fun webSocketUpgrade(path: String, origin: String = "http://localhost:$port"): List<String> =
     listOf(
       "GET $path HTTP/1.1",
       "Host: localhost:$port",
+      "Origin: $origin",
       "Upgrade: websocket",
       "Connection: Upgrade",
       "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==",
