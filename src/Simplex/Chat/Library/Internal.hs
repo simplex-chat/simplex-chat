@@ -922,25 +922,25 @@ resetRcvCIFileStatus user fileId ciFileStatus = do
 markFwdFilesUnavailable :: User -> GroupMember -> CM ()
 markFwdFilesUnavailable user m = do
   cxt <- chatStoreCxt
-  acis <- withStore $ \db -> do
-    fileIds <- liftIO $ getForwardedRcvFilesWithoutDescr db user m
-    forM fileIds $ \fileId -> do
+  fileIds <- withStore' $ \db -> getForwardedRcvFilesWithoutDescr db user m
+  forM_ fileIds $ \fileId -> withFileLock "markFwdFilesUnavailable" fileId $ do
+    aci_ <- withStore $ \db -> do
       liftIO $ updateCIFileStatus db user fileId (CIFSRcvError fwdFileUnavailableError)
       lookupChatItemByFileId db cxt user fileId
-  forM_ (catMaybes acis) $ toView . CEvtChatItemUpdated user
+    forM_ aci_ $ toView . CEvtChatItemUpdated user
 
 -- The author also sent the message directly, so it has the file transfer for the user and will send the description.
 fwdMsgReceivedDirectly :: User -> GroupId -> GroupMemberId -> SharedMsgId -> CM ()
 fwdMsgReceivedDirectly user@User {userId} groupId authorGroupMemberId sharedMsgId = do
   cxt <- chatStoreCxt
-  aci_ <- withStore' $ \db -> do
+  fileId_ <- withStore' $ \db -> do
     setGroupMsgReceivedDirectly db groupId authorGroupMemberId sharedMsgId
-    fmap (join . eitherToMaybe) . runExceptT $ do
-      fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
-      unmarkFwdFile db cxt user fileId
-  forM_ aci_ $ toView . CEvtChatItemUpdated user
+    eitherToMaybe <$> runExceptT (getGroupFileIdBySharedMsgId db userId groupId sharedMsgId)
+  forM_ fileId_ $ \fileId -> withFileLock "fwdMsgReceivedDirectly" fileId $ do
+    aci_ <- withStore $ \db -> unmarkFwdFile db cxt user fileId
+    forM_ aci_ $ toView . CEvtChatItemUpdated user
 
--- status is checked in the same transaction, as the file can be accepted concurrently
+-- marker changes are made under the file lock, as the file can be accepted or cancelled concurrently
 unmarkFwdFile :: DB.Connection -> StoreCxt -> User -> FileTransferId -> ExceptT StoreError IO (Maybe AChatItem)
 unmarkFwdFile db cxt user fileId = do
   aci <- getChatItemByFileId db cxt user fileId

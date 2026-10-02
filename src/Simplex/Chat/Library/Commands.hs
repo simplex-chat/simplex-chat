@@ -3548,7 +3548,8 @@ processChatCommand cxt nm = \case
                   liftIO $ removeFile fsFilePath `catchAll_` pure ()
                 lift . forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
                   withAgent' (`xftpDeleteRcvFile` aFileId)
-                aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+                unavailable <- withFastStore $ \db -> maybe False isFwdFileUnavailable <$> lookupChatItemByFileId db cxt user fileId
+                aci_ <- resetRcvCIFileStatus user fileId $ if unavailable then CIFSRcvError fwdFileUnavailableError else CIFSRcvInvitation
                 pure $ CRRcvFileCancelled user aci_ ftr
   FileStatus fileId -> withUser $ \user -> do
     withFastStore (\db -> lookupChatItemByFileId db cxt user fileId) >>= \case
