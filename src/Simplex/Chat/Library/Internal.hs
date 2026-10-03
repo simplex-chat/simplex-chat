@@ -940,7 +940,7 @@ fwdMsgReceivedDirectly user@User {userId} groupId authorGroupMemberId sharedMsgI
     aci_ <- withStore $ \db -> unmarkFwdFile db cxt user fileId
     forM_ aci_ $ toView . CEvtChatItemUpdated user
 
--- marker changes are made under the file lock, as the file can be accepted or cancelled concurrently
+-- marking, unmarking and the revive to an invitation are done under the file lock, as the file can be accepted or cancelled concurrently
 unmarkFwdFile :: DB.Connection -> StoreCxt -> User -> FileTransferId -> ExceptT StoreError IO (Maybe AChatItem)
 unmarkFwdFile db cxt user fileId = do
   aci <- getChatItemByFileId db cxt user fileId
