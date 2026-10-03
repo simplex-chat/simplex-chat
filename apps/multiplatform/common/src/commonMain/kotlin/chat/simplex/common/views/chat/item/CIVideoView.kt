@@ -55,7 +55,7 @@ fun CIVideoView(
           }
         } else Modifier
       )
-      .desktopModifyBlurredState(!smallView, blurred, showMenu),
+      .desktopModifyBlurredState(blurred, showMenu),
     contentAlignment = Alignment.TopEnd
   ) {
     val filePath = remember(file, CIFile.cachedRemoteFileRequests.toList()) { mutableStateOf(getLoadedFilePath(file)) }
@@ -85,11 +85,11 @@ fun CIVideoView(
       val uriDecrypted = remember(filePath) { mutableStateOf(if (file.fileSource?.cryptoArgs == null) uri else file.fileSource.decryptedGet()) }
       val decrypted = uriDecrypted.value
       if (decrypted != null && smallView) {
-        SmallVideoView(decrypted, file, preview, duration * 1000L, autoPlay, sizeMultiplier, openFullscreen = openFullscreen)
+        SmallVideoView(decrypted, file, preview, duration * 1000L, autoPlay, blurred, sizeMultiplier, openFullscreen = openFullscreen)
       } else if (decrypted != null) {
         VideoView(decrypted, file, preview, duration * 1000L, autoPlay, showMenu, blurred, openFullscreen = openFullscreen)
       } else if (smallView) {
-        SmallVideoViewEncrypted(uriDecrypted, file, preview, autoPlay, showMenu, sizeMultiplier, openFullscreen = openFullscreen)
+        SmallVideoViewEncrypted(uriDecrypted, file, preview, autoPlay, showMenu, blurred, sizeMultiplier, openFullscreen = openFullscreen)
       } else {
         VideoViewEncrypted(uriDecrypted, file, preview, duration * 1000L, autoPlay, showMenu, blurred, openFullscreen = openFullscreen)
       }
@@ -185,16 +185,17 @@ private fun SmallVideoViewEncrypted(
   defaultPreview: ImageBitmap,
   autoPlay: MutableState<Boolean>,
   showMenu: MutableState<Boolean>,
+  blurred: MutableState<Boolean>,
   sizeMultiplier: Float,
   openFullscreen: () -> Unit,
 ) {
   var decryptionInProgress by rememberSaveable(file.fileName) { mutableStateOf(false) }
   val onLongClick = { showMenu.value = true }
   Box {
-    VideoPreviewImageView(defaultPreview, smallView = true, blurred = remember { mutableStateOf(false) }, onClick = if (decryptionInProgress) {{}} else openFullscreen, onLongClick = onLongClick)
+    VideoPreviewImageView(defaultPreview, smallView = true, blurred = blurred, onClick = if (decryptionInProgress) {{}} else openFullscreen, onLongClick = onLongClick)
     if (decryptionInProgress) {
       VideoDecryptionProgress(sizeMultiplier, onLongClick = onLongClick)
-    } else if (!file.showStatusIconInSmallView) {
+    } else if (!file.showStatusIconInSmallView && !blurHidesMedia(true, blurred)) {
       PlayButton(false, sizeMultiplier, onLongClick = onLongClick) {
         decryptionInProgress = true
         withBGApi {
@@ -217,6 +218,7 @@ private fun SmallVideoView(
   defaultPreview: ImageBitmap,
   defaultDuration: Long,
   autoPlay: MutableState<Boolean>,
+  blurred: MutableState<Boolean>,
   sizeMultiplier: Float,
   openFullscreen: () -> Unit
 ) {
@@ -234,8 +236,8 @@ private fun SmallVideoView(
       onLongClick = {},
       {}
     )
-    VideoPreviewImageView(preview, smallView = true, blurred = remember { mutableStateOf(false) }, onClick = openFullscreen, onLongClick = {})
-    if (!file.showStatusIconInSmallView) {
+    VideoPreviewImageView(preview, smallView = true, blurred = blurred, onClick = openFullscreen, onLongClick = {})
+    if (!file.showStatusIconInSmallView && !blurHidesMedia(true, blurred)) {
       PlayButton(brokenVideo, sizeMultiplier, onLongClick = {}, onClick = openFullscreen)
     }
   }
@@ -422,7 +424,7 @@ fun VideoPreviewImageView(
         onClick = onClick
       )
       .onRightClick(onLongClick)
-      .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
+      .privacyBlur(!smallView, preview, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
     contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
   )
 }
