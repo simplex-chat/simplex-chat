@@ -140,6 +140,16 @@ public func deleteAppFiles() {
     }
 }
 
+public func deleteTempFiles() {
+    let fm = FileManager.default
+    do {
+        try fm.removeItem(at: getTempFilesDirectory())
+        try fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
+    } catch {
+        logger.error("FileUtils deleteTempFiles error: \(error.localizedDescription)")
+    }
+}
+
 public func fileSize(_ url: URL) -> Int? { // in bytes
     do {
         let val = try url.resourceValues(forKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey])
