@@ -1995,7 +1995,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         case prohibited_ of
           Nothing -> case (fileStatus, xftpRcvFile) of
             (RFSAccepted _, Just XFTPRcvFile {userApprovedRelays}) -> receiveViaCompleteFD user fileId rfd fileSize userApprovedRelays cryptoArgs
-            (RFSNew, _) | fileDescrComplete && isFwdFileUnavailable aci -> withFileLock "processFDMessage" fileId $ do
+            (RFSNew, _) | fileDescrComplete -> withFileLock "processFDMessage" fileId $ do
               aci_ <- withStore $ \db -> unmarkFwdFile db cxt user fileId
               forM_ aci_ $ toView . CEvtChatItemUpdated user
             _ -> pure ()

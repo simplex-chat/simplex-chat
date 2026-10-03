@@ -925,7 +925,7 @@ markFwdFilesUnavailable user m = do
   fileIds <- withStore' $ \db -> getForwardedRcvFilesWithoutDescr db user m
   forM_ fileIds $ \fileId -> withFileLock "markFwdFilesUnavailable" fileId $ do
     aci_ <- withStore $ \db -> do
-      liftIO $ updateCIFileStatus db user fileId (CIFSRcvError fwdFileUnavailableError)
+      liftIO $ setRcvFileUnavailable db user fileId
       lookupChatItemByFileId db cxt user fileId
     forM_ aci_ $ toView . CEvtChatItemUpdated user
 

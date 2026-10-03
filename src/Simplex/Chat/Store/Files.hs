@@ -54,6 +54,8 @@ module Simplex.Chat.Store.Files
     getRcvFileDescrByRcvFileId,
     getForwardedRcvFilesWithoutDescr,
     fwdFileUnavailableError,
+    setRcvFileUnavailable,
+    resetRcvXFTPFileStatus,
     setGroupMsgReceivedDirectly,
     getRcvFileDescrBySndFileId,
     updateRcvFileAgentId,
@@ -679,6 +681,34 @@ getForwardedRcvFilesWithoutDescr db User {userId} GroupMember {groupId, groupMem
 
 fwdFileUnavailableError :: FileError
 fwdFileUnavailableError = FileErrOther "file was sent before you connected to the sender"
+
+-- conditions are checked again, as the iOS app and notification service extension can process the same file
+setRcvFileUnavailable :: DB.Connection -> User -> FileTransferId -> IO ()
+setRcvFileUnavailable db User {userId} fileId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE files SET ci_file_status = ?, updated_at = ?
+      WHERE user_id = ? AND file_id = ? AND COALESCE(cancelled, 0) = 0
+        AND EXISTS (
+          SELECT 1 FROM rcv_files r
+          LEFT JOIN xftp_file_descriptions d ON d.file_descr_id = r.file_descr_id
+          WHERE r.file_id = files.file_id AND r.file_status IN (?,?)
+            AND (d.file_descr_id IS NULL OR d.file_descr_part_no = 0)
+        )
+    |]
+    (CIFSRcvError fwdFileUnavailableError, currentTs, userId, fileId, FSNew, FSAccepted)
+
+resetRcvXFTPFileStatus :: DB.Connection -> User -> FileTransferId -> IO ()
+resetRcvXFTPFileStatus db User {userId} fileId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE files SET ci_file_status = CASE WHEN ci_file_status = ? THEN ci_file_status ELSE ? END, updated_at = ? WHERE user_id = ? AND file_id = ?"
+    (CIFSRcvError fwdFileUnavailableError, CIFSRcvInvitation, currentTs, userId, fileId)
+  updateRcvFileStatus db fileId FSNew
+  updateRcvFileAgentId db fileId Nothing
 
 setGroupMsgReceivedDirectly :: DB.Connection -> GroupId -> GroupMemberId -> SharedMsgId -> IO ()
 setGroupMsgReceivedDirectly db groupId authorGroupMemberId sharedMsgId =
