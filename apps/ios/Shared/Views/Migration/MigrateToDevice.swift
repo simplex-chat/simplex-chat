@@ -538,6 +538,7 @@ struct MigrateToDevice: View {
     private func importArchive(_ archivePath: String) {
         Task {
             do {
+                excludeAppDataFromBackup(true)
                 if !hasChatCtrl() {
                     chatInitControllerRemovingDatabases()
                 } else if ChatModel.shared.chatRunning == true {

@@ -125,7 +125,7 @@ Server validation (`validateServers_`) now returns both errors and warnings.
 
 | Row | Icon | Destination | Description |
 |---|---|---|---|
-| Database passphrase & export | `internaldrive` (orange if unencrypted) | `DatabaseView` | Passphrase management, export/import database, file storage stats |
+| Database passphrase & export | `internaldrive` (orange if unencrypted) | `DatabaseView` | Passphrase management, export/import database, iCloud backup, file storage stats |
 | Migrate to another device | `tray.and.arrow.up` | `MigrateFromDevice` | Export database and generate migration link |
 
 Database row shows exclamation octagon icon in red when `chatRunning == false`.

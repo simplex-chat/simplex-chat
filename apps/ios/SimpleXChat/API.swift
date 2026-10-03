@@ -105,6 +105,10 @@ public func chatReopenStore() {
     }
 }
 
+public func hasMigrationResult() -> Bool {
+    migrationResult != nil
+}
+
 public func resetChatCtrl() {
     chatController = nil
     migrationResult = nil

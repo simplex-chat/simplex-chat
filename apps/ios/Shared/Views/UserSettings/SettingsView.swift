@@ -49,6 +49,7 @@ let DEFAULT_SHOULD_IMPORT_APP_SETTINGS = "shouldImportAppSettings"
 let DEFAULT_DEVELOPER_TOOLS = "developerTools"
 let DEFAULT_ENCRYPTION_STARTED = "encryptionStarted"
 let DEFAULT_ENCRYPTION_STARTED_AT = "encryptionStartedAt"
+let DEFAULT_ICLOUD_BACKUP = "iCloudBackup"
 let DEFAULT_ACCENT_COLOR_RED = "accentColorRed" // deprecated, only used for migration
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen" // deprecated, only used for migration
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue" // deprecated, only used for migration
@@ -118,6 +119,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_CHAT_V3_DB_MIGRATION: V3DBMigrationState.offer.rawValue,
     DEFAULT_DEVELOPER_TOOLS: false,
     DEFAULT_ENCRYPTION_STARTED: false,
+    DEFAULT_ICLOUD_BACKUP: true,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
     DEFAULT_CHAT_ITEM_ROUNDNESS: defaultChatItemRoundness,
     DEFAULT_CHAT_ITEM_TAIL: true,
@@ -206,6 +208,8 @@ let chatArchiveTimeDefault = DateDefault(defaults: UserDefaults.standard, forKey
 let encryptionStartedDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED)
 
 let encryptionStartedAtDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED_AT)
+
+let iCloudBackupDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ICLOUD_BACKUP)
 
 let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefaults.standard, forKey: DEFAULT_CONNECT_VIA_LINK_TAB, withDefault: .scan)
 
