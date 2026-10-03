@@ -592,6 +592,9 @@ private func processSendMessageCmd(toChatType: ChatType, cmd: ChatCommand) async
     } else {
         r = await chatApiSendCmd(cmd, bgDelay: msgDelay)
         if case let .result(.newChatItems(_, aChatItems)) = r {
+            if let last = aChatItems.last {
+                await MainActor.run { chatModel.upsertSupportChatMember(last.chatInfo) }
+            }
             return aChatItems.map { $0.chatItem }
         }
         sendMessageErrorAlert(r.unexpected)
@@ -1923,6 +1926,7 @@ func apiMarkChatItemsRead(_ im: ItemsModel, _ cInfo: ChatInfo, _ itemIds: [ChatI
         let updatedChatInfo = try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemIds: itemIds)
         await MainActor.run {
             ChatModel.shared.updateChatInfo(updatedChatInfo)
+            ChatModel.shared.upsertSupportChatMember(updatedChatInfo)
             ChatModel.shared.markChatItemsRead(im, cInfo, itemIds, mentionsRead)
         }
     } catch {
@@ -2625,6 +2629,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
                     if cItem.isActiveReport {
                         m.increaseGroupReportsCounter(cInfo.id)
                     }
+                    m.upsertSupportChatMember(cInfo)
                 } else if cItem.isRcvNew && cInfo.ntfsEnabled(chatItem: cItem) {
                     m.increaseUnreadCounter(user: user)
                 }
@@ -2690,6 +2695,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 if item.deletedChatItem.chatItem.isActiveReport {
                     m.decreaseGroupReportsCounter(item.deletedChatItem.chatInfo.id)
                 }
+                m.upsertSupportChatMember(item.deletedChatItem.chatInfo)
             }
             if let updatedChatInfo = items.last?.deletedChatItem.chatInfo {
                 m.updateChatInfo(updatedChatInfo)
@@ -2739,7 +2745,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
     case let .joinedGroupMemberConnecting(user, groupInfo, _, member):
         if active(user) {
             await MainActor.run {
-                _ = m.upsertGroupMember(groupInfo, member)
+                _ = m.upsertGroupMember(groupInfo, m.withLoadedSupportChat(member))
             }
         }
     case let .memberAcceptedByOther(user, groupInfo, _, member):
@@ -2802,7 +2808,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
     case let .joinedGroupMember(user, groupInfo, member):
         if active(user) {
             await MainActor.run {
-                _ = m.upsertGroupMember(groupInfo, member)
+                _ = m.upsertGroupMember(groupInfo, m.withLoadedSupportChat(member))
             }
         }
     case let .connectedToGroupMember(user, groupInfo, member, memberContact):

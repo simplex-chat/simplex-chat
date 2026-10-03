@@ -117,7 +117,7 @@ private fun acceptMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember,
     val r = chatModel.controller.apiAcceptMember(rhId, groupInfo.groupId, member.groupMemberId, role)
     if (r != null) {
       withContext(Dispatchers.Main) {
-        chatModel.chatsContext.upsertGroupMember(rhId, r.first, r.second)
+        chatModel.chatsContext.upsertGroupMember(rhId, r.first, chatModel.withLoadedSupportChat(r.second))
         chatModel.chatsContext.updateGroup(rhId, r.first)
       }
     }

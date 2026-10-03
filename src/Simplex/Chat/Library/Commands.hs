@@ -1311,12 +1311,12 @@ processChatCommand cxt nm = \case
         gInfo <- getGroupInfo db cxt user chatId
         pure (user, gInfo)
       chatScopeInfo <- mapM (getChatScopeInfo cxt user) scope
-      (timedItems, gInfo') <- withFastStore $ \db -> do
-        (timedItems, gInfo') <- updateGroupChatItemsReadList db cxt user gInfo chatScopeInfo itemIds
+      (timedItems, gInfo', chatScopeInfo') <- withFastStore $ \db -> do
+        (timedItems, gInfo', chatScopeInfo') <- updateGroupChatItemsReadList db cxt user gInfo chatScopeInfo itemIds
         timedItems' <- liftIO $ setGroupChatItemsDeleteAt db user chatId timedItems =<< getCurrentTime
-        pure (timedItems', gInfo')
+        pure (timedItems', gInfo', chatScopeInfo')
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
-      pure $ CRItemsReadForChat user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
+      pure $ CRItemsReadForChat user (AChatInfo SCTGroup $ GroupChat gInfo' chatScopeInfo')
     CTLocal -> throwCmdError "not supported"
     CTContactRequest -> throwCmdError "not supported"
     CTContactConnection -> throwCmdError "not supported"
@@ -4870,7 +4870,7 @@ processChatCommand cxt nm = \case
           (chatMsgEvents, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
           (msgs_, gsr) <- sendGroupMessages user g Nothing showGroupAsSender recipients signMsgs chatMsgEvents
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) showGroupAsSender itemsData timed_ live
+          (sentChatInfo, cis_) <- saveSndChatItems' user (CDGroupSnd gInfo chatScopeInfo) showGroupAsSender itemsData timed_ live
           when (length cis_ /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
           createMemberSndStatuses cis_ msgs_ gsr
           let r@(_, cis) = partitionEithers cis_
@@ -4878,7 +4878,7 @@ processChatCommand cxt nm = \case
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
               startProximateTimedItemThread user (ChatRef CTGroup groupId scope, chatItemId' ci) deleteAt
-          pure $ CRNewChatItems user (map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo)) cis)
+          pure $ CRNewChatItems user (map (AChatItem SCTGroup SMDSnd sentChatInfo) cis)
           where
             setupSndFileTransfers :: Int -> CM (NonEmpty (Maybe FileInvitation, Maybe (CIFile 'MDSnd)))
             setupSndFileTransfers n =
