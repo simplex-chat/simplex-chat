@@ -683,7 +683,7 @@ getForwardedRcvFilesWithoutDescr db User {userId} GroupMember {groupId, groupMem
 fwdFileUnavailableError :: FileError
 fwdFileUnavailableError = FileErrOther "file was sent before you connected to the sender"
 
--- cancellation, status and description are checked again, as the iOS app and notification service extension can process the same file
+-- the conditions that can change are checked again, as the iOS app and notification service extension can process the same file
 setRcvFileUnavailable :: DB.Connection -> User -> FileTransferId -> IO ()
 setRcvFileUnavailable db User {userId} fileId = do
   currentTs <- getCurrentTime
@@ -694,25 +694,38 @@ setRcvFileUnavailable db User {userId} fileId = do
       WHERE user_id = ? AND file_id = ? AND COALESCE(cancelled, 0) = 0
         AND EXISTS (
           SELECT 1 FROM rcv_files r
+          JOIN chat_items i ON i.chat_item_id = files.chat_item_id
           LEFT JOIN xftp_file_descriptions d ON d.file_descr_id = r.file_descr_id
           WHERE r.file_id = files.file_id AND r.file_status IN (?,?)
             AND (d.file_descr_id IS NULL OR d.file_descr_part_no = 0)
+            AND NOT EXISTS (
+              SELECT 1 FROM messages m
+              WHERE m.group_id = files.group_id AND m.shared_msg_id = i.shared_msg_id
+                AND m.author_group_member_id = r.group_member_id AND m.forwarded_by_group_member_id IS NULL
+            )
         )
     |]
     (CIFSRcvError fwdFileUnavailableError, currentTs, userId, fileId, FSNew, FSAccepted)
 
-unsetRcvFileUnavailable :: DB.Connection -> User -> FileTransferId -> IO ()
+unsetRcvFileUnavailable :: DB.Connection -> User -> FileTransferId -> IO Bool
 unsetRcvFileUnavailable db User {userId} fileId = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE files
-      SET ci_file_status = CASE WHEN (SELECT r.file_status FROM rcv_files r WHERE r.file_id = files.file_id) = ? THEN ? ELSE ? END,
-        updated_at = ?
-      WHERE user_id = ? AND file_id = ? AND ci_file_status = ?
-    |]
-    (FSAccepted, CIFSRcvAccepted, CIFSRcvInvitation, currentTs, userId, fileId, CIFSRcvError fwdFileUnavailableError)
+  marked <-
+    maybeFirstRow fromOnly $
+      DB.query db "SELECT 1 FROM files WHERE user_id = ? AND file_id = ? AND ci_file_status = ?" (userId, fileId, CIFSRcvError fwdFileUnavailableError)
+  case marked of
+    Just (_ :: Int) -> do
+      currentTs <- getCurrentTime
+      DB.execute
+        db
+        [sql|
+          UPDATE files
+          SET ci_file_status = CASE WHEN (SELECT r.file_status FROM rcv_files r WHERE r.file_id = files.file_id) = ? THEN ? ELSE ? END,
+            updated_at = ?
+          WHERE user_id = ? AND file_id = ?
+        |]
+        (FSAccepted, CIFSRcvAccepted, CIFSRcvInvitation, currentTs, userId, fileId)
+      pure True
+    Nothing -> pure False
 
 resetRcvXFTPFileStatus :: DB.Connection -> User -> FileTransferId -> IO ()
 resetRcvXFTPFileStatus db User {userId} fileId = do

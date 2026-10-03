@@ -923,7 +923,7 @@ markFwdFilesUnavailable :: User -> GroupMember -> CM ()
 markFwdFilesUnavailable user m = do
   cxt <- chatStoreCxt
   fileIds <- withStore' $ \db -> getForwardedRcvFilesWithoutDescr db user m
-  forM_ fileIds $ \fileId -> withFileLock "markFwdFilesUnavailable" fileId $ do
+  forM_ fileIds $ \fileId -> do
     aci_ <- withStore $ \db -> do
       liftIO $ setRcvFileUnavailable db user fileId
       lookupChatItemByFileId db cxt user fileId
@@ -933,26 +933,18 @@ markFwdFilesUnavailable user m = do
 fwdMsgReceivedDirectly :: User -> GroupId -> GroupMemberId -> SharedMsgId -> CM ()
 fwdMsgReceivedDirectly user@User {userId} groupId authorGroupMemberId sharedMsgId = do
   cxt <- chatStoreCxt
-  fileId_ <- withStore' $ \db -> do
-    setGroupMsgReceivedDirectly db groupId authorGroupMemberId sharedMsgId
-    eitherToMaybe <$> runExceptT (getGroupFileIdBySharedMsgId db userId groupId sharedMsgId)
-  forM_ fileId_ $ \fileId -> withFileLock "fwdMsgReceivedDirectly" fileId $ do
-    aci_ <- withStore $ \db -> unmarkFwdFile db cxt user fileId
-    forM_ aci_ $ toView . CEvtChatItemUpdated user
+  fileId_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupFileIdBySharedMsgId db userId groupId sharedMsgId)
+  case fileId_ of
+    Nothing -> withStore' $ \db -> setGroupMsgReceivedDirectly db groupId authorGroupMemberId sharedMsgId
+    Just fileId -> do
+      aci_ <- withStore $ \db -> do
+        liftIO $ setGroupMsgReceivedDirectly db groupId authorGroupMemberId sharedMsgId
+        unmarkFwdFile db cxt user fileId
+      forM_ aci_ $ toView . CEvtChatItemUpdated user
 
 unmarkFwdFile :: DB.Connection -> StoreCxt -> User -> FileTransferId -> ExceptT StoreError IO (Maybe AChatItem)
-unmarkFwdFile db cxt user fileId = do
-  aci <- getChatItemByFileId db cxt user fileId
-  if isFwdFileUnavailable aci
-    then do
-      liftIO $ unsetRcvFileUnavailable db user fileId
-      Just <$> getChatItemByFileId db cxt user fileId
-    else pure Nothing
-
-isFwdFileUnavailable :: AChatItem -> Bool
-isFwdFileUnavailable = \case
-  AChatItem _ SMDRcv _ ChatItem {file = Just CIFile {fileStatus = CIFSRcvError e}} -> e == fwdFileUnavailableError
-  _ -> False
+unmarkFwdFile db cxt user fileId =
+  ifM (liftIO $ unsetRcvFileUnavailable db user fileId) (Just <$> getChatItemByFileId db cxt user fileId) (pure Nothing)
 
 receiveViaURI :: User -> FileDescriptionURI -> CryptoFile -> CM RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
@@ -2922,14 +2914,14 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
     withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery $ Just amGroupMemId)
       `catchAllErrors` \e -> case e of
         ChatErrorStore (SEDuplicateGroupMessage _ _ duplAuthorId_ (Just forwardedByGroupMemberId)) -> do
-          cxt <- chatStoreCxt
-          fm <- withStore $ \db -> getGroupMember db cxt user groupId forwardedByGroupMemberId
-          forM_ (memberConn fm) $ \fmConn ->
-            void $ sendDirectMemberMessage fmConn (XGrpMemCon amMemId) groupId
           case (chatMsgEvent, sharedMsgId_) of
             (XMsgNew {}, Just sharedMsgId)
               | duplAuthorId_ == Just amGroupMemId -> fwdMsgReceivedDirectly user groupId amGroupMemId sharedMsgId `catchAllErrors` eToView
             _ -> pure ()
+          cxt <- chatStoreCxt
+          fm <- withStore $ \db -> getGroupMember db cxt user groupId forwardedByGroupMemberId
+          forM_ (memberConn fm) $ \fmConn ->
+            void $ sendDirectMemberMessage fmConn (XGrpMemCon amMemId) groupId
           throwError e
         _ -> throwError e
   pure (am', conn', msg)
