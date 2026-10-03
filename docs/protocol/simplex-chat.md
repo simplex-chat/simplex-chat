@@ -286,6 +286,12 @@ These message are used for WebRTC calls:
 
 4. `x.call.end` message is sent to notify the other party that the call is terminated.
 
+Call messages have their own version, independent of the chat protocol version. The initiating client sends the range of call versions it supports in `callVRange` property of `x.call.inv`. The receiving client chooses the highest version supported by both clients and sends it in `callVersion` property of `x.call.offer`. The initiating client rejects the offer if this version is not in the range it sent. A missing range or version means version 1.
+
+Media frames are encrypted with AES-256-GCM using the key agreed via X25519 DH keys in `x.call.inv` and `x.call.offer`:
+- version 1: the key is the DH shared secret.
+- version 2: the key is 32 bytes of HKDF-SHA512 output, using the DH shared secret as input key material, call ID as salt and `SimpleXCallMediaKey` as info.
+
 ## Threat model
 
 This threat model complements SMP, XFTP, push notifications and XRCP protocols threat models, as well as the channel-specific threat model:

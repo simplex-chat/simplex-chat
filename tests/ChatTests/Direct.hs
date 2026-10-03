@@ -17,6 +17,8 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, poll)
 import Control.Monad (forM_, void, (>=>))
+import Control.Monad.Except (runExceptT)
+import Control.Monad.Reader (runReaderT)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -30,10 +32,11 @@ import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServers (..))
+import Simplex.Chat.Library.Internal (sendDirectContactMessage)
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
+import Simplex.Chat.Protocol (ChatMsgEvent (..), supportedChatVRange)
+import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -105,6 +108,12 @@ chatDirectTests = do
     it "connect, fully asynchronous (when clients are never simultaneously online)" $ testFullAsyncFast
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
+    describe "call media key" $ do
+      it "current versions derive key with HKDF" $ testCallMediaKey testCfg testCfg callMediaKdfVersion
+      it "current to v1 uses DH secret as key" $ testCallMediaKey testCfg testCfgCallV1 initialCallVersion
+      it "v1 to current uses DH secret as key" $ testCallMediaKey testCfgCallV1 testCfg initialCallVersion
+    it "reject call offer with unsupported call version" testRejectCallOfferVersion
+    it "mark expired call invitation missed on restore" testExpireCallInvitation
   describe "maintenance mode" $ do
     it "stop chat stops all threads, start chat restarts them" testStopStartChat
 #if !defined(dbPostgres)
@@ -1368,6 +1377,80 @@ testNegotiateCall =
     noDuration s = case words s of
       ws@(_ : _) | "(0" `isPrefixOf` last ws -> unwords $ init ws
       _ -> s
+
+testCfgCallV1 :: ChatConfig
+testCfgCallV1 = testCfg {callVRange = callInitialVRange}
+
+currentCall :: TestCC -> ContactId -> IO Call
+currentCall cc ctId = M.lookup ctId <$> readTVarIO (currentCalls $ chatController cc) >>= maybe (fail "no current call") pure
+
+callRowCount :: TestCC -> IO Int
+callRowCount cc = do
+  [Only n] <- withCCTransaction cc $ \db -> DB.query_ db "SELECT count(1) FROM calls"
+  pure n
+
+inviteToCall :: HasCallStack => TestCC -> TestCC -> IO ()
+inviteToCall alice bob = do
+  alice ##> ("/_call invite @2 " <> serialize testCallType)
+  alice <## "ok"
+  bob <## "alice wants to connect with you via WebRTC video call (e2e encrypted)"
+  repeatM_ 3 $ getTermLine bob
+
+testCallMediaKey :: ChatConfig -> ChatConfig -> VersionCall -> TestParams -> IO ()
+testCallMediaKey aliceCfg bobCfg expectedVersion =
+  runTestCfg2 aliceCfg bobCfg $ \alice bob -> do
+    connectUsers alice bob
+    inviteToCall alice bob
+    Call {callId, callState = CallInvitationSent {localDhPrivKey = Just alicePrivKey}} <- currentCall alice 2
+    Call {callState = CallInvitationReceived {localDhPubKey = Just bobPubKey, sharedKey = Just bobKey, callVersion}} <- currentCall bob 2
+    callVersion `shouldBe` Just expectedVersion
+    bobKey `shouldBe` callMediaKey expectedVersion callId bobPubKey alicePrivKey
+    let rawKey = C.Key $ C.dhBytes' $ C.dh' bobPubKey alicePrivKey
+    (bobKey == rawKey) `shouldBe` (expectedVersion == initialCallVersion)
+    bob ##> ("/_call offer @2 " <> serialize testWebRTCCallOffer)
+    bob <## "ok"
+    alice <## "bob accepted your WebRTC video call (e2e encrypted)"
+    repeatM_ 3 $ getTermLine alice
+    Call {callState = CallOfferReceived {sharedKey = aliceKey}} <- currentCall alice 2
+    aliceKey `shouldBe` Just bobKey
+    alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
+    alice <## "ok"
+    bob <## "alice continued the WebRTC call"
+    repeatM_ 3 $ getTermLine bob
+    bob ##> "/_call end @2"
+    bob <## "ok"
+    alice <## "call with bob ended"
+
+testRejectCallOfferVersion :: HasCallStack => TestParams -> IO ()
+testRejectCallOfferVersion =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    inviteToCall alice bob
+    Call {callId, callState = CallInvitationReceived {localDhPubKey}} <- currentCall bob 2
+    ct <- getTestCCContact bob 2
+    let offer = CallOffer {callType = testCallType, rtcSession = testWebRTCSession, callDhPubKey = localDhPubKey, callVersion = Just $ nextVersion $ maxVersion supportedCallVRange}
+    Right _ <- withCCUser bob $ \user -> runExceptT (sendDirectContactMessage user ct $ XCallOffer callId offer) `runReaderT` chatController bob
+    alice <## "error: x.call.offer: unsupported call version"
+    Call {callState = CallInvitationSent {}} <- currentCall alice 2
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: calling...")])
+
+testExpireCallInvitation :: HasCallStack => TestParams -> IO ()
+testExpireCallInvitation ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      inviteToCall alice bob
+      callRowCount bob `shouldReturn` 1
+    withTestChat ps "bob" $ \bob -> do
+      bob <## "subscribed 1 connections on server localhost"
+      Call {callState = CallInvitationReceived {}} <- currentCall bob 2
+      callRowCount bob `shouldReturn` 1
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: calling...")])
+    withTestChatCfg ps testCfg {callInvitationTTL = 0} "bob" $ \bob -> do
+      bob <## "subscribed 1 connections on server localhost"
+      M.member 2 <$> readTVarIO (currentCalls $ chatController bob) `shouldReturn` False
+      callRowCount bob `shouldReturn` 0
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: missed")])
 
 testStopStartChat :: HasCallStack => TestParams -> IO ()
 testStopStartChat ps =

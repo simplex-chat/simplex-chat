@@ -352,9 +352,21 @@ startReceiveUserFiles user = do
 restoreCalls :: CM' ()
 restoreCalls = do
   savedCalls <- fromRight [] <$> runExceptT (withFastStore' getCalls)
-  let callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) savedCalls
+  ttl <- asks (callInvitationTTL . config)
+  currentTs <- liftIO getCurrentTime
+  let (expiredCalls, liveCalls) = partition (\Call {callTs} -> diffUTCTime currentTs callTs > ttl) savedCalls
+      callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) liveCalls
   calls <- asks currentCalls
   atomically $ writeTVar calls callsMap
+  forM_ expiredCalls $ \call -> expireCall call `catchAllErrors'` eToView'
+  where
+    expireCall call@Call {contactId} = do
+      cxt <- chatStoreCxt
+      (user, ct) <- withStore $ \db -> do
+        user <- getUserByContactId db contactId
+        (user,) <$> getContact db cxt user contactId
+      withStore' $ \db -> deleteCalls db user contactId
+      updateCallItemStatus user ct call WCSDisconnected Nothing
 
 stopChatController :: ChatController -> IO ()
 stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession, cleanupManagerAsync, relayGroupLinkChecksAsync, webPreviewState, expireCIThreads, timedItemThreads, deliveryTaskWorkers, deliveryJobWorkers, relayRequestWorkers, badgeWorkers} = do
@@ -1509,7 +1521,8 @@ processChatCommand cxt nm = \case
           callId <- atomically $ CallId <$> C.randomBytes 16 g
           callUUID <- UUID.toText <$> liftIO V4.nextRandom
           dhKeyPair <- atomically $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
-          let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
+          ChatConfig {callVRange = callVR} <- asks config
+          let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair, callVRange = Just $ CallVersionRange callVR}
               callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
           (msg, _) <- sendDirectContactMessage user ct (XCallInv callId invitation)
           ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndCall CISCallPending 0)
@@ -1537,9 +1550,9 @@ processChatCommand cxt nm = \case
   APISendCallOffer contactId WebRTCCallOffer {callType, rtcSession} ->
     -- party accepting call
     withCurrentCall contactId $ \user ct call@Call {callId, chatItemId, callState} -> case callState of
-      CallInvitationReceived {peerCallType, localDhPubKey, sharedKey} -> do
+      CallInvitationReceived {peerCallType, localDhPubKey, sharedKey, callVersion} -> do
         let callDhPubKey = if encryptedCall callType then localDhPubKey else Nothing
-            offer = CallOffer {callType, rtcSession, callDhPubKey}
+            offer = CallOffer {callType, rtcSession, callDhPubKey, callVersion}
             callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
             aciContent = ACIContent SMDRcv $ CIRcvCall CISCallAccepted 0
         (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XCallOffer callId offer)
