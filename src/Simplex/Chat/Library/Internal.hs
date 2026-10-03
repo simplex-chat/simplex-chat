@@ -940,16 +940,12 @@ fwdMsgReceivedDirectly user@User {userId} groupId authorGroupMemberId sharedMsgI
     aci_ <- withStore $ \db -> unmarkFwdFile db cxt user fileId
     forM_ aci_ $ toView . CEvtChatItemUpdated user
 
--- marking, unmarking and the revive to an invitation are done under the file lock, as the file can be accepted or cancelled concurrently
 unmarkFwdFile :: DB.Connection -> StoreCxt -> User -> FileTransferId -> ExceptT StoreError IO (Maybe AChatItem)
 unmarkFwdFile db cxt user fileId = do
   aci <- getChatItemByFileId db cxt user fileId
   if isFwdFileUnavailable aci
     then do
-      RcvFileTransfer {fileStatus} <- getRcvFileTransfer db user fileId
-      liftIO $ updateCIFileStatus db user fileId $ case fileStatus of
-        RFSAccepted _ -> CIFSRcvAccepted
-        _ -> CIFSRcvInvitation
+      liftIO $ unsetRcvFileUnavailable db user fileId
       Just <$> getChatItemByFileId db cxt user fileId
     else pure Nothing
 

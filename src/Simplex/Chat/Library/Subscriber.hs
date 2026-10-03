@@ -1972,13 +1972,16 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     processFDMessage binding_ fileId aci fileDescr fileExpires fileBadge = do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       unless (rcvFileCompleteOrCancelled ft) $ do
-        (rfd@RcvFileDescr {fileDescrComplete}, ft'@RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs, fileProhibited, fileInvitation = FileInvitation {fileSize}}) <- withStore $ \db -> do
-          rfd <- appendRcvFD db userId fileId fileDescr
+        (rfd@RcvFileDescr {fileDescrComplete}, ft'@RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs, fileProhibited, fileInvitation = FileInvitation {fileSize}}, unmarked_) <- withStore $ \db -> do
+          rfd@RcvFileDescr {fileDescrComplete = complete} <- appendRcvFD db userId fileId fileDescr
           forM_ fileExpires $ liftIO . setFileExpiration db user fileId
+          -- unmarked in the same transaction as appending the last part, so that it is not lost if the process stops
+          unmarked_ <- if complete then unmarkFwdFile db cxt user fileId else pure Nothing
           -- reading second time in the same transaction as appending description
           -- to prevent race condition with accept
           ft' <- getRcvFileTransfer db user fileId
-          pure (rfd, ft')
+          pure (rfd, ft', unmarked_)
+        forM_ unmarked_ $ toView . CEvtChatItemUpdated user
         when fileDescrComplete $ toView $ CEvtRcvFileDescrReady user aci ft' rfd
         maxSize <- asks $ noBadge . fileSizeLimits . config
         let descrBadgeRequired = fileDescrComplete && fileSize > maxSize && isNothing fileProhibited
@@ -1995,9 +1998,6 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
         case prohibited_ of
           Nothing -> case (fileStatus, xftpRcvFile) of
             (RFSAccepted _, Just XFTPRcvFile {userApprovedRelays}) -> receiveViaCompleteFD user fileId rfd fileSize userApprovedRelays cryptoArgs
-            (RFSNew, _) | fileDescrComplete -> withFileLock "processFDMessage" fileId $ do
-              aci_ <- withStore $ \db -> unmarkFwdFile db cxt user fileId
-              forM_ aci_ $ toView . CEvtChatItemUpdated user
             _ -> pure ()
           -- the file may already be accepted, so it is reset to an invitation the apps refuse by its prohibition
           Just prohibited -> do
