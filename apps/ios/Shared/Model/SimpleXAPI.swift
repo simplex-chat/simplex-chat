@@ -2361,6 +2361,10 @@ func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws
     ChatReceiver.shared.start()
     m.chatRunning = true
     chatLastStartGroupDefault.set(Date.now)
+    if shouldDeleteDatabaseBackupsDefault.get() {
+        deleteDatabaseBackups()
+        shouldDeleteDatabaseBackupsDefault.set(false)
+    }
 }
 
 func startChatWithTemporaryDatabase(ctrl: chat_ctrl) throws -> User? {

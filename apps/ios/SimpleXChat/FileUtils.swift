@@ -194,6 +194,13 @@ private func restoreBackupFile(fromPath: String, toPath: String) throws {
     try fm.copyItem(atPath: fromPath, toPath: toPath)
 }
 
+public func deleteDatabaseBackups() {
+    let fm = FileManager.default
+    let dbPath = getAppDatabasePath().path
+    try? fm.removeItem(atPath: dbPath + CHAT_DB_BAK)
+    try? fm.removeItem(atPath: dbPath + AGENT_DB_BAK)
+}
+
 public func hasLegacyDatabase() -> Bool {
     hasDatabaseAtPath(getLegacyDatabasePath())
 }
