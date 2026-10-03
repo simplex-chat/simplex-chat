@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.platform.KeyStorage
 import chat.simplex.common.ui.theme.WarningOrange
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -59,6 +60,7 @@ actual fun DatabaseEncryptionFooter(
   useKeychain: MutableState<Boolean>,
   chatDbEncrypted: Boolean?,
   storedKey: MutableState<Boolean>,
+  keyStorage: KeyStorage?,
   initialRandomDBPassphrase: MutableState<Boolean>,
   migration: Boolean,
 ) {

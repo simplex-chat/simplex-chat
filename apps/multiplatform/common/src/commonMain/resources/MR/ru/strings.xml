@@ -585,7 +585,7 @@
     <string name="update_database_passphrase">Поменять пароль</string>
     <string name="enter_correct_current_passphrase">Пожалуйста, введите правильный пароль.</string>
     <string name="database_is_not_encrypted">База данных НЕ зашифрована. Установите пароль, чтобы защитить Ваши данные.</string>
-    <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля - это позволяет стабильно получать уведомления в фоновом режиме.</string>
+    <string name="keychain_is_storing_securely">Android Keystore%s используется для безопасного хранения пароля - это позволяет стабильно получать уведомления в фоновом режиме.</string>
     <string name="encrypted_with_random_passphrase">База данных зашифрована случайным паролем, Вы можете его поменять.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Внимание</b>: Вы не сможете восстановить или поменять пароль, если потеряете его.]]></string>
     <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранён в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>

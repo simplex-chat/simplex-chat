@@ -115,7 +115,7 @@
     <string name="delete_files_and_media_question">Poistetaanko tiedostot ja media\?</string>
     <string name="total_files_count_and_size">%d tiedosto(a), joiden kokonaiskoko on %s</string>
     <string name="current_passphrase">Nykyinen tunnuslause…</string>
-    <string name="keychain_is_storing_securely">Android Keystorea käytetään salalauseen turvalliseen tallentamiseen - se mahdollistaa ilmoituspalvelun toiminnan.</string>
+    <string name="keychain_is_storing_securely">Android Keystorea%s käytetään salalauseen turvalliseen tallentamiseen - se mahdollistaa ilmoituspalvelun toiminnan.</string>
     <string name="encrypted_with_random_passphrase">Tietokanta on salattu satunnaisella tunnuslauseella, voit muuttaa sitä.</string>
     <string name="database_error">Tietokantavirhe</string>
     <string name="database_passphrase_is_required">Keskustelun avaamiseen tarvitaan tietokannan tunnuslause.</string>

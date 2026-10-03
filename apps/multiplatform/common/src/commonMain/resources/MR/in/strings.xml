@@ -987,7 +987,7 @@
     <string name="settings_section_title_themes">Tema</string>
     <string name="settings_section_title_delivery_receipts">Kirim tanda terima kiriman ke</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Hal ini dapat terjadi ketika Anda atau koneksi Anda menggunakan cadangan basis data lama.</string>
-    <string name="keychain_is_storing_securely">Android Keystore digunakan untuk menyimpan frasa sandi dengan aman - memungkinkan layanan notifikasi berfungsi.</string>
+    <string name="keychain_is_storing_securely">Android Keystore%s digunakan untuk menyimpan frasa sandi dengan aman - memungkinkan layanan notifikasi berfungsi.</string>
     <string name="remove_passphrase">Hapus</string>
     <string name="encrypt_database">Enkripsi</string>
     <string name="messages_section_title">Pesan</string>

@@ -117,7 +117,7 @@
     <string name="network_smp_proxy_mode_always_description">Bruk alltid privat ruting.</string>
     <string name="always_use_relay">Bruk alltid relé</string>
     <string name="rcv_group_and_other_events">og %d andre hendelser</string>
-    <string name="keychain_is_storing_securely">Android Keystore brukes til å lagre passord på en sikker måte – det gjør at varslingstjenesten fungerer.</string>
+    <string name="keychain_is_storing_securely">Android Keystore%s brukes til å lagre passord på en sikker måte – det gjør at varslingstjenesten fungerer.</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore brukes til å trygt lagre passordet ditt etter at du restarter appen eller bytter passord - det gjør at du kan motta varsler.</string>
     <string name="empty_chat_profile_is_created">En tom chat-profil med navnet du har valgt vil bli laget, og appen åpnes som vanlig.</string>
     <string name="connect__a_new_random_profile_will_be_shared">En ny tilfeldig profil vil bli delt.</string>

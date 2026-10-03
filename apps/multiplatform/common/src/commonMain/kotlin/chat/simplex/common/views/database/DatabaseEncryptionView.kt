@@ -1,6 +1,5 @@
 package chat.simplex.common.views.database
 
-import InfoRow
 import SectionBottomSpacer
 import SectionItemViewSpaceBetween
 import SectionSpacer
@@ -142,10 +141,6 @@ fun DatabaseEncryptionLayout(
           }
         }
 
-        if (keyStorage != null) {
-          InfoRow(stringResource(MR.strings.keystore_key_storage), keyStorage.text)
-        }
-
         if (!initialRandomDBPassphrase.value && chatDbEncrypted == true) {
           PassphraseField(
             currentKey,
@@ -204,7 +199,7 @@ fun DatabaseEncryptionLayout(
       }
 
       Column {
-        DatabaseEncryptionFooter(useKeychain, chatDbEncrypted, storedKey, initialRandomDBPassphrase, migration)
+        DatabaseEncryptionFooter(useKeychain, chatDbEncrypted, storedKey, keyStorage, initialRandomDBPassphrase, migration)
       }
       SectionBottomSpacer()
     }
@@ -262,6 +257,7 @@ expect fun DatabaseEncryptionFooter(
   useKeychain: MutableState<Boolean>,
   chatDbEncrypted: Boolean?,
   storedKey: MutableState<Boolean>,
+  keyStorage: KeyStorage?,
   initialRandomDBPassphrase: MutableState<Boolean>,
   migration: Boolean,
 )
@@ -307,7 +303,7 @@ private fun removePassphraseFromKeyChain(useKeychain: MutableState<Boolean>, sto
   storedKey.value = false
 }
 
-private val KeyStorage.text: String
+val KeyStorage.text: String
   get() = when (this) {
     KeyStorage.StrongBox -> generalGetString(MR.strings.keystore_key_storage_strongbox)
     KeyStorage.TrustedEnvironment -> generalGetString(MR.strings.keystore_key_storage_tee)
