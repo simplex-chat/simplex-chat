@@ -2463,6 +2463,7 @@ fun BoxScope.ChatItemsList(
 
   LaunchedEffect(Unit) {
     snapshotFlow { listState.value.isScrollInProgress }
+      .onCompletion { chatViewScrollState.value = false }
       .collect {
         chatViewScrollState.value = it
       }
