@@ -684,8 +684,8 @@ fwdFileUnavailableError :: FileError
 fwdFileUnavailableError = FileErrOther "file was sent before you connected to the sender"
 
 -- the conditions that can change are checked again, as the iOS app and notification service extension can process the same file
-setRcvFileUnavailable :: DB.Connection -> User -> FileTransferId -> IO ()
-setRcvFileUnavailable db User {userId} fileId = do
+setRcvFileUnavailable :: DB.Connection -> User -> FileTransferId -> IO Bool
+setRcvFileUnavailable db user@User {userId} fileId = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -706,24 +706,27 @@ setRcvFileUnavailable db User {userId} fileId = do
         )
     |]
     (CIFSRcvError fwdFileUnavailableError, currentTs, userId, fileId, FSNew, FSAccepted)
+  isJust <$> getRcvFileUnavailable_ db user fileId
+
+-- on Postgres the marked row is locked first, so that rcv_files status is read after a concurrent accept or cancel commits
+getRcvFileUnavailable_ :: DB.Connection -> User -> FileTransferId -> IO (Maybe Int)
+getRcvFileUnavailable_ db User {userId} fileId =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      ( "SELECT 1 FROM files WHERE user_id = ? AND file_id = ? AND ci_file_status = ?"
+#if defined(dbPostgres)
+          <> " FOR UPDATE"
+#endif
+      )
+      (userId, fileId, CIFSRcvError fwdFileUnavailableError)
 
 unsetRcvFileUnavailable :: DB.Connection -> User -> FileTransferId -> IO Bool
-unsetRcvFileUnavailable db User {userId} fileId = do
-  marked <-
-    maybeFirstRow fromOnly $
-      DB.query db "SELECT 1 FROM files WHERE user_id = ? AND file_id = ? AND ci_file_status = ?" (userId, fileId, CIFSRcvError fwdFileUnavailableError)
-  case marked of
-    Just (_ :: Int) -> do
-      currentTs <- getCurrentTime
-      DB.execute
-        db
-        [sql|
-          UPDATE files
-          SET ci_file_status = CASE WHEN (SELECT r.file_status FROM rcv_files r WHERE r.file_id = files.file_id) = ? THEN ? ELSE ? END,
-            updated_at = ?
-          WHERE user_id = ? AND file_id = ?
-        |]
-        (FSAccepted, CIFSRcvAccepted, CIFSRcvInvitation, currentTs, userId, fileId)
+unsetRcvFileUnavailable db user fileId =
+  getRcvFileUnavailable_ db user fileId >>= \case
+    Just _ -> do
+      status_ <- maybeFirstRow fromOnly $ DB.query db "SELECT file_status FROM rcv_files WHERE file_id = ?" (Only fileId)
+      updateCIFileStatus db user fileId $ if status_ == Just FSAccepted then CIFSRcvAccepted else CIFSRcvInvitation
       pure True
     Nothing -> pure False
 

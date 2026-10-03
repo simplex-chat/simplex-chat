@@ -924,9 +924,8 @@ markFwdFilesUnavailable user m = do
   cxt <- chatStoreCxt
   fileIds <- withStore' $ \db -> getForwardedRcvFilesWithoutDescr db user m
   forM_ fileIds $ \fileId -> do
-    aci_ <- withStore $ \db -> do
-      liftIO $ setRcvFileUnavailable db user fileId
-      lookupChatItemByFileId db cxt user fileId
+    aci_ <- withStore $ \db ->
+      ifM (liftIO $ setRcvFileUnavailable db user fileId) (lookupChatItemByFileId db cxt user fileId) (pure Nothing)
     forM_ aci_ $ toView . CEvtChatItemUpdated user
 
 -- The author also sent the message directly, so it has the file transfer for the user and should send the description.
@@ -2914,14 +2913,17 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
     withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery $ Just amGroupMemId)
       `catchAllErrors` \e -> case e of
         ChatErrorStore (SEDuplicateGroupMessage _ _ duplAuthorId_ (Just forwardedByGroupMemberId)) -> do
+          cxt <- chatStoreCxt
+          ( do
+              fm <- withStore $ \db -> getGroupMember db cxt user groupId forwardedByGroupMemberId
+              forM_ (memberConn fm) $ \fmConn ->
+                void $ sendDirectMemberMessage fmConn (XGrpMemCon amMemId) groupId
+            )
+            `catchAllErrors` eToView
           case (chatMsgEvent, sharedMsgId_) of
             (XMsgNew {}, Just sharedMsgId)
               | duplAuthorId_ == Just amGroupMemId -> fwdMsgReceivedDirectly user groupId amGroupMemId sharedMsgId `catchAllErrors` eToView
             _ -> pure ()
-          cxt <- chatStoreCxt
-          fm <- withStore $ \db -> getGroupMember db cxt user groupId forwardedByGroupMemberId
-          forM_ (memberConn fm) $ \fmConn ->
-            void $ sendDirectMemberMessage fmConn (XGrpMemCon amMemId) groupId
           throwError e
         _ -> throwError e
   pure (am', conn', msg)
