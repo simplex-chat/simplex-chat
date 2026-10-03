@@ -60,7 +60,7 @@ If the two members connect between sending the file and completing its upload, t
 
 ## Limitations
 
-- Marking, unmarking and the revive emit `CEvtChatItemUpdated`, as the existing "file digest" and "redirect not allowed" file errors do. Android and desktop apps show a notification for an updated item of a user that is not active, so such a user can get a notification for the old message.
+- Marking, unmarking and the revive emit `CEvtChatItemUpdated`, as the existing "file digest" and "redirect not allowed" file errors and edits of old messages do, but without a user action. The apps handle an update of an item that is not loaded in the open chat (`upsertChatItem`) by adding it at the bottom of the chat and showing a notification for it, and Android and desktop also notify for an updated item of a user that is not active. So a marked or revived old file message can appear at the bottom of an open chat until it is reopened, with a notification for the old message; on iOS it can also become the chat preview. This is app-side behaviour for all item updates and is addressed separately.
 - The CLI shows a marked or unmarked item as an updated message without the file status (`viewItemUpdate` ignores it, as for other file status updates); API clients get the status.
 
 - The file is not delivered: the user sees an error instead of an endless wait. Delivering it needs option 2 or 3.
