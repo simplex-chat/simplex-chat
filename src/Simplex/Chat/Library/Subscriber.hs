@@ -2826,7 +2826,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
 
     xGrpLinkAcpt :: GroupInfoKeys -> GroupMember -> GroupAcceptance -> GroupMemberRole -> MemberId -> RcvMessage -> UTCTime -> CM ()
     xGrpLinkAcpt g@(GIK gInfo@GroupInfo {membership} _) m acceptance role memberId msg brokerTs
-      | memberRole' m < GRModerator || memberRole' m < role =
+      -- same rule as role change (moderators grant up to member); pending member's role is a stand-in, so treat it as member
+      | memberRole' m < roleRequiredToChange GRMember role =
           messageError "x.grp.link.acpt with insufficient member permissions"
       | sameMemberId memberId membership = processUserAccepted
       | otherwise =
