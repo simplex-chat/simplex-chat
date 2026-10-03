@@ -5674,7 +5674,7 @@ Bu, %@ qrupu üçün olan keçidinizdir!</target>
       </trans-unit>
       <trans-unit id="Member is deleted - can't accept request" xml:space="preserve" approved="no">
         <source>Member is deleted - can't accept request</source>
-        <target state="translated">Üzv silinib – sorğu qəbul edilə bilmir.</target>
+        <target state="translated">Üzv silinib – sorğu qəbul edilə bilmir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
@@ -5732,20 +5732,24 @@ Bu, %@ qrupu üçün olan keçidinizdir!</target>
         <target state="translated">Üzvlər birbaşa mesajlar göndərə bilərlər.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can send disappearing messages." xml:space="preserve">
+      <trans-unit id="Members can send disappearing messages." xml:space="preserve" approved="no">
         <source>Members can send disappearing messages.</source>
+        <target state="translated">Üzvlər yoxa çıxan mesajlar göndərə bilərlər.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can send files and media." xml:space="preserve">
+      <trans-unit id="Members can send files and media." xml:space="preserve" approved="no">
         <source>Members can send files and media.</source>
+        <target state="translated">Üzvlər fayllar və media göndərə bilərlər.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Members can send voice messages." xml:space="preserve">
+      <trans-unit id="Members can send voice messages." xml:space="preserve" approved="no">
         <source>Members can send voice messages.</source>
+        <target state="translated">Üzvlər səsli mesajlar göndərə bilərlər.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Mention members 👋" xml:space="preserve">
+      <trans-unit id="Mention members 👋" xml:space="preserve" approved="no">
         <source>Mention members 👋</source>
+        <target state="translated">Üzvləri qeyd edin 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Menus" xml:space="preserve">
