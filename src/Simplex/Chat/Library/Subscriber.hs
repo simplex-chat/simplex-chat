@@ -1982,7 +1982,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           ft' <- getRcvFileTransfer db user fileId
           pure (rfd, ft', unmarked_)
         forM_ unmarked_ $ toView . CEvtChatItemUpdated user
-        when fileDescrComplete $ toView $ CEvtRcvFileDescrReady user aci ft' rfd
+        when fileDescrComplete $ toView $ CEvtRcvFileDescrReady user (fromMaybe aci unmarked_) ft' rfd
         maxSize <- asks $ noBadge . fileSizeLimits . config
         let descrBadgeRequired = fileDescrComplete && fileSize > maxSize && isNothing fileProhibited
         prohibited_ <- case fileBadge of

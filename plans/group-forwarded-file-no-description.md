@@ -60,7 +60,7 @@ If the two members connect between sending the file and completing its upload, t
 
 ## Limitations
 
-- Marking, unmarking and the revive emit `CEvtChatItemUpdated`, as the existing "file digest" and "redirect not allowed" file errors and edits of old messages do, but without a user action. The apps handle an update of an item that is not loaded in the open chat (`upsertChatItem`) by adding it at the bottom of the chat; iOS also adds a notification for it, and Android and desktop do so when the app is in the background or its window is not focused. Android and desktop also notify for an updated item of a user that is not active. So a marked or revived old file message can appear at the bottom of an open chat until it is reopened, possibly with a notification for the old message; on iOS it can also become the chat preview. This is app-side behaviour for all item updates and is addressed separately.
+- Marking, unmarking and the revive emit `CEvtChatItemUpdated`, as the existing "file digest" and "redirect not allowed" file errors and edits of old messages do, but without a user action. The apps handle an update of an item they have not loaded (`upsertChatItem`) like a new item: it can be added at the bottom of an open chat or become the chat preview, and a notification can be shown for it, depending on platform, app state and active user. So a marked or revived old file message can be shown this way. This is app-side behaviour for all item updates and is addressed separately.
 - The CLI shows a marked or unmarked item as an updated message without the file status (`viewItemUpdate` ignores it, as for other file status updates); API clients get the status.
 
 - The file is not delivered: the user sees an error instead of an endless wait. Delivering it needs option 2 or 3.
@@ -68,7 +68,7 @@ If the two members connect between sending the file and completing its upload, t
 - Files from authors whose connection was ready before this change are not revisited: marking happens only when a connection becomes ready.
 - A multi-part description of which only some parts were forwarded before the host stopped forwarding (`part_no > 0`, incomplete) is not marked, and keeps waiting as before. This needs a description longer than one part (very large files) and the connection report to be processed between the parts.
 - If the author's connection to the user is inactive (quota) when its upload completes, `memberFTs` skips it and the description is not sent, although the transfer record exists and the direct `x.msg.new` (sent later from the pending queue) unmarks the file. The file then waits, as it did before this change; this is a sender-side loss.
-- A file the revive resets to an invitation is not auto-received by Android and desktop apps, which auto-receive only new items; iOS receives it only if the notification service flagged it (`to_receive`) and the chat is started within 2 days of the invitation (`startReceiveUserFiles` runs at chat start for files created in the last 2 days).
+- A file the revive resets to an invitation is not auto-received by Android and desktop apps, which auto-receive only new items; iOS receives it only if the notification service flagged it (`to_receive`) and chat is started or activated within 2 days of the invitation (`startReceiveUserFiles`).
 
 ## Compatibility
 
