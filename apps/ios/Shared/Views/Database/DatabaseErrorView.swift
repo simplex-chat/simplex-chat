@@ -264,6 +264,7 @@ struct DatabaseErrorView: View {
         do {
             try restoreBackup()
             showRestoreDbButton = false
+            encryptionStartedDefault.set(false)
         } catch {
             AlertManager.shared.showAlert(Alert(
                 title: Text("Restore database error"),

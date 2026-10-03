@@ -2264,6 +2264,10 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
     if  m.chatDbStatus != .ok { return }
     NetworkObserver.shared.restartMonitor()
+    // If we migrated successfully means previous re-encryption process on database level finished successfully too
+    if encryptionStartedDefault.get() {
+        encryptionStartedDefault.set(false)
+    }
     try apiSetAppFilePaths(filesFolder: getAppFilesDirectory().path, tempFolder: getTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path)
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
@@ -2357,9 +2361,9 @@ func startChat(refreshInvitations: Bool = true, onboarding: Bool = false) throws
     ChatReceiver.shared.start()
     m.chatRunning = true
     chatLastStartGroupDefault.set(Date.now)
-    if encryptionStartedDefault.get() {
+    if shouldDeleteDatabaseBackupsDefault.get() {
         deleteDatabaseBackups()
-        encryptionStartedDefault.set(false)
+        shouldDeleteDatabaseBackupsDefault.set(false)
     }
 }
 

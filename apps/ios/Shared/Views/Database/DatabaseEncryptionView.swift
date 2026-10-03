@@ -153,6 +153,10 @@ struct DatabaseEncryptionView: View {
                 try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
             }
             try await apiStorageEncryption(currentKey: currentKey, newKey: newKey)
+            if currentKey != newKey {
+                shouldDeleteDatabaseBackupsDefault.set(true)
+            }
+            encryptionStartedDefault.set(false)
             initialRandomDBPassphraseGroupDefault.set(false)
             if migration {
                 storeDBPassphraseGroupDefault.set(useKeychain)

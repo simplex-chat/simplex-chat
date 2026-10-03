@@ -453,9 +453,9 @@ struct DatabaseView: View {
                 ChatReceiver.shared.start()
                 chatLastStartGroupDefault.set(Date.now)
                 AppChatState.shared.set(.active)
-                if encryptionStartedDefault.get() {
+                if shouldDeleteDatabaseBackupsDefault.get() {
                     deleteDatabaseBackups()
-                    encryptionStartedDefault.set(false)
+                    shouldDeleteDatabaseBackupsDefault.set(false)
                 }
             } catch let error {
                 runChat.wrappedValue = false
