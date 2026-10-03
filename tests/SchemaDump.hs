@@ -147,7 +147,9 @@ skipComparisonForDownMigrations =
     -- appends; CREATE INDEX appends).
     "20260529_delivery_job_senders",
     -- group_domain is removed
-    "20260603_simplex_name"
+    "20260603_simplex_name",
+    -- on down migration idx_group_members_group_id index moves down to the end of the file
+    "20260926_member_role_index"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String
