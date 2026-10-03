@@ -1642,6 +1642,10 @@
   <!-- DatabaseEncryptionView.kt -->
   <string name="save_passphrase_in_keychain">Save passphrase in Keystore</string>
   <string name="save_passphrase_in_settings">Save passphrase in settings</string>
+  <string name="keystore_key_storage">Key storage</string>
+  <string name="keystore_key_storage_strongbox">Secure element (StrongBox)</string>
+  <string name="keystore_key_storage_tee">Trusted environment (TEE)</string>
+  <string name="keystore_key_storage_software">Software</string>
   <string name="database_encrypted">Database encrypted!</string>
   <string name="error_encrypting_database">Error encrypting database</string>
   <string name="remove_passphrase_from_keychain">Remove passphrase from Keystore?</string>

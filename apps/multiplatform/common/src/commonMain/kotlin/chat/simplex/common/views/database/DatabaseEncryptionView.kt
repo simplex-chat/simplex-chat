@@ -1,5 +1,6 @@
 package chat.simplex.common.views.database
 
+import InfoRow
 import SectionBottomSpacer
 import SectionItemViewSpaceBetween
 import SectionSpacer
@@ -44,6 +45,7 @@ fun DatabaseEncryptionView(m: ChatModel, migration: Boolean) {
   val useKeychain = remember { mutableStateOf(appPrefs.storeDBPassphrase.get()) }
   val initialRandomDBPassphrase = remember { mutableStateOf(appPrefs.initialRandomDBPassphrase.get()) }
   val storedKey = remember { val key = DatabaseUtils.ksDatabasePassword.get(); mutableStateOf(key != null && key != "") }
+  val keyStorage = remember(storedKey.value) { if (storedKey.value) DatabaseUtils.ksDatabasePassword.storage() else null }
   // Do not do rememberSaveable on current key to prevent saving it on disk in clear text
   val currentKey = remember { mutableStateOf(if (initialRandomDBPassphrase.value) DatabaseUtils.ksDatabasePassword.get() ?: "" else "") }
   val newKey = rememberSaveable { mutableStateOf("") }
@@ -60,6 +62,7 @@ fun DatabaseEncryptionView(m: ChatModel, migration: Boolean) {
       newKey,
       confirmNewKey,
       storedKey,
+      keyStorage,
       initialRandomDBPassphrase,
       progressIndicator,
       migration,
@@ -105,6 +108,7 @@ fun DatabaseEncryptionLayout(
   newKey: MutableState<String>,
   confirmNewKey: MutableState<String>,
   storedKey: MutableState<Boolean>,
+  keyStorage: KeyStorage?,
   initialRandomDBPassphrase: MutableState<Boolean>,
   progressIndicator: MutableState<Boolean>,
   migration: Boolean,
@@ -136,6 +140,10 @@ fun DatabaseEncryptionLayout(
           } else {
             setUseKeychain(false, useKeychain, migration)
           }
+        }
+
+        if (keyStorage != null) {
+          InfoRow(stringResource(MR.strings.keystore_key_storage), keyStorage.text)
         }
 
         if (!initialRandomDBPassphrase.value && chatDbEncrypted == true) {
@@ -299,6 +307,13 @@ private fun removePassphraseFromKeyChain(useKeychain: MutableState<Boolean>, sto
   storedKey.value = false
 }
 
+private val KeyStorage.text: String
+  get() = when (this) {
+    KeyStorage.StrongBox -> generalGetString(MR.strings.keystore_key_storage_strongbox)
+    KeyStorage.TrustedEnvironment -> generalGetString(MR.strings.keystore_key_storage_tee)
+    KeyStorage.Software -> generalGetString(MR.strings.keystore_key_storage_software)
+  }
+
 fun storeSecurelySaved() = generalGetString(MR.strings.store_passphrase_securely)
 
 fun storeSecurelyDanger() = generalGetString(MR.strings.store_passphrase_securely_without_recover)
@@ -459,12 +474,13 @@ suspend fun encryptDatabase(
         if (migration) {
           appPreferences.storeDBPassphrase.set(useKeychain.value)
         }
-        resetFormAfterEncryption(m, initialRandomDBPassphrase, currentKey, newKey, confirmNewKey, storedKey, useKeychain.value)
         if (useKeychain.value) {
           DatabaseUtils.ksDatabasePassword.set(new)
         } else {
           removePassphraseFromKeyChain(useKeychain, storedKey, migration)
         }
+        // DatabaseEncryptionView reads key storage when storedKey changes, so storedKey is updated after the key is saved
+        resetFormAfterEncryption(m, initialRandomDBPassphrase, currentKey, newKey, confirmNewKey, storedKey, useKeychain.value)
         operationEnded(m, progressIndicator) {
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.database_encrypted))
         }
@@ -539,6 +555,7 @@ fun PreviewDatabaseEncryptionLayout() {
       newKey = remember { mutableStateOf("") },
       confirmNewKey = remember { mutableStateOf("") },
       storedKey = remember { mutableStateOf(true) },
+      keyStorage = KeyStorage.StrongBox,
       initialRandomDBPassphrase = remember { mutableStateOf(true) },
       progressIndicator = remember { mutableStateOf(false) },
       migration = false,

@@ -1,8 +1,11 @@
 package chat.simplex.common.platform
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyInfo
 import android.security.keystore.KeyProperties
+import android.security.keystore.StrongBoxUnavailableException
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -68,15 +71,43 @@ internal class Cryptor: CryptorInterface {
     keyStore.deleteEntry(alias)
   }
 
+  override fun keyStorage(alias: String): KeyStorage? {
+    val secretKey = getSecretKey(alias) ?: return null
+    val keyInfo = SecretKeyFactory.getInstance(secretKey.algorithm, "AndroidKeyStore").getKeySpec(secretKey, KeyInfo::class.java) as KeyInfo
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      when (keyInfo.securityLevel) {
+        KeyProperties.SECURITY_LEVEL_STRONGBOX -> KeyStorage.StrongBox
+        KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT -> KeyStorage.TrustedEnvironment
+        KeyProperties.SECURITY_LEVEL_SOFTWARE -> KeyStorage.Software
+        else -> null
+      }
+    } else {
+      // isInsideSecureHardware does not distinguish StrongBox, which createSecretKey only requests on API 31+
+      @Suppress("DEPRECATION")
+      if (keyInfo.isInsideSecureHardware) KeyStorage.TrustedEnvironment else KeyStorage.Software
+    }
+  }
+
   private fun createSecretKey(alias: String): SecretKey? {
     if (keyStore.containsAlias(alias)) return getSecretKey(alias)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      try {
+        return generateKey(keySpec(alias).setIsStrongBoxBacked(true))
+      } catch (e: StrongBoxUnavailableException) {
+        Log.i(TAG, "StrongBox is unavailable, using default keystore: ${e.message}")
+      }
+    }
+    return generateKey(keySpec(alias))
+  }
+
+  private fun keySpec(alias: String): KeyGenParameterSpec.Builder =
+    KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+      .setBlockModes(BLOCK_MODE)
+      .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+
+  private fun generateKey(spec: KeyGenParameterSpec.Builder): SecretKey {
     val keyGenerator: KeyGenerator = KeyGenerator.getInstance(KEY_ALGORITHM, "AndroidKeyStore")
-    keyGenerator.init(
-      KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
-        .setBlockModes(BLOCK_MODE)
-        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-        .build()
-    )
+    keyGenerator.init(spec.build())
     return keyGenerator.generateKey()
   }
 
