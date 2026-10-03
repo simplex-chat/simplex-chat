@@ -669,7 +669,7 @@ getForwardedRcvFilesWithoutDescr db User {userId} GroupMember {groupId, groupMem
         JOIN chat_items i ON i.chat_item_id = f.chat_item_id
         LEFT JOIN xftp_file_descriptions d ON d.file_descr_id = r.file_descr_id
         WHERE f.file_id = r.file_id AND f.user_id = ? AND f.group_id = ? AND r.group_member_id = ?
-          AND f.protocol = ? AND COALESCE(f.cancelled, 0) = 0 AND r.file_status IN (?,?)
+          AND f.protocol = ? AND COALESCE(f.cancelled, 0) = 0 AND f.file_max_size IS NULL AND r.file_status IN (?,?)
           AND i.forwarded_by_group_member_id IS NOT NULL
           AND (d.file_descr_id IS NULL OR d.file_descr_part_no = 0)
           AND NOT EXISTS (
@@ -691,7 +691,7 @@ setRcvFileUnavailable db user@User {userId} fileId = do
     db
     [sql|
       UPDATE files SET ci_file_status = ?, updated_at = ?
-      WHERE user_id = ? AND file_id = ? AND COALESCE(cancelled, 0) = 0
+      WHERE user_id = ? AND file_id = ? AND COALESCE(cancelled, 0) = 0 AND file_max_size IS NULL
         AND EXISTS (
           SELECT 1 FROM rcv_files r
           JOIN chat_items i ON i.chat_item_id = files.chat_item_id
