@@ -1326,6 +1326,27 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func upsertSupportChatMember(_ cInfo: ChatInfo) {
+        if case let .group(groupInfo, .memberSupport(member?)?) = cInfo {
+            var m = getGroupMember(member.groupMemberId)?.wrapped ?? member
+            let supportChatAdded = m.supportChat == nil && member.supportChat != nil
+            m.supportChat = member.supportChat
+            m.memberProfile = member.memberProfile
+            _ = upsertGroupMember(groupInfo, m)
+            if supportChatAdded {
+                objectWillChange.send()
+            }
+        }
+    }
+
+    func withLoadedSupportChat(_ member: GroupMember) -> GroupMember {
+        var m = member
+        if let supportChat = getGroupMember(member.groupMemberId)?.wrapped.supportChat {
+            m.supportChat = supportChat
+        }
+        return m
+    }
+
     func upsertGroupMember(_ groupInfo: GroupInfo, _ member: GroupMember) -> Bool {
         // user member was updated
         if groupInfo.membership.groupMemberId == member.groupMemberId {

@@ -54,6 +54,7 @@ func apiLoadMessages(
             if im.secondaryIMFilter == nil {
                 chatModel.updateChatInfo(chat.chatInfo)
             }
+            chatModel.upsertSupportChatMember(chat.chatInfo)
             im.chatState.splits = newSplits
             if !chat.chatItems.isEmpty {
                 im.chatState.unreadAfterItemId = chat.chatItems.last!.id

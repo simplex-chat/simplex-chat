@@ -20,19 +20,8 @@ struct MemberSupportView: View {
     var body: some View {
         viewBody()
             .onAppear {
-                Task {
-                    await chatModel.loadGroupMembers(groupInfo)
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        Task {
-                            await chatModel.loadGroupMembers(groupInfo)
-                        }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
+                if !chatModel.membersLoaded {
+                    Task { await chatModel.loadGroupMembers(groupInfo) }
                 }
             }
     }
@@ -92,8 +81,8 @@ struct MemberSupportView: View {
                 .frame(width: 1, height: 1)
                 .hidden()
             }
-            .if(!memberWithChat.wrapped.memberPending && memberWithChat.wrapped.supportChatNotRead) { v in
-                v.swipeActions(edge: .leading, allowsFullSwipe: true) {
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                if !memberWithChat.wrapped.memberPending && memberWithChat.wrapped.supportChatNotRead {
                     Button {
                         Task { await markSupportChatRead(groupInfo, memberWithChat.wrapped) }
                     } label: {
