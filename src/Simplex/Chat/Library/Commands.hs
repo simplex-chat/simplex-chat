@@ -351,22 +351,12 @@ startReceiveUserFiles user = do
 
 restoreCalls :: CM' ()
 restoreCalls = do
-  savedCalls <- fromRight [] <$> runExceptT (withFastStore' getCalls)
   ttl <- asks (callInvitationTTL . config)
-  currentTs <- liftIO getCurrentTime
-  let (expiredCalls, liveCalls) = partition (\Call {callTs} -> diffUTCTime currentTs callTs > ttl) savedCalls
-      callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) liveCalls
+  cutoffTs <- addUTCTime (-ttl) <$> liftIO getCurrentTime
+  savedCalls <- fromRight [] <$> runExceptT (withFastStore' $ \db -> expireCalls db cutoffTs >> getCalls db)
+  let callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) savedCalls
   calls <- asks currentCalls
   atomically $ writeTVar calls callsMap
-  forM_ expiredCalls $ \call -> expireCall call `catchAllErrors'` eToView'
-  where
-    expireCall call@Call {contactId} = do
-      cxt <- chatStoreCxt
-      (user, ct) <- withStore $ \db -> do
-        user <- getUserByContactId db contactId
-        (user,) <$> getContact db cxt user contactId
-      withStore' $ \db -> deleteCalls db user contactId
-      updateCallItemStatus user ct call WCSDisconnected Nothing
 
 stopChatController :: ChatController -> IO ()
 stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession, cleanupManagerAsync, relayGroupLinkChecksAsync, webPreviewState, expireCIThreads, timedItemThreads, deliveryTaskWorkers, deliveryJobWorkers, relayRequestWorkers, badgeWorkers} = do
@@ -5835,6 +5825,7 @@ cleanupManager = do
       cleanupDeliveryJobs `catchAllErrors` eToView
       -- TODO possibly, also cleanup async commands
       cleanupProbes `catchAllErrors` eToView
+      cleanupCalls `catchAllErrors` eToView
     liftIO $ threadDelay' $ diffToMicroseconds interval
   where
     runWithoutInitialDelay cleanupInterval = flip catchAllErrors eToView $ do
@@ -5904,6 +5895,13 @@ cleanupManager = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(14 * nominalDay)) ts
       withStore' (`deleteOldProbes` cutoffTs)
+    cleanupCalls = do
+      ttl <- asks (callInvitationTTL . config)
+      cutoffTs <- addUTCTime (-ttl) <$> liftIO getCurrentTime
+      calls <- asks currentCalls
+      -- memory is cleaned before the store, otherwise x.call.end received in between would mark the missed call as ended
+      atomically $ modifyTVar' calls $ M.filter $ \call@Call {callTs} -> not (isRcvInvitation call && callTs < cutoffTs)
+      withStore' (`expireCalls` cutoffTs)
 
 deleteInProgressGroup :: User -> GroupInfo -> CM ()
 deleteInProgressGroup user gInfo = do

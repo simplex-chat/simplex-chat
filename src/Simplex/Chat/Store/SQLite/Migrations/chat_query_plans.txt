@@ -5188,6 +5188,16 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE chat_items
+      SET item_content = ?, item_text = ?, updated_at = ?
+      WHERE chat_item_id IN (SELECT chat_item_id FROM calls WHERE call_ts < ?)
+    
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
+LIST SUBQUERY 1
+SCAN calls
+
+Query: 
+      UPDATE chat_items
       SET item_deleted = ?, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, updated_at = ?
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     
@@ -6647,6 +6657,10 @@ Error: SQLite3 returned ErrorError while attempting to perform prepare "explain 
 Query: DELETE FROM app_settings
 Plan:
 
+Query: DELETE FROM calls WHERE call_ts < ?
+Plan:
+SCAN calls
+
 Query: DELETE FROM calls WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH calls USING INDEX idx_calls_contact_id (contact_id=?)
@@ -7493,6 +7507,10 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT contact_request_id FROM contact_requests WHERE user_id = ? AND local_display_name = ?
 Plan:
 SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_1 (user_id=? AND local_display_name=?)
+
+Query: SELECT count(1) FROM calls
+Plan:
+SCAN calls USING COVERING INDEX idx_calls_contact_id
 
 Query: SELECT count(1) FROM chat_items WHERE chat_item_id > ?
 Plan:

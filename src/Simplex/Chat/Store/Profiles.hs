@@ -77,6 +77,7 @@ module Simplex.Chat.Store.Profiles
     createCall,
     deleteCalls,
     getCalls,
+    expireCalls,
     createCommand,
     setCommandConnId,
     deleteCommand,
@@ -103,6 +104,7 @@ import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Simplex.Chat.Badges (LocalBadge, localBadgeToRow)
 import Simplex.Chat.Call
 import Simplex.Chat.Messages
+import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
@@ -1083,6 +1085,21 @@ getCalls db =
   where
     toCall :: (ContactId, CallId, Text, ChatItemId, CallState, UTCTime) -> Call
     toCall (contactId, callId, callUUID, chatItemId, callState, callTs) = Call {contactId, callId, callUUID, chatItemId, callState, callTs}
+
+-- only received call invitations are stored, so their chat items are pending and become missed
+expireCalls :: DB.Connection -> UTCTime -> IO ()
+expireCalls db cutoffTs = do
+  currentTs <- getCurrentTime
+  let content = CIRcvCall CISCallMissed 0
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_content = ?, item_text = ?, updated_at = ?
+      WHERE chat_item_id IN (SELECT chat_item_id FROM calls WHERE call_ts < ?)
+    |]
+    (content, ciContentToText content, currentTs, cutoffTs)
+  DB.execute db "DELETE FROM calls WHERE call_ts < ?" (Only cutoffTs)
 
 createCommand :: DB.Connection -> User -> Maybe Int64 -> CommandFunction -> IO CommandId
 createCommand db User {userId} connId commandFunction = do
