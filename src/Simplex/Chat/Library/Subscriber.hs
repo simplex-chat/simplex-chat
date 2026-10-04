@@ -3046,7 +3046,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           CallInvitationSent {localCallType, localDhPrivKey} -> do
             let sharedKey = C.Key . C.dhBytes' <$> (C.dh' <$> callDhPubKey <*> localDhPrivKey)
                 callState' = CallOfferReceived {localCallType, peerCallType = callType, peerCallSession = rtcSession, sharedKey}
-                askConfirmation = encryptedCall localCallType && not (encryptedCall callType)
+                askConfirmation = encryptedCall localCallType && isNothing sharedKey
             toView CEvtCallOffer {user, contact = ct, callType, offer = rtcSession, sharedKey, askConfirmation}
             pure (Just call {callState = callState'}, Just . ACIContent SMDSnd $ CISndCall CISCallAccepted 0)
           _ -> do

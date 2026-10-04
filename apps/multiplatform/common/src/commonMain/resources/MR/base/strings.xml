@@ -1415,6 +1415,8 @@
   <string name="status_no_e2e_encryption">no e2e encryption</string>
   <string name="status_contact_has_e2e_encryption">contact has e2e encryption</string>
   <string name="status_contact_has_no_e2e_encryption">contact has no e2e encryption</string>
+  <string name="call_not_encrypted_title">Call is not encrypted</string>
+  <string name="call_not_encrypted_desc">%s accepted the call without end-to-end encryption.</string>
   <string name="call_connection_peer_to_peer">peer-to-peer</string>
   <string name="call_connection_via_relay">via relay</string>
   <string name="icon_descr_hang_up">Hang up</string>
