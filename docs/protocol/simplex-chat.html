@@ -1052,6 +1052,12 @@ eventWord = 1* ALPHA
 <p><code>x.call.end</code> message is sent to notify the other party that the call is terminated.</p>
 </li>
 </ol>
+<p>Call messages have their own version, independent of the chat protocol version. The initiating client sends the range of call versions it supports in <code>callVRange</code> property of <code>x.call.inv</code>. The receiving client chooses the highest version supported by both clients and sends it in <code>callVersion</code> property of <code>x.call.offer</code>. The initiating client rejects the offer if this version is not in the range it sent. A missing range or version means version 1.</p>
+<p>Media frames are encrypted with AES-256-GCM using the key agreed via X25519 DH keys in <code>x.call.inv</code> and <code>x.call.offer</code>:</p>
+<ul>
+<li>version 1: the key is the DH shared secret.</li>
+<li>version 2: the key is 32 bytes of HKDF-SHA512 output, using the DH shared secret as input key material, call ID as salt and <code>SimpleXCallMediaKey</code> as info.</li>
+</ul>
 <h2 id="threat-model" tabindex="-1">Threat model</h2>
 <p>This threat model complements SMP, XFTP, push notifications and XRCP protocols threat models, as well as the channel-specific threat model:</p>
 <ul>
