@@ -5188,16 +5188,6 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE chat_items
-      SET item_content = ?, item_text = ?, updated_at = ?
-      WHERE chat_item_id IN (SELECT chat_item_id FROM calls WHERE call_ts < ?)
-    
-Plan:
-SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
-LIST SUBQUERY 1
-SCAN calls
-
-Query: 
-      UPDATE chat_items
       SET item_deleted = ?, item_deleted_ts = ?, item_deleted_by_group_member_id = ?, updated_at = ?
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     
@@ -6657,7 +6647,7 @@ Error: SQLite3 returned ErrorError while attempting to perform prepare "explain 
 Query: DELETE FROM app_settings
 Plan:
 
-Query: DELETE FROM calls WHERE call_ts < ?
+Query: DELETE FROM calls WHERE call_ts < ? RETURNING chat_item_id
 Plan:
 SCAN calls
 
@@ -7821,6 +7811,10 @@ SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ? AND include_in_history = 1
 Plan:

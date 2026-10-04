@@ -128,7 +128,7 @@ import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
+import Database.PostgreSQL.Simple (In (..), Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
@@ -1089,17 +1089,22 @@ getCalls db =
 -- only received call invitations are stored, so their chat items are pending and become missed
 expireCalls :: DB.Connection -> UTCTime -> IO ()
 expireCalls db cutoffTs = do
+  itemIds :: [ChatItemId] <- map fromOnly <$> DB.query db "DELETE FROM calls WHERE call_ts < ? RETURNING chat_item_id" (Only cutoffTs)
   currentTs <- getCurrentTime
   let content = CIRcvCall CISCallMissed 0
-  DB.execute
+      contentText = ciContentToText content
+#if defined(dbPostgres)
+  unless (null itemIds) $
+    DB.execute
+      db
+      "UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id IN ?"
+      (content, contentText, currentTs, In itemIds)
+#else
+  DB.executeMany
     db
-    [sql|
-      UPDATE chat_items
-      SET item_content = ?, item_text = ?, updated_at = ?
-      WHERE chat_item_id IN (SELECT chat_item_id FROM calls WHERE call_ts < ?)
-    |]
-    (content, ciContentToText content, currentTs, cutoffTs)
-  DB.execute db "DELETE FROM calls WHERE call_ts < ?" (Only cutoffTs)
+    "UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id = ?"
+    (map (content,contentText,currentTs,) itemIds)
+#endif
 
 createCommand :: DB.Connection -> User -> Maybe Int64 -> CommandFunction -> IO CommandId
 createCommand db User {userId} connId commandFunction = do
