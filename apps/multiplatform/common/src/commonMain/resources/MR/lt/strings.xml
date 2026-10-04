@@ -523,7 +523,7 @@
     <string name="all_app_data_will_be_cleared">Visi programėlės duomenys bus ištrinti.</string>
     <string name="empty_chat_profile_is_created">Sukuriamas tuščias pokalbių profilis nurodytu pavadinimu ir programėlė atveriama kaip įprasta.</string>
     <string name="settings_section_title_app">Programėlė</string>
-    <string name="keychain_is_storing_securely">Saugiam slaptafrazės saugojimui yra naudojama „Android Keystore“ – tai įgalina pranešimų tarnybą veikti.</string>
+    <string name="keychain_is_storing_securely">Saugiam slaptafrazės saugojimui yra naudojama „Android Keystore“%s – tai įgalina pranešimų tarnybą veikti.</string>
     <string name="color_secondary_variant">Papildoma antrinė spalva</string>
     <string name="color_primary_variant">Papildomas akcentavimas</string>
     <string name="allow_to_send_files">Leisti siųsti failus ir mediją.</string>
