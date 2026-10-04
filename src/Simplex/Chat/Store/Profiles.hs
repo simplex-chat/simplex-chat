@@ -1093,17 +1093,17 @@ expireCalls db cutoffTs = do
   currentTs <- getCurrentTime
   let content = CIRcvCall CISCallMissed 0
       contentText = ciContentToText content
-#if defined(dbPostgres)
   unless (null itemIds) $
+#if defined(dbPostgres)
     DB.execute
       db
       "UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id IN ?"
       (content, contentText, currentTs, In itemIds)
 #else
-  DB.executeMany
-    db
-    "UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id = ?"
-    (map (content,contentText,currentTs,) itemIds)
+    DB.executeMany
+      db
+      "UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id = ?"
+      (map (content,contentText,currentTs,) itemIds)
 #endif
 
 createCommand :: DB.Connection -> User -> Maybe Int64 -> CommandFunction -> IO CommandId
