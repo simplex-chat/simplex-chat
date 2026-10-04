@@ -453,7 +453,7 @@ private fun MutableState<MigrationToState?>.PassphraseEnteringView(currentKey: S
           }
         }
       ) {}
-      DatabaseEncryptionFooter(useKeychain, chatDbEncrypted = true, remember { mutableStateOf(false) }, remember { mutableStateOf(false) }, true)
+      DatabaseEncryptionFooter(useKeychain, chatDbEncrypted = true, remember { mutableStateOf(false) }, null, remember { mutableStateOf(false) }, true)
     }
     if (verifyingPassphrase.value) {
       ProgressView()

@@ -89,7 +89,7 @@
     <string name="users_delete_profile_for">为此删除聊天资料</string>
     <string name="delete_database">删除数据库</string>
     <string name="keychain_allows_to_receive_ntfs">在你重启应用程序或者更换密码后安卓密钥库系统用来安全地保存密码——来确保收到通知。</string>
-    <string name="keychain_is_storing_securely">安卓密钥库系统用来安全地保存密码——来确保通知服务运作。</string>
+    <string name="keychain_is_storing_securely">安卓密钥库系统%s用来安全地保存密码——来确保通知服务运作。</string>
     <string name="appearance_settings">外观</string>
     <string name="app_version_title">应用程序版本</string>
     <string name="full_backup">应用程序数据备份</string>

@@ -583,7 +583,7 @@
     <string name="update_database_passphrase">Datenbank-Passwort aktualisieren</string>
     <string name="enter_correct_current_passphrase">Bitte geben Sie das korrekte, aktuelle Passwort ein.</string>
     <string name="database_is_not_encrypted">Ihre Chat-Datenbank ist nicht verschlüsselt. Bitte legen Sie ein Passwort fest, um sie zu schützen.</string>
-    <string name="keychain_is_storing_securely">Der Android-Keystore wird verwendet, um das Passwort sicher zu speichern. Dies ermöglicht die ordentliche Funktion des Benachrichtigungsdienstes.</string>
+    <string name="keychain_is_storing_securely">Der Android-Keystore%s wird verwendet, um das Passwort sicher zu speichern. Dies ermöglicht die ordentliche Funktion des Benachrichtigungsdienstes.</string>
     <string name="encrypted_with_random_passphrase">Die Datenbank wird mit einem zufälligen Passwort verschlüsselt, Sie können es ändern.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Bitte beachten Sie</b>: Sie können das Passwort NICHT wiederherstellen oder ändern, wenn Sie es vergessen haben oder verlieren.]]></string>
     <string name="keychain_allows_to_receive_ntfs">Der Android-Keystore wird verwendet, um das Passwort sicher zu speichern, nachdem Sie die App neu gestartet oder das Passwort geändert haben – dies ermöglicht den Empfang von Benachrichtigungen.</string>

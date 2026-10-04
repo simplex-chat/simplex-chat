@@ -101,7 +101,7 @@ Channel creation happens in `createNtfChannelsMaybeShowAlert()` ([line 298](../.
 [Line 160](../../android/src/main/java/chat/simplex/app/model/NtfManager.android.kt#L160):
 
 - Returns `false` (no notification) if app is in foreground -- in-app alert is used instead.
-- **Lock screen / screen off**: Uses `setFullScreenIntent` with a `PendingIntent` to `CallActivity`, plus `VISIBILITY_PUBLIC`.
+- **Lock screen / screen off**: Uses `setFullScreenIntent` with a `PendingIntent` to `CallActivity`.
 - **Foreground / unlocked**: Uses regular notification with Accept/Reject action buttons and a custom ringtone (`ring_once` raw resource).
 - Notification flags include `FLAG_INSISTENT` for repeating sound and vibration.
 - Call notification channel vibration pattern: `[250, 250, 0, 2600]` ms.

@@ -125,7 +125,7 @@
     <string name="settings_section_title_icon">Icona aplicació</string>
     <string name="privacy_media_blur_radius">Desenfocar els mitjans</string>
     <string name="settings_section_title_calls">Trucades</string>
-    <string name="keychain_is_storing_securely">Android Keystore s\'utilitza per emmagatzemar de manera segura la frase de contrasenya: permet que el servei de notificacions funcioni.</string>
+    <string name="keychain_is_storing_securely">Android Keystore%s s\'utilitza per emmagatzemar de manera segura la frase de contrasenya: permet que el servei de notificacions funcioni.</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore s\'utilitzarà per emmagatzemar de manera segura la frase de contrasenya després de reiniciar l\'aplicació o canviar la frase de contrasenya; permetrà rebre notificacions.</string>
     <string name="cannot_access_keychain">No es pot accedir a Keystore per desar la contrasenya de la base de dades</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Tingueu en compte</b>: NO podreu recuperar ni canviar la contrasenya si la perdeu.]]></string>

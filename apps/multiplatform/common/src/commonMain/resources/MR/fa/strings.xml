@@ -994,7 +994,7 @@
     <string name="encrypt_database">رمزنگاری</string>
     <string name="update_database_passphrase">به‌روزرسانی عبارت عبور پایگاه داده</string>
     <string name="set_passphrase">تعیین عبارت عبور</string>
-    <string name="keychain_is_storing_securely">از مخزن کلید اندروید برای ذخیره امن عبارت عبور استفاده می‌شود - به سرویس اعلان اجازه عمل می‌دهد.</string>
+    <string name="keychain_is_storing_securely">از مخزن کلید اندروید%s برای ذخیره امن عبارت عبور استفاده می‌شود - به سرویس اعلان اجازه عمل می‌دهد.</string>
     <string name="you_have_to_enter_passphrase_every_time">باید هر بار که برنامه شروع می‌شود عبارت عبور را وارد کنید - در دستگاه ذخیره نمی‌شود.</string>
     <string name="encrypted_database">پایگاه داده رمزنگاری شده</string>
     <string name="icon_descr_contact_checked">مخاطب بررسی شد</string>

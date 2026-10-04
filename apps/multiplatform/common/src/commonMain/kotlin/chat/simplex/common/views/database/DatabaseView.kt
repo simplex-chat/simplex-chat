@@ -598,6 +598,11 @@ fun deleteChatDatabaseFilesAndState() {
   ntfManager.cancelAllNotifications()
 }
 
+fun deleteDatabaseBackups() {
+  File(dataDir, "$chatDatabaseFileName.bak").delete()
+  File(dataDir, "$agentDatabaseFileName.bak").delete()
+}
+
 private suspend fun exportArchive(
   m: ChatModel,
   progressIndicator: MutableState<Boolean>,

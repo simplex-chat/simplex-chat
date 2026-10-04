@@ -54,7 +54,7 @@
     <string name="call_on_lock_screen">Chamadas na tela de bloqueio:</string>
     <string name="icon_descr_audio_on">Áudio ligado</string>
     <string name="chat_database_imported">Banco de dados do chat importado</string>
-    <string name="keychain_is_storing_securely">O Android Keystore é usado para armazenar a senha com segurança. Isso permite que o serviço de notificações funcione.</string>
+    <string name="keychain_is_storing_securely">O Android Keystore%s é usado para armazenar a senha com segurança. Isso permite que o serviço de notificações funcione.</string>
     <string name="keychain_allows_to_receive_ntfs">O Android Keystore será usado para armazenar a senha com segurança após você reiniciar o aplicativo ou alterar a senha, permitindo continuar recebendo notificações.</string>
     <string name="cannot_access_keychain">Não é possível acessar a Keystore para salvar a senha do banco de dados</string>
     <string name="chat_is_stopped_indication">O chat está parado</string>

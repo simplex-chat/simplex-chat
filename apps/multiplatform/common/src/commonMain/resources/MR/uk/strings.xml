@@ -25,7 +25,7 @@
     <string name="app_passcode_replaced_with_self_destruct">Пароль застосунку замінено паролем самознищення.</string>
     <string name="full_backup">Резервне копіювання даних застосунку</string>
     <string name="smp_servers_add_to_another_device">Додати на інший пристрій</string>
-    <string name="keychain_is_storing_securely">Сховище ключів Android використовується для безпечного збереження ключової фрази - це дозволяє службі сповіщень працювати.</string>
+    <string name="keychain_is_storing_securely">Сховище ключів Android%s використовується для безпечного збереження ключової фрази - це дозволяє службі сповіщень працювати.</string>
     <string name="v4_2_group_links_desc">Адміністратори можуть створювати посилання для приєднання до групи.</string>
     <string name="app_version_code">Збірка додатку: %s</string>
     <string name="allow_voice_messages_only_if">Дозволити голосові повідомлення тільки за умови, що ваш контакт дозволяє їх.</string>
