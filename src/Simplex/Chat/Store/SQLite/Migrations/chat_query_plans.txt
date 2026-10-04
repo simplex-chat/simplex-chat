@@ -6647,6 +6647,10 @@ Error: SQLite3 returned ErrorError while attempting to perform prepare "explain 
 Query: DELETE FROM app_settings
 Plan:
 
+Query: DELETE FROM calls WHERE call_ts < ? RETURNING chat_item_id
+Plan:
+SCAN calls
+
 Query: DELETE FROM calls WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH calls USING INDEX idx_calls_contact_id (contact_id=?)
@@ -7494,6 +7498,10 @@ Query: SELECT contact_request_id FROM contact_requests WHERE user_id = ? AND loc
 Plan:
 SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_1 (user_id=? AND local_display_name=?)
 
+Query: SELECT count(1) FROM calls
+Plan:
+SCAN calls USING COVERING INDEX idx_calls_contact_id
+
 Query: SELECT count(1) FROM chat_items WHERE chat_item_id > ?
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid>?)
@@ -7803,6 +7811,10 @@ SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE badge_purchases SET next_wake_at = ? WHERE badge_purchase_id = ?
 Plan:
 SEARCH badge_purchases USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE chat_items SET item_content = ?, item_text = ?, updated_at = ? WHERE chat_item_id = ?
+Plan:
+SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE chat_items SET item_msg_body = ?, item_chat_binding = ?, item_signatures = ?, item_signed_by_group_member_id = ? WHERE chat_item_id = ? AND include_in_history = 1
 Plan:
