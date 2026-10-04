@@ -17,8 +17,6 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_, poll)
 import Control.Monad (forM_, void, (>=>))
-import Control.Monad.Except (runExceptT)
-import Control.Monad.Reader (runReaderT)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -32,10 +30,9 @@ import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), PresetServers (..))
-import Simplex.Chat.Library.Internal (sendDirectContactMessage)
 import Simplex.Chat.Messages (ChatItemId)
 import Simplex.Chat.Options
-import Simplex.Chat.Protocol (ChatMsgEvent (..), supportedChatVRange)
+import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Types (ContactId, VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -108,11 +105,7 @@ chatDirectTests = do
     it "connect, fully asynchronous (when clients are never simultaneously online)" $ testFullAsyncFast
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
-    describe "call media key" $ do
-      it "current versions derive key with HKDF" $ testCallMediaKey testCfg testCfg callMediaKdfVersion
-      it "current to v1 uses DH secret as key" $ testCallMediaKey testCfg testCfgCallV1 initialCallVersion
-      it "v1 to current uses DH secret as key" $ testCallMediaKey testCfgCallV1 testCfg initialCallVersion
-    it "reject call offer with unsupported call version" testRejectCallOfferVersion
+    it "negotiate call between current and v1 clients" testNegotiateCallV1
     it "mark expired call invitation missed on restore" testExpireCallInvitation
   describe "maintenance mode" $ do
     it "stop chat stops all threads, start chat restarts them" testStopStartChat
@@ -1396,17 +1389,15 @@ inviteToCall alice bob = do
   bob <## "alice wants to connect with you via WebRTC video call (e2e encrypted)"
   repeatM_ 3 $ getTermLine bob
 
-testCallMediaKey :: ChatConfig -> ChatConfig -> VersionCall -> TestParams -> IO ()
-testCallMediaKey aliceCfg bobCfg expectedVersion =
-  runTestCfg2 aliceCfg bobCfg $ \alice bob -> do
+testNegotiateCallV1 :: TestParams -> IO ()
+testNegotiateCallV1 =
+  runTestCfg2 testCfg testCfgCallV1 $ \alice bob -> do
     connectUsers alice bob
     inviteToCall alice bob
-    Call {callId, callState = CallInvitationSent {localDhPrivKey = Just alicePrivKey}} <- currentCall alice 2
+    Call {callState = CallInvitationSent {localDhPrivKey = Just alicePrivKey}} <- currentCall alice 2
     Call {callState = CallInvitationReceived {localDhPubKey = Just bobPubKey, sharedKey = Just bobKey, callVersion}} <- currentCall bob 2
-    callVersion `shouldBe` Just expectedVersion
-    bobKey `shouldBe` callMediaKey expectedVersion callId bobPubKey alicePrivKey
-    let rawKey = C.Key $ C.dhBytes' $ C.dh' bobPubKey alicePrivKey
-    (bobKey == rawKey) `shouldBe` (expectedVersion == initialCallVersion)
+    callVersion `shouldBe` Just initialCallVersion
+    bobKey `shouldBe` C.Key (C.dhBytes' $ C.dh' bobPubKey alicePrivKey)
     bob ##> ("/_call offer @2 " <> serialize testWebRTCCallOffer)
     bob <## "ok"
     alice <## "bob accepted your WebRTC video call (e2e encrypted)"
@@ -1420,19 +1411,6 @@ testCallMediaKey aliceCfg bobCfg expectedVersion =
     bob ##> "/_call end @2"
     bob <## "ok"
     alice <## "call with bob ended"
-
-testRejectCallOfferVersion :: HasCallStack => TestParams -> IO ()
-testRejectCallOfferVersion =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
-    connectUsers alice bob
-    inviteToCall alice bob
-    Call {callId, callState = CallInvitationReceived {localDhPubKey}} <- currentCall bob 2
-    ct <- getTestCCContact bob 2
-    let offer = CallOffer {callType = testCallType, rtcSession = testWebRTCSession, callDhPubKey = localDhPubKey, callVersion = Just $ nextVersion $ maxVersion supportedCallVRange}
-    Right _ <- withCCUser bob $ \user -> runExceptT (sendDirectContactMessage user ct $ XCallOffer callId offer) `runReaderT` chatController bob
-    alice <## "error: x.call.offer: unsupported call version"
-    Call {callState = CallInvitationSent {}} <- currentCall alice 2
-    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: calling...")])
 
 testExpireCallInvitation :: HasCallStack => TestParams -> IO ()
 testExpireCallInvitation ps =
