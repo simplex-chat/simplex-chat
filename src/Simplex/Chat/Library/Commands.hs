@@ -5825,7 +5825,6 @@ cleanupManager = do
       cleanupDeliveryJobs `catchAllErrors` eToView
       -- TODO possibly, also cleanup async commands
       cleanupProbes `catchAllErrors` eToView
-      cleanupCalls `catchAllErrors` eToView
     liftIO $ threadDelay' $ diffToMicroseconds interval
   where
     runWithoutInitialDelay cleanupInterval = flip catchAllErrors eToView $ do
@@ -5895,13 +5894,6 @@ cleanupManager = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(14 * nominalDay)) ts
       withStore' (`deleteOldProbes` cutoffTs)
-    cleanupCalls = do
-      ttl <- asks (callInvitationTTL . config)
-      cutoffTs <- addUTCTime (-ttl) <$> liftIO getCurrentTime
-      calls <- asks currentCalls
-      -- memory is cleaned before the store, otherwise x.call.end received in between would mark the missed call as ended
-      atomically $ modifyTVar' calls $ M.filter $ \call@Call {callTs} -> not (isRcvInvitation call && callTs < cutoffTs)
-      withStore' (`expireCalls` cutoffTs)
 
 deleteInProgressGroup :: User -> GroupInfo -> CM ()
 deleteInProgressGroup user gInfo = do
