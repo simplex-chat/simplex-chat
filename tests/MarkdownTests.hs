@@ -20,6 +20,7 @@ import qualified URI.ByteString as U
 markdownTests :: Spec
 markdownTests = do
   textFormat
+  textStrikeThrough
   secretText
   textSmall
   textColor
@@ -56,6 +57,9 @@ s <<==>> ft = (s ==>> ft) >> (s <<== ft)
 
 bold :: Text -> Markdown
 bold = markdown Bold
+
+strike :: Text -> Markdown
+strike = markdown StrikeThrough
 
 textFormat :: Spec
 textFormat = describe "text format (bold)" do
@@ -115,6 +119,50 @@ textFormat = describe "text format (bold)" do
       <==> "this is " <> bold "long _bold_ (not italic)" <> " text"
     "snippet: `this is *bold text*`"
       <==> "snippet: " <> markdown Snippet "this is *bold text*"
+
+textStrikeThrough :: Spec
+textStrikeThrough = describe "text format (strikethrough)" do
+  it "correct markdown" do
+    "this is ~strike formatted~ text"
+      <==> "this is " <> strike "strike formatted" <> " text"
+    "~strike formatted~ text"
+      <==> strike "strike formatted" <> " text"
+    "this is ~strike~"
+      <==> "this is " <> strike "strike"
+    " ~strike~ text"
+      <==> " " <> strike "strike" <> " text"
+    "   ~strike~ text"
+      <==> "   " <> strike "strike" <> " text"
+    "this is ~strike~ "
+      <==> "this is " <> strike "strike" <> " "
+    "this is ~strike~   "
+      <==> "this is " <> strike "strike" <> "   "
+  it "correct markdown with double tilde" do
+    "this is ~~strike formatted~~ text"
+      ==> "this is " <> strike "strike formatted" <> " text"
+    "~~strike formatted~~ text"
+      ==> strike "strike formatted" <> " text"
+    "this is ~~strike~~"
+      ==> "this is " <> strike "strike"
+    " ~~strike~~ text"
+      ==> " " <> strike "strike" <> " text"
+    "this is ~~strike~~ "
+      ==> "this is " <> strike "strike" <> " "
+    "this is ~~strike~~   "
+      ==> "this is " <> strike "strike" <> "   "
+  it "ignored as markdown" do
+    "this is ~ unformatted ~ text"
+      <==> "this is ~ unformatted ~ text"
+    "this is ~unformatted ~ text"
+      <==> "this is ~unformatted ~ text"
+    "this is ~ unformatted~ text"
+      <==> "this is ~ unformatted~ text"
+    "this is ~~ unformatted ~~ text"
+      <==> "this is ~~ unformatted ~~ text"
+    "this is ~~unformatted ~~ text"
+      <==> "this is ~~unformatted ~~ text"
+    "this is ~~ unformatted~~ text"
+      <==> "this is ~~ unformatted~~ text"
 
 secretText :: Spec
 secretText = describe "secret text" do
