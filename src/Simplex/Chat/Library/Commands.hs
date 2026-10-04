@@ -351,7 +351,9 @@ startReceiveUserFiles user = do
 
 restoreCalls :: CM' ()
 restoreCalls = do
-  savedCalls <- fromRight [] <$> runExceptT (withFastStore' getCalls)
+  ttl <- asks (callInvitationTTL . config)
+  cutoffTs <- addUTCTime (-ttl) <$> liftIO getCurrentTime
+  savedCalls <- fromRight [] <$> runExceptT (withFastStore' $ \db -> expireCalls db cutoffTs >> getCalls db)
   let callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) savedCalls
   calls <- asks currentCalls
   atomically $ writeTVar calls callsMap
@@ -1509,7 +1511,8 @@ processChatCommand cxt nm = \case
           callId <- atomically $ CallId <$> C.randomBytes 16 g
           callUUID <- UUID.toText <$> liftIO V4.nextRandom
           dhKeyPair <- atomically $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
-          let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
+          ChatConfig {callVRange = callVR} <- asks config
+          let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair, callVRange = Just $ CallVersionRange callVR}
               callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
           (msg, _) <- sendDirectContactMessage user ct (XCallInv callId invitation)
           ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndCall CISCallPending 0)
@@ -1537,9 +1540,9 @@ processChatCommand cxt nm = \case
   APISendCallOffer contactId WebRTCCallOffer {callType, rtcSession} ->
     -- party accepting call
     withCurrentCall contactId $ \user ct call@Call {callId, chatItemId, callState} -> case callState of
-      CallInvitationReceived {peerCallType, localDhPubKey, sharedKey} -> do
+      CallInvitationReceived {peerCallType, localDhPubKey, sharedKey, callVersion} -> do
         let callDhPubKey = if encryptedCall callType then localDhPubKey else Nothing
-            offer = CallOffer {callType, rtcSession, callDhPubKey}
+            offer = CallOffer {callType, rtcSession, callDhPubKey, callVersion}
             callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
             aciContent = ACIContent SMDRcv $ CIRcvCall CISCallAccepted 0
         (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XCallOffer callId offer)

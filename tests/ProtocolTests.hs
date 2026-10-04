@@ -15,6 +15,7 @@ import Data.List (isInfixOf)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
+import Simplex.Chat.Call
 import Simplex.Chat.Library.Internal (decodeLinkUserData, encodeShortLinkData)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
@@ -420,3 +421,17 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.ok" $
     "{\"v\":\"9\",\"event\":\"x.ok\",\"params\":{}}"
       ==# XOk
+  it "x.call.inv without call version range" $
+    "{\"v\":\"9\",\"event\":\"x.call.inv\",\"params\":{\"callId\":\"AQIDBA==\",\"invitation\":{\"callType\":{\"media\":\"video\",\"capabilities\":{\"encryption\":true}}}}}"
+      #==# XCallInv (CallId "\1\2\3\4") CallInvitation {callType = defaultCallType, callDhPubKey = Nothing, callVRange = Nothing}
+  it "x.call.inv with call version range" $
+    "{\"v\":\"9\",\"event\":\"x.call.inv\",\"params\":{\"callId\":\"AQIDBA==\",\"invitation\":{\"callType\":{\"media\":\"video\",\"capabilities\":{\"encryption\":true}},\"callVRange\":\"1-2\"}}}"
+      #==# XCallInv (CallId "\1\2\3\4") CallInvitation {callType = defaultCallType, callDhPubKey = Nothing, callVRange = Just $ CallVersionRange $ mkVersionRange (VersionCall 1) (VersionCall 2)}
+  it "x.call.offer without call version" $
+    "{\"v\":\"9\",\"event\":\"x.call.offer\",\"params\":{\"callId\":\"AQIDBA==\",\"offer\":{\"callType\":{\"media\":\"video\",\"capabilities\":{\"encryption\":true}},\"rtcSession\":{\"rtcSession\":\"{}\",\"rtcIceCandidates\":\"[]\"}}}}"
+      #==# XCallOffer (CallId "\1\2\3\4") CallOffer {callType = defaultCallType, rtcSession = testRTCSession, callDhPubKey = Nothing, callVersion = Nothing}
+  it "x.call.offer with call version" $
+    "{\"v\":\"9\",\"event\":\"x.call.offer\",\"params\":{\"callId\":\"AQIDBA==\",\"offer\":{\"callType\":{\"media\":\"video\",\"capabilities\":{\"encryption\":true}},\"rtcSession\":{\"rtcSession\":\"{}\",\"rtcIceCandidates\":\"[]\"},\"callVersion\":2}}}"
+      #==# XCallOffer (CallId "\1\2\3\4") CallOffer {callType = defaultCallType, rtcSession = testRTCSession, callDhPubKey = Nothing, callVersion = Just $ VersionCall 2}
+  where
+    testRTCSession = WebRTCSession {rtcSession = "{}", rtcIceCandidates = "[]"}
