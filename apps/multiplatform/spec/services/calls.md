@@ -59,18 +59,18 @@ State transitions are driven by `WCallResponse` messages from the WebRTC layer. 
 
 ## 3. Android Implementation
 
-### 3.1 CallActivity.kt (464 lines)
+### 3.1 CallActivity.kt (468 lines)
 
 [`CallActivity.kt`](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt)
 
 A dedicated `ComponentActivity` that hosts the call UI. Key responsibilities:
 
-- **Intent handling** ([line 64](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L64)): On `AcceptCallAction` intent, looks up the matching `RcvCallInvitation` and calls `callManager.acceptIncomingCall()`.
-- **Lock screen support** ([line 160](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L160)): `unlockForIncomingCall()` uses `setShowWhenLocked(true)` / `setTurnScreenOn(true)` on API 27+, falls back to window flags on older versions. `lockAfterIncomingCall()` reverses these settings.
-- **Picture-in-Picture** ([line 99](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L99)): `setPipParams()` configures PiP aspect ratio and source rect hint. On Android 12+ (`Build.VERSION_CODES.S`), auto-enter PiP is enabled for video calls. `onPictureInPictureModeChanged` toggles `activeCallViewIsCollapsed` and sends a `WCallCommand.Layout` command.
-- **Permission checks** ([line 122](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L122)): Checks `RECORD_AUDIO` and conditionally `CAMERA` permissions.
-- **Service binding** ([line 181](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L181)): Binds to `CallService` as a workaround for Android 12 background activity launch restrictions.
-- **CallActivityView composable** ([line 208](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L208)): Renders `ActiveCallView()` when permissions are granted and a call is active. Shows `CallPermissionsView` when permissions are needed. Shows `IncomingCallLockScreenAlert` for incoming calls on the lock screen.
+- **Intent handling** ([line 65](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L65)): On `AcceptCallAction` intent, looks up the matching `RcvCallInvitation` and calls `callManager.acceptIncomingCall()`.
+- **Lock screen support** ([line 161](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L161)): `unlockForIncomingCall()` uses `setShowWhenLocked(true)` / `setTurnScreenOn(true)` on API 27+, falls back to window flags on older versions. `lockAfterIncomingCall()` reverses these settings.
+- **Picture-in-Picture** ([line 100](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L100)): `setPipParams()` configures PiP aspect ratio and source rect hint. On Android 12+ (`Build.VERSION_CODES.S`), auto-enter PiP is enabled for video calls. `onPictureInPictureModeChanged` toggles `activeCallViewIsCollapsed` and sends a `WCallCommand.Layout` command.
+- **Permission checks** ([line 123](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L123)): Checks `RECORD_AUDIO` and conditionally `CAMERA` permissions.
+- **Service binding** ([line 182](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L182)): Binds to `CallService` as a workaround for Android 12 background activity launch restrictions.
+- **CallActivityView composable** ([line 209](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt#L209)): Renders `ActiveCallView()` when permissions are granted and a call is active. Shows `CallPermissionsView` when permissions are needed. Shows `IncomingCallLockScreenAlert` for incoming calls on the lock screen.
 
 ### 3.2 CallService.kt (207 lines)
 
@@ -169,7 +169,7 @@ An in-app notification banner shown when a call invitation arrives while the app
 | `CallView.kt` | [`common/src/commonMain/.../views/call/CallView.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/CallView.kt) | 28 | `expect fun ActiveCallView()`, delivery receipt waiting |
 | `CallView.android.kt` | [`common/src/androidMain/.../views/call/CallView.android.kt`](../../common/src/androidMain/kotlin/chat/simplex/common/views/call/CallView.android.kt) | 891 | Android WebView WebRTC, overlay, permissions |
 | `CallView.desktop.kt` | [`common/src/desktopMain/.../views/call/CallView.desktop.kt`](../../common/src/desktopMain/kotlin/chat/simplex/common/views/call/CallView.desktop.kt) | 308 | Desktop browser WebRTC via NanoWSD |
-| `CallActivity.kt` | [`android/src/main/java/.../views/call/CallActivity.kt`](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt) | 464 | Android call Activity, PiP, lock screen |
+| `CallActivity.kt` | [`android/src/main/java/.../views/call/CallActivity.kt`](../../android/src/main/java/chat/simplex/app/views/call/CallActivity.kt) | 472 | Android call Activity, PiP, lock screen |
 | `CallService.kt` | [`android/src/main/java/.../CallService.kt`](../../android/src/main/java/chat/simplex/app/CallService.kt) | 207 | Android foreground service for calls |
 | `CallManager.kt` | [`common/src/commonMain/.../views/call/CallManager.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/CallManager.kt) | 119 | Call lifecycle management |
 | `WebRTC.kt` | [`common/src/commonMain/.../views/call/WebRTC.kt`](../../common/src/commonMain/kotlin/chat/simplex/common/views/call/WebRTC.kt) | -- | `CallState` enum, `WCallCommand`, `WCallResponse` types |
