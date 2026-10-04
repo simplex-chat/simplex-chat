@@ -13,5 +13,5 @@ actual val cryptor: CryptorInterface = object : CryptorInterface {
     // LALAL
   }
 
-  override fun keyStorage(alias: String): KeyStorage? = null
+  override fun keyStorage(alias: String): String? = null
 }

@@ -71,21 +71,22 @@ internal class Cryptor: CryptorInterface {
     keyStore.deleteEntry(alias)
   }
 
-  override fun keyStorage(alias: String): KeyStorage? {
+  override fun keyStorage(alias: String): String? {
     val secretKey = getSecretKey(alias) ?: return null
     val keyInfo = SecretKeyFactory.getInstance(secretKey.algorithm, "AndroidKeyStore").getKeySpec(secretKey, KeyInfo::class.java) as KeyInfo
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    val storage = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       when (keyInfo.securityLevel) {
-        KeyProperties.SECURITY_LEVEL_STRONGBOX -> KeyStorage.StrongBox
-        KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT -> KeyStorage.TrustedEnvironment
-        KeyProperties.SECURITY_LEVEL_SOFTWARE -> KeyStorage.Software
-        else -> null
+        KeyProperties.SECURITY_LEVEL_STRONGBOX -> MR.strings.keystore_key_storage_strongbox
+        KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT -> MR.strings.keystore_key_storage_tee
+        KeyProperties.SECURITY_LEVEL_SOFTWARE -> MR.strings.keystore_key_storage_software
+        else -> return null
       }
     } else {
       // isInsideSecureHardware does not distinguish StrongBox, which createSecretKey only requests on API 31+
       @Suppress("DEPRECATION")
-      if (keyInfo.isInsideSecureHardware) KeyStorage.TrustedEnvironment else KeyStorage.Software
+      if (keyInfo.isInsideSecureHardware) MR.strings.keystore_key_storage_tee else MR.strings.keystore_key_storage_software
     }
+    return generalGetString(storage)
   }
 
   private fun createSecretKey(alias: String): SecretKey? {

@@ -107,7 +107,7 @@ fun DatabaseEncryptionLayout(
   newKey: MutableState<String>,
   confirmNewKey: MutableState<String>,
   storedKey: MutableState<Boolean>,
-  keyStorage: KeyStorage?,
+  keyStorage: String?,
   initialRandomDBPassphrase: MutableState<Boolean>,
   progressIndicator: MutableState<Boolean>,
   migration: Boolean,
@@ -257,7 +257,7 @@ expect fun DatabaseEncryptionFooter(
   useKeychain: MutableState<Boolean>,
   chatDbEncrypted: Boolean?,
   storedKey: MutableState<Boolean>,
-  keyStorage: KeyStorage?,
+  keyStorage: String?,
   initialRandomDBPassphrase: MutableState<Boolean>,
   migration: Boolean,
 )
@@ -302,13 +302,6 @@ private fun removePassphraseFromKeyChain(useKeychain: MutableState<Boolean>, sto
   setUseKeychain(false, useKeychain, migration)
   storedKey.value = false
 }
-
-val KeyStorage.text: String
-  get() = when (this) {
-    KeyStorage.StrongBox -> generalGetString(MR.strings.keystore_key_storage_strongbox)
-    KeyStorage.TrustedEnvironment -> generalGetString(MR.strings.keystore_key_storage_tee)
-    KeyStorage.Software -> generalGetString(MR.strings.keystore_key_storage_software)
-  }
 
 fun storeSecurelySaved() = generalGetString(MR.strings.store_passphrase_securely)
 
@@ -551,7 +544,7 @@ fun PreviewDatabaseEncryptionLayout() {
       newKey = remember { mutableStateOf("") },
       confirmNewKey = remember { mutableStateOf("") },
       storedKey = remember { mutableStateOf(true) },
-      keyStorage = KeyStorage.StrongBox,
+      keyStorage = stringResource(MR.strings.keystore_key_storage_strongbox),
       initialRandomDBPassphrase = remember { mutableStateOf(true) },
       progressIndicator = remember { mutableStateOf(false) },
       migration = false,
