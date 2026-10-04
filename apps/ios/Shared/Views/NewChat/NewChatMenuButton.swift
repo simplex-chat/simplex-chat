@@ -96,8 +96,6 @@ struct NewChatSheet: View {
                 if let candidate = connectNameCandidate {
                     ConnectByNameRow(
                         name: candidate,
-                        searchText: $searchText,
-                        connectNameCandidate: $connectNameCandidate,
                         searchFocussed: $searchFocussed,
                         dismiss: true
                     )
@@ -449,7 +447,11 @@ struct ContactsListSearchBar: View {
                 searchText = ""
                 searchFocussed = false
             },
-            filterKnownContact: { searchChatFilteredBySimplexLink = $0.id }
+            filterChats: { chats in
+                guard chats.allSatisfy({ $0.contact != nil }) else { return false }
+                searchChatFilteredBySimplexLink = chats.first?.id
+                return true
+            }
         )
     }
 }

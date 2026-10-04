@@ -61,10 +61,12 @@ class ChatCmdError(TypedDict):
 class ConnectionPlan(TypedDict):
     type: Literal["connectionPlan"]
     user: "T.User"
-    connLink: "T.CreatedConnLink"
+    connLink: NotRequired["T.CreatedConnLink"]
     planSimplexName: NotRequired["T.SimplexNameInfo"]
     otherSimplexName: NotRequired["T.SimplexNameInfo"]
     connectionPlan: "T.ConnectionPlan"
+    localChats: list["T.ChatInfo"]
+    offerLookup: bool
 
 class ContactAlreadyExists(TypedDict):
     type: Literal["contactAlreadyExists"]

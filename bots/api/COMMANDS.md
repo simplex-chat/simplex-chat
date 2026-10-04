@@ -1559,10 +1559,12 @@ Determine SimpleX link type and if the bot is already connected via this link or
 ConnectionPlan: Connection link information.
 - type: "connectionPlan"
 - user: [User](./TYPES.md#user)
-- connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
+- connLink: [CreatedConnLink](./TYPES.md#createdconnlink)?
 - planSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - otherSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
+- localChats: [[ChatInfo](./TYPES.md#chatinfo)]
+- offerLookup: bool
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
@@ -1668,10 +1670,12 @@ SentInvitation: Invitation sent to contact address.
 ConnectionPlan: Connection link information.
 - type: "connectionPlan"
 - user: [User](./TYPES.md#user)
-- connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
+- connLink: [CreatedConnLink](./TYPES.md#createdconnlink)?
 - planSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - otherSimplexName: [SimplexNameInfo](./TYPES.md#simplexnameinfo)?
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
+- localChats: [[ChatInfo](./TYPES.md#chatinfo)]
+- offerLookup: bool
 
 SentInvitationToContact: Invitation sent to contact (when connecting via SimpleX name to a known contact address)..
 - type: "sentInvitationToContact"

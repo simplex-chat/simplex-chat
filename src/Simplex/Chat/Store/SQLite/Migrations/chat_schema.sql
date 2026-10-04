@@ -33,7 +33,9 @@ CREATE TABLE contact_profiles(
   contact_domain_proof TEXT,
   contact_domain_verified INTEGER,
   description TEXT,
-  preferences_json TEXT
+  preferences_json TEXT,
+  contact_domain_resolved_at TEXT,
+  contact_domain_expires_at TEXT
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -211,7 +213,9 @@ CREATE TABLE groups(
   roster_blob BLOB,
   group_domain_verified INTEGER,
   stored_roster_version INTEGER,
-  applied_complete_roster_version INTEGER, -- received
+  applied_complete_roster_version INTEGER,
+  group_domain_resolved_at TEXT,
+  group_domain_expires_at TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
