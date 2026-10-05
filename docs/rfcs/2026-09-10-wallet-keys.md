@@ -57,7 +57,7 @@ An account is bound to at most one chat profile, and a profile to any number of 
 
 Accounts are allocated in order and never reused, because an account the device no longer tracks still owns whatever it holds. An account can remain unbound. Nothing is bound when a profile is created; an account is bound on first use, when the user buys a name for a profile, so a device on which the user neither buys anything nor requests an address has never derived an account key.
 
-A hidden profile binds accounts like any other profile. Hiding a profile filters what is shown and encrypts nothing, and the master derives every account, so whoever can use any profile on the device can derive a hidden profile's account keys. Incognito is a property of a connection in this app rather than of a profile; the random profile of an incognito connection is not a chat profile, so it cannot hold an account.
+An account is bound to a hidden profile as to any other profile. A hidden profile is a filter on what is shown, not encryption, and every account is derived from the master, so whoever can use any profile on the device can derive a hidden profile's account keys. Incognito is a property of a connection in this app rather than of a profile; the random profile of an incognito connection is not a chat profile, so it cannot hold an account.
 
 ## Commands
 
