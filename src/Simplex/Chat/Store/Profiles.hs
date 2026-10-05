@@ -56,6 +56,9 @@ module Simplex.Chat.Store.Profiles
     getGroupLinkInfo,
     getUserContactLinkByConnReq,
     getUserContactLinkViaTarget,
+    getSimplexName,
+    setSimplexName,
+    deleteOldSimplexNames,
     setUserContactLinkShortLink,
     getContactWithoutConnViaAddress,
     getContactWithoutConnViaShortAddress,
@@ -123,10 +126,10 @@ import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON)
-import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode)
+import Simplex.Messaging.Protocol (BasicAuth (..), NameRegistration, ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode)
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
+import Simplex.Messaging.Util (decodeJSON, eitherToMaybe, encodeJSON, safeDecodeUtf8)
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (In (..), Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
@@ -589,6 +592,27 @@ userContactLinkQuery =
     SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, business_address, auto_accept, auto_accept_incognito, auto_reply_msg_content
     FROM user_contact_links
   |]
+
+getSimplexName :: DB.Connection -> SimplexDomain -> IO (Maybe (NameRegistration, UTCTime))
+getSimplexName db domain =
+  (>>= \(registration, resolvedAt) -> (,resolvedAt) <$> decodeJSON registration)
+    <$> maybeFirstRow id (DB.query db "SELECT registration, resolved_at FROM simplex_names WHERE simplex_domain = ?" (Only domain))
+
+setSimplexName :: DB.Connection -> SimplexDomain -> NameRegistration -> IO ()
+setSimplexName db domain registration = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO simplex_names (simplex_domain, registration, resolved_at) VALUES (?,?,?)
+      ON CONFLICT (simplex_domain) DO UPDATE SET
+        registration = excluded.registration,
+        resolved_at = excluded.resolved_at
+    |]
+    (domain, encodeJSON registration, currentTs)
+
+deleteOldSimplexNames :: DB.Connection -> UTCTime -> IO ()
+deleteOldSimplexNames db resolvedAtCutoff = DB.execute db "DELETE FROM simplex_names WHERE resolved_at < ?" (Only resolvedAtCutoff)
 
 setUserContactLinkShortLink :: DB.Connection -> Int64 -> ShortLinkContact -> IO ()
 setUserContactLinkShortLink db userContactLinkId shortLink =

@@ -47,8 +47,6 @@ module Simplex.Chat.Store.Groups
     getGroupInfoByGroupLinkHash,
     updateGroupProfile,
     setGroupDomainVerified,
-    setGroupDomainResolved,
-    getGroupDomainResolution,
     unverifyNameChats,
     updateGroupPreferences,
     updateGroupProfileFromMember,
@@ -672,7 +670,7 @@ createPreparedGroup db gVar cxt user@User {userId, userContactId} groupProfile b
   -- a business has no domain in its profile, so set it out-of-band; a channel already has it (createGroup_), just verify
   g' <- liftIO $ case verifiedDomain of
     Just d | business -> setPreparedGroupDomain db user g d
-    Just _ -> setGroupDomainResolved db user g Nothing
+    Just _ -> setGroupDomainVerified db user g True
     Nothing -> pure g
   pure (g', hostMember_)
   where
@@ -2753,23 +2751,6 @@ setGroupDomainVerified db User {userId} g@GroupInfo {groupId} verified = do
     (BI verified, userId, groupId)
   pure g {groupDomainVerified = Just verified}
 
-setGroupDomainResolved :: DB.Connection -> User -> GroupInfo -> Maybe UTCTime -> IO GroupInfo
-setGroupDomainResolved db User {userId} g@GroupInfo {groupId} expiresAt = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    "UPDATE groups SET group_domain_verified = 1, group_domain_resolved_at = ?, group_domain_expires_at = ? WHERE user_id = ? AND group_id = ?"
-    (currentTs, expiresAt, userId, groupId)
-  pure g {groupDomainVerified = Just True}
-
-getGroupDomainResolution :: DB.Connection -> User -> GroupInfo -> IO (Maybe (UTCTime, Maybe UTCTime))
-getGroupDomainResolution db User {userId} GroupInfo {groupId} =
-  maybeFirstRow id $
-    DB.query
-      db
-      "SELECT group_domain_resolved_at, group_domain_expires_at FROM groups WHERE user_id = ? AND group_id = ? AND group_domain_resolved_at IS NOT NULL"
-      (userId, groupId)
-
 unverifyNameChats :: DB.Connection -> StoreCxt -> User -> SimplexNameInfo -> ChatRef -> IO ([Contact], [GroupInfo])
 unverifyNameChats db cxt user@User {userId} SimplexNameInfo {nameType, nameDomain} verifiedChat = do
   cts <- case nameType of
@@ -2797,7 +2778,7 @@ setPreparedGroupDomain db user@User {userId} g@GroupInfo {groupId} domain = do
       WHERE group_profile_id IN (SELECT group_profile_id FROM groups WHERE user_id = ? AND group_id = ?)
     |]
     (domain, userId, groupId)
-  setGroupDomainResolved db user g Nothing
+  setGroupDomainVerified db user g True
 
 updateGroupPreferences :: DB.Connection -> User -> GroupInfo -> GroupPreferences -> IO GroupInfo
 updateGroupPreferences db User {userId} g@GroupInfo {groupId, groupProfile = p} ps = do

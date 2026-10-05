@@ -9,19 +9,18 @@ import Text.RawString.QQ (r)
 m20260924_simplex_name_resolved :: Text
 m20260924_simplex_name_resolved =
   [r|
-ALTER TABLE contact_profiles ADD COLUMN contact_domain_resolved_at TIMESTAMPTZ;
-ALTER TABLE contact_profiles ADD COLUMN contact_domain_expires_at TIMESTAMPTZ;
+CREATE TABLE simplex_names(
+  simplex_domain TEXT NOT NULL PRIMARY KEY,
+  registration TEXT NOT NULL,
+  resolved_at TIMESTAMPTZ NOT NULL
+);
 
-ALTER TABLE groups ADD COLUMN group_domain_resolved_at TIMESTAMPTZ;
-ALTER TABLE groups ADD COLUMN group_domain_expires_at TIMESTAMPTZ;
+CREATE INDEX idx_simplex_names_resolved_at ON simplex_names(resolved_at);
 |]
 
 down_m20260924_simplex_name_resolved :: Text
 down_m20260924_simplex_name_resolved =
   [r|
-ALTER TABLE contact_profiles DROP COLUMN contact_domain_resolved_at;
-ALTER TABLE contact_profiles DROP COLUMN contact_domain_expires_at;
-
-ALTER TABLE groups DROP COLUMN group_domain_resolved_at;
-ALTER TABLE groups DROP COLUMN group_domain_expires_at;
+DROP INDEX idx_simplex_names_resolved_at;
+DROP TABLE simplex_names;
 |]

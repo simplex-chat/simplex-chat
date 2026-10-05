@@ -71,15 +71,14 @@ The changes are to the types in `Controller.hs`, including `PlanResolveMode`, an
 
 `addressChanged` is true when the name resolved to a link that differs from the one held by the local chat, own address or own channel that claims this name, and that link can be joined; a link that cannot be joined yet keeps the local one, and another chat of the user's at the link is answered as that chat (N35 of `plans/2026-09-28-name-warnings.md`). This is state 3c and nothing else expresses it: both "a link you do not have" and "a link that replaced yours" are `CAPOk` today. It states that the address moved and not who moved it, which is exactly what the canvas's 3c says ("bakery.simplex now leads to a new address") and is the narrow form of the `nameOwnerChanged` field dropped in `f3bcd4a16` — no owner identity is carried, stored or compared.
 
-**`connectPlan` returns an optional link and `offerLookup`, and takes the registration already resolved.**
+**`connectPlan` returns an optional link and `offerLookup`.**
 
 ```haskell
 connectPlan :: User -> AConnectTarget -> PlanResolveMode -> Maybe LinkOwnerSig
-            -> Maybe (Either ChatError NameRegistration)
             -> CM (Maybe ACreatedConnLink, Maybe SimplexNameInfo, Maybe SimplexNameInfo, ConnectionPlan, Bool)
 ```
 
-The fifth parameter is the registration the bare name path resolved, so the path of the kind it plans does not resolve the name again. `CPContactAddress` and `CPGroupLink` have `nameWarning_ :: Maybe NameWarning` rather than a registration: see `plans/2026-09-28-name-warnings.md` §5.
+The registration parameter is removed: each kind's plan reads the name cache (§9), so a bare name is resolved once when the request succeeds, and twice when it fails. `CPContactAddress` and `CPGroupLink` have `nameWarning_ :: Maybe NameWarning` rather than a registration: see `plans/2026-09-28-name-warnings.md` §5.
 
 **`PRMAll` gets its meaning, and replaces `PRMAllGroups`.** It re-resolves a chat that is already known by name and, as `PRMAllGroups` did, a group known by link, instead of answering from the local lookup (`knownContactPlans`, `knownGroupPlans`); so `PRMAllGroups` is removed and the directory service uses `PRMAll`.
 
@@ -107,7 +106,7 @@ resolveNameRecord user nm domain =
 
 **Expiry is a producer rule, not a UI rule.** An expired name must not yield a connectable plan — "It does not connect while only its owner can renew it". `expires` absent (a v20/v21 router sent the record alone) means expiry is unknown, so the name is treated as live — the only safe reading. The dateless fallback in §4 covers the other case: `expires` known and past, `graceUntil` absent.
 
-**`addressChanged`.** Under `PRMAll`, or under `PRMUnknown` when the stored resolution is stale (§9), when the target is a `CTName` and the local lookup returns a known contact, a group, or the user's own address or channel, resolve the link anyway and compare it with the stored one. Equal, or fresh under `PRMUnknown`: today's `CAPKnown` / `GLPKnown` (3a), or the own link plan (4a). Different: return the `Ok` plan **for the new link**, with `addressChanged = True` — the canvas draws 3c as a profile card for the new address with *Open new chat*, not as a known chat — unless that link's profile does not claim the name, it cannot be joined yet (no relays, needs an app update, connecting), or, for a chat, its data cannot be fetched, when the local plan is returned; another chat of the user's at that link is answered as that chat (`plans/2026-09-28-name-warnings.md`, N12, N19 and N35). Every other construction site passes `False`.
+**`addressChanged`.** When the target is a `CTName` and the local lookup returns a known contact, a group, or the user's own address or channel, the name's link from the registration (cached or resolved, §9) is compared with the stored one. Equal: today's `CAPKnown` / `GLPKnown` (3a), or the own link plan (4a). Different: return the `Ok` plan **for the new link**, with `addressChanged = True` — the canvas draws 3c as a profile card for the new address with *Open new chat*, not as a known chat — unless that link's profile does not claim the name, it cannot be joined yet (no relays, needs an app update, connecting), or, for a chat, its data cannot be fetched, when the local plan is returned; another chat of the user's at that link is answered as that chat (`plans/2026-09-28-name-warnings.md`, N12, N19 and N35). Every other construction site passes `False`.
 
 **Warnings, not registrations.** `nameWarning_` is `Just` exactly when the canvas shows an alert. The registration stays in core (`plans/2026-09-28-name-warnings.md` §5).
 
@@ -125,15 +124,17 @@ The contract is the scenario table in `plans/2026-09-28-name-warnings.md` §3. I
 
 ## 5. Resolve modes, and the once-a-day rule
 
-The canvas asks that a name resolve at most once a day, or when past its expiry, while every kind looked up is a chat the user has (both kinds for a bare name), and on every other tap. Core applies this under the default mode, from state it stores beside the verification flags (§9; N28 of `plans/2026-09-28-name-warnings.md`):
+The canvas asks that a name resolve at most once a day while the user has a chat for it. Core keeps resolved registrations in a name cache (§9). The registration read from the cache or the registry is compared with the local chat on every lookup:
 
-| caller state | mode | result |
+| caller state | mode | registration |
 |---|---|---|
-| known chat of every kind looked up, each resolved within a day and not past expiry | `PRMUnknown` | `CAPKnown` / `GLPKnown` from the store, no network — 3a |
-| known chat, stale or past expiry, or a bare name with any kind not a fresh chat | `PRMUnknown` | registry + link resolve + compare — 3a, 3b, 3c, 3d, except that a bare name's fresh match is answered from the store (3a, or 3e from search) |
-| no known chat, or own address or channel | `PRMUnknown` | full resolution — band 2, or 3c, 4a, 4c, 4d for own |
-| forced refresh (directory service) | `PRMAll` | always resolves |
-| per keystroke in search | `PRMNever` | local hit, or `CENotResolvedLocally` swallowed |
+| known chat of the kind looked up | `PRMUnknown` | cached if resolved within a day, otherwise the registry — 3a, 3b, 3c, 3d |
+| nothing local | `PRMUnknown` | cached if resolved within 5 minutes, otherwise the registry — band 2 |
+| own address or channel | `PRMUnknown` | the registry — 3c, 4a, 4c, 4d |
+| forced refresh (directory service) | `PRMAll` | the registry |
+| per keystroke in search | `PRMNever` | none: local hit, or `CENotResolvedLocally` swallowed |
+
+A bare name plans the channel first and the contact second; each applies the row of its kind.
 
 Link targets keep today's `PRMUnknown` meaning: a known chat is answered from the store.
 
@@ -179,21 +180,25 @@ Registry and network failures stay command errors (2h). The canvas shows the res
 
 Review on 2026-09-24 reversed decision 6. Each decision below was taken by the author, not the implementer.
 
-1. **Storage.** `contact_profiles.contact_domain_resolved_at` and `contact_domain_expires_at`; `groups.group_domain_resolved_at` and `group_domain_expires_at` — beside `contact_domain_verified` and `group_domain_verified`, which record whether the name checked out; these record when it was last resolved and when its registration expires. `TEXT` in SQLite, `TIMESTAMPTZ` in Postgres, `_at` as in `invoices.expires_at`. One migration per backend.
-2. **Rule.** Under `PRMUnknown`, a known chat reached by a name is re-resolved when `resolved_at` is `NULL` or over a day old, or `expires_at` has passed. `PRMAll` always resolves; `PRMNever` never does. A name with no chat is resolved on every call and nothing is stored, except that a contact or channel the name leads to but not yet verified for the name is verified and stored as resolved (a business chat reached this way is not); the user's own address is not a chat, so it too is resolved on every call.
-3. **Writes.** Wherever core sets a verification flag after a resolution, it also sets `resolved_at` to now and `expires_at` to the registration's expiry, or `NULL` when the caller does not have it — then only the one-day limit applies until the next resolution. That is `setContactDomainResolved` and `setGroupDomainResolved`, called by the plan, by the refresh from link data (`updateContactFromLinkData`, `updateGroupFromLinkData`), and by preparing a chat by name (`createPreparedContact`, `createPreparedGroup`, `setPreparedGroupDomain`), which happens only when the link's profile claims the name the app passes. The plan passes the expiry of the registration it resolved; the refresh functions take it from their callers, since they must not resolve; preparing a chat passes `NULL`. `APISetPublicGroupAccess` and `/_verify domain` set the flag alone (`setGroupDomainVerified`, `setContactDomainVerified`): `/_verify domain` reads only the name's record, not its expiry. Two paths gain a write: a re-resolution confirming the name still resolves to the known chat; and one that answers the chat without a warning because the name no longer has a link of its kind or is not registered (`plans/2026-09-28-name-warnings.md`, N7 and N11). Both re-set the flag to `True`, a no-op, since only verified chats are found by name. Preparing a chat by name, a refresh from link data that verifies the chat, `/_verify domain` and `APISetPublicGroupAccess` are followed by `unverifyNameChats`, which sets the flag to `False` on the user's other chats of the name's kind (contacts and business chats for a contact name, channels for a channel name), so their name then reads as failed verification, and after "Open new chat" in 3c the name finds the new chat.
-4. **Moved name.** When re-resolution finds the name resolves elsewhere (3c), nothing is written to the old chat, so once it is stale each default lookup re-resolves and reports the new address; `resolve=never` still returns the old chat.
-5. **Reading.** Two store functions, `getContactDomainResolution` and `getGroupDomainResolution`, read the two columns for the chat each local lookup finds. `LocalProfile` and `GroupInfo` do not change, so the columns never reach the UIs; loading them there would touch 19 queries in 6 store files and both types' JSON.
+1. **Storage.** Table `simplex_names`, one row per name:
+   - `simplex_domain`, the primary key;
+   - `registration`, the registry's answer as JSON;
+   - `resolved_at`, indexed.
+
+   It is keyed by name alone: the registration does not depend on the user. One migration per backend.
+2. **Rule.** The maximum age of a cached registration is a day when a chat of the planned kind is local, 5 minutes when nothing is local, and zero for the own address or channel and for `PRMAll`. `PRMNever` does not resolve; it reads the cache only for `offerLookup`. An expiry inside the cached registration is reported from the cache.
+3. **Writes.** `resolveNameRegistration` writes every registration it receives. The cleanup job deletes rows resolved over a day ago. Verification flags are set as before this change. Preparing a chat by name, a refresh from link data that verifies the chat, `/_verify domain` and `APISetPublicGroupAccess` are followed by `unverifyNameChats`. It sets the flag to `False` on the user's other chats of the name's kind (contacts and business chats for a contact name, channels for a channel name), so after "Open new chat" in 3c the name finds the new chat.
+4. **Moved name.** Every lookup compares the local chat with the registration, so 3c shows as soon as the cache holds the new link; `resolve=never` still returns the old chat.
+5. **Reading.** `getSimplexName`. `LocalProfile` and `GroupInfo` do not change.
 6. **UIs.** Both apps lose the cache — the preference, `SimplexNameResolved`, the local probe before resolving, and the invalidation in `UserAddressView` — and plan a name with the default mode.
 7. **iOS decoding.** Superseded, per the note in §8.
 
-**Tests**, in core. A name re-pointed with `registerName`, or registered as expired with `registerExpiredName`, shows whether core queried the registry; a stored time is backdated with `withCCTransaction … DB.execute "UPDATE …"`, as `setContactNamesStale` in `tests/ChatTests/Names.hs` does:
-- a fresh known chat is answered from the store: with the name expired, the default plan returns the contact without a warning;
-- with `resolved_at` backdated, the default plan re-resolves and reports the new address;
-- with `expires_at` in the past, the default plan re-resolves and reports the expiry;
-- a name with no chat resolves on every call and stores nothing;
-- a moved name stays stale: two default lookups both report the new address;
-- `resolve=all` and `resolve=never` are unchanged, and existing tests using them stay as they are.
+**Tests**, in core. A name re-pointed with `registerName`, or registered as expired with `registerExpiredName`, shows whether core queried the registry. `setNamesStale` in `tests/ChatTests/Names.hs` backdates the cache:
+- a known chat with a cached registration: the registry's later expiry is not reported;
+- the cache backdated: the default plan resolves and reports the expiry, or the new address;
+- an expired registration in the cache is reported until the cache is backdated, also after the name is renewed;
+- nothing local: a lookup within 5 minutes uses the cache;
+- `resolve=all` and `resolve=never` are unchanged.
 
 ---
 

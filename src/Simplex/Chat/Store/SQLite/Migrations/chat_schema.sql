@@ -33,9 +33,7 @@ CREATE TABLE contact_profiles(
   contact_domain_proof TEXT,
   contact_domain_verified INTEGER,
   description TEXT,
-  preferences_json TEXT,
-  contact_domain_resolved_at TEXT,
-  contact_domain_expires_at TEXT
+  preferences_json TEXT
 ) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -213,9 +211,7 @@ CREATE TABLE groups(
   roster_blob BLOB,
   group_domain_verified INTEGER,
   stored_roster_version INTEGER,
-  applied_complete_roster_version INTEGER,
-  group_domain_resolved_at TEXT,
-  group_domain_expires_at TEXT, -- received
+  applied_complete_roster_version INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -985,6 +981,11 @@ CREATE TABLE badge_code_redemptions(
   created_at TEXT NOT NULL,
   UNIQUE(user_id, code)
 ) STRICT;
+CREATE TABLE simplex_names(
+  simplex_domain TEXT NOT NULL PRIMARY KEY,
+  registration TEXT NOT NULL,
+  resolved_at TEXT NOT NULL
+) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -1548,6 +1549,7 @@ CREATE INDEX idx_badge_code_redemptions_user ON badge_code_redemptions(
 CREATE UNIQUE INDEX idx_badge_purchases_code_redemption ON badge_purchases(
   badge_code_redemption_id
 );
+CREATE INDEX idx_simplex_names_resolved_at ON simplex_names(resolved_at);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW

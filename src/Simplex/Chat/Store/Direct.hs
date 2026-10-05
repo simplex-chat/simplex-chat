@@ -52,8 +52,6 @@ module Simplex.Chat.Store.Direct
     getContactIdByName,
     updateContactProfile,
     setContactDomainVerified,
-    setContactDomainResolved,
-    getContactDomainResolution,
     updateContactUserPreferences,
     updateContactAlias,
     updateContactConnectionAlias,
@@ -406,13 +404,13 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createPreparedContact :: DB.Connection -> StoreCxt -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Bool -> ExceptT StoreError IO Contact
-createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId nameResolved = do
+createPreparedContact :: DB.Connection -> StoreCxt -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> Maybe Bool -> ExceptT StoreError IO Contact
+createPreparedContact db cxt user p connLinkToConnect welcomeSharedMsgId verified_ = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
   ct <- getContact db cxt user =<< createContact_ db cxt user p ctUserPreferences prepared "" currentTs
-  liftIO $ if nameResolved then setContactDomainResolved db user ct Nothing else pure ct
+  liftIO $ maybe (pure ct) (setContactDomainVerified db user ct) verified_
 
 updatePreparedContactUser :: DB.Connection -> StoreCxt -> User -> Contact -> User -> ExceptT StoreError IO Contact
 updatePreparedContactUser
@@ -602,26 +600,6 @@ setContactDomainVerified db User {userId} ct@Contact {contactId, profile = p} ve
     |]
     (BI verified, userId, contactId)
   pure (ct {profile = p {contactDomainVerified = Just verified}} :: Contact)
-
-setContactDomainResolved :: DB.Connection -> User -> Contact -> Maybe UTCTime -> IO Contact
-setContactDomainResolved db User {userId} ct@Contact {contactId, profile = p} expiresAt = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE contact_profiles SET contact_domain_verified = 1, contact_domain_resolved_at = ?, contact_domain_expires_at = ?
-      WHERE contact_profile_id IN (SELECT contact_profile_id FROM contacts WHERE user_id = ? AND contact_id = ?)
-    |]
-    (currentTs, expiresAt, userId, contactId)
-  pure (ct {profile = p {contactDomainVerified = Just True}} :: Contact)
-
-getContactDomainResolution :: DB.Connection -> User -> Contact -> IO (Maybe (UTCTime, Maybe UTCTime))
-getContactDomainResolution db User {userId} Contact {profile = LocalProfile {profileId}} =
-  maybeFirstRow id $
-    DB.query
-      db
-      "SELECT contact_domain_resolved_at, contact_domain_expires_at FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ? AND contact_domain_resolved_at IS NOT NULL"
-      (userId, profileId)
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
 updateContactUserPreferences db user@User {userId} c@Contact {contactId} userPreferences = do

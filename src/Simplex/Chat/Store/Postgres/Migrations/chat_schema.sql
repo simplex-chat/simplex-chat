@@ -681,9 +681,7 @@ CREATE TABLE test_chat_schema.contact_profiles (
     contact_domain_proof text,
     contact_domain_verified smallint,
     description text,
-    preferences_json text,
-    contact_domain_resolved_at timestamp with time zone,
-    contact_domain_expires_at timestamp with time zone
+    preferences_json text
 );
 
 
@@ -1172,9 +1170,7 @@ CREATE TABLE test_chat_schema.groups (
     roster_blob bytea,
     group_domain_verified smallint,
     stored_roster_version bigint,
-    applied_complete_roster_version bigint,
-    group_domain_resolved_at timestamp with time zone,
-    group_domain_expires_at timestamp with time zone
+    applied_complete_roster_version bigint
 );
 
 
@@ -1637,6 +1633,14 @@ ALTER TABLE test_chat_schema.settings ALTER COLUMN settings_id ADD GENERATED ALW
     NO MINVALUE
     NO MAXVALUE
     CACHE 1
+);
+
+
+
+CREATE TABLE test_chat_schema.simplex_names (
+    simplex_domain text NOT NULL,
+    registration text NOT NULL,
+    resolved_at timestamp with time zone NOT NULL
 );
 
 
@@ -2104,6 +2108,11 @@ ALTER TABLE ONLY test_chat_schema.server_operators
 
 ALTER TABLE ONLY test_chat_schema.settings
     ADD CONSTRAINT settings_pkey PRIMARY KEY (settings_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.simplex_names
+    ADD CONSTRAINT simplex_names_pkey PRIMARY KEY (simplex_domain);
 
 
 
@@ -2913,6 +2922,10 @@ CREATE INDEX idx_sent_probes_user_id ON test_chat_schema.sent_probes USING btree
 
 
 CREATE INDEX idx_settings_user_id ON test_chat_schema.settings USING btree (user_id);
+
+
+
+CREATE INDEX idx_simplex_names_resolved_at ON test_chat_schema.simplex_names USING btree (resolved_at);
 
 
 
