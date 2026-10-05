@@ -74,7 +74,7 @@ import Simplex.Chat.Names (claimDomain)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Groups
-import Simplex.Chat.Store.Shared (GroupKeysRow, groupInfoQueryFields, groupInfoQueryFrom, mkGroupKeys, toGroupInfo_)
+import Simplex.Chat.Store.Shared (GroupKeysRow, groupInfoQueryFields, groupInfoQueryFrom, mkGroupInfoKeys, toGroupInfo_)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Protocol (CreatedConnLink (..), SimplexDomain)
@@ -316,8 +316,8 @@ getGroupAndRegLink cc user@User {userId, userContactId} gId =
     (g, gksData, gr, gLink_) <-
       ExceptT $ firstRow (toGroupInfoKeysRegLink currentTs cxt user) ("group " ++ show gId ++ " not found") $
         DB.query db (groupReqQuery <> " AND g.group_id = ?") (userId, userContactId, gId)
-    gks <- withExceptT groupDBError $ mkGroupKeys db cxt g gksData
-    pure (GIK g gks, gr, gLink_)
+    gInfoKeys <- withExceptT groupDBError $ mkGroupInfoKeys db cxt g gksData
+    pure (gInfoKeys, gr, gLink_)
   where
     cxt = storeCxt cc
 

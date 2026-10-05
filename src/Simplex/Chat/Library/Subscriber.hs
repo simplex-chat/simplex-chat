@@ -46,7 +46,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as V4
 import Data.Word (Word32)
-import Simplex.Chat.Badges (BadgeProof (..), BadgeProofKind (..), BadgeStatus (..), FileSizeLimits (..), ProofPresHeader (..), acceptedProof)
+import Simplex.Chat.Badges (BadgeProof (..), BadgeProofKind (..), BadgeStatus (..), FileSizeLimits (..), ProofPresHeader (..), acceptedProof, unboundProof)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery
@@ -138,18 +138,18 @@ processAgentMessage corrId connId msg = do
     -- Missing connection/entity errors here will be sent to the view but not shown as CRITICAL alert,
     -- as in this case no need to ACK message - we can't process messages for this connection anyway.
     critical connId (withStore $ getUserEntity cxt) >>= \case
-      Just (user, entity, gks_) -> processAgentMessageConn cxt user entity gks_ corrId connId msg `catchAllErrors` eToView
+      Just (user, entity, gInfoKeys_) -> processAgentMessageConn cxt user entity gInfoKeys_ corrId connId msg `catchAllErrors` eToView
       _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
   where
-    getUserEntity :: StoreCxt -> DB.Connection -> ExceptT StoreError IO (Maybe (User, ConnectionEntity, Maybe GroupKeys))
+    getUserEntity :: StoreCxt -> DB.Connection -> ExceptT StoreError IO (Maybe (User, ConnectionEntity, Maybe GroupInfoKeys))
     getUserEntity cxt db =
       liftIO (getUserByAConnId db $ AgentConnId connId)
         >>= mapM (\user -> do
               (entity, groupKeysData_) <- getConnectionEntityKeys db cxt user (AgentConnId connId)
-              gks_ <- case entity of
-                RcvGroupMsgConnection _ gInfo _ -> mapM (mkGroupKeys db cxt gInfo) groupKeysData_
+              gInfoKeys_ <- case entity of
+                RcvGroupMsgConnection _ gInfo _ -> mapM (mkGroupInfoKeys db cxt gInfo) groupKeysData_
                 _ -> pure Nothing
-              (user,,gks_) <$> liftIO (updateConnStatus db entity))
+              (user,,gInfoKeys_) <$> liftIO (updateConnStatus db entity))
 
     updateConnStatus :: DB.Connection -> ConnectionEntity -> IO ConnectionEntity
     updateConnStatus db acEntity = case agentMsgConnStatus (entityConnection acEntity) msg of
@@ -436,8 +436,8 @@ processAgentMsgRcvFile _corrId aFileId msg = do
 
 type ShouldDeleteGroupConns = Bool
 
-processAgentMessageConn :: StoreCxt -> User -> ConnectionEntity -> Maybe GroupKeys -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
-processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId agentMessage =
+processAgentMessageConn :: StoreCxt -> User -> ConnectionEntity -> Maybe GroupInfoKeys -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
+processAgentMessageConn cxt user@User {userId} entity gInfoKeys_ corrId agentConnId agentMessage =
   case agentMessage of
     END -> case entity of
       RcvDirectMsgConnection _ (Just ct) -> toView $ CEvtContactAnotherClient user ct
@@ -446,8 +446,8 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     _ -> case entity of
       RcvDirectMsgConnection conn contact_ ->
         processDirectMessage agentMessage entity conn contact_
-      RcvGroupMsgConnection conn gInfo m -> case gks_ of
-        Just gks -> processGroupMessage agentMessage entity conn (GIK gInfo gks) m
+      RcvGroupMsgConnection conn _ m -> case gInfoKeys_ of
+        Just gInfoKeys -> processGroupMessage agentMessage entity conn gInfoKeys m
         Nothing -> throwChatError $ CEInternalError "group connection entity without group keys"
       UserContactConnection conn uc ->
         processContactConnMessage agentMessage entity conn uc
@@ -498,19 +498,17 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 Right () -> pure ()
             Nothing -> do
               conn' <- processCONFpqSupport conn pqSupport
-              presHeader_ <- connPresHeader conn'
               -- [incognito] send saved profile
-              (conn'', gInfo_) <- saveConnInfo conn' presHeader_ connInfo
+              (conn'', gInfo_) <- saveConnInfo conn' connInfo
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
               profileToSend <- case gInfo_ of
                 Just (GIK gInfo _) -> presentUserBadge user incognitoProfile (groupPresHeader gInfo) $ userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
-                Nothing -> presentUserBadge user incognitoProfile presHeader_ $ userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
+                Nothing -> presentUserBadgeWith user incognitoProfile (connPresHeader conn'') $ userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
               allowAgentConnectionAsync user conn'' confId gInfo_ $ XInfo profileToSend ((\(GIK _ gks) -> groupMemberKey gks) <$> gInfo_)
         INFO pqSupport connInfo -> do
           processINFOpqSupport conn pqSupport
-          presHeader_ <- connPresHeader conn
-          void $ saveConnInfo conn presHeader_ connInfo
+          void $ saveConnInfo conn connInfo
         MSG meta _msgFlags _msgBody ->
           -- We are not saving message (saveDirectRcvMSG) as contact hasn't been created yet,
           -- chat item is also not created here
@@ -619,11 +617,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
               allowAgentConnectionAsync user conn'' confId Nothing XOk
             XInfo profile _ -> do
-              presHeader_ <- connPresHeader conn''
-              ct' <- processContactProfileUpdate ct presHeader_ profile False `catchAllErrors` const (pure ct)
+              ct' <- processContactProfileUpdate ct profile False `catchAllErrors` const (pure ct)
               -- [incognito] send incognito profile
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
-              p <- presentUserBadge user incognitoProfile presHeader_ $ userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') True
+              p <- presentUserBadgeWith user incognitoProfile (connPresHeader conn'') $ userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') True
               allowAgentConnectionAsync user conn'' confId Nothing $ XInfo p Nothing
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             XGrpLinkInv glInv -> do
@@ -652,8 +649,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
               pure ()
             XInfo profile _ -> do
               let prepared = isJust (preparedContact ct) || isJust (contactRequestId' ct)
-              presHeader_ <- connPresHeader conn
-              void $ processContactProfileUpdate ct presHeader_ profile prepared
+              void $ processContactProfileUpdate ct profile prepared
             XOk -> pure ()
             _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON pqEnc -> do
@@ -792,10 +788,10 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                     m' <- case mKey of
                       Just (MemberKey k) -> m {memberPubKey = Just k} <$ withStore' (\db -> setMemberPubKey db (groupMemberId' m) k)
                       Nothing -> pure m
-                    forM_ memProfile_ $ \memProfile -> processMemberProfileUpdate gInfo m' signedMsg_ memProfile Nothing
                     membershipProfile <- membershipHandshakeProfile gInfo $ maxVersion (peerChatVRange conn')
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId (Just g) $ XGrpMemInfo (memberId' membership) membershipProfile
+                    forM_ memProfile_ $ \memProfile -> processMemberProfileUpdate gInfo m' signedMsg_ memProfile Nothing
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               XGrpRelayAcpt relayLink relayCap
                 | memberRole' membership == GROwner && isRelay m -> do
@@ -2739,9 +2735,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       MsgError e -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
 
     xInfo :: Contact -> Profile -> CM ()
-    xInfo c p' = do
-      presHeader_ <- pure (contactConn c) $>>= connPresHeader
-      void $ processContactProfileUpdate c presHeader_ p' True
+    xInfo c p' = void $ processContactProfileUpdate c p' True
 
     xDirectDel :: Contact -> RcvMessage -> MsgMeta -> CM ()
     xDirectDel c msg msgMeta =
@@ -2764,10 +2758,14 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       where
         brokerTs = metaBrokerTs msgMeta
 
-    processContactProfileUpdate :: Contact -> Maybe ProofPresHeader -> Profile -> Bool -> CM Contact
-    processContactProfileUpdate c@Contact {profile = lp} presHeader_ p' createItems
+    processContactProfileUpdate :: Contact -> Profile -> Bool -> CM Contact
+    processContactProfileUpdate c@Contact {profile = lp} p'@Profile {badge = rcvBadge} createItems = do
+      presHeader_ <- if any (not . unboundProof) rcvBadge then pure (contactConn c) $>>= connPresHeader else pure Nothing
+      let p'' = if all (acceptedProof presHeader_) rcvBadge then p' else p' {badge = storedBadge}
+          contentChanged = not (sameProfileContent p p'')
       -- a failed/unknown-key badge is re-verified even when content is unchanged, so it heals after an app update adds the key
-      | contentChanged || badgeNeedsReverify lp = do
+      if contentChanged || badgeNeedsReverify lp
+        then do
           c' <- withStore $ \db ->
             if userTTL == rcvTTL
               then updateContactProfile db cxt user c presHeader_ p'
@@ -2775,15 +2773,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                 c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
                 updateContactProfile db cxt user c' presHeader_ p'
           when (contentChanged && directOrUsed c' && createItems) $ do
-            createProfileUpdatedItem c'
+            createProfileUpdatedItem c' p''
             lift $ createRcvFeatureItems user c c'
           toView $ CEvtContactUpdated user c c'
           pure c'
-      | otherwise =
-          pure c
+        else pure c
       where
-        contentChanged = not (sameProfileContent p p')
-        p = fromLocalProfile lp
+        p@Profile {badge = storedBadge} = fromLocalProfile lp
         Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
         userTTL = prefParam $ getPreference SCFTimedMessages ctUserPrefs
         Profile {preferences = rcvPrefs_} = p'
@@ -2797,15 +2793,15 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   | rcvTTL /= userDefaultTTL -> Just (userDefault :: TimedMessagesPreference) {ttl = rcvTTL}
                   | otherwise -> Nothing
            in setPreference_ SCFTimedMessages ctUserTMPref' ctUserPrefs
-        createProfileUpdatedItem c' =
+        createProfileUpdatedItem c' p'' =
           when visibleProfileUpdated $ do
-            let ciContent = CIRcvDirectEvent $ RDEProfileUpdated p p'
+            let ciContent = CIRcvDirectEvent $ RDEProfileUpdated p p''
             createInternalChatItem user (CDDirectRcv c') ciContent Nothing
           where
             visibleProfileUpdated =
               n' /= n || fn' /= fn || sd /= sd' || i' /= i || cl' /= cl
             Profile {displayName = n, fullName = fn, shortDescr = sd, image = i, contactLink = cl} = p
-            Profile {displayName = n', fullName = fn', shortDescr = sd', image = i', contactLink = cl'} = p'
+            Profile {displayName = n', fullName = fn', shortDescr = sd', image = i', contactLink = cl'} = p''
 
     xInfoMember :: GroupInfo -> GroupMember -> Profile -> Maybe MemberKey -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xInfoMember gInfo m p' mKey msg@RcvMessage {signedMsg_} brokerTs = do
@@ -3186,12 +3182,13 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       toView $ CEvtContactAndMemberAssociated user c2 g m1 c2'
       pure c2'
 
-    saveConnInfo :: Connection -> Maybe ProofPresHeader -> ConnInfo -> CM (Connection, Maybe GroupInfoKeys)
-    saveConnInfo activeConn presHeader_ connInfo = do
+    saveConnInfo :: Connection -> ConnInfo -> CM (Connection, Maybe GroupInfoKeys)
+    saveConnInfo activeConn connInfo = do
       ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage activeConn connInfo
       conn' <- updatePeerChatVRange activeConn chatVRange
       case chatMsgEvent of
-        XInfo p _ -> do
+        XInfo p@Profile {badge} _ -> do
+          presHeader_ <- if any (not . unboundProof) badge then connPresHeader conn' else pure Nothing
           ct <- withStore $ \db -> createDirectContact db cxt user conn' presHeader_ p
           toView $ CEvtContactConnecting user ct
           pure (conn', Nothing)
@@ -3233,7 +3230,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                   -- TODO [relays] member: surface relay-key-mismatch as a dedicated event / chat item / relay state
                   when (assertedKey /= memberPubKey unknownMember) $
                     messageWarning $ "x.grp.mem.new: relay asserted key differs from roster-established key, keeping roster key, memberId=" <> safeDecodeUtf8 (strEncode memId)
-                  updatedMember <- withStore $ \db -> updateRosterMemberAnnounced db cxt user m unknownMember memInfo presHeader_ initialStatus
+                  updatedMember <- withStore $ \db -> updateRosterMemberAnnounced db cxt user m unknownMember memInfo (channelMemberPresHeader gInfo memId (memberPubKey unknownMember)) initialStatus
                   -- roster members can't be pending, so no members-require-attention update
                   gInfo' <- updatePublicGroupData user gInfo gks
                   toView $ CEvtUnknownMemberAnnounced user gInfo' m unknownMember updatedMember
@@ -3298,13 +3295,12 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MemberRestrictions -> CM ()
     xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _ _) memRestrictions = do
-      let presHeader_ = memberInfoPresHeader gInfo memInfo
       case memberCategory m of
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db cxt user gInfo memId) >>= \case
             Right existingMember
               | useRelays' gInfo -> do
-                  updatedMember <- withStore $ \db -> updatePreparedChannelMember db cxt user existingMember memInfo presHeader_
+                  updatedMember <- withStore $ \db -> updatePreparedChannelMember db cxt user existingMember memInfo (channelMemberPresHeader gInfo memId (memberPubKey existingMember))
                   toView $ CEvtGroupMemberUpdated user gInfo existingMember updatedMember
               | otherwise ->
                   messageError "x.grp.mem.intro ignored: member already exists"
@@ -3317,7 +3313,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                         MemberInfo mId mRole v p _
                           | mRole >= GRMember -> MemberInfo mId defaultRole v p Nothing
                         _ -> memInfo
-                  void $ withStore $ \db -> createIntroReMember db cxt user gInfo memInfo' presHeader_ memRestrictions
+                  void $ withStore $ \db -> createIntroReMember db cxt user gInfo memInfo' (memberInfoPresHeader gInfo memInfo') memRestrictions
               | otherwise -> do
                   when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
                   case memChatVRange of
@@ -3327,7 +3323,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
                       groupConnIds@(cmdId, connId) <- prepareAgentCreation user CFCreateConnGrpMemInv (chatHasNtfs chatSettings) SCMInvitation
                       let chatV = maybe (minVersion (vr cxt)) (\peerVR -> vr cxt `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
                       void $ withStore $ \db -> do
-                        reMember <- createIntroReMember db cxt user gInfo memInfo presHeader_ memRestrictions
+                        reMember <- createIntroReMember db cxt user gInfo memInfo (memberInfoPresHeader gInfo memInfo) memRestrictions
                         createIntroReMemberConn db user m reMember chatV memInfo groupConnIds subMode
                       withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) connId (chatHasNtfs chatSettings) SCMInvitation CR.IKPQOff True subMode
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
@@ -3374,7 +3370,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
       -- [incognito] send membership incognito profile, create direct connection as incognito
       membershipProfile <- membershipHandshakeProfile gInfo chatV
       let msg = XGrpMemInfo membershipMemId membershipProfile
-      dm <- maybe (encodeConnInfo msg) (\signing -> encodeSignedConnInfo PQSupportOff signing msg) (groupMsgSigning False g msg)
+      dm <- encodeConnInfoSigning PQSupportOff (groupMsgSigning False g msg) msg
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       let enableNtfsGrp = chatHasNtfs chatSettings
       (groupConnIds@(gCmdId, gAcId), _) <- prepareAgentJoin user enableNtfsGrp groupConnReq

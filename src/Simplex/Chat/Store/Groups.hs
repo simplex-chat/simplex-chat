@@ -2030,7 +2030,7 @@ getRelayServedGroups db cxt User {userId, userContactId} = do
           <> " WHERE g.user_id = ? AND mu.contact_id = ? AND g.relay_own_status IN (?, ?, ?)"
       )
       (userId, userContactId, RSAccepted, RSAcknowledgedRoster, RSActive)
-  forM rows $ \(g, keysData) -> GIK g <$> mkGroupKeys db cxt g keysData
+  forM rows $ uncurry (mkGroupInfoKeys db cxt)
 
 getRelayPublishableGroups :: DB.Connection -> User -> IO [(Int64, B64UrlByteString, Maybe PublicGroupAccess)]
 getRelayPublishableGroups db User {userId, userContactId} =
@@ -3472,19 +3472,29 @@ updateContactMemberProfile db cxt user@User {userId} m ct@Contact {contactId} pr
             pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, ct {localDisplayName = ldn, profile} :: Contact)
 
 setMemberBadgeProof :: DB.Connection -> GroupMember -> Maybe ProofPresHeader -> Profile -> IO GroupMember
-setMemberBadgeProof db m@GroupMember {groupMemberId} presHeader_ Profile {badge} = case badge of
+setMemberBadgeProof db m@GroupMember {groupMemberId, memberBadgeProof = NoJSON storedProof} presHeader_ Profile {badge} = case badge of
   Just b | not (acceptedProof presHeader_ b) -> pure m
-  _ -> do
-    DB.execute db "DELETE FROM group_member_badge_proofs WHERE group_member_id = ?" (Only groupMemberId)
-    forM_ badge $ createMemberBadgeProof db groupMemberId
-    pure m {memberBadgeProof = NoJSON badge}
+  _ | badge == storedProof -> pure m
+  Nothing -> m {memberBadgeProof = NoJSON Nothing} <$ DB.execute db "DELETE FROM group_member_badge_proofs WHERE group_member_id = ?" (Only groupMemberId)
+  Just b -> m {memberBadgeProof = NoJSON badge} <$ createMemberBadgeProof db groupMemberId b
 
 createMemberBadgeProof :: DB.Connection -> GroupMemberId -> BadgeProof -> IO ()
 createMemberBadgeProof db groupMemberId badge = do
   currentTs <- getCurrentTime
   DB.execute
     db
-    "INSERT INTO group_member_badge_proofs (group_member_id, badge_proof, badge_pres_header, badge_key_idx, badge_type, badge_expiry, badge_extra, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+    [sql|
+      INSERT INTO group_member_badge_proofs (group_member_id, badge_proof, badge_pres_header, badge_key_idx, badge_type, badge_expiry, badge_extra, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?)
+      ON CONFLICT (group_member_id) DO UPDATE SET
+        badge_proof = excluded.badge_proof,
+        badge_pres_header = excluded.badge_pres_header,
+        badge_key_idx = excluded.badge_key_idx,
+        badge_type = excluded.badge_type,
+        badge_expiry = excluded.badge_expiry,
+        badge_extra = excluded.badge_extra,
+        updated_at = excluded.updated_at
+    |]
     (Only groupMemberId :. badgeProofToRow badge :. (currentTs, currentTs))
 
 getXGrpLinkMemReceived :: DB.Connection -> GroupMemberId -> ExceptT StoreError IO Bool

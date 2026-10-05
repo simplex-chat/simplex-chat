@@ -3401,7 +3401,7 @@ processChatCommand cxt nm = \case
             -- so incognito profile can be attached to it and be visible in UI before accepting
             Nothing -> joinNewConn subMode
             Just conn@Connection {connStatus} -> case connStatus of
-              ConnPrepared -> joinPreparedConn subMode conn =<< connPresHeader conn
+              ConnPrepared -> joinPreparedConn subMode conn $ connPresHeader conn
               _ -> throwChatError $ CEException "connection already started (past prepared status)"
         where
           joinNewConn subMode = do
@@ -3412,10 +3412,10 @@ processChatCommand cxt nm = \case
             conn <- withStore $ \db -> do
               connId <- liftIO $ createMemberContactConn db user acId Nothing gInfo mConn ConnPrepared contactId subMode
               getConnectionById db cxt user connId
-            joinPreparedConn subMode conn $ Just $ directPresHeader binding
-          joinPreparedConn subMode conn presHeader_ = do
+            joinPreparedConn subMode conn $ pure $ Just $ directPresHeader binding
+          joinPreparedConn subMode conn getPresHeader = do
             -- [incognito] send membership incognito profile
-            p <- presentUserBadge user (incognitoMembershipProfile gInfo) presHeader_ $ userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile gInfo) Nothing True
+            p <- presentUserBadgeWith user (incognitoMembershipProfile gInfo) getPresHeader $ userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile gInfo) Nothing True
             dm <- encodeConnInfo $ XInfo p Nothing
             sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
             let newStatus = if sqSecured then ConnSndReady else ConnJoined
@@ -3820,7 +3820,7 @@ processChatCommand cxt nm = \case
                 | connStatus == ConnNew && contactConnInitiated -> joinNewConn chatV -- own connection link
                 | connStatus == ConnPrepared -> do -- retrying join after error
                     localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
-                    joinPreparedConn conn (fromLocalProfile <$> localIncognitoProfile) =<< connPresHeader conn
+                    joinPreparedConn conn (fromLocalProfile <$> localIncognitoProfile) $ connPresHeader conn
               Just ent -> throwCmdError $ "connection is not RcvDirectMsgConnection: " <> show (connEntityInfo ent)
             where
               -- all supported versions support PQ encryption
@@ -3831,9 +3831,9 @@ processChatCommand cxt nm = \case
                 (connId, binding) <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
                 let ccLink = CCLink cReq $ serverShortLink <$> sLnk_
                 conn <- withFastStore' $ \db -> createDirectConnection' db userId connId ccLink contactId_ ConnPrepared incognitoProfile subMode chatV pqSup'
-                joinPreparedConn conn incognitoProfile $ Just $ directPresHeader binding
-              joinPreparedConn conn incognitoProfile presHeader_ = do
-                profileToSend <- presentUserBadge user incognitoProfile presHeader_ $ userProfileDirect user incognitoProfile Nothing True
+                joinPreparedConn conn incognitoProfile $ pure $ Just $ directPresHeader binding
+              joinPreparedConn conn incognitoProfile getPresHeader = do
+                profileToSend <- presentUserBadgeWith user incognitoProfile getPresHeader $ userProfileDirect user incognitoProfile Nothing True
                 dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend Nothing
                 sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
                 let newStatus = if sqSecured then ConnSndReady else ConnJoined
@@ -4083,8 +4083,8 @@ processChatCommand cxt nm = \case
     setMyAddressData :: Bool -> Maybe InitialKeys -> User -> UserContactLink -> CM UserContactLink
     setMyAddressData rotateKeys pqInitKeys user@User {userChatRelay} ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink sLnk_, addressSettings} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db cxt user
-      presHeader <- linkPresHeader <$> maybe (withAgent $ \a -> prepareConnShortLink a (aConnId conn) Nothing) pure sLnk_
-      shortLinkProfile <- presentUserBadge user Nothing (Just presHeader) (userProfileDirect user Nothing Nothing True)
+      let getPresHeader = Just . linkPresHeader <$> maybe (withAgent $ \a -> prepareConnShortLink a (aConnId conn) Nothing) pure sLnk_
+      shortLinkProfile <- presentUserBadgeWith user Nothing getPresHeader (userProfileDirect user Nothing Nothing True)
       -- TODO [short links] do not save address to server if data did not change, spinners, error handling
       let userData
             | isTrue userChatRelay = relayShortLinkData shortLinkProfile
@@ -4108,8 +4108,7 @@ processChatCommand cxt nm = \case
               mergedProfile' = userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') False
           when (mergedProfile' /= mergedProfile) $
             withContactLock "updateContactPrefs" (contactId' ct) $ do
-              presHeader_ <- connPresHeader conn
-              p <- presentUserBadge user incognitoProfile presHeader_ mergedProfile'
+              p <- presentUserBadgeWith user incognitoProfile (connPresHeader conn) mergedProfile'
               void (sendDirectContactMessage user ct' $ XInfo p Nothing) `catchAllErrors` eToView
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'

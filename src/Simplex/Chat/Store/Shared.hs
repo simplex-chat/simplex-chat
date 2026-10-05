@@ -746,14 +746,15 @@ toPublicGroupAccess (groupWebPage, groupDomain_, domainWebPage_, allowEmbedding_
     domainWebPage = maybe False unBI domainWebPage_
     allowEmbedding = maybe False unBI allowEmbedding_
 
-mkGroupKeys :: DB.Connection -> StoreCxt -> GroupInfo -> GroupKeysRow -> ExceptT StoreError IO GroupKeys
-mkGroupKeys db cxt g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup}, membership} (rootPrivKey, rootPubKey, memberPrivKey_, publicGroupId) = do
+mkGroupInfoKeys :: DB.Connection -> StoreCxt -> GroupInfo -> GroupKeysRow -> ExceptT StoreError IO GroupInfoKeys
+mkGroupInfoKeys db cxt g@GroupInfo {groupId, groupProfile = GroupProfile {publicGroup}, membership} (rootPrivKey, rootPubKey, memberPrivKey_, publicGroupId) = do
   memberPrivKey <- case memberPrivKey_ of
     Just k -> pure k
     Nothing -> do
       (_, k) <- atomically $ C.generateKeyPair (drg cxt)
       setUserMemberKey db groupId (groupMemberId' membership) k
-  pure $ case (useRelays' g, isJust publicGroup, GRKPrivate <$> rootPrivKey <|> GRKPublic <$> rootPubKey) of
+  let membership' = membership {memberPubKey = Just $ C.publicKey memberPrivKey} :: GroupMember
+  pure $ GIK g {membership = membership'} $ case (useRelays' g, isJust publicGroup, GRKPrivate <$> rootPrivKey <|> GRKPublic <$> rootPubKey) of
     (False, _, _) -> GKGroup {memberPrivKey}
     (True, True, Just groupRootKey) -> GKPublicGroup {groupRootKey, memberPrivKey}
     (True, True, Nothing) -> GKPreparedPublicGroup {memberPrivKey}
@@ -940,11 +941,7 @@ addGroupChatTags db g@GroupInfo {groupId} = do
   pure (g :: GroupInfo) {chatTags}
 
 getGroupInfoKeys :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO GroupInfoKeys
-getGroupInfoKeys db cxt user groupId = do
-  (g@GroupInfo {membership}, keysData) <- getGroupInfoRow db cxt user groupId
-  gks <- mkGroupKeys db cxt g keysData
-  let membership' = membership {memberPubKey = Just $ C.publicKey $ memberPrivKey gks} :: GroupMember
-  pure $ GIK (g :: GroupInfo) {membership = membership'} gks
+getGroupInfoKeys db cxt user groupId = uncurry (mkGroupInfoKeys db cxt) =<< getGroupInfoRow db cxt user groupId
 
 getGroupInfo :: DB.Connection -> StoreCxt -> User -> Int64 -> ExceptT StoreError IO GroupInfo
 getGroupInfo db cxt user groupId = fst <$> getGroupInfoRow db cxt user groupId

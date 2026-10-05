@@ -988,13 +988,13 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
       pqSup' = pqSup `CR.pqSupportAnd` pqSupport
   cxt <- chatStoreCxt
   let chatV = vr cxt `peerConnChatVersion` cReqChatVRange
-  (ct, conn, incognitoProfile, presHeader_) <- case contactId_ of
+  (ct, conn, incognitoProfile, getPresHeader) <- case contactId_ of
     Nothing -> do
       incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
       (connId, binding) <- withAgent $ \a -> prepareConnectionToAccept a (aUserId user) True invId pqSup'
       (ct, conn) <- withStore' $ \db ->
         createContactFromRequest db user userContactLinkId_ connId chatV cReqChatVRange cName profileId cp xContactId incognitoProfile subMode pqSup' False
-      pure (ct, conn, incognitoProfile, Just $ directPresHeader binding)
+      pure (ct, conn, incognitoProfile, pure $ Just $ directPresHeader binding)
     Just contactId -> do
       ct <- withFastStore $ \db -> getContact db cxt user contactId
       case contactConn ct of
@@ -1005,11 +1005,11 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
           conn <- withStore' $ \db -> do
             forM_ xContactId $ \xcId -> setContactAcceptedXContactId db ct xcId
             createAcceptedContactConn db user userContactLinkId_ contactId connId chatV cReqChatVRange pqSup' incognitoProfile subMode currentTs
-          pure (ct {activeConn = Just conn} :: Contact, conn, incognitoProfile, Just $ directPresHeader binding)
+          pure (ct {activeConn = Just conn} :: Contact, conn, incognitoProfile, pure $ Just $ directPresHeader binding)
         Just conn@Connection {customUserProfileId} -> do
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
-          (ct, conn, ExistingIncognito <$> incognitoProfile,) <$> connPresHeader conn
-  profileToSend <- presentUserBadge user incognitoProfile presHeader_ $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
+          pure (ct, conn, ExistingIncognito <$> incognitoProfile, connPresHeader conn)
+  profileToSend <- presentUserBadgeWith user incognitoProfile getPresHeader $ userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
   dm <- encodeConnInfoPQ pqSup' $ XInfo profileToSend Nothing
   (ct,conn,) <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
 
@@ -1347,7 +1347,7 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, memberPubKey, a
     { memberId,
       memberRole,
       v = ChatVersionRange . peerChatVRange <$> activeConn,
-      profile = (p :: Profile) {badge = mfilter (acceptedProof $ publicGroup' g *> memberPresHeader g memberId memberPubKey) (unNoJSON memberBadgeProof <|> badge)},
+      profile = (p :: Profile) {badge = mfilter (acceptedProof $ channelMemberPresHeader g memberId memberPubKey) (unNoJSON memberBadgeProof <|> badge)},
       memberKey = MemberKey <$> memberPubKey
     }
   where
@@ -2252,9 +2252,12 @@ sendDirectContactMessages user ct events = do
 -- the send's incognito profile (when set) suppresses it - an incognito identity must never carry the badge.
 -- a long-expired badge is not presented at all (receivers would hide it anyway).
 presentUserBadge :: User -> Maybe i -> Maybe ProofPresHeader -> Profile -> CM Profile
-presentUserBadge user incognitoProfile presHeader_ p
+presentUserBadge user incognitoProfile = presentUserBadgeWith user incognitoProfile . pure
+
+presentUserBadgeWith :: User -> Maybe i -> CM (Maybe ProofPresHeader) -> Profile -> CM Profile
+presentUserBadgeWith user incognitoProfile getPresHeader p
   | isNothing incognitoProfile && presentsUserBadge user = do
-      badge <- pure presHeader_ $>>= sndBadgeProof user
+      badge <- getPresHeader $>>= sndBadgeProof user
       pure p {badge}
   | otherwise = pure p
 
@@ -2278,7 +2281,7 @@ linkPresHeader = \case
 
 relayInvPresHeader :: GroupRelayInvitation -> Maybe ProofPresHeader
 relayInvPresHeader GroupRelayInvitation {fromMember = MemberIdRole {memberId}, publicGroupId, fromMemberKey} =
-  (\gId (MemberKey k) -> PHChat $ encodeChatBinding CBGroup $ smpEncode (gId, memberId, k)) <$> publicGroupId <*> fromMemberKey
+  (\gId (MemberKey k) -> memberKeyPresHeader (Just gId) memberId k) <$> publicGroupId <*> fromMemberKey
 
 connPresHeader :: Connection -> CM (Maybe ProofPresHeader)
 connPresHeader conn = M.lookup (aConnId conn) <$> connsPresHeaders [conn]
@@ -2384,12 +2387,17 @@ rcvGroupChatBinding gInfo m_ asGroup badge_ =
     _ -> Nothing
 
 memberPresHeader :: GroupInfo -> MemberId -> Maybe C.PublicKeyEd25519 -> Maybe ProofPresHeader
-memberPresHeader gInfo memberId = fmap $ \k -> PHChat $ encodeChatBinding CBGroup $ case publicGroup' gInfo of
-  Just PublicGroupProfile {publicGroupId} -> smpEncode (publicGroupId, memberId, k)
-  Nothing -> smpEncode (memberId, k)
+memberPresHeader gInfo memberId = fmap $ memberKeyPresHeader ((\PublicGroupProfile {publicGroupId} -> publicGroupId) <$> publicGroup' gInfo) memberId
+
+memberKeyPresHeader :: Maybe B64UrlByteString -> MemberId -> C.PublicKeyEd25519 -> ProofPresHeader
+memberKeyPresHeader publicGroupId_ memberId k =
+  PHChat $ encodeChatBinding CBGroup $ maybe (smpEncode (memberId, k)) (\publicGroupId -> smpEncode (publicGroupId, memberId, k)) publicGroupId_
+
+channelMemberPresHeader :: GroupInfo -> MemberId -> Maybe C.PublicKeyEd25519 -> Maybe ProofPresHeader
+channelMemberPresHeader gInfo memberId memberKey_ = publicGroup' gInfo *> memberPresHeader gInfo memberId memberKey_
 
 memberInfoPresHeader :: GroupInfo -> MemberInfo -> Maybe ProofPresHeader
-memberInfoPresHeader gInfo MemberInfo {memberId, memberKey} = publicGroup' gInfo *> memberPresHeader gInfo memberId ((\(MemberKey k) -> k) <$> memberKey)
+memberInfoPresHeader gInfo MemberInfo {memberId, memberKey} = channelMemberPresHeader gInfo memberId ((\(MemberKey k) -> k) <$> memberKey)
 
 proofMemberKey :: MemberId -> Maybe BadgeProof -> Maybe C.PublicKeyEd25519
 proofMemberKey memberId badge_ = do
@@ -2517,6 +2525,9 @@ encodeSignedConnInfo pqSup signing chatMsgEvent = do
     ECMEncoded body -> compressConnInfo pqSup $ encodeBatchElement (Just $ signChatMsgBody signing body) body
     ECMLarge -> throwChatError $ CEException "large signed info"
 
+encodeConnInfoSigning :: MsgEncodingI e => PQSupport -> Maybe MsgSigning -> ChatMsgEvent e -> CM ByteString
+encodeConnInfoSigning pqSup = maybe (encodeConnInfoPQ pqSup) (encodeSignedConnInfo pqSup)
+
 -- signed XMember for a relay-group join: proves the joiner holds the member key it asserts, and carries
 -- viaRelay = the target relay's memberId inside the signed body so a sibling relay can't accept a replay
 encodeXMemberConnInfo :: PQSupport -> GroupInfoKeys -> MemberId -> Profile -> CM ByteString
@@ -2535,7 +2546,7 @@ encodeXGrpAcpt user g@(GIK gInfo@GroupInfo {membership = GroupMember {memberId}}
       then Just <$> presentUserBadge user incognitoProfile (groupPresHeader gInfo) (userProfileInGroup user gInfo $ fromLocalProfile <$> incognitoProfile)
       else pure Nothing
   let msg = XGrpAcpt memberId (Just $ groupMemberKey gks) profile_
-  maybe (encodeConnInfo msg) (\signing -> encodeSignedConnInfo PQSupportOff signing msg) (groupMsgSigning False g msg)
+  encodeConnInfoSigning PQSupportOff (groupMsgSigning False g msg) msg
 
 deliverMessage :: Connection -> CMEventTag e -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
 deliverMessage conn cmEventTag msgBody msgId = do
@@ -3105,9 +3116,7 @@ allowAgentConnectionAsync user conn@Connection {pqSupport} confId gInfo_ msg = d
   let signing_ = case gInfo_ of
         Just gInfo@(GIK g _) | useRelays' g || maxVersion (peerChatVRange conn) >= relayWebCapVersion -> groupMsgSigning False gInfo msg
         _ -> Nothing
-  dm <- case signing_ of
-    Just signing -> encodeSignedConnInfo pqSupport signing msg
-    Nothing -> encodeConnInfoPQ pqSupport msg
+  dm <- encodeConnInfoSigning pqSupport signing_ msg
   allowAgentConnectionInfo user conn confId dm
 
 allowAgentConnectionInfo :: User -> Connection -> ConfirmationId -> ByteString -> CM ()
