@@ -5,10 +5,9 @@ module Simplex.Chat.Store.SQLite.Migrations.M20260925_badge_store_receipts where
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
--- | invoice_id is null for a purchase the app never started, such as a store offer code, since the stores
--- echo back only an id the app set. A reinstall or another device echoes one this database does not know,
--- and that row is keyed by its transaction instead. provider and transaction_ref are null until a receipt
--- arrives, and distinct NULLs let several rows await one at once.
+-- | invoice_id is null when a receipt arrives naming no invoice, or one another row already holds: that row
+-- is then keyed by its transaction alone. provider and transaction_ref are null until a receipt arrives, and
+-- distinct NULLs let several rows await one at once.
 m20260925_badge_store_receipts :: Query
 m20260925_badge_store_receipts =
   [sql|
