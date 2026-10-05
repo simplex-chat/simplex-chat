@@ -1437,6 +1437,8 @@
   <string name="status_no_e2e_encryption">no e2e encryption</string>
   <string name="status_contact_has_e2e_encryption">contact has e2e encryption</string>
   <string name="status_contact_has_no_e2e_encryption">contact has no e2e encryption</string>
+  <string name="call_not_encrypted_title">Call is not encrypted</string>
+  <string name="call_not_encrypted_desc">%s accepted the call without end-to-end encryption.</string>
   <string name="call_connection_peer_to_peer">peer-to-peer</string>
   <string name="call_connection_via_relay">via relay</string>
   <string name="icon_descr_hang_up">Hang up</string>
@@ -1664,6 +1666,9 @@
   <!-- DatabaseEncryptionView.kt -->
   <string name="save_passphrase_in_keychain">Save passphrase in Keystore</string>
   <string name="save_passphrase_in_settings">Save passphrase in settings</string>
+  <string name="keystore_key_storage_strongbox">Secure element</string>
+  <string name="keystore_key_storage_tee">TEE</string>
+  <string name="keystore_key_storage_software">Software</string>
   <string name="database_encrypted">Database encrypted!</string>
   <string name="error_encrypting_database">Error encrypting database</string>
   <string name="remove_passphrase_from_keychain">Remove passphrase from Keystore?</string>
@@ -1680,7 +1685,7 @@
   <string name="set_passphrase">Set passphrase</string>
   <string name="enter_correct_current_passphrase">Please enter correct current passphrase.</string>
   <string name="database_is_not_encrypted">Your chat database is not encrypted - set passphrase to protect it.</string>
-  <string name="keychain_is_storing_securely">Android Keystore is used to securely store passphrase - it allows notification service to work.</string>
+  <string name="keychain_is_storing_securely">Android Keystore%s is used to securely store passphrase - it allows notification service to work.</string>
   <string name="settings_is_storing_in_clear_text">The passphrase is stored in settings as plaintext.</string>
   <string name="encrypted_with_random_passphrase">Database is encrypted using a random passphrase, you can change it.</string>
   <string name="impossible_to_recover_passphrase"><![CDATA[<b>Please note</b>: you will NOT be able to recover or change passphrase if you lose it.]]></string>
@@ -1806,6 +1811,7 @@
   <string name="rcv_group_event_invited_via_your_group_link">invited via your group link</string>
   <string name="rcv_group_event_member_created_contact">requested connection</string>
   <string name="rcv_group_event_new_member_pending_review">New member wants to join the group.</string>
+  <string name="rcv_group_event_msg_bad_signature">message rejected: bad signature</string>
   <string name="snd_group_event_changed_member_role">you changed role of %s to %s</string>
   <string name="snd_group_event_changed_role_for_yourself">you changed role for yourself to %s</string>
   <string name="snd_group_event_member_blocked">you blocked %s</string>

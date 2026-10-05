@@ -51,7 +51,7 @@
     <string name="allow_voice_messages_question">לאפשר הודעות קוליות\?</string>
     <string name="allow_your_contacts_to_send_voice_messages">אפשר לאנשי קשר לשלוח הודעות קוליות.</string>
     <string name="notifications_mode_service">תמיד פעיל</string>
-    <string name="keychain_is_storing_securely">ישנו שימוש ב־Android Keystore כדי לאחסן בבטחה את הסיסמה – דבר המאפשר לשירות ההתראות לעבוד.</string>
+    <string name="keychain_is_storing_securely">ישנו שימוש ב־Android Keystore%s כדי לאחסן בבטחה את הסיסמה – דבר המאפשר לשירות ההתראות לעבוד.</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore יאחסן בבטחה את הסיסמה לאחר הפעלה מחדש של האפליקציה או שינוי הסיסמה – דבר המאפשר קבלת התראות.</string>
     <string name="full_backup">גיבוי נתוני האפליקציה</string>
     <string name="settings_section_title_icon">סמל האפליקציה</string>

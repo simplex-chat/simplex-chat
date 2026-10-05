@@ -20,7 +20,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, addUTCTime, getCurrentTime, nominalDay)
-import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime, utcTimeToPOSIXSeconds)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import qualified Data.Map.Strict as M
 import Simplex.Chat.Badges (BadgeCredential, BadgeInfo (..), BadgePurchase (..), BadgeRequest (..), BadgeType (..), generateMasterKey, issueBadge, verifyPayment)
@@ -284,11 +284,13 @@ futureDate = posixSecondsToUTCTime 4102444800 -- 2100-01-01
 issueTestBadge :: BBSSecretKey -> UTCTime -> IO BadgeCredential
 issueTestBadge sk = issueTestBadgeType sk BTSupporter
 
+-- The expiry is signed as written but PostgreSQL stores it to the microsecond, so it is cut to whole seconds, as the service issues it.
 issueTestBadgeType :: BBSSecretKey -> BadgeType -> UTCTime -> IO BadgeCredential
-issueTestBadgeType sk badgeType badgeExpiry = do
+issueTestBadgeType sk badgeType expiry = do
   drg <- C.newRandom
   mk <- generateMasterKey drg
-  let info = BadgeInfo {badgeType, badgeExpiry, badgeExtra = ""}
+  let badgeExpiry = posixSecondsToUTCTime $ fromInteger $ truncate $ utcTimeToPOSIXSeconds expiry
+      info = BadgeInfo {badgeType, badgeExpiry, badgeExtra = ""}
   Just vreq <- verifyPayment (BPRedeemCode "TEST") BadgeRequest {masterKey = mk, badgeInfo = info}
   Right cred <- issueBadge 1 sk vreq
   pure cred

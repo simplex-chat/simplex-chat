@@ -584,7 +584,7 @@
     <string name="new_passphrase">Nouvelle phrase secrète…</string>
     <string name="confirm_new_passphrase">Confirmer la nouvelle phrase secrète…</string>
     <string name="update_database_passphrase">Mise à jour de la phrase secrète de la base de données</string>
-    <string name="keychain_is_storing_securely">Le Keystore d\'Android est utilisé pour stocker en toute sécurité la phrase secrète - elle permet au service de notification de fonctionner.</string>
+    <string name="keychain_is_storing_securely">Le Keystore d\'Android%s est utilisé pour stocker en toute sécurité la phrase secrète - elle permet au service de notification de fonctionner.</string>
     <string name="you_have_to_enter_passphrase_every_time">Vous devez saisir la phrase secrète à chaque fois que l\'application démarre - elle n\'est pas stockée sur l\'appareil.</string>
     <string name="encrypt_database_question">Chiffrer la base de données \?</string>
     <string name="change_database_passphrase_question">Changer la phrase secrète de la base de données \?</string>

@@ -665,7 +665,7 @@
     <string name="v4_2_auto_accept_contact_requests">Bağlanma isteklerini otomatik kabul et</string>
     <string name="database_downgrade_warning">Uyarı: Bazı verileri kaybedebilirsin!</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Tüm kişileriniz bağlı kalacaktır. Profil güncellemesi kişilerinize gönderilecektir.</string>
-    <string name="keychain_is_storing_securely">Android Keystore parolayı güvenli bir şekilde saklamak için kullanılır - bildirim hizmetinin çalışmasını sağlar.</string>
+    <string name="keychain_is_storing_securely">Android Keystore%s parolayı güvenli bir şekilde saklamak için kullanılır - bildirim hizmetinin çalışmasını sağlar.</string>
     <string name="button_welcome_message">Karşılama mesajı</string>
     <string name="group_welcome_title">Karşılama mesajı</string>
     <string name="voice_messages_are_prohibited">Sesli mesajlar yasaktır.</string>
