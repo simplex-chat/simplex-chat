@@ -195,7 +195,6 @@ enum ChatCommand: ChatCmdProtocol {
     case apiRedeemBadgeCode(userId: Int64, code: String)
     case apiPurchaseBadge(userId: Int64, echoedInvoiceId: String?, payment: ServicePayment)
     case apiCreateBadgeInvoice(userId: Int64)
-    case apiCloseBadgeInvoice(userId: Int64, invoiceId: String)
     case apiGetBadgeState(userId: Int64)
     case apiGetBadgeLedger(userId: Int64, badgePurchaseId: Int64)
     case apiAckBadgeAlert(userId: Int64, badgePurchaseId: Int64, alertKind: BadgeAlertKind, snooze: Bool, episode: String)
@@ -425,7 +424,6 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiPurchaseBadge(userId, echoedInvoiceId, payment):
                 return "/_badge purchase \(userId)\(echoedInvoiceId.map { " invoice=\($0)" } ?? "") \(encodeJSON(payment))"
             case let .apiCreateBadgeInvoice(userId): return "/_badge invoice \(userId)"
-            case let .apiCloseBadgeInvoice(userId, invoiceId): return "/_badge invoice close \(userId) \(invoiceId)"
             case let .apiGetBadgeState(userId): return "/_badge state \(userId)"
             case let .apiGetBadgeLedger(userId, badgePurchaseId): return "/_badge ledger \(userId) \(badgePurchaseId)"
             case let .apiAckBadgeAlert(userId, badgePurchaseId, alertKind, snooze, episode):
@@ -620,7 +618,6 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiRedeemBadgeCode: return "apiRedeemBadgeCode"
             case .apiPurchaseBadge: return "apiPurchaseBadge"
             case .apiCreateBadgeInvoice: return "apiCreateBadgeInvoice"
-            case .apiCloseBadgeInvoice: return "apiCloseBadgeInvoice"
             case .apiGetBadgeState: return "apiGetBadgeState"
             case .apiGetBadgeLedger: return "apiGetBadgeLedger"
             case .apiAckBadgeAlert: return "apiAckBadgeAlert"

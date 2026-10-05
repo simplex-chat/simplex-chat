@@ -356,7 +356,6 @@ undocumentedCommands =
     "APIChatUnread",
     "APICheckToken",
     "APIClearChat",
-    "APICloseBadgeInvoice",
     "APIConnectContactViaAddress",
     "APIConnectPreparedContact",
     "APIConnectPreparedGroup",

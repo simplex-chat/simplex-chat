@@ -16,7 +16,7 @@ import chat.simplex.common.views.onboarding.TextButtonBelowOnboardingButton
 import chat.simplex.res.MR
 
 @Composable
-fun BadgesPurchaseStateView(purchaseState: BadgePurchaseState, onDismiss: () -> Unit) {
+fun BadgesPurchaseStateView(title: StringResource, message: StringResource, onDismiss: () -> Unit) {
   ColumnWithScrollBar(
     Modifier.background(MaterialTheme.colors.background).padding(horizontal = 25.dp).padding(top = 8.dp, bottom = 20.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -24,7 +24,7 @@ fun BadgesPurchaseStateView(purchaseState: BadgePurchaseState, onDismiss: () -> 
     maxIntrinsicSize = true,
   ) {
     Text(
-      stringResource(purchaseState.title),
+      stringResource(title),
       style = MaterialTheme.typography.h1,
       fontWeight = FontWeight.Bold,
       color = MaterialTheme.colors.primary,
@@ -33,7 +33,7 @@ fun BadgesPurchaseStateView(purchaseState: BadgePurchaseState, onDismiss: () -> 
     )
 
     Text(
-      stringResource(purchaseState.message),
+      stringResource(message),
       style = MaterialTheme.typography.body1,
       textAlign = TextAlign.Center,
       modifier = Modifier.fillMaxWidth()
@@ -56,16 +56,14 @@ fun BadgesPurchaseStateView(purchaseState: BadgePurchaseState, onDismiss: () -> 
   }
 }
 
-private val BadgePurchaseState.title: StringResource
+val BadgePurchaseState.title: StringResource
   get() = when (this) {
     BadgePurchaseState.Issuing -> MR.strings.badges_issuing_title
     BadgePurchaseState.WaitingForApproval -> MR.strings.badges_waiting_for_approval_title
-    BadgePurchaseState.Checking -> MR.strings.badges_checking_title
   }
 
-private val BadgePurchaseState.message: StringResource
+val BadgePurchaseState.message: StringResource
   get() = when (this) {
     BadgePurchaseState.Issuing -> MR.strings.badges_issuing_body
     BadgePurchaseState.WaitingForApproval -> MR.strings.badges_waiting_for_approval_body
-    BadgePurchaseState.Checking -> MR.strings.badges_checking_body
   }

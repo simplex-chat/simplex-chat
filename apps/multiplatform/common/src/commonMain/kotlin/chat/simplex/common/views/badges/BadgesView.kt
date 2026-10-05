@@ -9,6 +9,7 @@ import chat.simplex.common.model.BadgeState
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.helpers.ModalManager
 import chat.simplex.common.views.helpers.ModalView
+import chat.simplex.res.MR
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -19,15 +20,17 @@ fun BadgesView(modalManager: ModalManager, close: () -> Unit) {
   // the card look is a modal setting, so the modal is composed here to follow the screen shown
   ModalView(close, cardScreen = shownBadge != null) {
     AnimatedContent(
-      targetState = shownBadge to BadgeStore.purchaseState(chatModel.currentUser.value?.userId),
+      targetState = Triple(shownBadge, BadgeStore.purchaseState(chatModel.currentUser.value?.userId), BadgeStore.checkingPurchases),
       transitionSpec = { fadeIn() with fadeOut() },
-      contentKey = { (badgeState, purchaseState) -> (badgeState != null) to purchaseState }
-    ) { (badgeState, purchaseState) ->
+      contentKey = { (badgeState, purchaseState, checkingPurchases) -> Triple(badgeState != null, purchaseState, checkingPurchases) }
+    ) { (badgeState, purchaseState, checkingPurchases) ->
       if (badgeState != null) {
         BadgesYourBadgeView(badgeState, modalManager)
       } else if (purchaseState != null) {
         // holds the purchase screens' slot, so a consumable cannot be bought twice
-        BadgesPurchaseStateView(purchaseState, onDismiss = close)
+        BadgesPurchaseStateView(purchaseState.title, purchaseState.message, onDismiss = close)
+      } else if (checkingPurchases) {
+        BadgesPurchaseStateView(MR.strings.badges_checking_purchases_title, MR.strings.badges_checking_purchases_body, onDismiss = close)
       } else {
         BadgesSupportSimplexView(modalManager, unwindToDepth)
       }

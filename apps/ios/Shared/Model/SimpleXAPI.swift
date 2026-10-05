@@ -2224,10 +2224,6 @@ func apiCreateBadgeInvoice(_ userId: Int64) async throws -> String {
     throw r.unexpected
 }
 
-func apiCloseBadgeInvoice(_ userId: Int64, _ invoiceId: String) async throws {
-    try await sendCommandOkResp(.apiCloseBadgeInvoice(userId: userId, invoiceId: invoiceId))
-}
-
 // localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
 func redeemErrorText(_ error: Error, purchase: Bool) -> String {
     if case let .error(.badgeRedeemError(e)) = error as? ChatError {

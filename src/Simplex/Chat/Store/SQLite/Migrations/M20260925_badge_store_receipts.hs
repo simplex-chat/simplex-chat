@@ -5,9 +5,9 @@ module Simplex.Chat.Store.SQLite.Migrations.M20260925_badge_store_receipts where
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
--- | invoice_id is null when a receipt arrives naming no invoice, or one another row already holds: that row
--- is then keyed by its transaction alone. provider and transaction_ref are null until a receipt arrives, and
--- distinct NULLs let several rows await one at once.
+-- | invoice_id is null for a receipt naming one another row holds: the transaction still has to be
+-- creditable, and its reference identifies it. provider and transaction_ref are null until a receipt
+-- arrives, and distinct NULLs let several rows await one at once.
 m20260925_badge_store_receipts :: Query
 m20260925_badge_store_receipts =
   [sql|
@@ -21,7 +21,6 @@ CREATE TABLE badge_store_receipts(
   purchase_priv_key BLOB NOT NULL,
   master_key BLOB NOT NULL,
   created_at TEXT NOT NULL,
-  closed_at TEXT,
   UNIQUE(provider, transaction_ref)
 ) STRICT;
 

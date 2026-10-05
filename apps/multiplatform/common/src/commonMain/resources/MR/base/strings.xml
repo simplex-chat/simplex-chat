@@ -3189,8 +3189,8 @@
   <string name="badges_issuing_body">Your payment is complete. The badge will be added to this profile.</string>
   <string name="badges_waiting_for_approval_title">Waiting for approval</string>
   <string name="badges_waiting_for_approval_body">Nothing has been charged.</string>
-  <string name="badges_checking_title">Checking your purchase</string>
-  <string name="badges_checking_body">The store has not confirmed a purchase yet.</string>
+  <string name="badges_checking_purchases_title">Checking your purchases</string>
+  <string name="badges_checking_purchases_body">Purchases not yet delivered are checked first.</string>
   <string name="badges_store_purchase_title">Store purchase</string>
   <string name="badges_store_purchase_processing">A store purchase is being processed.</string>
   <string name="badges_buy_in_browser">Buy in browser</string>

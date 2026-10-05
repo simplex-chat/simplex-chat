@@ -3573,10 +3573,6 @@ processChatCommand cxt nm = \case
     invoiceId <- UUID.toText <$> liftIO V4.nextRandom
     _ <- withStore' $ \db -> createBadgeStoreReceipt db g user (Just invoiceId) Nothing now
     pure $ CRBadgeInvoice user invoiceId
-  APICloseBadgeInvoice userId invoiceId -> withUserId userId $ \user -> do
-    now <- liftIO getCurrentTime
-    withStore' $ \db -> closeBadgeStoreInvoice db user invoiceId now
-    ok user
   APIGetBadgeState userId -> withUserId' userId $ \user -> do
     -- the read also signals the worker, whose results follow as CEvtBadgeChanged
     lift $ startBadgeWork user
@@ -5503,7 +5499,8 @@ emitBadgeAlert user emitted p@UserBadgePurchase {alertSnoozeUntil} shownCred now
 badgeStateResponse :: User -> CM ChatResponse
 badgeStateResponse user = do
   badgeState <- getUserBadgeState user
-  CRBadgeState user badgeState <$> withStore' (`getOpenStorePurchases` user)
+  now <- badgeNow
+  CRBadgeState user badgeState <$> withStore' (\db -> getOpenStorePurchases db user now)
 
 -- | Read from stored rows alone; the worker's results follow as CEvtBadgeChanged.
 getUserBadgeState :: User -> CM (Maybe BadgeState)
@@ -6176,7 +6173,6 @@ chatCommandP =
       "/_service_request " *> (APISendServiceRequest <$> A.decimal <* A.space <*> strP <*> optional (" timeout=" *> (realToFrac <$> A.double)) <*> optional (" sign_key=" *> strP) <* A.space <*> jsonP),
       "/_redeem_badge_code " *> (APIRedeemBadgeCode <$> A.decimal <* A.space <*> textP),
       "/_badge purchase " *> (APIPurchaseBadge <$> A.decimal <*> optional (" invoice=" *> (safeDecodeUtf8 <$> A.takeTill (== ' '))) <* A.space <*> jsonP),
-      "/_badge invoice close " *> (APICloseBadgeInvoice <$> A.decimal <* A.space <*> textP),
       "/_badge invoice " *> (APICreateBadgeInvoice <$> A.decimal),
       "/_badge state " *> (APIGetBadgeState <$> A.decimal),
       "/_badge ledger " *> (APIGetBadgeLedger <$> A.decimal <* A.space <*> A.decimal),

@@ -86,7 +86,6 @@ enum BadgePurchaseOutcome {
 enum BadgePurchaseState {
     case issuing
     case waitingForApproval
-    case checking
 }
 
 enum BadgeStoreError: Error {
@@ -108,8 +107,8 @@ final class BadgeStore: ObservableObject {
     @Published private var unfinished: [UInt64: BadgeStoreReceipt] = [:]
     // core's open store purchases for the profile they were read for: core knows whose a purchase is
     @Published private var storePurchases: (userId: Int64, purchases: [OpenStorePurchase])? = nil
-    // invoices this run has an open store sheet for, and whose interactive presentation has not returned
-    @Published private var buying: Set<String> = []
+    // whether this run has an open store sheet, or an interactive presentation that has not returned
+    @Published private var buying = false
     // kept for this run only: StoreKit lists no deferred purchase, and a declined one delivers nothing
     // by invoice id, so a pending purchase shows only under the profile whose record it names
     @Published private var waitingForApproval: Set<String> = []
@@ -127,12 +126,13 @@ final class BadgeStore: ObservableObject {
         let held = Set(unfinished.values.compactMap { $0.echoedInvoiceId })
         if purchases.contains(where: { $0.invoiceId.map(held.contains) == true }) { return .issuing }
         if purchases.contains(where: { $0.invoiceId.map(waitingForApproval.contains) == true }) { return .waitingForApproval }
-        if purchases.contains(where: { $0.transactionRef == nil && $0.invoiceId.map(buying.contains) != true }) { return .checking }
         return nil
     }
 
+    var checkingPurchases: Bool { !reconciledOnce }
+
     func canBuy(_ userId: Int64?) -> Bool {
-        reconciledOnce && buying.isEmpty && purchaseState(userId) == nil
+        reconciledOnce && !buying && purchaseState(userId) == nil
     }
 
     func setStorePurchases(_ userId: Int64, _ purchases: [OpenStorePurchase]) {
@@ -204,21 +204,19 @@ final class BadgeStore: ObservableObject {
         }
         let invoice = try await apiCreateBadgeInvoice(userId)
         guard let invoiceId = UUID(uuidString: invoice) else { throw BadgeStoreError.invalidInvoiceId(invoice) }
-        await MainActor.run { _ = buying.insert(invoice) }
+        await MainActor.run { buying = true }
         await loadBadgeStateAsync(userId)
         do {
             let outcome = try await storePurchase(product, invoiceId)
             switch outcome {
             // finished only once the service answers for it, as an unfinished transaction is what the store re-delivers
             case let .purchased(receipt) where receipt.signatureVerified: await presentPurchase(receipt, interactive: true)
-            case .purchased, .cancelled: await closeInvoice(userId, invoice)
-            case .pending: break
+            case .purchased, .cancelled, .pending: break
             }
-            await MainActor.run { _ = buying.remove(invoice) }
+            await MainActor.run { buying = false }
             return outcome
         } catch let error {
-            await closeInvoice(userId, invoice)
-            await MainActor.run { _ = buying.remove(invoice) }
+            await MainActor.run { buying = false }
             throw error
         }
     }
@@ -273,37 +271,10 @@ final class BadgeStore: ObservableObject {
     // at launch, on return to the foreground and on a profile switch, never on a timer
     func presentUnfinished() async {
         await listenForTransactions()
-        var held: Set<String> = []
         for await verification in Transaction.unfinished {
-            if let invoiceId = storeReceipt(verification).echoedInvoiceId { held.insert(invoiceId) }
             await reconcile(verification)
         }
-        await closeAbandoned(held)
         await MainActor.run { reconciledOnce = true }
-    }
-
-    // A record no held transaction names and no purchase here waits on. If the store still charges for one,
-    // as when this runs between an invoice's creation and its purchase starting, the receipt reopens it.
-    private func closeAbandoned(_ held: Set<String>) async {
-        guard let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) else { return }
-        await loadBadgeStateAsync(userId)
-        let abandoned = await MainActor.run {
-            openStorePurchases(userId)
-                .compactMap { $0.transactionRef == nil ? $0.invoiceId : nil }
-                .filter { !held.contains($0) && !buying.contains($0) && !waitingForApproval.contains($0) }
-        }
-        for invoiceId in abandoned {
-            await closeInvoice(userId, invoiceId)
-        }
-    }
-
-    private func closeInvoice(_ userId: Int64, _ invoiceId: String) async {
-        do {
-            try await apiCloseBadgeInvoice(userId, invoiceId)
-        } catch let error {
-            logger.error("BadgeStore.closeInvoice: \(responseError(error))")
-        }
-        await loadCurrentBadgeState()
     }
 
     // transactions the store settles outside a purchase call, such as an approved Ask to Buy
@@ -325,9 +296,6 @@ final class BadgeStore: ObservableObject {
             await receipt.transaction.finish()
         } else if receipt.signatureVerified {
             await presentPurchase(receipt, interactive: false)
-        } else if let invoiceId = receipt.echoedInvoiceId,
-                  let userId = await MainActor.run(body: { ChatModel.shared.currentUser?.userId }) {
-            await closeInvoice(userId, invoiceId)
         }
     }
 

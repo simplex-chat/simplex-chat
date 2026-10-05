@@ -123,8 +123,7 @@ sealed class BadgePurchaseOutcome {
 
 enum class BadgePurchaseState {
   Issuing,
-  WaitingForApproval,
-  Checking
+  WaitingForApproval
 }
 
 sealed class BadgeStoreError: Exception() {
@@ -155,8 +154,8 @@ object BadgeStore {
   private val unfinished = mutableStateOf<Map<String, BadgeStoreReceipt>>(emptyMap())
   // core's open store purchases for the profile they were read for: core knows whose a purchase is
   private val storePurchases = mutableStateOf<Triple<Long?, Long, List<OpenStorePurchase>>?>(null)
-  // invoices this run has an open store sheet for, and whose interactive presentation has not returned
-  private val buying = mutableStateOf<Set<String>>(emptySet())
+  // whether this run has an open store sheet, or an interactive presentation that has not returned
+  private val buying = mutableStateOf(false)
   // by invoice id, so a pending purchase shows only under the profile whose record it names
   private val waitingForApproval = mutableStateOf<Set<String>>(emptySet())
   // set when the first sweep has returned or failed, which is after every held purchase has been presented
@@ -173,13 +172,14 @@ object BadgeStore {
     return when {
       purchases.any { it.invoiceId?.let(held::contains) == true } -> BadgePurchaseState.Issuing
       purchases.any { it.invoiceId?.let(waitingForApproval.value::contains) == true } -> BadgePurchaseState.WaitingForApproval
-      purchases.any { it.transactionRef == null && it.invoiceId?.let(buying.value::contains) != true } -> BadgePurchaseState.Checking
       else -> null
     }
   }
 
+  val checkingPurchases: Boolean get() = badgeStoreAvailable && !reconciledOnce.value
+
   fun canBuy(userId: Long?): Boolean =
-    badgeStoreAvailable && reconciledOnce.value && buying.value.isEmpty() && purchaseState(userId) == null
+    badgeStoreAvailable && reconciledOnce.value && !buying.value && purchaseState(userId) == null
 
   fun setStorePurchases(rhId: Long?, userId: Long, purchases: List<OpenStorePurchase>) {
     storePurchases.value = Triple(rhId, userId, purchases)
@@ -242,22 +242,18 @@ object BadgeStore {
     val rhId = chatModel.remoteHostId()
     val userId = chatModel.currentUser.value?.userId ?: throw BadgeStoreError.NoActiveProfile
     val invoiceId = chatModel.controller.apiCreateBadgeInvoice(rhId, userId)
-    withContext(Dispatchers.Main) { buying.value += invoiceId }
+    withContext(Dispatchers.Main) { buying.value = true }
     chatModel.controller.loadBadgeState(rhId)
     try {
       val outcome = storePurchase(id, invoiceId)
       when (outcome) {
         // finished only once the service answers for it, as an unfinished purchase is what the store re-delivers
         is BadgePurchaseOutcome.Purchased -> presentPurchase(outcome.receipt, interactive = true)
-        is BadgePurchaseOutcome.Cancelled -> closeInvoice(userId, invoiceId)
-        is BadgePurchaseOutcome.Pending -> {}
+        is BadgePurchaseOutcome.Cancelled, is BadgePurchaseOutcome.Pending -> {}
       }
       return outcome
-    } catch (e: Exception) {
-      closeInvoice(userId, invoiceId)
-      throw e
     } finally {
-      withContext(Dispatchers.Main + NonCancellable) { buying.value -= invoiceId }
+      withContext(Dispatchers.Main + NonCancellable) { buying.value = false }
     }
   }
 
@@ -331,35 +327,10 @@ object BadgeStore {
       }
       // Play lists a purchase awaiting payment, so unlike on iOS the waiting state is re-found here
       withContext(Dispatchers.Main) { waitingForApproval.value = purchases.mapNotNull { (it as? BadgePurchaseOutcome.Pending)?.invoiceId }.toSet() }
-      val held = purchases.mapNotNull { (it as? BadgePurchaseOutcome.Purchased)?.receipt?.invoiceId }.toSet()
       purchases.forEach { reconcile(it) }
-      closeAbandoned(held)
     } finally {
       withContext(Dispatchers.Main + NonCancellable) { reconciledOnce.value = true }
     }
-  }
-
-  // A record no held purchase names and no purchase here waits on. If the store still charges for one,
-  // as when this runs between an invoice's creation and its purchase starting, the receipt reopens it.
-  private suspend fun closeAbandoned(held: Set<String>) {
-    val userId = chatModel.currentUser.value?.userId ?: return
-    chatModel.controller.loadBadgeState(chatModel.remoteHostId())
-    val abandoned = withContext(Dispatchers.Main) {
-      openStorePurchases(userId)
-        .mapNotNull { if (it.transactionRef == null) it.invoiceId else null }
-        .filter { it !in held && it !in buying.value && it !in waitingForApproval.value }
-    }
-    abandoned.forEach { closeInvoice(userId, it) }
-  }
-
-  private suspend fun closeInvoice(userId: Long, invoiceId: String) {
-    val rhId = chatModel.remoteHostId()
-    try {
-      chatModel.controller.apiCloseBadgeInvoice(rhId, userId, invoiceId)
-    } catch (e: Exception) {
-      Log.e(TAG, "BadgeStore.closeInvoice: ${e.message}")
-    }
-    chatModel.controller.loadBadgeState(rhId)
   }
 
   suspend fun reconcile(outcome: BadgePurchaseOutcome) {

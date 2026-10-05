@@ -21,7 +21,6 @@ module Simplex.Chat.Store.Badges
     createBadgeCodeRedemption,
     getBadgeStoreReceiptUserId,
     attachBadgeStoreReceipt,
-    closeBadgeStoreInvoice,
     getOpenStorePurchases,
     getBadgeStoreReceipt,
     createBadgeStoreReceipt,
@@ -46,7 +45,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Maybe (isJust, mapMaybe)
 import Data.Text (Text)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime, addUTCTime, nominalDay)
 import Simplex.Chat.Badges
 import Simplex.Chat.Badges.Ledger
 import Simplex.Chat.Badges.Service (StatementCreditType (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..))
@@ -123,36 +122,30 @@ attachBadgeStoreReceipt db invoiceId_ txRef@StoreTransactionRef {provider, trans
       userId_ <-
         maybeFirstRow fromOnly $
           DB.query db "SELECT user_id FROM badge_store_receipts WHERE invoice_id = ? AND transaction_ref IS NULL" (Only invoiceId)
-      -- a closed record is reopened so the purchase stays on the profile that paid: only a record no
-      -- receipt has reached can be closed, so its keys were never sent and nothing was credited to them
       forM_ userId_ $ \_ ->
         DB.execute
           db
-          "UPDATE badge_store_receipts SET provider = ?, transaction_ref = ?, closed_at = NULL WHERE invoice_id = ?"
+          "UPDATE badge_store_receipts SET provider = ?, transaction_ref = ? WHERE invoice_id = ?"
           (provider, transactionRef, invoiceId)
       pure userId_
 
--- | Only a record no receipt has reached can be closed.
-closeBadgeStoreInvoice :: DB.Connection -> User -> Text -> UTCTime -> IO ()
-closeBadgeStoreInvoice db User {userId} invoiceId now =
-  DB.execute
-    db
-    "UPDATE badge_store_receipts SET closed_at = ? WHERE user_id = ? AND invoice_id = ? AND transaction_ref IS NULL"
-    (now, userId, invoiceId)
-
-getOpenStorePurchases :: DB.Connection -> User -> IO [OpenStorePurchase]
-getOpenStorePurchases db User {userId} =
+getOpenStorePurchases :: DB.Connection -> User -> UTCTime -> IO [OpenStorePurchase]
+getOpenStorePurchases db User {userId} now =
   map (uncurry OpenStorePurchase)
     <$> DB.query
       db
       [sql|
         SELECT r.invoice_id, r.transaction_ref
         FROM badge_store_receipts r
-        WHERE r.user_id = ? AND r.closed_at IS NULL
+        WHERE r.user_id = ? AND (r.transaction_ref IS NOT NULL OR r.created_at > ?)
           AND NOT EXISTS (SELECT 1 FROM badge_purchases p WHERE p.badge_store_receipt_id = r.badge_store_receipt_id)
         ORDER BY r.badge_store_receipt_id
       |]
-      (Only userId)
+      (userId, receiptDueSince)
+  where
+    -- a week outlasts an Ask to Buy request (24 hours) and a Play slow payment (days), whose waiting screen
+    -- needs the record; one a receipt reached is paid for, so it is listed until its badge arrives
+    receiptDueSince = addUTCTime (negate $ 7 * nominalDay) now
 
 getBadgeStoreReceipt :: DB.Connection -> User -> StoreTransactionRef -> IO (Maybe BadgeStash)
 getBadgeStoreReceipt db User {userId} StoreTransactionRef {provider, transactionRef} =

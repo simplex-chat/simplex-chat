@@ -6,9 +6,9 @@ module Simplex.Chat.Store.Postgres.Migrations.M20260925_badge_store_receipts whe
 import Data.Text (Text)
 import Text.RawString.QQ (r)
 
--- | invoice_id is null when a receipt arrives naming no invoice, or one another row already holds: that row
--- is then keyed by its transaction alone. provider and transaction_ref are null until a receipt arrives, and
--- distinct NULLs let several rows await one at once.
+-- | invoice_id is null for a receipt naming one another row holds: the transaction still has to be
+-- creditable, and its reference identifies it. provider and transaction_ref are null until a receipt
+-- arrives, and distinct NULLs let several rows await one at once.
 m20260925_badge_store_receipts :: Text
 m20260925_badge_store_receipts =
   [r|
@@ -22,7 +22,6 @@ CREATE TABLE badge_store_receipts(
   purchase_priv_key BYTEA NOT NULL,
   master_key BYTEA NOT NULL,
   created_at TIMESTAMPTZ NOT NULL,
-  closed_at TIMESTAMPTZ,
   UNIQUE(provider, transaction_ref)
 );
 

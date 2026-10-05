@@ -11,7 +11,8 @@ import SwiftUI
 struct BadgesPurchaseStateView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) private var dismiss
-    let purchaseState: BadgePurchaseState
+    let title: LocalizedStringKey
+    let message: LocalizedStringKey
     var showsAsSheet: Bool = false
 
     var body: some View {
@@ -64,20 +65,20 @@ struct BadgesPurchaseStateView: View {
             }
         }
     }
+}
 
-    private var title: LocalizedStringKey {
-        switch purchaseState {
+extension BadgePurchaseState {
+    var title: LocalizedStringKey {
+        switch self {
         case .issuing: "Issuing your badge"
         case .waitingForApproval: "Waiting for approval"
-        case .checking: "Checking your purchase"
         }
     }
 
-    private var message: LocalizedStringKey {
-        switch purchaseState {
+    var message: LocalizedStringKey {
+        switch self {
         case .issuing: "Your payment is complete. The badge will be added to this profile."
         case .waitingForApproval: "Nothing has been charged."
-        case .checking: "The store has not confirmed a purchase yet."
         }
     }
 }

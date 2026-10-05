@@ -147,11 +147,10 @@ badgeServiceTests = do
     it "should credit a receipt to the profile that created its invoice, and answer as that profile" testInvoiceOtherProfile
     it "should resolve the same receipt to the same record, and replay its credential" testInvoiceSameReceiptTwice
     it "should credit a receipt naming an unknown invoice to the presenting profile" testInvoiceUnknown
-    it "should reopen a closed record for a late receipt, and credit it" testInvoiceReopened
-    it "should close only a record no receipt has reached" testInvoiceClose
+    it "should attach a late receipt to its aged-out record, and credit the profile that created it" testInvoiceLateReceipt
+    it "should stop listing a record no receipt has reached once it ages out, and keep listing a presented one" testInvoiceAgedOut
     it "should refuse an invoice with no service configured or while a badge is held, creating no record" testInvoiceRefusedBeforeCharge
     it "should refuse a receipt for an invoice while a badge is held, keeping the record for a retry" testInvoiceWhileBadgeHeld
-    it "should not close another profile's invoice" testInvoiceCloseOtherProfile
     it "should list only the asking profile's open store purchases" testInvoiceStateOtherProfile
 
 badgeProfile :: Profile
@@ -1836,7 +1835,7 @@ testInvoiceOtherProfile ps =
       alice <## "supporter badge - active"
       alice <##. "expires "
       (alice </)
-      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True, False)]
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True)]
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice, * supporter)"
 
@@ -1851,7 +1850,7 @@ testInvoiceSameReceiptTwice ps =
       alice <##. "expires "
       alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
       alice <## "badge already redeemed"
-      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True, False)]
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True)]
       rowCount cc "sx_badge_service_badge_purchases" `shouldReturn` 1
 
 testInvoiceUnknown :: HasCallStack => TestParams -> IO ()
@@ -1866,44 +1865,41 @@ testInvoiceUnknown ps =
       alice <## "badge redeemed"
       alice <## "supporter badge - active"
       alice <##. "expires "
-      storeReceiptRows (chatController alice) `shouldReturn` [(2, Just (T.pack unknown), True, False)]
+      storeReceiptRows (chatController alice) `shouldReturn` [(2, Just (T.pack unknown), True)]
 
-testInvoiceReopened :: HasCallStack => TestParams -> IO ()
-testInvoiceReopened ps =
-  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg} ->
+testInvoiceLateReceipt :: HasCallStack => TestParams -> IO ()
+testInvoiceLateReceipt ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsClock = clock} ->
     withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
       invoiceId <- createInvoice alice 1
-      alice ##> ("/_badge invoice close 1 " <> invoiceId)
-      alice <## "ok"
-      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), False, True)]
-      alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
-      alice <## "badge redeemed"
-      alice <## "supporter badge - active"
-      alice <##. "expires "
-      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True, False)]
-
-testInvoiceClose :: HasCallStack => TestParams -> IO ()
-testInvoiceClose ps =
-  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsStore = store} ->
-    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
-      invoiceId <- createInvoice alice 1
+      getCurrentTime >>= setClockAt clock . addUTCTime (8 * nominalDay)
       alice ##> "/_badge state 1"
-      alice <## ("store purchase open: invoice " <> invoiceId)
-      alice ##> ("/_badge invoice close 1 " <> invoiceId)
-      alice <## "ok"
-      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), False, True)]
-      -- the late receipt finds the closed record, so a presented record exists and cannot be closed
-      let unsettled = googlePayment "badge_supporter_01" googlePendingToken
-      alice ##> purchaseWithInvoice 1 invoiceId unsettled
-      alice <## "cannot get badge: badge service error: payment_pending"
-      alice ##> ("/_badge invoice close 1 " <> invoiceId)
-      alice <## "ok"
-      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True, False)]
-      settlePending store
-      alice ##> purchaseWithInvoice 1 invoiceId unsettled
-      alice <## "badge redeemed"
+      (alice </)
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> purchaseWithInvoice 2 invoiceId supporterPlay
+      alice <## "[user: alice] badge redeemed"
       alice <## "supporter badge - active"
       alice <##. "expires "
+      (alice </)
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True)]
+
+testInvoiceAgedOut :: HasCallStack => TestParams -> IO ()
+testInvoiceAgedOut ps =
+  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg, bsClock = clock} ->
+    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
+      unpaid <- createInvoice alice 1
+      presented <- createInvoice alice 1
+      alice ##> purchaseWithInvoice 1 presented (googlePayment "badge_supporter_01" googlePendingToken)
+      alice <## "cannot get badge: badge service error: payment_pending"
+      alice ##> "/_badge state 1"
+      alice <## ("store purchase open: invoice " <> unpaid)
+      alice <##. ("store purchase open: invoice " <> presented <> ", transaction ")
+      getCurrentTime >>= setClockAt clock . addUTCTime (8 * nominalDay)
+      alice ##> "/_badge state 1"
+      alice <##. ("store purchase open: invoice " <> presented <> ", transaction ")
+      (alice </)
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack unpaid), False), (1, Just (T.pack presented), True)]
 
 testInvoiceRefusedBeforeCharge :: HasCallStack => TestParams -> IO ()
 testInvoiceRefusedBeforeCharge ps = do
@@ -1928,19 +1924,8 @@ testInvoiceWhileBadgeHeld ps =
       redeemFirstBadge alice code
       alice ##> purchaseWithInvoice 1 invoiceId supporterPlay
       alice <## "cannot get badge: badge already active"
-      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True, False)]
+      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), True)]
       rowCount cc "sx_badge_service_payments" `shouldReturn` 0
-
-testInvoiceCloseOtherProfile :: HasCallStack => TestParams -> IO ()
-testInvoiceCloseOtherProfile ps =
-  withBadgeServiceEnv ps $ \BadgeServiceEnv {bsClientCfg} ->
-    withNewTestChatCfg ps bsClientCfg "alice" aliceProfile $ \alice -> do
-      invoiceId <- createInvoice alice 1
-      alice ##> "/create user alisa"
-      showActiveUser alice "alisa"
-      alice ##> ("/_badge invoice close 2 " <> invoiceId)
-      alice <## "ok"
-      storeReceiptRows (chatController alice) `shouldReturn` [(1, Just (T.pack invoiceId), False, False)]
 
 testInvoiceStateOtherProfile :: HasCallStack => TestParams -> IO ()
 testInvoiceStateOtherProfile ps =
@@ -1967,10 +1952,10 @@ createInvoice cc userId = do
 purchaseWithInvoice :: Int -> String -> ServicePayment -> String
 purchaseWithInvoice userId invoiceId payment = "/_badge purchase " <> show userId <> " invoice=" <> invoiceId <> " " <> paymentArg payment
 
--- | Each store purchase record's profile, invoice id, whether a receipt reached it, and whether it is closed.
-storeReceiptRows :: ChatController -> IO [(Int64, Maybe Text, Bool, Bool)]
+-- | Each store purchase record's profile, invoice id, and whether a receipt reached it.
+storeReceiptRows :: ChatController -> IO [(Int64, Maybe Text, Bool)]
 storeReceiptRows ChatController {chatStore} =
   withTransaction chatStore $ \db ->
     DB.query_ db $
-      "SELECT user_id, invoice_id, transaction_ref IS NOT NULL, closed_at IS NOT NULL "
+      "SELECT user_id, invoice_id, transaction_ref IS NOT NULL "
         <> "FROM badge_store_receipts ORDER BY badge_store_receipt_id"

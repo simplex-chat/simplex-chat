@@ -612,12 +612,6 @@ object ChatController {
     throw Exception("apiCreateBadgeInvoice: unexpected ${r.responseType}")
   }
 
-  suspend fun apiCloseBadgeInvoice(rh: Long?, userId: Long, invoiceId: String) {
-    val r = sendCmd(rh, CC.ApiCloseBadgeInvoice(userId, invoiceId))
-    if (r is API.Result && r.res is CR.CmdOk) return
-    throw Exception("apiCloseBadgeInvoice: unexpected ${r.responseType}")
-  }
-
   // localized where the user can act on it; otherwise the error itself, so a screenshot says what happened
   fun redeemErrorText(err: ChatError?, purchase: Boolean): String {
     if (err is ChatError.ChatErrorChat && err.errorType is ChatErrorType.CEBadgeRedeemError) {
@@ -4114,7 +4108,6 @@ sealed class CC {
   class ApiRedeemBadgeCode(val userId: Long, val code: String): CC()
   class ApiPurchaseBadge(val userId: Long, val echoedInvoiceId: String?, val payment: ServicePayment): CC()
   class ApiCreateBadgeInvoice(val userId: Long): CC()
-  class ApiCloseBadgeInvoice(val userId: Long, val invoiceId: String): CC()
   class ApiGetBadgeState(val userId: Long): CC()
   class ApiGetBadgeLedger(val userId: Long, val badgePurchaseId: Long): CC()
   class ApiAckBadgeAlert(val userId: Long, val badgePurchaseId: Long, val alertKind: BadgeAlertKind, val snooze: Boolean, val episode: String): CC()
@@ -4342,7 +4335,6 @@ sealed class CC {
     is ApiRedeemBadgeCode -> "/_redeem_badge_code $userId $code"
     is ApiPurchaseBadge -> "/_badge purchase $userId${echoedInvoiceId?.let { " invoice=$it" } ?: ""} ${json.encodeToString(payment)}"
     is ApiCreateBadgeInvoice -> "/_badge invoice $userId"
-    is ApiCloseBadgeInvoice -> "/_badge invoice close $userId $invoiceId"
     is ApiGetBadgeState -> "/_badge state $userId"
     is ApiGetBadgeLedger -> "/_badge ledger $userId $badgePurchaseId"
     is ApiAckBadgeAlert -> "/_badge ack $userId $badgePurchaseId ${badgeAlertKindParam(alertKind)} ${onOff(snooze)} $episode"
@@ -4529,7 +4521,6 @@ sealed class CC {
     is ApiRedeemBadgeCode -> "apiRedeemBadgeCode"
     is ApiPurchaseBadge -> "apiPurchaseBadge"
     is ApiCreateBadgeInvoice -> "apiCreateBadgeInvoice"
-    is ApiCloseBadgeInvoice -> "apiCloseBadgeInvoice"
     is ApiGetBadgeState -> "apiGetBadgeState"
     is ApiGetBadgeLedger -> "apiGetBadgeLedger"
     is ApiAckBadgeAlert -> "apiAckBadgeAlert"
