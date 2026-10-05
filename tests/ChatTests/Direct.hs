@@ -1798,8 +1798,7 @@ testSubscribeAppNSE ps =
     withNewTestChat ps "alice" aliceProfile $ \alice -> do
       withTestChatOpts ps testOpts {coreOptions = testCoreOpts {maintenance = True}} "alice" $ \nseAlice -> do
         alice ##> "/_app suspend 1"
-        alice <## "ok"
-        alice <## "chat suspended"
+        alice <### ["ok", "chat suspended"]
         nseAlice ##> "/_start main=off"
         nseAlice <## "chat started"
         threadDelay 100000

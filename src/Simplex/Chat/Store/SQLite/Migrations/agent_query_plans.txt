@@ -526,6 +526,23 @@ Plan:
 SEARCH conn_confirmations USING INDEX idx_conn_confirmations_conn_id (conn_id=?)
 
 Query: 
+        SELECT conn_id, (
+          SELECT processed_ratchet_key_hash_id
+          FROM processed_ratchet_key_hashes
+          WHERE conn_id = c.conn_id
+          ORDER BY processed_ratchet_key_hash_id DESC
+          LIMIT 1 OFFSET ?
+        ) AS max_excess_id
+        FROM processed_ratchet_key_hashes c
+        GROUP BY conn_id
+        HAVING COUNT(*) > ?
+      
+Plan:
+SCAN c USING COVERING INDEX idx_processed_ratchet_key_hashes_conn_id
+CORRELATED SCALAR SUBQUERY 1
+SEARCH processed_ratchet_key_hashes USING COVERING INDEX idx_processed_ratchet_key_hashes_conn_id (conn_id=?)
+
+Query: 
         SELECT conn_id, ratchet_state, sender_key, e2e_snd_pub_key, sender_conn_info, smp_reply_queues, smp_client_version
         FROM conn_confirmations
         WHERE confirmation_id = ?;
@@ -662,21 +679,6 @@ SEARCH messages USING INDEX idx_messages_internal_ts (internal_ts<?)
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_conn_id_internal_id (conn_id=? AND internal_id=?)
 SEARCH snd_messages USING COVERING INDEX idx_snd_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
 SEARCH rcv_messages USING COVERING INDEX idx_rcv_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
-
-Query: 
-      DELETE FROM processed_ratchet_key_hashes
-      WHERE processed_ratchet_key_hash_id IN (
-        SELECT processed_ratchet_key_hash_id
-        FROM processed_ratchet_key_hashes
-        WHERE created_at < ?
-        ORDER BY created_at ASC
-        LIMIT ?
-      )
-    
-Plan:
-SEARCH processed_ratchet_key_hashes USING INTEGER PRIMARY KEY (rowid=?)
-LIST SUBQUERY 1
-SEARCH processed_ratchet_key_hashes USING COVERING INDEX idx_processed_ratchet_key_hashes_created_at (created_at<?)
 
 Query: 
       INSERT INTO address_ratchet_keys
@@ -1159,18 +1161,6 @@ SEARCH s USING PRIMARY KEY (host=? AND port=?)
 SEARCH q USING PRIMARY KEY (host=? AND port=?)
 SEARCH c USING PRIMARY KEY (conn_id=?)
 
-Query: 
-    SELECT c.user_id, q.conn_id, q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
-      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id
-    FROM rcv_queues q
-    JOIN servers s ON q.host = s.host AND q.port = s.port
-    JOIN connections c ON q.conn_id = c.conn_id
-   WHERE q.to_subscribe = 1 AND  c.deleted = 0 AND q.deleted = 0 AND c.user_id = ? AND q.host = ? AND q.port = ? AND COALESCE(q.server_key_hash, s.key_hash) = ? ORDER BY q.rcv_id LIMIT ?
-Plan:
-SEARCH q USING INDEX idx_rcv_queues_to_subscribe (to_subscribe=? AND host=? AND port=?)
-SEARCH c USING PRIMARY KEY (conn_id=?)
-SEARCH s USING PRIMARY KEY (host=? AND port=?)
-
 Query: DELETE FROM client_services WHERE user_id = ?
 Plan:
 SEARCH client_services USING COVERING INDEX idx_server_certs_user_id_host_port (user_id=?)
@@ -1191,7 +1181,7 @@ Query: DELETE FROM connections WHERE conn_id = ?
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
 SEARCH address_ratchet_keys USING COVERING INDEX idx_address_ratchet_keys (conn_id=?)
-SEARCH processed_ratchet_key_hashes USING COVERING INDEX idx_processed_ratchet_key_hashes_hash (conn_id=?)
+SEARCH processed_ratchet_key_hashes USING COVERING INDEX idx_processed_ratchet_key_hashes_conn_id (conn_id=?)
 SEARCH encrypted_rcv_message_hashes USING COVERING INDEX idx_encrypted_rcv_message_hashes_hash (conn_id=?)
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_conn_id_internal_id (conn_id=?)
 SEARCH commands USING COVERING INDEX idx_commands_conn_id (conn_id=?)
@@ -1206,7 +1196,7 @@ Query: DELETE FROM connections WHERE user_id = 2
 Plan:
 SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
 SEARCH address_ratchet_keys USING COVERING INDEX idx_address_ratchet_keys (conn_id=?)
-SEARCH processed_ratchet_key_hashes USING COVERING INDEX idx_processed_ratchet_key_hashes_hash (conn_id=?)
+SEARCH processed_ratchet_key_hashes USING COVERING INDEX idx_processed_ratchet_key_hashes_conn_id (conn_id=?)
 SEARCH encrypted_rcv_message_hashes USING COVERING INDEX idx_encrypted_rcv_message_hashes_hash (conn_id=?)
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_conn_id_internal_id (conn_id=?)
 SEARCH commands USING COVERING INDEX idx_commands_conn_id (conn_id=?)
@@ -1243,6 +1233,10 @@ SEARCH ntf_subscriptions USING PRIMARY KEY (conn_id=?)
 Query: DELETE FROM ntf_tokens_to_delete WHERE created_at < ?
 Plan:
 SCAN ntf_tokens_to_delete
+
+Query: DELETE FROM processed_ratchet_key_hashes WHERE conn_id = ? AND processed_ratchet_key_hash_id <= ? AND created_at < ?
+Plan:
+SEARCH processed_ratchet_key_hashes USING INDEX idx_processed_ratchet_key_hashes_conn_id (conn_id=? AND processed_ratchet_key_hash_id<?)
 
 Query: DELETE FROM ratchets WHERE conn_id = ?
 Plan:
@@ -1413,10 +1407,6 @@ Query: SELECT deleted FROM snd_files WHERE snd_file_id = ?
 Plan:
 SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT header_key, msg_n, msg_key FROM skipped_messages WHERE conn_id = ?
-Plan:
-SEARCH skipped_messages USING INDEX idx_skipped_messages_conn_id (conn_id=?)
-
 Query: SELECT key_hash FROM servers WHERE host = ? AND port = ?
 Plan:
 SEARCH servers USING PRIMARY KEY (host=? AND port=?)
@@ -1432,6 +1422,10 @@ SEARCH ratchets USING PRIMARY KEY (conn_id=?)
 Query: SELECT ratchet_state, x3dh_pub_key_1, x3dh_pub_key_2, pq_pub_kem FROM ratchets WHERE conn_id = ?
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
+
+Query: SELECT ratchet_sync_state FROM connections WHERE conn_id = ?
+Plan:
+SEARCH connections USING PRIMARY KEY (conn_id=?)
 
 Query: SELECT rcv_file_id FROM rcv_files WHERE rcv_file_entity_id = ?
 Plan:
@@ -1452,6 +1446,10 @@ SEARCH rcv_queues USING COVERING INDEX idx_rcv_queue_id (conn_id=?)
 Query: SELECT rcv_queue_id, broker_id FROM rcv_messages WHERE conn_id = ? AND internal_id = ?
 Plan:
 SEARCH rcv_messages USING PRIMARY KEY (conn_id=?)
+
+Query: SELECT skipped_message_id, header_key, msg_n, msg_key FROM skipped_messages WHERE conn_id = ? ORDER BY skipped_message_id DESC LIMIT ?
+Plan:
+SEARCH skipped_messages USING INDEX idx_skipped_messages_conn_id (conn_id=?)
 
 Query: SELECT snd_file_id FROM snd_files WHERE snd_file_entity_id = ?
 Plan:

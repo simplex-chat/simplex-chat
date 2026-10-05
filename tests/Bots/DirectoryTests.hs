@@ -2044,11 +2044,12 @@ testCaptchaTooManyAttempts ps =
           pure ()
         cath #> "#privacy (support) wrong"
         cath <# "#privacy (support) 'SimpleX Directory'> Too many failed attempts, you can't join group."
-        -- member removal produces multiple messages
-        _ <- getTermLine cath
-        _ <- getTermLine cath
-        _ <- getTermLine cath
-        pure ()
+        let removed = "#privacy: 'SimpleX Directory' removed you from the group (signed)"
+        line <- getTermLine cath
+        when (line /= removed) $ do
+          line `shouldContain` "error: connection authorization failed"
+          cath <## removed
+        cath <## "use /d #privacy to delete the group"
 
 testCaptchaUnknownCommand :: HasCallStack => TestParams -> IO ()
 testCaptchaUnknownCommand ps =

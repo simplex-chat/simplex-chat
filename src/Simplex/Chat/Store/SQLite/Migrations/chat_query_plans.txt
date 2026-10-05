@@ -7382,11 +7382,7 @@ Query: SELECT chat_item_id FROM chat_items WHERE group_scope_tag = 'member_suppo
 Plan:
 SCAN chat_items
 
-Query: SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND item_text LIKE '!2 SB-8H8V3-PF8CV-PQMA2-A54M3!%'
-Plan:
-SCAN chat_items
-
-Query: SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND item_text LIKE '!2 SB-Y14GX-Z83KW-0E3PK-DEN7X!%'
+Query: SELECT chat_item_id FROM chat_items WHERE item_sent = 0 AND item_text LIKE ? || '%'
 Plan:
 SCAN chat_items
 
