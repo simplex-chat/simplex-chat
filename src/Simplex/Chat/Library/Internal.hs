@@ -507,6 +507,7 @@ cancelFilesInProgress user filesInfo = do
   lift $ agentXFTPDeleteRcvFiles xrfIds
   where
     fileEnded CIFileInfo {fileStatus} = case fileStatus of
+      Just (AFS SMDRcv (CIFSRcvError e)) | e == fwdFileUnavailableError -> False
       Just (AFS _ status) -> ciFileEnded status
       Nothing -> True
     getFT :: DB.Connection -> CIFileInfo -> IO (Either ChatError FileTransfer)
@@ -913,6 +914,36 @@ resetRcvCIFileStatus user fileId ciFileStatus = do
       updateRcvFileStatus db fileId FSNew
       updateRcvFileAgentId db fileId Nothing
     lookupChatItemByFileId db cxt user fileId
+
+-- The sender sends file descriptions only to the members it was connected to when it sent the file,
+-- and the host stops forwarding the sender's messages once the members connect,
+-- so a description that was not forwarded before connection usually does not arrive.
+-- The file is not cancelled, so a description that still arrives is processed.
+markFwdFilesUnavailable :: User -> GroupMember -> CM ()
+markFwdFilesUnavailable user m = do
+  cxt <- chatStoreCxt
+  fileIds <- withStore' $ \db -> getForwardedRcvFilesWithoutDescr db user m
+  forM_ fileIds $ \fileId -> do
+    aci_ <- withStore $ \db ->
+      ifM (liftIO $ setRcvFileUnavailable db user fileId) (lookupChatItemByFileId db cxt user fileId) (pure Nothing)
+    forM_ aci_ $ toView . CEvtChatItemUpdated user
+
+-- The author also sent the message directly, so it has the file transfer for the user and should send the description.
+fwdMsgReceivedDirectly :: User -> GroupId -> GroupMemberId -> SharedMsgId -> CM ()
+fwdMsgReceivedDirectly user@User {userId} groupId authorGroupMemberId sharedMsgId = do
+  cxt <- chatStoreCxt
+  fileId_ <- withStore' $ \db -> eitherToMaybe <$> runExceptT (getGroupFileIdBySharedMsgId db userId groupId sharedMsgId)
+  case fileId_ of
+    Nothing -> withStore' $ \db -> setGroupMsgReceivedDirectly db groupId authorGroupMemberId sharedMsgId
+    Just fileId -> do
+      aci_ <- withStore $ \db -> do
+        liftIO $ setGroupMsgReceivedDirectly db groupId authorGroupMemberId sharedMsgId
+        unmarkFwdFile db cxt user fileId
+      forM_ aci_ $ toView . CEvtChatItemUpdated user
+
+unmarkFwdFile :: DB.Connection -> StoreCxt -> User -> FileTransferId -> ExceptT StoreError IO (Maybe AChatItem)
+unmarkFwdFile db cxt user fileId =
+  ifM (liftIO $ unsetRcvFileUnavailable db user fileId) (Just <$> getChatItemByFileId db cxt user fileId) (pure Nothing)
 
 receiveViaURI :: User -> FileDescriptionURI -> CryptoFile -> CM RcvFileTransfer
 receiveViaURI user@User {userId} FileDescriptionURI {description} cf@CryptoFile {cryptoArgs} = do
@@ -2881,11 +2912,18 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
   msg <-
     withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery $ Just amGroupMemId)
       `catchAllErrors` \e -> case e of
-        ChatErrorStore (SEDuplicateGroupMessage _ _ _ (Just forwardedByGroupMemberId)) -> do
+        ChatErrorStore (SEDuplicateGroupMessage _ _ duplAuthorId_ (Just forwardedByGroupMemberId)) -> do
           cxt <- chatStoreCxt
-          fm <- withStore $ \db -> getGroupMember db cxt user groupId forwardedByGroupMemberId
-          forM_ (memberConn fm) $ \fmConn ->
-            void $ sendDirectMemberMessage fmConn (XGrpMemCon amMemId) groupId
+          ( do
+              fm <- withStore $ \db -> getGroupMember db cxt user groupId forwardedByGroupMemberId
+              forM_ (memberConn fm) $ \fmConn ->
+                void $ sendDirectMemberMessage fmConn (XGrpMemCon amMemId) groupId
+            )
+            `catchAllErrors` eToView
+          case (chatMsgEvent, sharedMsgId_) of
+            (XMsgNew {}, Just sharedMsgId)
+              | duplAuthorId_ == Just amGroupMemId -> fwdMsgReceivedDirectly user groupId amGroupMemId sharedMsgId `catchAllErrors` eToView
+            _ -> pure ()
           throwError e
         _ -> throwError e
   pure (am', conn', msg)

@@ -3551,7 +3551,9 @@ processChatCommand cxt nm = \case
                   liftIO $ removeFile fsFilePath `catchAll_` pure ()
                 lift . forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
                   withAgent' (`xftpDeleteRcvFile` aFileId)
-                aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
+                aci_ <- withFastStore $ \db -> do
+                  liftIO $ resetRcvXFTPFileStatus db user fileId
+                  lookupChatItemByFileId db cxt user fileId
                 pure $ CRRcvFileCancelled user aci_ ftr
   FileStatus fileId -> withUser $ \user -> do
     withFastStore (\db -> lookupChatItemByFileId db cxt user fileId) >>= \case

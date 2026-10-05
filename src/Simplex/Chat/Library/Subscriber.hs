@@ -969,6 +969,7 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
             notifyMemberConnected gInfo m Nothing
+            unless (useRelays' gInfo) $ markFwdFilesUnavailable user m `catchAllErrors` eToView
             let memCategory = memberCategory m
                 connectedIncognito = memberIncognito membership
             when (memCategory == GCPreMember) $
@@ -1971,14 +1972,17 @@ processAgentMessageConn cxt user@User {userId} entity gks_ corrId agentConnId ag
     processFDMessage binding_ fileId aci fileDescr fileExpires fileBadge = do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
       unless (rcvFileCompleteOrCancelled ft) $ do
-        (rfd@RcvFileDescr {fileDescrComplete}, ft'@RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs, fileProhibited, fileInvitation = FileInvitation {fileSize}}) <- withStore $ \db -> do
-          rfd <- appendRcvFD db userId fileId fileDescr
+        (rfd@RcvFileDescr {fileDescrComplete}, ft'@RcvFileTransfer {fileStatus, xftpRcvFile, cryptoArgs, fileProhibited, fileInvitation = FileInvitation {fileSize}}, unmarked_) <- withStore $ \db -> do
+          rfd@RcvFileDescr {fileDescrComplete = complete} <- appendRcvFD db userId fileId fileDescr
           forM_ fileExpires $ liftIO . setFileExpiration db user fileId
+          -- unmarked in the same transaction as appending the last part, so that it is not lost if the process stops
+          unmarked_ <- if complete then unmarkFwdFile db cxt user fileId else pure Nothing
           -- reading second time in the same transaction as appending description
           -- to prevent race condition with accept
           ft' <- getRcvFileTransfer db user fileId
-          pure (rfd, ft')
-        when fileDescrComplete $ toView $ CEvtRcvFileDescrReady user aci ft' rfd
+          pure (rfd, ft', unmarked_)
+        forM_ unmarked_ $ toView . CEvtChatItemUpdated user
+        when fileDescrComplete $ toView $ CEvtRcvFileDescrReady user (fromMaybe aci unmarked_) ft' rfd
         maxSize <- asks $ noBadge . fileSizeLimits . config
         let descrBadgeRequired = fileDescrComplete && fileSize > maxSize && isNothing fileProhibited
         prohibited_ <- case fileBadge of
