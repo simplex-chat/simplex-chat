@@ -3,7 +3,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Store.Wallets
   ( Wallet (..),
@@ -75,13 +74,10 @@ deleteWallet :: DB.Connection -> IO Bool
 deleteWallet db =
   rowReturned $ DB.query_ db "DELETE FROM wallet_seeds RETURNING wallet_seed_id"
 
-resolveAccount :: DB.Connection -> Maybe AccountIndex -> ExceptT StoreError IO (Either WalletError (WalletEntropy, AccountIndex))
-resolveAccount db accountIdx_ =
-  getWallet db >>= \case
-    Nothing -> pure $ Left WENoMaster
-    Just Wallet {entropy, nextAccountIndex} -> pure $ (entropy,) <$> maybe next Right accountIdx_
-      where
-        next = maybe (Left WECounterUnknown) (first (const WEAccountsExhausted) . mkAccountIndex) nextAccountIndex
+resolveAccount :: Wallet -> Maybe AccountIndex -> Either WalletError AccountIndex
+resolveAccount Wallet {nextAccountIndex} = maybe next Right
+  where
+    next = maybe (Left WECounterUnknown) (first (const WEAccountsExhausted) . mkAccountIndex) nextAccountIndex
 
 getUserAccounts :: DB.Connection -> UserId -> SeedId -> IO [AccountIndex]
 getUserAccounts db userId sId =
@@ -101,21 +97,18 @@ accountUser db sId n =
   maybeFirstRow fromOnly $
     DB.query db "SELECT user_id FROM wallet_accounts WHERE wallet_seed_id = ? AND account_index = ?" (sId, n)
 
-bindAccount :: DB.Connection -> UserId -> Maybe AccountIndex -> ExceptT StoreError IO (Either WalletError (WalletEntropy, AccountIndex))
-bindAccount db userId accountIdx_ =
-  getWallet db >>= \case
-    Nothing -> pure $ Left WENoMaster
-    Just Wallet {walletId, entropy, nextAccountIndex} -> liftIO $ case accountIdx_ of
-      Nothing
-        | isNothing nextAccountIndex -> pure $ Left WECounterUnknown
-        | otherwise -> takeNextAccount db walletId >>= maybe (pure $ Left WEAccountsExhausted) (\n -> Right (entropy, n) <$ insertAccount db userId walletId n)
-      Just n -> do
-        held <-
-          accountUser db walletId n >>= \case
-            Just (Just heldBy) -> pure $ heldBy == userId
-            Just Nothing -> setAccountUser db userId walletId n
-            Nothing -> True <$ insertAccount db userId walletId n
-        if held then Right (entropy, n) <$ raiseNextAccount db walletId n else pure $ Left WEAccountBound
+bindAccount :: DB.Connection -> UserId -> Wallet -> Maybe AccountIndex -> IO (Either WalletError AccountIndex)
+bindAccount db userId Wallet {walletId, nextAccountIndex} accountIdx_ = case accountIdx_ of
+  Nothing
+    | isNothing nextAccountIndex -> pure $ Left WECounterUnknown
+    | otherwise -> takeNextAccount db walletId >>= maybe (pure $ Left WEAccountsExhausted) (\n -> Right n <$ insertAccount db userId walletId n)
+  Just n -> do
+    held <-
+      accountUser db walletId n >>= \case
+        Just (Just heldBy) -> pure $ heldBy == userId
+        Just Nothing -> setAccountUser db userId walletId n
+        Nothing -> True <$ insertAccount db userId walletId n
+    if held then Right n <$ raiseNextAccount db walletId n else pure $ Left WEAccountBound
 
 takeNextAccount :: DB.Connection -> SeedId -> IO (Maybe AccountIndex)
 takeNextAccount db sId =
@@ -141,11 +134,8 @@ setAccountUser db userId sId n =
       |]
       (userId, sId, n)
 
-heldAccount :: DB.Connection -> UserId -> AccountIndex -> ExceptT StoreError IO (Either WalletError WalletEntropy)
-heldAccount db userId n =
-  getWallet db >>= \case
-    Nothing -> pure $ Left WENoMaster
-    Just Wallet {walletId, entropy} -> liftIO $ (\held -> if held == Just (Just userId) then Right entropy else Left WEAccountNotHeld) <$> accountUser db walletId n
+heldAccount :: DB.Connection -> UserId -> SeedId -> AccountIndex -> IO Bool
+heldAccount db userId sId n = (== Just (Just userId)) <$> accountUser db sId n
 
 raiseNextAccount :: DB.Connection -> SeedId -> AccountIndex -> IO ()
 raiseNextAccount db sId n =

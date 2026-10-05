@@ -5308,38 +5308,16 @@ export interface VersionRange {
 }
 
 export type WalletError = 
-  | WalletError.NoMaster
-  | WalletError.MasterExists
-  | WalletError.BadMnemonic
   | WalletError.AccountBound
   | WalletError.AccountNotHeld
   | WalletError.CounterUnknown
   | WalletError.AccountsExhausted
 
 export namespace WalletError {
-  export type Tag = 
-    | "noMaster"
-    | "masterExists"
-    | "badMnemonic"
-    | "accountBound"
-    | "accountNotHeld"
-    | "counterUnknown"
-    | "accountsExhausted"
+  export type Tag = "accountBound" | "accountNotHeld" | "counterUnknown" | "accountsExhausted"
 
   interface Interface {
     type: Tag
-  }
-
-  export interface NoMaster extends Interface {
-    type: "noMaster"
-  }
-
-  export interface MasterExists extends Interface {
-    type: "masterExists"
-  }
-
-  export interface BadMnemonic extends Interface {
-    type: "badMnemonic"
   }
 
   export interface AccountBound extends Interface {

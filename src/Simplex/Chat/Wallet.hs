@@ -7,7 +7,6 @@ module Simplex.Chat.Wallet
     WalletInfo (..),
     WalletError (..),
     newEntropy,
-    entropyFromMnemonic,
     masterMnemonic,
     deriveAccount,
     accountSecret,
@@ -17,7 +16,6 @@ where
 import Control.Concurrent.STM
 import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as JQ
-import Data.Bifunctor (first)
 import qualified Data.ByteArray.Encoding as BAE
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1)
@@ -45,10 +43,7 @@ data WalletInfo = WalletInfo
   deriving (Show)
 
 data WalletError
-  = WENoMaster
-  | WEMasterExists
-  | WEBadMnemonic
-  | WEAccountBound
+  = WEAccountBound
   | WEAccountNotHeld
   | WECounterUnknown
   | WEAccountsExhausted
@@ -56,9 +51,6 @@ data WalletError
 
 newEntropy :: TVar ChaChaDRG -> IO B39.WalletEntropy
 newEntropy = atomically . B39.randomEntropy B39.ES256
-
-entropyFromMnemonic :: Text -> Either WalletError B39.WalletEntropy
-entropyFromMnemonic = first (const WEBadMnemonic) . B39.parsePhrase
 
 masterMnemonic :: B39.WalletEntropy -> Text
 masterMnemonic = decodeLatin1 . B39.entropyPhrase

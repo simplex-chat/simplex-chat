@@ -9,12 +9,11 @@ import qualified Data.ByteArray as BA
 import qualified Data.ByteArray.Encoding as BAE
 import qualified Data.ByteString.Char8 as B
 import Data.Char (toUpper)
-import Data.Either (isRight)
 import Data.List (nub)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Word (Word32)
-import Simplex.Chat.Wallet (AccountKey, WalletAddress (..), WalletError (..), accountSecret, deriveAccount, entropyFromMnemonic, masterMnemonic)
+import Simplex.Chat.Wallet (AccountKey, WalletAddress (..), accountSecret, deriveAccount, masterMnemonic)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.BIP39 as B39
 import Simplex.Messaging.Crypto.BIP44 (mkAccountIndex)
@@ -74,10 +73,6 @@ walletDerivationTests = do
     (keyPath . snd <$> walletAccount testPhrase12 7) `shouldReturn` "m/44'/60'/7'/0/0"
   Hspec.it "round-trips the phrase it was imported from" $
     masterMnemonic (walletEntropy testPhrase24) `shouldBe` testPhrase24
-  Hspec.it "accepts a phrase of any BIP-39 length with a valid checksum" $ do
-    entropyFromMnemonic testPhrase24 `shouldSatisfy` isRight
-    entropyFromMnemonic testPhrase12 `shouldSatisfy` isRight
-    entropyFromMnemonic (T.unwords $ replicate 24 "abandon") `shouldBe` Left WEBadMnemonic
 
 walletTests :: SpecWith TestParams
 walletTests = do
@@ -99,21 +94,21 @@ testWalletCreate ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_wallet 1"
   alice <## "no wallet on this device"
   alice ##> "/_wallet export master"
-  alice <## "wallet: this device has no wallet"
+  alice <## "bad chat command: this device has no wallet"
   alice ##> "/_wallet bind 1"
-  alice <## "wallet: this device has no wallet"
+  alice <## "bad chat command: this device has no wallet"
   alice ##> "/_wallet delete"
-  alice <## "wallet: this device has no wallet"
+  alice <## "bad chat command: this device has no wallet"
   alice ##> "/_wallet 1"
   alice <## "no wallet on this device"
   alice ##> "/_wallet create new"
   alice <## "wallet, next account 1, no accounts for this profile"
   alice ##> "/_wallet create new"
-  alice <## "wallet: this device already has a wallet"
+  alice <## "bad chat command: this device already has a wallet"
   alice ##> "/_wallet delete"
   alice <## "ok"
   alice ##> ("/_wallet create mnemonic=" <> unwords (replicate 24 "abandon"))
-  alice <## "wallet: not a valid recovery phrase"
+  alice <## "bad chat command: not a valid recovery phrase"
   alice ##> ("/_wallet create mnemonic=" <> map toUpper (T.unpack testPhrase24))
   alice <## "wallet, next account unknown, no accounts for this profile"
   alice ##> "/_wallet export master"

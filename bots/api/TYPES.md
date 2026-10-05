@@ -4644,15 +4644,6 @@ Handshake:
 
 **Discriminated union type**:
 
-NoMaster:
-- type: "noMaster"
-
-MasterExists:
-- type: "masterExists"
-
-BadMnemonic:
-- type: "badMnemonic"
-
 AccountBound:
 - type: "accountBound"
 

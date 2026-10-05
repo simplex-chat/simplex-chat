@@ -65,7 +65,7 @@ import Simplex.Chat.Badges.Types (BadgeAlert (..), BadgeAlertKind (..), BadgeIss
 import Simplex.Chat.Badges.Code (badgeCodeText, parseBadgeCode)
 import Simplex.Chat.Badges.Service (BadgeBalance (..), BadgeServiceCommand (..), BadgeServiceErrorCode (..), BadgeServiceRequest (..), BadgeServiceResponse (..), BadgeStatement (..), StatementDebitType (..), StatementEntry (..), StatementEntryType (..), currentBadgeServiceVersion)
 import Simplex.Chat.Names (SimplexDomainProof (..), SimplexDomainClaim (..), claimDomain, mkDomainClaim)
-import Simplex.Chat.Wallet (AccountKey, WalletAddress, WalletError (..), WalletInfo (..), accountSecret, deriveAccount, entropyFromMnemonic, masterMnemonic, newEntropy)
+import Simplex.Chat.Wallet (AccountKey, WalletAddress, WalletError (..), WalletInfo (..), accountSecret, deriveAccount, masterMnemonic, newEntropy)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Delivery (DeliveryJobScope (..), DeliveryJobSpec (..), DeliveryWorkerScope (..))
@@ -116,7 +116,7 @@ import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), pattern NRMInteractive, textToHostMode)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.ShortLink as SL
-import Simplex.Messaging.Crypto.BIP39 (WalletEntropy)
+import Simplex.Messaging.Crypto.BIP39 (WalletEntropy, parsePhrase)
 import Simplex.Messaging.Crypto.BIP44 (AccountIndex, mkAccountIndex)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -1505,32 +1505,36 @@ processChatCommand cxt nm = \case
     CRWallet user <$> withFastStore (\db -> getWallet db >>= mapM (\Wallet {walletId, nextAccountIndex} -> liftIO $ (`WalletInfo` nextAccountIndex) <$> getUserAccounts db userId walletId))
   APICreateWallet mnemonic_ -> withUser $ \user -> do
     wallet_ <- withFastStore getWallet
-    when (isJust wallet_) $ throwWalletError WEMasterExists
+    when (isJust wallet_) $ throwCmdError "this device already has a wallet"
     -- the counter starts at 1 for a generated seed, leaving account 0 to other wallets, and is unknown for an imported one
     (entropy, nextAccount) <- case mnemonic_ of
       Nothing -> (,Just 1) <$> (liftIO . newEntropy =<< asks random)
-      Just phrase -> (,Nothing) <$> liftWallet (entropyFromMnemonic phrase)
+      Just phrase -> (,Nothing) <$> either (const $ throwCmdError "not a valid recovery phrase") pure (parsePhrase phrase)
     -- derive the first account before storing, so stored entropy is valid for derivation
     void $ walletAccount entropy =<< liftDerivation (pure $ mkAccountIndex $ fromMaybe 0 nextAccount)
     created <- withFastStore' $ \db -> createWallet db entropy nextAccount
-    unless created $ throwWalletError WEMasterExists
+    unless created $ throwCmdError "this device already has a wallet"
     pure $ CRWallet user (Just $ WalletInfo [] nextAccount)
   APIBindWalletAccount userId accountIdx_ -> withUserId userId $ \user -> do
-    (entropy, n) <- withWalletStore $ \db -> bindAccount db userId accountIdx_
+    w@Wallet {entropy} <- deviceWallet
+    n <- liftWallet =<< withFastStore' (\db -> bindAccount db userId w accountIdx_)
     CRWalletAddress user . snd <$> walletAccount entropy n
   APIGetWalletAddress accountIdx_ -> withUser $ \user -> do
-    (entropy, n) <- withWalletStore (`resolveAccount` accountIdx_)
+    w@Wallet {entropy} <- deviceWallet
+    n <- liftWallet $ resolveAccount w accountIdx_
     CRWalletAddress user . snd <$> walletAccount entropy n
   APIExportWalletMnemonic -> withUser $ \user -> do
-    Wallet {entropy} <- withFastStore getWallet >>= maybe (throwWalletError WENoMaster) pure
+    Wallet {entropy} <- deviceWallet
     pure $ CRWalletMnemonic user (masterMnemonic entropy)
   APIExportWalletAccount userId n -> withUserId userId $ \user -> do
-    entropy <- withWalletStore $ \db -> heldAccount db userId n
+    Wallet {walletId, entropy} <- deviceWallet
+    held <- withFastStore' $ \db -> heldAccount db userId walletId n
+    unless held $ throwChatError $ CEWallet WEAccountNotHeld
     (k, a) <- walletAccount entropy n
     pure $ CRWalletAccountSecret user a (accountSecret k)
   APIDeleteWallet -> withUser_ $ do
     deleted <- withFastStore' deleteWallet
-    unless deleted $ throwWalletError WENoMaster
+    unless deleted $ throwCmdError "this device has no wallet"
     ok_
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
@@ -6026,14 +6030,11 @@ withExpirationDate globalTTL chatItemTTL action = do
   let ttl = fromMaybe globalTTL chatItemTTL
   when (ttl > 0) $ action $ addUTCTime (-1 * fromIntegral ttl) currentTs
 
-throwWalletError :: WalletError -> CM a
-throwWalletError = throwChatError . CEWallet
+deviceWallet :: CM Wallet
+deviceWallet = withFastStore getWallet >>= maybe (throwCmdError "this device has no wallet") pure
 
 liftWallet :: Either WalletError a -> CM a
 liftWallet = liftEitherWith (ChatError . CEWallet)
-
-withWalletStore :: (DB.Connection -> ExceptT StoreError IO (Either WalletError a)) -> CM a
-withWalletStore action = liftWallet =<< withFastStore action
 
 walletAccount :: WalletEntropy -> AccountIndex -> CM (AccountKey, WalletAddress)
 walletAccount entropy n = do

@@ -3722,15 +3722,6 @@ class VersionRange(TypedDict):
     minVersion: int  # int
     maxVersion: int  # int
 
-class WalletError_noMaster(TypedDict):
-    type: Literal["noMaster"]
-
-class WalletError_masterExists(TypedDict):
-    type: Literal["masterExists"]
-
-class WalletError_badMnemonic(TypedDict):
-    type: Literal["badMnemonic"]
-
 class WalletError_accountBound(TypedDict):
     type: Literal["accountBound"]
 
@@ -3744,16 +3735,13 @@ class WalletError_accountsExhausted(TypedDict):
     type: Literal["accountsExhausted"]
 
 WalletError = (
-    WalletError_noMaster
-    | WalletError_masterExists
-    | WalletError_badMnemonic
-    | WalletError_accountBound
+    WalletError_accountBound
     | WalletError_accountNotHeld
     | WalletError_counterUnknown
     | WalletError_accountsExhausted
 )
 
-WalletError_Tag = Literal["noMaster", "masterExists", "badMnemonic", "accountBound", "accountNotHeld", "counterUnknown", "accountsExhausted"]
+WalletError_Tag = Literal["accountBound", "accountNotHeld", "counterUnknown", "accountsExhausted"]
 
 class XFTPErrorType_BLOCK(TypedDict):
     type: Literal["BLOCK"]

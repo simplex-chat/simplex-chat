@@ -95,10 +95,7 @@ data WalletAddress = WalletAddress {accountIndex :: AccountIndex, keyPath :: Tex
 data WalletInfo = WalletInfo {accountIndexes :: [AccountIndex], nextAccountIndex :: Maybe Word32} -- Nothing: unknown after an import
 
 data WalletError
-  = WENoMaster        -- the device has no master entropy
-  | WEMasterExists    -- create, when the device already has one
-  | WEBadMnemonic     -- wrong word count, wrong word, or bad checksum
-  | WEAccountBound    -- bind, on an account another profile holds
+  = WEAccountBound    -- bind, on an account another profile holds
   | WEAccountNotHeld  -- export account, on an account the profile does not hold
   | WECounterUnknown  -- the counter is not set yet, after an import
   | WEAccountsExhausted -- bind without an index, when the counter has passed every index

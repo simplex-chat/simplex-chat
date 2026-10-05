@@ -2817,9 +2817,6 @@ viewChatError isCmd logLevel testView = \case
     CEWallet walletErr ->
       let reason :: Text
           reason = case walletErr of
-            WENoMaster -> "this device has no wallet"
-            WEMasterExists -> "this device already has a wallet"
-            WEBadMnemonic -> "not a valid recovery phrase"
             WEAccountBound -> "another profile holds this account"
             WEAccountNotHeld -> "this profile does not hold this account"
             WECounterUnknown -> "the next account is unknown after an import"
